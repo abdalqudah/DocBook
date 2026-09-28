@@ -1,0 +1,25 @@
+<% var canManage = can('doctors.manage'); var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('nav.group_operations') %></div><h1><%= t('doctors.title') %></h1><p><%= t('doctors.lead') %></p></div>
+  <div class="page-actions"><% if (canManage) { %><a class="btn btn-primary" href="/app/doctors/new"><%- icon('user-plus', 'icon-sm') %><%= t('doctors.add') %></a><% } %></div>
+</div>
+<% if (!rows.length) { %>
+  <div class="panel"><%- include('../../../partials/empty', { emptyIcon: 'stethoscope', emptyTitle: t('doctors.empty_title'), emptyText: t('doctors.empty_text'), emptyAction: canManage ? '<a class="btn btn-primary btn-sm" href="/app/doctors/new">' + t('doctors.add') + '</a>' : '' }) %></div>
+<% } else { %>
+<div class="grid grid-3">
+  <% rows.forEach(function (d) { var wh = parseWh(d.working_hours); var today = wh[dayKey]; var works = today && (today.enabled !== false) && ((today.shifts && today.shifts.length) || today.start); %>
+  <a class="panel card-link" href="/app/doctors/<%= d.id %>"<% if (!d.is_active) { %> style="opacity:.65"<% } %>>
+    <div class="panel-body stack-sm">
+      <div class="row"><span class="avatar avatar-lg" style="<%= d.color ? 'background:' + d.color + ';color:var(--surface)' : '' %>"><%= initials(L(d.full_name, d.full_name_en)) %></span>
+        <div class="grow" style="min-width:0"><div class="strong truncate"><%= L(d.full_name, d.full_name_en) %></div><div class="small muted truncate"><%= L(d.specialization, d.specialization_en) || '—' %></div></div></div>
+      <div class="row wrap small" style="gap:6px">
+        <% if (!d.is_active) { %><span class="badge badge-neutral"><%= t('doctors.inactive') %></span><% } else if (works) { %><span class="badge badge-success badge-dot"><%= t('doctors.works_today') %></span><% } else { %><span class="badge"><%= t('doctors.off_today') %></span><% } %>
+        <span class="badge"><%= t('doctors.today_n', { n: todayCounts[d.id] || 0 }) %></span>
+        <% if (accounts[d.id]) { %><span class="badge badge-info"><%- icon('key-round', 'icon-sm') %><%= t('doctors.has_login') %></span><% } %>
+      </div>
+      <div class="row between small"><span class="muted"><%= t('doctors.fee') %></span><strong><%= fmt.money(d.consultation_fee) %></strong></div>
+    </div>
+  </a>
+  <% }) %>
+</div>
+<% } %>

@@ -1,50 +1,46 @@
 // Navigation model — one definition feeds the sidebar, the ⌘K palette and the mobile bottom bar.
-// An item appears only when the member holds one of its permissions.
+// An item appears only when the staff member holds one of its permissions (and, for "my day", has a doctor profile).
 const NAV = [
   { group: 'overview', items: [
     { key: 'dashboard', href: '/app', icon: 'layout-dashboard', perms: ['dashboard.view'], exact: true, bottom: 1 },
+    { key: 'my_day', href: '/app/my-day', icon: 'stethoscope', perms: ['clinical.view'], needsDoctor: true, bottom: 2 },
+  ] },
+  { group: 'clinic', items: [
+    { key: 'appointments', href: '/app/appointments', icon: 'calendar-days', perms: ['appointments.view'], bottom: 3 },
+    { key: 'front_desk', href: '/app/front-desk', icon: 'armchair', perms: ['frontdesk.use'], badge: 'waiting', bottom: 2 },
+    { key: 'patients', href: '/app/patients', icon: 'users', perms: ['patients.view'], bottom: 4 },
   ] },
   { group: 'finance', items: [
-    { key: 'partners', href: '/app/partners', icon: 'handshake', perms: ['partners.view'] },
-    { key: 'expenses', href: '/app/expenses', icon: 'receipt', perms: ['expenses.view'], bottom: 3 },
-    { key: 'payroll', href: '/app/payroll', icon: 'wallet', perms: ['payroll.view'] },
-    { key: 'budgets', href: '/app/budgets', icon: 'piggy-bank', perms: ['budgets.view'], badge: 'budgetAlerts' },
+    { key: 'billing', href: '/app/billing', icon: 'receipt', perms: ['billing.view'] },
+    { key: 'payroll', href: '/app/payroll', icon: 'wallet', perms: ['payroll.view'], badge: 'pendingAdjustments' },
+    { key: 'expenses', href: '/app/expenses', icon: 'banknote', perms: ['expenses.view'] },
   ] },
   { group: 'operations', items: [
-    { key: 'sales', href: '/app/sales', icon: 'shopping-cart', perms: ['sales.view'], bottom: 2 },
-    { key: 'customers', href: '/app/customers', icon: 'users', perms: ['customers.view'] },
-    { key: 'purchases', href: '/app/purchases', icon: 'package', perms: ['purchases.view'] },
-    { key: 'delivery', href: '/app/delivery', icon: 'truck', perms: ['delivery.view'], badge: 'pendingDeliveries' },
+    { key: 'doctors', href: '/app/doctors', icon: 'stethoscope', perms: ['doctors.manage', 'appointments.view_all'] },
+    { key: 'services', href: '/app/services', icon: 'clipboard-list', perms: ['services.manage'] },
+    { key: 'supplies', href: '/app/supplies', icon: 'package', perms: ['supplies.view'], badge: 'lowStock' },
   ] },
-  { group: 'growth', items: [
-    { key: 'marketing', href: '/app/marketing', icon: 'megaphone', perms: ['marketing.view'] },
+  { group: 'insights', items: [
+    { key: 'reports', href: '/app/reports', icon: 'chart-pie', perms: ['reports.view'] },
   ] },
-  { group: 'intelligence', items: [
-    { key: 'reports', href: '/app/reports', icon: 'file-text', perms: ['reports.view'], bottom: 4 },
-    { key: 'advisor', href: '/app/advisor', icon: 'sparkles', perms: ['ai.use'] },
-  ] },
-  { group: 'workspace', items: [
-    { key: 'sheets', href: '/app/integrations/sheets', icon: 'sheet', perms: ['integrations.manage'] },
-    { key: 'support', href: '/app/support', icon: 'life-buoy', perms: ['support.use'] },
-    { key: 'settings', href: '/app/settings', icon: 'settings', perms: [] },
+  { group: 'admin', items: [
+    { key: 'team', href: '/app/settings/team', icon: 'user-cog', perms: ['users.manage'] },
+    { key: 'settings', href: '/app/settings', icon: 'settings', perms: [], exactSettings: true },
+    { key: 'support', href: '/app/help', icon: 'life-buoy', perms: [] },
   ] },
 ];
 
-// Quick actions offered in ⌘K.
 const ACTIONS = [
-  { key: 'new_expense', href: '/app/expenses?new=1', icon: 'plus', perms: ['expenses.manage'] },
-  { key: 'new_order', href: '/app/sales/new', icon: 'plus', perms: ['sales.manage'] },
-  { key: 'new_purchase', href: '/app/purchases?new=1', icon: 'plus', perms: ['purchases.manage'] },
-  { key: 'new_employee', href: '/app/payroll/employees/new', icon: 'user-plus', perms: ['payroll.manage'] },
-  { key: 'new_partner', href: '/app/partners/new', icon: 'handshake', perms: ['partners.manage'] },
-  { key: 'new_campaign', href: '/app/marketing?new=1', icon: 'megaphone', perms: ['marketing.manage'] },
-  { key: 'new_shipment', href: '/app/delivery?new=1', icon: 'truck', perms: ['delivery.manage'] },
-  { key: 'pnl', href: '/app/reports/pnl', icon: 'file-text', perms: ['reports.view'] },
-  { key: 'ask_ai', href: '/app/advisor/chat', icon: 'bot', perms: ['ai.use'] },
+  { key: 'new_appointment', href: '/app/appointments/new', icon: 'calendar-plus', perms: ['appointments.manage'] },
+  { key: 'new_patient', href: '/app/patients?new=1', icon: 'user-plus', perms: ['patients.create'] },
+  { key: 'waiting_room', href: '/app/front-desk', icon: 'armchair', perms: ['frontdesk.use'] },
+  { key: 'new_expense', href: '/app/expenses?new=1', icon: 'banknote', perms: ['expenses.manage'] },
+  { key: 'add_staff', href: '/app/settings/team?new=1', icon: 'user-cog', perms: ['users.manage'] },
+  { key: 'booking_page', href: '/app/settings/portal', icon: 'globe', perms: ['settings.manage'] },
 ];
 
-function forUser(permissions) {
-  const ok = (item) => !item.perms.length || item.perms.some((p) => permissions.has(p));
+function forUser(permissions, ctx = {}) {
+  const ok = (item) => (!item.perms.length || item.perms.some((p) => permissions.has(p))) && (!item.needsDoctor || ctx.doctorId);
   return NAV.map((g) => ({ group: g.group, items: g.items.filter(ok) })).filter((g) => g.items.length);
 }
 

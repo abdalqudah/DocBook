@@ -4,10 +4,10 @@ const { repo } = require('../../core/crud');
 const { z, validate, money, isoDate, optionalString } = require('../../core/validate');
 const { E } = require('../../core/errors');
 
-// DocBook's built-in categories (kept as keys; labels are translated). Workspaces can add their own.
-const SYSTEM_CATEGORIES = ['rent', 'utilities', 'packaging', 'maintenance', 'hospitality', 'software', 'transport', 'tax', 'government', 'office', 'miscellaneous',
-  'marketing', 'salaries', 'deliveries'];
-const PAYMENT_METHODS = ['cash', 'bank_transfer', 'credit_card', 'digital_wallet'];
+// Built-in clinic expense categories (kept as keys; labels are translated). Each clinic can add its own.
+const SYSTEM_CATEGORIES = ['rent', 'utilities', 'medical_supplies', 'lab_fees', 'equipment', 'maintenance', 'cleaning', 'software', 'staff_salaries', 'advertising',
+  'licences', 'tax', 'insurance_premiums', 'office', 'hospitality', 'transport', 'miscellaneous'];
+const PAYMENT_METHODS = ['cash', 'bank_transfer', 'card', 'digital_wallet'];
 
 const expenses = repo({
   table: 'expenses', entity: 'expense', searchable: ['title', 'invoice_number', 'recorded_by', 'notes'], dateColumn: 'date',

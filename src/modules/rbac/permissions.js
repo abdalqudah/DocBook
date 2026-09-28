@@ -1,56 +1,63 @@
-// Permission catalog and system roles.
-// DocBook's flag permissions map onto these keys:
-//   canViewProfits → profits.view        canManagePartners → partners.manage
-//   canManageExpenses → expenses.manage  canManagePayroll → payroll.manage
-//   canManagePurchases → purchases.manage canManageMarketing → marketing.manage
-//   canManageOrders → sales.manage + customers.manage   canManageDeliveries → delivery.manage
-//   canSyncSheets → integrations.manage  canManageUsers → users.manage   canManageProjects → settings.manage
-// "view" keys were implicit in DocBook (a module was visible whenever it could be managed); they are explicit here
-// so read-only roles (partner viewer, auditor) are possible.
+// Permission catalog and the built-in clinic staff roles.
+// Based on DocBook's clinic RBAC (owner, clinic_manager, doctor, receptionist, accountant) with a nurse role added.
+// "view" / "manage" pairs: managing always implies viewing (normalise()).
 const GROUPS = [
-  { key: 'overview', perms: ['dashboard.view', 'profits.view'] },
-  { key: 'partners', perms: ['partners.view', 'partners.manage'] },
-  { key: 'expenses', perms: ['expenses.view', 'expenses.manage'] },
-  { key: 'payroll', perms: ['payroll.view', 'payroll.manage'] },
-  { key: 'purchases', perms: ['purchases.view', 'purchases.manage'] },
-  { key: 'sales', perms: ['sales.view', 'sales.manage', 'customers.view', 'customers.manage'] },
-  { key: 'delivery', perms: ['delivery.view', 'delivery.manage'] },
-  { key: 'marketing', perms: ['marketing.view', 'marketing.manage'] },
-  { key: 'budgets', perms: ['budgets.view', 'budgets.manage'] },
+  { key: 'overview', perms: ['dashboard.view', 'finance.view'] },
+  { key: 'appointments', perms: ['appointments.view', 'appointments.manage', 'appointments.view_all'] },
+  { key: 'frontdesk', perms: ['frontdesk.use', 'billing.view', 'billing.manage'] },
+  { key: 'patients', perms: ['patients.view', 'patients.create', 'patients.edit', 'patients.delete'] },
+  { key: 'clinical', perms: ['clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create'] },
+  { key: 'clinic', perms: ['doctors.manage', 'services.manage'] },
+  { key: 'payroll', perms: ['payroll.view', 'payroll.manage', 'payroll.approve'] },
+  { key: 'supplies', perms: ['supplies.view', 'supplies.manage', 'expenses.view', 'expenses.manage'] },
   { key: 'reports', perms: ['reports.view', 'data.export'] },
-  { key: 'intelligence', perms: ['ai.use', 'ai.manage'] },
-  { key: 'workspace', perms: ['integrations.manage', 'support.use', 'settings.manage', 'users.manage', 'roles.manage', 'data.manage', 'audit.view'] },
+  { key: 'admin', perms: ['users.manage', 'roles.manage', 'settings.manage', 'data.manage', 'audit.view'] },
 ];
 
 const ALL = GROUPS.flatMap((g) => g.perms);
 const without = (...remove) => ALL.filter((p) => !remove.includes(p));
 
-// Viewing implies nothing else; managing implies viewing (enforced when saving a role).
-const IMPLIES = Object.fromEntries(ALL.filter((p) => p.endsWith('.manage')).map((p) => [p, p.replace('.manage', '.view')]).filter(([, v]) => ALL.includes(v)));
+const IMPLIES = {
+  'appointments.manage': 'appointments.view', 'appointments.view_all': 'appointments.view', 'billing.manage': 'billing.view',
+  'patients.create': 'patients.view', 'patients.edit': 'patients.view', 'patients.delete': 'patients.view',
+  'clinical.edit': 'clinical.view', 'vitals.edit': 'clinical.view', 'prescriptions.create': 'clinical.view',
+  'payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',
+};
 
 const SYSTEM_ROLES = [
-  { key: 'owner', permissions: ALL },
-  { key: 'admin', permissions: without('data.manage') },
+  { key: 'owner', permissions: ALL, entry: '/app' },
+  { key: 'clinic_manager', permissions: without('data.manage'), entry: '/app' },
   {
-    key: 'accountant', // DocBook "accountant": everything financial, no marketing, no users/projects
-    permissions: ['dashboard.view', 'profits.view', 'partners.view', 'partners.manage', 'expenses.view', 'expenses.manage', 'payroll.view', 'payroll.manage',
-      'purchases.view', 'purchases.manage', 'sales.view', 'sales.manage', 'customers.view', 'customers.manage', 'delivery.view', 'delivery.manage',
-      'marketing.view', 'budgets.view', 'budgets.manage', 'reports.view', 'data.export', 'integrations.manage', 'ai.use', 'support.use'],
+    key: 'doctor', // sees and treats their own patients; appointments are limited to their own schedule
+    permissions: ['dashboard.view', 'appointments.view', 'patients.view', 'patients.edit', 'clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create'],
+    entry: '/app/my-day',
   },
   {
-    key: 'sales', // DocBook "sales": marketing, orders, deliveries — no profit figures
-    permissions: ['dashboard.view', 'sales.view', 'sales.manage', 'customers.view', 'customers.manage', 'delivery.view', 'delivery.manage',
-      'marketing.view', 'marketing.manage', 'support.use'],
+    key: 'nurse', // prepares patients: waiting room, vital signs, patient records — no diagnoses or prescriptions
+    permissions: ['dashboard.view', 'appointments.view', 'appointments.view_all', 'frontdesk.use', 'patients.view', 'patients.edit', 'clinical.view', 'vitals.edit', 'supplies.view', 'supplies.manage'],
+    entry: '/app/front-desk',
   },
   {
-    key: 'partner_viewer', // DocBook "partner_viewer": sees profits and partner statements only
-    permissions: ['dashboard.view', 'profits.view', 'partners.view', 'reports.view', 'support.use'],
+    key: 'receptionist', // bookings, check-in, payment at checkout — no clinical notes (DocBook: "a receptionist schedules and checks in")
+    permissions: ['dashboard.view', 'appointments.view', 'appointments.manage', 'appointments.view_all', 'frontdesk.use', 'billing.view', 'billing.manage',
+      'patients.view', 'patients.create', 'patients.edit'],
+    entry: '/app/front-desk',
   },
   {
-    key: 'viewer',
-    permissions: ['dashboard.view', 'partners.view', 'expenses.view', 'payroll.view', 'purchases.view', 'sales.view', 'customers.view', 'delivery.view',
-      'marketing.view', 'budgets.view', 'reports.view', 'support.use'],
+    key: 'accountant', // billing, payroll, commissions, expenses, reports — no clinical data
+    permissions: ['dashboard.view', 'finance.view', 'appointments.view', 'appointments.view_all', 'billing.view', 'billing.manage', 'payroll.view', 'payroll.manage',
+      'supplies.view', 'expenses.view', 'expenses.manage', 'reports.view', 'data.export'],
+    entry: '/app/billing',
   },
+];
+
+/** Roles offered on the clinic sign-in portal, in display order, with the icon shown there. */
+const PORTAL_ROLES = [
+  { key: 'doctor', icon: 'stethoscope' },
+  { key: 'nurse', icon: 'heart-pulse' },
+  { key: 'receptionist', icon: 'clipboard-list' },
+  { key: 'accountant', icon: 'wallet' },
+  { key: 'clinic_manager', icon: 'building-2' },
 ];
 
 function normalise(perms) {
@@ -59,4 +66,6 @@ function normalise(perms) {
   return ALL.filter((p) => set.has(p));
 }
 
-module.exports = { GROUPS, ALL, SYSTEM_ROLES, IMPLIES, normalise };
+const entryFor = (roleKey) => (SYSTEM_ROLES.find((r) => r.key === roleKey) || {}).entry || '/app';
+
+module.exports = { GROUPS, ALL, SYSTEM_ROLES, PORTAL_ROLES, IMPLIES, normalise, entryFor };

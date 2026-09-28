@@ -23,6 +23,8 @@ async function loadUser(req, res, next) {
 }
 
 function requireAuth(req, res, next) {
+  // Accounts created with a temporary password must choose their own before using the app.
+  if (req.user && req.user.must_change_password && !isJson(req)) return res.redirect('/password/new');
   if (req.user) return next();
   if (isJson(req)) return next(E.unauthenticated());
   if (req.method === 'GET') req.session.returnTo = req.originalUrl;
@@ -43,8 +45,15 @@ async function resolveBusiness(req, res, next) {
       return res.redirect('/workspaces/new');
     }
     const [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);
-    const membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id }).first('m.partner_id', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
-    req.ctx = { businessId, userId: req.user.id, userName: req.user.name, permissions, currency: business.currency, ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale };
+    const membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id })
+      .first('m.doctor_id', 'm.job_title', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
+    // A doctor account only ever sees its own schedule unless its role grants appointments.view_all.
+    const ownDoctorId = membership && membership.doctor_id && !permissions.has('appointments.view_all') ? membership.doctor_id : null;
+    req.ctx = {
+      businessId, userId: req.user.id, userName: req.user.name, permissions, currency: business.currency, timezone: business.timezone,
+      roleKey: membership && membership.role_key, doctorId: membership ? membership.doctor_id : null, ownDoctorId,
+      ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale,
+    };
     req.business = business;
     res.locals.business = business;
     res.locals.membership = membership;

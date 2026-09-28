@@ -36,7 +36,7 @@
           <tr>
             <td data-label="<%= t('common.date') %>" class="nowrap"><%= fmt.date(r.date) %></td>
             <td class="primary-cell"><div class="strong"><%= r.title %></div><div class="small muted"><%= [r.invoice_number ? '#' + r.invoice_number : null, r.recorded_by].filter(Boolean).join(' · ') %></div></td>
-            <td data-label="<%= t('common.category') %>"><span class="badge"><%= catName(r.category) %></span><% if (['marketing','salaries','deliveries'].indexOf(r.category) >= 0) { %> <span class="badge badge-info" title="<%= t('expenses.not_in_opex_help') %>"><%= t('expenses.not_in_opex') %></span><% } %></td>
+            <td data-label="<%= t('common.category') %>"><span class="badge"><%= catName(r.category) %></span></td>
             <td data-label="<%= t('expenses.payment_method') %>"><%= label('payment_methods', r.payment_method) %></td>
             <td data-label="<%= t('common.amount') %>" class="num strong"><%= fmt.amount(r.amount) %></td>
             <td class="actions">
@@ -60,7 +60,6 @@
       <div class="panel-head"><h2><%= t('expenses.by_category') %></h2><% if (canManage) { %><button class="btn btn-ghost btn-sm" type="button" data-open-dialog="category-dialog"><%- icon('plus', 'icon-sm') %><%= t('expenses.new_category') %></button><% } %></div>
       <div class="panel-body"><% if (hasBreakdown) { %><%- breakdown %><% } else { %><p class="muted small"><%= t('expenses.no_breakdown') %></p><% } %></div>
     </div>
-    <div class="alert alert-info"><%- icon('info') %><div class="grow small"><%= t('expenses.opex_note') %></div></div>
   </div>
 </div>
 

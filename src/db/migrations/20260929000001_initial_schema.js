@@ -1,6 +1,7 @@
-// Initial schema: identity, workspaces (businesses), roles, audit, and every DocBook business entity.
-// Money columns are DECIMAL(15,3) so 3-decimal currencies (JOD, KWD, BHD, OMR) stay exact.
-// Every business record carries business_id; services always filter by the tenant from req.ctx.
+// Clinic management schema: identity, clinics (workspaces), roles & staff, audit, and every DocBook clinic
+// entity — doctors, schedules, services, patients, appointments, invoices, consultations, prescriptions,
+// insurance, medications, commissions, payroll adjustments, supplies and expenses.
+// Every clinic record carries business_id (the clinic); services always filter by the clinic in req.ctx.
 
 const money = (t, name) => t.decimal(name, 15, 3).notNullable().defaultTo(0);
 
@@ -10,10 +11,12 @@ exports.up = async (knex) => {
     t.string('name', 160).notNullable();
     t.string('email', 190).notNullable().unique();
     t.string('password_hash', 255).notNullable();
-    t.string('locale', 5).notNullable().defaultTo('en');
+    t.boolean('must_change_password').notNullable().defaultTo(false); // temporary password set by an admin
+    t.string('locale', 5).notNullable().defaultTo('ar');
     t.string('theme', 10).notNullable().defaultTo('system');
     t.string('status', 20).notNullable().defaultTo('active');
     t.string('phone', 40);
+    t.boolean('is_platform_admin').notNullable().defaultTo(false);
     t.timestamp('email_verified_at').nullable();
     t.timestamp('password_changed_at').nullable();
     t.timestamp('last_login_at').nullable();
@@ -21,34 +24,43 @@ exports.up = async (knex) => {
     t.timestamps(true, true);
   });
 
+  // A clinic. (Internal name "business" keeps the tenancy code generic.)
   await knex.schema.createTable('businesses', (t) => {
     t.increments('id');
-    t.string('name', 160).notNullable();
-    t.string('legal_name', 190);
-    t.string('industry', 60);
+    t.string('name', 160).notNullable();          // clinic name (Arabic / primary)
+    t.string('name_en', 160);
+    t.string('slug', 40).unique();                // portal & booking address: /<slug>
+    t.string('specialty', 60);
     t.string('country', 2);
-    t.string('currency', 3).notNullable().defaultTo('USD');
-    t.string('tax_number', 60);
+    t.string('city', 100);
+    t.string('currency', 3).notNullable().defaultTo('JOD');
+    t.string('timezone', 64).notNullable().defaultTo('Asia/Amman');
+    t.text('about');
+    t.text('about_en');
     t.string('phone', 40);
+    t.string('whatsapp', 40);
     t.string('email', 190);
     t.string('address', 500);
-    t.string('website', 190);
-    t.string('color', 9);                         // workspace accent (Settings → Appearance)
-    t.specificType('logo', 'MEDIUMBLOB');         // stored in the database: survives redeploys
+    t.string('map_url', 500);
+    t.string('working_hours_text', 500);
+    t.string('tax_number', 60);
+    t.string('color', 9);
+    t.specificType('logo', 'MEDIUMBLOB');
     t.string('logo_mime', 40);
     t.integer('logo_version').notNullable().defaultTo(0);
-    t.decimal('default_delivery_fee', 15, 3).notNullable().defaultTo(0);
-    t.string('invoice_prefix', 20).notNullable().defaultTo('ORD-');
-    t.integer('invoice_next_number').unsigned().notNullable().defaultTo(1000);
+    t.boolean('booking_enabled').notNullable().defaultTo(true);   // public online booking page
+    t.string('calendar_color_mode', 10).notNullable().defaultTo('status');
+    t.integer('invoice_next_number').unsigned().notNullable().defaultTo(1);
     t.string('onboarding_step', 30);
     t.timestamp('onboarding_completed_at').nullable();
+    t.string('status', 20).notNullable().defaultTo('active');
     t.integer('created_by').unsigned();
     t.timestamps(true, true);
   });
 
   await knex.schema.createTable('roles', (t) => {
     t.increments('id');
-    t.integer('business_id').unsigned().nullable().references('businesses.id').onDelete('CASCADE'); // null = system template
+    t.integer('business_id').unsigned().nullable().references('businesses.id').onDelete('CASCADE');
     t.string('key', 60).notNullable();
     t.string('name', 120).notNullable();
     t.string('description', 255);
@@ -58,13 +70,41 @@ exports.up = async (knex) => {
     t.unique(['business_id', 'key']);
   });
 
+  await knex.schema.createTable('doctors', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.string('full_name', 190).notNullable();
+    t.string('full_name_en', 190);
+    t.string('specialization', 190);
+    t.string('specialization_en', 190);
+    t.text('bio');
+    t.text('bio_en');
+    t.text('education');
+    t.text('education_en');
+    t.string('phone', 40);
+    t.string('whatsapp', 40);
+    t.string('email', 190);
+    t.string('license_number', 100);
+    t.boolean('is_active').notNullable().defaultTo(true);
+    t.integer('sort_order').notNullable().defaultTo(0);
+    t.json('working_hours');                       // { sun: { enabled, shifts:[{start,end}], breaks:[{start,end}] }, … }
+    t.integer('slot_duration_minutes').notNullable().defaultTo(30);
+    money(t, 'consultation_fee');
+    t.boolean('show_consultation_fee').notNullable().defaultTo(true);
+    money(t, 'base_salary');
+    t.string('color', 9);
+    t.timestamps(true, true);
+    t.index(['business_id', 'is_active']);
+  });
+
   await knex.schema.createTable('memberships', (t) => {
     t.increments('id');
     t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
     t.integer('user_id').unsigned().notNullable().references('users.id').onDelete('CASCADE');
     t.integer('role_id').unsigned().notNullable().references('roles.id');
+    t.integer('doctor_id').unsigned().nullable().references('doctors.id').onDelete('SET NULL'); // a doctor account ↔ its doctor profile
+    t.string('job_title', 100);
     t.string('status', 20).notNullable().defaultTo('active');
-    t.integer('partner_id').unsigned().nullable(); // a "partner viewer" account can be linked to its partner record
     t.timestamps(true, true);
     t.unique(['business_id', 'user_id']);
   });
@@ -73,7 +113,9 @@ exports.up = async (knex) => {
     t.increments('id');
     t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
     t.string('email', 190).notNullable();
+    t.string('name', 160);
     t.integer('role_id').unsigned().notNullable().references('roles.id');
+    t.integer('doctor_id').unsigned().nullable();
     t.string('token_hash', 64).notNullable().unique();
     t.integer('invited_by').unsigned();
     t.timestamp('expires_at').notNullable();
@@ -86,6 +128,7 @@ exports.up = async (knex) => {
     t.increments('id');
     t.integer('user_id').unsigned().notNullable().references('users.id').onDelete('CASCADE');
     t.string('token_hash', 64).notNullable().unique();
+    t.integer('created_by').unsigned().nullable(); // set when an admin generated the link
     t.timestamp('expires_at').notNullable();
     t.timestamp('used_at').nullable();
     t.timestamp('created_at').defaultTo(knex.fn.now());
@@ -118,7 +161,7 @@ exports.up = async (knex) => {
   await knex.schema.createTable('notifications', (t) => {
     t.bigIncrements('id');
     t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.integer('user_id').unsigned().nullable();   // null = everyone who may see `permission`
+    t.integer('user_id').unsigned().nullable();
     t.string('permission', 60);
     t.string('type', 40).notNullable();
     t.string('dedupe_key', 120);
@@ -136,64 +179,251 @@ exports.up = async (knex) => {
     t.primary(['notification_id', 'user_id']);
   });
 
-  // ------------------------------------------------------------------ business data (DocBook)
-  await knex.schema.createTable('partners', (t) => {
+  // Platform-wide settings (e.g. the editable landing page content).
+  await knex.schema.createTable('platform_settings', (t) => {
+    t.string('key', 60).primary();
+    t.specificType('value', 'MEDIUMTEXT').notNullable();
+    t.timestamps(true, true);
+  });
+
+  // ------------------------------------------------------------------ scheduling
+  await knex.schema.createTable('doctor_days_off', (t) => {
     t.increments('id');
     t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('name', 160).notNullable();
+    t.integer('doctor_id').unsigned().notNullable().references('doctors.id').onDelete('CASCADE');
+    t.date('off_date').notNullable();
+    t.string('reason', 255);
+    t.timestamp('created_at').defaultTo(knex.fn.now());
+    t.unique(['doctor_id', 'off_date']);
+  });
+
+  await knex.schema.createTable('services', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('doctor_id').unsigned().nullable().references('doctors.id').onDelete('SET NULL'); // null = any doctor
+    t.string('name', 190).notNullable();
+    t.string('name_en', 190);
+    t.text('description');
+    t.text('description_en');
+    money(t, 'price');
+    t.boolean('show_price').notNullable().defaultTo(true);
+    t.integer('duration_minutes').notNullable().defaultTo(30);
+    t.boolean('is_active').notNullable().defaultTo(true);
+    t.integer('sort_order').notNullable().defaultTo(0);
+    t.timestamps(true, true);
+    t.index(['business_id', 'is_active']);
+  });
+
+  await knex.schema.createTable('patients', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.string('full_name', 190).notNullable();
     t.string('phone', 40);
     t.string('email', 190);
-    money(t, 'initial_investment');
-    money(t, 'additional_contributions');   // maintained from partner_transactions
-    money(t, 'total_withdrawn');            // maintained from partner_transactions
-    t.decimal('current_equity_percent', 6, 2).notNullable().defaultTo(0);
-    t.date('join_date');
+    t.date('date_of_birth');
+    t.string('gender', 10);
+    t.string('national_id', 40);
+    t.integer('insurance_provider_id').unsigned().nullable();
+    t.string('insurance_number', 60);
+    t.text('allergies');
+    t.text('chronic_conditions');
     t.text('notes');
-    t.string('color', 9);
-    t.string('status', 20).notNullable().defaultTo('active');
-    t.string('legacy_id', 64);
     t.timestamps(true, true);
-    t.index(['business_id']);
+    t.index(['business_id', 'phone']);
+    t.index(['business_id', 'full_name']);
   });
 
-  await knex.schema.createTable('partner_transactions', (t) => {
+  await knex.schema.createTable('appointments', (t) => {
     t.increments('id');
     t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.integer('partner_id').unsigned().notNullable().references('partners.id').onDelete('CASCADE');
-    t.string('type', 20).notNullable();      // contribution | withdrawal | opening
+    t.integer('doctor_id').unsigned().nullable().references('doctors.id').onDelete('SET NULL');
+    t.integer('service_id').unsigned().nullable().references('services.id').onDelete('SET NULL');
+    t.integer('patient_id').unsigned().nullable().references('patients.id').onDelete('SET NULL');
+    t.string('patient_name', 190).notNullable();       // snapshot, as DocBook keeps it
+    t.string('patient_phone', 40);
+    t.string('patient_email', 190);
+    t.date('appointment_date').notNullable();
+    t.string('appointment_time', 5).notNullable();     // HH:MM in the clinic's time zone
+    t.integer('duration_minutes').nullable();          // custom length (else service / doctor slot)
+    t.string('status', 20).notNullable().defaultTo('pending'); // pending | confirmed | completed | cancelled | no_show
+    t.string('appointment_type', 20).notNullable().defaultTo('in_person'); // in_person | online | blocked
+    t.string('source', 20).notNullable().defaultTo('staff'); // staff | website
+    money(t, 'amount_due');
+    t.string('payment_status', 20).notNullable().defaultTo('unpaid'); // unpaid | paid
+    t.timestamp('paid_at').nullable();
+    t.boolean('checked_in').notNullable().defaultTo(false);
+    t.timestamp('arrived_at').nullable();
+    t.boolean('with_doctor').notNullable().defaultTo(false);
+    t.timestamp('called_at').nullable();
+    t.integer('parent_appointment_id').unsigned().nullable(); // follow-ups
+    t.text('notes');
+    t.integer('created_by').unsigned();
+    t.timestamps(true, true);
+    t.index(['business_id', 'appointment_date']);
+    t.index(['doctor_id', 'appointment_date']);
+    t.index(['business_id', 'status']);
+  });
+
+  await knex.schema.createTable('insurance_providers', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.string('name', 190).notNullable();
+    t.decimal('coverage_percent', 5, 2).notNullable().defaultTo(0);
+    t.boolean('is_active').notNullable().defaultTo(true);
+    t.integer('sort_order').notNullable().defaultTo(0);
+    t.timestamps(true, true);
+  });
+
+  await knex.schema.createTable('invoices', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('invoice_number').unsigned().notNullable();
+    t.integer('appointment_id').unsigned().nullable();
+    t.integer('doctor_id').unsigned().nullable();      // stable id for the commission engine
+    t.integer('patient_id').unsigned().nullable();
+    t.string('doctor_name', 190);                      // snapshots (settled invoices never change)
+    t.string('service_name', 190);
+    t.string('patient_name', 190).notNullable();
+    t.string('patient_phone', 40);
+    money(t, 'amount');                                 // amount actually charged (after discount)
+    t.string('payment_method', 30).notNullable().defaultTo('cash');
+    t.integer('insurance_provider_id').unsigned().nullable();
+    t.string('insurance_provider_name', 190);
+    t.decimal('discount_percent', 5, 2).notNullable().defaultTo(0);
+    money(t, 'discount_amount');
+    t.integer('created_by').unsigned();
+    t.timestamp('created_at').defaultTo(knex.fn.now());
+    t.unique(['business_id', 'invoice_number']);
+    t.index(['business_id', 'created_at']);
+    t.index(['doctor_id', 'created_at']);
+  });
+
+  await knex.schema.createTable('consultations', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('appointment_id').unsigned().notNullable().references('appointments.id').onDelete('CASCADE');
+    t.integer('doctor_id').unsigned().nullable();
+    t.integer('patient_id').unsigned().nullable();
+    t.string('patient_name', 190).notNullable();
+    t.string('patient_phone', 40);
+    t.json('vital_signs');                             // weightKg, heightCm, bloodPressure, temperatureC, pulseBpm, spo2
+    t.integer('vitals_by').unsigned();                 // the nurse / staff member who recorded vitals
+    t.text('subjective');
+    t.text('objective');
+    t.text('assessment');
+    t.text('plan_text');
+    t.text('diagnosis');
+    t.timestamps(true, true);
+    t.unique(['business_id', 'appointment_id']);
+  });
+
+  await knex.schema.createTable('medications', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.string('name', 190).notNullable();
+    t.string('category', 100);
+    t.string('country', 100);
+    t.boolean('is_active').notNullable().defaultTo(true);
+    t.integer('sort_order').notNullable().defaultTo(0);
+    t.timestamps(true, true);
+  });
+
+  await knex.schema.createTable('prescriptions', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('appointment_id').unsigned().nullable();
+    t.integer('doctor_id').unsigned().nullable();
+    t.integer('patient_id').unsigned().nullable();
+    t.string('patient_name', 190).notNullable();
+    t.string('patient_phone', 40);
+    t.text('diagnosis');
+    t.json('items').notNullable();                     // [{ medicationName, dosage, frequency, duration, instructions }]
+    t.text('notes');
+    t.integer('created_by').unsigned();
+    t.timestamp('created_at').defaultTo(knex.fn.now());
+    t.index(['business_id', 'created_at']);
+  });
+
+  // ------------------------------------------------------------------ commissions & payroll (DocBook)
+  await knex.schema.createTable('commission_rules', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('doctor_id').unsigned().notNullable().references('doctors.id').onDelete('CASCADE');
+    t.string('basis', 20).notNullable().defaultTo('percentage'); // percentage | fixed_per_visit | fixed_per_patient
+    t.decimal('rate', 15, 4).notNullable().defaultTo(0);
+    t.json('service_overrides');                       // [{ serviceName, basis, rate }]
+    t.timestamps(true, true);
+    t.unique(['business_id', 'doctor_id']);
+  });
+
+  await knex.schema.createTable('payroll_adjustments', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('doctor_id').unsigned().notNullable().references('doctors.id').onDelete('CASCADE');
+    t.string('type', 20).notNullable();                // bonus | deduction | advance
     money(t, 'amount');
-    t.date('date').notNullable();
-    t.string('reference', 100);
-    t.string('note', 500);
-    t.integer('distribution_id').unsigned().nullable();
+    t.string('reason', 500).notNullable().defaultTo('');
+    t.string('period', 7).notNullable();               // YYYY-MM
     t.integer('created_by').unsigned();
+    t.string('approval_status', 20).notNullable().defaultTo('pending'); // pending | approved | rejected
+    t.integer('approved_by').unsigned();
     t.timestamp('created_at').defaultTo(knex.fn.now());
-    t.index(['business_id', 'partner_id']);
+    t.index(['business_id', 'doctor_id', 'period']);
   });
 
-  await knex.schema.createTable('profit_distributions', (t) => {
+  await knex.schema.createTable('payroll_payments', (t) => {
     t.increments('id');
     t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('period', 7).notNullable();     // YYYY-MM, or 'all'
-    money(t, 'revenue');
-    money(t, 'gross_profit');
-    money(t, 'net_profit');
-    t.string('status', 20).notNullable().defaultTo('recorded'); // recorded | paid
-    t.string('note', 500);
+    t.integer('doctor_id').unsigned().notNullable().references('doctors.id').onDelete('CASCADE');
+    t.string('period', 7).notNullable();
+    money(t, 'base_salary');
+    money(t, 'commission');
+    money(t, 'bonuses');
+    money(t, 'deductions');
+    money(t, 'advances');
+    money(t, 'net_pay');
+    t.string('payment_method', 30);
+    t.string('reference', 100);
+    t.integer('paid_by').unsigned();
+    t.timestamp('paid_at').defaultTo(knex.fn.now());
+    t.unique(['doctor_id', 'period']);
+  });
+
+  // ------------------------------------------------------------------ supplies & expenses
+  await knex.schema.createTable('suppliers', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.string('name', 190).notNullable();
+    t.string('email', 190);
+    t.string('phone', 40);
+    t.text('notes');
+    t.boolean('is_active').notNullable().defaultTo(true);
+    t.timestamps(true, true);
+  });
+
+  await knex.schema.createTable('supply_items', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('supplier_id').unsigned().nullable().references('suppliers.id').onDelete('SET NULL');
+    t.string('name', 190).notNullable();
+    t.string('unit', 40);
+    t.decimal('current_stock', 15, 2).notNullable().defaultTo(0);
+    t.decimal('reorder_level', 15, 2).notNullable().defaultTo(0);
+    money(t, 'unit_cost');
+    t.timestamp('last_reorder_requested_at').nullable();
+    t.timestamps(true, true);
+  });
+
+  await knex.schema.createTable('stock_movements', (t) => {
+    t.increments('id');
+    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
+    t.integer('item_id').unsigned().notNullable().references('supply_items.id').onDelete('CASCADE');
+    t.string('type', 10).notNullable();                // in | out | adjust
+    t.decimal('quantity', 15, 2).notNullable();
+    t.decimal('stock_after', 15, 2).notNullable();
+    t.string('note', 255);
     t.integer('created_by').unsigned();
     t.timestamp('created_at').defaultTo(knex.fn.now());
-    t.index(['business_id', 'period']);
-  });
-  await knex.schema.createTable('profit_distribution_lines', (t) => {
-    t.increments('id');
-    t.integer('distribution_id').unsigned().notNullable().references('profit_distributions.id').onDelete('CASCADE');
-    t.integer('partner_id').unsigned().notNullable();
-    t.string('partner_name', 160).notNullable();
-    t.decimal('equity_percent', 6, 2).notNullable().defaultTo(0);
-    money(t, 'allocated_profit');
-    money(t, 'withdrawn');
-    money(t, 'net_payable');
-    money(t, 'paid_out');
   });
 
   await knex.schema.createTable('expense_categories', (t) => {
@@ -217,249 +447,15 @@ exports.up = async (knex) => {
     t.string('recorded_by', 160);
     t.integer('recorded_by_user_id').unsigned();
     t.text('notes');
-    t.string('legacy_id', 64);
     t.timestamps(true, true);
     t.index(['business_id', 'date']);
-    t.index(['business_id', 'category']);
-  });
-
-  await knex.schema.createTable('employees', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('name', 160).notNullable();
-    t.string('role', 100);
-    t.string('phone', 40);
-    t.string('email', 190);
-    money(t, 'base_salary');
-    t.string('commission_type', 30).notNullable().defaultTo('percentage'); // percentage | fixed_per_order
-    t.decimal('commission_rate', 15, 3).notNullable().defaultTo(0);
-    money(t, 'deductions');     // deductions & advances (DocBook merges both)
-    money(t, 'bonus');
-    t.date('hire_date');
-    t.string('status', 20).notNullable().defaultTo('active'); // active | on_leave | inactive
-    t.string('bank_account', 100);
-    t.text('notes');
-    t.json('paid_months');            // ["2026-09", …] — drives salary expense (DocBook semantics)
-    t.json('region_commission_rates');// { "<region>": rate }
-    t.string('legacy_id', 64);
-    t.timestamps(true, true);
-    t.index(['business_id']);
-  });
-
-  await knex.schema.createTable('payroll_payments', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.integer('employee_id').unsigned().notNullable().references('employees.id').onDelete('CASCADE');
-    t.string('month', 7).notNullable();
-    money(t, 'base_salary');
-    money(t, 'bonus');
-    money(t, 'deductions');
-    money(t, 'commission');
-    money(t, 'net_pay');
-    t.string('payment_method', 30);
-    t.string('reference', 100);
-    t.integer('paid_by').unsigned();
-    t.timestamp('paid_at').defaultTo(knex.fn.now());
-    t.unique(['employee_id', 'month']);
-  });
-
-  await knex.schema.createTable('purchases', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.date('date').notNullable();
-    t.string('supplier_name', 160).notNullable();
-    t.string('supplier_phone', 40);
-    t.string('item_name', 190).notNullable();
-    t.string('sku', 100);
-    t.string('category', 100);
-    t.decimal('unit_cost', 15, 3).notNullable().defaultTo(0);
-    t.decimal('quantity', 15, 3).notNullable().defaultTo(0);
-    money(t, 'total_cost');
-    money(t, 'shipping_cost');
-    money(t, 'paid_amount');
-    t.string('payment_status', 20).notNullable().defaultTo('due'); // paid | partial | due
-    t.string('invoice_ref', 100);
-    t.text('notes');
-    t.string('legacy_id', 64);
-    t.timestamps(true, true);
-    t.index(['business_id', 'date']);
-  });
-
-  await knex.schema.createTable('campaigns', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('campaign_name', 190).notNullable();
-    t.string('platform', 30).notNullable();
-    t.date('start_date');
-    t.date('end_date');
-    money(t, 'cost');
-    t.bigInteger('impressions').notNullable().defaultTo(0);
-    t.bigInteger('clicks').notNullable().defaultTo(0);
-    t.bigInteger('conversions').notNullable().defaultTo(0);
-    money(t, 'revenue_generated');
-    t.string('status', 20).notNullable().defaultTo('active');
-    t.string('target_product', 190);
-    t.text('notes');
-    t.string('legacy_id', 64);
-    t.timestamps(true, true);
-    t.index(['business_id']);
-  });
-
-  await knex.schema.createTable('customers', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('name', 160).notNullable();
-    t.string('phone', 40);
-    t.string('email', 190);
-    t.string('address', 500);
-    t.string('city', 100);
-    t.string('region', 100);     // drives region commission rates
-    t.string('group_name', 100);
-    t.string('category', 100);
-    t.text('notes');
-    t.string('legacy_id', 64);
-    t.timestamps(true, true);
-    t.index(['business_id', 'phone']);
-  });
-
-  await knex.schema.createTable('orders', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('order_number', 60).notNullable();
-    t.date('date').notNullable();
-    t.integer('customer_id').unsigned().nullable();
-    t.string('customer_name', 160).notNullable();
-    t.string('customer_phone', 40);
-    t.string('customer_email', 190);
-    t.json('items').notNullable();   // [{ itemName, sku, quantity, unitPrice, unitCost }]
-    money(t, 'subtotal');
-    money(t, 'discount');
-    money(t, 'delivery_fee');
-    money(t, 'total_amount');
-    money(t, 'total_cogs');
-    t.integer('employee_id').unsigned().nullable();
-    money(t, 'commission_earned');
-    t.string('delivery_courier', 160);
-    money(t, 'delivery_cost');
-    t.string('payment_status', 30).notNullable().defaultTo('paid'); // paid | cash_on_delivery | pending | refunded
-    t.string('channel', 30).notNullable().defaultTo('manual');
-    t.string('actual_payment_method', 30);
-    t.text('notes');
-    t.string('legacy_id', 64);
-    t.timestamps(true, true);
-    t.unique(['business_id', 'order_number']);
-    t.index(['business_id', 'date']);
-  });
-
-  await knex.schema.createTable('deliveries', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.integer('order_id').unsigned().nullable();
-    t.string('courier_company', 160);
-    t.string('courier_name', 160);
-    t.string('courier_phone', 40);
-    t.string('tracking_number', 100);
-    t.string('customer_name', 160).notNullable();
-    t.string('customer_phone', 40);
-    t.string('destination_city', 100);
-    t.string('address', 500);
-    money(t, 'delivery_fee_paid');
-    money(t, 'delivery_fee_collected');
-    t.string('status', 30).notNullable().defaultTo('pending'); // pending | out_for_delivery | delivered | returned | cancelled
-    t.date('date').notNullable();
-    t.text('notes');
-    t.boolean('cash_remitted').notNullable().defaultTo(false);
-    t.timestamp('cash_remitted_at').nullable();
-    t.string('legacy_id', 64);
-    t.timestamps(true, true);
-    t.index(['business_id', 'status']);
-  });
-
-  await knex.schema.createTable('budgets', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('category', 60).notNullable();
-    money(t, 'monthly_budget');
-    t.decimal('alert_threshold_percent', 6, 2).notNullable().defaultTo(80);
-    t.string('period_month', 7);   // null/empty = every month
-    t.timestamps(true, true);
-    t.index(['business_id']);
-  });
-
-  await knex.schema.createTable('tickets', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('ticket_number', 30).notNullable();
-    t.string('title', 255).notNullable();
-    t.string('category', 40).notNullable().defaultTo('general');
-    t.string('priority', 20).notNullable().defaultTo('medium');
-    t.string('status', 20).notNullable().defaultTo('open');
-    t.text('description');
-    t.integer('created_by').unsigned();
-    t.string('created_by_name', 160);
-    t.timestamps(true, true);
-    t.index(['business_id', 'status']);
-  });
-  await knex.schema.createTable('ticket_messages', (t) => {
-    t.increments('id');
-    t.integer('ticket_id').unsigned().notNullable().references('tickets.id').onDelete('CASCADE');
-    t.integer('user_id').unsigned();
-    t.string('author_name', 160);
-    t.text('body').notNullable();
-    t.timestamp('created_at').defaultTo(knex.fn.now());
-  });
-
-  // ------------------------------------------------------------------ integrations & AI
-  await knex.schema.createTable('sheets_connections', (t) => {
-    t.integer('business_id').unsigned().primary().references('businesses.id').onDelete('CASCADE');
-    t.string('spreadsheet_id', 190);
-    t.string('spreadsheet_url', 500);
-    t.text('webhook_enc');           // Apps Script web-app URL (encrypted: it grants write access)
-    t.string('sync_mode', 20).notNullable().defaultTo('push_only'); // push_only | bidirectional | pull_only
-    t.boolean('auto_sync').notNullable().defaultTo(false);
-    t.string('status', 20).notNullable().defaultTo('disconnected'); // disconnected | connected | error
-    t.timestamp('last_sync_at').nullable();
-    t.string('last_error', 500);
-    t.timestamps(true, true);
-  });
-  await knex.schema.createTable('sync_logs', (t) => {
-    t.increments('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.string('direction', 10).notNullable(); // push | pull | test
-    t.string('status', 12).notNullable();    // success | failed | sent
-    t.integer('rows').notNullable().defaultTo(0);
-    t.string('message', 1000);
-    t.integer('user_id').unsigned();
-    t.timestamp('created_at').defaultTo(knex.fn.now());
-    t.index(['business_id', 'created_at']);
-  });
-
-  await knex.schema.createTable('ai_settings', (t) => {
-    t.integer('business_id').unsigned().primary().references('businesses.id').onDelete('CASCADE');
-    t.string('provider', 20);
-    t.string('model', 80);
-    t.text('api_key_enc');
-    t.boolean('enabled').notNullable().defaultTo(false);
-    t.timestamps(true, true);
-  });
-  await knex.schema.createTable('ai_messages', (t) => {
-    t.bigIncrements('id');
-    t.integer('business_id').unsigned().notNullable().references('businesses.id').onDelete('CASCADE');
-    t.integer('user_id').unsigned().notNullable();
-    t.string('role', 12).notNullable();   // user | assistant
-    t.text('content').notNullable();
-    t.string('source', 20);                // provider name or 'rules'
-    t.integer('tokens_in').defaultTo(0);
-    t.integer('tokens_out').defaultTo(0);
-    t.timestamp('created_at').defaultTo(knex.fn.now());
-    t.index(['business_id', 'user_id']);
   });
 };
 
 exports.down = async (knex) => {
-  const tables = ['ai_messages', 'ai_settings', 'sync_logs', 'sheets_connections', 'ticket_messages', 'tickets', 'budgets', 'deliveries', 'orders',
-    'customers', 'campaigns', 'purchases', 'payroll_payments', 'employees', 'expenses', 'expense_categories', 'profit_distribution_lines',
-    'profit_distributions', 'partner_transactions', 'partners', 'notification_reads', 'notifications', 'audit_logs', 'email_verifications',
-    'password_resets', 'invitations', 'memberships', 'roles', 'businesses', 'users'];
+  const tables = ['expenses', 'expense_categories', 'stock_movements', 'supply_items', 'suppliers', 'payroll_payments', 'payroll_adjustments', 'commission_rules',
+    'prescriptions', 'medications', 'consultations', 'invoices', 'insurance_providers', 'appointments', 'patients', 'services', 'doctor_days_off',
+    'platform_settings', 'notification_reads', 'notifications', 'audit_logs', 'email_verifications', 'password_resets', 'invitations', 'memberships',
+    'doctors', 'roles', 'businesses', 'users'];
   for (const t of tables) await knex.schema.dropTableIfExists(t); // eslint-disable-line no-await-in-loop
 };

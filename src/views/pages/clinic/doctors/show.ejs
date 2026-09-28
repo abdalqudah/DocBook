@@ -1,0 +1,46 @@
+<% var d = doctor; var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; var canManage = can('doctors.manage'); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/doctors"><%= t('nav.doctors') %></a><%- icon('chevron-right', 'flip-rtl') %><%= L(d.full_name, d.full_name_en) %></div>
+    <div class="row"><span class="avatar avatar-lg" style="<%= d.color ? 'background:' + d.color + ';color:var(--surface)' : '' %>"><%= initials(L(d.full_name, d.full_name_en)) %></span><div><h1><%= L(d.full_name, d.full_name_en) %></h1><p><%= [L(d.specialization, d.specialization_en), d.license_number ? t('doctors.license') + ' ' + d.license_number : null].filter(Boolean).join(' · ') %></p></div></div>
+  </div>
+  <div class="page-actions">
+    <% if (can('appointments.manage')) { %><a class="btn btn-secondary" href="/app/appointments/new?doctor=<%= d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('appointments.new') %></a><% } %>
+    <% if (can('payroll.view')) { %><a class="btn btn-secondary" href="/app/payroll/doctors/<%= d.id %>"><%- icon('wallet', 'icon-sm') %><%= t('doctors.payroll') %></a><% } %>
+    <% if (canManage) { %><a class="btn btn-primary" href="/app/doctors/<%= d.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %>
+  </div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-label"><%= t('doctors.fee') %></div><div class="stat-value"><%= fmt.money(d.consultation_fee) %></div><div class="stat-meta"><%= d.show_consultation_fee ? t('doctors.fee_public') : t('doctors.fee_hidden') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('doctors.slot') %></div><div class="stat-value"><%= d.slot_duration_minutes %> <span class="small"><%= t('common.minutes') %></span></div></div>
+  <div class="stat"><div class="stat-label"><%= t('doctors.commission') %></div><div class="stat-value" style="font-size:18px"><%= rule ? (rule.basis === 'percentage' ? fmt.number(rule.rate) + '%' : fmt.money(rule.rate)) : '—' %></div><div class="stat-meta"><%= rule ? t('commission.basis.' + rule.basis) : t('doctors.no_rule') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('doctors.login') %></div><div class="stat-value" style="font-size:16px"><%= account ? account.name : t('doctors.no_login') %></div><div class="stat-meta"><% if (account) { %><%= account.email %><% } else if (can('users.manage')) { %><a class="link" href="/app/settings/team?new=1&doctor=<%= d.id %>"><%= t('doctors.create_login') %></a><% } %></div></div>
+</div>
+<div class="grid grid-main mt-6">
+  <div class="stack">
+    <div class="panel flush"><div class="panel-head"><h2><%= t('doctors.schedule') %></h2></div>
+      <ul class="action-list"><% days.forEach(function (k) { var day = wh[k] || {}; var sh = day.shifts || (day.start ? [{ start: day.start, end: day.end }] : []); var on = day.enabled !== false && sh.length; %>
+        <li><div><span class="strong" style="min-width:90px"><%= t('days.' + k) %></span><span class="grow small <%= on ? '' : 'muted' %>" dir="ltr" style="text-align:start"><%= on ? sh.map(function (s) { return s.start + '–' + s.end; }).join('  ·  ') : t('doctors.day_off') %></span><% if (on && day.breaks && day.breaks.length) { %><span class="badge"><%= t('doctors.break') %> <span dir="ltr"><%= day.breaks[0].start %>–<%= day.breaks[0].end %></span></span><% } %></div></li>
+      <% }) %></ul>
+    </div>
+    <div class="panel flush"><div class="panel-head"><h2><%= t('doctors.upcoming') %></h2></div>
+      <% if (!upcoming.length) { %><div class="panel-body small muted"><%= t('doctors.no_upcoming') %></div><% } else { %>
+      <ul class="action-list"><% upcoming.forEach(function (a) { %><li><a href="/app/visits/<%= a.id %>"><span class="action-icon brand"><%- icon('calendar-days') %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></div></div><span class="badge"><%= label('appointments.statuses', a.status) %></span></a></li><% }) %></ul><% } %>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel-head"><h2><%= t('doctors.days_off') %></h2></div>
+      <div class="panel-body stack">
+        <% if (!daysOff.length) { %><p class="small muted"><%= t('doctors.no_days_off') %></p><% } else { %><ul class="checklist"><% daysOff.forEach(function (o) { %><li><%- icon('calendar', 'icon-sm') %><span class="grow"><strong><%= fmt.date(o.off_date) %></strong><% if (o.reason) { %> · <%= o.reason %><% } %></span><% if (canManage) { %><form method="post" action="/app/doctors/<%= d.id %>/days-off/<%= o.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('common.delete') %>"><%- icon('x', 'icon-sm') %></button></form><% } %></li><% }) %></ul><% } %>
+        <% if (canManage) { %><form method="post" action="/app/doctors/<%= d.id %>/days-off" class="row wrap" novalidate><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input class="input" type="date" name="off_date" min="<%= clinicToday %>" required aria-label="<%= t('common.date') %>" style="width:auto"><input class="input grow" name="reason" placeholder="<%= t('doctors.reason') %>" aria-label="<%= t('doctors.reason') %>" style="width:auto"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('doctors.add_day_off') %></button></form><% if (errors.off_date) { %><span class="field-error"><%= errors.off_date %></span><% } %><% } %>
+      </div></div>
+    <div class="panel"><div class="panel-head"><h2><%= t('doctors.contact') %></h2></div><div class="panel-body"><dl class="dl">
+      <dt><%= t('common.phone') %></dt><dd dir="ltr" style="text-align:start"><%= d.phone || '—' %></dd>
+      <dt><%= t('doctors.whatsapp') %></dt><dd dir="ltr" style="text-align:start"><%= d.whatsapp || '—' %></dd>
+      <dt><%= t('common.email') %></dt><dd><%= d.email || '—' %></dd>
+      <dt><%= t('doctors.own_services') %></dt><dd><%= services.length ? services.map(function (s) { return L(s.name, s.name_en); }).join('، ') : '—' %></dd>
+    </dl></div>
+    <% if (canManage) { %><div class="panel-foot"><form method="post" action="/app/doctors/<%= d.id %>/delete" data-confirm="<%= t('doctors.delete_confirm') %>" data-confirm-title="<%= t('doctors.delete') %>" data-confirm-yes="<%= t('common.delete') %>" data-confirm-type="<%= d.full_name %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('doctors.delete') %></button></form></div><% } %>
+    </div>
+  </div>
+</div>

@@ -3,14 +3,17 @@
 const fs = require('fs');
 const path = require('path');
 
-const ICONS = `layout-dashboard handshake receipt wallet piggy-bank chart-pie file-text shopping-cart users package truck megaphone sparkles
-sheet life-buoy settings search bell log-out chevron-down chevron-right chevron-left chevrons-up-down plus pencil trash-2 x check circle-alert
-triangle-alert info lock moon sun languages menu filter arrow-up-down arrow-right arrow-left download upload mail key-round history eye ellipsis
-clock circle-check circle-x building-2 user user-plus user-cog shield-check copy external-link printer refresh-cw link unplug plug calendar
-calendar-days trending-up trending-down banknote coins hand-coins percent target badge-dollar-sign scale landmark database archive-restore
-send message-square bot lightbulb circle-help book-open palette monitor smartphone globe store boxes clipboard-list list-checks gauge
-arrow-up-right arrow-down-right minus circle-dot zap award rocket cloud cloud-upload cloud-download file-spreadsheet table phone map-pin
-activity layers id-card briefcase-business circle-plus`.split(/\s+/).filter(Boolean);
+const ICONS = `layout-dashboard receipt wallet chart-pie file-text users package sparkles life-buoy settings search bell log-out chevron-down
+chevron-right chevron-left chevrons-up-down plus pencil trash-2 x check circle-alert triangle-alert info lock moon sun languages
+menu filter arrow-up-down arrow-right arrow-left download upload mail key-round history eye ellipsis clock circle-check circle-x
+building-2 user user-plus user-cog shield-check copy external-link printer refresh-cw link unplug plug calendar calendar-days
+trending-up trending-down banknote coins hand-coins percent target scale landmark database archive-restore send message-square
+lightbulb circle-help book-open palette monitor smartphone globe clipboard-list list-checks gauge arrow-up-right arrow-down-right
+minus circle-dot zap award rocket cloud cloud-upload cloud-download file-spreadsheet table phone map-pin activity layers id-card
+briefcase-business circle-plus stethoscope heart-pulse armchair calendar-plus calendar-check calendar-x calendar-clock pill
+syringe eye-off chevron-up thermometer weight droplet hospital user-round user-check user-x door-open timer notebook-pen
+clipboard-plus scan-line qr-code grip-vertical arrow-up arrow-down eye-closed image square-pen layout-template panel-top
+panel-bottom toggle-left toggle-right house star quote list mouse-pointer-click badge-check shield-plus stamp`.split(/\s+/).filter(Boolean);
 
 const dir = process.argv[2];
 if (!dir) { console.error('Pass the lucide-static icons directory.'); process.exit(1); }

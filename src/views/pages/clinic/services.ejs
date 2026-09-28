@@ -1,0 +1,38 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('nav.group_operations') %></div><h1><%= t('services.title') %></h1><p><%= t('services.lead') %></p></div>
+  <div class="page-actions"><button class="btn btn-primary" type="button" data-open-dialog="service-dialog" data-reset-form data-action="/app/services" data-dialog-title="<%= t('services.add') %>"><%- icon('plus', 'icon-sm') %><%= t('services.add') %></button></div>
+</div>
+<div class="panel flush">
+  <% if (!rows.length) { %><%- include('../../partials/empty', { emptyIcon: 'clipboard-list', emptyTitle: t('services.empty_title'), emptyText: t('services.empty_text'), emptyAction: '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="service-dialog" data-reset-form>' + t('services.add') + '</button>' }) %><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('services.service') %></th><th><%= t('services.doctor') %></th><th class="num"><%= t('services.duration') %></th><th class="num"><%= t('services.price') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+    <tbody><% rows.forEach(function (s) { %><tr>
+      <td class="primary-cell"><div class="strong"><%= L(s.name, s.name_en) %></div><div class="small muted truncate" style="max-width:360px"><%= L(s.description, s.description_en) || '' %></div></td>
+      <td data-label="<%= t('services.doctor') %>"><%= s.doctor_name || t('services.any_doctor') %></td>
+      <td class="num" data-label="<%= t('services.duration') %>"><%= s.duration_minutes %> <%= t('common.minutes') %></td>
+      <td class="num strong" data-label="<%= t('services.price') %>"><%= fmt.money(s.price) %><% if (!s.show_price) { %><div class="tiny muted"><%= t('services.price_hidden') %></div><% } %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= s.is_active ? 'badge-success' : 'badge-neutral' %>"><%= s.is_active ? t('common.active') : t('common.inactive') %></span></td>
+      <td class="actions"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="service-dialog" data-action="/app/services/<%= s.id %>" data-dialog-title="<%= t('services.edit') %>" data-fill="<%= json({ name: s.name, name_en: s.name_en, description: s.description, description_en: s.description_en, price: s.price, duration_minutes: s.duration_minutes, doctor_id: s.doctor_id, sort_order: s.sort_order, is_active: !!s.is_active, show_price: !!s.show_price }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/services/' + s.id + '/delete' }) %></td>
+    </tr><% }) %></tbody>
+  </table></div><% } %>
+</div>
+<dialog class="dialog wide" id="service-dialog" data-new-dialog aria-labelledby="service-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'service-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/services' %>" novalidate>
+    <div class="dialog-head"><h2 id="service-title" data-dialog-title-target><%= t('services.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('services.name_ar'), required: true, attrs: 'dir="rtl"' }) %>
+        <%- include('../../partials/field', { name: 'name_en', label: t('services.name_en'), attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'description', label: t('services.desc_ar'), type: 'textarea' }) %>
+        <%- include('../../partials/field', { name: 'description_en', label: t('services.desc_en'), type: 'textarea' }) %>
+        <%- include('../../partials/field', { name: 'price', label: t('services.price'), required: true, suffix: currency, attrs: 'inputmode="decimal"' }) %>
+        <%- include('../../partials/field', { name: 'duration_minutes', label: t('services.duration'), value: 30, suffix: t('common.minutes'), attrs: 'inputmode="numeric" data-default="30"' }) %>
+        <%- include('../../partials/field', { name: 'doctor_id', label: t('services.doctor'), type: 'select', placeholder: t('services.any_doctor'), options: doctors.map(function (d) { return { value: d.id, label: d.full_name }; }) }) %>
+        <%- include('../../partials/field', { name: 'sort_order', label: t('doctors.sort_order'), value: 0, attrs: 'inputmode="numeric" data-default="0"' }) %>
+        <label class="check"><input type="checkbox" name="is_active" value="1" checked><span><%= t('common.active') %></span></label>
+        <label class="check"><input type="checkbox" name="show_price" value="1" checked><span><%= t('services.show_price') %></span></label>
+      </div></div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

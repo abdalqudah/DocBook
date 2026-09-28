@@ -67,7 +67,7 @@ router.post('/signup', limiter, form(async (req, res) => {
   }), req.body);
   const userId = await knex.transaction(async (trx) => {
     const id = await authService.createUser(trx, { name: data.name, email: data.email, password: data.password, locale: req.locale });
-    await businesses.create(id, { name: data.business_name, currency: data.currency, industry: data.industry }, trx);
+    await businesses.create(id, { name: data.business_name, currency: data.currency, specialty: data.industry }, trx);
     return id;
   });
   const user = await authService.findUser(userId);

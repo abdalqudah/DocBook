@@ -19,5 +19,6 @@
 <%- include('../partials/toasts') %>
 <%- include('../partials/cmdk') %>
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
 </body>
 </html>

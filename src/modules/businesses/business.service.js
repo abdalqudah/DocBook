@@ -1,5 +1,8 @@
-// Workspaces ("businesses"). DocBook called these projects/branches; a user can belong to several,
-// each with its own role — the equivalent of DocBook's per-user allowedProjectIds.
+// Clinics (the tenant) and their staff accounts.
+// Staff sign-in management: invite by e-mail, or create the account directly with a temporary password
+// (the person must choose their own password at first sign-in), generate a one-time reset link, change
+// role / linked doctor profile, disable or remove access. At least one active owner always remains.
+const crypto = require('crypto');
 const knex = require('../../db/knex');
 const config = require('../../config');
 const cache = require('../../core/cache');
@@ -11,16 +14,65 @@ const { randomToken, sha256 } = require('../../core/tokens');
 const { AppError, E } = require('../../core/errors');
 const rbac = require('../rbac/rbac.service');
 
-const PUBLIC_COLUMNS = ['id', 'name', 'legal_name', 'industry', 'country', 'currency', 'tax_number', 'phone', 'email', 'address', 'website', 'color',
-  'logo_mime', 'logo_version', 'default_delivery_fee', 'invoice_prefix', 'invoice_next_number', 'onboarding_step', 'onboarding_completed_at', 'created_at'];
+const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email',
+  'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'booking_enabled', 'calendar_color_mode', 'invoice_next_number',
+  'onboarding_step', 'onboarding_completed_at', 'status', 'created_at'];
 
-async function create(userId, { name, currency, industry, country }, trx = knex) {
-  const [id] = await trx('businesses').insert({ name, currency: currency || 'USD', industry: industry || null, country: country || null, created_by: userId, onboarding_step: 'company' });
+// ---------------------------------------------------------------- portal address (/<slug>), from RemoteWay 1.1
+const RESERVED = new Set(`app admin api login logout signup verify verify-email forgot reset invite invitations workspaces theme favicon.svg favicon.ico
+  css js img fonts icons.svg robots.txt sitemap.xml healthz help support docs blog about contact pricing privacy terms security book booking
+  www mail static assets public uploads files auth account settings dashboard home new clinic clinics`.split(/\s+/).filter(Boolean));
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
+const normalizeSlug = (raw) => String(raw || '').trim().toLowerCase().replace(/\s+/g, '-');
+
+function validateSlug(slug) {
+  if (!SLUG_RE.test(slug)) return 'Use 3–40 English letters, numbers or dashes.';
+  if (RESERVED.has(slug)) return 'This address is reserved. Choose another.';
+  return null;
+}
+
+async function suggestSlug(name, trx = knex) {
+  let base = normalizeSlug(String(name || '').normalize('NFKD').replace(/[^\x20-\x7E]/g, '').replace(/[^a-zA-Z0-9 -]/g, '')).replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (!base || base.length < 3 || RESERVED.has(base)) base = `clinic-${crypto.randomBytes(2).toString('hex')}`;
+  base = base.slice(0, 34);
+  let slug = base; let i = 2;
+  while (await trx('businesses').where({ slug }).first('id')) { slug = `${base}-${i}`; i += 1; } // eslint-disable-line no-await-in-loop
+  return slug;
+}
+
+async function setSlug(ctx, raw) {
+  const slug = normalizeSlug(raw);
+  const error = validateSlug(slug);
+  if (error) throw E.validation({ slug: error });
+  const taken = await knex('businesses').where({ slug }).whereNot({ id: ctx.businessId }).first('id');
+  if (taken) throw E.validation({ slug: 'Another clinic already uses this address.' });
+  const before = await knex('businesses').where({ id: ctx.businessId }).first('slug');
+  await knex('businesses').where({ id: ctx.businessId }).update({ slug, updated_at: new Date() });
+  forget(ctx.businessId);
+  cache.forgetPrefix('portal:');
+  await audit.record(ctx, 'clinic.link_changed', { entityType: 'clinic', entityId: ctx.businessId, oldValues: { slug: before.slug }, newValues: { slug } });
+  return slug;
+}
+
+async function bySlug(raw) {
+  const slug = normalizeSlug(raw);
+  if (!SLUG_RE.test(slug) || RESERVED.has(slug)) return null;
+  const row = await cache.remember(`portal:${slug}`, async () => (await knex('businesses').where({ slug, status: 'active' }).first('id')) || false, 60_000);
+  return row ? get(row.id) : null;
+}
+
+// ---------------------------------------------------------------- clinics
+async function create(userId, { name, currency, specialty, country, city, timezone }, trx = knex) {
+  const slug = await suggestSlug(name, trx);
+  const [id] = await trx('businesses').insert({
+    name, slug, currency: currency || 'JOD', specialty: specialty || null, country: country || null, city: city || null,
+    timezone: timezone || 'Asia/Amman', created_by: userId, onboarding_step: 'clinic',
+  });
   await rbac.seedRoles(id, trx);
   const owner = await rbac.getRoleByKey(id, 'owner', trx);
   await trx('memberships').insert({ business_id: id, user_id: userId, role_id: owner.id });
   await trx('users').where({ id: userId }).update({ last_business_id: id });
-  await audit.record({ businessId: id, userId }, 'business.created', { entityType: 'business', entityId: id, newValues: { name, currency } }, trx);
+  await audit.record({ businessId: id, userId }, 'clinic.created', { entityType: 'clinic', entityId: id, newValues: { name, currency } }, trx);
   return id;
 }
 
@@ -29,14 +81,14 @@ const forget = (id) => cache.forgetPrefix(`biz:${id}`);
 
 async function listForUser(userId) {
   return knex('memberships as m').join('businesses as b', 'b.id', 'm.business_id').join('roles as r', 'r.id', 'm.role_id')
-    .where({ 'm.user_id': userId, 'm.status': 'active' }).orderBy('b.name').select('b.id', 'b.name', 'b.currency', 'b.color', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
+    .where({ 'm.user_id': userId, 'm.status': 'active' }).orderBy('b.name')
+    .select('b.id', 'b.name', 'b.slug', 'b.currency', 'b.color', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
 }
 
-async function isMember(userId, businessId) {
-  return Boolean(await knex('memberships').where({ user_id: userId, business_id: businessId, status: 'active' }).first('id'));
-}
+const isMember = async (userId, businessId) => Boolean(await knex('memberships').where({ user_id: userId, business_id: businessId, status: 'active' }).first('id'));
 
-const PROFILE_FIELDS = ['name', 'legal_name', 'industry', 'country', 'currency', 'tax_number', 'phone', 'email', 'address', 'website', 'default_delivery_fee', 'invoice_prefix', 'invoice_next_number'];
+const PROFILE_FIELDS = ['name', 'name_en', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email', 'address',
+  'map_url', 'working_hours_text', 'tax_number', 'booking_enabled', 'calendar_color_mode'];
 
 async function updateProfile(ctx, data) {
   const before = await knex('businesses').where({ id: ctx.businessId }).first(PROFILE_FIELDS);
@@ -44,7 +96,7 @@ async function updateProfile(ctx, data) {
   const { oldValues, newValues, changed } = audit.diff(before, patch);
   if (!changed) return;
   await knex('businesses').where({ id: ctx.businessId }).update({ ...patch, updated_at: new Date() });
-  await audit.record(ctx, 'business.updated', { entityType: 'business', entityId: ctx.businessId, oldValues, newValues });
+  await audit.record(ctx, 'clinic.updated', { entityType: 'clinic', entityId: ctx.businessId, oldValues, newValues });
   forget(ctx.businessId);
 }
 
@@ -54,7 +106,7 @@ async function setAppearance(ctx, { color, logo, logoMime, removeLogo }) {
   if (logo) { patch.logo = logo; patch.logo_mime = logoMime; patch.logo_version = knex.raw('logo_version + 1'); }
   if (removeLogo) { patch.logo = null; patch.logo_mime = null; patch.logo_version = knex.raw('logo_version + 1'); }
   await knex('businesses').where({ id: ctx.businessId }).update(patch);
-  await audit.record(ctx, 'business.appearance_updated', { entityType: 'business', entityId: ctx.businessId, newValues: { color: color || null, logo: logo ? 'uploaded' : removeLogo ? 'removed' : undefined } });
+  await audit.record(ctx, 'clinic.appearance_updated', { entityType: 'clinic', entityId: ctx.businessId, newValues: { color: color || null, logo: logo ? 'uploaded' : removeLogo ? 'removed' : undefined } });
   forget(ctx.businessId);
 }
 
@@ -65,19 +117,21 @@ async function setOnboarding(businessId, step, done = false) {
   forget(businessId);
 }
 
-/** Claims the next invoice number atomically (DocBook: prefix + next number). */
+/** Next invoice number for the clinic, claimed atomically inside the caller's transaction. */
 async function claimInvoiceNumber(businessId, trx) {
-  const row = await trx('businesses').where({ id: businessId }).forUpdate().first('invoice_prefix', 'invoice_next_number');
+  const row = await trx('businesses').where({ id: businessId }).forUpdate().first('invoice_next_number');
   await trx('businesses').where({ id: businessId }).update({ invoice_next_number: row.invoice_next_number + 1 });
   forget(businessId);
-  return `${row.invoice_prefix || ''}${row.invoice_next_number}`;
+  return row.invoice_next_number;
 }
 
-// ---------------------------------------------------------------- members & invitations
+// ---------------------------------------------------------------- staff
 async function listMembers(businessId) {
   return knex('memberships as m').join('users as u', 'u.id', 'm.user_id').join('roles as r', 'r.id', 'm.role_id')
+    .leftJoin('doctors as d', 'd.id', 'm.doctor_id')
     .where('m.business_id', businessId)
-    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.partner_id', 'm.created_at', 'u.name', 'u.email', 'u.last_login_at', 'r.key as role_key', 'r.name as role_name', 'r.is_system')
+    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'u.last_login_at', 'u.must_change_password',
+      'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name')
     .orderBy('u.name');
 }
 
@@ -86,96 +140,162 @@ async function ownerCount(businessId, trx = knex) {
   return Number(n);
 }
 
-async function changeMember(ctx, membershipId, { roleId, status, partnerId }) {
+async function resolveRole(ctx, roleId, trx = knex) {
+  const role = await trx('roles').where({ id: roleId, business_id: ctx.businessId }).first();
+  if (!role) throw E.validation({ role_id: 'Choose a valid role.' });
+  // Only people who can manage everything may hand out the owner role.
+  if (role.key === 'owner' && !ctx.permissions.has('data.manage')) throw E.forbidden('owner');
+  return role;
+}
+
+async function resolveDoctor(ctx, role, doctorId, trx = knex) {
+  if (!doctorId) {
+    if (role.key === 'doctor') throw E.validation({ doctor_id: 'Link this account to a doctor profile.' });
+    return null;
+  }
+  const d = await trx('doctors').where({ id: doctorId, business_id: ctx.businessId }).first('id');
+  if (!d) throw E.validation({ doctor_id: 'Choose a valid value.' });
+  const taken = await trx('memberships').where({ business_id: ctx.businessId, doctor_id: doctorId }).first('id', 'user_id');
+  return { id: d.id, takenBy: taken };
+}
+
+async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTitle }) {
   const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.id': membershipId, 'm.business_id': ctx.businessId }).first('m.*', 'r.key as role_key');
-  if (!m) throw E.notFound('Member');
-  const role = roleId ? await knex('roles').where({ id: roleId, business_id: ctx.businessId }).first() : null;
-  if (roleId && !role) throw E.validation({ role_id: 'Choose a valid role.' });
-  const losingOwner = m.role_key === 'owner' && ((role && role.key !== 'owner') || status === 'disabled');
-  if (losingOwner && (await ownerCount(ctx.businessId)) <= 1) throw E.conflict('LAST_OWNER', 'A workspace must keep at least one active owner.');
+  if (!m) throw E.notFound('Staff member');
+  const role = roleId ? await resolveRole(ctx, roleId) : await knex('roles').where({ id: m.role_id }).first();
+  const losingOwner = m.role_key === 'owner' && (role.key !== 'owner' || status === 'disabled');
+  if (losingOwner && (await ownerCount(ctx.businessId)) <= 1) throw E.conflict('LAST_OWNER', 'A clinic must keep at least one active owner.');
   if (m.user_id === ctx.userId && status === 'disabled') throw E.conflict('SELF_DISABLE', 'You cannot disable your own access.');
-  const patch = {};
-  if (role) patch.role_id = role.id;
+  const patch = { role_id: role.id, updated_at: new Date() };
   if (status) patch.status = status;
-  if (partnerId !== undefined) patch.partner_id = partnerId || null;
-  await knex('memberships').where({ id: membershipId }).update({ ...patch, updated_at: new Date() });
-  await audit.record(ctx, 'member.updated', { entityType: 'member', entityId: m.user_id, oldValues: { role: m.role_key, status: m.status }, newValues: { role: role?.key, status } });
+  if (jobTitle !== undefined) patch.job_title = jobTitle || null;
+  if (doctorId !== undefined || role.key === 'doctor') {
+    const doc = await resolveDoctor(ctx, role, doctorId || m.doctor_id);
+    if (doc && doc.takenBy && doc.takenBy.id !== m.id) throw E.validation({ doctor_id: 'Another account is already linked to this doctor.' });
+    patch.doctor_id = doc ? doc.id : null;
+  }
+  await knex('memberships').where({ id: membershipId }).update(patch);
+  await audit.record(ctx, 'staff.updated', { entityType: 'staff', entityId: m.user_id, oldValues: { role: m.role_key, status: m.status, doctor_id: m.doctor_id }, newValues: { role: role.key, status: patch.status, doctor_id: patch.doctor_id } });
   rbac.invalidate(ctx.businessId);
 }
 
 async function removeMember(ctx, membershipId) {
   const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.id': membershipId, 'm.business_id': ctx.businessId }).first('m.*', 'r.key as role_key');
-  if (!m) throw E.notFound('Member');
+  if (!m) throw E.notFound('Staff member');
   if (m.user_id === ctx.userId) throw E.conflict('SELF_REMOVE', 'You cannot remove yourself.');
-  if (m.role_key === 'owner' && (await ownerCount(ctx.businessId)) <= 1) throw E.conflict('LAST_OWNER', 'A workspace must keep at least one active owner.');
+  if (m.role_key === 'owner' && (await ownerCount(ctx.businessId)) <= 1) throw E.conflict('LAST_OWNER', 'A clinic must keep at least one active owner.');
   await knex('memberships').where({ id: membershipId }).del();
-  await audit.record(ctx, 'member.removed', { entityType: 'member', entityId: m.user_id });
+  await audit.record(ctx, 'staff.removed', { entityType: 'staff', entityId: m.user_id });
   rbac.invalidate(ctx.businessId);
 }
 
+/** A readable temporary password (shown once to the admin; the person must replace it at first sign-in). */
+const tempPassword = () => `${crypto.randomBytes(3).toString('hex')}-${crypto.randomBytes(3).toString('hex')}-${crypto.randomInt(10, 99)}`;
+
 /**
- * Invites someone by e-mail. If they already have an account they are added directly; otherwise an
- * invitation link is created (e-mailed when SMTP is configured, and always returned so it can be shared).
+ * Adds a staff member.
+ *  mode 'invite'   → an invitation link (e-mailed when SMTP is configured; always returned to share by hand)
+ *  mode 'password' → the account is created now with a temporary password returned to the admin
+ * An existing account (same e-mail) is simply added to the clinic with the chosen role.
  */
-async function invite(ctx, { email, roleId, locale }) {
-  const role = await knex('roles').where({ id: roleId, business_id: ctx.businessId }).first();
-  if (!role) throw E.validation({ role_id: 'Choose a valid role.' });
-  if (role.key === 'owner' && !(await require('../rbac/rbac.service').getUserPermissions(ctx.businessId, ctx.userId)).has('data.manage')) throw E.forbidden('owner'); // eslint-disable-line global-require
-  const user = await knex('users').where({ email }).first();
-  if (user) {
-    const existing = await knex('memberships').where({ business_id: ctx.businessId, user_id: user.id }).first();
-    if (existing) throw E.conflict('ALREADY_MEMBER', 'This person is already a member.');
-    await knex('memberships').insert({ business_id: ctx.businessId, user_id: user.id, role_id: role.id });
-    await audit.record(ctx, 'member.added', { entityType: 'member', entityId: user.id, newValues: { email, role: role.key } });
+async function addStaff(ctx, { name, email, phone, roleId, doctorId, jobTitle, mode, locale }) {
+  const role = await resolveRole(ctx, roleId);
+  const doc = await resolveDoctor(ctx, role, doctorId);
+  if (doc && doc.takenBy) throw E.validation({ doctor_id: 'Another account is already linked to this doctor.' });
+  const existing = await knex('users').where({ email }).first();
+  if (existing) {
+    const already = await knex('memberships').where({ business_id: ctx.businessId, user_id: existing.id }).first();
+    if (already) throw E.conflict('ALREADY_MEMBER', 'This person is already a staff member.');
+    await knex('memberships').insert({ business_id: ctx.businessId, user_id: existing.id, role_id: role.id, doctor_id: doc ? doc.id : null, job_title: jobTitle || null });
+    await audit.record(ctx, 'staff.added', { entityType: 'staff', entityId: existing.id, newValues: { email, role: role.key } });
+    rbac.invalidate(ctx.businessId);
     return { added: true };
   }
+  if (mode === 'password') {
+    const password = tempPassword();
+    const { hashPassword } = require('../auth/auth.service'); // eslint-disable-line global-require
+    const userId = await knex.transaction(async (trx) => {
+      const [id] = await trx('users').insert({ name, email, phone: phone || null, password_hash: await hashPassword(password), must_change_password: true, locale: locale || 'ar', last_business_id: ctx.businessId });
+      await trx('memberships').insert({ business_id: ctx.businessId, user_id: id, role_id: role.id, doctor_id: doc ? doc.id : null, job_title: jobTitle || null });
+      await audit.record(ctx, 'staff.created', { entityType: 'staff', entityId: id, newValues: { email, role: role.key, temporary_password: true } }, trx);
+      return id;
+    });
+    rbac.invalidate(ctx.businessId);
+    return { created: true, userId, password };
+  }
   const token = randomToken(32);
-  await knex('invitations').insert({ business_id: ctx.businessId, email, role_id: role.id, token_hash: sha256(token), invited_by: ctx.userId, expires_at: new Date(Date.now() + 7 * 86400_000) });
+  await knex('invitations').insert({ business_id: ctx.businessId, email, name: name || null, role_id: role.id, doctor_id: doc ? doc.id : null, token_hash: sha256(token), invited_by: ctx.userId, expires_at: new Date(Date.now() + 7 * 86400_000) });
   const link = `${config.appUrl.replace(/\/+$/, '')}/invite/${token}`;
-  const business = await get(ctx.businessId);
-  const t = translator(locale || 'en');
+  const clinic = await get(ctx.businessId);
+  const t = translator(locale || 'ar');
   const sent = await mailer.send({
-    to: email, subject: `${brand.name} — ${t('users.invite_mail_subject', { business: business.name })}`,
-    html: mailer.layout({ locale, title: t('users.invite_mail_subject', { business: business.name }), body: t('users.invite_mail_body', { business: business.name }), cta: t('users.invite_mail_cta'), href: link }),
+    to: email, subject: `${brand.name} — ${t('team.invite_mail_subject', { clinic: clinic.name })}`,
+    html: mailer.layout({ locale, title: t('team.invite_mail_subject', { clinic: clinic.name }), body: t('team.invite_mail_body', { clinic: clinic.name, role: t(`roles.${role.key}`) }), cta: t('team.invite_mail_cta'), href: link }),
   }).catch(() => false);
-  await audit.record(ctx, 'member.invited', { entityType: 'invitation', entityId: email, newValues: { email, role: role.key } });
+  await audit.record(ctx, 'staff.invited', { entityType: 'invitation', entityId: email, newValues: { email, role: role.key } });
   return { link, sent };
 }
 
+/**
+ * One-time password reset link created by a clinic admin (RemoteWay 1.0: for clinics without e-mail).
+ * Only for accounts that belong to this clinic alone — otherwise the link is e-mailed to the person instead.
+ */
+async function adminResetLink(ctx, membershipId) {
+  const m = await knex('memberships').where({ id: membershipId, business_id: ctx.businessId }).first();
+  if (!m) throw E.notFound('Staff member');
+  const [{ n }] = await knex('memberships').where({ user_id: m.user_id }).whereNot({ business_id: ctx.businessId }).count({ n: '*' });
+  const user = await knex('users').where({ id: m.user_id }).first();
+  const token = randomToken(32);
+  await knex('password_resets').insert({ user_id: user.id, token_hash: sha256(token), created_by: ctx.userId, expires_at: new Date(Date.now() + 24 * 3600_000) });
+  const link = `${config.appUrl.replace(/\/+$/, '')}/reset/${token}`;
+  await audit.record(ctx, 'staff.reset_link_created', { entityType: 'staff', entityId: user.id });
+  if (Number(n) > 0) {
+    const t = translator(user.locale || 'ar');
+    await mailer.send({ to: user.email, subject: `${brand.name} — ${t('auth.reset_mail_subject')}`, html: mailer.layout({ locale: user.locale, title: t('auth.reset_mail_subject'), body: t('auth.reset_mail_body', { minutes: 24 * 60 }), cta: t('auth.reset_mail_cta'), href: link }) }).catch(() => {});
+    return { emailed: true };
+  }
+  return { link };
+}
+
 async function listInvitations(businessId) {
-  return knex('invitations as i').join('roles as r', 'r.id', 'i.role_id').where('i.business_id', businessId).whereNull('i.accepted_at').whereNull('i.revoked_at')
-    .where('i.expires_at', '>', new Date()).select('i.id', 'i.email', 'i.expires_at', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
+  return knex('invitations as i').join('roles as r', 'r.id', 'i.role_id').leftJoin('doctors as d', 'd.id', 'i.doctor_id').where('i.business_id', businessId)
+    .whereNull('i.accepted_at').whereNull('i.revoked_at').where('i.expires_at', '>', new Date())
+    .select('i.id', 'i.email', 'i.name', 'i.expires_at', 'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name');
 }
 
 async function revokeInvitation(ctx, id) {
   const n = await knex('invitations').where({ id, business_id: ctx.businessId }).whereNull('accepted_at').update({ revoked_at: new Date() });
   if (!n) throw E.notFound('Invitation');
-  await audit.record(ctx, 'member.invitation_revoked', { entityType: 'invitation', entityId: id });
+  await audit.record(ctx, 'staff.invitation_revoked', { entityType: 'invitation', entityId: id });
 }
 
-async function findInvitation(token) {
-  return knex('invitations as i').join('businesses as b', 'b.id', 'i.business_id').where('i.token_hash', sha256(String(token || '')))
-    .whereNull('i.accepted_at').whereNull('i.revoked_at').where('i.expires_at', '>', new Date()).first('i.*', 'b.name as business_name');
-}
+const findInvitation = (token) => knex('invitations as i').join('businesses as b', 'b.id', 'i.business_id').join('roles as r', 'r.id', 'i.role_id')
+  .where('i.token_hash', sha256(String(token || ''))).whereNull('i.accepted_at').whereNull('i.revoked_at').where('i.expires_at', '>', new Date())
+  .first('i.*', 'b.name as business_name', 'b.slug as business_slug', 'r.key as role_key');
 
 async function acceptInvitation(inv, userId, trx = knex) {
   const exists = await trx('memberships').where({ business_id: inv.business_id, user_id: userId }).first();
-  if (!exists) await trx('memberships').insert({ business_id: inv.business_id, user_id: userId, role_id: inv.role_id });
+  if (!exists) {
+    const docFree = inv.doctor_id && !(await trx('memberships').where({ business_id: inv.business_id, doctor_id: inv.doctor_id }).first('id'));
+    await trx('memberships').insert({ business_id: inv.business_id, user_id: userId, role_id: inv.role_id, doctor_id: docFree ? inv.doctor_id : null });
+  }
   await trx('invitations').where({ id: inv.id }).update({ accepted_at: new Date() });
   await trx('users').where({ id: userId }).update({ last_business_id: inv.business_id });
-  await audit.record({ businessId: inv.business_id, userId }, 'member.joined', { entityType: 'member', entityId: userId }, trx);
+  await audit.record({ businessId: inv.business_id, userId }, 'staff.joined', { entityType: 'staff', entityId: userId }, trx);
+  rbac.invalidate(inv.business_id);
 }
 
-/** Deletes a whole workspace. Requires typing its exact name (checked by the caller) and the data.manage permission. */
+/** Deletes a whole clinic. Requires typing its exact name and the data.manage permission (checked by the route). */
 async function destroy(ctx, confirmName) {
   const b = await knex('businesses').where({ id: ctx.businessId }).first('name');
-  if (!b || String(confirmName || '').trim() !== b.name) throw E.validation({ confirm_name: 'Type the workspace name exactly to confirm.' });
-  await audit.record(ctx, 'business.deleted', { entityType: 'business', entityId: ctx.businessId, oldValues: { name: b.name } });
+  if (!b || String(confirmName || '').trim() !== b.name) throw E.validation({ confirm_name: 'Type the clinic name exactly to confirm.' });
+  await audit.record(ctx, 'clinic.deleted', { entityType: 'clinic', entityId: ctx.businessId, oldValues: { name: b.name } });
   await knex('businesses').where({ id: ctx.businessId }).del();
   forget(ctx.businessId);
 }
 
 module.exports = {
   create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, setOnboarding, claimInvoiceNumber,
-  listMembers, changeMember, removeMember, invite, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
+  setSlug, bySlug, validateSlug, normalizeSlug, suggestSlug, RESERVED,
+  listMembers, changeMember, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
 };
