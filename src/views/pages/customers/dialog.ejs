@@ -1,0 +1,21 @@
+<dialog class="dialog" id="customer-dialog" data-new-dialog aria-labelledby="customer-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'customer-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/customers' %>" novalidate>
+    <div class="dialog-head"><h2 id="customer-title" data-dialog-title-target><%= t('customers.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, cls: 'full' }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel' }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email' }) %>
+        <%- include('../../partials/field', { name: 'city', label: t('customers.city') }) %>
+        <%- include('../../partials/field', { name: 'region', label: t('customers.region'), help: t('customers.region_help') }) %>
+        <%- include('../../partials/field', { name: 'address', label: t('customers.address'), cls: 'full' }) %>
+        <%- include('../../partials/field', { name: 'group_name', label: t('customers.group') }) %>
+        <%- include('../../partials/field', { name: 'category', label: t('common.category'), placeholder: t('customers.category_placeholder') }) %>
+        <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

@@ -1,0 +1,28 @@
+{
+  "sales": {
+    "title": "Sales & orders", "lead": "Every order with its items, cost, margin and sales rep — the revenue side of your P&L.", "new": "New order", "edit": "Edit order", "create": "Create order",
+    "saved": "Order created.", "deleted": "Order deleted.", "delete": "Delete order", "delete_confirm": "Delete order {number}? Linked shipments are kept but unlinked.", "status_updated": "Payment status updated.",
+    "order": "Order", "order_number": "Order #", "auto_number": "Automatic ({next})", "invoice": "Invoice", "print_invoice": "Print invoice", "customer": "Customer", "items": "Items", "item": "Item",
+    "qty": "Qty", "unit_price": "Unit price", "unit_cost": "Unit cost", "unit_cost_help": "The unit cost becomes cost of goods sold (COGS) for this order.", "line_total": "Line total",
+    "subtotal": "Subtotal", "discount": "Discount", "delivery_fee": "Delivery fee (charged)", "total": "Total", "gross_margin": "Gross margin", "commission": "Rep commission", "commissions": "Rep commissions",
+    "commissions_help": "Added to payroll", "rep": "Sales rep", "no_rep": "No sales rep", "all_reps": "All reps", "payment_status": "Payment", "all_payment": "All payment statuses",
+    "channel": "Channel", "courier": "Courier company", "delivery_cost": "Delivery cost (paid to courier)", "delivery_cost_help": "Ignored in profit when a shipment record exists for this order.",
+    "create_shipment": "Create a shipment for this order", "revenue_filtered": "Revenue (current filters)", "orders_n": "{n} orders", "avg_order": "Average order", "discounts": "Discounts {amount}",
+    "revenue_trend": "Monthly revenue", "search": "Search order #, customer, phone…", "empty_title": "No orders yet", "empty_text": "Create orders with their items to track revenue, cost and margin.",
+    "section_customer": "Customer", "customer_hint": "Pick an existing customer or type a new one", "existing_customer": "Existing customer", "new_customer_option": "— New customer —",
+    "save_customer": "Save to customers (matched by phone if they exist)", "section_items": "Items", "add_line": "Add item", "section_delivery": "Delivery", "section_order": "Order details",
+    "totals_server": "Totals and commission are recalculated on the server when you save.", "bill_to": "Bill to", "profitability": "Profitability", "replaced_by_shipment": "shipment cost used",
+    "shipments": "Shipments", "add_shipment": "Add shipment", "no_shipments": "No shipment recorded for this order.",
+    "payment_statuses": { "paid": "Paid", "cash_on_delivery": "Cash on delivery", "pending": "Pending", "refunded": "Refunded" },
+    "channels": { "manual": "Direct / manual", "phone": "Phone", "social": "Social media", "website": "Website", "store": "In store", "marketplace": "Marketplace", "import": "Imported" }
+  },
+  "customers": {
+    "title": "Customers", "lead": "Your customer directory with purchase history, lifetime value and regions used for commissions.", "add": "Add customer", "edit": "Edit customer", "saved": "Customer saved.",
+    "deleted": "Customer deleted.", "delete": "Delete customer", "delete_confirm": "Delete this customer? Their orders are kept with the name and phone on the order.",
+    "customer": "Customer", "total": "Customers", "buyers": "With orders", "buyers_help": "Excluding refunded orders", "repeat": "Repeat rate", "repeat_help": "{n} customers ordered more than once",
+    "ltv": "Average lifetime value", "ltv_help": "Per customer with orders", "search": "Search name, phone, e-mail, city…", "all_regions": "All regions", "all_groups": "All groups",
+    "location": "Location", "city": "City", "region": "Region", "region_help": "Used for per-region commission rates.", "address": "Address", "group": "Group", "category_placeholder": "e.g. VIP, wholesale",
+    "orders": "Orders", "spent": "Total spent", "last_order": "Last order", "avg_order": "Average order", "order_history": "Order history", "no_orders": "No orders yet", "contact": "Contact",
+    "empty_title": "No customers yet", "empty_text": "Customers are added automatically from orders, or you can add them here."
+  }
+}

@@ -1,0 +1,46 @@
+<% var canManage = can('sales.manage'); var badge = { paid: 'badge-success', cash_on_delivery: 'badge-info', pending: 'badge-warning', refunded: 'badge-danger' }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('nav.group_operations') %></div><h1><%= t('sales.title') %></h1><p><%= t('sales.lead') %></p></div>
+  <div class="page-actions">
+    <%- include('../../partials/export-menu', { href: '/app/sales/export' }) %>
+    <% if (can('customers.view')) { %><a class="btn btn-secondary" href="/app/customers"><%- icon('users', 'icon-sm') %><%= t('nav.customers') %></a><% } %>
+    <% if (canManage) { %><a class="btn btn-primary" href="/app/sales/new"><%- icon('plus', 'icon-sm') %><%= t('sales.new') %></a><% } %>
+  </div>
+</div>
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('sales.revenue_filtered') %><span class="stat-icon"><%- icon('trending-up') %></span></div><div class="stat-value"><%= fmt.money(totals.total_amount) %></div><div class="stat-meta"><%= t('sales.orders_n', { n: fmt.number(meta.total) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('sales.avg_order') %></div><div class="stat-value"><%= fmt.money(meta.total ? totals.total_amount / meta.total : 0) %></div><div class="stat-meta"><%= t('sales.discounts', { amount: fmt.money(totals.discount) }) %></div></div>
+  <% if (showProfit) { %><div class="stat"><div class="stat-label"><%= t('sales.gross_margin') %></div><div class="stat-value"><%= fmt.money(totals.total_amount - totals.total_cogs) %></div><div class="stat-meta"><%= t('kpi.margin') %> <%= fmt.pct(totals.total_amount ? (totals.total_amount - totals.total_cogs) / totals.total_amount * 100 : 0) %></div></div><% } %>
+  <div class="stat"><div class="stat-label"><%= t('sales.commissions') %></div><div class="stat-value"><%= fmt.money(totals.commission_earned) %></div><div class="stat-meta"><%= t('sales.commissions_help') %></div></div>
+</div>
+<% if (hasChart) { %><div class="panel mt-4"><div class="panel-head"><div><h2><%= t('sales.revenue_trend') %></h2><div class="panel-sub"><%= t('dashboard.last_12') %></div></div></div><div class="panel-body"><%- chart %></div></div><% } %>
+
+<div class="panel flush mt-4">
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('sales.search') %>" aria-label="<%= t('common.search') %>"></div>
+    <select class="select" name="payment" aria-label="<%= t('sales.payment_status') %>"><option value="all"><%= t('sales.all_payment') %></option><% statuses.forEach(function (s) { %><option value="<%= s %>"<%= query.payment === s ? ' selected' : '' %>><%= label('sales.payment_statuses', s) %></option><% }) %></select>
+    <% if (reps.length) { %><select class="select" name="rep" aria-label="<%= t('sales.rep') %>"><option value="all"><%= t('sales.all_reps') %></option><% reps.forEach(function (r) { %><option value="<%= r.id %>"<%= String(query.rep) === String(r.id) ? ' selected' : '' %>><%= r.name %></option><% }) %></select><% } %>
+    <input class="input" type="date" name="from" value="<%= query.from || '' %>" aria-label="<%= t('common.from') %>"><input class="input" type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('common.to') %>">
+    <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/sales"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', filtered ? { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '' } : { emptyIcon: 'shopping-cart', emptyTitle: t('sales.empty_title'), emptyText: t('sales.empty_text'), emptyAction: canManage ? '<a class="btn btn-primary btn-sm" href="/app/sales/new">' + t('sales.new') + '</a>' : '' }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('sales.order') %></th><th><%= t('sales.customer') %></th><th><%= t('sales.items') %></th><th class="num"><%= t('sales.total') %></th><% if (showProfit) { %><th class="num"><%= t('sales.gross_margin') %></th><% } %><th><%= t('sales.rep') %></th><th><%= t('sales.payment_status') %></th></tr></thead>
+    <tbody><% rows.forEach(function (r) { var items = r.items || []; %>
+      <tr data-href="/app/sales/<%= r.id %>">
+        <td class="primary-cell"><a class="strong" href="/app/sales/<%= r.id %>"><%= r.order_number %></a><div class="small muted"><%= fmt.date(r.date) %><% if (shipped.has(r.id)) { %> · <%- icon('truck', 'icon-sm') %><% } %></div></td>
+        <td data-label="<%= t('sales.customer') %>"><%= r.customer_name %><div class="small muted" dir="ltr" style="text-align:start"><%= r.customer_phone || '' %></div></td>
+        <td data-label="<%= t('sales.items') %>" class="small"><span class="truncate" style="display:inline-block;max-width:220px"><%= items.map(function (i) { return i.itemName + ' ×' + i.quantity; }).join(', ') %></span></td>
+        <td class="num strong" data-label="<%= t('sales.total') %>"><%= fmt.amount(r.total_amount) %></td>
+        <% if (showProfit) { %><td class="num" data-label="<%= t('sales.gross_margin') %>"><%= fmt.amount(Number(r.total_amount) - Number(r.total_cogs)) %></td><% } %>
+        <td data-label="<%= t('sales.rep') %>"><%= repName[r.employee_id] || '—' %></td>
+        <td data-label="<%= t('sales.payment_status') %>"><span class="badge badge-dot <%= badge[r.payment_status] || '' %>"><%= label('sales.payment_statuses', r.payment_status) %></span></td>
+      </tr>
+    <% }) %></tbody>
+    <tfoot><tr><td colspan="3"><%= t('table.totals') %></td><td class="num"><%= fmt.amount(totals.total_amount) %></td><% if (showProfit) { %><td class="num"><%= fmt.amount(totals.total_amount - totals.total_cogs) %></td><% } %><td colspan="2"></td></tr></tfoot>
+  </table></div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</div>

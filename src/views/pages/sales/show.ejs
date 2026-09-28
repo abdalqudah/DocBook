@@ -1,0 +1,52 @@
+<% var o = order; var items = o.items || []; var canManage = can('sales.manage'); var badge = { paid: 'badge-success', cash_on_delivery: 'badge-info', pending: 'badge-warning', refunded: 'badge-danger' }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs no-print"><a href="/app/sales"><%= t('nav.sales') %></a><%- icon('chevron-right', 'flip-rtl') %><%= o.order_number %></div>
+    <h1><%= t('sales.invoice') %> <%= o.order_number %></h1>
+    <p><%= fmt.date(o.date, { dateStyle: 'long' }) %> · <span class="badge badge-dot <%= badge[o.payment_status] %>"><%= label('sales.payment_statuses', o.payment_status) %></span></p>
+  </div>
+  <div class="page-actions no-print">
+    <a class="btn btn-secondary" href="?print=1"><%- icon('printer', 'icon-sm') %><%= t('sales.print_invoice') %></a>
+    <% if (canManage) { %>
+      <details class="dropdown"><summary class="btn btn-secondary"><%= t('sales.payment_status') %><%- icon('chevron-down', 'icon-sm') %></summary><div class="menu">
+        <% statuses.forEach(function (s) { %><form method="post" action="/app/sales/<%= o.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="payment_status" value="<%= s %>"><button type="submit" class="<%= s === o.payment_status ? 'is-current' : '' %>"><%= label('sales.payment_statuses', s) %><% if (s === o.payment_status) { %><%- icon('check', 'icon-sm') %><% } %></button></form><% }) %>
+      </div></details>
+      <a class="btn btn-primary" href="/app/sales/<%= o.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a>
+    <% } %>
+  </div>
+</div>
+<div class="grid grid-main">
+  <div class="panel flush">
+    <div class="panel-body grid grid-2">
+      <div><div class="label"><%= t('sales.bill_to') %></div><div class="strong mt-1"><% if (customer && can('customers.view')) { %><a class="link" href="/app/customers/<%= customer.id %>"><%= o.customer_name %></a><% } else { %><%= o.customer_name %><% } %></div><div class="small muted" dir="ltr" style="text-align:start"><%= o.customer_phone || '' %></div><div class="small muted"><%= o.customer_email || '' %></div><% if (customer && customer.address) { %><div class="small muted"><%= [customer.address, customer.city].filter(Boolean).join(', ') %></div><% } %></div>
+      <div class="text-end"><div class="label"><%= t('sales.rep') %></div><div class="strong mt-1"><%= rep ? rep.name : '—' %></div><div class="small muted"><%= label('sales.channels', o.channel) %></div></div>
+    </div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th><%= t('sales.item') %></th><th class="num"><%= t('sales.qty') %></th><th class="num"><%= t('sales.unit_price') %></th><th class="num"><%= t('sales.line_total') %></th></tr></thead>
+      <tbody><% items.forEach(function (it) { %><tr><td><div class="strong"><%= it.itemName %></div><% if (it.sku) { %><div class="small muted">SKU <%= it.sku %></div><% } %></td><td class="num"><%= fmt.number(it.quantity) %></td><td class="num"><%= fmt.amount(it.unitPrice) %></td><td class="num strong"><%= fmt.amount(Number(it.unitPrice) * Number(it.quantity)) %></td></tr><% }) %></tbody>
+    </table></div>
+    <div class="panel-body"><div class="totals-box">
+      <span class="muted"><%= t('sales.subtotal') %></span><span class="num"><%= fmt.amount(o.subtotal) %></span>
+      <% if (Number(o.discount)) { %><span class="muted"><%= t('sales.discount') %></span><span class="num">−<%= fmt.amount(o.discount) %></span><% } %>
+      <% if (Number(o.delivery_fee)) { %><span class="muted"><%= t('sales.delivery_fee') %></span><span class="num">+<%= fmt.amount(o.delivery_fee) %></span><% } %>
+      <span class="grand"><%= t('sales.total') %></span><span class="grand num"><%= fmt.money(o.total_amount) %></span>
+    </div></div>
+    <% if (o.notes) { %><div class="panel-foot" style="justify-content:flex-start"><span class="small text-2"><strong><%= t('common.notes') %>:</strong> <%= o.notes %></span></div><% } %>
+  </div>
+  <div class="stack no-print">
+    <% if (showProfit) { %><div class="panel"><div class="panel-head"><h2><%= t('sales.profitability') %></h2></div><div class="panel-body"><dl class="dl">
+      <dt><%= t('sales.total') %></dt><dd class="num"><%= fmt.money(o.total_amount) %></dd>
+      <dt><%= t('kpi.cogs') %></dt><dd class="num">−<%= fmt.money(o.total_cogs) %></dd>
+      <dt><%= t('sales.gross_margin') %></dt><dd class="num strong pos"><%= fmt.money(Number(o.total_amount) - Number(o.total_cogs)) %></dd>
+      <dt><%= t('sales.commission') %></dt><dd class="num"><%= fmt.money(o.commission_earned) %></dd>
+      <dt><%= t('sales.delivery_cost') %></dt><dd class="num"><%= fmt.money(o.delivery_cost) %><% if (shipments.length) { %> <span class="small muted">(<%= t('sales.replaced_by_shipment') %>)</span><% } %></dd>
+    </dl></div></div><% } %>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('sales.shipments') %></h2><% if (can('delivery.manage')) { %><a class="btn btn-ghost btn-sm" href="/app/delivery?new=1&order=<%= o.id %>"><%- icon('plus', 'icon-sm') %><%= t('sales.add_shipment') %></a><% } %></div>
+      <% if (!shipments.length) { %><div class="panel-body small muted"><%= t('sales.no_shipments') %></div><% } else { %>
+        <ul class="action-list"><% shipments.forEach(function (s) { %><li><a href="/app/delivery?q=<%= encodeURIComponent(s.tracking_number || o.order_number) %>"><span class="action-icon info"><%- icon('truck') %></span><div class="grow"><div class="strong"><%= s.courier_company || t('delivery.no_courier') %></div><div class="small muted"><%= s.tracking_number || '—' %></div></div><span class="badge"><%= label('delivery.statuses', s.status) %></span></a></li><% }) %></ul>
+      <% } %>
+    </div>
+    <% if (canManage) { %><form method="post" action="/app/sales/<%= o.id %>/delete" data-confirm="<%= t('sales.delete_confirm', { number: o.order_number }) %>" data-confirm-title="<%= t('sales.delete') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('sales.delete') %></button></form><% } %>
+  </div>
+</div>
