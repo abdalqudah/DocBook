@@ -1,0 +1,17 @@
+<% var rev = a.orders.reduce(function (s, o) { return s + o.totalAmount; }, 0); %>
+<div class="page-head">
+  <div><div class="breadcrumbs no-print"><a href="/app/reports"><%= t('nav.reports') %></a></div><h1><%= t('reports.sales_title') %></h1><p><%= month ? fmt.month(month) : t('common.all_time') %> · <%= t('sales.orders_n', { n: a.orders.length }) %> · <%= fmt.money(rev) %></p></div>
+  <div class="page-actions no-print"><%- include('../../partials/period') %><a class="btn btn-primary" href="?month=<%= month || 'all' %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.print_pdf') %></a></div>
+</div>
+<div class="panel flush">
+  <div class="panel-head"><h2><%= t('reports.top_products') %></h2></div>
+  <% if (!a.products.length) { %><div class="panel-body small muted"><%= t('sales.empty_title') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('sales.item') %></th><th class="num"><%= t('reports.units') %></th><th class="num"><%= t('kpi.revenue') %></th><% if (showProfit) { %><th class="num"><%= t('kpi.cogs') %></th><th class="num"><%= t('sales.gross_margin') %></th><% } %><th class="num"><%= t('common.share') %></th></tr></thead>
+  <tbody><% a.products.slice(0, 25).forEach(function (p) { %><tr><td class="primary-cell"><div class="strong"><%= p.name %></div><% if (p.sku) { %><div class="small muted">SKU <%= p.sku %></div><% } %></td><td class="num" data-label="<%= t('reports.units') %>"><%= fmt.number(p.qty) %></td><td class="num strong" data-label="<%= t('kpi.revenue') %>"><%= fmt.amount(p.revenue) %></td><% if (showProfit) { %><td class="num" data-label="<%= t('kpi.cogs') %>"><%= fmt.amount(p.cogs) %></td><td class="num" data-label="<%= t('sales.gross_margin') %>"><%= fmt.amount(p.revenue - p.cogs) %> <span class="small muted"><%= fmt.pct(p.revenue ? (p.revenue - p.cogs) / p.revenue * 100 : 0, 0) %></span></td><% } %><td class="num" data-label="<%= t('common.share') %>"><%= fmt.pct(rev ? p.revenue / rev * 100 : 0, 1) %></td></tr><% }) %></tbody></table></div>
+  <div class="panel-body small muted"><%= t('reports.products_note') %></div><% } %>
+</div>
+<div class="grid grid-3 mt-4">
+  <div class="panel flush"><div class="panel-head"><h2><%= t('reports.by_rep') %></h2></div><ul class="action-list"><% a.reps.forEach(function (r) { %><li><div><div class="grow"><div class="strong"><%= r.name || t('sales.no_rep') %></div><div class="small muted"><%= t('sales.orders_n', { n: r.orders }) %> · <%= t('sales.commission') %> <%= fmt.money(r.commission) %></div></div><span class="num strong"><%= fmt.money(r.revenue) %></span></div></li><% }) %></ul></div>
+  <div class="panel flush"><div class="panel-head"><h2><%= t('reports.by_channel') %></h2></div><ul class="action-list"><% a.channels.forEach(function (c) { %><li><div><div class="grow"><div class="strong"><%= label('sales.channels', c.key) %></div><div class="small muted"><%= t('sales.orders_n', { n: c.orders }) %></div></div><span class="num strong"><%= fmt.money(c.revenue) %></span></div></li><% }) %></ul></div>
+  <div class="panel flush"><div class="panel-head"><h2><%= t('reports.by_payment') %></h2></div><ul class="action-list"><% a.payments.forEach(function (c) { %><li><div><div class="grow"><div class="strong"><%= label('sales.payment_statuses', c.key) %></div><div class="small muted"><%= t('sales.orders_n', { n: c.orders }) %></div></div><span class="num strong"><%= fmt.money(c.revenue) %></span></div></li><% }) %></ul></div>
+</div>

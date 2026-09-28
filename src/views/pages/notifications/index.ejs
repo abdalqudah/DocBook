@@ -1,0 +1,14 @@
+<div class="page-head">
+  <div><h1><%= t('notifications.title') %></h1></div>
+  <div class="page-actions"><% if (items.some(function (n) { return !n.read_at; })) { %><form method="post" action="/app/notifications/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('check', 'icon-sm') %><%= t('notifications.mark_all_read') %></button></form><% } %></div>
+</div>
+<div class="panel flush" style="max-width:860px">
+  <% if (!items.length) { %><%- include('../../partials/empty', { emptyIcon: 'bell', emptyTitle: t('notifications.empty_title'), emptyText: t('notifications.empty_text') }) %><% } else { %>
+  <ul class="action-list"><% items.forEach(function (n) { %>
+    <li><div>
+      <span class="action-icon <%= n.severity === 'danger' ? 'danger' : n.severity === 'warning' ? 'warning' : 'info' %>"><%- icon(n.severity === 'info' ? 'info' : 'triangle-alert') %></span>
+      <div class="grow"><div class="<%= n.read_at ? '' : 'strong' %>"><%= n.title %> <% if (!n.read_at) { %><span class="badge badge-brand"><%= t('notifications.unread') %></span><% } %></div><div class="small muted"><%= n.body || '' %> · <%= fmt.date(n.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %></div></div>
+      <% if (n.link) { %><form method="post" action="/app/notifications/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="id" value="<%= n.id %>"><input type="hidden" name="go" value="<%= n.link %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('common.open') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button></form><% } %>
+    </div></li>
+  <% }) %></ul><% } %>
+</div>

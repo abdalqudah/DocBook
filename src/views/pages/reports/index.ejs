@@ -1,0 +1,39 @@
+<%
+  var cards = [];
+  if (showProfit) {
+    cards.push({ href: '/app/reports/pnl?month=' + (month || 'all'), icon: 'file-text', key: 'pnl' });
+    cards.push({ href: '/app/reports/monthly', icon: 'calendar-days', key: 'monthly' });
+    if (can('partners.view')) cards.push({ href: '/app/partners/distribution?month=' + (month || 'all'), icon: 'hand-coins', key: 'partners' });
+  }
+  if (can('payroll.view')) cards.push({ href: '/app/payroll?month=' + (month || thisMonth) + '&print=1', icon: 'wallet', key: 'payroll' });
+  if (can('sales.view')) cards.push({ href: '/app/reports/sales?month=' + (month || 'all'), icon: 'shopping-cart', key: 'sales' });
+  if (can('expenses.view')) cards.push({ href: '/app/reports/expenses', icon: 'receipt', key: 'expenses' });
+  if (can('marketing.view')) cards.push({ href: '/app/marketing?month=' + (month || 'all'), icon: 'megaphone', key: 'marketing' });
+  if (can('purchases.view')) cards.push({ href: '/app/purchases?tab=suppliers', icon: 'package', key: 'purchases' });
+  if (can('delivery.view')) cards.push({ href: '/app/delivery', icon: 'truck', key: 'delivery' });
+%>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('nav.group_intelligence') %></div><h1><%= t('reports.title') %></h1><p><%= t('reports.lead') %></p></div>
+  <div class="page-actions">
+    <%- include('../../partials/period') %>
+    <% if (can('data.export')) { %><a class="btn btn-primary" href="/app/reports/workbook?month=<%= month || 'all' %>"><%- icon('file-spreadsheet', 'icon-sm') %><%= t('reports.workbook') %></a><% } %>
+  </div>
+</div>
+<% if (showProfit) { %>
+<div class="kpis mb-6">
+  <div class="kpi"><div class="kpi-label"><%= t('kpi.revenue') %></div><div class="kpi-value"><%= fmt.money(metrics.totalRevenue) %></div></div>
+  <div class="kpi"><div class="kpi-label"><%= t('kpi.gross_profit') %></div><div class="kpi-value"><%= fmt.money(metrics.grossProfit) %></div></div>
+  <div class="kpi"><div class="kpi-label"><%= t('kpi.opex') %></div><div class="kpi-value"><%= fmt.money(metrics.totalOperatingExpenses) %></div></div>
+  <div class="kpi"><div class="kpi-label"><%= t('kpi.net_profit') %></div><div class="kpi-value <%= metrics.netProfit < 0 ? 'neg' : 'pos' %>"><%= fmt.money(metrics.netProfit) %></div></div>
+</div>
+<% } %>
+<div class="module-grid">
+  <% cards.forEach(function (c) { %>
+  <a class="module card-link" href="<%= c.href %>">
+    <span class="icon-wrap"><%- icon(c.icon) %></span>
+    <h3><%= t('reports.cards.' + c.key + '.title') %></h3>
+    <p><%= t('reports.cards.' + c.key + '.text') %></p>
+  </a>
+  <% }) %>
+</div>
+<p class="small muted mt-6"><%- icon('printer', 'icon-sm') %> <%= t('reports.pdf_note') %></p>

@@ -1,0 +1,15 @@
+<div class="page-head">
+  <div><div class="breadcrumbs no-print"><a href="/app/reports"><%= t('nav.reports') %></a></div><h1><%= t('reports.monthly_title') %></h1><p><%= t('reports.monthly_lead', { n: months }) %></p></div>
+  <div class="page-actions no-print">
+    <div class="segmented"><a class="<%= months === 12 ? 'active' : '' %>" href="?months=12"><%= t('reports.months_n', { n: 12 }) %></a><a class="<%= months === 24 ? 'active' : '' %>" href="?months=24"><%= t('reports.months_n', { n: 24 }) %></a></div>
+    <% if (can('data.export')) { %><a class="btn btn-secondary" href="?months=<%= months %>&format=xlsx"><%- icon('file-spreadsheet', 'icon-sm') %><%= t('common.export_xlsx') %></a><% } %>
+    <a class="btn btn-primary" href="?months=<%= months %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.print_pdf') %></a>
+  </div>
+</div>
+<div class="panel mb-4 no-print"><div class="panel-head"><h2><%= t('kpi.net_profit') %></h2></div><div class="panel-body"><%- chart %></div></div>
+<div class="panel flush"><div class="table-wrap"><table class="table">
+  <thead><tr><th><%= t('common.month') %></th><th class="num"><%= t('kpi.revenue') %></th><th class="num"><%= t('kpi.cogs') %></th><th class="num"><%= t('kpi.gross_profit') %></th><th class="num"><%= t('kpi.daily_opex') %></th><th class="num"><%= t('kpi.payroll') %></th><th class="num"><%= t('nav.marketing') %></th><th class="num"><%= t('kpi.delivery_net') %></th><th class="num"><%= t('kpi.net_profit') %></th><th class="num"><%= t('kpi.net_margin') %></th></tr></thead>
+  <tbody><% series.slice().reverse().forEach(function (s) { %><tr><td class="strong nowrap"><%= fmt.month(s.month) %></td><td class="num"><%= fmt.amount(s.totalRevenue) %></td><td class="num"><%= fmt.amount(s.totalCogs) %></td><td class="num"><%= fmt.amount(s.grossProfit) %></td><td class="num"><%= fmt.amount(s.totalDailyExpenses) %></td><td class="num"><%= fmt.amount(s.totalPayroll) %></td><td class="num"><%= fmt.amount(s.totalMarketingCost) %></td><td class="num"><%= fmt.amount(s.netDeliveryExpense) %></td><td class="num strong <%= s.netProfit < 0 ? 'neg' : 'pos' %>"><%= fmt.amount(s.netProfit) %></td><td class="num"><%= fmt.pct(s.netMarginPercent) %></td></tr><% }) %></tbody>
+  <% var sum = function (k) { return series.reduce(function (a, s) { return a + s[k]; }, 0); }; var rev = sum('totalRevenue'); var net = sum('netProfit'); %>
+  <tfoot><tr><td><%= t('table.totals') %></td><td class="num"><%= fmt.amount(rev) %></td><td class="num"><%= fmt.amount(sum('totalCogs')) %></td><td class="num"><%= fmt.amount(sum('grossProfit')) %></td><td class="num"><%= fmt.amount(sum('totalDailyExpenses')) %></td><td class="num"><%= fmt.amount(sum('totalPayroll')) %></td><td class="num"><%= fmt.amount(sum('totalMarketingCost')) %></td><td class="num"><%= fmt.amount(sum('netDeliveryExpense')) %></td><td class="num"><%= fmt.amount(net) %></td><td class="num"><%= fmt.pct(rev ? net / rev * 100 : 0) %></td></tr></tfoot>
+</table></div></div>

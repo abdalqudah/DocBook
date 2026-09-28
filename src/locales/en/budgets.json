@@ -1,0 +1,14 @@
+{
+  "budgets": {
+    "title": "Budgets & alerts", "lead": "Monthly spending caps per category with an early-warning threshold. You're alerted before a budget is blown, not after.", "add": "Add budget", "edit": "Edit budget",
+    "saved": "Budget saved.", "used_total": "Budget used · {month}", "exceeded": "Over budget", "warning": "Approaching the cap", "safe": "Within limits",
+    "lines": "Budgets for {month}", "lines_sub": "Sorted by how much of the budget is used", "every_month": "Every month", "alert_at": "alert at {pct}%",
+    "status_exceeded": "Over budget", "status_warning": "Warning", "status_safe": "Safe", "over_by": "Over by {amount}", "remaining": "{amount} left",
+    "alert_history": "Recent alerts", "no_alerts": "No budget alerts yet.", "category": "Budget category", "monthly_cap": "Monthly cap", "threshold": "Warn when used reaches",
+    "period": "Only for month", "period_help": "Leave empty to apply the budget to every month.",
+    "src_marketing": "from campaigns", "src_delivery": "from shipment fees", "src_inventory": "from supplier payments", "src_payroll": "from payroll & commissions", "src_expenses": "from expenses",
+    "how": "Marketing, delivery, inventory and payroll budgets are measured from their own modules; every other budget is measured from expenses in that category. Crossing the threshold or the cap sends an in-app alert once per month.",
+    "empty_title": "No budgets for this month", "empty_text": "Set a monthly cap for rent, marketing, payroll or any expense category to get early warnings.",
+    "alert_warning_title": "{category} budget is almost used", "alert_exceeded_title": "{category} budget exceeded", "alert_body": "{pct}% used in {month}"
+  }
+}

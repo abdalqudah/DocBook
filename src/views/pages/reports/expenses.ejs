@@ -1,0 +1,12 @@
+<div class="page-head">
+  <div><div class="breadcrumbs no-print"><a href="/app/reports"><%= t('nav.reports') %></a></div><h1><%= t('reports.expenses_title') %></h1><p><%= t('reports.expenses_lead') %></p></div>
+  <div class="page-actions no-print"><a class="btn btn-primary" href="?print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.print_pdf') %></a></div>
+</div>
+<div class="panel flush">
+  <% if (!matrix.rows.length) { %><%- include('../../partials/empty', { emptyIcon: 'receipt', emptyTitle: t('expenses.empty_title'), emptyText: '' }) %><% } else { %>
+  <div class="table-wrap"><table class="table"><thead><tr><th><%= t('common.category') %></th><% matrix.months.forEach(function (m) { %><th class="num"><%= fmt.date(m + '-01', { month: 'short', year: '2-digit' }) %></th><% }) %><th class="num"><%= t('common.total') %></th></tr></thead>
+  <tbody><% matrix.rows.forEach(function (r) { %><tr><td class="strong"><%= label('categories', r.category) %></td><% matrix.months.forEach(function (m) { %><td class="num <%= r.vals[m] ? '' : 'muted' %>"><%= r.vals[m] ? fmt.amount(r.vals[m]) : '—' %></td><% }) %><td class="num strong"><%= fmt.amount(r.total) %></td></tr><% }) %></tbody>
+  <tfoot><tr><td><%= t('table.totals') %></td><% matrix.months.forEach(function (m) { %><td class="num"><%= fmt.amount(matrix.rows.reduce(function (s, r) { return s + r.vals[m]; }, 0)) %></td><% }) %><td class="num"><%= fmt.amount(matrix.rows.reduce(function (s, r) { return s + r.total; }, 0)) %></td></tr></tfoot></table></div>
+  <% } %>
+</div>
+<p class="small muted mt-3"><%= t('expenses.opex_note') %></p>

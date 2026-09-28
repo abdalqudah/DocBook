@@ -1,0 +1,16 @@
+{
+  "delivery": {
+    "title": "Delivery & logistics", "lead": "Shipments, courier fees paid versus delivery fees collected from customers, and cash-on-delivery hand-over.", "add": "Add shipment", "edit": "Edit shipment",
+    "saved": "Shipment saved.", "status_updated": "Shipment status updated.", "remit_updated": "Cash hand-over updated.", "open": "In progress", "open_help": "{pending} processing · {out} out for delivery",
+    "fees_paid": "Paid to couriers", "fees_paid_help": "Counted as delivery cost in the P&L", "fees_collected": "Collected from customers", "net_label": "Net:", "cod_pending": "COD cash with couriers",
+    "cod_pending_help": "{n} delivered shipments not handed over yet", "pipeline": "Delivery pipeline", "shipments_n": "{n} shipments", "search": "Search tracking #, recipient, courier, city…",
+    "all_couriers": "All couriers", "any_remit": "Any hand-over", "remitted": "Cash handed over", "not_remitted": "Cash not handed over", "mark_remitted": "Mark handed over", "undo_remit": "Undo hand-over",
+    "remit_help": "Record that the courier handed the collected cash to the business.", "shipment": "Shipment", "recipient": "Recipient", "fee_paid": "Fee paid to courier", "fee_collected": "Fee collected",
+    "fee_paid_help": "What you pay the courier.", "fee_collected_help": "Delivery fee charged to the customer.", "net": "Net", "no_courier": "No courier", "linked_order": "Linked order", "no_order": "— No linked order —",
+    "courier_company": "Courier company", "courier_name": "Driver", "courier_phone": "Driver phone", "tracking": "Tracking / AWB #", "city": "Destination city", "address": "Address",
+    "by_courier": "By courier", "no_couriers": "No shipments yet.", "success_rate": "{pct}% delivered", "returned_n": "{n} returned",
+    "profit_note": "Delivery cost in profit = fees paid on shipments + delivery cost typed on orders without a shipment. Collected fees are part of the order total (revenue).",
+    "empty_title": "No shipments yet", "empty_text": "Track each delivery's courier, status and fees — or create shipments directly from orders.",
+    "statuses": { "pending": "Processing", "out_for_delivery": "Out for delivery", "delivered": "Delivered", "returned": "Returned", "cancelled": "Cancelled" }
+  }
+}

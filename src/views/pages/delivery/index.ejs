@@ -1,0 +1,114 @@
+<%
+  var canManage = can('delivery.manage');
+  var sb = { pending: 'badge-warning', out_for_delivery: 'badge-info', delivered: 'badge-success', returned: 'badge-danger', cancelled: 'badge-neutral' };
+  var openCount = (counts.pending || 0) + (counts.out_for_delivery || 0);
+  var totalCount = Object.keys(counts).reduce(function (s, k) { return s + counts[k]; }, 0);
+  var pf = prefill || {};
+%>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('nav.group_operations') %></div><h1><%= t('delivery.title') %></h1><p><%= t('delivery.lead') %></p></div>
+  <div class="page-actions">
+    <%- include('../../partials/export-menu', { href: '/app/delivery/export' }) %>
+    <% if (canManage) { %><button class="btn btn-primary" type="button" data-open-dialog="delivery-dialog" data-reset-form data-action="/app/delivery" data-dialog-title="<%= t('delivery.add') %>"<% if (prefill) { %> data-fill="<%= json(pf) %>"<% } %>><%- icon('plus', 'icon-sm') %><%= t('delivery.add') %></button><% } %>
+  </div>
+</div>
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('delivery.open') %><span class="stat-icon"><%- icon('truck') %></span></div><div class="stat-value"><%= fmt.number(openCount) %></div><div class="stat-meta"><%= t('delivery.open_help', { pending: counts.pending || 0, out: counts.out_for_delivery || 0 }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('delivery.fees_paid') %><span class="stat-icon warning"><%- icon('arrow-up-right') %></span></div><div class="stat-value"><%= fmt.money(totals.delivery_fee_paid) %></div><div class="stat-meta"><%= t('delivery.fees_paid_help') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('delivery.fees_collected') %><span class="stat-icon"><%- icon('arrow-down-right') %></span></div><div class="stat-value"><%= fmt.money(totals.delivery_fee_collected) %></div><div class="stat-meta"><%= t('delivery.net_label') %> <strong class="<%= totals.delivery_fee_collected - totals.delivery_fee_paid < 0 ? 'neg' : 'pos' %>"><%= fmt.money(totals.delivery_fee_collected - totals.delivery_fee_paid) %></strong></div></div>
+  <div class="stat"><div class="stat-label"><%= t('delivery.cod_pending') %><span class="stat-icon info"><%- icon('hand-coins') %></span></div><div class="stat-value"><%= fmt.money(unremitted.amount) %></div><div class="stat-meta"><%= t('delivery.cod_pending_help', { n: unremitted.count }) %></div></div>
+</div>
+
+<div class="panel mt-4"><div class="panel-body">
+  <div class="row between wrap mb-3"><h3><%= t('delivery.pipeline') %></h3><span class="small muted"><%= t('delivery.shipments_n', { n: totalCount }) %></span></div>
+  <div style="display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--surface-sunken)">
+    <% [['delivered','var(--success)'],['out_for_delivery','var(--info)'],['pending','var(--warning)'],['returned','var(--danger)'],['cancelled','var(--text-subtle)']].forEach(function (s) { var n = counts[s[0]] || 0; if (n) { %><span title="<%= label('delivery.statuses', s[0]) %>: <%= n %>" style="width:<%= (n / totalCount * 100).toFixed(1) %>%;background:<%= s[1] %>"></span><% } }) %>
+  </div>
+  <div class="pill-filter mt-3">
+    <a class="<%= !query.status || query.status === 'all' ? 'active' : '' %>" href="/app/delivery"><%= t('common.all') %> · <%= totalCount %></a>
+    <a class="<%= query.status === 'open' ? 'active' : '' %>" href="?status=open"><%= t('delivery.open') %> · <%= openCount %></a>
+    <% statuses.forEach(function (s) { %><a class="<%= query.status === s ? 'active' : '' %>" href="?status=<%= s %>"><%= label('delivery.statuses', s) %> · <%= counts[s] || 0 %></a><% }) %>
+  </div>
+</div></div>
+
+<div class="grid grid-main mt-4">
+  <div class="panel flush">
+    <form class="table-toolbar" method="get" data-autosubmit role="search">
+      <% if (query.status) { %><input type="hidden" name="status" value="<%= query.status %>"><% } %>
+      <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('delivery.search') %>" aria-label="<%= t('common.search') %>"></div>
+      <% if (couriers.length) { %><select class="select" name="courier" aria-label="<%= t('delivery.courier_company') %>"><option value="all"><%= t('delivery.all_couriers') %></option><% couriers.forEach(function (c) { if (c.courier !== '—') { %><option<%= query.courier === c.courier ? ' selected' : '' %>><%= c.courier %></option><% } }) %></select><% } %>
+      <select class="select" name="remitted" aria-label="<%= t('delivery.remitted') %>"><option value="all"><%= t('delivery.any_remit') %></option><option value="no"<%= query.remitted === 'no' ? ' selected' : '' %>><%= t('delivery.not_remitted') %></option><option value="yes"<%= query.remitted === 'yes' ? ' selected' : '' %>><%= t('delivery.remitted') %></option></select>
+      <input class="input" type="date" name="from" value="<%= query.from || '' %>" aria-label="<%= t('common.from') %>"><input class="input" type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('common.to') %>">
+      <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/delivery"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+    </form>
+    <% if (!rows.length) { %>
+      <%- include('../../partials/empty', filtered ? { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '' } : { emptyIcon: 'truck', emptyTitle: t('delivery.empty_title'), emptyText: t('delivery.empty_text'), emptyAction: canManage ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="delivery-dialog" data-reset-form>' + t('delivery.add') + '</button>' : '' }) %>
+    <% } else { %>
+    <div class="table-wrap"><table class="table responsive">
+      <thead><tr><th><%= t('delivery.shipment') %></th><th><%= t('delivery.recipient') %></th><th class="num"><%= t('delivery.fee_paid') %></th><th class="num"><%= t('delivery.fee_collected') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+      <tbody><% rows.forEach(function (r) { var o = orderById[r.order_id]; %>
+        <tr>
+          <td class="primary-cell"><div class="strong"><%= r.courier_company || t('delivery.no_courier') %></div><div class="small muted"><%= [r.tracking_number ? '#' + r.tracking_number : null, fmt.date(r.date)].filter(Boolean).join(' · ') %><% if (o && can('sales.view')) { %> · <a class="link" href="/app/sales/<%= o.id %>"><%= o.order_number %></a><% } %></div></td>
+          <td data-label="<%= t('delivery.recipient') %>"><%= r.customer_name %><div class="small muted"><%= [r.destination_city, r.customer_phone].filter(Boolean).join(' · ') %></div></td>
+          <td class="num" data-label="<%= t('delivery.fee_paid') %>"><%= fmt.amount(r.delivery_fee_paid) %></td>
+          <td class="num" data-label="<%= t('delivery.fee_collected') %>"><%= fmt.amount(r.delivery_fee_collected) %><% if (r.status === 'delivered') { %><div class="tiny <%= r.cash_remitted ? 'pos' : 'warn-text' %>"><%= r.cash_remitted ? t('delivery.remitted') : t('delivery.not_remitted') %></div><% } %></td>
+          <td data-label="<%= t('common.status') %>">
+            <% if (canManage) { %>
+              <details class="dropdown"><summary class="badge badge-dot <%= sb[r.status] %>" style="cursor:pointer"><%= label('delivery.statuses', r.status) %> ▾</summary><div class="menu start">
+                <% statuses.forEach(function (s) { %><form method="post" action="/app/delivery/<%= r.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>"><input type="hidden" name="status" value="<%= s %>"><button type="submit" class="<%= s === r.status ? 'is-current' : '' %>"><%= label('delivery.statuses', s) %></button></form><% }) %>
+              </div></details>
+            <% } else { %><span class="badge badge-dot <%= sb[r.status] %>"><%= label('delivery.statuses', r.status) %></span><% } %>
+          </td>
+          <td class="actions">
+            <% if (canManage) { %>
+              <% if (r.status === 'delivered' && Number(r.delivery_fee_collected) > 0) { %><form method="post" action="/app/delivery/<%= r.id %>/remit" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>"><input type="hidden" name="remitted" value="<%= r.cash_remitted ? '0' : '1' %>"><button class="btn btn-ghost btn-sm" type="submit" title="<%= t('delivery.remit_help') %>"><%= r.cash_remitted ? t('delivery.undo_remit') : t('delivery.mark_remitted') %></button></form><% } %>
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="delivery-dialog" data-action="/app/delivery/<%= r.id %>" data-dialog-title="<%= t('delivery.edit') %>" data-fill="<%= json({ date: r.date, order_id: r.order_id, courier_company: r.courier_company, courier_name: r.courier_name, courier_phone: r.courier_phone, tracking_number: r.tracking_number, customer_name: r.customer_name, customer_phone: r.customer_phone, destination_city: r.destination_city, address: r.address, delivery_fee_paid: r.delivery_fee_paid, delivery_fee_collected: r.delivery_fee_collected, status: r.status, notes: r.notes }) %>"><%- icon('pencil', 'icon-sm') %></button>
+              <%- include('../../partials/delete-form', { action: '/app/delivery/' + r.id + '/delete' }) %>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+    <%- include('../../partials/pagination', { meta: meta }) %>
+    <% } %>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('delivery.by_courier') %></h2></div>
+    <% if (!couriers.length) { %><div class="panel-body small muted"><%= t('delivery.no_couriers') %></div><% } else { %>
+    <ul class="action-list"><% couriers.forEach(function (c) { var rate = c.shipments ? Math.round(c.delivered / c.shipments * 100) : 0; %>
+      <li><div style="display:block"><div class="row between"><span class="strong"><%= c.courier %></span><span class="small muted"><%= t('delivery.shipments_n', { n: c.shipments }) %></span></div>
+        <div class="meter thin mt-2"><span style="width:<%= rate %>%"></span></div>
+        <div class="row between small muted mt-1"><span><%= t('delivery.success_rate', { pct: rate }) %> · <%= t('delivery.returned_n', { n: c.returned }) %></span><span class="<%= c.collected - c.paid < 0 ? 'neg' : 'pos' %>"><%= fmt.money(c.collected - c.paid) %></span></div></div></li>
+    <% }) %></ul><% } %>
+    <div class="panel-body small muted" style="border-top:1px solid var(--border)"><%= t('delivery.profit_note') %></div>
+  </div>
+</div>
+
+<% if (canManage) { %>
+<dialog class="dialog wide" id="delivery-dialog" data-new-dialog aria-labelledby="delivery-title"<% if ((typeof openDialog !== 'undefined' && openDialog === 'delivery-dialog')) { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/delivery' %>" novalidate>
+    <div class="dialog-head"><h2 id="delivery-title" data-dialog-title-target><%= t('delivery.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { name: 'order_id', label: t('delivery.linked_order'), type: 'select', placeholder: t('delivery.no_order'), value: pf.order_id || '', options: orders.map(function (o) { return { value: o.id, label: o.order_number + ' · ' + o.customer_name }; }), cls: 'span-2' }) %>
+        <%- include('../../partials/field', { name: 'date', label: t('common.date'), type: 'date', required: true, value: today, attrs: 'data-default="' + today + '"' }) %>
+        <%- include('../../partials/field', { name: 'courier_company', label: t('delivery.courier_company'), value: pf.courier_company || '' }) %>
+        <%- include('../../partials/field', { name: 'courier_name', label: t('delivery.courier_name') }) %>
+        <%- include('../../partials/field', { name: 'courier_phone', label: t('delivery.courier_phone'), type: 'tel' }) %>
+        <%- include('../../partials/field', { name: 'tracking_number', label: t('delivery.tracking') }) %>
+        <%- include('../../partials/field', { name: 'customer_name', label: t('delivery.recipient'), required: true, value: pf.customer_name || '' }) %>
+        <%- include('../../partials/field', { name: 'customer_phone', label: t('common.phone'), type: 'tel', value: pf.customer_phone || '' }) %>
+        <%- include('../../partials/field', { name: 'destination_city', label: t('delivery.city') }) %>
+        <%- include('../../partials/field', { name: 'address', label: t('delivery.address'), cls: 'span-2' }) %>
+        <%- include('../../partials/field', { name: 'delivery_fee_paid', label: t('delivery.fee_paid'), value: pf.delivery_fee_paid || 0, suffix: currency, attrs: 'inputmode="decimal" data-default="0"', help: t('delivery.fee_paid_help') }) %>
+        <%- include('../../partials/field', { name: 'delivery_fee_collected', label: t('delivery.fee_collected'), value: pf.delivery_fee_collected || 0, suffix: currency, attrs: 'inputmode="decimal" data-default="0"', help: t('delivery.fee_collected_help') }) %>
+        <%- include('../../partials/field', { name: 'status', label: t('common.status'), type: 'select', value: 'pending', options: statuses.map(function (s) { return { value: s, label: label('delivery.statuses', s) }; }), attrs: 'data-default="pending"' }) %>
+        <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>
