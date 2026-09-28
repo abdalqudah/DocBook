@@ -1,0 +1,10 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><%= typeof title !== 'undefined' && title ? title + ' · ' : '' %><%= brandName %></title>
+<meta name="description" content="<%= tagline %>">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/svg+xml" href="<%= brand.favicon || '/favicon.svg' %>">
+<link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
+<link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
+<% if (typeof business !== 'undefined' && business && business.color) { %><link rel="stylesheet" href="/app/theme/<%= business.id %>.css?c=<%= encodeURIComponent(business.color) %>"><% } %>
+<meta name="csrf-token" content="<%= csrfToken %>">

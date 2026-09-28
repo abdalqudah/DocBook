@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
+<head><%- include('../partials/head') %></head>
+<body>
+<div class="auth">
+  <div class="auth-side">
+    <a class="row-sm" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
+    <div>
+      <h2><%= t('auth.side_title') %></h2>
+      <p><%= t('auth.side_text') %></p>
+      <ul class="auth-points">
+        <li><%- icon('circle-check') %><%= t('auth.side_point_1') %></li>
+        <li><%- icon('circle-check') %><%= t('auth.side_point_2') %></li>
+        <li><%- icon('circle-check') %><%= t('auth.side_point_3') %></li>
+      </ul>
+    </div>
+    <div class="small" style="opacity:.7">© <%= new Date().getFullYear() %> <%= brandName %></div>
+  </div>
+  <div class="auth-main">
+    <div class="auth-top">
+      <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>"><%- icon('languages') %><%= locale === 'ar' ? 'English' : 'العربية' %></a>
+      <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
+    </div>
+    <div class="auth-card<%= typeof wide !== 'undefined' && wide ? ' wide' : '' %>">
+      <a class="auth-mobile-logo row-sm" href="/"><%- include('../partials/logo') %></a>
+      <%- include('../partials/toasts') %>
+      <%- body %>
+    </div>
+  </div>
+</div>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+</body>
+</html>

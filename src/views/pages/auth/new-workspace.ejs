@@ -1,0 +1,11 @@
+<h1><%= t('workspaces.new_title') %></h1>
+<p class="lead"><%= t('workspaces.new_lead') %></p>
+<form class="stack mt-6" method="post" action="/workspaces/new" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <%- include('../../partials/field', { name: 'name', label: t('auth.business_name'), required: true }) %>
+  <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: 'USD', options: currencies.map(function (c) { return { value: c, label: c + ' — ' + t('currencies.' + c) }; }) }) %>
+  <%- include('../../partials/field', { name: 'industry', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: ['ecommerce','retail','wholesale','services','food','manufacturing','other'].map(function (k) { return { value: k, label: t('industries.' + k) }; }) }) %>
+  <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('workspaces.create') %></button>
+  <% if (currentUser) { %><a class="btn btn-ghost btn-block" href="/app"><%= t('common.cancel') %></a><% } %>
+</form>

@@ -1,0 +1,14 @@
+<%
+  var p = fullPath.split('?')[0];
+  var items = [];
+  navGroups.forEach(function (g) { g.items.forEach(function (i) { if (i.bottom) items.push(i); }); });
+  items.sort(function (a, b) { return a.bottom - b.bottom; });
+%>
+<% if (items.length) { %>
+<nav class="bottom-nav" aria-label="<%= t('nav.quick') %>">
+  <% items.slice(0, 4).forEach(function (i) { var active = i.exact ? p === i.href : p.indexOf(i.href) === 0; %>
+    <a href="<%= i.href %>" class="<%= active ? 'active' : '' %>"><%- icon(i.icon) %><span><%= t('nav.short.' + i.key) %></span></a>
+  <% }) %>
+  <a href="#" data-nav-toggle><%- icon('menu') %><span><%= t('nav.more') %></span></a>
+</nav>
+<% } %>

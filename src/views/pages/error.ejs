@@ -1,0 +1,9 @@
+<div class="panel" style="max-width:560px;margin:48px auto">
+  <div class="empty">
+    <div class="empty-icon"><%- icon(status === 404 ? 'search' : status === 403 ? 'lock' : 'triangle-alert') %></div>
+    <h3><%= title %></h3>
+    <p><%= message %></p>
+    <div class="row mt-2"><a class="btn btn-secondary" href="/" data-back><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a><a class="btn btn-primary" href="<%= currentUser ? '/app' : '/' %>"><%= t('common.go_home') %></a></div>
+    <% if (stack) { %><pre class="code-box mt-4" style="text-align:start;max-width:100%"><%= stack %></pre><% } %>
+  </div>
+</div>

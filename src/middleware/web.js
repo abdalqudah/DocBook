@@ -1,0 +1,98 @@
+// View locals, CSRF protection, flash messages and theme/locale for server-rendered pages.
+const { translator, resolveLocale, has } = require('../core/i18n');
+const { randomToken, safeEqual } = require('../core/tokens');
+const { E } = require('../core/errors');
+const fmt = require('../core/format');
+const config = require('../config');
+const brand = require('../config/brand');
+
+const ASSET_V = require('../../package.json').version;
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+function locals(req, res, next) {
+  const locale = resolveLocale(req);
+  if (req.query.lang && config.locales.includes(req.query.lang)) {
+    res.cookie('db_lang', req.query.lang, { maxAge: 365 * 86_400_000, sameSite: 'lax', httpOnly: true, secure: config.isProd });
+  }
+  const t = translator(locale);
+  req.t = t;
+  req.locale = locale;
+  if (req.session && !req.session.csrf) req.session.csrf = randomToken(24);
+  const cookieTheme = req.cookies?.db_theme;
+  const theme = ['light', 'dark'].includes(cookieTheme) ? cookieTheme : (req.user && ['light', 'dark'].includes(req.user.theme) && !cookieTheme ? req.user.theme : 'system');
+  const cur = () => res.locals.currency || 'USD';
+  Object.assign(res.locals, {
+    t,
+    // Translates an enum value (category, status…) and falls back to the raw value for custom entries.
+    label: (group, key) => (key === null || key === undefined || key === '' ? '—' : has(locale, `${group}.${key}`) ? t(`${group}.${key}`) : String(key)),
+    locale,
+    dir: locale === 'ar' ? 'rtl' : 'ltr',
+    theme,
+    brand,
+    brandName: brand.name,
+    tagline: brand.tagline[locale] || brand.tagline.en,
+    csrfToken: req.session?.csrf,
+    currentUser: req.user || null,
+    path: req.path,
+    fullPath: req.originalUrl,
+    query: req.query,
+    flash: req.session?.flash || [],
+    fmt: {
+      date: (v, o) => fmt.formatDate(v, locale, o),
+      month: (k) => fmt.formatMonth(k, locale),
+      money: (a, c) => fmt.formatMoney(a, c || cur(), locale),
+      amount: (a, c) => fmt.formatAmount(a, c || cur(), locale),
+      compact: (a, c) => fmt.formatCompact(a, c || cur(), locale),
+      number: (n, d) => fmt.formatNumber(n, locale, d),
+      pct: (n, d) => fmt.formatPercent(n, locale, d),
+      dateInput: fmt.toDateInput,
+    },
+    today: fmt.today(),
+    thisMonth: fmt.currentMonth(),
+    assetV: ASSET_V,
+    escapeHtml: esc,
+    icon: (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="/icons.svg?v=${ASSET_V}#i-${name}"></use></svg>`,
+    initials: (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase(),
+    roleName: (r) => (r && (r.is_system || r.is_system === 1) ? t(`roles.${r.role_key || r.key}`) : (r && (r.role_name || r.name)) || '—'),
+    json: (v) => JSON.stringify(v).replace(/</g, '\\u003c'),
+    errors: {},
+    old: {},
+    formError: null,
+    unreadNotifications: 0,
+    can: () => false,
+    canAny: () => false,
+  });
+  if (req.session) req.session.flash = [];
+  res.locals.langUrl = (lang) => {
+    const url = new URL(req.originalUrl, 'http://x');
+    url.searchParams.set('lang', lang);
+    return url.pathname + url.search;
+  };
+  next();
+}
+
+function flash(req, type, message) {
+  req.session.flash = [...(req.session.flash || []), { type, message }];
+}
+
+// Multipart bodies are only parsed by these routes; their token is checked after parsing.
+const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/logo\/?$/, /^\/app\/settings\/data\/(restore|import)\/?$/, /^\/app\/[a-z-]+\/import\/?$/];
+
+const tokenValid = (req, sent) => Boolean(req.session?.csrf && sent && safeEqual(sent, req.session.csrf));
+
+function csrf(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  if (req.is('multipart/form-data')) {
+    if (MULTIPART_ROUTES.some((r) => r.test(req.path))) { req.csrfDeferred = true; return next(); }
+    return next(E.csrf());
+  }
+  if (!tokenValid(req, req.body?._csrf || req.get('x-csrf-token'))) return next(E.csrf());
+  return next();
+}
+
+function verifyCsrfAfterUpload(req, res, next) {
+  if (!req.csrfDeferred) return next();
+  return tokenValid(req, req.body?._csrf || req.get('x-csrf-token')) ? next() : next(E.csrf());
+}
+
+module.exports = { locals, flash, csrf, verifyCsrfAfterUpload };

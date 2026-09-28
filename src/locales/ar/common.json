@@ -1,0 +1,81 @@
+{
+  "common": {
+    "save": "حفظ", "save_changes": "حفظ التغييرات", "cancel": "إلغاء", "close": "إغلاق", "delete": "حذف", "edit": "تعديل", "add": "إضافة", "create": "إنشاء",
+    "back": "رجوع", "go_home": "العودة للوحة التحكم", "search": "بحث", "filter": "تصفية", "filters": "عوامل التصفية", "clear": "مسح", "reset": "إعادة ضبط", "all": "الكل", "none": "لا شيء",
+    "yes": "نعم", "no": "لا", "actions": "إجراءات", "details": "التفاصيل", "view": "عرض", "view_all": "عرض الكل", "open": "فتح", "export": "تصدير", "export_csv": "تصدير CSV",
+    "export_xlsx": "تصدير Excel", "print": "طباعة", "language": "اللغة", "toggle_theme": "التبديل بين الوضع الفاتح والداكن", "skip_to_content": "تخطَّ إلى المحتوى",
+    "period": "الفترة", "all_time": "كل الفترات", "this_month": "هذا الشهر", "from": "من", "to": "إلى", "date": "التاريخ", "notes": "ملاحظات", "status": "الحالة",
+    "name": "الاسم", "phone": "الهاتف", "email": "البريد الإلكتروني", "amount": "المبلغ", "total": "الإجمالي", "category": "التصنيف", "reference": "المرجع", "optional": "اختياري",
+    "loading": "جارٍ التحميل…", "saved": "تم الحفظ.", "created": "تمت الإضافة.", "updated": "تم التحديث.", "deleted": "تم الحذف.", "more": "المزيد", "of": "من", "per_month": "شهريًا",
+    "confirm_delete": "حذف هذا السجل؟ لا يمكن التراجع عن ذلك.", "confirm_delete_title": "حذف السجل", "no_permission": "يمكنك عرض هذه الصفحة دون تعديلها.",
+    "currency": "العملة", "created_by": "بواسطة", "created_at": "تاريخ الإنشاء", "updated_at": "آخر تحديث", "continue": "متابعة", "next": "التالي", "previous": "السابق",
+    "finish": "إنهاء", "skip": "تخطٍّ الآن", "learn_more": "اعرف المزيد", "copy": "نسخ", "copied": "تم النسخ", "unknown": "غير معروف", "recorded": "مسجّل", "month": "الشهر",
+    "select": "اختر…", "manage": "إدارة", "summary": "الملخص", "trend": "الاتجاه", "count": "العدد", "average": "المتوسط", "share": "الحصة", "search_placeholder": "بحث…"
+  },
+  "nav": {
+    "main": "التنقل الرئيسي", "menu": "القائمة", "more": "المزيد", "quick": "تنقل سريع", "workspaces": "مساحات العمل", "new_workspace": "مساحة عمل جديدة",
+    "group_overview": "نظرة عامة", "group_finance": "المالية", "group_operations": "العمليات", "group_growth": "النمو", "group_intelligence": "الذكاء والتقارير", "group_workspace": "مساحة العمل",
+    "dashboard": "لوحة التحكم", "partners": "الشركاء", "expenses": "المصاريف", "payroll": "الرواتب", "budgets": "الميزانيات والتنبيهات", "sales": "المبيعات والطلبات",
+    "customers": "العملاء", "purchases": "المشتريات وتكلفة البضاعة", "delivery": "الشحن والتوصيل", "marketing": "التسويق", "reports": "التقارير", "advisor": "المستشار المالي الذكي",
+    "sheets": "Google Sheets", "support": "المساعدة والدعم", "settings": "الإعدادات",
+    "short": { "dashboard": "الرئيسية", "sales": "المبيعات", "expenses": "المصاريف", "reports": "التقارير", "payroll": "الرواتب", "partners": "الشركاء" }
+  },
+  "search": {
+    "open": "البحث والإجراءات السريعة", "placeholder": "ابحث أو انتقل إلى…", "placeholder_long": "ابحث في الطلبات والعملاء والمصاريف والموظفين والشركاء…",
+    "pages": "الصفحات", "actions_title": "إجراءات سريعة", "records": "السجلات", "no_results": "لا توجد نتائج.",
+    "actions": { "new_expense": "تسجيل مصروف", "new_order": "إنشاء طلب مبيعات", "new_purchase": "تسجيل فاتورة شراء", "new_employee": "إضافة موظف",
+      "new_partner": "إضافة شريك", "new_campaign": "إضافة حملة", "new_shipment": "إضافة شحنة", "pnl": "فتح قائمة الأرباح والخسائر", "ask_ai": "اسأل المستشار الذكي" }
+  },
+  "table": { "showing": "عرض {from}–{to} من {total}", "pagination": "التنقل بين الصفحات", "prev": "الصفحة السابقة", "next": "الصفحة التالية", "totals": "الإجماليات", "no_matches": "لا توجد سجلات مطابقة لهذه التصفية.", "clear_filters": "مسح التصفية" },
+  "errors": {
+    "not_found_title": "الصفحة غير موجودة", "forbidden_title": "لا تملك صلاحية الوصول", "generic_title": "حدث خطأ",
+    "NOT_FOUND": "لم نعثر على ما تبحث عنه.", "PERMISSION_DENIED": "دورك لا يسمح بهذا الإجراء. اطلب الصلاحية من مالك مساحة العمل.",
+    "VALIDATION_FAILED": "يرجى تصحيح الحقول المحددة.", "INVALID_CREDENTIALS": "البريد الإلكتروني أو كلمة المرور غير صحيحة.", "CSRF_TOKEN_INVALID": "انتهت صلاحية الجلسة. حاول مرة أخرى.",
+    "RATE_LIMITED": "محاولات كثيرة. انتظر بضع دقائق.", "TOO_MANY_ATTEMPTS": "محاولات دخول فاشلة كثيرة. انتظر 15 دقيقة أو أعد تعيين كلمة المرور.",
+    "ACCOUNT_DISABLED": "هذا الحساب معطّل.", "EMAIL_TAKEN": "يوجد حساب بهذا البريد الإلكتروني.", "INTERNAL_ERROR": "حدث خطأ من جهتنا. حاول مرة أخرى.",
+    "BUSINESS_REQUIRED": "أنشئ مساحة عمل أو اخترها أولًا.", "LAST_OWNER": "يجب أن يبقى مالك نشط واحد على الأقل لمساحة العمل.", "ROLE_IN_USE": "انقل أعضاء هذا الدور إلى دور آخر أولًا.",
+    "ROLE_LOCKED": "لا يمكن تعديل هذا الدور.", "ALREADY_MEMBER": "هذا الشخص عضو بالفعل.", "SELF_REMOVE": "لا يمكنك إزالة نفسك.", "SELF_DISABLE": "لا يمكنك تعطيل وصولك.",
+    "RESET_INVALID": "انتهت صلاحية هذا الرابط أو تم استخدامه.", "VERIFY_INVALID": "انتهت صلاحية هذا الرابط أو تم استخدامه.",
+    "INVITE_OTHER_EMAIL": "أُرسلت هذه الدعوة إلى بريد إلكتروني آخر.", "INVITE_SIGN_IN": "لديك حساب بالفعل — سجّل الدخول أولًا ثم افتح رابط الدعوة مجددًا.",
+    "EQUITY_OVER_100": "لا يمكن أن يتجاوز مجموع حصص الشركاء 100%.", "WITHDRAWAL_EXCEEDS": "مبلغ السحب أكبر من رصيد الشريك المتاح.",
+    "ORDER_NUMBER_TAKEN": "رقم الطلب مستخدم بالفعل.", "MONTH_ALREADY_PAID": "هذا الشهر مسجّل كمدفوع بالفعل.",
+    "AI_NOT_CONFIGURED": "المستشار الذكي غير متصل بعد. يمكن للمسؤول إضافة مفتاح مزوّد الذكاء الاصطناعي من الإعدادات ← الذكاء الاصطناعي.", "AI_PROVIDER_ERROR": "أعاد مزوّد الذكاء الاصطناعي خطأً.",
+    "SHEETS_NOT_CONNECTED": "اربط Google Sheets أولًا.", "SHEETS_FAILED": "فشلت المزامنة مع Google Sheets.",
+    "RESTORE_INVALID": "هذا الملف ليس نسخة احتياطية صالحة.", "RESTORE_NAME": "اكتب اسم مساحة العمل كما هو للتأكيد."
+  },
+  "vmsg": {
+    "_fallback": "قيمة غير صالحة.",
+    "Enter a valid email address.": "أدخل بريدًا إلكترونيًا صحيحًا.", "Password must be at least 8 characters.": "كلمة المرور 8 أحرف على الأقل.", "Password is required.": "كلمة المرور مطلوبة.",
+    "Enter your full name.": "أدخل اسمك الكامل.", "Enter your business name.": "أدخل اسم النشاط التجاري.", "Choose a currency.": "اختر العملة.", "Please accept the terms to continue.": "يرجى الموافقة على الشروط للمتابعة.",
+    "Enter a number.": "أدخل رقمًا.", "Must be zero or more.": "يجب أن تكون القيمة صفرًا أو أكثر.", "Too large.": "القيمة كبيرة جدًا.", "Enter a valid date.": "أدخل تاريخًا صحيحًا.", "Enter a valid month.": "أدخل شهرًا صحيحًا.",
+    "Required.": "مطلوب.", "Passwords do not match.": "كلمتا المرور غير متطابقتين.", "Current password is incorrect.": "كلمة المرور الحالية غير صحيحة.", "Choose a valid role.": "اختر دورًا صحيحًا.",
+    "Add at least one item.": "أضف صنفًا واحدًا على الأقل.", "Choose a valid value.": "اختر قيمة صحيحة.", "Must be between 0 and 100.": "يجب أن تكون بين 0 و 100.",
+    "Type the workspace name exactly to confirm.": "اكتب اسم مساحة العمل كما هو للتأكيد.", "Use an https:// URL.": "استخدم رابطًا يبدأ بـ https://", "Enter a valid URL.": "أدخل رابطًا صحيحًا."
+  },
+  "roles": { "owner": "المالك", "admin": "مسؤول النظام", "accountant": "المحاسب", "sales": "المبيعات والتسويق", "partner_viewer": "شريك (عرض فقط)", "viewer": "مُطّلع" },
+  "role_desc": {
+    "owner": "تحكم كامل يشمل النسخ الاحتياطي والاستعادة وحذف مساحة العمل.", "admin": "كل شيء عدا استعادة النسخ الاحتياطية وحذف مساحة العمل.",
+    "accountant": "جميع الأقسام المالية؛ يمكنه عرض التسويق دون تعديله؛ دون إدارة المستخدمين.", "sales": "الطلبات والعملاء والتوصيل والتسويق، دون أرقام الأرباح.",
+    "partner_viewer": "يرى الأرباح وكشوف الشركاء والتقارير فقط.", "viewer": "عرض فقط للأقسام التشغيلية دون أرقام الأرباح."
+  },
+  "perm_groups": { "overview": "نظرة عامة", "partners": "الشركاء", "expenses": "المصاريف", "payroll": "الرواتب", "purchases": "المشتريات والمخزون", "sales": "المبيعات والعملاء", "delivery": "التوصيل", "marketing": "التسويق", "budgets": "الميزانيات", "reports": "التقارير والتصدير", "intelligence": "المستشار الذكي", "workspace": "إدارة مساحة العمل" },
+  "perms": {
+    "dashboard.view": "عرض لوحة التحكم", "profits.view": "رؤية أرقام الأرباح (صافي الربح، الهوامش، حصص الشركاء)", "partners.view": "عرض الشركاء", "partners.manage": "إدارة الشركاء والإيداعات والتوزيعات",
+    "expenses.view": "عرض المصاريف", "expenses.manage": "تسجيل المصاريف وتعديلها", "payroll.view": "عرض الرواتب", "payroll.manage": "إدارة الموظفين وصرف الرواتب",
+    "purchases.view": "عرض المشتريات والمخزون", "purchases.manage": "تسجيل المشتريات", "sales.view": "عرض الطلبات", "sales.manage": "إنشاء الطلبات وتعديلها",
+    "customers.view": "عرض العملاء", "customers.manage": "إدارة العملاء", "delivery.view": "عرض الشحنات", "delivery.manage": "إدارة الشحنات",
+    "marketing.view": "عرض الحملات", "marketing.manage": "إدارة الحملات", "budgets.view": "عرض الميزانيات والتنبيهات", "budgets.manage": "تحديد الميزانيات",
+    "reports.view": "عرض التقارير", "data.export": "تصدير البيانات (CSV و Excel)", "ai.use": "استخدام المستشار الذكي", "ai.manage": "إعداد مزوّد الذكاء الاصطناعي",
+    "integrations.manage": "إدارة Google Sheets والتكاملات", "support.use": "فتح تذاكر الدعم", "settings.manage": "إعدادات الشركة والمظهر",
+    "users.manage": "دعوة المستخدمين وإدارتهم", "roles.manage": "إدارة الأدوار والصلاحيات", "data.manage": "النسخ الاحتياطي والاستعادة وحذف مساحة العمل", "audit.view": "عرض سجل التدقيق"
+  },
+  "categories": {
+    "rent": "الإيجار", "utilities": "الكهرباء والمياه والخدمات", "packaging": "التغليف والطباعة", "maintenance": "الصيانة والمعدات", "hospitality": "الضيافة والبوفيه",
+    "software": "البرامج والاشتراكات", "transport": "المحروقات والمواصلات والسفر", "tax": "الضرائب والرسوم الحكومية", "government": "التراخيص والتسجيلات",
+    "office": "القرطاسية ومستلزمات المكتب", "miscellaneous": "مصاريف متنوعة", "marketing": "التسويق والإعلان", "salaries": "رواتب (يدوي)", "deliveries": "توصيل (يدوي)",
+    "delivery": "الشحن والتوصيل", "inventory_purchase": "مشتريات البضاعة", "payroll": "الرواتب والعمولات"
+  },
+  "payment_methods": { "cash": "نقدًا", "bank_transfer": "تحويل بنكي", "credit_card": "بطاقة / نقاط بيع", "digital_wallet": "محفظة إلكترونية" },
+  "notifications": { "title": "الإشعارات", "empty_title": "لا جديد", "empty_text": "تظهر هنا تنبيهات الميزانية والأحداث المهمة.", "mark_all_read": "تحديد الكل كمقروء", "unread": "غير مقروء" },
+  "workspaces": { "new_title": "إنشاء مساحة عمل", "new_lead": "مساحة العمل هي نشاط تجاري أو فرع له عملته وبياناته وفريقه.", "create": "إنشاء مساحة العمل" }
+}

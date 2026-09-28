@@ -1,0 +1,6 @@
+<div class="empty<%= typeof compact !== 'undefined' && compact ? ' compact' : '' %>">
+  <div class="empty-icon"><%- icon(typeof emptyIcon !== 'undefined' ? emptyIcon : 'layers') %></div>
+  <h3><%= emptyTitle %></h3>
+  <% if (typeof emptyText !== 'undefined' && emptyText) { %><p><%= emptyText %></p><% } %>
+  <% if (typeof emptyAction !== 'undefined' && emptyAction) { %><div class="mt-2"><%- emptyAction %></div><% } %>
+</div>

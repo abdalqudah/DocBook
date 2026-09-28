@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
+<head><%- include('../partials/head') %></head>
+<body>
+<div class="onb-shell">
+  <div class="onb-top">
+    <div class="row-sm"><%- include('../partials/logo') %></div>
+    <div class="row-sm">
+      <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>"><%- icon('languages') %><%= locale === 'ar' ? 'EN' : 'ع' %></a>
+      <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
+      <form method="post" action="/app/onboarding/finish" data-confirm="<%= t('onboarding.skip_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('onboarding.skip_all') %></button></form>
+    </div>
+  </div>
+  <div class="onb-body">
+    <div class="steps" aria-label="<%= t('onboarding.progress') %>">
+      <% steps.forEach(function (s, i) { var idx = steps.indexOf(step); %>
+        <div class="step <%= i < idx ? 'done' : i === idx ? 'current' : '' %>"><div class="bar"></div><div class="step-label"><%= i + 1 %>. <%= t('onboarding.step_' + s) %></div></div>
+      <% }) %>
+    </div>
+    <%- body %>
+  </div>
+</div>
+<%- include('../partials/toasts') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+</body>
+</html>

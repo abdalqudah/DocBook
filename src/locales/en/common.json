@@ -1,0 +1,81 @@
+{
+  "common": {
+    "save": "Save", "save_changes": "Save changes", "cancel": "Cancel", "close": "Close", "delete": "Delete", "edit": "Edit", "add": "Add", "create": "Create",
+    "back": "Back", "go_home": "Go to dashboard", "search": "Search", "filter": "Filter", "filters": "Filters", "clear": "Clear", "reset": "Reset", "all": "All", "none": "None",
+    "yes": "Yes", "no": "No", "actions": "Actions", "details": "Details", "view": "View", "view_all": "View all", "open": "Open", "export": "Export", "export_csv": "Export CSV",
+    "export_xlsx": "Export Excel", "print": "Print", "language": "Language", "toggle_theme": "Switch light/dark mode", "skip_to_content": "Skip to content",
+    "period": "Period", "all_time": "All time", "this_month": "This month", "from": "From", "to": "To", "date": "Date", "notes": "Notes", "status": "Status",
+    "name": "Name", "phone": "Phone", "email": "E-mail", "amount": "Amount", "total": "Total", "category": "Category", "reference": "Reference", "optional": "optional",
+    "loading": "Loading…", "saved": "Saved.", "created": "Created.", "updated": "Updated.", "deleted": "Deleted.", "more": "More", "of": "of", "per_month": "per month",
+    "confirm_delete": "Delete this record? This cannot be undone.", "confirm_delete_title": "Delete record", "no_permission": "You can view this page but not change it.",
+    "currency": "Currency", "created_by": "Created by", "created_at": "Created", "updated_at": "Last updated", "continue": "Continue", "next": "Next", "previous": "Previous",
+    "finish": "Finish", "skip": "Skip for now", "learn_more": "Learn more", "copy": "Copy", "copied": "Copied", "unknown": "Unknown", "recorded": "Recorded", "month": "Month",
+    "select": "Select…", "manage": "Manage", "summary": "Summary", "trend": "Trend", "count": "Count", "average": "Average", "share": "Share", "search_placeholder": "Search…"
+  },
+  "nav": {
+    "main": "Main navigation", "menu": "Menu", "more": "More", "quick": "Quick navigation", "workspaces": "Workspaces", "new_workspace": "New workspace",
+    "group_overview": "Overview", "group_finance": "Finance", "group_operations": "Operations", "group_growth": "Growth", "group_intelligence": "Intelligence", "group_workspace": "Workspace",
+    "dashboard": "Dashboard", "partners": "Partners", "expenses": "Expenses", "payroll": "Payroll", "budgets": "Budgets & alerts", "sales": "Sales & orders",
+    "customers": "Customers", "purchases": "Purchases & COGS", "delivery": "Delivery", "marketing": "Marketing", "reports": "Reports", "advisor": "AI financial advisor",
+    "sheets": "Google Sheets", "support": "Help & support", "settings": "Settings",
+    "short": { "dashboard": "Home", "sales": "Sales", "expenses": "Expenses", "reports": "Reports", "payroll": "Payroll", "partners": "Partners" }
+  },
+  "search": {
+    "open": "Search and quick actions", "placeholder": "Search or jump to…", "placeholder_long": "Search orders, customers, expenses, employees, partners…",
+    "pages": "Pages", "actions_title": "Quick actions", "records": "Records", "no_results": "Nothing found.",
+    "actions": { "new_expense": "Record an expense", "new_order": "Create a sales order", "new_purchase": "Record a purchase", "new_employee": "Add an employee",
+      "new_partner": "Add a partner", "new_campaign": "Add a campaign", "new_shipment": "Add a shipment", "pnl": "Open the P&L statement", "ask_ai": "Ask the AI advisor" }
+  },
+  "table": { "showing": "Showing {from}–{to} of {total}", "pagination": "Pagination", "prev": "Previous page", "next": "Next page", "totals": "Totals", "no_matches": "No records match these filters.", "clear_filters": "Clear filters" },
+  "errors": {
+    "not_found_title": "Page not found", "forbidden_title": "Access denied", "generic_title": "Something went wrong",
+    "NOT_FOUND": "We couldn't find what you were looking for.", "PERMISSION_DENIED": "Your role doesn't allow this. Ask a workspace owner if you need access.",
+    "VALIDATION_FAILED": "Please correct the highlighted fields.", "INVALID_CREDENTIALS": "E-mail or password is incorrect.", "CSRF_TOKEN_INVALID": "Your session expired. Please try again.",
+    "RATE_LIMITED": "Too many attempts. Please wait a few minutes.", "TOO_MANY_ATTEMPTS": "Too many failed sign-in attempts. Wait 15 minutes or reset your password.",
+    "ACCOUNT_DISABLED": "This account is disabled.", "EMAIL_TAKEN": "An account with this e-mail already exists.", "INTERNAL_ERROR": "Something went wrong on our side. Please try again.",
+    "BUSINESS_REQUIRED": "Create or select a workspace first.", "LAST_OWNER": "A workspace must keep at least one active owner.", "ROLE_IN_USE": "Move the members of this role to another role first.",
+    "ROLE_LOCKED": "This role cannot be changed.", "ALREADY_MEMBER": "This person is already a member.", "SELF_REMOVE": "You cannot remove yourself.", "SELF_DISABLE": "You cannot disable your own access.",
+    "RESET_INVALID": "This link has expired or was already used.", "VERIFY_INVALID": "This link has expired or was already used.",
+    "INVITE_OTHER_EMAIL": "This invitation was sent to a different e-mail address.", "INVITE_SIGN_IN": "You already have an account — sign in first, then open the invitation link again.",
+    "EQUITY_OVER_100": "Total partner equity cannot exceed 100%.", "WITHDRAWAL_EXCEEDS": "The withdrawal is larger than this partner's available balance.",
+    "ORDER_NUMBER_TAKEN": "This order number is already used.", "MONTH_ALREADY_PAID": "This month is already marked as paid.",
+    "AI_NOT_CONFIGURED": "The AI advisor is not connected yet. An administrator can add an AI provider key in Settings → AI.", "AI_PROVIDER_ERROR": "The AI provider returned an error.",
+    "SHEETS_NOT_CONNECTED": "Connect Google Sheets first.", "SHEETS_FAILED": "Google Sheets sync failed.",
+    "RESTORE_INVALID": "This file is not a valid backup.", "RESTORE_NAME": "Type the workspace name exactly to confirm."
+  },
+  "vmsg": {
+    "_fallback": "قيمة غير صالحة.",
+    "Enter a valid email address.": "أدخل بريدًا إلكترونيًا صحيحًا.", "Password must be at least 8 characters.": "كلمة المرور 8 أحرف على الأقل.", "Password is required.": "كلمة المرور مطلوبة.",
+    "Enter your full name.": "أدخل اسمك الكامل.", "Enter your business name.": "أدخل اسم النشاط التجاري.", "Choose a currency.": "اختر العملة.", "Please accept the terms to continue.": "يرجى الموافقة على الشروط للمتابعة.",
+    "Enter a number.": "أدخل رقمًا.", "Must be zero or more.": "يجب أن تكون القيمة صفرًا أو أكثر.", "Too large.": "القيمة كبيرة جدًا.", "Enter a valid date.": "أدخل تاريخًا صحيحًا.", "Enter a valid month.": "أدخل شهرًا صحيحًا.",
+    "Required.": "مطلوب.", "Passwords do not match.": "كلمتا المرور غير متطابقتين.", "Current password is incorrect.": "كلمة المرور الحالية غير صحيحة.", "Choose a valid role.": "اختر دورًا صحيحًا.",
+    "Add at least one item.": "أضف صنفًا واحدًا على الأقل.", "Choose a valid value.": "اختر قيمة صحيحة.", "Must be between 0 and 100.": "يجب أن تكون بين 0 و 100.",
+    "Type the workspace name exactly to confirm.": "اكتب اسم مساحة العمل كما هو للتأكيد.", "Use an https:// URL.": "استخدم رابطًا يبدأ بـ https://", "Enter a valid URL.": "أدخل رابطًا صحيحًا."
+  },
+  "roles": { "owner": "Owner", "admin": "Administrator", "accountant": "Accountant", "sales": "Sales & marketing", "partner_viewer": "Partner (view only)", "viewer": "Viewer" },
+  "role_desc": {
+    "owner": "Full control, including backups, restore and deleting the workspace.", "admin": "Everything except restoring backups and deleting the workspace.",
+    "accountant": "All financial modules; can view marketing but not change it; no user management.", "sales": "Orders, customers, delivery and marketing. No profit figures.",
+    "partner_viewer": "Sees profits, partner statements and reports only.", "viewer": "Read-only access to operational modules, no profit figures."
+  },
+  "perm_groups": { "overview": "Overview", "partners": "Partners", "expenses": "Expenses", "payroll": "Payroll", "purchases": "Purchases & inventory", "sales": "Sales & customers", "delivery": "Delivery", "marketing": "Marketing", "budgets": "Budgets", "reports": "Reports & exports", "intelligence": "AI advisor", "workspace": "Workspace administration" },
+  "perms": {
+    "dashboard.view": "View dashboard", "profits.view": "See profit figures (net profit, margins, partner allocations)", "partners.view": "View partners", "partners.manage": "Manage partners, contributions and distributions",
+    "expenses.view": "View expenses", "expenses.manage": "Record and edit expenses", "payroll.view": "View payroll and salaries", "payroll.manage": "Manage employees and run payroll",
+    "purchases.view": "View purchases & inventory", "purchases.manage": "Record purchases", "sales.view": "View orders", "sales.manage": "Create and edit orders",
+    "customers.view": "View customers", "customers.manage": "Manage customers", "delivery.view": "View shipments", "delivery.manage": "Manage shipments",
+    "marketing.view": "View campaigns", "marketing.manage": "Manage campaigns", "budgets.view": "View budgets and alerts", "budgets.manage": "Set budgets",
+    "reports.view": "View reports", "data.export": "Export data (CSV, Excel)", "ai.use": "Use the AI advisor", "ai.manage": "Configure the AI provider",
+    "integrations.manage": "Manage Google Sheets and integrations", "support.use": "Open support tickets", "settings.manage": "Company settings & appearance",
+    "users.manage": "Invite and manage users", "roles.manage": "Manage roles & permissions", "data.manage": "Backup, restore and delete the workspace", "audit.view": "View the audit log"
+  },
+  "categories": {
+    "rent": "Rent", "utilities": "Utilities", "packaging": "Packaging & printing", "maintenance": "Maintenance & equipment", "hospitality": "Hospitality & pantry",
+    "software": "Software & subscriptions", "transport": "Fuel, transport & travel", "tax": "Taxes & government fees", "government": "Licences & registrations",
+    "office": "Office supplies", "miscellaneous": "Miscellaneous", "marketing": "Marketing & advertising", "salaries": "Salaries (manual)", "deliveries": "Delivery (manual)",
+    "delivery": "Shipping & delivery", "inventory_purchase": "Inventory purchases", "payroll": "Payroll & commissions"
+  },
+  "payment_methods": { "cash": "Cash", "bank_transfer": "Bank transfer", "credit_card": "Card / POS", "digital_wallet": "Digital wallet" },
+  "notifications": { "title": "Notifications", "empty_title": "You're all caught up", "empty_text": "Budget alerts and other important events appear here.", "mark_all_read": "Mark all as read", "unread": "Unread" },
+  "workspaces": { "new_title": "Create a workspace", "new_lead": "A workspace is one business or branch with its own currency, data and team.", "create": "Create workspace" }
+}

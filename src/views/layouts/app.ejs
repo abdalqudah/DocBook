@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
+<head><%- include('../partials/head') %></head>
+<body>
+<div class="loading-bar" aria-hidden="true"></div>
+<a class="sr-only" href="#main"><%= t('common.skip_to_content') %></a>
+<div class="shell">
+  <aside class="sidebar" id="sidebar"><%- include('../partials/sidebar') %></aside>
+  <div class="sidebar-backdrop" data-nav-close></div>
+  <div class="main">
+    <%- include('../partials/topbar') %>
+    <% if (typeof verifyBanner !== 'undefined' && verifyBanner) { %><div class="banner info"><%- icon('mail') %><span><%= t('verify.banner', { email: currentUser.email }) %></span><form method="post" action="/verify-email/resend"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('verify.resend') %></button></form></div><% } %>
+    <main class="content" id="main">
+      <%- body %>
+    </main>
+  </div>
+</div>
+<%- include('../partials/bottom-nav') %>
+<%- include('../partials/toasts') %>
+<%- include('../partials/cmdk') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+</body>
+</html>

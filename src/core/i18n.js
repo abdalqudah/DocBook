@@ -2,9 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const config = require('../config');
 
+// Each language is a folder of JSON files (one per area) merged into one dictionary.
 const dictionaries = {};
 for (const locale of config.locales) {
-  dictionaries[locale] = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', `${locale}.json`), 'utf8'));
+  const dir = path.join(__dirname, '..', 'locales', locale);
+  dictionaries[locale] = {};
+  for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort()) {
+    Object.assign(dictionaries[locale], JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')));
+  }
 }
 
 const lookup = (dict, key) => key.split('.').reduce((node, part) => (node && typeof node === 'object' ? node[part] : undefined), dict);

@@ -1,0 +1,15 @@
+<h1><%= t('auth.forgot_title') %></h1>
+<% if (sent) { %>
+  <div class="alert alert-success mt-6"><%- icon('mail') %><div class="grow"><div class="alert-title"><%= t('auth.forgot_sent_title') %></div><div><%= t('auth.forgot_sent_text') %></div></div></div>
+  <a class="btn btn-secondary btn-block mt-4" href="/login"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('auth.back_to_login') %></a>
+<% } else { %>
+  <p class="lead"><%= t('auth.forgot_lead') %></p>
+  <% if (!canEmail) { %><div class="alert alert-warning mt-4"><%- icon('triangle-alert') %><div class="grow"><%= t('auth.forgot_no_email') %></div></div><% } %>
+  <form class="stack mt-6" method="post" action="/forgot" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include('../../partials/form-error') %>
+    <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, autocomplete: 'email' }) %>
+    <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('auth.send_reset') %></button>
+  </form>
+  <p class="mt-6 small text-center"><a class="link" href="/login"><%= t('auth.back_to_login') %></a></p>
+<% } %>

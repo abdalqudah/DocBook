@@ -1,0 +1,5 @@
+<% if (typeof formError !== 'undefined' && formError) { %>
+<div class="alert alert-<%= formError.code === 'VALIDATION_FAILED' ? 'error' : 'warning' %> mb-4" role="alert"><%- icon('circle-alert') %><div class="grow"><div class="alert-title"><%= formError.message %></div>
+<% if (formError.code === 'VALIDATION_FAILED' && errors && Object.keys(errors).length) { %><ul class="small" style="margin:4px 0 0;padding-inline-start:18px"><% Object.keys(errors).forEach(function (k) { %><li><%= errors[k] %></li><% }) %></ul><% } %>
+</div></div>
+<% } %>

@@ -1,0 +1,9 @@
+<form class="period-picker" method="get" data-autosubmit>
+  <% Object.keys(query).forEach(function (k) { if (k !== 'month' && k !== 'page') { %><input type="hidden" name="<%= k %>" value="<%= query[k] %>"><% } }) %>
+  <label class="sr-only" for="period-month"><%= t('common.period') %></label>
+  <%- icon('calendar', 'muted') %>
+  <select class="select" id="period-month" name="month" style="height:36px;width:auto">
+    <option value="all"<%= month === '' ? ' selected' : '' %>><%= t('common.all_time') %></option>
+    <% periodOptions.forEach(function (m) { %><option value="<%= m %>"<%= m === month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %>
+  </select>
+</form>

@@ -1,0 +1,11 @@
+<div class="cmdk" data-cmdk role="dialog" aria-modal="true" aria-label="<%= t('search.open') %>">
+  <div class="cmdk-box">
+    <div class="cmdk-input"><%- icon('search', 'muted') %><input type="text" data-cmdk-input placeholder="<%= t('search.placeholder_long') %>" autocomplete="off" aria-label="<%= t('search.placeholder') %>"><span class="kbd">Esc</span></div>
+    <div class="cmdk-results" data-cmdk-results></div>
+  </div>
+  <script type="application/json" data-cmdk-pages><%- json([].concat(
+    navGroups.reduce(function (a, g) { return a.concat(g.items.map(function (i) { return { title: t('nav.' + i.key), href: i.href, icon: i.icon, group: 'pages' }; })); }, []),
+    navActions.map(function (a) { return { title: t('search.actions.' + a.key), href: a.href, icon: a.icon, group: 'actions' }; })
+  )) %></script>
+  <script type="application/json" data-cmdk-i18n><%- json({ pages: t('search.pages'), actions: t('search.actions_title'), records: t('search.records'), empty: t('search.no_results') }) %></script>
+</div>

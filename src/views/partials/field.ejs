@@ -1,0 +1,24 @@
+<%
+  var _type = typeof type !== 'undefined' ? type : 'text';
+  var _val = (typeof old !== 'undefined' && old && old[name] !== undefined) ? old[name] : (typeof value !== 'undefined' && value !== null ? value : '');
+  var _err = (typeof errors !== 'undefined' && errors) ? errors[name] : null;
+  var _id = (typeof id !== 'undefined' ? id : 'f-' + name).replace(/[^a-z0-9_-]/gi, '_');
+  var _cls = typeof cls !== 'undefined' ? cls : '';
+  var _req = typeof required !== 'undefined' && required;
+%>
+<div class="field <%= _cls %>">
+  <label class="label" for="<%= _id %>"><%= label %><% if (_req) { %><span class="req">*</span><% } %></label>
+  <% if (_type === 'select') { %>
+    <select class="select<%= _err ? ' is-invalid' : '' %>" id="<%= _id %>" name="<%= name %>"<% if (_req) { %> required<% } %><% if (typeof attrs !== 'undefined') { %> <%- attrs %><% } %>>
+      <% if (typeof placeholder !== 'undefined') { %><option value=""><%= placeholder %></option><% } %>
+      <% options.forEach(function (o) { %><option value="<%= o.value %>"<%= String(o.value) === String(_val) ? ' selected' : '' %>><%= o.label %></option><% }) %>
+    </select>
+  <% } else if (_type === 'textarea') { %>
+    <textarea class="textarea<%= _err ? ' is-invalid' : '' %>" id="<%= _id %>" name="<%= name %>"<% if (typeof placeholder !== 'undefined') { %> placeholder="<%= placeholder %>"<% } %><% if (_req) { %> required<% } %>><%= _val %></textarea>
+  <% } else if (typeof suffix !== 'undefined' && suffix) { %>
+    <div class="input-affix"><input class="input<%= _err ? ' is-invalid' : '' %>" id="<%= _id %>" name="<%= name %>" type="<%= _type %>" value="<%= _val %>"<% if (_req) { %> required<% } %><% if (typeof attrs !== 'undefined') { %> <%- attrs %><% } %>><span class="affix"><%= suffix %></span></div>
+  <% } else { %>
+    <input class="input<%= _err ? ' is-invalid' : '' %>" id="<%= _id %>" name="<%= name %>" type="<%= _type %>" value="<%= _type === 'password' ? '' : _val %>"<% if (typeof placeholder !== 'undefined') { %> placeholder="<%= placeholder %>"<% } %><% if (_req) { %> required<% } %><% if (typeof autocomplete !== 'undefined') { %> autocomplete="<%= autocomplete %>"<% } %><% if (typeof attrs !== 'undefined') { %> <%- attrs %><% } %>>
+  <% } %>
+  <% if (_err) { %><span class="field-error"><%= _err %></span><% } else if (typeof help !== 'undefined' && help) { %><span class="help"><%= help %></span><% } %>
+</div>
