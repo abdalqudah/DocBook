@@ -1,0 +1,34 @@
+{
+  "name": "docbook",
+  "version": "2.0.0",
+  "description": "DocBook — business finance, partners, payroll, sales and operations in one workspace",
+  "main": "app.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "NODE_ENV=development AUTO_MIGRATE=true node app.js",
+    "migrate": "node scripts/migrate.js",
+    "test": "NODE_ENV=test node --test --test-concurrency=1 test/",
+    "brand:check": "node scripts/brand-check.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.1",
+    "connect-session-knex": "^5.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.1.0",
+    "knex": "^3.1.0",
+    "multer": "^2.0.2",
+    "mysql2": "^3.14.0",
+    "nodemailer": "^7.0.5",
+    "zod": "^3.24.2"
+  }
+}
