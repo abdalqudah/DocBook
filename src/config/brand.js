@@ -12,8 +12,8 @@ module.exports = {
   name: 'DocBook',
   // Short product line used in titles, the sidebar and the landing page.
   tagline: {
-    en: 'Business finance, partners and payroll in one ledger',
-    ar: 'مالية الأعمال والشركاء والرواتب في دفتر واحد',
+    en: 'Clinic bookings, patients and billing in one place',
+    ar: 'حجوزات العيادة ومرضاها وفواتيرها في مكان واحد',
   },
   // Logo: leave null to use the built-in mark + wordmark (tinted with `primary`),
   // or point to files under /public (e.g. '/brand/logo.svg'). logoOnDark is used in dark mode.

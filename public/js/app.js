@@ -191,94 +191,6 @@
     });
   });
 
-  /* ---------- Live calculators (data-calc) ---------- */
-  var num = function (v) { var n = parseFloat(String(v || '').replace(/,/g, '')); return isFinite(n) ? n : 0; };
-  var money = function (n, d) { return n.toLocaleString(isAr ? 'ar-EG-u-nu-latn' : 'en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); };
-  // Purchase: total = unit × qty; payable = total + shipping; remaining = payable − paid.
-  $$('form[data-calc="purchase"]').forEach(function (form) {
-    var d = Number(form.getAttribute('data-decimals') || 2);
-    var f = function (n) { return form.querySelector('[name="' + n + '"]'); };
-    function run() {
-      var total = num(f('unit_cost').value) * num(f('quantity').value);
-      var payable = total + num(f('shipping_cost').value);
-      var remaining = Math.max(0, payable - num(f('paid_amount').value));
-      var set = function (k, v) { var el = form.querySelector('[data-out="' + k + '"]'); if (el) el.textContent = money(v, d); };
-      set('total', total); set('payable', payable); set('remaining', remaining);
-    }
-    form.addEventListener('input', run); run();
-  });
-  // Employee: monthly net = base + bonus − deductions.
-  $$('form[data-calc="salary"]').forEach(function (form) {
-    var d = Number(form.getAttribute('data-decimals') || 2);
-    function run() {
-      var g = function (n) { var el = form.querySelector('[name="' + n + '"]'); return el ? num(el.value) : 0; };
-      var el = form.querySelector('[data-out="net"]'); if (el) el.textContent = money(g('base_salary') + g('bonus') - g('deductions'), d);
-      var type = form.querySelector('[name="commission_type"]'); var sfx = form.querySelector('[data-rate-suffix]');
-      if (type && sfx) sfx.textContent = type.value === 'percentage' ? '%' : sfx.getAttribute('data-currency');
-    }
-    form.addEventListener('input', run); form.addEventListener('change', run); run();
-  });
-  // Campaign preview: ROAS / CTR / CPC / CPA.
-  $$('form[data-calc="campaign"]').forEach(function (form) {
-    function run() {
-      var g = function (n) { var el = form.querySelector('[name="' + n + '"]'); return el ? num(el.value) : 0; };
-      var cost = g('cost'); var rev = g('revenue_generated'); var cl = g('clicks'); var im = g('impressions'); var cv = g('conversions');
-      var put = function (k, v) { var el = form.querySelector('[data-out="' + k + '"]'); if (el) el.textContent = v; };
-      put('roas', cost > 0 ? (rev / cost).toFixed(2) + '×' : '—');
-      put('ctr', im > 0 ? (cl / im * 100).toFixed(2) + '%' : '—');
-      put('cpc', cl > 0 ? money(cost / cl, 2) : '—');
-      put('cpa', cv > 0 ? money(cost / cv, 2) : '—');
-    }
-    form.addEventListener('input', run); run();
-  });
-
-  /* ---------- Order line editor ---------- */
-  $$('[data-order-form]').forEach(function (form) {
-    var lines = form.querySelector('[data-lines]');
-    var tpl = form.querySelector('template[data-line-template]');
-    var d = Number(form.getAttribute('data-decimals') || 2);
-    var reps = {}; try { reps = JSON.parse(form.getAttribute('data-reps') || '{}'); } catch (e) { reps = {}; }
-    var customers = {}; try { customers = JSON.parse(form.getAttribute('data-customers') || '{}'); } catch (e) { customers = {}; }
-    function renumber() {
-      $$('[data-line]', lines).forEach(function (row, i) {
-        $$('[data-name]', row).forEach(function (inp) { inp.name = 'items[' + i + '][' + inp.getAttribute('data-name') + ']'; });
-      });
-    }
-    function totals() {
-      var sub = 0; var cogs = 0;
-      $$('[data-line]', lines).forEach(function (row) {
-        var q = num(row.querySelector('[data-name=quantity]').value); var p = num(row.querySelector('[data-name=unitPrice]').value); var c = num(row.querySelector('[data-name=unitCost]').value);
-        var lt = row.querySelector('[data-line-total]'); if (lt) lt.textContent = money(q * p, d);
-        sub += q * p; cogs += q * c;
-      });
-      var disc = num((form.querySelector('[name=discount]') || {}).value); var fee = num((form.querySelector('[name=delivery_fee]') || {}).value);
-      var total = Math.max(0, sub - disc + fee);
-      var put = function (k, v) { var el = form.querySelector('[data-out="' + k + '"]'); if (el) el.textContent = money(v, d); };
-      put('subtotal', sub); put('discount', disc); put('fee', fee); put('total', total); put('cogs', cogs); put('gross', total - cogs);
-      // Commission preview (region rate overrides the rep's default rate).
-      var repSel = form.querySelector('[name=employee_id]'); var custSel = form.querySelector('[name=customer_id]');
-      var rep = repSel && reps[repSel.value]; var region = custSel && customers[custSel.value] ? customers[custSel.value].region : '';
-      var com = 0;
-      if (rep) { var rr = rep.regions && region && rep.regions[region] !== undefined && rep.regions[region] !== '' ? num(rep.regions[region]) : num(rep.rate); com = rep.type === 'percentage' ? total * rr / 100 : rr; }
-      put('commission', com);
-    }
-    function bind(row) {
-      var rm = row.querySelector('[data-remove-line]');
-      if (rm) rm.addEventListener('click', function () { if ($$('[data-line]', lines).length > 1) { row.remove(); renumber(); totals(); } });
-    }
-    $$('[data-line]', lines).forEach(bind);
-    var add = form.querySelector('[data-add-line]');
-    if (add && tpl) add.addEventListener('click', function () { var node = tpl.content.firstElementChild.cloneNode(true); lines.appendChild(node); bind(node); renumber(); totals(); var f = node.querySelector('input'); if (f) f.focus(); });
-    // Picking a known customer fills the name/phone/email fields.
-    var custSel2 = form.querySelector('[name=customer_id]');
-    if (custSel2) custSel2.addEventListener('change', function () {
-      var c = customers[custSel2.value]; if (!c) return;
-      ['customer_name', 'customer_phone', 'customer_email'].forEach(function (k) { var el = form.querySelector('[name=' + k + ']'); if (el) el.value = c[k.replace('customer_', '')] || ''; });
-    });
-    form.addEventListener('input', totals); form.addEventListener('change', totals);
-    renumber(); totals();
-  });
-
   /* ---------- Chart tooltips ---------- */
   $$('[data-chart]').forEach(function (chart) {
     var tip = chart.querySelector('.chart-tip'); var svg = chart.querySelector('svg');
@@ -294,14 +206,6 @@
     }
     function hide() { tip.hidden = true; if (cross) cross.setAttribute('visibility', 'hidden'); }
     $$('.ch-hit', svg).forEach(function (h) { h.addEventListener('mouseenter', function () { show(h); }); h.addEventListener('focus', function () { show(h); }); h.addEventListener('mouseleave', hide); h.addEventListener('blur', hide); });
-  });
-
-  /* ---------- AI chat: suggestions fill the box, Enter sends ---------- */
-  $$('[data-chat-form]').forEach(function (form) {
-    var ta = form.querySelector('textarea');
-    $$('[data-suggest]').forEach(function (b) { b.addEventListener('click', function () { ta.value = b.getAttribute('data-suggest'); ta.focus(); }); });
-    if (ta) ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (ta.value.trim()) { if (form.requestSubmit) form.requestSubmit(); else form.submit(); } } });
-    var thread = document.querySelector('[data-thread]'); if (thread) thread.scrollTop = thread.scrollHeight;
   });
 
   /* ---------- Command palette (Ctrl/⌘ + K) ---------- */

@@ -9,7 +9,7 @@
     "start": "node app.js",
     "dev": "NODE_ENV=development AUTO_MIGRATE=true node app.js",
     "migrate": "node scripts/migrate.js",
-    "test": "NODE_ENV=test node --test --test-concurrency=1 test/",
+    "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
     "brand:check": "node scripts/brand-check.js"
   },
   "engines": { "node": ">=20" },
