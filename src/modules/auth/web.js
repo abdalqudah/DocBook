@@ -15,27 +15,7 @@ const businesses = require('../businesses/business.service');
 const router = express.Router();
 const limiter = rateLimit({ windowMs: 15 * 60_000, limit: config.isTest ? 1000 : 30, standardHeaders: true, legacyHeaders: false, handler: (req, res, next) => next(E.rateLimited()) });
 
-function signIn(req, user) {
-  return new Promise((resolve, reject) => {
-    const returnTo = req.session.returnTo;
-    req.session.regenerate((err) => {
-      if (err) return reject(err);
-      req.session.userId = user.id;
-      req.session.businessId = user.last_business_id || null;
-      req.session.returnTo = returnTo;
-      req.session.ua = String(req.get('user-agent') || '').slice(0, 200);
-      req.session.ip = req.ip;
-      req.session.since = new Date().toISOString();
-      return req.session.save((e) => (e ? reject(e) : resolve()));
-    });
-  });
-}
-
-function afterLogin(req, res) {
-  const to = req.session.returnTo;
-  delete req.session.returnTo;
-  return res.redirect(to && to.startsWith('/') && !to.startsWith('//') ? to : '/app');
-}
+const { signIn, afterLogin } = require('./session');
 
 // ---------- Login
 const renderLogin = (req, res, extra = {}) => res.page('pages/auth/login', { layout: 'auth', title: req.t('auth.login_title'), ...extra });
