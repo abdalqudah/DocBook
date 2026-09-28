@@ -1,0 +1,10 @@
+<div class="month-nav">
+  <a class="btn btn-secondary btn-icon" href="?period=<%= prevPeriod %>" aria-label="<%= t('payroll.prev_month') %>" title="<%= t('payroll.prev_month') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
+  <form method="get" data-autosubmit class="month-nav-form">
+    <label class="sr-only" for="period-input"><%= t('common.month') %></label>
+    <input class="input" type="month" id="period-input" name="period" value="<%= period %>" required>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+  </form>
+  <a class="btn btn-secondary btn-icon" href="?period=<%= nextPeriod %>" aria-label="<%= t('payroll.next_month') %>" title="<%= t('payroll.next_month') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+  <% if (period !== clinicToday.slice(0, 7)) { %><a class="btn btn-ghost btn-sm" href="?period=<%= clinicToday.slice(0, 7) %>"><%= t('payroll.this_month') %></a><% } %>
+</div>
