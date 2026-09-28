@@ -1,0 +1,4 @@
+<form method="post" action="<%= action %>" data-confirm="<%= typeof confirmText !== 'undefined' ? confirmText : t('common.confirm_delete') %>" data-confirm-title="<%= t('common.confirm_delete_title') %>" data-confirm-yes="<%= t('common.delete') %>" style="display:inline">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>">
+  <button class="btn btn-danger-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('common.delete') %>" title="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button>
+</form>

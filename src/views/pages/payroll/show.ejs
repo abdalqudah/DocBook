@@ -1,0 +1,57 @@
+<% var e = employee; var canManage = can('payroll.manage'); var salary = e.baseSalary + e.bonus - e.deductions; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/payroll/employees"><%= t('payroll.employees') %></a><%- icon('chevron-right', 'flip-rtl') %><%= e.name %></div>
+    <div class="row"><span class="avatar avatar-lg"><%= initials(e.name) %></span><div><h1><%= e.name %></h1><p><%= [e.role, label('payroll.statuses', e.status), e.hireDate ? t('payroll.hired_on', { date: fmt.date(e.hireDate) }) : null].filter(Boolean).join(' · ') %></p></div></div>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/payroll/employees/<%= e.id %>/payslip/<%= thisMonth %>?print=1"><%- icon('printer', 'icon-sm') %><%= t('payroll.payslip_month', { month: fmt.month(thisMonth) }) %></a>
+    <% if (canManage) { %><a class="btn btn-secondary" href="/app/payroll/employees/<%= e.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %>
+  </div>
+</div>
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('payroll.monthly_net') %></div><div class="stat-value"><%= fmt.money(salary) %></div><div class="stat-meta"><%= t('payroll.base_salary') %> <%= fmt.money(e.baseSalary) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('payroll.commission_scheme') %></div><div class="stat-value" style="font-size:20px"><%= e.commissionType === 'percentage' ? fmt.number(e.commissionRate) + '%' : fmt.money(e.commissionRate) %></div><div class="stat-meta"><%= label('payroll.types', e.commissionType) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('payroll.months_paid') %></div><div class="stat-value"><%= e.paidMonths.length %></div><div class="stat-meta"><%= e.paidMonths.length ? t('payroll.last_paid', { month: fmt.month(e.paidMonths[e.paidMonths.length - 1]) }) : t('payroll.never_paid') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('payroll.lifetime_commission') %></div><div class="stat-value"><%= fmt.money(byMonth.reduce(function (s, x) { return s + x[1].commission; }, 0)) %></div><div class="stat-meta"><%= t('payroll.last_12') %></div></div>
+</div>
+<div class="grid grid-main mt-6">
+  <div class="stack">
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('payroll.history') %></h2></div>
+      <% if (!payments.length) { %><%- include('../../partials/empty', { compact: true, emptyIcon: 'history', emptyTitle: t('payroll.no_history'), emptyText: t('payroll.no_history_text') }) %><% } else { %>
+      <div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.month') %></th><th class="num"><%= t('payroll.salary') %></th><th class="num"><%= t('payroll.commission') %></th><th class="num"><%= t('payroll.net_pay') %></th><th><%= t('payroll.paid_on') %></th><th class="actions"></th></tr></thead>
+        <tbody><% payments.forEach(function (p) { %><tr>
+          <td class="primary-cell strong"><%= fmt.month(p.month) %></td>
+          <td class="num" data-label="<%= t('payroll.salary') %>"><%= fmt.amount(Number(p.base_salary) + Number(p.bonus) - Number(p.deductions)) %></td>
+          <td class="num" data-label="<%= t('payroll.commission') %>"><%= fmt.amount(p.commission) %></td>
+          <td class="num strong" data-label="<%= t('payroll.net_pay') %>"><%= fmt.amount(p.net_pay) %></td>
+          <td data-label="<%= t('payroll.paid_on') %>" class="small"><%= fmt.date(p.paid_at) %><div class="muted tiny"><%= p.paid_by_name || '' %></div></td>
+          <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="/app/payroll/employees/<%= e.id %>/payslip/<%= p.month %>?print=1" aria-label="<%= t('payroll.payslip') %>"><%- icon('printer', 'icon-sm') %></a></td>
+        </tr><% }) %></tbody></table></div>
+      <% } %>
+    </div>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('payroll.sales_by_month') %></h2></div>
+      <% if (!byMonth.length) { %><%- include('../../partials/empty', { compact: true, emptyIcon: 'shopping-cart', emptyTitle: t('payroll.no_sales'), emptyText: '' }) %><% } else { %>
+      <div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.month') %></th><th class="num"><%= t('kpi.orders') %></th><th class="num"><%= t('kpi.revenue') %></th><th class="num"><%= t('payroll.commission') %></th></tr></thead>
+      <tbody><% byMonth.forEach(function (x) { %><tr><td class="primary-cell strong"><%= fmt.month(x[0]) %></td><td class="num" data-label="<%= t('kpi.orders') %>"><%= x[1].orders %></td><td class="num" data-label="<%= t('kpi.revenue') %>"><%= fmt.amount(x[1].sales) %></td><td class="num strong" data-label="<%= t('payroll.commission') %>"><%= fmt.amount(x[1].commission) %></td></tr><% }) %></tbody></table></div>
+      <% } %>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('payroll.section_person') %></h2></div>
+    <div class="panel-body">
+      <dl class="dl">
+        <dt><%= t('common.phone') %></dt><dd dir="ltr" style="text-align:start"><%= e.phone || '—' %></dd>
+        <dt><%= t('common.email') %></dt><dd><%= e.email || '—' %></dd>
+        <dt><%= t('payroll.bank_account') %></dt><dd><%= e.bankAccount || '—' %></dd>
+        <dt><%= t('payroll.bonus') %></dt><dd><%= fmt.money(e.bonus) %></dd>
+        <dt><%= t('payroll.deductions') %></dt><dd><%= fmt.money(e.deductions) %></dd>
+        <dt><%= t('payroll.region_rates') %></dt><dd><% var rr = Object.keys(e.regionCommissionRates || {}); if (!rr.length) { %>—<% } else { rr.forEach(function (k) { %><span class="badge"><%= k %>: <%= e.regionCommissionRates[k] %><%= e.commissionType === 'percentage' ? '%' : '' %></span> <% }) } %></dd>
+        <dt><%= t('common.notes') %></dt><dd><%= e.notes || '—' %></dd>
+      </dl>
+    </div>
+    <% if (canManage) { %><div class="panel-foot"><form method="post" action="/app/payroll/employees/<%= e.id %>/delete" data-confirm="<%= t('payroll.delete_confirm', { name: e.name }) %>" data-confirm-title="<%= t('payroll.delete_employee') %>" data-confirm-yes="<%= t('common.delete') %>" data-confirm-type="<%= e.name %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('payroll.delete_employee') %></button></form></div><% } %>
+  </div>
+</div>

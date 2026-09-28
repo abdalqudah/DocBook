@@ -1,0 +1,57 @@
+<% var e = employee || {}; var regionRates = e.region_commission_rates || {}; var regionList = Object.keys(regionRates); regions.forEach(function (r) { if (regionList.indexOf(r) < 0) regionList.push(r); }); while (regionList.length < 3) regionList.push(''); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/payroll/employees"><%= t('payroll.employees') %></a><%- icon('chevron-right', 'flip-rtl') %><%= employee ? employee.name : t('payroll.add_employee') %></div>
+    <h1><%= employee ? t('payroll.edit_employee') : t('payroll.add_employee') %></h1>
+  </div>
+</div>
+<form class="grid grid-main" method="post" action="<%= employee ? '/app/payroll/employees/' + employee.id + '/edit' : '/app/payroll/employees/new' %>" data-calc="salary" data-decimals="<%= ['JOD','KWD','BHD','OMR','TND','LYD','IQD'].indexOf(currency) >= 0 ? 3 : 2 %>" novalidate>
+  <div class="panel">
+    <div class="panel-body stack-lg">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-section stack">
+        <h3><%= t('payroll.section_person') %></h3>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, value: e.name }) %>
+          <%- include('../../partials/field', { name: 'role', label: t('payroll.role'), value: e.role, placeholder: t('payroll.role_placeholder') }) %>
+          <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: e.phone }) %>
+          <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: e.email }) %>
+          <%- include('../../partials/field', { name: 'hire_date', label: t('payroll.hire_date'), type: 'date', value: fmt.dateInput(e.hire_date) || today }) %>
+          <%- include('../../partials/field', { name: 'status', label: t('payroll.employment_status'), type: 'select', value: e.status || 'active', options: statuses.map(function (s) { return { value: s, label: label('payroll.statuses', s) }; }) }) %>
+        </div>
+      </div>
+      <div class="form-section stack">
+        <h3><%= t('payroll.section_pay') %></h3>
+        <div class="form-grid cols-3">
+          <%- include('../../partials/field', { name: 'base_salary', label: t('payroll.base_salary'), required: true, value: e.base_salary || 0, suffix: currency, attrs: 'inputmode="decimal"' }) %>
+          <%- include('../../partials/field', { name: 'bonus', label: t('payroll.bonus'), value: e.bonus || 0, suffix: currency, attrs: 'inputmode="decimal"' }) %>
+          <%- include('../../partials/field', { name: 'deductions', label: t('payroll.deductions'), value: e.deductions || 0, suffix: currency, attrs: 'inputmode="decimal"', help: t('payroll.deductions_help') }) %>
+        </div>
+        <%- include('../../partials/field', { name: 'bank_account', label: t('payroll.bank_account'), value: e.bank_account }) %>
+      </div>
+      <div class="form-section stack">
+        <h3><%= t('payroll.section_commission') %></h3>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 'commission_type', label: t('payroll.commission_type'), type: 'select', value: e.commission_type || 'percentage', options: types.map(function (s) { return { value: s, label: label('payroll.types', s) }; }) }) %>
+          <div class="field"><label class="label" for="f-commission_rate"><%= t('payroll.commission_rate') %></label><div class="input-affix"><input class="input<%= errors.commission_rate ? ' is-invalid' : '' %>" id="f-commission_rate" name="commission_rate" value="<%= old.commission_rate !== undefined ? old.commission_rate : (e.commission_rate || 0) %>" inputmode="decimal"><span class="affix" data-rate-suffix data-currency="<%= currency %>">%</span></div><% if (errors.commission_rate) { %><span class="field-error"><%= errors.commission_rate %></span><% } %></div>
+        </div>
+        <div>
+          <div class="label mb-2"><%= t('payroll.region_rates') %></div>
+          <p class="help mb-3"><%= t('payroll.region_rates_help') %></p>
+          <div class="stack-sm">
+            <% regionList.forEach(function (r) { %>
+            <div class="row"><input class="input" name="region_names[]" value="<%= r %>" placeholder="<%= t('payroll.region') %>" aria-label="<%= t('payroll.region') %>"><input class="input" name="region_rates[]" value="<%= r && regionRates[r] !== undefined ? regionRates[r] : '' %>" placeholder="<%= t('payroll.rate') %>" inputmode="decimal" aria-label="<%= t('payroll.rate') %>" style="max-width:140px"></div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+      <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', value: e.notes }) %>
+    </div>
+    <div class="panel-foot"><a class="btn btn-ghost" href="<%= employee ? '/app/payroll/employees/' + employee.id : '/app/payroll/employees' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </div>
+  <div class="stack">
+    <div class="stat hero"><div class="stat-label"><%= t('payroll.monthly_net') %><span class="stat-icon"><%- icon('wallet') %></span></div><div class="stat-value"><span data-out="net">0</span> <span class="small"><%= currency %></span></div><div class="stat-meta"><%= t('payroll.monthly_net_help') %></div></div>
+    <div class="alert alert-info"><%- icon('info') %><div class="grow small"><%= t('payroll.commission_explain') %></div></div>
+  </div>
+</form>

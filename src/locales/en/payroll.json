@@ -1,0 +1,29 @@
+{
+  "payroll": {
+    "title": "Payroll", "lead": "Salaries, bonuses, deductions and sales commissions for the month. A month's salary counts as an expense once it is marked paid.",
+    "run": "Monthly payroll", "employees": "Employees", "employees_lead": "Your team, their pay and commission schemes.", "add_employee": "Add employee", "edit_employee": "Edit employee",
+    "employee_saved": "Employee saved.", "employee_deleted": "Employee deleted.", "delete_employee": "Delete employee", "delete_confirm": "Delete {name}? Their payroll history is deleted too. Type the name to confirm.",
+    "employee": "Employee", "role": "Job title", "role_placeholder": "e.g. Sales representative", "base_salary": "Base salary", "bonus": "Bonus", "deductions": "Deductions & advances",
+    "deductions_help": "Includes salary advances.", "commission": "Commission", "commissions": "Commissions", "commission_type": "Commission scheme", "commission_rate": "Commission rate",
+    "commission_scheme": "Commission", "commission_this_month": "Commission (this month)", "net_pay": "Net pay", "salary": "Salary", "monthly_net": "Monthly salary",
+    "monthly_net_help": "Base + bonus − deductions. Commissions are added from the orders they sell.", "hire_date": "Hire date", "employment_status": "Employment status",
+    "bank_account": "Bank account / IBAN", "per_order": "order", "total_net": "Total net pay", "employees_n": "{n} employees", "salaries": "Salaries",
+    "commissions_note": "From orders sold this month", "outstanding": "Salaries not yet paid", "paid_so_far": "Paid: {amount}", "register": "Payroll register",
+    "register_sub": "Net pay = salary + commissions earned on the month's orders", "paid": "Paid", "unpaid": "Unpaid", "orders_n": "{n} orders",
+    "mark_paid": "Mark paid", "undo_paid": "Undo", "pay_all": "Mark all as paid", "marked_paid": "Salary marked as paid.", "marked_all": "{n} salaries marked as paid.", "unmarked": "Payment undone.",
+    "pay_one_confirm": "Mark {name}'s salary of {amount} for {month} as paid? It will be counted as a payroll expense for that month.",
+    "pay_all_confirm": "Mark {n} salaries for {month} as paid? They will be counted as payroll expense for that month.",
+    "unpay_confirm": "Undo the payment for {name}? The salary will no longer be counted as an expense for this month.",
+    "rule_note": "Salaries are recognised as an expense only in months marked paid (inactive employees are never counted). Commissions are always counted in the month of the order.",
+    "empty_title": "No employees yet", "empty_text": "Add your team with their base salary and commission scheme to run payroll.", "search": "Search name, title, phone…",
+    "section_person": "Employee details", "section_pay": "Salary", "section_commission": "Sales commission", "region_rates": "Rates by customer region",
+    "region_rates_help": "Optional. When an order's customer is in one of these regions, this rate replaces the default commission rate.", "region": "Region", "rate": "Rate",
+    "commission_explain": "Percentage: the rate × the order total (after discount, including the delivery fee). Fixed: the rate is paid once per order.",
+    "hired_on": "Hired {date}", "months_paid": "Months paid", "last_paid": "Last: {month}", "never_paid": "No payroll run yet", "lifetime_commission": "Commissions",
+    "last_12": "Last 12 active months", "history": "Payroll history", "no_history": "No payments yet", "no_history_text": "Paid months appear here with a payslip.", "paid_on": "Paid on",
+    "sales_by_month": "Sales & commission by month", "no_sales": "No orders assigned to this employee", "payslip": "Payslip", "payslip_month": "Payslip · {month}",
+    "no_slip": "No payroll data for this month", "paid_on_date": "Paid on {date}", "unpaid_projection": "Not paid yet — current figures", "employee_signature": "Employee signature", "employer_signature": "Authorised signature",
+    "types": { "percentage": "Percentage of order total", "fixed_per_order": "Fixed amount per order" },
+    "statuses": { "active": "Active", "on_leave": "On leave", "inactive": "Inactive" }
+  }
+}

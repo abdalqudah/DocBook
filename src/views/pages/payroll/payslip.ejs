@@ -1,0 +1,28 @@
+<div class="page-head">
+  <div><div class="breadcrumbs no-print"><a href="/app/payroll/employees/<%= employee.id %>"><%= employee.name %></a></div><h1><%= t('payroll.payslip') %> — <%= fmt.month(month) %></h1><p><%= employee.name %><%= employee.role ? ' · ' + employee.role : '' %></p></div>
+  <div class="page-actions no-print"><a class="btn btn-secondary" href="?print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.print_pdf') %></a></div>
+</div>
+<% if (!slip) { %>
+  <%- include('../../partials/empty', { emptyIcon: 'receipt', emptyTitle: t('payroll.no_slip'), emptyText: '' }) %>
+<% } else { %>
+<div class="panel">
+  <div class="panel-body">
+    <dl class="dl mb-4">
+      <dt><%= t('payroll.employee') %></dt><dd><%= employee.name %></dd>
+      <dt><%= t('common.month') %></dt><dd><%= fmt.month(month) %></dd>
+      <dt><%= t('payroll.bank_account') %></dt><dd><%= employee.bank_account || '—' %></dd>
+      <dt><%= t('common.status') %></dt><dd><%= paid ? t('payroll.paid_on_date', { date: fmt.date(slip.paidAt) }) : t('payroll.unpaid_projection') %></dd>
+    </dl>
+  </div>
+  <table class="statement">
+    <tr><td><%= t('payroll.base_salary') %></td><td><%= fmt.money(slip.base) %></td></tr>
+    <tr class="sub"><td>+ <%= t('payroll.bonus') %></td><td><%= fmt.money(slip.bonus) %></td></tr>
+    <tr class="sub"><td>− <%= t('payroll.deductions') %></td><td><%= fmt.money(slip.deductions) %></td></tr>
+    <tr class="total"><td><%= t('payroll.salary') %></td><td><%= fmt.money(slip.base + slip.bonus - slip.deductions) %></td></tr>
+    <tr class="sub"><td>+ <%= t('payroll.commission') %> (<%= t('payroll.orders_n', { n: orders }) %>)</td><td><%= fmt.money(slip.commission) %></td></tr>
+    <tr class="grand"><td><%= t('payroll.net_pay') %></td><td><%= fmt.money(slip.net) %></td></tr>
+  </table>
+</div>
+<% if (slip.reference || slip.method) { %><p class="small muted mt-3"><%= [slip.method ? label('payment_methods', slip.method) : null, slip.reference].filter(Boolean).join(' · ') %></p><% } %>
+<div class="grid grid-2 mt-8"><div class="small" style="border-top:1px solid var(--border-strong);padding-top:8px"><%= t('payroll.employee_signature') %></div><div class="small" style="border-top:1px solid var(--border-strong);padding-top:8px"><%= t('payroll.employer_signature') %></div></div>
+<% } %>

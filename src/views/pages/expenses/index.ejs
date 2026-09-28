@@ -1,0 +1,94 @@
+<% var canManage = can('expenses.manage'); var cats = system.map(function (k) { return { value: k, label: catName(k) }; }).concat(custom.map(function (c) { return { value: c.key, label: c.name }; })); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <h1><%= t('expenses.title') %></h1>
+    <p><%= t('expenses.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include('../../partials/export-menu', { href: '/app/expenses/export' }) %>
+    <% if (canManage) { %><button class="btn btn-primary" type="button" data-open-dialog="expense-dialog" data-reset-form data-action="/app/expenses" data-dialog-title="<%= t('expenses.add') %>"><%- icon('plus', 'icon-sm') %><%= t('expenses.add') %></button><% } %>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <div class="panel flush">
+    <form class="table-toolbar" method="get" data-autosubmit role="search">
+      <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('expenses.search') %>" aria-label="<%= t('common.search') %>"></div>
+      <select class="select" name="category" aria-label="<%= t('common.category') %>"><option value="all"><%= t('expenses.all_categories') %></option><% cats.forEach(function (c) { %><option value="<%= c.value %>"<%= query.category === c.value ? ' selected' : '' %>><%= c.label %></option><% }) %></select>
+      <select class="select" name="method" aria-label="<%= t('expenses.payment_method') %>"><option value="all"><%= t('expenses.all_methods') %></option><% methods.forEach(function (m) { %><option value="<%= m %>"<%= query.method === m ? ' selected' : '' %>><%= label('payment_methods', m) %></option><% }) %></select>
+      <input class="input" type="date" name="from" value="<%= query.from || '' %>" aria-label="<%= t('common.from') %>" title="<%= t('common.from') %>">
+      <input class="input" type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('common.to') %>" title="<%= t('common.to') %>">
+      <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/expenses"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+    </form>
+    <% if (!rows.length) { %>
+      <% if (filtered) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/expenses">' + t('table.clear_filters') + '</a>' }) %>
+      <% } else { %>
+        <%- include('../../partials/empty', { emptyIcon: 'receipt', emptyTitle: t('expenses.empty_title'), emptyText: t('expenses.empty_text'), emptyAction: canManage ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="expense-dialog" data-reset-form>' + t('expenses.add') + '</button>' : '' }) %>
+      <% } %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('common.date') %></th><th><%= t('expenses.title_field') %></th><th><%= t('common.category') %></th><th><%= t('expenses.payment_method') %></th><th class="num"><%= t('common.amount') %> (<%= currency %>)</th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+          <% rows.forEach(function (r) { %>
+          <tr>
+            <td data-label="<%= t('common.date') %>" class="nowrap"><%= fmt.date(r.date) %></td>
+            <td class="primary-cell"><div class="strong"><%= r.title %></div><div class="small muted"><%= [r.invoice_number ? '#' + r.invoice_number : null, r.recorded_by].filter(Boolean).join(' · ') %></div></td>
+            <td data-label="<%= t('common.category') %>"><span class="badge"><%= catName(r.category) %></span><% if (['marketing','salaries','deliveries'].indexOf(r.category) >= 0) { %> <span class="badge badge-info" title="<%= t('expenses.not_in_opex_help') %>"><%= t('expenses.not_in_opex') %></span><% } %></td>
+            <td data-label="<%= t('expenses.payment_method') %>"><%= label('payment_methods', r.payment_method) %></td>
+            <td data-label="<%= t('common.amount') %>" class="num strong"><%= fmt.amount(r.amount) %></td>
+            <td class="actions">
+              <% if (canManage) { %>
+                <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="expense-dialog" data-action="/app/expenses/<%= r.id %>" data-dialog-title="<%= t('expenses.edit') %>" data-fill="<%= json({ date: r.date, category: r.category, title: r.title, amount: r.amount, payment_method: r.payment_method, invoice_number: r.invoice_number, notes: r.notes }) %>"><%- icon('pencil', 'icon-sm') %></button>
+                <%- include('../../partials/delete-form', { action: '/app/expenses/' + r.id + '/delete' }) %>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+        <tfoot><tr><td colspan="4"><%= t('expenses.filtered_total') %></td><td class="num"><%= fmt.amount(totals.amount) %></td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <%- include('../../partials/pagination', { meta: meta }) %>
+    <% } %>
+  </div>
+  <div class="stack">
+    <div class="stat hero"><div class="stat-label"><%= t('expenses.total_shown') %><span class="stat-icon"><%- icon('receipt') %></span></div><div class="stat-value"><%= fmt.money(totals.amount) %></div><div class="stat-meta"><%= t('expenses.records', { n: fmt.number(meta.total) }) %></div></div>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('expenses.by_category') %></h2><% if (canManage) { %><button class="btn btn-ghost btn-sm" type="button" data-open-dialog="category-dialog"><%- icon('plus', 'icon-sm') %><%= t('expenses.new_category') %></button><% } %></div>
+      <div class="panel-body"><% if (hasBreakdown) { %><%- breakdown %><% } else { %><p class="muted small"><%= t('expenses.no_breakdown') %></p><% } %></div>
+    </div>
+    <div class="alert alert-info"><%- icon('info') %><div class="grow small"><%= t('expenses.opex_note') %></div></div>
+  </div>
+</div>
+
+<% if (canManage) { %>
+<dialog class="dialog" id="expense-dialog" data-new-dialog aria-labelledby="expense-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'expense-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/expenses' %>" novalidate>
+    <div class="dialog-head"><h2 id="expense-dialog-title" data-dialog-title-target><%= t('expenses.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'title', label: t('expenses.title_field'), required: true, cls: 'full', placeholder: t('expenses.title_placeholder') }) %>
+        <%- include('../../partials/field', { name: 'amount', label: t('common.amount'), required: true, type: 'text', suffix: currency, attrs: 'inputmode="decimal"' }) %>
+        <%- include('../../partials/field', { name: 'date', label: t('common.date'), required: true, type: 'date', value: today, attrs: 'data-default="' + today + '"' }) %>
+        <%- include('../../partials/field', { name: 'category', label: t('common.category'), type: 'select', required: true, options: cats, value: 'miscellaneous' }) %>
+        <%- include('../../partials/field', { name: 'payment_method', label: t('expenses.payment_method'), type: 'select', required: true, options: methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }), value: 'cash' }) %>
+        <%- include('../../partials/field', { name: 'invoice_number', label: t('expenses.invoice'), cls: 'full' }) %>
+        <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<dialog class="dialog" id="category-dialog" aria-labelledby="category-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'category-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/expenses/categories">
+    <div class="dialog-head"><h2 id="category-dialog-title"><%= t('expenses.new_category') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, value: '' }) %><p class="help mt-2"><%= t('expenses.category_help') %></p></div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.add') %></button></div>
+  </form>
+</dialog>
+<% } %>

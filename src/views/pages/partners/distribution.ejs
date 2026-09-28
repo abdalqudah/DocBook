@@ -1,0 +1,60 @@
+<% var m = metrics; var canManage = can('partners.manage'); var eqOk = Math.abs(equityTotal - 100) < 0.01; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/partners"><%= t('nav.partners') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('partners.distribution') %></div>
+    <h1><%= t('partners.distribution') %></h1>
+    <p><%= t('partners.distribution_lead') %></p>
+  </div>
+  <div class="page-actions"><%- include('../../partials/period') %></div>
+</div>
+
+<% if (!eqOk) { %><div class="alert alert-warning mb-4"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('partners.equity_warning_title', { pct: fmt.number(equityTotal, 2) }) %></div><div><%= t('partners.equity_warning_text') %></div></div></div><% } %>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label"><%= t('kpi.revenue') %></div><div class="stat-value"><%= fmt.money(m.totalRevenue) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.gross_profit') %></div><div class="stat-value"><%= fmt.money(m.grossProfit) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.opex') %></div><div class="stat-value"><%= fmt.money(m.totalOperatingExpenses) %></div></div>
+  <div class="stat hero"><div class="stat-label"><%= t('partners.distributable', { period: month ? fmt.month(month) : t('common.all_time') }) %></div><div class="stat-value"><%= fmt.money(m.netProfit) %></div><div class="stat-meta"><%= t('kpi.net_margin') %> <%= fmt.pct(m.netMarginPercent) %></div></div>
+</div>
+
+<form class="panel flush mt-6" method="post" action="/app/partners/distribution" data-confirm="<%= t('partners.record_confirm') %>" data-confirm-title="<%= t('partners.record_distribution') %>" data-confirm-yes="<%= t('partners.record_distribution') %>" data-confirm-tone="primary">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="month" value="<%= month || 'all' %>">
+  <div class="panel-head"><div><h2><%= t('partners.statement_title') %></h2><div class="panel-sub"><%= month ? fmt.month(month) : t('common.all_time') %></div></div></div>
+  <% if (!m.partnerAllocations.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'handshake', emptyTitle: t('partners.empty_title'), emptyText: t('partners.empty_text') }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('partners.partner') %></th><th class="num"><%= t('partners.equity') %></th><th class="num"><%= t('partners.allocated') %></th><th class="num"><%= t('partners.withdrawn') %></th><th class="num"><%= t('partners.net_payable') %></th><% if (canManage) { %><th><%= t('partners.pay_out') %></th><% } %></tr></thead>
+    <tbody><% m.partnerAllocations.forEach(function (a) { %>
+      <tr>
+        <td class="primary-cell strong"><%= a.partnerName %></td>
+        <td class="num" data-label="<%= t('partners.equity') %>"><%= fmt.pct(a.equityPercent, 2) %></td>
+        <td class="num strong <%= a.allocatedProfit < 0 ? 'neg' : 'pos' %>" data-label="<%= t('partners.allocated') %>"><%= fmt.amount(a.allocatedProfit) %></td>
+        <td class="num" data-label="<%= t('partners.withdrawn') %>"><%= fmt.amount(a.withdrawn) %></td>
+        <td class="num strong" data-label="<%= t('partners.net_payable') %>"><%= fmt.amount(a.netPayable) %></td>
+        <% if (canManage) { %><td data-label="<%= t('partners.pay_out') %>"><% if (a.allocatedProfit > 0) { %><label class="check small"><input type="checkbox" name="payout" value="<%= a.partnerId %>"><span><%= t('partners.pay_amount', { amount: fmt.money(a.allocatedProfit) }) %></span></label><% } else { %><span class="muted small"><%= t('partners.nothing_to_pay') %></span><% } %></td><% } %>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+  <% if (canManage) { %>
+  <div class="panel-body"><%- include('../../partials/field', { name: 'note', label: t('common.notes'), placeholder: t('partners.note_placeholder') }) %><p class="help mt-2"><%= t('partners.payout_help') %></p></div>
+  <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('partners.record_distribution') %></button></div>
+  <% } %>
+  <% } %>
+</form>
+
+<div class="panel flush mt-4">
+  <div class="panel-head"><h2><%= t('partners.history') %></h2></div>
+  <% if (!history.length) { %><%- include('../../partials/empty', { compact: true, emptyIcon: 'history', emptyTitle: t('partners.no_history'), emptyText: '' }) %><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.period') %></th><th class="num"><%= t('kpi.net_profit') %></th><th><%= t('common.status') %></th><th><%= t('common.created_by') %></th><th class="actions"></th></tr></thead>
+    <tbody><% history.forEach(function (h) { %><tr data-href="/app/partners/distribution/<%= h.id %>">
+      <td class="primary-cell strong"><%= fmt.month(h.period) %><div class="small muted"><%= fmt.date(h.created_at) %></div></td>
+      <td class="num" data-label="<%= t('kpi.net_profit') %>"><%= fmt.amount(h.net_profit) %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge <%= h.status === 'paid' ? 'badge-success' : 'badge-info' %>"><%= t('partners.dist_' + h.status) %></span></td>
+      <td data-label="<%= t('common.created_by') %>"><%= h.created_by_name || '—' %></td>
+      <td class="actions"><a class="btn btn-ghost btn-sm" href="/app/partners/distribution/<%= h.id %>?print=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</div>

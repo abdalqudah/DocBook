@@ -1,0 +1,140 @@
+<%
+  // Change vs previous month. For costs (invert = true) a rise is shown in the danger colour.
+  var d = function (v, invert) { if (v === null || v === undefined || !isFinite(v)) return ''; var up = v >= 0; var good = invert ? !up : up; return '<span class="' + (good ? 'pos' : 'neg') + '">' + (up ? '▲ ' : '▼ ') + escapeHtml(fmt.pct(Math.abs(v), 0)) + '</span> ' + escapeHtml(t('dashboard.vs_prev')); };
+  var m = metrics;
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= business.name %></div>
+    <h1><%= t('dashboard.greeting', { name: currentUser.name.split(' ')[0] }) %></h1>
+    <p><%= month ? t('dashboard.lead_month', { month: fmt.month(month) }) : t('dashboard.lead_all') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include('../../partials/period') %>
+    <% if (can('reports.view')) { %><a class="btn btn-secondary" href="/app/reports/pnl?month=<%= month || 'all' %>"><%- icon('file-text', 'icon-sm') %><%= t('dashboard.open_pnl') %></a><% } %>
+    <% if (can('sales.manage')) { %><a class="btn btn-primary" href="/app/sales/new"><%- icon('plus', 'icon-sm') %><%= t('dashboard.new_order') %></a><% } %>
+  </div>
+</div>
+
+<% if (isEmpty) { %>
+<div class="panel mb-6 accent">
+  <div class="panel-body row wrap" style="gap:20px">
+    <div class="empty-icon" style="width:48px;height:48px;border-radius:12px;background:var(--primary-soft);color:var(--primary);display:inline-flex;align-items:center;justify-content:center"><%- icon('rocket') %></div>
+    <div class="grow"><h3><%= t('dashboard.empty_title') %></h3><p class="muted mt-1"><%= t('dashboard.empty_text') %></p></div>
+    <div class="btn-group">
+      <% if (can('settings.manage')) { %><a class="btn btn-secondary btn-sm" href="/app/onboarding"><%= t('dashboard.resume_setup') %></a><% } %>
+      <% if (can('sales.manage')) { %><a class="btn btn-primary btn-sm" href="/app/sales/new"><%= t('dashboard.first_order') %></a><% } %>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<div class="stats">
+  <div class="stat hero">
+    <div class="stat-label"><%= t('kpi.revenue') %><span class="stat-icon"><%- icon('trending-up') %></span></div>
+    <div class="stat-value"><%= fmt.money(m.totalRevenue) %></div>
+    <div class="stat-meta"><%- prev ? d(delta(m.totalRevenue, prev.totalRevenue)) : escapeHtml(t('dashboard.orders_count', { n: fmt.number(orders.length) })) %></div>
+  </div>
+  <% if (showProfit) { %>
+  <div class="stat">
+    <div class="stat-label"><%= t('kpi.gross_profit') %><span class="stat-icon"><%- icon('layers') %></span></div>
+    <div class="stat-value"><%= fmt.money(m.grossProfit) %></div>
+    <div class="stat-meta"><%= t('kpi.margin') %> <strong><%= fmt.pct(m.grossMarginPercent) %></strong></div>
+  </div>
+  <div class="stat">
+    <div class="stat-label"><%= t('kpi.opex') %><span class="stat-icon warning"><%- icon('receipt') %></span></div>
+    <div class="stat-value"><%= fmt.money(m.totalOperatingExpenses) %></div>
+    <div class="stat-meta"><%- prev ? d(delta(m.totalOperatingExpenses, prev.totalOperatingExpenses), true) : '' %></div>
+  </div>
+  <div class="stat">
+    <div class="stat-label"><%= t('kpi.net_profit') %><span class="stat-icon <%= m.netProfit < 0 ? 'danger' : '' %>"><%- icon('badge-dollar-sign') %></span></div>
+    <div class="stat-value <%= m.netProfit < 0 ? 'neg' : '' %>"><%= fmt.money(m.netProfit) %></div>
+    <div class="stat-meta"><%= t('kpi.net_margin') %> <strong><%= fmt.pct(m.netMarginPercent) %></strong></div>
+  </div>
+  <% } else { %>
+  <div class="stat"><div class="stat-label"><%= t('kpi.orders') %><span class="stat-icon"><%- icon('shopping-cart') %></span></div><div class="stat-value"><%= fmt.number(orders.length) %></div><div class="stat-meta"><%= t('kpi.avg_order') %> <strong><%= fmt.money(orders.length ? m.totalRevenue / orders.length : 0) %></strong></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.marketing_roas') %><span class="stat-icon accent"><%- icon('megaphone') %></span></div><div class="stat-value"><%= campCost ? fmt.number(roas, 2) + '×' : '—' %></div><div class="stat-meta"><%= t('kpi.ad_spend') %> <strong><%= fmt.money(campCost) %></strong></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.pending_deliveries') %><span class="stat-icon info"><%- icon('truck') %></span></div><div class="stat-value"><%= fmt.number(pendingDeliveries.length) %></div><div class="stat-meta"><a class="link" href="/app/delivery?status=open"><%= t('common.view_all') %></a></div></div>
+  <% } %>
+</div>
+
+<% if (showProfit) { %>
+<div class="stats cols-5 mt-4">
+  <div class="stat"><div class="stat-label"><%= t('kpi.payroll') %></div><div class="stat-value" style="font-size:18px"><%= fmt.money(m.totalPayroll) %></div><div class="stat-meta"><%= t('kpi.commissions') %> <%= fmt.money(m.totalCommissions) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.partner_capital') %></div><div class="stat-value" style="font-size:18px"><%= fmt.money(partnerCapital) %></div><div class="stat-meta"><%= t('dashboard.partners_count', { n: fmt.number(counts.partners) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.marketing_roas') %></div><div class="stat-value" style="font-size:18px"><%= campCost ? fmt.number(roas, 2) + '×' : '—' %></div><div class="stat-meta"><%= t('kpi.ad_spend') %> <%= fmt.money(campCost) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.payables') %></div><div class="stat-value" style="font-size:18px"><%= fmt.money(m.totalInventoryDue) %></div><div class="stat-meta"><%= t('kpi.inventory_paid') %> <%= fmt.money(m.totalInventoryPurchased) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('kpi.pending_deliveries') %></div><div class="stat-value" style="font-size:18px"><%= fmt.number(pendingDeliveries.length) %></div><div class="stat-meta"><%= t('kpi.budget_alerts') %> <strong class="<%= alertsList.length ? 'neg' : '' %>"><%= fmt.number(alertsList.length) %></strong></div></div>
+</div>
+<% } %>
+
+<div class="grid grid-main mt-6">
+  <div class="panel">
+    <div class="panel-head">
+      <div><h2><%= showProfit ? t('dashboard.trend_title') : t('dashboard.revenue_trend') %></h2><div class="panel-sub"><%= t('dashboard.last_12') %></div></div>
+      <div class="legend"><span><i class="l1"></i><%= t('kpi.revenue') %></span><% if (showProfit) { %><span><i class="l2"></i><%= t('kpi.net_profit') %></span><% } %></div>
+    </div>
+    <div class="panel-body"><% if (hasTrend) { %><%- trend %><% } else { %><%- include('../../partials/empty', { compact: true, emptyIcon: 'trending-up', emptyTitle: t('dashboard.no_trend'), emptyText: t('dashboard.no_trend_text') }) %><% } %></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><h2><%= t('dashboard.spend_title') %></h2><div class="panel-sub"><%= t('dashboard.spend_sub') %></div></div></div>
+    <div class="panel-body"><% if (m.totalOperatingExpenses > 0) { %><%- spendChart %><% } else { %><%- include('../../partials/empty', { compact: true, emptyIcon: 'chart-pie', emptyTitle: t('dashboard.no_spend'), emptyText: '' }) %><% } %></div>
+  </div>
+</div>
+
+<div class="grid grid-3 mt-4">
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('dashboard.budget_alerts') %></h2><% if (can('budgets.view')) { %><a class="btn btn-ghost btn-sm" href="/app/budgets"><%= t('common.view_all') %></a><% } %></div>
+    <% if (!budgetLines.length) { %>
+      <%- include('../../partials/empty', { compact: true, emptyIcon: 'piggy-bank', emptyTitle: t('dashboard.no_budgets'), emptyText: t('dashboard.no_budgets_text'), emptyAction: can('budgets.manage') ? '<a class="btn btn-secondary btn-sm" href="/app/budgets?new=1">' + t('budgets.add') + '</a>' : '' }) %>
+    <% } else if (!alertsList.length) { %>
+      <div class="panel-body row"><span class="action-icon success"><%- icon('circle-check') %></span><div><div class="strong"><%= t('dashboard.budgets_ok') %></div><div class="small muted"><%= t('dashboard.budgets_ok_text', { n: budgetLines.length }) %></div></div></div>
+    <% } else { %>
+      <ul class="action-list"><% alertsList.slice(0, 5).forEach(function (b) { %>
+        <li><a href="/app/budgets"><span class="action-icon <%= b.isExceeded ? 'danger' : 'warning' %>"><%- icon('triangle-alert') %></span><div class="grow"><div class="strong"><%= label('categories', b.category) %></div><div class="meter thin mt-1 <%= b.isExceeded ? 'full' : 'warn' %>"><span style="width:<%= Math.min(100, b.usagePercent).toFixed(0) %>%"></span></div></div><span class="small num <%= b.isExceeded ? 'neg' : 'warn-text' %>"><%= fmt.pct(b.usagePercent, 0) %></span></a></li>
+      <% }) %></ul>
+    <% } %>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('dashboard.recent_orders') %></h2><% if (can('sales.view')) { %><a class="btn btn-ghost btn-sm" href="/app/sales"><%= t('common.view_all') %></a><% } %></div>
+    <% if (!recentOrders.length) { %>
+      <%- include('../../partials/empty', { compact: true, emptyIcon: 'shopping-cart', emptyTitle: t('sales.empty_title'), emptyText: '' }) %>
+    <% } else { %>
+      <ul class="action-list"><% recentOrders.forEach(function (o) { %>
+        <li><a href="/app/sales/<%= o.id %>"><span class="action-icon brand"><%- icon('receipt') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= o.customerName %></div><div class="small muted"><%= o.orderNumber %> · <%= fmt.date(o.date) %></div></div><span class="num strong"><%= fmt.money(o.totalAmount) %></span></a></li>
+      <% }) %></ul>
+    <% } %>
+  </div>
+  <div class="panel">
+    <% if (showProfit && can('partners.view')) { %>
+      <div class="panel-head"><h2><%= t('dashboard.partner_split') %></h2><a class="btn btn-ghost btn-sm" href="/app/partners"><%= t('common.view_all') %></a></div>
+      <% if (!m.partnerAllocations.length) { %>
+        <%- include('../../partials/empty', { compact: true, emptyIcon: 'handshake', emptyTitle: t('partners.empty_title'), emptyText: '' }) %>
+      <% } else { %>
+        <ul class="action-list"><% m.partnerAllocations.forEach(function (a) { %>
+          <li><a href="/app/partners/<%= a.partnerId %>"><span class="avatar"><%= initials(a.partnerName) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= a.partnerName %></div><div class="small muted"><%= fmt.pct(a.equityPercent, 1) %> · <%= t('partners.allocated') %> <span class="<%= a.allocatedProfit < 0 ? 'neg' : 'pos' %>"><%= fmt.money(a.allocatedProfit) %></span></div></div></a></li>
+        <% }) %></ul>
+      <% } %>
+    <% } else { %>
+      <div class="panel-head"><h2><%= t('dashboard.top_campaigns') %></h2><% if (can('marketing.view')) { %><a class="btn btn-ghost btn-sm" href="/app/marketing"><%= t('common.view_all') %></a><% } %></div>
+      <% if (!topCampaigns.length) { %><%- include('../../partials/empty', { compact: true, emptyIcon: 'megaphone', emptyTitle: t('marketing.empty_title'), emptyText: '' }) %><% } else { %>
+        <ul class="action-list"><% topCampaigns.forEach(function (c) { %><li><div><span class="action-icon brand"><%- icon('megaphone') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= c.campaignName %></div><div class="small muted"><%= label('platforms', c.platform) %></div></div><span class="num strong"><%= fmt.number(c.m.roas, 2) %>×</span></div></li><% }) %></ul>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<% if (showProfit) { %>
+<div class="panel mt-4">
+  <div class="panel-head"><div><h2><%= t('dashboard.formula_title') %></h2><div class="panel-sub"><%= t('dashboard.formula_sub') %></div></div></div>
+  <div class="panel-body">
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label"><%= t('kpi.revenue') %></div><div class="kpi-value"><%= fmt.money(m.totalRevenue) %></div></div>
+      <div class="kpi"><div class="kpi-label">− <%= t('kpi.cogs') %></div><div class="kpi-value"><%= fmt.money(m.totalCogs) %></div></div>
+      <div class="kpi"><div class="kpi-label">− <%= t('kpi.opex') %></div><div class="kpi-value"><%= fmt.money(m.totalOperatingExpenses) %></div></div>
+      <div class="kpi"><div class="kpi-label">= <%= t('kpi.net_profit') %></div><div class="kpi-value <%= m.netProfit < 0 ? 'neg' : 'pos' %>"><%= fmt.money(m.netProfit) %></div></div>
+    </div>
+    <p class="small muted mt-3"><%= t('dashboard.formula_text') %></p>
+  </div>
+</div>
+<% } %>

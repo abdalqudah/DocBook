@@ -1,0 +1,4 @@
+<nav class="tabs mb-6 no-print" aria-label="<%= t('nav.payroll') %>">
+  <a href="/app/payroll" class="<%= tab === 'run' ? 'active' : '' %>"><%- icon('calendar', 'icon-sm') %><%= t('payroll.run') %></a>
+  <a href="/app/payroll/employees" class="<%= tab === 'employees' ? 'active' : '' %>"><%- icon('users', 'icon-sm') %><%= t('payroll.employees') %></a>
+</nav>

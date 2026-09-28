@@ -1,0 +1,12 @@
+{
+  "expenses": {
+    "title": "Expenses", "lead": "Daily and operating expenses — rent, utilities, supplies and everything else that keeps the business running.",
+    "add": "Record expense", "edit": "Edit expense", "saved": "Expense recorded.", "search": "Search title, invoice #, notes…", "all_categories": "All categories", "all_methods": "All payment methods",
+    "title_field": "Description", "title_placeholder": "e.g. Warehouse rent — October", "payment_method": "Payment method", "invoice": "Invoice / reference #", "recorded_by": "Recorded by",
+    "filtered_total": "Total of filtered records", "total_shown": "Total (current filters)", "records": "{n} records", "by_category": "By category", "no_breakdown": "No expenses to break down yet.",
+    "new_category": "New category", "category_added": "Category added.", "category_help": "Custom categories appear alongside the built-in ones and can have their own budget.",
+    "empty_title": "No expenses yet", "empty_text": "Record rent, utilities, packaging and other running costs to see where money goes.",
+    "not_in_opex": "Counted elsewhere", "not_in_opex_help": "Marketing, salaries and delivery costs come from their own modules, so these entries are not added to operating expenses again.",
+    "opex_note": "Expenses filed under Marketing, Salaries (manual) or Delivery (manual) are kept for your records but are not counted in operating expenses again — campaigns, payroll and shipments already account for them."
+  }
+}

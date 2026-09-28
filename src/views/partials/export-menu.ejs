@@ -1,0 +1,9 @@
+<% if (can('data.export')) { var _q = Object.assign({}, query); delete _q.page; delete _q.new; var _qs = Object.keys(_q).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(_q[k]); }).join('&'); %>
+<details class="dropdown">
+  <summary class="btn btn-secondary"><%- icon('download', 'icon-sm') %><%= t('common.export') %><%- icon('chevron-down', 'icon-sm') %></summary>
+  <div class="menu">
+    <a href="<%= href %>?<%= _qs %>&format=xlsx"><%- icon('file-spreadsheet', 'icon-sm') %><%= t('common.export_xlsx') %></a>
+    <a href="<%= href %>?<%= _qs %>&format=csv"><%- icon('table', 'icon-sm') %><%= t('common.export_csv') %></a>
+  </div>
+</details>
+<% } %>

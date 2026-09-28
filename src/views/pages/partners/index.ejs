@@ -1,0 +1,60 @@
+<% var canManage = can('partners.manage'); var eqOk = Math.abs(equity - 100) < 0.01; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <h1><%= t('partners.title') %></h1>
+    <p><%= t('partners.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (showProfit) { %><%- include('../../partials/period') %><% } %>
+    <%- include('../../partials/export-menu', { href: '/app/partners/export' }) %>
+    <% if (showProfit) { %><a class="btn btn-secondary" href="/app/partners/distribution"><%- icon('hand-coins', 'icon-sm') %><%= t('partners.distribute') %></a><% } %>
+    <% if (canManage) { %><a class="btn btn-primary" href="/app/partners/new"><%- icon('plus', 'icon-sm') %><%= t('partners.add') %></a><% } %>
+  </div>
+</div>
+
+<% if (partners.length && !eqOk) { %>
+<div class="alert alert-warning mb-4"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('partners.equity_warning_title', { pct: fmt.number(equity, 2) }) %></div><div><%= t('partners.equity_warning_text') %></div></div></div>
+<% } %>
+
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('partners.total_capital') %><span class="stat-icon"><%- icon('landmark') %></span></div><div class="stat-value"><%= fmt.money(capital) %></div><div class="stat-meta"><%= t('dashboard.partners_count', { n: partners.length }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('partners.equity_allocated') %><span class="stat-icon <%= eqOk ? '' : 'warning' %>"><%- icon('percent') %></span></div><div class="stat-value <%= eqOk ? '' : 'warn-text' %>"><%= fmt.pct(equity, 2) %></div><div class="meter thin mt-2 <%= equity > 100 ? 'full' : eqOk ? '' : 'warn' %>"><span style="width:<%= Math.min(100, equity).toFixed(1) %>%"></span></div></div>
+  <% if (showProfit) { %>
+  <div class="stat"><div class="stat-label"><%= t('partners.distributable', { period: month ? fmt.month(month) : t('common.all_time') }) %><span class="stat-icon <%= metrics.netProfit < 0 ? 'danger' : '' %>"><%- icon('badge-dollar-sign') %></span></div><div class="stat-value <%= metrics.netProfit < 0 ? 'neg' : '' %>"><%= fmt.money(metrics.netProfit) %></div><div class="stat-meta"><%= t('kpi.net_margin') %> <%= fmt.pct(metrics.netMarginPercent) %></div></div>
+  <% } %>
+  <div class="stat"><div class="stat-label"><%= t('partners.total_withdrawn') %><span class="stat-icon info"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.money(withdrawn) %></div><div class="stat-meta"><%= t('partners.drawings_note') %></div></div>
+</div>
+
+<div class="grid grid-main mt-6">
+  <div class="panel flush">
+    <div class="panel-head"><h2><%= t('partners.register') %></h2></div>
+    <% if (!partners.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'handshake', emptyTitle: t('partners.empty_title'), emptyText: t('partners.empty_text'), emptyAction: canManage ? '<a class="btn btn-primary btn-sm" href="/app/partners/new">' + t('partners.add') + '</a>' : '' }) %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('partners.partner') %></th><th class="num"><%= t('partners.equity') %></th><th class="num"><%= t('partners.total_invested') %></th><th class="num"><%= t('partners.withdrawn') %></th><% if (showProfit) { %><th class="num"><%= t('partners.allocated') %></th><th class="num"><%= t('partners.net_payable') %></th><% } %></tr></thead>
+        <tbody>
+        <% partners.forEach(function (p) { var a = byId[String(p.id)] || {}; var aa = byIdAll[String(p.id)] || {}; %>
+          <tr data-href="/app/partners/<%= p.id %>">
+            <td class="primary-cell"><a class="person" href="/app/partners/<%= p.id %>"><span class="avatar"><%= initials(p.name) %></span><span><span class="person-name"><%= p.name %></span><span class="person-sub" style="display:block"><%= p.joinDate ? t('partners.since', { date: fmt.date(p.joinDate) }) : (p.phone || p.email || '') %></span></span></a></td>
+            <td class="num" data-label="<%= t('partners.equity') %>"><span class="badge badge-brand"><%= fmt.pct(p.currentEquityPercent, 2) %></span></td>
+            <td class="num" data-label="<%= t('partners.total_invested') %>"><%= fmt.amount(p.initialInvestment + p.additionalContributions) %></td>
+            <td class="num" data-label="<%= t('partners.withdrawn') %>"><%= fmt.amount(p.totalWithdrawn) %></td>
+            <% if (showProfit) { %>
+            <td class="num <%= (a.allocatedProfit || 0) < 0 ? 'neg' : 'pos' %>" data-label="<%= t('partners.allocated') %>"><%= fmt.amount(a.allocatedProfit || 0) %></td>
+            <td class="num strong" data-label="<%= t('partners.net_payable') %>"><%= fmt.amount(aa.netPayable || 0) %></td>
+            <% } %>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel-head"><h2><%= t('partners.equity_split') %></h2></div><div class="panel-body"><% if (partners.length) { %><%- split %><% } else { %><p class="muted small"><%= t('partners.no_split') %></p><% } %></div></div>
+    <% if (showProfit) { %><div class="panel"><div class="panel-body small text-2"><strong><%= t('partners.how_title') %></strong><p class="mt-2"><%= t('partners.how_text') %></p><div class="formula mt-3"><%= t('partners.formula_alloc') %><br><%= t('partners.formula_payable') %></div></div></div><% } %>
+  </div>
+</div>
