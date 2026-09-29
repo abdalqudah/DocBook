@@ -1,6 +1,8 @@
 const http = require('http');
 const brand = require('./config/brand');
 
+// Load .env first (config does it) so PORT from the .env file is honoured, not only from the process environment.
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env'), quiet: true });
 const PORT = process.env.PORT || 3000;
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
