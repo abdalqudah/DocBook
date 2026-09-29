@@ -44,7 +44,7 @@ body.site { background: var(--surface); overflow-x: hidden; }
 .lp-note { margin-top: 14px; font-size: 13px; color: var(--text-subtle); }
 .lp-hero .hero-proof { margin-top: 26px; padding-top: 22px; border-top: 1px dashed var(--border-strong); gap: 10px 22px; }
 .lp-hero-visual { position: relative; padding: 40px 28px 64px; }
-@media (max-width: 1000px) { .lp-hero { padding: 48px 0 56px; } .lp-hero-visual { max-width: 520px; margin: 0 auto; width: 100%; } }
+@media (max-width: 1000px) { .lp-hero .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; } .lp-hero { padding: 48px 0 56px; } .lp-hero-visual { max-width: 520px; margin: 0 auto; width: 100%; } }
 @media (max-width: 520px) { .lp-hero-visual { padding: 28px 0 36px; } .lp-hero .cta .btn { flex: 1 1 auto; } }
 
 /* ---------- Mock UI (CSS-only illustrations) ---------- */
