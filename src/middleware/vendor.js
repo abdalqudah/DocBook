@@ -18,6 +18,13 @@ async function requireVendor(req, res, next) {
     req.vendor = vendor;
     req.vendorCtx = { vendorId: vendor.id, userId: req.user.id, role, ip: req.ip, userAgent: req.get('user-agent') };
     res.locals.vendor = vendor;
+    // Sidebar counters: new purchase orders from clinics and visit requests still awaiting the clinic's answer are
+    // only relevant once the vendor is approved.
+    res.locals.vendorBadges = { orders: 0 };
+    if (vendor.status === 'active') {
+      const [{ n }] = await knex('purchase_orders').where({ vendor_id: vendor.id, status: 'sent' }).count({ n: '*' });
+      res.locals.vendorBadges.orders = Number(n);
+    }
     return next();
   } catch (err) { return next(err); }
 }

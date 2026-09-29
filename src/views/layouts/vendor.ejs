@@ -8,7 +8,7 @@
     { href: '/vendor/products', icon: 'package', key: 'nav_products', bottom: 2 },
     { href: '/vendor/offers', icon: 'megaphone', key: 'nav_offers', bottom: 3 },
     { href: '/vendor/visits', icon: 'calendar-clock', key: 'nav_visits', group: 'clinics', bottom: 4 },
-    { href: '/vendor/orders', icon: 'clipboard-list', key: 'nav_orders', group: 'clinics' },
+    { href: '/vendor/orders', icon: 'clipboard-list', key: 'nav_orders', group: 'clinics', badge: 'orders' },
     { href: '/vendor/profile', icon: 'building-2', key: 'nav_profile', group: 'account' },
     { href: '/vendor/account', icon: 'user-cog', key: 'nav_account', group: 'account' }
   ];
@@ -32,7 +32,7 @@
       <% _groups.forEach(function (g) { %>
       <div class="nav-group">
         <div class="nav-title"><%= t('vendor_portal.group_' + g[0]) %></div>
-        <% g[1].forEach(function (n) { %><a href="<%= n.href %>" class="<%= _on(n) ? 'active' : '' %>"<% if (_on(n)) { %> aria-current="page"<% } %>><%- icon(n.icon) %><span class="truncate"><%= t('vendor_portal.' + n.key) %></span></a><% }) %>
+        <% g[1].forEach(function (n) { %><a href="<%= n.href %>" class="<%= _on(n) ? 'active' : '' %>"<% if (_on(n)) { %> aria-current="page"<% } %>><%- icon(n.icon) %><span class="truncate"><%= t('vendor_portal.' + n.key) %></span><% var _c = n.badge && typeof vendorBadges !== 'undefined' ? vendorBadges[n.badge] : 0; if (_c) { %><span class="nav-count"><%= _c > 99 ? '99+' : _c %></span><% } %></a><% }) %>
       </div>
       <% }) %>
     </nav>

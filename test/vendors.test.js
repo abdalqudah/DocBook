@@ -136,10 +136,10 @@ test('catalog and offers are filtered by specialty, vendor status, activity and 
   assert.ok(!(await vendors.offersForSpecialty('dermatology', { today: '2026-10-01' })).some((o) => o.id === o4));
 });
 
-test('the portal guard blocks suspended vendors and accounts without a vendor', async () => {
+test('the portal guard blocks suspended vendors and sends accounts without a vendor to registration', async () => {
   const run = (user) => new Promise((resolve) => {
-    const req = { user, session: {}, method: 'GET', originalUrl: '/vendor', ip: '127.0.0.1', get: () => '' };
-    const res = { locals: {}, redirect: (to) => resolve({ redirect: to }) };
+    const req = { user, session: {}, method: 'GET', originalUrl: '/vendor', ip: '127.0.0.1', get: () => '', t: (k) => k };
+    const res = { locals: {}, redirect: (to) => resolve({ redirect: to }), status(code) { this.code = code; return this; }, page(view) { resolve({ status: this.code, view }); } };
     requireVendor(req, res, (err) => resolve({ err, req }));
   });
   const a = await makeVendor('guard@v.test', ['dentistry'], 'active');
@@ -148,9 +148,9 @@ test('the portal guard blocks suspended vendors and accounts without a vendor', 
   assert.equal(ok.req.vendorCtx.vendorId, a.vendorId);
   await vendors.setStatus({ userId: adminId }, a.vendorId, 'suspended');
   const blocked = await run(await knex('users').where({ id: a.userId }).first());
-  assert.equal(blocked.err.status, 403);
+  assert.deepEqual(blocked, { status: 403, view: 'pages/auth/message' }); // explains the suspension
   const none = await run(await knex('users').where({ id: adminId }).first());
-  assert.equal(none.err.status, 403);
+  assert.deepEqual(none, { redirect: '/vendors/signup' }); // offered to register this account as a rep
   assert.deepEqual(await run(null), { redirect: '/login' });
 });
 
