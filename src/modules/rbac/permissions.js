@@ -6,12 +6,13 @@ const GROUPS = [
   { key: 'appointments', perms: ['appointments.view', 'appointments.manage', 'appointments.view_all'] },
   { key: 'frontdesk', perms: ['frontdesk.use', 'billing.view', 'billing.manage'] },
   { key: 'patients', perms: ['patients.view', 'patients.create', 'patients.edit', 'patients.delete'] },
-  { key: 'clinical', perms: ['clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create'] },
+  { key: 'clinical', perms: ['clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create', 'certificates.view', 'certificates.issue'] },
   { key: 'clinic', perms: ['doctors.manage', 'services.manage'] },
   { key: 'payroll', perms: ['payroll.view', 'payroll.manage', 'payroll.approve'] },
   { key: 'supplies', perms: ['supplies.view', 'supplies.manage', 'expenses.view', 'expenses.manage'] },
   { key: 'attendance', perms: ['attendance.view', 'attendance.manage'] },
   { key: 'vendors', perms: ['vendors.view', 'vendors.manage'] },
+  { key: 'reviews', perms: ['reviews.view', 'reviews.manage'] },
   { key: 'reports', perms: ['reports.view', 'data.export'] },
   { key: 'admin', perms: ['users.manage', 'roles.manage', 'settings.manage', 'data.manage', 'audit.view'] },
 ];
@@ -23,7 +24,7 @@ const IMPLIES = {
   'appointments.manage': 'appointments.view', 'appointments.view_all': 'appointments.view', 'billing.manage': 'billing.view',
   'patients.create': 'patients.view', 'patients.edit': 'patients.view', 'patients.delete': 'patients.view',
   'clinical.edit': 'clinical.view', 'vitals.edit': 'clinical.view', 'prescriptions.create': 'clinical.view',
-  'attendance.manage': 'attendance.view', 'vendors.manage': 'vendors.view', 'payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',
+  'attendance.manage': 'attendance.view', 'certificates.issue': 'certificates.view', 'vendors.manage': 'vendors.view', 'reviews.manage': 'reviews.view','payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',
 };
 
 const SYSTEM_ROLES = [
@@ -31,18 +32,18 @@ const SYSTEM_ROLES = [
   { key: 'clinic_manager', permissions: without('data.manage'), entry: '/app' },
   {
     key: 'doctor', // sees and treats their own patients; appointments are limited to their own schedule
-    permissions: ['dashboard.view', 'vendors.view', 'appointments.view', 'patients.view', 'patients.edit', 'clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create'],
+    permissions: ['dashboard.view', 'vendors.view', 'appointments.view', 'reviews.view', 'patients.view', 'patients.edit', 'clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create', 'certificates.issue'],
     entry: '/app/my-day',
   },
   {
     key: 'nurse', // prepares patients: waiting room, vital signs, patient records — no diagnoses or prescriptions
-    permissions: ['dashboard.view', 'vendors.view', 'appointments.view', 'appointments.view_all', 'frontdesk.use', 'patients.view', 'patients.edit', 'clinical.view', 'vitals.edit', 'supplies.view', 'supplies.manage'],
+    permissions: ['dashboard.view', 'vendors.view', 'appointments.view', 'appointments.view_all', 'frontdesk.use', 'patients.view', 'patients.edit', 'clinical.view', 'vitals.edit', 'supplies.view', 'supplies.manage', 'certificates.view'],
     entry: '/app/front-desk',
   },
   {
     key: 'receptionist', // bookings, check-in, payment at checkout — no clinical notes (DocBook: "a receptionist schedules and checks in")
     permissions: ['dashboard.view', 'vendors.view', 'appointments.view', 'appointments.manage', 'appointments.view_all', 'frontdesk.use', 'billing.view', 'billing.manage',
-      'patients.view', 'patients.create', 'patients.edit'],
+      'patients.view', 'patients.create', 'patients.edit', 'certificates.view'],
     entry: '/app/front-desk',
   },
   {

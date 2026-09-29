@@ -1,0 +1,17 @@
+<% var base = '/r/' + token; %>
+<div class="container eg-page">
+  <% if (!st.expired) { %><div class="eg-back"><a class="link small" href="<%= base %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('messaging.back_to_appointment') %></a></div><% } %>
+  <% if (done === 'stopped' || done === 'started') { %>
+  <div class="alert alert-success mb-4" role="status"><%- icon('circle-check') %><div class="grow"><%= t('messaging.done.' + done) %></div></div>
+  <% } %>
+  <section class="eg-card">
+    <span class="tiny muted"><%= clinic.displayName %></span>
+    <h1 class="eg-h1"><%= optedOut ? t('messaging.stopped_title') : t('messaging.stop_title') %></h1>
+    <p class="small muted"><%= optedOut ? t('messaging.stopped_text') : t('messaging.stop_text') %></p>
+    <form method="post" action="<%= action %>" class="mt-3">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="out" value="<%= optedOut ? '0' : '1' %>">
+      <button class="btn <%= optedOut ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%= optedOut ? t('messaging.start_btn') : t('messaging.stop_btn') %></button>
+    </form>
+  </section>
+</div>

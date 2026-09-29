@@ -1,0 +1,63 @@
+<%/* The document itself, always in its own language (dt/dfmt/days/dlang/ddir from modules/certificates/web.js). */%>
+<%
+  var DL = function (ar, en) { return dlang === 'en' && en ? en : (ar || en || ''); };
+  var em = function (v) { return '<strong>' + escapeHtml(v) + '</strong>'; };
+  var ltr = function (v) { return '<strong dir="ltr">' + escapeHtml(v) + '</strong>'; };
+  var fem = doc.patient_gender === 'female';
+  var clinicName = DL(doc.clinic_name, doc.clinic_name_en);
+  var b = doc.body || {};
+%>
+<article class="cert-sheet<%= doc.revoked_at ? ' is-revoked' : '' %>" lang="<%= dlang %>" dir="<%= ddir %>">
+  <% if (doc.revoked_at) { %><div class="cert-void" role="note"><%= dt('certificates.doc.revoked_banner') %></div><% } %>
+  <div class="cert-titlebar">
+    <h2 class="cert-title"><%= dt('certificates.doc.' + doc.doc_type + '_title') %></h2>
+    <div class="cert-ids">
+      <div><span><%= dt('certificates.doc.serial') %></span><strong dir="ltr"><%= doc.serial %></strong></div>
+      <div><span><%= dt('certificates.doc.issue_date') %></span><strong><%= dfmt.date(issued.date) %> · <bdi dir="ltr"><%= issued.time %></bdi></strong></div>
+    </div>
+  </div>
+
+  <dl class="cert-facts">
+    <div><dt><%= dt('certificates.doc.patient_name') %></dt><dd><%= doc.patient_name %></dd></div>
+    <% if (doc.patient_national_id) { %><div><dt><%= dt('certificates.doc.national_id') %></dt><dd dir="ltr"><%= doc.patient_national_id %></dd></div><% } %>
+    <% if (doc.doc_type === 'medical_report' && doc.patient_dob) { %><div><dt><%= dt('certificates.doc.date_of_birth') %></dt><dd><%= dfmt.date(doc.patient_dob) %></dd></div><% } %>
+    <div><dt><%= dt('certificates.doc.visit_date') %></dt><dd><%= dfmt.date(doc.visit_date) %></dd></div>
+  </dl>
+
+  <p class="cert-to"><%= doc.doc_type === 'medical_report' && b.addressee ? b.addressee : dt('certificates.doc.to_whom') %></p>
+
+  <div class="cert-body">
+    <% if (doc.doc_type === 'sick_leave') { %>
+      <p><%- dt('certificates.doc.' + (fem ? 'sick_body_f' : 'sick_body'), { patient: em(doc.patient_name), clinic: escapeHtml(clinicName), date: em(dfmt.date(doc.visit_date)), days: em(days(doc.leave_days)), start: em(dfmt.date(doc.leave_start)), end: em(dfmt.date(doc.leave_end)) }) %></p>
+      <% if (doc.show_diagnosis && doc.diagnosis) { %><p><span class="cert-label"><%= dt('certificates.doc.diagnosis') %>:</span> <bdi><%= doc.diagnosis %></bdi></p><% } %>
+      <% if (doc.companion_leave && doc.companion_name) { %><p><%- dt('certificates.doc.companion_body', { name: em(doc.companion_name + (doc.companion_relation ? ' (' + doc.companion_relation + ')' : '')) }) %></p><% } %>
+      <p class="cert-note"><%= dt('certificates.doc.request_note') %></p>
+    <% } else if (doc.doc_type === 'attendance') { %>
+      <p><%- dt('certificates.doc.' + (fem ? 'attendance_body_f' : 'attendance_body'), { patient: em(doc.patient_name), clinic: escapeHtml(clinicName), date: em(dfmt.date(doc.visit_date)), from: ltr(doc.time_from), to: ltr(doc.time_to) }) %></p>
+      <p class="cert-note"><%= dt('certificates.doc.request_note') %></p>
+    <% } else { %>
+      <% if (b.findings) { %><section><h3><%= dt('certificates.doc.findings') %></h3><p class="pre"><bdi><%= b.findings %></bdi></p></section><% } %>
+      <% if (doc.diagnosis) { %><section><h3><%= dt('certificates.doc.diagnosis') %></h3><p class="pre"><bdi><%= doc.diagnosis %></bdi></p></section><% } %>
+      <% if (b.recommendations) { %><section><h3><%= dt('certificates.doc.recommendations') %></h3><p class="pre"><bdi><%= b.recommendations %></bdi></p></section><% } %>
+      <% if (b.attachments && b.attachments.length) { %><section><h3><%= dt('certificates.doc.attachments') %></h3><ol><% b.attachments.forEach(function (x) { %><li><bdi><%= x %></bdi></li><% }) %></ol></section><% } %>
+    <% } %>
+  </div>
+
+  <div class="cert-foot">
+    <div class="cert-doctor">
+      <div class="strong"><%= DL(doc.doctor_name, doc.doctor_name_en) %></div>
+      <% var spec = DL(doc.doctor_specialty, doc.doctor_specialty_en); if (spec) { %><div class="small"><%= spec %></div><% } %>
+      <% if (doc.doctor_license) { %><div class="small"><%= dt('certificates.doc.licence') %>: <bdi dir="ltr"><%= doc.doctor_license %></bdi></div><% } %>
+      <div class="cert-line"></div>
+      <div class="tiny muted"><%= dt('certificates.doc.signature') %></div>
+    </div>
+    <div class="cert-stamp"><span class="tiny muted"><%= dt('certificates.doc.stamp') %></span></div>
+    <div class="cert-qr">
+      <div class="cert-qr-box"><%- qr %></div>
+      <div class="cert-qr-text">
+        <div class="small strong"><%= dt('certificates.doc.verify_title') %></div>
+        <div class="tiny muted"><%- dt('certificates.doc.verify_text', { url: '<bdi dir="ltr">' + escapeHtml(verifyBase) + '</bdi>', code: '<bdi dir="ltr" class="cert-code">' + escapeHtml(code) + '</bdi>' }) %></div>
+      </div>
+    </div>
+  </div>
+</article>

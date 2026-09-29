@@ -16,7 +16,7 @@
       <dl class="dl">
         <dt><%= t('telehealth.staff.patient_time') %></dt><dd><bdi class="num" dir="ltr"><%= o.local.time %></bdi> · <span class="small"><%= fmt.date(o.local.date, { weekday: 'short', day: 'numeric', month: 'short' }) %></span> <span class="tiny muted"><bdi dir="ltr"><%= o.tz %></bdi></span></dd>
         <% if (o.countryName) { %><dt><%= t('telehealth.staff.country') %></dt><dd><%= o.countryName %></dd><% } %>
-        <dt><%= t('telehealth.staff.patient_joined') %></dt><dd data-peer-joined><%= r.patient_joined_at ? t('common.yes') : t('telehealth.staff.not_joined') %></dd>
+        <dt><%= t('telehealth.staff.patient_joined') %></dt><dd data-peer-joined data-yes="<%= t('common.yes') %>"><%= r.patient_joined_at ? t('common.yes') : t('telehealth.staff.not_joined') %></dd>
       </dl>
       <div class="tele-start">
         <% if (o.canVideo) { %>

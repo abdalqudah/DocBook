@@ -1,0 +1,76 @@
+/* Medical documents: the printable sheet (sick leave, medical report, attendance certificate), the issue form
+   and the public verification page. Theme tokens only — the QR code's black-on-white comes from its own SVG. */
+
+/* ---------- the document ---------- */
+.cert-sheet { font-size: 14px; line-height: 1.85; color: var(--text); }
+.cert-screen { padding: 28px 32px; }
+.cert-void { margin-bottom: 18px; padding: 10px 14px; border: 2px solid var(--danger); border-radius: var(--radius-sm); color: var(--danger); font-weight: var(--fw-bold); text-align: center; letter-spacing: .02em; }
+.cert-titlebar { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.cert-title { margin: 0; font-size: 24px; font-weight: var(--fw-bold); line-height: 1.3; }
+.cert-ids { display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px; }
+.cert-ids > div { display: flex; flex-direction: column; }
+.cert-ids span { color: var(--text-subtle); }
+.cert-ids strong { font-weight: var(--fw-semibold); }
+.cert-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 24px; margin: 18px 0 0; }
+.cert-facts dt { font-size: 12px; color: var(--text-subtle); }
+.cert-facts dd { margin: 0; font-weight: var(--fw-semibold); overflow-wrap: anywhere; }
+.cert-to { margin: 22px 0 6px; font-weight: var(--fw-semibold); }
+.cert-body p { margin: 0 0 10px; }
+.cert-body section + section { margin-top: 14px; }
+.cert-body h3 { margin: 0 0 2px; font-size: 13px; font-weight: var(--fw-bold); color: var(--text-muted); }
+.cert-body ol { margin: 0; padding-inline-start: 22px; }
+.cert-body .pre { white-space: pre-line; }
+.cert-label { color: var(--text-muted); }
+.cert-note { font-size: 12px; color: var(--text-muted); }
+.cert-foot { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; align-items: end; margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border); }
+.cert-doctor { line-height: 1.6; }
+.cert-line { height: 44px; border-bottom: 1px solid var(--text); margin-bottom: 4px; max-width: 220px; }
+.cert-stamp { height: 108px; border: 1px dashed var(--border-strong); border-radius: 50%; max-width: 150px; width: 100%; justify-self: center; display: flex; align-items: center; justify-content: center; }
+.cert-qr { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; justify-self: end; max-width: 240px; }
+.cert-qr-box { flex: none; width: 112px; height: 112px; }
+.cert-qr-box svg { display: block; width: 100%; height: 100%; }
+.cert-qr-text { line-height: 1.5; min-width: 0; overflow-wrap: anywhere; }
+.cert-code { font-family: var(--font-mono); letter-spacing: .04em; white-space: nowrap; }
+.cert-dl { grid-template-columns: minmax(100px, 140px) 1fr; }
+
+@media (max-width: 720px) {
+  .cert-screen { padding: 18px 16px; }
+  .cert-foot { grid-template-columns: 1fr 1fr; }
+  .cert-qr { grid-column: 1 / -1; justify-self: center; }
+  .cert-title { font-size: 20px; }
+}
+
+/* Printed page: the sheet fills the page (letterhead comes from layouts/print). */
+.print-page .cert-sheet { font-size: 15px; }
+.print-page .cert-foot { grid-template-columns: 1fr 1fr 1fr; }
+.print-page .cert-qr { grid-column: auto; }
+@media print {
+  .cert-sheet { font-size: 13.5px; }
+  .cert-foot { break-inside: avoid; }
+}
+
+/* ---------- issue form ---------- */
+.cert-readout { display: flex; align-items: center; background: var(--surface-muted); color: var(--text); }
+.cert-form [data-toggle-box][hidden] { display: none; }
+
+/* ---------- public verification page ---------- */
+.verify-wrap { max-width: 640px; margin: 0 auto; padding: 40px 16px 56px; display: flex; flex-direction: column; gap: 16px; }
+.verify-head { text-align: center; }
+.verify-head h1 { margin: 12px 0 6px; font-size: 24px; }
+.verify-head p { margin: 0; }
+.verify-mark { display: inline-flex; width: 48px; height: 48px; border-radius: 50%; align-items: center; justify-content: center; background: var(--surface-sunken); color: var(--text-muted); }
+.verify-status { display: flex; gap: 12px; align-items: flex-start; }
+.verify-status h2 { margin: 0 0 2px; font-size: 18px; }
+.verify-status p { margin: 0; }
+.verify-status-icon { flex: none; display: inline-flex; color: var(--text-muted); }
+.verify-status-icon .icon { width: 28px; height: 28px; }
+.verify-valid .verify-status-icon { color: var(--success); }
+.verify-revoked .verify-status-icon, .verify-revoked h2 { color: var(--danger); }
+.verify-limited .verify-status-icon { color: var(--warning); }
+.verify-clinic { display: flex; align-items: center; gap: 10px; margin: 20px 0 14px; padding-top: 16px; border-top: 1px solid var(--border); }
+.verify-logo { flex: none; width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+.verify-logo img { width: 100%; height: 100%; object-fit: contain; }
+.verify-dl { grid-template-columns: minmax(96px, 150px) 1fr; }
+.verify-note { text-align: center; margin: 0; }
+.cert-form .segmented { align-self: flex-start; width: max-content; max-width: 100%; }
+.cert-types { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; white-space: nowrap; }

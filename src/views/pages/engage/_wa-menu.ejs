@@ -1,0 +1,25 @@
+<%
+  // Appointment page: "WhatsApp" menu — opens the member's own WhatsApp (wa.me) with the ready-made message and the
+  // patient's personal link. Nothing is sent automatically from here. Needs appointments.manage or frontdesk.use.
+  var _a = appt;
+  var _show = _a && _a.patient_phone && _a.appointment_type !== 'blocked' && canAny('appointments.manage', 'frontdesk.use');
+  var _visited = _a && (_a.status === 'completed' || _a.payment_status === 'paid');
+  var _upcoming = _a && (_a.status === 'pending' || _a.status === 'confirmed');
+%>
+<% if (_show && (_upcoming || _visited)) { %>
+<details class="dropdown wa-menu">
+  <summary class="btn btn-secondary"><%- icon('message-circle', 'icon-sm') %><%= t('messaging.wa_short') %><%- icon('chevron-down', 'icon-sm') %></summary>
+  <div class="menu">
+    <div class="menu-label"><%= t('messaging.wa_send') %></div>
+    <% if (_upcoming) { %>
+    <a href="/app/messaging/wa/<%= _a.id %>?kind=reminder" target="_blank" rel="noopener"><%- icon('bell', 'icon-sm') %><%= t('messaging.kinds.reminder') %></a>
+    <a href="/app/messaging/wa/<%= _a.id %>?kind=confirmation" target="_blank" rel="noopener"><%- icon('calendar-check', 'icon-sm') %><%= t('messaging.kinds.confirmation') %></a>
+    <% } %>
+    <% if (_visited) { %>
+    <a href="/app/messaging/wa/<%= _a.id %>?kind=review" target="_blank" rel="noopener"><%- icon('star', 'icon-sm') %><%= t('messaging.kinds.review') %></a>
+    <% } %>
+    <div class="sep"></div>
+    <div class="tiny muted wa-menu-note"><%= t('messaging.wa_note') %></div>
+  </div>
+</details>
+<% } %>

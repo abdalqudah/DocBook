@@ -16,8 +16,11 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@expo-google-fonts/noto-naskh-arabic": "^0.4.5",
+    "@expo-google-fonts/noto-sans": "^0.4.2",
     "adm-zip": "^0.5.16",
     "bcryptjs": "^3.0.2",
+    "bidi-js": "^1.1.0",
     "compression": "^1.8.1",
     "connect-session-knex": "^5.0.0",
     "cookie-parser": "^1.4.7",
@@ -31,8 +34,12 @@
     "multer": "^2.0.2",
     "mysql2": "^3.14.0",
     "nodemailer": "^7.0.5",
+    "pdfkit": "^0.17.2",
     "pg": "^8.23.0",
     "qrcode": "^1.5.4",
     "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "pdfjs-dist": "^4.10.38"
   }
 }

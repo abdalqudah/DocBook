@@ -1,0 +1,72 @@
+<%
+  var dateLong = fmt.date(a.appointment_date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  var stClass = a.status === 'cancelled' || a.status === 'no_show' ? 'badge-danger' : 'badge-neutral';
+  var base = '/r/' + token;
+%>
+<div class="container eg-page">
+  <% if (done) { %>
+  <div class="alert alert-success mb-4" role="status"><%- icon('circle-check') %><div class="grow"><div class="alert-title"><%= t('messaging.done.' + done) %></div><% if (done === 'rescheduled' || done === 'confirmed') { %><div class="small"><%= t('messaging.done_text') %></div><% } %></div></div>
+  <% } %>
+  <% if (error) { %>
+  <div class="alert alert-error mb-4" role="alert"><%- icon('circle-alert') %><div class="grow"><%= error %></div></div>
+  <% } %>
+
+  <section class="eg-card">
+    <div class="row between wrap">
+      <span class="tiny muted"><%= t('messaging.your_appointment') %></span>
+      <span class="badge badge-dot <%= stClass %>"><%= t('messaging.status.' + a.status) %></span>
+    </div>
+    <h1 class="eg-h1"><%= dateLong %></h1>
+    <div class="eg-time"><bdi class="num" dir="ltr"><%= a.appointment_time %></bdi><span class="muted small"> · <%= t('messaging.minutes', { n: length }) %></span></div>
+
+    <dl class="eg-dl">
+      <% if (doctor) { %><dt><%= t('common.doctor') %></dt><dd><strong><%= doctor %></strong><% if (doctorSpec) { %><span class="muted small"> · <%= doctorSpec %></span><% } %></dd><% } %>
+      <% if (service) { %><dt><%= t('common.service') %></dt><dd><%= service %></dd><% } %>
+      <dt><%= t('messaging.clinic') %></dt><dd><%= clinic.displayName %><% if (clinic.address) { %><div class="small muted"><%= clinic.address %></div><% } %></dd>
+      <% if (a.appointment_type === 'online') { %><dt><%= t('common.type') %></dt><dd><%- icon('video', 'icon-sm') %> <%= t('messaging.online') %></dd><% } %>
+    </dl>
+
+    <% if (st.open) { %>
+    <div class="eg-actions">
+      <% if (st.canConfirm) { %>
+      <form method="post" action="<%= base %>/confirm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary btn-lg btn-block" type="submit"><%- icon('check') %><%= t('messaging.confirm') %></button>
+      </form>
+      <% } else if (a.status === 'confirmed') { %>
+      <p class="eg-confirmed small"><%- icon('circle-check', 'icon-sm') %><%= t('messaging.is_confirmed') %></p>
+      <% } %>
+      <div class="eg-row">
+        <% if (st.canReschedule) { %><a class="btn btn-secondary" href="<%= base %>/reschedule"><%- icon('calendar-clock', 'icon-sm') %><%= t('messaging.reschedule') %></a><% } %>
+        <a class="btn btn-secondary" href="<%= base %>/calendar.ics"><%- icon('calendar-plus', 'icon-sm') %><%= t('messaging.add_calendar') %></a>
+      </div>
+      <% if (st.canCancel) { %>
+      <details class="eg-cancel">
+        <summary class="btn btn-ghost btn-danger-ghost"><%- icon('calendar-x', 'icon-sm') %><%= t('messaging.cancel') %></summary>
+        <form method="post" action="<%= base %>/cancel" class="stack-sm mt-3" data-confirm="<%= t('messaging.cancel_confirm') %>" data-confirm-title="<%= t('messaging.cancel') %>" data-confirm-yes="<%= t('messaging.cancel_yes') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label class="label" for="eg-reason"><%= t('messaging.cancel_reason') %> <span class="muted">(<%= t('messaging.optional') %>)</span></label>
+          <textarea class="textarea" id="eg-reason" name="reason" rows="2" maxlength="300" dir="auto"></textarea>
+          <div><button class="btn btn-danger" type="submit"><%= t('messaging.cancel_yes') %></button></div>
+        </form>
+      </details>
+      <% } %>
+      <% if (st.locked) { %>
+      <div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('messaging.locked', { n: cfg.cancel_cutoff_hours }) %></div><% if (clinic.telHref) { %><a class="btn btn-secondary btn-sm" href="<%= clinic.telHref %>"><%- icon('phone', 'icon-sm') %><%= t('messaging.call_clinic') %></a><% } %></div>
+      <% } else if (!st.canReschedule && (a.appointment_type === 'online' || !cfg.allow_reschedule) && clinic.telHref) { %>
+      <p class="tiny muted"><%= t('messaging.change_by_phone') %> <a class="link" href="<%= clinic.telHref %>" dir="ltr"><%= clinic.phone %></a></p>
+      <% } %>
+    </div>
+    <% } else if (a.status === 'cancelled') { %>
+    <p class="small muted mt-3"><%= t('messaging.cancelled_text') %></p>
+    <% if (clinic.booking_enabled && clinic.slug) { %><a class="btn btn-secondary mt-2" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><%= t('messaging.book_again') %></a><% } %>
+    <% } else { %>
+    <p class="small muted mt-3"><%= t('messaging.closed_text') %></p>
+    <% } %>
+  </section>
+
+  <p class="eg-foot tiny muted">
+    <%- icon('lock', 'icon-sm') %><span><%= t('messaging.private_link') %></span>
+    <a class="link" href="<%= base %>/stop"><%= t('messaging.stop_link') %></a>
+  </p>
+</div>

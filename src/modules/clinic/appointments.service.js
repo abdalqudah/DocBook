@@ -123,6 +123,8 @@ async function insertAppointment(ctx, d, { source, trx }) {
     status: d.status || (source === 'website' ? 'pending' : 'confirmed'), appointment_type: d.appointment_type || 'in_person', source,
     amount_due: await expectedFee(trx, ctx.businessId, d.doctor_id, d.service_id), notes: d.notes || null, created_by: ctx.userId || null,
     parent_appointment_id: d.parent_appointment_id || null,
+    // Booking channel (reports): public bookings pass ctx.channel (instagram, widget, directory…); staff bookings are 'staff'.
+    booking_channel: (/^[a-z]{1,20}$/.test(ctx.channel || '') && ctx.channel) || (source === 'website' ? 'website' : 'staff'),
   });
   await audit.record(ctx, 'appointment.created', { entityType: 'appointment', entityId: apptId, newValues: { date: d.appointment_date, time: d.appointment_time, doctor_id: d.doctor_id, source } }, trx);
   return apptId;

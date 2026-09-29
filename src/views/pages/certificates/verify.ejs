@@ -1,0 +1,57 @@
+<%
+  var f = form || {};
+  var daysText = function (n) { return n === 1 ? t('certificates.one_day') : t('certificates.days', { n: n }); };
+%>
+<div class="container verify-wrap">
+  <div class="verify-head">
+    <span class="verify-mark"><%- icon('shield-check') %></span>
+    <h1><%= t('verify_doc.title') %></h1>
+    <p class="muted"><%= t('verify_doc.lead') %></p>
+  </div>
+
+  <% if (state !== 'form') { %>
+  <section class="panel verify-result verify-<%= state %>" aria-live="polite">
+    <div class="panel-body">
+      <div class="verify-status">
+        <span class="verify-status-icon"><%- icon(state === 'valid' ? 'circle-check' : state === 'revoked' ? 'circle-x' : state === 'limited' ? 'clock' : 'search') %></span>
+        <div>
+          <h2><%= t('verify_doc.' + state + '_title') %></h2>
+          <p class="small muted"><%= state === 'revoked' ? t('verify_doc.revoked_text', { date: fmt.date(info.revokedDate) }) : t('verify_doc.' + state + '_text') %></p>
+        </div>
+      </div>
+      <% if (info) { %>
+      <div class="verify-clinic">
+        <span class="verify-logo"><% if (issuer.logo) { %><img src="<%= issuer.logo %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
+        <strong><%= issuer.name %></strong>
+      </div>
+      <dl class="dl verify-dl">
+        <dt><%= t('verify_doc.type') %></dt><dd><%= t('certificates.types.' + info.docType) %></dd>
+        <dt><%= t('verify_doc.serial_label') %></dt><dd><bdi dir="ltr"><%= info.serial %></bdi></dd>
+        <dt><%= t('verify_doc.issued') %></dt><dd><%= fmt.date(info.issuedDate, { year: 'numeric', month: 'long', day: 'numeric' }) %></dd>
+        <dt><%= t('verify_doc.doctor') %></dt><dd><%= info.doctorName %><% if (info.doctorSpecialty) { %><div class="small muted"><%= info.doctorSpecialty %></div><% } %></dd>
+        <dt><%= t('verify_doc.patient') %></dt><dd><%= info.patientMasked %></dd>
+        <% if (info.leaveStart) { %><dt><%= t('verify_doc.period') %></dt><dd><%= t('verify_doc.period_value', { start: fmt.date(info.leaveStart), end: fmt.date(info.leaveEnd), days: daysText(info.leaveDays) }) %></dd><% } %>
+        <% if (info.visitDate) { %><dt><%= t('verify_doc.attendance_date') %></dt><dd><%= fmt.date(info.visitDate) %></dd><% } %>
+      </dl>
+      <p class="tiny muted mt-4"><%= t('verify_doc.privacy') %></p>
+      <% } %>
+    </div>
+  </section>
+  <% } %>
+
+  <% if (state !== 'limited') { %>
+  <form class="panel verify-form" method="get" action="/verify" novalidate>
+    <div class="panel-body stack">
+      <% if (state !== 'form') { %><h2 class="small strong"><%= t('verify_doc.again') %></h2><% } %>
+      <div class="form-grid">
+        <div class="field"><label class="label" for="v-serial"><%= t('verify_doc.serial') %></label><input class="input" id="v-serial" name="serial" value="<%= f.serial || '' %>" placeholder="<%= t('verify_doc.serial_ph') %>" dir="ltr" autocomplete="off" autocapitalize="characters" spellcheck="false" required maxlength="40"></div>
+        <div class="field"><label class="label" for="v-code"><%= t('verify_doc.code') %></label><input class="input" id="v-code" name="code" value="<%= f.code || '' %>" placeholder="<%= t('verify_doc.code_ph') %>" dir="ltr" autocomplete="off" autocapitalize="characters" spellcheck="false" required maxlength="40"></div>
+      </div>
+      <p class="help"><%= t('verify_doc.form_help') %></p>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('shield-check', 'icon-sm') %><%= t('verify_doc.check') %></button></div>
+  </form>
+  <% } %>
+
+  <p class="tiny muted verify-note"><%= t('verify_doc.disclaimer') %></p>
+</div>

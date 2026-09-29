@@ -13,6 +13,7 @@
     <p><%= t('reports.lead') %></p>
   </div>
   <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/reports/bookings?<%= rq %>"><%- icon('chart-pie', 'icon-sm') %><%= t('channels.open_report') %></a>
     <a class="btn btn-secondary" href="/app/reports?<%= rq %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.printable') %></a>
   </div>
 </div>

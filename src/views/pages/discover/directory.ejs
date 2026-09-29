@@ -1,0 +1,101 @@
+<%
+  var formAction = preset.specialty ? '/clinics/' + preset.specialty : '/clinics';
+  var selCity = f.city; var selIns = f.insurance;
+  var countText = total === 1 ? t('directory.results_one') : t('directory.results', { n: fmt.number(total) });
+%>
+<section class="dir-head">
+  <div class="container">
+    <% if (preset.specialty) { %><a class="portal-back small" href="/clinics"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('directory.title') %></a><% } %>
+    <h1><%= heading %></h1>
+    <p class="muted"><%= t('directory.lead') %></p>
+  </div>
+</section>
+
+<div class="container dir-layout">
+  <form class="dir-filters" method="get" action="<%= formAction %>" role="search" data-autosubmit>
+    <div class="dir-search">
+      <label class="sr-only" for="dir-q"><%= t('directory.search_label') %></label>
+      <span class="dir-search-icon"><%- icon('search', 'icon-sm') %></span>
+      <input class="input" id="dir-q" type="search" name="q" value="<%= f.q %>" placeholder="<%= t('directory.search_placeholder') %>" maxlength="80" autocomplete="off">
+      <button class="btn btn-primary" type="submit"><%= t('directory.search') %></button>
+    </div>
+    <div class="dir-selects">
+      <% if (!preset.specialty) { %>
+      <div class="field">
+        <label class="label" for="dir-spec"><%= t('directory.specialty') %></label>
+        <select class="select" id="dir-spec" name="specialty">
+          <option value=""><%= t('directory.any_specialty') %></option>
+          <% facets.specialties.forEach(function (k) { %><option value="<%= k %>"<%= f.specialty === k ? ' selected' : '' %>><%= t('specialties.' + k) %></option><% }) %>
+        </select>
+      </div>
+      <% } %>
+      <div class="field">
+        <label class="label" for="dir-city"><%= t('directory.city') %></label>
+        <select class="select" id="dir-city" name="city">
+          <option value=""><%= t('directory.any_city') %></option>
+          <% facets.cities.forEach(function (c) { %><option value="<%= c.label %>"<%= selCity === c.key ? ' selected' : '' %>><%= c.label %></option><% }) %>
+        </select>
+      </div>
+      <% if (facets.insurers.length) { %>
+      <div class="field">
+        <label class="label" for="dir-ins"><%= t('directory.insurance') %></label>
+        <select class="select" id="dir-ins" name="insurance">
+          <option value=""><%= t('directory.any_insurance') %></option>
+          <% facets.insurers.forEach(function (c) { %><option value="<%= c.label %>"<%= selIns === c.key ? ' selected' : '' %>><%= c.label %></option><% }) %>
+        </select>
+      </div>
+      <% } %>
+      <div class="field">
+        <label class="label" for="dir-sort"><%= t('directory.sort') %></label>
+        <select class="select" id="dir-sort" name="sort">
+          <option value="soonest"<%= f.sort === 'soonest' ? ' selected' : '' %>><%= t('directory.sort_soonest') %></option>
+          <option value="name"<%= f.sort === 'name' ? ' selected' : '' %>><%= t('directory.sort_name') %></option>
+        </select>
+      </div>
+      <% if (facets.online) { %>
+      <label class="check dir-online" title="<%= t('directory.online_only_help') %>"><input type="checkbox" name="online" value="1"<%= f.online ? ' checked' : '' %>><%= t('directory.online_only') %></label>
+      <% } %>
+    </div>
+  </form>
+
+  <div class="row between wrap dir-count">
+    <span class="small muted" aria-live="polite"><%= countText %></span>
+    <% if (filtered) { %><a class="small link" href="<%= formAction %>"><%- icon('x', 'icon-sm') %><%= t('directory.clear') %></a><% } %>
+  </div>
+
+  <% if (!cards.length) { %>
+  <div class="panel"><%- include('../../partials/empty', allCount ? { emptyIcon: 'search', emptyTitle: t('directory.empty_title'), emptyText: t('directory.empty_text'), emptyAction: '<a class="btn btn-secondary btn-sm" href="/clinics">' + escapeHtml(t('directory.clear')) + '</a>' } : { emptyIcon: 'hospital', emptyTitle: t('directory.none_title'), emptyText: t('directory.none_text') }) %></div>
+  <% } else { %>
+  <ul class="dir-grid" role="list">
+    <% cards.forEach(function (c) { %>
+    <li class="dir-card">
+      <div class="dir-card-top">
+        <span class="dir-logo"><% if (c.logo) { %><img src="<%= c.logo %>" alt="" loading="lazy" width="48" height="48"><% } else { %><%- icon('hospital') %><% } %></span>
+        <div class="dir-card-title">
+          <h2><a href="<%= c.pageHref %>"><%= c.name %></a></h2>
+          <% if (c.other) { %><div class="tiny muted" dir="auto"><%= c.other %></div><% } %>
+          <div class="small muted dir-meta"><% if (c.specialty) { %><span><%= c.specialty %></span><% } %><% if (c.city) { %><span><%- icon('map-pin', 'icon-sm') %><%= c.city %></span><% } %></div>
+        </div>
+      </div>
+      <dl class="dir-facts small">
+        <% if (c.doctors.length) { %><div><dt><%- icon('stethoscope', 'icon-sm') %><span class="sr-only"><%= t('directory.doctors_n', { n: c.doctors.length }) %></span></dt><dd class="truncate" title="<%= c.doctors.join('، ') %>"><%= c.doctors.slice(0, 3).join(locale === 'ar' ? '، ' : ', ') %><%= c.doctors.length > 3 ? ' +' + (c.doctors.length - 3) : '' %></dd></div><% } %>
+        <% if (c.insurers.length) { %><div><dt><%- icon('shield-plus', 'icon-sm') %><span class="sr-only"><%= t('directory.insurance') %></span></dt><dd class="truncate" title="<%= c.insurers.join('، ') %>"><%= c.insurers.slice(0, 3).join(locale === 'ar' ? '، ' : ', ') %><%= c.insurers.length > 3 ? ' +' + (c.insurers.length - 3) : '' %></dd></div><% } %>
+        <% if (c.online) { %><div><dt><%- icon('video', 'icon-sm') %></dt><dd><%= t('directory.online_badge') %></dd></div><% } %>
+      </dl>
+      <div class="dir-card-foot">
+        <div class="dir-next">
+          <span class="tiny muted"><%= t('directory.next_available') %></span>
+          <% if (c.next.known && !c.next.none) { %><a class="strong" href="<%= c.bookHref %>"><span class="badge-dot dir-dot"></span><bdi><%= c.next.text %></bdi></a>
+          <% } else if (c.next.none) { %><span class="small muted"><%= c.next.text %></span>
+          <% } else { %><a class="small" href="<%= c.bookHref %>"><%= c.next.text %></a><% } %>
+        </div>
+        <a class="btn btn-secondary btn-sm" href="<%= c.bookHref %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('directory.book') %></a>
+      </div>
+    </li>
+    <% }) %>
+  </ul>
+  <% if (meta.pages > 1) { %><div class="mt-4"><%- include('../../partials/pagination', { meta: meta }) %></div><% } %>
+  <% } %>
+
+  <p class="small muted dir-join"><%= t('directory.for_clinics') %> <a href="/signup"><%= t('directory.for_clinics_link') %></a></p>
+</div>

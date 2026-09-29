@@ -81,7 +81,8 @@
         } else if (c.key === 'expected') {
           actions = act(a.id, 'check-in', t('frontdesk.check_in'), 'user-check', 'btn-secondary', 1)
             + act(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', 'btn-ghost', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name }));
-          if (a.appointment_time < nowTime) badge = '<span class="badge badge-warning">' + escapeHtml(t('frontdesk.late')) + '</span>';
+          if (a.patient_phone && canBook) actions += '<a class="btn btn-ghost btn-sm" href="/app/messaging/wa/' + a.id + '" target="_blank" rel="noopener" title="' + escapeHtml(t('messaging.wa_send')) + '">' + icon('message-circle', 'icon-sm') + '<span>' + escapeHtml(t('messaging.wa_short')) + '</span></a>'; // WhatsApp click-to-chat reminder
+          if (a.appointment_time < nowTime) badge ='<span class="badge badge-warning">' + escapeHtml(t('frontdesk.late')) + '</span>';
         } else if (c.key === 'waiting') {
           badge = '<span class="badge ' + (a.waited >= 30 ? 'badge-danger' : a.waited >= 15 ? 'badge-warning' : 'badge-neutral') + '">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.waited', { n: a.waited })) + '</span>';
           actions = (a.doctor_id ? act(a.id, 'call-in', t('frontdesk.call_in'), 'door-open', 'btn-secondary', 1) : '')

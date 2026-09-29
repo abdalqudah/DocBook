@@ -1,0 +1,41 @@
+<%
+  // Verified reviews on the clinic page. part: 'doctor' (rating line on a doctor card, needs doctorId) | 'section'.
+  // Shows only the rating, the comment, the name the patient chose, the month and the clinic's reply.
+  var _rv = typeof clinic !== 'undefined' && clinic && clinic.reviews && clinic.reviews.count ? clinic.reviews : null;
+  var _stars = function (n) { var h = ''; for (var i = 1; i <= 5; i += 1) h += '<span class="rv-star' + (i <= Math.round(n) ? ' on' : '') + '">' + icon('star', 'icon-sm') + '</span>'; return h; };
+  var _one = function (v) { return (Math.round(v * 10) / 10).toFixed(1); };
+%>
+<% if (_rv && part === 'doctor') { var _d = _rv.byDoctor[doctorId]; if (_d) { %>
+<div class="rv-doc" aria-label="<%= t('reviews.aria_rating', { avg: _one(_d.avg), n: _d.count }) %>"><span class="rv-stars" aria-hidden="true"><%- _stars(_d.avg) %></span><strong class="num"><%= _one(_d.avg) %></strong><span class="muted tiny">(<%= fmt.number(_d.count) %>)</span></div>
+<% } } %>
+<% if (_rv && part === 'section') { %>
+<link rel="stylesheet" href="/css/engage.css?v=<%= assetV %>">
+<section class="portal-section" id="reviews">
+  <div class="portal-section-head"><h2><%= t('reviews.public_title') %></h2><p><%= t('reviews.public_sub') %></p></div>
+  <div class="portal-card rv-summary">
+    <div class="rv-avg">
+      <strong class="rv-avg-num num"><%= _one(_rv.avg) %></strong>
+      <span class="rv-stars rv-stars-lg" aria-hidden="true"><%- _stars(_rv.avg) %></span>
+      <span class="small muted"><%= t('reviews.count', { n: fmt.number(_rv.count) }) %></span>
+    </div>
+    <ul class="rv-dist" aria-label="<%= t('reviews.distribution') %>">
+      <% [5, 4, 3, 2, 1].forEach(function (k) { var pct = _rv.count ? Math.round(_rv.dist[k] * 100 / _rv.count) : 0; %>
+      <li><span class="rv-dist-k num"><%= k %></span><span class="rv-bar"><span style="width:<%= pct %>%"></span></span><span class="rv-dist-n num muted"><%= fmt.number(_rv.dist[k]) %></span></li>
+      <% }) %>
+    </ul>
+  </div>
+  <div class="rv-list">
+    <% _rv.latest.forEach(function (r) { var doc = locale === 'en' && r.doctor_name_en ? r.doctor_name_en : r.doctor_name; %>
+    <article class="portal-card rv-item">
+      <div class="rv-item-head">
+        <span class="rv-stars" aria-label="<%= t('reviews.stars_n', { n: r.rating }) %>"><%- _stars(r.rating) %></span>
+        <span class="tiny muted"><%= fmt.date(r.created_at, { month: 'long', year: 'numeric' }) %></span>
+      </div>
+      <div class="rv-who small"><strong><%= r.display_name || t('reviews.anonymous') %></strong><span class="rv-verified tiny muted"><%- icon('badge-check', 'icon-sm') %><%= t('reviews.verified_visit') %></span><% if (doc) { %><span class="tiny muted">· <%= doc %></span><% } %></div>
+      <% if (r.comment) { %><p class="rv-comment" dir="auto"><%= r.comment %></p><% } %>
+      <% if (r.reply) { %><div class="rv-reply"><div class="tiny strong"><%= t('reviews.clinic_reply', { clinic: clinic.displayName }) %></div><p dir="auto"><%= r.reply %></p></div><% } %>
+    </article>
+    <% }) %>
+  </div>
+</section>
+<% } %>

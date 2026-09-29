@@ -1,0 +1,145 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var one = function (v) { return v === null || v === undefined ? '—' : (Math.round(v * 10) / 10).toFixed(1); };
+  var stars = function (n) { var h = ''; for (var i = 1; i <= 5; i += 1) h += '<span class="rv-star' + (i <= Math.round(n || 0) ? ' on' : '') + '">' + icon('star', 'icon-sm') + '</span>'; return h; };
+  var filtered = f.doctor !== 'all' || f.rating || f.status;
+  var fe = typeof formError !== 'undefined' ? formError : null;
+  var errs = (typeof errors !== 'undefined' && errors) || {};
+  var o = (typeof old !== 'undefined' && old) || {};
+  var rf = typeof replyFor !== 'undefined' ? replyFor : null;
+  var pf = typeof reportFor !== 'undefined' ? reportFor : null;
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_insights') %></div>
+    <h1><%= t('reviews.title') %></h1>
+    <p><%= t('reviews.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (publicUrl && stats.count) { %><a class="btn btn-secondary" href="<%= publicUrl %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('reviews.view_public') %></a><% } %>
+    <% if (can('settings.manage')) { %><a class="btn btn-ghost" href="/app/settings/messaging"><%- icon('settings', 'icon-sm') %><%= t('reviews.request_settings') %></a><% } %>
+  </div>
+</div>
+
+<div class="stats cols-4">
+  <div class="stat"><div class="stat-label"><%= t('reviews.average') %></div><div class="stat-value"><%= one(stats.avg) %></div><div class="stat-meta"><span class="rv-stars" aria-hidden="true"><%- stars(stats.avg) %></span></div></div>
+  <div class="stat"><div class="stat-label"><%= t('reviews.total') %></div><div class="stat-value"><%= fmt.number(stats.count) %></div><div class="stat-meta"><%= t('reviews.published_only') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('reviews.unanswered') %></div><div class="stat-value"><%= fmt.number(stats.unanswered) %></div><div class="stat-meta"><%= t('reviews.unanswered_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('reviews.subratings') %></div>
+    <div class="rv-subs small">
+      <span><%= t('reviews.sub.doctor') %> <strong class="num"><%= one(stats.subs.doctor) %></strong></span>
+      <span><%= t('reviews.sub.wait') %> <strong class="num"><%= one(stats.subs.wait) %></strong></span>
+      <span><%= t('reviews.sub.clinic') %> <strong class="num"><%= one(stats.subs.clinic) %></strong></span>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-main mt-4 rv-grid">
+  <div class="panel flush">
+    <form class="table-toolbar" method="get" data-autosubmit>
+      <% if (doctors.length) { %>
+      <select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value="all"><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(f.doctor) === String(d.id) ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select>
+      <% } %>
+      <select class="select" name="rating" aria-label="<%= t('reviews.rating') %>"><option value=""><%= t('reviews.all_ratings') %></option><% [5, 4, 3, 2, 1].forEach(function (k) { %><option value="<%= k %>"<%= String(f.rating) === String(k) ? ' selected' : '' %>><%= t('reviews.stars_n', { n: k }) %></option><% }) %></select>
+      <select class="select" name="status" aria-label="<%= t('common.status') %>"><option value=""><%= t('common.all') %></option><% ['unanswered', 'reported', 'hidden'].forEach(function (k) { %><option value="<%= k %>"<%= f.status === k ? ' selected' : '' %>><%= t('reviews.filter.' + k) %></option><% }) %></select>
+      <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+      <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/reviews"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+    </form>
+    <% if (!rows.length) { %>
+      <% if (filtered) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/reviews">' + t('table.clear_filters') + '</a>' }) %>
+      <% } else { %>
+        <%- include('../../partials/empty', { emptyIcon: 'star', emptyTitle: t('reviews.empty_title'), emptyText: t('reviews.empty_text') }) %>
+      <% } %>
+    <% } else { %>
+    <ul class="rv-rows">
+      <% rows.forEach(function (r) { var doc = L(r.doctor_name, r.doctor_name_en); %>
+      <li class="rv-row<%= focus === r.id ? ' is-focus' : '' %>" id="review-<%= r.id %>">
+        <div class="rv-item-head">
+          <span class="rv-stars" aria-label="<%= t('reviews.stars_n', { n: r.rating }) %>"><%- stars(r.rating) %></span>
+          <div class="row-sm wrap">
+            <% if (r.status === 'hidden') { %><span class="badge badge-danger badge-dot"><%= t('reviews.hidden_badge') %></span><% } %>
+            <% if (r.reported_at && r.status !== 'hidden') { %><span class="badge badge-warning badge-dot"><%= t('reviews.reported_badge') %></span><% } %>
+            <span class="tiny muted"><%= fmt.date(r.created_at, { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+          </div>
+        </div>
+        <div class="rv-who small">
+          <strong><%= r.display_name || t('reviews.anonymous') %></strong>
+          <span class="rv-verified tiny muted"><%- icon('badge-check', 'icon-sm') %><%= t('reviews.verified_visit') %></span>
+          <% if (doc) { %><span class="tiny muted row-sm"><span class="doc-dot" style="<%= r.doctor_color ? 'background:' + r.doctor_color : '' %>"></span><%= doc %></span><% } %>
+          <span class="tiny muted">· <%= t('reviews.visit_of', { date: fmt.date(r.visit_date, { month: 'short', year: 'numeric' }) }) %></span>
+        </div>
+        <% if (r.rating_doctor || r.rating_wait || r.rating_clinic) { %>
+        <div class="rv-subs tiny muted">
+          <% if (r.rating_doctor) { %><span><%= t('reviews.sub.doctor') %> <strong class="num"><%= r.rating_doctor %>/5</strong></span><% } %>
+          <% if (r.rating_wait) { %><span><%= t('reviews.sub.wait') %> <strong class="num"><%= r.rating_wait %>/5</strong></span><% } %>
+          <% if (r.rating_clinic) { %><span><%= t('reviews.sub.clinic') %> <strong class="num"><%= r.rating_clinic %>/5</strong></span><% } %>
+        </div>
+        <% } %>
+        <% if (r.comment) { %><p class="rv-comment" dir="auto"><%= r.comment %></p><% } else { %><p class="rv-comment tiny muted"><%= t('reviews.no_comment') %></p><% } %>
+        <% if (r.status === 'hidden' && r.hidden_reason) { %><p class="tiny muted"><%= t('reviews.hidden_reason') %>: <%= r.hidden_reason %></p><% } %>
+        <% if (r.reported_at) { %><p class="tiny muted"><%= t('reviews.reported_on', { date: fmt.date(r.reported_at) }) %><% if (r.report_reason) { %> — <%= r.report_reason %><% } %></p><% } %>
+
+        <% if (r.reply) { %>
+        <div class="rv-reply"><div class="tiny strong"><%= t('reviews.your_reply') %> · <span class="muted"><%= fmt.date(r.replied_at) %></span></div><p dir="auto"><%= r.reply %></p></div>
+        <% } %>
+
+        <% if (canManage) { %>
+        <div class="rv-actions">
+          <% if (!r.reply && r.status === 'published') { %>
+          <details class="rv-details"<%= rf === r.id ? ' open' : '' %>>
+            <summary class="btn btn-secondary btn-sm"><%- icon('message-square', 'icon-sm') %><%= t('reviews.reply') %></summary>
+            <form method="post" action="/app/reviews/<%= r.id %>/reply" class="stack-sm mt-2" data-confirm="<%= t('reviews.reply_confirm') %>" data-confirm-title="<%= t('reviews.reply') %>" data-confirm-yes="<%= t('reviews.publish_reply') %>" data-confirm-tone="primary">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <% if (rf === r.id && fe) { %><div class="alert alert-error small"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= errs.reply || fe.message %></div></div><% } %>
+              <textarea class="textarea" name="reply" rows="3" maxlength="1000" dir="auto" required aria-label="<%= t('reviews.reply') %>" placeholder="<%= t('reviews.reply_ph') %>"><%= rf === r.id ? (o.reply || '') : '' %></textarea>
+              <span class="help"><%= t('reviews.reply_help') %></span>
+              <div><button class="btn btn-primary btn-sm" type="submit"><%= t('reviews.publish_reply') %></button></div>
+            </form>
+          </details>
+          <% } %>
+          <% if (!r.reported_at && r.status === 'published') { %>
+          <details class="rv-details"<%= pf === r.id ? ' open' : '' %>>
+            <summary class="btn btn-ghost btn-sm"><%- icon('triangle-alert', 'icon-sm') %><%= t('reviews.report') %></summary>
+            <form method="post" action="/app/reviews/<%= r.id %>/report" class="stack-sm mt-2">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <% if (pf === r.id && fe) { %><div class="alert alert-error small"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= errs.reason || fe.message %></div></div><% } %>
+              <textarea class="textarea" name="reason" rows="2" maxlength="500" dir="auto" required aria-label="<%= t('reviews.report_reason') %>" placeholder="<%= t('reviews.report_ph') %>"><%= pf === r.id ? (o.reason || '') : '' %></textarea>
+              <span class="help"><%= t('reviews.report_help') %></span>
+              <div><button class="btn btn-secondary btn-sm" type="submit"><%= t('reviews.send_report') %></button></div>
+            </form>
+          </details>
+          <% } %>
+        </div>
+        <% } %>
+      </li>
+      <% }) %>
+    </ul>
+    <%- include('../../partials/pagination', { meta: meta }) %>
+    <% } %>
+  </div>
+
+  <div class="stack">
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('reviews.distribution') %></h2></div>
+      <div class="panel-body">
+        <ul class="rv-dist">
+          <% [5, 4, 3, 2, 1].forEach(function (k) { var pct = stats.count ? Math.round(stats.dist[k] * 100 / stats.count) : 0; %>
+          <li><span class="rv-dist-k num"><%= k %></span><span class="rv-bar"><span style="width:<%= pct %>%"></span></span><span class="rv-dist-n num muted"><%= fmt.number(stats.dist[k]) %></span></li>
+          <% }) %>
+        </ul>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('reviews.rules_title') %></h2></div>
+      <div class="panel-body">
+        <ul class="rv-rules small muted">
+          <li><%- icon('badge-check', 'icon-sm') %><span><%= t('reviews.rule_verified') %></span></li>
+          <li><%- icon('lock', 'icon-sm') %><span><%= t('reviews.rule_no_edit') %></span></li>
+          <li><%- icon('message-square', 'icon-sm') %><span><%= t('reviews.rule_reply') %></span></li>
+          <li><%- icon('shield-check', 'icon-sm') %><span><%= t('reviews.rule_report') %></span></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,66 @@
+<%
+  var printing = query.print === '1';
+  var canIssue = can('certificates.issue');
+  var L = function (ar, en) { return locale === 'en' && en ? en : (ar || en || ''); };
+%>
+<% if (printing) { %>
+  <%- include('_sheet') %>
+<% } else { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/certificates"><%= t('certificates.title') %></a><%- icon('chevron-right', 'flip-rtl') %><bdi dir="ltr"><%= doc.serial %></bdi></div>
+    <h1><%= t('certificates.types.' + doc.doc_type) %></h1>
+    <p><%= doc.patient_name %> · <%= L(doc.doctor_name, doc.doctor_name_en) %></p>
+  </div>
+  <div class="page-actions">
+    <% if (doc.appointment_id && canAny('clinical.view', 'vitals.edit', 'frontdesk.use')) { %><a class="btn btn-ghost" href="/app/visits/<%= doc.appointment_id %>#documents"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('certificates.open_visit') %></a><% } %>
+    <% if (canIssue && !doc.revoked_at) { %><button class="btn btn-secondary" type="button" data-open-dialog="revoke-dialog"><%- icon('circle-x', 'icon-sm') %><%= t('certificates.revoke') %></button><% } %>
+    <a class="btn <%= doc.revoked_at ? 'btn-secondary' : 'btn-primary' %>" href="/app/certificates/<%= doc.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('certificates.print') %></a>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <div class="panel cert-screen"><%- include('_sheet') %></div>
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-body"><dl class="dl cert-dl">
+        <dt><%= t('certificates.status_label') %></dt>
+        <dd><% if (doc.revoked_at) { %><span class="badge badge-danger badge-dot"><%= t('certificates.status.revoked') %></span><% } else { %><span class="badge badge-success badge-dot"><%= t('certificates.status.valid') %></span><% } %></dd>
+        <dt><%= t('certificates.serial') %></dt><dd><bdi dir="ltr"><%= doc.serial %></bdi></dd>
+        <dt><%= t('certificates.verify_code') %></dt><dd><bdi dir="ltr" class="cert-code"><%= code %></bdi></dd>
+        <dt><%= t('certificates.language') %></dt><dd><%= t('certificates.lang_' + doc.language) %></dd>
+        <dt><%= t('certificates.issued_at') %></dt><dd><%= fmt.date(issued.date) %> · <bdi dir="ltr"><%= issued.time %></bdi></dd>
+        <dt><%= t('certificates.issued_by') %></dt><dd><%= doc.issued_by_name || '—' %></dd>
+        <% if (doc.revoked_at) { %>
+        <dt><%= t('certificates.revoked_at') %></dt><dd><%= fmt.date(revoked.date) %> · <bdi dir="ltr"><%= revoked.time %></bdi></dd>
+        <dt><%= t('certificates.revoked_by') %></dt><dd><%= doc.revoked_by_name || '—' %></dd>
+        <dt><%= t('certificates.revoke_reason') %></dt><dd style="white-space:pre-line"><%= doc.revoke_reason %></dd>
+        <% } %>
+        <% if (replaces) { %><dt><%= t('certificates.replaces_label') %></dt><dd><a href="/app/certificates/<%= replaces.id %>"><bdi dir="ltr"><%= replaces.serial %></bdi></a></dd><% } %>
+        <% if (replacedBy) { %><dt><%= t('certificates.replaced_by') %></dt><dd><a href="/app/certificates/<%= replacedBy.id %>"><bdi dir="ltr"><%= replacedBy.serial %></bdi></a></dd><% } %>
+      </dl></div>
+      <div class="panel-foot"><a class="btn btn-ghost btn-sm" href="<%= verifyUrl %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('verify_doc.title') %></a></div>
+    </div>
+    <p class="small muted"><%= t('certificates.authenticity') %></p>
+    <% if (canIssue && doc.revoked_at && doc.appointment_id && !replacedBy) { %>
+      <a class="btn btn-secondary" href="/app/certificates/new?visit=<%= doc.appointment_id %>&type=<%= doc.doc_type %>&from=<%= doc.id %>"><%- icon('refresh-cw', 'icon-sm') %><%= t('certificates.reissue') %></a>
+    <% } %>
+  </div>
+</div>
+
+<% if (canIssue && !doc.revoked_at) { %>
+<dialog class="dialog" id="revoke-dialog" aria-labelledby="revoke-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'revoke-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/certificates/<%= doc.id %>/revoke" novalidate data-confirm="<%= t('certificates.revoke_help') %>" data-confirm-title="<%= t('certificates.revoke_title') %>" data-confirm-yes="<%= t('certificates.revoke_yes') %>">
+    <div class="dialog-head"><h2 id="revoke-dialog-title"><%= t('certificates.revoke_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack-sm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <p class="small muted"><%= t('certificates.revoke_help') %></p>
+      <%- include('../../partials/field', { name: 'reason', label: t('certificates.revoke_reason'), type: 'textarea', required: true, value: '' }) %>
+      <% if (doc.appointment_id) { %><label class="check"><input type="checkbox" name="reissue" value="1"<%= typeof old !== 'undefined' && old && old.reissue === '1' ? ' checked' : '' %>><span><%= t('certificates.reissue_help') %></span></label><% } %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-danger" type="submit"><%= t('certificates.revoke_yes') %></button></div>
+  </form>
+</dialog>
+<% } %>
+<% } %>

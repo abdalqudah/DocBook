@@ -1,0 +1,105 @@
+<%
+  var st = !ready.listed ? 'off' : (ready.visible ? 'on' : 'wait');
+  var stText = { off: t('directory.status_off'), on: t('directory.status_listed'), wait: t('directory.status_waiting') }[st];
+  var checks = [
+    { ok: ready.checks.booking, text: t('directory.check_booking'), href: '/app/settings/portal' },
+    { ok: ready.checks.doctors, text: t('directory.check_doctors'), href: '/app/doctors' },
+    { ok: ready.checks.slug, text: t('directory.check_slug'), href: '/app/settings/portal' },
+    { ok: ready.checks.setup, text: t('directory.check_setup'), href: '/app/onboarding' },
+    { ok: ready.checks.city, text: t('directory.check_city'), href: '/app/settings/clinic', optional: true },
+    { ok: ready.checks.specialty, text: t('directory.check_specialty'), href: '/app/settings/clinic', optional: true },
+  ];
+%>
+<%- include('../settings/_head', { heading: t('widget.title'), lead: t('widget.lead'), actions: can('reports.view') ? '<a class="btn btn-secondary" href="/app/reports/bookings">' + icon('chart-pie', 'icon-sm') + escapeHtml(t('widget.report_link')) + '</a>' : '' }) %>
+<div class="settings-layout">
+  <%- include('../settings/_nav') %>
+  <div class="stack-lg">
+    <% if (!b.slug) { %>
+    <div class="alert alert-warning"><%- icon('triangle-alert') %><div class="grow"><%= t('widget.need_slug') %></div><a class="btn btn-secondary btn-sm" href="/app/settings/portal"><%= t('widget.need_slug_action') %></a></div>
+    <% } else if (!b.booking_enabled) { %>
+    <div class="alert alert-warning"><%- icon('triangle-alert') %><div class="grow"><%= t('widget.booking_off') %></div><a class="btn btn-secondary btn-sm" href="/app/settings/portal"><%= t('widget.booking_off_action') %></a></div>
+    <% } %>
+
+    <section class="panel" id="directory">
+      <div class="panel-head">
+        <div><h2><%= t('directory.settings_title') %></h2><div class="panel-sub"><%= t('directory.settings_sub') %></div></div>
+        <span class="bl-status <%= st %>"><span class="dot"></span><%= stText %></span>
+      </div>
+      <div class="panel-body stack">
+        <p class="small muted"><%= t('directory.shown_text') %></p>
+        <% if (st !== 'on') { %>
+        <ul class="checklist bl-checks">
+          <% checks.forEach(function (c) { %><li class="<%= c.ok ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= c.text %><% if (c.optional) { %><span class="tiny muted"><%= t('directory.optional') %></span><% } %></span><% if (!c.ok) { %><a class="link small" href="<%= c.href %>"><%= t('common.manage') %></a><% } %></li><% }) %>
+        </ul>
+        <% } %>
+        <form method="post" action="/app/settings/booking-links/directory" class="row between wrap set-toggle-row"<% if (ready.listed) { %> data-confirm="<%= t('directory.off_confirm') %>" data-confirm-title="<%= t('directory.settings_title') %>" data-confirm-yes="<%= t('directory.turn_off') %>"<% } %>>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="directory_listed" value="<%= ready.listed ? '0' : '1' %>">
+          <div class="small grow" style="min-width:220px"><span class="strong"><%= t('directory.toggle_label') %></span><% if (st === 'wait') { %><div class="muted"><%= t('directory.waiting_text') %></div><% } %></div>
+          <% if (ready.visible) { %><a class="btn btn-ghost btn-sm" href="/clinics" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('directory.view_listing') %></a><% } %>
+          <button class="btn <%= ready.listed ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%- icon(ready.listed ? 'toggle-right' : 'toggle-left', 'icon-sm') %><%= ready.listed ? t('directory.turn_off') : t('directory.turn_on') %></button>
+        </form>
+      </div>
+    </section>
+
+    <% if (b.slug) { %>
+    <section class="panel" id="widget">
+      <div class="panel-head"><div><h2><%= t('widget.embed_title') %></h2><div class="panel-sub"><%= t('widget.embed_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <div class="bl-code">
+          <pre dir="ltr" id="bl-script" aria-label="<%= t('widget.embed_code') %>"><%= scriptCode %></pre>
+          <button class="btn btn-secondary btn-sm" type="button" data-copy="bl-script"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button>
+        </div>
+        <div class="row wrap">
+          <button class="btn btn-secondary btn-sm" type="button" data-docbook-book><%- icon('mouse-pointer-click', 'icon-sm') %><%= t('widget.preview') %></button>
+          <span class="small muted"><%= t('widget.preview_note') %></span>
+        </div>
+        <form class="stack" method="post" action="/app/settings/booking-links/origins" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('../../partials/field', { name: 'widget_origins', label: t('widget.origins_label'), type: 'textarea', value: origins, help: t('widget.origins_help'), placeholder: 'https://www.example.com' }) %>
+          <div><button class="btn btn-secondary btn-sm" type="submit"><%= t('widget.origins_save') %></button></div>
+        </form>
+      </div>
+      <div class="panel-foot stack-sm">
+        <div><div class="strong small"><%= t('widget.button_title') %></div><div class="small muted"><%= t('widget.button_sub') %></div></div>
+        <div class="bl-code">
+          <pre dir="ltr" id="bl-button"><%= buttonCode %></pre>
+          <button class="btn btn-secondary btn-sm" type="button" data-copy="bl-button"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="links">
+      <div class="panel-head"><div><h2><%= t('widget.links_title') %></h2><div class="panel-sub"><%= t('widget.links_sub') %></div></div></div>
+      <div class="panel-body">
+        <ul class="bl-links">
+          <% links.forEach(function (l) { %>
+          <li>
+            <div class="bl-name"><%- icon(l.icon, 'icon-sm') %><div style="min-width:0"><div class="strong small"><%= t('channels.names.' + l.key) %></div><div class="tiny muted"><%= t('widget.where_' + l.key) %></div></div></div>
+            <code dir="ltr" id="bl-link-<%= l.key %>" title="<%= l.url %>"><%= l.url %></code>
+            <span class="row-sm">
+              <button class="btn btn-secondary btn-sm" type="button" data-copy="bl-link-<%= l.key %>"><%- icon('copy', 'icon-sm') %><span class="hide-sm"><%= t('common.copy') %></span></button>
+              <a class="btn btn-ghost btn-sm btn-icon" href="<%= l.url %>" target="_blank" rel="noopener" aria-label="<%= t('widget.open') %>" title="<%= t('widget.open') %>"><%- icon('external-link', 'icon-sm') %></a>
+            </span>
+          </li>
+          <% }) %>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel" id="qr">
+      <div class="panel-head"><div><h2><%= t('widget.qr_title') %></h2><div class="panel-sub"><%= t('widget.qr_sub') %></div></div></div>
+      <div class="panel-body bl-qr">
+        <div class="bl-qr-box"><img src="<%= qr %>" alt="<%= t('widget.qr_alt') %>" width="152" height="152"></div>
+        <div class="stack-sm" style="min-width:0;flex:1">
+          <code class="small muted truncate" dir="ltr" style="display:block"><%= qrUrl %></code>
+          <div class="row wrap">
+            <a class="btn btn-secondary btn-sm" href="/app/settings/booking-links/qr.png" download><%- icon('download', 'icon-sm') %><%= t('widget.qr_png') %></a>
+            <a class="btn btn-ghost btn-sm" href="/app/settings/booking-links/qr.svg" download><%- icon('download', 'icon-sm') %><%= t('widget.qr_svg') %></a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <script src="/widget.js" data-clinic="<%= b.slug %>" data-lang="<%= locale %>" data-button="none" defer></script>
+    <% } %>
+  </div>
+</div>

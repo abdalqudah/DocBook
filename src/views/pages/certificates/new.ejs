@@ -1,0 +1,86 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : (ar || en || ''); };
+  var o = old || {};
+  var on = function (k) { return o[k] === '1' || o[k] === 'on' || o[k] === true; };
+  var errs = typeof errors !== 'undefined' && errors ? errors : {};
+  var maxStart = (function () { var x = new Date(a.appointment_date + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + 7); return x.toISOString().slice(0, 10); })();
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/visits/<%= a.id %>"><%= t('visits.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('certificates.issue_new') %></div>
+    <h1><%= t('certificates.new_title', { type: t('certificates.types.' + type) }) %></h1>
+    <p><%= a.patient_name %> · <%= t('certificates.for_visit', { date: fmt.date(a.appointment_date), doctor: a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : '—' }) %></p>
+  </div>
+</div>
+
+<nav class="segmented mb-4 cert-types" aria-label="<%= t('certificates.type') %>">
+  <% ['sick_leave', 'medical_report', 'attendance'].forEach(function (ty) { %><a class="<%= ty === type ? 'active' : '' %>" href="/app/certificates/new?visit=<%= a.id %>&type=<%= ty %>"<%- ty === type ? ' aria-current="page"' : '' %>><%= t('certificates.types.' + ty) %></a><% }) %>
+</nav>
+
+<form class="panel cert-form" method="post" action="/app/certificates/new" novalidate data-cert-form>
+  <div class="panel-body stack">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="visit" value="<%= a.id %>">
+    <input type="hidden" name="doc_type" value="<%= type %>">
+    <% if (o.replaces_id) { %><input type="hidden" name="replaces_id" value="<%= o.replaces_id %>"><% } %>
+    <%- include('../../partials/form-error') %>
+    <% if (copy) { %><div class="alert alert-info"><%- icon('refresh-cw') %><div class="grow"><%= t('certificates.replaces', { serial: copy.serial }) %></div></div><% } %>
+
+    <div class="form-grid">
+      <div class="field">
+        <span class="label"><%= t('certificates.language') %></span>
+        <div class="segmented" role="radiogroup" aria-label="<%= t('certificates.language') %>">
+          <label><input type="radio" name="language" value="ar"<%= o.language !== 'en' ? ' checked' : '' %>><span lang="ar">العربية</span></label>
+          <label><input type="radio" name="language" value="en"<%= o.language === 'en' ? ' checked' : '' %>><span lang="en">English</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label"><%= t('certificates.patient') %></span>
+        <div class="strong"><%= a.patient_name %></div>
+        <% if (d.nationalId) { %>
+          <label class="check mt-2"><input type="checkbox" name="include_national_id" value="1"<%= on('include_national_id') ? ' checked' : '' %>><span><%= t('certificates.include_national_id', { id: d.nationalId }) %></span></label>
+        <% } else { %><span class="help"><%= t('certificates.no_national_id') %></span><% } %>
+      </div>
+    </div>
+
+    <% if (type === 'sick_leave') { %>
+    <div class="form-grid cols-3">
+      <%- include('../../partials/field', { name: 'leave_start', label: t('certificates.leave_start'), type: 'date', required: true, value: o.leave_start, attrs: 'min="' + a.appointment_date + '" max="' + maxStart + '" data-leave-start' }) %>
+      <%- include('../../partials/field', { name: 'leave_days', label: t('certificates.leave_days'), type: 'number', required: true, value: o.leave_days, attrs: 'min="1" max="' + maxDays + '" inputmode="numeric" data-leave-days' }) %>
+      <div class="field"><span class="label"><%= t('certificates.leave_end') %></span><div class="input cert-readout" data-leave-end aria-live="polite">—</div></div>
+    </div>
+    <p class="help"><%= t('certificates.leave_help', { max: maxDays }) %></p>
+    <div class="stack-sm">
+      <label class="check"><input type="checkbox" name="show_diagnosis" value="1"<%= on('show_diagnosis') ? ' checked' : '' %> data-toggle-target="cert-diagnosis"><span><%= t('certificates.show_diagnosis') %></span></label>
+      <p class="help"><%= t('certificates.show_diagnosis_help') %></p>
+      <div id="cert-diagnosis" data-toggle-box><%- include('../../partials/field', { name: 'diagnosis', label: t('certificates.diagnosis'), value: o.diagnosis }) %></div>
+    </div>
+    <div class="stack-sm">
+      <label class="check"><input type="checkbox" name="companion_leave" value="1"<%= on('companion_leave') ? ' checked' : '' %> data-toggle-target="cert-companion"><span><%= t('certificates.companion_leave') %></span></label>
+      <div class="form-grid" id="cert-companion" data-toggle-box>
+        <%- include('../../partials/field', { name: 'companion_name', label: t('certificates.companion_name'), value: o.companion_name }) %>
+        <%- include('../../partials/field', { name: 'companion_relation', label: t('certificates.companion_relation'), value: o.companion_relation, placeholder: t('certificates.companion_relation_ph') }) %>
+      </div>
+    </div>
+    <% } else if (type === 'medical_report') { %>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'addressee', label: t('certificates.addressee'), value: o.addressee, placeholder: t('certificates.addressee_ph'), cls: 'full' }) %>
+      <%- include('../../partials/field', { name: 'findings', label: t('certificates.findings'), type: 'textarea', value: o.findings, placeholder: t('certificates.findings_ph'), cls: 'full' }) %>
+      <%- include('../../partials/field', { name: 'diagnosis', label: t('certificates.diagnosis'), type: 'textarea', value: o.diagnosis, cls: 'full' }) %>
+      <%- include('../../partials/field', { name: 'recommendations', label: t('certificates.recommendations'), type: 'textarea', value: o.recommendations, cls: 'full' }) %>
+      <%- include('../../partials/field', { name: 'attachments', label: t('certificates.attachments'), type: 'textarea', value: o.attachments, help: t('certificates.attachments_help'), cls: 'full' }) %>
+    </div>
+    <% } else { %>
+    <div class="form-grid cols-3">
+      <div class="field"><span class="label"><%= t('common.date') %></span><div class="input cert-readout"><%= fmt.date(a.appointment_date) %></div></div>
+      <%- include('../../partials/field', { name: 'time_from', label: t('certificates.time_from'), type: 'time', required: true, value: o.time_from }) %>
+      <%- include('../../partials/field', { name: 'time_to', label: t('certificates.time_to'), type: 'time', required: true, value: o.time_to }) %>
+    </div>
+    <% } %>
+    <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('certificates.prefilled') %></p>
+  </div>
+  <div class="panel-foot">
+    <a class="btn btn-ghost" href="/app/visits/<%= a.id %>#documents"><%= t('common.cancel') %></a>
+    <button class="btn btn-primary" type="submit"><%- icon('badge-check', 'icon-sm') %><%= t('certificates.issue') %></button>
+  </div>
+</form>

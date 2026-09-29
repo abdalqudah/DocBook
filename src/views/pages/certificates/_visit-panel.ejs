@@ -1,0 +1,24 @@
+<%/* "Documents" panel on the visit page (data: res.locals.certPanel from modules/certificates/web.js). */%>
+<% var cp = certPanel; %>
+<div class="panel flush" id="documents">
+  <div class="panel-head"><h2><%- icon('badge-check', 'icon-sm') %> <%= t('certificates.panel_title') %></h2><% if (cp.docs.length) { %><span class="badge"><%= fmt.number(cp.docs.length) %></span><% } %></div>
+  <% if (!cp.docs.length) { %>
+    <div class="flush-empty small muted"><%= cp.canIssue ? t('certificates.panel_hint') : t('certificates.panel_empty') %></div>
+  <% } else { %>
+  <ul class="action-list">
+    <% cp.docs.forEach(function (d) { %>
+    <li><a href="/app/certificates/<%= d.id %>"><span class="action-icon"><%- icon('file-text') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= t('certificates.types.' + d.doc_type) %><% if (d.revoked_at) { %> <span class="badge badge-dot"><%= t('certificates.status.revoked') %></span><% } %></div><div class="tiny muted" dir="auto"><bdi dir="ltr"><%= d.serial %></bdi><% if (d.doc_type === 'sick_leave' && d.leave_start) { %> · <%= fmt.date(d.leave_start, { day: 'numeric', month: 'short' }) %> – <%= fmt.date(d.leave_end, { day: 'numeric', month: 'short' }) %><% } %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+    <% }) %>
+  </ul>
+  <% } %>
+  <% if (cp.canIssue) { %>
+  <div class="panel-foot">
+    <details class="dropdown">
+      <summary class="btn btn-secondary btn-sm"><%- icon('plus', 'icon-sm') %><%= t('certificates.issue_new') %><%- icon('chevron-down', 'icon-sm') %></summary>
+      <div class="menu">
+        <% cp.types.forEach(function (ty) { %><a href="/app/certificates/new?visit=<%= cp.visitId %>&type=<%= ty %>"><%- icon('file-text', 'icon-sm') %><%= t('certificates.types.' + ty) %></a><% }) %>
+      </div>
+    </details>
+  </div>
+  <% } %>
+</div>

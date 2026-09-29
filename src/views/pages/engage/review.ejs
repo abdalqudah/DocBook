@@ -1,0 +1,77 @@
+<%
+  var o = (typeof old !== 'undefined' && old) || {};
+  var errs = (typeof errors !== 'undefined' && errors) || {};
+  var fe = typeof formError !== 'undefined' ? formError : null;
+  var initialsOf = function (n) { return String(n || '').trim().split(/\s+/).slice(0, 3).map(function (p) { return p.charAt(0) + '.'; }).join(' '); };
+  var starGroup = function (name, label, required, big) {
+    var h = '<fieldset class="eg-stars-field' + (big ? ' big' : '') + '"><legend class="' + (big ? 'eg-legend' : 'small') + '">' + escapeHtml(label) + (required ? '' : ' <span class="muted tiny">(' + escapeHtml(t('messaging.optional')) + ')</span>') + '</legend><div class="eg-stars">';
+    for (var i = 5; i >= 1; i -= 1) {
+      var id = 'rv-' + name + '-' + i;
+      h += '<input type="radio" id="' + id + '" name="' + name + '" value="' + i + '"' + (String(o[name]) === String(i) ? ' checked' : '') + (required && i === 5 ? ' required' : '') + '>'
+        + '<label for="' + id + '" title="' + escapeHtml(t('reviews.stars_n', { n: i })) + '">' + icon('star') + '<span class="sr-only">' + escapeHtml(t('reviews.stars_n', { n: i })) + '</span></label>';
+    }
+    h += '</div>' + (errs[name] ? '<span class="field-error">' + escapeHtml(errs[name]) + '</span>' : '') + '</fieldset>';
+    return h;
+  };
+  var mode = o.display_mode || 'initials';
+%>
+<div class="container eg-page">
+  <% if (thanks || (typeof stopped !== 'undefined' && stopped)) { %>
+  <section class="eg-card eg-center">
+    <span class="eg-icon"><%- icon(thanks ? 'circle-check' : 'bell') %></span>
+    <h1 class="eg-h1"><%= thanks ? t('reviews.thanks_title') : t('messaging.done.stopped') %></h1>
+    <p class="muted"><%= thanks ? t('reviews.thanks_text', { clinic: clinic.displayName }) : t('messaging.stopped_text') %></p>
+    <% if (thanks && clinic.slug) { %><a class="btn btn-secondary mt-3" href="/<%= clinic.slug %>#reviews"><%= t('reviews.see_clinic') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
+  </section>
+  <% } else if (state === 'done') { %>
+  <section class="eg-card eg-center">
+    <span class="eg-icon"><%- icon('badge-check') %></span>
+    <h1 class="eg-h1"><%= t('reviews.already_title') %></h1>
+    <p class="muted"><%= t('reviews.already_text') %></p>
+  </section>
+  <% } else if (state === 'not_visited') { %>
+  <section class="eg-card eg-center">
+    <span class="eg-icon"><%- icon('info') %></span>
+    <h1 class="eg-h1"><%= t('reviews.not_visited_title') %></h1>
+    <p class="muted"><%= t('reviews.not_visited_text') %></p>
+  </section>
+  <% } else { %>
+  <section class="eg-card">
+    <span class="tiny muted"><%= clinic.displayName %></span>
+    <h1 class="eg-h1"><%= t('reviews.form_title') %></h1>
+    <p class="small muted"><%= t('reviews.form_sub', { date: fmt.date(visitDate, { day: 'numeric', month: 'long', year: 'numeric' }) }) %><% if (doctor) { %> · <%= doctor %><% } %></p>
+    <% if (fe) { %><div class="alert alert-error mt-3" role="alert"><%- icon('circle-alert') %><div class="grow"><%= fe.message %></div></div><% } %>
+
+    <form method="post" action="/review/<%= token %>" class="stack mt-4" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="eg-hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" value=""></label></div>
+      <%- starGroup('rating', t('reviews.overall'), true, true) %>
+      <div class="eg-subratings">
+        <%- starGroup('rating_doctor', t('reviews.sub.doctor'), false, false) %>
+        <%- starGroup('rating_wait', t('reviews.sub.wait'), false, false) %>
+        <%- starGroup('rating_clinic', t('reviews.sub.clinic'), false, false) %>
+      </div>
+      <div class="field">
+        <label class="label" for="rv-comment"><%= t('reviews.comment') %> <span class="muted tiny">(<%= t('messaging.optional') %>)</span></label>
+        <textarea class="textarea<%= errs.comment ? ' is-invalid' : '' %>" id="rv-comment" name="comment" rows="4" maxlength="<%= maxComment %>" dir="auto" data-count="rv-count" placeholder="<%= t('reviews.comment_ph') %>"><%= o.comment || '' %></textarea>
+        <span class="help row between"><span><%= t('reviews.comment_help') %></span><span class="num" id="rv-count" aria-live="polite"></span></span>
+        <% if (errs.comment) { %><span class="field-error"><%= errs.comment %></span><% } %>
+      </div>
+      <fieldset class="field">
+        <legend class="label"><%= t('reviews.show_as') %></legend>
+        <div class="eg-modes">
+          <% [['full', patientName], ['initials', initialsOf(patientName)], ['anonymous', t('reviews.anonymous')]].forEach(function (m) { %>
+          <label class="eg-mode"><input type="radio" name="display_mode" value="<%= m[0] %>"<%= mode === m[0] ? ' checked' : '' %>><span><strong><%= t('reviews.mode.' + m[0]) %></strong><span class="tiny muted"><%= m[1] %></span></span></label>
+          <% }) %>
+        </div>
+      </fieldset>
+      <p class="tiny muted"><%- icon('lock', 'icon-sm') %> <%= t('reviews.privacy') %></p>
+      <div><button class="btn btn-primary btn-lg" type="submit"><%- icon('send', 'icon-sm') %><%= t('reviews.submit') %></button></div>
+    </form>
+  </section>
+  <form method="post" action="/review/<%= token %>/stop" class="eg-foot tiny muted">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button class="linkish" type="submit"><%= t('messaging.stop_link') %></button>
+  </form>
+  <% } %>
+</div>

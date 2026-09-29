@@ -248,6 +248,7 @@ async function sitemap(s, base) {
   const urls = [];
   if (s.index_home) urls.push({ loc: '/' });
   if (s.index_clinics) for (const c of await listedClinics()) urls.push({ loc: `/${c.slug}`, lastmod: c.updated_at });
+  if (s.index_clinics) urls.push(...await require('../discover/directory.service').sitemapUrls()); // eslint-disable-line global-require -- clinic directory pages
   const alt = (loc) => ['ar', 'en'].map((lc) => `<xhtml:link rel="alternate" hreflang="${lc}" href="${x(`${base}${loc}?lang=${lc}`)}"/>`).join('')
     + `<xhtml:link rel="alternate" hreflang="x-default" href="${x(base + loc)}"/>`;
   const body = urls.map((u) => `<url><loc>${x(base + u.loc)}</loc>${u.lastmod ? `<lastmod>${new Date(u.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${alt(u.loc)}</url>`).join('\n');
@@ -318,7 +319,8 @@ function clinicLd({ clinic, doctors, base, locale }) {
       ...(clinic.booking_enabled ? { url: `${url}/book?doctor=${d.id}` } : {}),
     }));
   }
-  if (clinic.booking_enabled) ld.potentialAction = { '@type': 'ReserveAction', target: { '@type': 'EntryPoint', urlTemplate: `${url}/book`, inLanguage: ['ar', 'en'] }, name: locale === 'ar' ? 'احجز موعدًا' : 'Book an appointment' };
+  if (clinic.reviews && clinic.reviews.count) Object.assign(ld, require('../reviews/reviews.service').jsonLd(clinic.reviews, locale)); // eslint-disable-line global-require -- verified reviews
+  if (clinic.booking_enabled) ld.potentialAction ={ '@type': 'ReserveAction', target: { '@type': 'EntryPoint', urlTemplate: `${url}/book`, inLanguage: ['ar', 'en'] }, name: locale === 'ar' ? 'احجز موعدًا' : 'Book an appointment' };
   return [ld];
 }
 

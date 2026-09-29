@@ -10,6 +10,7 @@
     "nav_overview": "Overview",
     "nav_clinic": "Clinic profile",
     "nav_portal": "Clinic page & booking",
+    "nav_booking_links": "Booking button & links",
     "nav_team": "Staff & logins",
     "nav_roles": "Roles & permissions",
     "nav_insurance": "Insurance companies",
@@ -25,6 +26,7 @@
     "group_data": "Data",
     "desc_clinic": "Name in Arabic and English, specialty, contact details, address and time zone.",
     "desc_portal": "Your public address for online booking and the staff sign-in entry.",
+    "desc_booking_links": "Website booking button, tracked links, QR code and the DocBook clinic directory.",
     "desc_team": "Logins for doctors, nurses, reception and accounting — invite, reset passwords, disable.",
     "desc_roles": "What each role can see and do, plus your own custom roles.",
     "desc_insurance": "Insurance companies you accept and their coverage.",
@@ -398,7 +400,9 @@
       "restored": "restored"
     },
     "nav_database": "Your database",
-    "desc_database": "Copy the clinic data to your own MySQL or PostgreSQL database."
+    "desc_database": "Copy the clinic data to your own MySQL or PostgreSQL database.",
+    "nav_messaging": "Messages & reminders",
+    "desc_messaging": "WhatsApp, SMS and e-mail confirmations, reminders and review requests."
   },
   "team": {
     "lead": "Everyone who signs in to your clinic — doctors, nurses, reception, accounting and management. Each person gets their own login and sees only what their role allows.",

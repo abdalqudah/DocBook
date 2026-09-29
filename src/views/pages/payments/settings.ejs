@@ -1,0 +1,122 @@
+<%
+  var o = old || {};
+  var val = function (k, d) { return o[k] !== undefined ? o[k] : d; };
+  var provider = val('provider', gw.provider);
+  var mode = val('mode', gw.mode);
+  var statusKey = gw.provider === 'none' ? 'status_off' : gw.ready ? 'status_ready' : 'status_incomplete';
+%>
+<%- include('../settings/_head', { heading: t('settings.nav_payments'), lead: t('payments.settings.lead'), actions: can('billing.view') ? '<a class="btn btn-secondary" href="/app/payments">' + icon('receipt', 'icon-sm') + escapeHtml(t('payments.settings.view_payments')) + '</a>' : '' }) %>
+<div class="settings-layout">
+  <%- include('../settings/_nav') %>
+  <div class="stack-lg">
+    <form class="stack-lg" method="post" action="/app/settings/payments" novalidate data-pay-settings>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2><%= t('payments.settings.gateway_title') %></h2><div class="panel-sub"><%= t('payments.settings.gateway_sub') %></div></div>
+          <span class="badge badge-dot <%= gw.provider !== 'none' && !gw.ready ? 'badge-warning' : 'badge-neutral' %>"><%= t('payments.settings.' + statusKey) %></span>
+        </div>
+        <div class="panel-body stack">
+          <%- include('../../partials/form-error') %>
+          <% if (gw.unreadable) { %><div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><%= t('payments.settings.unreadable') %></div></div><% } %>
+          <fieldset class="pay-fieldset">
+            <legend class="label"><%= t('payments.settings.provider_label') %></legend>
+            <div class="choice-grid">
+              <% providers.forEach(function (p) { %>
+              <label class="choice"><input type="radio" name="provider" value="<%= p %>"<%= provider === p ? ' checked' : '' %> data-provider-choice><span class="box"><span class="name"><%= t('payments.providers.' + p) %></span><span class="meta"><%= t('payments.settings.provider_meta.' + p) %></span></span></label>
+              <% }) %>
+            </div>
+          </fieldset>
+
+          <div class="stack" data-provider-when="paytabs hyperpay">
+            <div class="form-grid">
+              <div class="field">
+                <span class="label"><%= t('payments.settings.mode_label') %></span>
+                <div class="segmented" role="radiogroup" aria-label="<%= t('payments.settings.mode_label') %>">
+                  <% ['test', 'live'].forEach(function (m) { %><label><input type="radio" name="mode" value="<%= m %>"<%= mode === m ? ' checked' : '' %>><span><%= t('payments.modes.' + m) %></span></label><% }) %>
+                </div>
+                <span class="help"><%= t('payments.settings.mode_help') %></span>
+              </div>
+              <%- include('../../partials/field', { name: 'hold_minutes', label: t('payments.settings.hold_label'), type: 'number', value: val('hold_minutes', gw.holdMinutes), suffix: t('payments.settings.minutes'), help: t('payments.settings.hold_help'), attrs: 'min="0" max="1440" inputmode="numeric" dir="ltr"' }) %>
+            </div>
+            <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('payments.settings.currency_note', { currency: b.currency }) %></p>
+          </div>
+
+          <div class="stack pay-provider" data-provider-when="paytabs">
+            <h3 class="small strong"><%= t('payments.providers.paytabs') %></h3>
+            <div class="form-grid">
+              <%- include('../../partials/field', { name: 'pt_region', label: t('payments.settings.region_label'), type: 'select', value: val('pt_region', gw.region), options: regions.map(function (r) { return { value: r, label: t('payments.regions.' + r) }; }), help: t('payments.settings.region_help') }) %>
+              <%- include('../../partials/field', { name: 'pt_profile_id', label: t('payments.settings.profile_id'), value: val('pt_profile_id', gw.profileId), attrs: 'inputmode="numeric" dir="ltr" autocomplete="off"', help: t('payments.settings.profile_id_help') }) %>
+              <%- include('../../partials/field', { name: 'pt_server_key', label: t('payments.settings.server_key'), type: 'password', value: '', autocomplete: 'new-password', attrs: 'dir="ltr"', cls: 'full', placeholder: gw.serverKeySet && gw.provider === 'paytabs' ? t('payments.settings.secret_keep') : '', help: gw.serverKeySet && gw.provider === 'paytabs' ? t('payments.settings.secret_set', { hint: gw.serverKeyHint }) : t('payments.settings.server_key_help') }) %>
+            </div>
+          </div>
+
+          <div class="stack pay-provider" data-provider-when="hyperpay">
+            <h3 class="small strong"><%= t('payments.providers.hyperpay') %></h3>
+            <div class="form-grid">
+              <%- include('../../partials/field', { name: 'hp_entity_card', label: t('payments.settings.entity_card'), value: val('hp_entity_card', gw.entityCard), attrs: 'dir="ltr" autocomplete="off" spellcheck="false"', help: t('payments.settings.entity_card_help') }) %>
+              <%- include('../../partials/field', { name: 'hp_entity_mada', label: t('payments.settings.entity_mada'), value: val('hp_entity_mada', gw.entityMada), attrs: 'dir="ltr" autocomplete="off" spellcheck="false"', help: t('payments.settings.entity_mada_help') }) %>
+              <%- include('../../partials/field', { name: 'hp_access_token', label: t('payments.settings.access_token'), type: 'password', value: '', autocomplete: 'new-password', attrs: 'dir="ltr"', cls: 'full', placeholder: gw.accessTokenSet && gw.provider === 'hyperpay' ? t('payments.settings.secret_keep') : '', help: gw.accessTokenSet && gw.provider === 'hyperpay' ? t('payments.settings.secret_set', { hint: gw.accessTokenHint }) : t('payments.settings.access_token_help') }) %>
+            </div>
+            <p class="tiny muted"><%= t('payments.settings.hyperpay_urls', { test: 'eu-test.oppwa.com', live: 'eu-prod.oppwa.com' }) %></p>
+          </div>
+          <p class="tiny muted"><%- icon('lock', 'icon-sm') %> <%= t('payments.settings.security_note') %></p>
+        </div>
+        <div class="panel-foot row end"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+      </section>
+    </form>
+
+    <% if (gw.provider !== 'none') { %>
+    <section class="panel" id="test">
+      <div class="panel-head"><div><h2><%= t('payments.settings.test_title') %></h2><div class="panel-sub"><%= t('payments.settings.test_sub') %></div></div>
+        <% if (gw.testedAt) { %><span class="badge badge-dot <%= gw.testOk ? 'badge-neutral' : 'badge-danger' %>"><%= gw.testOk ? t('payments.settings.tested_ok', { when: fmt.date(gw.testedAt, { dateStyle: 'medium', timeStyle: 'short' }) }) : t('payments.settings.tested_fail', { when: fmt.date(gw.testedAt, { dateStyle: 'medium', timeStyle: 'short' }) }) %></span><% } %></div>
+      <div class="panel-body row between wrap">
+        <p class="small muted grow" style="min-width:240px"><%= t('payments.settings.test_text.' + gw.provider) %></p>
+        <form method="post" action="/app/settings/payments/test"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"<%= gw.ready ? '' : ' disabled' %>><%- icon('plug', 'icon-sm') %><%= t('payments.settings.test_btn') %></button></form>
+      </div>
+    </section>
+    <% } %>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('payments.settings.setup_title') %></h2><div class="panel-sub"><%= t('payments.settings.setup_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <% if (!https) { %><div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><%= t('payments.settings.https_warn') %></div></div><% } %>
+        <div class="grid grid-2">
+          <div class="stack-sm">
+            <h3 class="small strong"><%= t('payments.providers.paytabs') %></h3>
+            <ol class="pay-steps small">
+              <% [1, 2, 3, 4, 5].forEach(function (n) { %><li><%= t('payments.settings.paytabs_steps.s' + n) %></li><% }) %>
+            </ol>
+            <div class="stack-sm">
+              <span class="tiny muted"><%= t('payments.settings.url_callback') %></span>
+              <div class="set-url"><code class="grow truncate" data-copy-source dir="ltr"><%= urls.paytabsCallback %></code></div>
+              <span class="tiny muted"><%= t('payments.settings.url_return') %></span>
+              <div class="set-url"><code class="grow truncate" data-copy-source dir="ltr"><%= urls.paytabsReturn %></code></div>
+            </div>
+          </div>
+          <div class="stack-sm">
+            <h3 class="small strong"><%= t('payments.providers.hyperpay') %></h3>
+            <ol class="pay-steps small">
+              <% [1, 2, 3, 4, 5].forEach(function (n) { %><li><%= t('payments.settings.hyperpay_steps.s' + n) %></li><% }) %>
+            </ol>
+            <div class="stack-sm">
+              <span class="tiny muted"><%= t('payments.settings.url_shopper') %></span>
+              <div class="set-url"><code class="grow truncate" data-copy-source dir="ltr"><%= urls.hyperpayReturn %></code></div>
+              <span class="tiny muted"><%= t('payments.settings.url_domain') %></span>
+              <div class="set-url"><code class="grow truncate" data-copy-source dir="ltr"><%= urls.domain %></code><button class="btn btn-ghost btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><span class="hide-sm"><%= t('common.copy') %></span></button></div>
+            </div>
+          </div>
+        </div>
+        <p class="tiny muted"><%= t('payments.settings.urls_note') %></p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('payments.settings.manual_title') %></h2><div class="panel-sub"><%= t('payments.settings.manual_sub') %></div></div></div>
+      <div class="panel-body row between wrap">
+        <p class="small muted grow" style="min-width:240px"><%= b.online_payment_instructions || b.online_payment_instructions_en ? t('payments.settings.manual_on') : t('payments.settings.manual_off') %></p>
+        <a class="btn btn-secondary" href="/app/settings/portal#telehealth"><%- icon('banknote', 'icon-sm') %><%= t('payments.settings.manual_link') %></a>
+      </div>
+    </section>
+  </div>
+</div>

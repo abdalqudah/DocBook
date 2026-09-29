@@ -5,6 +5,7 @@
   var seoTitle = typeof pageTitle !== 'undefined' && pageTitle ? pageTitle : ((typeof title !== 'undefined' && title ? title + ' · ' : '') + brandName);
   var seoDesc = typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : (chrome && chrome.seo ? Lx(chrome.seo.description) : '');
   var head = typeof seoHead !== 'undefined' && seoHead ? seoHead : null;
+  var embed = typeof embedMode !== 'undefined' && embedMode && portalClinic; // booking page inside the booking widget (no site header/footer)
   var header = chrome ? chrome.header : null;
   var footer = chrome ? chrome.footer : null;
 %><!doctype html>
@@ -23,11 +24,13 @@
 <link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
 <% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function (h) { if (h === '/css/site.css') return; %><link rel="stylesheet" href="<%= h %><%= h.indexOf('?') === -1 ? '?v=' + assetV : '' %>"><% }) %>
+<% if (embed) { %><link rel="stylesheet" href="/css/discover.css?v=<%= assetV %>"><% } %>
 <meta name="csrf-token" content="<%= csrfToken %>">
 <% if (head && head.pixels) { %><meta name="db-pixels" content="<%= JSON.stringify({ ids: head.pixels }) %>"><% } %>
 </head>
-<body class="site<%= portalClinic ? ' site-portal' : '' %>">
+<body class="site<%= portalClinic ? ' site-portal' : '' %><%= embed ? ' site-embed' : '' %>">
 <a class="sr-only" href="#main"><%= t('site.skip') %></a>
+<% if (embed) { %><div class="embed-bar"><span class="strong truncate"><%= portalClinic.displayName %></span><a href="/" target="_blank" rel="noopener"><%= t('portal.powered', { brand: brandName }) %></a></div><% } else { %>
 <header class="site-nav">
   <div class="container inner">
     <% if (portalClinic) { %>
@@ -46,6 +49,7 @@
     <div class="right">
       <a class="btn btn-ghost btn-sm lang-btn" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span class="hide-xs"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a>
       <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
+      <% if (!portalClinic && path !== '/clinics' && path.indexOf('/clinics/') !== 0) { %><a class="btn btn-ghost btn-sm" href="/clinics" aria-label="<%= t('directory.find_clinic') %>"><%- icon('search', 'icon-sm') %><span class="hide-sm"><%= t('directory.find_clinic') %></span></a><% } %>
       <% if (portalClinic) { %>
         <% if (portalClinic.booking_enabled && !(typeof hideBookCta !== 'undefined' && hideBookCta)) { %><a class="btn btn-primary btn-sm" href="/<%= portalClinic.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><span><%= t('portal.book') %></span></a><% } %>
       <% } else if (currentUser) { %>
@@ -66,8 +70,10 @@
     </div>
   </div>
 </header>
+<% } %>
 <main id="main"><%- include('../partials/toasts') %><%- body %></main>
-<% if (portalClinic) { %>
+<% if (embed) { %>
+<% } else if (portalClinic) { %>
 <footer class="footer portal-footer">
   <div class="container inner">
     <span>© <%= new Date().getFullYear() %> <%= portalClinic.displayName %></span>
@@ -106,6 +112,7 @@
     <div class="site-footer-bottom">
       <span>© <%= new Date().getFullYear() %> <%= footer && footer.copyright ? footer.copyright : brandName %>. <%= t('site.rights') %></span>
       <span class="row wrap site-footer-links">
+        <a href="/clinics"><%= t('directory.find_clinic') %></a>
         <a href="/vendors"><%= t('vendors.footer_link') %></a>
         <a href="/preferences/cookies"><%= t('growth.cookie_prefs') %></a>
         <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%= locale === 'ar' ? 'English' : 'العربية' %></a>
@@ -126,6 +133,7 @@
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
 <% if (head && head.pixels) { %><script src="/js/pixels.js?v=<%= assetV %>" defer></script><% } %>
 <script src="/js/site.js?v=<%= assetV %>" defer></script>
+<% if (embed) { %><script src="/js/embed-frame.js?v=<%= assetV %>" defer></script><% } %>
 <% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { if (h === '/js/site.js') return; %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
 </body>
 </html>

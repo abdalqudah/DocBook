@@ -126,6 +126,7 @@
     "services": "Services & prices",
     "supplies": "Supplies",
     "reports": "Reports",
+    "reviews": "Reviews",
     "team": "Staff & logins",
     "settings": "Settings",
     "support": "Help",
@@ -140,7 +141,8 @@
     "cashier": "Cashier",
     "attendance": "Staff attendance",
     "marketplace": "Reps & offers",
-    "rep_visits": "Rep visits"
+    "rep_visits": "Rep visits",
+    "certificates": "Medical documents"
   },
   "search": {
     "open": "Search and quick actions",
@@ -276,7 +278,8 @@
     "reports": "Reports & exports",
     "admin": "Administration",
     "attendance": "Staff attendance",
-    "vendors": "Reps & suppliers"
+    "vendors": "Reps & suppliers",
+    "reviews": "Patient reviews"
   },
   "perms": {
     "dashboard.view": "View the clinic dashboard",
@@ -314,7 +317,11 @@
     "attendance.view": "View staff attendance",
     "attendance.manage": "Attendance screen (QR) and corrections",
     "vendors.view": "See reps' products, offers and visits",
-    "vendors.manage": "Add reps as suppliers, manage rep visit hours and bookings"
+    "vendors.manage": "Add reps as suppliers, manage rep visit hours and bookings",
+    "reviews.view": "Read patient reviews (doctors: of their own visits)",
+    "reviews.manage": "Reply to reviews and report them to the platform",
+    "certificates.view": "View and print sick leaves and medical reports",
+    "certificates.issue": "Issue and revoke sick leaves and medical reports"
   },
   "categories": {
     "rent": "Rent",

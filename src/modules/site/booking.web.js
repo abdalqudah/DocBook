@@ -132,7 +132,7 @@ router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 's
 
   let id;
   try {
-    id = await appointments.book(publicCtx(req, clinic), {
+    id = await appointments.book({ ...publicCtx(req, clinic), channel: require('../discover/channels').current(req, clinic) }, { // eslint-disable-line global-require
       doctor_id: d.doctor_id, service_id: d.service_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time,
       patient_name: d.patient_name, patient_phone: phone, patient_email: d.patient_email, notes: d.notes, appointment_type: 'in_person',
     }, { source: 'website' });

@@ -9,6 +9,7 @@ const NAV = [
     { key: 'appointments', href: '/app/appointments', icon: 'calendar-days', perms: ['appointments.view'], bottom: 3 },
     { key: 'front_desk', href: '/app/front-desk', icon: 'armchair', perms: ['frontdesk.use'], badge: 'waiting', bottom: 2 },
     { key: 'patients', href: '/app/patients', icon: 'users', perms: ['patients.view'], bottom: 4 },
+    { key: 'certificates', href: '/app/certificates', icon: 'badge-check', perms: ['certificates.view'] },
   ] },
   { group: 'finance', items: [
     { key: 'cashier', href: '/app/cashier', icon: 'banknote', perms: ['billing.manage'], badge: 'toPay' },
@@ -26,6 +27,7 @@ const NAV = [
   ] },
   { group: 'insights', items: [
     { key: 'reports', href: '/app/reports', icon: 'chart-pie', perms: ['reports.view'] },
+    { key: 'reviews', href: '/app/reviews', icon: 'star', perms: ['reviews.view'] },
   ] },
   { group: 'admin', items: [
     { key: 'team', href: '/app/settings/team', icon: 'user-cog', perms: ['users.manage'] },

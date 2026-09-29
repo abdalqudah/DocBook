@@ -1,0 +1,55 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : (ar || en || ''); }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_clinic') %></div>
+    <h1><%= t('certificates.title') %></h1>
+    <p><%= t('certificates.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include('../../partials/export-menu', { href: '/app/certificates/export' }) %>
+    <a class="btn btn-ghost" href="/verify" target="_blank" rel="noopener"><%- icon('qr-code', 'icon-sm') %><%= t('verify_doc.title') %></a>
+  </div>
+</div>
+
+<div class="panel flush">
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('certificates.search') %>" aria-label="<%= t('common.search') %>"></div>
+    <select class="select" name="type" aria-label="<%= t('certificates.type') %>"><option value="all"><%= t('certificates.all_types') %></option><% types.forEach(function (ty) { %><option value="<%= ty %>"<%= query.type === ty ? ' selected' : '' %>><%= t('certificates.types.' + ty) %></option><% }) %></select>
+    <% if (doctors.length > 1) { %><select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value="all"><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(query.doctor) === String(d.id) ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% } %>
+    <select class="select" name="status" aria-label="<%= t('certificates.status_label') %>"><option value="all"><%= t('certificates.all_statuses') %></option><% ['valid', 'revoked'].forEach(function (s) { %><option value="<%= s %>"<%= query.status === s ? ' selected' : '' %>><%= t('certificates.status.' + s) %></option><% }) %></select>
+    <input class="input" type="date" name="from" value="<%= query.from || '' %>" aria-label="<%= t('common.from') %>" title="<%= t('common.from') %>">
+    <input class="input" type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('common.to') %>" title="<%= t('common.to') %>">
+    <% if (query.patient) { %><input type="hidden" name="patient" value="<%= query.patient %>"><% } %>
+    <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/certificates"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+  <% if (!rows.length) { %>
+    <% if (filtered) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/certificates">' + t('table.clear_filters') + '</a>' }) %>
+    <% } else { %>
+      <%- include('../../partials/empty', { emptyIcon: 'badge-check', emptyTitle: t('certificates.empty_title'), emptyText: t('certificates.empty_text'), emptyAction: '' }) %>
+    <% } %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('certificates.serial') %></th><th><%= t('common.patient') %></th><th><%= t('certificates.type') %></th><th><%= t('common.doctor') %></th><th><%= t('certificates.issued_at') %></th><th><%= t('certificates.status_label') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { %>
+        <tr>
+          <td data-label="<%= t('certificates.serial') %>" class="nowrap"><a href="/app/certificates/<%= r.id %>"><bdi dir="ltr"><%= r.serial %></bdi></a></td>
+          <td class="primary-cell"><div class="strong"><%= r.patient_name %></div><% if (r.doc_type === 'sick_leave' && r.leave_start) { %><div class="small muted"><%= fmt.date(r.leave_start, { day: 'numeric', month: 'short' }) %> – <%= fmt.date(r.leave_end, { day: 'numeric', month: 'short', year: 'numeric' }) %></div><% } %></td>
+          <td data-label="<%= t('certificates.type') %>"><%= t('certificates.types.' + r.doc_type) %> <span class="tiny muted"><%= t('certificates.language_short.' + r.language) %></span></td>
+          <td data-label="<%= t('common.doctor') %>"><%= L(r.doctor_name, r.doctor_name_en) || '—' %></td>
+          <td data-label="<%= t('certificates.issued_at') %>" class="nowrap"><%= fmt.date(r.issued.date) %> <span class="muted small" dir="ltr"><%= r.issued.time %></span></td>
+          <td data-label="<%= t('certificates.status_label') %>"><% if (r.revoked_at) { %><span class="badge badge-danger badge-dot" title="<%= r.revoke_reason || '' %>"><%= t('certificates.status.revoked') %></span><% } else { %><span class="badge badge-success badge-dot"><%= t('certificates.status.valid') %></span><% } %></td>
+          <td class="actions nowrap">
+            <a class="btn btn-ghost btn-icon btn-sm" href="/app/certificates/<%= r.id %>?print=1&autoprint=1" aria-label="<%= t('certificates.print') %>" title="<%= t('certificates.print') %>"><%- icon('printer', 'icon-sm') %></a>
+            <a class="btn btn-ghost btn-icon btn-sm" href="/app/certificates/<%= r.id %>" aria-label="<%= t('certificates.view') %>" title="<%= t('certificates.view') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</div>

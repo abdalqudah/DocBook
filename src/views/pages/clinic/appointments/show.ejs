@@ -29,6 +29,7 @@
     </div>
   </div>
   <div class="page-actions">
+    <%- include('../../engage/_wa-menu', { appt: a }) %>
     <% if (canVisit) { %><a class="btn btn-secondary" href="/app/visits/<%= a.id %>"><%- icon('stethoscope', 'icon-sm') %><%= t('appointments.open_visit') %></a><% } %>
     <% if (canManage && a.payment_status !== 'paid') { %><a class="btn btn-secondary" href="/app/appointments/<%= a.id %>/edit"><%- icon('calendar-clock', 'icon-sm') %><%= t('appointments.reschedule') %></a><% } %>
     <% if (canManage) { %><button class="btn btn-primary" type="button" data-open-dialog="followup-dialog"><%- icon('calendar-plus', 'icon-sm') %><%= t('appointments.book_follow_up') %></button><% } %>

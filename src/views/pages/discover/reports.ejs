@@ -1,0 +1,91 @@
+<% var printing = query.print === '1'; var canExport = can('data.export') && !printing;
+   var rq = range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month;
+   var exp = function (section) { if (!canExport) return ''; return '<details class="dropdown rec-exp"><summary class="btn btn-ghost btn-sm" aria-label="' + t('common.export') + '">' + icon('download', 'icon-sm') + '<span class="rec-exp-label">' + t('common.export') + '</span></summary><div class="menu"><a href="/app/reports/bookings?' + rq + '&export=' + section + '&format=xlsx">' + icon('file-spreadsheet', 'icon-sm') + t('common.export_xlsx') + '</a><a href="/app/reports/bookings?' + rq + '&export=' + section + '&format=csv">' + icon('table', 'icon-sm') + t('common.export_csv') + '</a></div></details>'; };
+   var rangeText = range.custom ? fmt.date(range.from) + ' – ' + fmt.date(range.to) : fmt.month(range.month);
+   var T = data.totals;
+   var rateCell = function (v) { if (v === null || v === undefined) return '<span class="muted">—</span>'; return '<span class="rate-cell"><span class="rate-bar' + (v >= 20 ? ' high' : '') + '"><span style="width:' + Math.min(100, v).toFixed(1) + '%"></span></span><span class="num">' + escapeHtml(fmt.pct(v, 0)) + '</span></span>'; }; %>
+<% if (printing) { %>
+<div class="rec-print-title"><h1><%= t('channels.title') %></h1><p class="muted"><%= rangeText %></p></div>
+<% } else { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/reports?<%= rq %>"><%= t('channels.back') %></a></div>
+    <h1><%= t('channels.title') %></h1>
+    <p><%= t('channels.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/reports/bookings?<%= rq %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.printable') %></a>
+  </div>
+</div>
+
+<div class="panel mb-4"><div class="panel-body rec-range">
+  <form class="row wrap" method="get" action="/app/reports/bookings" data-autosubmit>
+    <label class="small strong muted" for="rep-month"><%- icon('calendar', 'icon-sm') %> <%= t('reports.month') %></label>
+    <select class="select" id="rep-month" name="month" style="width:auto;height:36px">
+      <% if (range.custom) { %><option value="" selected><%= t('reports.custom_selected') %></option><% } %>
+      <% months.forEach(function (m) { %><option value="<%= m %>"<%= !range.custom && m === range.month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %>
+    </select>
+  </form>
+  <form class="row wrap" method="get" action="/app/reports/bookings">
+    <span class="small strong muted"><%= t('reports.or_range') %></span>
+    <input class="input" type="date" name="from" value="<%= range.from %>" aria-label="<%= t('common.from') %>" required style="width:auto;height:36px">
+    <span class="muted">–</span>
+    <input class="input" type="date" name="to" value="<%= range.to %>" aria-label="<%= t('common.to') %>" required style="width:auto;height:36px">
+    <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button>
+  </form>
+  <div class="small muted rec-range-now"><%- icon('info', 'icon-sm') %><%= t('reports.showing', { range: rangeText }) %></div>
+</div></div>
+<% } %>
+
+<div class="stats rec-kpis">
+  <div class="stat"><div class="stat-label"><%= t('channels.kpi_bookings') %><span class="stat-icon"><%- icon('calendar-days') %></span></div><div class="stat-value"><%= fmt.number(T.n) %></div><div class="stat-meta"><%= t('reports.completion', { pct: fmt.pct(T.n ? T.completed * 100 / T.n : null, 0) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('channels.kpi_online') %><span class="stat-icon"><%- icon('globe') %></span></div><div class="stat-value"><%= fmt.pct(T.n ? data.online * 100 / T.n : null, 0) %></div><div class="stat-meta"><%= t('channels.kpi_online_meta', { n: fmt.number(data.online), m: fmt.number(data.staff) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('channels.kpi_no_show') %><span class="stat-icon"><%- icon('calendar-x') %></span></div><div class="stat-value"><%= T.rate === null ? '—' : fmt.pct(T.rate) %></div><div class="stat-meta"><%= t('channels.kpi_no_show_meta', { n: fmt.number(T.noShow), m: fmt.number(T.due) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('channels.kpi_cancel') %><span class="stat-icon"><%- icon('circle-x') %></span></div><div class="stat-value"><%= fmt.number(T.cancelled) %></div><div class="stat-meta"><%= t('channels.kpi_cancel_meta', { pct: fmt.pct(T.n ? T.cancelled * 100 / T.n : null, 0) }) %></div></div>
+</div>
+
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('channels.trend') %></h2><p class="panel-sub"><%= t('channels.trend_sub') %></p></div><%- exp('weekly') %></div>
+  <div class="panel-body">
+    <% if (charts.weekly) { %>
+    <div class="ch-legend mb-2"><span><i></i><%= t('channels.online') %></span><span><i class="s2"></i><%= t('channels.staff') %></span></div>
+    <%- charts.weekly %>
+    <% } else { %><p class="small muted"><%= t('channels.no_data') %></p><% } %>
+  </div>
+</section>
+
+<div class="grid grid-2 mt-6">
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('channels.by_channel') %></h2><p class="panel-sub"><%= t('channels.by_channel_sub') %></p></div><%- exp('channels') %></div>
+    <% if (charts.channels) { %><div class="panel-body rec-pad"><%- charts.channels %></div><% } %>
+    <% if (!data.channels.length) { %><div class="panel-body"><p class="small muted"><%= t('channels.no_data') %></p></div><% } else { %>
+    <div class="table-wrap"><table class="table responsive">
+      <thead><tr><th><%= t('channels.channel') %></th><th class="num"><%= t('channels.bookings') %></th><th class="num"><%= t('channels.completed') %></th><th class="num"><%= t('channels.no_shows') %></th><th class="num"><%= t('channels.no_show_rate') %></th></tr></thead>
+      <tbody><% data.channels.forEach(function (c) { %><tr>
+        <td class="primary-cell"><%= channelName(c.key) %><div class="tiny muted"><%= fmt.pct(c.share, 0) %> · <%= t('channels.cancelled') %> <%= fmt.number(c.cancelled) %></div></td>
+        <td class="num" data-label="<%= t('channels.bookings') %>"><%= fmt.number(c.n) %></td>
+        <td class="num" data-label="<%= t('channels.completed') %>"><%= fmt.number(c.completed) %></td>
+        <td class="num" data-label="<%= t('channels.no_shows') %>"><%= fmt.number(c.noShow) %></td>
+        <td class="num" data-label="<%= t('channels.no_show_rate') %>"><%- rateCell(c.rate) %></td>
+      </tr><% }) %></tbody>
+    </table></div>
+    <% } %>
+  </section>
+
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('channels.per_doctor') %></h2><p class="panel-sub"><%= t('channels.per_doctor_sub') %></p></div><%- exp('doctors') %></div>
+    <% if (!data.doctors.length) { %><div class="panel-body"><p class="small muted"><%= t('channels.no_data') %></p></div><% } else { %>
+    <div class="table-wrap"><table class="table responsive">
+      <thead><tr><th><%= t('common.doctor') %></th><th class="num"><%= t('channels.bookings') %></th><th class="num"><%= t('channels.completed') %></th><th class="num"><%= t('channels.no_shows') %></th><th class="num"><%= t('channels.no_show_rate') %></th></tr></thead>
+      <tbody><% data.doctors.forEach(function (d) { %><tr>
+        <td class="primary-cell"><span class="row-sm"><% if (d.color) { %><span style="width:8px;height:8px;border-radius:50%;background:<%= d.color %>;display:inline-block;flex:none"></span><% } %><%= d.name || t('channels.no_doctor') %></span><div class="tiny muted"><%= t('channels.cancelled') %> <%= fmt.number(d.cancelled) %></div></td>
+        <td class="num" data-label="<%= t('channels.bookings') %>"><%= fmt.number(d.n) %></td>
+        <td class="num" data-label="<%= t('channels.completed') %>"><%= fmt.number(d.completed) %></td>
+        <td class="num" data-label="<%= t('channels.no_shows') %>"><%= fmt.number(d.noShow) %></td>
+        <td class="num" data-label="<%= t('channels.no_show_rate') %>"><%- rateCell(d.rate) %></td>
+      </tr><% }) %></tbody>
+    </table></div>
+    <% } %>
+    <div class="panel-foot tiny muted"><%= t('channels.rate_hint') %></div>
+  </section>
+</div>

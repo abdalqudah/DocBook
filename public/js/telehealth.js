@@ -307,7 +307,7 @@
       if (pc !== mine) return;
       var st = mine.connectionState;
       root.setAttribute('data-state', st);
-      if (st === 'connected') { connected = true; retries = 0; setStatus(''); root.classList.add('is-connected'); }
+      if (st === 'connected') { connected = true; retries = 0; setStatus(''); root.classList.add('is-connected'); var pj = document.querySelector('[data-peer-joined]'); if (pj && pj.getAttribute('data-yes')) pj.textContent = pj.getAttribute('data-yes'); }
       else if (st === 'disconnected') { setStatus(L.reconnecting, 'warn'); }
       else if (st === 'failed') { connected = false; root.classList.remove('is-connected'); setStatus(L.failed, 'error'); recover(); }
     };

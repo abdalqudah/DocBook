@@ -78,6 +78,7 @@ router.get('/:slug', wrap(async (req, res, next) => {
   ]);
   const doctorNames = Object.fromEntries(doctors.map((d) => [d.id, d.name]));
   res.locals.currency = clinic.currency;
+  clinic.reviews = await require('../reviews/reviews.service').publicSummary(clinic.id); // eslint-disable-line global-require -- verified reviews: page section + JSON-LD
   // Search tags and schema.org MedicalClinic + Physician data (never any tracking pixel on clinic pages).
   const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors, title: clinic.displayName, description: clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ') });
   return res.page('pages/portal/home', {

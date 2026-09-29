@@ -1,0 +1,67 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var stars = function (n) { var h = ''; for (var i = 1; i <= 5; i += 1) h += '<span class="rv-star' + (i <= n ? ' on' : '') + '">' + icon('star', 'icon-sm') + '</span>'; return h; };
+  var here = '/admin/reviews?status=' + status + (q ? '&q=' + encodeURIComponent(q) : '') + (meta.page > 1 ? '&page=' + meta.page : '');
+%>
+<div class="page-head"><div><h1><%= t('reviews.admin.title') %></h1><p><%= t('reviews.admin.lead') %></p></div></div>
+<nav class="pill-filter mb-4" aria-label="<%= t('common.status') %>">
+  <% [['reported', counts.reported], ['hidden', counts.hidden], ['all', counts.total]].forEach(function (tb) { %>
+  <a href="/admin/reviews?status=<%= tb[0] %><%= q ? '&q=' + encodeURIComponent(q) : '' %>" class="<%= status === tb[0] ? 'active' : '' %>"><%= t('reviews.admin.tab_' + tb[0]) %> · <%= fmt.number(tb[1]) %></a>
+  <% }) %>
+</nav>
+<section class="panel flush">
+  <form class="table-toolbar" method="get" action="/admin/reviews" data-autosubmit>
+    <input type="hidden" name="status" value="<%= status %>">
+    <div class="input-group"><%- icon('search') %><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('reviews.admin.search') %>" aria-label="<%= t('reviews.admin.search') %>"></div>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button></noscript>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'star', emptyTitle: t('reviews.admin.empty') }) %>
+  <% } else { %>
+  <ul class="rv-rows">
+    <% rows.forEach(function (r) { %>
+    <li class="rv-row">
+      <div class="rv-item-head">
+        <div class="row-sm wrap"><span class="rv-stars" aria-label="<%= t('reviews.stars_n', { n: r.rating }) %>"><%- stars(r.rating) %></span>
+          <a class="link small strong" href="/<%= r.slug %>#reviews" target="_blank" rel="noopener"><%= L(r.clinic_name, r.clinic_name_en) %></a>
+          <% if (r.doctor_name) { %><span class="tiny muted">· <%= L(r.doctor_name, r.doctor_name_en) %></span><% } %>
+        </div>
+        <div class="row-sm wrap">
+          <% if (r.status === 'hidden') { %><span class="badge badge-danger badge-dot"><%= t('reviews.hidden_badge') %></span><% } else if (r.reported_at) { %><span class="badge badge-warning badge-dot"><%= t('reviews.reported_badge') %></span><% } else { %><span class="badge badge-neutral badge-dot"><%= t('reviews.admin.published') %></span><% } %>
+          <span class="tiny muted"><%= fmt.date(r.created_at, { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+        </div>
+      </div>
+      <div class="rv-who small"><strong><%= r.display_name || t('reviews.anonymous') %></strong><span class="tiny muted">#<%= r.id %></span></div>
+      <% if (r.comment) { %><p class="rv-comment" dir="auto"><%= r.comment %></p><% } else { %><p class="rv-comment tiny muted"><%= t('reviews.no_comment') %></p><% } %>
+      <% if (r.reply) { %><div class="rv-reply"><div class="tiny strong"><%= t('reviews.clinic_reply', { clinic: L(r.clinic_name, r.clinic_name_en) }) %></div><p dir="auto"><%= r.reply %></p></div><% } %>
+      <% if (r.reported_at) { %><p class="small"><span class="strong"><%= t('reviews.admin.report_reason') %>:</span> <span dir="auto"><%= r.report_reason || '—' %></span> <span class="tiny muted">· <%= fmt.date(r.reported_at) %></span></p><% } %>
+      <% if (r.status === 'hidden') { %><p class="small"><span class="strong"><%= t('reviews.hidden_reason') %>:</span> <span dir="auto"><%= r.hidden_reason %></span></p><% } %>
+      <div class="rv-actions">
+        <% if (r.status === 'published') { %>
+        <details class="rv-details">
+          <summary class="btn btn-secondary btn-sm"><%- icon('eye-off', 'icon-sm') %><%= t('reviews.admin.hide') %></summary>
+          <form method="post" action="/admin/reviews/<%= r.id %>/hide" class="stack-sm mt-2" data-confirm="<%= t('reviews.admin.hide_confirm') %>" data-confirm-title="<%= t('reviews.admin.hide') %>" data-confirm-yes="<%= t('reviews.admin.hide') %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= here %>">
+            <textarea class="textarea" name="reason" rows="2" maxlength="500" required dir="auto" aria-label="<%= t('reviews.admin.reason') %>" placeholder="<%= t('reviews.admin.reason_ph') %>"></textarea>
+            <div><button class="btn btn-danger btn-sm" type="submit"><%= t('reviews.admin.hide') %></button></div>
+          </form>
+        </details>
+        <% if (r.reported_at) { %>
+        <form method="post" action="/admin/reviews/<%= r.id %>/dismiss">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= here %>">
+          <button class="btn btn-ghost btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('reviews.admin.dismiss') %></button>
+        </form>
+        <% } %>
+        <% } else { %>
+        <form method="post" action="/admin/reviews/<%= r.id %>/show" data-confirm="<%= t('reviews.admin.show_confirm') %>" data-confirm-yes="<%= t('reviews.admin.show') %>" data-confirm-tone="primary">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= here %>">
+          <button class="btn btn-secondary btn-sm" type="submit"><%- icon('eye', 'icon-sm') %><%= t('reviews.admin.show') %></button>
+        </form>
+        <% } %>
+      </div>
+    </li>
+    <% }) %>
+  </ul>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</section>

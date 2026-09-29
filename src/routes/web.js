@@ -19,10 +19,13 @@ router.use('/vendors', require('../modules/vendors/public.web'));
   vendor.use('/', require('../modules/vendors/web'));
   router.use('/vendor', vendor);
 }
+router.use('/verify', require('../modules/certificates/verify.web')); // public check of sick leaves / medical reports (QR)
 // Clinic pages (docbook/<slug>, /<slug>/login, /<slug>/book…) come LAST so they never shadow a platform path;
 // every top-level path the platform uses is also in businesses.RESERVED so no clinic can take it.
 // Online consultations: the patient's consultation page (/c/<token>) and online booking (/<slug>/book/online).
+router.use('/', require('../modules/discover/public.web')); // clinic directory (/clinics), /widget.js, widget booking confirmation
 router.use('/c', require('../modules/telehealth/public.web'));
+router.use('/', require('../modules/messaging/public.web')); // patient links from messages: /r/<token> (confirm/cancel/reschedule), /review/<token>
 router.use('/', require('../modules/telehealth/booking.web'));
 router.use('/', require('../modules/site/booking.web'));
 router.use('/', require('../modules/site/portal.web'));

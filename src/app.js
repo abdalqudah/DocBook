@@ -51,6 +51,7 @@ function createApp() {
   });
   app.get('/favicon.ico', (req, res) => res.redirect(301, brand.favicon || '/favicon.svg'));
   app.use('/', express.static(path.join(__dirname, '..', 'public'), { maxAge: config.isProd ? '7d' : 0, index: false }));
+  app.use('/hooks', require('./modules/messaging/hooks.web')); // WhatsApp / SMS provider webhooks: raw body, no session or CSRF
 
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(express.json({ limit: '2mb' }));
@@ -85,7 +86,8 @@ function createApp() {
 
   app.use(loadUser);
   app.use(web.locals);
-  app.use(web.csrf);
+  // CSRF check; the booking-widget embed mode (frameable /<slug>/book?embed=1) uses a signed token instead of the session.
+  app.use(require('./modules/discover/embed').wrapCsrf(web.csrf));
 
   app.get('/healthz', async (req, res) => {
     try { await knex.raw('select 1'); res.json({ status: 'ok' }); } catch { res.status(503).json({ status: 'db_unavailable' }); }

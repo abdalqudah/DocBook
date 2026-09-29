@@ -83,6 +83,7 @@ router.use('/', require('../modules/clinic/dashboard.web'));
 router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));
 router.use('/patients', require('../modules/clinic/patients.web'));
+router.use(require('../modules/certificates/web')); // /certificates + the visit page's "Documents" panel data (before /visits)
 router.use('/visits', require('../modules/clinic/visits.web'));
 router.use('/telehealth', require('../modules/telehealth/web'));
 router.use('/cashier', require('../modules/clinic/cashier.web'));
@@ -95,7 +96,11 @@ router.use('/supplies/orders', require('../modules/purchasing/web'));
 router.use('/supplies', require('../modules/clinic/supplies.web'));
 router.use('/marketplace', require('../modules/marketplace/web'));
 router.use('/rep-visits', require('../modules/marketplace/rep-visits.web'));
+router.use('/', require('../modules/discover/app.web')); // /settings/booking-links, /reports/bookings
 router.use('/reports', require('../modules/clinic/reports.web'));
+router.use('/reviews', require('../modules/reviews/web')); // verified patient reviews
+router.use('/messaging', require('../modules/messaging/staff.web')); // WhatsApp click-to-chat for staff
+router.use('/settings/messaging', require('../modules/messaging/web')); // Settings → Messaging (reminders, channels, log)
 router.use('/attendance', require('../modules/attendance/web'));
 router.use('/settings/database', require('../modules/datasync/web'));
 router.use('/help', require('../modules/support/web'));
