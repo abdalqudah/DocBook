@@ -451,3 +451,23 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .portal-logo.sm > .icon, .portal-logo.xs > .icon { width: 50%; height: 50%; }
 @media (max-width: 480px) { .site-portal .site-nav .right .btn-primary span { display: none; } .site-portal .site-nav .right .btn-primary { width: 36px; padding: 0; } .portal-brand-name { max-width: 52vw; } }
 .site-portal main { min-height: calc(100vh - 170px); }
+
+/* ============================================================================
+   Calm overrides — neutral greys + one brand colour (no gradients, glows or
+   multicoloured icons). Kept as one block so the calm look is easy to audit.
+   ============================================================================ */
+.lp-hero-bg { background: none; -webkit-mask-image: none; mask-image: none; }
+[dir] .lp-hero h1 .hl { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--primary); }
+.pulse-dot { animation: none; box-shadow: none; }
+.lp-feature::after, .lp-cta-glow { display: none; }
+.lp-feature:hover, .doc-card:hover { transform: none; box-shadow: none; border-color: var(--border-strong); }
+.lp-icon, .svc-icon, .role-icon, .icon-preview, .mock-toast-icon { background: var(--surface-sunken); color: var(--text-muted); }
+.lp-visual { background: var(--surface-sunken); }
+.lp-role-icon, .lp-role:nth-child(n) .lp-role-icon { background: var(--surface-sunken); color: var(--text-muted); }
+.lp-preview-note { background: var(--surface-muted); }
+.portal-hero-bg, .portal-login-wrap, .book-top { background: none; -webkit-mask-image: none; mask-image: none; }
+.doc-av, .doc-av[style], .mock-av, .mock-av.c1, .mock-av.c2, .mock-av.c3, .mock-av.c4, .doc-av.c1, .doc-av.c2, .doc-av.c3, .doc-av.c4 { background: var(--surface-sunken); color: var(--text-muted); }
+.mock-pill.info, .mock-pill.warn, .mock-pill.ok { background: var(--surface-sunken); color: var(--text-muted); }
+.mock-doc.is-on { background: var(--surface); }
+.mock-time.is-on { background: var(--primary-soft); }
+.booked-check { background: var(--surface-sunken); color: var(--primary); }

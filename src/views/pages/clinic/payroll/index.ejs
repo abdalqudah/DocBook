@@ -55,7 +55,7 @@
       <tbody>
         <% rows.forEach(function (r) { var d = r.info; var href = '/app/payroll/doctors/' + d.id + '?period=' + period; %>
         <tr data-href="<%= href %>">
-          <td class="primary-cell doctor-cell"><div class="row-sm"><span class="avatar" style="<%= d.color ? 'background:' + d.color + ';color:var(--surface)' : '' %>"><%= initials(L(d.full_name, d.full_name_en)) %></span><div><a class="strong" href="<%= href %>"><%= L(d.full_name, d.full_name_en) %></a><div class="tiny muted"><%= r.rule ? t('commission.basis.' + r.rule.basis) + ' · ' + (r.rule.basis === 'percentage' ? fmt.number(r.rule.rate) + '%' : fmt.money(r.rule.rate)) : t('payroll.no_rule') %><% if (!d.is_active) { %> · <%= t('common.inactive') %><% } %></div></div></div></td>
+          <td class="primary-cell doctor-cell"><div class="row-sm"><span class="avatar"><%= initials(L(d.full_name, d.full_name_en)) %></span><div><a class="strong" href="<%= href %>"><%= L(d.full_name, d.full_name_en) %></a><div class="tiny muted"><%= r.rule ? t('commission.basis.' + r.rule.basis) + ' · ' + (r.rule.basis === 'percentage' ? fmt.number(r.rule.rate) + '%' : fmt.money(r.rule.rate)) : t('payroll.no_rule') %><% if (!d.is_active) { %> · <%= t('common.inactive') %><% } %></div></div></div></td>
           <td class="num" data-label="<%= t('payroll.revenue') %>"><%= fmt.amount(r.commission.totalRevenue) %></td>
           <td class="num" data-label="<%= t('payroll.visits') %>"><%= fmt.number(r.commission.visitCount) %><div class="tiny muted"><%= t('payroll.n_patients', { n: fmt.number(r.commission.uniquePatientCount) }) %></div></td>
           <td class="num" data-label="<%= t('payroll.commission') %>"><%= fmt.amount(r.commission.totalCommission) %></td>

@@ -28,7 +28,7 @@
         <% doctors.forEach(function (d, i) { %>
         <label class="doc-choice">
           <input type="radio" name="doctor_id" value="<%= d.id %>"<%= sel.doctor === d.id ? ' checked' : '' %> required data-name="<%= d.name %>">
-          <span class="doc-av sm<%= d.color ? '' : ' c' + ((i % 4) + 1) %>"<% if (d.color) { %> style="background:<%= d.color %>"<% } %>><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
+          <span class="doc-av sm"><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
           <span class="grow"><strong><%= d.name %></strong><% if (d.specialty) { %><span class="muted small"><%= d.specialty %></span><% } %></span>
           <% if (d.fee !== null) { %><span class="doc-choice-fee num"><%= fmt.money(d.fee, clinic.currency) %></span><% } %>
           <span class="doc-choice-check"><%- icon('check', 'icon-sm') %></span>

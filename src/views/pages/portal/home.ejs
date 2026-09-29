@@ -26,7 +26,7 @@
       <div class="portal-doctors">
         <% doctors.forEach(function (d, i) { %>
         <article class="doc-card">
-          <span class="doc-av<%= d.color ? '' : ' c' + ((i % 4) + 1) %>"<% if (d.color) { %> style="background:<%= d.color %>"<% } %>><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
+          <span class="doc-av"><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
           <div class="doc-info">
             <h3><%= d.name %></h3>
             <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>

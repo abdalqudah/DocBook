@@ -2,7 +2,7 @@
 <div class="page-head">
   <div>
     <div class="breadcrumbs"><a href="/app/doctors"><%= t('nav.doctors') %></a><%- icon('chevron-right', 'flip-rtl') %><%= L(d.full_name, d.full_name_en) %></div>
-    <div class="row"><span class="avatar avatar-lg" style="<%= d.color ? 'background:' + d.color + ';color:var(--surface)' : '' %>"><%= initials(L(d.full_name, d.full_name_en)) %></span><div><h1><%= L(d.full_name, d.full_name_en) %></h1><p><%= [L(d.specialization, d.specialization_en), d.license_number ? t('doctors.license') + ' ' + d.license_number : null].filter(Boolean).join(' · ') %></p></div></div>
+    <div class="row"><span class="avatar avatar-lg"><%= initials(L(d.full_name, d.full_name_en)) %></span><div><h1><%= L(d.full_name, d.full_name_en) %></h1><p><%= [L(d.specialization, d.specialization_en), d.license_number ? t('doctors.license') + ' ' + d.license_number : null].filter(Boolean).join(' · ') %></p></div></div>
   </div>
   <div class="page-actions">
     <% if (can('appointments.manage')) { %><a class="btn btn-secondary" href="/app/appointments/new?doctor=<%= d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('appointments.new') %></a><% } %>

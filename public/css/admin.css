@@ -64,10 +64,10 @@
 .set-perm-groups legend { padding: 0; display: flex; }
 
 /* ---------- Staff & logins ---------- */
-.set-result { border-color: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+.set-result { border-color: var(--border-strong); }
 .set-result-icon { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
-.set-result-icon.is-success { background: var(--success-soft); color: var(--success); }
-.set-result-icon.is-info { background: var(--info-soft); color: var(--info); }
+.set-result-icon.is-success { background: var(--surface-sunken); color: var(--success); }
+.set-result-icon.is-info { background: var(--surface-sunken); color: var(--text-muted); }
 .set-secret { display: grid; gap: 8px; }
 .set-secret-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-sunken); }
 .set-secret-label { font-size: var(--fs-sm); color: var(--text-subtle); font-weight: var(--fw-semibold); }
@@ -91,8 +91,8 @@
 .set-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 8px 0 0; font-size: 12px; }
 .set-kv dt { color: var(--text-subtle); font-family: var(--font-mono); }
 .set-kv dd { margin: 0; overflow-wrap: anywhere; }
-.set-danger { border-color: var(--danger); }
-.set-danger .panel-head { background: var(--danger-soft); border-bottom-color: var(--danger); border-radius: var(--radius) var(--radius) 0 0; }
+.set-danger { border-color: var(--danger-soft); }
+.set-danger .panel-head { border-bottom-color: var(--border); }
 .set-danger .panel-head h2 { color: var(--danger); }
 
 /* ---------- Setup wizard ---------- */

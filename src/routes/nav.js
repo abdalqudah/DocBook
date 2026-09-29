@@ -11,9 +11,10 @@ const NAV = [
     { key: 'patients', href: '/app/patients', icon: 'users', perms: ['patients.view'], bottom: 4 },
   ] },
   { group: 'finance', items: [
+    { key: 'cashier', href: '/app/cashier', icon: 'banknote', perms: ['billing.manage'], badge: 'toPay' },
     { key: 'billing', href: '/app/billing', icon: 'receipt', perms: ['billing.view'] },
     { key: 'payroll', href: '/app/payroll', icon: 'wallet', perms: ['payroll.view'], badge: 'pendingAdjustments' },
-    { key: 'expenses', href: '/app/expenses', icon: 'banknote', perms: ['expenses.view'] },
+    { key: 'expenses', href: '/app/expenses', icon: 'receipt-text', perms: ['expenses.view'] },
   ] },
   { group: 'operations', items: [
     { key: 'doctors', href: '/app/doctors', icon: 'stethoscope', perms: ['doctors.manage', 'appointments.view_all'] },

@@ -15,7 +15,7 @@
 <div class="page-head">
   <div>
     <div class="breadcrumbs"><a href="/app/payroll?period=<%= period %>"><%= t('payroll.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= L(d.full_name, d.full_name_en) %></div>
-    <div class="row"><span class="avatar avatar-lg" style="<%= d.color ? 'background:' + d.color + ';color:var(--surface)' : '' %>"><%= initials(L(d.full_name, d.full_name_en)) %></span>
+    <div class="row"><span class="avatar avatar-lg"><%= initials(L(d.full_name, d.full_name_en)) %></span>
       <div><h1><%= L(d.full_name, d.full_name_en) %></h1><p><%= fmt.month(period) %> · <%= rule ? t('commission.basis.' + rule.basis) + ' (' + rateText(rule.basis, rule.rate) + ')' : t('payroll.no_rule') %></p></div></div>
   </div>
   <div class="page-actions">

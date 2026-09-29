@@ -134,8 +134,10 @@
       "my_day": "يومي",
       "appointments": "المواعيد",
       "front_desk": "الاستقبال",
-      "patients": "المرضى"
-    }
+      "patients": "المرضى",
+      "cashier": "الكاشير"
+    },
+    "cashier": "الكاشير"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",

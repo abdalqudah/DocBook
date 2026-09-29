@@ -15,11 +15,9 @@
 .rec-timeline li:first-child::before { top: 18px; }
 .rec-timeline li:last-child::before { bottom: calc(100% - 18px); }
 .rec-timeline li::after { content: ''; position: absolute; inset-inline-start: var(--card-pad); top: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--text-subtle); }
-.rec-timeline li.tone-success::after { border-color: var(--success); background: var(--success-soft); }
-.rec-timeline li.tone-info::after { border-color: var(--info); background: var(--info-soft); }
-.rec-timeline li.tone-warning::after { border-color: var(--warning); background: var(--warning-soft); }
-.rec-timeline li.tone-danger::after { border-color: var(--danger); background: var(--danger-soft); }
-.rec-timeline li.tone-brand::after { border-color: var(--primary); background: var(--primary-soft); }
+/* Calm: timeline dots are neutral; only the current item uses the brand colour and problems use danger. */
+.rec-timeline li.tone-brand::after { border-color: var(--primary); }
+.rec-timeline li.tone-danger::after { border-color: var(--danger); }
 .rec-tl-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 2px; }
 .rec-tl-head a.strong:hover { color: var(--primary); }
 .rec-tl-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; font-size: 13px; }
@@ -57,7 +55,7 @@
 .rec-sched li.is-dim > a { opacity: .6; }
 .rec-sched li.is-now > a { background: var(--primary-soft); }
 .rec-sched-time { font-weight: var(--fw-bold); font-size: 13px; min-width: 44px; }
-.rec-sched-bar { width: 4px; align-self: stretch; min-height: 34px; border-radius: var(--pill); background: var(--border-strong); flex: none; }
+.rec-sched-bar { width: 8px; height: 8px; align-self: center; border-radius: 50%; background: var(--border-strong); flex: none; } /* doctor colour: small dot only */
 .rec-sched .end { justify-content: flex-end; }
 @media (max-width: 560px) { .rec-sched li > a { flex-wrap: wrap; gap: 8px 10px; } .rec-sched li > a > .row-sm { width: 100%; justify-content: flex-start; padding-inline-start: 62px; } }
 
@@ -71,15 +69,11 @@
 .rec-day { list-style: none; margin: 0; padding: 10px var(--card-pad) 16px; display: flex; flex-direction: column; gap: 8px; }
 .rec-day li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: stretch; }
 .rec-day-time { display: flex; flex-direction: column; font-weight: var(--fw-bold); font-size: 13px; padding-top: 10px; }
-.rec-day-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-inline-start: 4px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); min-width: 0; }
+.rec-day-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); min-width: 0; }
 a.rec-day-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
-.rec-day li.state-confirmed .rec-day-card { border-inline-start-color: var(--info); }
-.rec-day li.state-pending .rec-day-card { border-inline-start-color: var(--warning); }
-.rec-day li.state-waiting .rec-day-card { border-inline-start-color: var(--warning); background: var(--warning-soft); }
-.rec-day li.state-with .rec-day-card { border-inline-start-color: var(--primary); background: var(--primary-soft); }
-.rec-day li.state-completed .rec-day-card { border-inline-start-color: var(--success); }
-.rec-day li.state-no_show .rec-day-card { border-inline-start-color: var(--danger); }
-.rec-day li.state-cancelled .rec-day-card { border-inline-start-color: var(--border); text-decoration: line-through; text-decoration-color: var(--text-subtle); }
+/* Calm: the patient currently with the doctor is the only highlighted card. */
+.rec-day li.state-with .rec-day-card { border-color: var(--primary); }
+.rec-day li.state-cancelled .rec-day-card { text-decoration: line-through; text-decoration-color: var(--text-subtle); }
 .rec-day li.is-past .rec-day-card, .rec-day li.state-cancelled .rec-day-card { opacity: .65; }
 .rec-day li.is-block .rec-day-card { background: var(--surface-sunken); border-style: dashed; }
 .rec-wait { display: inline-flex; align-items: center; gap: 4px; color: var(--warning); font-weight: var(--fw-semibold); margin-top: 2px; }
@@ -95,7 +89,7 @@ a.rec-day-card:hover { border-color: var(--border-strong); box-shadow: var(--sha
 .rec-exp .menu { inset-inline-end: 0; inset-inline-start: auto; }
 .rec-discounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .rec-border-top { border-top: 1px solid var(--border); }
-.rec-meter-accent > span { background: var(--accent); }
+.rec-meter-accent > span { background: var(--text-subtle); }
 .rec-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .rec-neg { color: var(--danger); }
 .rec-print-title { margin-bottom: 18px; }
@@ -126,5 +120,4 @@ html[dir="rtl"] [dir="auto"] { text-align: right; }
   .stats.rec-kpis .stat.hero { grid-column: 1 / -1; }
   .stats.rec-kpis .stat-icon { display: none; }
 }
-/* The 5th donut slice uses the success green, which reads as the primary green — use the secondary tone here. */
-.donut circle.d5 { stroke: var(--secondary); } .legend .d5 { background: var(--secondary); }
+

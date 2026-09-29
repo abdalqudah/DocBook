@@ -32,12 +32,18 @@ router.use(wrap(async (req, res, next) => {
   res.locals.navActions = nav.actionsFor(perms);
   res.locals.verifyBanner = verify.required() && !verify.isVerified(req.user);
   res.locals.ctx = req.ctx;
-  const badges = { waiting: 0, pendingAdjustments: 0, lowStock: 0 };
+  const badges = { waiting: 0, pendingAdjustments: 0, lowStock: 0, toPay: 0 };
   if (req.method === 'GET' && !req.path.startsWith('/theme') && !req.path.startsWith('/logo')) {
     const b = req.ctx.businessId;
     if (perms.has('frontdesk.use')) {
       const [{ n }] = await knex('appointments').where({ business_id: b, appointment_date: req.ctx.today, checked_in: true, with_doctor: false, payment_status: 'unpaid' }).whereNot('status', 'cancelled').count({ n: '*' });
       badges.waiting = Number(n);
+    }
+    if (perms.has('billing.manage')) {
+      // Visits of today waiting at the cashier: arrived (or finished) and not yet paid.
+      const [{ n }] = await knex('appointments').where({ business_id: b, appointment_date: req.ctx.today, payment_status: 'unpaid' }).whereNot('status', 'cancelled')
+        .whereNot('appointment_type', 'blocked').andWhere((q) => q.where('checked_in', true).orWhere('status', 'completed')).count({ n: '*' });
+      badges.toPay = Number(n);
     }
     if (perms.has('payroll.approve')) {
       const [{ n }] = await knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).count({ n: '*' });
@@ -70,6 +76,7 @@ router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));
 router.use('/patients', require('../modules/clinic/patients.web'));
 router.use('/visits', require('../modules/clinic/visits.web'));
+router.use('/cashier', require('../modules/clinic/cashier.web'));
 router.use('/billing', require('../modules/clinic/billing.web'));
 router.use('/payroll', require('../modules/clinic/payroll.web'));
 router.use('/expenses', require('../modules/expenses/web'));

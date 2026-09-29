@@ -134,8 +134,10 @@
       "my_day": "My day",
       "appointments": "Calendar",
       "front_desk": "Desk",
-      "patients": "Patients"
-    }
+      "patients": "Patients",
+      "cashier": "Cashier"
+    },
+    "cashier": "Cashier"
   },
   "search": {
     "open": "Search and quick actions",
