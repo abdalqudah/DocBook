@@ -68,6 +68,13 @@ const DATASETS = {
       stock_movements: T('stock_movements', { id: 'i', item_id: 'i', type: 's', quantity: 'n', stock_after: 'n', note: 's', created_by: 'i', created_at: 'dt' }),
     },
   },
+  attendance: {
+    permission: 'attendance.view',
+    tables: {
+      // Clock-in/out times only; the IP address and browser kept for audit stay in DocBook.
+      staff_attendance: T('attendance_records', { id: 'i', user_id: 'i', work_date: 'd', clock_in: 'dt', clock_out: 'dt', in_method: 's', out_method: 's', correction_reason: 's', corrected_by: 'i', corrected_at: 'dt', created_at: 'dt', updated_at: 'dt' }),
+    },
+  },
   payroll: {
     permission: 'payroll.view',
     sensitive: true,

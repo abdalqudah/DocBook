@@ -28,6 +28,15 @@ function requireAuth(req, res, next) {
   if (req.user) return next();
   if (isJson(req)) return next(E.unauthenticated());
   if (req.method === 'GET') req.session.returnTo = req.originalUrl;
+  // Attendance QR scanned while signed out: the code only lives 30 s, so remember that a VALID code was
+  // scanned (clinic + time, never the code itself) and let the scan page honour it for a few minutes after login.
+  if (req.method === 'GET' && req.originalUrl.split('?')[0] === '/app/attendance/scan' && req.query.t) {
+    try {
+      const tok = require('../modules/attendance/attendance.service').verifyToken(req.query.t); // eslint-disable-line global-require
+      req.session.pendingScan = { b: tok.businessId, at: Date.now() };
+      req.session.returnTo = '/app/attendance/scan?resume=1';
+    } catch { /* expired or forged: the scan page will ask to scan again */ }
+  }
   return res.redirect('/login');
 }
 
@@ -59,7 +68,7 @@ async function resolveBusiness(req, res, next) {
     req.ctx = {
       businessId, userId: req.user.id, userName: req.user.name, permissions, currency: business.currency, timezone: business.timezone,
       roleKey: membership && membership.role_key, doctorId: membership ? membership.doctor_id : null, ownDoctorId,
-      ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale,
+      ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale, baseUrl: res.locals.baseUrl,
     };
     req.business = business;
     res.locals.business = business;

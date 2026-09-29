@@ -97,7 +97,9 @@
     "test_fail": "The connection test failed:",
     "run_ok": "Copy finished: {n} rows.",
     "run_fail": "The copy failed:",
-    "removed": "Disconnected. Nothing will be copied any more."
+    "removed": "Disconnected. Nothing will be copied any more.",
+    "ds_attendance": "Staff attendance",
+    "ds_attendance_text": "Clock-in and clock-out times of the staff (db_staff_attendance), without IP addresses."
   },
   "errors_datasync": {
     "PRIVATE": "This address is not reachable from DocBook. Use a public server name or IP address.",

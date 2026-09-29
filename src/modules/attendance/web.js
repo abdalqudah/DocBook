@@ -150,6 +150,18 @@ const ticketOk = (req) => {
 const save = (req) => new Promise((resolve, reject) => { req.session.save((err) => (err ? reject(err) : resolve())); });
 
 router.get('/scan', wrap(async (req, res) => {
+  const pending = req.session.pendingScan;
+  if (pending) {
+    // A valid code was scanned just before signing in (see requireAuth): turn it into the usual ticket.
+    delete req.session.pendingScan;
+    if (Date.now() - pending.at < svc.TICKET_MS && (pending.b === req.ctx.businessId || await businesses.isMember(req.user.id, pending.b))) {
+      if (pending.b !== req.ctx.businessId) req.session.businessId = pending.b;
+      req.session.attTicket = { b: pending.b, at: pending.at };
+      delete req.session.attDone;
+      await save(req);
+      if (pending.b !== req.ctx.businessId) return res.redirect('/app/attendance/scan');
+    }
+  }
   if (req.query.t !== undefined) {
     let tok;
     try {

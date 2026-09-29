@@ -6,8 +6,10 @@ const { entryFor } = require('../rbac/permissions');
 function signIn(req, user, { businessId } = {}) {
   return new Promise((resolve, reject) => {
     const returnTo = req.session.returnTo;
+    const pendingScan = req.session.pendingScan; // attendance QR scanned before signing in
     req.session.regenerate((err) => {
       if (err) return reject(err);
+      if (pendingScan) req.session.pendingScan = pendingScan;
       req.session.userId = user.id;
       req.session.businessId = businessId || user.last_business_id || null;
       req.session.returnTo = returnTo;
