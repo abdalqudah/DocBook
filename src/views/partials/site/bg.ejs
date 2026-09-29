@@ -1,0 +1,2 @@
+<% var _D = s.design || {}; var _bg = _D.background === 'image' && _D.bg_image && typeof siteMedia !== 'undefined' && siteMedia ? siteMedia[String(_D.bg_image)] : null; %>
+<% if (_bg) { %><div class="sec-bg" aria-hidden="true" style="background-image:url('<%= _bg.url %>')"></div><% } %>

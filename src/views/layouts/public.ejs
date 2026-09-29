@@ -4,6 +4,7 @@
   var portalClinic = typeof clinic !== 'undefined' && clinic ? clinic : null;
   var seoTitle = typeof pageTitle !== 'undefined' && pageTitle ? pageTitle : ((typeof title !== 'undefined' && title ? title + ' · ' : '') + brandName);
   var seoDesc = typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : (chrome && chrome.seo ? Lx(chrome.seo.description) : '');
+  var head = typeof seoHead !== 'undefined' && seoHead ? seoHead : null;
   var header = chrome ? chrome.header : null;
   var footer = chrome ? chrome.footer : null;
 %><!doctype html>
@@ -11,16 +12,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title><%= seoTitle %></title>
-<% if (seoDesc) { %><meta name="description" content="<%= seoDesc %>"><meta property="og:description" content="<%= seoDesc %>"><% } %>
+<title><%= head ? head.title : seoTitle %></title>
+<% if (head) { %><%- head.html %>
+<% } else { %><% if (seoDesc) { %><meta name="description" content="<%= seoDesc %>"><meta property="og:description" content="<%= seoDesc %>"><% } %>
 <meta property="og:title" content="<%= seoTitle %>">
-<meta name="color-scheme" content="light dark">
+<% if (typeof noindex !== 'undefined' && noindex) { %><meta name="robots" content="noindex, nofollow"><% } %>
+<% } %><meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/svg+xml" href="<%= brand.favicon || '/favicon.svg' %>">
 <link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
 <% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function (h) { if (h === '/css/site.css') return; %><link rel="stylesheet" href="<%= h %><%= h.indexOf('?') === -1 ? '?v=' + assetV : '' %>"><% }) %>
 <meta name="csrf-token" content="<%= csrfToken %>">
+<% if (head && head.pixels) { %><meta name="db-pixels" content="<%= JSON.stringify({ ids: head.pixels }) %>"><% } %>
 </head>
 <body class="site<%= portalClinic ? ' site-portal' : '' %>">
 <a class="sr-only" href="#main"><%= t('site.skip') %></a>
@@ -77,10 +81,10 @@
       <div class="site-footer-brand">
         <a class="row-sm" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
         <% if (footer && Lx(footer.tagline)) { %><p><%= Lx(footer.tagline) %></p><% } %>
-        <% if (footer && footer.social && footer.social.length) { %>
-        <div class="site-social">
-          <% footer.social.forEach(function (s) { if (!s.href) return; %><a class="btn btn-ghost btn-icon" href="<%= s.href %>" rel="noopener" target="_blank" aria-label="<%= Lx(s.label) %>" title="<%= Lx(s.label) %>"><%- icon(s.icon || 'link') %></a><% }) %>
-        </div>
+        <% var _social = typeof siteSocial !== 'undefined' && siteSocial ? siteSocial : []; if (_social.length) { %>
+        <nav class="site-social" aria-label="<%= t('growth.social_nav') %>">
+          <% _social.forEach(function (s) { %><a class="btn btn-ghost btn-icon" href="<%= s.href %>" rel="noopener me" target="_blank" aria-label="<%= t('growth.social_' + s.key) %>" title="<%= t('growth.social_' + s.key) %>"><%- icon(s.icon) %></a><% }) %>
+        </nav>
         <% } %>
       </div>
       <% if (footer) { ['1', '2', '3'].forEach(function (c) { var links = (footer.items || []).filter(function (l) { return String(l.column || '1') === c && l.href && Lx(l.label); }); if (!links.length) return; %>
@@ -101,12 +105,25 @@
     </div>
     <div class="site-footer-bottom">
       <span>© <%= new Date().getFullYear() %> <%= footer && footer.copyright ? footer.copyright : brandName %>. <%= t('site.rights') %></span>
-      <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%= locale === 'ar' ? 'English' : 'العربية' %></a>
+      <span class="row wrap site-footer-links">
+        <a href="/preferences/cookies"><%= t('growth.cookie_prefs') %></a>
+        <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%= locale === 'ar' ? 'English' : 'العربية' %></a>
+      </span>
     </div>
   </div>
 </footer>
 <% } %>
+<% if (head && head.askConsent && !(typeof noConsentBanner !== 'undefined' && noConsentBanner)) { %>
+<div class="consent-note" role="region" aria-label="<%= t('growth.consent_label') %>" data-consent-note>
+  <p><%= t('growth.consent_text') %> <a href="/preferences/cookies"><%= t('growth.consent_more') %></a></p>
+  <div class="consent-actions">
+    <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= path %>"><input type="hidden" name="choice" value="reject"><button class="btn btn-secondary btn-sm" type="submit"><%= t('growth.consent_reject') %></button></form>
+    <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= path %>"><input type="hidden" name="choice" value="accept"><button class="btn btn-primary btn-sm" type="submit"><%= t('growth.consent_accept') %></button></form>
+  </div>
+</div>
+<% } %>
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
+<% if (head && head.pixels) { %><script src="/js/pixels.js?v=<%= assetV %>" defer></script><% } %>
 <script src="/js/site.js?v=<%= assetV %>" defer></script>
 <% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { if (h === '/js/site.js') return; %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
 </body>

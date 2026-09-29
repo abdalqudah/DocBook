@@ -1,0 +1,2 @@
+<% var _m = typeof siteMedia !== 'undefined' && siteMedia && mid ? siteMedia[String(mid)] : null; %>
+<% if (_m) { %><img class="site-img" src="<%= _m.url %>" alt="<%= typeof alt !== 'undefined' && alt ? alt : '' %>"<% if (_m.width && _m.height) { %> width="<%= _m.width %>" height="<%= _m.height %>"<% } %> loading="<%= typeof eager !== 'undefined' && eager ? 'eager' : 'lazy' %>" decoding="async"><% } %>

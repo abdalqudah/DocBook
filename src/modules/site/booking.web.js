@@ -171,7 +171,7 @@ router.get('/:slug/book/done', wrap(async (req, res, next) => {
   if (!clinic) return next();
   const a = await lastBooking(req, clinic);
   if (!a) return res.redirect(`/${clinic.slug}/book`);
-  return res.page('pages/portal/booked', { layout: 'public', title: req.t('booking.done_title'), clinic, appt: localise(req, a), hideBookCta: true, pageStyles: clinicStyles(clinic) });
+  return res.page('pages/portal/booked', { layout: 'public', title: req.t('booking.done_title'), clinic, appt: localise(req, a), hideBookCta: true, noindex: true, pageStyles: clinicStyles(clinic) });
 }));
 
 /** UTC instant of a wall-clock time in a time zone. */

@@ -1,0 +1,76 @@
+<%
+  var d = typeof domain !== 'undefined' ? domain : null;
+  var rec = typeof domainRecords !== 'undefined' ? domainRecords : null;
+  var dErr = typeof domainErrors !== 'undefined' && domainErrors ? domainErrors : {};
+  var dFormErr = typeof domainFormError !== 'undefined' ? domainFormError : null;
+  var st = d ? d.status : 'none';
+  var c = d && d.check;
+  var mark = function (ok) { return '<span class="row-sm small' + (ok ? '' : ' muted') + '">' + icon(ok ? 'circle-check' : 'circle-x', 'icon-sm') + escapeHtml(t(ok ? 'identity.dns_ok' : 'identity.dns_missing')) + '</span>'; };
+%>
+<section class="panel" id="domain">
+  <div class="panel-head"><div><h2><%= t('identity.domain_title') %></h2><div class="panel-sub"><%= t('identity.domain_sub') %></div></div>
+    <% if (d) { %><span class="badge badge-dot <%= st === 'verified' ? 'badge-success' : st === 'suspended' ? 'badge-danger' : 'badge-neutral' %>"><%= t('identity.domain_status_' + st) %></span><% } %></div>
+  <div class="panel-body stack">
+    <% if (dFormErr) { %><%- include('../../partials/form-error', { formError: dFormErr, errors: {} }) %><% } %>
+
+    <% if (st === 'verified') { %>
+      <div class="set-url">
+        <%- icon('globe', 'icon-sm muted') %>
+        <code class="grow truncate" id="domain-live-url" dir="ltr">https://<%= d.host %></code>
+        <button class="btn btn-secondary btn-sm" type="button" data-copy="domain-live-url"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button>
+        <a class="btn btn-ghost btn-sm" href="https://<%= d.host %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><span class="hide-sm"><%= t('common.open') %></span></a>
+      </div>
+      <p class="small muted"><%= t('identity.domain_live_text', { host: d.host }) %></p>
+      <% if (c && !c.owned) { %><div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><%= t('identity.domain_keep_txt') %></div></div><% } %>
+    <% } else if (st === 'suspended') { %>
+      <div class="alert alert-error small"><%- icon('circle-alert') %><div class="grow"><div class="alert-title" dir="ltr" style="text-align:start"><%= d.host %></div><%= t('identity.domain_suspended_text') %></div></div>
+    <% } %>
+
+    <% if (st === 'pending') { %>
+      <p class="small muted"><%= t('identity.domain_pending_text') %></p>
+      <% var recs = [['TXT', rec.txt.name, rec.txt.value, c ? c.owned : null, 'txt']];
+         recs.push(['CNAME', rec.cname.name, rec.cname.value, c ? c.pointed : null, 'cname']);
+         if (rec.serverIps.length) recs.push(['A', rec.host, rec.serverIps.join(', '), c ? c.pointed : null, 'a']); %>
+      <div class="stack-sm">
+        <% recs.forEach(function (r) { %>
+        <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px">
+          <div class="row between wrap" style="gap:8px;margin-bottom:8px">
+            <span class="strong"><%= r[0] %><% if (r[4] === 'a') { %> <span class="small muted">(<%= t('identity.dns_apex_only') %>)</span><% } %></span>
+            <% if (r[3] !== null) { %><%- mark(r[3]) %><% } %>
+          </div>
+          <div class="grid grid-2" style="gap:10px">
+            <div style="min-width:0"><div class="tiny muted" style="margin-bottom:4px"><%= t('identity.dns_name') %></div>
+              <div class="set-url"><code class="grow" id="dns-<%= r[4] %>-name" dir="ltr" style="word-break:break-all"><%= r[1] %></code><button class="btn btn-ghost btn-icon btn-sm" type="button" data-copy="dns-<%= r[4] %>-name" aria-label="<%= t('common.copy') %>" title="<%= t('common.copy') %>"><%- icon('copy', 'icon-sm') %></button></div></div>
+            <div style="min-width:0"><div class="tiny muted" style="margin-bottom:4px"><%= t('identity.dns_value') %></div>
+              <div class="set-url"><code class="grow" id="dns-<%= r[4] %>-value" dir="ltr" style="word-break:break-all"><%= r[2] %></code><button class="btn btn-ghost btn-icon btn-sm" type="button" data-copy="dns-<%= r[4] %>-value" aria-label="<%= t('common.copy') %>" title="<%= t('common.copy') %>"><%- icon('copy', 'icon-sm') %></button></div></div>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+      <p class="small muted"><%= t('identity.domain_dns_wait') %></p>
+    <% } %>
+
+    <% if (d && d.checked_at) { %><div class="tiny muted"><%= t('identity.domain_last_check', { date: fmt.date(d.checked_at, { dateStyle: 'medium', timeStyle: 'short' }) }) %></div><% } %>
+
+    <% if (st === 'none' || st === 'pending') { var openChange = Boolean(dErr.host); %>
+    <% if (d) { %><details<%= openChange ? ' open' : '' %>><summary class="link small"><%= t('identity.domain_change') %></summary><% } %>
+    <form class="stack<%= d ? ' mt-2' : '' %>" method="post" action="/app/settings/portal/domain" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label class="label" for="f-host"><%= d ? t('identity.domain_new_host') : t('identity.domain_host') %></label>
+        <input class="input<%= dErr.host ? ' is-invalid' : '' %>" id="f-host" name="host" value="<%= old && old.host !== undefined ? old.host : '' %>" placeholder="book.yourclinic.com" autocomplete="off" spellcheck="false" maxlength="253" dir="ltr" inputmode="url">
+        <% if (dErr.host) { %><span class="field-error"><%= dErr.host %></span><% } else { %><span class="help"><%= t('identity.domain_host_help') %></span><% } %>
+      </div>
+      <div class="form-actions"><button class="btn <%= d ? 'btn-secondary' : 'btn-secondary' %>" type="submit"><%= d ? t('identity.domain_save_new') : t('identity.domain_connect') %></button></div>
+    </form>
+    <% if (d) { %></details><% } %>
+    <% } %>
+
+    <% if (d && st !== 'suspended') { %>
+    <div class="row wrap" style="gap:8px">
+      <form method="post" action="/app/settings/portal/domain/verify"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn <%= st === 'pending' ? 'btn-primary' : 'btn-secondary' %> btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= st === 'pending' ? t('identity.domain_verify') : t('identity.domain_check_again') %></button></form>
+      <form method="post" action="/app/settings/portal/domain/delete" data-confirm="<%= t('identity.domain_remove_confirm', { host: d.host }) %>" data-confirm-yes="<%= t('identity.domain_remove') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('identity.domain_remove') %></button></form>
+    </div>
+    <% } %>
+  </div>
+</section>

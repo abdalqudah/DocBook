@@ -8,10 +8,10 @@
 </div>
 
 <div class="se-blocks">
-  <% [['header', 'panel-top'], ['footer', 'panel-bottom'], ['seo', 'search']].forEach(function (b) { %>
+  <% [['header', 'panel-top', 'admin.site.header'], ['footer', 'panel-bottom', 'admin.site.footer'], ['media', 'image', 'admin.site.media.title']].forEach(function (b) { %>
   <a class="panel se-block card-link" href="/admin/site/<%= b[0] %>">
     <span class="icon-wrap"><%- icon(b[1]) %></span>
-    <span class="grow"><strong><%= t('admin.site.' + b[0]) %></strong><span class="muted small"><%= t('admin.site.' + b[0] + '_help') %></span></span>
+    <span class="grow"><strong><%= t(b[2]) %></strong><span class="muted small"><%= t(b[0] === 'media' ? 'admin.site.media.sub' : 'admin.site.' + b[0] + '_help') %></span></span>
     <%- icon('chevron-right', 'icon-sm flip-rtl muted') %>
   </a>
   <% }) %>

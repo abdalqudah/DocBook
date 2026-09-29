@@ -28,6 +28,8 @@
       </div>
     </section>
 
+    <%- include('_domain') %>
+
     <section class="panel">
       <div class="panel-head"><div><h2><%= t('settings.booking_title') %></h2><div class="panel-sub"><%= t('settings.booking_sub') %></div></div>
         <span class="badge badge-dot <%= b.booking_enabled ? 'badge-success' : 'badge-neutral' %>"><%= b.booking_enabled ? t('settings.booking_on') : t('settings.booking_off') %></span></div>

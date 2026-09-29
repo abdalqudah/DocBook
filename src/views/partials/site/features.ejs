@@ -1,15 +1,15 @@
 <% var d = s.data || {}; %>
-<section class="section lp-features" id="<%= s.anchor %>">
-  <div class="container">
+<section class="section lp-features <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
     <%- include('head', { s: s, center: true }) %>
     <div class="lp-feature-grid">
       <% (d.items || []).forEach(function (f) { %>
       <article class="lp-feature">
-        <% if (f.icon) { %><span class="lp-icon"><%- icon(f.icon) %></span><% } %>
+        <% if (f.image && typeof siteMedia !== 'undefined' && siteMedia[String(f.image)]) { %><div class="card-media"><%- include('img', { mid: f.image, alt: '' }) %></div><% } else if (f.icon) { %><span class="lp-icon"><%- icon(f.icon) %></span><% } %>
         <h3><%= L(f.title) %></h3>
         <% if (L(f.text)) { %><p><%= L(f.text) %></p><% } %>
       </article>
       <% }) %>
     </div>
-  </div>
+  <%- include('slot-close', { s: s }) %></div>
 </section>

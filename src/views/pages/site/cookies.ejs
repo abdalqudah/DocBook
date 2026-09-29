@@ -1,0 +1,41 @@
+<section class="section cookie-page">
+  <div class="container lp-narrow">
+    <div class="section-head">
+      <h1><%= t('growth.cookies_title') %></h1>
+      <p><%= t('growth.cookies_sub') %></p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('growth.essential_title') %></h2><span class="badge badge-neutral"><%= t('growth.always_on') %></span></div>
+      <div class="panel-body stack">
+        <p class="muted"><%= t('growth.essential_text') %></p>
+        <dl class="cookie-list">
+          <div><dt dir="ltr">db.sid</dt><dd><%= t('growth.c_session') %></dd></div>
+          <div><dt dir="ltr">db_lang</dt><dd><%= t('growth.c_lang') %></dd></div>
+          <div><dt dir="ltr">db_theme</dt><dd><%= t('growth.c_theme') %></dd></div>
+          <div><dt dir="ltr">db_consent</dt><dd><%= t('growth.c_consent') %></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="panel mt-6" id="measurement">
+      <div class="panel-head">
+        <h2><%= t('growth.measure_title') %></h2>
+        <% if (tools.length) { %><span class="badge badge-neutral"><span class="g-dot<%= consent === 'yes' ? ' dot-on' : '' %>"></span><%= consent === 'yes' ? t('growth.now_yes') : consent === 'no' ? t('growth.now_no') : t('growth.now_none') %></span><% } %>
+      </div>
+      <div class="panel-body stack">
+        <% if (!tools.length) { %>
+          <p class="muted"><%= t('growth.measure_none') %></p>
+        <% } else { %>
+          <p class="muted"><%= t('growth.measure_text') %></p>
+          <ul class="cookie-tools"><% tools.forEach(function (n) { %><li><bdi><%= n %></bdi></li><% }) %></ul>
+          <p class="small muted"><%= t('growth.measure_scope') %></p>
+          <div class="row wrap">
+            <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="/preferences/cookies"><input type="hidden" name="choice" value="reject"><button class="btn btn-secondary" type="submit"<%= consent === 'no' ? ' aria-pressed="true"' : '' %>><%= t('growth.consent_reject') %></button></form>
+            <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="/preferences/cookies"><input type="hidden" name="choice" value="accept"><button class="btn btn-primary" type="submit"<%= consent === 'yes' ? ' aria-pressed="true"' : '' %>><%= t('growth.consent_accept') %></button></form>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

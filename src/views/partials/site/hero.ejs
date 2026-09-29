@@ -1,7 +1,8 @@
-<% var d = s.data || {}; %>
-<section class="site-hero lp-hero" id="<%= s.anchor %>">
-  <div class="lp-hero-bg" aria-hidden="true"></div>
-  <div class="container hero-grid<%= d.visual === 'none' ? ' no-visual' : '' %>">
+<% var d = s.data || {}; var HD = s.design || {}; var heroImg = d.visual === 'image' && HD.media && typeof siteMedia !== 'undefined' && siteMedia && siteMedia[String(HD.media)]; var noVisual = d.visual === 'none' || (d.visual === 'image' && !heroImg); %>
+<section class="site-hero lp-hero <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <% if (!(HD.background === 'image' && HD.bg_image)) { %><div class="lp-hero-bg" aria-hidden="true"></div><% } %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
+  <div class="hero-grid<%= noVisual ? ' no-visual' : '' %>">
     <div class="lp-hero-copy">
       <% if (L(d.eyebrow)) { %><span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= L(d.eyebrow) %></span><% } %>
       <h1><%= L(d.title) %><% if (L(d.title_accent)) { %> <span class="hl"><%= L(d.title_accent) %></span><% } %></h1>
@@ -21,10 +22,13 @@
       </div>
       <% } %>
     </div>
-    <% if (d.visual !== 'none') { %>
+    <% if (heroImg) { %>
+    <div class="lp-hero-visual lp-hero-image"><%- include('img', { mid: HD.media, alt: L(HD.media_alt), eager: true }) %></div>
+    <% } else if (!noVisual) { %>
     <div class="lp-hero-visual" aria-hidden="true">
       <%- include('mock-booking', { hero: true }) %>
     </div>
     <% } %>
   </div>
+  <%- include('slot-close', { s: s }) %></div>
 </section>

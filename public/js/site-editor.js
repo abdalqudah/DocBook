@@ -1,5 +1,6 @@
-/* Landing page editor (platform admin): repeatable rows and the icon picker.
-   Without JavaScript the rows already on the page can still be edited and the icon is a plain list. */
+/* Landing page editor (platform admin): repeatable rows, the icon picker, the media picker and uploads
+   (media library), design options that depend on each other, and character counters (Search & AI).
+   Without JavaScript the rows already on the page can still be edited, icons and images are plain lists. */
 (function () {
   'use strict';
 
@@ -29,7 +30,7 @@
       if (add && rows && tpl) {
         rows.appendChild(tpl.content.cloneNode(true));
         var last = rows.lastElementChild;
-        if (last) { enhanceIcons(last); var first = last.querySelector('input:not([type=hidden]), textarea'); if (first) first.focus(); }
+        if (last) { enhanceIcons(last); enhanceMedia(last); var first = last.querySelector('input:not([type=hidden]), textarea'); if (first) first.focus(); }
       }
       if (rm) {
         var row = rm.closest('[data-row]');
@@ -104,5 +105,137 @@
     if (first !== e.target && !(e.target.lang && first && first.lang !== e.target.lang && first.closest('.bi-lang') === e.target.closest('.bi-lang'))) return;
     var title = row.querySelector('.se-item-sum .grow');
     if (title && e.target.value.trim()) title.textContent = e.target.value.trim();
+  });
+  /* ---------- Media: upload (the raw file with the CSRF token in a header), picker thumbnails ---------- */
+  var csrf = ($('meta[name="csrf-token"]') || {}).content || '';
+  var maxBytes = Number(text.maxBytes) || 5242880;
+  function uploadFile(file, name) {
+    if (!file) return Promise.reject(new Error(text.choose || ''));
+    if (['image/png', 'image/jpeg', 'image/webp'].indexOf(file.type) === -1 && file.type) return Promise.reject(new Error(text.failed || ''));
+    if (file.size > maxBytes) return Promise.reject(new Error(text.tooBig || ''));
+    return fetch('/admin/site/media', {
+      method: 'POST', credentials: 'same-origin', body: file,
+      headers: { 'Content-Type': file.type || 'application/octet-stream', 'X-CSRF-Token': csrf, 'X-File-Name': encodeURIComponent(name || file.name || ''), Accept: 'application/json' }
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (body) {
+        if (!r.ok || !body.data) throw new Error(body.error || text.failed || '');
+        return body.data;
+      });
+    });
+  }
+
+  function paintThumb(pick) {
+    var sel = pick.querySelector('select');
+    var thumb = pick.querySelector('[data-media-thumb]');
+    if (!sel || !thumb) return;
+    var opt = sel.options[sel.selectedIndex];
+    var url = opt && opt.getAttribute('data-url');
+    thumb.innerHTML = url ? '<img src="' + url.replace(/"/g, '') + '" alt="">' : iconSvg('image', 'muted');
+  }
+  function enhanceMedia(root) {
+    $$('[data-media-pick]', root).forEach(function (pick) {
+      if (pick.getAttribute('data-ready')) return;
+      pick.setAttribute('data-ready', '1');
+      var btn = pick.querySelector('[data-media-upload]');
+      if (btn) btn.hidden = false;
+      paintThumb(pick);
+    });
+  }
+  enhanceMedia(document);
+  document.addEventListener('change', function (e) {
+    var pick = e.target.closest && e.target.closest('[data-media-pick]');
+    if (pick) paintThumb(pick);
+    if (e.target.matches && (e.target.matches('[data-design]') || e.target.name === 'd_media')) designVisibility();
+  });
+
+  // Upload from inside a picker: the new image joins every picker on the page and is chosen in this one.
+  var fileInput = $('[data-media-file]');
+  var target = null;
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-media-upload]');
+    if (!b || !fileInput) return;
+    e.preventDefault();
+    target = b.closest('[data-media-pick]');
+    fileInput.value = '';
+    fileInput.click();
+  });
+  if (fileInput) fileInput.addEventListener('change', function () {
+    var file = fileInput.files && fileInput.files[0];
+    if (!file || !target) return;
+    var btn = target.querySelector('[data-media-upload]');
+    var label = btn && btn.querySelector('span');
+    var before = label ? label.textContent : '';
+    if (btn) btn.disabled = true;
+    if (label) label.textContent = text.uploading || '…';
+    uploadFile(file).then(function (m) {
+      $$('select[data-media-select]').forEach(function (sel) {
+        var o = document.createElement('option');
+        o.value = String(m.id); o.textContent = m.name + (m.width ? ' · ' + m.width + '×' + m.height : ''); o.setAttribute('data-url', m.url);
+        sel.insertBefore(o, sel.options[1] || null);
+      });
+      $$('template[data-row-template]').forEach(function (tpl) {
+        $$('select[data-media-select]', tpl.content).forEach(function (sel) {
+          var o = document.createElement('option');
+          o.value = String(m.id); o.textContent = m.name; o.setAttribute('data-url', m.url);
+          sel.insertBefore(o, sel.options[1] || null);
+        });
+      });
+      var sel = target.querySelector('select');
+      sel.value = String(m.id);
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      if (label) label.textContent = text.uploaded || before;
+      setTimeout(function () { if (label) label.textContent = before; }, 2000);
+    }).catch(function (err) {
+      if (label) label.textContent = before;
+      window.alert(err.message || text.failed || '');
+    }).then(function () { if (btn) btn.disabled = false; });
+  });
+
+  // Media library page: the upload form (shown only with JavaScript).
+  var mform = $('form[data-media-form]');
+  if (mform) {
+    mform.hidden = false;
+    var status = $('[data-media-status]', mform);
+    mform.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = mform.querySelector('input[type=file]');
+      var file = input && input.files && input.files[0];
+      var submit = mform.querySelector('button[type=submit]');
+      if (status) status.textContent = text.uploading || '';
+      if (submit) submit.disabled = true;
+      uploadFile(file, (mform.querySelector('input[name=name]') || {}).value).then(function () {
+        if (status) status.textContent = text.uploaded || '';
+        window.location.reload();
+      }).catch(function (err) {
+        if (status) status.textContent = err.message || text.failed || '';
+        if (submit) submit.disabled = false;
+      });
+    });
+  }
+
+  /* ---------- Design options: show what applies (background image, image position/size/alt) ---------- */
+  function designVisibility() {
+    var bg = $('select[data-design="background"]');
+    var mediaSel = $('select[name="d_media"]');
+    var show = function (key, on) { var f = $('[data-design-field="' + key + '"]'); if (f) f.hidden = !on; };
+    if (bg) show('bg_image', bg.value === 'image');
+    if (mediaSel) ['media_pos', 'media_size', 'media_alt'].forEach(function (k) { show(k, Boolean(mediaSel.value)); });
+  }
+  designVisibility();
+
+  /* ---------- Character counters (data-count = recommended length) ---------- */
+  $$('[data-count]').forEach(function (el) {
+    var limit = Number(el.getAttribute('data-count'));
+    var out = document.createElement('span');
+    out.className = 'char-count tiny';
+    out.setAttribute('aria-live', 'polite');
+    el.parentNode.appendChild(out);
+    var update = function () {
+      var n = el.value.length;
+      out.textContent = n + ' / ' + limit;
+      out.classList.toggle('is-over', n > limit);
+    };
+    el.addEventListener('input', update);
+    update();
   });
 })();

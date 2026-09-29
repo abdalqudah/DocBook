@@ -1,0 +1,147 @@
+<%
+  var o = old || {};
+  var has = Object.keys(o).length > 0;
+  var bv = function (obj, key, lc) { return has ? (o[key + '_' + lc] || '') : ((obj && obj[lc]) || ''); };
+  var val = function (key, cur) { return has ? (o[key] !== undefined ? o[key] : '') : (cur || ''); };
+  var on = function (key, cur) { return has ? o[key] === '1' : Boolean(cur); };
+  var err = function (k) { return errors && errors[k] ? '<span class="field-error">' + escapeHtml(errors[k]) + '</span>' : ''; };
+  var okCount = checks.filter(function (c) { return c.ok; }).length;
+  var biField = function (key, labelKey, n, rows, count, ph) {
+    var h = '<div class="field full"><span class="label">' + escapeHtml(t(labelKey)) + '</span><div class="bi-lang">';
+    ['ar', 'en'].forEach(function (lc) {
+      var id = 'f-' + key + '_' + lc;
+      var v = escapeHtml(bv(key === 'site_name' ? s.site_name : key === 'title' ? s.title : s.description, key, lc));
+      var p = ph && ph[lc] ? ' placeholder="' + escapeHtml(ph[lc]) + '"' : '';
+      var ctl = rows
+        ? '<textarea class="textarea" id="' + id + '" name="' + key + '_' + lc + '" dir="' + (lc === 'ar' ? 'rtl' : 'ltr') + '" lang="' + lc + '" rows="' + rows + '" maxlength="' + n + '"' + (count ? ' data-count="' + count + '"' : '') + p + ' aria-label="' + escapeHtml(t(labelKey) + ' — ' + t('admin.site.' + (lc === 'ar' ? 'arabic' : 'english'))) + '">' + v + '</textarea>'
+        : '<input class="input" id="' + id + '" name="' + key + '_' + lc + '" dir="' + (lc === 'ar' ? 'rtl' : 'ltr') + '" lang="' + lc + '" maxlength="' + n + '" value="' + v + '"' + (count ? ' data-count="' + count + '"' : '') + p + ' aria-label="' + escapeHtml(t(labelKey) + ' — ' + t('admin.site.' + (lc === 'ar' ? 'arabic' : 'english'))) + '">';
+      h += '<span class="bi-row"><span class="bi-tag">' + (lc === 'ar' ? 'ع' : 'EN') + '</span><span class="grow stack-sm">' + ctl + '</span></span>';
+    });
+    return h + '</div></div>';
+  };
+  var dflt = function (v) { return { ar: (v && v.ar) || '', en: (v && v.en) || '' }; };
+%>
+<div class="page-head">
+  <div><h1><%= t('growth.seo_title') %></h1><p><%= t('growth.seo_sub') %></p></div>
+  <div class="page-actions">
+    <details class="dropdown">
+      <summary class="btn btn-secondary"><%- icon('external-link', 'icon-sm') %><%= t('growth.files') %><%- icon('chevron-down', 'icon-sm') %></summary>
+      <div class="menu">
+        <a href="/sitemap.xml" target="_blank" rel="noopener"><span dir="ltr">sitemap.xml</span></a>
+        <a href="/robots.txt" target="_blank" rel="noopener"><span dir="ltr">robots.txt</span></a>
+        <a href="/llms.txt" target="_blank" rel="noopener"><span dir="ltr">llms.txt</span></a>
+        <a href="/admin/seo/structured-data" target="_blank" rel="noopener"><span dir="ltr">JSON-LD</span></a>
+      </div>
+    </details>
+  </div>
+</div>
+
+<%- include('../../partials/form-error') %>
+
+<section class="panel mb-6" id="checks">
+  <div class="panel-head"><div><h2><%= t('growth.checks') %></h2><p class="small muted"><%= t('growth.checks_sub') %></p></div><span class="badge badge-neutral num"><%= okCount %> / <%= checks.length %></span></div>
+  <ul class="seo-checks">
+    <% checks.forEach(function (c) { %>
+    <li class="<%= c.ok ? 'is-ok' : 'is-missing' %>">
+      <span class="seo-check-dot" aria-hidden="true"></span>
+      <div class="grow">
+        <div><%= t('growth.check.' + c.key, { n: c.n || 0 }) %><span class="sr-only"> — <%= c.ok ? t('growth.check_ok') : t('growth.check_missing') %></span></div>
+        <% if (!c.ok) { %><div class="small muted"><%= t('growth.fix.' + c.key, { n: c.n || 0 }) %></div><% } %>
+        <% if (c.key === 'clinic_details' && c.list && c.list.length) { %><div class="small muted"><% c.list.forEach(function (b, i) { %><%= i ? '، ' : '' %><a href="/admin/clinics/<%= b.id %>"><%= b.name %></a><% }) %></div><% } %>
+      </div>
+      <span class="small <%= c.ok ? 'muted' : 'strong' %>"><%= c.ok ? t('growth.check_ok') : t('growth.check_missing') %></span>
+    </li>
+    <% }) %>
+  </ul>
+</section>
+
+<form method="post" action="/admin/seo" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <section class="panel" id="search">
+    <div class="panel-head"><div><h2><%= t('growth.sec_search') %></h2><p class="small muted"><%= t('growth.sec_search_sub') %></p></div></div>
+    <div class="panel-body form-grid">
+      <%- biField('site_name', 'growth.site_name', 80) %>
+      <%- biField('title', 'growth.home_title', 120, 0, 60, dflt(defaults.title)) %>
+      <%- biField('description', 'growth.home_desc', 320, 3, 160, dflt(defaults.description)) %>
+      <p class="help full"><%= t('growth.title_help') %></p>
+      <div class="field">
+        <label class="label" for="f-base_url"><%= t('growth.base_url') %></label>
+        <input class="input<%= errors.base_url ? ' is-invalid' : '' %>" id="f-base_url" name="base_url" dir="ltr" maxlength="200" placeholder="https://docbook.example" value="<%= val('base_url', s.base_url) %>">
+        <%- err('base_url') || '<span class="help">' + escapeHtml(t('growth.base_url_help', { now: base })) + '</span>' %>
+      </div>
+      <div class="field">
+        <span class="label"><%= t('growth.og_image') %></span>
+        <span class="media-pick" data-media-pick>
+          <select class="select<%= errors.og_image ? ' is-invalid' : '' %>" name="og_image" data-media-select aria-label="<%= t('growth.og_image') %>">
+            <option value=""><%= t('growth.og_none') %></option>
+            <% images.forEach(function (m) { var url = '/assets/media/' + m.id + '/' + m.sha + '.' + ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' })[m.mime]; %><option value="<%= m.id %>" data-url="<%= url %>"<%= String(val('og_image', s.og_image)) === String(m.id) ? ' selected' : '' %>><%= m.name %><%= m.width ? ' · ' + m.width + '×' + m.height : '' %></option><% }) %>
+          </select>
+          <span class="media-thumb" data-media-thumb></span>
+        </span>
+        <%- err('og_image') || '<span class="help">' + escapeHtml(t('growth.og_help')) + ' <a href="/admin/site/media">' + escapeHtml(t('admin.site.media.title')) + '</a></span>' %>
+      </div>
+      <div class="field">
+        <label class="label" for="f-x_handle"><%= t('growth.x_handle') %></label>
+        <input class="input<%= errors.x_handle ? ' is-invalid' : '' %>" id="f-x_handle" name="x_handle" dir="ltr" maxlength="40" placeholder="docbook" value="<%= val('x_handle', s.x_handle) %>">
+        <%- err('x_handle') || '<span class="help">' + escapeHtml(t('growth.x_handle_help')) + '</span>' %>
+      </div>
+      <div class="field">
+        <span class="label"><%= t('growth.indexing') %></span>
+        <label class="check"><input type="checkbox" name="index_home" value="1"<%= on('index_home', s.index_home) ? ' checked' : '' %>><span><%= t('growth.index_home') %></span></label>
+        <label class="check"><input type="checkbox" name="index_clinics" value="1"<%= on('index_clinics', s.index_clinics) ? ' checked' : '' %>><span><%= t('growth.index_clinics') %></span></label>
+        <span class="help"><%= t('growth.index_help') %></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="verify">
+    <div class="panel-head"><div><h2><%= t('growth.sec_verify') %></h2><p class="small muted"><%= t('growth.sec_verify_sub') %></p></div></div>
+    <div class="panel-body form-grid">
+      <div class="field"><label class="label" for="f-v_google">Google Search Console</label><input class="input<%= errors.v_google ? ' is-invalid' : '' %>" id="f-v_google" name="v_google" dir="ltr" maxlength="100" value="<%= val('v_google', s.verify.google) %>"><%- err('v_google') || '<span class="help">' + escapeHtml(t('growth.verify_help')) + '</span>' %></div>
+      <div class="field"><label class="label" for="f-v_bing">Bing Webmaster Tools</label><input class="input<%= errors.v_bing ? ' is-invalid' : '' %>" id="f-v_bing" name="v_bing" dir="ltr" maxlength="100" value="<%= val('v_bing', s.verify.bing) %>"><%- err('v_bing') %></div>
+    </div>
+  </section>
+
+  <section class="panel" id="aeo">
+    <div class="panel-head"><div><h2><%= t('growth.sec_aeo') %></h2><p class="small muted"><%= t('growth.sec_aeo_sub') %></p></div></div>
+    <div class="panel-body form-grid cols-3">
+      <div class="field"><label class="label" for="f-o_legal_name"><%= t('growth.org_legal_name') %></label><input class="input" id="f-o_legal_name" name="o_legal_name" maxlength="150" value="<%= val('o_legal_name', s.org.legal_name) %>"></div>
+      <div class="field"><label class="label" for="f-o_email"><%= t('growth.org_email') %></label><input class="input<%= errors.o_email ? ' is-invalid' : '' %>" id="f-o_email" name="o_email" type="email" dir="ltr" maxlength="150" value="<%= val('o_email', s.org.email) %>"><%- err('o_email') %></div>
+      <div class="field"><label class="label" for="f-o_phone"><%= t('growth.org_phone') %></label><input class="input<%= errors.o_phone ? ' is-invalid' : '' %>" id="f-o_phone" name="o_phone" dir="ltr" maxlength="40" placeholder="+962…" value="<%= val('o_phone', s.org.phone) %>"><%- err('o_phone') %></div>
+      <div class="field"><label class="label" for="f-o_city"><%= t('growth.org_city') %></label><input class="input" id="f-o_city" name="o_city" maxlength="80" value="<%= val('o_city', s.org.city) %>"></div>
+      <div class="field"><label class="label" for="f-o_country"><%= t('growth.org_country') %></label><input class="input<%= errors.o_country ? ' is-invalid' : '' %>" id="f-o_country" name="o_country" dir="ltr" maxlength="2" placeholder="JO" value="<%= val('o_country', s.org.country) %>"><%- err('o_country') || '<span class="help">' + escapeHtml(t('growth.org_country_help')) + '</span>' %></div>
+    </div>
+    <div class="panel-body" style="padding-top:0"><p class="small muted"><%= t('growth.aeo_note') %></p></div>
+  </section>
+
+  <section class="panel" id="geo">
+    <div class="panel-head"><div><h2><%= t('growth.sec_geo') %></h2><p class="small muted"><%= t('growth.sec_geo_sub') %></p></div></div>
+    <div class="panel-body stack">
+      <div>
+        <div class="label"><%= t('growth.bots') %></div>
+        <div class="seo-bots mt-2">
+          <% Object.keys(AI_BOTS).forEach(function (k) { %>
+          <label class="check"><input type="checkbox" name="b_<%= k %>" value="1"<%= on('b_' + k, s.bots[k]) ? ' checked' : '' %>><span class="mono small" dir="ltr"><%= AI_BOTS[k] %></span></label>
+          <% }) %>
+        </div>
+        <span class="help"><%= t('growth.bots_help') %></span>
+      </div>
+      <div class="field">
+        <label class="label" for="f-disallow"><%= t('growth.disallow') %></label>
+        <textarea class="textarea mono<%= errors.disallow ? ' is-invalid' : '' %>" id="f-disallow" name="disallow" dir="ltr" rows="3" maxlength="2000" placeholder="/private-page"><%= has ? (o.disallow || '') : s.disallow.join('\n') %></textarea>
+        <%- err('disallow') || '<span class="help">' + escapeHtml(t('growth.disallow_help')) + '</span>' %>
+      </div>
+      <div class="field">
+        <label class="label" for="f-llms">llms.txt</label>
+        <textarea class="textarea mono" id="f-llms" name="llms" dir="auto" rows="10" maxlength="20000" placeholder="<%= t('growth.llms_ph') %>"><%= val('llms', s.llms) %></textarea>
+        <span class="help"><%= t('growth.llms_help') %> <a href="/admin/seo/llms-default" target="_blank" rel="noopener"><%= t('growth.llms_view') %></a></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="se-savebar">
+    <button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save_changes') %></button>
+    <% if (s.updated_at) { %><span class="small muted"><%= t('growth.updated') %> <span dir="ltr"><%= fmt.date(s.updated_at.slice(0, 10)) %></span></span><% } %>
+  </div>
+</form>

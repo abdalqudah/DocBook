@@ -34,6 +34,7 @@
       </div>
       <button class="btn btn-primary btn-lg btn-block" type="submit"><% if (chosen) { %><%- icon(chosen.icon, 'icon-sm') %><% } %><%= t('auth.login') %><% if (chosen) { %> · <%= t('roles.' + chosen.key) %><% } %></button>
     </form>
+    <%- include('../../partials/google-button', { gPortal: clinic.slug, gAs: as }) %>
     <a class="portal-back small" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('portal.back_to_clinic') %></a>
   </div>
 </div>

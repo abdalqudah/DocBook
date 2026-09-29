@@ -6,7 +6,7 @@ const knex = require('../../db/knex');
 const config = require('../../config');
 const audit = require('../../core/audit');
 const { z, validate, optionalString, emptyToUndefined, password } = require('../../core/validate');
-const { E } = require('../../core/errors');
+const { E, AppError } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
 const { can, canAny } = require('../../middleware/context');
 const { verifyCsrfAfterUpload } = require('../../middleware/web');
@@ -20,6 +20,9 @@ const options = require('./options');
 const { form, message } = require('./form');
 const { translator, dictionaries } = require('../../core/i18n');
 const { render, sectionsFor, baseUrl } = require('./common');
+const domains = require('../branding/domain.service');
+const google = require('../auth/google.service');
+const { errorText: identityError, appHostRedirect } = require('../auth/google.web');
 
 const router = express.Router();
 const back = (req, fallback) => {
@@ -79,7 +82,7 @@ const renderPortal = async (req, res, extra = {}) => {
   ]);
   render(req, res, 'portal', 'portal', {
     b, base: baseUrl(req), publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null, suggestion: b.slug ? null : await businesses.suggestSlug(b.name_en || b.name),
-    portalRoles: PORTAL_ROLES, readiness: { doctors, services }, ...extra,
+    portalRoles: PORTAL_ROLES, readiness: { doctors, services }, ...await domainData(req), ...extra,
   });
 };
 router.get('/portal', can('settings.manage'), wrap((req, res) => renderPortal(req, res)));
@@ -97,6 +100,29 @@ router.post('/portal/slug', can('settings.manage'), form(async (req, res) => {
   flash(req, 'success', req.t('settings.portal_saved'));
   res.redirect('/app/settings/portal');
 }, renderPortal));
+// ---------------------------------------------------------------- custom domain for the clinic page
+async function domainData(req) {
+  const d = await domains.forClinic(req.ctx.businessId);
+  return { domain: d, domainRecords: domains.records(d), platformHost: domains.platformHost() };
+}
+router.post('/portal/domain', can('settings.manage'), form(async (req, res) => {
+  await domains.save(req.ctx, req.body.host);
+  flash(req, 'success', req.t('identity.domain_saved'));
+  res.redirect('/app/settings/portal#domain');
+}, (req, res, extra) => renderPortal(req, res, { ...extra, formError: null, domainErrors: extra.errors, domainFormError: extra.formError && extra.formError.code !== 'VALIDATION_FAILED' ? { ...extra.formError, message: identityError(req, extra.formError) } : null, errors: {} })));
+router.post('/portal/domain/verify', can('settings.manage'), form(async (req, res) => {
+  const r = await domains.check(req.ctx, req.ctx.businessId);
+  if (r.justVerified) flash(req, 'success', req.t('identity.domain_now_live'));
+  else if (r.live) flash(req, r.owned ? 'success' : 'warning', req.t(r.owned ? 'identity.domain_still_live' : 'identity.domain_keep_txt'));
+  else if (r.conflict) flash(req, 'error', req.t('errors_identity.DOMAIN_TAKEN'));
+  else flash(req, 'warning', req.t(!r.owned ? 'identity.domain_missing_txt' : 'identity.domain_missing_cname'));
+  res.redirect('/app/settings/portal#domain');
+}, (req, res, extra) => renderPortal(req, res, { ...extra, formError: null, domainFormError: extra.formError ? { ...extra.formError, message: identityError(req, extra.formError) } : null })));
+router.post('/portal/domain/delete', can('settings.manage'), form(async (req, res) => {
+  await domains.remove(req.ctx);
+  flash(req, 'success', req.t('identity.domain_removed'));
+  res.redirect('/app/settings/portal#domain');
+}, (req, res, extra) => renderPortal(req, res, { ...extra, formError: null, domainFormError: extra.formError ? { ...extra.formError, message: identityError(req, extra.formError) } : null })));
 router.post('/portal/booking', can('settings.manage'), wrap(async (req, res) => {
   const on = req.body.booking_enabled === '1';
   await businesses.updateProfile(req.ctx, { booking_enabled: on });
@@ -192,9 +218,12 @@ router.post('/preferences', form(async (req, res) => {
 const renderSecurity = async (req, res, extra = {}) => {
   const sessions = (await security.listSessions(req.user.id)).map((s) => ({ ...s, current: s.sid === req.sessionID }))
     .sort((a, b) => (b.current - a.current) || String(b.since || '').localeCompare(String(a.since || '')));
-  const recent = await knex('audit_logs').where({ user_id: req.user.id }).whereIn('action', ['auth.login', 'auth.login_failed', 'auth.password_changed', 'auth.password_reset', 'auth.temporary_password_replaced'])
+  const recent = await knex('audit_logs').where({ user_id: req.user.id }).whereIn('action', ['auth.login', 'auth.login_failed', 'auth.password_changed', 'auth.password_reset', 'auth.temporary_password_replaced', 'auth.google_linked', 'auth.google_unlinked', 'auth.google_login_failed'])
     .orderBy('id', 'desc').limit(8).select('action', 'ip', 'user_agent', 'created_at');
-  render(req, res, 'security', 'security', { me: req.user, sessions, recent, ...extra });
+  const g = await google.settings();
+  const ok = req.session.googleLinkOk;
+  const googleLinkReady = Boolean(ok && ok.userId === req.user.id && Date.now() - ok.at < 5 * 60_000);
+  render(req, res, 'security', 'security', { me: req.user, sessions, recent, googleAvailable: g.enabled && !req.user.is_platform_admin, googleLinkReady, ...extra });
 };
 router.get('/security', wrap((req, res) => renderSecurity(req, res)));
 router.post('/security/password', form(async (req, res) => {
@@ -204,6 +233,29 @@ router.post('/security/password', form(async (req, res) => {
   flash(req, 'success', req.t('settings.password_changed'));
   res.redirect('/app/settings/security');
 }, renderSecurity));
+// Link a Google account: confirm the password first (a borrowed session cannot add a way back in), then Google.
+router.post('/security/google/link', form(async (req, res) => {
+  if (!(await google.enabled())) throw new AppError('GOOGLE_OFF', 'Google sign-in is not available.', 404);
+  if (req.user.is_platform_admin) throw new AppError('GOOGLE_NOT_ALLOWED', 'Platform admin accounts sign in with their password only.', 403);
+  if (appHostRedirect(req)) throw new AppError('GOOGLE_HOST', 'Open DocBook at its main address to link Google.', 409);
+  const d = validate(z.object({ google_password: z.string().min(1, 'Password is required.') }), req.body);
+  const user = await knex('users').where({ id: req.user.id }).first();
+  if (!(await authService.verifyPassword(user, d.google_password))) {
+    await audit.record(req.ctx, 'auth.login_failed', { entityType: 'user', entityId: req.user.id, newValues: { reason: 'google_link_password' } });
+    throw E.validation({ google_password: 'Current password is incorrect.' });
+  }
+  // The form's CSP (form-action 'self') forbids redirecting a form post to Google, so the page offers a link next.
+  req.session.googleLinkOk = { userId: req.user.id, at: Date.now() };
+  res.redirect('/app/settings/security#google');
+}, (req, res, extra) => renderSecurity(req, res, {
+  ...extra, formError: null, errors: {}, openDialog: 'google-link-dialog',
+  googleErrors: extra.errors,
+  googleFormError: extra.formError && extra.formError.code !== 'VALIDATION_FAILED' ? { ...extra.formError, message: identityError(req, extra.formError) } : null,
+})));
+router.post('/security/google/unlink', wrap(async (req, res) => {
+  if (await google.unlink(req.ctx, req.user.id)) flash(req, 'success', req.t('identity.google_unlinked_done'));
+  res.redirect('/app/settings/security');
+}));
 router.post('/security/sessions/revoke', wrap(async (req, res) => {
   const sid = String(req.body.sid || '');
   if (!sid || sid === req.sessionID) throw E.validation({ sid: 'Choose a valid value.' });

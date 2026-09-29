@@ -1,0 +1,43 @@
+<%
+  var o = old || {};
+  var has = Object.keys(o).length > 0;
+  var idVal = has ? o.client_id : g.client_id;
+  var onVal = has ? (o.enabled === '1') : g.switchedOn;
+%>
+<div class="page-head"><div><h1><%= t('identity.admin_google_title') %></h1><p><%= t('identity.admin_google_sub') %></p></div>
+  <div class="page-actions"><span class="badge badge-dot <%= g.enabled ? 'badge-success' : 'badge-neutral' %>"><%= g.enabled ? t('identity.google_status_on') : t('identity.google_status_off') %></span></div></div>
+
+<div class="grid grid-2" style="align-items:start">
+  <form method="post" action="/admin/google" class="panel" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%= t('identity.admin_google_client') %></h2><div class="panel-sub"><%= t('identity.admin_google_client_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <%- include('../../partials/form-error') %>
+      <%- include('../../partials/field', { name: 'client_id', label: t('identity.client_id'), value: idVal, attrs: 'dir="ltr" autocomplete="off" spellcheck="false"', placeholder: '1234567890-abc.apps.googleusercontent.com' }) %>
+      <div class="field">
+        <label class="label" for="f-client_secret"><%= t('identity.client_secret') %></label>
+        <input class="input<%= errors.client_secret ? ' is-invalid' : '' %>" id="f-client_secret" name="client_secret" type="password" autocomplete="new-password" dir="ltr" spellcheck="false" placeholder="<%= secretHint ? secretHint : '' %>">
+        <% if (errors.client_secret) { %><span class="field-error"><%= errors.client_secret %></span><% } else { %><span class="help"><%= secretHint ? t('identity.secret_saved', { hint: secretHint }) : t('identity.secret_help') %></span><% } %>
+      </div>
+      <label class="row-sm" style="gap:10px"><input type="checkbox" name="enabled" value="1"<%= onVal ? ' checked' : '' %>><span><%= t('identity.google_enable') %></span></label>
+      <p class="small muted"><%= t('identity.google_rules') %></p>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('identity.google_steps_title') %></h2><div class="panel-sub"><%= t('identity.google_steps_sub') %></div></div></div>
+    <div class="panel-body stack small">
+      <ol class="stack-sm" style="margin:0;padding-inline-start:20px">
+        <li><%= t('identity.google_step1') %> <a class="link" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" dir="ltr">console.cloud.google.com</a></li>
+        <li><%= t('identity.google_step2') %></li>
+        <li><%= t('identity.google_step3') %>
+          <div class="set-url mt-2"><code class="grow truncate" id="g-origin" dir="ltr"><%= origin %></code><button class="btn btn-secondary btn-sm" type="button" data-copy="g-origin"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div></li>
+        <li><%= t('identity.google_step4') %>
+          <div class="set-url mt-2"><code class="grow truncate" id="g-redirect" dir="ltr"><%= redirectUri %></code><button class="btn btn-secondary btn-sm" type="button" data-copy="g-redirect"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div></li>
+        <li><%= t('identity.google_step5') %></li>
+      </ol>
+      <p class="muted"><%= t('identity.google_domains_note') %></p>
+    </div>
+  </section>
+</div>

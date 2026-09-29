@@ -17,6 +17,7 @@ const options = require('../settings/options');
 const { signIn, afterLogin, landingFor } = require('./session');
 
 const router = express.Router();
+router.use(require('./google.web')); // Sign in with Google (+ res.locals.googleOn for the sign-in pages)
 const limiter = rateLimit({ windowMs: 15 * 60_000, limit: config.isTest ? 1000 : 30, standardHeaders: true, legacyHeaders: false, handler: (req, res, next) => next(E.rateLimited()) });
 
 // Clinic fields shared by sign-up and "add a clinic".

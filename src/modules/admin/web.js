@@ -1,6 +1,6 @@
 // Platform admin (/admin): only accounts with users.is_platform_admin = 1; everyone else gets a 404.
-// Overview, clinics (suspend / reactivate), user accounts (disable / enable) and the landing-page editor
-// ported from the previous platform release. Every change is written to audit_logs with business_id NULL (platform scope).
+// Overview, clinics (suspend / reactivate), user accounts (disable / enable), the landing-page editor
+// ported from the previous platform release, and (growth.web.js) its media library, Search & AI and Social & tracking. Every change is written to audit_logs with business_id NULL (platform scope).
 const express = require('express');
 const knex = require('../../db/knex');
 const cache = require('../../core/cache');
@@ -10,6 +10,7 @@ const { wrap, flash } = require('../../routes/helpers');
 const { requireAuth } = require('../../middleware/context');
 const businesses = require('../businesses/business.service');
 const site = require('../site/content.service');
+const media = require('../site/media.service');
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.use(requireAuth, (req, res, next) => {
   res.locals.L = site.pick(req.locale);
   return next();
 });
+router.use('/', require('./identity.web')); // Google sign-in + clinic custom domains (identity area)
 
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });
 const like = (q) => `%${String(q).trim().replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
@@ -137,13 +139,13 @@ router.post('/site/sections', wrap(async (req, res) => {
   return res.redirect(`/admin/site/sections/${id}`);
 }));
 
-const editorData = (req) => ({ icons: site.ICONS, pageScripts: ['/js/site-editor.js'] });
+const editorData = async () => ({ icons: site.ICONS, media: (await media.list()).map((m) => ({ ...m, url: media.urlOf(m) })), DESIGN: site.DESIGN, pageScripts: ['/js/site-editor.js'] });
 
 router.get('/site/sections/:id', wrap(async (req, res) => {
   const content = await site.get();
   const s = content.sections.find((x) => x.id === req.params.id);
   if (!s) throw E.notFound('Section');
-  page(res, 'site/edit', { title: req.t(`admin.site.types.${s.type}`), kind: 'section', s, schema: site.TYPES[s.type], data: s.data, action: `/admin/site/sections/${encodeURIComponent(s.id)}`, ...editorData(req) });
+  page(res, 'site/edit', { title: req.t(`admin.site.types.${s.type}`), kind: 'section', s, schema: site.TYPES[s.type], data: s.data, design: s.design || {}, action: `/admin/site/sections/${encodeURIComponent(s.id)}`, ...(await editorData()) });
 }));
 
 router.post('/site/sections/:id', wrap(async (req, res) => {
@@ -169,7 +171,7 @@ for (const [name, fn] of Object.entries(ACTIONS)) {
 for (const which of Object.keys(site.BLOCKS)) {
   router.get(`/site/${which}`, wrap(async (req, res) => {
     const content = await site.get();
-    page(res, 'site/edit', { title: req.t(`admin.site.${which}`), kind: which, s: null, schema: site.BLOCKS[which], data: content[which] || {}, action: `/admin/site/${which}`, ...editorData(req) });
+    page(res, 'site/edit', { title: req.t(`admin.site.${which}`), kind: which, s: null, schema: site.BLOCKS[which], data: content[which] || {}, design: {}, action: `/admin/site/${which}`, ...(await editorData()) });
   }));
   router.post(`/site/${which}`, wrap(async (req, res) => {
     await site.updateBlock(req.ctx, which, req.body);
@@ -177,6 +179,9 @@ for (const which of Object.keys(site.BLOCKS)) {
     res.redirect('/admin/site');
   }));
 }
+
+// The page title and description moved to Search & AI.
+router.get('/site/seo', (req, res) => res.redirect(301, '/admin/seo'));
 
 router.post('/site/reset', wrap(async (req, res) => {
   if (String(req.body.confirm_name || '').trim() !== req.t('admin.site.reset_word')) {
@@ -194,7 +199,10 @@ router.get('/site/preview', wrap(async (req, res) => {
   const hidden = content.sections.filter((s) => s.hidden).length;
   content.sections.forEach((s) => { s.hidden = false; });
   res.locals.siteChrome = content;
-  res.page('pages/site/home', { layout: 'public', content, pageTitle: site.pick(req.locale)(content.seo && content.seo.title), previewNote: hidden ? req.t('site.hidden_preview') : req.t('admin.site.preview') });
+  res.page('pages/site/home', { layout: 'public', noindex: true, content, pageTitle: site.pick(req.locale)(content.seo && content.seo.title), previewNote: hidden ? req.t('site.hidden_preview') : req.t('admin.site.preview') });
 }));
+
+// Media library, Search & AI (SEO/AEO/GEO) and Social & tracking.
+router.use('/', require('./growth.web'));
 
 module.exports = router;

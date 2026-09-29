@@ -1,0 +1,10 @@
+<%
+  // Section image (from the media library) above, beside or below the content. Hero and split sections with
+  // "visual: image" show it in place of the illustration instead (see hero.ejs / split.ejs).
+  var _D = s.design || {}; var _d = s.data || {};
+  var _m = _D.media && typeof siteMedia !== 'undefined' && siteMedia ? siteMedia[String(_D.media)] : null;
+  var _pos = _m && !(['hero', 'split'].indexOf(s.type) !== -1 && _d.visual === 'image') ? (_D.media_pos || 'top') : null;
+  var _alt = L(_D.media_alt);
+%>
+<% if (_pos === 'top') { %><div class="sec-media sz-<%= _D.media_size || 'medium' %> sec-media-top"><%- include('img', { mid: _D.media, alt: _alt }) %></div><% } %>
+<% if (_pos === 'start' || _pos === 'end') { %><div class="sec-split media-<%= _pos %>"><div class="sec-media sz-<%= _D.media_size || 'medium' %>"><%- include('img', { mid: _D.media, alt: _alt }) %></div><div class="sec-body"><% } %>

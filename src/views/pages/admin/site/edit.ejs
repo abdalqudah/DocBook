@@ -8,6 +8,14 @@
     icons.forEach(function (ic) { h += '<option value="' + ic + '"' + (ic === current ? ' selected' : '') + '>' + ic + '</option>'; });
     return h + '</select><span class="icon-preview" data-icon-preview>' + (current ? icon(current) : '') + '</span></span>';
   };
+  var mediaSelect = function (n, current, aria) {
+    var cur = null;
+    var h = '<span class="media-pick" data-media-pick><select class="select" name="' + n + '" data-media-select aria-label="' + esc(aria) + '"><option value="">' + esc(t('admin.site.media.none')) + '</option>';
+    media.forEach(function (m) { var on = String(m.id) === String(current); if (on) cur = m; h += '<option value="' + m.id + '" data-url="' + esc(m.url) + '"' + (on ? ' selected' : '') + '>' + esc(m.name) + (m.width ? ' · ' + m.width + '×' + m.height : '') + '</option>'; });
+    h += '</select><span class="media-thumb" data-media-thumb>' + (cur ? '<img src="' + esc(cur.url) + '" alt="">' : icon('image', 'muted')) + '</span>';
+    h += '<button class="btn btn-ghost btn-sm" type="button" data-media-upload hidden>' + icon('upload', 'icon-sm') + '<span>' + esc(t('admin.site.media.upload_short')) + '</span></button></span>';
+    return h;
+  };
   var input = function (f, name, obj) {
     var key = f[0], kind = f[1], opts = f[2];
     if (i18n(kind)) {
@@ -22,7 +30,8 @@
     }
     var cur = val(obj, key);
     if (kind === 'icon') return iconSelect(name + key, cur);
-    if (kind === 'select') { var h = '<select class="select" name="' + name + key + '">'; opts.forEach(function (o) { h += '<option value="' + o + '"' + (String(o) === String(cur) ? ' selected' : '') + '>' + esc(t('admin.site.opt.' + o)) + '</option>'; }); return h + '</select>'; }
+    if (kind === 'media') return mediaSelect(name + key, cur, label(key));
+    if (kind === 'select') { var h = '<select class="select" name="' + name + key + '"' + (name === 'd_' ? ' data-design="' + key + '"' : '') + '>'; opts.forEach(function (o) { h += '<option value="' + o + '"' + (String(o) === String(cur) ? ' selected' : '') + '>' + esc(name === 'd_' ? t('admin.site.dopt.' + key + '.' + o) : t('admin.site.opt.' + o)) + '</option>'; }); return h + '</select>'; }
     return '<input class="input" name="' + name + key + '" value="' + esc(cur) + '" dir="ltr"' + (kind === 'link' ? ' placeholder="/signup · /#faq · https://…"' : '') + '>' + (kind === 'link' ? '<span class="help">' + esc(t('admin.site.link_help')) + '</span>' : '');
   };
   var itemTitle = function (fields, item) {
@@ -68,6 +77,18 @@
     </div>
   </section>
 
+  <% if (kind === 'section') { %>
+  <section class="panel" id="design">
+    <div class="panel-head"><div><h2><%= t('admin.site.design.title') %></h2><p class="small muted"><%= t('admin.site.design.sub') %></p></div><a class="btn btn-ghost btn-sm" href="/admin/site/media" target="_blank" rel="noopener"><%- icon('image', 'icon-sm') %><%= t('admin.site.media.title') %></a></div>
+    <div class="panel-body form-grid">
+      <% DESIGN.forEach(function (f) { %>
+        <div class="field<%= f[1] === 'text' ? ' full' : '' %>" data-design-field="<%= f[0] %>"><span class="label"><%= label(f[0]) %></span><%- input(f, 'd_', design) %><% if (t('admin.site.design.help_' + f[0]) !== 'admin.site.design.help_' + f[0]) { %><span class="help"><%= t('admin.site.design.help_' + f[0]) %></span><% } %></div>
+      <% }) %>
+      <% if (['hero', 'split'].indexOf(s.type) !== -1) { %><p class="small muted full"><%= t('admin.site.design.visual_note') %></p><% } %>
+    </div>
+  </section>
+  <% } %>
+
   <% (schema.lists || []).forEach(function (list) { var rows = data[list.key] || []; %>
   <section class="panel" data-repeater>
     <div class="panel-head"><h2><%= t('admin.site.lists.' + list.key) %></h2><span class="badge num" data-row-count><%= rows.length %></span></div>
@@ -85,4 +106,5 @@
     <a class="btn btn-ghost" href="/admin/site"><%= t('common.cancel') %></a>
   </div>
 </form>
-<script type="application/json" id="icon-picker-data"><%- json({ search: t('admin.site.search_icons'), none: t('admin.site.no_icon'), choose: t('admin.site.choose_icon') }) %></script>
+<script type="application/json" id="icon-picker-data"><%- json({ search: t('admin.site.search_icons'), none: t('admin.site.no_icon'), choose: t('admin.site.choose_icon'), uploading: t('admin.site.media.uploading'), uploaded: t('admin.site.media.uploaded'), failed: t('admin.site.media.failed'), tooBig: t('growth_err.file_too_big', { mb: 5 }), maxBytes: 5242880 }) %></script>
+<input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file aria-hidden="true" tabindex="-1">

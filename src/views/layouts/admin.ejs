@@ -1,6 +1,7 @@
 <%
   var _p = typeof adminPath !== 'undefined' ? adminPath.replace(/\/$/, '') : '';
-  var _nav = [['/admin', 'layout-dashboard', 'nav_overview', true], ['/admin/clinics', 'hospital', 'nav_clinics'], ['/admin/users', 'users', 'nav_users'], ['/admin/site', 'layout-template', 'nav_site']];
+  var _nav = [['/admin', 'layout-dashboard', 'nav_overview', true], ['/admin/clinics', 'hospital', 'nav_clinics'], ['/admin/users', 'users', 'nav_users'], ['/admin/site', 'layout-template', 'nav_site'], ['/admin/seo', 'search', 'nav_seo'], ['/admin/growth', 'megaphone', 'nav_growth']];
+  _nav.push(['/admin/domains', 'globe', 'identity.nav_domains'], ['/admin/google', 'key-round', 'identity.nav_google']); // identity area
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_p === n[0] || _p.indexOf(n[0] + '/') === 0); };
 %><!doctype html>
 <html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
@@ -39,7 +40,7 @@
   </div>
   <nav class="admin-nav" aria-label="<%= t('admin.title') %>">
     <div class="admin-nav-inner tabs">
-      <% _nav.forEach(function (n) { %><a href="<%= n[0] %>" class="<%= _active(n) ? 'active' : '' %>"<% if (_active(n)) { %> aria-current="page"<% } %>><%- icon(n[1], 'icon-sm') %><%= t('admin.' + n[2]) %></a><% }) %>
+      <% _nav.forEach(function (n) { %><a href="<%= n[0] %>" class="<%= _active(n) ? 'active' : '' %>"<% if (_active(n)) { %> aria-current="page"<% } %>><%- icon(n[1], 'icon-sm') %><%= t(n[2].indexOf('.') > 0 ? n[2] : 'admin.' + n[2]) %></a><% }) %>
     </div>
   </nav>
 </header>

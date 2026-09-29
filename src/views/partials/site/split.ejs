@@ -1,6 +1,6 @@
-<% var d = s.data || {}; var hasVisual = d.visual && d.visual !== 'none'; %>
-<section class="section lp-split<%= typeof alt !== 'undefined' && alt ? ' alt' : '' %>" id="<%= s.anchor %>">
-  <div class="container">
+<% var d = s.data || {}; var SD = s.design || {}; var splitImg = d.visual === 'image' && SD.media && typeof siteMedia !== 'undefined' && siteMedia && siteMedia[String(SD.media)]; var hasVisual = d.visual && d.visual !== 'none' && (d.visual !== 'image' || splitImg); %>
+<section class="section lp-split<%= typeof alt !== 'undefined' && alt ? ' alt' : '' %> <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
     <div class="feature-row<%= d.side === 'start' && hasVisual ? ' reverse' : '' %><%= hasVisual ? '' : ' single' %>">
       <div class="lp-split-copy">
         <% if (L(d.kicker)) { %><span class="lp-kicker"><%= L(d.kicker) %></span><% } %>
@@ -13,11 +13,13 @@
         <% } %>
         <% if (L(d.btn_label) && d.btn_href && !currentUser) { %><a class="btn btn-primary mt-6" href="<%= d.btn_href %>"><%= L(d.btn_label) %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
       </div>
-      <% if (hasVisual) { %>
+      <% if (splitImg) { %>
+      <div class="lp-visual-image"><%- include('img', { mid: SD.media, alt: L(SD.media_alt) }) %></div>
+      <% } else if (hasVisual) { %>
       <div class="lp-visual" aria-hidden="true">
         <% if (d.visual === 'booking') { %><%- include('mock-booking', { hero: false }) %><% } else if (d.visual === 'frontdesk') { %><%- include('mock-frontdesk') %><% } else { %><%- include('mock-records') %><% } %>
       </div>
       <% } %>
     </div>
-  </div>
+  <%- include('slot-close', { s: s }) %></div>
 </section>

@@ -1,9 +1,9 @@
 <% var d = s.data || {}; %>
-<section class="section lp-text" id="<%= s.anchor %>">
-  <div class="container lp-narrow">
+<section class="section lp-text <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container lp-narrow"><%- include('slot-open', { s: s }) %>
     <%- include('head', { s: s }) %>
     <div class="lp-prose">
       <% String(L(d.body) || '').split(/\n\s*\n/).forEach(function (p) { if (!p.trim()) return; %><p><%= p.trim() %></p><% }) %>
     </div>
-  </div>
+  <%- include('slot-close', { s: s }) %></div>
 </section>

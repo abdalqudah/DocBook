@@ -116,13 +116,14 @@
     "x_pay": { "unpaid": "Unpaid", "paid": "Paid" },
 
     "act": {
-      "auth": { "login": "Signed in", "login_failed": "Failed sign-in attempt", "password_changed": "Changed password", "password_reset": "Reset password with a link", "reset_requested": "Requested a password reset", "temporary_password_replaced": "Replaced temporary password", "email_verified": "Confirmed e-mail", "session_ended": "Signed out a device", "other_sessions_ended": "Signed out other devices" },
+      "auth": { "login": "Signed in", "login_failed": "Failed sign-in attempt", "password_changed": "Changed password", "password_reset": "Reset password with a link", "reset_requested": "Requested a password reset", "temporary_password_replaced": "Replaced temporary password", "email_verified": "Confirmed e-mail", "session_ended": "Signed out a device", "other_sessions_ended": "Signed out other devices", "google_linked": "Linked a Google account", "google_unlinked": "Unlinked a Google account", "google_login_failed": "Google sign-in refused" },
       "staff": { "added": "Added a staff member", "created": "Created a staff login", "invited": "Invited a staff member", "joined": "Joined the clinic", "updated": "Changed a staff member's access", "removed": "Removed a staff member", "reset_link_created": "Generated a password-reset link", "invitation_revoked": "Revoked an invitation" },
       "clinic": { "created": "Created the clinic", "updated": "Updated the clinic profile", "appearance_updated": "Changed the clinic colour or logo", "link_changed": "Changed the clinic page address", "setup_completed": "Finished the clinic setup", "deleted": "Deleted the clinic" },
       "role": { "created": "Created a role", "updated": "Changed a role's permissions", "deleted": "Deleted a role" },
       "user": { "profile_updated": "Updated their profile", "preferences_updated": "Changed display preferences" },
       "data": { "exported": "Exported clinic data" },
-      "medication": { "starter_list_added": "Added the common medications list" }
+      "medication": { "starter_list_added": "Added the common medications list" },
+      "domain": { "saved": "Connected a custom domain", "removed": "Removed the custom domain", "verified": "Verified the custom domain", "checked": "Checked the custom domain DNS" }
     },
     "act_entity": {
       "auth": "Sign-in", "staff": "Staff", "clinic": "Clinic", "role": "Roles", "user": "Account", "data": "Data", "appointment": "Appointment", "patient": "Patient",
@@ -206,6 +207,7 @@
   "errors_admin": {
     "RESET_NEEDS_EMAIL": "This person also works at another clinic, so a reset link can only be e-mailed to them — and e-mail isn't set up on this server. Ask them to use \"Forgot password\" once e-mail is available, or to contact the other clinic.",
     "vmsg": {
+      "Enter a domain like book.yourclinic.com.": "Enter a domain like book.yourclinic.com.", "Use a public domain that your clinic owns.": "Use a public domain that your clinic owns.", "Use a domain that your clinic owns, not the DocBook address.": "Use a domain that your clinic owns, not the DocBook address.", "This domain is already connected to another clinic.": "This domain is already connected to another clinic.", "Paste the Client ID from Google Cloud; it ends with .apps.googleusercontent.com.": "Paste the Client ID from Google Cloud; it ends with .apps.googleusercontent.com.", "Enter the Client ID to turn Google sign-in on.": "Enter the Client ID to turn Google sign-in on.", "Paste the Client secret exactly as Google shows it.": "Paste the Client secret exactly as Google shows it.", "Enter the Client secret to turn Google sign-in on.": "Enter the Client secret to turn Google sign-in on.", "Current password is incorrect.": "Current password is incorrect.",
       "Enter the clinic name.": "Enter the clinic name.", "Enter the full name.": "Enter the full name.", "Enter a valid phone number.": "Enter a valid phone number.",
       "Choose a valid colour.": "Choose a valid colour.", "Choose at least one permission.": "Choose at least one permission.",
       "Choose a password different from the current one.": "Choose a password different from the current one.", "Type the name exactly to confirm.": "Type the name exactly to confirm.",

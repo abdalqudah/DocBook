@@ -1,0 +1,56 @@
+<%
+  var o = old || {};
+  var has = Object.keys(o).length > 0;
+  var val = function (key, cur) { return has ? (o[key] || '') : (cur || ''); };
+  var PH = { x: 'https://x.com/docbook', instagram: 'https://www.instagram.com/docbook', facebook: 'https://www.facebook.com/docbook', linkedin: 'https://www.linkedin.com/company/docbook',
+    youtube: 'https://www.youtube.com/@docbook', tiktok: 'https://www.tiktok.com/@docbook', snapchat: 'https://www.snapchat.com/add/docbook', whatsapp: 'https://wa.me/9627XXXXXXXX', telegram: 'https://t.me/docbook' };
+  var PX = { ga4: 'G-XXXXXXXXXX', gtm: 'GTM-XXXXXXX', meta: '123456789012345', tiktok: 'CXXXXXXXXXXXXXXXXXXX', snap: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', linkedin: '1234567', x: 'o1abc' };
+  var active = Object.keys(m.pixels || {}).filter(function (k) { return m.pixels[k]; });
+%>
+<div class="page-head">
+  <div><h1><%= t('growth.mkt_title') %></h1><p><%= t('growth.mkt_sub') %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/preferences/cookies" target="_blank" rel="noopener"><%- icon('cookie', 'icon-sm') %><%= t('growth.cookie_prefs') %></a></div>
+</div>
+
+<%- include('../../partials/form-error') %>
+
+<form method="post" action="/admin/growth" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <section class="panel" id="social">
+    <div class="panel-head"><div><h2><%= t('growth.social') %></h2><p class="small muted"><%= t('growth.social_sub') %></p></div></div>
+    <div class="panel-body form-grid">
+      <% Object.keys(SOCIAL).forEach(function (k) { var e = errors['social_' + k]; %>
+      <div class="field">
+        <label class="label row-sm" for="f-social_<%= k %>"><%- icon(SOCIAL[k].icon, 'icon-sm muted') %><%= t('growth.social_' + k) %></label>
+        <input class="input<%= e ? ' is-invalid' : '' %>" id="f-social_<%= k %>" name="social_<%= k %>" type="url" dir="ltr" maxlength="300" placeholder="<%= PH[k] %>" value="<%= val('social_' + k, m.social[k]) %>">
+        <% if (e) { %><span class="field-error"><%= e %></span><% } %>
+      </div>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="panel" id="pixels">
+    <div class="panel-head"><div><h2><%= t('growth.pixels') %></h2><p class="small muted"><%= t('growth.pixels_sub') %></p></div><span class="badge badge-neutral"><span class="g-dot<%= active.length ? ' dot-on' : '' %>"></span><%= active.length ? t('growth.pixels_on', { n: active.length }) : t('growth.pixels_off') %></span></div>
+    <div class="panel-body stack">
+      <div class="alert alert-info"><%- icon('shield-check') %><div class="grow small">
+        <div class="alert-title"><%= t('growth.privacy_title') %></div>
+        <ul class="growth-rules"><li><%= t('growth.rule_pages') %></li><li><%= t('growth.rule_consent') %></li><li><%= t('growth.rule_never') %></li><li><%= t('growth.rule_csp') %></li></ul>
+      </div></div>
+      <div class="form-grid">
+        <% Object.keys(PIXELS).forEach(function (k) { var e = errors['pixel_' + k]; %>
+        <div class="field">
+          <label class="label" for="f-pixel_<%= k %>"><%= PIXELS[k].name %></label>
+          <input class="input mono<%= e ? ' is-invalid' : '' %>" id="f-pixel_<%= k %>" name="pixel_<%= k %>" dir="ltr" maxlength="60" autocomplete="off" spellcheck="false" placeholder="<%= PX[k] %>" value="<%= val('pixel_' + k, m.pixels[k]) %>">
+          <% if (e) { %><span class="field-error"><%= e %></span><% } else { %><span class="help"><%= t('growth.pixel_help.' + k) %></span><% } %>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+
+  <div class="se-savebar">
+    <button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save_changes') %></button>
+    <% if (m.updated_at) { %><span class="small muted"><%= t('growth.updated') %> <span dir="ltr"><%= fmt.date(m.updated_at.slice(0, 10)) %></span></span><% } %>
+  </div>
+</form>

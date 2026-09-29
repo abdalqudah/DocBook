@@ -116,13 +116,14 @@
     "x_pay": { "unpaid": "غير مدفوع", "paid": "مدفوع" },
 
     "act": {
-      "auth": { "login": "سجّل الدخول", "login_failed": "محاولة دخول فاشلة", "password_changed": "غيّر كلمة المرور", "password_reset": "أعاد تعيين كلمة المرور عبر رابط", "reset_requested": "طلب إعادة تعيين كلمة المرور", "temporary_password_replaced": "استبدل كلمة المرور المؤقتة", "email_verified": "أكّد البريد الإلكتروني", "session_ended": "سجّل خروج جهاز", "other_sessions_ended": "سجّل الخروج من الأجهزة الأخرى" },
+      "auth": { "login": "سجّل الدخول", "login_failed": "محاولة دخول فاشلة", "password_changed": "غيّر كلمة المرور", "password_reset": "أعاد تعيين كلمة المرور عبر رابط", "reset_requested": "طلب إعادة تعيين كلمة المرور", "temporary_password_replaced": "استبدل كلمة المرور المؤقتة", "email_verified": "أكّد البريد الإلكتروني", "session_ended": "سجّل خروج جهاز", "other_sessions_ended": "سجّل الخروج من الأجهزة الأخرى", "google_linked": "ربط حساب Google", "google_unlinked": "ألغى ربط حساب Google", "google_login_failed": "رُفض الدخول عبر Google" },
       "staff": { "added": "أضاف موظفًا", "created": "أنشأ حساب دخول لموظف", "invited": "دعا موظفًا", "joined": "انضم إلى العيادة", "updated": "عدّل صلاحيات موظف", "removed": "أزال موظفًا", "reset_link_created": "أنشأ رابط إعادة تعيين كلمة المرور", "invitation_revoked": "ألغى دعوة" },
       "clinic": { "created": "أنشأ العيادة", "updated": "حدّث ملف العيادة", "appearance_updated": "غيّر لون العيادة أو شعارها", "link_changed": "غيّر عنوان صفحة العيادة", "setup_completed": "أنهى إعداد العيادة", "deleted": "حذف العيادة" },
       "role": { "created": "أنشأ دورًا", "updated": "عدّل صلاحيات دور", "deleted": "حذف دورًا" },
       "user": { "profile_updated": "حدّث ملفه الشخصي", "preferences_updated": "غيّر تفضيلات العرض" },
       "data": { "exported": "صدّر بيانات العيادة" },
-      "medication": { "starter_list_added": "أضاف قائمة الأدوية الشائعة" }
+      "medication": { "starter_list_added": "أضاف قائمة الأدوية الشائعة" },
+      "domain": { "saved": "ربط نطاقًا خاصًا", "removed": "أزال النطاق الخاص", "verified": "تحقّق من النطاق الخاص", "checked": "فحص سجلات DNS للنطاق الخاص" }
     },
     "act_entity": {
       "auth": "الدخول", "staff": "الموظفون", "clinic": "العيادة", "role": "الأدوار", "user": "الحساب", "data": "البيانات", "appointment": "موعد", "patient": "مريض",
@@ -206,6 +207,7 @@
   "errors_admin": {
     "RESET_NEEDS_EMAIL": "يعمل هذا الشخص في عيادة أخرى أيضًا، لذا لا يمكن إرسال رابط إعادة التعيين إلا إلى بريده — والبريد الإلكتروني غير مُعَدّ على هذا الخادم. اطلب منه استخدام «نسيت كلمة المرور» عند توفر البريد، أو التواصل مع العيادة الأخرى.",
     "vmsg": {
+      "Enter a domain like book.yourclinic.com.": "أدخل نطاقًا مثل book.yourclinic.com.", "Use a public domain that your clinic owns.": "استخدم نطاقًا عامًا تملكه عيادتك.", "Use a domain that your clinic owns, not the DocBook address.": "استخدم نطاقًا تملكه عيادتك، لا عنوان DocBook.", "This domain is already connected to another clinic.": "هذا النطاق مربوط بعيادة أخرى.", "Paste the Client ID from Google Cloud; it ends with .apps.googleusercontent.com.": "الصق معرّف العميل من Google Cloud؛ ينتهي بـ ‎.apps.googleusercontent.com.", "Enter the Client ID to turn Google sign-in on.": "أدخل معرّف العميل لتفعيل الدخول عبر Google.", "Paste the Client secret exactly as Google shows it.": "الصق المفتاح السري كما يظهر في Google تمامًا.", "Enter the Client secret to turn Google sign-in on.": "أدخل المفتاح السري لتفعيل الدخول عبر Google.", "Current password is incorrect.": "كلمة المرور الحالية غير صحيحة.",
       "Enter the clinic name.": "أدخل اسم العيادة.", "Enter the full name.": "أدخل الاسم الكامل.", "Enter a valid phone number.": "أدخل رقم هاتف صحيحًا.",
       "Choose a valid colour.": "اختر لونًا صحيحًا.", "Choose at least one permission.": "اختر صلاحية واحدة على الأقل.",
       "Choose a password different from the current one.": "اختر كلمة مرور مختلفة عن الحالية.", "Type the name exactly to confirm.": "اكتب الاسم تمامًا للتأكيد.",

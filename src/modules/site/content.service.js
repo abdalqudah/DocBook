@@ -24,18 +24,19 @@ const ICONS = (() => {
 })();
 
 // ---------------------------------------------------------------- schema
-// Field kinds: text (one line, AR+EN), textarea (AR+EN), link (a safe URL/path), icon, select, plain (not translated).
+// Field kinds: text (one line, AR+EN), textarea (AR+EN), link (a safe URL/path), icon, select, plain (not translated),
+// media (the id of an image in the media library, see media.service.js).
 // A schema has scalar `fields` and zero or more repeatable `lists` ({ key, fields }).
-const VISUALS = ['booking', 'frontdesk', 'records', 'none'];
+const VISUALS = ['booking', 'frontdesk', 'records', 'image', 'none'];
 const TYPES = {
   hero: {
     fields: [['eyebrow', 'text'], ['title', 'text'], ['title_accent', 'text'], ['lead', 'textarea'],
-      ['btn1_label', 'text'], ['btn1_href', 'link'], ['btn2_label', 'text'], ['btn2_href', 'link'], ['note', 'text'], ['visual', 'select', ['booking', 'none']]],
+      ['btn1_label', 'text'], ['btn1_href', 'link'], ['btn2_label', 'text'], ['btn2_href', 'link'], ['note', 'text'], ['visual', 'select', ['booking', 'image', 'none']]],
     lists: [{ key: 'items', fields: [['icon', 'icon'], ['label', 'text']] }],
   },
   features: {
     fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea']],
-    lists: [{ key: 'items', fields: [['icon', 'icon'], ['title', 'text'], ['text', 'textarea']] }],
+    lists: [{ key: 'items', fields: [['icon', 'icon'], ['image', 'media'], ['title', 'text'], ['text', 'textarea']] }],
   },
   split: {
     fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea'], ['btn_label', 'text'], ['btn_href', 'link'],
@@ -48,7 +49,7 @@ const TYPES = {
   },
   roles: {
     fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea']],
-    lists: [{ key: 'items', fields: [['icon', 'icon'], ['title', 'text'], ['text', 'textarea']] }],
+    lists: [{ key: 'items', fields: [['icon', 'icon'], ['image', 'media'], ['title', 'text'], ['text', 'textarea']] }],
   },
   faq: {
     fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea']],
@@ -65,20 +66,33 @@ const TYPES = {
   },
   cta: { fields: [['title', 'text'], ['text', 'text'], ['btn1_label', 'text'], ['btn1_href', 'link'], ['btn2_label', 'text'], ['btn2_href', 'link']] },
 };
+// Layout settings every section has: alignment, an optional background (a light surface or an image from the
+// media library under a soft scrim) and an optional image shown with the section. For the hero and the split
+// sections, "visual: image" shows the same image in place of the illustration.
+const DESIGN = [
+  ['align', 'select', ['default', 'start', 'center', 'end']],
+  ['background', 'select', ['none', 'muted', 'image']],
+  ['bg_image', 'media'],
+  ['media', 'media'],
+  ['media_alt', 'text'],
+  ['media_pos', 'select', ['top', 'bottom', 'start', 'end']],
+  ['media_size', 'select', ['medium', 'small', 'large', 'full']],
+];
 const HEADER = {
   fields: [['login_label', 'text'], ['signup_label', 'text'], ['signup_href', 'link'], ['show_login', 'select', ['yes', 'no']]],
   lists: [{ key: 'items', fields: [['label', 'text'], ['href', 'link']] }],
 };
+// Social links moved to Admin → Social & tracking (growth.service.js); the footer shows them from there.
 const FOOTER = {
   fields: [['tagline', 'textarea'], ['col1_title', 'text'], ['col2_title', 'text'], ['col3_title', 'text'],
     ['email', 'plain'], ['phone', 'plain'], ['address', 'text'], ['copyright', 'plain']],
   lists: [
     { key: 'items', fields: [['label', 'text'], ['href', 'link'], ['column', 'select', ['1', '2', '3']]] },
-    { key: 'social', fields: [['icon', 'icon'], ['label', 'text'], ['href', 'link']] },
   ],
 };
+// Page title and description now live in Admin → Search & AI (growth.service.js); these stay as the defaults.
 const SEO = { fields: [['title', 'text'], ['description', 'textarea']] };
-const BLOCKS = { header: HEADER, footer: FOOTER, seo: SEO };
+const BLOCKS = { header: HEADER, footer: FOOTER };
 const isI18n = (kind) => kind === 'text' || kind === 'textarea';
 
 // ---------------------------------------------------------------- default content (from the translation files)
@@ -206,6 +220,7 @@ function parseValue(raw, [, kind, options], rawAr, rawEn) {
   if (kind === 'link') return safeHref(raw);
   if (kind === 'icon') return ICONS.includes(raw) ? raw : '';
   if (kind === 'select') return options.includes(raw) ? raw : options[0];
+  if (kind === 'media') return /^\d{1,10}$/.test(String(raw ?? '')) ? String(raw) : '';
   return clip(raw, 200);
 }
 
@@ -233,6 +248,13 @@ function parseSchema(schema, body) {
   return data;
 }
 
+/** Design fields arrive as d_<key> (d_<key>_ar / d_<key>_en for texts). */
+function parseDesign(body) {
+  const out = {};
+  for (const f of DESIGN) out[f[0]] = parseValue(body[`d_${f[0]}`], f, body[`d_${f[0]}_ar`], body[`d_${f[0]}_en`]);
+  return out;
+}
+
 const cleanAnchor = (v) => clip(v, 40).toLowerCase().replace(/[^a-z0-9-]/g, '');
 const newId = (type) => `${type}-${crypto.randomBytes(3).toString('hex')}`;
 
@@ -245,6 +267,7 @@ async function updateSection(ctx, id, body) {
   const anchor = cleanAnchor(body.anchor);
   if (anchor && !content.sections.some((x) => x.id !== id && x.anchor === anchor)) s.anchor = anchor;
   s.hidden = body.hidden === '1';
+  s.design = parseDesign(body);
   await save(ctx, content, `section:${id}`, { type: s.type });
 }
 
@@ -324,6 +347,6 @@ const pick = (locale) => (v) => {
 };
 
 module.exports = {
-  ICONS, TYPES, HEADER, FOOTER, SEO, BLOCKS, VISUALS, isI18n, defaults, get, isCustomised, reset, safeHref, pick,
+  ICONS, TYPES, DESIGN, HEADER, FOOTER, SEO, BLOCKS, VISUALS, parseDesign, isI18n, defaults, get, isCustomised, reset, safeHref, pick,
   updateSection, updateBlock, addSection, removeSection, moveSection, toggleSection, duplicateSection, parseSchema,
 };

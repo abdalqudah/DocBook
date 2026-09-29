@@ -1,0 +1,54 @@
+<% var sz = function (b) { return b >= 1048576 ? fmt.number(b / 1048576, 1) + ' MB' : fmt.number(Math.max(1, Math.ceil(b / 1024))) + ' KB'; }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/admin/site"><%= t('admin.site.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t('admin.site.media.title') %></h1><p><%= t('admin.site.media.sub') %></p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('admin.site.media.upload') %></h2><p class="small muted"><%= t('admin.site.media.rules') %></p></div></div>
+  <form class="panel-body media-upload" method="post" action="/admin/site/media" data-media-form hidden>
+    <label class="field grow"><span class="label"><%= t('admin.site.media.file') %></span><input class="input" type="file" name="file" accept="image/png,image/jpeg,image/webp" required></label>
+    <label class="field grow"><span class="label"><%= t('admin.site.media.name') %></span><input class="input" name="name" maxlength="150" placeholder="<%= t('admin.site.media.name_ph') %>"></label>
+    <button class="btn btn-primary" type="submit"><%- icon('upload', 'icon-sm') %><%= t('admin.site.media.upload_go') %></button>
+    <p class="small muted full" data-media-status role="status" aria-live="polite"></p>
+  </form>
+  <noscript><div class="panel-body"><p class="muted"><%= t('admin.site.media.needs_js') %></p></div></noscript>
+</section>
+
+<section class="panel mt-6">
+  <div class="panel-head"><h2><%= t('admin.site.media.all') %></h2><span class="badge badge-neutral num"><%= fmt.number(list.length) %></span></div>
+  <% if (!list.length) { %>
+    <%- include('../../../partials/empty', { emptyIcon: 'image', emptyTitle: t('admin.site.media.empty_title'), emptyText: t('admin.site.media.empty'), emptyAction: '' }) %>
+  <% } else { %>
+  <div class="media-grid">
+    <% list.forEach(function (m) { var url = '/assets/media/' + m.id + '/' + m.sha + '.' + ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' })[m.mime]; var u = used[String(m.id)] || []; %>
+    <article class="media-tile" id="m-<%= m.id %>">
+      <a class="media-thumb-lg" href="<%= url %>" target="_blank" rel="noopener"><img src="<%= url %>" alt="<%= m.name %>" loading="lazy"<% if (m.width && m.height) { %> width="<%= m.width %>" height="<%= m.height %>"<% } %>></a>
+      <div class="media-meta">
+        <strong class="truncate" title="<%= m.name %>"><%= m.name %></strong>
+        <span class="tiny muted"><span dir="ltr"><%= m.width ? m.width + '×' + m.height + ' · ' : '' %><%= m.mime.replace('image/', '').toUpperCase() %> · <%= sz(m.size) %></span></span>
+        <span class="tiny muted"><span class="g-dot<%= u.length ? ' dot-on' : '' %>"></span> <%= u.length ? t('admin.site.media.used', { n: u.length }) : t('admin.site.media.unused') %></span>
+      </div>
+      <div class="media-actions">
+        <details class="media-rename">
+          <summary class="btn btn-ghost btn-sm"><%- icon('pencil', 'icon-sm') %><%= t('admin.site.media.rename') %></summary>
+          <form method="post" action="/admin/site/media/<%= m.id %>/rename" class="row-sm">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input class="input" name="name" value="<%= m.name %>" maxlength="150" aria-label="<%= t('admin.site.media.name') %>">
+            <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.save') %></button>
+          </form>
+        </details>
+        <button class="btn btn-ghost btn-sm" type="button" data-copy="<%= url %>" title="<%= t('admin.site.media.copy') %>"><%- icon('copy', 'icon-sm') %><span class="sr-only"><%= t('admin.site.media.copy') %></span></button>
+        <form method="post" action="/admin/site/media/<%= m.id %>/delete" data-confirm="<%= u.length ? t('admin.site.media.delete_used', { n: u.length }) : t('admin.site.media.delete_confirm') %>" data-confirm-yes="<%= t('common.delete') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-danger-ghost btn-icon btn-sm" type="submit" title="<%= t('common.delete') %>" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button>
+        </form>
+      </div>
+    </article>
+    <% }) %>
+  </div>
+  <% } %>
+</section>
+<script type="application/json" id="icon-picker-data"><%- json({ uploading: t('admin.site.media.uploading'), uploaded: t('admin.site.media.uploaded'), failed: t('admin.site.media.failed'), tooBig: t('growth_err.file_too_big', { mb: 5 }), choose: t('growth_err.file_required'), maxBytes: 5242880 }) %></script>

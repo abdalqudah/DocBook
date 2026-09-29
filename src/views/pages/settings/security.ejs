@@ -24,6 +24,45 @@
       </div>
     </section>
 
+    <% if (me.google_sub || (typeof googleAvailable !== 'undefined' && googleAvailable)) { var gErr = typeof googleErrors !== 'undefined' && googleErrors ? googleErrors : {}; %>
+    <section class="panel" id="google">
+      <div class="panel-head"><div><h2><%= t('identity.google_title') %></h2><div class="panel-sub"><%= t('identity.google_sub') %></div></div>
+        <span class="badge badge-dot <%= me.google_sub ? 'badge-success' : 'badge-neutral' %>"><%= me.google_sub ? t('identity.google_state_on') : t('identity.google_state_off') %></span></div>
+      <div class="panel-body stack">
+        <% if (typeof googleFormError !== 'undefined' && googleFormError) { %><%- include('../../partials/form-error', { formError: googleFormError, errors: {} }) %><% } %>
+        <% if (me.google_sub) { %>
+          <div class="row between wrap" style="gap:12px">
+            <div class="row-sm" style="min-width:0">
+              <svg class="icon muted" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
+              <div style="min-width:0"><div class="strong truncate" dir="ltr" style="text-align:start"><%= me.google_email || '—' %></div>
+                <% if (me.google_linked_at) { %><div class="small muted"><%= t('identity.google_linked_since', { date: fmt.date(me.google_linked_at, { dateStyle: 'medium' }) }) %></div><% } %></div>
+            </div>
+            <form method="post" action="/app/settings/security/google/unlink" data-confirm="<%= t('identity.google_unlink_confirm') %>" data-confirm-yes="<%= t('identity.google_unlink') %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('identity.google_unlink') %></button>
+            </form>
+          </div>
+          <p class="small muted"><%= t('identity.google_linked_text') %></p>
+        <% } else if (typeof googleLinkReady !== 'undefined' && googleLinkReady) { %>
+          <p class="small muted"><%= t('identity.google_link_ready') %></p>
+          <div><a class="btn btn-primary" href="/auth/google/link"><%= t('identity.google_continue') %></a></div>
+        <% } else { %>
+          <p class="small muted"><%= t('identity.google_link_text') %></p>
+          <form method="post" action="/app/settings/security/google/link" class="stack" novalidate style="max-width:520px">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="email" name="username" value="<%= me.email %>" autocomplete="username" hidden>
+            <div class="field">
+              <label class="label" for="f-google_password"><%= t('identity.google_confirm_pw') %><span class="req">*</span></label>
+              <input class="input<%= gErr.google_password ? ' is-invalid' : '' %>" id="f-google_password" name="google_password" type="password" required autocomplete="current-password">
+              <% if (gErr.google_password) { %><span class="field-error"><%= gErr.google_password %></span><% } else { %><span class="help"><%= t('identity.google_confirm_help') %></span><% } %>
+            </div>
+            <div class="form-actions"><button class="btn btn-secondary" type="submit"><%= t('identity.google_link') %></button></div>
+          </form>
+        <% } %>
+      </div>
+    </section>
+    <% } %>
+
     <section class="panel flush">
       <div class="panel-head"><div><h2><%= t('settings.sessions') %></h2><div class="panel-sub"><%= t('settings.sessions_sub') %></div></div>
         <% if (sessions.length > 1) { %><form method="post" action="/app/settings/security/sessions/revoke-others" data-confirm="<%= t('settings.revoke_others_confirm') %>" data-confirm-yes="<%= t('settings.revoke_others') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('log-out', 'icon-sm') %><%= t('settings.revoke_others') %></button></form><% } %></div>

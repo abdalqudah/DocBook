@@ -1,6 +1,6 @@
 <% var d = s.data || {}; %>
-<section class="section alt lp-steps" id="<%= s.anchor %>">
-  <div class="container">
+<section class="section alt lp-steps <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
     <%- include('head', { s: s, center: true }) %>
     <ol class="lp-step-list">
       <% (d.items || []).forEach(function (st, i) { %>
@@ -11,5 +11,5 @@
       </li>
       <% }) %>
     </ol>
-  </div>
+  <%- include('slot-close', { s: s }) %></div>
 </section>

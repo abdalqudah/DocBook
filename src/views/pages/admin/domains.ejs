@@ -1,0 +1,72 @@
+<%
+  var badge = function (s) { return s === 'verified' ? 'badge-success' : s === 'suspended' ? 'badge-danger' : 'badge-neutral'; };
+  var mark = function (ok, label) { return '<div class="row-sm small' + (ok ? '' : ' muted') + '">' + icon(ok ? 'circle-check' : 'circle-x', 'icon-sm') + escapeHtml(label) + '</div>'; };
+  var btn = function (r, path, label, style, confirm) {
+    return '<form method="post" action="/admin/domains/' + r.id + '/' + path + '"' + (confirm ? ' data-confirm="' + escapeHtml(confirm) + '" data-confirm-yes="' + escapeHtml(label) + '"' : '') + '>'
+      + '<input type="hidden" name="_csrf" value="' + escapeHtml(csrfToken) + '"><button class="btn ' + (style || 'btn-secondary') + ' btn-sm" type="submit">' + escapeHtml(label) + '</button></form>';
+  };
+%>
+<div class="page-head"><div><h1><%= t('identity.admin_domains_title') %></h1><p><%= t('identity.admin_domains_sub') %></p></div></div>
+
+<div class="stack-lg">
+<section class="panel flush">
+  <div class="table-toolbar">
+    <div class="segmented" role="group" aria-label="<%= t('common.status') %>">
+      <a href="/admin/domains" class="<%= !status ? 'active' : '' %>"<% if (!status) { %> aria-current="page"<% } %>><%= t('common.all') %> · <%= fmt.number(total) %></a>
+      <% ['pending', 'verified', 'suspended'].forEach(function (s) { %><a href="/admin/domains?status=<%= s %>" class="<%= status === s ? 'active' : '' %>"<% if (status === s) { %> aria-current="page"<% } %>><%= t('identity.domain_status_' + s) %> · <%= fmt.number(counts[s]) %></a><% }) %>
+    </div>
+  </div>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'globe', emptyTitle: t('identity.admin_domains_empty'), emptyText: t('identity.admin_domains_empty_text') }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('identity.col_domain') %></th><th><%= t('identity.col_clinic') %></th><th><%= t('common.status') %></th><th><%= t('identity.col_dns') %></th><th><%= t('identity.col_checked') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { var c = r.check; %>
+        <tr>
+          <td class="primary-cell"><div class="strong" dir="ltr" style="text-align:start"><%= r.host %></div>
+            <% if (r.status === 'verified') { %><a class="link small" href="https://<%= r.host %>" target="_blank" rel="noopener" dir="ltr">https://<%= r.host %></a><% } %></td>
+          <td data-label="<%= t('identity.col_clinic') %>"><a class="link" href="/admin/clinics/<%= r.business_id %>"><%= (locale === 'en' && r.clinic_name_en) || r.clinic_name %></a>
+            <div class="small muted" dir="ltr" style="text-align:start">/<%= r.slug || '—' %></div>
+            <% if (r.clinic_status !== 'active') { %><div class="small muted"><%= t('identity.admin_clinic_suspended') %></div><% } %></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= badge(r.status) %>"><%= t('identity.domain_status_' + r.status) %></span>
+            <% if (r.verified_at && r.status === 'verified') { %><div class="small muted mt-1"><%= t('identity.admin_since', { date: fmt.date(r.verified_at) }) %></div><% } %></td>
+          <td data-label="<%= t('identity.col_dns') %>">
+            <% if (c) { %>
+              <%- mark(c.owned, 'TXT') %>
+              <%- mark(c.pointed, c.cname.length ? 'CNAME → ' + c.cname[0] : (c.a.length ? 'A ' + c.a.join(', ') : 'CNAME / A')) %>
+            <% } else { %><span class="small muted"><%= t('identity.admin_not_checked') %></span><% } %>
+            <details class="mt-1"><summary class="link small"><%= t('identity.admin_records') %></summary>
+              <div class="small mono mt-1" dir="ltr" style="text-align:start;word-break:break-all">TXT <%= r.records.txt.name %><br>&nbsp;&nbsp;= <%= r.records.txt.value %><br>CNAME <%= r.records.cname.name %> → <%= r.records.cname.value %></div>
+            </details>
+          </td>
+          <td data-label="<%= t('identity.col_checked') %>" class="nowrap small"><%= r.checked_at ? fmt.date(r.checked_at, { dateStyle: 'medium', timeStyle: 'short' }) : '—' %></td>
+          <td class="actions">
+            <div class="row wrap" style="gap:6px;justify-content:flex-end">
+              <% if (r.status !== 'suspended') { %><%- btn(r, 'check', t('identity.domain_check_again')) %><% } %>
+              <% if (r.status === 'pending' && c && c.owned) { %><%- btn(r, 'approve', t('identity.admin_approve'), 'btn-secondary', t('identity.admin_approve_confirm', { host: r.host })) %><% } %>
+              <% if (r.status === 'suspended') { %><%- btn(r, 'resume', t('identity.admin_resume')) %><% } else { %><%- btn(r, 'suspend', t('identity.admin_suspend'), 'btn-danger-ghost', t('identity.admin_suspend_confirm', { host: r.host })) %><% } %>
+            </div>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('identity.admin_domains_how') %></h2></div></div>
+  <div class="panel-body small stack-sm">
+    <ol class="stack-sm" style="margin:0;padding-inline-start:20px">
+      <li><%= t('identity.admin_how1') %></li>
+      <li><%= t('identity.admin_how2', { host: platformHost }) %></li>
+      <li><%= t('identity.admin_how3') %></li>
+      <li><%= t('identity.admin_how4') %></li>
+    </ol>
+    <% if (!serverIps.length) { %><p class="muted"><%= t('identity.admin_server_ip_hint') %></p><% } %>
+  </div>
+</section>
+</div>

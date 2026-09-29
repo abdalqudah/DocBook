@@ -66,15 +66,42 @@
         "title": "Everything the clinic day runs on",
         "lead": "From the first booking to the final invoice, every step lives in one place — and every person sees only what their role needs.",
         "items": {
-          "booking": { "title": "Online booking", "text": "Patients choose a doctor, a service and a free time from your clinic's page. New bookings arrive as pending for your team to confirm." },
-          "calendar": { "title": "Smart calendar", "text": "Free times come from each doctor's shifts, breaks and days off, so the same time can never be booked twice." },
-          "frontdesk": { "title": "Front desk & waiting room", "text": "Check patients in, see who is waiting and for how long, call them in and take payment at checkout." },
-          "records": { "title": "Patient records & prescriptions", "text": "Vital signs, visit notes, diagnoses and printable prescriptions, kept in each patient's history." },
-          "billing": { "title": "Invoices & insurance", "text": "Numbered invoices with discounts, several payment methods and your insurance providers." },
-          "payroll": { "title": "Doctor commissions & payroll", "text": "Commission rules per doctor with per-service exceptions, adjustments that need approval, and monthly payroll." },
-          "supplies": { "title": "Supplies with low-stock alerts", "text": "Record stock in and out, and see at a glance which items reached their reorder level." },
-          "staff": { "title": "Staff logins by role", "text": "Doctors, nurses, reception and accountants each get their own sign-in and a view made for their work." },
-          "languages": { "title": "Arabic & English", "text": "The whole system works in Arabic (right to left) and English, in light or dark mode — printouts included." }
+          "booking": {
+            "title": "Online booking",
+            "text": "Patients choose a doctor, a service and a free time from your clinic's page. New bookings arrive as pending for your team to confirm."
+          },
+          "calendar": {
+            "title": "Smart calendar",
+            "text": "Free times come from each doctor's shifts, breaks and days off, so the same time can never be booked twice."
+          },
+          "frontdesk": {
+            "title": "Front desk & waiting room",
+            "text": "Check patients in, see who is waiting and for how long, call them in and take payment at checkout."
+          },
+          "records": {
+            "title": "Patient records & prescriptions",
+            "text": "Vital signs, visit notes, diagnoses and printable prescriptions, kept in each patient's history."
+          },
+          "billing": {
+            "title": "Invoices & insurance",
+            "text": "Numbered invoices with discounts, several payment methods and your insurance providers."
+          },
+          "payroll": {
+            "title": "Doctor commissions & payroll",
+            "text": "Commission rules per doctor with per-service exceptions, adjustments that need approval, and monthly payroll."
+          },
+          "supplies": {
+            "title": "Supplies with low-stock alerts",
+            "text": "Record stock in and out, and see at a glance which items reached their reorder level."
+          },
+          "staff": {
+            "title": "Staff logins by role",
+            "text": "Doctors, nurses, reception and accountants each get their own sign-in and a view made for their work."
+          },
+          "languages": {
+            "title": "Arabic & English",
+            "text": "The whole system works in Arabic (right to left) and English, in light or dark mode — printouts included."
+          }
         }
       },
       "booking": {
@@ -109,21 +136,48 @@
         "kicker": "How it works",
         "title": "Up and running in four steps",
         "lead": "No installation: DocBook runs in the browser on computers, tablets and phones.",
-        "s1": { "title": "Create your clinic", "text": "Sign up, name your clinic and choose its currency and time zone." },
-        "s2": { "title": "Add doctors and services", "text": "Set each doctor's working hours, appointment length and fee, then list your services." },
-        "s3": { "title": "Give your team their sign-ins", "text": "Add each staff member with a role: doctor, nurse, reception, accountant or clinic manager." },
-        "s4": { "title": "Share your booking page", "text": "Send patients your clinic's address — their bookings land straight in your calendar." }
+        "s1": {
+          "title": "Create your clinic",
+          "text": "Sign up, name your clinic and choose its currency and time zone."
+        },
+        "s2": {
+          "title": "Add doctors and services",
+          "text": "Set each doctor's working hours, appointment length and fee, then list your services."
+        },
+        "s3": {
+          "title": "Give your team their sign-ins",
+          "text": "Add each staff member with a role: doctor, nurse, reception, accountant or clinic manager."
+        },
+        "s4": {
+          "title": "Share your booking page",
+          "text": "Send patients your clinic's address — their bookings land straight in your calendar."
+        }
       },
       "roles": {
         "kicker": "For your team",
         "title": "The right screen for every role",
         "lead": "Everyone signs in with their own account. Their role decides what they see and what they can change.",
         "items": {
-          "doctor": { "title": "Doctor", "text": "My day: their own appointments, visit notes, diagnoses and prescriptions." },
-          "nurse": { "title": "Nurse", "text": "The waiting room, vital signs, patient records and supplies." },
-          "reception": { "title": "Reception", "text": "Bookings, check-in, patient files and payment at checkout." },
-          "accountant": { "title": "Accountant", "text": "Invoices, payroll, commissions, expenses and reports — without clinical notes." },
-          "manager": { "title": "Clinic manager", "text": "The whole clinic: staff, doctors, services, settings and reports." }
+          "doctor": {
+            "title": "Doctor",
+            "text": "My day: their own appointments, visit notes, diagnoses and prescriptions."
+          },
+          "nurse": {
+            "title": "Nurse",
+            "text": "The waiting room, vital signs, patient records and supplies."
+          },
+          "reception": {
+            "title": "Reception",
+            "text": "Bookings, check-in, patient files and payment at checkout."
+          },
+          "accountant": {
+            "title": "Accountant",
+            "text": "Invoices, payroll, commissions, expenses and reports — without clinical notes."
+          },
+          "manager": {
+            "title": "Clinic manager",
+            "text": "The whole clinic: staff, doctors, services, settings and reports."
+          }
         }
       },
       "faq": {
@@ -234,7 +288,12 @@
       "platform.clinic_suspended": "Clinic suspended",
       "platform.clinic_activated": "Clinic reactivated",
       "platform.user_disabled": "Account disabled",
-      "platform.user_enabled": "Account enabled"
+      "platform.user_enabled": "Account enabled",
+      "platform.site_media_uploaded": "Image added to the media library",
+      "platform.site_media_renamed": "Media image renamed",
+      "platform.site_media_deleted": "Image deleted from the media library",
+      "platform.seo_updated": "Search & AI settings updated",
+      "platform.marketing_updated": "Social links or pixels updated"
     },
     "site": {
       "title": "Landing page",
@@ -244,7 +303,7 @@
       "header": "Header",
       "header_help": "Menu links and the sign-in / start buttons at the top of the page.",
       "footer": "Footer",
-      "footer_help": "Link columns, contact details and social links at the bottom of every public page.",
+      "footer_help": "Link columns, contact details and the copyright line at the bottom of every public page. Social links are set in Social & tracking.",
       "seo": "Search engines",
       "seo_help": "The page title and description shown by search engines and link previews.",
       "sections": "Sections",
@@ -315,8 +374,7 @@
         "cta": "A dark band with a headline and two buttons."
       },
       "lists": {
-        "items": "Items",
-        "social": "Social links"
+        "items": "Items"
       },
       "f": {
         "eyebrow": "Small label above the headline",
@@ -357,9 +415,20 @@
         "phone": "Contact phone",
         "address": "Address",
         "copyright": "Copyright name",
-        "description": "Description"
+        "description": "Description",
+        "align": "Alignment",
+        "background": "Background",
+        "bg_image": "Background image",
+        "media": "Section image",
+        "media_alt": "Image description",
+        "media_pos": "Image position",
+        "media_size": "Image size",
+        "image": "Image (instead of the icon)"
       },
       "opt": {
+        "1": "Column 1",
+        "2": "Column 2",
+        "3": "Column 3",
         "booking": "Booking card",
         "frontdesk": "Waiting room",
         "records": "Patient file",
@@ -368,11 +437,70 @@
         "start": "Before the text (start)",
         "yes": "Yes",
         "no": "No",
-        "1": "Column 1",
-        "2": "Column 2",
-        "3": "Column 3"
+        "image": "Image from the media library"
+      },
+      "media": {
+        "title": "Media library",
+        "sub": "Images for the landing page sections, cards and link previews.",
+        "none": "No image",
+        "upload_short": "Upload",
+        "uploading": "Uploading…",
+        "uploaded": "Added to the media library.",
+        "failed": "The image could not be uploaded.",
+        "upload": "Upload an image",
+        "rules": "PNG, JPEG or WebP, up to 5 MB. The file is checked by its content; SVG is not accepted.",
+        "file": "Image file",
+        "name": "Name (optional)",
+        "name_ph": "For example: reception desk",
+        "upload_go": "Upload",
+        "needs_js": "Uploading needs JavaScript. Turn it on in your browser, then reload this page.",
+        "all": "All images",
+        "empty_title": "No images yet",
+        "empty": "Upload an image above, then choose it in a section, a card or as the share image.",
+        "used": "Used in {n} place(s)",
+        "unused": "Not used yet",
+        "rename": "Rename",
+        "copy": "Copy address",
+        "delete_used": "This image is used in {n} place(s). Delete it anyway? Those places will simply show no image.",
+        "delete_confirm": "Delete this image from the media library?",
+        "renamed": "Name saved.",
+        "deleted": "Deleted from the media library."
+      },
+      "design": {
+        "title": "Layout, background and image",
+        "sub": "Alignment of this section, an optional background and an image from the media library.",
+        "help_background": "A light grey surface, or an image softened so the text stays readable in light and dark mode.",
+        "help_media_alt": "Describe the image for screen readers and search engines. Leave empty if it is only decoration.",
+        "visual_note": "To show the image in place of the illustration, choose “Image from the media library” as the illustration above."
+      },
+      "dopt": {
+        "align": {
+          "default": "As designed",
+          "start": "Start",
+          "center": "Center",
+          "end": "End"
+        },
+        "background": {
+          "none": "None",
+          "muted": "Light grey surface",
+          "image": "Image"
+        },
+        "media_pos": {
+          "top": "Above the content",
+          "bottom": "Below the content",
+          "start": "Beside the content (start)",
+          "end": "Beside the content (end)"
+        },
+        "media_size": {
+          "medium": "Medium",
+          "small": "Small",
+          "large": "Large",
+          "full": "Full width"
+        }
       }
-    }
+    },
+    "nav_seo": "Search & AI",
+    "nav_growth": "Social & tracking"
   },
   "portal": {
     "book": "Book an appointment",
@@ -458,5 +586,150 @@
   "errors_site": {
     "NOT_MEMBER": "This account is not a staff member of this clinic.",
     "BOOKING_LIMIT": "Too many pending requests for this phone number."
+  },
+  "growth": {
+    "cookie_prefs": "Cookie preferences",
+    "social_nav": "DocBook on social media",
+    "social_x": "X",
+    "social_instagram": "Instagram",
+    "social_facebook": "Facebook",
+    "social_linkedin": "LinkedIn",
+    "social_youtube": "YouTube",
+    "social_tiktok": "TikTok",
+    "social_snapchat": "Snapchat",
+    "social_whatsapp": "WhatsApp",
+    "social_telegram": "Telegram",
+    "consent_label": "Cookie notice",
+    "consent_text": "We would like to use measurement cookies on this page to understand visits and improve our ads. They load only if you accept.",
+    "consent_more": "Details",
+    "consent_accept": "Accept",
+    "consent_reject": "Reject",
+    "cookies_title": "Cookie preferences",
+    "cookies_sub": "What DocBook stores in your browser, and your choice about measurement tools on our public pages.",
+    "essential_title": "Essential cookies",
+    "always_on": "Always on",
+    "essential_text": "These keep the site working and cannot be turned off. They are not used for advertising.",
+    "c_session": "Keeps you signed in and protects forms (session).",
+    "c_lang": "Remembers your language (Arabic or English).",
+    "c_theme": "Remembers light or dark mode.",
+    "c_consent": "Remembers your choice on this page (180 days).",
+    "measure_title": "Measurement and advertising",
+    "now_yes": "Accepted",
+    "now_no": "Rejected",
+    "now_none": "Not chosen yet",
+    "measure_none": "DocBook does not use measurement or advertising tools at the moment. Only the essential cookies above are used.",
+    "measure_text": "If you accept, these tools load on DocBook's public pages (this page and the home page) to measure visits and ad performance:",
+    "measure_scope": "They never load inside clinic accounts, on clinic pages, on booking pages or on sign-in pages. You can change your choice here at any time.",
+    "seo_title": "Search & AI",
+    "seo_sub": "How DocBook and the clinics' public pages appear in search engines, link previews and AI assistants.",
+    "files": "Public files",
+    "checks": "Checklist",
+    "checks_sub": "What is set up and what is still missing.",
+    "check_ok": "Done",
+    "check_missing": "Missing",
+    "check": {
+      "title": "Home page title in Arabic and English",
+      "description": "Home page description in both languages (50–170 characters)",
+      "og_image": "Share image for link previews",
+      "base_url": "Canonical address uses https",
+      "verify": "Search console verification",
+      "org": "Contact details for structured data",
+      "social": "Social links",
+      "faq": "FAQ section on the home page (FAQPage data)",
+      "home_indexed": "Home page open to search engines",
+      "clinics": "{n} clinic page(s) in the sitemap",
+      "clinic_details": "Listed clinics have phone, address and city"
+    },
+    "fix": {
+      "title": "Write the title in both languages below.",
+      "description": "Write a description of 50–170 characters in each language.",
+      "og_image": "Upload an image (1200×630 works best) and choose it below.",
+      "base_url": "Enter the site address starting with https:// so links in the sitemap and previews are correct.",
+      "verify": "Paste the verification code from Google Search Console or Bing.",
+      "org": "Add an e-mail or phone for DocBook below.",
+      "social": "Add at least one profile in Social & tracking.",
+      "faq": "Add or show a FAQ section in the landing page editor.",
+      "home_indexed": "Tick “Home page” under Indexing.",
+      "clinics": "Clinic pages appear once a clinic finishes set-up and turns on online booking (or tick “Clinic pages”).",
+      "clinic_details": "{n} clinic(s) are missing a phone, address or city, so their search data is incomplete:"
+    },
+    "sec_search": "Search results and link previews",
+    "sec_search_sub": "The title and description search engines show for the home page, and the image shown when a link is shared.",
+    "site_name": "Site name",
+    "home_title": "Home page title",
+    "home_desc": "Home page description",
+    "title_help": "Empty fields use the landing page defaults shown as placeholders. Aim for about 60 characters for titles and 160 for descriptions.",
+    "base_url": "Canonical address",
+    "base_url_help": "Used in canonical links, the sitemap, robots.txt and structured data. Now: {now}",
+    "og_image": "Share image",
+    "og_none": "None",
+    "og_help": "Shown when the home page is shared. Clinic pages use the clinic's logo.",
+    "x_handle": "X account (without @)",
+    "x_handle_help": "Added to link previews on X.",
+    "indexing": "Indexing",
+    "index_home": "Home page",
+    "index_clinics": "Clinic pages (/clinic-address)",
+    "index_help": "Only clinics that finished set-up and take online bookings are listed. Sign-in, booking steps, /app and /admin are never indexed.",
+    "sec_verify": "Search console verification",
+    "sec_verify_sub": "Proves to search engines that you own the site (a meta tag on the home page).",
+    "verify_help": "Only the code from content=\"…\".",
+    "sec_aeo": "Structured data (AEO)",
+    "sec_aeo_sub": "Machine-readable facts so search and answer engines can describe DocBook and each clinic correctly.",
+    "org_legal_name": "Legal name",
+    "org_email": "Contact e-mail",
+    "org_phone": "Contact phone",
+    "org_city": "City",
+    "org_country": "Country code",
+    "org_country_help": "Two letters, e.g. JO.",
+    "aeo_note": "The home page carries Organization, WebSite, SoftwareApplication and FAQPage (from the FAQ section). Each clinic page carries a MedicalClinic with its address, phone, hours text and its doctors as Physician entries — only details the clinic entered.",
+    "sec_geo": "AI assistants (GEO)",
+    "sec_geo_sub": "Which AI crawlers may read the public pages, and the summary they read at /llms.txt.",
+    "bots": "AI crawlers allowed",
+    "bots_help": "Unticked crawlers are blocked in robots.txt. Private areas are blocked for everyone.",
+    "disallow": "Extra paths to block",
+    "disallow_help": "One path per line, starting with /. Added to robots.txt for every crawler.",
+    "llms_ph": "Leave empty to use the summary generated from the landing page and the listed clinics.",
+    "llms_help": "Plain text (Markdown) describing DocBook factually.",
+    "llms_view": "View the generated version",
+    "updated": "Last saved",
+    "saved": "Saved.",
+    "fix_errors": "Please check the highlighted fields.",
+    "mkt_title": "Social & tracking",
+    "mkt_sub": "Social profiles shown in the site footer, and measurement pixels for the public marketing pages.",
+    "social": "Social profiles",
+    "social_sub": "Shown as icons in the footer and listed as sameAs in the structured data. Full https links on each platform's own domain.",
+    "pixels": "Measurement pixels",
+    "pixels_sub": "Paste the ID from each platform. Leave empty to turn one off.",
+    "pixels_on": "{n} active",
+    "pixels_off": "None active",
+    "privacy_title": "How pixels are loaded",
+    "rule_pages": "Only on the public marketing pages: the home page and the cookie-preferences page.",
+    "rule_consent": "Only after the visitor clicks Accept on the cookie notice; Reject is remembered too, and can be changed from the footer.",
+    "rule_never": "Never inside /app or /admin, on clinic pages, clinic sign-in or patient booking pages.",
+    "rule_csp": "The security policy allows each vendor only on those pages, for visitors who accepted.",
+    "pixel_help": {
+      "ga4": "Measurement ID, e.g. G-XXXXXXXXXX.",
+      "gtm": "Container ID, e.g. GTM-XXXXXXX. Tags inside it are limited by the security policy.",
+      "meta": "Pixel ID (digits only).",
+      "tiktok": "Pixel ID (capital letters and digits).",
+      "snap": "Pixel ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).",
+      "linkedin": "Partner ID (digits only).",
+      "x": "Pixel ID (letters and digits)."
+    }
+  },
+  "growth_err": {
+    "file_required": "Choose an image to upload.",
+    "file_too_big": "Images must be {mb} MB or smaller.",
+    "file_type": "Use a PNG, JPEG or WebP image (SVG is not accepted).",
+    "base_url": "Enter the address as https://example.com (no path).",
+    "email": "Enter a valid e-mail address.",
+    "phone": "Enter a valid phone number.",
+    "country": "Use a two-letter country code, e.g. JO.",
+    "token": "Use only the code (letters, digits, - and _).",
+    "handle": "Use up to 15 letters, digits or _.",
+    "paths": "One path per line, each starting with / (up to 30).",
+    "media": "Choose an image from the media library.",
+    "social": "Use a full https link on this platform's own site.",
+    "pixel": "This ID does not look right. Copy it again from the platform."
   }
 }

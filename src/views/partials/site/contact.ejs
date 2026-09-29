@@ -1,11 +1,11 @@
 <% var d = s.data || {}; %>
-<section class="section lp-contact" id="<%= s.anchor %>">
-  <div class="container">
+<section class="section lp-contact <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
     <%- include('head', { s: s, center: true }) %>
     <div class="lp-contact-grid">
       <% (d.items || []).forEach(function (c) { var inner = '<span class="lp-icon">' + icon(c.icon || 'info') + '</span><span class="stack-sm"><span class="muted small">' + escapeHtml(L(c.label)) + '</span><strong dir="auto">' + escapeHtml(c.value || '') + '</strong></span>'; %>
         <% if (c.href) { %><a class="lp-contact-card" href="<%= c.href %>"><%- inner %></a><% } else { %><div class="lp-contact-card"><%- inner %></div><% } %>
       <% }) %>
     </div>
-  </div>
+  <%- include('slot-close', { s: s }) %></div>
 </section>

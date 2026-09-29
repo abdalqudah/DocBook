@@ -15,6 +15,7 @@ const businesses = require('../businesses/business.service');
 const authService = require('../auth/auth.service');
 const { signIn, landingFor } = require('../auth/session');
 const { PORTAL_ROLES } = require('../rbac/permissions');
+const seo = require('./seo.service');
 
 const router = express.Router();
 const loginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: config.isTest ? 1000 : 30, standardHeaders: true, legacyHeaders: false, handler: (req, res, next) => next(E.rateLimited()) });
@@ -77,8 +78,10 @@ router.get('/:slug', wrap(async (req, res, next) => {
   ]);
   const doctorNames = Object.fromEntries(doctors.map((d) => [d.id, d.name]));
   res.locals.currency = clinic.currency;
+  // Search tags and schema.org MedicalClinic + Physician data (never any tracking pixel on clinic pages).
+  const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors, title: clinic.displayName, description: clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ') });
   return res.page('pages/portal/home', {
-    layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, metaDescription: clinic.aboutText.slice(0, 160),
+    layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, metaDescription: clinic.aboutText.slice(0, 160), seoHead,
     clinic, doctors, services, doctorNames, member, memberRole: member ? roleLabel(req, member) : null,
     roles: PORTAL_ROLES, pageStyles: clinicStyles(clinic),
   });
@@ -110,7 +113,7 @@ async function renderLogin(req, res, clinic, extra = {}) {
   const member = req.user ? await membershipOf(req.user.id, clinic.id) : null;
   return res.page('pages/portal/login', {
     layout: 'public', title: req.t('portal.login_title', { clinic: clinic.displayName }), clinic, roles: PORTAL_ROLES, as,
-    member, memberRole: member ? roleLabel(req, member) : null, hideBookCta: true, pageStyles: clinicStyles(clinic), ...extra,
+    member, memberRole: member ? roleLabel(req, member) : null, hideBookCta: true, noindex: true, pageStyles: clinicStyles(clinic), ...extra,
   });
 }
 

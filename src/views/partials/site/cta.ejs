@@ -1,6 +1,6 @@
 <% var d = s.data || {}; %>
-<section class="section lp-cta" id="<%= s.anchor %>">
-  <div class="container">
+<section class="section lp-cta <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
     <div class="cta-band">
       <div class="lp-cta-glow" aria-hidden="true"></div>
       <div class="lp-cta-copy">
@@ -16,5 +16,5 @@
         <% } %>
       </div>
     </div>
-  </div>
+  <%- include('slot-close', { s: s }) %></div>
 </section>

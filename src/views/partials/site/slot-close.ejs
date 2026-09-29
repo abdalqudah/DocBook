@@ -1,0 +1,7 @@
+<%
+  var _D = s.design || {}; var _d = s.data || {};
+  var _m = _D.media && typeof siteMedia !== 'undefined' && siteMedia ? siteMedia[String(_D.media)] : null;
+  var _pos = _m && !(['hero', 'split'].indexOf(s.type) !== -1 && _d.visual === 'image') ? (_D.media_pos || 'top') : null;
+%>
+<% if (_pos === 'start' || _pos === 'end') { %></div></div><% } %>
+<% if (_pos === 'bottom') { %><div class="sec-media sz-<%= _D.media_size || 'medium' %> sec-media-bottom"><%- include('img', { mid: _D.media, alt: L(_D.media_alt) }) %></div><% } %>
