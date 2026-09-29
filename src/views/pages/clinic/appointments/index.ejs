@@ -123,7 +123,7 @@
             <% if (canManage) { %><form class="cal-ev-del" method="post" action="/app/appointments/blocks/<%= it.id %>/delete" data-confirm="<%= t('appointments.block_delete_confirm') %>" data-confirm-title="<%= t('appointments.block_delete') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit" aria-label="<%= t('appointments.block_delete') %>" title="<%= t('appointments.block_delete') %>"><%- icon('x', 'icon-xs') %></button></form><% } %>
           </div>
           <% } else { %>
-          <a class="cal-ev st-<%= it.status %><%= short ? ' is-short' : '' %>" href="/app/appointments/<%= it.id %>" draggable="false" style="<%= style %>" <%- dataAttrs %> title="<%= tip %>">
+          <a class="cal-ev st-<%= it.status %><%= short ? ' is-short' : (it.len <= 30 ? ' is-compact' : '') %>" href="/app/appointments/<%= it.id %>" draggable="false" style="<%= style %>" <%- dataAttrs %> title="<%= tip %>">
             <span class="cal-ev-line"><i class="st-dot st-<%= it.status %>" aria-hidden="true"></i><span class="cal-ev-time" dir="ltr"><%= it.time %></span><span class="cal-ev-name truncate"><%= it.patient %></span></span>
             <% if (!short) { %>
               <% if (svc) { %><span class="cal-ev-sub truncate"><%= svc %></span><% } %>
