@@ -10,7 +10,8 @@
     "dev": "NODE_ENV=development AUTO_MIGRATE=true node app.js",
     "migrate": "node scripts/migrate.js",
     "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
-    "brand:check": "node scripts/brand-check.js"
+    "brand:check": "node scripts/brand-check.js",
+    "build": "node scripts/build-dist.js"
   },
   "engines": {
     "node": ">=20"
@@ -40,6 +41,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "pdfjs-dist": "^4.10.38"
   }
 }

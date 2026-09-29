@@ -41,9 +41,10 @@ EXIT;
 ```bash
 sudo mkdir -p /var/www/docbook && sudo chown $USER /var/www/docbook
 cd /var/www/docbook
-unzip ~/docbook.zip          # الملف الذي استلمته
-npm ci --omit=dev
+unzip ~/docbook-2.0.0.zip    # نسخة dist: مجلد docbook فيه app.js جاهز بكل المكتبات
+mv docbook/* docbook/.env.example . && rmdir docbook
 ```
+> نسخة الـ dist لا تحتاج `npm install`. إذا كنت تستخدم الكود المصدري بدلًا منها: `npm ci --omit=dev` (وتُبنى الـ dist بالأمر `npm run build`).
 
 ### 4) ملف الإعدادات
 ```bash
@@ -60,7 +61,7 @@ nano .env
 
 ### 5) إنشاء الجداول والتشغيل
 ```bash
-npm run migrate
+node app.js migrate
 pm2 start app.js --name docbook
 pm2 save
 pm2 startup        # ونفّذ الأمر الذي يظهر لك، ليعمل التطبيق تلقائيًا بعد إعادة تشغيل السيرفر
@@ -105,7 +106,7 @@ sudo certbot --nginx -d docbook.yourdomain.com
    - Application URL: الدومين أو الدومين الفرعي
    - Application startup file: `app.js`
 4. **المتغيرات:** في نفس الصفحة أضف Environment variables (نفس محتوى `.env.example`): `APP_URL`، `SESSION_SECRET`، `APP_KEY`، `DB_HOST=localhost`، `DB_NAME`، `DB_USER`، `DB_PASSWORD`، `SUPER_ADMIN_EMAIL`، `SUPER_ADMIN_PASSWORD`، `AUTO_MIGRATE=true`. (أو أنشئ ملف `.env` داخل المجلد.)
-5. اضغط **Run NPM Install** ثم **Restart**.
+5. اضغط **Restart** (نسخة الـ dist لا تحتاج Run NPM Install).
 6. SSL: cPanel ← SSL/TLS Status ← Run AutoSSL.
 7. مع `AUTO_MIGRATE=true` تُنشأ الجداول تلقائيًا عند أول تشغيل.
 
@@ -147,9 +148,8 @@ ICE_SERVERS=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:yourdomain.co
 ```bash
 cd /var/www/docbook
 mysqldump -u docbook -p docbook > ~/backup-$(date +%F).sql   # نسخة احتياطية أولًا
-unzip -o ~/docbook-new.zip
-npm ci --omit=dev
-npm run migrate
+unzip -o ~/docbook-new.zip && cp -r docbook/. . && rm -r docbook
+node app.js migrate
 pm2 restart docbook
 ```
 (لا تستبدل ملف `.env`.)
@@ -173,7 +173,7 @@ pm2 restart docbook
 
 ## English summary
 1. Requirements: Node.js ≥ 20, MySQL 8 / MariaDB 10.6+, HTTPS, one app instance.
-2. `npm ci --omit=dev` → `cp .env.example .env` and set `APP_URL`, `SESSION_SECRET`, `APP_KEY` (never change it later), `DB_*`, `SUPER_ADMIN_*` → `npm run migrate` → `pm2 start app.js --name docbook` behind nginx with TLS (`client_max_body_size 60m`, forward `X-Forwarded-Proto`).
-3. cPanel: Setup Node.js App (startup file `app.js`), add the same environment variables, Run NPM Install, Restart, AutoSSL.
+2. Unzip the dist (bundled `app.js`, no `npm install`; from source: `npm ci --omit=dev`, build with `npm run build`) → `cp .env.example .env` and set `APP_URL`, `SESSION_SECRET`, `APP_KEY` (never change it later), `DB_*`, `SUPER_ADMIN_*` → `node app.js migrate` → `pm2 start app.js --name docbook` behind nginx with TLS (`client_max_body_size 60m`, forward `X-Forwarded-Proto`).
+3. cPanel: Setup Node.js App (startup file `app.js`), add the same environment variables, Restart, AutoSSL.
 4. Sign in as the super admin → `/admin`; create clinics via `/signup`.
 5. Optional services (SMTP, WhatsApp Cloud API, SMS, PayTabs/HyperPay, Google sign-in, TURN, custom domains) are configured as in the table above.

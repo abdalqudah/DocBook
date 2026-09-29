@@ -18,6 +18,7 @@ function createApp() {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
+  app.engine('ejs', require('ejs').__express); // registered explicitly so the bundled build (npm run build) finds it
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
 
