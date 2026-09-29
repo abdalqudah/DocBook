@@ -16,6 +16,17 @@ async function seedRoles(businessId, trx = knex) {
   }
 }
 
+/**
+ * Built-in roles are read-only in the UI, so their permissions follow the catalog: when a release adds a
+ * permission (e.g. attendance), every clinic's system roles are brought up to date at boot.
+ */
+async function syncSystemRoles() {
+  for (const r of SYSTEM_ROLES) {
+    const perms = JSON.stringify(normalise(r.permissions));
+    await knex('roles').where({ key: r.key, is_system: true }).whereNot({ permissions: perms }).update({ permissions: perms }); // eslint-disable-line no-await-in-loop
+  }
+}
+
 async function loadPermissions(businessId, userId) {
   const row = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id')
     .where({ 'm.business_id': businessId, 'm.user_id': userId, 'm.status': 'active' }).first('r.permissions', 'r.key');
@@ -67,4 +78,4 @@ async function deleteRole(ctx, id) {
   await audit.record(ctx, 'role.deleted', { entityType: 'role', entityId: id, oldValues: { name: role.name } });
 }
 
-module.exports = { seedRoles, getUserPermissions, invalidate, listRoles, getRole, getRoleByKey, saveRole, deleteRole };
+module.exports = { seedRoles, syncSystemRoles, getUserPermissions, invalidate, listRoles, getRole, getRoleByKey, saveRole, deleteRole };

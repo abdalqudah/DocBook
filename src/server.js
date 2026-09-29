@@ -56,6 +56,7 @@ async function start() {
     });
   }
   // Platform super admin from SUPER_ADMIN_* (never overwrites an existing password).
+  await require('./modules/rbac/rbac.service').syncSystemRoles(); // eslint-disable-line global-require
   await require('./modules/auth/auth.service').ensureSuperAdmin() // eslint-disable-line global-require
     .catch((e) => console.error('[auth] could not ensure the platform admin:', e.message)); // eslint-disable-line no-console
   const app = createApp();

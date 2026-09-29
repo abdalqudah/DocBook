@@ -137,7 +137,8 @@
       "patients": "Patients",
       "cashier": "Cashier"
     },
-    "cashier": "Cashier"
+    "cashier": "Cashier",
+    "attendance": "Staff attendance"
   },
   "search": {
     "open": "Search and quick actions",
@@ -271,7 +272,8 @@
     "payroll": "Doctor payroll",
     "supplies": "Supplies & expenses",
     "reports": "Reports & exports",
-    "admin": "Administration"
+    "admin": "Administration",
+    "attendance": "Staff attendance"
   },
   "perms": {
     "dashboard.view": "View the clinic dashboard",
@@ -305,7 +307,9 @@
     "roles.manage": "Manage roles & permissions",
     "settings.manage": "Clinic settings, page & appearance",
     "data.manage": "Backup, restore and delete the clinic",
-    "audit.view": "View the audit log"
+    "audit.view": "View the audit log",
+    "attendance.view": "View staff attendance",
+    "attendance.manage": "Attendance screen (QR) and corrections"
   },
   "categories": {
     "rent": "Rent",

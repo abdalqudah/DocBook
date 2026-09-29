@@ -19,6 +19,7 @@ const NAV = [
   { group: 'operations', items: [
     { key: 'doctors', href: '/app/doctors', icon: 'stethoscope', perms: ['doctors.manage', 'appointments.view_all'] },
     { key: 'services', href: '/app/services', icon: 'clipboard-list', perms: ['services.manage'] },
+    { key: 'attendance', href: '/app/attendance', icon: 'clock', perms: ['attendance.view', 'attendance.manage'] },
     { key: 'supplies', href: '/app/supplies', icon: 'package', perms: ['supplies.view'], badge: 'lowStock' },
   ] },
   { group: 'insights', items: [

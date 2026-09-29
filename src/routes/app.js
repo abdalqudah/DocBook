@@ -84,6 +84,8 @@ router.use('/doctors', require('../modules/clinic/doctors.web'));
 router.use('/services', require('../modules/clinic/services.web'));
 router.use('/supplies', require('../modules/clinic/supplies.web'));
 router.use('/reports', require('../modules/clinic/reports.web'));
+router.use('/attendance', require('../modules/attendance/web'));
+router.use('/settings/database', require('../modules/datasync/web'));
 router.use('/help', require('../modules/support/web'));
 router.use('/settings', require('../modules/settings/web'));
 

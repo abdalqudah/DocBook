@@ -10,6 +10,7 @@ const GROUPS = [
   { key: 'clinic', perms: ['doctors.manage', 'services.manage'] },
   { key: 'payroll', perms: ['payroll.view', 'payroll.manage', 'payroll.approve'] },
   { key: 'supplies', perms: ['supplies.view', 'supplies.manage', 'expenses.view', 'expenses.manage'] },
+  { key: 'attendance', perms: ['attendance.view', 'attendance.manage'] },
   { key: 'reports', perms: ['reports.view', 'data.export'] },
   { key: 'admin', perms: ['users.manage', 'roles.manage', 'settings.manage', 'data.manage', 'audit.view'] },
 ];
@@ -21,7 +22,7 @@ const IMPLIES = {
   'appointments.manage': 'appointments.view', 'appointments.view_all': 'appointments.view', 'billing.manage': 'billing.view',
   'patients.create': 'patients.view', 'patients.edit': 'patients.view', 'patients.delete': 'patients.view',
   'clinical.edit': 'clinical.view', 'vitals.edit': 'clinical.view', 'prescriptions.create': 'clinical.view',
-  'payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',
+  'attendance.manage': 'attendance.view', 'payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',
 };
 
 const SYSTEM_ROLES = [
@@ -45,7 +46,7 @@ const SYSTEM_ROLES = [
   },
   {
     key: 'accountant', // billing, payroll, commissions, expenses, reports — no clinical data
-    permissions: ['dashboard.view', 'finance.view', 'appointments.view', 'appointments.view_all', 'billing.view', 'billing.manage', 'payroll.view', 'payroll.manage',
+    permissions: ['dashboard.view', 'finance.view', 'appointments.view', 'appointments.view_all', 'billing.view', 'billing.manage', 'payroll.view', 'payroll.manage', 'attendance.view',
       'supplies.view', 'expenses.view', 'expenses.manage', 'reports.view', 'data.export'],
     entry: '/app/billing',
   },
