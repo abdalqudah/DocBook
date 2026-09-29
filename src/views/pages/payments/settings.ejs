@@ -81,7 +81,7 @@
       <div class="panel-head"><div><h2><%= t('payments.settings.setup_title') %></h2><div class="panel-sub"><%= t('payments.settings.setup_sub') %></div></div></div>
       <div class="panel-body stack">
         <% if (!https) { %><div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><%= t('payments.settings.https_warn') %></div></div><% } %>
-        <div class="grid grid-2">
+        <div class="grid grid-2 pay-setup-grid">
           <div class="stack-sm">
             <h3 class="small strong"><%= t('payments.providers.paytabs') %></h3>
             <ol class="pay-steps small">

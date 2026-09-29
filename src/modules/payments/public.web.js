@@ -12,6 +12,7 @@ const { publicBase } = require('../../middleware/web');
 const businesses = require('../businesses/business.service');
 const pay = require('./payments.service');
 const { backToPatient } = require('./hooks.web');
+const { clinicStyles } = require('../site/portal.web');
 
 const router = express.Router();
 const limiter = rateLimit({ windowMs: 10 * 60_000, limit: config.isTest ? 5000 : 120, standardHeaders: true, legacyHeaders: false });
@@ -49,7 +50,7 @@ router.get('/:pid', limiter, wrap(async (req, res, next) => {
   const common = {
     layout: 'public', title: req.t('payments.patient.redirect_title'), noindex: true, hideBookCta: true, p, a,
     clinic: { ...clinic, displayName: (en && clinic.name_en) || clinic.name },
-    pageStyles: ['/css/payments.css'],
+    pageStyles: [...clinicStyles(clinic), '/css/telehealth.css', '/css/payments.css'],
   };
   if (p.provider === 'paytabs') {
     let url = null;

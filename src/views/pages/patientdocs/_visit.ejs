@@ -4,7 +4,7 @@
   var D = V.docs;
   var hasChoices = D && (D.rxs.length || D.sections.length || D.certs.length);
   var DEFAULT_SECTIONS = ['diagnosis', 'assessment', 'plan_text'];
-  var payStatus = function (s) { return s === 'failed' || s === 'refunded' ? 'badge-danger' : 'badge-neutral'; };
+  var payStatus = function (s) { return s === 'failed' ? 'badge-danger' : 'badge-neutral'; };
 %>
 <% if (D) { %>
 <section class="panel mt-4" id="patient-docs">
@@ -86,7 +86,7 @@
       </li>
       <% }) %>
     </ul>
-    <% if (V.online && V.link) { %><p class="tiny muted mt-2"><%= t('patient_docs.page_hint') %> <bdi dir="ltr" class="truncate"><%= V.link.replace(/^https?:\/\//, '') %></bdi></p><% } %>
+    <% if (V.online && V.link) { %><p class="tiny muted mt-2 pdoc-link"><%= t('patient_docs.page_hint') %> <bdi dir="ltr"><%= V.link.replace(/^https?:\/\//, '') %></bdi></p><% } %>
   </div>
   <% } %>
 </section>

@@ -27,3 +27,6 @@
   .pay-form .btn-lg { width: 100%; justify-content: center; }
   .pdoc-sections { padding-inline-start: 0; }
 }
+.pay-card .segmented, .pdoc-list + .row .segmented { align-self: flex-start; }
+.pdoc-link { overflow-wrap: anywhere; word-break: break-all; }
+.pay-setup-grid > * { min-width: 0; }

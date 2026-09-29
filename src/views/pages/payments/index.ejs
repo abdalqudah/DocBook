@@ -1,6 +1,6 @@
 <%
   var FILTERS = ['all', 'paid', 'attention', 'failed', 'refunded'];
-  var badge = function (s) { return s === 'failed' || s === 'refunded' ? 'badge-danger' : 'badge-neutral'; };
+  var badge = function (s) { return s === 'failed' ? 'badge-danger' : 'badge-neutral'; };
 %>
 <div class="page-head">
   <div>
@@ -27,7 +27,7 @@
         <tr>
           <td data-label="<%= t('common.date') %>" class="nowrap"><%= fmt.date(p.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %></td>
           <td class="primary-cell"><a class="strong" href="/app/payments/<%= p.id %>"><%= p.patient_name %></a><div class="tiny muted"><%= t('payments.list.consult_on', { date: fmt.date(p.appointment_date), time: p.appointment_time }) %></div></td>
-          <td data-label="<%= t('payments.list.provider') %>"><%= t('payments.providers.' + p.provider) %><% if (p.brand === 'mada') { %> <span class="tiny muted">· mada</span><% } %><% if (p.mode === 'test') { %> <span class="tiny muted">· <%= t('payments.modes.test') %></span><% } %></td>
+          <td data-label="<%= t('payments.list.provider') %>"><span><%= [t('payments.providers.' + p.provider), p.brand === 'mada' ? 'mada' : null, p.mode === 'test' ? t('payments.modes.test') : null].filter(Boolean).join(' · ') %></span></td>
           <td data-label="<%= t('common.status') %>"><span class="row-sm wrap"><span class="badge badge-dot <%= badge(p.status) %>"><%= t('payments.statuses.' + p.status) %></span><% if (p.note && p.note !== 'settling' && p.status !== 'refunded') { %><span class="badge badge-warning"><%= t('payments.notes.' + p.note) %></span><% } %></span></td>
           <td data-label="<%= t('common.amount') %>" class="num strong"><%= fmt.money(p.amount, p.currency) %></td>
           <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="/app/payments/<%= p.id %>" aria-label="<%= t('common.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
