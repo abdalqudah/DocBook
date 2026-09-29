@@ -1,0 +1,130 @@
+/* Records area: patients, billing, dashboard, my day, reports. Theme tokens only. */
+
+/* ---------- Patient header & text blocks ---------- */
+.rec-head h1 { overflow-wrap: anywhere; }
+.rec-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 6px; font-size: 13px; color: var(--text-muted); }
+.rec-meta > span:not(.badge) + span:not(.badge)::before { content: none; }
+.rec-meta a { display: inline-flex; align-items: center; gap: 4px; }
+.rec-pre { white-space: pre-line; overflow-wrap: anywhere; }
+.rec-form { max-width: 880px; }
+
+/* ---------- Timeline (patient history) ---------- */
+.rec-timeline { list-style: none; margin: 0; padding: 8px 0; }
+.rec-timeline li { position: relative; padding: 12px var(--card-pad) 14px; padding-inline-start: calc(var(--card-pad) + 22px); }
+.rec-timeline li::before { content: ''; position: absolute; inset-inline-start: calc(var(--card-pad) + 4px); top: 0; bottom: 0; width: 2px; background: var(--border); }
+.rec-timeline li:first-child::before { top: 18px; }
+.rec-timeline li:last-child::before { bottom: calc(100% - 18px); }
+.rec-timeline li::after { content: ''; position: absolute; inset-inline-start: var(--card-pad); top: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--text-subtle); }
+.rec-timeline li.tone-success::after { border-color: var(--success); background: var(--success-soft); }
+.rec-timeline li.tone-info::after { border-color: var(--info); background: var(--info-soft); }
+.rec-timeline li.tone-warning::after { border-color: var(--warning); background: var(--warning-soft); }
+.rec-timeline li.tone-danger::after { border-color: var(--danger); background: var(--danger-soft); }
+.rec-timeline li.tone-brand::after { border-color: var(--primary); background: var(--primary-soft); }
+.rec-tl-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 2px; }
+.rec-tl-head a.strong:hover { color: var(--primary); }
+.rec-tl-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; font-size: 13px; }
+.rec-tl-line > .icon { color: var(--text-subtle); flex: none; }
+
+/* ---------- Invoice document ---------- */
+.rec-invoice { padding: 28px; display: flex; flex-direction: column; gap: 22px; }
+.rec-invoice.is-print { padding: 0; }
+.rec-inv-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.rec-inv-kind { font-size: var(--fs-sm); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); }
+.rec-inv-no { font-size: 26px; font-weight: var(--fw-heavy); letter-spacing: -.01em; margin-top: 2px; }
+.rec-inv-clinic { padding: 12px 14px; border-radius: var(--radius); background: var(--surface-muted); }
+.rec-inv-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.rec-inv-parties > div { display: flex; flex-direction: column; gap: 3px; }
+.rec-inv-label { font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); margin-bottom: 2px; }
+.rec-inv-lines { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; border-collapse: separate; border-spacing: 0; }
+.rec-inv-lines tr:last-child td { border-bottom: 0; }
+.rec-inv-pay { max-width: 460px; }
+.rec-inv-thanks { border-top: 1px dashed var(--border-strong); padding-top: 14px; margin: 0; }
+@media (max-width: 560px) { .rec-invoice { padding: 18px; } .rec-inv-parties { grid-template-columns: 1fr; } .rec-inv-no { font-size: 22px; } }
+.rec-danger { border-color: var(--danger-soft); }
+
+/* ---------- Dashboard ---------- */
+.rec-trend { display: inline-flex; align-items: center; gap: 2px; font-weight: var(--fw-bold); }
+.rec-trend.up { color: var(--success); } .rec-trend.down { color: var(--danger); }
+.stat.hero .rec-trend { color: inherit; }
+.rec-setup-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .rec-setup-list { grid-template-columns: 1fr; } }
+.rec-setup .check-dot { color: var(--text-subtle); }
+
+.rec-sched { list-style: none; margin: 0; padding: 0; max-height: 560px; overflow-y: auto; }
+.rec-sched li > a { display: flex; align-items: center; gap: 12px; padding: 10px var(--card-pad); border-bottom: 1px solid var(--border); }
+.rec-sched li:last-child > a { border-bottom: 0; }
+.rec-sched li > a:hover { background: var(--surface-muted); }
+.rec-sched li.is-dim > a { opacity: .6; }
+.rec-sched li.is-now > a { background: var(--primary-soft); }
+.rec-sched-time { font-weight: var(--fw-bold); font-size: 13px; min-width: 44px; }
+.rec-sched-bar { width: 4px; align-self: stretch; min-height: 34px; border-radius: var(--pill); background: var(--border-strong); flex: none; }
+.rec-sched .end { justify-content: flex-end; }
+@media (max-width: 560px) { .rec-sched li > a { flex-wrap: wrap; gap: 8px 10px; } .rec-sched li > a > .row-sm { width: 100%; justify-content: flex-start; padding-inline-start: 62px; } }
+
+/* ---------- My day ---------- */
+.rec-datenav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rec-datenav .input { width: auto; height: 38px; }
+.rec-now { border-color: var(--primary); background: var(--primary-soft); }
+.rec-now:hover { border-color: var(--primary); }
+.rec-kicker { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: .06em; color: var(--primary); }
+.rec-big { font-size: 20px; line-height: 1.25; }
+.rec-day { list-style: none; margin: 0; padding: 10px var(--card-pad) 16px; display: flex; flex-direction: column; gap: 8px; }
+.rec-day li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.rec-day-time { display: flex; flex-direction: column; font-weight: var(--fw-bold); font-size: 13px; padding-top: 10px; }
+.rec-day-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-inline-start: 4px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); min-width: 0; }
+a.rec-day-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
+.rec-day li.state-confirmed .rec-day-card { border-inline-start-color: var(--info); }
+.rec-day li.state-pending .rec-day-card { border-inline-start-color: var(--warning); }
+.rec-day li.state-waiting .rec-day-card { border-inline-start-color: var(--warning); background: var(--warning-soft); }
+.rec-day li.state-with .rec-day-card { border-inline-start-color: var(--primary); background: var(--primary-soft); }
+.rec-day li.state-completed .rec-day-card { border-inline-start-color: var(--success); }
+.rec-day li.state-no_show .rec-day-card { border-inline-start-color: var(--danger); }
+.rec-day li.state-cancelled .rec-day-card { border-inline-start-color: var(--border); text-decoration: line-through; text-decoration-color: var(--text-subtle); }
+.rec-day li.is-past .rec-day-card, .rec-day li.state-cancelled .rec-day-card { opacity: .65; }
+.rec-day li.is-block .rec-day-card { background: var(--surface-sunken); border-style: dashed; }
+.rec-wait { display: inline-flex; align-items: center; gap: 4px; color: var(--warning); font-weight: var(--fw-semibold); margin-top: 2px; }
+.rec-week { list-style: none; margin: 0; padding: 12px var(--card-pad); display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.rec-week a { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px; border-radius: var(--radius-sm); border: 1px solid var(--border); text-align: center; }
+.rec-week a:hover { border-color: var(--border-strong); background: var(--surface-muted); }
+.rec-week .badge { padding: 0 6px; }
+
+/* ---------- Reports ---------- */
+.rec-range { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.rec-range .select, .rec-range .input { min-width: 0; }
+.rec-range-now { display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto; }
+.rec-exp .menu { inset-inline-end: 0; inset-inline-start: auto; }
+.rec-discounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rec-border-top { border-top: 1px solid var(--border); }
+.rec-meter-accent > span { background: var(--accent); }
+.rec-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rec-neg { color: var(--danger); }
+.rec-print-title { margin-bottom: 18px; }
+.rec-print-title h1 { font-size: 20px; }
+@media (max-width: 560px) {
+  .rec-exp-label { display: none; }
+  .rec-range-now { margin-inline-start: 0; }
+  .rec-discounts { grid-template-columns: 1fr 1fr; }
+  .rec-day li { grid-template-columns: 46px minmax(0, 1fr); gap: 8px; }
+  .rec-week { gap: 4px; padding: 10px 12px; }
+}
+@media print {
+  .rec-exp, .rec-range { display: none !important; }
+  .rec-invoice { gap: 16px; }
+  .rec-inv-lines, .statement tr.grand td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.rec-dl-narrow { grid-template-columns: minmax(96px, 130px) minmax(0, 1fr); gap: 10px 14px; }
+.rec-hbars-stacked .hbar { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+.rec-hbars-stacked .hbar-track { grid-column: 1 / -1; order: 3; }
+.panel.flush .panel-body.rec-pad { padding: var(--card-pad); }
+/* Names typed in either script keep the page's alignment (dir="auto" would otherwise flip block alignment). */
+html[dir="ltr"] [dir="auto"] { text-align: left; }
+html[dir="rtl"] [dir="auto"] { text-align: right; }
+@media (max-width: 420px) {
+  .stats.rec-kpis { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stats.rec-kpis .stat { padding: 12px 14px; }
+  .stats.rec-kpis .stat-value { font-size: 20px; }
+  .stats.rec-kpis .stat.hero { grid-column: 1 / -1; }
+  .stats.rec-kpis .stat-icon { display: none; }
+}
+/* The 5th donut slice uses the success green, which reads as the primary green — use the secondary tone here. */
+.donut circle.d5 { stroke: var(--secondary); } .legend .d5 { background: var(--secondary); }

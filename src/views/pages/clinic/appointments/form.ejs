@@ -1,0 +1,127 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var own = Boolean(ctx.ownDoctorId);
+  var action = appt ? '/app/appointments/' + appt.id + '/edit' : '/app/appointments/new';
+  var back = returnTo || (appt ? '/app/appointments/' + appt.id : '/app/appointments?date=' + v.appointment_date);
+  var err = function (k) { return errors && errors[k] ? '<span class="field-error">' + escapeHtml(errors[k]) + '</span>' : ''; };
+  var inv = function (k) { return errors && errors[k] ? ' is-invalid' : ''; };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/appointments"><%= t('appointments.title') %></a><%- icon('chevron-right', 'flip-rtl') %><% if (appt) { %><a href="/app/appointments/<%= appt.id %>"><%= appt.patient_name %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('appointments.reschedule') %><% } else { %><%= t('appointments.new') %><% } %></div>
+    <h1><%= appt ? t('appointments.edit') : t('appointments.new') %></h1>
+    <p><%= appt ? t('appointments.edit_lead') : t('appointments.new_lead') %></p>
+  </div>
+</div>
+
+<form method="post" action="<%= action %>" novalidate data-booking class="booking-form"
+  data-fee-default="<%= json(Object.fromEntries(doctors.map(function (d) { return [d.id, Number(d.consultation_fee) || 0]; }))) %>" data-currency="<%= currency %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (returnTo) { %><input type="hidden" name="return_to" value="<%= returnTo %>"><% } %>
+  <%- include('../../../partials/form-error') %>
+  <div class="grid grid-main">
+    <div class="panel">
+      <div class="panel-head"><h2><%- icon('calendar-clock', 'icon-sm') %> <%= t('appointments.section_when') %></h2></div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <div class="field">
+            <label class="label" for="f-doctor"><%= t('common.doctor') %></label>
+            <% if (own) { var me = doctors[0]; %>
+              <input type="hidden" name="doctor_id" value="<%= ctx.ownDoctorId %>" data-doctor-field>
+              <input class="input" id="f-doctor" value="<%= me ? L(me.full_name, me.full_name_en) : '' %>" readonly>
+            <% } else { %>
+            <select class="select<%= inv('doctor_id') %>" id="f-doctor" name="doctor_id" data-doctor-field>
+              <option value=""><%= t('appointments.no_doctor') %></option>
+              <% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(v.doctor_id) === String(d.id) ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %><%= d.specialization ? ' — ' + L(d.specialization, d.specialization_en) : '' %></option><% }) %>
+            </select>
+            <% } %>
+            <%- err('doctor_id') %>
+          </div>
+          <div class="field">
+            <label class="label" for="f-service"><%= t('common.service') %></label>
+            <select class="select<%= inv('service_id') %>" id="f-service" name="service_id" data-service-field data-min="<%= t('common.minutes') %>" data-none-label="<%= t('appointments.no_service') %>">
+              <option value=""><%= t('appointments.no_service') %></option>
+              <% services.forEach(function (s) { %><option value="<%= s.id %>" data-duration="<%= s.duration_minutes %>" data-price="<%= Number(s.price) %>"<%= String(v.service_id) === String(s.id) ? ' selected' : '' %>><%= L(s.name, s.name_en) %> · <%= s.duration_minutes %> <%= t('common.minutes') %></option><% }) %>
+            </select>
+            <%- err('service_id') %>
+          </div>
+          <div class="field">
+            <label class="label" for="f-date"><%= t('common.date') %><span class="req">*</span></label>
+            <input class="input<%= inv('appointment_date') %>" id="f-date" type="date" name="appointment_date" value="<%= v.appointment_date %>" min="<%= appt && appt.appointment_date < clinicToday ? appt.appointment_date : clinicToday %>" required data-date-field>
+            <%- err('appointment_date') %>
+          </div>
+          <div class="field" data-duration-wrap>
+            <label class="label" for="f-duration"><%= t('appointments.custom_duration') %></label>
+            <div class="input-affix"><input class="input<%= inv('duration_minutes') %>" id="f-duration" name="duration_minutes" value="<%= v.duration_minutes %>" inputmode="numeric" placeholder="<%= t('appointments.duration_default') %>" data-duration-input><span class="affix"><%= t('common.minutes') %></span></div>
+            <% if (errors && errors.duration_minutes) { %><%- err('duration_minutes') %><% } else { %><span class="help"><%= t('appointments.duration_help') %></span><% } %>
+          </div>
+          <%- include('_slots', { slotId: 'f-slots', selected: v.appointment_time, exclude: appt ? appt.id : '' }) %>
+          <div class="field">
+            <span class="label"><%= t('common.type') %></span>
+            <div class="segmented" role="radiogroup" aria-label="<%= t('common.type') %>">
+              <% ['in_person', 'online'].forEach(function (k) { %><label><input type="radio" name="appointment_type" value="<%= k %>"<%= v.appointment_type === k ? ' checked' : '' %>><span><%= t('appointments.types.' + k) %></span></label><% }) %>
+            </div>
+          </div>
+          <% if (!appt) { %>
+          <div class="field">
+            <span class="label"><%= t('common.status') %></span>
+            <div class="segmented" role="radiogroup" aria-label="<%= t('common.status') %>">
+              <% ['confirmed', 'pending'].forEach(function (k) { %><label><input type="radio" name="status" value="<%= k %>"<%= v.status === k ? ' checked' : '' %>><span><%= t('appointments.statuses.' + k) %></span></label><% }) %>
+            </div>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <div class="panel-head"><h2><%- icon('user-round', 'icon-sm') %> <%= t('common.patient') %></h2></div>
+        <div class="panel-body stack">
+          <input type="hidden" name="patient_id" value="<%= v.patient_id %>" data-patient-id>
+          <div class="patient-picked<%= v.patient_id ? '' : ' hidden' %>" data-patient-chip>
+            <span class="avatar"><%= initials(v.patient_name) %></span>
+            <div class="grow"><div class="strong" data-chip-name><%= v.patient_name %></div><div class="small muted"><%= t('appointments.existing_patient') %> · <span dir="ltr" data-chip-phone><%= v.patient_phone %></span></div></div>
+            <% if (!appt) { %><button class="btn btn-ghost btn-sm" type="button" data-patient-clear><%= t('appointments.change') %></button><% } %>
+          </div>
+          <% if (!appt) { %>
+          <div class="field patient-search hidden" data-patient-search-wrap>
+            <label class="label" for="f-psearch"><%= t('appointments.find_patient') %></label>
+            <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" id="f-psearch" type="search" autocomplete="off" placeholder="<%= t('appointments.find_patient_ph') %>" data-patient-search data-empty="<%= t('appointments.no_patient_match') %>" aria-controls="f-presults" aria-expanded="false"></div>
+            <div class="patient-results hidden" id="f-presults" role="listbox" data-patient-results></div>
+            <span class="help"><%= t('appointments.find_patient_help') %></span>
+          </div>
+          <% } %>
+          <div class="form-grid">
+            <div class="field full">
+              <label class="label" for="f-pname"><%= t('appointments.patient_name') %><span class="req">*</span></label>
+              <input class="input<%= inv('patient_name') %>" id="f-pname" name="patient_name" value="<%= v.patient_name %>" required autocomplete="off" data-patient-name>
+              <%- err('patient_name') %>
+            </div>
+            <div class="field">
+              <label class="label" for="f-pphone"><%= t('common.phone') %><span class="req">*</span></label>
+              <input class="input<%= inv('patient_phone') %>" id="f-pphone" name="patient_phone" value="<%= v.patient_phone %>" required inputmode="tel" dir="ltr" autocomplete="off" data-patient-phone>
+              <%- err('patient_phone') %>
+            </div>
+            <div class="field">
+              <label class="label" for="f-pemail"><%= t('common.email') %></label>
+              <input class="input<%= inv('patient_email') %>" id="f-pemail" name="patient_email" value="<%= v.patient_email %>" type="email" dir="ltr" autocomplete="off" data-patient-email>
+              <%- err('patient_email') %>
+            </div>
+          </div>
+          <% if (!appt) { %><p class="help"><%= t('appointments.phone_match_help') %></p><% } %>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-body stack-sm">
+          <%- include('../../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', value: v.notes, placeholder: t('appointments.notes_ph') }) %>
+          <div class="fee-line small" data-fee-line hidden><%- icon('banknote', 'icon-sm') %><span><%= t('appointments.expected_fee') %>:</span><strong data-fee-out></strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="form-actions booking-actions">
+    <a class="btn btn-ghost" href="<%= back %>"><%= t('common.cancel') %></a>
+    <button class="btn btn-primary" type="submit"><%- icon('calendar-check', 'icon-sm') %><%= appt ? t('common.save_changes') : t('appointments.book') %></button>
+  </div>
+</form>

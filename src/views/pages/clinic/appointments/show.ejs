@@ -1,0 +1,142 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var canManage = can('appointments.manage');
+  var canVisit = canAny('clinical.view', 'vitals.edit', 'frontdesk.use');
+  var SB = { pending: 'badge-warning', confirmed: 'badge-info', completed: 'badge-success', cancelled: 'badge-neutral', no_show: 'badge-danger' };
+  var closed = a.status === 'cancelled' || a.status === 'no_show';
+  var statusForm = function (status, label, iconName, cls, confirmMsg) {
+    return '<form method="post" action="/app/appointments/' + a.id + '/status"' + (confirmMsg ? ' data-confirm="' + escapeHtml(confirmMsg) + '" data-confirm-title="' + escapeHtml(label) + '" data-confirm-yes="' + escapeHtml(label) + '"' : '') + '>'
+      + '<input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="status" value="' + status + '">'
+      + '<button class="btn ' + cls + ' btn-block" type="submit">' + icon(iconName, 'icon-sm') + escapeHtml(label) + '</button></form>';
+  };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/appointments?date=<%= a.appointment_date %>"><%= t('appointments.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= fmt.date(a.appointment_date) %></div>
+    <div class="row">
+      <span class="avatar avatar-lg" style="<%= a.doctor_color ? 'background:' + a.doctor_color + ';color:var(--surface)' : '' %>"><%= initials(a.patient_name) %></span>
+      <div>
+        <h1><%= a.patient_name %></h1>
+        <p><%= fmt.date(a.appointment_date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span dir="ltr"><%= a.appointment_time %>–<%= a.end_time %></span></p>
+        <div class="row-sm wrap mt-2">
+          <span class="badge badge-dot <%= SB[a.status] %>"><%= t('appointments.statuses.' + a.status) %></span>
+          <% if (a.source === 'website') { %><span class="badge badge-brand"><%- icon('globe', 'icon-sm') %><%= t('appointments.booked_online') %></span><% } %>
+          <% if (a.appointment_type === 'online') { %><span class="badge badge-info"><%- icon('monitor', 'icon-sm') %><%= t('appointments.types.online') %></span><% } %>
+          <% if (a.payment_status === 'paid') { %><span class="badge badge-success"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } %>
+          <% if (a.parent_appointment_id) { %><span class="badge"><%- icon('history', 'icon-sm') %><%= t('appointments.follow_up') %></span><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-actions">
+    <% if (canVisit) { %><a class="btn btn-secondary" href="/app/visits/<%= a.id %>"><%- icon('stethoscope', 'icon-sm') %><%= t('appointments.open_visit') %></a><% } %>
+    <% if (canManage && a.payment_status !== 'paid') { %><a class="btn btn-secondary" href="/app/appointments/<%= a.id %>/edit"><%- icon('calendar-clock', 'icon-sm') %><%= t('appointments.reschedule') %></a><% } %>
+    <% if (canManage) { %><button class="btn btn-primary" type="button" data-open-dialog="followup-dialog"><%- icon('calendar-plus', 'icon-sm') %><%= t('appointments.book_follow_up') %></button><% } %>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('appointments.details') %></h2></div>
+      <div class="panel-body">
+        <dl class="dl">
+          <dt><%= t('common.patient') %></dt>
+          <dd><% if (a.patient_id && can('patients.view')) { %><a class="link" href="/app/patients/<%= a.patient_id %>"><%= patient ? patient.full_name : a.patient_name %></a><% } else { %><%= a.patient_name %><% } %></dd>
+          <dt><%= t('common.phone') %></dt><dd><bdi dir="ltr"><%= a.patient_phone || '—' %></bdi></dd>
+          <% if (a.patient_email) { %><dt><%= t('common.email') %></dt><dd><%= a.patient_email %></dd><% } %>
+          <dt><%= t('common.doctor') %></dt>
+          <dd><% if (a.doctor_id) { %><span class="row-sm"><span class="swatch" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= L(a.doctor_name, a.doctor_name_en) %></span><% } else { %><span class="badge badge-warning"><%= t('appointments.unassigned') %></span><% } %></dd>
+          <dt><%= t('common.service') %></dt><dd><%= a.service_name ? L(a.service_name, a.service_name_en) : t('appointments.general_visit') %></dd>
+          <dt><%= t('appointments.duration') %></dt><dd><%= a.length %> <%= t('common.minutes') %></dd>
+          <dt><%= t('common.type') %></dt><dd><%= t('appointments.types.' + a.appointment_type) %></dd>
+          <dt><%= t('appointments.source') %></dt><dd><%= t('appointments.sources.' + a.source) %></dd>
+          <% if (a.checked_in) { %><dt><%= t('appointments.checked_in') %></dt><dd><%= a.with_doctor ? t('appointments.with_doctor') : t('appointments.arrived') %><% if (a.arrived_at) { %> · <span dir="ltr"><%= new Date(a.arrived_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: business.timezone || 'UTC' }) %></span><% } %></dd><% } %>
+          <% if (parent) { %><dt><%= t('appointments.follow_up_of') %></dt><dd><a class="link" href="/app/appointments/<%= parent.id %>"><%= fmt.date(parent.appointment_date) %> · <span dir="ltr"><%= parent.appointment_time %></span></a></dd><% } %>
+          <dt><%= t('common.notes') %></dt><dd style="white-space:pre-line"><%= a.notes || '—' %></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('appointments.follow_ups') %></h2><% if (canManage) { %><button class="btn btn-ghost btn-sm" type="button" data-open-dialog="followup-dialog"><%- icon('plus', 'icon-sm') %><%= t('appointments.book_follow_up') %></button><% } %></div>
+      <% if (!children.length) { %><div class="flush-empty small muted"><%= t('appointments.no_follow_ups') %></div><% } else { %>
+      <ul class="action-list"><% children.forEach(function (c) { %><li><a href="/app/appointments/<%= c.id %>"><span class="action-icon brand"><%- icon('calendar-check') %></span><div class="grow"><div class="strong"><%= fmt.date(c.appointment_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %></div><div class="small muted"><bdi dir="ltr"><%= c.appointment_time %></bdi></div></div><span class="badge badge-dot <%= SB[c.status] %>"><%= t('appointments.statuses.' + c.status) %></span></a></li><% }) %></ul>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="stack">
+    <% if (canManage) { %>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('appointments.actions') %></h2></div>
+      <div class="panel-body stack-sm">
+        <% if (a.status === 'pending') { %><%- statusForm('confirmed', t('appointments.do_confirm'), 'circle-check', 'btn-primary') %><% } %>
+        <% if (!closed && a.status !== 'completed') { %><%- statusForm('completed', t('appointments.do_complete'), 'check', 'btn-secondary') %><% } %>
+        <% if (!closed && a.status !== 'completed') { %><%- statusForm('no_show', t('appointments.do_no_show'), 'user-x', 'btn-secondary', t('appointments.no_show_confirm')) %><% } %>
+        <% if (closed) { %><%- statusForm('confirmed', t('appointments.do_restore'), 'refresh-cw', 'btn-secondary') %><% } %>
+        <% if (a.status !== 'cancelled' && a.payment_status !== 'paid') { %><%- statusForm('cancelled', t('appointments.do_cancel'), 'calendar-x', 'btn-danger-ghost', t('appointments.cancel_confirm')) %><% } %>
+      </div>
+    </div>
+    <% if (!a.doctor_id && doctors.length) { %>
+    <div class="panel accent">
+      <div class="panel-head"><h2><%= t('appointments.assign_doctor') %></h2></div>
+      <form class="panel-body stack-sm" method="post" action="/app/appointments/<%= a.id %>/assign">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <p class="small muted"><%= t('appointments.assign_help') %></p>
+        <select class="select" name="doctor_id" required aria-label="<%= t('common.doctor') %>"><option value=""><%= t('appointments.choose_doctor') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"><%= L(d.full_name, d.full_name_en) %></option><% }) %></select>
+        <button class="btn btn-primary btn-block" type="submit"><%- icon('user-check', 'icon-sm') %><%= t('appointments.assign') %></button>
+      </form>
+    </div>
+    <% } %>
+    <% } %>
+
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('appointments.payment') %></h2></div>
+      <div class="panel-body">
+        <dl class="dl">
+          <dt><%= t('appointments.amount_due') %></dt><dd class="strong"><%= fmt.money(a.amount_due) %></dd>
+          <dt><%= t('common.status') %></dt><dd><span class="badge <%= a.payment_status === 'paid' ? 'badge-success' : 'badge-neutral' %>"><%= t('appointments.payment_statuses.' + a.payment_status) %></span></dd>
+          <% if (invoice) { %><dt><%= t('appointments.invoice') %></dt><dd><% if (can('billing.view')) { %><a class="link" href="/app/billing/<%= invoice.id %>">#<%= invoice.invoice_number %></a><% } else { %>#<%= invoice.invoice_number %><% } %> · <%= label('payment_methods', invoice.payment_method) %></dd><% } %>
+        </dl>
+        <% if (invoice && can('billing.view')) { %><a class="btn btn-secondary btn-sm mt-4" href="/app/billing/<%= invoice.id %>?print=1"><%- icon('printer', 'icon-sm') %><%= t('appointments.print_invoice') %></a><% } else if (!invoice && a.status !== 'cancelled' && can('frontdesk.use') && can('billing.manage') && a.appointment_date === clinicToday) { %><a class="btn btn-secondary btn-sm mt-4" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('appointments.checkout_at_desk') %></a><% } %>
+      </div>
+    </div>
+
+    <% if (canManage) { %>
+    <div class="panel">
+      <div class="panel-body row between wrap">
+        <div><div class="strong small"><%= t('appointments.delete') %></div><div class="tiny muted"><%= invoice ? t('errors.APPOINTMENT_INVOICED') : t('appointments.delete_help') %></div></div>
+        <form method="post" action="/app/appointments/<%= a.id %>/delete" data-confirm="<%= t('appointments.delete_confirm') %>" data-confirm-title="<%= t('appointments.delete') %>" data-confirm-yes="<%= t('common.delete') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button>
+        </form>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<% if (canManage) { var fOld = (typeof old !== 'undefined' && old) || {}; %>
+<dialog class="dialog" id="followup-dialog" aria-labelledby="fu-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'followup-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/appointments/<%= a.id %>/follow-up" novalidate data-booking>
+    <div class="dialog-head"><div><h2 id="fu-title"><%= t('appointments.book_follow_up') %></h2><p class="small muted"><%= a.doctor_id ? t('appointments.follow_up_help', { doctor: L(a.doctor_name, a.doctor_name_en) }) : t('appointments.follow_up_help_nodoc') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../../partials/form-error') %>
+      <% if (a.doctor_id) { %><input type="hidden" value="<%= a.doctor_id %>" data-doctor-field><% } %>
+      <% if (a.service_id) { %><input type="hidden" value="<%= a.service_id %>" data-service-field><% } else if (a.duration_minutes) { %><input type="hidden" value="<%= a.duration_minutes %>" data-duration-input><% } %>
+      <div class="form-grid">
+        <%- include('../../../partials/field', { name: 'appointment_date', id: 'fu-date', label: t('common.date'), type: 'date', required: true, value: followDate, attrs: 'min="' + clinicToday + '" data-date-field' }) %>
+        <div class="field">
+          <span class="label"><%= t('common.type') %></span>
+          <div class="segmented"><% ['in_person', 'online'].forEach(function (k) { %><label><input type="radio" name="appointment_type" value="<%= k %>"<%= (fOld.appointment_type || a.appointment_type) === k ? ' checked' : '' %>><span><%= t('appointments.types.' + k) %></span></label><% }) %></div>
+        </div>
+        <%- include('_slots', { slotId: 'fu-slots', selected: fOld.appointment_time || '', exclude: '' }) %>
+        <%- include('../../../partials/field', { name: 'notes', id: 'fu-notes', label: t('common.notes'), type: 'textarea', cls: 'full', value: '', placeholder: t('appointments.follow_up_note') }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('calendar-check', 'icon-sm') %><%= t('appointments.book') %></button></div>
+  </form>
+</dialog>
+<% } %>

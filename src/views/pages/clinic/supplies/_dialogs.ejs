@@ -1,0 +1,47 @@
+<%
+  var _open = typeof openDialog !== 'undefined' ? openDialog : '';
+  var _action = typeof formAction !== 'undefined' && formAction ? formAction : null;
+  var _old = typeof old !== 'undefined' && old ? old : {};
+  var _from = typeof from !== 'undefined' ? from : '';
+  var _supOpts = suppliers.filter(function (s) { return s.is_active || (typeof item !== 'undefined' && item && item.supplier_id === s.id); }).map(function (s) { return { value: s.id, label: s.name }; });
+%>
+<dialog class="dialog wide" id="item-dialog"<% if (typeof newItem === 'undefined' || newItem) { %> data-new-dialog<% } %> aria-labelledby="item-dialog-title"<% if (_open === 'item-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= _open === 'item-dialog' && _action ? _action : '/app/supplies/items' %>" novalidate>
+    <div class="dialog-head"><h2 id="item-dialog-title" data-dialog-title-target><%= _open === 'item-dialog' && _action && _action !== '/app/supplies/items' ? t('supplies.edit_item') : t('supplies.add_item') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>"><input type="hidden" name="_from" value="<%= _from %>">
+      <% if (_open === 'item-dialog') { %><%- include('../../../partials/form-error') %><% } %>
+      <div class="form-grid">
+        <%- include('../../../partials/field', { name: 'name', label: t('supplies.item_name'), required: true, cls: 'full', placeholder: t('supplies.item_name_ph'), errors: _open === 'item-dialog' ? errors : {} }) %>
+        <%- include('../../../partials/field', { name: 'unit', label: t('supplies.unit'), placeholder: t('supplies.unit_ph'), errors: _open === 'item-dialog' ? errors : {} }) %>
+        <%- include('../../../partials/field', { name: 'supplier_id', label: t('supplies.supplier'), type: 'select', placeholder: t('supplies.no_supplier'), options: _supOpts, errors: _open === 'item-dialog' ? errors : {} }) %>
+        <%- include('../../../partials/field', { name: 'current_stock', label: t('supplies.current_stock'), value: 0, attrs: 'inputmode="decimal" data-default="0"', help: t('supplies.stock_help'), errors: _open === 'item-dialog' ? errors : {} }) %>
+        <%- include('../../../partials/field', { name: 'reorder_level', label: t('supplies.reorder_level'), value: 0, attrs: 'inputmode="decimal" data-default="0"', help: t('supplies.reorder_help'), errors: _open === 'item-dialog' ? errors : {} }) %>
+        <%- include('../../../partials/field', { name: 'unit_cost', label: t('supplies.unit_cost'), value: 0, suffix: currency, attrs: 'inputmode="decimal" data-default="0"', errors: _open === 'item-dialog' ? errors : {} }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="move-dialog" aria-labelledby="move-dialog-title"<% if (_open === 'move-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= _open === 'move-dialog' && _action ? _action : (typeof item !== 'undefined' && item ? '/app/supplies/items/' + item.id + '/move' : '/app/supplies') %>" novalidate>
+    <div class="dialog-head"><h2 id="move-dialog-title"><%= t('supplies.move_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>"><input type="hidden" name="_from" value="<%= _from %>">
+      <% if (_open === 'move-dialog') { %><%- include('../../../partials/form-error') %><% } %>
+      <div class="move-item"><span class="action-icon brand"><%- icon('package') %></span><div class="grow"><input class="plain-out strong" name="_item_label" value="<%= _old._item_label || (typeof item !== 'undefined' && item ? item.name : '') %>" readonly tabindex="-1" aria-label="<%= t('supplies.item') %>"><div class="tiny muted"><%= t('supplies.in_stock_now') %> <input class="plain-out" name="_item_stock" value="<%= _old._item_stock || (typeof item !== 'undefined' && item ? fmt.number(item.current_stock) + ' ' + (item.unit || '') : '') %>" readonly tabindex="-1" aria-label="<%= t('supplies.current_stock') %>"></div></div></div>
+      <div class="field">
+        <span class="label"><%= t('supplies.move_type') %></span>
+        <div class="segmented move-types" role="radiogroup">
+          <% ['in', 'out', 'adjust'].forEach(function (k) { %><label><input type="radio" name="type" value="<%= k %>"<%= (_old.type || 'in') === k ? ' checked' : '' %>><span><%= t('supplies.types.' + k) %></span></label><% }) %>
+        </div>
+        <span class="help" data-move-help><%= t('supplies.move_help.' + (_old.type || 'in')) %></span>
+      </div>
+      <%- include('../../../partials/field', { name: 'quantity', label: t('supplies.quantity'), required: true, attrs: 'inputmode="decimal"', errors: _open === 'move-dialog' ? errors : {} }) %>
+      <%- include('../../../partials/field', { name: 'note', label: t('common.notes'), placeholder: t('supplies.note_ph'), errors: _open === 'move-dialog' ? errors : {} }) %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<script type="application/json" id="move-help-texts"><%- JSON.stringify({ in: t('supplies.move_help.in'), out: t('supplies.move_help.out'), adjust: t('supplies.move_help.adjust') }).replace(/</g, '\\u003c') %></script>

@@ -9,7 +9,8 @@ function cell(v) {
 function send(res, filename, header, rows) {
   const csv = [header.map(cell).join(','), ...rows.map((r) => r.map(cell).join(','))].join('\r\n');
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  // ASCII fallback + RFC 5987 name: raw non-ASCII (e.g. Arabic) in a header throws ERR_INVALID_CHAR.
+  res.setHeader('Content-Disposition', `attachment; filename="${String(filename).replace(/[^\x20-\x7e]+/g, '_').replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
   res.setHeader('Cache-Control', 'private, no-store');
   res.send(`﻿${csv}`);
 }

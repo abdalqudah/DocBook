@@ -1,0 +1,21 @@
+<% var _rows = [['c1', 'w55', 'info', t('site.mock.with_doctor'), '09:30'], ['c2', 'w45', 'warn', t('site.mock.waiting_for') + ' · ' + t('site.mock.minutes', { n: 12 }), '10:00'], ['c3', 'w60', 'warn', t('site.mock.waiting_for') + ' · ' + t('site.mock.minutes', { n: 4 }), '10:15'], ['c4', 'w40', 'ok', t('site.mock.paid'), '08:45']]; %>
+<div class="mock mock-frontdesk">
+  <div class="mock-card">
+    <div class="mock-head">
+      <span class="mock-mark"><%- icon('armchair') %></span>
+      <span class="grow"><strong><%= t('site.mock.waiting') %></strong><span class="mock-sub"><%= fmt.date(today) %></span></span>
+      <span class="mock-count num">4</span>
+    </div>
+    <div class="mock-body tight">
+      <% _rows.forEach(function (r) { %>
+      <div class="mock-queue">
+        <span class="mock-time-tag num" dir="ltr"><%= r[4] %></span>
+        <span class="mock-av <%= r[0] %>"><%- icon('user-round', 'icon-sm') %></span>
+        <span class="grow"><i class="sk <%= r[1] %>"></i><i class="sk w30"></i></span>
+        <span class="mock-pill <%= r[2] %>"><%= r[3] %></span>
+      </div>
+      <% }) %>
+      <div class="mock-actions"><span class="mock-btn ghost"><%- icon('door-open', 'icon-sm') %><%= t('site.mock.checked_in') %></span><span class="mock-btn"><%- icon('receipt', 'icon-sm') %><%= t('site.mock.checkout') %></span></div>
+    </div>
+  </div>
+</div>

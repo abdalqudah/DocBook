@@ -1,0 +1,149 @@
+{
+  "payroll": {
+    "title": "Doctor payroll",
+    "lead": "Monthly pay for each doctor: base salary plus commission on their invoices, with approved bonuses, deductions and advances.",
+    "prev_month": "Previous month", "next_month": "Next month", "this_month": "This month",
+    "empty_title": "No doctors yet", "empty_text": "Add your doctors with their base salary to start calculating monthly pay.", "add_doctor": "Add a doctor",
+    "total_net": "Net payroll", "total_commission": "Commissions", "of_revenue": "on {amount} of invoiced revenue", "base_salaries": "Base salaries",
+    "adjustments_net": "Bonuses {plus} · deductions & advances {minus}", "paid_doctors": "Doctors paid", "paid_amount": "{amount} paid so far", "none_paid": "Nothing marked as paid yet",
+    "pending_title": "Pending approvals", "pending_hint": "Adjustments only count once approved.", "pending_hint_view": "Waiting for the clinic owner or manager to approve.",
+    "requested_by": "Requested by {name}", "approved_by": "approved by {name}", "rejected_by": "rejected by {name}", "no_reason": "No reason given",
+    "approve": "Approve", "reject": "Reject", "reject_confirm": "Reject this adjustment? It will stay on record but won't affect pay.", "needs_other": "Needs another approver",
+    "adj_approved": "Adjustment approved.", "adj_rejected": "Adjustment rejected.", "adj_added": "Adjustment added — it counts once approved.",
+    "sheet_title": "Payroll sheet — {month}", "sheet_hint": "Open a doctor for the full breakdown.", "sheet_note": "Amounts in {currency}. Commission is calculated from the invoices issued to each doctor during the month; figures stay live until the month is marked as paid.",
+    "revenue": "Revenue", "n_patients": "{n} patients", "visits": "Visits", "patients": "Patients", "commission": "Commission", "base_salary": "Base salary", "bonuses": "Bonuses", "deductions": "Deductions", "advances": "Advances",
+    "deductions_advances": "Deductions & advances", "net_pay": "Net pay", "basis": "Commission basis", "rate": "Rate", "no_rule": "No commission rule",
+    "paid_short": "paid {amount}", "paid_differs": "The live figure changed after the month was paid (for example a new invoice).",
+    "status": { "paid": "Paid", "unpaid": "Not paid", "pending": "{n} pending" },
+    "types": { "bonus": "Bonus", "deduction": "Deduction", "advance": "Salary advance" },
+    "approval": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected" },
+    "payslip": "Payslip", "mark_paid": "Mark as paid", "confirm_paid": "Confirm payment", "undo_paid": "Undo payment",
+    "undo_confirm": "Undo the payment for this month? The stored payslip figures are removed and the month becomes editable again.",
+    "marked_paid": "Month marked as paid.", "payment_undone": "Payment undone — the month is editable again.",
+    "paid_banner": "Paid {amount} on {date}", "paid_by": "by {name}", "reference": "Reference", "reference_ph": "Transfer or cheque number (optional)", "method": "Payment method",
+    "live_differs": "Today's live calculation is {amount}; the payslip keeps the figures stored at payment.",
+    "pending_banner": "{n} adjustment(s) waiting for approval", "review": "Review",
+    "breakdown": "Pay breakdown", "live": "Live figures", "formula_label": "Base salary plus commission plus bonuses minus deductions minus advances equals net pay",
+    "effective_rate": "Effective rate", "lines_title": "Commission by invoice", "lines_hint": "Invoices from {from} to {to}",
+    "no_lines": "No invoices this month", "no_lines_text": "Commission appears here once visits for this doctor are paid at the front desk.",
+    "lines_shown": "Showing the first {n} of {total} invoices.", "show_all_lines": "Show all", "invoice": "Invoice", "per_patient_line": "Counted per patient",
+    "per_patient_note": "Per-patient basis: {n} unique patients × {rate} = {total}.",
+    "no_rule_note": "This doctor has no commission rule yet, so commission is zero. Set a rule to start paying commission.",
+    "adjustments": "Adjustments", "adjustments_hint": "Bonuses, deductions and salary advances for this month",
+    "no_adjustments": "No adjustments this month.", "add_adjustment": "Add adjustment", "reason": "Reason", "reason_ph": "e.g. Extra Friday clinic",
+    "adjustment_needs_approval": "A different person with approval rights must approve it before it counts.",
+    "locked_paid": "This month is paid. Undo the payment to add or review adjustments.",
+    "rule_title": "Commission rule", "rule_saved": "Commission rule saved.", "rule_applies": "Applies to every unpaid month.",
+    "basis_help": { "percentage": "Percentage of each invoice amount (0–100).", "fixed_per_visit": "A fixed amount for every paid visit.", "fixed_per_patient": "A fixed amount for each different patient seen in the month." },
+    "overrides": "Per-service rates", "overrides_help": "Optional: a different rate for specific services (matched on the service name on the invoice).",
+    "ov_basis": { "percentage": "% of amount", "fixed_per_visit": "Fixed per visit" },
+    "choose_service": "Choose a service", "add_override": "Add a service rate", "no_services": "Add services first to set per-service rates.",
+    "how_title": "How pay is calculated",
+    "how_1": "Net pay = base salary + commission + approved bonuses − approved deductions − approved advances.",
+    "how_2": "Commission comes from the invoices issued for this doctor in the month. A voided invoice no longer counts.",
+    "how_3": "Marking the month as paid stores the figures for the payslip and locks adjustments until the payment is undone.",
+    "pay_note": "The current figures are stored on the payslip. Pending adjustments must be approved or rejected first.",
+    "draft": "Draft", "draft_note": "Not paid yet — figures may still change.", "license": "Licence no.",
+    "slip_activity": "{visits} visits · {patients} patients · revenue {revenue}", "slip_adjustments": "Approved adjustments",
+    "sign_prepared": "Prepared by", "sign_doctor": "Doctor's signature"
+  },
+  "supplies": {
+    "title": "Supplies",
+    "lead": "Medical and clinic consumables, how much is left, and who supplies them.",
+    "tab_items": "Items", "tab_suppliers": "Suppliers",
+    "add_item": "Add item", "edit_item": "Edit item", "item_saved": "Item saved.", "item_deleted": "Item deleted.", "delete_item": "Delete item",
+    "delete_item_confirm": "Delete “{name}” and its stock history? This can't be undone.", "delete_hint": "Deleting removes the item and all of its movements.",
+    "item": "Item", "item_name": "Item name", "item_name_ph": "e.g. Nitrile gloves (M)", "unit": "Unit", "unit_ph": "box, pack, bottle…",
+    "supplier": "Supplier", "no_supplier": "No supplier", "no_supplier_text": "No supplier linked. Edit the item to choose one.",
+    "current_stock": "Current stock", "reorder_level": "Reorder level", "unit_cost": "Unit cost", "stock_value": "Stock value", "stock_value_hint": "Current stock × unit cost",
+    "stock_help": "Changing it on an existing item is recorded as a stock count.", "reorder_help": "You're alerted when stock falls to this level.",
+    "items_count": "Items", "suppliers_count": "{n} suppliers", "low_stock": "Low stock", "at_or_below": "At or below the reorder level", "out_of_stock": "Out of stock", "zero_left": "Nothing left",
+    "low_banner": "{n} item(s) need restocking", "low_banner_text": "These items are at or below their reorder level.", "show_low": "Show them",
+    "search": "Search items…", "all_suppliers": "All suppliers", "low_only": "Low stock only", "no_low": "All items are above their reorder level",
+    "empty_title": "No supplies yet", "empty_text": "Add the consumables you track — gloves, syringes, dressings, cleaning supplies — with a reorder level.",
+    "stock_level": "Stock level", "bar_label": "{cur} in stock, reorder level {lvl}",
+    "level": { "ok": "In stock", "low": "Low", "out": "Out" },
+    "move": "Stock in / out", "move_title": "Record stock movement", "moved": "Stock updated.", "move_type": "Movement", "quantity": "Quantity",
+    "in_stock_now": "In stock now:", "note_ph": "e.g. Supplier invoice 1043, used in procedure room",
+    "types": { "in": "Received", "out": "Used", "adjust": "Count" },
+    "move_help": { "in": "Adds the quantity to the current stock (restocked from the supplier).", "out": "Subtracts the quantity from the current stock (used or discarded).", "adjust": "Sets the stock to the counted quantity." },
+    "history": "Stock history", "history_hint": "Latest 50 movements", "history_limit": "Only the latest 50 movements are shown.", "no_movements": "No movements yet",
+    "when": "When", "after": "Stock after", "by": "By", "note_opening": "Opening stock", "note_edit": "Corrected when editing the item",
+    "reorder_at": "Reorder at {n}", "item_low": "This item is at or below its reorder level", "item_out": "This item is out of stock",
+    "supplier_notified": "{name} was e-mailed a restock request when stock reached the reorder level (if e-mail is configured).", "reorder_hint": "Add a supplier e-mail to send restock requests automatically.",
+    "no_contact": "No contact details",
+    "add_supplier": "Add supplier", "edit_supplier": "Edit supplier", "supplier_name": "Supplier name", "supplier_saved": "Supplier saved.", "supplier_deleted": "Supplier deleted.",
+    "delete_supplier_confirm": "Delete the supplier “{name}”?", "email_help": "Restock requests are sent here when an item runs low.",
+    "no_suppliers": "No suppliers yet", "no_suppliers_text": "Add the companies you buy from so low-stock items can be reordered quickly."
+  },
+  "errors_ops": {
+    "SUPPLIER_IN_USE": "This supplier is linked to {n} item(s). Move those items to another supplier first."
+  },
+  "help": {
+    "title": "Help center",
+    "lead": "Answers for the clinic team — from the first booking to month-end payroll.",
+    "search_ph": "Search the help center…", "no_results": "No answers match your search.", "no_results_text": "Try another word, or browse the topics.",
+    "topics": "Topics", "go_to": "Open {name}", "roles_heading": "What each role can do", "roles_all": "Everything in the clinic.", "roles_except": "Everything except:",
+    "role_entry": "Opens on", "contact_title": "Still need help?", "contact_text": "Write to us with the clinic name and what you were trying to do — a screenshot helps.",
+    "contact_btn": "E-mail support", "contact_none": "Ask your clinic owner or manager — they can adjust roles, settings and staff logins.",
+    "entries": { "/app": "Dashboard", "/app/my-day": "My day", "/app/front-desk": "Front desk", "/app/billing": "Billing & invoices" },
+    "sections": [
+      { "id": "getting-started", "icon": "rocket", "title": "Getting started", "items": [
+        { "q": "What should I set up first?", "a": "Add your doctors with their working hours and consultation fee, then your services and prices. After that, create logins for your staff so each person signs in with their own account." },
+        { "q": "How do I switch between Arabic and English?", "a": "Use the language button in the top bar. Your choice is remembered on this device. Doctor names and services can have both an Arabic and an English name." },
+        { "q": "Can I use DocBook on my phone?", "a": "Yes. Every screen works in the mobile browser — the bottom bar gives quick access to the calendar, front desk and patients." },
+        { "q": "I manage more than one clinic. Do I need another account?", "a": "No. One login can belong to several clinics. Use the clinic switcher in the menu to move between them; each clinic's data stays completely separate." }
+      ] },
+      { "id": "appointments", "icon": "calendar-days", "title": "Appointments & online booking", "items": [
+        { "q": "How do I book an appointment?", "a": "Open Appointments and choose New appointment. Pick the doctor, service and date — only free times inside the doctor's working hours are offered, so double bookings can't happen." },
+        { "q": "How does online booking work?", "a": "When online booking is turned on, patients book from your clinic's public page. Their requests arrive as pending appointments and you get a notification to confirm them." },
+        { "q": "A doctor is away for a day. What do I do?", "a": "Add a day off on the doctor's profile. That day disappears from the available times, both for staff and for online booking." },
+        { "q": "What is the difference between cancelled and no-show?", "a": "Cancelled means the visit was called off in advance and the time is freed. No-show means the patient did not come; it stays on record for follow-up." }
+      ] },
+      { "id": "front-desk", "icon": "armchair", "title": "Front desk & payments", "items": [
+        { "q": "How does the waiting room work?", "a": "Check patients in when they arrive, call them in when the doctor is ready, and take payment at checkout. The front desk shows who is waiting and for how long." },
+        { "q": "How are discounts recorded?", "a": "At checkout enter the amount the patient actually pays and the discount percentage. The invoice keeps both, so reports show the real amount collected." },
+        { "q": "An invoice was entered by mistake.", "a": "Someone allowed to manage billing can void the invoice. The visit goes back to unpaid and the change is kept in the audit log." },
+        { "q": "Which payment methods are supported?", "a": "Cash, card, bank transfer, insurance and digital wallets. For insurance, choose the insurance company so claims can be followed up." }
+      ] },
+      { "id": "doctors", "icon": "stethoscope", "title": "Doctors & schedules", "items": [
+        { "q": "How do I set a doctor's working hours?", "a": "Edit the doctor and set the hours for each day, with up to two shifts and a break. The slot length decides how far apart appointment times are." },
+        { "q": "Can a doctor have their own login?", "a": "Yes. Create a staff login with the Doctor role and link it to the doctor profile. The doctor then sees only their own schedule and patients." },
+        { "q": "Where is the consultation fee used?", "a": "It is the default price of a visit when no service with its own price is chosen. You can hide it from the public booking page." }
+      ] },
+      { "id": "roles", "icon": "user-cog", "title": "Staff logins & roles", "items": [
+        { "q": "How do I add a staff member?", "a": "Go to Staff & logins, add the person's name and e-mail and pick a role. Each person signs in with their own account and sets their own password — never share one login." },
+        { "q": "Can I change what a role can do?", "a": "The clinic owner can adjust permissions or create custom roles. The built-in roles below are a good starting point for most clinics." },
+        { "q": "Someone left the clinic.", "a": "Disable their login from Staff & logins. They are signed out immediately and their past work stays on record." }
+      ] },
+      { "id": "clinical", "icon": "notebook-pen", "title": "Clinical records & prescriptions", "items": [
+        { "q": "Who can read and write clinical notes?", "a": "Doctors write the notes, diagnosis and prescriptions. Nurses record vital signs and can read the record. Reception and accounting staff don't see clinical notes." },
+        { "q": "How do I write a visit note?", "a": "Open the visit from My day or the calendar. Record vital signs, then the notes in SOAP format (subjective, objective, assessment, plan) and the diagnosis." },
+        { "q": "Can I print a prescription?", "a": "Yes. Prescriptions print on the clinic letterhead with the patient's name, the medicines, dosage, frequency and duration." },
+        { "q": "Where do I see a patient's history?", "a": "The patient's page shows all their visits, notes, prescriptions and invoices in one timeline." }
+      ] },
+      { "id": "payroll", "icon": "wallet", "title": "Doctor payroll", "items": [
+        { "q": "How is a doctor's pay calculated?", "a": "Net pay = base salary + commission + approved bonuses − approved deductions − approved advances. Commission comes from the invoices issued for that doctor during the month." },
+        { "q": "What commission types are there?", "a": "A percentage of each invoice, a fixed amount per visit, or a fixed amount per different patient in the month. You can also set a different rate for specific services." },
+        { "q": "Why can't I approve my own adjustment?", "a": "Bonuses, deductions and advances need a second person to approve them. This protects the clinic and the doctor; the clinic owner is the only exception." },
+        { "q": "What happens when I mark a month as paid?", "a": "The figures of that moment are stored for the payslip and the month is locked. If you need to correct something, undo the payment, fix it and mark it paid again." }
+      ] },
+      { "id": "supplies", "icon": "package", "title": "Supplies", "items": [
+        { "q": "How do I track stock?", "a": "Add each item with its unit and a reorder level. Record restocks as Received, usage as Used, and physical counts as Count — every change is kept in the item's history." },
+        { "q": "How do low-stock alerts work?", "a": "When an item reaches its reorder level, people who can see supplies get a notification. If the supplier has an e-mail address, a restock request is e-mailed to them once." },
+        { "q": "Who can see what supplies are worth?", "a": "The stock value (stock × unit cost) is shown only to staff who can see the clinic's financial figures." }
+      ] },
+      { "id": "security", "icon": "shield-check", "title": "Security & privacy", "items": [
+        { "q": "Who can see patient data?", "a": "Only staff of your clinic, and only what their role allows. Data from different clinics is always kept apart." },
+        { "q": "Is there a record of who changed what?", "a": "Yes. Important actions — edits, deletions, payments, approvals — are written to an audit log that the owner and manager can review." },
+        { "q": "I forgot my password.", "a": "Use “Forgot password” on the sign-in page to receive a reset link by e-mail. The link works once and expires after a short time." },
+        { "q": "How do I sign out other devices?", "a": "From your account security page you can see active sessions and end the ones you don't recognise." }
+      ] },
+      { "id": "export", "icon": "download", "title": "Data export", "items": [
+        { "q": "Can I export my data?", "a": "Lists such as invoices, expenses, payroll and supplies have an Export button that downloads a CSV or Excel file of the current filters." },
+        { "q": "Why don't I see the Export button?", "a": "Exporting needs the data export permission. Ask the clinic owner or manager if your work requires it." },
+        { "q": "Who can back up or delete the clinic's data?", "a": "Only the clinic owner. These actions ask you to type the clinic name to confirm." }
+      ] }
+    ]
+  }
+}

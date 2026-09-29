@@ -34,6 +34,23 @@ const attempt = (fn) => wrap(async (req, res) => {
   res.redirect(to);
 });
 
+// payroll.service.calculate() spreads the payroll figures over its result, so `commission` there is the total (a number)
+// and the per-invoice detail is lost; the detail is re-attached here as `commission` and the total kept on `commissionTotal`.
+async function calcFull(ctx, doctorId, period) {
+  const c = await svc.calculate(ctx, doctorId, period);
+  const detail = await svc.commission(ctx, doctorId, c.range.from, c.range.to);
+  return { ...c, commissionTotal: detail.totalCommission, commission: detail };
+}
+async function sheet(ctx, period) {
+  const docs = await knex('doctors').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id');
+  const rows = [];
+  for (const d of docs) rows.push(await calcFull(ctx, d.id, period)); // eslint-disable-line no-await-in-loop
+  return rows;
+}
+const sumRows = (rows) => rows.reduce((t, r) => ({ base: t.base + r.baseSalary, commission: t.commission + r.commissionTotal, bonuses: t.bonuses + r.bonuses,
+  deductions: t.deductions + r.deductions + r.advances, net: t.net + r.netPayroll, revenue: t.revenue + r.commission.totalRevenue, visits: t.visits + r.commission.visitCount }),
+{ base: 0, commission: 0, bonuses: 0, deductions: 0, net: 0, revenue: 0, visits: 0 });
+
 async function doctorsMap(ctx) {
   const rows = await knex('doctors').where({ business_id: ctx.businessId }).select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'color', 'is_active', 'base_salary');
   return Object.fromEntries(rows.map((d) => [d.id, d]));
@@ -47,11 +64,11 @@ const pendingFor = (ctx, period, doctorId) => knex('payroll_adjustments as a').j
   .orderBy('a.created_at').select('a.*', 'd.full_name', 'd.full_name_en', 'u.name as created_by_name');
 
 async function buildSheet(ctx, period) {
-  const [{ rows, totals }, docs, rules, pending] = await Promise.all([svc.sheet(ctx, period), doctorsMap(ctx), rulesMap(ctx), pendingFor(ctx, period)]);
+  const [rows, docs, rules, pending] = await Promise.all([sheet(ctx, period), doctorsMap(ctx), rulesMap(ctx), pendingFor(ctx, period)]);
   // Inactive doctors are listed only when they have something in this month.
   const list = rows.map((r) => ({ ...r, info: docs[r.doctor.id], rule: rules[r.doctor.id] || null, pending: r.adjustments.filter((a) => a.approvalStatus === 'pending').length }))
     .filter((r) => r.info.is_active || r.commission.visitCount || r.adjustments.length || r.payment);
-  return { rows: list, totals, pending };
+  return { rows: list, totals: sumRows(list), pending };
 }
 
 router.get('/', wrap(async (req, res) => {
@@ -88,7 +105,7 @@ router.post('/adjustments/:adj(\\d+)/review', can('payroll.approve'), attempt(as
 async function renderDoctor(req, res, extra = {}) {
   const period = periodOf(req);
   const id = Number(req.params.id);
-  const calc = await svc.calculate(req.ctx, id, period);
+  const calc = await calcFull(req.ctx, id, period);
   const [info, rule, services] = await Promise.all([
     knex('doctors').where({ id, business_id: req.ctx.businessId }).first(),
     svc.rule(req.ctx, id),
@@ -131,11 +148,11 @@ router.post('/doctors/:id(\\d+)/unpay', can('payroll.approve'), attempt(async (r
 router.get('/doctors/:id(\\d+)/payslip', wrap(async (req, res) => {
   const period = periodOf(req);
   const id = Number(req.params.id);
-  const calc = await svc.calculate(req.ctx, id, period);
+  const calc = await calcFull(req.ctx, id, period);
   const info = await knex('doctors').where({ id, business_id: req.ctx.businessId }).first();
   const p = calc.payment;
   const figures = p ? { base: Number(p.base_salary), commission: Number(p.commission), bonuses: Number(p.bonuses), deductions: Number(p.deductions), advances: Number(p.advances), net: Number(p.net_pay) }
-    : { base: calc.baseSalary, commission: calc.commission, bonuses: calc.bonuses, deductions: calc.deductions, advances: calc.advances, net: calc.netPayroll };
+    : { base: calc.baseSalary, commission: calc.commissionTotal, bonuses: calc.bonuses, deductions: calc.deductions, advances: calc.advances, net: calc.netPayroll };
   const rule = await svc.rule(req.ctx, id);
   res.page('pages/clinic/payroll/payslip', {
     title: `${req.t('payroll.payslip')} · ${info.full_name} · ${period}`, ...nav(period), calc, info, rule, figures, draft: !p, printable: true,

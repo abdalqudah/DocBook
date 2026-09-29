@@ -1,0 +1,30 @@
+<% var d = s.data || {}; %>
+<section class="site-hero lp-hero" id="<%= s.anchor %>">
+  <div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container hero-grid<%= d.visual === 'none' ? ' no-visual' : '' %>">
+    <div class="lp-hero-copy">
+      <% if (L(d.eyebrow)) { %><span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= L(d.eyebrow) %></span><% } %>
+      <h1><%= L(d.title) %><% if (L(d.title_accent)) { %> <span class="hl"><%= L(d.title_accent) %></span><% } %></h1>
+      <% if (L(d.lead)) { %><p class="lead"><%= L(d.lead) %></p><% } %>
+      <div class="cta">
+        <% if (currentUser) { %>
+          <a class="btn btn-primary btn-lg" href="/app"><%= t('site.open_app') %><%- icon('arrow-right', 'flip-rtl') %></a>
+        <% } else { %>
+          <% if (L(d.btn1_label) && d.btn1_href) { %><a class="btn btn-primary btn-lg" href="<%= d.btn1_href %>"><%= L(d.btn1_label) %><%- icon('arrow-right', 'flip-rtl') %></a><% } %>
+          <% if (L(d.btn2_label) && d.btn2_href) { %><a class="btn btn-secondary btn-lg" href="<%= d.btn2_href %>"><%= L(d.btn2_label) %></a><% } %>
+        <% } %>
+      </div>
+      <% if (L(d.note)) { %><p class="lp-note"><%= L(d.note) %></p><% } %>
+      <% if ((d.items || []).length) { %>
+      <div class="hero-proof">
+        <% d.items.forEach(function (p) { if (!L(p.label)) return; %><span><%- icon(p.icon || 'circle-check', 'icon-sm') %><%= L(p.label) %></span><% }) %>
+      </div>
+      <% } %>
+    </div>
+    <% if (d.visual !== 'none') { %>
+    <div class="lp-hero-visual" aria-hidden="true">
+      <%- include('mock-booking', { hero: true }) %>
+    </div>
+    <% } %>
+  </div>
+</section>

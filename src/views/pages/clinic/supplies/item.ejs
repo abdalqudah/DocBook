@@ -1,0 +1,75 @@
+<%
+  var canManage = can('supplies.manage'); var showCost = can('finance.view');
+  var cur = Number(item.current_stock), lvl = Number(item.reorder_level); var scale = Math.max(cur, lvl * 2, 1);
+  var lv = cur <= 0 ? 'out' : (cur <= lvl ? 'low' : 'ok');
+  var noteText = function (n) { return n === 'opening' ? t('supplies.note_opening') : n === 'edit' ? t('supplies.note_edit') : (n || ''); };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/supplies"><%= t('supplies.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= item.name %></div>
+    <div class="row"><span class="action-icon brand item-icon"><%- icon('package') %></span><div><h1><%= item.name %></h1><p><%= [item.unit, supplier ? supplier.name : t('supplies.no_supplier')].filter(Boolean).join(' · ') %></p></div></div>
+  </div>
+  <div class="page-actions">
+    <% if (canManage) { %>
+      <button class="btn btn-secondary" type="button" data-open-dialog="item-dialog" data-action="/app/supplies/items/<%= item.id %>" data-dialog-title="<%= t('supplies.edit_item') %>" data-fill="<%= json({ name: item.name, unit: item.unit, supplier_id: item.supplier_id, current_stock: cur, reorder_level: lvl, unit_cost: Number(item.unit_cost) }) %>"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></button>
+      <button class="btn btn-primary" type="button" data-open-dialog="move-dialog"><%- icon('arrow-up-down', 'icon-sm') %><%= t('supplies.move') %></button>
+    <% } %>
+  </div>
+</div>
+
+<% if (lv !== 'ok') { %>
+<div class="alert alert-<%= lv === 'out' ? 'danger' : 'warning' %> mb-4"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= lv === 'out' ? t('supplies.item_out') : t('supplies.item_low') %></div><div class="small"><%= supplier && supplier.email ? t('supplies.supplier_notified', { name: supplier.name }) : t('supplies.reorder_hint') %></div></div></div>
+<% } %>
+
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('supplies.stock_level') %></h2><% if (lv === 'out') { %><span class="badge badge-danger"><%= t('supplies.level.out') %></span><% } else if (lv === 'low') { %><span class="badge badge-warning"><%= t('supplies.level.low') %></span><% } else { %><span class="badge badge-success"><%= t('supplies.level.ok') %></span><% } %></div>
+      <div class="panel-body stack">
+        <div class="row between wrap"><div><span class="big-num"><%= fmt.number(cur) %></span> <span class="muted"><%= item.unit || '' %></span></div><div class="small muted"><%= t('supplies.reorder_at', { n: fmt.number(lvl) }) %></div></div>
+        <div class="stock-bar lg <%= lv %>" role="img" aria-label="<%= t('supplies.bar_label', { cur: fmt.number(cur), lvl: fmt.number(lvl) }) %>"><span style="width:<%= Math.min(100, cur / scale * 100).toFixed(1) %>%"></span><% if (lvl > 0) { %><i style="inset-inline-start:<%= Math.min(100, lvl / scale * 100).toFixed(1) %>%"></i><% } %></div>
+      </div>
+    </div>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('supplies.history') %></h2><span class="small muted"><%= t('supplies.history_hint') %></span></div>
+      <% if (!movements.length) { %><%- include('../../../partials/empty', { emptyIcon: 'history', emptyTitle: t('supplies.no_movements'), emptyText: '', compact: true }) %><% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('supplies.when') %></th><th><%= t('common.type') %></th><th class="num"><%= t('supplies.quantity') %></th><th class="num"><%= t('supplies.after') %></th><th><%= t('common.notes') %></th><th><%= t('supplies.by') %></th></tr></thead>
+        <tbody><% movements.forEach(function (m) { var q = Number(m.quantity); %><tr>
+          <td class="primary-cell"><span class="strong"><%= when(m.created_at) %></span></td>
+          <td data-label="<%= t('common.type') %>"><span class="badge <%= m.type === 'in' ? 'badge-success' : m.type === 'out' ? 'badge-warning' : 'badge-info' %>"><%- icon(m.type === 'in' ? 'arrow-down' : m.type === 'out' ? 'arrow-up' : 'refresh-cw', 'icon-sm') %><%= t('supplies.types.' + m.type) %></span></td>
+          <td class="num strong" data-label="<%= t('supplies.quantity') %>"><bdi dir="ltr"><%= m.type === 'in' ? '+' : m.type === 'out' ? '−' : '=' %><%= fmt.number(q) %></bdi></td>
+          <td class="num" data-label="<%= t('supplies.after') %>"><%= fmt.number(m.stock_after) %></td>
+          <td data-label="<%= t('common.notes') %>"><span class="small"><%= noteText(m.note) || '—' %></span></td>
+          <td data-label="<%= t('supplies.by') %>"><span class="small muted"><%= m.by_name || '—' %></span></td>
+        </tr><% }) %></tbody>
+      </table></div>
+      <% if (movements.length >= 50) { %><div class="panel-foot tiny muted"><%= t('supplies.history_limit') %></div><% } %>
+      <% } %>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel-head"><h2><%= t('common.details') %></h2></div><div class="panel-body"><dl class="dl">
+      <dt><%= t('supplies.unit') %></dt><dd><%= item.unit || '—' %></dd>
+      <dt><%= t('supplies.reorder_level') %></dt><dd><%= fmt.number(lvl) %></dd>
+      <% if (showCost) { %><dt><%= t('supplies.unit_cost') %></dt><dd><%= fmt.money(item.unit_cost) %></dd><dt><%= t('supplies.stock_value') %></dt><dd><%= fmt.money(cur * Number(item.unit_cost)) %></dd><% } %>
+      <dt><%= t('common.updated_at') %></dt><dd><%= fmt.date(item.updated_at) %></dd>
+    </dl></div></div>
+    <div class="panel"><div class="panel-head"><h2><%= t('supplies.supplier') %></h2></div><div class="panel-body">
+      <% if (!supplier) { %><p class="small muted"><%= t('supplies.no_supplier_text') %></p><% } else { %>
+      <div class="strong"><%= supplier.name %></div>
+      <ul class="contact-list mt-2 small">
+        <% if (supplier.phone) { %><li><%- icon('phone', 'icon-sm') %><a class="link" dir="ltr" href="tel:<%= supplier.phone.replace(/[^0-9+]/g, '') %>"><%= supplier.phone %></a></li><% } %>
+        <% if (supplier.email) { %><li><%- icon('mail', 'icon-sm') %><a class="link" href="mailto:<%= supplier.email %>"><%= supplier.email %></a></li><% } %>
+        <% if (!supplier.phone && !supplier.email) { %><li class="muted"><%= t('supplies.no_contact') %></li><% } %>
+      </ul>
+      <% if (supplier.notes) { %><p class="small muted mt-2"><%= supplier.notes %></p><% } %>
+      <% } %>
+    </div></div>
+    <% if (canManage) { %><div class="panel"><div class="panel-body row between wrap"><span class="small muted"><%= t('supplies.delete_hint') %></span>
+      <form method="post" action="/app/supplies/items/<%= item.id %>/delete" data-confirm="<%= t('supplies.delete_item_confirm', { name: item.name }) %>" data-confirm-title="<%= t('supplies.delete_item') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('supplies.delete_item') %></button></form>
+    </div></div><% } %>
+  </div>
+</div>
+
+<% if (canManage) { %><%- include('_dialogs', { from: 'item', newItem: false }) %><% } %>

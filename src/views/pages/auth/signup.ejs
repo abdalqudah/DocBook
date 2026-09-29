@@ -6,8 +6,8 @@
   <fieldset class="fieldset stack">
     <div class="row-sm"><span class="badge badge-brand">1</span><span class="fieldset-title" style="margin:0"><%= t('auth.section_account') %></span></div>
     <div class="form-grid">
-      <%- include('../../partials/field', { name: 'name', label: t('auth.full_name'), required: true, autocomplete: 'name', cls: 'full' }) %>
-      <%- include('../../partials/field', { name: 'email', label: t('auth.work_email'), type: 'email', required: true, autocomplete: 'email' }) %>
+      <%- include('../../partials/field', { name: 'name', label: t('auth.full_name'), required: true, autocomplete: 'name', cls: 'full', help: t('auth.full_name_help') }) %>
+      <%- include('../../partials/field', { name: 'email', label: t('auth.work_email'), type: 'email', required: true, autocomplete: 'email', attrs: 'inputmode="email" dir="ltr"' }) %>
       <div class="field">
         <label class="label" for="f-password"><%= t('auth.password') %><span class="req">*</span></label>
         <input class="input<%= errors.password ? ' is-invalid' : '' %>" id="f-password" name="password" type="password" required minlength="8" autocomplete="new-password">
@@ -19,13 +19,17 @@
   <fieldset class="fieldset stack">
     <div class="row-sm"><span class="badge badge-brand">2</span><span class="fieldset-title" style="margin:0"><%= t('auth.section_business') %></span></div>
     <div class="form-grid">
-      <%- include('../../partials/field', { name: 'business_name', label: t('auth.business_name'), required: true, cls: 'full', autocomplete: 'organization' }) %>
-      <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: locale === 'ar' ? 'JOD' : 'USD', options: currencies.map(function (c) { return { value: c, label: c + ' — ' + t('currencies.' + c) }; }) }) %>
-      <%- include('../../partials/field', { name: 'industry', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: ['ecommerce','retail','wholesale','services','food','manufacturing','other'].map(function (k) { return { value: k, label: t('industries.' + k) }; }) }) %>
+      <%- include('../../partials/field', { name: 'clinic_name', label: t('auth.business_name'), required: true, cls: 'full', autocomplete: 'organization', placeholder: t('auth.business_name_ph') }) %>
+      <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: specialtyOptions }) %>
+      <%- include('../../partials/field', { name: 'city', label: t('auth.city'), autocomplete: 'address-level2' }) %>
+      <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: 'JOD', options: currencyOptions }) %>
+      <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', required: true, value: 'Asia/Amman', options: zoneOptions }) %>
     </div>
   </fieldset>
-  <label class="check"><input type="checkbox" name="terms" required<%= old.terms ? ' checked' : '' %>><span><%= t('auth.terms_agree') %></span></label>
-  <% if (errors.terms) { %><span class="field-error"><%= errors.terms %></span><% } %>
+  <div>
+    <label class="check"><input type="checkbox" name="terms" required<%= old.terms ? ' checked' : '' %>><span><%= t('auth.terms_agree') %></span></label>
+    <% if (errors.terms) { %><div class="field-error"><%= errors.terms %></div><% } %>
+  </div>
   <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('auth.create_account') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button>
 </form>
 <p class="mt-6 small muted text-center"><%= t('auth.have_account') %> <a class="link" href="/login"><%= t('auth.login') %></a></p>

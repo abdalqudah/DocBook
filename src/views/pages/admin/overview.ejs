@@ -1,0 +1,36 @@
+<div class="page-head">
+  <div><h1><%= t('admin.nav_overview') %></h1><p><%= t('admin.overview_sub') %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/admin/site"><%- icon('layout-template', 'icon-sm') %><%= t('admin.nav_site') %></a></div>
+</div>
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('admin.stat_clinics') %><span class="stat-icon"><%- icon('hospital') %></span></div><div class="stat-value"><%= fmt.number(stats.clinics) %></div><div class="stat-meta"><%= t('admin.stat_clinics_meta', { active: fmt.number(stats.active), suspended: fmt.number(stats.suspended) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('admin.stat_users') %><span class="stat-icon info"><%- icon('users') %></span></div><div class="stat-value"><%= fmt.number(stats.users) %></div><div class="stat-meta"><%= t('admin.stat_users_meta', { n: fmt.number(stats.activeUsers) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('admin.stat_appts') %><span class="stat-icon"><%- icon('calendar-check') %></span></div><div class="stat-value"><%= fmt.number(stats.appts) %></div><div class="stat-meta"><%= t('admin.stat_appts_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('admin.stat_online') %><span class="stat-icon accent"><%- icon('globe') %></span></div><div class="stat-value"><%= fmt.number(stats.online) %></div><div class="stat-meta"><%= t('admin.stat_online_meta', { pct: fmt.pct(stats.appts ? stats.online / stats.appts * 100 : 0) }) %></div></div>
+</div>
+<div class="grid grid-main mt-6">
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('admin.recent_clinics') %></h2><a class="btn btn-ghost btn-sm" href="/admin/clinics"><%= t('common.view_all') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a></div>
+    <div class="panel-body">
+      <% if (!recentClinics.length) { %><%- include('../../partials/empty', { emptyIcon: 'hospital', emptyTitle: t('admin.no_clinics'), compact: true }) %><% } else { %>
+      <ul class="action-list">
+        <% recentClinics.forEach(function (b) { %>
+        <li><a href="/admin/clinics/<%= b.id %>"><span class="action-icon brand"><%- icon('hospital', 'icon-sm') %></span><span class="grow"><span class="strong"><%= b.name %></span><span class="muted small" dir="ltr" style="display:block;text-align:start">/<%= b.slug %></span></span><span class="badge <%= b.status === 'active' ? 'badge-success' : 'badge-danger' %> badge-dot"><%= t('admin.status_' + b.status) %></span><span class="muted small nowrap hide-xs-admin"><%= fmt.date(b.created_at) %></span></a></li>
+        <% }) %>
+      </ul>
+      <% } %>
+    </div>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('admin.recent_activity') %></h2></div>
+    <div class="panel-body">
+      <% if (!activity.length) { %><%- include('../../partials/empty', { emptyIcon: 'history', emptyTitle: t('admin.no_activity'), compact: true }) %><% } else { %>
+      <ul class="feed">
+        <% activity.forEach(function (a) { var nv = {}; try { nv = typeof a.new_values === 'string' ? JSON.parse(a.new_values || '{}') : (a.new_values || {}); } catch (e) {} %>
+        <li><span class="dot"></span><div class="grow"><div class="what"><%= t('admin.act.' + a.action) !== 'admin.act.' + a.action ? t('admin.act.' + a.action) : a.action %><% if (nv && (nv.name || nv.email || nv.action)) { %> <span class="muted">· <%= nv.name || nv.email || nv.action %></span><% } %></div><div class="when"><%= a.user_name || '—' %> · <%= fmt.date(a.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></div></div></li>
+        <% }) %>
+      </ul>
+      <% } %>
+    </div>
+  </section>
+</div>

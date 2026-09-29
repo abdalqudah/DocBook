@@ -1,0 +1,88 @@
+<%
+  var i18n = function (kind) { return kind === 'text' || kind === 'textarea'; };
+  var val = function (obj, key, lang) { var v = obj ? obj[key] : undefined; if (lang) return v && typeof v === 'object' ? (v[lang] || '') : ''; return v === undefined || v === null ? '' : v; };
+  var esc = escapeHtml;
+  var label = function (key) { return t('admin.site.f.' + key); };
+  var iconSelect = function (name, current) {
+    var h = '<span class="icon-pick" data-icon-pick><select class="select" name="' + name + '" data-icon-select aria-label="' + esc(t('admin.site.choose_icon')) + '"><option value="">' + esc(t('admin.site.no_icon')) + '</option>';
+    icons.forEach(function (ic) { h += '<option value="' + ic + '"' + (ic === current ? ' selected' : '') + '>' + ic + '</option>'; });
+    return h + '</select><span class="icon-preview" data-icon-preview>' + (current ? icon(current) : '') + '</span></span>';
+  };
+  var input = function (f, name, obj) {
+    var key = f[0], kind = f[1], opts = f[2];
+    if (i18n(kind)) {
+      var tag = function (lang) {
+        var v = esc(val(obj, key, lang)), n = name + key + '_' + lang;
+        var control = kind === 'textarea'
+          ? '<textarea class="textarea" name="' + n + '" dir="' + (lang === 'ar' ? 'rtl' : 'ltr') + '" lang="' + lang + '" rows="3" aria-label="' + esc(label(key) + ' — ' + t('admin.site.' + (lang === 'ar' ? 'arabic' : 'english'))) + '">' + v + '</textarea>'
+          : '<input class="input" name="' + n + '" value="' + v + '" dir="' + (lang === 'ar' ? 'rtl' : 'ltr') + '" lang="' + lang + '" aria-label="' + esc(label(key) + ' — ' + t('admin.site.' + (lang === 'ar' ? 'arabic' : 'english'))) + '">';
+        return '<span class="bi-row"><span class="bi-tag">' + (lang === 'ar' ? 'ع' : 'EN') + '</span>' + control + '</span>';
+      };
+      return '<div class="bi-lang">' + tag('ar') + tag('en') + '</div>';
+    }
+    var cur = val(obj, key);
+    if (kind === 'icon') return iconSelect(name + key, cur);
+    if (kind === 'select') { var h = '<select class="select" name="' + name + key + '">'; opts.forEach(function (o) { h += '<option value="' + o + '"' + (String(o) === String(cur) ? ' selected' : '') + '>' + esc(t('admin.site.opt.' + o)) + '</option>'; }); return h + '</select>'; }
+    return '<input class="input" name="' + name + key + '" value="' + esc(cur) + '" dir="ltr"' + (kind === 'link' ? ' placeholder="/signup · /#faq · https://…"' : '') + '>' + (kind === 'link' ? '<span class="help">' + esc(t('admin.site.link_help')) + '</span>' : '');
+  };
+  var itemTitle = function (fields, item) {
+    if (!item) return t('admin.site.new_item');
+    var first = fields.find(function (f) { return i18n(f[1]); });
+    var v = first ? item[first[0]] : null;
+    return (v && (v[locale] || v.ar || v.en)) || item.value || item.href || t('admin.site.new_item');
+  };
+  var itemRow = function (list, item) {
+    var h = '<details class="se-item" data-row' + (item ? '' : ' open') + '><summary class="se-item-sum">'
+      + '<span class="se-item-n num" data-row-n></span>' + (item && item.icon ? icon(item.icon, 'icon-sm') : '') + '<span class="grow truncate">' + esc(itemTitle(list.fields, item)) + '</span>'
+      + '<span class="se-item-tools">'
+      + '<button class="btn btn-ghost btn-icon btn-sm" type="button" data-move-row="-1" title="' + esc(t('admin.site.up')) + '" aria-label="' + esc(t('admin.site.up')) + '">' + icon('chevron-up', 'icon-sm') + '</button>'
+      + '<button class="btn btn-ghost btn-icon btn-sm" type="button" data-move-row="1" title="' + esc(t('admin.site.down')) + '" aria-label="' + esc(t('admin.site.down')) + '">' + icon('chevron-down', 'icon-sm') + '</button>'
+      + '<button class="btn btn-danger-ghost btn-icon btn-sm" type="button" data-remove-row title="' + esc(t('admin.site.remove_item')) + '" aria-label="' + esc(t('admin.site.remove_item')) + '">' + icon('trash-2', 'icon-sm') + '</button>'
+      + '</span></summary><div class="se-item-grid">';
+    list.fields.forEach(function (f) { h += '<div class="field' + (i18n(f[1]) ? ' full' : '') + '"><span class="label">' + esc(label(f[0])) + '</span>' + input(f, list.key + '__', item) + '</div>'; });
+    return h + '</div></details>';
+  };
+  var heading = kind === 'section' ? t('admin.site.types.' + s.type) : t('admin.site.' + kind);
+  var help = kind === 'section' ? t('admin.site.type_help.' + s.type) : t('admin.site.' + kind + '_help');
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/admin/site"><%= t('admin.site.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= heading %></h1><p><%= help %></p>
+  </div>
+  <div class="page-actions"><a class="btn btn-secondary" href="<%= kind === 'section' ? '/admin/site/preview#' + s.anchor : '/admin/site/preview' %>" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('admin.site.preview') %></a></div>
+</div>
+
+<form method="post" action="<%= action %>" class="stack se-form" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('admin.site.texts') %></h2><span class="small muted"><%= t('admin.site.bilingual_hint') %></span></div>
+    <div class="panel-body form-grid">
+      <% schema.fields.forEach(function (f) { %>
+        <div class="field<%= i18n(f[1]) ? ' full' : '' %>"><span class="label"><%= label(f[0]) %></span><%- input(f, 'f_', data) %></div>
+      <% }) %>
+      <% if (kind === 'section') { %>
+        <div class="field"><label class="label" for="f-anchor"><%= t('admin.site.anchor') %></label><input class="input" id="f-anchor" name="anchor" value="<%= s.anchor %>" dir="ltr" pattern="[a-z0-9-]*"><span class="help"><%= t('admin.site.anchor_help') %></span></div>
+        <div class="field"><span class="label">&nbsp;</span><label class="check"><input type="checkbox" name="hidden" value="1"<%= s.hidden ? ' checked' : '' %>><span><%= t('admin.site.hidden_check') %></span></label></div>
+      <% } %>
+    </div>
+  </section>
+
+  <% (schema.lists || []).forEach(function (list) { var rows = data[list.key] || []; %>
+  <section class="panel" data-repeater>
+    <div class="panel-head"><h2><%= t('admin.site.lists.' + list.key) %></h2><span class="badge num" data-row-count><%= rows.length %></span></div>
+    <div class="panel-body stack">
+      <div class="stack-sm" data-rows><% rows.forEach(function (it) { %><%- itemRow(list, it) %><% }) %><% if (!rows.length) { %><%- itemRow(list, null) %><% } %></div>
+      <template data-row-template><%- itemRow(list, null) %></template>
+      <div><button class="btn btn-secondary btn-sm" type="button" data-add-row><%- icon('plus', 'icon-sm') %><%= t('admin.site.add_item') %></button></div>
+    </div>
+  </section>
+  <% }) %>
+
+  <div class="se-savebar">
+    <button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save_changes') %></button>
+    <% if (kind === 'section') { %><button class="btn btn-secondary" type="submit" name="stay" value="1"><%= t('admin.site.save_stay') %></button><% } %>
+    <a class="btn btn-ghost" href="/admin/site"><%= t('common.cancel') %></a>
+  </div>
+</form>
+<script type="application/json" id="icon-picker-data"><%- json({ search: t('admin.site.search_icons'), none: t('admin.site.no_icon'), choose: t('admin.site.choose_icon') }) %></script>

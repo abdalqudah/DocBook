@@ -38,10 +38,11 @@ async function resetPassword(token, password, confirm, { ip } = {}) {
   const row = await findReset(token);
   if (!row) throw new AppError('RESET_INVALID', 'This link has expired or was already used.', 404);
   if (String(password || '').length < 8) throw E.validation({ password: 'Password must be at least 8 characters.' });
+  if (String(password).length > 128) throw E.validation({ password: 'Too large.' });
   if (password !== confirm) throw E.validation({ password_confirm: 'Passwords do not match.' });
   const { hashPassword } = require('./auth.service'); // eslint-disable-line global-require
   await knex.transaction(async (trx) => {
-    await trx('users').where({ id: row.user_id }).update({ password_hash: await hashPassword(password), password_changed_at: new Date(), email_verified_at: trx.raw('COALESCE(email_verified_at, NOW())') });
+    await trx('users').where({ id: row.user_id }).update({ password_hash: await hashPassword(password), password_changed_at: new Date(), must_change_password: false, email_verified_at: trx.raw('COALESCE(email_verified_at, NOW())') });
     await trx('password_resets').where({ user_id: row.user_id }).whereNull('used_at').update({ used_at: new Date() });
   });
   await endOtherSessions(row.user_id, null);

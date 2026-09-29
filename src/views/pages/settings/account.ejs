@@ -1,0 +1,43 @@
+<%- include('_head', { heading: t('settings.nav_account'), lead: t('settings.account_lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><div class="row"><span class="avatar avatar-lg"><%= initials(me.name) %></span><div><h2><%= me.name %></h2><div class="panel-sub" dir="ltr" style="text-align:start"><%= me.email %></div></div></div>
+        <% if (membership) { %><span class="badge badge-brand"><%= roleName(membership) %></span><% } %></div>
+      <div class="panel-body">
+        <form method="post" action="/app/settings/account" class="stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('../../partials/form-error') %>
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'name', label: t('auth.full_name'), required: true, value: me.name, autocomplete: 'name' }) %>
+            <div class="field"><span class="label"><%= t('common.email') %></span><input class="input" value="<%= me.email %>" readonly dir="ltr" aria-readonly="true"><span class="help"><%= t('settings.email_ro') %></span></div>
+            <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: me.phone, attrs: 'dir="ltr" inputmode="tel"' }) %>
+            <div class="field"><label class="label" for="f-locale"><%= t('settings.language') %></label>
+              <select class="select" id="f-locale" name="locale"><option value="ar"<%= (old.locale || me.locale) === 'ar' ? ' selected' : '' %>>العربية</option><option value="en"<%= (old.locale || me.locale) === 'en' ? ' selected' : '' %>>English</option></select>
+              <span class="help"><%= t('settings.language_help') %></span></div>
+          </div>
+          <div class="field"><span class="label"><%= t('settings.theme') %></span>
+            <div class="theme-preview">
+              <% [['system', 'monitor'], ['light', 'sun'], ['dark', 'moon']].forEach(function (o) { %>
+              <label class="choice"><input type="radio" name="theme" value="<%= o[0] %>"<%= (old.theme || me.theme || 'system') === o[0] ? ' checked' : '' %>><span class="box"><span class="row-sm"><%- icon(o[1], 'icon-sm') %><span class="name"><%= t('settings.theme_' + o[0]) %></span></span><span class="meta"><%= t('settings.theme_' + o[0] + '_text') %></span></span></label>
+              <% }) %>
+            </div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+        </form>
+      </div>
+    </section>
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('settings.my_clinics') %></h2><div class="panel-sub"><%= t('settings.my_clinics_sub') %></div></div></div>
+      <ul class="action-list">
+        <% memberships.forEach(function (m) { %>
+        <li><div><span class="avatar"><%= initials(m.name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= m.name %></div><div class="small muted"><%= roleName(m) %></div></div>
+          <% if (m.id === business.id) { %><span class="badge badge-success badge-dot"><%= t('settings.current_clinic') %></span><% } else { %>
+          <form method="post" action="/workspaces/switch"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="business_id" value="<%= m.id %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('settings.switch_clinic') %></button></form><% } %></div></li>
+        <% }) %>
+        <li><a href="/workspaces/new"><span class="action-icon"><%- icon('plus', 'icon-sm') %></span><span class="strong"><%= t('workspaces.new_title') %></span></a></li>
+      </ul>
+    </section>
+  </div>
+</div>

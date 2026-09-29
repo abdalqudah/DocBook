@@ -1,0 +1,45 @@
+<% var dlg = typeof openDialog !== 'undefined' && openDialog === 'med-dialog'; var canEdit = true; %>
+<%- include('_head', { heading: t('settings.nav_medications'), lead: t('settings.meds_lead'), actions: '<button class="btn btn-primary" type="button" data-open-dialog="med-dialog" data-reset-form data-action="/app/settings/medications" data-dialog-title="' + escapeHtml(t('settings.med_add')) + '">' + icon('plus', 'icon-sm') + escapeHtml(t('settings.med_add')) + '</button>' }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <section class="panel flush">
+    <% if (!totalAll) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'pill', emptyTitle: t('settings.meds_empty_title'), emptyText: t('settings.meds_empty_text'), emptyAction: '<div class="row-sm wrap" style="justify-content:center"><form method="post" action="/app/settings/medications/starter"><input type="hidden" name="_csrf" value="' + csrfToken + '"><button class="btn btn-primary btn-sm" type="submit">' + escapeHtml(t('settings.med_starter')) + '</button></form><button class="btn btn-secondary btn-sm" type="button" data-open-dialog="med-dialog" data-reset-form data-action="/app/settings/medications">' + escapeHtml(t('settings.med_add')) + '</button></div>' }) %>
+    <% } else { %>
+    <div class="table-toolbar">
+      <form method="get" class="row-sm grow" data-autosubmit role="search">
+        <input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('settings.meds_search') %>" aria-label="<%= t('common.search') %>" style="max-width:320px">
+      </form>
+    </div>
+    <% if (!rows.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'search', emptyTitle: t('table.no_matches'), compact: true, emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/settings/medications">' + escapeHtml(t('table.clear_filters')) + '</a>' }) %>
+    <% } else { %>
+    <div class="table-wrap"><table class="table responsive">
+      <thead><tr><th><%= t('settings.med_name') %></th><th><%= t('common.category') %></th><th><%= t('settings.med_origin') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+      <tbody><% rows.forEach(function (r) { %><tr>
+        <td class="primary-cell"><span class="strong" dir="auto"><%= r.name %></span></td>
+        <td data-label="<%= t('common.category') %>"><%= r.category || '—' %></td>
+        <td data-label="<%= t('settings.med_origin') %>"><%= r.country || '—' %></td>
+        <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= r.is_active ? 'badge-success' : 'badge-neutral' %>"><%= r.is_active ? t('common.active') : t('common.inactive') %></span></td>
+        <td class="actions nowrap"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="med-dialog" data-action="/app/settings/medications/<%= r.id %>" data-dialog-title="<%= t('settings.med_edit') %>" data-fill="<%= json({ name: r.name, category: r.category || '', country: r.country || '', is_active: !!r.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/settings/medications/' + r.id + '/delete', confirmText: t('settings.med_delete_confirm', { name: r.name }) }) %></td>
+      </tr><% }) %></tbody>
+    </table></div>
+    <%- include('../../partials/pagination', { meta: meta }) %>
+    <% } %>
+    <% } %>
+  </section>
+</div>
+<dialog class="dialog" id="med-dialog" data-new-dialog aria-labelledby="med-title"<% if (dlg) { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= dlg && formAction ? formAction : '/app/settings/medications' %>" novalidate>
+    <div class="dialog-head"><h2 id="med-title" data-dialog-title-target><%= t('settings.med_add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>"><% if (dlg) { %><%- include('../../partials/form-error') %><% } %>
+      <%- include('../../partials/field', { name: 'name', label: t('settings.med_name'), required: true, placeholder: t('settings.med_name_ph'), attrs: 'dir="auto"' }) %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'category', label: t('common.category'), placeholder: t('settings.med_cat_ph') }) %>
+        <%- include('../../partials/field', { name: 'country', label: t('settings.med_origin') }) %>
+      </div>
+      <label class="check"><input type="checkbox" name="is_active" value="1"<%= !dlg || old.is_active ? ' checked' : '' %>><span><%= t('settings.med_active') %></span></label>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

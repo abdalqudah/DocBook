@@ -1,0 +1,153 @@
+<%
+  var dlg = typeof openDialog !== 'undefined' ? openDialog : (prefill ? 'add-dialog' : null);
+  var counts = {}; groups.forEach(function (g) { counts[g.key] = members.filter(function (m) { return m.group === g.key; }).length; });
+  var shown = groups.filter(function (g) { return counts[g.key] && (group === 'all' || group === g.key); });
+  var active = members.filter(function (m) { return m.status === 'active'; }).length;
+  var doctorRole = roles.find(function (r) { return r.key === 'doctor'; });
+  var noLogin = doctors.filter(function (d) { return d.is_active && !d.linkedTo && !d.invited; });
+  var ago = function (d) { return d ? fmt.date(d, { dateStyle: 'medium', timeStyle: 'short' }) : t('team.never'); };
+  var docName = function (m) { return locale === 'en' && m.doctor_name_en ? m.doctor_name_en : m.doctor_name; };
+  var addBtn = '<button class="btn btn-primary" type="button" data-open-dialog="add-dialog" data-reset-form>' + icon('user-plus', 'icon-sm') + escapeHtml(t('team.add')) + '</button>';
+%>
+<%- include('_head', { heading: t('settings.nav_team'), lead: t('team.lead'), actions: addBtn }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('_result', { result: result }) %>
+    <% if (!dlg) { %><%- include('../../partials/form-error') %><% } %>
+
+    <div class="stats set-team-stats">
+      <div class="stat"><div class="stat-label"><%= t('team.stat_members') %></div><div class="stat-value"><%= fmt.number(members.length) %></div><div class="stat-meta"><%= t('team.stat_active', { n: fmt.number(active) }) %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('team.g_doctors') %></div><div class="stat-value"><%= fmt.number(counts.doctors) %></div><div class="stat-meta"><%= t('team.stat_profiles', { n: fmt.number(doctors.filter(function (d) { return d.is_active; }).length) }) %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('team.stat_frontline') %></div><div class="stat-value"><%= fmt.number(counts.nurses + counts.reception) %></div><div class="stat-meta"><%= t('team.g_nurses') %> <%= fmt.number(counts.nurses) %> · <%= t('team.g_reception') %> <%= fmt.number(counts.reception) %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('team.stat_pending') %></div><div class="stat-value"><%= fmt.number(invitations.length) %></div><div class="stat-meta"><%= t('team.stat_pending_meta') %></div></div>
+    </div>
+
+    <% if (noLogin.length && doctorRole) { %>
+    <section class="panel set-callout">
+      <div class="panel-body stack-sm">
+        <div class="row-sm"><%- icon('stethoscope', 'icon-sm') %><span class="strong"><%= t('team.no_login_title', { n: noLogin.length }) %></span></div>
+        <div class="small muted"><%= t('team.no_login_text') %></div>
+        <div class="row-sm wrap mt-1">
+          <% noLogin.slice(0, 8).forEach(function (d) { %><button class="btn btn-secondary btn-sm" type="button" data-open-dialog="add-dialog" data-fill="<%= json({ name: d.full_name, role_id: doctorRole.id, doctor_id: d.id, mode: 'password' }) %>" data-dialog-title="<%= t('team.add_for', { name: d.full_name }) %>"><%- icon('user-plus', 'icon-sm') %><%= d.full_name %></button><% }) %>
+        </div>
+      </div>
+    </section>
+    <% } %>
+
+    <nav class="tabs" aria-label="<%= t('team.filter') %>">
+      <a href="/app/settings/team" class="<%= group === 'all' ? 'active' : '' %>"><%= t('common.all') %> <span class="count"><%= members.length %></span></a>
+      <% groups.forEach(function (g) { if (!counts[g.key] && g.key === 'other') return; %><a href="/app/settings/team?group=<%= g.key %>" class="<%= group === g.key ? 'active' : '' %>"><%- icon(g.icon, 'icon-sm') %><%= t('team.g_' + g.key) %> <span class="count"><%= counts[g.key] %></span></a><% }) %>
+    </nav>
+
+    <% if (!shown.length) { %>
+      <section class="panel"><%- include('../../partials/empty', { emptyIcon: 'users', emptyTitle: t('team.empty_group_title'), emptyText: t('team.empty_group_text'), emptyAction: '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="add-dialog" data-reset-form>' + escapeHtml(t('team.add')) + '</button>' }) %></section>
+    <% } %>
+
+    <% shown.forEach(function (g) { var list = members.filter(function (m) { return m.group === g.key; }); %>
+    <section class="panel flush">
+      <div class="panel-head"><div class="row-sm"><span class="set-group-icon"><%- icon(g.icon, 'icon-sm') %></span><h2><%= t('team.g_' + g.key) %></h2><span class="badge badge-neutral"><%= list.length %></span></div></div>
+      <div class="table-wrap"><table class="table responsive set-team-table">
+        <thead><tr><th><%= t('team.member') %></th><th><%= t('team.role') %></th><th><%= t('team.doctor_profile') %></th><th><%= t('common.status') %></th><th><%= t('team.last_login') %></th><th class="actions"></th></tr></thead>
+        <tbody>
+        <% list.forEach(function (m) { %>
+          <tr class="<%= m.status !== 'active' ? 'set-row-off' : '' %>">
+            <td class="primary-cell"><div class="person"><span class="avatar"><%= initials(m.name) %></span><span style="min-width:0"><span class="person-name"><%= m.name %><% if (m.isSelf) { %> <span class="badge badge-brand"><%= t('team.you') %></span><% } %></span><span class="person-sub truncate" style="display:block" dir="ltr"><%= m.email %></span><% if (m.job_title) { %><span class="person-sub" style="display:block"><%= m.job_title %></span><% } %></span></div></td>
+            <td data-label="<%= t('team.role') %>"><span class="badge <%= m.role_key === 'owner' ? 'badge-brand' : 'badge-info' %>"><%= roleName(m) %></span></td>
+            <td data-label="<%= t('team.doctor_profile') %>"><% if (m.doctor_id) { %><a class="link small" href="/app/doctors/<%= m.doctor_id %>"><%= docName(m) %></a><% } else if (m.role_key === 'doctor') { %><span class="badge badge-warning"><%= t('team.not_linked') %></span><% } else { %><span class="muted">—</span><% } %></td>
+            <td data-label="<%= t('common.status') %>">
+              <span class="badge badge-dot <%= m.status === 'active' ? 'badge-success' : 'badge-danger' %>"><%= t('team.status_' + m.status) %></span>
+              <% if (m.must_change_password) { %><div class="tiny muted mt-1"><%- icon('key-round', 'icon-sm') %> <%= t('team.temp_pending') %></div><% } %>
+            </td>
+            <td data-label="<%= t('team.last_login') %>" class="small muted"><%= ago(m.last_login_at) %></td>
+            <td class="actions nowrap">
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" title="<%= t('team.edit') %>" aria-label="<%= t('team.edit') %>" data-open-dialog="edit-dialog" data-action="/app/settings/team/<%= m.id %>" data-dialog-title="<%= t('team.edit_named', { name: m.name }) %>" data-fill="<%= json({ role_id: m.role_id, doctor_id: m.doctor_id || '', job_title: m.job_title || '', status: m.status }) %>" data-self="<%= m.isSelf ? '1' : '' %>"><%- icon('pencil', 'icon-sm') %></button>
+              <% if (!m.isSelf) { %>
+              <form method="post" action="/app/settings/team/<%= m.id %>/reset-link" style="display:inline" data-confirm="<%= t('team.reset_confirm', { name: m.name }) %>" data-confirm-title="<%= t('team.reset_link') %>" data-confirm-yes="<%= t('team.reset_generate') %>" data-confirm-tone="primary">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" title="<%= t('team.reset_link') %>" aria-label="<%= t('team.reset_link') %>"><%- icon('key-round', 'icon-sm') %></button></form>
+              <form method="post" action="/app/settings/team/<%= m.id %>/remove" style="display:inline" data-confirm="<%= t('team.remove_confirm', { name: m.name }) %>" data-confirm-title="<%= t('team.remove') %>" data-confirm-yes="<%= t('team.remove') %>" data-confirm-type="<%= m.name %>">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="confirm_name" value=""><button class="btn btn-danger-ghost btn-icon btn-sm" type="submit" title="<%= t('team.remove') %>" aria-label="<%= t('team.remove') %>"><%- icon('user-x', 'icon-sm') %></button></form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+    </section>
+    <% }) %>
+
+    <% if (invitations.length) { %>
+    <section class="panel flush">
+      <div class="panel-head"><div class="row-sm"><span class="set-group-icon"><%- icon('mail', 'icon-sm') %></span><div><h2><%= t('team.pending') %></h2><div class="panel-sub"><%= t('team.pending_sub') %></div></div></div></div>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('team.member') %></th><th><%= t('team.role') %></th><th><%= t('team.invited_by') %></th><th><%= t('team.expires') %></th><th class="actions"></th></tr></thead>
+        <tbody><% invitations.forEach(function (i) { %><tr>
+          <td class="primary-cell"><div class="person"><span class="avatar"><%- icon('mail', 'icon-sm') %></span><span style="min-width:0"><span class="person-name"><%= i.name || i.email %></span><span class="person-sub truncate" style="display:block" dir="ltr"><%= i.email %></span></span></div></td>
+          <td data-label="<%= t('team.role') %>"><span class="badge badge-info"><%= roleName(i) %></span><% if (i.doctor_name) { %><div class="tiny muted mt-1"><%= i.doctor_name %></div><% } %></td>
+          <td data-label="<%= t('team.invited_by') %>" class="small muted"><%= i.invited_by_name || '—' %></td>
+          <td data-label="<%= t('team.expires') %>" class="small muted"><%= fmt.date(i.expires_at, { dateStyle: 'medium' }) %></td>
+          <td class="actions nowrap">
+            <form method="post" action="/app/settings/team/invitations/<%= i.id %>/renew" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('team.new_link') %></button></form>
+            <form method="post" action="/app/settings/team/invitations/<%= i.id %>/revoke" style="display:inline" data-confirm="<%= t('team.revoke_confirm', { email: i.email }) %>" data-confirm-yes="<%= t('team.revoke') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('team.revoke') %></button></form>
+          </td></tr><% }) %></tbody>
+      </table></div>
+    </section>
+    <% } %>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('team.how_title') %></h2><div class="panel-sub"><%= t('team.how_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="set-how">
+          <div class="set-how-item"><span class="set-step-no">1</span><div><div class="strong small"><%= t('team.how_1') %></div><div class="small muted"><%= t('team.how_1_text') %></div></div></div>
+          <div class="set-how-item"><span class="set-step-no">2</span><div><div class="strong small"><%= t('team.how_2') %></div><div class="small muted"><% if (publicUrl) { %><%= t('team.how_2_text') %> <a class="link" href="/<%= business.slug %>" target="_blank" rel="noopener" dir="ltr"><%= publicUrl.replace(/^https?:\/\//, '') %></a><% } else { %><%= t('team.how_2_noslug') %><% } %></div>
+            <div class="set-role-chips mt-2"><% portalRoles.forEach(function (r) { %><span class="set-role-chip"><%- icon(r.icon, 'icon-sm') %><%= t('roles.' + r.key) %></span><% }) %></div></div></div>
+          <div class="set-how-item"><span class="set-step-no">3</span><div><div class="strong small"><%= t('team.how_3') %></div><div class="small muted"><%= t('team.how_3_text') %></div></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<dialog class="dialog wide" id="add-dialog"<% if (!prefill) { %> data-new-dialog<% } %> aria-labelledby="add-title"<% if (dlg === 'add-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/settings/team" novalidate data-staff-form>
+    <div class="dialog-head"><div><h2 id="add-title" data-dialog-title-target><%= t('team.add') %></h2><p class="small muted mt-1"><%= t('team.add_sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (dlg === 'add-dialog') { %><%- include('../../partials/form-error') %><% } %>
+      <%- include('_staff-form', { old: dlg === 'add-dialog' ? old : {} }) %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('team.create') %></button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="edit-dialog" aria-labelledby="edit-title"<% if (dlg === 'edit-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof editAction !== 'undefined' ? editAction : '/app/settings/team' %>" novalidate data-staff-form>
+    <div class="dialog-head"><h2 id="edit-title" data-dialog-title-target><%= t('team.edit') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (dlg === 'edit-dialog') { %><%- include('../../partials/form-error') %><% } %>
+      <% var eo = dlg === 'edit-dialog' ? old : {}; %>
+      <div class="field">
+        <label class="label" for="e-role_id"><%= t('team.role') %></label>
+        <select class="select" id="e-role_id" name="role_id" data-role-select>
+          <% roles.forEach(function (r) { var locked = r.key === 'owner' && !can('data.manage'); %><option value="<%= r.id %>" data-key="<%= r.key %>"<%= String(eo.role_id) === String(r.id) ? ' selected' : '' %><%= locked ? ' disabled' : '' %>><%= roleName(r) %></option><% }) %>
+        </select>
+      </div>
+      <div class="field" data-doctor-field>
+        <label class="label" for="e-doctor_id"><%= t('team.doctor_profile') %><span class="req" data-doctor-req hidden>*</span></label>
+        <select class="select<%= errors.doctor_id && dlg === 'edit-dialog' ? ' is-invalid' : '' %>" id="e-doctor_id" name="doctor_id">
+          <option value=""><%= t('team.no_doctor') %></option>
+          <% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(eo.doctor_id) === String(d.id) ? ' selected' : '' %>><%= d.full_name %><%= d.linkedTo ? ' — ' + t('team.linked_to', { name: d.linkedTo.name }) : '' %><%= !d.is_active ? ' (' + t('common.inactive') + ')' : '' %></option><% }) %>
+        </select>
+        <% if (errors.doctor_id && dlg === 'edit-dialog') { %><span class="field-error"><%= errors.doctor_id %></span><% } else { %><span class="help"><%= t('team.doctor_help_edit') %></span><% } %>
+      </div>
+      <%- include('../../partials/field', { id: 'e-job_title', name: 'job_title', label: t('team.job_title'), value: eo.job_title, placeholder: t('team.job_title_ph') }) %>
+      <div class="field"><span class="label"><%= t('team.access') %></span>
+        <div class="segmented" role="radiogroup">
+          <label><input type="radio" name="status" value="active"<%= eo.status !== 'disabled' ? ' checked' : '' %>><span><%= t('team.status_active') %></span></label>
+          <label><input type="radio" name="status" value="disabled"<%= eo.status === 'disabled' ? ' checked' : '' %> data-disable-radio><span><%= t('team.status_disabled') %></span></label>
+        </div>
+        <span class="help"><%= t('team.disable_help') %></span>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+  </form>
+</dialog>

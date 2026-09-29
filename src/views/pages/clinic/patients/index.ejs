@@ -1,0 +1,72 @@
+<% var P = '../../../partials/'; var canCreate = can('patients.create'); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_clinic') %></div>
+    <h1><%= t('patients.title') %></h1>
+    <p><%= ctx.ownDoctorId ? t('patients.lead_doctor') : t('patients.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include(P + 'export-menu', { href: '/app/patients/export' }) %>
+    <% if (canCreate) { %><button class="btn btn-primary" type="button" data-open-dialog="patient-dialog" data-reset-form><%- icon('user-plus', 'icon-sm') %><%= t('patients.add') %></button><% } %>
+  </div>
+</div>
+
+<div class="panel flush">
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('patients.search') %>" aria-label="<%= t('common.search') %>"></div>
+    <select class="select" name="insurance" aria-label="<%= t('patients.insurance') %>">
+      <option value="all"><%= t('patients.all_insurance') %></option>
+      <option value="none"<%= query.insurance === 'none' ? ' selected' : '' %>><%= t('patients.no_insurance') %></option>
+      <% insurance.forEach(function (i) { %><option value="<%= i.id %>"<%= String(query.insurance) === String(i.id) ? ' selected' : '' %>><%= i.name %></option><% }) %>
+    </select>
+    <select class="select" name="sort" aria-label="<%= t('patients.sort') %>">
+      <option value="created"><%= t('patients.sort_newest') %></option>
+      <option value="name"<%= query.sort === 'name' ? ' selected' : '' %>><%= t('patients.sort_name') %></option>
+      <option value="last"<%= query.sort === 'last' ? ' selected' : '' %>><%= t('patients.sort_last') %></option>
+    </select>
+    <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/patients"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+  <% if (!rows.length) { %>
+    <% if (filtered) { %>
+      <%- include(P + 'empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: t('patients.no_match_text'), emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/patients">' + t('table.clear_filters') + '</a>' }) %>
+    <% } else { %>
+      <%- include(P + 'empty', { emptyIcon: 'users', emptyTitle: t('patients.empty_title'), emptyText: ctx.ownDoctorId ? t('patients.empty_doctor') : t('patients.empty_text'), emptyAction: canCreate ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="patient-dialog" data-reset-form>' + t('patients.add') + '</button>' : '' }) %>
+    <% } %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('common.patient') %></th><th><%= t('patients.age_gender') %></th><th><%= t('patients.insurance') %></th><th class="num"><%= t('patients.visits') %></th><th><%= t('patients.last_visit') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { var age = ageOf(r.date_of_birth); %>
+        <tr>
+          <td class="primary-cell"><a class="person" href="/app/patients/<%= r.id %>"><span class="avatar"><%= initials(r.full_name) %></span><span style="min-width:0"><span class="person-name" dir="auto"><%= r.full_name %></span><% if (r.allergies) { %> <span class="badge badge-danger" title="<%= t('patients.allergies') %>: <%= r.allergies %>"><%- icon('triangle-alert', 'icon-sm') %><%= t('patients.allergy_short') %></span><% } %><span class="person-sub" style="display:block"><span dir="ltr"><%= r.phone || '—' %></span><% if (r.national_id) { %> · <span dir="ltr"><%= r.national_id %></span><% } %></span></span></a></td>
+          <td data-label="<%= t('patients.age_gender') %>"><%= [age !== null ? t('patients.years', { n: age }) : null, r.gender ? t('patients.genders.' + r.gender) : null].filter(Boolean).join(' · ') || '—' %></td>
+          <td data-label="<%= t('patients.insurance') %>"><% if (r.insurance_name) { %><span class="badge badge-info"><%= r.insurance_name %></span><% if (r.insurance_number) { %> <span class="small muted" dir="ltr"><%= r.insurance_number %></span><% } %><% } else { %><span class="muted">—</span><% } %></td>
+          <td data-label="<%= t('patients.visits') %>" class="num"><%= fmt.number(r.visits) %></td>
+          <td data-label="<%= t('patients.last_visit') %>" class="nowrap"><%= r.last_visit ? fmt.date(r.last_visit) : '—' %><% if (r.next_visit) { %><div class="tiny muted"><%= t('patients.next_on', { date: fmt.date(r.next_visit) }) %></div><% } %></td>
+          <td class="actions">
+            <% if (can('appointments.manage')) { %><a class="btn btn-ghost btn-icon btn-sm" href="/app/appointments/new?patient=<%= r.id %>" aria-label="<%= t('patients.book') %>" title="<%= t('patients.book') %>"><%- icon('calendar-plus', 'icon-sm') %></a><% } %>
+            <a class="btn btn-ghost btn-icon btn-sm" href="/app/patients/<%= r.id %>" aria-label="<%= t('common.open') %>" title="<%= t('common.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include(P + 'pagination', { meta: meta }) %>
+  <% } %>
+</div>
+
+<% if (canCreate) { %>
+<dialog class="dialog wide" id="patient-dialog" data-new-dialog aria-labelledby="patient-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'patient-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients" novalidate>
+    <div class="dialog-head"><div><h2 id="patient-dialog-title"><%= t('patients.add') %></h2><p class="panel-sub"><%= t('patients.add_lead') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include(P + 'form-error') %>
+      <%- include('_form', { p: null }) %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('patients.save') %></button></div>
+  </form>
+</dialog>
+<% } %>

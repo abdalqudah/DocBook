@@ -1,0 +1,15 @@
+<% var d = s.data || {}; %>
+<section class="section lp-features" id="<%= s.anchor %>">
+  <div class="container">
+    <%- include('head', { s: s, center: true }) %>
+    <div class="lp-feature-grid">
+      <% (d.items || []).forEach(function (f) { %>
+      <article class="lp-feature">
+        <% if (f.icon) { %><span class="lp-icon"><%- icon(f.icon) %></span><% } %>
+        <h3><%= L(f.title) %></h3>
+        <% if (L(f.text)) { %><p><%= L(f.text) %></p><% } %>
+      </article>
+      <% }) %>
+    </div>
+  </div>
+</section>

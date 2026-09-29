@@ -1,0 +1,55 @@
+<%- include('_head', { heading: t('settings.nav_security'), lead: t('settings.security_lead') }) %>
+<% var ua = function (s) { s = String(s || ''); var b = /Edg\//.test(s) ? 'Edge' : /OPR\//.test(s) ? 'Opera' : /Chrome\//.test(s) ? 'Chrome' : /Firefox\//.test(s) ? 'Firefox' : /Safari\//.test(s) ? 'Safari' : ''; var o = /Android/.test(s) ? 'Android' : /iPhone|iPad/.test(s) ? 'iOS' : /Windows/.test(s) ? 'Windows' : /Mac OS X/.test(s) ? 'macOS' : /Linux/.test(s) ? 'Linux' : ''; return [b, o].filter(Boolean).join(' · ') || t('settings.unknown_device'); }; %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.change_password') %></h2><div class="panel-sub"><%= me.password_changed_at ? t('settings.pw_last_changed', { date: fmt.date(me.password_changed_at, { dateStyle: 'medium' }) }) : t('settings.pw_sub') %></div></div></div>
+      <div class="panel-body">
+        <form method="post" action="/app/settings/security/password" class="stack" novalidate style="max-width:520px">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="email" name="username" value="<%= me.email %>" autocomplete="username" hidden>
+          <%- include('../../partials/form-error') %>
+          <%- include('../../partials/field', { name: 'current_password', label: t('settings.current_password'), type: 'password', required: true, autocomplete: 'current-password' }) %>
+          <div class="field">
+            <label class="label" for="f-new_password"><%= t('auth.new_password') %><span class="req">*</span></label>
+            <input class="input<%= errors.new_password ? ' is-invalid' : '' %>" id="f-new_password" name="new_password" type="password" required minlength="8" autocomplete="new-password">
+            <div class="pw-meter" data-pw-meter="f-new_password"><span></span></div>
+            <% if (errors.new_password) { %><span class="field-error"><%= errors.new_password %></span><% } else { %><span class="help"><%= t('auth.password_help') %></span><% } %>
+          </div>
+          <%- include('../../partials/field', { name: 'new_password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, autocomplete: 'new-password' }) %>
+          <div class="small muted"><%= t('settings.pw_signout_note') %></div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('settings.change_password') %></button></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('settings.sessions') %></h2><div class="panel-sub"><%= t('settings.sessions_sub') %></div></div>
+        <% if (sessions.length > 1) { %><form method="post" action="/app/settings/security/sessions/revoke-others" data-confirm="<%= t('settings.revoke_others_confirm') %>" data-confirm-yes="<%= t('settings.revoke_others') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('log-out', 'icon-sm') %><%= t('settings.revoke_others') %></button></form><% } %></div>
+      <ul class="action-list">
+        <% sessions.forEach(function (s) { %>
+        <li><div>
+          <span class="action-icon"><%- icon(/Android|iPhone|iPad|Mobile/.test(s.userAgent) ? 'smartphone' : 'monitor', 'icon-sm') %></span>
+          <div class="grow" style="min-width:0"><div class="strong"><%= ua(s.userAgent) %><% if (s.current) { %> <span class="badge badge-success"><%= t('settings.this_device') %></span><% } %></div>
+            <div class="small muted"><span dir="ltr"><%= s.ip || '—' %></span><% if (s.since) { %> · <%= t('settings.signed_in_at', { date: fmt.date(s.since, { dateStyle: 'medium', timeStyle: 'short' }) }) %><% } %></div></div>
+          <% if (!s.current) { %><form method="post" action="/app/settings/security/sessions/revoke" data-confirm="<%= t('settings.revoke_confirm') %>" data-confirm-yes="<%= t('settings.revoke') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="sid" value="<%= s.sid %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('settings.revoke') %></button></form><% } %>
+        </div></li>
+        <% }) %>
+      </ul>
+    </section>
+
+    <% if (recent.length) { %>
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('settings.recent_activity') %></h2><div class="panel-sub"><%= t('settings.recent_activity_sub') %></div></div></div>
+      <ul class="action-list">
+        <% recent.forEach(function (r) { var bad = r.action === 'auth.login_failed'; %>
+        <li><div><span class="action-icon<%= bad ? ' set-bad' : '' %>"><%- icon(bad ? 'circle-x' : r.action === 'auth.login' ? 'door-open' : 'key-round', 'icon-sm') %></span>
+          <div class="grow" style="min-width:0"><div class="strong small"><%= t('settings.act.' + r.action) %></div><div class="tiny muted"><%= ua(r.user_agent) %> · <span dir="ltr"><%= r.ip || '—' %></span></div></div>
+          <span class="small muted nowrap"><%= fmt.date(r.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %></span></div></li>
+        <% }) %>
+      </ul>
+    </section>
+    <% } %>
+  </div>
+</div>

@@ -1,0 +1,192 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var d = info; var c = calc; var cm = c.commission; var paid = c.payment;
+  var canManage = can('payroll.manage'); var canApprove = can('payroll.approve'); var me = currentUser ? currentUser.id : null;
+  var pendingN = c.adjustments.filter(function (a) { return a.approvalStatus === 'pending'; }).length;
+  var rateText = function (basis, rate) { return basis === 'percentage' ? fmt.number(rate) + '%' : fmt.money(rate); };
+  var self = '/app/payroll/doctors/' + d.id + '?period=' + period;
+  var showRuleErr = typeof ruleForm !== 'undefined' && ruleForm; var showAdjErr = typeof adjForm !== 'undefined' && adjForm;
+  var o = showRuleErr && typeof old !== 'undefined' && old ? old : null;
+  var ruleBasis = o ? o.basis : (rule ? rule.basis : 'percentage');
+  var ruleRate = o ? o.rate : (rule ? rule.rate : '');
+  var overrides = o ? [].concat(o.ov_service || []).map(function (s, i) { return { serviceName: s, basis: [].concat(o.ov_basis || [])[i], rate: [].concat(o.ov_rate || [])[i] }; }) : (rule ? rule.serviceOverrides : []);
+  var ovBases = ['percentage', 'fixed_per_visit'];
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/payroll?period=<%= period %>"><%= t('payroll.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= L(d.full_name, d.full_name_en) %></div>
+    <div class="row"><span class="avatar avatar-lg" style="<%= d.color ? 'background:' + d.color + ';color:var(--surface)' : '' %>"><%= initials(L(d.full_name, d.full_name_en)) %></span>
+      <div><h1><%= L(d.full_name, d.full_name_en) %></h1><p><%= fmt.month(period) %> · <%= rule ? t('commission.basis.' + rule.basis) + ' (' + rateText(rule.basis, rule.rate) + ')' : t('payroll.no_rule') %></p></div></div>
+  </div>
+  <div class="page-actions">
+    <%- include('_month') %>
+    <a class="btn btn-secondary" href="/app/payroll/doctors/<%= d.id %>/payslip?period=<%= period %>"><%- icon('file-text', 'icon-sm') %><%= t('payroll.payslip') %></a>
+    <% if (canApprove && !paid) { %><button class="btn btn-primary" type="button" data-open-dialog="pay-dialog"><%- icon('circle-check', 'icon-sm') %><%= t('payroll.mark_paid') %></button><% } %>
+  </div>
+</div>
+
+<% if (paid) { %>
+<div class="alert alert-success mb-4"><%- icon('circle-check') %><div class="grow">
+  <div class="alert-title"><%= t('payroll.paid_banner', { amount: fmt.money(paid.net_pay), date: fmt.date(paid.paid_at) }) %></div>
+  <div class="small"><%= [paid.paid_by_name ? t('payroll.paid_by', { name: paid.paid_by_name }) : null, paid.payment_method ? label('payment_methods', paid.payment_method) : null, paid.reference ? t('payroll.reference') + ': ' + paid.reference : null].filter(Boolean).join(' · ') %></div>
+  <% if (Math.abs(Number(paid.net_pay) - c.netPayroll) >= 0.005) { %><div class="small"><%- icon('triangle-alert', 'icon-sm') %> <%= t('payroll.live_differs', { amount: fmt.money(c.netPayroll) }) %></div><% } %>
+</div>
+<% if (canApprove) { %><form method="post" action="/app/payroll/doctors/<%= d.id %>/unpay" data-confirm="<%= t('payroll.undo_confirm') %>" data-confirm-title="<%= t('payroll.undo_paid') %>" data-confirm-yes="<%= t('payroll.undo_paid') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><input type="hidden" name="_return" value="<%= self %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('history', 'icon-sm') %><%= t('payroll.undo_paid') %></button></form><% } %>
+</div>
+<% } else if (pendingN) { %>
+<div class="alert alert-warning mb-4"><%- icon('clock') %><div class="grow"><div class="alert-title"><%= t('payroll.pending_banner', { n: fmt.number(pendingN) }) %></div><div class="small"><%= t('errors.PENDING_ADJUSTMENTS') %></div></div><a class="btn btn-secondary btn-sm" href="#adjustments"><%= t('payroll.review') %></a></div>
+<% } %>
+
+<div class="panel">
+  <div class="panel-head"><h2><%= t('payroll.breakdown') %></h2><% if (!paid) { %><span class="badge badge-neutral"><%= t('payroll.live') %></span><% } %></div>
+  <div class="panel-body">
+    <div class="pay-formula" aria-label="<%= t('payroll.formula_label') %>">
+      <div class="pf-term"><span class="pf-label"><%= t('payroll.base_salary') %></span><span class="pf-value"><%= fmt.amount(c.baseSalary) %></span></div>
+      <span class="pf-op" aria-hidden="true">+</span>
+      <div class="pf-term"><span class="pf-label"><%= t('payroll.commission') %></span><span class="pf-value"><%= fmt.amount(c.commissionTotal) %></span></div>
+      <span class="pf-op" aria-hidden="true">+</span>
+      <div class="pf-term<%= c.bonuses ? ' pos' : '' %>"><span class="pf-label"><%= t('payroll.bonuses') %></span><span class="pf-value"><%= fmt.amount(c.bonuses) %></span></div>
+      <span class="pf-op" aria-hidden="true">−</span>
+      <div class="pf-term<%= c.deductions ? ' neg' : '' %>"><span class="pf-label"><%= t('payroll.deductions') %></span><span class="pf-value"><%= fmt.amount(c.deductions) %></span></div>
+      <span class="pf-op" aria-hidden="true">−</span>
+      <div class="pf-term<%= c.advances ? ' neg' : '' %>"><span class="pf-label"><%= t('payroll.advances') %></span><span class="pf-value"><%= fmt.amount(c.advances) %></span></div>
+      <span class="pf-op" aria-hidden="true">=</span>
+      <div class="pf-term total"><span class="pf-label"><%= t('payroll.net_pay') %></span><span class="pf-value"><%= fmt.money(c.netPayroll) %></span></div>
+    </div>
+    <div class="summary-strip mt-4">
+      <span class="chip"><%= t('payroll.revenue') %> <strong><%= fmt.money(cm.totalRevenue) %></strong></span>
+      <span class="chip"><%= t('payroll.visits') %> <strong><%= fmt.number(cm.visitCount) %></strong></span>
+      <span class="chip"><%= t('payroll.patients') %> <strong><%= fmt.number(cm.uniquePatientCount) %></strong></span>
+      <% if (cm.totalRevenue > 0) { %><span class="chip"><%= t('payroll.effective_rate') %> <strong><%= fmt.pct(cm.totalCommission / cm.totalRevenue * 100) %></strong></span><% } %>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-main mt-6">
+  <div class="stack">
+    <div class="panel flush" id="lines">
+      <div class="panel-head"><h2><%= t('payroll.lines_title') %></h2><span class="small muted"><%= t('payroll.lines_hint', { from: fmt.date(c.range.from), to: fmt.date(c.range.to) }) %></span></div>
+      <% if (!cm.lines.length) { %>
+        <%- include('../../../partials/empty', { emptyIcon: 'receipt', emptyTitle: t('payroll.no_lines'), emptyText: t('payroll.no_lines_text'), compact: true }) %>
+      <% } else { %>
+      <% var LIMIT = 20; var showAll = query.lines === 'all'; var shown = showAll ? cm.lines : cm.lines.slice(0, LIMIT); var perPatient = rule && rule.basis === 'fixed_per_patient';
+         var basisText = function (l) { if (!c.hasRule) return '—'; if (perPatient && l.basisApplied === 'fixed_per_patient') return t('payroll.per_patient_line'); return t('commission.basis.' + l.basisApplied) + ' · ' + rateText(l.basisApplied, l.rateApplied); }; %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('payroll.invoice') %></th><th><%= t('common.service') %></th><th class="num"><%= t('common.amount') %></th><th class="ops-hide-sm"><%= t('payroll.basis') %></th><th class="num"><%= t('payroll.commission') %></th></tr></thead>
+        <tbody><% shown.forEach(function (l) { %><tr>
+          <td class="primary-cell"><div class="strong"><%= l.patient_name %></div><div class="tiny muted">#<%= l.invoice_number %> · <%= fmt.date(l.created_at) %></div></td>
+          <td data-label="<%= t('common.service') %>"><%= l.serviceName || '—' %></td>
+          <td class="num" data-label="<%= t('common.amount') %>"><%= fmt.amount(l.amount) %></td>
+          <td class="ops-hide-sm" data-label="<%= t('payroll.basis') %>"><span class="small<%= c.hasRule ? '' : ' muted' %>"><%= basisText(l) %></span></td>
+          <td class="num strong" data-label="<%= t('payroll.commission') %>"><div><%= perPatient ? '—' : fmt.amount(l.commission) %><div class="tiny muted ops-show-sm"><%= basisText(l) %></div></div></td>
+        </tr><% }) %></tbody>
+        <tfoot><tr><td colspan="2"><%= t('common.total') %></td><td class="num" data-label="<%= t('payroll.revenue') %>"><%= fmt.amount(cm.totalRevenue) %></td><td class="ops-hide-sm"></td><td class="num" data-label="<%= t('payroll.commission') %>"><%= fmt.amount(cm.totalCommission) %></td></tr></tfoot>
+      </table></div>
+      <% if (!showAll && cm.lines.length > LIMIT) { %><div class="panel-foot row between wrap"><span class="small muted"><%= t('payroll.lines_shown', { n: fmt.number(LIMIT), total: fmt.number(cm.lines.length) }) %></span><a class="btn btn-secondary btn-sm" href="?period=<%= period %>&lines=all#lines"><%= t('payroll.show_all_lines') %></a></div><% } %>
+      <% if (rule && rule.basis === 'fixed_per_patient') { %><div class="panel-foot small muted"><%- icon('info', 'icon-sm') %> <%= t('payroll.per_patient_note', { n: fmt.number(cm.uniquePatientCount), rate: fmt.money(rule.rate), total: fmt.money(cm.totalCommission) }) %></div><% } %>
+      <% if (!c.hasRule) { %><div class="panel-foot small muted"><%- icon('info', 'icon-sm') %> <%= t('payroll.no_rule_note') %></div><% } %>
+      <% } %>
+    </div>
+
+    <div class="panel flush" id="adjustments">
+      <div class="panel-head"><h2><%= t('payroll.adjustments') %></h2><span class="small muted"><%= t('payroll.adjustments_hint') %></span></div>
+      <% if (!c.adjustments.length) { %><div class="panel-body small muted"><%= t('payroll.no_adjustments') %></div><% } else { %>
+      <ul class="action-list">
+        <% c.adjustments.forEach(function (a) { var own = a.created_by === me && !can('data.manage'); var st = a.approvalStatus; %>
+        <li><div class="adj-row">
+          <span class="action-icon <%= a.type === 'bonus' ? 'success' : 'warning' %>"><%- icon(a.type === 'bonus' ? 'trending-up' : (a.type === 'advance' ? 'hand-coins' : 'trending-down')) %></span>
+          <div class="grow">
+            <div class="strong"><%= t('payroll.types.' + a.type) %> <span class="nowrap" dir="ltr"><%= a.type === 'bonus' ? '+' : '−' %><%= fmt.money(a.amount) %></span>
+              <span class="badge badge-dot <%= st === 'approved' ? 'badge-success' : st === 'rejected' ? 'badge-danger' : 'badge-warning' %>"><%= t('payroll.approval.' + st) %></span></div>
+            <div class="small muted"><%= a.reason || t('payroll.no_reason') %></div>
+            <div class="tiny muted"><%= t('payroll.requested_by', { name: a.created_by_name || '—' }) %> · <%= fmt.date(a.created_at) %><% if (st !== 'pending' && a.approved_by_name) { %> · <%= t(st === 'approved' ? 'payroll.approved_by' : 'payroll.rejected_by', { name: a.approved_by_name }) %><% } %></div>
+          </div>
+          <% if (st === 'pending' && canApprove && !paid) { %><div class="row-sm adj-actions">
+            <% if (!own) { %><form method="post" action="/app/payroll/adjustments/<%= a.id %>/review"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= self %>#adjustments"><input type="hidden" name="decision" value="approved"><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('payroll.approve') %></button></form>
+            <% } else { %><span class="tiny muted" title="<%= t('errors.FOUR_EYES') %>"><%- icon('users', 'icon-sm') %> <%= t('payroll.needs_other') %></span><% } %>
+            <form method="post" action="/app/payroll/adjustments/<%= a.id %>/review" data-confirm="<%= t('payroll.reject_confirm') %>" data-confirm-title="<%= t('payroll.reject') %>" data-confirm-yes="<%= t('payroll.reject') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= self %>#adjustments"><input type="hidden" name="decision" value="rejected"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('x', 'icon-sm') %><%= t('payroll.reject') %></button></form>
+          </div><% } %>
+        </div></li>
+        <% }) %>
+      </ul><% } %>
+      <% if (canManage) { %>
+      <div class="panel-foot">
+        <% if (paid) { %><p class="small muted"><%- icon('lock', 'icon-sm') %> <%= t('payroll.locked_paid') %></p><% } else { %>
+        <form method="post" action="/app/payroll/doctors/<%= d.id %>/adjustments?period=<%= period %>" class="stack-sm" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>">
+          <div class="strong small"><%= t('payroll.add_adjustment') %></div>
+          <% if (showAdjErr) { %><%- include('../../../partials/form-error') %><% } %>
+          <div class="form-grid cols-3">
+            <%- include('../../../partials/field', { name: 'type', label: t('common.type'), type: 'select', required: true, value: 'bonus', options: ['bonus', 'deduction', 'advance'].map(function (k) { return { value: k, label: t('payroll.types.' + k) }; }), old: showAdjErr ? old : null, errors: showAdjErr ? errors : {} }) %>
+            <%- include('../../../partials/field', { name: 'amount', label: t('common.amount'), required: true, suffix: currency, attrs: 'inputmode="decimal"', old: showAdjErr ? old : null, errors: showAdjErr ? errors : {} }) %>
+            <%- include('../../../partials/field', { name: 'reason', label: t('payroll.reason'), placeholder: t('payroll.reason_ph'), old: showAdjErr ? old : null, errors: showAdjErr ? errors : {} }) %>
+          </div>
+          <div class="row between wrap"><span class="tiny muted"><%= t('payroll.adjustment_needs_approval') %></span><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('payroll.add_adjustment') %></button></div>
+        </form><% } %>
+      </div><% } %>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel" id="rule">
+      <div class="panel-head"><h2><%= t('payroll.rule_title') %></h2></div>
+      <% if (canManage) { %>
+      <form method="post" action="/app/payroll/doctors/<%= d.id %>/rule?period=<%= period %>" novalidate data-rule-form data-basis-helps="<%= json({ percentage: t('payroll.basis_help.percentage'), fixed_per_visit: t('payroll.basis_help.fixed_per_visit'), fixed_per_patient: t('payroll.basis_help.fixed_per_patient') }) %>">
+        <div class="panel-body stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>">
+          <% if (showRuleErr) { %><%- include('../../../partials/form-error') %><% } %>
+          <%- include('../../../partials/field', { name: 'basis', label: t('payroll.basis'), type: 'select', required: true, value: ruleBasis, options: ['percentage', 'fixed_per_visit', 'fixed_per_patient'].map(function (k) { return { value: k, label: t('commission.basis.' + k) }; }), attrs: 'data-basis-select', old: null, errors: showRuleErr ? errors : {} }) %>
+          <div class="field">
+            <label class="label" for="f-rate"><%= t('payroll.rate') %><span class="req">*</span></label>
+            <div class="input-affix"><input class="input<%= showRuleErr && errors.rate ? ' is-invalid' : '' %>" id="f-rate" name="rate" value="<%= ruleRate %>" inputmode="decimal" required><span class="affix" data-rate-suffix data-pct="%" data-cur="<%= currency %>"><%= ruleBasis === 'percentage' ? '%' : currency %></span></div>
+            <% if (showRuleErr && errors.rate) { %><span class="field-error"><%= errors.rate %></span><% } else { %><span class="help" data-basis-help><%= t('payroll.basis_help.' + ruleBasis) %></span><% } %>
+          </div>
+          <div class="fieldset-title small strong"><%= t('payroll.overrides') %></div>
+          <p class="tiny muted" style="margin-top:-8px"><%= t('payroll.overrides_help') %></p>
+          <div class="ov-list" data-ov-list>
+            <% overrides.concat([{ serviceName: '', basis: 'percentage', rate: '' }]).forEach(function (ov, i) { var blank = i === overrides.length; %>
+            <div class="ov-row"<% if (blank) { %> data-ov-blank<% } %>>
+              <select class="select" name="ov_service" aria-label="<%= t('common.service') %>"><option value=""><%= t('payroll.choose_service') %></option><% serviceOptions.forEach(function (s) { %><option value="<%= s.value %>"<%= s.value === ov.serviceName ? ' selected' : '' %>><%= s.label %></option><% }) %></select>
+              <select class="select" name="ov_basis" aria-label="<%= t('payroll.basis') %>"><% ovBases.forEach(function (b) { %><option value="<%= b %>"<%= b === ov.basis ? ' selected' : '' %>><%= t('payroll.ov_basis.' + b) %></option><% }) %></select>
+              <input class="input" name="ov_rate" value="<%= ov.rate %>" inputmode="decimal" aria-label="<%= t('payroll.rate') %>" placeholder="<%= t('payroll.rate') %>">
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" data-ov-remove aria-label="<%= t('common.delete') %>" title="<%= t('common.delete') %>"><%- icon('x', 'icon-sm') %></button>
+            </div>
+            <% }) %>
+          </div>
+          <% if (!serviceOptions.length) { %><p class="tiny muted"><%= t('payroll.no_services') %></p><% } else { %><button class="btn btn-ghost btn-sm" type="button" data-ov-add hidden><%- icon('plus', 'icon-sm') %><%= t('payroll.add_override') %></button><% } %>
+        </div>
+        <div class="panel-foot row between"><span class="tiny muted"><%= t('payroll.rule_applies') %></span><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button></div>
+      </form>
+      <% } else { %>
+      <div class="panel-body">
+        <% if (!rule) { %><p class="small muted"><%= t('payroll.no_rule_note') %></p><% } else { %>
+        <dl class="dl"><dt><%= t('payroll.basis') %></dt><dd><%= t('commission.basis.' + rule.basis) %></dd><dt><%= t('payroll.rate') %></dt><dd><%= rateText(rule.basis, rule.rate) %></dd>
+        <% rule.serviceOverrides.forEach(function (ov) { %><dt><%= ov.serviceName %></dt><dd><%= t('payroll.ov_basis.' + ov.basis) %> · <%= rateText(ov.basis, ov.rate) %></dd><% }) %></dl><% } %>
+      </div>
+      <% } %>
+    </div>
+    <div class="panel"><div class="panel-body small muted stack-sm">
+      <div class="strong" style="color:var(--text)"><%- icon('lightbulb', 'icon-sm') %> <%= t('payroll.how_title') %></div>
+      <p><%= t('payroll.how_1') %></p><p><%= t('payroll.how_2') %></p><p><%= t('payroll.how_3') %></p>
+    </div></div>
+  </div>
+</div>
+
+<% if (canApprove && !paid) { %>
+<dialog class="dialog" id="pay-dialog" aria-labelledby="pay-title">
+  <form method="post" action="/app/payroll/doctors/<%= d.id %>/pay">
+    <div class="dialog-head"><h2 id="pay-title"><%= t('payroll.mark_paid') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><input type="hidden" name="_return" value="<%= self %>">
+      <% if (pendingN) { %><div class="alert alert-warning"><%- icon('clock') %><div class="grow small"><%= t('errors.PENDING_ADJUSTMENTS') %></div></div><% } %>
+      <div class="pay-summary"><span class="muted"><%= L(d.full_name, d.full_name_en) %> · <%= fmt.month(period) %></span><strong><%= fmt.money(c.netPayroll) %></strong></div>
+      <div class="form-grid">
+        <%- include('../../../partials/field', { name: 'method', label: t('payroll.method'), type: 'select', value: 'bank_transfer', options: methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }) }) %>
+        <%- include('../../../partials/field', { name: 'reference', label: t('payroll.reference'), placeholder: t('payroll.reference_ph') }) %>
+      </div>
+      <p class="tiny muted"><%= t('payroll.pay_note') %></p>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('circle-check', 'icon-sm') %><%= t('payroll.confirm_paid') %></button></div>
+  </form>
+</dialog>
+<% } %>

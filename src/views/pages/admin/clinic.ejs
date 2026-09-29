@@ -1,0 +1,55 @@
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/admin/clinics"><%= t('admin.nav_clinics') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1 class="row-sm"><%= b.name %> <span class="badge <%= b.status === 'active' ? 'badge-success' : 'badge-danger' %> badge-dot"><%= t('admin.status_' + b.status) %></span></h1>
+    <% if (b.name_en) { %><p><%= b.name_en %></p><% } %>
+  </div>
+  <div class="page-actions">
+    <% if (b.status === 'active' && b.slug) { %><a class="btn btn-secondary" href="/<%= b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('admin.open_page') %></a><% } %>
+    <form method="post" action="/admin/clinics/<%= b.id %>/status" data-confirm="<%= t(b.status === 'active' ? 'admin.suspend_confirm' : 'admin.activate_confirm', { name: b.name }) %>" data-confirm-yes="<%= t(b.status === 'active' ? 'admin.suspend' : 'admin.activate') %>"<% if (b.status !== 'active') { %> data-confirm-tone="primary"<% } %>>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="detail"><input type="hidden" name="status" value="<%= b.status === 'active' ? 'suspended' : 'active' %>">
+      <button class="btn <%= b.status === 'active' ? 'btn-danger' : 'btn-primary' %>" type="submit"><%- icon(b.status === 'active' ? 'lock' : 'refresh-cw', 'icon-sm') %><%= t(b.status === 'active' ? 'admin.suspend' : 'admin.activate') %></button>
+    </form>
+  </div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-label"><%= t('admin.col_doctors') %><span class="stat-icon"><%- icon('stethoscope') %></span></div><div class="stat-value"><%= fmt.number(counts.doctors) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('admin.patients') %><span class="stat-icon info"><%- icon('users') %></span></div><div class="stat-value"><%= fmt.number(counts.patients) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('admin.appointments_total') %><span class="stat-icon"><%- icon('calendar-check') %></span></div><div class="stat-value"><%= fmt.number(counts.appts) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('admin.online_total') %><span class="stat-icon accent"><%- icon('globe') %></span></div><div class="stat-value"><%= fmt.number(counts.online) %></div></div>
+</div>
+<div class="grid grid-main mt-6">
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('admin.members') %></h2><span class="badge"><%= members.length %></span></div>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('admin.col_user') %></th><th><%= t('admin.col_status') %></th><th><%= t('admin.col_last_login') %></th></tr></thead>
+        <tbody>
+          <% members.forEach(function (m) { %>
+          <tr>
+            <td class="primary-cell"><div class="person"><span class="avatar"><%= initials(m.name) %></span><div><div class="person-name"><%= m.name %></div><div class="person-sub" dir="ltr" style="text-align:start"><%= m.email %></div></div></div></td>
+            <td data-label="<%= t('admin.col_status') %>"><span class="badge badge-brand"><%= roleName(m) %></span><% if (m.status !== 'active') { %> <span class="badge badge-neutral"><%= t('admin.status_disabled') %></span><% } %></td>
+            <td data-label="<%= t('admin.col_last_login') %>" class="nowrap"><%= m.last_login_at ? fmt.date(m.last_login_at) : t('admin.never') %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('admin.clinic_info') %></h2></div>
+    <div class="panel-body">
+      <dl class="dl">
+        <dt><%= t('admin.col_address') %></dt><dd dir="ltr" style="text-align:start" class="mono">/<%= b.slug || '—' %></dd>
+        <% if (b.specialty) { %><dt><%= t('admin.specialty') %></dt><dd><%= b.specialty %></dd><% } %>
+        <dt><%= t('common.currency') %></dt><dd><%= b.currency %> · <span dir="ltr"><%= b.timezone %></span></dd>
+        <% if (b.city) { %><dt><%= t('portal.address') %></dt><dd><%= [b.city, b.address].filter(Boolean).join(' · ') %></dd><% } %>
+        <% if (b.phone) { %><dt><%= t('common.phone') %></dt><dd dir="ltr" style="text-align:start"><%= b.phone %></dd><% } %>
+        <% if (b.email) { %><dt><%= t('common.email') %></dt><dd dir="ltr" style="text-align:start"><%= b.email %></dd><% } %>
+        <dt><%= t('admin.booking') %></dt><dd><span class="badge <%= b.booking_enabled ? 'badge-success' : 'badge-neutral' %>"><%= t(b.booking_enabled ? 'admin.booking_on' : 'admin.booking_off') %></span></dd>
+        <dt><%= t('admin.onboarding') %></dt><dd><%= t(b.onboarding_completed_at ? 'admin.onboarding_done' : 'admin.onboarding_pending') %></dd>
+        <dt><%= t('admin.col_created') %></dt><dd><%= fmt.date(b.created_at) %></dd>
+      </dl>
+    </div>
+  </section>
+</div>

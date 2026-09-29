@@ -1,0 +1,14 @@
+<% var _p = typeof p !== 'undefined' && p ? p : {}; var P = '../../../partials/'; %>
+<div class="form-grid">
+  <%- include(P + 'field', { name: 'full_name', label: t('patients.full_name'), required: true, cls: 'full', value: _p.full_name, autocomplete: 'off' }) %>
+  <%- include(P + 'field', { name: 'phone', label: t('common.phone'), type: 'tel', value: _p.phone, attrs: 'dir="ltr" inputmode="tel" autocomplete="off"', help: t('patients.phone_help') }) %>
+  <%- include(P + 'field', { name: 'email', label: t('common.email'), type: 'email', value: _p.email, attrs: 'dir="ltr" autocomplete="off"' }) %>
+  <%- include(P + 'field', { name: 'date_of_birth', label: t('patients.dob'), type: 'date', value: _p.date_of_birth, attrs: 'max="' + clinicToday + '"' }) %>
+  <%- include(P + 'field', { name: 'gender', label: t('patients.gender'), type: 'select', value: _p.gender, placeholder: t('patients.not_specified'), options: [{ value: 'male', label: t('patients.genders.male') }, { value: 'female', label: t('patients.genders.female') }] }) %>
+  <%- include(P + 'field', { name: 'national_id', label: t('patients.national_id'), value: _p.national_id, attrs: 'dir="ltr" autocomplete="off"' }) %>
+  <%- include(P + 'field', { name: 'insurance_provider_id', label: t('patients.insurance'), type: 'select', value: _p.insurance_provider_id, placeholder: t('patients.no_insurance'), options: insurance.map(function (i) { return { value: i.id, label: i.name }; }), help: !insurance.length && can('settings.manage') ? t('patients.no_providers_help') : '' }) %>
+  <%- include(P + 'field', { name: 'insurance_number', label: t('patients.insurance_number'), value: _p.insurance_number, attrs: 'dir="ltr" autocomplete="off"' }) %>
+  <%- include(P + 'field', { name: 'allergies', label: t('patients.allergies'), type: 'textarea', cls: 'full', value: _p.allergies, placeholder: t('patients.allergies_ph') }) %>
+  <%- include(P + 'field', { name: 'chronic_conditions', label: t('patients.chronic'), type: 'textarea', cls: 'full', value: _p.chronic_conditions, placeholder: t('patients.chronic_ph') }) %>
+  <%- include(P + 'field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full', value: _p.notes }) %>
+</div>

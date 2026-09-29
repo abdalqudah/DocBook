@@ -1,16 +1,29 @@
 <h1><%= t('auth.invite_title') %></h1>
 <% if (!inv) { %>
   <div class="alert alert-error mt-6"><%- icon('circle-alert') %><div class="grow"><%= t('auth.invite_invalid') %></div></div>
+  <a class="btn btn-secondary btn-block mt-4" href="/login"><%= t('auth.back_to_login') %></a>
 <% } else { %>
   <p class="lead"><%= t('auth.invite_lead', { business: inv.business_name }) %></p>
+  <% if (role) { %><div class="row-sm mt-4"><span class="badge badge-brand"><%= roleName(role) %></span></div><% } %>
   <form class="stack mt-6" method="post" action="/invite/<%= token %>" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <%- include('../../partials/form-error') %>
-    <div class="field"><span class="label"><%= t('common.email') %></span><input class="input" value="<%= inv.email %>" readonly></div>
-    <% if (!currentUser) { %>
-      <%- include('../../partials/field', { name: 'name', label: t('auth.full_name'), required: true, autocomplete: 'name' }) %>
-      <%- include('../../partials/field', { name: 'password', label: t('auth.password'), type: 'password', required: true, autocomplete: 'new-password', help: t('auth.password_help') }) %>
+    <div class="field"><span class="label"><%= t('common.email') %></span><input class="input" value="<%= inv.email %>" readonly dir="ltr"></div>
+    <% if (!currentUser && !hasAccount) { %>
+      <%- include('../../partials/field', { name: 'name', label: t('auth.full_name'), required: true, autocomplete: 'name', value: inv.name || '' }) %>
+      <div class="field">
+        <label class="label" for="f-password"><%= t('auth.password') %><span class="req">*</span></label>
+        <input class="input<%= errors.password ? ' is-invalid' : '' %>" id="f-password" name="password" type="password" required minlength="8" autocomplete="new-password">
+        <div class="pw-meter" data-pw-meter="f-password"><span></span></div>
+        <% if (errors.password) { %><span class="field-error"><%= errors.password %></span><% } else { %><span class="help"><%= t('auth.password_help') %></span><% } %>
+      </div>
+      <%- include('../../partials/field', { name: 'password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, autocomplete: 'new-password' }) %>
+      <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('auth.invite_accept') %></button>
+    <% } else if (!currentUser && hasAccount) { %>
+      <div class="alert alert-info"><%- icon('info') %><div class="grow small"><%= t('auth.invite_have_account') %></div></div>
+      <a class="btn btn-primary btn-lg btn-block" href="/login"><%= t('auth.invite_sign_in') %></a>
+    <% } else { %>
+      <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('auth.invite_accept') %></button>
     <% } %>
-    <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('auth.invite_accept') %></button>
   </form>
 <% } %>

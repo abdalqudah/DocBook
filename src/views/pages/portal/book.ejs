@@ -1,0 +1,124 @@
+<%
+  var err = function (k) { return errors && errors[k] ? '<span class="field-error">' + escapeHtml(errors[k]) + '</span>' : ''; };
+  var oldv = function (k) { return old && old[k] !== undefined ? old[k] : ''; };
+  var selDoctor = doctors.find(function (d) { return d.id === sel.doctor; });
+  var selService = services.find(function (s) { return s.id === sel.service; });
+  var svcLabel = function (s) { return s.name + ' · ' + t('portal.min', { n: s.duration }) + (s.price !== null ? ' · ' + fmt.money(s.price, clinic.currency) : ''); };
+%>
+<section class="book-top">
+  <div class="container book-top-inner">
+    <a class="portal-back small" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= clinic.displayName %></a>
+    <h1><%= t('booking.title') %></h1>
+    <p class="muted"><%= t('booking.sub') %></p>
+  </div>
+</section>
+
+<div class="container book-layout">
+  <form class="book-form" method="post" action="/<%= clinic.slug %>/book" novalidate data-booking data-slots-url="/<%= clinic.slug %>/book/slots">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="hp-field" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+    <%- include('../../partials/form-error') %>
+
+    <section class="book-step">
+      <h2><span class="step-n num">1</span><%= t('booking.choose_doctor') %></h2>
+      <% if (!doctors.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'stethoscope', emptyTitle: t('portal.no_doctors'), compact: true }) %>
+      <% } else { %>
+      <div class="doc-choices">
+        <% doctors.forEach(function (d, i) { %>
+        <label class="doc-choice">
+          <input type="radio" name="doctor_id" value="<%= d.id %>"<%= sel.doctor === d.id ? ' checked' : '' %> required data-name="<%= d.name %>">
+          <span class="doc-av sm<%= d.color ? '' : ' c' + ((i % 4) + 1) %>"<% if (d.color) { %> style="background:<%= d.color %>"<% } %>><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
+          <span class="grow"><strong><%= d.name %></strong><% if (d.specialty) { %><span class="muted small"><%= d.specialty %></span><% } %></span>
+          <% if (d.fee !== null) { %><span class="doc-choice-fee num"><%= fmt.money(d.fee, clinic.currency) %></span><% } %>
+          <span class="doc-choice-check"><%- icon('check', 'icon-sm') %></span>
+        </label>
+        <% }) %>
+      </div>
+      <%- err('doctor_id') %>
+      <% } %>
+    </section>
+
+    <section class="book-step">
+      <h2><span class="step-n num">2</span><%= t('booking.step_service') %></h2>
+      <div class="field">
+        <select class="select<%= errors.service_id ? ' is-invalid' : '' %>" name="service_id" id="f-service" aria-label="<%= t('booking.step_service') %>" data-service-select>
+          <option value=""><%= t('booking.any_service') %></option>
+          <% services.forEach(function (s) { var hidden = s.doctorId && sel.doctor && s.doctorId !== sel.doctor; %>
+          <option value="<%= s.id %>" data-doctor="<%= s.doctorId || '' %>"<%= sel.service === s.id ? ' selected' : '' %><%= hidden ? ' hidden disabled' : '' %>><%= svcLabel(s) %></option>
+          <% }) %>
+        </select>
+        <span class="help"><%= t('booking.service_optional') %></span>
+        <%- err('service_id') %>
+      </div>
+    </section>
+
+    <section class="book-step">
+      <h2><span class="step-n num">3</span><%= t('booking.step_time') %></h2>
+      <div class="book-date-row">
+        <div class="field">
+          <label class="label" for="f-date"><%= t('booking.date') %></label>
+          <input class="input<%= errors.appointment_date ? ' is-invalid' : '' %>" type="date" id="f-date" name="appointment_date" value="<%= sel.date %>" min="<%= minDate %>" max="<%= maxDate %>" required data-date-input>
+          <%- err('appointment_date') %>
+        </div>
+        <button class="btn btn-secondary" type="submit" name="step" value="slots" formnovalidate data-slots-btn><%- icon('refresh-cw', 'icon-sm') %><%= t('booking.show_times') %></button>
+      </div>
+      <div class="field mt-4">
+        <span class="label"><%= t('booking.time') %></span>
+        <div class="time-grid" data-times role="radiogroup" aria-label="<%= t('booking.time') %>">
+          <% slots.forEach(function (tm) { %><label class="time-chip"><input type="radio" name="appointment_time" value="<%= tm %>"<%= sel.time === tm ? ' checked' : '' %> required><span class="num" dir="ltr"><%= tm %></span></label><% }) %>
+        </div>
+        <p class="times-msg muted small" data-times-msg<%= slots.length ? ' hidden' : '' %>><%- icon('info', 'icon-sm') %><span><%= slotsError || (sel.doctor ? t('booking.no_slots') : t('booking.pick_date')) %></span></p>
+        <%- err('appointment_time') %>
+      </div>
+    </section>
+
+    <section class="book-step">
+      <h2><span class="step-n num">4</span><%= t('booking.step_details') %></h2>
+      <div class="form-grid">
+        <div class="field full">
+          <label class="label" for="f-name"><%= t('booking.name') %><span class="req">*</span></label>
+          <input class="input<%= errors.patient_name ? ' is-invalid' : '' %>" id="f-name" name="patient_name" value="<%= oldv('patient_name') %>" required maxlength="120" autocomplete="name">
+          <%- err('patient_name') %>
+        </div>
+        <div class="field">
+          <label class="label" for="f-phone"><%= t('booking.phone') %><span class="req">*</span></label>
+          <input class="input<%= errors.patient_phone ? ' is-invalid' : '' %>" id="f-phone" name="patient_phone" type="tel" value="<%= oldv('patient_phone') %>" required maxlength="40" autocomplete="tel" inputmode="tel" dir="ltr">
+          <% if (errors.patient_phone) { %><%- err('patient_phone') %><% } else { %><span class="help"><%= t('booking.phone_help') %></span><% } %>
+        </div>
+        <div class="field">
+          <label class="label" for="f-email"><%= t('booking.email') %> <span class="muted">(<%= t('common.optional') %>)</span></label>
+          <input class="input<%= errors.patient_email ? ' is-invalid' : '' %>" id="f-email" name="patient_email" type="email" value="<%= oldv('patient_email') %>" maxlength="190" autocomplete="email" dir="ltr">
+          <%- err('patient_email') %>
+        </div>
+        <div class="field full">
+          <label class="label" for="f-notes"><%= t('booking.notes') %></label>
+          <textarea class="textarea" id="f-notes" name="notes" rows="3" maxlength="1000" placeholder="<%= t('booking.notes_ph') %>"><%= oldv('notes') %></textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="book-submit">
+      <button class="btn btn-primary btn-lg" type="submit" name="step" value="book"<%= doctors.length ? '' : ' disabled' %>><%- icon('calendar-check') %><%= t('booking.submit') %></button>
+      <span class="muted small"><%- icon('lock', 'icon-sm') %><%= t('booking.privacy') %></span>
+    </div>
+  </form>
+
+  <aside class="book-summary">
+    <div class="book-summary-card">
+      <div class="book-summary-clinic">
+        <span class="portal-logo xs"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt=""><% } else { %><%= initials(clinic.displayName) %><% } %></span>
+        <span class="grow"><strong><%= clinic.displayName %></strong><% if (clinic.address) { %><span class="muted small"><%= clinic.address %></span><% } %></span>
+      </div>
+      <h2><%= t('booking.summary') %></h2>
+      <dl class="book-sum-list">
+        <div><dt><%- icon('stethoscope', 'icon-sm') %><%= t('common.doctor') %></dt><dd data-sum="doctor"><%= selDoctor ? selDoctor.name : '—' %></dd></div>
+        <div><dt><%- icon('clipboard-plus', 'icon-sm') %><%= t('common.service') %></dt><dd data-sum="service"><%= selService ? selService.name : t('booking.any_service') %></dd></div>
+        <div><dt><%- icon('calendar-days', 'icon-sm') %><%= t('common.date') %></dt><dd data-sum="date"><%= sel.date ? fmt.date(sel.date, { weekday: 'long', day: 'numeric', month: 'long' }) : '—' %></dd></div>
+        <div><dt><%- icon('clock', 'icon-sm') %><%= t('common.time') %></dt><dd data-sum="time" class="num"><%= sel.time || '—' %></dd></div>
+      </dl>
+      <% if (clinic.telHref) { %><a class="book-call small" href="<%= clinic.telHref %>"><%- icon('phone', 'icon-sm') %><span dir="ltr"><%= clinic.phone %></span></a><% } %>
+    </div>
+  </aside>
+</div>
+<script type="application/json" id="booking-data"><%- json({ locale: locale, messages: { loading: t('booking.loading'), none: t('booking.no_slots'), pick: t('booking.pick_date'), error: t('booking.slots_error'), anyService: t('booking.any_service') } }) %></script>

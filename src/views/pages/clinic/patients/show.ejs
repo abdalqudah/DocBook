@@ -1,0 +1,95 @@
+<% var p = patient; var P = '../../../partials/'; var canClinical = can('clinical.view'); var canBilling = can('billing.view');
+   var visitHref = function (id) { return canClinical ? '/app/visits/' + id : '/app/appointments/' + id; };
+   var stamp = function (d) { return d ? fmt.date(d) : '—'; }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><span dir="auto"><%= p.full_name %></span></div>
+    <div class="row rec-head">
+      <span class="avatar avatar-lg"><%= initials(p.full_name) %></span>
+      <div style="min-width:0">
+        <h1 dir="auto"><%= p.full_name %></h1>
+        <div class="rec-meta">
+          <% if (age !== null) { %><span><%= t('patients.years', { n: age }) %></span><% } %>
+          <% if (p.gender) { %><span><%= t('patients.genders.' + p.gender) %></span><% } %>
+          <% if (p.phone) { %><a class="link" href="tel:<%= p.phone.replace(/[^\d+]/g, '') %>" dir="ltr"><%- icon('phone', 'icon-sm') %><%= p.phone %></a><% } %>
+          <% if (p.insurance_name) { %><span class="badge badge-info"><%- icon('shield-check', 'icon-sm') %><%= p.insurance_name %><% if (p.insurance_number) { %> · <span dir="ltr"><%= p.insurance_number %></span><% } %></span><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-actions">
+    <% if (wa) { %><a class="btn btn-secondary" href="https://wa.me/<%= wa %>" target="_blank" rel="noopener noreferrer"><%- icon('message-square', 'icon-sm') %><%= t('patients.whatsapp') %></a><% } %>
+    <% if (can('patients.edit')) { %><a class="btn btn-secondary" href="/app/patients/<%= p.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %>
+    <% if (can('appointments.manage')) { %><a class="btn btn-primary" href="/app/appointments/new?patient=<%= p.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('patients.book') %></a><% } %>
+  </div>
+</div>
+
+<% if (p.allergies || p.chronic_conditions) { %>
+<div class="grid <%= p.allergies && p.chronic_conditions ? 'grid-2' : '' %> mb-4">
+  <% if (p.allergies) { %><div class="alert alert-error" role="note"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('patients.allergies') %></div><div class="rec-pre"><%= p.allergies %></div></div></div><% } %>
+  <% if (p.chronic_conditions) { %><div class="alert alert-warning" role="note"><%- icon('heart-pulse') %><div class="grow"><div class="alert-title"><%= t('patients.chronic') %></div><div class="rec-pre"><%= p.chronic_conditions %></div></div></div><% } %>
+</div>
+<% } %>
+
+<div class="stats rec-kpis<%= canBilling ? "" : " cols-3" %>">
+  <div class="stat"><div class="stat-label"><%= t('patients.visits') %><span class="stat-icon"><%- icon('calendar-check') %></span></div><div class="stat-value"><%= fmt.number(stats.visits) %></div><div class="stat-meta"><%= stats.cancelled ? t('patients.cancelled_n', { n: fmt.number(stats.cancelled) }) : t('patients.completed_visits') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('patients.no_shows') %><span class="stat-icon <%= stats.noShows ? 'danger' : 'info' %>"><%- icon('calendar-x') %></span></div><div class="stat-value"><%= fmt.number(stats.noShows) %></div><div class="stat-meta"><%= stats.visits + stats.noShows ? t('patients.no_show_rate', { pct: fmt.pct(stats.noShows * 100 / (stats.visits + stats.noShows), 0) }) : '—' %></div></div>
+  <% if (canBilling) { %>
+  <div class="stat"><div class="stat-label"><%= t('patients.total_paid') %><span class="stat-icon"><%- icon('receipt') %></span></div><div class="stat-value"><%= fmt.money(stats.totalPaid) %></div><div class="stat-meta"><%= t('patients.invoices_n', { n: fmt.number(stats.invoices) }) %></div></div>
+  <% } %>
+  <div class="stat"><div class="stat-label"><%= t('patients.last_visit') %><span class="stat-icon accent"><%- icon('history') %></span></div><div class="stat-value" style="font-size:18px"><%= stats.lastVisit ? fmt.date(stats.lastVisit) : '—' %></div><div class="stat-meta"><%= upcoming.length ? t('patients.next_on', { date: fmt.date(upcoming[0].appointment_date) }) : t('patients.no_upcoming') %></div></div>
+</div>
+
+<div class="grid grid-main mt-6">
+  <div class="panel flush">
+    <div class="panel-head"><div><h2><%= t('patients.timeline') %></h2><p class="panel-sub"><%= canClinical ? t('patients.timeline_sub') : t('patients.timeline_sub_basic') %></p></div></div>
+    <% if (!timeline.length) { %>
+      <%- include(P + 'empty', { compact: true, emptyIcon: 'history', emptyTitle: t('patients.timeline_empty'), emptyText: t('patients.timeline_empty_text'), emptyAction: can('appointments.manage') ? '<a class="btn btn-primary btn-sm" href="/app/appointments/new?patient=' + p.id + '">' + t('patients.book') + '</a>' : '' }) %>
+    <% } else { %>
+    <ol class="rec-timeline">
+      <% timeline.forEach(function (e) { %>
+        <% if (e.kind === 'visit') { var a = e.appt; %>
+        <li class="tone-<%= statusTone[a.status] || 'neutral' %>">
+          <div class="rec-tl-head">
+            <a class="strong" href="<%= visitHref(a.id) %>"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></a>
+            <span class="badge badge-<%= statusTone[a.status] || 'neutral' %>"><%= t('dashboard.statuses.' + a.status) %></span>
+            <% if (a.appointment_type === 'online') { %><span class="badge"><%- icon('monitor', 'icon-sm') %><%= t('dashboard.online') %></span><% } %>
+            <% if (a.parent_appointment_id) { %><span class="badge badge-brand"><%= t('patients.follow_up') %></span><% } %>
+          </div>
+          <div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') || t('patients.no_doctor') %></div>
+          <% if (e.consultation && (e.consultation.diagnosis || e.consultation.assessment)) { %><div class="rec-tl-line"><%- icon('stethoscope', 'icon-sm') %><span><span class="muted"><%= t('patients.diagnosis') %>:</span> <%= e.consultation.diagnosis || e.consultation.assessment %></span></div><% } %>
+          <% e.prescriptions.forEach(function (rx) { %><div class="rec-tl-line"><%- icon('pill', 'icon-sm') %><a class="link" href="/app/visits/<%= a.id %>/prescriptions/<%= rx.id %>"><%= t('patients.prescription') %></a><span class="muted"><%= rx.items.map(function (i) { return i.medicationName; }).join('، ') %></span></div><% }) %>
+          <% if (e.invoice) { %><div class="rec-tl-line"><%- icon('receipt', 'icon-sm') %><a class="link" href="/app/billing/<%= e.invoice.id %>"><%= t('billing.invoice_no', { n: e.invoice.invoice_number }) %></a><span class="muted"><%= fmt.money(e.invoice.amount) %> · <%= label('payment_methods', e.invoice.payment_method) %></span></div>
+          <% } else if (canBilling && a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= clinicToday) { %><div class="rec-tl-line"><%- icon('circle-alert', 'icon-sm') %><span class="badge badge-warning"><%= t('billing.unpaid') %></span></div><% } %>
+        </li>
+        <% } else if (e.kind === 'invoice') { var inv = e.row; %>
+        <li class="tone-info"><div class="rec-tl-head"><a class="strong" href="/app/billing/<%= inv.id %>"><%= t('billing.invoice_no', { n: inv.invoice_number }) %></a><span class="small muted"><%= stamp(inv.created_at) %></span></div><div class="small muted"><%= [inv.doctor_name, inv.service_name].filter(Boolean).join(' · ') %> · <%= fmt.money(inv.amount) %></div></li>
+        <% } else if (e.kind === 'prescription') { var rx = e.row; %>
+        <li class="tone-brand"><div class="rec-tl-head"><a class="strong" href="/app/visits/<%= rx.appointment_id %>/prescriptions/<%= rx.id %>"><%= t('patients.prescription') %></a><span class="small muted"><%= stamp(rx.created_at) %></span></div><div class="small muted"><%= rx.items.map(function (i) { return i.medicationName; }).join('، ') %></div></li>
+        <% } else if (e.kind === 'diagnosis') { var c = e.row; %>
+        <li class="tone-brand"><div class="rec-tl-head"><span class="strong"><%= t('patients.diagnosis') %></span><span class="small muted"><%= stamp(c.created_at) %></span></div><div class="small"><%= c.diagnosis %></div></li>
+        <% } %>
+      <% }) %>
+    </ol>
+    <% } %>
+  </div>
+
+  <div class="stack">
+    <% if (upcoming.length) { %>
+    <div class="panel flush"><div class="panel-head"><h2><%= t('patients.upcoming') %></h2></div>
+      <ul class="action-list"><% upcoming.slice(0, 4).forEach(function (a) { %><li><a href="<%= can('appointments.view') ? '/app/appointments/' + a.id : visitHref(a.id) %>"><span class="action-icon brand"><%- icon('calendar-days') %></span><div class="grow"><div class="strong"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></div><div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') %></div></div><span class="badge badge-<%= statusTone[a.status] %>"><%= t('dashboard.statuses.' + a.status) %></span></a></li><% }) %></ul>
+    </div>
+    <% } %>
+    <% if (latestDiagnosis) { %><div class="panel"><div class="panel-body"><div class="small muted strong"><%= t('patients.latest_diagnosis') %></div><div class="mt-1"><%= latestDiagnosis %></div></div></div><% } %>
+    <div class="panel"><div class="panel-head"><h2><%= t('patients.details') %></h2></div><div class="panel-body"><dl class="dl rec-dl-narrow">
+      <dt><%= t('patients.dob') %></dt><dd><%= p.date_of_birth ? fmt.date(p.date_of_birth) : '—' %></dd>
+      <dt><%= t('patients.national_id') %></dt><dd><span dir="ltr"><%= p.national_id || '—' %></span></dd>
+      <dt><%= t('common.email') %></dt><dd><% if (p.email) { %><a class="link" href="mailto:<%= p.email %>"><%= p.email %></a><% } else { %>—<% } %></dd>
+      <dt><%= t('patients.insurance') %></dt><dd><%= p.insurance_name || t('patients.no_insurance') %><% if (p.insurance_number) { %> · <span dir="ltr"><%= p.insurance_number %></span><% } %></dd>
+      <dt><%= t('common.notes') %></dt><dd class="rec-pre"><%= p.notes || '—' %></dd>
+      <dt><%= t('patients.registered') %></dt><dd><%= fmt.date(p.created_at) %></dd>
+    </dl></div>
+    <% if (can('patients.delete')) { %><div class="panel-foot"><form method="post" action="/app/patients/<%= p.id %>/delete" data-confirm="<%= t('patients.delete_confirm') %>" data-confirm-title="<%= t('patients.delete') %>" data-confirm-yes="<%= t('common.delete') %>" data-confirm-type="<%= p.full_name %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('patients.delete') %></button></form></div><% } %>
+    </div>
+  </div>
+</div>

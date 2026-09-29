@@ -1,0 +1,15 @@
+<% var d = s.data || {}; %>
+<section class="section lp-roles" id="<%= s.anchor %>">
+  <div class="container">
+    <%- include('head', { s: s, center: true }) %>
+    <div class="lp-role-grid">
+      <% (d.items || []).forEach(function (r) { %>
+      <article class="lp-role">
+        <span class="lp-role-icon"><%- icon(r.icon || 'user') %></span>
+        <h3><%= L(r.title) %></h3>
+        <% if (L(r.text)) { %><p><%= L(r.text) %></p><% } %>
+      </article>
+      <% }) %>
+    </div>
+  </div>
+</section>

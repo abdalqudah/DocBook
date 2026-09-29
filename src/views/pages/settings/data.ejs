@@ -1,0 +1,70 @@
+<% var fmtVal = function (v) { if (v === null || v === undefined || v === '') return '—'; if (typeof v === 'object') v = JSON.stringify(v); v = String(v); return v.length > 80 ? v.slice(0, 80) + '…' : v; }; %>
+<%- include('_head', { heading: t('settings.nav_data'), lead: t('settings.data_lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <% if (typeof openDialog === 'undefined') { %><%- include('../../partials/form-error') %><% } %>
+    <% if (can('data.export')) { %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.export_title') %></h2><div class="panel-sub"><%= t('settings.export_sub') %></div></div>
+        <a class="btn btn-primary" href="/app/settings/data/export" download><%- icon('file-spreadsheet', 'icon-sm') %><%= t('settings.export_btn') %></a></div>
+      <div class="panel-body">
+        <div class="set-export-grid">
+          <% ['patients', 'appointments', 'invoices', 'doctors', 'services', 'expenses'].forEach(function (k) { %>
+          <div class="set-export-item"><span class="small muted"><%= t('settings.sheet_' + k) %></span><span class="strong"><%= fmt.number(counts[k] || 0) %></span></div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+    <% } %>
+
+    <% if (log) { %>
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('settings.audit_title') %></h2><div class="panel-sub"><%= t('settings.audit_sub') %></div></div></div>
+      <form method="get" class="table-toolbar set-audit-filters" data-autosubmit>
+        <select class="select" name="user" aria-label="<%= t('settings.audit_user') %>"><option value=""><%= t('settings.audit_all_users') %></option><% log.users.forEach(function (u) { %><option value="<%= u.id %>"<%= String(query.user) === String(u.id) ? ' selected' : '' %>><%= u.name %></option><% }) %></select>
+        <select class="select" name="action" aria-label="<%= t('settings.audit_area') %>"><option value=""><%= t('settings.audit_all_areas') %></option><% log.prefixes.forEach(function (p) { %><option value="<%= p %>"<%= query.action === p ? ' selected' : '' %>><%= log.entityLabel(p) %></option><% }) %></select>
+        <label class="row-sm small"><span class="muted"><%= t('common.from') %></span><input class="input" type="date" name="from" value="<%= query.from || '' %>"></label>
+        <label class="row-sm small"><span class="muted"><%= t('common.to') %></span><input class="input" type="date" name="to" value="<%= query.to || '' %>"></label>
+        <% if (log.filtered) { %><a class="btn btn-ghost btn-sm" href="/app/settings/data"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+        <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+      </form>
+      <% if (!log.rows.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'history', emptyTitle: log.filtered ? t('table.no_matches') : t('settings.audit_empty'), compact: true }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive set-audit">
+        <thead><tr><th><%= t('settings.audit_when') %></th><th><%= t('settings.audit_user') %></th><th><%= t('settings.audit_action') %></th><th><%= t('settings.audit_details') %></th><th><%= t('settings.audit_ip') %></th></tr></thead>
+        <tbody><% log.rows.forEach(function (r) { var keys = Object.keys(r.newV || r.oldV || {}); %><tr>
+          <td class="nowrap small" data-label="<%= t('settings.audit_when') %>"><%= fmt.date(r.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %></td>
+          <td data-label="<%= t('settings.audit_user') %>"><%= r.user_name || t('settings.audit_system') %></td>
+          <td class="primary-cell"><div class="strong small"><%= r.label %></div><% if (r.entity_type) { %><div class="tiny muted"><%= log.entityLabel(r.entity_type) %><%= r.entity_id ? ' #' + r.entity_id : '' %></div><% } %></td>
+          <td data-label="<%= t('settings.audit_details') %>" class="small">
+            <% if (keys.length) { %><details class="set-audit-details"><summary><%= t('settings.audit_fields', { n: keys.length }) %></summary>
+              <dl class="set-kv"><% keys.slice(0, 12).forEach(function (k) { var o = r.oldV && r.oldV[k]; var n = r.newV && r.newV[k]; %><dt><%= k %></dt><dd><% if (r.oldV && r.newV && k in r.oldV) { %><span class="muted"><%= fmtVal(o) %></span> → <% } %><%= fmtVal(r.newV ? n : o) %></dd><% }) %></dl>
+            </details><% } else { %><span class="muted">—</span><% } %>
+          </td>
+          <td class="small muted" data-label="<%= t('settings.audit_ip') %>" dir="ltr"><%= r.ip || '—' %></td>
+        </tr><% }) %></tbody>
+      </table></div>
+      <%- include('../../partials/pagination', { meta: log.meta }) %>
+      <% } %>
+    </section>
+    <% } %>
+
+    <% if (can('data.manage')) { %>
+    <section class="panel set-danger">
+      <div class="panel-head"><div><h2><%= t('settings.danger_title') %></h2><div class="panel-sub"><%= t('settings.danger_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <% if (typeof openDialog !== 'undefined' && openDialog === 'delete') { %><%- include('../../partials/form-error') %><% } %>
+        <div class="row between wrap">
+          <div class="small grow" style="min-width:240px"><div class="strong"><%= t('settings.delete_clinic') %></div><div class="muted"><%= t('settings.delete_clinic_text', { name: b.name }) %></div></div>
+          <form method="post" action="/app/settings/data/delete" data-confirm="<%= t('settings.delete_clinic_confirm', { name: b.name }) %>" data-confirm-title="<%= t('settings.delete_clinic') %>" data-confirm-yes="<%= t('settings.delete_clinic_yes') %>" data-confirm-type="<%= b.name %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="confirm_name" value="">
+            <button class="btn btn-danger" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('settings.delete_clinic') %></button>
+          </form>
+        </div>
+      </div>
+    </section>
+    <% } %>
+  </div>
+</div>

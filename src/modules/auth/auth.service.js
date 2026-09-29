@@ -54,11 +54,53 @@ async function authenticate({ email, password }, ctx = {}) {
 async function changePassword(ctx, { currentPassword, newPassword }) {
   const user = await knex('users').where({ id: ctx.userId }).first();
   if (!(await verifyPassword(user, currentPassword))) throw E.validation({ current_password: 'Current password is incorrect.' });
-  await knex('users').where({ id: user.id }).update({ password_hash: await hashPassword(newPassword), password_changed_at: new Date() });
+  if (String(newPassword) === String(currentPassword)) throw E.validation({ new_password: 'Choose a password different from the current one.' });
+  await knex('users').where({ id: user.id }).update({ password_hash: await hashPassword(newPassword), password_changed_at: new Date(), must_change_password: false });
   await require('./security.service').endOtherSessions(user.id, ctx.sessionId); // eslint-disable-line global-require
   await audit.record(ctx, 'auth.password_changed', { entityType: 'user', entityId: user.id });
 }
 
+/**
+ * First sign-in with a temporary password set by a clinic admin: the person chooses their own password.
+ * The temporary one may not be reused.
+ */
+async function replaceTemporaryPassword(ctx, { password, confirm }) {
+  const user = await knex('users').where({ id: ctx.userId }).first();
+  if (!user) throw E.unauthenticated();
+  if (String(password || '').length < 8) throw E.validation({ password: 'Password must be at least 8 characters.' });
+  if (password !== confirm) throw E.validation({ password_confirm: 'Passwords do not match.' });
+  if (await bcrypt.compare(String(password), user.password_hash).catch(() => false)) throw E.validation({ password: 'Choose a password different from the current one.' });
+  await knex('users').where({ id: user.id }).update({ password_hash: await hashPassword(password), password_changed_at: new Date(), must_change_password: false });
+  await require('./security.service').endOtherSessions(user.id, ctx.sessionId); // eslint-disable-line global-require
+  await audit.record(ctx, 'auth.temporary_password_replaced', { entityType: 'user', entityId: user.id });
+}
+
+/**
+ * Platform super admin from SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD / SUPER_ADMIN_NAME (called at boot, after migrations).
+ * Creates the account when missing, or flags an existing account. An existing password is never overwritten.
+ */
+async function ensureSuperAdmin() {
+  const { email, password, name } = config.superAdmin || {};
+  if (!email) return null;
+  const existing = await knex('users').where({ email }).first('id', 'is_platform_admin');
+  if (existing) {
+    if (!existing.is_platform_admin) {
+      await knex('users').where({ id: existing.id }).update({ is_platform_admin: true });
+      await audit.record({ userId: existing.id }, 'platform.admin_granted', { entityType: 'user', entityId: existing.id, newValues: { email } });
+    }
+    return existing.id;
+  }
+  if (String(password || '').length < 8) {
+    console.warn('[auth] SUPER_ADMIN_EMAIL is set but SUPER_ADMIN_PASSWORD is missing or shorter than 8 characters; platform admin not created.'); // eslint-disable-line no-console
+    return null;
+  }
+  const [id] = await knex('users').insert({
+    name: name || 'Platform admin', email, password_hash: await hashPassword(password), locale: config.defaultLocale, is_platform_admin: true, email_verified_at: new Date(),
+  });
+  await audit.record({ userId: id }, 'platform.admin_created', { entityType: 'user', entityId: id, newValues: { email } });
+  return id;
+}
+
 const findUser = (id) => knex('users').where({ id }).first();
 
-module.exports = { hashPassword, createUser, authenticate, changePassword, findUser, verifyPassword };
+module.exports = { hashPassword, createUser, authenticate, changePassword, replaceTemporaryPassword, ensureSuperAdmin, findUser, verifyPassword };

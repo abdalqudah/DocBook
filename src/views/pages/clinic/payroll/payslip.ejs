@@ -1,0 +1,60 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var d = info; var p = calc.payment; var cm = calc.commission; var f = figures;
+  var isPrint = query.print === '1';
+  var approved = calc.adjustments.filter(function (a) { return a.approvalStatus === 'approved'; });
+  var rateText = function (basis, rate) { return basis === 'percentage' ? fmt.number(rate) + '%' : fmt.money(rate); };
+%>
+<% if (!isPrint) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/payroll?period=<%= period %>"><%= t('payroll.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/payroll/doctors/<%= d.id %>?period=<%= period %>"><%= L(d.full_name, d.full_name_en) %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('payroll.payslip') %></div>
+    <h1><%= t('payroll.payslip') %></h1>
+  </div>
+  <div class="page-actions">
+    <%- include('_month') %>
+    <a class="btn btn-primary" href="?period=<%= period %>&print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+<div class="payslip<%= isPrint ? '' : ' panel' %>">
+  <div class="<%= isPrint ? '' : 'panel-body' %> stack">
+    <div class="row between wrap payslip-head">
+      <div>
+        <div class="tiny muted payslip-eyebrow"><%= t('payroll.payslip') %> · <%= fmt.month(period) %></div>
+        <div class="payslip-name"><%= L(d.full_name, d.full_name_en) %></div>
+        <div class="small muted"><%= [L(d.specialization, d.specialization_en), d.license_number ? t('payroll.license') + ' ' + d.license_number : null].filter(Boolean).join(' · ') || '—' %></div>
+      </div>
+      <div class="payslip-status">
+        <% if (draft) { %><span class="badge badge-warning"><%= t('payroll.draft') %></span><div class="tiny muted mt-1"><%= t('payroll.draft_note') %></div>
+        <% } else { %><span class="badge badge-success"><%= t('payroll.status.paid') %></span><div class="tiny muted mt-1"><%= fmt.date(p.paid_at) %><%= p.payment_method ? ' · ' + label('payment_methods', p.payment_method) : '' %><%= p.reference ? ' · ' + p.reference : '' %></div><% } %>
+      </div>
+    </div>
+
+    <table class="statement">
+      <tbody>
+        <tr><td><%= t('payroll.base_salary') %></td><td><%= fmt.money(f.base) %></td></tr>
+        <tr><td><%= t('payroll.commission') %></td><td><%= fmt.money(f.commission) %></td></tr>
+        <tr class="sub"><td><%= rule ? t('commission.basis.' + rule.basis) + ' (' + rateText(rule.basis, rule.rate) + ')' : t('payroll.no_rule') %> · <%= t('payroll.slip_activity', { visits: fmt.number(cm.visitCount), patients: fmt.number(cm.uniquePatientCount), revenue: fmt.money(cm.totalRevenue) }) %></td><td></td></tr>
+        <tr><td><%= t('payroll.bonuses') %></td><td><bdi dir="ltr">+ <%= fmt.money(f.bonuses) %></bdi></td></tr>
+        <tr><td><%= t('payroll.deductions') %></td><td><bdi dir="ltr">− <%= fmt.money(f.deductions) %></bdi></td></tr>
+        <tr><td><%= t('payroll.advances') %></td><td><bdi dir="ltr">− <%= fmt.money(f.advances) %></bdi></td></tr>
+        <tr class="grand"><td><%= t('payroll.net_pay') %></td><td><%= fmt.money(f.net) %></td></tr>
+      </tbody>
+    </table>
+
+    <% if (approved.length) { %>
+    <div>
+      <div class="strong small mb-2"><%= t('payroll.slip_adjustments') %></div>
+      <table class="statement"><tbody>
+        <% approved.forEach(function (a) { %><tr class="sub"><td><%= t('payroll.types.' + a.type) %><%= a.reason ? ' — ' + a.reason : '' %></td><td><bdi dir="ltr"><%= a.type === 'bonus' ? '+' : '−' %> <%= fmt.money(a.amount) %></bdi></td></tr><% }) %>
+      </tbody></table>
+    </div>
+    <% } %>
+
+    <div class="payslip-sign">
+      <div><span class="tiny muted"><%= t('payroll.sign_prepared') %></span><%= p && p.paid_by_name ? p.paid_by_name : '' %></div>
+      <div><span class="tiny muted"><%= t('payroll.sign_doctor') %></span></div>
+    </div>
+  </div>
+</div>

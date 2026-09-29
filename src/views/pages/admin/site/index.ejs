@@ -1,0 +1,68 @@
+<% var preview = function (s) { var d = s.data || {}; return L(d.title) || L(d.eyebrow) || L(d.kicker) || ''; }; %>
+<div class="page-head">
+  <div><h1 class="row-sm"><%= t('admin.site.title') %> <span class="badge <%= customised ? 'badge-brand' : 'badge-neutral' %>"><%= t(customised ? 'admin.site.customised' : 'admin.site.default') %></span></h1><p><%= t('admin.site.sub') %></p></div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/admin/site/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('admin.site.preview') %></a>
+    <a class="btn btn-primary" href="/" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('admin.site.view') %></a>
+  </div>
+</div>
+
+<div class="se-blocks">
+  <% [['header', 'panel-top'], ['footer', 'panel-bottom'], ['seo', 'search']].forEach(function (b) { %>
+  <a class="panel se-block card-link" href="/admin/site/<%= b[0] %>">
+    <span class="icon-wrap"><%- icon(b[1]) %></span>
+    <span class="grow"><strong><%= t('admin.site.' + b[0]) %></strong><span class="muted small"><%= t('admin.site.' + b[0] + '_help') %></span></span>
+    <%- icon('chevron-right', 'icon-sm flip-rtl muted') %>
+  </a>
+  <% }) %>
+</div>
+
+<div class="row between mt-8 mb-3"><div><h2><%= t('admin.site.sections') %></h2><p class="muted small"><%= t('admin.site.sections_help') %></p></div></div>
+<ol class="se-sections">
+<% content.sections.forEach(function (s, i) { %>
+  <li class="panel se-section<%= s.hidden ? ' is-hidden' : '' %>" id="s-<%= s.id %>">
+    <span class="se-order num"><%= i + 1 %></span>
+    <div class="se-main">
+      <div class="row-sm wrap"><strong><%= t('admin.site.types.' + s.type) %></strong><% if (s.hidden) { %><span class="badge badge-neutral"><%- icon('eye-off', 'icon-sm') %><%= t('admin.site.hidden') %></span><% } %><span class="muted tiny mono" dir="ltr">#<%= s.anchor %></span></div>
+      <div class="small muted truncate"><%= preview(s) || '—' %></div>
+    </div>
+    <div class="se-actions">
+      <form method="post" action="/admin/site/sections/<%= s.id %>/move"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="dir" value="up"><button class="btn btn-ghost btn-icon btn-sm" type="submit" title="<%= t('admin.site.up') %>" aria-label="<%= t('admin.site.up') %>"<%= i === 0 ? ' disabled' : '' %>><%- icon('chevron-up', 'icon-sm') %></button></form>
+      <form method="post" action="/admin/site/sections/<%= s.id %>/move"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="dir" value="down"><button class="btn btn-ghost btn-icon btn-sm" type="submit" title="<%= t('admin.site.down') %>" aria-label="<%= t('admin.site.down') %>"<%= i === content.sections.length - 1 ? ' disabled' : '' %>><%- icon('chevron-down', 'icon-sm') %></button></form>
+      <form method="post" action="/admin/site/sections/<%= s.id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" title="<%= s.hidden ? t('admin.site.show') : t('admin.site.hide') %>" aria-label="<%= s.hidden ? t('admin.site.show') : t('admin.site.hide') %>"><%- icon(s.hidden ? 'eye' : 'eye-off', 'icon-sm') %></button></form>
+      <form method="post" action="/admin/site/sections/<%= s.id %>/duplicate"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" title="<%= t('admin.site.duplicate') %>" aria-label="<%= t('admin.site.duplicate') %>"><%- icon('copy', 'icon-sm') %></button></form>
+      <form method="post" action="/admin/site/sections/<%= s.id %>/delete" data-confirm="<%= t('admin.site.delete_confirm') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-icon btn-sm" type="submit" title="<%= t('common.delete') %>" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button></form>
+      <a class="btn btn-secondary btn-sm" href="/admin/site/sections/<%= s.id %>"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a>
+    </div>
+  </li>
+<% }) %>
+</ol>
+
+<form class="panel se-add mt-4" method="post" action="/admin/site/sections">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body">
+    <div class="row-sm mb-3"><%- icon('circle-plus', 'icon-sm') %><strong><%= t('admin.site.add') %></strong></div>
+    <div class="se-type-grid" role="radiogroup" aria-label="<%= t('admin.site.add') %>">
+      <% types.forEach(function (ty, i) { %>
+      <label class="se-type"><input type="radio" name="type" value="<%= ty %>"<%= i === 0 ? ' checked' : '' %>><span><strong><%= t('admin.site.types.' + ty) %></strong><span class="muted tiny"><%= t('admin.site.type_help.' + ty) %></span></span></label>
+      <% }) %>
+    </div>
+    <div class="row wrap mt-4">
+      <label class="field" style="flex:1 1 240px;max-width:360px"><span class="label"><%= t('admin.site.position') %></span>
+        <select class="select" name="after"><option value=""><%= t('admin.site.at_end') %></option><% content.sections.forEach(function (s, i) { %><option value="<%= s.id %>"><%= t('admin.site.after', { n: i + 1, name: t('admin.site.types.' + s.type) }) %></option><% }) %></select>
+      </label>
+      <button class="btn btn-primary" type="submit" style="align-self:flex-end"><%- icon('plus', 'icon-sm') %><%= t('admin.site.add_go') %></button>
+    </div>
+  </div>
+</form>
+
+<% if (customised) { %>
+<form class="panel se-reset mt-8" method="post" action="/admin/site/reset" data-confirm="<%= t('admin.site.reset_confirm') %>" data-confirm-type="<%= t('admin.site.reset_word') %>" data-confirm-yes="<%= t('admin.site.reset') %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="confirm_name" value="">
+  <div class="panel-body row wrap between">
+    <div><strong><%= t('admin.site.reset') %></strong><div class="muted small"><%= t('admin.site.reset_hint') %></div></div>
+    <noscript><input class="input" name="confirm_name" placeholder="<%= t('admin.site.reset_word') %>" style="width:140px"></noscript>
+    <button class="btn btn-danger-ghost" type="submit"><%- icon('history', 'icon-sm') %><%= t('admin.site.reset') %></button>
+  </div>
+</form>
+<% } %>

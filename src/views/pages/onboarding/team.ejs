@@ -1,0 +1,26 @@
+<%- include('_top') %>
+<div class="stack-lg">
+  <%- include('../settings/_result', { result: result, publicUrl: null }) %>
+  <% if (members.length > 1 || invitations.length) { %>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('onboarding.team_so_far', { n: members.length }) %></h2></div>
+    <ul class="action-list">
+      <% members.forEach(function (m) { %><li><div><span class="avatar"><%= initials(m.name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= m.name %></div><div class="small muted truncate" dir="ltr" style="text-align:start"><%= m.email %></div></div><span class="badge badge-info"><%= roleName(m) %></span></div></li><% }) %>
+      <% invitations.forEach(function (i) { %><li><div><span class="avatar"><%- icon('mail', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= i.name || i.email %></div><div class="small muted"><%= t('onboarding.invited') %></div></div><span class="badge badge-neutral"><%= roleName(i) %></span></div></li><% }) %>
+    </ul>
+  </section>
+  <% } %>
+  <% if (can('users.manage')) { %>
+  <form class="panel" method="post" action="/app/onboarding/team/add" novalidate data-staff-form>
+    <div class="panel-head"><div><h2><%= t('team.add') %></h2><div class="panel-sub"><%= t('onboarding.team_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <%- include('../settings/_staff-form', { prefill: null }) %>
+      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('team.create') %></button></div>
+    </div>
+  </form>
+  <% } %>
+</div>
+<form id="step-form" method="post" action="/app/onboarding/team"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form>
+<%- include('_foot', { formId: 'step-form' }) %>

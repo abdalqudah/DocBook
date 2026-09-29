@@ -1,0 +1,16 @@
+<%- include('_top') %>
+<form id="step-form" class="panel" method="post" action="/app/onboarding/clinic" novalidate>
+  <div class="panel-body stack">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include('../../partials/form-error') %>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'name', label: t('settings.f_name_ar'), required: true, value: b.name, attrs: 'dir="auto"' }) %>
+      <%- include('../../partials/field', { name: 'name_en', label: t('settings.f_name_en'), value: b.name_en, attrs: 'dir="ltr"', help: t('onboarding.name_en_help') }) %>
+      <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), value: b.specialty, options: specialtyOptions }) %>
+      <%- include('../../partials/field', { name: 'city', label: t('auth.city'), value: b.city }) %>
+      <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: b.phone, attrs: 'dir="ltr" inputmode="tel"' }) %>
+      <%- include('../../partials/field', { name: 'whatsapp', label: t('settings.f_whatsapp'), type: 'tel', value: b.whatsapp, attrs: 'dir="ltr" inputmode="tel"' }) %>
+    </div>
+  </div>
+</form>
+<%- include('_foot', { formId: 'step-form' }) %>

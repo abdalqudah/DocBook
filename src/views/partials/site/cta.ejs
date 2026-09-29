@@ -1,0 +1,20 @@
+<% var d = s.data || {}; %>
+<section class="section lp-cta" id="<%= s.anchor %>">
+  <div class="container">
+    <div class="cta-band">
+      <div class="lp-cta-glow" aria-hidden="true"></div>
+      <div class="lp-cta-copy">
+        <h2><%= L(d.title) %></h2>
+        <% if (L(d.text)) { %><p><%= L(d.text) %></p><% } %>
+      </div>
+      <div class="lp-cta-actions">
+        <% if (currentUser) { %>
+          <a class="btn btn-primary btn-lg" href="/app"><%= t('site.open_app') %><%- icon('arrow-right', 'flip-rtl') %></a>
+        <% } else { %>
+          <% if (L(d.btn1_label) && d.btn1_href) { %><a class="btn btn-primary btn-lg" href="<%= d.btn1_href %>"><%= L(d.btn1_label) %><%- icon('arrow-right', 'flip-rtl') %></a><% } %>
+          <% if (L(d.btn2_label) && d.btn2_href) { %><a class="btn btn-lg lp-btn-ghost-inverse" href="<%= d.btn2_href %>"><%= L(d.btn2_label) %></a><% } %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>

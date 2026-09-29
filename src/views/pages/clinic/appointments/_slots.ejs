@@ -1,0 +1,18 @@
+<%
+  // Slot picker: free start times from /app/api/slots as radio chips (appointments.js).
+  // Without JavaScript the plain time input below is submitted instead.
+  var _sel = typeof selected !== 'undefined' && selected ? selected : '';
+  var _err = (typeof errors !== 'undefined' && errors) ? errors.appointment_time : null;
+  var _ex = typeof exclude !== 'undefined' && exclude ? exclude : '';
+  var _doc = typeof fixedDoctor !== 'undefined' && fixedDoctor ? fixedDoctor : '';
+%>
+<div class="field full slot-picker" data-slot-picker data-selected="<%= _sel %>" data-exclude="<%= _ex %>" data-doctor="<%= _doc %>"
+  data-i18n="<%= json({ pick_doctor: t('appointments.slots.pick_doctor'), pick_date: t('appointments.slots.pick_date'), loading: t('appointments.slots.loading'), none: t('appointments.slots.none'), choose: t('appointments.slots.choose'), error: t('appointments.slots.error'), count: t('appointments.slots.count'), morning: t('appointments.slots.morning'), afternoon: t('appointments.slots.afternoon'), evening: t('appointments.slots.evening') }) %>">
+  <span class="label" id="<%= slotId %>-label"><%= t('common.time') %><span class="req">*</span></span>
+  <div class="slot-status small muted hidden" data-slot-status aria-live="polite"></div>
+  <div class="slot-groups hidden" data-slot-grid role="radiogroup" aria-labelledby="<%= slotId %>-label"></div>
+  <div data-slot-fallback>
+    <input class="input<%= _err ? ' is-invalid' : '' %>" type="time" name="appointment_time" value="<%= _sel %>" step="300" required aria-labelledby="<%= slotId %>-label" style="max-width:180px">
+  </div>
+  <% if (_err) { %><span class="field-error"><%= _err %></span><% } %>
+</div>

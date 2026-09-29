@@ -1,0 +1,15 @@
+<% var p = patient; var P = '../../../partials/'; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/patients/<%= p.id %>" dir="auto"><%= p.full_name %></a></div>
+    <h1><%= t('patients.edit') %></h1>
+  </div>
+</div>
+<form class="panel rec-form" method="post" action="/app/patients/<%= p.id %>/edit" novalidate>
+  <div class="panel-body">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include(P + 'form-error') %>
+    <%- include('_form', { p: p }) %>
+  </div>
+  <div class="panel-foot row end"><a class="btn btn-ghost" href="/app/patients/<%= p.id %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+</form>

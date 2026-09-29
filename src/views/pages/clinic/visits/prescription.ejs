@@ -1,0 +1,52 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var printing = query.print === '1';
+  var p = patient || {};
+%>
+<% if (!printing) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/visits/<%= a.id %>"><%= t('visits.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('visits.rx_number', { n: rx.id }) %></div>
+    <h1><%= t('visits.rx_title') %></h1>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/visits/<%= a.id %>#prescriptions"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a>
+    <a class="btn btn-primary" href="/app/visits/<%= a.id %>/prescriptions/<%= rx.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+<article class="rx-sheet<%= printing ? '' : ' panel' %>">
+  <div class="rx-sheet-head">
+    <div>
+      <div class="rx-doctor"><%= L(rx.doctor_name, rx.doctor_name_en) || t('appointments.unassigned') %></div>
+      <% if (rx.specialization || rx.specialization_en) { %><div class="muted"><%= L(rx.specialization, rx.specialization_en) %></div><% } %>
+      <% if (rx.license_number) { %><div class="small muted"><%= t('visits.licence') %>: <span dir="ltr"><%= rx.license_number %></span></div><% } %>
+    </div>
+    <div class="rx-meta small">
+      <div><span class="muted"><%= t('visits.rx_no') %></span> <strong>#<%= rx.id %></strong></div>
+      <div><span class="muted"><%= t('common.date') %></span> <strong><%= fmt.date(rx.created_at) %></strong></div>
+    </div>
+  </div>
+  <div class="rx-patient">
+    <div><span class="muted small"><%= t('common.patient') %></span><strong><%= rx.patient_name %></strong></div>
+    <div><span class="muted small"><%= t('visits.age') %></span><strong><%= age !== null ? t('visits.age_years', { n: age }) : '—' %></strong></div>
+    <div><span class="muted small"><%= t('visits.gender_label') %></span><strong><%= p.gender ? t('visits.gender.' + p.gender) : '—' %></strong></div>
+    <div><span class="muted small"><%= t('common.phone') %></span><strong dir="ltr"><%= rx.patient_phone || '—' %></strong></div>
+  </div>
+  <% if (rx.diagnosis) { %><div class="rx-diagnosis"><span class="muted small"><%= t('visits.diagnosis') %></span><div><%= rx.diagnosis %></div></div><% } %>
+  <div class="rx-symbol" aria-hidden="true">℞</div>
+  <ol class="rx-print-items">
+    <% rx.items.forEach(function (it) { %>
+    <li>
+      <div class="rx-med"><bdi><%= it.medicationName %></bdi></div>
+      <div class="rx-dose"><bdi><%= [it.dosage, it.frequency, it.duration].filter(Boolean).join(' — ') %></bdi></div>
+      <% if (it.instructions) { %><div class="rx-instr"><bdi><%= it.instructions %></bdi></div><% } %>
+    </li>
+    <% }) %>
+  </ol>
+  <% if (rx.notes) { %><div class="rx-notes"><span class="muted small"><%= t('visits.rx_notes') %></span><div style="white-space:pre-line"><%= rx.notes %></div></div><% } %>
+  <div class="rx-sign">
+    <div><div class="rx-sign-line"></div><div class="small muted"><%= t('visits.signature') %></div></div>
+    <div><div class="rx-sign-line"></div><div class="small muted"><%= t('visits.stamp') %></div></div>
+  </div>
+</article>

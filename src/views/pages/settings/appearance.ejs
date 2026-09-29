@@ -1,0 +1,79 @@
+<% var color = (old && old.color) || b.color || ''; %>
+<%- include('_head', { heading: t('settings.nav_appearance'), lead: can('settings.manage') ? t('settings.appearance_lead') : t('settings.appearance_lead_personal') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.display_title') %></h2><div class="panel-sub"><%= t('settings.display_sub') %></div></div></div>
+      <div class="panel-body"><%- include('_prefs') %></div>
+    </section>
+
+    <% if (can('settings.manage')) { %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.brand_title') %></h2><div class="panel-sub"><%= t('settings.brand_sub') %></div></div></div>
+      <div class="panel-body">
+        <form method="post" action="/app/settings/appearance" class="stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('../../partials/form-error') %>
+          <div class="set-brand-grid">
+            <div class="stack">
+              <div class="field">
+                <label class="label" for="f-color"><%= t('settings.brand_color') %></label>
+                <div class="row-sm">
+                  <input class="color-input" type="color" id="f-color-picker" value="<%= color || brand.colors.light.primary %>" data-color-picker aria-label="<%= t('settings.brand_color') %>">
+                  <input class="input mono<%= errors.color ? ' is-invalid' : '' %>" id="f-color" name="color" value="<%= color %>" placeholder="<%= t('settings.brand_default') %>" maxlength="7" dir="ltr" style="max-width:160px" data-color-text>
+                </div>
+                <% if (errors.color) { %><span class="field-error"><%= errors.color %></span><% } else { %><span class="help"><%= t('settings.brand_color_help') %></span><% } %>
+              </div>
+              <div class="field">
+                <label class="label" for="f-calendar_color_mode"><%= t('settings.cal_mode') %></label>
+                <select class="select" id="f-calendar_color_mode" name="calendar_color_mode">
+                  <option value="status"<%= b.calendar_color_mode !== 'doctor' ? ' selected' : '' %>><%= t('settings.cal_mode_status') %></option>
+                  <option value="doctor"<%= b.calendar_color_mode === 'doctor' ? ' selected' : '' %>><%= t('settings.cal_mode_doctor') %></option>
+                </select>
+                <span class="help"><%= t('settings.cal_mode_help') %></span>
+              </div>
+            </div>
+            <div class="set-brand-preview" data-brand-preview<% if (color) { %> style="--pv: <%= color %>"<% } %>>
+              <div class="tiny muted strong mb-2"><%= t('settings.preview') %></div>
+              <div class="set-pv-bar"><span class="set-pv-dot"></span><span class="strong small truncate"><%= b.name %></span></div>
+              <div class="set-pv-body">
+                <span class="set-pv-btn"><%= t('settings.pv_book') %></span>
+                <span class="set-pv-chip"><%= t('settings.pv_slot') %></span>
+                <span class="set-pv-link"><%= t('settings.pv_link') %></span>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <% if (b.color) { %><button class="btn btn-ghost" type="submit" name="reset_color" value="1"><%- icon('refresh-cw', 'icon-sm') %><%= t('settings.brand_reset') %></button><% } %>
+            <button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.logo_title') %></h2><div class="panel-sub"><%= t('settings.logo_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="row wrap" style="align-items:flex-start;gap:20px">
+          <div class="logo-preview set-logo-lg" data-logo-preview><% if (b.logo_mime) { %><img src="/app/logo/<%= b.id %>?v=<%= b.logo_version %>" alt="<%= t('settings.logo_title') %>"><% } else { %><%- icon('image') %><% } %></div>
+          <div class="stack grow" style="min-width:240px">
+            <form method="post" action="/app/settings/appearance/logo" enctype="multipart/form-data" class="stack-sm" data-logo-form>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input class="input" type="file" name="logo" accept="image/png,image/jpeg,image/webp" required data-logo-input data-max="1048576" data-too-big="<%= t('settings.logo_too_big') %>">
+              <span class="help"><%= t('settings.logo_help') %></span>
+              <div class="row-sm"><button class="btn btn-primary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('settings.logo_upload') %></button></div>
+            </form>
+            <% if (b.logo_mime) { %>
+            <form method="post" action="/app/settings/appearance/logo/delete" data-confirm="<%= t('settings.logo_remove_confirm') %>" data-confirm-yes="<%= t('settings.logo_remove') %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('settings.logo_remove') %></button>
+            </form>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+    <% } %>
+  </div>
+</div>

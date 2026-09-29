@@ -1,0 +1,15 @@
+<% var d = s.data || {}; %>
+<section class="section lp-quotes" id="<%= s.anchor %>">
+  <div class="container">
+    <%- include('head', { s: s, center: true }) %>
+    <div class="lp-quote-grid">
+      <% (d.items || []).forEach(function (q) { if (!L(q.quote)) return; %>
+      <figure class="lp-quote">
+        <%- icon('quote', 'icon-lg') %>
+        <blockquote><%= L(q.quote) %></blockquote>
+        <figcaption><span class="avatar"><%= initials(L(q.name)) %></span><span><strong><%= L(q.name) %></strong><% if (L(q.role)) { %><span class="muted small"><%= L(q.role) %></span><% } %></span></figcaption>
+      </figure>
+      <% }) %>
+    </div>
+  </div>
+</section>

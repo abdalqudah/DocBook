@@ -44,7 +44,7 @@ function build(sheets, { rtl = false } = {}) {
 
 function send(res, filename, sheets, opts) {
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+  res.setHeader('Content-Disposition', `attachment; filename="${String(filename).replace(/[^\x20-\x7e]+/g, '_').replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
   res.setHeader('Cache-Control', 'private, no-store');
   res.send(build(sheets, opts));
 }

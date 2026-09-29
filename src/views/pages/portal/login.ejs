@@ -1,0 +1,39 @@
+<% var chosen = as ? roles.find(function (r) { return r.key === as; }) : null; %>
+<div class="portal-login-wrap">
+  <div class="portal-login">
+    <div class="portal-login-head">
+      <span class="portal-logo sm"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt=""><% } else { %><%= initials(clinic.displayName) %><% } %></span>
+      <div>
+        <h1><%= t('portal.login_title', { clinic: clinic.displayName }) %></h1>
+        <p class="muted small"><%= t('portal.login_lead') %></p>
+      </div>
+    </div>
+
+    <% if (member) { %>
+      <div class="alert alert-info"><%- icon('info') %><div class="grow"><%= t('portal.staff_continue', { name: currentUser.name }) %> <strong><%= memberRole %></strong></div></div>
+      <form method="post" action="/<%= clinic.slug %>/enter" class="mt-3"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-block btn-lg" type="submit"><%= t('portal.staff_open') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button></form>
+      <div class="divider"></div>
+    <% } %>
+
+    <div class="role-chooser" role="group" aria-label="<%= t('portal.login_as') %>">
+      <span class="label"><%= t('portal.login_as') %></span>
+      <div class="role-chips">
+        <% roles.forEach(function (r) { %><a class="role-chip<%= as === r.key ? ' is-on' : '' %>" href="?as=<%= r.key %>"<% if (as === r.key) { %> aria-current="true"<% } %>><%- icon(r.icon, 'icon-sm') %><%= t('roles.' + r.key) %></a><% }) %>
+      </div>
+    </div>
+
+    <form class="stack mt-4" method="post" action="/<%= clinic.slug %>/login<%= as ? '?as=' + as : '' %>" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (as) { %><input type="hidden" name="as" value="<%= as %>"><% } %>
+      <%- include('../../partials/form-error') %>
+      <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, autocomplete: 'username', attrs: 'autofocus inputmode="email" dir="ltr"' }) %>
+      <div class="field">
+        <div class="row between"><label class="label" for="f-password"><%= t('auth.password') %><span class="req">*</span></label><a class="link small" href="/forgot"><%= t('portal.forgot') %></a></div>
+        <input class="input<%= errors.password ? ' is-invalid' : '' %>" id="f-password" name="password" type="password" required autocomplete="current-password" dir="ltr">
+        <% if (errors.password) { %><span class="field-error"><%= errors.password %></span><% } %>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit"><% if (chosen) { %><%- icon(chosen.icon, 'icon-sm') %><% } %><%= t('auth.login') %><% if (chosen) { %> · <%= t('roles.' + chosen.key) %><% } %></button>
+    </form>
+    <a class="portal-back small" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('portal.back_to_clinic') %></a>
+  </div>
+</div>

@@ -1,0 +1,99 @@
+<%- include('_hero') %>
+<div class="container portal-actions-bar">
+  <div class="portal-actions">
+    <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus') %><%= t('portal.book') %></a><% } %>
+    <% if (clinic.telHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.telHref %>"><%- icon('phone') %><%= t('portal.call') %></a><% } %>
+    <% if (clinic.waHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square') %><%= t('portal.whatsapp') %></a><% } %>
+    <% if (clinic.mapHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%- icon('map-pin') %><%= t('portal.directions') %></a><% } %>
+  </div>
+  <% if (!clinic.booking_enabled) { %><div class="alert alert-info mt-4"><%- icon('info') %><div class="grow"><%= t('portal.booking_off') %></div></div><% } %>
+</div>
+
+<div class="container portal-body">
+  <div class="portal-main">
+    <% if (clinic.aboutText) { %>
+    <section class="portal-card">
+      <h2><%= t('portal.about') %></h2>
+      <div class="lp-prose"><% clinic.aboutText.split(/\n\s*\n/).forEach(function (p) { if (p.trim()) { %><p><%= p.trim() %></p><% } }) %></div>
+    </section>
+    <% } %>
+
+    <section class="portal-section" id="doctors">
+      <div class="portal-section-head"><h2><%= t('portal.doctors') %></h2><% if (doctors.length && clinic.booking_enabled) { %><p><%= t('portal.doctors_sub') %></p><% } %></div>
+      <% if (!doctors.length) { %>
+        <div class="portal-card"><%- include('../../partials/empty', { emptyIcon: 'stethoscope', emptyTitle: t('portal.no_doctors'), compact: true }) %></div>
+      <% } else { %>
+      <div class="portal-doctors">
+        <% doctors.forEach(function (d, i) { %>
+        <article class="doc-card">
+          <span class="doc-av<%= d.color ? '' : ' c' + ((i % 4) + 1) %>"<% if (d.color) { %> style="background:<%= d.color %>"<% } %>><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
+          <div class="doc-info">
+            <h3><%= d.name %></h3>
+            <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
+            <% if (d.bio) { %><p><%= d.bio %></p><% } %>
+            <div class="doc-foot">
+              <% if (d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } else { %><span></span><% } %>
+              <% if (clinic.booking_enabled) { %><a class="btn btn-secondary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%= t('portal.book_with') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
+            </div>
+          </div>
+        </article>
+        <% }) %>
+      </div>
+      <% } %>
+    </section>
+
+    <% if (services.length) { %>
+    <section class="portal-section" id="services">
+      <div class="portal-section-head"><h2><%= t('portal.services') %></h2><p><%= t('portal.services_sub') %></p></div>
+      <div class="portal-card flush">
+        <ul class="svc-list">
+          <% services.forEach(function (s) { %>
+          <li>
+            <span class="svc-icon"><%- icon('clipboard-plus', 'icon-sm') %></span>
+            <span class="grow">
+              <strong><%= s.name %></strong>
+              <span class="svc-meta"><span><%- icon('clock', 'icon-sm') %><%= t('portal.min', { n: s.duration }) %></span><% if (s.doctorId && doctorNames[s.doctorId]) { %><span><%- icon('stethoscope', 'icon-sm') %><%= doctorNames[s.doctorId] %></span><% } %></span>
+              <% if (s.description) { %><span class="svc-desc"><%= s.description %></span><% } %>
+            </span>
+            <% if (s.price !== null) { %><span class="svc-price num"><%= fmt.money(s.price, clinic.currency) %></span><% } %>
+          </li>
+          <% }) %>
+        </ul>
+      </div>
+    </section>
+    <% } %>
+  </div>
+
+  <aside class="portal-side">
+    <% if (clinic.address || clinic.working_hours_text || clinic.phone || clinic.email) { %>
+    <section class="portal-card">
+      <h2><%= t('portal.info') %></h2>
+      <ul class="info-list">
+        <% if (clinic.address) { %><li><span class="info-icon"><%- icon('map-pin', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.address') %></span><span><%= clinic.address %></span><% if (clinic.mapHref) { %><a class="link small" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%= t('portal.directions') %></a><% } %></span></li><% } %>
+        <% if (clinic.working_hours_text) { %><li><span class="info-icon"><%- icon('clock', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.hours') %></span><span class="pre-line"><%= clinic.working_hours_text %></span></span></li><% } %>
+        <% if (clinic.phone) { %><li><span class="info-icon"><%- icon('phone', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.phone') %></span><a href="<%= clinic.telHref %>" dir="ltr"><%= clinic.phone %></a></span></li><% } %>
+        <% if (clinic.email) { %><li><span class="info-icon"><%- icon('mail', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.email') %></span><a href="mailto:<%= clinic.email %>" dir="ltr"><%= clinic.email %></a></span></li><% } %>
+      </ul>
+    </section>
+    <% } %>
+
+    <section class="portal-card staff-card" id="staff">
+      <h2><%- icon('lock', 'icon-sm') %><%= t('portal.staff_title') %></h2>
+      <% if (member) { %>
+        <p class="muted small"><%= t('portal.staff_continue', { name: currentUser.name }) %> <span class="badge badge-brand"><%= memberRole %></span></p>
+        <form method="post" action="/<%= clinic.slug %>/enter" class="mt-3"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-block" type="submit"><%= t('portal.staff_open') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button></form>
+      <% } else { %>
+        <p class="muted small"><%= t('portal.staff_sub') %></p>
+        <div class="role-list">
+          <% roles.forEach(function (r) { %>
+          <a class="role-pick" href="/<%= clinic.slug %>/login?as=<%= r.key %>">
+            <span class="role-icon"><%- icon(r.icon, 'icon-sm') %></span>
+            <span class="grow"><strong><%= t('roles.' + r.key) %></strong><span class="muted tiny"><%= t('portal.role_hint.' + r.key) %></span></span>
+            <%- icon('chevron-right', 'icon-sm flip-rtl muted') %>
+          </a>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </aside>
+</div>

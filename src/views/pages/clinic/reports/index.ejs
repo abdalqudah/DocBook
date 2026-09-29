@@ -1,0 +1,158 @@
+<% var P = '../../../partials/'; var printing = query.print === '1'; var canExport = can('data.export') && !printing;
+   var rq = range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month;
+   var exp = function (section) { if (!canExport) return ''; return '<details class="dropdown rec-exp"><summary class="btn btn-ghost btn-sm" aria-label="' + t('common.export') + '">' + icon('download', 'icon-sm') + '<span class="rec-exp-label">' + t('common.export') + '</span></summary><div class="menu"><a href="/app/reports?' + rq + '&export=' + section + '&format=xlsx">' + icon('file-spreadsheet', 'icon-sm') + t('common.export_xlsx') + '</a><a href="/app/reports?' + rq + '&export=' + section + '&format=csv">' + icon('table', 'icon-sm') + t('common.export_csv') + '</a></div></details>'; };
+   var rangeText = range.custom ? fmt.date(range.from) + ' – ' + fmt.date(range.to) : fmt.month(range.month);
+   var s = data.status; %>
+<% if (printing) { %>
+<div class="rec-print-title"><h1><%= t('reports.title') %></h1><p class="muted"><%= rangeText %></p></div>
+<% } else { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_insights') %></div>
+    <h1><%= t('reports.title') %></h1>
+    <p><%= t('reports.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/reports?<%= rq %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.printable') %></a>
+  </div>
+</div>
+
+<div class="panel mb-4"><div class="panel-body rec-range">
+  <form class="row wrap" method="get" action="/app/reports" data-autosubmit>
+    <label class="small strong muted" for="rep-month"><%- icon('calendar', 'icon-sm') %> <%= t('reports.month') %></label>
+    <select class="select" id="rep-month" name="month" style="width:auto;height:36px">
+      <% if (range.custom) { %><option value="" selected><%= t('reports.custom_selected') %></option><% } %>
+      <% months.forEach(function (m) { %><option value="<%= m %>"<%= !range.custom && m === range.month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %>
+    </select>
+  </form>
+  <form class="row wrap" method="get" action="/app/reports">
+    <span class="small strong muted"><%= t('reports.or_range') %></span>
+    <input class="input" type="date" name="from" value="<%= range.from %>" aria-label="<%= t('common.from') %>" required style="width:auto;height:36px">
+    <span class="muted">–</span>
+    <input class="input" type="date" name="to" value="<%= range.to %>" aria-label="<%= t('common.to') %>" required style="width:auto;height:36px">
+    <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button>
+  </form>
+  <div class="small muted rec-range-now"><%- icon('info', 'icon-sm') %><%= t('reports.showing', { range: rangeText }) %></div>
+</div></div>
+<% } %>
+
+<div class="stats rec-kpis">
+  <div class="stat"><div class="stat-label"><%= t('reports.appointments') %><span class="stat-icon"><%- icon('calendar-days') %></span></div><div class="stat-value"><%= fmt.number(s.total) %></div><div class="stat-meta"><%= t('reports.completion', { pct: fmt.pct(s.completionRate, 0) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('reports.no_show_rate') %><span class="stat-icon danger"><%- icon('calendar-x') %></span></div><div class="stat-value"><%= fmt.pct(s.noShowRate) %></div><div class="stat-meta"><%= t('reports.n_appts', { n: fmt.number(s.rows.find(function (r) { return r.key === 'no_show'; }).n) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('reports.cancel_rate') %><span class="stat-icon warning"><%- icon('circle-x') %></span></div><div class="stat-value"><%= fmt.pct(s.cancelRate) %></div><div class="stat-meta"><%= t('reports.n_appts', { n: fmt.number(s.rows.find(function (r) { return r.key === 'cancelled'; }).n) }) %></div></div>
+  <div class="stat hero"><div class="stat-label"><%= t('reports.revenue') %><span class="stat-icon"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.money(data.revenue) %></div><div class="stat-meta"><%= t('reports.invoices_n', { n: fmt.number(data.discounts.invoices) }) %></div></div>
+</div>
+
+<% if (charts.appts || charts.revenue) { %>
+<div class="grid grid-2 mt-6">
+  <div class="panel"><div class="panel-head"><div><h2><%= t('reports.chart_appts') %></h2><p class="panel-sub"><%= data.byMonth ? t('reports.per_month') : t('reports.per_day') %></p></div><%- exp('daily') %></div><div class="panel-body"><% if (charts.appts) { %><%- charts.appts %><% } else { %><p class="small muted"><%= t('reports.no_data') %></p><% } %></div></div>
+  <div class="panel"><div class="panel-head"><div><h2><%= t('reports.chart_revenue') %></h2><p class="panel-sub"><%= data.byMonth ? t('reports.per_month') : t('reports.per_day') %></p></div></div><div class="panel-body"><% if (charts.revenue) { %><%- charts.revenue %><% } else { %><p class="small muted"><%= t('reports.no_data') %></p><% } %></div></div>
+</div>
+<% } %>
+
+<div class="grid grid-2 mt-6">
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('reports.sec.status') %></h2><p class="panel-sub"><%= t('reports.status_sub') %></p></div><%- exp('status') %></div>
+    <% if (charts.status) { %><div class="panel-body rec-pad"><%- charts.status %></div><% } %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th><%= t('common.status') %></th><th class="num"><%= t('reports.count') %></th><th class="num"><%= t('reports.share') %></th></tr></thead>
+      <tbody><% s.rows.forEach(function (r) { %><tr><td><span class="badge badge-<%= { pending: 'warning', confirmed: 'info', completed: 'success', cancelled: 'neutral', no_show: 'danger' }[r.key] %> badge-dot"><%= t('dashboard.statuses.' + r.key) %></span></td><td class="num"><%= fmt.number(r.n) %></td><td class="num"><%= s.total ? fmt.pct(r.share, 0) : '—' %></td></tr><% }) %></tbody>
+      <tfoot><tr><td><%= t('common.total') %></td><td class="num"><%= fmt.number(s.total) %></td><td class="num"></td></tr></tfoot>
+    </table></div>
+  </section>
+
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('reports.sec.methods') %></h2><p class="panel-sub"><%= t('reports.methods_sub') %></p></div><%- exp('methods') %></div>
+    <% if (charts.methods) { %><div class="panel-body rec-pad"><%- charts.methods %></div><% } %>
+    <% if (!data.methods.length) { %><div class="panel-body rec-pad small muted"><%= t('reports.no_invoices') %></div><% } else { %>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th><%= t('billing.method') %></th><th class="num"><%= t('reports.invoices') %></th><th class="num"><%= t('reports.revenue') %></th></tr></thead>
+      <tbody><% data.methods.forEach(function (m) { %><tr><td><%= label('payment_methods', m.key) %></td><td class="num"><%= fmt.number(m.n) %></td><td class="num"><%= fmt.money(m.v) %></td></tr><% }) %></tbody>
+      <tfoot><tr><td><%= t('common.total') %></td><td class="num"><%= fmt.number(data.discounts.invoices) %></td><td class="num"><%= fmt.money(data.revenue) %></td></tr></tfoot>
+    </table></div>
+    <% } %>
+    <div class="panel-foot rec-discounts">
+      <div><div class="small muted"><%= t('reports.discounts_total') %></div><div class="strong"><%= fmt.money(data.discounts.total) %></div></div>
+      <div><div class="small muted"><%= t('reports.discounted_invoices') %></div><div class="strong"><%= fmt.number(data.discounts.n) %></div></div>
+      <div><div class="small muted"><%= t('reports.avg_discount') %></div><div class="strong"><%= data.discounts.n ? fmt.pct(data.discounts.avgPct) : '—' %></div></div>
+    </div>
+  </section>
+</div>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('reports.sec.doctors') %></h2><p class="panel-sub"><%= t('reports.doctors_sub') %></p></div><%- exp('doctors') %></div>
+  <% if (!data.byDoctor.length) { %><%- include(P + 'empty', { compact: true, emptyIcon: 'stethoscope', emptyTitle: t('reports.no_data'), emptyText: t('reports.no_data_text') }) %><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.doctor') %></th><th class="num"><%= t('reports.appointments') %></th><th class="num"><%= t('reports.completed') %></th><th class="num"><%= t('reports.no_shows') %></th><th class="num"><%= t('reports.invoices') %></th><th class="num"><%= t('reports.revenue') %></th><th class="num"><%= t('reports.avg_ticket') %></th></tr></thead>
+    <tbody><% data.byDoctor.forEach(function (d) { %><tr>
+      <td class="primary-cell"><span class="row-sm"><span class="swatch" style="<%= d.color ? 'background:' + d.color : '' %>"></span><span class="strong"><%= d.name %></span></span></td>
+      <td data-label="<%= t('reports.appointments') %>" class="num"><%= fmt.number(d.appts) %></td>
+      <td data-label="<%= t('reports.completed') %>" class="num"><%= fmt.number(d.done) %></td>
+      <td data-label="<%= t('reports.no_shows') %>" class="num"><%= fmt.number(d.noShow) %></td>
+      <td data-label="<%= t('reports.invoices') %>" class="num"><%= fmt.number(d.invoices) %></td>
+      <td data-label="<%= t('reports.revenue') %>" class="num strong"><%= fmt.money(d.revenue) %></td>
+      <td data-label="<%= t('reports.avg_ticket') %>" class="num"><%= d.avg === null ? '—' : fmt.money(d.avg) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% if (charts.doctors) { %><div class="panel-body rec-pad rec-border-top"><%- charts.doctors %></div><% } %>
+  <% } %>
+</section>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('reports.sec.services') %></h2><p class="panel-sub"><%= t('reports.services_sub') %></p></div><%- exp('services') %></div>
+  <% if (!data.byService.length) { %><div class="panel-body rec-pad small muted"><%= t('reports.no_data') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.service') %></th><th class="num"><%= t('reports.appointments') %></th><th class="num"><%= t('reports.completed') %></th><th class="num"><%= t('reports.invoices') %></th><th class="num"><%= t('reports.revenue') %></th></tr></thead>
+    <tbody><% data.byService.forEach(function (r) { %><tr>
+      <td class="primary-cell strong"><%= r.name %></td>
+      <td data-label="<%= t('reports.appointments') %>" class="num"><%= fmt.number(r.n) %></td>
+      <td data-label="<%= t('reports.completed') %>" class="num"><%= fmt.number(r.done) %></td>
+      <td data-label="<%= t('reports.invoices') %>" class="num"><%= fmt.number(r.invoices) %></td>
+      <td data-label="<%= t('reports.revenue') %>" class="num strong"><%= fmt.money(r.revenue) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>
+
+<div class="grid grid-2 mt-6">
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('reports.sec.sources') %></h2><p class="panel-sub"><%= t('reports.sources_sub') %></p></div><%- exp('sources') %></div>
+    <div class="panel-body rec-pad stack">
+      <% var srcTotal = data.bySource.reduce(function (a, b) { return a + b.n; }, 0); data.bySource.forEach(function (r, i) { %>
+      <div>
+        <div class="row between small"><span class="strong row-sm"><%- icon(r.key === 'website' ? 'globe' : 'user-round', 'icon-sm') %><%= t('dashboard.sources.' + r.key) %></span><span><strong><%= fmt.number(r.n) %></strong> <span class="muted">· <%= srcTotal ? fmt.pct(r.n * 100 / srcTotal, 0) : '—' %></span></span></div>
+        <div class="meter mt-1 <%= i ? 'rec-meter-accent' : '' %>"><span style="width:<%= srcTotal ? Math.round(r.n * 100 / srcTotal) : 0 %>%"></span></div>
+        <div class="tiny muted mt-1"><%= t('reports.source_detail', { done: fmt.number(r.done), lost: fmt.number(r.lost) }) %></div>
+      </div>
+      <% }) %>
+    </div>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('reports.sec.patients') %></h2><p class="panel-sub"><%= t('reports.patients_sub') %></p></div><%- exp('patients') %></div>
+    <div class="panel-body rec-pad">
+      <div class="rec-split">
+        <div><div class="small muted"><%= t('reports.new_patients') %></div><div class="rec-big strong"><%= fmt.number(data.patients.new) %></div></div>
+        <div><div class="small muted"><%= t('reports.returning_patients') %></div><div class="rec-big strong"><%= fmt.number(data.patients.returning) %></div></div>
+        <div><div class="small muted"><%= t('reports.registered') %></div><div class="rec-big strong"><%= fmt.number(data.patients.registered) %></div></div>
+      </div>
+      <div class="meter mt-3"><span style="width:<%= data.patients.seen ? Math.round(data.patients.new * 100 / data.patients.seen) : 0 %>%"></span></div>
+      <p class="tiny muted mt-2"><%= t('reports.patients_note', { n: fmt.number(data.patients.seen) }) %></p>
+    </div>
+  </section>
+</div>
+
+<% if (data.fin) { var f = data.fin; %>
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('reports.sec.finance') %></h2><p class="panel-sub"><%= t('reports.finance_sub') %></p></div><%- exp('finance') %></div>
+  <table class="statement">
+    <tbody>
+      <tr><td><%= t('reports.gross') %></td><td><%= fmt.money(data.discounts.gross) %></td></tr>
+      <tr class="sub"><td><%= t('reports.discounts_total') %></td><td>− <%= fmt.money(data.discounts.total) %></td></tr>
+      <tr class="total"><td><%= t('reports.revenue') %></td><td><%= fmt.money(f.revenue) %></td></tr>
+      <tr class="sub"><td><%= t('reports.expenses') %> <span class="tiny">(<%= t('reports.records_n', { n: fmt.number(f.expenseCount) }) %>)</span><% if (can('expenses.view') && !printing) { %> · <a class="link tiny" href="/app/expenses?from=<%= range.from %>&to=<%= range.to %>"><%= t('common.view') %></a><% } %></td><td>− <%= fmt.money(f.expenses) %></td></tr>
+      <tr class="sub"><td><%= t('reports.payroll') %> <span class="tiny">(<%= t('reports.payroll_note', { n: fmt.number(f.payrollCount) }) %>)</span></td><td>− <%= fmt.money(f.payroll) %></td></tr>
+      <tr class="grand"><td><%= t('reports.net') %><% if (f.margin !== null) { %> <span class="small muted">· <%= t('reports.margin', { pct: fmt.pct(f.margin, 0) }) %></span><% } %></td><td class="<%= f.net < 0 ? 'rec-neg' : '' %>"><%= fmt.money(f.net) %></td></tr>
+    </tbody>
+  </table>
+</section>
+<% } %>

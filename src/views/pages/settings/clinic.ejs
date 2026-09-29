@@ -1,0 +1,40 @@
+<%- include('_head', { heading: t('settings.nav_clinic'), lead: t('settings.clinic_lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <form class="stack-lg" method="post" action="/app/settings/clinic" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include('../../partials/form-error') %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.sec_identity') %></h2><div class="panel-sub"><%= t('settings.sec_identity_sub') %></div></div></div>
+      <div class="panel-body form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('settings.f_name_ar'), required: true, value: b.name, attrs: 'dir="auto" maxlength="160"' }) %>
+        <%- include('../../partials/field', { name: 'name_en', label: t('settings.f_name_en'), value: b.name_en, attrs: 'dir="ltr" maxlength="160"' }) %>
+        <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), value: b.specialty, options: specialtyOptions }) %>
+        <%- include('../../partials/field', { name: 'tax_number', label: t('settings.tax_number'), value: b.tax_number, help: t('settings.tax_help'), attrs: 'dir="ltr" maxlength="60"' }) %>
+        <%- include('../../partials/field', { name: 'about', label: t('settings.f_about_ar'), type: 'textarea', value: b.about, placeholder: t('settings.f_about_ph') }) %>
+        <%- include('../../partials/field', { name: 'about_en', label: t('settings.f_about_en'), type: 'textarea', value: b.about_en }) %>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.sec_contact') %></h2><div class="panel-sub"><%= t('settings.sec_contact_sub') %></div></div></div>
+      <div class="panel-body form-grid">
+        <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: b.phone, attrs: 'dir="ltr" inputmode="tel"' }) %>
+        <%- include('../../partials/field', { name: 'whatsapp', label: t('settings.f_whatsapp'), type: 'tel', value: b.whatsapp, help: t('settings.f_whatsapp_help'), attrs: 'dir="ltr" inputmode="tel"' }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: b.email, attrs: 'dir="ltr" inputmode="email"' }) %>
+        <%- include('../../partials/field', { name: 'working_hours_text', label: t('settings.f_hours'), value: b.working_hours_text, placeholder: t('settings.f_hours_ph') }) %>
+        <%- include('../../partials/field', { name: 'address', label: t('settings.f_address'), value: b.address, cls: 'full' }) %>
+        <%- include('../../partials/field', { name: 'map_url', label: t('settings.f_map'), type: 'url', value: b.map_url, placeholder: 'https://maps.google.com/…', help: t('settings.f_map_help'), attrs: 'dir="ltr" inputmode="url"', cls: 'full' }) %>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.sec_region') %></h2><div class="panel-sub"><%= t('settings.sec_region_sub') %></div></div></div>
+      <div class="panel-body form-grid">
+        <%- include('../../partials/field', { name: 'city', label: t('auth.city'), value: b.city }) %>
+        <%- include('../../partials/field', { name: 'country', label: t('settings.f_country'), type: 'select', placeholder: t('common.select'), value: b.country, options: countryOptions }) %>
+        <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', required: true, value: b.timezone, options: zoneOptions, help: t('settings.f_tz_help') }) %>
+        <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: b.currency, options: currencyOptions, help: hasInvoices ? t('settings.f_currency_warn') : t('settings.f_currency_help') }) %>
+      </div>
+    </section>
+    <div class="form-actions set-sticky-actions"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save_changes') %></button></div>
+  </form>
+</div>

@@ -4,6 +4,7 @@
   <a class="btn btn-secondary btn-block mt-4" href="/forgot"><%= t('auth.request_new_link') %></a>
 <% } else { %>
   <p class="lead"><%= t('auth.reset_lead') %></p>
+  <% if (typeof resetEmail !== 'undefined' && resetEmail) { %><div class="field mt-4"><span class="label"><%= t('common.email') %></span><input class="input" value="<%= resetEmail %>" readonly dir="ltr" autocomplete="username"></div><% } %>
   <form class="stack mt-6" method="post" action="/reset/<%= token %>" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <%- include('../../partials/form-error') %>

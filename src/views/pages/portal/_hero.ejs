@@ -1,0 +1,14 @@
+<section class="portal-hero<%= typeof compact !== 'undefined' && compact ? ' compact' : '' %>">
+  <div class="portal-hero-bg" aria-hidden="true"></div>
+  <div class="container portal-hero-inner">
+    <span class="portal-logo"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt="<%= clinic.displayName %>"><% } else { %><%= initials(clinic.displayName) %><% } %></span>
+    <div class="portal-hero-text">
+      <h1><%= clinic.displayName %></h1>
+      <% if (clinic.otherName) { %><div class="portal-other-name" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%= clinic.otherName %></div><% } %>
+      <div class="portal-meta">
+        <% if (clinic.specialty) { %><span><%- icon('stethoscope', 'icon-sm') %><%= clinic.specialty %></span><% } %>
+        <% if (clinic.city) { %><span><%- icon('map-pin', 'icon-sm') %><%= clinic.city %></span><% } %>
+      </div>
+    </div>
+  </div>
+</section>

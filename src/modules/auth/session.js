@@ -27,9 +27,17 @@ async function landingFor(userId, businessId) {
 }
 
 async function afterLogin(req, res) {
+  const user = await knex('users').where({ id: req.session.userId }).first('id', 'must_change_password', 'is_platform_admin');
+  // Accounts created with a temporary password choose their own first (returnTo is kept for afterwards).
+  if (user && user.must_change_password) return res.redirect('/password/new');
   const to = req.session.returnTo;
   delete req.session.returnTo;
-  if (to && to.startsWith('/') && !to.startsWith('//')) return res.redirect(to);
+  if (to && to.startsWith('/') && !to.startsWith('//') && !to.startsWith('/password/new')) return res.redirect(to);
+  if (!req.session.businessId && user && user.is_platform_admin) {
+    const any = await knex('memberships').where({ user_id: user.id, status: 'active' }).first('business_id');
+    if (!any) return res.redirect('/admin');
+    req.session.businessId = any.business_id;
+  }
   return res.redirect(await landingFor(req.session.userId, req.session.businessId));
 }
 

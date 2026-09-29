@@ -55,6 +55,9 @@ async function start() {
       if (applied.length) console.log(`[db] applied migrations: ${applied.join(', ')}`); // eslint-disable-line no-console
     });
   }
+  // Platform super admin from SUPER_ADMIN_* (never overwrites an existing password).
+  await require('./modules/auth/auth.service').ensureSuperAdmin() // eslint-disable-line global-require
+    .catch((e) => console.error('[auth] could not ensure the platform admin:', e.message)); // eslint-disable-line no-console
   const app = createApp();
   const server = app.listen(PORT, () => console.log(`[${brand.name}] listening on ${PORT} (${config.env})`)); // eslint-disable-line no-console
   const shutdown = () => server.close(() => knex.destroy().then(() => process.exit(0)));

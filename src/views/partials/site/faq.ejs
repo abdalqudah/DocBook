@@ -1,0 +1,11 @@
+<% var d = s.data || {}; %>
+<section class="section alt lp-faq" id="<%= s.anchor %>">
+  <div class="container lp-faq-grid">
+    <div><%- include('head', { s: s }) %></div>
+    <div class="faq">
+      <% (d.items || []).forEach(function (f) { %>
+        <details><summary><span><%= L(f.q) %></span><%- icon('chevron-down', 'icon-sm') %></summary><p><%= L(f.a) %></p></details>
+      <% }) %>
+    </div>
+  </div>
+</section>

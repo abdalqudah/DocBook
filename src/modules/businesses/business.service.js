@@ -21,7 +21,8 @@ const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country',
 // ---------------------------------------------------------------- portal address (/<slug>), from RemoteWay 1.1
 const RESERVED = new Set(`app admin api login logout signup verify verify-email forgot reset invite invitations workspaces theme favicon.svg favicon.ico
   css js img fonts icons.svg robots.txt sitemap.xml healthz help support docs blog about contact pricing privacy terms security book booking
-  www mail static assets public uploads files auth account settings dashboard home new clinic clinics`.split(/\s+/).filter(Boolean));
+  www mail static assets public uploads files auth account settings dashboard home new clinic clinics
+  password preferences profile portal staff logo brand docbook demo join status kiosk calendar onboarding notifications`.split(/\s+/).filter(Boolean));
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 const normalizeSlug = (raw) => String(raw || '').trim().toLowerCase().replace(/\s+/g, '-');
 
@@ -131,7 +132,7 @@ async function listMembers(businessId) {
     .leftJoin('doctors as d', 'd.id', 'm.doctor_id')
     .where('m.business_id', businessId)
     .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'u.last_login_at', 'u.must_change_password',
-      'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name')
+      'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
     .orderBy('u.name');
 }
 
@@ -170,7 +171,7 @@ async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTi
   if (status) patch.status = status;
   if (jobTitle !== undefined) patch.job_title = jobTitle || null;
   if (doctorId !== undefined || role.key === 'doctor') {
-    const doc = await resolveDoctor(ctx, role, doctorId || m.doctor_id);
+    const doc = await resolveDoctor(ctx, role, doctorId === undefined ? m.doctor_id : doctorId);
     if (doc && doc.takenBy && doc.takenBy.id !== m.id) throw E.validation({ doctor_id: 'Another account is already linked to this doctor.' });
     patch.doctor_id = doc ? doc.id : null;
   }
@@ -229,8 +230,8 @@ async function addStaff(ctx, { name, email, phone, roleId, doctorId, jobTitle, m
   const clinic = await get(ctx.businessId);
   const t = translator(locale || 'ar');
   const sent = await mailer.send({
-    to: email, subject: `${brand.name} — ${t('team.invite_mail_subject', { clinic: clinic.name })}`,
-    html: mailer.layout({ locale, title: t('team.invite_mail_subject', { clinic: clinic.name }), body: t('team.invite_mail_body', { clinic: clinic.name, role: t(`roles.${role.key}`) }), cta: t('team.invite_mail_cta'), href: link }),
+    to: email, subject: `${brand.name} — ${t('team.invite_mail_subject', { clinic: clinic.name, business: clinic.name })}`,
+    html: mailer.layout({ locale, title: t('team.invite_mail_subject', { clinic: clinic.name, business: clinic.name }), body: t('team.invite_mail_body', { clinic: clinic.name, business: clinic.name, role: role.is_system ? t(`roles.${role.key}`) : role.name, name: name || email }), cta: t('team.invite_mail_cta'), href: link }),
   }).catch(() => false);
   await audit.record(ctx, 'staff.invited', { entityType: 'invitation', entityId: email, newValues: { email, role: role.key } });
   return { link, sent };
@@ -248,19 +249,26 @@ async function adminResetLink(ctx, membershipId) {
   const token = randomToken(32);
   await knex('password_resets').insert({ user_id: user.id, token_hash: sha256(token), created_by: ctx.userId, expires_at: new Date(Date.now() + 24 * 3600_000) });
   const link = `${config.appUrl.replace(/\/+$/, '')}/reset/${token}`;
-  await audit.record(ctx, 'staff.reset_link_created', { entityType: 'staff', entityId: user.id });
   if (Number(n) > 0) {
+    // The account also belongs to another clinic: only the person may receive the link, by e-mail.
+    if (!mailer.configured()) {
+      await knex('password_resets').where({ user_id: user.id, token_hash: sha256(token) }).del();
+      throw E.conflict('RESET_NEEDS_EMAIL', 'This person also works at another clinic. A reset link can only be e-mailed to them, and e-mail is not configured.');
+    }
     const t = translator(user.locale || 'ar');
     await mailer.send({ to: user.email, subject: `${brand.name} — ${t('auth.reset_mail_subject')}`, html: mailer.layout({ locale: user.locale, title: t('auth.reset_mail_subject'), body: t('auth.reset_mail_body', { minutes: 24 * 60 }), cta: t('auth.reset_mail_cta'), href: link }) }).catch(() => {});
-    return { emailed: true };
+    await audit.record(ctx, 'staff.reset_link_created', { entityType: 'staff', entityId: user.id, newValues: { delivery: 'email' } });
+    return { emailed: true, email: user.email, name: user.name };
   }
-  return { link };
+  await audit.record(ctx, 'staff.reset_link_created', { entityType: 'staff', entityId: user.id, newValues: { delivery: 'link' } });
+  return { link, email: user.email, name: user.name };
 }
 
 async function listInvitations(businessId) {
   return knex('invitations as i').join('roles as r', 'r.id', 'i.role_id').leftJoin('doctors as d', 'd.id', 'i.doctor_id').where('i.business_id', businessId)
     .whereNull('i.accepted_at').whereNull('i.revoked_at').where('i.expires_at', '>', new Date())
-    .select('i.id', 'i.email', 'i.name', 'i.expires_at', 'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name');
+    .leftJoin('users as ib', 'ib.id', 'i.invited_by').orderBy('i.created_at', 'desc')
+    .select('i.id', 'i.email', 'i.name', 'i.expires_at', 'i.created_at', 'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name', 'ib.name as invited_by_name');
 }
 
 async function revokeInvitation(ctx, id) {
@@ -290,7 +298,15 @@ async function destroy(ctx, confirmName) {
   const b = await knex('businesses').where({ id: ctx.businessId }).first('name');
   if (!b || String(confirmName || '').trim() !== b.name) throw E.validation({ confirm_name: 'Type the clinic name exactly to confirm.' });
   await audit.record(ctx, 'clinic.deleted', { entityType: 'clinic', entityId: ctx.businessId, oldValues: { name: b.name } });
-  await knex('businesses').where({ id: ctx.businessId }).del();
+  await knex.transaction(async (trx) => {
+    // Rows that reference roles without ON DELETE CASCADE go first, then everything else cascades from the clinic.
+    await trx('invitations').where({ business_id: ctx.businessId }).del();
+    await trx('memberships').where({ business_id: ctx.businessId }).del();
+    await trx('users').where({ last_business_id: ctx.businessId }).update({ last_business_id: null });
+    await trx('businesses').where({ id: ctx.businessId }).del();
+  });
+  rbac.invalidate(ctx.businessId);
+  cache.forgetPrefix('portal:');
   forget(ctx.businessId);
 }
 

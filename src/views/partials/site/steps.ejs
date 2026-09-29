@@ -1,0 +1,15 @@
+<% var d = s.data || {}; %>
+<section class="section alt lp-steps" id="<%= s.anchor %>">
+  <div class="container">
+    <%- include('head', { s: s, center: true }) %>
+    <ol class="lp-step-list">
+      <% (d.items || []).forEach(function (st, i) { %>
+      <li class="lp-step">
+        <span class="lp-step-n num"><%= i + 1 %></span>
+        <h3><%= L(st.title) %></h3>
+        <% if (L(st.text)) { %><p><%= L(st.text) %></p><% } %>
+      </li>
+      <% }) %>
+    </ol>
+  </div>
+</section>

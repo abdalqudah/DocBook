@@ -1,0 +1,36 @@
+<div class="page-head"><div><h1><%= t('admin.nav_users') %></h1><p><%= t('admin.users_sub') %></p></div></div>
+<section class="panel flush">
+  <form class="table-toolbar" method="get" action="/admin/users" data-autosubmit>
+    <div class="input-group"><%- icon('search') %><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('admin.search_users') %>" aria-label="<%= t('admin.search_users') %>"></div>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button></noscript>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'users', emptyTitle: t('admin.no_users') }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('admin.col_user') %></th><th class="num"><%= t('admin.col_clinics') %></th><th><%= t('admin.col_last_login') %></th><th><%= t('admin.col_status') %></th><th><%= t('admin.col_created') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (u) { var self = u.id === currentUser.id; %>
+        <tr>
+          <td class="primary-cell"><div class="person"><span class="avatar"><%= initials(u.name) %></span><div><div class="person-name"><%= u.name %><% if (self) { %> <span class="muted small">(<%= t('admin.you') %>)</span><% } %></div><div class="person-sub" dir="ltr" style="text-align:start"><%= u.email %></div></div></div></td>
+          <td class="num" data-label="<%= t('admin.col_clinics') %>"><%= fmt.number(Number(u.clinics)) %></td>
+          <td data-label="<%= t('admin.col_last_login') %>" class="nowrap"><%= u.last_login_at ? fmt.date(u.last_login_at) : t('admin.never') %></td>
+          <td data-label="<%= t('admin.col_status') %>"><span class="badge <%= u.status === 'active' ? 'badge-success' : 'badge-neutral' %> badge-dot"><%= t(u.status === 'active' ? 'admin.status_active' : 'admin.status_disabled') %></span><% if (u.is_platform_admin) { %> <span class="badge badge-brand"><%- icon('shield-check', 'icon-sm') %><%= t('admin.platform_admin') %></span><% } %></td>
+          <td data-label="<%= t('admin.col_created') %>" class="nowrap"><%= fmt.date(u.created_at) %></td>
+          <td class="actions">
+            <% if (!self) { %>
+            <form method="post" action="/admin/users/<%= u.id %>/status" data-confirm="<%= t(u.status === 'active' ? 'admin.disable_confirm' : 'admin.enable_confirm', { name: u.name }) %>" data-confirm-yes="<%= t(u.status === 'active' ? 'admin.disable' : 'admin.enable') %>"<% if (u.status !== 'active') { %> data-confirm-tone="primary"<% } %>>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="q" value="<%= q %>"><input type="hidden" name="status" value="<%= u.status === 'active' ? 'disabled' : 'active' %>">
+              <button class="btn btn-sm <%= u.status === 'active' ? 'btn-danger-ghost' : 'btn-secondary' %>" type="submit"><%- icon(u.status === 'active' ? 'user-x' : 'user-check', 'icon-sm') %><%= t(u.status === 'active' ? 'admin.disable' : 'admin.enable') %></button>
+            </form>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</section>

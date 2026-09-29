@@ -1,0 +1,28 @@
+<% var o = old || {}; %>
+<%- include('_top') %>
+<div class="stack-lg">
+  <% if (services.length) { %>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('onboarding.services_added', { n: services.length }) %></h2><a class="link small" href="/app/services" target="_blank" rel="noopener"><%= t('onboarding.edit_later') %></a></div>
+    <ul class="action-list">
+      <% services.forEach(function (s) { %><li><div><span class="action-icon"><%- icon('clipboard-list', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= s.name %></div><div class="small muted"><%= [fmt.money(s.price), s.duration_minutes + ' ' + t('common.minutes'), s.doctor_name || t('services.any_doctor')].join(' · ') %></div></div><%- icon('circle-check', 'icon-sm onb-ok') %></div></li><% }) %>
+    </ul>
+  </section>
+  <% } %>
+  <form class="panel" method="post" action="/app/onboarding/services/add" novalidate>
+    <div class="panel-head"><div><h2><%= t('onboarding.add_service') %></h2><div class="panel-sub"><%= t('onboarding.add_service_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('onboarding.service_name'), required: true, placeholder: t('onboarding.service_name_ph'), cls: 'full' }) %>
+        <%- include('../../partials/field', { name: 'price', label: t('onboarding.price'), required: true, suffix: b.currency, attrs: 'inputmode="decimal"' }) %>
+        <%- include('../../partials/field', { name: 'duration_minutes', label: t('onboarding.duration'), type: 'select', value: o.duration_minutes || 30, options: [10, 15, 20, 30, 45, 60, 90, 120].map(function (m) { return { value: m, label: m + ' ' + t('common.minutes') }; }) }) %>
+        <% if (doctors.length > 1) { %><%- include('../../partials/field', { name: 'doctor_id', label: t('common.doctor'), type: 'select', placeholder: t('services.any_doctor'), options: doctors.map(function (d) { return { value: d.id, label: d.full_name }; }) }) %><% } %>
+      </div>
+      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('onboarding.save_service') %></button></div>
+    </div>
+  </form>
+</div>
+<form id="step-form" method="post" action="/app/onboarding/services"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form>
+<%- include('_foot', { formId: 'step-form' }) %>

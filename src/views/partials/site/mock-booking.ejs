@@ -1,0 +1,43 @@
+<%
+  var _hero = typeof hero !== 'undefined' && hero;
+  var _wd = new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en', { weekday: 'short', timeZone: 'UTC' });
+  var _base = new Date(); _base = new Date(Date.UTC(_base.getUTCFullYear(), _base.getUTCMonth(), _base.getUTCDate()));
+  var _days = []; for (var _i = 0; _i < 6; _i++) { var _dt = new Date(_base.getTime() + (_i + 1) * 86400000); _days.push({ w: _wd.format(_dt), n: _dt.getUTCDate() }); }
+  var _times = [['09:00', 'off'], ['09:30', ''], ['10:00', ''], ['10:30', 'on'], ['11:00', 'off'], ['11:30', ''], ['12:00', ''], ['14:00', ''], ['14:30', 'off']];
+%>
+<div class="mock mock-booking<%= _hero ? ' is-hero' : '' %>">
+  <div class="mock-card">
+    <div class="mock-head">
+      <span class="mock-mark"><%- icon('stethoscope') %></span>
+      <span class="grow"><strong><%= t('site.mock.your_clinic') %></strong><span class="mock-sub"><%= t('site.mock.book_title') %></span></span>
+      <span class="mock-lights"><i></i><i></i><i></i></span>
+    </div>
+    <div class="mock-body">
+      <div class="mock-label"><%= t('site.mock.doctor_name') %></div>
+      <div class="mock-docs">
+        <div class="mock-doc is-on"><span class="mock-av c1"><%- icon('user-round', 'icon-sm') %></span><span class="grow"><i class="sk w70"></i><span class="mock-spec"><%= t('site.mock.doctor') %></span></span><%- icon('circle-check', 'icon-sm mock-check') %></div>
+        <div class="mock-doc"><span class="mock-av c2"><%- icon('user-round', 'icon-sm') %></span><span class="grow"><i class="sk w55"></i><i class="sk w35"></i></span></div>
+      </div>
+      <div class="mock-label"><%= t('site.mock.choose_time') %></div>
+      <div class="mock-days">
+        <% _days.forEach(function (d, i) { %><span class="mock-day<%= i === 1 ? ' is-on' : '' %>"><small><%= d.w %></small><b class="num"><%= d.n %></b></span><% }) %>
+      </div>
+      <div class="mock-times">
+        <% _times.forEach(function (x) { %><span class="mock-time num<%= x[1] === 'on' ? ' is-on' : x[1] === 'off' ? ' is-off' : '' %>" dir="ltr"><%= x[0] %></span><% }) %>
+      </div>
+      <div class="mock-btn"><%= t('site.mock.confirm') %></div>
+    </div>
+  </div>
+  <% if (_hero) { %>
+  <div class="mock-toast">
+    <span class="mock-toast-icon"><%- icon('bell', 'icon-sm') %></span>
+    <span><strong><%= t('site.mock.new_booking') %></strong><span class="mock-sub"><%= t('site.mock.new_booking_sub') %> · <span dir="ltr">10:30</span></span></span>
+  </div>
+  <div class="mock-mini">
+    <div class="mock-mini-head"><%- icon('armchair', 'icon-sm') %><strong><%= t('site.mock.waiting') %></strong><span class="mock-count num">3</span></div>
+    <div class="mock-row"><span class="mock-av c3 sm"></span><i class="sk w50"></i><span class="mock-pill info"><%= t('site.mock.with_doctor') %></span></div>
+    <div class="mock-row"><span class="mock-av c2 sm"></span><i class="sk w40"></i><span class="mock-pill warn"><%= t('site.mock.minutes', { n: 12 }) %></span></div>
+    <div class="mock-row"><span class="mock-av c1 sm"></span><i class="sk w45"></i><span class="mock-pill ok"><%= t('site.mock.checked_in') %></span></div>
+  </div>
+  <% } %>
+</div>

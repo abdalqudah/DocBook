@@ -1,0 +1,139 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var canPay = can('billing.manage');
+  var canBook = can('appointments.manage');
+  var canVisit = canAny('clinical.view', 'vitals.edit', 'frontdesk.use');
+  var act = function (id, path, label, iconName, cls, onVal, confirmMsg) {
+    return '<form method="post" action="/app/front-desk/' + id + '/' + path + '"' + (confirmMsg ? ' data-confirm="' + escapeHtml(confirmMsg) + '" data-confirm-title="' + escapeHtml(label) + '" data-confirm-yes="' + escapeHtml(label) + '"' : '') + '>'
+      + '<input type="hidden" name="_csrf" value="' + csrfToken + '">' + (onVal !== undefined ? '<input type="hidden" name="on" value="' + onVal + '">' : '')
+      + '<button class="btn ' + cls + ' btn-sm" type="submit">' + icon(iconName, 'icon-sm') + '<span>' + escapeHtml(label) + '</span></button></form>';
+  };
+  var payBtn = function (a) {
+    if (!canPay) return '';
+    return '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="checkout-dialog" data-action="/app/front-desk/' + a.id + '/checkout" data-dialog-title="' + escapeHtml(t('frontdesk.checkout_for', { name: a.patient_name })) + '" data-fill="' + escapeHtml(json({ amount_paid: Number(a.amount_due || 0), discount_percent: '', payment_method: 'cash', insurance_provider_id: '' })) + '">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(t('frontdesk.checkout')) + '</span></button>';
+  };
+  var card = function (a, extraBadge, actions) {
+    var h = '<article class="fd-card" style="' + (a.doctor_color ? '--doc:' + escapeHtml(a.doctor_color) : '') + '">'
+      + '<div class="fd-card-top"><span class="fd-time" dir="ltr">' + escapeHtml(a.appointment_time) + '</span>' + (extraBadge || '') + '</div>'
+      + '<div class="fd-name">' + (canVisit ? '<a href="/app/visits/' + a.id + '">' + escapeHtml(a.patient_name) + '</a>' : escapeHtml(a.patient_name)) + '</div>'
+      + '<div class="fd-meta small muted">' + (a.doctor_id ? '<span class="swatch" style="' + (a.doctor_color ? 'background:' + escapeHtml(a.doctor_color) : '') + '"></span>' + escapeHtml(L(a.doctor_name, a.doctor_name_en)) : escapeHtml(t('appointments.unassigned')))
+      + (a.service_name ? ' · ' + escapeHtml(L(a.service_name, a.service_name_en)) : '') + '</div>'
+      + (a.patient_phone ? '<div class="tiny muted"><bdi dir="ltr">' + escapeHtml(a.patient_phone) + '</bdi></div>' : '')
+      + '<div class="fd-badges">'
+      + (a.status === 'pending' ? '<span class="badge badge-warning">' + escapeHtml(t('appointments.statuses.pending')) + '</span>' : '')
+      + (a.source === 'website' ? '<span class="badge badge-brand">' + icon('globe', 'icon-sm') + escapeHtml(t('appointments.sources.website')) + '</span>' : '')
+      + (a.appointment_type === 'online' ? '<span class="badge badge-info">' + icon('monitor', 'icon-sm') + escapeHtml(t('appointments.types.online')) + '</span>' : '')
+      + '</div>'
+      + (actions ? '<div class="fd-actions">' + actions + '</div>' : '')
+      + '</article>';
+    return h;
+  };
+  var cols = [
+    { key: 'expected', icon: 'calendar-clock', tone: '', items: board.expected },
+    { key: 'waiting', icon: 'armchair', tone: 'warning', items: board.waiting },
+    { key: 'with_doctor', icon: 'stethoscope', tone: 'info', items: board.withDoctor },
+    { key: 'checkout', icon: 'banknote', tone: 'success', items: board.toPay.concat(board.done) },
+  ];
+%>
+<div class="page-head" data-auto-refresh="60">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_clinic') %></div>
+    <h1><%= t('frontdesk.title') %></h1>
+    <p><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span class="muted"><%= t('frontdesk.auto_refresh') %></span></p>
+  </div>
+  <div class="page-actions">
+    <% if (can('appointments.view')) { %><a class="btn btn-secondary" href="/app/appointments"><%- icon('calendar-days', 'icon-sm') %><%= t('frontdesk.day_view') %></a><% } %>
+    <% if (canBook) { %><a class="btn btn-primary" href="/app/appointments/new?date=today&return=%2Fapp%2Ffront-desk"><%- icon('user-plus', 'icon-sm') %><%= t('frontdesk.walk_in') %></a><% } %>
+  </div>
+</div>
+
+<% if (justPaid) { %>
+<div class="alert alert-success mb-4" role="status" data-dismissible>
+  <%- icon('circle-check') %>
+  <div class="grow"><div class="alert-title"><%= t('frontdesk.paid_title', { number: justPaid.invoice_number, name: justPaid.patient_name }) %></div><div class="small"><%= fmt.money(justPaid.amount) %></div></div>
+  <a class="btn btn-secondary btn-sm" href="/app/billing/<%= justPaid.id %>?print=1" target="_blank" rel="noopener"><%- icon('printer', 'icon-sm') %><%= t('frontdesk.print_invoice') %></a>
+</div>
+<% } %>
+
+<div class="stats cols-5 fd-stats">
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.expected') %><span class="stat-icon"><%- icon('calendar-clock') %></span></div><div class="stat-value"><%= fmt.number(board.expected.length) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.waiting') %><span class="stat-icon warning"><%- icon('armchair') %></span></div><div class="stat-value"><%= fmt.number(board.waiting.length) %></div><div class="stat-meta"><%= board.waiting.length ? t('frontdesk.longest_wait', { n: board.waiting[0].waited }) : '—' %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.with_doctor') %><span class="stat-icon"><%- icon('stethoscope') %></span></div><div class="stat-value"><%= fmt.number(board.withDoctor.length) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.to_pay') %><span class="stat-icon"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.number(board.toPay.length) %></div></div>
+  <% if (can('billing.view')) { %><div class="stat hero"><div class="stat-label"><%= t('frontdesk.collected') %><span class="stat-icon"><%- icon('wallet') %></span></div><div class="stat-value"><%= fmt.money(collected) %></div><div class="stat-meta"><%= t('frontdesk.paid_visits', { n: fmt.number(board.done.length) }) %></div></div>
+  <% } else { %><div class="stat"><div class="stat-label"><%= t('frontdesk.col.done') %><span class="stat-icon"><%- icon('circle-check') %></span></div><div class="stat-value"><%= fmt.number(board.done.length) %></div></div><% } %>
+</div>
+
+<div class="fd-board mt-4">
+  <% cols.forEach(function (c) { %>
+  <section class="fd-col<%= c.tone ? ' tone-' + c.tone : '' %>" aria-labelledby="fd-<%= c.key %>">
+    <header class="fd-col-head"><span class="action-icon <%= c.tone %>"><%- icon(c.icon) %></span><h2 id="fd-<%= c.key %>"><%= t('frontdesk.col.' + c.key) %></h2><span class="badge"><%= fmt.number(c.items.length) %></span></header>
+    <div class="fd-col-body">
+      <% if (!c.items.length) { %><div class="fd-empty small muted"><%= t('frontdesk.empty.' + c.key) %></div><% } %>
+      <% c.items.forEach(function (a) {
+        var badge = ''; var actions = '';
+        if (c.key === 'expected') {
+          actions = act(a.id, 'check-in', t('frontdesk.check_in'), 'user-check', 'btn-primary', 1)
+            + act(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', 'btn-ghost', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name }));
+          if (a.appointment_time < nowTime) badge = '<span class="badge badge-warning">' + escapeHtml(t('frontdesk.late')) + '</span>';
+        } else if (c.key === 'waiting') {
+          badge = '<span class="badge ' + (a.waited >= 30 ? 'badge-danger' : a.waited >= 15 ? 'badge-warning' : 'badge-neutral') + '">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.waited', { n: a.waited })) + '</span>';
+          actions = (a.doctor_id ? act(a.id, 'call-in', t('frontdesk.call_in'), 'door-open', 'btn-primary', 1) : '')
+            + payBtn(a) + act(a.id, 'check-in', t('frontdesk.undo'), 'refresh-cw', 'btn-ghost', 0);
+        } else if (c.key === 'with_doctor') {
+          badge = '<span class="badge badge-info">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.in_room', { n: a.inRoom })) + '</span>';
+          actions = payBtn(a) + act(a.id, 'call-in', t('frontdesk.back_to_waiting'), 'refresh-cw', 'btn-ghost', 0);
+        } else if (a.payment_status === 'paid') {
+          var inv = invoiceFor[a.id];
+          badge = '<span class="badge badge-success">' + icon('check', 'icon-sm') + escapeHtml(t('appointments.payment_statuses.paid')) + '</span>';
+          actions = inv && can('billing.view') ? '<a class="btn btn-ghost btn-sm" href="/app/billing/' + inv.id + '?print=1">' + icon('printer', 'icon-sm') + '<span>#' + inv.invoice_number + '</span></a><span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>' : '<span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>';
+        } else {
+          badge = '<span class="badge badge-warning">' + escapeHtml(t('frontdesk.to_pay')) + '</span>';
+          actions = payBtn(a) + '<span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>';
+        }
+      %><%- card(a, badge, actions) %><% }) %>
+    </div>
+  </section>
+  <% }) %>
+</div>
+
+<% if (board.missed.length) { %>
+<details class="panel fd-missed mt-4">
+  <summary class="panel-head"><h2><%- icon('calendar-x', 'icon-sm') %> <%= t('frontdesk.missed') %> <span class="badge"><%= fmt.number(board.missed.length) %></span></h2><%- icon('chevron-down', 'icon-sm muted') %></summary>
+  <ul class="action-list">
+    <% board.missed.forEach(function (a) { %>
+    <li><div><span class="small strong" dir="ltr" style="min-width:48px"><%= a.appointment_time %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></div></div><span class="badge <%= a.status === 'no_show' ? 'badge-danger' : 'badge-neutral' %>"><%= t('appointments.statuses.' + a.status) %></span><%- act(a.id, 'restore', t('frontdesk.restore'), 'refresh-cw', 'btn-ghost') %></div></li>
+    <% }) %>
+  </ul>
+</details>
+<% } %>
+
+<% if (canPay) { var cOld = (typeof old !== 'undefined' && old) || {}; %>
+<dialog class="dialog" id="checkout-dialog" aria-labelledby="co-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'checkout-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/front-desk' %>" novalidate data-checkout data-decimals="<%= decimals %>" data-locale="<%= locale %>">
+    <div class="dialog-head"><div><h2 id="co-title" data-dialog-title-target><%= t('frontdesk.checkout') %></h2><p class="small muted"><%= t('frontdesk.checkout_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../../partials/field', { name: 'amount_paid', id: 'co-amount', label: t('frontdesk.amount_paid'), required: true, suffix: currency, attrs: 'inputmode="decimal" autocomplete="off"', help: t('frontdesk.amount_paid_help') }) %>
+        <%- include('../../../partials/field', { name: 'discount_percent', id: 'co-discount', label: t('frontdesk.discount'), suffix: '%', placeholder: '0', attrs: 'inputmode="decimal" autocomplete="off"' }) %>
+        <div class="full co-summary" data-co-summary hidden>
+          <div><span class="muted"><%= t('frontdesk.original_price') %></span><strong data-co-original></strong></div>
+          <div><span class="muted"><%= t('frontdesk.discount_amount') %></span><strong data-co-discount></strong></div>
+          <div class="grand"><span><%= t('frontdesk.net_paid') %></span><strong data-co-net></strong></div>
+        </div>
+        <%- include('../../../partials/field', { name: 'payment_method', id: 'co-method', label: t('frontdesk.payment_method'), type: 'select', required: true, value: 'cash', options: methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }), attrs: 'data-co-method' }) %>
+        <div class="field" data-co-insurance>
+          <label class="label" for="co-insurance"><%= t('frontdesk.insurance') %></label>
+          <% if (insurance.length) { %>
+          <select class="select<%= errors && errors.insurance_provider_id ? ' is-invalid' : '' %>" id="co-insurance" name="insurance_provider_id"><option value=""><%= t('frontdesk.choose_insurance') %></option><% insurance.forEach(function (i) { %><option value="<%= i.id %>"<%= String(cOld.insurance_provider_id) === String(i.id) ? ' selected' : '' %>><%= i.name %><%= Number(i.coverage_percent) ? ' · ' + fmt.number(i.coverage_percent) + '%' : '' %></option><% }) %></select>
+          <% } else { %><p class="help"><%= t('frontdesk.no_insurance') %></p><% } %>
+          <% if (errors && errors.insurance_provider_id) { %><span class="field-error"><%= errors.insurance_provider_id %></span><% } %>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('frontdesk.confirm_payment') %></button></div>
+  </form>
+</dialog>
+<% } %>

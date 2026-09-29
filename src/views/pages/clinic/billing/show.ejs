@@ -1,0 +1,84 @@
+<% var printing = query.print === '1'; var original = Number(inv.amount) + Number(inv.discount_amount); var hasDiscount = Number(inv.discount_amount) > 0 || Number(inv.discount_percent) > 0; %>
+<% if (!printing) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/billing"><%= t('billing.title') %></a><%- icon('chevron-right', 'flip-rtl') %><span class="mono">#<%= inv.invoice_number %></span></div>
+    <h1><%= t('billing.invoice_no', { n: inv.invoice_number }) %></h1>
+    <p><%= inv.patient_name %> · <%= fmt.date(issued.date) %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/billing/<%= inv.id %>?print=1"><%- icon('file-text', 'icon-sm') %><%= t('billing.print_view') %></a>
+    <a class="btn btn-primary" href="/app/billing/<%= inv.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+
+<div class="<%= printing ? '' : 'grid grid-main' %>">
+  <article class="<%= printing ? 'rec-invoice is-print' : 'panel rec-invoice' %>" aria-label="<%= t('billing.invoice_no', { n: inv.invoice_number }) %>">
+    <div class="rec-inv-top">
+      <div>
+        <div class="rec-inv-kind"><%= t('billing.doc_title') %></div>
+        <div class="rec-inv-no mono">#<%= inv.invoice_number %></div>
+      </div>
+      <div class="text-end">
+        <span class="badge badge-success badge-dot"><%= t('billing.paid') %></span>
+        <div class="small muted mt-2"><%= t('billing.issued') %>: <strong><%= fmt.date(issued.date) %></strong> <span dir="ltr"><%= issued.time %></span></div>
+        <% if (business.tax_number) { %><div class="small muted"><%= t('billing.tax_no') %>: <strong dir="ltr"><%= business.tax_number %></strong></div><% } %>
+      </div>
+    </div>
+    <% if (!printing) { %><div class="rec-inv-clinic"><strong><%= business.name %></strong><% if (business.name_en && locale === 'en') { %> · <%= business.name_en %><% } %><div class="small muted"><%= [business.address, business.phone].filter(Boolean).join(' · ') %></div></div><% } %>
+
+    <div class="rec-inv-parties">
+      <div>
+        <div class="rec-inv-label"><%= t('billing.billed_to') %></div>
+        <div class="strong" dir="auto"><% if (patient && can('patients.view') && !printing) { %><a class="link" href="/app/patients/<%= patient.id %>"><%= inv.patient_name %></a><% } else { %><%= inv.patient_name %><% } %></div>
+        <% if (inv.patient_phone) { %><div class="small"><span dir="ltr"><%= inv.patient_phone %></span></div><% } %>
+        <% if (patient && patient.national_id) { %><div class="small muted"><%= t('patients.national_id') %>: <span dir="ltr"><%= patient.national_id %></span></div><% } %>
+      </div>
+      <div>
+        <div class="rec-inv-label"><%= t('billing.visit') %></div>
+        <div class="strong"><%= inv.doctor_name || '—' %></div>
+        <% if (inv.appointment_date) { %><div class="small"><%= fmt.date(inv.appointment_date) %> · <span dir="ltr"><%= inv.appointment_time %></span></div><% } %>
+        <% if (inv.insurance_provider_name) { %><div class="small muted"><%= t('billing.insurance') %>: <%= inv.insurance_provider_name %><% if (patient && patient.insurance_number) { %> · <span dir="ltr"><%= patient.insurance_number %></span><% } %></div><% } %>
+      </div>
+    </div>
+
+    <table class="statement rec-inv-lines">
+      <tbody>
+        <tr><td><div class="strong"><%= inv.service_name || t('billing.consultation') %></div><div class="small muted"><%= inv.doctor_name || '' %></div></td><td><%= fmt.money(original) %></td></tr>
+        <% if (hasDiscount) { %><tr class="sub"><td><%= t('billing.discount') %> (<%= fmt.number(inv.discount_percent) %>%)</td><td>− <%= fmt.money(inv.discount_amount) %></td></tr><% } %>
+        <tr class="grand"><td><%= t('billing.net_paid') %></td><td><%= fmt.money(inv.amount) %></td></tr>
+      </tbody>
+    </table>
+
+    <dl class="dl rec-inv-pay">
+      <dt><%= t('billing.method') %></dt><dd><%= label('payment_methods', inv.payment_method) %></dd>
+      <% if (hasDiscount) { %><dt><%= t('billing.original_price') %></dt><dd><%= fmt.money(original) %></dd><% } %>
+      <% if (inv.cashier) { %><dt><%= t('billing.received_by') %></dt><dd><%= inv.cashier %></dd><% } %>
+    </dl>
+    <p class="rec-inv-thanks small muted"><%= t('billing.thanks') %></p>
+  </article>
+
+  <% if (!printing) { %>
+  <div class="stack">
+    <div class="panel"><div class="panel-head"><h2><%= t('billing.summary') %></h2></div><div class="panel-body"><dl class="dl rec-dl-narrow">
+      <dt><%= t('billing.original_price') %></dt><dd><%= fmt.money(original) %></dd>
+      <dt><%= t('billing.discount_pct') %></dt><dd><%= fmt.number(inv.discount_percent) %>%</dd>
+      <dt><%= t('billing.discount_amount') %></dt><dd><%= fmt.money(inv.discount_amount) %></dd>
+      <dt><%= t('billing.net_paid') %></dt><dd class="strong"><%= fmt.money(inv.amount) %></dd>
+    </dl></div>
+    <% if (inv.appointment_id && (can('appointments.view') || can('clinical.view'))) { %><div class="panel-foot"><a class="btn btn-ghost btn-sm" href="<%= can('clinical.view') ? '/app/visits/' : '/app/appointments/' %><%= inv.appointment_id %>"><%- icon('calendar-days', 'icon-sm') %><%= t('billing.open_visit') %></a></div><% } %>
+    </div>
+    <% if (can('billing.manage')) { %>
+    <div class="panel rec-danger"><div class="panel-body stack-sm">
+      <div class="strong"><%= t('billing.void') %></div>
+      <p class="small muted"><%= t('billing.void_help') %></p>
+      <form method="post" action="/app/billing/<%= inv.id %>/void" data-confirm="<%= t('billing.void_confirm', { n: inv.invoice_number }) %>" data-confirm-title="<%= t('billing.void') %>" data-confirm-yes="<%= t('billing.void_yes') %>" data-confirm-type="<%= inv.invoice_number %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="confirm_name" value="">
+        <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('circle-x', 'icon-sm') %><%= t('billing.void') %></button>
+      </form>
+    </div></div>
+    <% } %>
+  </div>
+  <% } %>
+</div>

@@ -1,0 +1,36 @@
+<% if (result) { var rn = result.role ? roleName(result.role) : ''; %>
+<section class="panel set-result" role="status" data-dismissible>
+  <div class="panel-body stack">
+    <div class="row between" style="align-items:flex-start">
+      <div class="row" style="align-items:flex-start">
+        <span class="set-result-icon <%= result.type === 'reset' || result.type === 'reset_emailed' ? 'is-info' : 'is-success' %>"><%- icon(result.type === 'password' ? 'key-round' : result.type === 'invite' ? 'mail' : result.type === 'added' ? 'user-check' : 'refresh-cw') %></span>
+        <div>
+          <div class="strong"><%= t('team.result_' + result.type + '_title', { name: result.name, email: result.email }) %></div>
+          <div class="small muted"><%= result.email %><% if (rn) { %> · <%= rn %><% } %></div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-icon btn-sm" type="button" data-dismiss aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button>
+    </div>
+    <% if (result.type === 'password') { %>
+      <div class="set-secret">
+        <div class="set-secret-row"><span class="set-secret-label"><%= t('common.email') %></span><code data-copy-source dir="ltr"><%= result.email %></code><button class="btn btn-secondary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+        <div class="set-secret-row"><span class="set-secret-label"><%= t('team.temp_password') %></span><code class="set-secret-value" data-copy-source dir="ltr"><%= result.password %></code><button class="btn btn-primary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+      </div>
+      <div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('team.shown_once') %></div><%= t('team.temp_password_note') %></div></div>
+      <% if (typeof publicUrl !== 'undefined' && publicUrl) { %><div class="small muted"><%= t('team.sign_in_at') %> <a class="link" href="/<%= business.slug %>" target="_blank" rel="noopener" dir="ltr"><%= publicUrl.replace(/^https?:\/\//, '') %></a> <%= t('team.or_login') %></div><% } %>
+    <% } else if (result.type === 'invite') { %>
+      <div class="small"><%= result.sent ? t('team.invite_sent_text', { email: result.email }) : t('team.invite_manual_text', { name: result.name }) %></div>
+      <div class="set-url"><%- icon('link', 'icon-sm muted') %><code class="grow truncate" data-copy-source dir="ltr"><%= result.link %></code><button class="btn <%= result.sent ? 'btn-secondary' : 'btn-primary' %> btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('team.copy_link') %></button></div>
+      <div class="tiny muted"><%= t('team.invite_valid') %></div>
+    <% } else if (result.type === 'added') { %>
+      <div class="small"><%= t('team.added_existing_text') %></div>
+    <% } else if (result.type === 'reset') { %>
+      <div class="small"><%= t('team.reset_text', { name: result.name }) %></div>
+      <div class="set-url"><%- icon('link', 'icon-sm muted') %><code class="grow truncate" data-copy-source dir="ltr"><%= result.link %></code><button class="btn btn-primary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('team.copy_link') %></button></div>
+      <div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('team.shown_once') %></div><%= t('team.reset_valid') %></div></div>
+    <% } else if (result.type === 'reset_emailed') { %>
+      <div class="small"><%= t('team.reset_emailed_text', { email: result.email }) %></div>
+    <% } %>
+  </div>
+</section>
+<% } %>

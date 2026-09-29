@@ -1,0 +1,38 @@
+<div class="page-head">
+  <div><h1><%= t('settings.title') %></h1><p><%= t('settings.lead') %></p></div>
+</div>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel set-hero">
+      <div class="panel-body row wrap between">
+        <div class="row grow" style="min-width:0">
+          <div class="logo-preview set-hero-logo"><% if (business.logo_mime) { %><img src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt=""><% } else { %><span class="set-initials"><%= initials(business.name) %></span><% } %></div>
+          <div style="min-width:0">
+            <div class="strong set-hero-name truncate"><%= locale === 'en' && business.name_en ? business.name_en : business.name %></div>
+            <div class="small muted"><%= [business.specialty ? label('specialties', business.specialty) : null, business.city, business.currency, business.timezone].filter(Boolean).join(' · ') %></div>
+            <% if (publicUrl) { %><div class="row-sm mt-1 small"><%- icon('globe', 'icon-sm muted') %><a class="link truncate" href="/<%= business.slug %>" target="_blank" rel="noopener" dir="ltr"><%= publicUrl.replace(/^https?:\/\//, '') %></a><span class="badge <%= business.booking_enabled ? 'badge-success' : 'badge-neutral' %> badge-dot"><%= business.booking_enabled ? t('settings.booking_on') : t('settings.booking_off') %></span></div><% } %>
+          </div>
+        </div>
+        <div class="row-sm wrap">
+          <% if (stats.members !== null) { %><div class="set-mini"><div class="stat-label"><%= t('settings.stat_members') %></div><div class="set-mini-value"><%= fmt.number(stats.members) %></div></div><% } %>
+          <div class="set-mini"><div class="stat-label"><%= t('settings.stat_doctors') %></div><div class="set-mini-value"><%= fmt.number(stats.doctors) %></div></div>
+        </div>
+      </div>
+    </section>
+    <% groups.forEach(function (g) { %>
+    <section>
+      <h2 class="set-group-title"><%= t('settings.group_' + g.group) %></h2>
+      <div class="set-cards">
+        <% g.items.forEach(function (i) { %>
+        <a class="set-card" href="<%= i.href %>">
+          <span class="set-card-icon"><%- icon(i.icon) %></span>
+          <span class="grow" style="min-width:0"><span class="set-card-title"><%= t('settings.nav_' + i.key) %></span><span class="set-card-text"><%= t('settings.desc_' + i.key) %></span></span>
+          <%- icon('chevron-right', 'icon-sm muted flip-rtl') %>
+        </a>
+        <% }) %>
+      </div>
+    </section>
+    <% }) %>
+  </div>
+</div>

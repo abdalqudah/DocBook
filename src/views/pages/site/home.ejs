@@ -1,0 +1,4 @@
+<% if (typeof previewNote !== 'undefined' && previewNote) { %><div class="lp-preview-note"><%- icon('eye', 'icon-sm') %><%= previewNote %></div><% } %>
+<% var _altNext = false; content.sections.forEach(function (s) { if (s.hidden) return; %>
+  <% if (s.type === 'split') { %><%- include('../../partials/site/split', { s: s, alt: _altNext }) %><% _altNext = !_altNext; %><% } else { %><%- include('../../partials/site/' + s.type, { s: s }) %><% } %>
+<% }) %>

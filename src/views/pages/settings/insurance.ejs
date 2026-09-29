@@ -1,0 +1,32 @@
+<% var dlg = typeof openDialog !== 'undefined' && openDialog === 'insurance-dialog'; %>
+<%- include('_head', { heading: t('settings.nav_insurance'), lead: t('settings.insurance_lead'), actions: '<button class="btn btn-primary" type="button" data-open-dialog="insurance-dialog" data-reset-form data-action="/app/settings/insurance" data-dialog-title="' + escapeHtml(t('settings.insurance_add')) + '">' + icon('plus', 'icon-sm') + escapeHtml(t('settings.insurance_add')) + '</button>' }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <section class="panel flush">
+    <% if (!rows.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'shield-plus', emptyTitle: t('settings.insurance_empty_title'), emptyText: t('settings.insurance_empty_text'), emptyAction: '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="insurance-dialog" data-reset-form data-action="/app/settings/insurance">' + escapeHtml(t('settings.insurance_add')) + '</button>' }) %>
+    <% } else { %>
+    <div class="table-wrap"><table class="table responsive">
+      <thead><tr><th><%= t('settings.insurance_name') %></th><th class="num"><%= t('settings.coverage') %></th><th class="num"><%= t('settings.insured_patients') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+      <tbody><% rows.forEach(function (r) { %><tr>
+        <td class="primary-cell"><div class="row-sm"><span class="action-icon"><%- icon('shield-plus', 'icon-sm') %></span><span class="strong"><%= r.name %></span></div></td>
+        <td class="num" data-label="<%= t('settings.coverage') %>"><%= fmt.pct(Number(r.coverage_percent) / 100, 0) %></td>
+        <td class="num" data-label="<%= t('settings.insured_patients') %>"><%= fmt.number(used[r.id] || 0) %></td>
+        <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= r.is_active ? 'badge-success' : 'badge-neutral' %>"><%= r.is_active ? t('common.active') : t('common.inactive') %></span></td>
+        <td class="actions nowrap"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="insurance-dialog" data-action="/app/settings/insurance/<%= r.id %>" data-dialog-title="<%= t('settings.insurance_edit') %>" data-fill="<%= json({ name: r.name, coverage_percent: Number(r.coverage_percent), is_active: !!r.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/settings/insurance/' + r.id + '/delete', confirmText: t('settings.insurance_delete_confirm', { name: r.name }) }) %></td>
+      </tr><% }) %></tbody>
+    </table></div>
+    <% } %>
+  </section>
+</div>
+<dialog class="dialog" id="insurance-dialog" data-new-dialog aria-labelledby="ins-title"<% if (dlg) { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= dlg && formAction ? formAction : '/app/settings/insurance' %>" novalidate>
+    <div class="dialog-head"><h2 id="ins-title" data-dialog-title-target><%= t('settings.insurance_add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (dlg) { %><%- include('../../partials/form-error') %><% } %>
+      <%- include('../../partials/field', { name: 'name', label: t('settings.insurance_name'), required: true, placeholder: t('settings.insurance_name_ph') }) %>
+      <%- include('../../partials/field', { name: 'coverage_percent', label: t('settings.coverage'), value: 0, suffix: '%', help: t('settings.coverage_help'), attrs: 'inputmode="decimal" data-default="0"' }) %>
+      <label class="check"><input type="checkbox" name="is_active" value="1"<%= !dlg || old.is_active ? ' checked' : '' %>><span><%= t('common.active') %></span></label>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

@@ -1,0 +1,84 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; var canApprove = can('payroll.approve'); var me = currentUser ? currentUser.id : null; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <h1><%= t('payroll.title') %></h1>
+    <p><%= t('payroll.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include('_month') %>
+    <% if (rows.length) { %><%- include('../../../partials/export-menu', { href: '/app/payroll/export', query: { period: period } }) %><% } %>
+  </div>
+</div>
+
+<% if (!rows.length) { %>
+  <div class="panel"><%- include('../../../partials/empty', { emptyIcon: 'stethoscope', emptyTitle: t('payroll.empty_title'), emptyText: t('payroll.empty_text'), emptyAction: can('doctors.manage') ? '<a class="btn btn-primary btn-sm" href="/app/doctors/new">' + t('payroll.add_doctor') + '</a>' : '' }) %></div>
+<% } else { %>
+<div class="stats ops-stats">
+  <div class="stat hero"><div class="stat-label"><%= t('payroll.total_net') %><span class="stat-icon"><%- icon('wallet') %></span></div><div class="stat-value"><%= fmt.money(totals.net) %></div><div class="stat-meta"><%= fmt.month(period) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('payroll.total_commission') %><span class="stat-icon"><%- icon('percent') %></span></div><div class="stat-value"><%= fmt.money(totals.commission) %></div><div class="stat-meta"><%= t('payroll.of_revenue', { amount: fmt.money(totals.revenue) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('payroll.base_salaries') %><span class="stat-icon"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.money(totals.base) %></div><div class="stat-meta"><%= t('payroll.adjustments_net', { plus: fmt.money(totals.bonuses), minus: fmt.money(totals.deductions) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('payroll.paid_doctors') %><span class="stat-icon"><%- icon('circle-check') %></span></div><div class="stat-value"><%= fmt.number(paidCount) %> <span class="small muted">/ <%= fmt.number(rows.length) %></span></div><div class="stat-meta"><%= paidCount ? t('payroll.paid_amount', { amount: fmt.money(netPaid) }) : t('payroll.none_paid') %></div></div>
+</div>
+
+<% if (pending.length) { %>
+<div class="panel flush mt-6" id="pending">
+  <div class="panel-head"><h2><%- icon('clock', 'icon-sm') %> <%= t('payroll.pending_title') %> <span class="badge badge-warning"><%= fmt.number(pending.length) %></span></h2><span class="small muted"><%= canApprove ? t('payroll.pending_hint') : t('payroll.pending_hint_view') %></span></div>
+  <ul class="action-list">
+    <% pending.forEach(function (a) { var own = a.created_by === me && !can('data.manage'); %>
+    <li><div class="adj-row">
+      <span class="action-icon <%= a.type === 'bonus' ? 'success' : 'warning' %>"><%- icon(a.type === 'bonus' ? 'trending-up' : (a.type === 'advance' ? 'hand-coins' : 'trending-down')) %></span>
+      <div class="grow">
+        <div class="strong"><a class="link" href="/app/payroll/doctors/<%= a.doctor_id %>?period=<%= period %>"><%= L(a.full_name, a.full_name_en) %></a> · <%= t('payroll.types.' + a.type) %> <span class="nowrap" dir="ltr"><%= a.type === 'bonus' ? '+' : '−' %><%= fmt.money(a.amount) %></span></div>
+        <div class="small muted"><%= a.reason || t('payroll.no_reason') %> · <%= t('payroll.requested_by', { name: a.created_by_name || '—' }) %> · <%= fmt.date(a.created_at) %></div>
+      </div>
+      <% if (canApprove) { %><div class="row-sm adj-actions">
+        <% if (!own) { %><form method="post" action="/app/payroll/adjustments/<%= a.id %>/review"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="/app/payroll?period=<%= period %>#pending"><input type="hidden" name="decision" value="approved"><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('payroll.approve') %></button></form>
+        <% } else { %><span class="tiny muted" title="<%= t('errors.FOUR_EYES') %>"><%- icon('users', 'icon-sm') %> <%= t('payroll.needs_other') %></span><% } %>
+        <form method="post" action="/app/payroll/adjustments/<%= a.id %>/review" data-confirm="<%= t('payroll.reject_confirm') %>" data-confirm-title="<%= t('payroll.reject') %>" data-confirm-yes="<%= t('payroll.reject') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="/app/payroll?period=<%= period %>#pending"><input type="hidden" name="decision" value="rejected"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('x', 'icon-sm') %><%= t('payroll.reject') %></button></form>
+      </div><% } %>
+    </div></li>
+    <% }) %>
+  </ul>
+</div>
+<% } %>
+
+<div class="panel flush mt-6">
+  <div class="panel-head"><h2><%= t('payroll.sheet_title', { month: fmt.month(period) }) %></h2><span class="small muted"><%= t('payroll.sheet_hint') %></span></div>
+  <div class="table-wrap">
+    <table class="table responsive payroll-sheet">
+      <thead><tr>
+        <th><%= t('common.doctor') %></th><th class="num"><%= t('payroll.revenue') %></th><th class="num"><%= t('payroll.visits') %></th>
+        <th class="num"><%= t('payroll.commission') %></th><th class="num"><%= t('payroll.base_salary') %></th><th class="num"><%= t('payroll.adjustments') %></th>
+        <th class="num"><%= t('payroll.net_pay') %></th><th><%= t('common.status') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th>
+      </tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { var d = r.info; var href = '/app/payroll/doctors/' + d.id + '?period=' + period; %>
+        <tr data-href="<%= href %>">
+          <td class="primary-cell doctor-cell"><div class="row-sm"><span class="avatar" style="<%= d.color ? 'background:' + d.color + ';color:var(--surface)' : '' %>"><%= initials(L(d.full_name, d.full_name_en)) %></span><div><a class="strong" href="<%= href %>"><%= L(d.full_name, d.full_name_en) %></a><div class="tiny muted"><%= r.rule ? t('commission.basis.' + r.rule.basis) + ' · ' + (r.rule.basis === 'percentage' ? fmt.number(r.rule.rate) + '%' : fmt.money(r.rule.rate)) : t('payroll.no_rule') %><% if (!d.is_active) { %> · <%= t('common.inactive') %><% } %></div></div></div></td>
+          <td class="num" data-label="<%= t('payroll.revenue') %>"><%= fmt.amount(r.commission.totalRevenue) %></td>
+          <td class="num" data-label="<%= t('payroll.visits') %>"><%= fmt.number(r.commission.visitCount) %><div class="tiny muted"><%= t('payroll.n_patients', { n: fmt.number(r.commission.uniquePatientCount) }) %></div></td>
+          <td class="num" data-label="<%= t('payroll.commission') %>"><%= fmt.amount(r.commission.totalCommission) %></td>
+          <td class="num" data-label="<%= t('payroll.base_salary') %>"><%= fmt.amount(r.baseSalary) %></td>
+          <td class="num" data-label="<%= t('payroll.adjustments') %>"><% if (!r.bonuses && !(r.deductions + r.advances)) { %><span class="muted">—</span><% } %><% if (r.bonuses) { %><div class="ops-pos"><bdi dir="ltr">+<%= fmt.amount(r.bonuses) %></bdi></div><% } %><% if (r.deductions + r.advances) { %><div class="ops-neg"><bdi dir="ltr">−<%= fmt.amount(r.deductions + r.advances) %></bdi></div><% } %></td>
+          <td class="num strong" data-label="<%= t('payroll.net_pay') %>"><%= fmt.amount(r.netPayroll) %><% if (r.payment && Math.abs(Number(r.payment.net_pay) - r.netPayroll) >= 0.005) { %><div class="tiny muted" title="<%= t('payroll.paid_differs') %>"><%= t('payroll.paid_short', { amount: fmt.amount(r.payment.net_pay) }) %></div><% } %></td>
+          <td data-label="<%= t('common.status') %>">
+            <% if (r.payment) { %><span class="badge badge-dot badge-success"><%= t('payroll.status.paid') %></span>
+            <% } else if (r.pending) { %><span class="badge badge-dot badge-warning"><%= t('payroll.status.pending', { n: fmt.number(r.pending) }) %></span>
+            <% } else { %><span class="badge badge-dot badge-neutral"><%= t('payroll.status.unpaid') %></span><% } %>
+          </td>
+          <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="<%= href %>" aria-label="<%= t('common.details') %>" title="<%= t('common.details') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <tfoot><tr>
+        <td><%= t('common.total') %></td><td class="num" data-label="<%= t('payroll.revenue') %>"><%= fmt.amount(totals.revenue) %></td><td class="num" data-label="<%= t('payroll.visits') %>"><%= fmt.number(totals.visits) %></td>
+        <td class="num" data-label="<%= t('payroll.commission') %>"><%= fmt.amount(totals.commission) %></td><td class="num" data-label="<%= t('payroll.base_salary') %>"><%= fmt.amount(totals.base) %></td>
+        <td class="num" data-label="<%= t('payroll.adjustments') %>"><bdi dir="ltr"><%= (totals.bonuses - totals.deductions) < 0 ? '−' : (totals.bonuses - totals.deductions) > 0 ? '+' : '' %><%= fmt.amount(Math.abs(totals.bonuses - totals.deductions)) %></bdi></td>
+        <td class="num" data-label="<%= t('payroll.net_pay') %>"><%= fmt.amount(totals.net) %></td><td></td><td></td>
+      </tr></tfoot>
+    </table>
+  </div>
+  <div class="panel-foot small muted"><%- icon('info', 'icon-sm') %> <%= t('payroll.sheet_note', { currency: currency }) %></div>
+</div>
+<% } %>

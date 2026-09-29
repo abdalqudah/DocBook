@@ -1,0 +1,41 @@
+<div class="page-head"><div><h1><%= t('admin.nav_clinics') %></h1><p><%= t('admin.clinics_sub') %></p></div></div>
+<section class="panel flush">
+  <form class="table-toolbar" method="get" action="/admin/clinics" data-autosubmit>
+    <div class="input-group"><%- icon('search') %><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('admin.search_clinics') %>" aria-label="<%= t('admin.search_clinics') %>"></div>
+    <select class="select" name="status" aria-label="<%= t('admin.col_status') %>">
+      <option value=""><%= t('common.all') %></option>
+      <option value="active"<%= status === 'active' ? ' selected' : '' %>><%= t('admin.status_active') %></option>
+      <option value="suspended"<%= status === 'suspended' ? ' selected' : '' %>><%= t('admin.status_suspended') %></option>
+    </select>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button></noscript>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'hospital', emptyTitle: t('admin.no_clinics') }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('admin.col_clinic') %></th><th><%= t('admin.col_address') %></th><th class="num"><%= t('admin.col_staff') %></th><th class="num"><%= t('admin.col_doctors') %></th><th class="num"><%= t('admin.col_appts') %></th><th><%= t('admin.col_status') %></th><th><%= t('admin.col_created') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (b) { %>
+        <tr data-href="/admin/clinics/<%= b.id %>">
+          <td class="primary-cell"><div class="person"><span class="avatar"><%= initials(b.name) %></span><div><a class="person-name" href="/admin/clinics/<%= b.id %>"><%= b.name %></a><div class="person-sub"><%= [b.name_en, b.city].filter(Boolean).join(' · ') || b.currency %></div></div></div></td>
+          <td data-label="<%= t('admin.col_address') %>"><a class="link mono" href="/<%= b.slug %>" target="_blank" rel="noopener" dir="ltr">/<%= b.slug %></a></td>
+          <td class="num" data-label="<%= t('admin.col_staff') %>"><%= fmt.number(Number(b.staff)) %></td>
+          <td class="num" data-label="<%= t('admin.col_doctors') %>"><%= fmt.number(Number(b.doctors)) %></td>
+          <td class="num" data-label="<%= t('admin.col_appts') %>"><%= fmt.number(Number(b.appts)) %></td>
+          <td data-label="<%= t('admin.col_status') %>"><span class="badge <%= b.status === 'active' ? 'badge-success' : 'badge-danger' %> badge-dot"><%= t('admin.status_' + b.status) %></span></td>
+          <td data-label="<%= t('admin.col_created') %>" class="nowrap"><%= fmt.date(b.created_at) %></td>
+          <td class="actions">
+            <form method="post" action="/admin/clinics/<%= b.id %>/status" data-confirm="<%= t(b.status === 'active' ? 'admin.suspend_confirm' : 'admin.activate_confirm', { name: b.name }) %>" data-confirm-yes="<%= t(b.status === 'active' ? 'admin.suspend' : 'admin.activate') %>"<% if (b.status !== 'active') { %> data-confirm-tone="primary"<% } %>>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= b.status === 'active' ? 'suspended' : 'active' %>">
+              <button class="btn btn-sm <%= b.status === 'active' ? 'btn-danger-ghost' : 'btn-secondary' %>" type="submit"><%- icon(b.status === 'active' ? 'lock' : 'refresh-cw', 'icon-sm') %><%= t(b.status === 'active' ? 'admin.suspend' : 'admin.activate') %></button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</section>

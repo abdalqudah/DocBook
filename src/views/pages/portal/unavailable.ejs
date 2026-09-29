@@ -1,0 +1,15 @@
+<%- include('_hero', { compact: true }) %>
+<div class="container portal-narrow">
+  <div class="portal-card text-center">
+    <div class="empty">
+      <div class="empty-icon"><%- icon('calendar-x') %></div>
+      <h3><%= t('booking.unavailable_title') %></h3>
+      <p><%= t('booking.unavailable_text') %></p>
+      <div class="row wrap mt-2" style="justify-content:center">
+        <% if (clinic.telHref) { %><a class="btn btn-primary" href="<%= clinic.telHref %>"><%- icon('phone', 'icon-sm') %><span dir="ltr"><%= clinic.phone %></span></a><% } %>
+        <% if (clinic.waHref) { %><a class="btn btn-secondary" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square', 'icon-sm') %><%= t('portal.whatsapp') %></a><% } %>
+        <a class="btn btn-ghost" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('portal.back_to_clinic') %></a>
+      </div>
+    </div>
+  </div>
+</div>

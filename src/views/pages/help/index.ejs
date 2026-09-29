@@ -1,0 +1,58 @@
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_admin') %></div>
+    <h1><%= t('help.title') %></h1>
+    <p><%= t('help.lead') %></p>
+  </div>
+</div>
+
+<div class="help-search">
+  <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" data-help-search placeholder="<%= t('help.search_ph') %>" aria-label="<%= t('common.search') %>" autocomplete="off"></div>
+</div>
+
+<div class="help-layout">
+  <nav class="help-nav" aria-label="<%= t('help.topics') %>">
+    <div class="tiny muted strong help-nav-title"><%= t('help.topics') %></div>
+    <% sections.forEach(function (s) { %><a href="#<%= s.id %>" data-help-link="<%= s.id %>"><%- icon(s.icon, 'icon-sm') %><span><%= s.title %></span></a><% }) %>
+  </nav>
+
+  <div class="stack help-main">
+    <div class="panel hidden" data-help-empty><%- include('../../partials/empty', { emptyIcon: 'search', emptyTitle: t('help.no_results'), emptyText: t('help.no_results_text'), compact: true }) %></div>
+
+    <% sections.forEach(function (s) { var link = links[s.id]; %>
+    <section class="panel help-section" id="<%= s.id %>" data-help-section>
+      <div class="panel-head"><h2 class="row-sm"><span class="action-icon brand"><%- icon(s.icon, 'icon-sm') %></span><%= s.title %></h2>
+        <% if (link) { %><a class="btn btn-ghost btn-sm" href="<%= link.href %>"><%= t('help.go_to', { name: t('nav.' + link.nav) }) %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %></div>
+      <div class="panel-body">
+        <div class="faq">
+          <% s.items.forEach(function (it) { %>
+          <details data-help-item><summary><span><%= it.q %></span><%- icon('chevron-down', 'icon-sm') %></summary><p><%= it.a %></p></details>
+          <% }) %>
+        </div>
+        <% if (s.id === 'roles') { %>
+        <h3 class="help-sub"><%= t('help.roles_heading') %></h3>
+        <div class="role-cards">
+          <% roles.forEach(function (r) { %>
+          <div class="role-card" data-help-item>
+            <div class="row between wrap"><strong><%= t('roles.' + r.key) %></strong><span class="badge badge-neutral"><%= t('help.role_entry') %>: <%= t('help.entries.' + r.entry) %></span></div>
+            <p class="small muted"><%= t('role_desc.' + r.key) %></p>
+            <% if (r.all) { %><p class="small"><%- icon('circle-check', 'icon-sm') %> <%= t('help.roles_all') %></p>
+            <% } else if (r.missing) { %><p class="small"><%= t('help.roles_except') %></p><ul class="role-perms"><% r.missing.forEach(function (p) { %><li class="muted"><%- icon('minus', 'icon-sm') %><%= permLabel(p) %></li><% }) %></ul>
+            <% } else { %><ul class="role-perms"><% r.groups.forEach(function (g) { g.perms.forEach(function (p) { %><li><%- icon('check', 'icon-sm') %><%= permLabel(p) %></li><% }) }) %></ul><% } %>
+          </div>
+          <% }) %>
+        </div>
+        <% } %>
+      </div>
+    </section>
+    <% }) %>
+
+    <div class="panel help-contact">
+      <div class="panel-body row wrap">
+        <span class="action-icon brand"><%- icon('life-buoy') %></span>
+        <div class="grow"><div class="strong"><%= t('help.contact_title') %></div><div class="small muted"><%= supportEmail ? t('help.contact_text') : t('help.contact_none') %></div></div>
+        <% if (supportEmail) { %><a class="btn btn-primary btn-sm" href="mailto:<%= supportEmail %>?subject=<%= encodeURIComponent('DocBook — ' + business.name) %>"><%- icon('mail', 'icon-sm') %><%= t('help.contact_btn') %></a><% } %>
+      </div>
+    </div>
+  </div>
+</div>

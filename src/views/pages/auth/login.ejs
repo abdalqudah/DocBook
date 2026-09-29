@@ -3,7 +3,7 @@
 <form class="stack mt-6" method="post" action="/login" novalidate>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <%- include('../../partials/form-error') %>
-  <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, autocomplete: 'email', attrs: 'autofocus inputmode="email"' }) %>
+  <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, autocomplete: 'username', attrs: 'autofocus inputmode="email" dir="ltr"' }) %>
   <div class="field">
     <div class="row between"><label class="label" for="f-password"><%= t('auth.password') %></label><a class="link small" href="/forgot"><%= t('auth.forgot_link') %></a></div>
     <input class="input<%= errors.password ? ' is-invalid' : '' %>" id="f-password" name="password" type="password" required autocomplete="current-password">
@@ -11,4 +11,5 @@
   </div>
   <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('auth.login') %></button>
 </form>
+<div class="alert alert-info mt-6"><%- icon('info') %><div class="grow small"><div class="alert-title"><%= t('auth.staff_hint_title') %></div><%= t('auth.staff_hint_text') %></div></div>
 <p class="mt-6 small muted text-center"><%= t('auth.no_account') %> <a class="link" href="/signup"><%= t('auth.signup_link') %></a></p>

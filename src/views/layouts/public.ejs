@@ -1,34 +1,113 @@
-<!doctype html>
+<%
+  var chrome = typeof siteChrome !== 'undefined' && siteChrome ? siteChrome : null;
+  var Lx = typeof L === 'function' ? L : function (v) { return v && typeof v === 'object' ? (v[locale] || v.ar || v.en || '') : (v || ''); };
+  var portalClinic = typeof clinic !== 'undefined' && clinic ? clinic : null;
+  var seoTitle = typeof pageTitle !== 'undefined' && pageTitle ? pageTitle : ((typeof title !== 'undefined' && title ? title + ' · ' : '') + brandName);
+  var seoDesc = typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : (chrome && chrome.seo ? Lx(chrome.seo.description) : '');
+  var header = chrome ? chrome.header : null;
+  var footer = chrome ? chrome.footer : null;
+%><!doctype html>
 <html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
-<head><%- include('../partials/head') %></head>
-<body class="site">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><%= seoTitle %></title>
+<% if (seoDesc) { %><meta name="description" content="<%= seoDesc %>"><meta property="og:description" content="<%= seoDesc %>"><% } %>
+<meta property="og:title" content="<%= seoTitle %>">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/svg+xml" href="<%= brand.favicon || '/favicon.svg' %>">
+<link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
+<link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
+<link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
+<% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function (h) { if (h === '/css/site.css') return; %><link rel="stylesheet" href="<%= h %><%= h.indexOf('?') === -1 ? '?v=' + assetV : '' %>"><% }) %>
+<meta name="csrf-token" content="<%= csrfToken %>">
+</head>
+<body class="site<%= portalClinic ? ' site-portal' : '' %>">
+<a class="sr-only" href="#main"><%= t('site.skip') %></a>
 <header class="site-nav">
   <div class="container inner">
-    <a class="row-sm" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
-    <nav class="site-links" aria-label="<%= t('site.nav_label') %>">
-      <a href="/#modules"><%= t('site.nav_modules') %></a>
-      <a href="/#payroll"><%= t('site.nav_payroll') %></a>
-      <a href="/#ai"><%= t('site.nav_ai') %></a>
-      <a href="/#security"><%= t('site.nav_security') %></a>
-      <a href="/#faq"><%= t('site.nav_faq') %></a>
-    </nav>
+    <% if (portalClinic) { %>
+      <a class="portal-brand" href="/<%= portalClinic.slug %>">
+        <span class="portal-mark"><% if (portalClinic.logo_mime) { %><img src="/<%= portalClinic.slug %>/logo?v=<%= portalClinic.logo_version %>" alt=""><% } else { %><%= initials(portalClinic.displayName) %><% } %></span>
+        <span class="portal-brand-name"><%= portalClinic.displayName %></span>
+      </a>
+    <% } else { %>
+      <a class="row-sm" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
+      <% if (header && header.items && header.items.length) { %>
+      <nav class="site-links" aria-label="<%= t('site.nav_label') %>">
+        <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href) return; %><a href="<%= n.href %>"><%= Lx(n.label) %></a><% }) %>
+      </nav>
+      <% } %>
+    <% } %>
     <div class="right">
-      <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>"><%- icon('languages') %><span class="hide-sm"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a>
+      <a class="btn btn-ghost btn-sm lang-btn" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span class="hide-xs"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a>
       <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
-      <% if (currentUser) { %><a class="btn btn-primary btn-sm" href="/app"><%= t('site.open_app') %></a><% } else { %>
-      <a class="btn btn-ghost btn-sm hide-sm" href="/login"><%= t('auth.login') %></a>
-      <a class="btn btn-primary btn-sm" href="/signup"><%= t('site.cta_start') %></a><% } %>
+      <% if (portalClinic) { %>
+        <% if (portalClinic.booking_enabled && !(typeof hideBookCta !== 'undefined' && hideBookCta)) { %><a class="btn btn-primary btn-sm" href="/<%= portalClinic.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><span><%= t('portal.book') %></span></a><% } %>
+      <% } else if (currentUser) { %>
+        <a class="btn btn-primary btn-sm" href="/app"><%= t('site.open_app') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
+      <% } else { %>
+        <% if (!header || header.show_login !== 'no') { %><a class="btn btn-ghost btn-sm hide-sm" href="/login"><%= header ? Lx(header.login_label) || t('site.sign_in') : t('site.sign_in') %></a><% } %>
+        <a class="btn btn-primary btn-sm" href="<%= header && header.signup_href ? header.signup_href : '/signup' %>"><%= header ? Lx(header.signup_label) || t('site.start_free') : t('site.start_free') %></a>
+      <% } %>
+      <% if (!portalClinic && header && header.items && header.items.length) { %>
+      <details class="site-menu">
+        <summary class="btn btn-ghost btn-icon" aria-label="<%= t('site.menu') %>"><%- icon('menu') %></summary>
+        <div class="site-menu-panel">
+          <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href) return; %><a href="<%= n.href %>" data-menu-close><%= Lx(n.label) %></a><% }) %>
+          <% if (!currentUser) { %><a href="/login"><%= header ? Lx(header.login_label) || t('site.sign_in') : t('site.sign_in') %></a><% } %>
+        </div>
+      </details>
+      <% } %>
     </div>
   </div>
 </header>
 <main id="main"><%- include('../partials/toasts') %><%- body %></main>
-<footer class="footer">
+<% if (portalClinic) { %>
+<footer class="footer portal-footer">
   <div class="container inner">
-    <div class="row-sm"><%- include('../partials/logo') %></div>
-    <div class="row wrap small"><span>© <%= new Date().getFullYear() %> <%= brandName %></span><span><%= tagline %></span><% if (brand.supportEmail) { %><a href="mailto:<%= brand.supportEmail %>"><%= brand.supportEmail %></a><% } %></div>
+    <span>© <%= new Date().getFullYear() %> <%= portalClinic.displayName %></span>
+    <a class="row-sm" href="/"><%= t('portal.powered', { brand: brandName }) %></a>
   </div>
 </footer>
+<% } else { %>
+<footer class="site-footer">
+  <div class="container">
+    <div class="site-footer-grid">
+      <div class="site-footer-brand">
+        <a class="row-sm" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
+        <% if (footer && Lx(footer.tagline)) { %><p><%= Lx(footer.tagline) %></p><% } %>
+        <% if (footer && footer.social && footer.social.length) { %>
+        <div class="site-social">
+          <% footer.social.forEach(function (s) { if (!s.href) return; %><a class="btn btn-ghost btn-icon" href="<%= s.href %>" rel="noopener" target="_blank" aria-label="<%= Lx(s.label) %>" title="<%= Lx(s.label) %>"><%- icon(s.icon || 'link') %></a><% }) %>
+        </div>
+        <% } %>
+      </div>
+      <% if (footer) { ['1', '2', '3'].forEach(function (c) { var links = (footer.items || []).filter(function (l) { return String(l.column || '1') === c && l.href && Lx(l.label); }); if (!links.length) return; %>
+      <div class="site-footer-col">
+        <% if (Lx(footer['col' + c + '_title'])) { %><h3><%= Lx(footer['col' + c + '_title']) %></h3><% } %>
+        <ul><% links.forEach(function (l) { %><li><a href="<%= l.href %>"><%= Lx(l.label) %></a></li><% }) %></ul>
+      </div>
+      <% }); } %>
+      <% if (footer && (footer.email || footer.phone || Lx(footer.address))) { %>
+      <div class="site-footer-col">
+        <ul class="site-contact">
+          <% if (footer.email) { %><li><%- icon('mail', 'icon-sm') %><a href="mailto:<%= footer.email %>" dir="ltr"><%= footer.email %></a></li><% } %>
+          <% if (footer.phone) { %><li><%- icon('phone', 'icon-sm') %><a href="tel:<%= footer.phone.replace(/[^0-9+]/g, '') %>" dir="ltr"><%= footer.phone %></a></li><% } %>
+          <% if (Lx(footer.address)) { %><li><%- icon('map-pin', 'icon-sm') %><span><%= Lx(footer.address) %></span></li><% } %>
+        </ul>
+      </div>
+      <% } %>
+    </div>
+    <div class="site-footer-bottom">
+      <span>© <%= new Date().getFullYear() %> <%= footer && footer.copyright ? footer.copyright : brandName %>. <%= t('site.rights') %></span>
+      <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%= locale === 'ar' ? 'English' : 'العربية' %></a>
+    </div>
+  </div>
+</footer>
+<% } %>
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
-<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
+<script src="/js/site.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { if (h === '/js/site.js') return; %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
 </body>
 </html>

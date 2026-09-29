@@ -1,0 +1,9 @@
+<% var d = s.data || {}; %>
+<section class="section lp-text" id="<%= s.anchor %>">
+  <div class="container lp-narrow">
+    <%- include('head', { s: s }) %>
+    <div class="lp-prose">
+      <% String(L(d.body) || '').split(/\n\s*\n/).forEach(function (p) { if (!p.trim()) return; %><p><%= p.trim() %></p><% }) %>
+    </div>
+  </div>
+</section>

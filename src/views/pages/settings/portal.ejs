@@ -1,0 +1,61 @@
+<% var slugVal = old && old.slug !== undefined ? old.slug : (b.slug || suggestion || ''); %>
+<%- include('_head', { heading: t('settings.nav_portal'), lead: t('settings.portal_lead'), actions: b.slug ? '<a class="btn btn-secondary" href="/' + escapeHtml(b.slug) + '" target="_blank" rel="noopener">' + icon('external-link', 'icon-sm') + escapeHtml(t('settings.preview_page')) + '</a>' : '' }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.portal_address') %></h2><div class="panel-sub"><%= t('settings.portal_address_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <% if (publicUrl) { %>
+        <div class="set-url">
+          <%- icon('globe', 'icon-sm muted') %>
+          <code class="grow truncate" data-copy-source dir="ltr"><%= publicUrl %></code>
+          <button class="btn btn-secondary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button>
+          <a class="btn btn-ghost btn-sm" href="/<%= b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><span class="hide-sm"><%= t('common.open') %></span></a>
+        </div>
+        <% } %>
+        <form class="stack" method="post" action="/app/settings/portal/slug" novalidate data-slug-form>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('../../partials/form-error') %>
+          <div class="field">
+            <label class="label" for="f-slug"><%= t('settings.portal_slug') %></label>
+            <div class="input-affix set-slug-input" dir="ltr"><span class="affix"><%= base.replace(/^https?:\/\//, '') %>/</span><input class="input<%= errors.slug ? ' is-invalid' : '' %>" id="f-slug" name="slug" value="<%= slugVal %>" autocomplete="off" spellcheck="false" maxlength="40" required data-slug-input data-check-url="/app/settings/portal/check"></div>
+            <% if (errors.slug) { %><span class="field-error"><%= errors.slug %></span><% } else { %><span class="help" data-slug-status><%= t('settings.portal_slug_help') %></span><% } %>
+          </div>
+          <div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><%= t('settings.portal_change_warn') %></div></div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit"><%= b.slug ? t('settings.portal_change') : t('settings.portal_set') %></button></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.booking_title') %></h2><div class="panel-sub"><%= t('settings.booking_sub') %></div></div>
+        <span class="badge badge-dot <%= b.booking_enabled ? 'badge-success' : 'badge-neutral' %>"><%= b.booking_enabled ? t('settings.booking_on') : t('settings.booking_off') %></span></div>
+      <div class="panel-body stack">
+        <ul class="checklist">
+          <li class="<%= readiness.doctors ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= t('settings.ready_doctors', { n: readiness.doctors }) %></span><a class="link small" href="/app/doctors"><%= t('common.manage') %></a></li>
+          <li class="<%= readiness.services ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= t('settings.ready_services', { n: readiness.services }) %></span><a class="link small" href="/app/services"><%= t('common.manage') %></a></li>
+          <li class="<%= b.slug ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= t('settings.ready_slug') %></span></li>
+        </ul>
+        <form method="post" action="/app/settings/portal/booking" class="row between wrap set-toggle-row"<% if (b.booking_enabled) { %> data-confirm="<%= t('settings.booking_off_confirm') %>" data-confirm-title="<%= t('settings.booking_title') %>" data-confirm-yes="<%= t('settings.booking_turn_off') %>"<% } %>>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="booking_enabled" value="<%= b.booking_enabled ? '0' : '1' %>">
+          <div class="small muted grow" style="min-width:220px"><%= b.booking_enabled ? t('settings.booking_on_text') : t('settings.booking_off_text') %></div>
+          <button class="btn <%= b.booking_enabled ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%- icon(b.booking_enabled ? 'toggle-right' : 'toggle-left', 'icon-sm') %><%= b.booking_enabled ? t('settings.booking_turn_off') : t('settings.booking_turn_on') %></button>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('settings.staff_entry_title') %></h2><div class="panel-sub"><%= t('settings.staff_entry_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <ol class="set-steps">
+          <li><span class="set-step-no">1</span><div><div class="strong"><%= t('settings.staff_entry_1') %></div><div class="small muted"><%= publicUrl ? t('settings.staff_entry_1_text', { url: publicUrl.replace(/^https?:\/\//, '') }) : t('settings.staff_entry_1_noslug') %></div></div></li>
+          <li><span class="set-step-no">2</span><div><div class="strong"><%= t('settings.staff_entry_2') %></div>
+            <div class="set-role-chips mt-2"><% portalRoles.forEach(function (r) { %><span class="set-role-chip"><%- icon(r.icon, 'icon-sm') %><%= t('roles.' + r.key) %></span><% }) %></div></div></li>
+          <li><span class="set-step-no">3</span><div><div class="strong"><%= t('settings.staff_entry_3') %></div><div class="small muted"><%= t('settings.staff_entry_3_text') %></div></div></li>
+        </ol>
+        <% if (can('users.manage')) { %><div><a class="btn btn-secondary btn-sm" href="/app/settings/team"><%- icon('user-cog', 'icon-sm') %><%= t('settings.nav_team') %></a></div><% } %>
+      </div>
+    </section>
+  </div>
+</div>

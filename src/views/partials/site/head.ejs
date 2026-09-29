@@ -1,0 +1,8 @@
+<% var _d = s.data || {}; var _center = typeof center !== 'undefined' && center; %>
+<% if (L(_d.kicker) || L(_d.title) || L(_d.lead)) { %>
+<div class="section-head<%= _center ? ' center' : '' %>">
+  <% if (L(_d.kicker)) { %><span class="kicker"><%= L(_d.kicker) %></span><% } %>
+  <% if (L(_d.title)) { %><h2><%= L(_d.title) %></h2><% } %>
+  <% if (L(_d.lead)) { %><p><%= L(_d.lead) %></p><% } %>
+</div>
+<% } %>

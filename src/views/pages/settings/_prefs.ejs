@@ -1,0 +1,18 @@
+<% var myTheme = currentUser.theme || 'system'; var ret = typeof returnTo !== 'undefined' ? returnTo : fullPath; %>
+<form method="post" action="/app/settings/preferences" class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= ret %>">
+  <div class="field"><span class="label"><%= t('settings.theme') %></span>
+    <div class="theme-preview">
+      <% [['system', 'monitor'], ['light', 'sun'], ['dark', 'moon']].forEach(function (o) { %>
+      <label class="choice"><input type="radio" name="theme" value="<%= o[0] %>"<%= myTheme === o[0] ? ' checked' : '' %>><span class="box"><span class="row-sm"><%- icon(o[1], 'icon-sm') %><span class="name"><%= t('settings.theme_' + o[0]) %></span></span><span class="meta"><%= t('settings.theme_' + o[0] + '_text') %></span></span></label>
+      <% }) %>
+    </div>
+  </div>
+  <div class="field"><span class="label"><%= t('settings.language') %></span>
+    <div class="segmented" role="radiogroup">
+      <label><input type="radio" name="locale" value="ar"<%= locale === 'ar' ? ' checked' : '' %>><span>العربية</span></label>
+      <label><input type="radio" name="locale" value="en"<%= locale === 'en' ? ' checked' : '' %>><span>English</span></label>
+    </div>
+  </div>
+  <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>

@@ -1,0 +1,25 @@
+<div class="container portal-narrow">
+  <div class="booked-card">
+    <div class="booked-check"><%- icon('circle-check', 'icon-xl') %></div>
+    <h1><%= t('booking.done_title') %></h1>
+    <p class="muted"><%= t('booking.done_text', { clinic: clinic.displayName }) %></p>
+    <div class="booked-summary">
+      <div class="booked-date">
+        <span class="booked-day num"><%= Number(appt.appointment_date.slice(8, 10)) %></span>
+        <span class="booked-month"><%= fmt.date(appt.appointment_date, { month: 'long', year: 'numeric' }) %></span>
+      </div>
+      <dl class="dl">
+        <dt><%= t('common.date') %></dt><dd><%= fmt.date(appt.appointment_date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></dd>
+        <dt><%= t('common.time') %></dt><dd class="num" dir="ltr" style="text-align:start"><%= String(appt.appointment_time).slice(0, 5) %></dd>
+        <% if (appt.doctor) { %><dt><%= t('common.doctor') %></dt><dd><%= appt.doctor %></dd><% } %>
+        <% if (appt.service) { %><dt><%= t('common.service') %></dt><dd><%= appt.service %></dd><% } %>
+        <dt><%= t('common.status') %></dt><dd><span class="badge badge-warning badge-dot"><%= t('booking.status_pending') %></span></dd>
+      </dl>
+    </div>
+    <div class="row wrap booked-actions">
+      <a class="btn btn-primary" href="/<%= clinic.slug %>/book/appointment.ics"><%- icon('calendar-plus', 'icon-sm') %><%= t('booking.add_calendar') %></a>
+      <% if (clinic.telHref) { %><a class="btn btn-secondary" href="<%= clinic.telHref %>"><%- icon('phone', 'icon-sm') %><%= t('portal.call') %></a><% } %>
+      <a class="btn btn-ghost" href="/<%= clinic.slug %>"><%= t('portal.back_to_clinic') %></a>
+    </div>
+  </div>
+</div>
