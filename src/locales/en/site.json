@@ -283,17 +283,23 @@
     "you": "You",
     "self_disable": "You cannot disable your own account.",
     "act": {
-      "platform.site_updated": "Landing page updated",
-      "platform.site_reset": "Landing page reset to defaults",
-      "platform.clinic_suspended": "Clinic suspended",
-      "platform.clinic_activated": "Clinic reactivated",
-      "platform.user_disabled": "Account disabled",
-      "platform.user_enabled": "Account enabled",
-      "platform.site_media_uploaded": "Image added to the media library",
-      "platform.site_media_renamed": "Media image renamed",
-      "platform.site_media_deleted": "Image deleted from the media library",
-      "platform.seo_updated": "Search & AI settings updated",
-      "platform.marketing_updated": "Social links or pixels updated"
+      "platform": {
+        "site_updated": "Landing page updated",
+        "site_reset": "Landing page reset to defaults",
+        "clinic_suspended": "Clinic suspended",
+        "clinic_activated": "Clinic reactivated",
+        "user_disabled": "Account disabled",
+        "user_enabled": "Account enabled",
+        "site_media_uploaded": "Image added to the media library",
+        "site_media_renamed": "Media image renamed",
+        "site_media_deleted": "Image deleted from the media library",
+        "seo_updated": "Search & AI settings updated",
+        "marketing_updated": "Social links or pixels updated",
+        "google_updated": "Google sign-in settings updated",
+        "domain_approved": "Clinic domain approved",
+        "domain_suspended": "Clinic domain suspended",
+        "domain_resumed": "Clinic domain resumed"
+      }
     },
     "site": {
       "title": "Landing page",

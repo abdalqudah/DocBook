@@ -283,17 +283,23 @@
     "you": "أنت",
     "self_disable": "لا يمكنك تعطيل حسابك.",
     "act": {
-      "platform.site_updated": "تعديل الصفحة الرئيسية",
-      "platform.site_reset": "استعادة الصفحة الرئيسية الافتراضية",
-      "platform.clinic_suspended": "إيقاف عيادة",
-      "platform.clinic_activated": "إعادة تفعيل عيادة",
-      "platform.user_disabled": "تعطيل حساب",
-      "platform.user_enabled": "تفعيل حساب",
-      "platform.site_media_uploaded": "إضافة صورة إلى المكتبة",
-      "platform.site_media_renamed": "إعادة تسمية صورة",
-      "platform.site_media_deleted": "حذف صورة من المكتبة",
-      "platform.seo_updated": "تعديل إعدادات البحث والذكاء الاصطناعي",
-      "platform.marketing_updated": "تعديل روابط التواصل أو البكسلات"
+      "platform": {
+        "site_updated": "تعديل الصفحة الرئيسية",
+        "site_reset": "استعادة الصفحة الرئيسية الافتراضية",
+        "clinic_suspended": "إيقاف عيادة",
+        "clinic_activated": "إعادة تفعيل عيادة",
+        "user_disabled": "تعطيل حساب",
+        "user_enabled": "تفعيل حساب",
+        "site_media_uploaded": "إضافة صورة إلى المكتبة",
+        "site_media_renamed": "إعادة تسمية صورة",
+        "site_media_deleted": "حذف صورة من المكتبة",
+        "seo_updated": "تعديل إعدادات البحث والذكاء الاصطناعي",
+        "marketing_updated": "تعديل روابط التواصل أو البكسلات",
+        "google_updated": "تم تحديث إعدادات الدخول بحساب Google",
+        "domain_approved": "تمت الموافقة على دومين عيادة",
+        "domain_suspended": "تم إيقاف دومين عيادة",
+        "domain_resumed": "تمت إعادة تفعيل دومين عيادة"
+      }
     },
     "site": {
       "title": "الصفحة الرئيسية",
