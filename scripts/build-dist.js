@@ -1,6 +1,6 @@
 // Builds dist/docbook: one bundled app.js (all libraries inside, no node_modules and no `npm install` needed)
 // plus the files it reads at run time (views, locales, migrations, public assets, PDF fonts).
-//   npm run build   →   dist/docbook/  and  dist/docbook-<version>.zip
+//   npm run build   →   dist/docbook/  and  dist/docbook-<version>-dist.zip
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -73,8 +73,14 @@ function copy(from, to, filter) {
     scripts: { start: 'node app.js', migrate: 'node app.js migrate' },
   }, null, 2)}\n`);
 
-  const zip = path.join(ROOT, 'dist', `docbook-${version}.zip`);
+  // CloudLinux NodeJS Selector keeps an app's modules in its own virtual environment and links it as
+  // "node_modules" in the app root, so the build must never contain anything with that name.
+  const clash = execFileSync('find', ['.', '-name', 'node_modules'], { cwd: OUT, encoding: 'utf8' }).trim();
+  if (clash) throw new Error(`dist must not contain node_modules:\n${clash}`);
+
+  // Files sit at the top of the zip, so it extracts straight into the application root.
+  const zip = path.join(ROOT, 'dist', `docbook-${version}-dist.zip`);
   fs.rmSync(zip, { force: true });
-  execFileSync('zip', ['-qr', zip, 'docbook'], { cwd: path.dirname(OUT) });
+  execFileSync('zip', ['-qr', zip, '.'], { cwd: OUT });
   console.log(`Built ${path.relative(ROOT, OUT)} and ${path.relative(ROOT, zip)}`);
 })().catch((e) => { console.error(e); process.exitCode = 1; });

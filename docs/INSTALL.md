@@ -41,8 +41,7 @@ EXIT;
 ```bash
 sudo mkdir -p /var/www/docbook && sudo chown $USER /var/www/docbook
 cd /var/www/docbook
-unzip ~/docbook-2.0.0.zip    # نسخة dist: مجلد docbook فيه app.js جاهز بكل المكتبات
-mv docbook/* docbook/.env.example . && rmdir docbook
+unzip ~/docbook-2.0.0-dist.zip   # نسخة dist: app.js جاهز بكل المكتبات، بدون node_modules
 ```
 > نسخة الـ dist لا تحتاج `npm install`. إذا كنت تستخدم الكود المصدري بدلًا منها: `npm ci --omit=dev` (وتُبنى الـ dist بالأمر `npm run build`).
 
@@ -107,6 +106,7 @@ sudo certbot --nginx -d docbook.yourdomain.com
    - Application startup file: `app.js`
 4. **المتغيرات:** في نفس الصفحة أضف Environment variables (نفس محتوى `.env.example`): `APP_URL`، `SESSION_SECRET`، `APP_KEY`، `DB_HOST=localhost`، `DB_NAME`، `DB_USER`، `DB_PASSWORD`، `SUPER_ADMIN_EMAIL`، `SUPER_ADMIN_PASSWORD`، `AUTO_MIGRATE=true`. (أو أنشئ ملف `.env` داخل المجلد.)
 5. اضغط **Restart** (نسخة الـ dist لا تحتاج Run NPM Install).
+   > CloudLinux: الـ dist لا يحتوي مجلد `node_modules` (يُنشئ CloudLinux رابطًا بهذا الاسم بنفسه). إذا ظهرت رسالة أن المجلد يحتوي `node_modules`، احذف أي `node_modules` قديم من مجلد التطبيق (من رفع سابق) قبل إنشاء التطبيق.
 6. SSL: cPanel ← SSL/TLS Status ← Run AutoSSL.
 7. مع `AUTO_MIGRATE=true` تُنشأ الجداول تلقائيًا عند أول تشغيل.
 
@@ -148,7 +148,7 @@ ICE_SERVERS=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:yourdomain.co
 ```bash
 cd /var/www/docbook
 mysqldump -u docbook -p docbook > ~/backup-$(date +%F).sql   # نسخة احتياطية أولًا
-unzip -o ~/docbook-new.zip && cp -r docbook/. . && rm -r docbook
+unzip -o ~/docbook-new-dist.zip
 node app.js migrate
 pm2 restart docbook
 ```
