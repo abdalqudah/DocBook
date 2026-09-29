@@ -1,0 +1,123 @@
+<%
+  var canClose = can('billing.manage');
+  var stamp = function (d) { var l = localTime(d) || {}; return { date: l.date, time: l.time }; };
+  var ps = stamp(period.start); var pe = stamp(period.end);
+  var afterExpenses = period.expected - period.expenses.total;
+  var varianceCell = function (v) {
+    v = Number(v) || 0;
+    if (v === 0) return '<span class="cs-var">' + escapeHtml(t('cashier.balanced')) + '</span>';
+    return '<span class="cs-var ' + (v > 0 ? 'is-over' : 'is-short') + '"><span class="cs-var-dot" aria-hidden="true"></span>' + escapeHtml(t(v > 0 ? 'cashier.over' : 'cashier.short')) + ' <span class="num">' + escapeHtml(fmt.amount(Math.abs(v))) + '</span></span>';
+  };
+  var val = function (k) { return old && old[k] !== undefined ? old[k] : ''; };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><% if (canClose) { %><a href="/app/cashier"><%= t('cashier.title') %></a><%- icon('chevron-right', 'flip-rtl') %><% } else { %><%= t('nav.group_finance') %><% } %></div>
+    <h1><%= t('cashier.closings_title') %></h1>
+    <p><%= t('cashier.closings_lead') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include('../../../partials/export-menu', { href: '/app/cashier/closings/export' }) %>
+  </div>
+</div>
+
+<%- include('../../../partials/form-error', { formError: formError, errors: errors }) %>
+
+<div class="cs-drawer">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('cashier.open_period') %></h2><div class="panel-sub"><%= period.sinceClosing ? t('cashier.period_since_closing', { date: fmt.date(ps.date), time: ps.time }) : t('cashier.period_since_today', { date: fmt.date(ps.date) }) %></div></div></div>
+    <div class="panel-body stack">
+      <div>
+        <div class="cs-figure-label"><%= t('cashier.expected') %></div>
+        <div class="cs-figure num"><%= fmt.amount(period.expected) %> <span class="cs-cur"><%= currency %></span></div>
+        <div class="small muted mt-1">
+          <%= t('cashier.cash_receipts_n', { n: fmt.number(period.count) }) %>
+          <% if (period.firstCashAt) { var fc = stamp(period.firstCashAt); %> · <%= t('cashier.first_cash_at', { time: fc.time }) %><% } %>
+          · <%= t('cashier.until_now', { time: pe.time }) %>
+        </div>
+      </div>
+      <dl class="cs-sum cs-sum-plain">
+        <% if (period.expenses.count) { %>
+        <div><dt><%= t('cashier.cash_expenses', { n: fmt.number(period.expenses.count) }) %></dt><dd class="num">− <%= fmt.amount(period.expenses.total) %></dd></div>
+        <div><dt class="strong"><%= t('cashier.expected_after_expenses') %></dt><dd class="num strong"><%= fmt.amount(afterExpenses) %></dd></div>
+        <% } %>
+      </dl>
+      <ul class="cs-explain small muted">
+        <li><%= period.sinceClosing ? t('cashier.explain_since_closing') : t('cashier.explain_first') %></li>
+        <li><%= t('cashier.explain_cash_only') %></li>
+        <li><%= period.expenses.count ? t('cashier.explain_expenses_info') : t('cashier.explain_expenses') %></li>
+      </ul>
+    </div>
+  </section>
+
+  <% if (canClose) { %>
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('cashier.count_drawer') %></h2></div>
+    <form method="post" action="/app/cashier/closings" data-closing data-expected="<%= period.expected %>" data-expected-after="<%= afterExpenses %>"
+      data-confirm="<%= t('cashier.close_confirm') %>" data-confirm-title="<%= t('cashier.close_drawer') %>" data-confirm-yes="<%= t('cashier.close_drawer') %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="seen_expected" value="<%= period.expected %>">
+      <input type="hidden" name="seen_count" value="<%= period.count %>">
+      <div class="panel-body stack">
+        <div class="field">
+          <label class="label" for="cs-counted"><%= t('cashier.counted') %><span class="req">*</span></label>
+          <div class="input-affix"><input class="input num cs-counted<%= errors.counted_cash ? ' is-invalid' : '' %>" id="cs-counted" name="counted_cash" type="number" min="0" step="any" inputmode="decimal" required value="<%= val('counted_cash') %>"><span class="affix"><%= currency %></span></div>
+          <% if (errors.counted_cash) { %><span class="field-error"><%= errors.counted_cash %></span><% } %>
+        </div>
+        <div class="cs-variance-box">
+          <div><div class="small muted"><%= t('cashier.variance') %></div><div class="cs-variance num" data-variance data-sign="zero">—</div></div>
+          <div class="small muted" data-variance-text data-even="<%= t('cashier.balanced') %>" data-over="<%= t('cashier.over_help') %>" data-short="<%= t('cashier.short_help') %>"></div>
+          <% if (period.expenses.count) { %><div class="small muted"><%= t('cashier.variance_after') %>: <span class="num strong" data-variance-after>—</span></div><% } %>
+        </div>
+
+        <details class="cs-denoms">
+          <summary><%- icon('calculator', 'icon-sm') %><%= t('cashier.count_helper') %></summary>
+          <table class="cs-denom-table" data-denoms>
+            <thead><tr><th><%= t('cashier.denomination') %></th><th><%= t('cashier.pieces') %></th><th class="num"><%= t('common.total') %></th></tr></thead>
+            <tbody>
+              <% denominations.forEach(function (dn) { %>
+              <tr><td class="num strong"><%= fmt.number(dn, 3) %></td><td><input class="input num" type="number" min="0" step="1" inputmode="numeric" data-denom="<%= dn %>" aria-label="<%= t('cashier.pieces_of', { v: fmt.number(dn, 3) }) %>"></td><td class="num muted" data-denom-total>—</td></tr>
+              <% }) %>
+            </tbody>
+            <tfoot><tr><td colspan="2"><%= t('common.total') %></td><td class="num strong" data-denom-sum>—</td></tr></tfoot>
+          </table>
+          <p class="help"><%= t('cashier.count_helper_help') %></p>
+        </details>
+
+        <%- include('../../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', value: val('notes'), placeholder: t('cashier.notes_ph') }) %>
+      </div>
+      <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('lock', 'icon-sm') %><%= t('cashier.close_drawer') %></button></div>
+    </form>
+  </section>
+  <% } %>
+</div>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><h2><%= t('cashier.history') %></h2><span class="small muted"><%= t('cashier.history_n', { n: fmt.number(closings.length) }) %></span></div>
+  <div class="panel-body">
+  <% if (!closings.length) { %>
+    <p class="cs-empty-line cs-empty-pad"><%= t('cashier.history_empty') %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('cashier.closed_at') %></th><th><%= t('cashier.period') %></th><th class="num"><%= t('cashier.cash_receipts') %></th><th class="num"><%= t('cashier.expected') %></th><th class="num"><%= t('cashier.counted') %></th><th><%= t('cashier.variance') %></th><th><%= t('cashier.closed_by') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+          <% closings.forEach(function (c) { var s = stamp(c.period_start); var e = stamp(c.period_end); %>
+          <tr>
+            <td class="primary-cell"><div class="strong"><%= fmt.date(e.date) %> · <span dir="ltr"><%= e.time %></span></div><% if (c.notes) { %><div class="small muted cs-note" dir="auto"><%= c.notes %></div><% } %></td>
+            <td data-label="<%= t('cashier.period') %>" class="small"><span><%= s.date === e.date ? '' : fmt.date(s.date) + ' ' %><span dir="ltr"><%= s.time %></span> – <span dir="ltr"><%= e.time %></span></span></td>
+            <td data-label="<%= t('cashier.cash_receipts') %>" class="num"><%= fmt.number(c.invoice_count) %></td>
+            <td data-label="<%= t('cashier.expected') %>" class="num"><%= fmt.amount(c.expected_cash) %></td>
+            <td data-label="<%= t('cashier.counted') %>" class="num"><%= fmt.amount(c.counted_cash) %></td>
+            <td data-label="<%= t('cashier.variance') %>"><%- varianceCell(c.variance) %></td>
+            <td data-label="<%= t('cashier.closed_by') %>"><%= c.closed_by_name || '—' %></td>
+            <td class="actions"><a class="btn btn-ghost btn-sm" href="/app/cashier/closings/<%= c.id %>"><%- icon('file-text', 'icon-sm') %><%= t('cashier.slip') %></a></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+  </div>
+</section>
+<script type="application/json" id="cs-closing-data"><%- json({ decimals: decimals, locale: locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US' }) %></script>

@@ -23,7 +23,10 @@
     "phone_help": "Used to find the patient when they book again.",
     "dob": "Date of birth",
     "gender": "Gender",
-    "genders": { "male": "Male", "female": "Female" },
+    "genders": {
+      "male": "Male",
+      "female": "Female"
+    },
     "not_specified": "Not specified",
     "national_id": "National ID",
     "insurance": "Insurance",
@@ -120,7 +123,9 @@
     "void_help": "Voiding removes this invoice and returns the visit to unpaid. It is recorded in the audit log.",
     "void_confirm": "Void invoice #{n}? The visit will be marked unpaid again.",
     "void_mismatch": "Type the invoice number exactly to void it.",
-    "voided": "Invoice #{n} was voided."
+    "voided": "Invoice #{n} was voided.",
+    "insurer_share": "Insurance covers ({pct}%)",
+    "patient_share": "Patient pays"
   },
   "dashboard": {
     "greet_morning": "Good morning, {name}",
@@ -188,9 +193,21 @@
     "with_doctor": "With doctor",
     "checked_in": "Checked in",
     "online": "Online",
-    "statuses": { "pending": "Pending", "confirmed": "Confirmed", "completed": "Completed", "cancelled": "Cancelled", "no_show": "No-show" },
-    "sources": { "staff": "Booked by staff", "website": "Online booking" },
-    "search": { "patient": "Patient", "doctor": "Doctor" }
+    "statuses": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
+    },
+    "sources": {
+      "staff": "Booked by staff",
+      "website": "Online booking"
+    },
+    "search": {
+      "patient": "Patient",
+      "doctor": "Doctor"
+    }
   },
   "my_day": {
     "title": "My day",
@@ -280,7 +297,16 @@
     "margin": "{pct} margin",
     "no_service": "No service",
     "other": "Other",
-    "sec": { "status": "Appointments by status", "doctors": "By doctor", "services": "By service", "sources": "Staff vs online bookings", "patients": "New vs returning patients", "methods": "Revenue by payment method", "daily": "Daily activity", "finance": "Profit & loss" }
+    "sec": {
+      "status": "Appointments by status",
+      "doctors": "By doctor",
+      "services": "By service",
+      "sources": "Staff vs online bookings",
+      "patients": "New vs returning patients",
+      "methods": "Revenue by payment method",
+      "daily": "Daily activity",
+      "finance": "Profit & loss"
+    }
   },
   "errors_records": {
     "PATIENT_HAS_INVOICES": "This patient has invoices, so their file can't be deleted. Void the invoices first if they were issued by mistake.",

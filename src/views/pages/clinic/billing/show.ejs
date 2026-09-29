@@ -1,4 +1,5 @@
-<% var printing = query.print === '1'; var original = Number(inv.amount) + Number(inv.discount_amount); var hasDiscount = Number(inv.discount_amount) > 0 || Number(inv.discount_percent) > 0; %>
+<% var printing = query.print === '1'; var original = Number(inv.amount) + Number(inv.discount_amount);
+   var billLines = Array.isArray(inv.items) ? inv.items : (function () { try { var p = JSON.parse(inv.items || 'null'); return Array.isArray(p) ? p : []; } catch (e) { return []; } })(); var hasDiscount = Number(inv.discount_amount) > 0 || Number(inv.discount_percent) > 0; %>
 <% if (!printing) { %>
 <div class="page-head">
   <div>
@@ -45,14 +46,24 @@
 
     <table class="statement rec-inv-lines">
       <tbody>
+        <% if (billLines.length) { billLines.forEach(function (l) { %>
+        <tr><td><div class="strong" dir="auto"><%= l.name %></div><div class="small muted"><% if (Number(l.qty) > 1) { %><span class="num"><%= fmt.number(l.qty) %> × <%= fmt.amount(l.unitPrice) %></span><% } else { %><%= inv.doctor_name || '' %><% } %></div></td><td><%= fmt.money(l.total !== undefined ? l.total : Number(l.qty) * Number(l.unitPrice)) %></td></tr>
+        <% }); if (billLines.length > 1 || hasDiscount) { %><tr class="sub"><td><%= t('cashier.subtotal') %></td><td><%= fmt.money(original) %></td></tr><% } %>
+        <% } else { %>
         <tr><td><div class="strong"><%= inv.service_name || t('billing.consultation') %></div><div class="small muted"><%= inv.doctor_name || '' %></div></td><td><%= fmt.money(original) %></td></tr>
+        <% } %>
         <% if (hasDiscount) { %><tr class="sub"><td><%= t('billing.discount') %> (<%= fmt.number(inv.discount_percent) %>%)</td><td>− <%= fmt.money(inv.discount_amount) %></td></tr><% } %>
         <tr class="grand"><td><%= t('billing.net_paid') %></td><td><%= fmt.money(inv.amount) %></td></tr>
+        <% if (inv.insurance_coverage_percent !== null && inv.insurance_coverage_percent !== undefined) { var _cov = Number(inv.insurance_coverage_percent); var _ins = Math.round(Number(inv.amount) * _cov) / 100; %>
+        <tr class="sub"><td><%= t('billing.insurer_share', { pct: fmt.number(_cov) }) %></td><td><%= fmt.money(_ins) %></td></tr>
+        <tr class="sub"><td class="strong"><%= t('billing.patient_share') %></td><td class="strong"><%= fmt.money(Number(inv.amount) - _ins) %></td></tr>
+        <% } %>
       </tbody>
     </table>
 
     <dl class="dl rec-inv-pay">
       <dt><%= t('billing.method') %></dt><dd><%= label('payment_methods', inv.payment_method) %></dd>
+      <% if (inv.amount_received !== null && inv.amount_received !== undefined) { %><dt><%= t('cashier.received') %></dt><dd><%= fmt.money(inv.amount_received) %></dd><dt><%= t('cashier.change_due') %></dt><dd><%= fmt.money(inv.change_due || 0) %></dd><% } %>
       <% if (hasDiscount) { %><dt><%= t('billing.original_price') %></dt><dd><%= fmt.money(original) %></dd><% } %>
       <% if (inv.cashier) { %><dt><%= t('billing.received_by') %></dt><dd><%= inv.cashier %></dd><% } %>
     </dl>

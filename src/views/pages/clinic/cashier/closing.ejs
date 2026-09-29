@@ -1,0 +1,50 @@
+<%
+  var printing = query.print === '1';
+  var s = localTime(c.period_start) || {}; var e = localTime(c.period_end) || {};
+  var v = Number(c.variance) || 0;
+%>
+<% if (!printing) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/cashier/closings"><%= t('cashier.closings_title') %></a><%- icon('chevron-right', 'flip-rtl') %><span class="mono">#<%= c.id %></span></div>
+    <h1><%= t('cashier.closing_slip', { n: c.id }) %></h1>
+    <p><%= fmt.date(e.date) %> · <span dir="ltr"><%= e.time %></span></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/cashier/closings"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a>
+    <a class="btn btn-primary" href="/app/cashier/closings/<%= c.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+
+<article class="<%= printing ? 'cs-slip is-print' : 'panel cs-slip' %>">
+  <div class="cs-slip-top">
+    <div>
+      <div class="cs-slip-kind"><%= t('cashier.slip_title') %></div>
+      <div class="cs-slip-no mono">#<%= c.id %></div>
+    </div>
+    <div class="text-end small muted"><%= t('cashier.closed_by') %>: <strong><%= c.closed_by_name || '—' %></strong></div>
+  </div>
+
+  <dl class="cs-slip-dl">
+    <dt><%= t('cashier.period_from') %></dt><dd><%= fmt.date(s.date) %> · <span dir="ltr"><%= s.time %></span></dd>
+    <dt><%= t('cashier.period_to') %></dt><dd><%= fmt.date(e.date) %> · <span dir="ltr"><%= e.time %></span></dd>
+    <dt><%= t('cashier.cash_receipts') %></dt><dd class="num"><%= fmt.number(c.invoice_count) %></dd>
+  </dl>
+
+  <table class="statement cs-slip-lines">
+    <tbody>
+      <tr><td><%= t('cashier.expected') %></td><td><%= fmt.money(c.expected_cash) %></td></tr>
+      <tr><td><%= t('cashier.counted') %></td><td><%= fmt.money(c.counted_cash) %></td></tr>
+      <tr class="cs-slip-var"><td><%= t('cashier.variance') %> — <%= v === 0 ? t('cashier.balanced') : t(v > 0 ? 'cashier.over' : 'cashier.short') %></td><td><bdi dir="ltr"><%= v > 0 ? '+' : v < 0 ? '−' : '' %><%= fmt.money(Math.abs(v)) %></bdi></td></tr>
+    </tbody>
+  </table>
+
+  <% if (c.notes) { %><div><div class="cs-slip-label"><%= t('common.notes') %></div><p class="cs-note-full" dir="auto"><%= c.notes %></p></div><% } %>
+  <p class="small muted"><%= t('cashier.slip_note') %></p>
+
+  <div class="cs-sign">
+    <div><span><%= t('cashier.sign_cashier') %></span></div>
+    <div><span><%= t('cashier.sign_manager') %></span></div>
+  </div>
+</article>

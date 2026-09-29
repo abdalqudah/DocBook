@@ -1,0 +1,215 @@
+/* Cashier (POS) screen, cash drawer closing and closing slip. Calm: neutral surfaces, one primary action,
+   large tabular numbers. Only theme tokens. */
+.cs-layout [hidden], .cs-drawer [hidden], .cs-bill [hidden] { display: none !important; }
+.cs-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; background: var(--border-strong); }
+.cs-cur { font-size: 12px; font-weight: var(--fw-semibold); color: var(--text-subtle); letter-spacing: 0; }
+
+/* ---------- totals strip ---------- */
+.cs-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: var(--space-5); }
+.cs-strip-cell { padding: 14px 20px; min-width: 0; display: block; }
+.cs-strip-cell + .cs-strip-cell { border-inline-start: 1px solid var(--border); }
+.cs-strip-link:hover { background: var(--surface-muted); }
+.cs-strip-link:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.cs-strip-label { font-size: var(--fs-sm); color: var(--text-subtle); font-weight: var(--fw-semibold); }
+.cs-strip-value { font-size: 24px; font-weight: var(--fw-bold); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.cs-strip-meta { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 2px; }
+.cs-methods { margin: 6px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 20px; }
+.cs-methods > div { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.cs-methods dt { color: var(--text-muted); } .cs-methods dd { margin: 0; font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+
+/* ---------- just paid ---------- */
+.cs-done { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: var(--space-5); flex-wrap: wrap; }
+.cs-done-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex: none; }
+.cs-done-change { display: flex; flex-direction: column; align-items: flex-end; padding-inline: 12px; }
+.cs-done-change strong { font-size: 22px; }
+
+/* ---------- layout ---------- */
+.cs-layout { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.cs-side { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; position: sticky; top: calc(var(--topbar-h) + 16px); }
+.cs-main { min-width: 0; }
+.cs-search { position: relative; }
+.cs-search .input { height: 42px; padding-inline-end: 36px; }
+.cs-kbd { position: absolute; inset-inline-end: 10px; top: 50%; transform: translateY(-50%); }
+.cs-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; }
+.cs-block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 6px; }
+.cs-block-head h2 { font-size: 13px; }
+.cs-list, .cs-receipts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cs-list { max-height: 46vh; overflow-y: auto; }
+.cs-visit { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 10px; border-radius: var(--radius-sm); }
+.cs-visit:hover { background: var(--surface-muted); }
+.cs-visit.is-selected { background: var(--surface-sunken); box-shadow: inset 3px 0 0 var(--primary); }
+[dir="rtl"] .cs-visit.is-selected { box-shadow: inset -3px 0 0 var(--primary); }
+.cs-visit-main, .cs-visit-side { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cs-visit-side { align-items: flex-end; flex: none; }
+.cs-visit-name { font-weight: var(--fw-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-visit-sub { font-size: var(--fs-sm); color: var(--text-subtle); display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cs-visit-amount { font-weight: var(--fw-semibold); }
+.cs-visit-meta { font-size: var(--fs-xs); color: var(--text-subtle); white-space: nowrap; }
+.cs-late { color: var(--warning); font-weight: var(--fw-semibold); }
+.cs-empty-line { padding: 6px 10px 12px; font-size: 13px; color: var(--text-subtle); }
+.cs-empty-pad { padding: 20px; }
+.cs-receipts li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 6px; align-items: center; padding: 6px 4px 6px 10px; border-radius: var(--radius-sm); }
+[dir="rtl"] .cs-receipts li { padding: 6px 10px 6px 4px; }
+.cs-receipts li:hover { background: var(--surface-muted); }
+.cs-receipt { display: flex; gap: 8px; align-items: center; min-width: 0; font-size: 13px; }
+.cs-receipt-meta { grid-row: 2; font-size: var(--fs-xs); color: var(--text-subtle); }
+.cs-receipts .btn-icon { grid-row: 1 / span 2; grid-column: 2; }
+
+/* ---------- placeholder ---------- */
+.cs-placeholder { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 64px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.cs-placeholder-icon { width: 52px; height: 52px; border-radius: 14px; background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; }
+.cs-placeholder-icon .icon { width: 24px; height: 24px; }
+.cs-placeholder p { max-width: 420px; }
+
+/* ---------- bill ---------- */
+.cs-bill { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.cs-bill > .alert { margin: 16px 24px 0; }
+.cs-bill-head { display: flex; gap: 16px; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.cs-bill-patient { font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
+.cs-bill-sub { display: flex; gap: 6px 16px; flex-wrap: wrap; margin-top: 6px; color: var(--text-muted); font-size: 13px; }
+.cs-paid-note { display: flex; align-items: center; gap: 12px; padding: 20px 24px; color: var(--text-muted); }
+.cs-section { padding: 20px 24px; }
+.cs-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.cs-section-head h2 { font-size: 14px; }
+.cs-lines { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cs-lines th { text-align: start; font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-subtle); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.cs-lines th.num { text-align: end; }
+.cs-lines td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.cs-lines .input { height: 38px; }
+.cs-line-name { width: 100%; min-width: 180px; }
+.cs-th-qty, .cs-line-qty { width: 132px; }
+.cs-th-price, .cs-line-price { width: 130px; }
+.cs-line-price .input { text-align: end; }
+.cs-line-total { width: 110px; text-align: end; font-weight: var(--fw-semibold); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cs-line-del { width: 40px; }
+.cs-qty { display: flex; align-items: center; gap: 2px; }
+.cs-qty .input { width: 52px; text-align: center; padding: 0 4px; -moz-appearance: textfield; }
+.cs-qty .input::-webkit-inner-spin-button, .cs-qty .input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.cs-line.is-new td { animation: cs-new 1.2s ease-out; }
+@keyframes cs-new { from { background: var(--surface-sunken); } to { background: transparent; } }
+.cs-add { margin-top: 14px; }
+.cs-add-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.cs-add-filter { max-width: 220px; height: 34px; font-size: 13px; }
+.cs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cs-chip { display: inline-flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-size: 13px; font-weight: var(--fw-medium); cursor: pointer; }
+.cs-chip:hover { background: var(--surface-muted); border-color: var(--text-subtle); }
+.cs-chip-price { color: var(--text-subtle); font-size: 12px; }
+.cs-chip-custom { color: var(--text-muted); border-style: dashed; }
+
+.cs-pay { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); border-top: 1px solid var(--border); }
+.cs-pay-options { display: flex; flex-direction: column; gap: 20px; }
+.cs-summary { border-inline-start: 1px solid var(--border); background: var(--surface-muted); border-end-end-radius: var(--radius); display: flex; flex-direction: column; gap: 16px; }
+[dir="rtl"] .cs-summary { border-end-end-radius: 0; border-end-start-radius: var(--radius); }
+.cs-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cs-field-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cs-field > .input, .cs-field .input-affix .input { height: 46px; font-size: 18px; font-weight: var(--fw-semibold); }
+.cs-field .input-affix .affix { font-size: 13px; }
+.cs-seg-sm label span { padding: 4px 12px; font-size: 12px; }
+.cs-methods-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+.cs-method { position: relative; cursor: pointer; }
+.cs-method input { position: absolute; opacity: 0; pointer-events: none; }
+.cs-method span { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 48px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); font-weight: var(--fw-semibold); font-size: 14px; color: var(--text-muted); transition: border-color .15s, background .15s; }
+.cs-method:hover span { border-color: var(--text-subtle); color: var(--text); }
+.cs-method input:checked + span { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); color: var(--text); background: var(--surface); }
+.cs-method input:focus-visible + span { box-shadow: var(--focus-ring); }
+.cs-ins { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; }
+.cs-ins .input-affix .input { height: 40px; font-size: 14px; }
+.cs-notes { display: flex; flex-wrap: wrap; gap: 6px; }
+.cs-recv { text-align: end; }
+
+.cs-sum { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.cs-sum > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; }
+.cs-sum dt { color: var(--text-muted); } .cs-sum dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: var(--fw-semibold); }
+.cs-sum-total { padding: 12px 0; margin: 4px 0; border-block: 1px solid var(--border); }
+.cs-sum-total dt { color: var(--text); font-weight: var(--fw-semibold); }
+.cs-sum-total dd .num { font-size: 34px; font-weight: var(--fw-heavy); letter-spacing: -.02em; }
+[dir="rtl"] .cs-sum-total dd .num { letter-spacing: 0; }
+.cs-sum-change dt { color: var(--text); font-weight: var(--fw-semibold); }
+.cs-sum-change dd .num { font-size: 26px; font-weight: var(--fw-bold); }
+.cs-sum-plain > div { font-size: 13px; }
+.cs-short { color: var(--danger); font-size: 13px; font-weight: var(--fw-semibold); }
+.cs-actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+.cs-actions .btn { position: relative; }
+.cs-key { position: absolute; inset-inline-end: 14px; font-size: 10px; font-family: var(--font-mono); opacity: .6; font-weight: var(--fw-semibold); }
+
+/* ---------- drawer closing ---------- */
+.cs-drawer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); align-items: start; }
+.cs-figure-label { font-size: var(--fs-sm); color: var(--text-subtle); font-weight: var(--fw-semibold); }
+.cs-figure { font-size: 34px; font-weight: var(--fw-heavy); letter-spacing: -.02em; margin-top: 2px; }
+[dir="rtl"] .cs-figure { letter-spacing: 0; }
+.cs-explain { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 4px; }
+.cs-counted { height: 50px; font-size: 22px; font-weight: var(--fw-bold); }
+.cs-variance-box { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--surface-muted); border-radius: var(--radius-sm); }
+.cs-variance { font-size: 24px; font-weight: var(--fw-bold); }
+.cs-variance[data-sign="short"] { color: var(--danger); }
+.cs-denoms { border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.cs-denoms summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; font-weight: var(--fw-semibold); font-size: 13px; color: var(--text-muted); list-style: none; }
+.cs-denoms summary::-webkit-details-marker { display: none; }
+.cs-denoms[open] summary { border-bottom: 1px solid var(--border); }
+.cs-denoms .help { padding: 0 12px 10px; }
+.cs-denom-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cs-denom-table th { text-align: start; font-size: var(--fs-xs); color: var(--text-subtle); font-weight: var(--fw-semibold); padding: 8px 12px 4px; }
+.cs-denom-table th.num, .cs-denom-table td.num { text-align: end; }
+.cs-denom-table td { padding: 4px 12px; }
+.cs-denom-table .input { height: 34px; width: 100px; text-align: center; }
+.cs-denom-table tfoot td { padding: 8px 12px; border-top: 1px solid var(--border); font-weight: var(--fw-semibold); }
+.cs-var { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); white-space: nowrap; font-size: 13px; }
+.cs-var-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warning); }
+.cs-var.is-short .cs-var-dot { background: var(--danger); }
+.cs-var.is-short { color: var(--text); }
+.cs-note { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- closing slip ---------- */
+.cs-slip { padding: 28px; display: flex; flex-direction: column; gap: 20px; max-width: 720px; }
+.cs-slip.is-print { padding: 0; max-width: none; }
+.cs-slip-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.cs-slip-kind, .cs-slip-label { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--text-subtle); }
+.cs-slip-no { font-size: 24px; font-weight: var(--fw-heavy); margin-top: 2px; }
+.cs-slip-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 24px; margin: 0; font-size: 14px; }
+.cs-slip-dl dt { color: var(--text-muted); } .cs-slip-dl dd { margin: 0; font-weight: var(--fw-semibold); }
+.cs-slip-lines { border: 1px solid var(--border); border-radius: var(--radius); border-collapse: separate; border-spacing: 0; overflow: hidden; font-size: 14px; }
+.cs-slip-lines tr:last-child td { border-bottom: 0; }
+.cs-slip-var td { font-weight: var(--fw-bold); background: var(--surface-muted); }
+.cs-note-full { white-space: pre-wrap; margin-top: 4px; }
+.cs-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 28px; }
+.cs-sign div { border-top: 1px solid var(--border-strong); padding-top: 6px; font-size: 12px; color: var(--text-subtle); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1180px) {
+  .cs-methods { grid-template-columns: 1fr; }
+  .cs-pay { grid-template-columns: 1fr; }
+  .cs-summary { border-inline-start: 0; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+}
+@media (max-width: 1024px) {
+  .cs-layout { grid-template-columns: 1fr; }
+  .cs-side { position: static; }
+  .cs-layout.has-bill .cs-list { max-height: 240px; }
+  /* Narrow screens: search and the queue sit above the bill, recent receipts go below it. */
+  .cs-layout { gap: var(--space-4); }
+  .cs-side { display: contents; }
+  .cs-search { order: 1; } .cs-side > .cs-block { order: 3; } .cs-side > .cs-block-results { order: 2; } .cs-main { order: 4; } .cs-side > .cs-block-receipts { order: 5; }
+  .cs-drawer { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .cs-strip { grid-template-columns: 1fr 1fr; }
+  .cs-strip-cell:nth-child(2) { display: none; }
+  .cs-strip-cell { padding: 12px 14px; }
+  .cs-strip-value { font-size: 20px; }
+  .cs-bill-head, .cs-section, .cs-paid-note { padding-inline: 16px; }
+  .cs-lines thead { display: none; }
+  .cs-lines, .cs-lines tbody { display: block; }
+  .cs-lines tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "name name name del" "qty price total total"; gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: center; }
+  .cs-lines td { display: block; border: 0; padding: 0; width: auto; min-width: 0; }
+  .cs-line-name { grid-area: name; } .cs-line-qty { grid-area: qty; } .cs-line-price { grid-area: price; } .cs-line-total { grid-area: total; } .cs-line-del { grid-area: del; }
+  .cs-line-price .input { width: 100%; }
+  .cs-methods-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cs-ins { grid-template-columns: 1fr; }
+  .cs-done-change { align-items: flex-start; padding-inline: 0; }
+  .cs-slip { padding: 18px; }
+  .cs-sum-total dd .num { font-size: 28px; }
+}
+@media print {
+  .cs-sign div { border-top-color: var(--text-subtle); }
+}
+.cs-bill input[type="number"] { -moz-appearance: textfield; }
+.cs-bill input[type="number"]::-webkit-inner-spin-button, .cs-bill input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

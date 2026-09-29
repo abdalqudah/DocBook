@@ -7,7 +7,7 @@
   </div>
   <div class="page-actions">
     <% if (tab === 'invoices') { %><%- include(P + 'export-menu', { href: '/app/billing/export' }) %><% } %>
-    <% if (can('frontdesk.use')) { %><a class="btn btn-primary" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('billing.front_desk') %></a><% } %>
+    <% if (can('billing.manage')) { %><a class="btn btn-primary" href="/app/cashier"><%- icon('banknote', 'icon-sm') %><%= t('nav.cashier') %></a><% } %>
   </div>
 </div>
 
@@ -31,7 +31,7 @@
           <td data-label="<%= t('common.doctor') %>"><span class="row-sm"><span class="swatch" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_name || '—' %></span><div class="small muted"><%= a.service_name || '' %></div></td>
           <td data-label="<%= t('common.status') %>"><span class="badge badge-<%= a.status === 'completed' ? 'success' : 'info' %>"><%= a.status === 'completed' ? t('dashboard.statuses.completed') : t('dashboard.checked_in') %></span></td>
           <td data-label="<%= t('billing.amount_due') %>" class="num strong"><%= fmt.amount(a.amount_due) %></td>
-          <td class="actions"><% if (!old && can('frontdesk.use') && can('billing.manage')) { %><a class="btn btn-secondary btn-sm" href="/app/front-desk"><%- icon('banknote', 'icon-sm') %><%= t('billing.checkout') %></a><% } else if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments/<%= a.id %>"><%= t('billing.open_visit') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></td>
+          <td class="actions"><% if (can('billing.manage')) { %><a class="btn btn-secondary btn-sm" href="/app/cashier?visit=<%= a.id %>"><%- icon('banknote', 'icon-sm') %><%= t('billing.checkout') %></a><% } else if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments/<%= a.id %>"><%= t('billing.open_visit') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></td>
         </tr>
       <% }) %></tbody>
     </table></div>
