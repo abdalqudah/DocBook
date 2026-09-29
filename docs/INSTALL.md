@@ -104,11 +104,11 @@ sudo certbot --nginx -d docbook.yourdomain.com
    - Application root: `docbook`
    - Application URL: الدومين أو الدومين الفرعي
    - Application startup file: `app.js`
-4. **المتغيرات:** في نفس الصفحة أضف Environment variables (نفس محتوى `.env.example`): `APP_URL`، `SESSION_SECRET`، `APP_KEY`، `DB_HOST=localhost`، `DB_NAME`، `DB_USER`، `DB_PASSWORD`، `SUPER_ADMIN_EMAIL`، `SUPER_ADMIN_PASSWORD`، `AUTO_MIGRATE=true`. (أو أنشئ ملف `.env` داخل المجلد.)
+4. **المتغيرات:** في نفس الصفحة أضف Environment variables (نفس محتوى `.env.example`): `APP_URL`، `SESSION_SECRET`، `APP_KEY`، `DB_HOST=localhost`، `DB_NAME`، `DB_USER`، `DB_PASSWORD`، `SUPER_ADMIN_EMAIL`، `SUPER_ADMIN_PASSWORD`. (أو أنشئ ملف `.env` داخل المجلد.)
 5. اضغط **Restart** (نسخة الـ dist لا تحتاج Run NPM Install).
    > CloudLinux: الـ dist لا يحتوي مجلد `node_modules` (يُنشئ CloudLinux رابطًا بهذا الاسم بنفسه). إذا ظهرت رسالة أن المجلد يحتوي `node_modules`، احذف أي `node_modules` قديم من مجلد التطبيق (من رفع سابق) قبل إنشاء التطبيق.
 6. SSL: cPanel ← SSL/TLS Status ← Run AutoSSL.
-7. مع `AUTO_MIGRATE=true` تُنشأ الجداول تلقائيًا عند أول تشغيل.
+7. تُنشأ الجداول تلقائيًا عند أول تشغيل (إلا إذا وضعت `AUTO_MIGRATE=false`). مستخدم قاعدة البيانات يحتاج كل الصلاحيات (ALL PRIVILEGES).
 
 > إذا كانت الاستضافة المشتركة تحدّ الذاكرة أو توقف التطبيق عند الخمول، قد تتأخر التذكيرات المجدولة — الـ VPS أنسب للإنتاج.
 
@@ -164,6 +164,8 @@ pm2 restart docbook
 | الصفحة لا تفتح | `pm2 logs docbook` لقراءة الخطأ. على cPanel/CloudLinux: الملف `stderr.log` في مجلد التطبيق، ثم Restart من Setup Node.js App |
 | صفحة "503 Service Unavailable" من السيرفر (LiteSpeed) | التطبيق لم يعمل: تأكد من Node.js 20+، وملف التشغيل `app.js`، واقرأ `stderr.log` |
 | "Missing required environment variable" | متغير ناقص في `.env` |
+| `ER_NO_SUCH_TABLE` | الجداول غير موجودة: احذف `AUTO_MIGRATE=false` إن وُجد ثم Restart |
+| `MIGRATION_FAILED` | أعطِ مستخدم قاعدة البيانات كل الصلاحيات (ALL PRIVILEGES) ثم Restart |
 | خطأ اتصال بقاعدة البيانات | تحقق من `DB_*` وأن المستخدم له صلاحيات |
 | تسجيل الدخول يرجع لصفحة الدخول | استخدم https، و `TRUST_PROXY=true` خلف nginx/cPanel |
 | الروابط في الإيميلات أو رمز QR خاطئة | اضبط `APP_URL` على العنوان الحقيقي بـ https |

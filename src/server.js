@@ -11,6 +11,8 @@ const HINTS = {
   ER_BAD_DB_ERROR: 'The database does not exist. Check DB_NAME.',
   ECONNREFUSED: 'Cannot reach MySQL. Try DB_HOST=127.0.0.1 or set DB_SOCKET.',
   MISSING_ENV: 'A required environment variable is missing.',
+  ER_NO_SUCH_TABLE: 'The database tables are missing. Remove AUTO_MIGRATE=false (or run `node app.js migrate`) and restart the app.',
+  MIGRATION_FAILED: 'Creating or updating the database tables failed. The database user needs CREATE, ALTER, INDEX, REFERENCES and DROP privileges.',
   BOOT_LOCK_TIMEOUT: 'Another process is still starting the app. Wait a minute and refresh.',
 };
 
@@ -34,7 +36,8 @@ async function bootDatabase(knex, work) {
 function serveSetupError(err) {
   const code = err.code || (/Missing required environment variable/.test(err.message) ? 'MISSING_ENV' : 'STARTUP_ERROR');
   const hint = HINTS[code] || 'The application could not start. Check the server log.';
-  const detail = code === 'MISSING_ENV' ? err.message : code;
+  // The database's own message says what is missing (table, privilege); it holds no credentials.
+  const detail = code === 'MISSING_ENV' ? err.message : err.sqlMessage ? `${err.code}: ${err.sqlMessage}` : code;
   const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(brand.name)} — setup</title>
 <style>body{font-family:system-ui,sans-serif;background:${brand.colors.light.background};color:${brand.colors.light.text};display:grid;place-items:center;min-height:100vh;margin:0}
 .c{background:#fff;border:1px solid ${brand.colors.light.border};border-radius:16px;padding:32px;max-width:520px;margin:16px}code{background:#f1f1f1;padding:2px 6px;border-radius:6px}</style></head>
@@ -53,7 +56,9 @@ async function start() {
   await knex.raw('select 1');
   if (config.autoMigrate) {
     await bootDatabase(knex, async () => {
-      const [, applied] = await knex.migrate.latest();
+      const [, applied] = await knex.migrate.latest().catch((e) => {
+        throw Object.assign(new Error(`Migration failed: ${e.message}`), { code: 'MIGRATION_FAILED', sqlMessage: e.sqlMessage || e.message });
+      });
       if (applied.length) console.log(`[db] applied migrations: ${applied.join(', ')}`); // eslint-disable-line no-console
     });
   }

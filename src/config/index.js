@@ -18,7 +18,8 @@ module.exports = {
   appUrl: process.env.APP_URL || 'http://localhost:3000',
   sessionSecret: required('SESSION_SECRET', isTest || env === 'development' ? 'dev-only-secret-dev-only-secret-dev-only' : undefined),
   trustProxy: process.env.TRUST_PROXY !== 'false',
-  autoMigrate: process.env.AUTO_MIGRATE === 'true' || isTest,
+  // Migrations run at start-up unless AUTO_MIGRATE=false (shared hosts often have no terminal for `node app.js migrate`).
+  autoMigrate: process.env.AUTO_MIGRATE !== 'false' || isTest,
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 3306),
