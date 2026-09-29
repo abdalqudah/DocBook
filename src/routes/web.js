@@ -8,6 +8,17 @@ router.use('/', site);
 router.use('/', require('../modules/auth/web'));
 router.use('/app', requireAuth, resolveBusiness, require('./app'));
 router.use('/admin', require('../modules/admin/web'));
+// Medical reps & drug warehouses: public sign-up/landing (/vendors) and their portal (/vendor).
+router.use('/vendors', require('../modules/vendors/public.web'));
+{
+  const { requireVendor } = require('../middleware/vendor'); // eslint-disable-line global-require
+  const vendor = express.Router();
+  vendor.use(requireVendor);
+  vendor.use('/visits', require('../modules/marketplace/vendor-visits.web'));
+  vendor.use('/orders', require('../modules/purchasing/vendor-orders.web'));
+  vendor.use('/', require('../modules/vendors/web'));
+  router.use('/vendor', vendor);
+}
 // Clinic pages (docbook/<slug>, /<slug>/login, /<slug>/book…) come LAST so they never shadow a platform path;
 // every top-level path the platform uses is also in businesses.RESERVED so no clinic can take it.
 router.use('/', require('../modules/site/booking.web'));

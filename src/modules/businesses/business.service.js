@@ -19,7 +19,7 @@ const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country',
   'onboarding_step', 'onboarding_completed_at', 'status', 'created_at'];
 
 // ---------------------------------------------------------------- clinic portal address (/<slug>)
-const RESERVED = new Set(`app admin api login logout signup verify verify-email forgot reset invite invitations workspaces theme favicon.svg favicon.ico
+const RESERVED = new Set(`app admin api vendor vendors reps marketplace login logout signup verify verify-email forgot reset invite invitations workspaces theme favicon.svg favicon.ico
   css js img fonts icons.svg robots.txt sitemap.xml healthz help support docs blog about contact pricing privacy terms security book booking
   www mail static assets public uploads files auth account settings dashboard home new clinic clinics
   password preferences profile portal staff logo brand docbook demo join status kiosk calendar onboarding notifications`.split(/\s+/).filter(Boolean));

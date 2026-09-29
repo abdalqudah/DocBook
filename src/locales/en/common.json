@@ -138,7 +138,9 @@
       "cashier": "Cashier"
     },
     "cashier": "Cashier",
-    "attendance": "Staff attendance"
+    "attendance": "Staff attendance",
+    "marketplace": "Reps & offers",
+    "rep_visits": "Rep visits"
   },
   "search": {
     "open": "Search and quick actions",
@@ -273,7 +275,8 @@
     "supplies": "Supplies & expenses",
     "reports": "Reports & exports",
     "admin": "Administration",
-    "attendance": "Staff attendance"
+    "attendance": "Staff attendance",
+    "vendors": "Reps & suppliers"
   },
   "perms": {
     "dashboard.view": "View the clinic dashboard",
@@ -309,7 +312,9 @@
     "data.manage": "Backup, restore and delete the clinic",
     "audit.view": "View the audit log",
     "attendance.view": "View staff attendance",
-    "attendance.manage": "Attendance screen (QR) and corrections"
+    "attendance.manage": "Attendance screen (QR) and corrections",
+    "vendors.view": "See reps' products, offers and visits",
+    "vendors.manage": "Add reps as suppliers, manage rep visit hours and bookings"
   },
   "categories": {
     "rent": "Rent",

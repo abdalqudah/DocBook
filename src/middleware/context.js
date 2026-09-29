@@ -58,6 +58,8 @@ async function resolveBusiness(req, res, next) {
     }
     if (!businessId) {
       if (isJson(req)) throw E.noBusiness();
+      // A rep / warehouse account has no clinic: send it to the vendor portal instead of "create a clinic".
+      if (await knex('vendor_users').where({ user_id: req.user.id }).first('id')) return res.redirect('/vendor');
       return res.redirect('/workspaces/new');
     }
     const [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);

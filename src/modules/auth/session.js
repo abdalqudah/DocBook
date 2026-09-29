@@ -27,7 +27,10 @@ async function landingFor(userId, businessId) {
   const q = knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.user_id': userId, 'm.status': 'active' });
   if (businessId) q.where('m.business_id', businessId); else q.orderBy('m.id');
   const m = await q.first('r.key');
-  return m ? entryFor(m.key) : '/app';
+  if (m) return entryFor(m.key);
+  // Medical reps / drug warehouses have no clinic: they work in the vendor portal.
+  const v = await knex('vendor_users').where({ user_id: userId }).first('id');
+  return v ? '/vendor' : '/app';
 }
 
 async function afterLogin(req, res) {

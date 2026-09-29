@@ -20,6 +20,8 @@ const NAV = [
     { key: 'doctors', href: '/app/doctors', icon: 'stethoscope', perms: ['doctors.manage', 'appointments.view_all'] },
     { key: 'services', href: '/app/services', icon: 'clipboard-list', perms: ['services.manage'] },
     { key: 'attendance', href: '/app/attendance', icon: 'clock', perms: [] }, // every member clocks in/out here
+    { key: 'marketplace', href: '/app/marketplace', icon: 'package-search', perms: ['vendors.view'], badge: 'newOffers' },
+    { key: 'rep_visits', href: '/app/rep-visits', icon: 'briefcase-business', perms: ['vendors.view'], badge: 'repRequests' },
     { key: 'supplies', href: '/app/supplies', icon: 'package', perms: ['supplies.view'], badge: 'lowStock' },
   ] },
   { group: 'insights', items: [
