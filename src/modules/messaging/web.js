@@ -1,7 +1,7 @@
 // Settings → Messaging (/app/settings/messaging, clinic owners and managers with settings.manage):
 // switches and timing for confirmations, reminders and review requests, channels (WhatsApp Cloud API, SMS
 // provider, e-mail), message previews in Arabic and English, webhook addresses for STOP replies, a test send
-// and the delivery log (last 200 messages — status only, never message texts).
+// and the message log (last 200 messages — status only, never message texts).
 const express = require('express');
 const { wrap, form, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');

@@ -48,7 +48,7 @@ router.post('/:token', postLimiter, wrap(async (req, res) => {
   noStore(res);
   const found = await load(req);
   if (!found || found.state === 'expired') return notFound(req, res);
-  // Honeypot: people never see this field; bots fill it. Answer as if it worked, store nothing.
+  // Honeypot: people never see this field; bots fill it. Answer as if it worked, save nothing.
   if (String(req.body.website || '').trim()) return res.redirect(303, `/review/${req.params.token}?done=1`);
   try {
     await reviews.submit(found.link, req.body, { ip: req.ip, userAgent: req.get('user-agent'), locale: req.locale, base: publicBase(req) });

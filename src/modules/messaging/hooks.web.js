@@ -4,7 +4,7 @@
 //   POST /hooks/whatsapp/<key>   messages & statuses, signed with X-Hub-Signature-256 (the clinic's app secret)
 //   GET|POST /hooks/sms/<key>    generic SMS replies: from/From/sender/msisdn + text/Text/Body/body/message
 // <key> is a random per-clinic value shown in Settings → Messaging. Only STOP / START replies, the "Confirm"
-// quick-reply button and delivery statuses are acted on; message texts are never stored.
+// quick-reply button and message statuses are acted on; message texts are never stored.
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const config = require('../../config');

@@ -592,7 +592,7 @@ function validSignature(cfg, raw, header) {
 
 const STATUS_MAP = { sent: 'sent', delivered: 'delivered', read: 'read', failed: 'failed' };
 
-/** WhatsApp Cloud API webhook: delivery statuses, STOP / START replies and the "Confirm" quick-reply button. */
+/** WhatsApp Cloud API webhook: message statuses, STOP / START replies and the "Confirm" quick-reply button. */
 async function handleWhatsApp(cfg, payload) {
   const clinic = await businesses.get(cfg.business_id);
   if (!clinic) return;

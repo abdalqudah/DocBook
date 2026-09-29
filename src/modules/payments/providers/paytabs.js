@@ -34,8 +34,11 @@ const sameHex = (a, b) => {
 /** Amount as PayTabs expects it: a number with at most 3 decimals. */
 const amountOf = (v) => Math.round(Number(v) * 1000) / 1000;
 
+/** Outside production a local simulator can stand in for PayTabs (PAYTABS_BASE_URL) — never in production. */
+const override = () => (process.env.NODE_ENV !== 'production' && /^https?:\/\/[^\s]+$/.test(process.env.PAYTABS_BASE_URL || '') ? process.env.PAYTABS_BASE_URL.replace(/\/+$/, '') : null);
+
 function client(creds) {
-  const base = REGIONS[creds.region] || null;
+  const base = (REGIONS[creds.region] && override()) || REGIONS[creds.region] || null;
   if (!base || !creds.profileId || !creds.serverKey) throw new AppError('PAY_NOT_CONFIGURED', 'PayTabs is not configured.', 409);
   const profileId = Number(creds.profileId);
   const post = (path, body) => request(`${base}${path}`, {

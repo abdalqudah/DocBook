@@ -45,7 +45,7 @@ function view(req, res, found, extra = {}) {
     clinic, a, st, cfg, token: req.params.token, done: ['confirmed', 'cancelled', 'rescheduled', 'already', 'stopped', 'started'].includes(req.query.done) ? req.query.done : null,
     doctor: (en && a.doctor_name_en) || a.doctor_name, doctorSpec: (en ? a.doctor_spec_en || a.doctor_spec : a.doctor_spec || a.doctor_spec_en) || '',
     service: (en && a.service_name_en) || a.service_name, length: msg.lengthOf(a), error: null,
-    pageStyles: [...clinicStyles(clinic), '/css/engage.css'], ...extra,
+    pageStyles: [...clinicStyles(clinic), '/css/engage.css'], pageScripts: ['/js/engage.js'], ...extra,
   });
 }
 

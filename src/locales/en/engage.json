@@ -152,7 +152,7 @@
       "review_en": "Thank you for visiting {{1}}. How was your visit with {{2}}? Your rating helps other patients and takes one minute."
     },
     "tpl_button": "Button URL",
-    "webhook": "Replies (STOP, Confirm button, delivery status)",
+    "webhook": "Replies (STOP, Confirm button, message status)",
     "webhook_help": "In Meta for Developers → WhatsApp → Configuration, set this callback URL and verify token, and subscribe to “messages”. Paste the app secret (App settings → Basic) so replies can be verified.",
     "callback_url": "Callback URL",
     "verify_token": "Verify token",
@@ -183,7 +183,7 @@
     "test_fail": "The test could not be sent.",
     "test_phone_invalid": "Enter a valid mobile number with the country code.",
     "saved": "Messaging settings saved.",
-    "log_title": "Delivery log",
+    "log_title": "Message log",
     "log_sub": "The last 200 messages — status only; message texts are not stored.",
     "log_empty": "No messages yet",
     "log_empty_text": "Sent confirmations, reminders and review requests appear here.",

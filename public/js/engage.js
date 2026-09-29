@@ -11,3 +11,10 @@
     update();
   });
 }());
+
+// Reschedule: keep the chosen day visible in the horizontally scrolling day list.
+(function () {
+  'use strict';
+  var active = document.querySelector('.eg-days .eg-day.active');
+  if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+}());

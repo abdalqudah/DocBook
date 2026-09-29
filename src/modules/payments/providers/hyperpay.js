@@ -24,7 +24,9 @@ const statusOf = (code) => (SUCCESS.test(code) ? 'paid' : REVIEW.test(code) || P
 const amountOf = (v) => Number(v).toFixed(2);
 
 function client(creds) {
-  const base = BASES[creds.mode === 'live' ? 'live' : 'test'];
+  // Outside production a local simulator can stand in for HyperPay (HYPERPAY_BASE_URL) — never in production.
+  const sim = process.env.NODE_ENV !== 'production' && /^https?:\/\/[^\s]+$/.test(process.env.HYPERPAY_BASE_URL || '') ? process.env.HYPERPAY_BASE_URL.replace(/\/+$/, '') : null;
+  const base = sim || BASES[creds.mode === 'live' ? 'live' : 'test'];
   const entity = (brand) => (brand === 'mada' ? creds.entityMada : creds.entityCard);
   if (!creds.accessToken || !creds.entityCard) throw new AppError('PAY_NOT_CONFIGURED', 'HyperPay is not configured.', 409);
   const headers = { authorization: `Bearer ${creds.accessToken}`, accept: 'application/json' };

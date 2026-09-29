@@ -123,7 +123,7 @@
 .eg-check { align-items: flex-start; }
 .eg-check input { margin-top: 2px; flex: none; }
 .eg-indent { padding-inline-start: 24px; }
-.eg-save { display: flex; justify-content: flex-end; position: sticky; bottom: 0; padding: 12px 0; background: var(--background); z-index: 2; }
+.eg-save { display: flex; justify-content: flex-end; }
 .eg-tpl { padding: 12px 0; border-top: 1px solid var(--border); }
 .eg-tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 6px 0; }
 .eg-tpl-grid p { margin: 2px 0 0; line-height: 1.7; }
@@ -142,3 +142,5 @@
   .eg-indent { padding-inline-start: 0; }
   .set-url { flex-wrap: wrap; }
 }
+.eg-card fieldset.field { border: 0; padding: 0; margin: 0; min-width: 0; }
+.eg-card fieldset.field > legend { padding: 0; margin-bottom: 6px; }

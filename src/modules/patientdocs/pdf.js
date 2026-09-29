@@ -32,6 +32,21 @@ const C = brand.colors.light;
 // the words of a right-to-left run in the wrong order). The shaper still applies the script's own features.
 const FEATURES = ['liga', 'kern'];
 
+/**
+ * Direction of a paragraph from its first strong letter (Unicode rule P2, like dir="auto"), skipping isolated
+ * pieces; null when it has no letters (numbers only). An Arabic line in an English document still reads right to left.
+ */
+function paragraphDir(text) {
+  let depth = 0;
+  for (const ch of String(text)) {
+    if (ch === '\u2066' || ch === '\u2067' || ch === '\u2068') depth += 1;
+    else if (ch === '\u2069') depth = Math.max(0, depth - 1);
+    else if (!depth && ARABIC.test(ch)) return 'rtl';
+    else if (!depth && LATIN.test(ch)) return 'ltr';
+  }
+  return null;
+}
+
 /** Font key for one character at a bidi level (neutrals and numbers follow the direction of their level). */
 function fontKey(ch, level, bold) {
   let base;
@@ -106,9 +121,12 @@ class Writer {
   /** Breaks a paragraph into lines that fit `width` (word by word; very long words are cut). */
   wrap(text, width, size, bold) {
     const out = [];
+    const dirs = [];
     String(text ?? '').replace(/\r\n?/g, '\n').split('\n').forEach((para) => {
       const words = para.split(/\s+/).filter(Boolean);
-      if (!words.length) { out.push(''); return; }
+      const pdir = paragraphDir(para) || this.dir;
+      const start = out.length;
+      if (!words.length) { out.push(''); dirs.push(pdir); return; }
       let line = '';
       words.forEach((w0) => {
         let w = w0;
@@ -125,13 +143,15 @@ class Writer {
         line = w;
       });
       if (line) out.push(line);
+      for (let i = start; i < out.length; i += 1) dirs[i] = pdir;
     });
+    out.dirs = dirs;
     return out;
   }
 
   /** Draws one line at a baseline; `align`: start | end | center within [x, x+width]. Returns its width. */
-  drawLine(line, { x, width, baseline, size, bold, color, align }) {
-    const runs = visualRuns(line, this.dir, bold);
+  drawLine(line, { x, width, baseline, size, bold, color, align, dir }) {
+    const runs = visualRuns(line, dir || paragraphDir(line) || this.dir, bold);
     const widths = runs.map((r) => this.doc.font(r.font).fontSize(size).widthOfString(r.text, { features: FEATURES }));
     const total = widths.reduce((a, b) => a + b, 0);
     const side = align === 'center' ? 'center' : (align === 'end') === this.rtl ? 'left' : 'right';
@@ -155,9 +175,9 @@ class Writer {
     const width = o.width ?? this.width;
     const lines = this.wrap(str, width, size, o.bold);
     let y = o.y ?? this.y;
-    lines.forEach((line) => {
+    lines.forEach((line, i) => {
       if (!o.fixed && y + lh > this.bottom) { this.doc.addPage(); y = this.doc.page.margins.top; }
-      if (line) this.drawLine(line, { x, width, baseline: y + size * 1.25, size, bold: o.bold, color: o.color, align: o.align || 'start' });
+      if (line) this.drawLine(line, { x, width, baseline: y + size * 1.25, size, bold: o.bold, color: o.color, align: o.align || 'start', dir: lines.dirs[i] });
       y += lh;
     });
     const used = lines.length * lh;
@@ -213,8 +233,8 @@ class Writer {
       this.doc.page.margins.bottom = 0; // drawing in the margin must not add a page
       const base = this.doc.page.height - 30;
       this.doc.moveTo(this.left, base - 16).lineTo(this.right, base - 16).lineWidth(0.5).strokeColor(C.border).stroke();
-      if (note) this.drawLine(String(note).slice(0, 140), { x: this.left, width: this.width * 0.75, baseline: base, size: 7.5, color: C.textSubtle, align: 'start' });
-      this.drawLine(pageLabel(i - range.start + 1, range.count), { x: this.left, width: this.width, baseline: base, size: 7.5, color: C.textSubtle, align: 'end' });
+      if (note) this.drawLine(String(note).slice(0, 140), { x: this.left, width: this.width * 0.75, baseline: base, size: 7.5, color: C.textSubtle, align: 'start', dir: this.dir });
+      this.drawLine(pageLabel(i - range.start + 1, range.count), { x: this.left, width: this.width, baseline: base, size: 7.5, color: C.textSubtle, align: 'end', dir: this.dir });
       this.doc.page.margins.bottom = saveBottom;
     }
   }
@@ -236,4 +256,4 @@ function isPdfImage(buf) {
   return buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
 }
 
-module.exports = { Writer, visualRuns, isPdfImage, ltr, FONTS, colors: C };
+module.exports = { Writer, visualRuns, paragraphDir, isPdfImage, ltr, FONTS, colors: C };

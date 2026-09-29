@@ -54,7 +54,9 @@ router.get('/:pid', limiter, wrap(async (req, res, next) => {
   if (p.provider === 'paytabs') {
     let url = null;
     try { url = JSON.parse(p.raw_result || '{}').redirect_url || null; } catch { url = null; }
-    if (!url || !/^https:\/\/secure[a-z-]*\.paytabs\.(com|sa)\//.test(url)) return backToPatient(res, p, 'failed');
+    const gw = await pay.gateway(p.business_id);
+    const client = pay.clientOf(gw, p.currency);
+    if (!url || !client || !url.startsWith(`${client.base}/`)) return backToPatient(res, p, 'failed'); // only the provider's own page
     return res.page('pages/payments/redirect', { ...common, redirectUrl: url, pageScripts: ['/js/payments.js'] });
   }
   const gw = await pay.gateway(p.business_id);

@@ -31,7 +31,7 @@
           <span class="tiny muted"><%= fmt.date(r.created_at, { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
         </div>
       </div>
-      <div class="rv-who small"><strong><%= r.display_name || t('reviews.anonymous') %></strong><span class="tiny muted">#<%= r.id %></span></div>
+      <div class="rv-who small"><strong><bdi><%= r.display_name || t('reviews.anonymous') %></bdi></strong><span class="tiny muted">#<%= r.id %></span></div>
       <% if (r.comment) { %><p class="rv-comment" dir="auto"><%= r.comment %></p><% } else { %><p class="rv-comment tiny muted"><%= t('reviews.no_comment') %></p><% } %>
       <% if (r.reply) { %><div class="rv-reply"><div class="tiny strong"><%= t('reviews.clinic_reply', { clinic: L(r.clinic_name, r.clinic_name_en) }) %></div><p dir="auto"><%= r.reply %></p></div><% } %>
       <% if (r.reported_at) { %><p class="small"><span class="strong"><%= t('reviews.admin.report_reason') %>:</span> <span dir="auto"><%= r.report_reason || '—' %></span> <span class="tiny muted">· <%= fmt.date(r.reported_at) %></span></p><% } %>

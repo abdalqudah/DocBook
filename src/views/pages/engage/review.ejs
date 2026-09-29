@@ -61,7 +61,7 @@
         <legend class="label"><%= t('reviews.show_as') %></legend>
         <div class="eg-modes">
           <% [['full', patientName], ['initials', initialsOf(patientName)], ['anonymous', t('reviews.anonymous')]].forEach(function (m) { %>
-          <label class="eg-mode"><input type="radio" name="display_mode" value="<%= m[0] %>"<%= mode === m[0] ? ' checked' : '' %>><span><strong><%= t('reviews.mode.' + m[0]) %></strong><span class="tiny muted"><%= m[1] %></span></span></label>
+          <label class="eg-mode"><input type="radio" name="display_mode" value="<%= m[0] %>"<%= mode === m[0] ? ' checked' : '' %>><span><strong><%= t('reviews.mode.' + m[0]) %></strong><span class="tiny muted" dir="auto"><%= m[1] %></span></span></label>
           <% }) %>
         </div>
       </fieldset>

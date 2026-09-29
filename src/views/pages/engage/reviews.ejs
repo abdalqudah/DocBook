@@ -64,7 +64,7 @@
           </div>
         </div>
         <div class="rv-who small">
-          <strong><%= r.display_name || t('reviews.anonymous') %></strong>
+          <strong><bdi><%= r.display_name || t('reviews.anonymous') %></bdi></strong>
           <span class="rv-verified tiny muted"><%- icon('badge-check', 'icon-sm') %><%= t('reviews.verified_visit') %></span>
           <% if (doc) { %><span class="tiny muted row-sm"><span class="doc-dot" style="<%= r.doctor_color ? 'background:' + r.doctor_color : '' %>"></span><%= doc %></span><% } %>
           <span class="tiny muted">· <%= t('reviews.visit_of', { date: fmt.date(r.visit_date, { month: 'short', year: 'numeric' }) }) %></span>
