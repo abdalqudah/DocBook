@@ -125,7 +125,7 @@ function wrapCsrf(csrf) {
             res.redirect = (...args) => {
               const url = args[args.length - 1];
               const b = req.session && req.session.booked;
-              if (url === `/${clinic.slug}/book/done` && b && b.businessId === clinic.id) return redirect(`/${clinic.slug}/book/done?e=${doneToken(clinic.id, b.id)}`);
+              if (url === `/${clinic.slug}/book/done` && b && b.businessId === clinic.id) return redirect(`/${clinic.slug}/book/done?e=${doneToken(clinic.id, b.id)}&lang=${req.locale}`);
               return redirect(...args);
             };
             return next(); // the signed token replaces the session CSRF token

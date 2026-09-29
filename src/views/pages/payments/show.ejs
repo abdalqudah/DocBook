@@ -1,0 +1,51 @@
+<%
+  var canManage = can('billing.manage');
+  var badge = p.status === 'failed' || p.status === 'refunded' ? 'badge-danger' : 'badge-neutral';
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/payments"><%= t('payments.list.title') %></a><%- icon('chevron-right', 'flip-rtl') %>#<%= p.id %></div>
+    <h1><%= fmt.money(p.amount, p.currency) %> · <%= p.patient_name %></h1>
+    <p class="row-sm wrap"><span class="badge badge-dot <%= badge %>"><%= t('payments.statuses.' + p.status) %></span><% if (p.note && p.note !== 'settling' && p.status !== 'refunded') { %><span class="badge badge-warning"><%= t('payments.notes.' + p.note) %></span><% } %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/appointments/<%= p.appointment_id %>"><%- icon('calendar-days', 'icon-sm') %><%= t('payments.show.appointment') %></a>
+    <% if (canManage && ['initiated', 'failed', 'cancelled'].indexOf(p.status) !== -1 && p.provider_ref) { %>
+      <form method="post" action="/app/payments/<%= p.id %>/verify"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('payments.show.verify') %></button></form>
+    <% } %>
+    <% if (canManage && p.status === 'paid') { %>
+      <form method="post" action="/app/payments/<%= p.id %>/refund" data-confirm="<%= t('payments.show.refund_confirm', { amount: fmt.money(p.amount, p.currency) }) %>" data-confirm-title="<%= t('payments.show.refund') %>" data-confirm-yes="<%= t('payments.show.refund') %>" data-confirm-type="<%= t('payments.show.refund_word') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost" type="submit"><%- icon('archive-restore', 'icon-sm') %><%= t('payments.show.refund') %></button></form>
+    <% } %>
+  </div>
+</div>
+
+<% if (p.note && p.note !== 'settling' && p.status === 'paid') { %>
+<div class="alert alert-warning mb-4"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('payments.notes.' + p.note) %></div><div class="small"><%= t('payments.show.note_text.' + p.note) %></div></div></div>
+<% } %>
+
+<div class="grid grid-2">
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('payments.show.details') %></h2></div>
+    <div class="panel-body"><dl class="dl">
+      <dt><%= t('payments.list.provider') %></dt><dd><%= t('payments.providers.' + p.provider) %><%= p.brand === 'mada' ? ' · mada' : '' %> · <%= t('payments.modes.' + (p.mode || 'test')) %></dd>
+      <dt><%= t('common.amount') %></dt><dd class="strong"><%= fmt.money(p.amount, p.currency) %></dd>
+      <dt><%= t('common.patient') %></dt><dd><%= p.patient_name %><% if (p.patient_phone) { %> · <bdi dir="ltr"><%= p.patient_phone %></bdi><% } %></dd>
+      <dt><%= t('payments.show.consultation') %></dt><dd><%= fmt.date(p.appointment_date) %> · <bdi dir="ltr"><%= p.appointment_time %></bdi> · <%= t('appointments.statuses.' + p.appointment_status) %></dd>
+      <dt><%= t('payments.show.started') %></dt><dd><%= fmt.date(p.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %></dd>
+      <% if (p.paid_at) { %><dt><%= t('payments.show.paid_at') %></dt><dd><%= fmt.date(p.paid_at, { dateStyle: 'medium', timeStyle: 'short' }) %></dd><% } %>
+      <% if (p.invoice_id && can('billing.view')) { %><dt><%= t('payments.show.invoice') %></dt><dd><a class="link" href="/app/billing/<%= p.invoice_id %>?print=1"><%= t('payments.show.open_invoice') %></a></dd><% } %>
+      <% if (p.refunded_at) { %><dt><%= t('payments.show.refunded_at') %></dt><dd><%= fmt.date(p.refunded_at, { dateStyle: 'medium', timeStyle: 'short' }) %> · <%= fmt.money(p.refunded_amount, p.currency) %></dd><% } %>
+    </dl></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('payments.show.provider_refs') %></h2></div>
+    <div class="panel-body"><dl class="dl">
+      <dt><%= t('payments.show.cart_id') %></dt><dd><code dir="ltr"><%= p.cart_id %></code></dd>
+      <dt><%= t('payments.show.provider_ref') %></dt><dd><code dir="ltr"><%= p.provider_ref || '—' %></code></dd>
+      <% if (p.provider_payment_id && p.provider_payment_id !== p.provider_ref) { %><dt><%= t('payments.show.payment_id') %></dt><dd><code dir="ltr"><%= p.provider_payment_id %></code></dd><% } %>
+      <dt><%= t('payments.show.result') %></dt><dd><bdi dir="ltr"><%= [p.result_code, p.result_message].filter(Boolean).join(' · ') || '—' %></bdi></dd>
+      <% if (p.refund_ref && p.refund_ref !== 'pending') { %><dt><%= t('payments.show.refund_ref') %></dt><dd><code dir="ltr"><%= p.refund_ref %></code></dd><% } %>
+    </dl>
+    <p class="tiny muted mt-2"><%- icon('lock', 'icon-sm') %> <%= t('payments.show.no_card_data') %></p></div>
+  </section>
+</div>

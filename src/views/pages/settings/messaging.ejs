@@ -11,7 +11,7 @@
   var chk = function (name, labelText, help) {
     return '<label class="check eg-check"><input type="checkbox" name="' + name + '" value="1"' + (on(name) ? ' checked' : '') + '><span><span class="strong">' + escapeHtml(labelText) + '</span>' + (help ? '<span class="tiny muted" style="display:block">' + escapeHtml(help) + '</span>' : '') + '</span></label>';
   };
-  var chState = function (okFlag, configured) { return okFlag ? ['badge-neutral', t('messaging.ch_active')] : configured ? ['badge-neutral', t('messaging.ch_off')] : ['badge-neutral', t('messaging.ch_not_set')]; };
+  var chState = function (okFlag, configured) { return okFlag ? ['badge-success', t('messaging.ch_active')] : configured ? ['badge-neutral', t('messaging.ch_off')] : ['badge-neutral', t('messaging.ch_not_set')]; };
 %>
 <%- include('_head', { heading: t('settings.nav_messaging'), lead: t('messaging.settings_lead') }) %>
 <div class="settings-layout">
@@ -24,7 +24,7 @@
       <div class="panel-body stack">
         <ul class="eg-channels">
           <% [['whatsapp', 'message-circle', ready.whatsapp, ready.waConfigured], ['sms', 'smartphone', ready.sms, ready.smsConfigured], ['email', 'mail', ready.email, ready.mailConfigured]].forEach(function (x) { var s = chState(x[2], x[3]); %>
-          <li><span class="eg-ch-icon"><%- icon(x[1], 'icon-sm') %></span><span class="grow"><span class="strong small"><%= t('messaging.channels.' + x[0]) %></span><span class="tiny muted" style="display:block"><%= t('messaging.ch_help.' + x[0]) %></span></span><span class="badge badge-dot <%= s[0] %><%= x[2] ? ' eg-on' : '' %>"><%= s[1] %></span></li>
+          <li><span class="eg-ch-icon"><%- icon(x[1], 'icon-sm') %></span><span class="grow"><span class="strong small"><%= t('messaging.channels.' + x[0]) %></span><span class="tiny muted" style="display:block"><%= t('messaging.ch_help.' + x[0]) %></span></span><span class="badge badge-dot <%= s[0] %>"><%= s[1] %></span></li>
           <% }) %>
         </ul>
         <% if (!ready.any) { %>

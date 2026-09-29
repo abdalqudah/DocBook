@@ -1,0 +1,109 @@
+<%/* Visit page: documents for the patient (prescription / consultation report / certificates as PDF) and online payments. */%>
+<%
+  var V = visitExtras;
+  var D = V.docs;
+  var hasChoices = D && (D.rxs.length || D.sections.length || D.certs.length);
+  var DEFAULT_SECTIONS = ['diagnosis', 'assessment', 'plan_text'];
+  var payStatus = function (s) { return s === 'failed' || s === 'refunded' ? 'badge-danger' : 'badge-neutral'; };
+%>
+<% if (D) { %>
+<section class="panel mt-4" id="patient-docs">
+  <div class="panel-head">
+    <div><h2><%- icon('file-text', 'icon-sm') %> <%= t('patient_docs.title') %></h2><div class="panel-sub"><%= V.online ? t('patient_docs.lead_online') : t('patient_docs.lead_clinic') %></div></div>
+    <% if (V.waHref && D.shared.length) { %><a class="btn btn-ghost btn-sm" href="<%= V.waHref %>" target="_blank" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= t('patient_docs.whatsapp') %></a><% } %>
+  </div>
+  <% if (!hasChoices) { %>
+    <div class="panel-body small muted"><%= t('patient_docs.nothing_yet') %></div>
+  <% } else if (V.canShare) { %>
+  <form method="post" action="/app/patient-docs/<%= V.apptId %>/send" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-body stack">
+      <ul class="pdoc-list">
+        <% D.rxs.forEach(function (rx) { %>
+        <li>
+          <label class="check grow"><input type="checkbox" name="rx" value="<%= rx.id %>"<%= D.rxs[0].id === rx.id ? ' checked' : '' %>><span><span class="strong"><%= t('patient_docs.rx_label', { n: rx.id }) %></span> <span class="muted small">· <%= fmt.date(rx.created_at) %> · <%= t('patient_docs.items', { n: rx.items.length }) %></span></span></label>
+          <a class="btn btn-ghost btn-sm" href="/app/patient-docs/<%= V.apptId %>/prescription/<%= rx.id %>.pdf" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><span class="hide-sm"><%= t('patient_docs.preview') %></span></a>
+        </li>
+        <% }) %>
+        <% if (D.sections.length) { %>
+        <li class="pdoc-report">
+          <div class="row between wrap">
+            <label class="check grow"><input type="checkbox" name="report" value="1"<%= V.online ? ' checked' : '' %>><span class="strong"><%= t('patient_docs.kinds.report') %></span></label>
+            <a class="btn btn-ghost btn-sm" href="/app/patient-docs/<%= V.apptId %>/report.pdf" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><span class="hide-sm"><%= t('patient_docs.preview') %></span></a>
+          </div>
+          <div class="pdoc-sections">
+            <span class="tiny muted"><%= t('patient_docs.include') %></span>
+            <% D.sections.forEach(function (s) { %><label class="check"><input type="checkbox" name="sections" value="<%= s %>"<%= DEFAULT_SECTIONS.indexOf(s) !== -1 ? ' checked' : '' %>><span><%= t('patient_docs.sections.' + s) %></span></label><% }) %>
+          </div>
+        </li>
+        <% } %>
+        <% D.certs.forEach(function (c) { %>
+        <li>
+          <label class="check grow"><input type="checkbox" name="cert" value="<%= c.id %>"><span><span class="strong"><%= t('patient_docs.cert_types.' + c.doc_type) %></span> <span class="muted small" dir="ltr"><%= c.serial %></span></span></label>
+          <a class="btn btn-ghost btn-sm" href="/app/patient-docs/<%= V.apptId %>/certificate/<%= c.id %>.pdf" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><span class="hide-sm"><%= t('patient_docs.preview') %></span></a>
+        </li>
+        <% }) %>
+      </ul>
+      <div class="row wrap between">
+        <div class="stack-sm">
+          <span class="small strong"><%= t('patient_docs.language') %></span>
+          <div class="segmented" role="radiogroup" aria-label="<%= t('patient_docs.language') %>">
+            <label><input type="radio" name="locale" value="ar"<%= V.locale !== 'en' ? ' checked' : '' %>><span>العربية</span></label>
+            <label><input type="radio" name="locale" value="en"<%= V.locale === 'en' ? ' checked' : '' %>><span>English</span></label>
+          </div>
+        </div>
+        <ul class="pdoc-ways small muted">
+          <% if (V.online) { %><li><%- icon('globe', 'icon-sm') %> <%= t('patient_docs.way_page') %></li><% } %>
+          <li><%- icon('mail', 'icon-sm') %> <%= V.mailOn && V.patientEmail ? t('patient_docs.way_mail', { email: V.patientEmail }) : V.mailOn ? t('patient_docs.way_no_email') : t('patient_docs.way_no_mail') %></li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel-foot row end"><button class="btn btn-primary btn-sm" type="submit"><%- icon('send', 'icon-sm') %><%= t('patient_docs.send_btn') %></button></div>
+  </form>
+  <% } else { %>
+  <div class="panel-body">
+    <ul class="pdoc-list">
+      <% D.rxs.forEach(function (rx) { %><li><span class="grow strong small"><%= t('patient_docs.rx_label', { n: rx.id }) %></span><a class="btn btn-secondary btn-sm" href="/app/patient-docs/<%= V.apptId %>/prescription/<%= rx.id %>.pdf?download=1"><%- icon('download', 'icon-sm') %><%= t('patient_docs.download_pdf') %></a></li><% }) %>
+      <% if (D.sections.length) { %><li><span class="grow strong small"><%= t('patient_docs.kinds.report') %></span><a class="btn btn-secondary btn-sm" href="/app/patient-docs/<%= V.apptId %>/report.pdf?download=1"><%- icon('download', 'icon-sm') %><%= t('patient_docs.download_pdf') %></a></li><% } %>
+    </ul>
+  </div>
+  <% } %>
+
+  <% if (D.shared.length) { %>
+  <div class="panel-body pdoc-shared">
+    <h3 class="small strong mb-2"><%= t('patient_docs.shared_title') %></h3>
+    <ul class="pdoc-list">
+      <% D.shared.forEach(function (d) { %>
+      <li>
+        <div class="grow" style="min-width:0">
+          <div class="small strong"><%= d.label %> <span class="tiny muted">· <%= d.locale === 'en' ? 'EN' : 'AR' %></span></div>
+          <div class="tiny muted"><%= t('patient_docs.shared_on', { when: fmt.date(d.created_at, { dateStyle: 'medium', timeStyle: 'short' }) }) %><%= d.emailed_at ? ' · ' + t('patient_docs.emailed') : '' %> · <%= t('patient_docs.downloads', { n: d.downloads }) %></div>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="/app/patient-docs/<%= V.apptId %>/docs/<%= d.id %>.pdf?download=1" aria-label="<%= t('patient_docs.download_pdf') %>" title="<%= t('patient_docs.download_pdf') %>"><%- icon('download', 'icon-sm') %></a>
+        <% if (V.canShare) { %>
+        <form method="post" action="/app/patient-docs/<%= V.apptId %>/docs/<%= d.id %>/revoke" data-confirm="<%= t('patient_docs.revoke_confirm') %>" data-confirm-title="<%= t('patient_docs.revoke') %>" data-confirm-yes="<%= t('patient_docs.revoke') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('x', 'icon-sm') %><span class="hide-sm"><%= t('patient_docs.revoke') %></span></button></form>
+        <% } %>
+      </li>
+      <% }) %>
+    </ul>
+    <% if (V.online && V.link) { %><p class="tiny muted mt-2"><%= t('patient_docs.page_hint') %> <bdi dir="ltr" class="truncate"><%= V.link.replace(/^https?:\/\//, '') %></bdi></p><% } %>
+  </div>
+  <% } %>
+</section>
+<% } %>
+
+<% if (V.payments && V.payments.length) { %>
+<section class="panel flush mt-4" id="online-payments">
+  <div class="panel-head"><h2><%- icon('wallet', 'icon-sm') %> <%= t('payments.panel.title') %></h2><a class="link small" href="/app/payments"><%= t('payments.panel.all') %></a></div>
+  <ul class="action-list">
+    <% V.payments.forEach(function (p) { %>
+    <li><a href="/app/payments/<%= p.id %>">
+      <span class="action-icon"><%- icon('wallet') %></span>
+      <div class="grow" style="min-width:0"><div class="strong small"><%= fmt.money(p.amount, p.currency) %> · <%= t('payments.providers.' + p.provider) %></div><div class="tiny muted"><%= fmt.date(p.paid_at || p.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %><%= p.note && p.note !== 'settling' ? ' · ' + t('payments.notes.' + p.note) : '' %></div></div>
+      <span class="badge badge-dot <%= payStatus(p.status) %>"><%= t('payments.statuses.' + p.status) %></span>
+    </a></li>
+    <% }) %>
+  </ul>
+</section>
+<% } %>
+<link rel="stylesheet" href="/css/payments.css?v=<%= assetV %>">

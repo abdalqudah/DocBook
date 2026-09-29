@@ -1,0 +1,29 @@
+/* Online payments & patient documents — calm: neutral surfaces, one primary action. */
+.pay-page { max-width: 560px; padding-top: 32px; padding-bottom: 72px; }
+.pay-h1 { font-size: 20px; margin: 0; }
+.pay-card .tele-h2 { margin-bottom: 6px; }
+.pay-card > * + * { margin-top: 10px; }
+.pay-amount { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pay-amount strong { font-size: 22px; }
+.pay-warn { color: var(--warning); display: flex; gap: 6px; align-items: center; }
+.pay-form .btn-lg { width: auto; }
+.pay-widget { min-height: 160px; }
+.pay-widget .wpwl-form { max-width: 100%; margin: 0; }
+.pay-doc-list, .pdoc-list { list-style: none; margin: 0; padding: 0; }
+.pay-doc-list li, .pdoc-list li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); min-width: 0; }
+.pay-doc-list li:first-child, .pdoc-list li:first-child { border-top: 0; }
+.pdoc-list .check { align-items: flex-start; min-width: 0; }
+.pdoc-list .check input { margin-top: 2px; flex: none; }
+.pdoc-report { flex-direction: column; align-items: stretch !important; }
+.pdoc-sections { display: flex; flex-wrap: wrap; gap: 8px 16px; padding-inline-start: 24px; align-items: center; }
+.pdoc-ways { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pdoc-ways li { display: flex; gap: 6px; align-items: center; }
+.pdoc-shared { border-top: 1px solid var(--border); }
+.pay-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.pay-fieldset legend { margin-bottom: 8px; }
+.pay-steps { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--text-muted); line-height: 1.6; }
+[data-provider-when][hidden] { display: none !important; }
+@media (max-width: 640px) {
+  .pay-form .btn-lg { width: 100%; justify-content: center; }
+  .pdoc-sections { padding-inline-start: 0; }
+}

@@ -11,7 +11,17 @@
       links[i].setAttribute('rel', 'noopener');
     }
   }
-  document.addEventListener('DOMContentLoaded', function () { tag(document); });
+  // No cookies inside a third-party frame: keep the language on every form post.
+  function keepLang() {
+    var lang = document.documentElement.getAttribute('lang');
+    if (lang !== 'ar' && lang !== 'en') return;
+    var forms = document.querySelectorAll('form[method=post]');
+    for (var i = 0; i < forms.length; i += 1) {
+      var act = forms[i].getAttribute('action') || window.location.pathname;
+      if (!/[?&]lang=/.test(act)) forms[i].setAttribute('action', act + (act.indexOf('?') === -1 ? '?' : '&') + 'lang=' + lang);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function () { tag(document); keepLang(); });
   document.addEventListener('click', function (e) {
     var el = e.target && e.target.closest ? e.target.closest('[data-embed-close]') : null;
     if (!el) return;

@@ -7,6 +7,7 @@ const SECTIONS = [
   { group: 'clinic', items: [
     { key: 'clinic', href: '/app/settings/clinic', icon: 'building-2', perms: ['settings.manage'] },
     { key: 'portal', href: '/app/settings/portal', icon: 'globe', perms: ['settings.manage'] },
+    { key: 'payments', href: '/app/settings/payments', icon: 'wallet', perms: ['settings.manage'] },
     { key: 'booking_links', href: '/app/settings/booking-links', icon: 'link', perms: ['settings.manage'] },
     { key: 'messaging', href: '/app/settings/messaging', icon: 'message-circle', perms: ['settings.manage'] },
   ] },

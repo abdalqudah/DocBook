@@ -52,6 +52,7 @@ function createApp() {
   app.get('/favicon.ico', (req, res) => res.redirect(301, brand.favicon || '/favicon.svg'));
   app.use('/', express.static(path.join(__dirname, '..', 'public'), { maxAge: config.isProd ? '7d' : 0, index: false }));
   app.use('/hooks', require('./modules/messaging/hooks.web')); // WhatsApp / SMS provider webhooks: raw body, no session or CSRF
+  app.use('/pay', require('./modules/payments/hooks.web')); // card gateway callback/return (PayTabs): raw body, no session or CSRF
 
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(express.json({ limit: '2mb' }));

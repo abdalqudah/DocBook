@@ -37,6 +37,7 @@
     "clinic_page": "Clinic page",
     "doctors_n": "Doctors: {n}",
     "insurers": "Insurance: {list}",
+    "rating_title": "{n} verified patient reviews",
     "online_badge": "Online consultations",
     "empty_title": "No clinics match your search",
     "empty_text": "Try another city or specialty, or clear the filters.",

@@ -52,10 +52,14 @@ function listed() {
         'b.address', 'b.phone', 'b.online_enabled', 'b.updated_at');
     if (!clinics.length) return [];
     const ids = clinics.map((c) => c.id);
-    const [docs, ins] = await Promise.all([
+    // Verified patient reviews (published only), when the reviews feature is installed.
+    const hasReviews = await knex.schema.hasTable('reviews');
+    const [docs, ins, revs] = await Promise.all([
       knex('doctors').whereIn('business_id', ids).where('is_active', true).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
         .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'online_enabled'),
       knex('insurance_providers').whereIn('business_id', ids).where('is_active', true).select('business_id', 'name'),
+      hasReviews ? knex('reviews').whereIn('business_id', ids).where('status', 'published').groupBy('business_id')
+        .select('business_id', knex.raw('AVG(rating) as avg'), knex.raw('COUNT(*) as n')) : [],
     ]);
     return clinics.map((c) => {
       const doctors = docs.filter((d) => d.business_id === c.id);
@@ -66,6 +70,7 @@ function listed() {
         insurers: [...new Set(ins.filter((i) => i.business_id === c.id).map((i) => String(i.name).trim()).filter(Boolean))],
         doctors,
         online: Boolean(c.online_enabled) && doctors.some((d) => d.online_enabled),
+        rating: (() => { const r = revs.find((x) => x.business_id === c.id); return r && Number(r.n) ? { avg: Math.round(Number(r.avg) * 10) / 10, count: Number(r.n) } : null; })(),
         search: norm([c.name, c.name_en, ...doctors.flatMap((d) => [d.full_name, d.full_name_en])].filter(Boolean).join(' | ')),
       };
     });

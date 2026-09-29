@@ -17,7 +17,7 @@
       </dl>
     </div>
     <div class="row wrap booked-actions">
-      <button class="btn btn-primary" type="button" data-embed-close><%= t('common.close') %></button>
+      <button class="btn btn-primary" type="button" data-embed-close data-href="/<%= clinic.slug %>"><%= t('common.close') %></button>
       <% if (clinic.telHref) { %><a class="btn btn-secondary" href="<%= clinic.telHref %>"><%- icon('phone', 'icon-sm') %><%= t('portal.call') %></a><% } %>
       <a class="btn btn-ghost" href="/<%= clinic.slug %>" target="_blank" rel="noopener"><%= t('portal.back_to_clinic') %></a>
     </div>

@@ -74,7 +74,7 @@
         <div class="dir-card-title">
           <h2><a href="<%= c.pageHref %>"><%= c.name %></a></h2>
           <% if (c.other) { %><div class="tiny muted" dir="auto"><%= c.other %></div><% } %>
-          <div class="small muted dir-meta"><% if (c.specialty) { %><span><%= c.specialty %></span><% } %><% if (c.city) { %><span><%- icon('map-pin', 'icon-sm') %><%= c.city %></span><% } %></div>
+          <div class="small muted dir-meta"><% if (c.specialty) { %><span><%= c.specialty %></span><% } %><% if (c.city) { %><span><%- icon('map-pin', 'icon-sm') %><%= c.city %></span><% } %><% if (c.rating) { %><span title="<%= t('directory.rating_title', { n: c.rating.count }) %>"><%- icon('star', 'icon-sm') %><span class="num"><%= fmt.number(c.rating.avg, 1) %></span> <span class="tiny">(<%= fmt.number(c.rating.count) %>)</span></span><% } %></div>
         </div>
       </div>
       <dl class="dir-facts small">

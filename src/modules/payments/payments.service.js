@@ -187,7 +187,7 @@ async function start(clinic, row, { brand = 'card', baseUrl, locale = 'ar', stat
         cartId, amount, currency, description: `${clinicName} · #${row.appointment_id}`, customer, lang: locale,
         callbackUrl: `${base}/pay/callback/paytabs/${publicId}`, returnUrl: `${base}/pay/return/paytabs/${publicId}`,
       });
-      await knex('payments').where({ id }).update({ provider_ref: r.ref, provider_payment_id: r.ref, updated_at: new Date() });
+      await knex('payments').where({ id }).update({ provider_ref: r.ref, provider_payment_id: r.ref, raw_result: JSON.stringify({ redirect_url: r.redirectUrl }), updated_at: new Date() });
       await audit.record(systemCtx(clinic.id, env), 'payment.started', { entityType: 'appointment', entityId: row.appointment_id, newValues: { payment: id, provider: 'paytabs', amount, currency } });
       return { id, publicId, provider: 'paytabs', redirectUrl: r.redirectUrl };
     }

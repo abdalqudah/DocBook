@@ -1,0 +1,59 @@
+<%/* Patient's consultation page (/c/<token>): result of an online payment, "Pay online", "Your documents". */%>
+<%
+  var X = payExtras;
+  var P = X.payOnline;
+  var dateLongP = function (d) { return fmt.date(d, { weekday: 'long', day: 'numeric', month: 'long' }); };
+%>
+<link rel="stylesheet" href="/css/payments.css?v=<%= assetV %>">
+<% if (X.result === 'paid') { %>
+<div class="alert alert-success mt-4" role="status"><%- icon('circle-check') %><div class="grow"><div class="alert-title"><%= t('payments.patient.result_paid_title') %></div><div class="small"><%= t('payments.patient.result_paid') %></div></div></div>
+<% } else if (X.result === 'pending') { %>
+<div class="alert alert-info mt-4" role="status"><%- icon('clock') %><div class="grow"><div class="alert-title"><%= t('payments.patient.result_pending_title') %></div><div class="small"><%= t('payments.patient.result_pending') %></div></div></div>
+<% } else if (X.result === 'failed' && P) { %>
+<div class="alert alert-warning mt-4" role="status"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('payments.patient.result_failed_title') %></div><div class="small"><%= t('payments.patient.result_failed') %></div></div></div>
+<% } else if (X.result === 'error') { %>
+<div class="alert alert-error mt-4" role="status"><%- icon('circle-alert') %><div class="grow"><div class="small"><%= t('payments.patient.result_error') %></div></div></div>
+<% } %>
+
+<% if (P) { %>
+<section class="tele-card pay-card mt-4" id="pay">
+  <div class="row between wrap">
+    <h2 class="tele-h2"><%- icon('lock', 'icon-sm') %> <%= t('payments.patient.pay_title') %></h2>
+    <% if (P.test) { %><span class="badge badge-dot badge-warning"><%= t('payments.patient.test_mode') %></span><% } %>
+  </div>
+  <div class="pay-amount"><span class="small muted"><%= t('payments.patient.amount') %></span><strong class="num"><%= fmt.money(P.amount, P.currency) %></strong></div>
+  <p class="small muted"><%= t('payments.patient.pay_text') %></p>
+  <% if (P.lastFailed && X.result !== 'failed') { %><p class="small pay-warn"><%- icon('triangle-alert', 'icon-sm') %> <%= t('payments.patient.last_failed') %></p><% } %>
+  <form method="post" action="/c/<%= X.token %>/pay" class="stack-sm pay-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% if (P.brands.length > 1) { %>
+    <div class="stack-sm">
+      <span class="small strong"><%= t('payments.patient.choose_card') %></span>
+      <div class="segmented" role="radiogroup" aria-label="<%= t('payments.patient.choose_card') %>">
+        <% P.brands.forEach(function (b, i) { %><label><input type="radio" name="brand" value="<%= b %>"<%= i === 0 ? ' checked' : '' %>><span><%= t('payments.brands.' + b) %></span></label><% }) %>
+      </div>
+    </div>
+    <% } else { %><input type="hidden" name="brand" value="card"><% } %>
+    <div><button class="btn btn-primary btn-lg" type="submit"><%- icon('lock', 'icon-sm') %><%= t('payments.patient.pay_btn', { amount: fmt.money(P.amount, P.currency) }) %></button></div>
+  </form>
+  <% if (P.holdUntil) { %><p class="tiny muted"><%- icon('clock', 'icon-sm') %> <%= t('payments.patient.hold_until', { date: dateLongP(P.holdUntil.date), time: P.holdUntil.time, tz: P.holdUntil.offset }) %></p><% } %>
+  <p class="tiny muted"><%= t('payments.patient.secure_by', { provider: t('payments.providers.' + P.provider) }) %></p>
+</section>
+<% } %>
+
+<% if (X.docs && X.docs.length) { %>
+<section class="tele-card mt-4" id="documents">
+  <h2 class="tele-h2"><%- icon('file-text', 'icon-sm') %> <%= t('patient_docs.your_docs') %></h2>
+  <p class="small muted"><%= t('patient_docs.your_docs_text') %></p>
+  <ul class="pay-doc-list">
+    <% X.docs.forEach(function (d) { %>
+    <li>
+      <span class="action-icon"><%- icon(d.kind === 'prescription' ? 'pill' : 'file-text') %></span>
+      <div class="grow" style="min-width:0"><div class="strong small"><%= d.label %></div><div class="tiny muted"><%= fmt.date(d.date) %> · PDF</div></div>
+      <a class="btn btn-secondary btn-sm" href="/c/<%= X.token %>/docs/<%= d.id %>.pdf" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><span class="hide-sm"><%= t('patient_docs.open') %></span></a>
+      <a class="btn btn-ghost btn-sm" href="/c/<%= X.token %>/docs/<%= d.id %>.pdf?download=1" aria-label="<%= t('patient_docs.download') %>"><%- icon('download', 'icon-sm') %><span class="hide-sm"><%= t('patient_docs.download') %></span></a>
+    </li>
+    <% }) %>
+  </ul>
+</section>
+<% } %>

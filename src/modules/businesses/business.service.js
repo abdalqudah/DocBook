@@ -23,7 +23,7 @@ const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country',
 const RESERVED = new Set(`app admin api vendor vendors reps marketplace login logout signup verify verify-email forgot reset invite invitations workspaces theme favicon.svg favicon.ico
   css js img fonts icons.svg robots.txt sitemap.xml healthz help support docs blog about contact pricing privacy terms security book booking
   www mail static assets public uploads files auth account settings dashboard home new clinic clinics
-  password preferences profile portal staff logo brand docbook demo join status kiosk calendar onboarding notifications review reviews hooks`.split(/\s+/).filter(Boolean));
+  password preferences profile portal staff logo brand docbook demo join status kiosk calendar onboarding notifications review reviews hooks pay`.split(/\s+/).filter(Boolean));
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 const normalizeSlug = (raw) => String(raw || '').trim().toLowerCase().replace(/\s+/g, '-');
 

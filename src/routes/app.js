@@ -84,7 +84,10 @@ router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));
 router.use('/patients', require('../modules/clinic/patients.web'));
 router.use(require('../modules/certificates/web')); // /certificates + the visit page's "Documents" panel data (before /visits)
+router.use('/visits', require('../modules/patientdocs/visit-hook')); // data for the "Documents for the patient" panel
 router.use('/visits', require('../modules/clinic/visits.web'));
+router.use('/patient-docs', require('../modules/patientdocs/web')); // prescription / report PDFs, send to patient
+router.use('/payments', require('../modules/payments/staff.web')); // online card payments, refunds
 router.use('/telehealth', require('../modules/telehealth/web'));
 router.use('/cashier', require('../modules/clinic/cashier.web'));
 router.use('/billing', require('../modules/clinic/billing.web'));
@@ -104,6 +107,7 @@ router.use('/settings/messaging', require('../modules/messaging/web')); // Setti
 router.use('/attendance', require('../modules/attendance/web'));
 router.use('/settings/database', require('../modules/datasync/web'));
 router.use('/help', require('../modules/support/web'));
+router.use('/settings/payments', require('../modules/payments/settings.web')); // Settings → Online payments
 router.use('/settings', require('../modules/settings/web'));
 
 module.exports = router;

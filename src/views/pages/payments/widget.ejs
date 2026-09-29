@@ -1,0 +1,20 @@
+<%/* HyperPay COPYandPAY: the card form is HyperPay's widget (their script and frames are allowed on this page only). */%>
+<div class="container pay-page">
+  <section class="tele-card pay-card stack">
+    <div class="row between wrap">
+      <span class="tiny muted"><%= clinic.displayName %></span>
+      <% if (testMode) { %><span class="badge badge-dot badge-warning"><%= t('payments.patient.test_mode') %></span><% } %>
+    </div>
+    <h1 class="pay-h1"><%= t('payments.patient.widget_title') %></h1>
+    <div class="pay-amount"><span class="small muted"><%= t('payments.patient.amount') %></span><strong class="num"><%= fmt.money(p.amount, p.currency) %></strong></div>
+    <p class="small muted"><%= t('payments.patient.widget_text') %></p>
+    <div class="pay-widget" dir="ltr">
+      <form action="<%= shopperResultUrl %>" class="paymentWidgets" data-brands="<%= brands %>"></form>
+      <p class="small muted" data-pay-loading><%= t('payments.patient.widget_loading') %></p>
+    </div>
+    <p class="tiny muted"><%- icon('lock', 'icon-sm') %> <%= t('payments.patient.secure_by', { provider: t('payments.providers.hyperpay') }) %></p>
+  </section>
+</div>
+<script type="application/json" id="wpwl-options"><%- json(wpwl) %></script>
+<script src="/js/payments.js?v=<%= assetV %>"></script>
+<script src="<%= widgetUrl %>"></script>

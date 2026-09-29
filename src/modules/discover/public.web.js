@@ -51,7 +51,7 @@ function card(req, c) {
   const docNames = c.doctors.map((d) => (en && d.full_name_en) || d.full_name);
   return {
     id: c.id, slug: c.slug, name, other: other && other !== name ? other : null, specialty: spec, city: c.city || '', online: c.online,
-    logo: c.logo_mime ? `/${c.slug}/logo?v=${c.logo_version}` : null, doctors: docNames, insurers: c.insurers,
+    logo: c.logo_mime ? `/${c.slug}/logo?v=${c.logo_version}` : null, doctors: docNames, insurers: c.insurers, rating: c.rating,
     next: nextLabel(req, c), bookHref: `/${c.slug}/book?src=directory`, pageHref: `/${c.slug}?src=directory`,
   };
 }
@@ -79,7 +79,8 @@ async function directory(req, res, preset = {}) {
     itemListElement: cards.map((c, i) => ({
       '@type': 'ListItem', position: (result.page - 1) * dir.PAGE_SIZE + i + 1, url: `${base}/${c.slug}`,
       item: { '@type': 'MedicalClinic', '@id': `${base}/${c.slug}#clinic`, name: c.name, url: `${base}/${c.slug}`,
-        ...(c.city ? { address: { '@type': 'PostalAddress', addressLocality: c.city } } : {}), ...(c.specialty ? { keywords: c.specialty } : {}) },
+        ...(c.city ? { address: { '@type': 'PostalAddress', addressLocality: c.city } } : {}), ...(c.specialty ? { keywords: c.specialty } : {}),
+        ...(c.rating ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: c.rating.avg, reviewCount: c.rating.count, bestRating: 5, worstRating: 1 } } : {}) },
     })),
   };
   const url = `${base}${canonicalPath}`;

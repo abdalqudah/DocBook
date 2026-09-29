@@ -59,7 +59,7 @@ router.post('/', form(async (req, res) => {
   await msg.saveSettings(req.ctx, req.body);
   flash(req, 'success', req.t('messaging.saved'));
   res.redirect('/app/settings/messaging');
-}, page));
+}, (req, res, extra) => page(req, res, { ...extra, formError: extra.formError && { ...extra.formError, message: errText(req, extra.formError) } })));
 
 router.post('/test', wrap(async (req, res) => {
   try {

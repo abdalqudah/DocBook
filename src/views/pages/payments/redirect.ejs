@@ -1,0 +1,11 @@
+<%/* PayTabs: short hand-over page before the provider's secure payment page (auto-continues with JavaScript). */%>
+<div class="container pay-page">
+  <section class="tele-card pay-card stack">
+    <span class="tiny muted"><%= clinic.displayName %></span>
+    <h1 class="pay-h1"><%= t('payments.patient.redirect_title') %></h1>
+    <div class="pay-amount"><span class="small muted"><%= t('payments.patient.amount') %></span><strong class="num"><%= fmt.money(p.amount, p.currency) %></strong></div>
+    <p class="small muted"><%= t('payments.patient.redirect_text', { provider: t('payments.providers.paytabs') }) %></p>
+    <div><a class="btn btn-primary btn-lg" href="<%= redirectUrl %>" rel="noreferrer" data-pay-redirect><%- icon('lock', 'icon-sm') %><%= t('payments.patient.continue_btn') %></a></div>
+    <p class="tiny muted"><%= t('payments.patient.secure_by', { provider: t('payments.providers.paytabs') }) %></p>
+  </section>
+</div>

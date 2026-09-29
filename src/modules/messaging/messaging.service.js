@@ -104,7 +104,7 @@ function readiness(cfg) {
 const dialFor = (cfg, clinic) => cfg.default_dial || countries.dialOf(clinic.country) || countries.dialOf(options.countryForZone(clinic.timezone)) || null;
 
 const bool = () => z.preprocess((v) => v === '1' || v === 'on' || v === true || v === 'true', z.boolean());
-const int = (min, max) => z.preprocess((v) => (v === '' || v === undefined ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a whole number.').min(min, `Must be at least ${min}.`).max(max, `Must be at most ${max}.`));
+const int = (min, max) => z.preprocess((v) => (v === '' || v === undefined ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a whole number.').min(min, `Must be at least ${min}.`).max(max, `Must be at most ${max}.`).optional());
 const opt = (max) => z.preprocess(emptyToUndefined, z.string().trim().max(max).optional());
 const tplName = () => z.preprocess(emptyToUndefined, z.string().trim().max(120).regex(/^[a-z0-9_]+$/, 'Use lowercase letters, numbers and underscores.').optional());
 const langCode = () => z.preprocess(emptyToUndefined, z.string().trim().max(10).regex(/^[a-z]{2,3}(_[A-Z]{2})?$/, 'Choose a valid value.').optional());
@@ -142,9 +142,12 @@ async function saveSettings(ctx, input) {
     updated_by: ctx.userId, updated_at: new Date(),
   };
   // Secrets: an empty field keeps the stored value; "remove" clears it.
-  if (d.wa_token) row.wa_token_enc = secrets.encrypt(d.wa_token); else if (d.clear_wa_token) row.wa_token_enc = null;
-  if (d.wa_app_secret) row.wa_app_secret_enc = secrets.encrypt(d.wa_app_secret);
-  if (d.sms_auth) row.sms_auth_enc = secrets.encrypt(d.sms_auth); else if (d.clear_sms_auth) row.sms_auth_enc = null;
+  const enc = (v) => {
+    try { return secrets.encrypt(v); } catch { throw new AppError('MESSAGING_NO_APP_KEY', 'Set APP_KEY on the server before saving credentials.', 422); }
+  };
+  if (d.wa_token) row.wa_token_enc = enc(d.wa_token); else if (d.clear_wa_token) row.wa_token_enc = null;
+  if (d.wa_app_secret) row.wa_app_secret_enc = enc(d.wa_app_secret);
+  if (d.sms_auth) row.sms_auth_enc = enc(d.sms_auth); else if (d.clear_sms_auth) row.sms_auth_enc = null;
   if (row.wa_phone_number_id !== before.wa_phone_number_id || d.wa_token) row.wa_last_error = null;
   await knex('clinic_messaging').insert({ business_id: ctx.businessId, ...row, created_at: new Date() }).onConflict('business_id').merge(row);
   const shown = { ...row };
@@ -153,7 +156,29 @@ async function saveSettings(ctx, input) {
 }
 
 // ---------------------------------------------------------------- patient links
-const newToken = () => { const token = randomToken(32); return { token, token_hash: sha256(token), token_enc: secrets.encrypt(token) }; };
+// Link tokens are kept encrypted with a key derived from APP_KEY (or the session secret) so the next message can
+// repeat the same link; look-ups use the SHA-256. If the secret changes, a new link is issued on the next send.
+let linkKey;
+const keyOf = () => {
+  if (!linkKey) linkKey = Buffer.from(crypto.hkdfSync('sha256', Buffer.from(process.env.APP_KEY || config.sessionSecret), Buffer.from('engage'), Buffer.from('patient-link-v1'), 32));
+  return linkKey;
+};
+const sealToken = (value) => {
+  const iv = crypto.randomBytes(12);
+  const c = crypto.createCipheriv('aes-256-gcm', keyOf(), iv);
+  const data = Buffer.concat([c.update(String(value), 'utf8'), c.final()]);
+  return ['v1', iv.toString('base64'), c.getAuthTag().toString('base64'), data.toString('base64')].join(':');
+};
+const openToken = (payload) => {
+  try {
+    const [v, iv, tag, data] = String(payload || '').split(':');
+    if (v !== 'v1') return null;
+    const d = crypto.createDecipheriv('aes-256-gcm', keyOf(), Buffer.from(iv, 'base64'));
+    d.setAuthTag(Buffer.from(tag, 'base64'));
+    return Buffer.concat([d.update(Buffer.from(data, 'base64')), d.final()]).toString('utf8');
+  } catch { return null; }
+};
+const newToken = () => { const token = randomToken(32); return { token, token_hash: sha256(token), token_enc: sealToken(token) }; };
 
 /** The patient's link for an appointment (created on first use; the same token is reused by every message). */
 async function linkFor(appt, purpose, now = Date.now()) {
@@ -167,7 +192,7 @@ async function linkFor(appt, purpose, now = Date.now()) {
     }).onConflict(['appointment_id', 'purpose']).ignore();
     row = await knex('appointment_links').where({ appointment_id: appt.id, purpose }).first();
   }
-  let token = secrets.decrypt(row.token_enc);
+  let token = openToken(row.token_enc);
   if (!token || sha256(token) !== row.token_hash) { // APP_KEY changed: issue a new link
     const t = newToken();
     await knex('appointment_links').where({ id: row.id }).update({ token_hash: t.token_hash, token_enc: t.token_enc });
@@ -341,7 +366,7 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
   if (a.patient_email && ready.email) {
     const t = translator(locale);
     const subject = t(`messaging.mail.${kind}_subject`, vars);
-    const html = mailer.layout({ locale, title: subject, body: t(`messaging.text.${kind}`, { ...vars, link: '' }).trim(), cta: t(`messaging.mail.${kind}_cta`), href: link });
+    const html = mailer.layout({ locale, title: subject, body: t(`messaging.mail.${kind}_body`, vars), cta: t(`messaging.mail.${kind}_cta`), href: link });
     const r = await ch.sendEmail({ to: a.patient_email, subject, html, replyTo: clinic.email || undefined });
     results.push(r.ok);
     await log({ business_id: a.business_id, appointment_id: a.id, dispatch_id: dispatchId, stage, channel: 'email', recipient: ch.maskEmail(a.patient_email), status: r.ok ? 'sent' : 'failed', error: r.error });

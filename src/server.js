@@ -66,6 +66,9 @@ async function start() {
     // Online consultations: reminder e-mails ~1 hour before, and old video-call signaling messages purged.
     const teleTick = () => require('./modules/telehealth/telehealth.service').runDue().catch((e) => console.error('[telehealth]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(teleTick, 5 * 60_000).unref();
+    // Online payments: unpaid online bookings past the clinic's hold time are released; stuck payments settled.
+    const payTick = () => require('./modules/payments/payments.service').runDue().catch((e) => console.error('[payments]', e.message)); // eslint-disable-line global-require, no-console
+    setInterval(payTick, 5 * 60_000).unref();
     // Appointment messages (WhatsApp / SMS / e-mail): confirmations, reminders and review requests, every minute.
     const messagingTick = () => require('./modules/messaging/messaging.service').runDue().catch((e) => console.error('[messaging]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(messagingTick, 60_000).unref();

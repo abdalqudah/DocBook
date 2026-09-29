@@ -24,7 +24,9 @@ router.use('/verify', require('../modules/certificates/verify.web')); // public 
 // every top-level path the platform uses is also in businesses.RESERVED so no clinic can take it.
 // Online consultations: the patient's consultation page (/c/<token>) and online booking (/<slug>/book/online).
 router.use('/', require('../modules/discover/public.web')); // clinic directory (/clinics), /widget.js, widget booking confirmation
+router.use('/c', require('../modules/payments/patient.web')); // "Pay online" + "Your documents" on /c/<token> (before telehealth)
 router.use('/c', require('../modules/telehealth/public.web'));
+router.use('/pay', require('../modules/payments/public.web')); // card payment pages (/pay/<id>, HyperPay return)
 router.use('/', require('../modules/messaging/public.web')); // patient links from messages: /r/<token> (confirm/cancel/reschedule), /review/<token>
 router.use('/', require('../modules/telehealth/booking.web'));
 router.use('/', require('../modules/site/booking.web'));

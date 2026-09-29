@@ -53,6 +53,7 @@
 
   <% if (state === 'confirmed' || state === 'pending' || state === 'awaiting_payment') { %><%- include('_call') %><% } %>
 
+  <% if (typeof payExtras !== 'undefined' && payExtras) { %><%- include('../payments/_consult') %><% } %>
   <div class="tele-grid">
     <% if (unpaid && (state === 'awaiting_payment' || (row.payment_required && live))) { %>
     <section class="tele-card">
