@@ -161,7 +161,8 @@ pm2 restart docbook
 ## فحص سريع عند المشاكل
 | المشكلة | الحل |
 | --- | --- |
-| الصفحة لا تفتح | `pm2 logs docbook` لقراءة الخطأ |
+| الصفحة لا تفتح | `pm2 logs docbook` لقراءة الخطأ. على cPanel/CloudLinux: الملف `stderr.log` في مجلد التطبيق، ثم Restart من Setup Node.js App |
+| صفحة "503 Service Unavailable" من السيرفر (LiteSpeed) | التطبيق لم يعمل: تأكد من Node.js 20+، وملف التشغيل `app.js`، واقرأ `stderr.log` |
 | "Missing required environment variable" | متغير ناقص في `.env` |
 | خطأ اتصال بقاعدة البيانات | تحقق من `DB_*` وأن المستخدم له صلاحيات |
 | تسجيل الدخول يرجع لصفحة الدخول | استخدم https، و `TRUST_PROXY=true` خلف nginx/cPanel |

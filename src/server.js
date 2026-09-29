@@ -82,11 +82,17 @@ async function start() {
   process.on('SIGINT', shutdown);
 }
 
-if (require.main === module || require.main?.filename?.endsWith('app.js')) {
-  start().catch((err) => {
+/**
+ * Starts the server. Called explicitly by app.js: hosting loaders (cPanel/CloudLinux LiteSpeed lsnode, Passenger)
+ * load the startup file through their own script, so "is this the main module" checks do not work there.
+ */
+function run() {
+  return start().catch((err) => {
     console.error(`[${brand.name}] failed to start:`, err.code || '', err.message); // eslint-disable-line no-console
     serveSetupError(err);
   });
 }
 
-module.exports = { bootDatabase };
+if (require.main === module) run();
+
+module.exports = { run, bootDatabase };
