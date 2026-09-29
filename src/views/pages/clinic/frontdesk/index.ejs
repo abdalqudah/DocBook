@@ -10,29 +10,30 @@
   };
   var payBtn = function (a) {
     if (!canPay) return '';
-    return '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="checkout-dialog" data-action="/app/front-desk/' + a.id + '/checkout" data-dialog-title="' + escapeHtml(t('frontdesk.checkout_for', { name: a.patient_name })) + '" data-fill="' + escapeHtml(json({ amount_paid: Number(a.amount_due || 0), discount_percent: '', payment_method: 'cash', insurance_provider_id: '' })) + '">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(t('frontdesk.checkout')) + '</span></button>';
+    return '<button class="btn btn-secondary btn-sm" type="button" data-open-dialog="checkout-dialog" data-action="/app/front-desk/' + a.id + '/checkout" data-dialog-title="' + escapeHtml(t('frontdesk.checkout_for', { name: a.patient_name })) + '" data-fill="' + escapeHtml(json({ amount_paid: Number(a.amount_due || 0), discount_percent: '', payment_method: 'cash', insurance_provider_id: '' })) + '">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(t('frontdesk.checkout')) + '</span></button>'
+      + '<a class="btn btn-ghost btn-sm" href="/app/cashier?visit=' + a.id + '" title="' + escapeHtml(t('nav.cashier')) + '">' + icon('receipt-text', 'icon-sm') + '<span>' + escapeHtml(t('nav.cashier')) + '</span></a>';
   };
   var card = function (a, extraBadge, actions) {
-    var h = '<article class="fd-card" style="' + (a.doctor_color ? '--doc:' + escapeHtml(a.doctor_color) : '') + '">'
+    var h = '<article class="fd-card">'
       + '<div class="fd-card-top"><span class="fd-time" dir="ltr">' + escapeHtml(a.appointment_time) + '</span>' + (extraBadge || '') + '</div>'
       + '<div class="fd-name">' + (canVisit ? '<a href="/app/visits/' + a.id + '">' + escapeHtml(a.patient_name) + '</a>' : escapeHtml(a.patient_name)) + '</div>'
-      + '<div class="fd-meta small muted">' + (a.doctor_id ? '<span class="swatch" style="' + (a.doctor_color ? 'background:' + escapeHtml(a.doctor_color) : '') + '"></span>' + escapeHtml(L(a.doctor_name, a.doctor_name_en)) : escapeHtml(t('appointments.unassigned')))
+      + '<div class="fd-meta small muted">' + (a.doctor_id ? '<span class="doc-dot" style="' + (a.doctor_color ? 'background:' + escapeHtml(a.doctor_color) : '') + '"></span>' + escapeHtml(L(a.doctor_name, a.doctor_name_en)) : escapeHtml(t('appointments.unassigned')))
       + (a.service_name ? ' · ' + escapeHtml(L(a.service_name, a.service_name_en)) : '') + '</div>'
       + (a.patient_phone ? '<div class="tiny muted"><bdi dir="ltr">' + escapeHtml(a.patient_phone) + '</bdi></div>' : '')
       + '<div class="fd-badges">'
-      + (a.status === 'pending' ? '<span class="badge badge-warning">' + escapeHtml(t('appointments.statuses.pending')) + '</span>' : '')
-      + (a.source === 'website' ? '<span class="badge badge-brand">' + icon('globe', 'icon-sm') + escapeHtml(t('appointments.sources.website')) + '</span>' : '')
-      + (a.appointment_type === 'online' ? '<span class="badge badge-info">' + icon('monitor', 'icon-sm') + escapeHtml(t('appointments.types.online')) + '</span>' : '')
+      + (a.status === 'pending' ? '<span class="st"><i class="st-dot st-pending"></i>' + escapeHtml(t('appointments.statuses.pending')) + '</span>' : '')
+      + (a.source === 'website' ? '<span class="fd-tag">' + icon('globe', 'icon-sm') + escapeHtml(t('appointments.sources.website')) + '</span>' : '')
+      + (a.appointment_type === 'online' ? '<span class="fd-tag">' + icon('monitor', 'icon-sm') + escapeHtml(t('appointments.types.online')) + '</span>' : '')
       + '</div>'
       + (actions ? '<div class="fd-actions">' + actions + '</div>' : '')
       + '</article>';
     return h;
   };
   var cols = [
-    { key: 'expected', icon: 'calendar-clock', tone: '', items: board.expected },
-    { key: 'waiting', icon: 'armchair', tone: 'warning', items: board.waiting },
-    { key: 'with_doctor', icon: 'stethoscope', tone: 'info', items: board.withDoctor },
-    { key: 'checkout', icon: 'banknote', tone: 'success', items: board.toPay.concat(board.done) },
+    { key: 'expected', icon: 'calendar-clock', items: board.expected },
+    { key: 'waiting', icon: 'armchair', items: board.waiting },
+    { key: 'with_doctor', icon: 'stethoscope', items: board.withDoctor },
+    { key: 'checkout', icon: 'banknote', items: board.toPay.concat(board.done) },
   ];
 %>
 <div class="page-head" data-auto-refresh="60">
@@ -56,39 +57,39 @@
 <% } %>
 
 <div class="stats cols-5 fd-stats">
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.expected') %><span class="stat-icon"><%- icon('calendar-clock') %></span></div><div class="stat-value"><%= fmt.number(board.expected.length) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.waiting') %><span class="stat-icon warning"><%- icon('armchair') %></span></div><div class="stat-value"><%= fmt.number(board.waiting.length) %></div><div class="stat-meta"><%= board.waiting.length ? t('frontdesk.longest_wait', { n: board.waiting[0].waited }) : '—' %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.with_doctor') %><span class="stat-icon"><%- icon('stethoscope') %></span></div><div class="stat-value"><%= fmt.number(board.withDoctor.length) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.to_pay') %><span class="stat-icon"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.number(board.toPay.length) %></div></div>
-  <% if (can('billing.view')) { %><div class="stat hero"><div class="stat-label"><%= t('frontdesk.collected') %><span class="stat-icon"><%- icon('wallet') %></span></div><div class="stat-value"><%= fmt.money(collected) %></div><div class="stat-meta"><%= t('frontdesk.paid_visits', { n: fmt.number(board.done.length) }) %></div></div>
-  <% } else { %><div class="stat"><div class="stat-label"><%= t('frontdesk.col.done') %><span class="stat-icon"><%- icon('circle-check') %></span></div><div class="stat-value"><%= fmt.number(board.done.length) %></div></div><% } %>
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.expected') %></div><div class="stat-value"><%= fmt.number(board.expected.length) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.waiting') %></div><div class="stat-value"><%= fmt.number(board.waiting.length) %></div><div class="stat-meta<%= board.waiting.length && board.waiting[0].waited >= 30 ? ' fd-late' : '' %>"><%= board.waiting.length ? t('frontdesk.longest_wait', { n: board.waiting[0].waited }) : '—' %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.with_doctor') %></div><div class="stat-value"><%= fmt.number(board.withDoctor.length) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('frontdesk.to_pay') %></div><div class="stat-value"><%= fmt.number(board.toPay.length) %></div></div>
+  <% if (can('billing.view')) { %><div class="stat"><div class="stat-label"><%= t('frontdesk.collected') %></div><div class="stat-value"><%= fmt.money(collected) %></div><div class="stat-meta"><%= t('frontdesk.paid_visits', { n: fmt.number(board.done.length) }) %></div></div>
+  <% } else { %><div class="stat"><div class="stat-label"><%= t('frontdesk.col.done') %></div><div class="stat-value"><%= fmt.number(board.done.length) %></div></div><% } %>
 </div>
 
 <div class="fd-board mt-4">
   <% cols.forEach(function (c) { %>
-  <section class="fd-col<%= c.tone ? ' tone-' + c.tone : '' %>" aria-labelledby="fd-<%= c.key %>">
-    <header class="fd-col-head"><span class="action-icon <%= c.tone %>"><%- icon(c.icon) %></span><h2 id="fd-<%= c.key %>"><%= t('frontdesk.col.' + c.key) %></h2><span class="badge"><%= fmt.number(c.items.length) %></span></header>
+  <section class="fd-col" aria-labelledby="fd-<%= c.key %>">
+    <header class="fd-col-head"><%- icon(c.icon, 'icon-sm fd-col-icon') %><h2 id="fd-<%= c.key %>"><%= t('frontdesk.col.' + c.key) %></h2><span class="badge"><%= fmt.number(c.items.length) %></span></header>
     <div class="fd-col-body">
       <% if (!c.items.length) { %><div class="fd-empty small muted"><%= t('frontdesk.empty.' + c.key) %></div><% } %>
       <% c.items.forEach(function (a) {
         var badge = ''; var actions = '';
         if (c.key === 'expected') {
-          actions = act(a.id, 'check-in', t('frontdesk.check_in'), 'user-check', 'btn-primary', 1)
+          actions = act(a.id, 'check-in', t('frontdesk.check_in'), 'user-check', 'btn-secondary', 1)
             + act(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', 'btn-ghost', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name }));
           if (a.appointment_time < nowTime) badge = '<span class="badge badge-warning">' + escapeHtml(t('frontdesk.late')) + '</span>';
         } else if (c.key === 'waiting') {
           badge = '<span class="badge ' + (a.waited >= 30 ? 'badge-danger' : a.waited >= 15 ? 'badge-warning' : 'badge-neutral') + '">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.waited', { n: a.waited })) + '</span>';
-          actions = (a.doctor_id ? act(a.id, 'call-in', t('frontdesk.call_in'), 'door-open', 'btn-primary', 1) : '')
+          actions = (a.doctor_id ? act(a.id, 'call-in', t('frontdesk.call_in'), 'door-open', 'btn-secondary', 1) : '')
             + payBtn(a) + act(a.id, 'check-in', t('frontdesk.undo'), 'refresh-cw', 'btn-ghost', 0);
         } else if (c.key === 'with_doctor') {
-          badge = '<span class="badge badge-info">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.in_room', { n: a.inRoom })) + '</span>';
+          badge = '<span class="badge">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.in_room', { n: a.inRoom })) + '</span>';
           actions = payBtn(a) + act(a.id, 'call-in', t('frontdesk.back_to_waiting'), 'refresh-cw', 'btn-ghost', 0);
         } else if (a.payment_status === 'paid') {
           var inv = invoiceFor[a.id];
-          badge = '<span class="badge badge-success">' + icon('check', 'icon-sm') + escapeHtml(t('appointments.payment_statuses.paid')) + '</span>';
+          badge = '<span class="st"><i class="st-dot st-completed"></i>' + escapeHtml(t('appointments.payment_statuses.paid')) + '</span>';
           actions = inv && can('billing.view') ? '<a class="btn btn-ghost btn-sm" href="/app/billing/' + inv.id + '?print=1">' + icon('printer', 'icon-sm') + '<span>#' + inv.invoice_number + '</span></a><span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>' : '<span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>';
         } else {
-          badge = '<span class="badge badge-warning">' + escapeHtml(t('frontdesk.to_pay')) + '</span>';
+          badge = '<span class="badge">' + escapeHtml(t('frontdesk.to_pay')) + '</span>';
           actions = payBtn(a) + '<span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>';
         }
       %><%- card(a, badge, actions) %><% }) %>
@@ -102,7 +103,7 @@
   <summary class="panel-head"><h2><%- icon('calendar-x', 'icon-sm') %> <%= t('frontdesk.missed') %> <span class="badge"><%= fmt.number(board.missed.length) %></span></h2><%- icon('chevron-down', 'icon-sm muted') %></summary>
   <ul class="action-list">
     <% board.missed.forEach(function (a) { %>
-    <li><div><span class="small strong" dir="ltr" style="min-width:48px"><%= a.appointment_time %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></div></div><span class="badge <%= a.status === 'no_show' ? 'badge-danger' : 'badge-neutral' %>"><%= t('appointments.statuses.' + a.status) %></span><%- act(a.id, 'restore', t('frontdesk.restore'), 'refresh-cw', 'btn-ghost') %></div></li>
+    <li><div><span class="small strong" dir="ltr" style="min-width:48px"><%= a.appointment_time %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></div></div><span class="st"><i class="st-dot st-<%= a.status %>"></i><%= t('appointments.statuses.' + a.status) %></span><%- act(a.id, 'restore', t('frontdesk.restore'), 'refresh-cw', 'btn-ghost') %></div></li>
     <% }) %>
   </ul>
 </details>

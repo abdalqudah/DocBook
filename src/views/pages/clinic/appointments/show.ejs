@@ -2,7 +2,7 @@
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
   var canManage = can('appointments.manage');
   var canVisit = canAny('clinical.view', 'vitals.edit', 'frontdesk.use');
-  var SB = { pending: 'badge-warning', confirmed: 'badge-info', completed: 'badge-success', cancelled: 'badge-neutral', no_show: 'badge-danger' };
+  var stDot = function (s) { return '<span class="st"><i class="st-dot st-' + s + '"></i>' + escapeHtml(t('appointments.statuses.' + s)) + '</span>'; };
   var closed = a.status === 'cancelled' || a.status === 'no_show';
   var statusForm = function (status, label, iconName, cls, confirmMsg) {
     return '<form method="post" action="/app/appointments/' + a.id + '/status"' + (confirmMsg ? ' data-confirm="' + escapeHtml(confirmMsg) + '" data-confirm-title="' + escapeHtml(label) + '" data-confirm-yes="' + escapeHtml(label) + '"' : '') + '>'
@@ -14,15 +14,15 @@
   <div>
     <div class="breadcrumbs"><a href="/app/appointments?date=<%= a.appointment_date %>"><%= t('appointments.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= fmt.date(a.appointment_date) %></div>
     <div class="row">
-      <span class="avatar avatar-lg" style="<%= a.doctor_color ? 'background:' + a.doctor_color + ';color:var(--surface)' : '' %>"><%= initials(a.patient_name) %></span>
+      <span class="avatar avatar-lg appt-avatar"><%= initials(a.patient_name) %></span>
       <div>
         <h1><%= a.patient_name %></h1>
         <p><%= fmt.date(a.appointment_date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span dir="ltr"><%= a.appointment_time %>–<%= a.end_time %></span></p>
         <div class="row-sm wrap mt-2">
-          <span class="badge badge-dot <%= SB[a.status] %>"><%= t('appointments.statuses.' + a.status) %></span>
-          <% if (a.source === 'website') { %><span class="badge badge-brand"><%- icon('globe', 'icon-sm') %><%= t('appointments.booked_online') %></span><% } %>
-          <% if (a.appointment_type === 'online') { %><span class="badge badge-info"><%- icon('monitor', 'icon-sm') %><%= t('appointments.types.online') %></span><% } %>
-          <% if (a.payment_status === 'paid') { %><span class="badge badge-success"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } %>
+          <%- stDot(a.status) %>
+          <% if (a.source === 'website') { %><span class="badge"><%- icon('globe', 'icon-sm') %><%= t('appointments.booked_online') %></span><% } %>
+          <% if (a.appointment_type === 'online') { %><span class="badge"><%- icon('monitor', 'icon-sm') %><%= t('appointments.types.online') %></span><% } %>
+          <% if (a.payment_status === 'paid') { %><span class="badge"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } %>
           <% if (a.parent_appointment_id) { %><span class="badge"><%- icon('history', 'icon-sm') %><%= t('appointments.follow_up') %></span><% } %>
         </div>
       </div>
@@ -46,7 +46,7 @@
           <dt><%= t('common.phone') %></dt><dd><bdi dir="ltr"><%= a.patient_phone || '—' %></bdi></dd>
           <% if (a.patient_email) { %><dt><%= t('common.email') %></dt><dd><%= a.patient_email %></dd><% } %>
           <dt><%= t('common.doctor') %></dt>
-          <dd><% if (a.doctor_id) { %><span class="row-sm"><span class="swatch" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= L(a.doctor_name, a.doctor_name_en) %></span><% } else { %><span class="badge badge-warning"><%= t('appointments.unassigned') %></span><% } %></dd>
+          <dd><% if (a.doctor_id) { %><span class="row-sm"><span class="doc-dot" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= L(a.doctor_name, a.doctor_name_en) %></span><% } else { %><span class="badge badge-warning"><%= t('appointments.unassigned') %></span><% } %></dd>
           <dt><%= t('common.service') %></dt><dd><%= a.service_name ? L(a.service_name, a.service_name_en) : t('appointments.general_visit') %></dd>
           <dt><%= t('appointments.duration') %></dt><dd><%= a.length %> <%= t('common.minutes') %></dd>
           <dt><%= t('common.type') %></dt><dd><%= t('appointments.types.' + a.appointment_type) %></dd>
@@ -61,13 +61,14 @@
     <div class="panel flush">
       <div class="panel-head"><h2><%= t('appointments.follow_ups') %></h2><% if (canManage) { %><button class="btn btn-ghost btn-sm" type="button" data-open-dialog="followup-dialog"><%- icon('plus', 'icon-sm') %><%= t('appointments.book_follow_up') %></button><% } %></div>
       <% if (!children.length) { %><div class="flush-empty small muted"><%= t('appointments.no_follow_ups') %></div><% } else { %>
-      <ul class="action-list"><% children.forEach(function (c) { %><li><a href="/app/appointments/<%= c.id %>"><span class="action-icon brand"><%- icon('calendar-check') %></span><div class="grow"><div class="strong"><%= fmt.date(c.appointment_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %></div><div class="small muted"><bdi dir="ltr"><%= c.appointment_time %></bdi></div></div><span class="badge badge-dot <%= SB[c.status] %>"><%= t('appointments.statuses.' + c.status) %></span></a></li><% }) %></ul>
+      <ul class="action-list"><% children.forEach(function (c) { %><li><a href="/app/appointments/<%= c.id %>"><span class="action-icon"><%- icon('calendar-check') %></span><div class="grow"><div class="strong"><%= fmt.date(c.appointment_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %></div><div class="small muted"><bdi dir="ltr"><%= c.appointment_time %></bdi></div></div><%- stDot(c.status) %></a></li><% }) %></ul>
       <% } %>
     </div>
   </div>
 
   <div class="stack">
     <% if (canManage) { %>
+    <% if (!(a.status === 'completed' && a.payment_status === 'paid')) { %>
     <div class="panel">
       <div class="panel-head"><h2><%= t('appointments.actions') %></h2></div>
       <div class="panel-body stack-sm">
@@ -78,8 +79,9 @@
         <% if (a.status !== 'cancelled' && a.payment_status !== 'paid') { %><%- statusForm('cancelled', t('appointments.do_cancel'), 'calendar-x', 'btn-danger-ghost', t('appointments.cancel_confirm')) %><% } %>
       </div>
     </div>
+    <% } %>
     <% if (!a.doctor_id && doctors.length) { %>
-    <div class="panel accent">
+    <div class="panel">
       <div class="panel-head"><h2><%= t('appointments.assign_doctor') %></h2></div>
       <form class="panel-body stack-sm" method="post" action="/app/appointments/<%= a.id %>/assign">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -96,7 +98,7 @@
       <div class="panel-body">
         <dl class="dl">
           <dt><%= t('appointments.amount_due') %></dt><dd class="strong"><%= fmt.money(a.amount_due) %></dd>
-          <dt><%= t('common.status') %></dt><dd><span class="badge <%= a.payment_status === 'paid' ? 'badge-success' : 'badge-neutral' %>"><%= t('appointments.payment_statuses.' + a.payment_status) %></span></dd>
+          <dt><%= t('common.status') %></dt><dd><span class="st"><i class="st-dot <%= a.payment_status === 'paid' ? 'st-completed' : '' %>"></i><%= t('appointments.payment_statuses.' + a.payment_status) %></span></dd>
           <% if (invoice) { %><dt><%= t('appointments.invoice') %></dt><dd><% if (can('billing.view')) { %><a class="link" href="/app/billing/<%= invoice.id %>">#<%= invoice.invoice_number %></a><% } else { %>#<%= invoice.invoice_number %><% } %> · <%= label('payment_methods', invoice.payment_method) %></dd><% } %>
         </dl>
         <% if (invoice && can('billing.view')) { %><a class="btn btn-secondary btn-sm mt-4" href="/app/billing/<%= invoice.id %>?print=1"><%- icon('printer', 'icon-sm') %><%= t('appointments.print_invoice') %></a><% } else if (!invoice && a.status !== 'cancelled' && can('frontdesk.use') && can('billing.manage') && a.appointment_date === clinicToday) { %><a class="btn btn-secondary btn-sm mt-4" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('appointments.checkout_at_desk') %></a><% } %>

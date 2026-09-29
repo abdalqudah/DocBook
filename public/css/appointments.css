@@ -161,7 +161,10 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .fd-col-head h2 { font-size: 14px; flex: 1; }
 .fd-col-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 80px; }
 .fd-empty { padding: 18px 8px; text-align: center; }
-.fd-card { background: var(--surface); border: 1px solid var(--border); border-inline-start: 4px solid var(--doc, var(--primary)); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+.fd-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+.fd-col-icon { color: var(--text-subtle); }
+.fd-tag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--text-subtle); }
+.fd-late { color: var(--warning); }
 .fd-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fd-time { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
 .fd-name { font-weight: var(--fw-semibold); font-size: 14px; overflow-wrap: anywhere; }
@@ -171,9 +174,6 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .fd-badges:empty { display: none; }
 .fd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .fd-amount { margin-inline-start: auto; font-variant-numeric: tabular-nums; }
-.fd-col.tone-warning .fd-col-head { box-shadow: inset 0 -2px 0 var(--warning); }
-.fd-col.tone-info .fd-col-head { box-shadow: inset 0 -2px 0 var(--info); }
-.fd-col.tone-success .fd-col-head { box-shadow: inset 0 -2px 0 var(--success); }
 .fd-missed > summary { cursor: pointer; list-style: none; }
 .fd-missed > summary::-webkit-details-marker { display: none; }
 .fd-missed > summary h2 { display: flex; align-items: center; gap: 8px; }
@@ -191,7 +191,7 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
   .fd-actions .btn { flex: 1 1 auto; justify-content: center; }
   .fd-actions form { display: contents; }
 }
-@media (max-width: 720px) { .stats.fd-stats { grid-template-columns: 1fr 1fr; gap: 10px; } .stats.fd-stats .stat.hero { grid-column: 1 / -1; } .fd-stats .stat-value { font-size: 22px; } .fd-stats .stat-icon { display: none; } }
+@media (max-width: 720px) { .stats.fd-stats { grid-template-columns: 1fr 1fr; gap: 10px; } .stats.fd-stats .stat:last-child { grid-column: 1 / -1; } .fd-stats .stat-value { font-size: 22px; } }
 
 /* ---------- Visit page ---------- */
 .visit-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
@@ -203,13 +203,13 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 @media (max-width: 900px) { .vitals-grid { grid-template-columns: 1fr 1fr; } }
 .bmi-box .bmi-value { display: flex; align-items: baseline; gap: 8px; height: 38px; padding: 0 12px; border-radius: var(--radius-sm); background: var(--surface-muted); border: 1px dashed var(--border); align-items: center; }
 .bmi-box strong { font-size: 16px; font-variant-numeric: tabular-nums; }
-.bmi-under, .bmi-over { color: var(--warning); } .bmi-normal { color: var(--success); } .bmi-obese { color: var(--danger); }
+.bmi-under, .bmi-over { color: var(--warning); } .bmi-normal { color: var(--text-muted); } .bmi-obese { color: var(--danger); }
 .vitals-read { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 .vitals-read > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); }
-.soap-letter { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); font-size: 11px; font-weight: var(--fw-bold); margin-inline-end: 6px; }
+.soap-letter { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 6px; background: var(--surface-sunken); color: var(--text-muted); font-size: 11px; font-weight: var(--fw-bold); margin-inline-end: 6px; }
 .rx-list { list-style: none; margin: 0; padding: 0; }
 .rx-list > li { padding: 14px var(--card-pad); border-bottom: 1px solid var(--border); }
-.rx-list > li.is-new { background: var(--success-soft); }
+.rx-list > li.is-new { background: var(--surface-muted); }
 .rx-items { margin: 10px 0 0; padding-inline-start: 20px; display: grid; gap: 6px; font-size: 13px; }
 .rx-items li > * { display: block; text-align: match-parent; }
 .rx-head, .rx-line { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 8px; align-items: center; }
@@ -234,7 +234,7 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .rx-patient { display: grid; grid-template-columns: 2fr 1fr 1fr 1.4fr; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); }
 .rx-patient > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .rx-diagnosis, .rx-notes { display: flex; flex-direction: column; gap: 4px; }
-.rx-symbol { font-size: 40px; font-weight: var(--fw-bold); color: var(--primary); line-height: 1; font-family: serif; }
+.rx-symbol { font-size: 40px; font-weight: var(--fw-bold); color: var(--text); line-height: 1; font-family: serif; }
 .rx-print-items { margin: 0; padding-inline-start: 26px; display: grid; gap: 14px; }
 .rx-print-items li::marker { font-weight: var(--fw-bold); }
 .rx-med, .rx-dose, .rx-instr { text-align: match-parent; }

@@ -367,6 +367,7 @@
       };
       var saved = null; try { saved = sessionStorage.getItem('cal-col'); } catch (e) { /* storage blocked */ }
       if (saved !== null && Number(saved) < D.columns.length) sw.value = saved;
+      else { var firstWorking = D.columns.findIndex(function (c) { return c.work.length > 0; }); if (firstWorking > 0) sw.value = String(firstWorking); }
       showCol(sw.value);
       sw.addEventListener('change', function () { closePop(); showCol(sw.value); try { sessionStorage.setItem('cal-col', sw.value); } catch (e) { /* ignore */ } });
     }
@@ -389,6 +390,12 @@
       if (target !== null && target > D.rangeStart) {
         var b = bodies[0];
         scroller.scrollTop = Math.max(0, ((target - D.rangeStart) / span) * b.getBoundingClientRect().height);
+      }
+      // Week view on a narrow screen: bring today's column into view.
+      var tb = $('.cal-body[data-date="' + D.today + '"]', cal);
+      if (D.view === 'week' && tb && scroller.scrollWidth > scroller.clientWidth) {
+        var r = tb.getBoundingClientRect(); var sr = scroller.getBoundingClientRect();
+        scroller.scrollBy({ left: (r.left + r.width / 2) - (sr.left + sr.width / 2) });
       }
     }());
 
@@ -441,7 +448,7 @@
       pop.setAttribute('role', 'dialog');
       pop.setAttribute('aria-label', hhmm(s.start) + ' – ' + hhmm(s.end));
       var q = 'doctor=' + encodeURIComponent(col.doctorId) + '&date=' + encodeURIComponent(col.date) + '&time=' + encodeURIComponent(hhmm(s.start)) + '&duration=' + dur + '&return=' + encodeURIComponent(D.here);
-      pop.innerHTML = '<div class="cal-pop-head"><strong dir="ltr">' + hhmm(s.start) + ' – ' + hhmm(s.end) + '</strong><span class="tiny muted">'
+      pop.innerHTML = '<div class="cal-pop-head"><strong><span dir="ltr">' + hhmm(s.start) + ' – ' + hhmm(s.end) + '</span></strong><span class="tiny muted">'
         + esc([col.name, col.dateLabel, fill(i18n.min, { n: dur })].filter(Boolean).join(' · ')) + '</span></div>'
         + '<a class="btn btn-primary btn-sm" data-pop-book href="/app/appointments/new?' + q + '">' + svg('calendar-plus') + esc(i18n.book) + '</a>'
         + '<button class="btn btn-secondary btn-sm" type="button" data-pop-block>' + svg('lock') + esc(i18n.block) + '</button>'
@@ -551,6 +558,7 @@
 
     /* ---- pointer plumbing ---- */
     cal.addEventListener('pointerdown', function (e) {
+      suppressClick = 0; // only the click that ends a drag/selection gesture is swallowed
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if (e.target.closest('.cal-ev-del, .cal-head, .cal-switch')) return;
       var body = e.target.closest('.cal-body');
@@ -610,7 +618,7 @@
     document.addEventListener('pointercancel', function (e) { up(e, true); });
     // While a touch drag is active the page must not scroll.
     document.addEventListener('touchmove', function (e) { if (st && (st.mode === 'select' || st.mode === 'move')) e.preventDefault(); }, { passive: false });
-    cal.addEventListener('click', function (e) { if (Date.now() - suppressClick < 400) { e.preventDefault(); e.stopPropagation(); } }, true);
+    cal.addEventListener('click', function (e) { if (suppressClick && Date.now() - suppressClick < 1000) { e.preventDefault(); e.stopPropagation(); } }, true);
     cal.addEventListener('contextmenu', function (e) { if (e.target.closest('.cal-body')) e.preventDefault(); });
     cal.addEventListener('dragstart', function (e) { e.preventDefault(); });
     document.addEventListener('keydown', function (e) {

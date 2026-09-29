@@ -1,6 +1,6 @@
 <%
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
-  var SB = { pending: 'badge-warning', confirmed: 'badge-info', completed: 'badge-success', cancelled: 'badge-neutral', no_show: 'badge-danger' };
+  var stDot = function (s) { return '<span class="st"><i class="st-dot st-' + s + '"></i>' + escapeHtml(t('appointments.statuses.' + s)) + '</span>'; };
   var clinicalView = can('clinical.view');
   var canVitals = can('vitals.edit');
   var canNote = can('clinical.edit');
@@ -36,7 +36,7 @@
       <%= t('visits.title') %>
     </div>
     <div class="row">
-      <span class="avatar avatar-lg" style="<%= a.doctor_color ? 'background:' + a.doctor_color + ';color:var(--surface)' : '' %>"><%= initials(a.patient_name) %></span>
+      <span class="avatar avatar-lg appt-avatar"><%= initials(a.patient_name) %></span>
       <div>
         <h1><%= patient ? patient.full_name : a.patient_name %></h1>
         <p>
@@ -58,9 +58,9 @@
 
 <div class="visit-strip panel">
   <div><span class="tiny muted"><%= t('common.date') %></span><strong><%= fmt.date(a.appointment_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %> · <span dir="ltr"><%= a.appointment_time %></span></strong></div>
-  <div><span class="tiny muted"><%= t('common.doctor') %></span><strong class="row-sm"><span class="swatch" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></strong></div>
+  <div><span class="tiny muted"><%= t('common.doctor') %></span><strong class="row-sm"><span class="doc-dot" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></strong></div>
   <div><span class="tiny muted"><%= t('common.service') %></span><strong><%= a.service_name ? L(a.service_name, a.service_name_en) : t('appointments.general_visit') %></strong></div>
-  <div><span class="tiny muted"><%= t('common.status') %></span><span class="row-sm wrap"><span class="badge badge-dot <%= SB[a.status] %>"><%= t('appointments.statuses.' + a.status) %></span><% if (closed || a.status === 'completed') { %><% } else if (a.with_doctor) { %><span class="badge badge-info"><%= t('appointments.with_doctor') %></span><% } else if (a.checked_in) { %><span class="badge"><%= t('appointments.arrived') %></span><% } %><% if (a.payment_status === 'paid') { %><span class="badge badge-success"><%= t('appointments.payment_statuses.paid') %></span><% } %></span></div>
+  <div><span class="tiny muted"><%= t('common.status') %></span><span class="row-sm wrap"><%- stDot(a.status) %><% if (closed || a.status === 'completed') { %><% } else if (a.with_doctor) { %><span class="badge"><%= t('appointments.with_doctor') %></span><% } else if (a.checked_in) { %><span class="badge"><%= t('appointments.arrived') %></span><% } %><% if (a.payment_status === 'paid') { %><span class="badge"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } %></span></div>
 </div>
 
 <% if (clinicalView && (p.allergies || p.chronic_conditions)) { %>
@@ -197,7 +197,7 @@
       <% } %>
     </section>
     <% } else { %>
-      <div class="panel"><div class="panel-body row"><span class="action-icon info"><%- icon('lock') %></span><p class="small muted grow"><%= t('visits.clinical_hidden') %></p></div></div>
+      <div class="panel"><div class="panel-body row"><span class="action-icon"><%- icon('lock') %></span><p class="small muted grow"><%= t('visits.clinical_hidden') %></p></div></div>
     <% } %>
   </div>
 
@@ -229,7 +229,7 @@
       </dl></div>
     </div>
     <% if (invoice && can('billing.view')) { %>
-    <a class="panel card-link" href="/app/billing/<%= invoice.id %>?print=1"><div class="panel-body row"><span class="action-icon success"><%- icon('receipt') %></span><div class="grow"><div class="strong small"><%= t('appointments.invoice') %> #<%= invoice.invoice_number %></div><div class="tiny muted"><%= t('appointments.print_invoice') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></div></a>
+    <a class="panel card-link" href="/app/billing/<%= invoice.id %>?print=1"><div class="panel-body row"><span class="action-icon"><%- icon('receipt') %></span><div class="grow"><div class="strong small"><%= t('appointments.invoice') %> #<%= invoice.invoice_number %></div><div class="tiny muted"><%= t('appointments.print_invoice') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></div></a>
     <% } %>
   </div>
 </div>
