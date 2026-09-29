@@ -72,7 +72,7 @@ async function calculate(ctx, doctorId, period) {
   const adj = await adjustments(ctx, doctorId, period);
   const pay = rules.payroll(doc.base_salary, comm.totalCommission, adj);
   const payment = await knex('payroll_payments as p').leftJoin('users as u', 'u.id', 'p.paid_by').where({ 'p.business_id': ctx.businessId, 'p.doctor_id': doctorId, 'p.period': period }).first('p.*', 'u.name as paid_by_name');
-  return { doctor: doc, period, range, commission: comm, adjustments: adj, ...pay, payment: payment || null, hasRule: comm.hasRule };
+  return { doctor: doc, period, range, commissionDetail: comm, adjustments: adj, ...pay, payment: payment || null, hasRule: comm.hasRule };
 }
 
 /** Whole-clinic payroll sheet for a month. */
@@ -80,7 +80,7 @@ async function sheet(ctx, period) {
   const docs = await knex('doctors').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id');
   const rows = [];
   for (const d of docs) rows.push(await calculate(ctx, d.id, period)); // eslint-disable-line no-await-in-loop
-  const totals = rows.reduce((t, r) => ({ base: t.base + r.baseSalary, commission: t.commission + r.commission, bonuses: t.bonuses + r.bonuses, deductions: t.deductions + r.deductions + r.advances, net: t.net + r.netPayroll, revenue: t.revenue + r.commission.totalRevenue }),
+  const totals = rows.reduce((t, r) => ({ base: t.base + r.baseSalary, commission: t.commission + r.commission, bonuses: t.bonuses + r.bonuses, deductions: t.deductions + r.deductions + r.advances, net: t.net + r.netPayroll, revenue: t.revenue + r.commissionDetail.totalRevenue }),
     { base: 0, commission: 0, bonuses: 0, deductions: 0, net: 0, revenue: 0 });
   return { rows, totals };
 }
