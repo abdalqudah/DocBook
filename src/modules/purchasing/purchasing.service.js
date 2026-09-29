@@ -237,7 +237,7 @@ async function claimPoNumber(businessId, trx) {
 }
 
 /** How a draft would go out right now: e-mail (configured + recipient) and/or the vendor portal. */
-async function deliveryPlan(ctx, po) {
+async function dispatchPlan(ctx, po) {
   const supplier = po.supplier_id ? await getSupplier(ctx, po.supplier_id).catch(() => null) : null;
   const to = supplier ? recipientOf(supplier) : po.sent_to_email;
   const vendorId = supplier ? activeVendorId(supplier) : po.vendor_id;
@@ -282,7 +282,7 @@ async function mailOrder(ctx, id, to, baseUrl, kind = 'order') {
 async function send(ctx, id, { baseUrl = '' } = {}) {
   const po = await get(ctx, id);
   if (po.status !== 'draft') throw conflict('PO_NOT_DRAFT');
-  const plan = await deliveryPlan(ctx, po);
+  const plan = await dispatchPlan(ctx, po);
   if (!plan.mail && !plan.vendorId) throw conflict(plan.mailConfigured ? 'PO_NO_EMAIL' : 'MAIL_NOT_CONFIGURED');
   const number = await markOut(ctx, id, { to: plan.mail ? plan.to : null, vendorId: plan.vendorId, action: 'purchase_order.sent' });
   if (plan.mail) {
@@ -302,7 +302,7 @@ async function send(ctx, id, { baseUrl = '' } = {}) {
 /** The clinic shared the order itself (WhatsApp, print, phone): record it as sent, honestly without an e-mail. */
 async function markSent(ctx, id) {
   const po = await get(ctx, id);
-  const plan = await deliveryPlan(ctx, po);
+  const plan = await dispatchPlan(ctx, po);
   const number = await markOut(ctx, id, { to: null, vendorId: plan.vendorId, action: 'purchase_order.marked_sent' });
   return { number, portal: Boolean(plan.vendorId) };
 }
@@ -310,7 +310,7 @@ async function markSent(ctx, id) {
 async function resend(ctx, id, { baseUrl = '' } = {}) {
   const po = await get(ctx, id);
   if (!OPEN.includes(po.status)) throw conflict('PO_NOT_OPEN');
-  const plan = await deliveryPlan(ctx, po);
+  const plan = await dispatchPlan(ctx, po);
   if (!plan.mailConfigured) throw conflict('MAIL_NOT_CONFIGURED');
   if (!plan.to) throw conflict('PO_NO_EMAIL');
   try { await mailOrder(ctx, id, plan.to, baseUrl); } catch { throw new AppError('PO_MAIL_FAILED', 'The e-mail could not be sent.', 502); }
@@ -510,6 +510,6 @@ async function vendorNote(vendor, vctx, id, input = {}) {
 
 module.exports = {
   STATUSES, OPEN, suggestQty, getSupplier, activeVendorId, recipientOf, listSuppliers, listItems, onOrder, get, list, progress,
-  saveDraft, draftLowStock, removeDraft, claimPoNumber, deliveryPlan, send, markSent, resend, cancel, receive,
+  saveDraft, draftLowStock, removeDraft, claimPoNumber, dispatchPlan, send, markSent, resend, cancel, receive,
   orderText, buildEmail, dateIn, vendorList, vendorGet, acknowledge, vendorNote,
 };

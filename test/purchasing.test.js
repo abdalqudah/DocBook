@@ -67,7 +67,7 @@ test('suggested quantity: max(2 × reorder level − stock, reorder level), only
 
 test('a draft keeps only lines with a quantity, validates them and has no number yet', async () => {
   await assert.rejects(po.saveDraft(ctx, null, { supplier_id: String(supplierId), ...lines([gloves, 0]) }), { code: 'VALIDATION_FAILED' });
-  await assert.rejects(po.saveDraft(ctx, null, { supplier_id: String(supplierId), ...lines([gloves, 'abc']) }), (e) => e.code === 'VALIDATION_FAILED' && e.details['lines.0.quantity']);
+  await assert.rejects(po.saveDraft(ctx, null, { supplier_id: String(supplierId), ...lines([gloves, 'abc']) }), (e) => e.code === 'VALIDATION_FAILED' && e.details['lines.0.quantity'] === 'Enter a number.');
   await assert.rejects(po.saveDraft(ctx, null, { supplier_id: String(supplierId), ...lines([null, 2]) }), (e) => e.details['lines.0.name'] === 'Required.');
   await assert.rejects(po.saveDraft(other, null, { supplier_id: String(supplierId), ...lines([gloves, 2]) }), { code: 'NOT_FOUND' }, 'another clinic cannot use this supplier');
   const id = await po.saveDraft(ctx, null, { supplier_id: String(supplierId), notes: 'Call before coming', ...lines([gloves, 17], [masks, 0], [null, 2, { name: 'Dental bibs', unit: 'box' }]) });

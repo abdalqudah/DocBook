@@ -324,5 +324,9 @@
       "Use a PNG, JPEG or WebP image.": "استخدم صورة بصيغة PNG أو JPEG أو WebP.",
       "Choose an image first.": "اختر صورة أولًا."
     }
+  },
+  "vendor_guard": {
+    "suspended_title": "الحساب موقوف",
+    "suspended_text": "تم إيقاف حساب المندوب/المستودع من إدارة المنصة، ولم يعد ظاهرًا للعيادات. تواصل مع فريق DocBook إذا كنت تعتقد أن ذلك خطأ."
   }
 }

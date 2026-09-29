@@ -179,7 +179,7 @@ router.post('/low-stock', can('supplies.manage'), wrap(async (req, res) => {
 // ---------------------------------------------------------------- one order
 router.get('/:id(\\d+)', wrap(async (req, res) => {
   const po = await svc.get(req.ctx, Number(req.params.id));
-  const plan = await svc.deliveryPlan(req.ctx, po);
+  const plan = await svc.dispatchPlan(req.ctx, po);
   const supplier = plan.supplier;
   const text = svc.orderText(po, req.business, req.locale);
   const phone = supplier && supplier.phone ? String(supplier.phone).replace(/[^0-9]/g, '') : '';

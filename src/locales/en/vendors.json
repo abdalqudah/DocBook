@@ -324,5 +324,9 @@
       "Use a PNG, JPEG or WebP image.": "Use a PNG, JPEG or WebP image.",
       "Choose an image first.": "Choose an image first."
     }
+  },
+  "vendor_guard": {
+    "suspended_title": "Account suspended",
+    "suspended_text": "This rep / warehouse account has been suspended by the platform, so clinics no longer see it. Contact the DocBook team if you think this is a mistake."
   }
 }
