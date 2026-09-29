@@ -84,6 +84,7 @@ router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));
 router.use('/patients', require('../modules/clinic/patients.web'));
 router.use('/visits', require('../modules/clinic/visits.web'));
+router.use('/telehealth', require('../modules/telehealth/web'));
 router.use('/cashier', require('../modules/clinic/cashier.web'));
 router.use('/billing', require('../modules/clinic/billing.web'));
 router.use('/payroll', require('../modules/clinic/payroll.web'));

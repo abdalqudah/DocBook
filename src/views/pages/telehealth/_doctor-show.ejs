@@ -1,0 +1,16 @@
+<%/* Doctor page: online consultations summary. */%>
+<% var any = Object.keys(online.windows).some(function (k) { return online.windows[k].length; }); %>
+<div class="panel" id="online">
+  <div class="panel-head"><h2><%- icon('video', 'icon-sm') %> <%= t('telehealth.doctor.section') %></h2><span class="badge badge-dot <%= online.enabled && online.clinicOn ? 'badge-neutral' : '' %>"><%= online.enabled ? t('telehealth.settings.on') : t('telehealth.settings.off') %></span></div>
+  <div class="panel-body">
+    <% if (!online.enabled) { %><p class="small muted"><%= t('telehealth.doctor.summary_off') %></p><% } else { %>
+    <dl class="dl">
+      <dt><%= t('telehealth.doctor.fee') %></dt><dd><%= fmt.money(online.fee) %></dd>
+      <dt><%= t('telehealth.doctor.length') %></dt><dd><%= online.duration %> <%= t('common.minutes') %></dd>
+      <dt><%= t('telehealth.doctor.method') %></dt><dd><%= t('telehealth.staff.methods.' + online.method) %></dd>
+      <dt><%= t('telehealth.doctor.hours') %></dt><dd><% if (!any) { %><%= t('telehealth.doctor.uses_hours') %><% } else { %><% days.forEach(function (k) { if (!online.windows[k].length) return; %><div class="small"><span class="strong"><%= t('days.' + k) %></span> <bdi dir="ltr"><%= online.windows[k].map(function (w) { return w.start + '–' + w.end; }).join(' · ') %></bdi></div><% }) %><% } %></dd>
+    </dl>
+    <% if (!online.clinicOn) { %><p class="tiny muted mt-2"><%= t('telehealth.doctor.clinic_off') %></p><% } %>
+    <% } %>
+  </div>
+</div>

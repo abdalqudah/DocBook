@@ -95,7 +95,7 @@ async function appointmentLength(trx, businessId, doctor, serviceId, override) {
 
 /**
  * Free start times for a doctor on a date.
- * @param {{ businessId, timezone, doctorId, date, serviceId?, durationOverride?, excludeAppointmentId? }} req
+ * @param {{ businessId, timezone, doctorId, date, serviceId?, durationOverride?, excludeAppointmentId?, workingHours?, slotStep? }} req
  */
 async function availableSlots(req, trx = knex) {
   const doctor = await trx('doctors').where({ id: req.doctorId, business_id: req.businessId, is_active: true }).first('id', 'working_hours', 'slot_duration_minutes');
@@ -109,7 +109,9 @@ async function availableSlots(req, trx = knex) {
   if (req.excludeAppointmentId) q.whereNot('a.id', req.excludeAppointmentId);
   const booked = await q;
   const wh = typeof doctor.working_hours === 'string' ? JSON.parse(doctor.working_hours) : doctor.working_hours;
-  return computeSlots({ workingHours: wh, slotStep: doctor.slot_duration_minutes, duration, date: req.date, dayOff: Boolean(off), booked, today, nowMinutes });
+  // Online consultations pass their own weekly windows and step (req.workingHours / req.slotStep); every
+  // appointment of the doctor — in the clinic or online — still blocks, so the two can never overlap.
+  return computeSlots({ workingHours: req.workingHours || wh, slotStep: req.slotStep || doctor.slot_duration_minutes, duration, date: req.date, dayOff: Boolean(off), booked, today, nowMinutes });
 }
 
 /**

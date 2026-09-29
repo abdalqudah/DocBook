@@ -63,6 +63,8 @@
   <div><span class="tiny muted"><%= t('common.status') %></span><span class="row-sm wrap"><%- stDot(a.status) %><% if (closed || a.status === 'completed') { %><% } else if (a.with_doctor) { %><span class="badge"><%= t('appointments.with_doctor') %></span><% } else if (a.checked_in) { %><span class="badge"><%= t('appointments.arrived') %></span><% } %><% if (a.payment_status === 'paid') { %><span class="badge"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } %></span></div>
 </div>
 
+<% if (typeof online !== 'undefined' && online) { %><%- include('../../telehealth/_visit-panel') %><% } %>
+
 <% if (clinicalView && (p.allergies || p.chronic_conditions)) { %>
 <div class="grid grid-2 mt-4">
   <% if (p.allergies) { %><div class="alert alert-error" role="note"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('visits.allergies') %></div><div class="small" style="white-space:pre-line"><%= p.allergies %></div></div></div><% } %>

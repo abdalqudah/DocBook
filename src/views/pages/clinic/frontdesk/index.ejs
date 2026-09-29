@@ -9,7 +9,7 @@
       + '<button class="btn ' + cls + ' btn-sm" type="submit">' + icon(iconName, 'icon-sm') + '<span>' + escapeHtml(label) + '</span></button></form>';
   };
   var payBtn = function (a) {
-    if (!canPay) return '';
+    if (!canPay || a.payment_status === 'paid') return '';
     return '<button class="btn btn-secondary btn-sm" type="button" data-open-dialog="checkout-dialog" data-action="/app/front-desk/' + a.id + '/checkout" data-dialog-title="' + escapeHtml(t('frontdesk.checkout_for', { name: a.patient_name })) + '" data-fill="' + escapeHtml(json({ amount_paid: Number(a.amount_due || 0), discount_percent: '', payment_method: 'cash', insurance_provider_id: '' })) + '">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(t('frontdesk.checkout')) + '</span></button>'
       + '<a class="btn btn-ghost btn-sm" href="/app/cashier?visit=' + a.id + '" title="' + escapeHtml(t('nav.cashier')) + '">' + icon('receipt-text', 'icon-sm') + '<span>' + escapeHtml(t('nav.cashier')) + '</span></a>';
   };
@@ -73,7 +73,12 @@
       <% if (!c.items.length) { %><div class="fd-empty small muted"><%= t('frontdesk.empty.' + c.key) %></div><% } %>
       <% c.items.forEach(function (a) {
         var badge = ''; var actions = '';
-        if (c.key === 'expected') {
+        if (c.key === 'expected' && a.appointment_type === 'online') {
+          // Online consultations skip the check-in: joining the call marks the patient as arrived.
+          actions = (onlineLinks[a.id] ? '<button class="btn btn-secondary btn-sm" type="button" data-tele-copy="' + escapeHtml(onlineLinks[a.id]) + '" title="' + escapeHtml(t('telehealth.staff.copied_hint')) + '">' + icon('copy', 'icon-sm') + '<span>' + escapeHtml(t('telehealth.staff.copy')) + '</span></button>' : '')
+            + (canVisit ? '<a class="btn btn-ghost btn-sm" href="/app/visits/' + a.id + '#online">' + icon('video', 'icon-sm') + '<span>' + escapeHtml(t('telehealth.staff.go_video')) + '</span></a>' : '')
+            + act(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', 'btn-ghost', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name }));
+        } else if (c.key === 'expected') {
           actions = act(a.id, 'check-in', t('frontdesk.check_in'), 'user-check', 'btn-secondary', 1)
             + act(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', 'btn-ghost', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name }));
           if (a.appointment_time < nowTime) badge = '<span class="badge badge-warning">' + escapeHtml(t('frontdesk.late')) + '</span>';

@@ -10,6 +10,7 @@
     <a class="portal-back small" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= clinic.displayName %></a>
     <h1><%= t('booking.title') %></h1>
     <p class="muted"><%= t('booking.sub') %></p>
+    <% if (typeof onlineAvailable !== 'undefined' && onlineAvailable) { %><%- include('../telehealth/_mode', { mode: 'clinic' }) %><% } %>
   </div>
 </section>
 

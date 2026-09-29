@@ -58,9 +58,12 @@ async function renderVisit(req, res, extra = {}) {
     knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number'),
   ]);
   const vitals = (consult && consult.vital_signs) || {};
+  // Online consultation: link, patient's time zone, reason and files, and the doctor's side of the video call.
+  const online = await require('../telehealth/web').panelData(req, a, { res }); // eslint-disable-line global-require
   res.page('pages/clinic/visits/show', {
     title: `${a.patient_name} · ${req.t('visits.title')}`, a, patient, consult, vitals, bmi: bmiOf(vitals), rxs, history, meds, invoice,
-    age: patient ? ageOn(patient.date_of_birth, ctx.today) : null, ...ASSETS, ...extra,
+    age: patient ? ageOn(patient.date_of_birth, ctx.today) : null, ...ASSETS, online,
+    ...(online ? { pageScripts: [...ASSETS.pageScripts, '/js/telehealth.js'], pageStyles: [...ASSETS.pageStyles, '/css/telehealth.css'] } : {}), ...extra,
   });
 }
 

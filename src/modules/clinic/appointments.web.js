@@ -45,6 +45,7 @@ const filtersOf = (req) => ({
   doctor: req.ctx.ownDoctorId ? null : (Number(req.query.doctor) || null),
   status: appts.STATUSES.includes(req.query.status) ? req.query.status : null,
   q: String(req.query.q || '').trim().slice(0, 100) || null,
+  type: ['online', 'in_person'].includes(req.query.type) ? req.query.type : null, // Online consultations filter
 });
 
 // ---------------------------------------------------------------- calendar (day / week) & list
@@ -141,7 +142,7 @@ async function renderIndex(req, res, extra = {}) {
     const from = pickDate(req.query.from, ctx.today);
     let to = pickDate(req.query.to, addDays(from, 6));
     if (to < from) to = from;
-    const rows = (await appts.list(ctx, { from, to, doctor: f.doctor, status: f.status, q: f.q })).map(withEnd(lenOf));
+    const rows = (await appts.list(ctx, { from, to, doctor: f.doctor, status: f.status, q: f.q, type: f.type })).map(withEnd(lenOf));
     const totals = { count: rows.length, due: rows.filter((r) => r.status !== 'cancelled').reduce((s, r) => s + Number(r.amount_due || 0), 0) };
     return res.page('pages/clinic/appointments/index', { ...base, from, to, rows, totals, capped: rows.length >= 1000, ...extra });
   }
@@ -155,12 +156,12 @@ async function renderIndex(req, res, extra = {}) {
     weekDoctor = doctors.find((d) => d.id === (ctx.ownDoctorId || f.doctor)) || doctors[0] || null;
     const from = weekStart(date);
     days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
-    all = weekDoctor ? await appts.list(ctx, { from: days[0], to: days[6], doctor: weekDoctor.id, includeBlocked: true }) : [];
+    all = weekDoctor ? await appts.list(ctx, { from: days[0], to: days[6], doctor: weekDoctor.id, includeBlocked: true, type: f.type }) : [];
     const off = weekDoctor ? await knex('doctor_days_off').where({ business_id: ctx.businessId, doctor_id: weekDoctor.id }).whereBetween('off_date', [days[0], days[6]]).pluck('off_date') : [];
     const offSet = new Set(off.map((d) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10))));
     if (weekDoctor) columns = days.map((d) => buildColumn({ key: d, doctor: weekDoctor, date: d, off: offSet.has(d), items: all.filter((a) => a.appointment_date === d), lenOf, showCancelled }));
   } else {
-    all = await appts.list(ctx, { from: date, to: date, doctor: f.doctor, includeBlocked: true });
+    all = await appts.list(ctx, { from: date, to: date, doctor: f.doctor, includeBlocked: true, type: f.type });
     const off = await knex('doctor_days_off').where({ business_id: ctx.businessId, off_date: date }).pluck('doctor_id');
     const shown = f.doctor ? doctors.filter((d) => d.id === f.doctor) : doctors;
     columns = shown.map((d) => buildColumn({ key: `d${d.id}`, doctor: d, date, off: off.includes(d.id), items: all.filter((a) => a.doctor_id === d.id), lenOf, showCancelled }));
@@ -198,7 +199,7 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
   const from = pickDate(req.query.from || req.query.date, ctx.today);
   const to = pickDate(req.query.to || req.query.date, from);
   const lenOf = await lengths(ctx);
-  const rows = await appts.list(ctx, { from, to: to < from ? from : to, doctor: f.doctor, status: f.status, q: f.q });
+  const rows = await appts.list(ctx, { from, to: to < from ? from : to, doctor: f.doctor, status: f.status, q: f.q, type: f.type });
   const L = (ar, en) => (req.locale === 'en' && en ? en : ar);
   const t = (k) => req.t(k);
   exporter.send(req, res, {
@@ -305,9 +306,11 @@ async function renderShow(req, res, extra = {}) {
     a.patient_id ? knex('patients').where({ business_id: ctx.businessId, id: a.patient_id }).first('id', 'full_name', 'date_of_birth', 'gender') : null,
     knex('consultations').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'diagnosis'),
   ]);
+  const online = await require('../telehealth/web').panelData(req, a); // eslint-disable-line global-require
   return res.page('pages/clinic/appointments/show', {
-    title: `${a.patient_name} · ${a.appointment_date}`, a: { ...a, length: lenOf(a), end_time: withEnd(lenOf)(a).end_time }, invoice, children, parent, doctors, patient, consult,
-    followDate: a.appointment_date >= ctx.today ? addDays(a.appointment_date, 7) : addDays(ctx.today, 7), ...ASSETS, ...extra,
+    title: `${a.patient_name} · ${a.appointment_date}`, a: { ...a, length: lenOf(a), end_time: withEnd(lenOf)(a).end_time }, invoice, children, parent, doctors, patient, consult, online,
+    followDate: a.appointment_date >= ctx.today ? addDays(a.appointment_date, 7) : addDays(ctx.today, 7), ...ASSETS,
+    ...(online ? { pageScripts: [...ASSETS.pageScripts, '/js/telehealth.js'], pageStyles: [...ASSETS.pageStyles, '/css/telehealth.css'] } : {}), ...extra,
   });
 }
 

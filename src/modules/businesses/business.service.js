@@ -16,7 +16,8 @@ const rbac = require('../rbac/rbac.service');
 
 const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email',
   'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'booking_enabled', 'calendar_color_mode', 'invoice_next_number',
-  'onboarding_step', 'onboarding_completed_at', 'status', 'created_at'];
+  'onboarding_step', 'onboarding_completed_at', 'status', 'created_at',
+  'online_enabled', 'online_payment_required', 'online_payment_instructions', 'online_payment_instructions_en', 'online_cancellation_policy', 'online_cancellation_policy_en'];
 
 // ---------------------------------------------------------------- clinic portal address (/<slug>)
 const RESERVED = new Set(`app admin api vendor vendors reps marketplace login logout signup verify verify-email forgot reset invite invitations workspaces theme favicon.svg favicon.ico

@@ -32,10 +32,10 @@ ${cta ? `<a href="${esc(href)}" style="display:inline-block;background:${c.prima
 </div></body></html>`;
 }
 
-async function send({ to, subject, html, replyTo }) {
+async function send({ to, subject, html, replyTo, attachments }) {
   const t = tx();
   if (!t) return false;
-  await t.sendMail({ from: process.env.MAIL_FROM || `${brand.name} <no-reply@localhost>`, to, subject, html, ...(replyTo ? { replyTo } : {}) });
+  await t.sendMail({ from: process.env.MAIL_FROM || `${brand.name} <no-reply@localhost>`, to, subject, html, ...(replyTo ? { replyTo } : {}), ...(attachments ? { attachments } : {}) });
   return true;
 }
 

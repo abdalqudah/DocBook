@@ -53,7 +53,7 @@ async function renderBook(req, res, clinic, extra = {}) {
   if (!clinic.booking_enabled) {
     return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, pageStyles: clinicStyles(clinic) });
   }
-  const [doctors, services] = await Promise.all([listDoctors(req, clinic), listServices(req, clinic)]);
+  const [doctors, services, onlineDoctors] = await Promise.all([listDoctors(req, clinic), listServices(req, clinic), require('../telehealth/telehealth.service').onlineDoctors(clinic, req.locale)]); // eslint-disable-line global-require
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
   const sel = {
     doctor: doctors.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (doctors.length === 1 ? doctors[0].id : null),
@@ -69,7 +69,7 @@ async function renderBook(req, res, clinic, extra = {}) {
   res.locals.currency = clinic.currency;
   return res.page('pages/portal/book', {
     layout: 'public', title: req.t('booking.title'), pageTitle: `${req.t('booking.title')} · ${clinic.displayName}`, clinic, doctors, services, sel, slots, slotsError,
-    minDate: min, maxDate: max, hideBookCta: true, pageStyles: clinicStyles(clinic), pageScripts: ['/js/site.js'],
+    minDate: min, maxDate: max, hideBookCta: true, pageStyles: [...clinicStyles(clinic), '/css/telehealth.css'], pageScripts: ['/js/site.js'], onlineAvailable: onlineDoctors.length > 0,
     errors: {}, formError: null, old: {}, ...extra,
   });
 }

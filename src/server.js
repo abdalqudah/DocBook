@@ -63,6 +63,9 @@ async function start() {
   if (config.env !== 'test') {
     const syncTick = () => require('./modules/datasync/datasync.service').runDue().catch((e) => console.error('[datasync]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(syncTick, 5 * 60_000).unref();
+    // Online consultations: reminder e-mails ~1 hour before, and old video-call signaling messages purged.
+    const teleTick = () => require('./modules/telehealth/telehealth.service').runDue().catch((e) => console.error('[telehealth]', e.message)); // eslint-disable-line global-require, no-console
+    setInterval(teleTick, 5 * 60_000).unref();
   }
   const app = createApp();
   const server = app.listen(PORT, () => console.log(`[${brand.name}] listening on ${PORT} (${config.env})`)); // eslint-disable-line no-console

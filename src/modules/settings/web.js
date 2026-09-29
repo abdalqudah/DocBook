@@ -76,11 +76,13 @@ router.post('/clinic', can('settings.manage'), form(async (req, res) => {
 // ---------------------------------------------------------------- clinic page & online booking
 const renderPortal = async (req, res, extra = {}) => {
   const b = req.business;
-  const [doctors, services] = await Promise.all([
+  const [doctors, services, onlineDoctors] = await Promise.all([
     knex('doctors').where({ business_id: b.id, is_active: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
     knex('services').where({ business_id: b.id, is_active: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
+    knex('doctors').where({ business_id: b.id, is_active: true, online_enabled: true }).count({ n: '*' }).then((r) => Number(r[0].n)), // online consultations
   ]);
   render(req, res, 'portal', 'portal', {
+    onlineDoctors,
     b, base: baseUrl(req), publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null, suggestion: b.slug ? null : await businesses.suggestSlug(b.name_en || b.name),
     portalRoles: PORTAL_ROLES, readiness: { doctors, services }, ...await domainData(req), ...extra,
   });

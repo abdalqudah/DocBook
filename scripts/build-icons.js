@@ -15,7 +15,8 @@ syringe eye-off chevron-up thermometer weight droplet hospital user-round user-c
 clipboard-plus scan-line qr-code grip-vertical arrow-up arrow-down eye-closed image square-pen layout-template panel-top
 panel-bottom toggle-left toggle-right house star quote list mouse-pointer-click badge-check shield-plus stamp receipt-text
 calculator hand-coins vault grip calendar-range move megaphone cookie bot facebook instagram linkedin youtube twitter music ghost
-message-circle images align-left align-center align-right package-search handshake clipboard-check truck tag`.split(/\s+/).filter((n, i, a) => n && a.indexOf(n) === i);
+message-circle images align-left align-center align-right package-search handshake clipboard-check truck tag
+video video-off mic mic-off phone-off switch-camera paperclip`.split(/\s+/).filter((n, i, a) => n && a.indexOf(n) === i);
 
 const dir = process.argv[2];
 if (!dir) { console.error('Pass the lucide-static icons directory.'); process.exit(1); }

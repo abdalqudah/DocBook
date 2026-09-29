@@ -1,0 +1,30 @@
+<%/* Settings → Clinic page: online consultations for the clinic. */%>
+<%
+  var on = Boolean(b.online_enabled);
+  var sv = function (k) { return b[k] || ''; };
+%>
+<section class="panel" id="telehealth">
+  <div class="panel-head"><div><h2><%= t('telehealth.settings.title') %></h2><div class="panel-sub"><%= t('telehealth.settings.sub') %></div></div>
+    <span class="badge badge-dot <%= on ? 'badge-success' : 'badge-neutral' %>"><%= on ? t('telehealth.settings.on') : t('telehealth.settings.off') %></span></div>
+  <form method="post" action="/app/telehealth/settings" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-body stack">
+      <ul class="checklist">
+        <li class="<%= onlineDoctors ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= onlineDoctors ? t('telehealth.settings.doctors_ready', { n: onlineDoctors }) : t('telehealth.settings.doctors_none') %></span><a class="link small" href="/app/doctors"><%= t('common.manage') %></a></li>
+      </ul>
+      <label class="check"><input type="checkbox" name="online_enabled" value="1"<%= on ? ' checked' : '' %>><span class="strong"><%= t('telehealth.settings.enabled') %></span></label>
+      <div class="stack-sm">
+        <label class="check"><input type="checkbox" name="online_payment_required" value="1"<%= b.online_payment_required ? ' checked' : '' %>><span class="strong"><%= t('telehealth.settings.pay_required') %></span></label>
+        <span class="help"><%= t('telehealth.settings.pay_required_help') %></span>
+      </div>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'online_payment_instructions', label: t('telehealth.settings.instructions'), type: 'textarea', value: sv('online_payment_instructions'), placeholder: t('telehealth.settings.instructions_ph') }) %>
+        <%- include('../../partials/field', { name: 'online_payment_instructions_en', label: t('telehealth.settings.instructions_en'), type: 'textarea', value: sv('online_payment_instructions_en') }) %>
+        <%- include('../../partials/field', { name: 'online_cancellation_policy', label: t('telehealth.settings.policy'), type: 'textarea', value: sv('online_cancellation_policy'), placeholder: t('telehealth.settings.policy_ph') }) %>
+        <%- include('../../partials/field', { name: 'online_cancellation_policy_en', label: t('telehealth.settings.policy_en'), type: 'textarea', value: sv('online_cancellation_policy_en') }) %>
+      </div>
+      <p class="tiny muted"><%- icon('info', 'icon-sm') %> <%= t('telehealth.settings.video_note') %> <%= t('telehealth.settings.mail_note') %></p>
+    </div>
+    <div class="panel-foot row end"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</section>

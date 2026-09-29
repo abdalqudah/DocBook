@@ -45,5 +45,6 @@
       <% }) %></tbody>
     </table></div>
   </div>
+  <%- include('../../telehealth/_doctor-form') %>
   <div class="form-actions"><a class="btn btn-ghost" href="<%= doctor ? '/app/doctors/' + doctor.id : '/app/doctors' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
 </form>

@@ -1,0 +1,153 @@
+<%
+  var err = function (k) { return errors && errors[k] ? '<span class="field-error">' + escapeHtml(errors[k]) + '</span>' : ''; };
+  var oldv = function (k, def) { return old && old[k] !== undefined ? old[k] : (def === undefined ? '' : def); };
+  var selDoctor = doctors.find(function (d) { return d.id === sel.doctor; });
+  var selSlot = slots.find(function (s) { return s.time === sel.time; });
+  var dayNote = function (s) { return s.shift < 0 ? t('telehealth.prev_day') : s.shift > 0 ? t('telehealth.next_day') : ''; };
+  var zoneLabel = (zones.find(function (z) { return z.value === sel.tz; }) || { label: sel.tz }).label;
+  var clinicZone = (zones.find(function (z) { return z.value === clinic.timezone; }) || { label: clinic.timezone }).label;
+  var country = String(oldv('patient_country', '')).toUpperCase();
+  var code = oldv('phone_code', '');
+  if (!code && country) { var cc = countryOptions.find(function (c) { return c.value === country; }); code = cc ? cc.dial : ''; }
+  var dials = []; countryOptions.forEach(function (c) { if (dials.indexOf(c.dial) === -1) dials.push(c.dial); }); dials.sort(function (a, b) { return Number(a) - Number(b); });
+%>
+<section class="book-top">
+  <div class="container book-top-inner">
+    <a class="portal-back small" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= clinic.displayName %></a>
+    <h1><%= t('telehealth.book_title') %></h1>
+    <p class="muted"><%= t('telehealth.book_sub') %></p>
+    <%- include('../telehealth/_mode', { mode: 'online' }) %>
+  </div>
+</section>
+
+<div class="container book-layout">
+  <form class="book-form" method="post" action="/<%= clinic.slug %>/book/online" enctype="multipart/form-data" novalidate data-tele-book data-slots-url="/<%= clinic.slug %>/book/online/slots">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="hp-field" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+    <%- include('../../partials/form-error') %>
+
+    <section class="book-step">
+      <h2><span class="step-n num">1</span><%= t('telehealth.choose_doctor') %></h2>
+      <div class="doc-choices">
+        <% doctors.forEach(function (d) { %>
+        <label class="doc-choice">
+          <input type="radio" name="doctor_id" value="<%= d.id %>"<%= sel.doctor === d.id ? ' checked' : '' %> required data-name="<%= d.name %>" data-fee="<%= fmt.money(d.fee, clinic.currency) %>" data-length="<%= d.duration %>">
+          <span class="doc-av sm"><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
+          <span class="grow"><strong><%= d.name %></strong><span class="muted small"><%= d.specialty ? d.specialty + ' · ' : '' %><%= t('telehealth.video_call', { n: d.duration }) %></span></span>
+          <span class="doc-choice-fee num"><%= fmt.money(d.fee, clinic.currency) %></span>
+          <span class="doc-choice-check"><%- icon('check', 'icon-sm') %></span>
+        </label>
+        <% }) %>
+      </div>
+      <%- err('doctor_id') %>
+    </section>
+
+    <section class="book-step">
+      <h2><span class="step-n num">2</span><%= t('telehealth.step_time') %></h2>
+      <div class="form-grid">
+        <div class="field">
+          <label class="label" for="f-tz"><%= t('telehealth.your_tz') %></label>
+          <select class="select<%= errors.patient_timezone ? ' is-invalid' : '' %>" id="f-tz" name="patient_timezone" data-tz-select<%= sel.tzGiven ? ' data-tz-given' : '' %>>
+            <% zones.forEach(function (z) { %><option value="<%= z.value %>"<%= z.value === sel.tz ? ' selected' : '' %>><%= z.label %></option><% }) %>
+          </select>
+          <% if (errors.patient_timezone) { %><%- err('patient_timezone') %><% } else { %><span class="help"><%= t('telehealth.tz_help') %></span><% } %>
+        </div>
+        <div class="field">
+          <label class="label" for="f-date"><%= t('telehealth.clinic_date') %></label>
+          <input class="input<%= errors.appointment_date ? ' is-invalid' : '' %>" type="date" id="f-date" name="appointment_date" value="<%= sel.date %>" min="<%= minDate %>" max="<%= maxDate %>" required data-date-input>
+          <% if (errors.appointment_date) { %><%- err('appointment_date') %><% } else { %><span class="help"><%= t('telehealth.clinic_tz_note', { tz: clinic.timezone, offset: clinicZone.replace(/^.*\((.*)\)$/, '$1') }) %></span><% } %>
+        </div>
+      </div>
+      <div class="row wrap mt-2">
+        <button class="btn btn-secondary btn-sm" type="submit" formmethod="get" formaction="/<%= clinic.slug %>/book/online" formenctype="application/x-www-form-urlencoded" formnovalidate data-slots-btn><%- icon('refresh-cw', 'icon-sm') %><%= t('booking.show_times') %></button>
+      </div>
+      <div class="field mt-4">
+        <span class="label"><%= t('booking.time') %> <span class="tiny muted" data-times-hint<%= slots.length ? '' : ' hidden' %>>· <%= t('telehealth.times_hint') %></span></span>
+        <div class="tele-times" data-times role="radiogroup" aria-label="<%= t('booking.time') %>">
+          <% slots.forEach(function (s) { var note = dayNote(s); %>
+          <label class="tele-chip"><input type="radio" name="appointment_time" value="<%= s.time %>"<%= sel.time === s.time ? ' checked' : '' %> required data-local="<%= s.local %>" data-note="<%= note %>"><span><strong class="num" dir="ltr"><%= s.local %></strong><small class="num" dir="ltr"><%= s.time %></small><% if (note) { %><em><%= note %></em><% } %></span></label>
+          <% }) %>
+        </div>
+        <p class="times-msg muted small" data-times-msg<%= slots.length ? ' hidden' : '' %>><%- icon('info', 'icon-sm') %><span><%= slotsError || (sel.doctor ? t('booking.no_slots') : t('booking.pick_date')) %></span></p>
+        <%- err('appointment_time') %>
+      </div>
+    </section>
+
+    <section class="book-step">
+      <h2><span class="step-n num">3</span><%= t('telehealth.step_details') %></h2>
+      <div class="form-grid">
+        <div class="field full">
+          <label class="label" for="f-name"><%= t('telehealth.name') %><span class="req">*</span></label>
+          <input class="input<%= errors.patient_name ? ' is-invalid' : '' %>" id="f-name" name="patient_name" value="<%= oldv('patient_name') %>" required maxlength="120" autocomplete="name">
+          <%- err('patient_name') %>
+        </div>
+        <div class="field">
+          <label class="label" for="f-country"><%= t('telehealth.country') %><span class="req">*</span></label>
+          <select class="select<%= errors.patient_country ? ' is-invalid' : '' %>" id="f-country" name="patient_country" required autocomplete="country" data-country-select>
+            <option value=""><%= t('telehealth.choose_country') %></option>
+            <% countryOptions.forEach(function (c) { %><option value="<%= c.value %>" data-dial="<%= c.dial %>"<%= c.value === country ? ' selected' : '' %>><%= c.label %></option><% }) %>
+          </select>
+          <%- err('patient_country') %>
+        </div>
+        <div class="field">
+          <label class="label" for="f-phone"><%= t('telehealth.phone') %><span class="req">*</span></label>
+          <div class="tele-phone" dir="ltr">
+            <select class="select" name="phone_code" aria-label="<%= t('telehealth.phone_code') %>" data-dial-select>
+              <option value="">+</option>
+              <% dials.forEach(function (d) { %><option value="<%= d %>"<%= String(code) === d ? ' selected' : '' %>>+<%= d %></option><% }) %>
+            </select>
+            <input class="input<%= errors.phone_number ? ' is-invalid' : '' %>" id="f-phone" name="phone_number" type="tel" value="<%= oldv('phone_number') %>" required maxlength="30" autocomplete="tel-national" inputmode="tel">
+          </div>
+          <% if (errors.phone_number) { %><%- err('phone_number') %><% } else { %><span class="help"><%= t('telehealth.phone_help') %></span><% } %>
+        </div>
+        <div class="field full">
+          <label class="label" for="f-email"><%= t('telehealth.email') %><span class="req">*</span></label>
+          <input class="input<%= errors.patient_email ? ' is-invalid' : '' %>" id="f-email" name="patient_email" type="email" value="<%= oldv('patient_email') %>" required maxlength="190" autocomplete="email" dir="ltr">
+          <% if (errors.patient_email) { %><%- err('patient_email') %><% } else { %><span class="help"><%= t('telehealth.email_help') %></span><% } %>
+        </div>
+        <div class="field full">
+          <label class="label" for="f-reason"><%= t('telehealth.reason') %><span class="req">*</span></label>
+          <textarea class="textarea<%= errors.reason ? ' is-invalid' : '' %>" id="f-reason" name="reason" rows="4" maxlength="2000" required placeholder="<%= t('telehealth.reason_ph') %>"><%= oldv('reason') %></textarea>
+          <%- err('reason') %>
+        </div>
+        <div class="field full">
+          <label class="label" for="f-files"><%= t('telehealth.files') %></label>
+          <input class="input tele-file<%= errors.files ? ' is-invalid' : '' %>" id="f-files" name="files" type="file" multiple accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" data-files data-max="<%= maxFiles %>" data-max-bytes="10485760">
+          <% if (errors.files) { %><%- err('files') %><% } else { %><span class="help" data-files-help><%= t('telehealth.files_help') %></span><% } %>
+          <span class="field-error" data-files-error hidden></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="book-submit">
+      <button class="btn btn-primary btn-lg" type="submit"><%- icon('video') %><%= t('telehealth.submit') %></button>
+      <span class="muted small"><%- icon('lock', 'icon-sm') %><%= t('telehealth.privacy') %></span>
+    </div>
+  </form>
+
+  <aside class="book-summary">
+    <div class="book-summary-card">
+      <div class="book-summary-clinic">
+        <span class="portal-logo xs"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
+        <span class="grow"><strong><%= clinic.displayName %></strong><span class="muted small"><%= t('telehealth.mode_online') %></span></span>
+      </div>
+      <h2><%= t('booking.summary') %></h2>
+      <dl class="book-sum-list">
+        <div><dt><%- icon('stethoscope', 'icon-sm') %><%= t('common.doctor') %></dt><dd data-sum="doctor"><%= selDoctor ? selDoctor.name : '—' %></dd></div>
+        <div><dt><%- icon('video', 'icon-sm') %><%= t('telehealth.summary_type') %></dt><dd data-sum="length"><%= selDoctor ? t('telehealth.video_call', { n: selDoctor.duration }) : '—' %></dd></div>
+        <div><dt><%- icon('calendar-days', 'icon-sm') %><%= t('telehealth.clinic_date') %></dt><dd data-sum="date"><%= sel.date ? fmt.date(sel.date, { weekday: 'long', day: 'numeric', month: 'long' }) : '—' %></dd></div>
+        <div><dt><%- icon('clock', 'icon-sm') %><%= t('telehealth.your_time') %></dt><dd data-sum="local" class="num" dir="ltr"><%= selSlot ? selSlot.local : '—' %></dd></div>
+        <div><dt><%- icon('building-2', 'icon-sm') %><%= t('telehealth.clinic_time') %></dt><dd data-sum="time" class="num" dir="ltr"><%= sel.time || '—' %></dd></div>
+        <div><dt><%- icon('banknote', 'icon-sm') %><%= t('telehealth.fee') %></dt><dd data-sum="fee" class="num"><%= selDoctor ? fmt.money(selDoctor.fee, clinic.currency) : '—' %></dd></div>
+      </dl>
+      <p class="tiny muted mt-2" data-sum="zone"><%= zoneLabel %></p>
+      <% if (settings.paymentRequired) { %>
+      <div class="tele-note mt-4"><%- icon('banknote', 'icon-sm') %><div><div class="strong small"><%= t('telehealth.payment_title') %></div><p class="small muted"><%= t('telehealth.pay_first') %></p><% if (settings.instructions) { %><p class="small tele-pre"><%= settings.instructions %></p><% } %></div></div>
+      <% } %>
+      <% if (settings.policy) { %>
+      <div class="tele-note mt-2"><%- icon('info', 'icon-sm') %><div><div class="strong small"><%= t('telehealth.policy_title') %></div><p class="small muted tele-pre"><%= settings.policy %></p></div></div>
+      <% } %>
+    </div>
+  </aside>
+</div>
+<script type="application/json" id="tele-book-data"><%- json({ locale: locale, messages: { loading: t('booking.loading'), none: t('booking.no_slots'), pick: t('booking.pick_date'), error: t('booking.slots_error'), prev: t('telehealth.prev_day'), next: t('telehealth.next_day'), tooMany: t('errors_telehealth.TELE_TOO_MANY_FILES'), tooBig: t('errors_telehealth.TELE_FILE_TOO_BIG'), badType: t('errors_telehealth.TELE_FILE_TYPE'), chosen: t('telehealth.files_chosen') } }) %></script>

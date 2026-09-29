@@ -49,12 +49,12 @@ const doctorView = (req) => (d) => {
   return {
     id: d.id, name: (en && d.full_name_en) || d.full_name, specialty: (en ? d.specialization_en || d.specialization : d.specialization || d.specialization_en) || '',
     fee: d.show_consultation_fee ? Number(d.consultation_fee) || 0 : null, color: d.color && theme.HEX.test(d.color) ? d.color : null,
-    bio: bio.length > 180 ? `${bio.slice(0, 177).trim()}…` : bio, slot: d.slot_duration_minutes,
+    bio: bio.length > 180 ? `${bio.slice(0, 177).trim()}…` : bio, slot: d.slot_duration_minutes, online: Boolean(d.online_enabled),
   };
 };
 const listDoctors = async (req, clinic) => (await knex('doctors').where({ business_id: clinic.id, is_active: true })
   .orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
-  .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes'))
+  .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled'))
   .map(doctorView(req));
 const listServices = async (req, clinic) => (await knex('services').where({ business_id: clinic.id, is_active: true })
   .orderBy([{ column: 'sort_order' }, { column: 'name' }])
@@ -83,7 +83,7 @@ router.get('/:slug', wrap(async (req, res, next) => {
   return res.page('pages/portal/home', {
     layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, metaDescription: clinic.aboutText.slice(0, 160), seoHead,
     clinic, doctors, services, doctorNames, member, memberRole: member ? roleLabel(req, member) : null,
-    roles: PORTAL_ROLES, pageStyles: clinicStyles(clinic),
+    roles: PORTAL_ROLES, pageStyles: [...clinicStyles(clinic), '/css/telehealth.css'],
   });
 }));
 

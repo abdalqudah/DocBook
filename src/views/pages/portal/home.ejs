@@ -1,4 +1,5 @@
 <%- include('_hero') %>
+<% var teleOn = clinic.booking_enabled && clinic.online_enabled && doctors.some(function (d) { return d.online; }); %>
 <div class="container portal-actions-bar">
   <div class="portal-actions">
     <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus') %><%= t('portal.book') %></a><% } %>
@@ -6,6 +7,13 @@
     <% if (clinic.waHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square') %><%= t('portal.whatsapp') %></a><% } %>
     <% if (clinic.mapHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%- icon('map-pin') %><%= t('portal.directions') %></a><% } %>
   </div>
+  <% if (teleOn) { %>
+  <a class="tele-banner mt-4" href="/<%= clinic.slug %>/book/online">
+    <span class="tele-banner-icon"><%- icon('video') %></span>
+    <span class="grow"><strong><%= t('telehealth.available') %></strong><span class="small muted"><%= t('telehealth.available_sub') %></span></span>
+    <span class="btn btn-secondary btn-sm"><%= t('telehealth.book_online_cta') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></span>
+  </a>
+  <% } %>
   <% if (!clinic.booking_enabled) { %><div class="alert alert-info mt-4"><%- icon('info') %><div class="grow"><%= t('portal.booking_off') %></div></div><% } %>
 </div>
 
@@ -31,6 +39,7 @@
             <h3><%= d.name %></h3>
             <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
             <% if (d.bio) { %><p><%= d.bio %></p><% } %>
+            <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
             <div class="doc-foot">
               <% if (d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } else { %><span></span><% } %>
               <% if (clinic.booking_enabled) { %><a class="btn btn-secondary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%= t('portal.book_with') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>

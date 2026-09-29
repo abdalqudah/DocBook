@@ -4,7 +4,7 @@
   var own = Boolean(ctx.ownDoctorId);
   var isCal = view !== 'list';
   var qs = function (o) {
-    var m = Object.assign({}, { view: view === 'day' ? undefined : view, doctor: f.doctor || undefined, cancelled: isCal && showCancelled ? 1 : undefined }, o);
+    var m = Object.assign({}, { view: view === 'day' ? undefined : view, doctor: f.doctor || undefined, type: f.type || undefined, cancelled: isCal && showCancelled ? 1 : undefined }, o);
     if (m.view === 'list') { m.cancelled = undefined; }
     var s = Object.keys(m).filter(function (k) { return m[k] !== undefined && m[k] !== null && m[k] !== ''; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(m[k]); }).join('&');
     return s ? '?' + s : '';
@@ -55,6 +55,7 @@
       <% doctors.forEach(function (d) { var sel = view === 'week' ? (weekDoctor && weekDoctor.id === d.id) : f.doctor === d.id; %><option value="<%= d.id %>"<%= sel ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %>
     </select>
     <% } %>
+    <%- include('../../telehealth/_type-filter', { f: f }) %>
     <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
   </form>
 </div>
@@ -167,8 +168,9 @@
     <input class="input" type="date" name="to" value="<%= to %>" aria-label="<%= t('common.to') %>" title="<%= t('common.to') %>">
     <% if (!own && doctors.length > 1) { %><select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value=""><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= f.doctor === d.id ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% } %>
     <select class="select" name="status" aria-label="<%= t('common.status') %>"><option value=""><%= t('appointments.all_statuses') %></option><% statuses.forEach(function (s) { %><option value="<%= s %>"<%= f.status === s ? ' selected' : '' %>><%= t('appointments.statuses.' + s) %></option><% }) %></select>
+    <%- include('../../telehealth/_type-filter', { f: f }) %>
     <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= f.q || '' %>" placeholder="<%= t('appointments.search') %>" aria-label="<%= t('common.search') %>"></div>
-    <% if (f.doctor || f.status || f.q) { %><a class="btn btn-ghost btn-sm" href="/app/appointments?view=list&from=<%= from %>&to=<%= to %>"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+    <% if (f.doctor || f.status || f.q || f.type) { %><a class="btn btn-ghost btn-sm" href="/app/appointments?view=list&from=<%= from %>&to=<%= to %>"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
     <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
   </form>
   <% if (!rows.length) { %>

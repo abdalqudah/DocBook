@@ -1,0 +1,43 @@
+<%/* Doctor form: online consultations (toggle, fee, length, video method, optional weekly online windows). */%>
+<%
+  var d = doctor || {};
+  var v = function (k, def) { return old[k] !== undefined ? old[k] : (d[k] !== undefined && d[k] !== null ? d[k] : def); };
+  var on = String(v('online_enabled', false)) === '1' || v('online_enabled', false) === true;
+  var method = v('online_method', 'builtin') || 'builtin';
+  var ow = old.ow || null;
+  var dayWin = function (k) {
+    if (ow) { var o = ow[k] || {}; return { enabled: o.enabled === '1', w: [{ start: o.s1 || '', end: o.e1 || '' }, { start: o.s2 || '', end: o.e2 || '' }] }; }
+    var list = onlineWindows[k] || [];
+    return { enabled: list.length > 0, w: [list[0] || {}, list[1] || {}] };
+  };
+%>
+<div class="panel" id="online">
+  <input type="hidden" name="online_form" value="1">
+  <div class="panel-head"><div><h2><%- icon('video', 'icon-sm') %> <%= t('telehealth.doctor.section') %></h2><div class="panel-sub"><%= t('telehealth.doctor.section_sub') %></div></div></div>
+  <div class="panel-body stack">
+    <% if (!clinicOnline) { %><div class="alert alert-info small"><%- icon('info') %><div class="grow"><%= t('telehealth.doctor.clinic_off') %><% if (can('settings.manage')) { %> <a class="link" href="/app/settings/portal#telehealth"><%= t('telehealth.settings.title') %></a><% } %></div></div><% } %>
+    <label class="check"><input type="checkbox" name="online_enabled" value="1"<%= on ? ' checked' : '' %>><span class="strong"><%= t('telehealth.doctor.enabled') %></span></label>
+    <div class="form-grid cols-3">
+      <%- include('../../partials/field', { name: 'online_fee', label: t('telehealth.doctor.fee'), value: v('online_fee', ''), suffix: currency, attrs: 'inputmode="decimal" placeholder="' + escapeHtml(String(v('consultation_fee', ''))) + '"', help: t('telehealth.doctor.fee_help') }) %>
+      <%- include('../../partials/field', { name: 'online_duration_minutes', label: t('telehealth.doctor.length'), value: v('online_duration_minutes', ''), suffix: t('common.minutes'), attrs: 'inputmode="numeric" placeholder="' + escapeHtml(String(v('slot_duration_minutes', 30))) + '"', help: t('telehealth.doctor.length_help') }) %>
+      <div class="field full">
+        <span class="label"><%= t('telehealth.doctor.method') %></span>
+        <div class="segmented"><% ['builtin', 'jitsi', 'link'].forEach(function (m) { %><label><input type="radio" name="online_method" value="<%= m %>"<%= method === m ? ' checked' : '' %>><span><%= t('telehealth.staff.methods.' + m) %></span></label><% }) %></div>
+        <span class="help"><%= t('telehealth.doctor.method_help.' + method) %><% if (method === 'jitsi' && !jitsiReady) { %> <%= t('telehealth.doctor.jitsi_missing') %><% } %></span>
+        <% if (errors.online_method) { %><span class="field-error"><%= errors.online_method %></span><% } %>
+      </div>
+      <%- include('../../partials/field', { name: 'online_link', cls: 'full', label: t('telehealth.doctor.link'), type: 'url', value: v('online_link', ''), attrs: 'dir="ltr" placeholder="https://"', help: t('telehealth.doctor.link_help') + ' · ' + t('telehealth.doctor.method_help.link') }) %>
+    </div>
+  </div>
+  <div class="panel-head tele-subhead"><div><h3 class="small strong"><%= t('telehealth.doctor.windows') %></h3><div class="panel-sub"><%= t('telehealth.doctor.windows_help') %></div></div></div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('doctors.day') %></th><th><%= t('telehealth.doctor.window1') %></th><th><%= t('telehealth.doctor.window2') %></th></tr></thead>
+    <tbody><% days.forEach(function (k) { var dw = dayWin(k); var e = errors['ow.' + k]; %>
+      <tr>
+        <td class="primary-cell"><label class="check"><input type="checkbox" name="ow[<%= k %>][enabled]" value="1"<%= dw.enabled ? ' checked' : '' %>><span class="strong"><%= t('days.' + k) %></span></label><% if (e) { %><span class="field-error"><%= e %></span><% } %></td>
+        <td data-label="<%= t('telehealth.doctor.window1') %>"><div class="row-sm"><input class="input" type="time" name="ow[<%= k %>][s1]" value="<%= dw.w[0].start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="ow[<%= k %>][e1]" value="<%= dw.w[0].end || '' %>" aria-label="<%= t('common.to') %>"></div></td>
+        <td data-label="<%= t('telehealth.doctor.window2') %>"><div class="row-sm"><input class="input" type="time" name="ow[<%= k %>][s2]" value="<%= dw.w[1].start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="ow[<%= k %>][e2]" value="<%= dw.w[1].end || '' %>" aria-label="<%= t('common.to') %>"></div></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+</div>

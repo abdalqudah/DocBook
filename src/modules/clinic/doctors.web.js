@@ -5,6 +5,7 @@ const { can, canAny } = require('../../middleware/context');
 const scheduling = require('./scheduling');
 const svc = require('./doctors.service');
 const payroll = require('./payroll.service');
+const tele = require('../telehealth/telehealth.service');
 
 const router = express.Router();
 router.use(canAny('doctors.manage', 'appointments.view_all'));
@@ -19,7 +20,11 @@ router.get('/', wrap(async (req, res) => {
 
 const renderForm = async (req, res, extra = {}) => {
   const doctor = req.params.id ? await svc.doctors.get(req.ctx, Number(req.params.id)) : null;
-  res.page('pages/clinic/doctors/form', { title: doctor ? req.t('doctors.edit') : req.t('doctors.add'), doctor, wh: doctor ? svc.parseWh(doctor.working_hours) : scheduling.defaultWorkingHours(), days: scheduling.DAY_KEYS, ...extra });
+  const onlineWindows = tele.windowsByDay(doctor ? await tele.windowsOf(req.ctx.businessId, doctor.id) : []);
+  res.page('pages/clinic/doctors/form', {
+    title: doctor ? req.t('doctors.edit') : req.t('doctors.add'), doctor, wh: doctor ? svc.parseWh(doctor.working_hours) : scheduling.defaultWorkingHours(), days: scheduling.DAY_KEYS,
+    onlineWindows, jitsiReady: Boolean(tele.jitsiBase()), clinicOnline: Boolean(req.business.online_enabled), ...extra,
+  });
 };
 router.get('/new', can('doctors.manage'), wrap((req, res) => renderForm(req, res)));
 router.post('/new', can('doctors.manage'), form(async (req, res) => {
@@ -43,7 +48,8 @@ const renderShow = async (req, res, extra = {}) => {
     payroll.rule(req.ctx, doctor.id),
     knex('appointments').where({ business_id: req.ctx.businessId, doctor_id: doctor.id }).where('appointment_date', '>=', req.ctx.today).whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').orderBy([{ column: 'appointment_date' }, { column: 'appointment_time' }]).limit(8),
   ]);
-  res.page('pages/clinic/doctors/show', { title: doctor.full_name, doctor, wh: svc.parseWh(doctor.working_hours), days: scheduling.DAY_KEYS, daysOff, services, account, rule, upcoming, ...extra });
+  const online = { ...tele.doctorOnline(doctor), method: tele.effectiveMethod(doctor), windows: tele.windowsByDay(await tele.windowsOf(req.ctx.businessId, doctor.id)), clinicOn: Boolean(req.business.online_enabled) };
+  res.page('pages/clinic/doctors/show', { title: doctor.full_name, doctor, wh: svc.parseWh(doctor.working_hours), days: scheduling.DAY_KEYS, daysOff, services, account, rule, upcoming, online, ...extra });
 };
 router.get('/:id(\\d+)', wrap((req, res) => renderShow(req, res)));
 router.post('/:id(\\d+)/days-off', can('doctors.manage'), form(async (req, res) => {

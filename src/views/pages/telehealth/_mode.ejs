@@ -1,0 +1,9 @@
+<%/* Booking choice: in the clinic / online consultation (only shown when the clinic offers online consultations). */%>
+<nav class="tele-mode" aria-label="<%= t('telehealth.mode_label') %>">
+  <a class="tele-mode-opt<%= mode === 'clinic' ? ' is-active' : '' %>" href="/<%= clinic.slug %>/book"<% if (mode === 'clinic') { %> aria-current="page"<% } %>>
+    <%- icon('hospital', 'icon-sm') %><span><strong><%= t('telehealth.mode_clinic') %></strong><span class="tiny muted"><%= t('telehealth.mode_clinic_sub') %></span></span>
+  </a>
+  <a class="tele-mode-opt<%= mode === 'online' ? ' is-active' : '' %>" href="/<%= clinic.slug %>/book/online"<% if (mode === 'online') { %> aria-current="page"<% } %>>
+    <%- icon('video', 'icon-sm') %><span><strong><%= t('telehealth.mode_online') %></strong><span class="tiny muted"><%= t('telehealth.mode_online_sub') %></span></span>
+  </a>
+</nav>

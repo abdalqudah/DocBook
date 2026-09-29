@@ -21,6 +21,9 @@ router.use('/vendors', require('../modules/vendors/public.web'));
 }
 // Clinic pages (docbook/<slug>, /<slug>/login, /<slug>/book…) come LAST so they never shadow a platform path;
 // every top-level path the platform uses is also in businesses.RESERVED so no clinic can take it.
+// Online consultations: the patient's consultation page (/c/<token>) and online booking (/<slug>/book/online).
+router.use('/c', require('../modules/telehealth/public.web'));
+router.use('/', require('../modules/telehealth/booking.web'));
 router.use('/', require('../modules/site/booking.web'));
 router.use('/', require('../modules/site/portal.web'));
 module.exports = router;

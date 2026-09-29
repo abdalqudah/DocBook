@@ -1,0 +1,25 @@
+<%/* The video call (patient page and the doctor's visit page). Driven by /js/telehealth.js with the JSON below. */%>
+<section class="tele-call" data-tele-call hidden aria-label="<%= t('telehealth.call.title') %>">
+  <div class="tele-stage" data-stage>
+    <video class="tele-remote" data-remote autoplay playsinline></video>
+    <div class="tele-status" data-call-status role="status" aria-live="polite"><%= t('telehealth.call.connecting') %></div>
+    <div class="tele-local-wrap"><video class="tele-local" data-local autoplay playsinline muted></video><span class="tele-you tiny"><%= t('telehealth.call.you') %></span></div>
+    <button class="btn btn-secondary btn-sm tele-play" type="button" data-play hidden><%- icon('mic', 'icon-sm') %><%= t('telehealth.call.play') %></button>
+  </div>
+  <div class="tele-controls" role="toolbar" aria-label="<%= t('telehealth.call.title') %>">
+    <button class="btn btn-secondary tele-ctl" type="button" data-act="mute" aria-pressed="false" data-on="<%= t('telehealth.call.mute') %>" data-off="<%= t('telehealth.call.unmute') %>"><%- icon('mic', 'icon-sm i-on') %><%- icon('mic-off', 'icon-sm i-off') %><span><%= t('telehealth.call.mute') %></span></button>
+    <button class="btn btn-secondary tele-ctl" type="button" data-act="cam" aria-pressed="false" data-on="<%= t('telehealth.call.cam_off') %>" data-off="<%= t('telehealth.call.cam_on') %>"><%- icon('video', 'icon-sm i-on') %><%- icon('video-off', 'icon-sm i-off') %><span><%= t('telehealth.call.cam_off') %></span></button>
+    <button class="btn btn-secondary tele-ctl" type="button" data-act="switch" hidden><%- icon('switch-camera', 'icon-sm') %><span><%= t('telehealth.call.switch') %></span></button>
+    <button class="btn btn-secondary tele-ctl" type="button" data-act="reconnect"><%- icon('refresh-cw', 'icon-sm') %><span><%= t('telehealth.call.reconnect') %></span></button>
+    <button class="btn btn-danger tele-ctl" type="button" data-act="hangup"><%- icon('phone-off', 'icon-sm') %><span><%= t('telehealth.call.hangup') %></span></button>
+  </div>
+  <p class="tiny muted tele-media-note" data-no-media hidden><%= t('telehealth.call.no_media') %></p>
+</section>
+<script type="application/json" id="tele-call-data"><%- json(Object.assign({}, call, { labels: {
+  connecting: t('telehealth.call.connecting'), waitingDoctor: t('telehealth.call.waiting_doctor'), waitingPatient: t('telehealth.call.waiting_patient'),
+  peerHere: t('telehealth.call.peer_here'), connected: t('telehealth.call.connected'), reconnecting: t('telehealth.call.reconnecting'), failed: t('telehealth.call.failed'),
+  ended: t('telehealth.call.ended'), peerLeft: t('telehealth.call.peer_left'), closed: t('telehealth.call.closed'), error: t('telehealth.call.error'), rejoin: t('telehealth.call.rejoin'),
+  startsIn: t('telehealth.starts_in'), startingNow: t('telehealth.starting_now'), inProgress: t('telehealth.in_progress'), over: t('telehealth.ended'),
+  d: t('telehealth.cd_days'), h: t('telehealth.cd_hours'), m: t('telehealth.cd_minutes'),
+  deviceOk: t('telehealth.device_ok'), deviceFail: t('telehealth.device_fail'), deviceUnsupported: t('telehealth.device_unsupported'), deviceBtn: t('telehealth.device_btn'), deviceStop: t('telehealth.device_stop')
+} })) %></script>

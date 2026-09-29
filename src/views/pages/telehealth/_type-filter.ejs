@@ -1,0 +1,5 @@
+<select class="select" name="type" aria-label="<%= t('common.type') %>">
+  <option value=""><%= t('telehealth.staff.filter_all') %></option>
+  <option value="online"<%= f.type === 'online' ? ' selected' : '' %>><%= t('telehealth.staff.filter_online') %></option>
+  <option value="in_person"<%= f.type === 'in_person' ? ' selected' : '' %>><%= t('telehealth.staff.filter_clinic') %></option>
+</select>

@@ -47,6 +47,7 @@ exports.up = async (knex) => {
     t.text('token_enc').notNullable();
     t.string('patient_timezone', 64);
     t.string('patient_country', 2);
+    t.string('locale', 5).notNullable().defaultTo('ar'); // language of the patient's e-mails
     t.text('reason');
     t.boolean('payment_required').notNullable().defaultTo(false);
     t.timestamp('received_sent_at').nullable();

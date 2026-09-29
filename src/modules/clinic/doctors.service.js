@@ -27,9 +27,17 @@ async function saveDoctor(ctx, id, input) {
   const d = validate(doctorSchema, input);
   const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
   if (input.wh) row.working_hours = JSON.stringify(scheduling.parseWorkingHoursForm(input));
-  if (id) { await doctors.update(ctx, id, row); return id; }
-  if (!row.working_hours) row.working_hours = JSON.stringify(scheduling.defaultWorkingHours());
-  return doctors.create(ctx, row);
+  // Online consultations section of the doctor form (validated before anything is saved).
+  const tele = input.online_form ? require('../telehealth/telehealth.service') : null; // eslint-disable-line global-require
+  const online = tele ? tele.parseDoctorOnline(input) : null;
+  if (id) {
+    await doctors.update(ctx, id, row);
+  } else {
+    if (!row.working_hours) row.working_hours = JSON.stringify(scheduling.defaultWorkingHours());
+    id = await doctors.create(ctx, row); // eslint-disable-line no-param-reassign
+  }
+  if (online) await tele.applyDoctorOnline(ctx, id, online);
+  return id;
 }
 
 const parseWh = (v) => (typeof v === 'string' ? JSON.parse(v || 'null') : v) || {};

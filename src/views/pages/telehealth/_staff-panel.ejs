@@ -1,0 +1,67 @@
+<%/* Appointment page: the online consultation — link (copy / e-mail / WhatsApp), payment, confirmation. `online` from telehealth/web.panelData. */%>
+<%
+  var o = online; var r = o.row;
+  var stCls = o.state === 'cancelled' ? 'badge-danger' : o.state === 'awaiting_payment' ? 'badge-warning' : 'badge-neutral';
+  var canManage = can('appointments.manage');
+  var canPay = can('billing.manage');
+  var hm = function (d) { try { return new Date(d).toLocaleString(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: business.timezone || 'UTC' }); } catch (e) { return ''; } };
+  var needPay = o.paymentRequired && !o.paid;
+%>
+<section class="panel tele-panel" id="online">
+  <div class="panel-head"><h2><%- icon('video', 'icon-sm') %> <%= t('telehealth.staff.panel') %></h2><span class="badge badge-dot <%= stCls %>"><%= t('telehealth.states.' + o.state) %></span></div>
+  <div class="panel-body stack">
+    <dl class="dl tele-kv">
+      <dt><%= t('telehealth.staff.patient_time') %></dt><dd><%= fmt.date(o.local.date, { weekday: 'short', day: 'numeric', month: 'short' }) %> · <bdi class="num" dir="ltr"><%= o.local.time %></bdi> <span class="tiny muted"><bdi dir="ltr"><%= o.tz %> (<%= o.tzOffset %>)</bdi></span></dd>
+      <% if (o.countryName) { %><dt><%= t('telehealth.staff.country') %></dt><dd><%= o.countryName %></dd><% } %>
+      <dt><%= t('telehealth.staff.method') %></dt><dd><%= t('telehealth.staff.methods.' + o.method) %></dd>
+      <dt><%= t('telehealth.staff.payment') %></dt><dd><% if (o.paid) { %><span class="st"><i class="st-dot st-completed"></i><%= t('telehealth.paid') %></span><% } else { %><%= fmt.money(a.amount_due) %> · <span class="muted"><%= t('telehealth.staff.unpaid') %></span><% } %><% if (o.paymentRequired) { %><div class="tiny muted"><%= t('telehealth.staff.payment_required') %></div><% } %></dd>
+      <dt><%= t('telehealth.staff.patient_joined') %></dt><dd><%= r.patient_joined_at ? hm(r.patient_joined_at) : t('telehealth.staff.not_joined') %></dd>
+    </dl>
+
+    <div class="stack-sm">
+      <span class="label"><%= t('telehealth.staff.link') %></span>
+      <div class="tele-link">
+        <code class="grow truncate" dir="ltr"><%= o.link %></code>
+        <button class="btn btn-secondary btn-sm" type="button" data-tele-copy="<%= o.link %>" title="<%= t('telehealth.staff.copied_hint') %>"><%- icon('copy', 'icon-sm') %><span><%= t('telehealth.staff.copy') %></span></button>
+      </div>
+      <div class="row wrap">
+        <a class="btn btn-ghost btn-sm" href="<%= o.link %>" target="_blank" rel="noopener noreferrer"><%- icon('external-link', 'icon-sm') %><%= t('telehealth.staff.open') %></a>
+        <% if (o.waHref) { %><a class="btn btn-ghost btn-sm" href="<%= o.waHref %>" target="_blank" rel="noopener noreferrer"><%- icon('message-square', 'icon-sm') %><%= t('telehealth.staff.whatsapp') %></a><% } %>
+        <% if (canManage && o.mailOn && a.patient_email && o.state !== 'cancelled') { %>
+        <form method="post" action="/app/telehealth/<%= a.id %>/send"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('send', 'icon-sm') %><%= r.link_sent_at ? t('telehealth.staff.send_again') : t('telehealth.staff.send') %></button></form>
+        <% } %>
+      </div>
+      <p class="tiny muted"><% if (!o.mailOn) { %><%= t('telehealth.staff.mail_off') %><% } else { %><%= r.link_sent_at ? t('telehealth.staff.sent_at') + ' · ' + hm(r.link_sent_at) : t('telehealth.staff.not_sent') %><% } %></p>
+    </div>
+
+    <div class="stack-sm">
+      <% if (canManage && (o.state === 'pending' || o.state === 'awaiting_payment')) { %>
+      <form method="post" action="/app/telehealth/<%= a.id %>/confirm"<% if (needPay) { %> data-confirm="<%= t('telehealth.staff.confirm_unpaid') %>" data-confirm-title="<%= t('telehealth.staff.confirm_send') %>" data-confirm-yes="<%= t('telehealth.staff.confirm_send') %>"<% } %>>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn <%= needPay ? 'btn-secondary' : 'btn-primary' %> btn-block" type="submit"><%- icon('circle-check', 'icon-sm') %><%= t('telehealth.staff.confirm_send') %></button>
+      </form>
+      <% } %>
+      <% if (canPay && !o.paid && o.state !== 'cancelled' && o.state !== 'completed') { %>
+      <button class="btn <%= needPay ? 'btn-primary' : 'btn-secondary' %> btn-block" type="button" data-open-dialog="tele-paid-dialog"><%- icon('banknote', 'icon-sm') %><%= t('telehealth.staff.mark_paid') %></button>
+      <% } %>
+      <% if (canAny('clinical.view', 'vitals.edit', 'frontdesk.use')) { %><a class="btn btn-secondary btn-block" href="/app/visits/<%= a.id %>#online"><%- icon('video', 'icon-sm') %><%= can('clinical.edit') ? t('telehealth.staff.start') : t('telehealth.staff.go_video') %></a><% } %>
+    </div>
+    <p class="tiny muted"><%= t('telehealth.staff.skip_checkin') %></p>
+  </div>
+</section>
+<% if (canPay && !o.paid) { %>
+<dialog class="dialog" id="tele-paid-dialog" aria-labelledby="tele-paid-title">
+  <form method="post" action="/app/telehealth/<%= a.id %>/paid" novalidate>
+    <div class="dialog-head"><div><h2 id="tele-paid-title"><%= t('telehealth.staff.mark_paid_title') %></h2><p class="small muted"><%= t('telehealth.staff.mark_paid_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'amount_paid', id: 'tp-amount', label: t('telehealth.staff.paid_amount'), value: Number(a.amount_due || 0), suffix: currency, attrs: 'inputmode="decimal" autocomplete="off"' }) %>
+        <%- include('../../partials/field', { name: 'payment_method', id: 'tp-method', label: t('telehealth.staff.paid_method'), type: 'select', value: 'bank_transfer', options: ['bank_transfer', 'digital_wallet', 'card', 'cash'].map(function (m) { return { value: m, label: label('payment_methods', m) }; }) }) %>
+        <% if (o.state === 'pending' || o.state === 'awaiting_payment') { %><label class="check full"><input type="checkbox" name="confirm" value="1" checked><span><%= t('telehealth.staff.and_confirm') %></span></label><% } %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('telehealth.staff.mark_paid') %></button></div>
+  </form>
+</dialog>
+<% } %>

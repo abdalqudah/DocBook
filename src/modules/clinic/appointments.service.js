@@ -73,13 +73,14 @@ function baseQuery(ctx) {
   return q;
 }
 
-async function list(ctx, { from, to, doctor, status, q: search, includeBlocked = false, patient } = {}) {
+async function list(ctx, { from, to, doctor, status, q: search, includeBlocked = false, patient, type } = {}) {
   const q = baseQuery(ctx).select(APPT_SELECT).orderBy([{ column: 'a.appointment_date' }, { column: 'a.appointment_time' }]);
   if (from) q.where('a.appointment_date', '>=', from);
   if (to) q.where('a.appointment_date', '<=', to);
   if (doctor && doctor !== 'all') q.where('a.doctor_id', doctor);
   if (status && status !== 'all') q.where('a.status', status);
   if (patient) q.where('a.patient_id', patient);
+  if (type) q.where((w) => { w.where('a.appointment_type', type); if (includeBlocked) w.orWhere('a.appointment_type', 'blocked'); }); // Online / in-clinic filter
   if (!includeBlocked) q.whereNot('a.appointment_type', 'blocked');
   if (search) { const s = `%${String(search).replace(/[%_]/g, (m) => `\\${m}`)}%`; q.andWhere((w) => w.where('a.patient_name', 'like', s).orWhere('a.patient_phone', 'like', s)); }
   return q.limit(1000);
@@ -154,7 +155,8 @@ async function update(ctx, apptId, input) {
     appointment_type: d.appointment_type || before.appointment_type, notes: d.notes || null, updated_at: new Date(),
   };
   const run = async (trx) => {
-    if (before.payment_status !== 'paid') patch.amount_due = await expectedFee(trx, ctx.businessId, patch.doctor_id, patch.service_id);
+    // Online consultations keep the online fee set when booking.
+    if (before.payment_status !== 'paid' && !(before.appointment_type === 'online' && patch.appointment_type === 'online')) patch.amount_due = await expectedFee(trx, ctx.businessId, patch.doctor_id, patch.service_id);
     await trx('appointments').where({ id: apptId, business_id: ctx.businessId }).update(patch);
     const { oldValues, newValues } = audit.diff(before, patch);
     await audit.record(ctx, 'appointment.updated', { entityType: 'appointment', entityId: apptId, oldValues, newValues }, trx);
@@ -170,6 +172,8 @@ async function setStatus(ctx, apptId, status) {
   const a = await get(ctx, apptId);
   await knex('appointments').where({ id: a.id }).update({ status, updated_at: new Date(), ...(status === 'cancelled' ? { checked_in: false, with_doctor: false } : {}) });
   await audit.record(ctx, 'appointment.status', { entityType: 'appointment', entityId: a.id, oldValues: { status: a.status }, newValues: { status } });
+  // Online consultations: confirmation e-mails the link, cancellation notifies the patient (only when e-mail is set up).
+  if (a.appointment_type === 'online') await require('../telehealth/telehealth.service').statusChanged(ctx, a, status); // eslint-disable-line global-require
 }
 
 async function checkIn(ctx, apptId, on = true) {
@@ -228,7 +232,7 @@ async function move(ctx, apptId, input) {
   await scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: d.doctor_id, serviceId: a.service_id, durationOverride: duration,
     date: d.appointment_date, time: d.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
     const patch = { doctor_id: d.doctor_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: a.service_id ? a.duration_minutes : duration, updated_at: new Date() };
-    if (a.appointment_type !== 'blocked' && a.doctor_id !== d.doctor_id) patch.amount_due = await expectedFee(trx, ctx.businessId, d.doctor_id, a.service_id);
+    if (a.appointment_type === 'in_person' && a.doctor_id !== d.doctor_id) patch.amount_due = await expectedFee(trx, ctx.businessId, d.doctor_id, a.service_id);
     await trx('appointments').where({ id: a.id, business_id: ctx.businessId }).update(patch);
     await audit.record(ctx, 'appointment.moved', { entityType: 'appointment', entityId: a.id,
       oldValues: { doctor_id: a.doctor_id, date: a.appointment_date, time: a.appointment_time }, newValues: { doctor_id: d.doctor_id, date: d.appointment_date, time: d.appointment_time } }, trx);

@@ -1,0 +1,104 @@
+<%
+  var stClass = state === 'cancelled' ? 'badge-danger' : state === 'awaiting_payment' ? 'badge-warning' : 'badge-neutral';
+  var dateLong = function (d) { return fmt.date(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
+  var unpaid = row.payment_status !== 'paid' && Number(row.amount_due) > 0;
+  var live = state === 'confirmed' || state === 'pending' || state === 'awaiting_payment';
+%>
+<div class="container tele-page">
+  <% if (justBooked) { %>
+  <div class="alert alert-success mb-4" role="status"><%- icon('circle-check') %><div class="grow"><div class="alert-title"><%= t('telehealth.request_received') %></div><div class="small"><%= t('telehealth.request_received_text') %></div></div></div>
+  <% } %>
+
+  <section class="tele-card">
+    <div class="row between wrap">
+      <span class="badge badge-dot <%= stClass %>"><%= t('telehealth.states.' + state) %></span>
+      <span class="tiny muted"><%- icon('video', 'icon-sm') %> <%= t('telehealth.mode_online') %> · <%= t('telehealth.minutes', { n: length }) %></span>
+    </div>
+    <h1 class="tele-h1"><%= t('telehealth.page_title') %></h1>
+    <p class="muted"><%= t('telehealth.with_doctor', { doctor: doctor || '—' }) %><%= doctorSpec ? ' · ' + doctorSpec : '' %> — <%= clinic.displayName %></p>
+
+    <div class="tele-when">
+      <div>
+        <span class="tiny muted"><%= t('telehealth.your_local', { tz: tz }) %></span>
+        <strong class="tele-when-main"><%= dateLong(local.date) %></strong>
+        <strong class="tele-when-time num"><bdi dir="ltr"><%= local.time %> <small class="muted"><%= tzOffset %></small></bdi></strong>
+      </div>
+      <% if (tz !== clinic.timezone) { %>
+      <div class="tele-when-clinic">
+        <span class="tiny muted"><%= t('telehealth.clinic_local', { tz: clinic.timezone }) %></span>
+        <span class="small"><%= dateLong(clinicLocal.date) %> · <bdi class="num" dir="ltr"><%= clinicLocal.time %> <%= clinicOffset %></bdi></span>
+      </div>
+      <% } %>
+    </div>
+
+    <% if (live) { %>
+    <div class="tele-countdown" data-countdown><span class="tiny muted" data-cd-label><%= t('telehealth.starts_in') %></span><strong class="num" data-cd-value>—</strong></div>
+    <% } %>
+    <p class="small muted mt-2"><%= t('telehealth.state_text.' + state) %></p>
+
+    <% if (state === 'confirmed') { %>
+    <div class="tele-join">
+      <% if (method === 'link') { %>
+        <a class="btn btn-primary btn-lg" href="<%= call.link %>" target="_blank" rel="noopener noreferrer" data-join data-join-link aria-disabled="<%= win.isOpen ? 'false' : 'true' %>"><%- icon('external-link') %><%= t('telehealth.join') %></a>
+        <p class="tiny muted"><%= t('telehealth.join_link_help') %></p>
+      <% } else { %>
+        <button class="btn btn-primary btn-lg" type="button" data-join<%= win.isOpen ? '' : ' disabled' %>><%- icon('video') %><%= t('telehealth.join') %></button>
+      <% } %>
+      <p class="tiny muted" data-join-note><%= win.phase === 'over' ? t('telehealth.join_closed') : win.phase === 'early' ? t('telehealth.join_opens') : '' %></p>
+    </div>
+    <% } else if (state === 'pending' || state === 'awaiting_payment') { %>
+    <p class="tiny muted"><%- icon('lock', 'icon-sm') %> <%= t('telehealth.join_after_confirm') %></p>
+    <% } %>
+  </section>
+
+  <% if (state === 'confirmed' || state === 'pending' || state === 'awaiting_payment') { %><%- include('_call') %><% } %>
+
+  <div class="tele-grid">
+    <% if (unpaid && (state === 'awaiting_payment' || (row.payment_required && live))) { %>
+    <section class="tele-card">
+      <h2 class="tele-h2"><%- icon('banknote', 'icon-sm') %> <%= t('telehealth.payment_title') %></h2>
+      <dl class="dl"><dt><%= t('telehealth.amount') %></dt><dd class="strong"><%= fmt.money(row.amount_due, clinic.currency) %></dd></dl>
+      <% if (settings.instructions) { %><p class="small tele-pre mt-2"><%= settings.instructions %></p><% } %>
+    </section>
+    <% } else if (row.payment_status === 'paid') { %>
+    <section class="tele-card"><h2 class="tele-h2"><%- icon('banknote', 'icon-sm') %> <%= t('telehealth.payment_title') %></h2><p class="small"><span class="st"><i class="st-dot st-completed"></i><%= t('telehealth.paid') %></span> · <%= fmt.money(row.amount_due, clinic.currency) %></p></section>
+    <% } %>
+
+    <% if (live && method !== 'link') { %>
+    <section class="tele-card" data-device-check>
+      <h2 class="tele-h2"><%- icon('monitor', 'icon-sm') %> <%= t('telehealth.device_title') %></h2>
+      <p class="small muted"><%= t('telehealth.device_text') %></p>
+      <div class="tele-device" data-device-preview hidden>
+        <video data-device-video autoplay playsinline muted></video>
+        <div class="tele-meter" aria-label="<%= t('telehealth.mic_level') %>"><span data-device-meter></span></div>
+      </div>
+      <p class="small" data-device-msg role="status" aria-live="polite"></p>
+      <button class="btn btn-secondary btn-sm" type="button" data-device-btn><%- icon('video', 'icon-sm') %><span><%= t('telehealth.device_btn') %></span></button>
+    </section>
+    <% } %>
+
+    <section class="tele-card">
+      <h2 class="tele-h2"><%- icon('lock', 'icon-sm') %> <%= t('telehealth.privacy_title') %></h2>
+      <p class="small muted"><%= t('telehealth.privacy_text') %></p>
+    </section>
+
+    <% if (settings.policy && state !== 'completed') { %>
+    <section class="tele-card">
+      <h2 class="tele-h2"><%- icon('info', 'icon-sm') %> <%= t('telehealth.policy_title') %></h2>
+      <p class="small muted tele-pre"><%= settings.policy %></p>
+    </section>
+    <% } %>
+
+    <section class="tele-card">
+      <h2 class="tele-h2"><%- icon('phone', 'icon-sm') %> <%= t('telehealth.contact_clinic') %></h2>
+      <div class="row wrap">
+        <% if (live) { %><a class="btn btn-secondary btn-sm" href="/c/<%= call.base.split('/').pop() %>/calendar.ics"><%- icon('calendar-plus', 'icon-sm') %><%= t('telehealth.add_calendar') %></a><% } %>
+        <% if (clinic.waHref) { %><a class="btn btn-ghost btn-sm" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square', 'icon-sm') %><%= t('portal.whatsapp') %></a><% } %>
+        <% if (clinic.telHref) { %><a class="btn btn-ghost btn-sm" href="<%= clinic.telHref %>"><%- icon('phone', 'icon-sm') %><bdi dir="ltr"><%= clinic.phone %></bdi></a><% } %>
+        <% if (clinic.email) { %><a class="btn btn-ghost btn-sm" href="mailto:<%= clinic.email %>"><%- icon('mail', 'icon-sm') %><bdi dir="ltr"><%= clinic.email %></bdi></a><% } %>
+      </div>
+      <p class="tiny muted mt-2"><%= t('telehealth.bookmark_hint') %></p>
+    </section>
+  </div>
+</div>
+<% if (!(state === 'confirmed' || state === 'pending' || state === 'awaiting_payment')) { %><script type="application/json" id="tele-call-data"><%- json({ role: 'patient', state: state, method: method, openMs: win.openMs, closeMs: win.closeMs, startMs: win.startMs, endMs: win.endMs, serverNow: Date.now(), labels: {} }) %></script><% } %>

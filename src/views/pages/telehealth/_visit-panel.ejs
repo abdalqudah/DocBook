@@ -1,0 +1,49 @@
+<%/* Visit page: the online consultation — the doctor's video call, the patient's time zone, reason and files. */%>
+<%
+  var o = online; var r = o.row;
+  var stCls = o.state === 'cancelled' ? 'badge-danger' : o.state === 'awaiting_payment' ? 'badge-warning' : 'badge-neutral';
+  var clinicalView = can('clinical.view');
+  var clinicHm = function (ms) { try { return new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: business.timezone || 'UTC' }); } catch (e) { return ''; } };
+  var kb = function (n) { return n >= 1048576 ? (Math.round(n / 104857.6) / 10) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; };
+%>
+<section class="panel tele-panel mt-4" id="online">
+  <div class="panel-head">
+    <div><h2><%- icon('video', 'icon-sm') %> <%= t('telehealth.staff.panel') %></h2><div class="panel-sub"><%= t('telehealth.staff.methods.' + o.method) %> · <%= t('telehealth.minutes', { n: Math.round((o.win.endMs - o.win.startMs) / 60000) }) %></div></div>
+    <span class="badge badge-dot <%= stCls %>"><%= t('telehealth.states.' + o.state) %></span>
+  </div>
+  <div class="panel-body stack">
+    <div class="tele-visit-grid">
+      <dl class="dl">
+        <dt><%= t('telehealth.staff.patient_time') %></dt><dd><bdi class="num" dir="ltr"><%= o.local.time %></bdi> · <span class="small"><%= fmt.date(o.local.date, { weekday: 'short', day: 'numeric', month: 'short' }) %></span> <span class="tiny muted"><bdi dir="ltr"><%= o.tz %></bdi></span></dd>
+        <% if (o.countryName) { %><dt><%= t('telehealth.staff.country') %></dt><dd><%= o.countryName %></dd><% } %>
+        <dt><%= t('telehealth.staff.patient_joined') %></dt><dd data-peer-joined><%= r.patient_joined_at ? t('common.yes') : t('telehealth.staff.not_joined') %></dd>
+      </dl>
+      <div class="tele-start">
+        <% if (o.canVideo) { %>
+          <% if (o.method === 'link') { %>
+            <a class="btn btn-primary" href="<%= o.call.link %>" target="_blank" rel="noopener noreferrer" data-join data-join-link><%- icon('external-link', 'icon-sm') %><%= t('telehealth.staff.open_link') %></a>
+          <% } else { %>
+            <button class="btn btn-primary" type="button" data-join<%= o.win.isOpen ? '' : ' disabled' %>><%- icon('video', 'icon-sm') %><%= t('telehealth.staff.start') %></button>
+          <% } %>
+          <p class="tiny muted" data-join-note><%= o.win.phase === 'early' ? t('telehealth.staff.opens_at', { time: clinicHm(o.win.openMs) }) : o.win.phase === 'over' ? t('telehealth.staff.closed') : '' %></p>
+        <% } %>
+        <% if (can('appointments.manage')) { %><button class="btn btn-ghost btn-sm" type="button" data-tele-copy="<%= o.link %>"><%- icon('copy', 'icon-sm') %><span><%= t('telehealth.staff.copy') %></span></button><% } %>
+      </div>
+    </div>
+    <% if (o.canVideo && o.method !== 'link') { %><%- include('_call', { call: o.call }) %><% } %>
+    <% if (clinicalView) { %>
+    <div class="stack-sm">
+      <span class="label"><%= t('telehealth.staff.reason') %></span>
+      <p class="small tele-pre"><%= o.reason || '—' %></p>
+    </div>
+    <div class="stack-sm">
+      <span class="label"><%= t('telehealth.staff.files') %></span>
+      <% if (!o.files.length) { %><p class="small muted"><%= t('telehealth.staff.no_files') %></p><% } else { %>
+      <ul class="tele-files">
+        <% o.files.forEach(function (f) { %><li><%- icon(f.mime === 'application/pdf' ? 'file-text' : 'image', 'icon-sm muted') %><a class="link grow truncate" href="/app/telehealth/<%= a.id %>/files/<%= f.id %>" target="_blank" rel="noopener"><bdi><%= f.name %></bdi></a><span class="tiny muted num"><%= kb(f.size) %></span><a class="btn btn-ghost btn-icon btn-sm" href="/app/telehealth/<%= a.id %>/files/<%= f.id %>?download=1" aria-label="<%= t('telehealth.staff.download') %>" title="<%= t('telehealth.staff.download') %>"><%- icon('download', 'icon-sm') %></a></li><% }) %>
+      </ul>
+      <% } %>
+    </div>
+    <% } %>
+  </div>
+</section>

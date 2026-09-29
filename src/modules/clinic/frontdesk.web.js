@@ -19,8 +19,9 @@ const minutesSince = (ts) => (ts ? Math.max(0, Math.round((Date.now() - new Date
 async function renderBoard(req, res, extra = {}) {
   const { ctx } = req;
   const rows = await appts.list(ctx, { from: ctx.today, to: ctx.today });
-  const paid = (a) => a.payment_status === 'paid';
   const open = (a) => a.status === 'pending' || a.status === 'confirmed';
+  // An online consultation paid in advance stays on the board until the call is done.
+  const paid = (a) => a.payment_status === 'paid' && !(a.appointment_type === 'online' && open(a));
   const byTime = (x, y) => (x.appointment_time < y.appointment_time ? -1 : x.appointment_time > y.appointment_time ? 1 : 0);
   const board = {
     expected: rows.filter((a) => !paid(a) && !a.checked_in && open(a)).sort(byTime),
@@ -41,9 +42,10 @@ async function renderBoard(req, res, extra = {}) {
   if (Number(req.query.paid)) {
     justPaid = await knex('invoices').where({ business_id: ctx.businessId, id: Number(req.query.paid) }).first('id', 'invoice_number', 'patient_name', 'amount');
   }
+  const onlineLinks = await require('../telehealth/web').linksFor(req, board.expected.concat(board.waiting)); // eslint-disable-line global-require
   res.page('pages/clinic/frontdesk/index', {
-    title: req.t('frontdesk.title'), board, collected, insurance, methods: appts.PAYMENT_METHODS, invoiceFor: Object.fromEntries(invoices.map((i) => [i.appointment_id, i])),
-    justPaid, nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), decimals: decimalsOf(ctx.currency), pageScripts: ['/js/appointments.js'], pageStyles: ['/css/appointments.css'], ...extra,
+    title: req.t('frontdesk.title'), board, onlineLinks, collected, insurance, methods: appts.PAYMENT_METHODS, invoiceFor: Object.fromEntries(invoices.map((i) => [i.appointment_id, i])),
+    justPaid, nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), decimals: decimalsOf(ctx.currency), pageScripts: ['/js/appointments.js', '/js/telehealth.js'], pageStyles: ['/css/appointments.css'], ...extra,
   });
 }
 
