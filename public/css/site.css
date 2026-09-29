@@ -441,3 +441,9 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .icon-cell.is-on { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
 :root[data-theme="dark"] .doc-av[style] { color: var(--text); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .doc-av[style] { color: var(--text); } }
+@media (max-width: 600px) {
+  .lp-feature { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; padding: 18px; }
+  .lp-feature .lp-icon { grid-row: span 2; }
+  .lp-feature h3 { margin-top: 2px; }
+  .lp-feature p { margin-top: 4px; }
+}
