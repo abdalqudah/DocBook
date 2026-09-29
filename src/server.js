@@ -33,30 +33,40 @@ async function bootDatabase(knex, work) {
   });
 }
 
-function serveSetupError(err) {
+const page = (title, body, refresh) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${refresh ? `<meta http-equiv="refresh" content="${refresh}">` : ''}<title>${escapeHtml(brand.name)} — ${escapeHtml(title)}</title>
+<style>body{font-family:system-ui,sans-serif;background:${brand.colors.light.background};color:${brand.colors.light.text};display:grid;place-items:center;min-height:100vh;margin:0}
+.c{background:#fff;border:1px solid ${brand.colors.light.border};border-radius:16px;padding:32px;max-width:520px;margin:16px}code{background:#f1f1f1;padding:2px 6px;border-radius:6px}</style></head>
+<body><div class="c">${body}</div></body></html>`;
+
+/** Answers while the database is being prepared: the port is open at once, so the host does not treat a long first start as a hung app and stop it half-way. */
+function startingHandler(req, res) {
+  res.writeHead(503, { 'Content-Type': req.url === '/healthz' ? 'application/json' : 'text/html; charset=utf-8', 'Retry-After': '5', 'Cache-Control': 'no-store' });
+  res.end(req.url === '/healthz' ? JSON.stringify({ status: 'starting' })
+    : page('starting', `<h1 style="font-size:20px">${escapeHtml(brand.name)}</h1><p>Starting up, preparing the database… this page refreshes by itself.</p><p dir="rtl" lang="ar">جاري التشغيل وتجهيز قاعدة البيانات… ستتحدث الصفحة تلقائيًا.</p>`, 5));
+}
+
+function setupErrorHandler(err) {
   const code = err.code || (/Missing required environment variable/.test(err.message) ? 'MISSING_ENV' : 'STARTUP_ERROR');
   const hint = HINTS[code] || 'The application could not start. Check the server log.';
   // The database's own message says what is missing (table, privilege); it holds no credentials.
   const detail = code === 'MISSING_ENV' ? err.message : err.sqlMessage ? `${err.code}: ${err.sqlMessage}` : code;
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(brand.name)} — setup</title>
-<style>body{font-family:system-ui,sans-serif;background:${brand.colors.light.background};color:${brand.colors.light.text};display:grid;place-items:center;min-height:100vh;margin:0}
-.c{background:#fff;border:1px solid ${brand.colors.light.border};border-radius:16px;padding:32px;max-width:520px;margin:16px}code{background:#f1f1f1;padding:2px 6px;border-radius:6px}</style></head>
-<body><div class="c"><h1 style="font-size:20px">${escapeHtml(brand.name)} needs setup</h1><p>${escapeHtml(hint)}</p><p>Error: <code>${escapeHtml(detail)}</code></p></div></body></html>`;
-  http.createServer((req, res) => {
-    res.writeHead(503, { 'Content-Type': req.url === '/healthz' ? 'application/json' : 'text/html; charset=utf-8', 'Retry-After': '60' });
-    res.end(req.url === '/healthz' ? JSON.stringify({ status: 'setup_error', code: detail }) : html);
-  }).listen(PORT);
+  const html = page('setup', `<h1 style="font-size:20px">${escapeHtml(brand.name)} needs setup</h1><p>${escapeHtml(hint)}</p><p>Error: <code>${escapeHtml(detail)}</code></p>`);
+  // Exit after a minute so the host starts the app again (after the settings are fixed).
   setTimeout(() => process.exit(1), 60_000).unref();
+  return (req, res) => {
+    res.writeHead(503, { 'Content-Type': req.url === '/healthz' ? 'application/json' : 'text/html; charset=utf-8', 'Retry-After': '60', 'Cache-Control': 'no-store' });
+    res.end(req.url === '/healthz' ? JSON.stringify({ status: 'setup_error', code: detail }) : html);
+  };
 }
 
-async function start() {
+async function start(server) {
   const config = require('./config');
   const knex = require('./db/knex');
   const { createApp } = require('./app');
   await knex.raw('select 1');
   if (config.autoMigrate) {
     await bootDatabase(knex, async () => {
-      const [, applied] = await knex.migrate.latest().catch((e) => {
+      const [, applied] = await require('./db/migrate').migrateLatest(knex).catch((e) => { // eslint-disable-line global-require
         throw Object.assign(new Error(`Migration failed: ${e.message}`), { code: 'MIGRATION_FAILED', sqlMessage: e.sqlMessage || e.message });
       });
       if (applied.length) console.log(`[db] applied migrations: ${applied.join(', ')}`); // eslint-disable-line no-console
@@ -80,8 +90,9 @@ async function start() {
     const messagingTick = () => require('./modules/messaging/messaging.service').runDue().catch((e) => console.error('[messaging]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(messagingTick, 60_000).unref();
   }
-  const app = createApp();
-  const server = app.listen(PORT, () => console.log(`[${brand.name}] listening on ${PORT} (${config.env})`)); // eslint-disable-line no-console
+  server.removeAllListeners('request');
+  server.on('request', createApp());
+  console.log(`[${brand.name}] ready on ${PORT} (${config.env})`); // eslint-disable-line no-console
   const shutdown = () => server.close(() => knex.destroy().then(() => process.exit(0)));
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
@@ -92,9 +103,12 @@ async function start() {
  * load the startup file through their own script, so "is this the main module" checks do not work there.
  */
 function run() {
-  return start().catch((err) => {
+  const server = http.createServer(startingHandler);
+  server.listen(PORT, () => console.log(`[${brand.name}] listening on ${PORT}, starting…`)); // eslint-disable-line no-console
+  return start(server).catch((err) => {
     console.error(`[${brand.name}] failed to start:`, err.code || '', err.message); // eslint-disable-line no-console
-    serveSetupError(err);
+    server.removeAllListeners('request');
+    server.on('request', setupErrorHandler(err));
   });
 }
 
