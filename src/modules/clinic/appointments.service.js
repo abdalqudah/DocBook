@@ -207,6 +207,35 @@ async function block(ctx, input) {
   });
 }
 
+/**
+ * Calendar drag-and-drop: moves an appointment or time block to another time, date and/or doctor.
+ * Keeps the service and the length (a booking without a service keeps its current length even when the
+ * new doctor's slot is different); the new slot is re-validated and locked with scheduling.withSlot.
+ * Paid visits and cancelled appointments cannot be moved.
+ */
+async function move(ctx, apptId, input) {
+  const a = await get(ctx, apptId);
+  const d = validate(z.object({ doctor_id: z.coerce.number().int().positive(), appointment_date: isoDate(), appointment_time: time() }), input);
+  if (ctx.ownDoctorId && d.doctor_id !== ctx.ownDoctorId) throw E.forbidden('appointments.view_all');
+  if (a.status === 'cancelled') throw E.conflict('APPOINTMENT_CANCELLED', 'This appointment is cancelled.');
+  if (a.payment_status === 'paid') throw E.conflict('ALREADY_PAID', 'This visit is already paid.');
+  if (a.doctor_id === d.doctor_id && a.appointment_date === d.appointment_date && a.appointment_time === d.appointment_time) return a.id;
+  let duration = a.service_id ? null : (a.duration_minutes || null);
+  if (!a.service_id && !duration && a.doctor_id && a.doctor_id !== d.doctor_id) {
+    const cur = await knex('doctors').where({ id: a.doctor_id, business_id: ctx.businessId }).first('slot_duration_minutes');
+    duration = (cur && cur.slot_duration_minutes) || null;
+  }
+  await scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: d.doctor_id, serviceId: a.service_id, durationOverride: duration,
+    date: d.appointment_date, time: d.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
+    const patch = { doctor_id: d.doctor_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: a.service_id ? a.duration_minutes : duration, updated_at: new Date() };
+    if (a.appointment_type !== 'blocked' && a.doctor_id !== d.doctor_id) patch.amount_due = await expectedFee(trx, ctx.businessId, d.doctor_id, a.service_id);
+    await trx('appointments').where({ id: a.id, business_id: ctx.businessId }).update(patch);
+    await audit.record(ctx, 'appointment.moved', { entityType: 'appointment', entityId: a.id,
+      oldValues: { doctor_id: a.doctor_id, date: a.appointment_date, time: a.appointment_time }, newValues: { doctor_id: d.doctor_id, date: d.appointment_date, time: d.appointment_time } }, trx);
+  });
+  return a.id;
+}
+
 async function followUp(ctx, parentId, input) {
   const parent = await get(ctx, parentId);
   return book(ctx, { ...input, doctor_id: parent.doctor_id, service_id: input.service_id || parent.service_id, patient_id: parent.patient_id, patient_name: parent.patient_name,
@@ -273,5 +302,5 @@ async function voidInvoice(ctx, invId) {
 
 module.exports = {
   STATUSES, PAYMENT_METHODS, patients, savePatient, resolveOrCreatePatient, timeline,
-  list, get, book, update, setStatus, checkIn, callIn, assignDoctor, block, followUp, remove, checkout, invoices, voidInvoice, expectedFee,
+  list, get, book, update, setStatus, checkIn, callIn, assignDoctor, block, move, followUp, remove, checkout, invoices, voidInvoice, expectedFee,
 };

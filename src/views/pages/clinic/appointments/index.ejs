@@ -1,10 +1,20 @@
 <%
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
   var canManage = can('appointments.manage');
-  var SB = { pending: 'badge-warning', confirmed: 'badge-info', completed: 'badge-success', cancelled: 'badge-neutral', no_show: 'badge-danger' };
   var own = Boolean(ctx.ownDoctorId);
-  var qs = function (o) { var m = Object.assign({}, { view: view === 'list' ? 'list' : undefined, doctor: f.doctor || undefined, status: f.status || undefined, q: f.q || undefined }, o); return '?' + Object.keys(m).filter(function (k) { return m[k] !== undefined && m[k] !== null && m[k] !== ''; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(m[k]); }).join('&'); };
-  var bookDate = view === 'day' && !isPast ? date : clinicToday;
+  var isCal = view !== 'list';
+  var qs = function (o) {
+    var m = Object.assign({}, { view: view === 'day' ? undefined : view, doctor: f.doctor || undefined, cancelled: isCal && showCancelled ? 1 : undefined }, o);
+    if (m.view === 'list') { m.cancelled = undefined; }
+    var s = Object.keys(m).filter(function (k) { return m[k] !== undefined && m[k] !== null && m[k] !== ''; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(m[k]); }).join('&');
+    return s ? '?' + s : '';
+  };
+  var here = '/app/appointments' + qs(isCal ? { date: date } : { from: from, to: to, status: f.status || undefined, q: f.q || undefined });
+  var bookDate = isCal && date >= clinicToday ? date : clinicToday;
+  var bookDoctor = view === 'week' && weekDoctor ? weekDoctor.id : f.doctor;
+  var ROW = 15;
+  var y = function (mins) { return (mins - (isCal ? range.start : 0)) / ROW; };
+  var stDot = function (s) { return '<span class="st"><i class="st-dot st-' + s + '"></i>' + escapeHtml(t('appointments.statuses.' + s)) + '</span>'; };
 %>
 <div class="page-head">
   <div>
@@ -14,101 +24,139 @@
   </div>
   <div class="page-actions">
     <nav class="segmented" aria-label="<%= t('appointments.view_mode') %>">
-      <a class="<%= view === 'day' ? 'active' : '' %>" href="/app/appointments<%= qs({ view: undefined, date: view === 'day' ? date : undefined }) %>"<% if (view === 'day') { %> aria-current="page"<% } %>><%= t('appointments.view_day') %></a>
-      <a class="<%= view === 'list' ? 'active' : '' %>" href="/app/appointments<%= qs({ view: 'list', from: view === 'day' ? date : from }) %>"<% if (view === 'list') { %> aria-current="page"<% } %>><%= t('appointments.view_list') %></a>
+      <a class="<%= view === 'day' ? 'active' : '' %>" href="/app/appointments<%= qs({ view: undefined, date: isCal ? date : from }) %>"<% if (view === 'day') { %> aria-current="page"<% } %>><%= t('appointments.view_day') %></a>
+      <a class="<%= view === 'week' ? 'active' : '' %>" href="/app/appointments<%= qs({ view: 'week', date: isCal ? date : from }) %>"<% if (view === 'week') { %> aria-current="page"<% } %>><%= t('appointments.cal.view_week') %></a>
+      <a class="<%= view === 'list' ? 'active' : '' %>" href="/app/appointments<%= qs({ view: 'list', from: isCal ? date : from }) %>"<% if (view === 'list') { %> aria-current="page"<% } %>><%= t('appointments.view_list') %></a>
     </nav>
     <% if (view === 'list') { %><%- include('../../../partials/export-menu', { href: '/app/appointments/export' }) %><% } %>
-    <% if (canManage && doctors.length) { %><button class="btn btn-secondary" type="button" data-open-dialog="block-dialog" data-reset-form><%- icon('lock', 'icon-sm') %><%= t('appointments.block_time') %></button><% } %>
-    <% if (canManage) { %><a class="btn btn-primary" href="/app/appointments/new?date=<%= bookDate %><%= f.doctor ? '&doctor=' + f.doctor : '' %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('appointments.new') %></a><% } %>
+    <% if (canManage && doctors.length) { %><button class="btn btn-secondary" type="button" data-open-dialog="block-dialog" data-reset-form data-block-open><%- icon('lock', 'icon-sm') %><%= t('appointments.block_time') %></button><% } %>
+    <% if (canManage) { %><a class="btn btn-primary" href="/app/appointments/new?date=<%= bookDate %><%= bookDoctor ? '&doctor=' + bookDoctor : '' %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('appointments.new') %></a><% } %>
   </div>
 </div>
 
-<% if (view === 'day') { %>
-<div class="panel appt-toolbar">
-  <div class="appt-datebar">
-    <div class="row-sm">
-      <a class="btn btn-secondary btn-icon btn-sm" href="/app/appointments<%= qs({ date: prev }) %>" aria-label="<%= t('appointments.prev_day') %>" title="<%= t('appointments.prev_day') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
-      <a class="btn btn-secondary btn-icon btn-sm" href="/app/appointments<%= qs({ date: next }) %>" aria-label="<%= t('appointments.next_day') %>" title="<%= t('appointments.next_day') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
-      <% if (date !== clinicToday) { %><a class="btn btn-ghost btn-sm" href="/app/appointments<%= qs({}) %>"><%= t('common.today') %></a><% } %>
-    </div>
-    <div class="appt-date-title">
-      <h2><%= fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></h2>
-      <% if (date === clinicToday) { %><span class="badge badge-brand"><%= t('common.today') %></span><% } else if (isPast) { %><span class="badge badge-neutral"><%= t('appointments.past_day') %></span><% } %>
-    </div>
+<% if (isCal) { %>
+<div class="cal-bar">
+  <div class="cal-nav">
+    <a class="btn btn-secondary btn-icon btn-sm" href="/app/appointments<%= qs({ date: prev }) %>" aria-label="<%= view === 'week' ? t('appointments.cal.prev_week') : t('appointments.prev_day') %>" title="<%= view === 'week' ? t('appointments.cal.prev_week') : t('appointments.prev_day') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
+    <a class="btn btn-secondary btn-sm" href="/app/appointments<%= qs({}) %>"<% if ((view === 'day' && date === clinicToday) || (view === 'week' && days.indexOf(clinicToday) >= 0)) { %> aria-current="date"<% } %>><%= t('common.today') %></a>
+    <a class="btn btn-secondary btn-icon btn-sm" href="/app/appointments<%= qs({ date: next }) %>" aria-label="<%= view === 'week' ? t('appointments.cal.next_week') : t('appointments.next_day') %>" title="<%= view === 'week' ? t('appointments.cal.next_week') : t('appointments.next_day') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+    <h2 class="cal-title">
+      <% if (view === 'week') { %><%= t('appointments.cal.week_range', { from: fmt.date(days[0], { day: 'numeric', month: 'short' }), to: fmt.date(days[6], { day: 'numeric', month: 'short', year: 'numeric' }) }) %>
+      <% } else { %><%= fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %><% } %>
+    </h2>
   </div>
-  <form class="table-toolbar appt-filters" method="get" data-autosubmit role="search">
+  <form class="cal-filters" method="get" data-autosubmit role="search">
+    <% if (view === 'week') { %><input type="hidden" name="view" value="week"><% } %>
+    <% if (showCancelled) { %><input type="hidden" name="cancelled" value="1"><% } %>
     <input class="input" type="date" name="date" value="<%= date %>" aria-label="<%= t('common.date') %>">
-    <% if (!own && doctors.length > 1) { %><select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value=""><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= f.doctor === d.id ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% } %>
-    <select class="select" name="status" aria-label="<%= t('common.status') %>"><option value=""><%= t('appointments.all_statuses') %></option><% statuses.forEach(function (s) { %><option value="<%= s %>"<%= f.status === s ? ' selected' : '' %>><%= t('appointments.statuses.' + s) %></option><% }) %></select>
-    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= f.q || '' %>" placeholder="<%= t('appointments.search') %>" aria-label="<%= t('common.search') %>"></div>
-    <% if (f.doctor || f.status || f.q) { %><a class="btn btn-ghost btn-sm" href="/app/appointments?date=<%= date %>"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+    <% if (!own && doctors.length > 1) { %>
+    <select class="select" name="doctor" aria-label="<%= t('common.doctor') %>">
+      <% if (view === 'day') { %><option value=""><%= t('common.all_doctors') %></option><% } %>
+      <% doctors.forEach(function (d) { var sel = view === 'week' ? (weekDoctor && weekDoctor.id === d.id) : f.doctor === d.id; %><option value="<%= d.id %>"<%= sel ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %>
+    </select>
+    <% } %>
     <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
   </form>
 </div>
 
-<div class="summary-strip mt-4">
-  <span class="chip"><strong><%= fmt.number(stats.total) %></strong><%= t('appointments.stat_total') %></span>
-  <span class="chip"><span class="badge badge-dot badge-info"></span><strong><%= fmt.number(stats.confirmed) %></strong><%= t('appointments.statuses.confirmed') %></span>
-  <span class="chip"><span class="badge badge-dot badge-warning"></span><strong><%= fmt.number(stats.pending) %></strong><%= t('appointments.statuses.pending') %></span>
-  <span class="chip"><span class="badge badge-dot badge-success"></span><strong><%= fmt.number(stats.completed) %></strong><%= t('appointments.statuses.completed') %></span>
-  <span class="chip"><span class="badge badge-dot badge-danger"></span><strong><%= fmt.number(stats.missed) %></strong><%= t('appointments.stat_missed') %></span>
+<div class="cal-meta">
+  <span class="small"><strong><%= t('appointments.cal.summary', { n: fmt.number(stats.total) }) %></strong><% if (stats.pending) { %><span class="muted"> · <%= t('appointments.cal.summary_pending', { n: fmt.number(stats.pending) }) %></span><% } %><% if (stats.missed) { %><span class="muted"> · <%= t('appointments.cal.summary_missed', { n: fmt.number(stats.missed) }) %></span><% } %><% if (stats.blocks) { %><span class="muted"> · <%= t('appointments.cal.summary_blocks', { n: fmt.number(stats.blocks) }) %></span><% } %></span>
+  <a class="cal-toggle small" href="/app/appointments<%= qs({ date: date, cancelled: showCancelled ? undefined : 1 }) %>" role="switch" aria-checked="<%= showCancelled ? 'true' : 'false' %>"><span class="cal-toggle-box" aria-hidden="true"><%- showCancelled ? icon('check', 'icon-sm') : '' %></span><%= t('appointments.cal.show_cancelled') %></a>
+  <span class="cal-hint tiny muted" data-cal-hint data-touch="<%= canManage ? t('appointments.cal.hint_touch') : t('appointments.cal.hint_view') %>"><%= canManage ? t('appointments.cal.hint') : t('appointments.cal.hint_view') %></span>
 </div>
 
-<% if (!doctors.length && !columns.length) { %>
-  <div class="panel mt-4"><%- include('../../../partials/empty', { emptyIcon: 'stethoscope', emptyTitle: t('appointments.no_doctors_title'), emptyText: t('appointments.no_doctors_text'), emptyAction: can('doctors.manage') ? '<a class="btn btn-primary btn-sm" href="/app/doctors/new">' + t('doctors.add') + '</a>' : '' }) %></div>
-<% } else { %>
-<div class="appt-board mt-4" style="--cols:<%= Math.max(1, columns.length) %>">
-  <% columns.forEach(function (col) { var visitCount = col.items.filter(function (a) { return a.appointment_type !== 'blocked' && a.status !== 'cancelled'; }).length; %>
-  <section class="appt-col" aria-label="<%= col.unassigned ? t('appointments.unassigned') : L(col.name, col.name_en) %>" style="<%= col.color ? '--doc:' + col.color : '' %>">
-    <header class="appt-col-head">
-      <span class="avatar" style="<%= col.color ? 'background:' + col.color + ';color:var(--surface)' : '' %>"><%= col.unassigned ? '?' : initials(L(col.name, col.name_en)) %></span>
-      <div class="grow">
-        <div class="strong truncate"><%= col.unassigned ? t('appointments.unassigned') : L(col.name, col.name_en) %></div>
-        <div class="tiny muted">
-          <% if (col.unassigned) { %><%= t('appointments.unassigned_hint') %>
-          <% } else if (col.off) { %><span style="color:var(--warning)"><%= t('appointments.day_off') %></span>
-          <% } else if (!col.works) { %><%= t('appointments.not_working') %>
-          <% } else if (col.shifts.length) { %><span dir="ltr"><%= col.shifts.map(function (s) { return s.start + '–' + s.end; }).join(' · ') %></span><% if (col.breaks.length) { %> · <%= t('appointments.break') %> <span dir="ltr"><%= col.breaks[0].start %>–<%= col.breaks[0].end %></span><% } %><% } %>
-        </div>
-      </div>
-      <span class="badge" title="<%= t('appointments.stat_total') %>"><%= fmt.number(visitCount) %></span>
-    </header>
-    <div class="appt-col-body">
-      <% if (!col.items.length) { %>
-        <div class="appt-col-empty">
-          <%- icon('calendar', 'icon-sm') %><span><%= col.off || !col.works ? t('appointments.no_schedule') : t('appointments.no_appointments') %></span>
-          <% if (canManage && !isPast && !col.unassigned && col.works && !col.off) { %><a class="btn btn-ghost btn-sm" href="/app/appointments/new?doctor=<%= col.id %>&date=<%= date %>"><%- icon('plus', 'icon-sm') %><%= t('appointments.book_here') %></a><% } %>
-        </div>
-      <% } %>
-      <% col.items.forEach(function (a) { %>
-        <% if (a.appointment_type === 'blocked') { %>
-          <div class="appt-card is-block">
-            <div class="appt-time" dir="ltr"><%= a.appointment_time %><span><%= a.end_time %></span></div>
-            <div class="appt-main"><div class="row-sm small strong"><%- icon('lock', 'icon-sm') %><span class="truncate"><%= a.notes || t('appointments.blocked') %></span></div><div class="tiny muted"><%= t('appointments.blocked_len', { n: a.length }) %></div></div>
-            <% if (canManage) { %><form method="post" action="/app/appointments/blocks/<%= a.id %>/delete" data-confirm="<%= t('appointments.block_delete_confirm') %>" data-confirm-title="<%= t('appointments.block_delete') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('appointments.block_delete') %>" title="<%= t('appointments.block_delete') %>"><%- icon('x', 'icon-sm') %></button></form><% } %>
-          </div>
-        <% } else { %>
-          <a class="appt-card st-<%= a.status %>" href="/app/appointments/<%= a.id %>">
-            <div class="appt-time" dir="ltr"><%= a.appointment_time %><span><%= a.end_time %></span></div>
-            <div class="appt-main">
-              <div class="strong truncate"><%= a.patient_name %></div>
-              <% if (a.patient_phone) { %><div class="small muted truncate"><bdi dir="ltr"><%= a.patient_phone %></bdi></div><% } %>
-              <% if (a.service_name) { %><div class="tiny muted truncate"><%= L(a.service_name, a.service_name_en) %></div><% } %>
-              <div class="appt-badges">
-                <span class="badge badge-dot <%= SB[a.status] %>"><%= t('appointments.statuses.' + a.status) %></span>
-                <% if (a.source === 'website') { %><span class="badge badge-brand"><%- icon('globe', 'icon-sm') %><%= t('appointments.sources.website') %></span><% } %>
-                <% if (a.appointment_type === 'online') { %><span class="badge badge-info"><%- icon('monitor', 'icon-sm') %><%= t('appointments.types.online') %></span><% } %>
-                <% if (a.payment_status === 'paid') { %><span class="badge badge-success"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } else if (a.checked_in && a.status !== 'cancelled') { %><span class="badge"><%- icon('armchair', 'icon-sm') %><%= a.with_doctor ? t('appointments.with_doctor') : t('appointments.arrived') %></span><% } %>
-              </div>
-            </div>
+<% if (!columns.length) { %>
+  <div class="panel mt-4">
+    <% if (!doctors.length) { %><%- include('../../../partials/empty', { emptyIcon: 'stethoscope', emptyTitle: t('appointments.no_doctors_title'), emptyText: t('appointments.no_doctors_text'), emptyAction: can('doctors.manage') ? '<a class="btn btn-primary btn-sm" href="/app/doctors/new">' + t('doctors.add') + '</a>' : '' }) %>
+    <% } else { %><%- include('../../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/appointments?date=' + date + '">' + t('table.clear_filters') + '</a>' }) %><% } %>
+  </div>
+<% } else { var nowY = now.minutes >= range.start && now.minutes <= range.end ? y(now.minutes) : null; %>
+<div class="cal cal-<%= view %><%= canManage ? ' can-manage' : '' %>" data-cal data-view="<%= view %>">
+  <% if (view === 'day' && columns.length > 1) { %>
+  <div class="cal-switch">
+    <label class="label" for="cal-switch"><%= t('appointments.cal.doctor_switch') %></label>
+    <select class="select" id="cal-switch" data-cal-switch>
+      <% columns.forEach(function (c, i) { %><option value="<%= i %>"><%= c.unassigned ? t('appointments.unassigned') : L(c.name, c.name_en) %></option><% }) %>
+    </select>
+  </div>
+  <% } %>
+  <div class="cal-scroll" data-cal-scroll>
+    <div class="cal-grid" role="grid" aria-label="<%= t('appointments.cal.grid_label') %>" style="--cols:<%= columns.length %>;--rows:<%= (range.end - range.start) / ROW %>">
+      <div class="cal-corner" aria-hidden="true"></div>
+      <% columns.forEach(function (c, i) { var isToday = c.date === clinicToday; %>
+      <div class="cal-head<%= isToday && view === 'week' ? ' is-today' : '' %>" data-col="<%= i %>" role="columnheader">
+        <% if (view === 'week') { %>
+          <a class="cal-head-link" href="/app/appointments?date=<%= c.date %><%= own ? '' : '&doctor=' + c.doctorId %>">
+            <span class="cal-wd"><%= fmt.date(c.date, { weekday: 'short' }) %></span>
+            <span class="cal-dn"><%= fmt.date(c.date, { day: 'numeric' }) %></span>
           </a>
+          <span class="cal-sub tiny"><%= c.off ? t('appointments.cal.day_off') : !c.works ? t('appointments.cal.closed_day') : '' %><% if (c.works) { %><bdi dir="ltr"><%= c.shifts.map(function (s) { return s.start + '–' + s.end; }).join(' · ') %></bdi><% } %></span>
+        <% } else { %>
+          <a class="cal-head-link" <% if (c.doctorId && !c.orphan) { %>href="/app/appointments?view=week&doctor=<%= c.doctorId %>&date=<%= date %>" title="<%= t('appointments.cal.view_week') %>"<% } %>>
+            <span class="doc-dot" style="<%= c.color ? 'background:' + c.color : '' %>"></span>
+            <span class="cal-name truncate"><%= c.unassigned ? t('appointments.unassigned') : L(c.name, c.name_en) %></span>
+          </a>
+          <span class="cal-sub tiny"><% if (c.unassigned) { %><%= t('appointments.unassigned_hint') %><% } else if (c.orphan) { %><%= t('common.inactive') %><% } else if (c.off) { %><%= t('appointments.cal.day_off') %><% } else if (!c.works) { %><%= t('appointments.cal.closed_day') %><% } else { %><bdi dir="ltr"><%= c.shifts.map(function (s) { return s.start + '–' + s.end; }).join(' · ') %></bdi><% } %></span>
         <% } %>
+      </div>
+      <% }) %>
+      <div class="cal-axis" aria-hidden="true">
+        <% for (var m = range.start; m <= range.end; m += 60) { %><span class="cal-hour<%= m === range.start ? ' first' : '' %><%= m === range.end ? ' last' : '' %>" style="--y:<%= y(m) %>" dir="ltr"><%= String(Math.floor(m / 60)).padStart(2, '0') %>:00</span><% } %>
+        <% if (nowY !== null && ((view === 'day' && date === clinicToday) || (view === 'week' && days.indexOf(clinicToday) >= 0))) { %><span class="cal-now-label" style="--y:<%= nowY %>" data-cal-now-label dir="ltr"><%= String(Math.floor(now.minutes / 60)).padStart(2, '0') + ':' + String(now.minutes % 60).padStart(2, '0') %></span><% } %>
+      </div>
+      <% columns.forEach(function (c, i) { %>
+      <div class="cal-body" data-col="<%= i %>" data-doctor="<%= c.doctorId || '' %>" data-date="<%= c.date %>"<%= c.orphan ? ' data-readonly' : '' %> role="gridcell"
+        aria-label="<%= (c.unassigned ? t('appointments.unassigned') : L(c.name, c.name_en) || '') + ' · ' + fmt.date(c.date) %>">
+        <% c.offRanges.forEach(function (r) { var full = r[0] === range.start && r[1] === range.end; %>
+          <div class="cal-off<%= full ? ' full' : '' %>" style="--y:<%= y(r[0]) %>;--h:<%= (r[1] - r[0]) / ROW %>"><% if (full) { %><span class="cal-off-label tiny"><%= c.off ? t('appointments.cal.day_off') : t('appointments.cal.closed_day') %></span><% } %></div>
+        <% }) %>
+        <% c.items.forEach(function (it) {
+             var short = it.len <= 20; var svc = L(it.service, it.service_en);
+             var style = '--y:' + y(it.start) + ';--h:' + (it.len / ROW) + ';--lane:' + it.lane + ';--lanes:' + it.lanes;
+             var tip = it.time + '–' + it.end + ' · ' + (it.blocked ? (it.label || t('appointments.blocked')) : it.patient + (svc ? ' · ' + svc : '') + ' · ' + t('appointments.statuses.' + it.status));
+             var dataAttrs = 'data-ev="' + it.id + '" data-start="' + it.start + '" data-len="' + it.len + '" data-name="' + escapeHtml(it.blocked ? (it.label || t('appointments.blocked')) : it.patient) + '"' + (canManage && it.movable && !c.orphan ? ' data-movable' : '') + (it.blocked ? ' data-block' : '');
+        %>
+          <% if (it.blocked) { %>
+          <div class="cal-ev is-block<%= short ? ' is-short' : '' %>" style="<%= style %>" <%- dataAttrs %> title="<%= tip %>">
+            <span class="cal-ev-line"><%- icon('lock', 'icon-xs') %><span class="cal-ev-name truncate"><%= it.label || t('appointments.blocked') %></span></span>
+            <% if (!short) { %><span class="cal-ev-time" dir="ltr"><%= it.time %>–<%= it.end %></span><% } %>
+            <% if (canManage) { %><form class="cal-ev-del" method="post" action="/app/appointments/blocks/<%= it.id %>/delete" data-confirm="<%= t('appointments.block_delete_confirm') %>" data-confirm-title="<%= t('appointments.block_delete') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit" aria-label="<%= t('appointments.block_delete') %>" title="<%= t('appointments.block_delete') %>"><%- icon('x', 'icon-xs') %></button></form><% } %>
+          </div>
+          <% } else { %>
+          <a class="cal-ev st-<%= it.status %><%= short ? ' is-short' : '' %>" href="/app/appointments/<%= it.id %>" draggable="false" style="<%= style %>" <%- dataAttrs %> title="<%= tip %>">
+            <span class="cal-ev-line"><i class="st-dot st-<%= it.status %>" aria-hidden="true"></i><span class="cal-ev-time" dir="ltr"><%= it.time %></span><span class="cal-ev-name truncate"><%= it.patient %></span></span>
+            <% if (!short) { %>
+              <% if (svc) { %><span class="cal-ev-sub truncate"><%= svc %></span><% } %>
+              <span class="cal-ev-tags"><% if (it.paid) { %><span><%- icon('check', 'icon-xs') %><%= t('appointments.cal.paid') %></span><% } else if (it.with_doctor) { %><span><%= t('appointments.cal.with_doctor') %></span><% } else if (it.checked_in) { %><span><%= t('appointments.cal.arrived') %></span><% } %><% if (it.online) { %><span><%- icon('monitor', 'icon-xs') %><%= t('appointments.cal.online') %></span><% } %><% if (it.website) { %><span><%- icon('globe', 'icon-xs') %></span><% } %></span>
+            <% } %>
+            <span class="sr-only"><%= t('appointments.statuses.' + it.status) %></span>
+          </a>
+          <% } %>
+        <% }) %>
+        <% if (nowY !== null && c.date === clinicToday) { %><div class="cal-now" style="--y:<%= nowY %>" data-cal-now aria-hidden="true"></div><% } %>
+      </div>
       <% }) %>
     </div>
-  </section>
-  <% }) %>
+  </div>
 </div>
-<% if (!columns.length) { %><div class="panel mt-4"><%- include('../../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/appointments?date=' + date + '">' + t('table.clear_filters') + '</a>' }) %></div><% } %>
+
+<script type="application/json" id="cal-data"><%- json({
+  canManage: canManage, csrf: csrfToken, today: clinicToday, now: now.minutes, rangeStart: range.start, rangeEnd: range.end, view: view, here: here, locale: locale,
+  columns: columns.map(function (c) { return { doctorId: c.doctorId, date: c.date, slot: c.slot, work: c.work, shifts: c.shiftMins, busy: c.busy, readonly: Boolean(c.orphan), name: c.unassigned ? '' : L(c.name, c.name_en), dateLabel: fmt.date(c.date, { weekday: 'short', day: 'numeric', month: 'short' }) }; }),
+  i18n: {
+    book: t('appointments.cal.sel_book'), block: t('appointments.cal.sel_block'), cancel: t('appointments.cal.sel_cancel'), unavailable: t('appointments.cal.unavailable'),
+    moveDoctor: t('appointments.cal.move_doctor'), moveDate: t('appointments.cal.move_date'), moveTitle: t('appointments.cal.move_title'), moveBlockTitle: t('appointments.cal.move_block_title'),
+    moving: t('appointments.cal.moving'), netError: t('appointments.cal.net_error'), min: t('appointments.cal.min'), close: t('common.close')
+  }
+}) %></script>
+
+<% if (canManage) { %>
+<dialog class="dialog" id="move-dialog" aria-labelledby="move-title">
+  <div class="dialog-head"><h2 id="move-title" data-move-title><%= t('appointments.cal.move_title') %></h2></div>
+  <div class="dialog-body"><p data-move-msg></p><p class="small muted hidden" data-move-error role="alert"></p></div>
+  <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-move-no><%= t('common.cancel') %></button><button class="btn btn-primary" type="button" data-move-yes><%= t('appointments.cal.move_yes') %></button></div>
+</dialog>
+<% } %>
 <% } %>
 
 <% } else { /* ---------------- list view ---------------- */ %>
@@ -135,10 +183,10 @@
         <tr data-href="/app/appointments/<%= a.id %>">
           <td data-label="<%= t('common.date') %>" class="nowrap"><div class="strong"><%= fmt.date(a.appointment_date, { weekday: 'short', day: 'numeric', month: 'short' }) %></div><div class="small muted"><bdi dir="ltr"><%= a.appointment_time %>–<%= a.end_time %></bdi></div></td>
           <td class="primary-cell"><a class="strong" href="/app/appointments/<%= a.id %>"><%= a.patient_name %></a><div class="small muted"><bdi dir="ltr"><%= a.patient_phone || '' %></bdi></div></td>
-          <td data-label="<%= t('common.doctor') %>"><span class="row-sm"><span class="swatch" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></span></td>
+          <td data-label="<%= t('common.doctor') %>"><span class="row-sm"><span class="doc-dot" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></span></td>
           <td data-label="<%= t('common.service') %>"><%= a.service_name ? L(a.service_name, a.service_name_en) : '—' %></td>
-          <td data-label="<%= t('common.status') %>"><span class="row-sm wrap"><span class="badge badge-dot <%= SB[a.status] %>"><%= t('appointments.statuses.' + a.status) %></span><% if (a.source === 'website') { %><span class="badge badge-brand"><%= t('appointments.sources.website') %></span><% } %><% if (a.appointment_type === 'online') { %><span class="badge badge-info"><%= t('appointments.types.online') %></span><% } %></span></td>
-          <td data-label="<%= t('appointments.amount_due') %>" class="num"><%= fmt.amount(a.amount_due) %><% if (a.payment_status === 'paid') { %><div class="tiny" style="color:var(--success)"><%= t('appointments.payment_statuses.paid') %></div><% } %></td>
+          <td data-label="<%= t('common.status') %>"><span class="row-sm wrap"><%- stDot(a.status) %><% if (a.source === 'website') { %><span class="tiny muted"><%= t('appointments.sources.website') %></span><% } %><% if (a.appointment_type === 'online') { %><span class="tiny muted"><%= t('appointments.types.online') %></span><% } %></span></td>
+          <td data-label="<%= t('appointments.amount_due') %>" class="num"><%= fmt.amount(a.amount_due) %><% if (a.payment_status === 'paid') { %><div class="tiny muted"><%= t('appointments.payment_statuses.paid') %></div><% } %></td>
           <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="/app/appointments/<%= a.id %>" aria-label="<%= t('common.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
         </tr>
       <% }) %>
@@ -150,18 +198,19 @@
 </div>
 <% } %>
 
-<% if (canManage && doctors.length) { var bOld = (typeof old !== 'undefined' && old) || {}; var bDoc = bOld.doctor_id || (f.doctor || (doctors.length === 1 ? doctors[0].id : '')); %>
+<% if (canManage && doctors.length) { var bOld = (typeof old !== 'undefined' && old) || {}; var bDoc = bOld.doctor_id || (bookDoctor || (doctors.length === 1 ? doctors[0].id : '')); %>
 <dialog class="dialog" id="block-dialog" aria-labelledby="block-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'block-dialog') { %> data-open-on-load<% } %>>
   <form method="post" action="/app/appointments/blocks" novalidate data-booking>
     <div class="dialog-head"><div><h2 id="block-title"><%= t('appointments.block_time') %></h2><p class="small muted"><%= t('appointments.block_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
     <div class="dialog-body">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="return_to" value="<%= here %>">
       <%- include('../../../partials/form-error') %>
       <div class="form-grid">
         <%- include('../../../partials/field', { name: 'doctor_id', id: 'b-doctor', label: t('common.doctor'), type: 'select', required: true, value: bDoc, placeholder: t('appointments.choose_doctor'), options: doctors.map(function (d) { return { value: d.id, label: L(d.full_name, d.full_name_en) }; }), attrs: 'data-default="' + bDoc + '" data-doctor-field' }) %>
-        <%- include('../../../partials/field', { name: 'appointment_date', id: 'b-date', label: t('common.date'), type: 'date', required: true, value: view === 'day' && !isPast ? date : clinicToday, attrs: 'min="' + clinicToday + '" data-date-field data-default="' + (view === 'day' && !isPast ? date : clinicToday) + '"' }) %>
-        <%- include('../../../partials/field', { name: 'duration_minutes', id: 'b-duration', label: t('appointments.duration'), value: 60, suffix: t('common.minutes'), required: true, attrs: 'inputmode="numeric" data-default="60" data-duration-input' }) %>
-        <%- include('../../../partials/field', { name: 'label', id: 'b-label', label: t('appointments.block_label'), placeholder: t('appointments.block_label_ph') }) %>
+        <%- include('../../../partials/field', { name: 'appointment_date', id: 'b-date', label: t('common.date'), type: 'date', required: true, value: bOld.appointment_date || bookDate, attrs: 'min="' + clinicToday + '" data-date-field data-default="' + bookDate + '"' }) %>
+        <%- include('../../../partials/field', { name: 'duration_minutes', id: 'b-duration', label: t('appointments.duration'), value: bOld.duration_minutes || 60, suffix: t('common.minutes'), required: true, attrs: 'inputmode="numeric" data-default="60" data-duration-input' }) %>
+        <%- include('../../../partials/field', { name: 'label', id: 'b-label', label: t('appointments.block_label'), placeholder: t('appointments.block_label_ph'), value: bOld.label || '' }) %>
         <%- include('_slots', { slotId: 'b-slots', selected: bOld.appointment_time || '', exclude: '' }) %>
       </div>
     </div>

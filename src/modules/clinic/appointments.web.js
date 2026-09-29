@@ -6,6 +6,7 @@ const { wrap, form, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const { AppError, E } = require('../../core/errors');
 const exporter = require('../../core/exporter');
+const { translateMessage } = require('../../core/i18n');
 const scheduling = require('./scheduling');
 const appts = require('./appointments.service');
 const doctorsSvc = require('./doctors.service');
@@ -46,11 +47,92 @@ const filtersOf = (req) => ({
   q: String(req.query.q || '').trim().slice(0, 100) || null,
 });
 
-// ---------------------------------------------------------------- day board & list
+// ---------------------------------------------------------------- calendar (day / week) & list
+const T = scheduling.timeToMinutes;
+const QUARTER = 15;
+
+/** Working intervals of a day: shifts minus breaks, in minutes. */
+function workIntervals(day) {
+  let out = day.shifts.map((s) => [T(s.start), T(s.end)]);
+  day.breaks.forEach((b) => {
+    const bs = T(b.start); const be = T(b.end);
+    out = out.flatMap(([s, e]) => (be <= s || bs >= e ? [[s, e]] : [[s, Math.min(bs, e)], [Math.max(be, s), e]].filter(([x, y]) => y > x)));
+  });
+  return out.sort((x, y) => x[0] - y[0]);
+}
+
+/** Side-by-side lanes for overlapping items of one column (greedy, per overlapping cluster). */
+function layoutLanes(items) {
+  const sorted = [...items].sort((a, b) => a.start - b.start || b.len - a.len);
+  let cluster = []; let clusterEnd = -1;
+  const flush = () => { const n = Math.max(1, ...cluster.map((i) => i.lane + 1)); cluster.forEach((i) => { i.lanes = n; }); cluster = []; };
+  sorted.forEach((it) => {
+    if (cluster.length && it.start >= clusterEnd) flush();
+    const lanesEnd = [];
+    cluster.forEach((c) => { lanesEnd[c.lane] = Math.max(lanesEnd[c.lane] || 0, c.start + c.len); });
+    let lane = lanesEnd.findIndex((e) => e <= it.start);
+    if (lane < 0) lane = lanesEnd.length;
+    it.lane = lane;
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, it.start + it.len);
+  });
+  if (cluster.length) flush();
+  return sorted;
+}
+
+/** One calendar column (a doctor on a date): schedule, non-working ranges and positioned items. */
+function buildColumn({ key, doctor, date, off, items, lenOf, showCancelled, orphan }) {
+  const day = doctor && !orphan ? scheduling.normalizeDayConfig(doctorsSvc.parseWh(doctor.working_hours)[scheduling.dayKeyOf(date)]) : { enabled: false, shifts: [], breaks: [] };
+  const works = day.enabled && !off;
+  const evs = items.filter((a) => showCancelled || a.status !== 'cancelled').map((a) => {
+    const len = lenOf(a);
+    return {
+      id: a.id, blocked: a.appointment_type === 'blocked', status: a.status, start: T(a.appointment_time), len, time: a.appointment_time,
+      end: scheduling.minutesToTime(Math.min(24 * 60 - 1, T(a.appointment_time) + len)), patient: a.patient_name, label: a.notes, service: a.service_name, service_en: a.service_name_en,
+      online: a.appointment_type === 'online', website: a.source === 'website', paid: a.payment_status === 'paid', checked_in: a.checked_in, with_doctor: a.with_doctor,
+      movable: Boolean(a.doctor_id) && a.status !== 'cancelled' && a.payment_status !== 'paid',
+    };
+  });
+  return {
+    key, date, doctorId: doctor ? doctor.id : null, name: doctor ? doctor.full_name : null, name_en: doctor ? doctor.full_name_en : null, color: doctor ? doctor.color : null,
+    slot: (doctor && doctor.slot_duration_minutes) || 30, off, works, orphan: Boolean(orphan), shifts: day.shifts, breaks: day.breaks,
+    work: works ? workIntervals(day) : [], shiftMins: works ? day.shifts.map((x) => [T(x.start), T(x.end)]) : [], items: layoutLanes(evs),
+    busy: items.filter((a) => a.status !== 'cancelled').map((a) => [T(a.appointment_time), T(a.appointment_time) + lenOf(a), a.id]),
+  };
+}
+
+/** Visible time range: earliest shift start → latest shift end (whole hours), widened to fit every item. */
+function gridRange(columns) {
+  let lo = Infinity; let hi = -Infinity;
+  columns.forEach((c) => {
+    c.work.forEach(([s, e]) => { lo = Math.min(lo, s); hi = Math.max(hi, e); });
+    c.shifts.forEach((s) => { if (c.works) { lo = Math.min(lo, T(s.start)); hi = Math.max(hi, T(s.end)); } });
+  });
+  if (!Number.isFinite(lo)) { lo = 8 * 60; hi = 20 * 60; }
+  columns.forEach((c) => c.items.forEach((i) => { lo = Math.min(lo, i.start); hi = Math.max(hi, i.start + i.len); }));
+  lo = Math.max(0, Math.floor(lo / 60) * 60);
+  hi = Math.min(24 * 60, Math.ceil(hi / 60) * 60);
+  if (hi - lo < 60) hi = Math.min(24 * 60, lo + 60);
+  return { start: lo, end: hi };
+}
+
+/** Non-working ranges of a column inside the visible range (shaded on the grid). */
+function offRanges(col, range) {
+  if (col.orphan) return [];
+  if (!col.works) return [[range.start, range.end]];
+  const out = []; let cur = range.start;
+  col.work.forEach(([s, e]) => { if (s > cur) out.push([cur, Math.min(s, range.end)]); cur = Math.max(cur, e); });
+  if (cur < range.end) out.push([cur, range.end]);
+  return out.filter(([s, e]) => e > s);
+}
+
+/** Saturday that starts the clinic week containing `date`. */
+const weekStart = (date) => addDays(date, -((new Date(`${date}T00:00:00Z`).getUTCDay() + 1) % 7));
+
 async function renderIndex(req, res, extra = {}) {
   const { ctx } = req;
   const f = filtersOf(req);
-  const view = req.query.view === 'list' ? 'list' : 'day';
+  const view = ['list', 'week'].includes(req.query.view) ? req.query.view : 'day';
   const doctors = await bookableDoctors(ctx);
   const lenOf = await lengths(ctx);
   const base = { title: req.t('appointments.title'), view, f, doctors, statuses: appts.STATUSES, ...ASSETS };
@@ -65,31 +147,46 @@ async function renderIndex(req, res, extra = {}) {
   }
 
   const date = pickDate(req.query.date, ctx.today);
-  const filtered = Boolean(f.status || f.q);
-  const all = (await appts.list(ctx, { from: date, to: date, doctor: f.doctor, status: f.status, q: f.q, includeBlocked: !filtered })).map(withEnd(lenOf));
-  const off = await knex('doctor_days_off').where({ business_id: ctx.businessId, off_date: date }).pluck('doctor_id');
-  const dayKey = scheduling.dayKeyOf(date);
-  const shown = f.doctor ? doctors.filter((d) => d.id === f.doctor) : doctors;
-  const columns = shown.map((d) => {
-    const day = scheduling.normalizeDayConfig(doctorsSvc.parseWh(d.working_hours)[dayKey]);
-    return { id: d.id, name: d.full_name, name_en: d.full_name_en, color: d.color, off: off.includes(d.id), works: day.enabled, shifts: day.shifts, breaks: day.breaks, items: all.filter((a) => a.doctor_id === d.id) };
-  });
-  // Appointments of an inactive/removed doctor or without a doctor still show up.
-  const known = new Set(shown.map((d) => d.id));
-  const orphans = all.filter((a) => !known.has(a.doctor_id) && (!f.doctor || a.doctor_id === f.doctor));
-  const groups = {};
-  orphans.forEach((a) => { const k = a.doctor_id || 0; (groups[k] = groups[k] || { id: a.doctor_id, name: a.doctor_name, name_en: a.doctor_name_en, color: a.doctor_color, works: true, shifts: [], breaks: [], items: [], unassigned: !a.doctor_id }).items.push(a); });
-  Object.values(groups).forEach((g) => columns.push(g));
+  const showCancelled = req.query.cancelled === '1';
+  const now = scheduling.clinicNow(ctx.timezone);
+  let columns = []; let days = []; let weekDoctor = null;
+  let all;
+  if (view === 'week') {
+    weekDoctor = doctors.find((d) => d.id === (ctx.ownDoctorId || f.doctor)) || doctors[0] || null;
+    const from = weekStart(date);
+    days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
+    all = weekDoctor ? await appts.list(ctx, { from: days[0], to: days[6], doctor: weekDoctor.id, includeBlocked: true }) : [];
+    const off = weekDoctor ? await knex('doctor_days_off').where({ business_id: ctx.businessId, doctor_id: weekDoctor.id }).whereBetween('off_date', [days[0], days[6]]).pluck('off_date') : [];
+    const offSet = new Set(off.map((d) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10))));
+    if (weekDoctor) columns = days.map((d) => buildColumn({ key: d, doctor: weekDoctor, date: d, off: offSet.has(d), items: all.filter((a) => a.appointment_date === d), lenOf, showCancelled }));
+  } else {
+    all = await appts.list(ctx, { from: date, to: date, doctor: f.doctor, includeBlocked: true });
+    const off = await knex('doctor_days_off').where({ business_id: ctx.businessId, off_date: date }).pluck('doctor_id');
+    const shown = f.doctor ? doctors.filter((d) => d.id === f.doctor) : doctors;
+    columns = shown.map((d) => buildColumn({ key: `d${d.id}`, doctor: d, date, off: off.includes(d.id), items: all.filter((a) => a.doctor_id === d.id), lenOf, showCancelled }));
+    // Appointments of an inactive/removed doctor or without a doctor still show up (read-only columns).
+    const known = new Set(shown.map((d) => d.id));
+    const groups = {};
+    all.filter((a) => !known.has(a.doctor_id) && (!f.doctor || a.doctor_id === f.doctor)).forEach((a) => {
+      const k = a.doctor_id || 0;
+      (groups[k] = groups[k] || { doctor: a.doctor_id ? { id: a.doctor_id, full_name: a.doctor_name, full_name_en: a.doctor_name_en, color: a.doctor_color } : null, items: [] }).items.push(a);
+    });
+    Object.entries(groups).forEach(([k, g]) => columns.push({ ...buildColumn({ key: `o${k}`, doctor: g.doctor, date, off: false, items: g.items, lenOf, showCancelled, orphan: true }), unassigned: !g.doctor }));
+  }
+  const range = gridRange(columns);
+  columns.forEach((c) => { c.offRanges = offRanges(c, range); });
   const visits = all.filter((a) => a.appointment_type !== 'blocked');
   const stats = {
     total: visits.filter((a) => a.status !== 'cancelled').length,
-    confirmed: visits.filter((a) => a.status === 'confirmed').length,
     pending: visits.filter((a) => a.status === 'pending').length,
     completed: visits.filter((a) => a.status === 'completed').length,
     missed: visits.filter((a) => a.status === 'no_show' || a.status === 'cancelled').length,
+    blocks: all.filter((a) => a.appointment_type === 'blocked').length,
   };
+  const step = view === 'week' ? 7 : 1;
   return res.page('pages/clinic/appointments/index', {
-    ...base, date, prev: addDays(date, -1), next: addDays(date, 1), columns, stats, filtered, isPast: date < ctx.today, ...extra,
+    ...base, date, prev: addDays(date, -step), next: addDays(date, step), columns, days, weekDoctor, range, stats, showCancelled,
+    now, isPast: date < ctx.today, ...extra,
   });
 }
 
@@ -130,9 +227,10 @@ router.post('/blocks', can('appointments.manage'), form(async (req, res) => {
   if (req.ctx.ownDoctorId && Number(req.body.doctor_id) !== req.ctx.ownDoctorId) throw E.forbidden('appointments.view_all');
   await appts.block(req.ctx, req.body);
   flash(req, 'success', req.t('appointments.block_saved'));
-  res.redirect(`/app/appointments?date=${encodeURIComponent(req.body.appointment_date)}`);
+  res.redirect(safeReturn(req.body.return_to) || `/app/appointments?date=${encodeURIComponent(req.body.appointment_date)}`);
 }, (req, res, extra) => {
-  req.query = { date: scheduling.isDate(req.body.appointment_date) ? req.body.appointment_date : undefined };
+  const back = new URLSearchParams(String(safeReturn(req.body.return_to) || '').split('?')[1] || '');
+  req.query = { view: back.get('view') || undefined, doctor: back.get('doctor') || undefined, date: scheduling.isDate(req.body.appointment_date) ? req.body.appointment_date : undefined };
   return renderIndex(req, res, { ...extra, openDialog: 'block-dialog' });
 }));
 
@@ -163,7 +261,8 @@ async function renderForm(req, res, extra = {}) {
     v = {
       doctor_id: doctors.some((d) => d.id === Number(docId)) ? Number(docId) : '', service_id: Number(q.service) || '', patient_id: '', patient_name: '', patient_phone: '', patient_email: '',
       appointment_date: q.date === 'today' ? ctx.today : (scheduling.isDate(q.date) && q.date >= ctx.today ? q.date : ctx.today),
-      appointment_time: scheduling.isTime(q.time) ? q.time : '', duration_minutes: '', appointment_type: 'in_person', status: 'confirmed', notes: '',
+      appointment_time: scheduling.isTime(q.time) ? q.time : '',
+      duration_minutes: Number.isInteger(Number(q.duration)) && Number(q.duration) >= scheduling.MIN_BLOCK_MINUTES && Number(q.duration) <= scheduling.MAX_BLOCK_MINUTES ? Number(q.duration) : '', appointment_type: 'in_person', status: 'confirmed', notes: '',
     };
     if (Number(q.patient)) {
       const p = await knex('patients').where({ business_id: ctx.businessId, id: Number(q.patient) }).first('id', 'full_name', 'phone', 'email');
@@ -232,6 +331,20 @@ router.post('/:id(\\d+)/assign', can('appointments.manage'), wrap(async (req, re
     flash(req, 'error', errText(req, e));
   }
   res.redirect(`/app/appointments/${req.params.id}`);
+}));
+
+// Calendar drag-and-drop (JSON): move to another time/date/doctor; the slot is re-validated server-side.
+router.post('/:id(\\d+)/move', can('appointments.manage'), wrap(async (req, res) => {
+  try {
+    await appts.move(req.ctx, Number(req.params.id), { doctor_id: req.body.doctor_id, appointment_date: req.body.appointment_date, appointment_time: req.body.appointment_time });
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    const field = e.details && typeof e.details === 'object' ? Object.values(e.details).find((v) => typeof v === 'string') : null;
+    // 200 + ok:false keeps an expected refusal (e.g. SLOT_TAKEN) out of the browser console as a failed request.
+    return res.json({ ok: false, status: e.status, error: e.code === 'VALIDATION_FAILED' && field ? translateMessage(req.locale, field) : errText(req, e), code: e.code });
+  }
+  flash(req, 'success', req.t('appointments.cal.moved'));
+  return res.json({ ok: true });
 }));
 
 router.post('/:id(\\d+)/follow-up', can('appointments.manage'), form(async (req, res) => {
