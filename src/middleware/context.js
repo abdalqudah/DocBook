@@ -34,8 +34,15 @@ function requireAuth(req, res, next) {
 async function resolveBusiness(req, res, next) {
   try {
     let businessId = req.session.businessId;
-    if (!businessId || !(await businesses.isMember(req.user.id, businessId))) {
-      const list = await businesses.listForUser(req.user.id);
+    const usable = async (id) => {
+      if (!id || !(await businesses.isMember(req.user.id, id))) return false;
+      const b = await businesses.get(id);
+      return Boolean(b) && (b.status || 'active') === 'active';
+    };
+    if (!(await usable(businessId))) {
+      // Suspended clinics are skipped: their staff can't open them until the platform reactivates them.
+      const list = [];
+      for (const b of await businesses.listForUser(req.user.id)) if (await usable(b.id)) list.push(b); // eslint-disable-line no-await-in-loop
       const preferred = list.find((b) => b.id === req.user.last_business_id) || list[0];
       businessId = preferred ? preferred.id : null;
       req.session.businessId = businessId;

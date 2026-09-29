@@ -28,7 +28,7 @@
       <div class="panel-head"><div><h2><%= t('settings.sessions') %></h2><div class="panel-sub"><%= t('settings.sessions_sub') %></div></div>
         <% if (sessions.length > 1) { %><form method="post" action="/app/settings/security/sessions/revoke-others" data-confirm="<%= t('settings.revoke_others_confirm') %>" data-confirm-yes="<%= t('settings.revoke_others') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('log-out', 'icon-sm') %><%= t('settings.revoke_others') %></button></form><% } %></div>
       <ul class="action-list">
-        <% sessions.forEach(function (s) { %>
+        <% sessions.slice(0, 10).forEach(function (s) { %>
         <li><div>
           <span class="action-icon"><%- icon(/Android|iPhone|iPad|Mobile/.test(s.userAgent) ? 'smartphone' : 'monitor', 'icon-sm') %></span>
           <div class="grow" style="min-width:0"><div class="strong"><%= ua(s.userAgent) %><% if (s.current) { %> <span class="badge badge-success"><%= t('settings.this_device') %></span><% } %></div>
@@ -36,6 +36,7 @@
           <% if (!s.current) { %><form method="post" action="/app/settings/security/sessions/revoke" data-confirm="<%= t('settings.revoke_confirm') %>" data-confirm-yes="<%= t('settings.revoke') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="sid" value="<%= s.sid %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('settings.revoke') %></button></form><% } %>
         </div></li>
         <% }) %>
+        <% if (sessions.length > 10) { %><li><div class="small muted"><%- icon('info', 'icon-sm') %><%= t('settings.sessions_more', { n: sessions.length - 10 }) %></div></li><% } %>
       </ul>
     </section>
 

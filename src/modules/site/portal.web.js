@@ -1,4 +1,4 @@
-// Clinic portal (from RemoteWay 1.1's company portal, adapted to clinics): docbook/<slug> is the clinic's
+// Clinic portal (the earlier company portal, adapted to clinics): docbook/<slug> is the clinic's
 // own public page — details, doctors, services, the online-booking button — and its staff entrance:
 // choose a role → sign in on a page branded with the clinic → land on that role's screen.
 // Mounted LAST (after /app, /admin and the auth routes) so it never shadows a platform path.

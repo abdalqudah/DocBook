@@ -7,7 +7,7 @@
     <div class="field">
       <label class="label" for="f-slug"><%= t('settings.portal_slug') %></label>
       <div class="input-affix set-slug-input" dir="ltr"><span class="affix"><%= base.replace(/^https?:\/\//, '') %>/</span><input class="input<%= errors.slug ? ' is-invalid' : '' %>" id="f-slug" name="slug" value="<%= slugVal %>" autocomplete="off" spellcheck="false" maxlength="40" data-slug-input data-check-url="/app/settings/portal/check"></div>
-      <% if (errors.slug) { %><span class="field-error"><%= errors.slug %></span><% } else { %><span class="help" data-slug-status><%= t('settings.portal_slug_help') %></span><% } %>
+      <% if (errors.slug) { %><span class="field-error"><%= errors.slug %></span><% } else { %><span class="help" data-slug-status data-checking="<%= t('settings.slug_checking') %>" data-available="<%= t('settings.slug_available') %>" data-current="<%= t('settings.slug_current') %>"><%= t('settings.portal_slug_help') %></span><% } %>
     </div>
     <label class="check"><input type="checkbox" name="booking_enabled" value="1"<%= (old && Object.keys(old).length ? old.booking_enabled : b.booking_enabled) ? ' checked' : '' %>><span><strong><%= t('onboarding.booking_on') %></strong> — <span class="muted"><%= t('onboarding.booking_on_text') %></span></span></label>
     <div class="alert alert-info small"><%- icon('info') %><div class="grow"><%= t('onboarding.page_note') %></div></div>

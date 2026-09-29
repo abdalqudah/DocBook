@@ -449,3 +449,5 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 }
 .portal-logo > .icon { width: 42%; height: 42%; }
 .portal-logo.sm > .icon, .portal-logo.xs > .icon { width: 50%; height: 50%; }
+@media (max-width: 480px) { .site-portal .site-nav .right .btn-primary span { display: none; } .site-portal .site-nav .right .btn-primary { width: 36px; padding: 0; } .portal-brand-name { max-width: 52vw; } }
+.site-portal main { min-height: calc(100vh - 170px); }

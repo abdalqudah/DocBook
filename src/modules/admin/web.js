@@ -1,6 +1,6 @@
 // Platform admin (/admin): only accounts with users.is_platform_admin = 1; everyone else gets a 404.
 // Overview, clinics (suspend / reactivate), user accounts (disable / enable) and the landing-page editor
-// ported from RemoteWay 1.1. Every change is written to audit_logs with business_id NULL (platform scope).
+// ported from the previous platform release. Every change is written to audit_logs with business_id NULL (platform scope).
 const express = require('express');
 const knex = require('../../db/knex');
 const cache = require('../../core/cache');

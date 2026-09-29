@@ -70,7 +70,7 @@
     "sessions": "Signed-in devices", "sessions_sub": "Devices where your account is signed in right now.",
     "this_device": "This device", "signed_in_at": "signed in {date}", "unknown_device": "Unknown device",
     "revoke": "Sign out", "revoke_confirm": "Sign this device out?", "revoke_others": "Sign out all other devices", "revoke_others_confirm": "Sign out everywhere except this device?",
-    "session_revoked": "Device signed out.", "sessions_revoked": "Signed out of {n} other device(s).",
+    "sessions_more": "…and {n} more. \"Sign out all other devices\" ends them all.", "session_revoked": "Device signed out.", "sessions_revoked": "Signed out of {n} other device(s).",
     "recent_activity": "Recent sign-in activity", "recent_activity_sub": "Your last sign-ins and password changes.",
 
     "roles_lead": "Built-in roles cover most clinics. Create a custom role when someone needs a different mix of access.",
@@ -78,7 +78,7 @@
     "custom_empty_title": "No custom roles", "custom_empty_text": "For example a \"Lab technician\" who only sees patients and vital signs.",
     "role": "Role", "role_new": "New role", "role_edit": "Edit role", "role_name": "Role name", "role_name_ph": "e.g. Lab technician", "role_saved": "Role saved.",
     "role_delete_confirm": "Delete the role \"{name}\"?", "role_all": "Every permission", "permissions": "Permissions", "permission": "Permission", "members": "Members",
-    "n_members": "{n} members", "n_permissions": "{n} permissions", "select_all": "Select all",
+    "n_members": "Members: {n}", "n_permissions": "{n} permissions", "select_all": "Select all",
     "matrix": "Permission matrix", "matrix_sub": "What every role can do. Owners always have every permission.",
 
     "insurance_lead": "Insurance companies your clinic works with. Front desk picks one when a patient pays by insurance.",

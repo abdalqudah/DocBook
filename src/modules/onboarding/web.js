@@ -52,7 +52,12 @@ async function stepData(req, step) {
       const data = await team.teamData(req);
       return { ...data, emailEnabled: mailer.configured(), prefill: null, result: takeStash(req, 'teamResult') };
     }
-    case 'page': return { base: baseUrl(req), suggestion: req.business.slug || await businesses.suggestSlug(req.business.name_en || req.business.name) };
+    case 'page': {
+      // A random address from sign-up (Arabic names can't make one) is replaced by a suggestion from the English name.
+      const b0 = req.business;
+      const random = !b0.slug || /^clinic-[0-9a-f]{4}$/.test(b0.slug);
+      return { base: baseUrl(req), suggestion: random && b0.name_en ? await businesses.suggestSlug(b0.name_en) : (b0.slug || await businesses.suggestSlug(b0.name)) };
+    }
     default: return {};
   }
 }

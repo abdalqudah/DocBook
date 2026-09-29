@@ -128,3 +128,11 @@
   .set-cards { grid-template-columns: 1fr; }
 }
 @media (max-width: 420px) { .set-team-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 721px) {
+  .set-team-table { table-layout: fixed; }
+  .set-team-table th:nth-child(1) { width: 28%; } .set-team-table th:nth-child(2) { width: 14%; } .set-team-table th:nth-child(3) { width: 17%; }
+  .set-team-table th:nth-child(4) { width: 13%; } .set-team-table th:nth-child(5) { width: 14%; } .set-team-table th:nth-child(6) { width: 132px; }
+  .set-team-table td:not(.actions) { overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 900px) { .settings-layout { grid-template-columns: minmax(0, 1fr); } .settings-layout > * { min-width: 0; } }
+.field .segmented { align-self: flex-start; }

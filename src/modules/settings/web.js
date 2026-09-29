@@ -18,7 +18,7 @@ const authService = require('../auth/auth.service');
 const security = require('../auth/security.service');
 const options = require('./options');
 const { form, message } = require('./form');
-const { translator } = require('../../core/i18n');
+const { translator, dictionaries } = require('../../core/i18n');
 const { render, sectionsFor, baseUrl } = require('./common');
 
 const router = express.Router();
@@ -224,7 +224,9 @@ const renderRoles = async (req, res, extra = {}) => {
   const roles = await rbac.listRoles(req.ctx.businessId);
   const order = SYSTEM_ROLES.map((r) => r.key);
   roles.sort((a, b) => (b.is_system - a.is_system) || (order.indexOf(a.key) - order.indexOf(b.key)) || (a.id - b.id));
-  render(req, res, 'roles', 'roles', { roles, groups: GROUPS, ...extra });
+  const dict = (dictionaries[req.locale] || {}).perms || {};
+  const en = (dictionaries.en || {}).perms || {};
+  render(req, res, 'roles', 'roles', { roles, groups: GROUPS, permLabel: (p) => dict[p] || en[p] || p, ...extra });
 };
 router.get('/roles', can('roles.manage'), wrap((req, res) => renderRoles(req, res)));
 const roleInput = (body) => {

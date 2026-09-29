@@ -1,4 +1,4 @@
-// Landing page content, editable by the platform admin (ported from the RemoteWay 1.1 site editor and
+// Landing page content, editable by the platform admin (ported from the earlier platform site editor and
 // adapted to clinics): the header, an ordered list of typed sections, the footer and the SEO texts.
 // Every text has an Arabic and an English version. Until the platform saves its own version the page is
 // built from the translation files (site.d.*), so it always shows DocBook's truthful default copy.

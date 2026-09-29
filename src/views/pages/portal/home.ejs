@@ -70,7 +70,7 @@
       <h2><%= t('portal.info') %></h2>
       <ul class="info-list">
         <% if (clinic.address) { %><li><span class="info-icon"><%- icon('map-pin', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.address') %></span><span><%= clinic.address %></span><% if (clinic.mapHref) { %><a class="link small" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%= t('portal.directions') %></a><% } %></span></li><% } %>
-        <% if (clinic.working_hours_text) { %><li><span class="info-icon"><%- icon('clock', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.hours') %></span><span class="pre-line"><%= clinic.working_hours_text %></span></span></li><% } %>
+        <% if (clinic.working_hours_text) { %><li><span class="info-icon"><%- icon('clock', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.hours') %></span><span class="pre-line" dir="auto"><%= clinic.working_hours_text %></span></span></li><% } %>
         <% if (clinic.phone) { %><li><span class="info-icon"><%- icon('phone', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.phone') %></span><a href="<%= clinic.telHref %>" dir="ltr"><%= clinic.phone %></a></span></li><% } %>
         <% if (clinic.email) { %><li><span class="info-icon"><%- icon('mail', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.email') %></span><a href="mailto:<%= clinic.email %>" dir="ltr"><%= clinic.email %></a></span></li><% } %>
       </ul>
