@@ -21,8 +21,10 @@ function signIn(req, user, { businessId } = {}) {
 
 /** Where a staff member lands in a clinic: their role's entry page (doctor → my day, nurse/reception → front desk…). */
 async function landingFor(userId, businessId) {
-  if (!businessId) return '/app';
-  const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.user_id': userId, 'm.business_id': businessId, 'm.status': 'active' }).first('r.key');
+  // Without a remembered clinic, use the first active membership (new staff accounts have none yet).
+  const q = knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.user_id': userId, 'm.status': 'active' });
+  if (businessId) q.where('m.business_id', businessId); else q.orderBy('m.id');
+  const m = await q.first('r.key');
   return m ? entryFor(m.key) : '/app';
 }
 

@@ -17,7 +17,7 @@
       <% if (!ownerLinked) { %><label class="check set-me"><input type="checkbox" name="is_me" value="1"<%= o.is_me ? ' checked' : '' %> data-is-me data-my-name="<%= currentUser.name %>"><span><strong><%= t('onboarding.i_am_doctor') %></strong> — <span class="muted"><%= t('onboarding.i_am_doctor_text') %></span></span></label><% } %>
       <div class="form-grid">
         <%- include('../../partials/field', { name: 'full_name', label: t('onboarding.doctor_name'), required: true, placeholder: t('onboarding.doctor_name_ph'), attrs: 'data-doctor-name' }) %>
-        <%- include('../../partials/field', { name: 'specialization', label: t('auth.industry'), placeholder: b.specialty ? label('specialties', b.specialty) : '', value: o.specialization !== undefined ? o.specialization : (b.specialty && b.specialty !== 'multi' && b.specialty !== 'other' ? label('specialties', b.specialty) : '') }) %>
+        <%- include('../../partials/field', { name: 'specialization', label: t('auth.industry'), placeholder: b.specialty && b.specialty !== 'multi' && b.specialty !== 'other' ? label('specialties', b.specialty) : '', value: o.specialization !== undefined ? o.specialization : (b.specialty && b.specialty !== 'multi' && b.specialty !== 'other' ? label('specialties', b.specialty) : '') }) %>
         <%- include('../../partials/field', { name: 'consultation_fee', label: t('onboarding.fee'), suffix: b.currency, value: '', attrs: 'inputmode="decimal"' }) %>
         <%- include('../../partials/field', { name: 'slot_duration_minutes', label: t('onboarding.slot'), type: 'select', value: o.slot_duration_minutes || 30, options: [10, 15, 20, 30, 45, 60].map(function (m) { return { value: m, label: m + ' ' + t('common.minutes') }; }) }) %>
       </div>

@@ -10,8 +10,8 @@
   if (nav) {
     var act = $('a.active', nav);
     if (act && nav.scrollWidth > nav.clientWidth) {
-      var left = act.offsetLeft - (nav.clientWidth - act.offsetWidth) / 2;
-      nav.scrollLeft = document.documentElement.dir === 'rtl' ? left - nav.scrollWidth + nav.clientWidth : left;
+      var nr = nav.getBoundingClientRect(); var ar = act.getBoundingClientRect();
+      nav.scrollLeft += (ar.left + ar.width / 2) - (nr.left + nr.width / 2); // works for LTR and RTL scroll origins
     }
   }
 

@@ -142,7 +142,7 @@
     "add": "Add staff login", "add_sub": "Create a login for a doctor, nurse, receptionist, accountant or manager.", "add_for": "Login for {name}", "create": "Create login",
     "role": "Role", "role_help": "Decides what they can see and do. Details in Roles & permissions.",
     "doctor_profile": "Doctor profile", "no_doctor": "Not linked", "doctor_help": "Required for the Doctor role: the login sees this doctor's own schedule and patients.",
-    "doctor_help_edit": "A doctor login works on the linked doctor's schedule.", "no_free_doctors": "Every doctor profile already has a login.", "add_doctor_profile": "Add a doctor profile",
+    "doctor_help_edit": "A doctor login works on the linked doctor's schedule.", "no_doctors": "No doctor profiles yet.", "no_free_doctors": "Every doctor profile already has a login.", "add_doctor_profile": "Add a doctor profile",
     "job_title": "Job title", "job_title_ph": "e.g. Head nurse", "account_language": "Account language", "email_help": "They sign in with this e-mail.",
     "method": "How will they get access?", "method_password": "Temporary password", "method_password_text": "Create the login now. You'll see a temporary password to hand over; they must change it at first sign-in.",
     "method_invite": "Invitation link", "method_invite_text": "We e-mail them a link to set their own password (valid 7 days).",

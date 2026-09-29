@@ -16,7 +16,7 @@
       <option value=""><%= t('team.no_doctor') %></option>
       <% freeDocs.forEach(function (d) { %><option value="<%= d.id %>" data-name="<%= d.full_name %>"<%= String(d.id) === String(o.doctor_id) ? ' selected' : '' %>><%= d.full_name %><%= d.specialization ? ' — ' + d.specialization : '' %></option><% }) %>
     </select>
-    <% if (errors.doctor_id) { %><span class="field-error"><%= errors.doctor_id %></span><% } else { %><span class="help"><%= freeDocs.length ? t('team.doctor_help') : t('team.no_free_doctors') %> <% if (can('doctors.manage')) { %><a class="link" href="/app/doctors/new"><%= t('team.add_doctor_profile') %></a><% } %></span><% } %>
+    <% if (errors.doctor_id) { %><span class="field-error"><%= errors.doctor_id %></span><% } else { %><span class="help"><%= freeDocs.length ? t('team.doctor_help') : doctors.length ? t('team.no_free_doctors') : t('team.no_doctors') %> <% if (can('doctors.manage')) { %><a class="link" href="/app/doctors/new"><%= t('team.add_doctor_profile') %></a><% } %></span><% } %>
   </div>
   <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: o.phone, attrs: 'dir="ltr" inputmode="tel"' }) %>
   <%- include('../../partials/field', { name: 'job_title', label: t('team.job_title'), value: o.job_title, placeholder: t('team.job_title_ph') }) %>
