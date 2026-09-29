@@ -107,7 +107,7 @@
   <aside class="book-summary">
     <div class="book-summary-card">
       <div class="book-summary-clinic">
-        <span class="portal-logo xs"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt=""><% } else { %><%= initials(clinic.displayName) %><% } %></span>
+        <span class="portal-logo xs"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
         <span class="grow"><strong><%= clinic.displayName %></strong><% if (clinic.address) { %><span class="muted small"><%= clinic.address %></span><% } %></span>
       </div>
       <h2><%= t('booking.summary') %></h2>

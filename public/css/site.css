@@ -447,3 +447,5 @@ a.lp-contact-card:hover { border-color: var(--primary); }
   .lp-feature h3 { margin-top: 2px; }
   .lp-feature p { margin-top: 4px; }
 }
+.portal-logo > .icon { width: 42%; height: 42%; }
+.portal-logo.sm > .icon, .portal-logo.xs > .icon { width: 50%; height: 50%; }
