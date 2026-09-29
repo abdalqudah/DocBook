@@ -5,6 +5,7 @@
 //  • team view (attendance.view): by day or month with per-person totals, filters and export (data.export)
 //  • corrections and deletions (attendance.manage): reason required, audited
 const express = require('express');
+const { phoneBase } = require('../../middleware/web');
 const { wrap, form, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const { AppError } = require('../../core/errors');
@@ -126,17 +127,18 @@ router.post('/settings', can('attendance.manage'), wrap(async (req, res) => {
 // ---------------------------------------------------------------- attendance screen (kiosk)
 router.get('/kiosk/setup', can('attendance.manage'), wrap(async (req, res) => {
   res.page('pages/attendance/setup', {
-    title: req.t('attendance.kiosk_title'), settings: await svc.settings(req.ctx.businessId), kioskUrl: `${res.locals.baseUrl}/app/attendance/kiosk`, pageStyles: STYLES, pageScripts: SCRIPTS,
+    title: req.t('attendance.kiosk_title'), settings: await svc.settings(req.ctx.businessId), kioskUrl: `${phoneBase(req).base}/app/attendance/kiosk`, reach: phoneBase(req), pageStyles: STYLES, pageScripts: SCRIPTS,
   });
 }));
 router.get('/kiosk', can('attendance.manage'), wrap(async (req, res) => {
   res.set('Cache-Control', 'no-store');
-  const qr = await svc.currentQr(req.ctx.businessId, res.locals.baseUrl);
-  res.page('pages/attendance/kiosk', { layout: 'kiosk', title: req.t('attendance.kiosk_title'), qr, pageStyles: STYLES, pageScripts: SCRIPTS });
+  const reach = phoneBase(req); // phones cannot open "localhost": use the network address when needed
+  const qr = await svc.currentQr(req.ctx.businessId, reach.base);
+  res.page('pages/attendance/kiosk', { layout: 'kiosk', title: req.t('attendance.kiosk_title'), qr, reach, pageStyles: STYLES, pageScripts: SCRIPTS });
 }));
 router.get('/kiosk/qr', can('attendance.manage'), wrap(async (req, res) => {
   res.set('Cache-Control', 'no-store');
-  const q = await svc.currentQr(req.ctx.businessId, res.locals.baseUrl);
+  const q = await svc.currentQr(req.ctx.businessId, phoneBase(req).base);
   res.json({ data: { svg: q.svg, expiresIn: q.expiresIn, step: q.stepSeconds } });
 }));
 

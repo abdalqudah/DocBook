@@ -64,7 +64,9 @@ function createApp() {
     saveUninitialized: false,
     rolling: true,
     store: new ConnectSessionKnexStore({ knex, tableName: 'sessions', createTable: true, cleanupInterval: config.isTest ? 0 : 3_600_000 }),
-    cookie: { httpOnly: true, sameSite: 'lax', secure: config.isProd, maxAge: 14 * 86_400_000 },
+    // 'auto': Secure over HTTPS (behind a trusted proxy too); still works when a clinic runs DocBook over plain http
+    // on its local network — otherwise phones could never stay signed in there (e.g. attendance QR scans).
+    cookie: { httpOnly: true, sameSite: 'lax', secure: config.isProd ? 'auto' : false, maxAge: 14 * 86_400_000 },
   }));
 
   // Render a view inside a layout: res.page('pages/x', { layout: 'app', ... }).

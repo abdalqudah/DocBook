@@ -68,3 +68,4 @@
 @media (max-width: 480px) { .scan { align-items: flex-start; padding-top: 32px; } .scan-card { border: 0; background: transparent; padding: 8px 4px; } }
 /* Three small tiles stay side by side on phones. */
 @media (max-width: 720px) { .stats.att-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .att-stats .stat { padding: 12px; } .att-stats .stat-value { font-size: 20px; margin-top: 4px; } .att-stats .stat-meta { display: none; } .att-stats .stat-label { font-size: 12px; } }
+.kiosk-reach { margin: 6px auto 0; max-width: 560px; }

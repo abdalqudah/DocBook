@@ -13,6 +13,8 @@
   <section class="kiosk-main">
     <h1><%= t('attendance.scan_to_clock') %></h1>
     <p class="kiosk-sub"><%= t('attendance.scan_sub') %></p>
+    <% if (typeof reach !== 'undefined' && reach.via === 'lan') { %><p class="kiosk-reach small muted"><%= t('attendance.reach_lan') %> <span dir="ltr" class="mono"><%= reach.base %></span></p><% } %>
+    <% if (typeof reach !== 'undefined' && reach.via === 'local') { %><div class="alert alert-warning kiosk-reach"><%- icon('triangle-alert') %><div><%= t('attendance.reach_local') %></div></div><% } %>
     <div class="kiosk-qr" data-kiosk-qr><%- qr.svg %></div>
     <div class="kiosk-timer" aria-live="off"><span><%= t('attendance.changes_in') %></span> <strong data-kiosk-left dir="ltr"><%= qr.expiresIn %></strong><span><%= t('attendance.seconds') %></span></div>
     <div class="kiosk-bar" aria-hidden="true"><span data-kiosk-bar></span></div>

@@ -23,6 +23,23 @@ function publicBase(req) {
   return host ? `${req.protocol === 'https' ? 'https' : 'http'}://${host}` : config.appUrl.replace(/\/+$/, '');
 }
 
+/**
+ * Address that a PHONE can open (attendance QR). When the site is opened as localhost/127.0.0.1 — e.g. the
+ * clinic runs DocBook on the reception PC — a phone cannot reach "localhost" (it means the phone itself), so the
+ * server's own network (LAN) address with the same port is used instead.
+ * Returns { base, via: 'site' | 'lan' | 'local' } — 'local' means no reachable address could be found.
+ */
+function phoneBase(req) {
+  const base = publicBase(req);
+  if (!isLocalUrl(base)) return { base, via: 'site' };
+  const u = new URL(base);
+  const nets = Object.values(require('os').networkInterfaces()).flat() // eslint-disable-line global-require
+    .filter((n) => n && n.family === 'IPv4' && !n.internal && !/^169\.254\./.test(n.address));
+  const lan = nets.find((n) => /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(n.address)) || nets[0];
+  if (!lan) return { base, via: 'local' };
+  return { base: `${u.protocol}//${lan.address}${u.port ? `:${u.port}` : ''}`, via: 'lan' };
+}
+
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 function locals(req, res, next) {
@@ -112,4 +129,4 @@ function verifyCsrfAfterUpload(req, res, next) {
   return tokenValid(req, req.body?._csrf || req.get('x-csrf-token')) ? next() : next(E.csrf());
 }
 
-module.exports = { locals, flash, csrf, verifyCsrfAfterUpload, publicBase, isLocalUrl, isLocalHost };
+module.exports = { locals, flash, csrf, verifyCsrfAfterUpload, publicBase, phoneBase, isLocalUrl, isLocalHost };
