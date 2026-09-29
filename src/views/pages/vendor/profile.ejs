@@ -1,0 +1,59 @@
+<div class="page-head">
+  <div><h1><%= t('vendor_portal.nav_profile') %></h1><p><%= t('vendor_portal.profile_lead') %></p></div>
+</div>
+<div class="grid grid-main">
+  <form class="panel" method="post" action="/vendor/profile" novalidate>
+    <div class="panel-head"><h2><%= t('vendor_portal.profile_details') %></h2></div>
+    <div class="panel-body stack-lg">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'type', label: t('vendors.f_type'), type: 'select', required: true, value: v.type, options: ['rep', 'warehouse', 'company'].map(function (k) { return { value: k, label: t('vendors.types.' + k) }; }) }) %>
+        <%- include('../../partials/field', { name: 'contact_name', label: t('vendors.f_contact'), required: true, value: v.contact_name }) %>
+        <%- include('../../partials/field', { name: 'name', label: t('vendors.f_name'), required: true, value: v.name }) %>
+        <%- include('../../partials/field', { name: 'name_en', label: t('vendors.f_name_en'), value: v.name_en, attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('vendors.f_email'), type: 'email', required: true, value: v.email, attrs: 'dir="ltr" inputmode="email"', help: t('vendors.f_email_help') }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('vendors.f_phone'), type: 'tel', value: v.phone, attrs: 'dir="ltr" inputmode="tel"' }) %>
+        <%- include('../../partials/field', { name: 'whatsapp', label: t('vendors.f_whatsapp'), type: 'tel', value: v.whatsapp, attrs: 'dir="ltr" inputmode="tel"' }) %>
+        <%- include('../../partials/field', { name: 'country', label: t('vendors.f_country'), type: 'select', value: v.country, placeholder: t('common.select'), options: countryOptions }) %>
+        <%- include('../../partials/field', { name: 'city', label: t('vendors.f_city'), value: v.city }) %>
+        <%- include('../../partials/field', { name: 'about', label: t('vendors.f_about'), type: 'textarea', value: v.about, cls: 'full' }) %>
+        <%- include('../../partials/field', { name: 'about_en', label: t('vendors.f_about_en'), type: 'textarea', value: v.about_en, cls: 'full' }) %>
+        <%- include('_specialties', { selected: v.specialties, help: t('vendors.target_specialties_help') }) %>
+      </div>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+  </form>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('vendor_portal.logo') %></h2></div>
+      <div class="panel-body stack">
+        <div class="row">
+          <span class="vendor-logo-lg"><% if (v.logo_url) { %><img src="<%= v.logo_url %>" alt="<%= t('vendor_portal.logo') %>"><% } else { %><%- icon('image') %><% } %></span>
+          <p class="small muted grow"><%= t('vendor_portal.logo_help') %></p>
+        </div>
+        <form method="post" action="/vendor/profile/logo" enctype="multipart/form-data" class="stack-sm">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input class="input" type="file" name="logo" accept="image/png,image/jpeg,image/webp" required aria-label="<%= t('vendor_portal.logo') %>">
+          <div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('vendor_portal.upload') %></button></div>
+        </form>
+        <% if (v.logo_url) { %>
+        <form method="post" action="/vendor/profile/logo/delete" data-confirm="<%= t('vendor_portal.logo_remove_confirm') %>" data-confirm-yes="<%= t('vendor_portal.remove') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('vendor_portal.remove') %></button>
+        </form>
+        <% } %>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('vendor_portal.account_status') %></h2></div>
+      <div class="panel-body">
+        <dl class="dl">
+          <dt><%= t('common.status') %></dt><dd><span class="badge badge-dot <%= v.status === 'active' ? 'badge-success' : v.status === 'suspended' ? 'badge-danger' : 'badge-neutral' %>"><%= t('vendors.status.' + v.status) %></span></dd>
+          <% if (v.approved_at) { %><dt><%= t('vendor_portal.approved_on') %></dt><dd><%= fmt.date(v.approved_at) %></dd><% } %>
+          <dt><%= t('vendor_portal.member_since') %></dt><dd><%= fmt.date(v.created_at) %></dd>
+        </dl>
+        <p class="small muted mt-4"><%= v.status === 'active' ? t('vendor_portal.status_active_help') : t('vendor_portal.pending_text') %></p>
+      </div>
+    </section>
+  </div>
+</div>

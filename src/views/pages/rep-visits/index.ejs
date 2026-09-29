@@ -1,0 +1,143 @@
+<%
+  var enabled = Boolean(settings && settings.rep_visits_enabled);
+  var _open = typeof openDialog !== 'undefined' ? openDialog : '';
+  var _action = typeof formAction !== 'undefined' && formAction ? formAction : '/app/rep-visits/windows';
+  var statusCls = { requested: 'badge-warning', confirmed: 'badge-brand', declined: 'badge-neutral', cancelled: 'badge-danger', done: 'badge-success' };
+  var mayAct = function (r) { return manage || (myDoctorId && r.doctor_id === myDoctorId); };
+  var docName = function (r) { return r.doctor_id ? L(r.doctor_name, r.doctor_name_en) : t('rep_visits.clinic_wide'); };
+  var dayLabel = function (k) { return t('days.' + k); };
+  var endOf = function (time, mins) { var p = String(time).split(':'); var m = Number(p[0]) * 60 + Number(p[1]) + Number(mins || 0); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  var slotsIn = function (w) { var s = String(w.start_time).split(':'), e = String(w.end_time).split(':'); var len = (Number(e[0]) * 60 + Number(e[1])) - (Number(s[0]) * 60 + Number(s[1])); return Math.floor(len / (Number(w.slot_minutes) || 15)); };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_operations') %></div>
+    <h1><%= t('nav.rep_visits') %></h1>
+    <p><%= ownScope ? t('rep_visits.own_scope') : t('rep_visits.lead') %></p>
+  </div>
+</div>
+
+<% if (!enabled && tab !== 'settings') { %>
+<div class="alert mb-4" role="status"><%- icon('info') %><div class="grow"><div class="alert-title"><%= t('rep_visits.disabled_title') %></div><div class="small"><%= manage ? t('rep_visits.disabled_text') : t('rep_visits.disabled_text_staff') %></div></div><% if (manage) { %><a class="btn btn-secondary btn-sm" href="/app/rep-visits?tab=settings"><%= t('rep_visits.open_settings') %></a><% } %></div>
+<% } %>
+
+<nav class="tabs" aria-label="<%= t('rep_visits.title') %>">
+  <a href="/app/rep-visits" class="<%= tab === 'requests' ? 'active' : '' %>"<%= tab === 'requests' ? ' aria-current="page"' : '' %>><%- icon('clock', 'icon-sm') %><%= t('rep_visits.tab_requests') %><% if (counts.requests) { %> <span class="count"><%= fmt.number(counts.requests) %></span><% } %></a>
+  <a href="/app/rep-visits?tab=upcoming" class="<%= tab === 'upcoming' ? 'active' : '' %>"<%= tab === 'upcoming' ? ' aria-current="page"' : '' %>><%- icon('calendar-check', 'icon-sm') %><%= t('rep_visits.tab_upcoming') %><% if (counts.upcoming) { %> <span class="count"><%= fmt.number(counts.upcoming) %></span><% } %></a>
+  <a href="/app/rep-visits?tab=past" class="<%= tab === 'past' ? 'active' : '' %>"<%= tab === 'past' ? ' aria-current="page"' : '' %>><%- icon('history', 'icon-sm') %><%= t('rep_visits.tab_past') %></a>
+  <% if (manage) { %><a href="/app/rep-visits?tab=settings" class="<%= tab === 'settings' ? 'active' : '' %>"<%= tab === 'settings' ? ' aria-current="page"' : '' %>><%- icon('settings', 'icon-sm') %><%= t('rep_visits.tab_settings') %></a><% } %>
+</nav>
+
+<% if (tab !== 'settings') { %>
+<div class="panel flush mt-4">
+  <% if (!visits.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: tab === 'past' ? 'history' : 'briefcase-business', emptyTitle: t('rep_visits.' + tab + '_empty_title'), emptyText: t('rep_visits.' + tab + '_empty_text') }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('rep_visits.when') %></th><th><%= t('rep_visits.vendor') %></th><th><%= t('rep_visits.doctor') %></th><th><%= t('rep_visits.purpose') %></th><th><%= t('common.status') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% visits.forEach(function (r) { var act = mayAct(r); %>
+        <tr>
+          <td class="primary-cell nowrap"><div class="strong"><%= fmt.date(r.visit_date, { weekday: 'short', month: 'short', day: 'numeric' }) %></div><div class="small muted" dir="ltr"><%= r.visit_time %>–<%= endOf(r.visit_time, r.duration_minutes) %></div></td>
+          <td data-label="<%= t('rep_visits.vendor') %>"><div>
+            <div class="strong"><%= L(r.vendor_name, r.vendor_name_en) %></div>
+            <div class="tiny muted"><%= t('market.type_' + r.vendor_type) %><%= r.rep_name ? ' · ' + r.rep_name : '' %></div>
+            <% if (r.vendor_phone) { %><a class="tiny mk-phone" href="tel:<%= r.vendor_phone %>" dir="ltr"><%= r.vendor_phone %></a><% } %>
+          </div></td>
+          <td data-label="<%= t('rep_visits.doctor') %>"><span class="row-sm nowrap"><% if (r.doctor_id) { %><span class="mk-dot" style="background: <%= r.doctor_color || 'var(--border-strong)' %>"></span><% } %><%= docName(r) %></span></td>
+          <td data-label="<%= t('rep_visits.purpose') %>" class="mk-purpose"><div><div class="small mk-pre" dir="auto"><%= r.purpose || '—' %></div><% if (r.clinic_note) { %><div class="tiny muted mt-1"><%= t('rep_visits.note') %>: <%= r.clinic_note %></div><% } %></div></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= statusCls[r.status] || 'badge-neutral' %>"><%= t('rep_visits.status.' + r.status) %></span></td>
+          <td class="actions">
+            <% if (act && (r.status === 'requested' || r.status === 'confirmed')) { %>
+            <div class="mk-actions">
+              <% if (r.status === 'requested') { %>
+                <form method="post" action="/app/rep-visits/<%= r.id %>/confirm"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_tab" value="<%= tab %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('rep_visits.confirm') %></button></form>
+                <button class="btn btn-ghost btn-sm" type="button" data-open-dialog="decline-dialog" data-action="/app/rep-visits/<%= r.id %>/decline" data-fill="<%= json({ note: '' }) %>"><%= t('rep_visits.decline') %></button>
+              <% } else { %>
+                <% if (r.visit_date <= today) { %><form method="post" action="/app/rep-visits/<%= r.id %>/done"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_tab" value="<%= tab %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('rep_visits.mark_done') %></button></form><% } %>
+                <form method="post" action="/app/rep-visits/<%= r.id %>/cancel" data-confirm="<%= t('rep_visits.cancel_confirm') %>" data-confirm-title="<%= t('rep_visits.cancel_visit') %>" data-confirm-yes="<%= t('rep_visits.cancel_visit') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_tab" value="<%= tab %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('rep_visits.cancel_visit') %></button></form>
+              <% } %>
+            </div>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+
+<dialog class="dialog" id="decline-dialog" aria-labelledby="decline-dialog-title">
+  <form method="post" action="/app/rep-visits">
+    <div class="dialog-head"><h2 id="decline-dialog-title"><%= t('rep_visits.decline_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_tab" value="<%= tab %>">
+      <%- include('../../partials/field', { name: 'note', label: t('rep_visits.decline_note'), type: 'textarea', help: t('rep_visits.decline_help'), attrs: 'maxlength="500"' }) %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-danger" type="submit"><%= t('rep_visits.decline') %></button></div>
+  </form>
+</dialog>
+<% } else { %>
+
+<div class="grid grid-main mt-4 mk-settings">
+  <div class="panel flush">
+    <div class="panel-head">
+      <div><h2><%= t('rep_visits.windows_title') %></h2><div class="panel-sub"><%= t('rep_visits.windows_text') %></div></div>
+      <% if (windows.length) { %><button class="btn btn-secondary btn-sm" type="button" data-open-dialog="window-dialog" data-reset-form data-action="/app/rep-visits/windows" data-dialog-title="<%= t('rep_visits.add_window') %>"><%- icon('plus', 'icon-sm') %><%= t('rep_visits.add_window') %></button><% } %>
+    </div>
+    <% if (!windows.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'calendar-clock', emptyTitle: t('rep_visits.windows_empty_title'), emptyText: t('rep_visits.windows_empty_text'), emptyAction: '<button class="btn btn-secondary btn-sm" type="button" data-open-dialog="window-dialog" data-reset-form data-action="/app/rep-visits/windows">' + t('rep_visits.add_window') + '</button>' }) %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('rep_visits.weekday') %></th><th><%= t('rep_visits.doctor_or_clinic') %></th><th><%= t('rep_visits.start') %> – <%= t('rep_visits.end') %></th><th><%= t('rep_visits.slot_minutes') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+          <% windows.forEach(function (w) { %>
+          <tr>
+            <td class="primary-cell"><span class="strong"><%= dayLabel(w.weekday) %></span></td>
+            <td data-label="<%= t('rep_visits.doctor_or_clinic') %>"><span class="row-sm nowrap"><% if (w.doctor_id) { %><span class="mk-dot" style="background: <%= w.doctor_color || 'var(--border-strong)' %>"></span><%= L(w.doctor_name, w.doctor_name_en) %><% } else { %><%= t('rep_visits.clinic_wide') %><% } %></span></td>
+            <td data-label="<%= t('rep_visits.start') %> – <%= t('rep_visits.end') %>" class="nowrap"><span dir="ltr"><%= w.start_time %>–<%= w.end_time %></span></td>
+            <td data-label="<%= t('rep_visits.slot_minutes') %>" class="nowrap"><%= t('rep_visits.minutes', { n: fmt.number(w.slot_minutes) }) %> <span class="muted small">· <%= t('rep_visits.n_slots', { n: fmt.number(slotsIn(w)) }) %></span></td>
+            <td class="actions nowrap">
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="window-dialog" data-action="/app/rep-visits/windows/<%= w.id %>" data-dialog-title="<%= t('rep_visits.edit_window') %>" data-fill="<%= json({ doctor_id: w.doctor_id || '', weekday: w.weekday, start_time: w.start_time, end_time: w.end_time, slot_minutes: w.slot_minutes }) %>"><%- icon('pencil', 'icon-sm') %></button>
+              <%- include('../../partials/delete-form', { action: '/app/rep-visits/windows/' + w.id + '/delete' }) %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+
+  <form class="panel" method="post" action="/app/rep-visits/settings">
+    <div class="panel-head"><h2><%= t('rep_visits.settings_title') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label class="check mk-check"><input type="checkbox" name="rep_visits_enabled" value="1"<%= enabled ? ' checked' : '' %>><span><span class="strong"><%= t('rep_visits.enabled') %></span><span class="help"><%= t('rep_visits.enabled_help') %></span></span></label>
+      <label class="check mk-check"><input type="checkbox" name="rep_visits_auto_confirm" value="1"<%= settings.rep_visits_auto_confirm ? ' checked' : '' %>><span><span class="strong"><%= t('rep_visits.auto_confirm') %></span><span class="help"><%= t('rep_visits.auto_confirm_help') %></span></span></label>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</div>
+
+<dialog class="dialog" id="window-dialog" aria-labelledby="window-dialog-title"<% if (_open === 'window-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= _action %>" novalidate>
+    <div class="dialog-head"><h2 id="window-dialog-title" data-dialog-title-target><%= t('rep_visits.add_window') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'doctor_id', label: t('rep_visits.doctor_or_clinic'), type: 'select', cls: 'full', options: [{ value: '', label: t('rep_visits.clinic_wide') }].concat(doctors.map(function (d) { return { value: d.id, label: L(d.full_name, d.full_name_en) }; })), value: '' }) %>
+        <%- include('../../partials/field', { name: 'weekday', label: t('rep_visits.weekday'), type: 'select', required: true, options: days.map(function (k) { return { value: k, label: dayLabel(k) }; }), value: 'sun' }) %>
+        <%- include('../../partials/field', { name: 'slot_minutes', label: t('rep_visits.slot_minutes'), type: 'number', required: true, value: '15', suffix: t('common.minutes'), attrs: 'min="10" max="60" step="5" data-default="15"', help: t('rep_visits.slot_help') }) %>
+        <%- include('../../partials/field', { name: 'start_time', label: t('rep_visits.start'), type: 'time', required: true, value: '13:00', attrs: 'data-default="13:00"' }) %>
+        <%- include('../../partials/field', { name: 'end_time', label: t('rep_visits.end'), type: 'time', required: true, value: '14:00', attrs: 'data-default="14:00"' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>

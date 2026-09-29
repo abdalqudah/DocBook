@@ -32,7 +32,7 @@ router.use(wrap(async (req, res, next) => {
   res.locals.navActions = nav.actionsFor(perms);
   res.locals.verifyBanner = verify.required() && !verify.isVerified(req.user);
   res.locals.ctx = req.ctx;
-  const badges = { waiting: 0, pendingAdjustments: 0, lowStock: 0, toPay: 0 };
+  const badges = { waiting: 0, pendingAdjustments: 0, lowStock: 0, toPay: 0, newOffers: 0, repRequests: 0 };
   if (req.method === 'GET' && !req.path.startsWith('/theme') && !req.path.startsWith('/logo')) {
     const b = req.ctx.businessId;
     if (perms.has('frontdesk.use')) {
@@ -44,6 +44,14 @@ router.use(wrap(async (req, res, next) => {
       const [{ n }] = await knex('appointments').where({ business_id: b, appointment_date: req.ctx.today, payment_status: 'unpaid' }).whereNot('status', 'cancelled')
         .whereNot('appointment_type', 'blocked').andWhere((q) => q.where('checked_in', true).orWhere('status', 'completed')).count({ n: '*' });
       badges.toPay = Number(n);
+    }
+    if (perms.has('vendors.view')) {
+      // Reps & warehouses: offers for this clinic's specialty not opened yet, and rep visit requests awaiting a decision.
+      badges.newOffers = await require('../modules/marketplace/market.service').newOffersCount({ businessId: b, today: req.ctx.today }, req.business); // eslint-disable-line global-require
+      const rq = knex('rep_visits').where({ business_id: b, status: 'requested' }).where('visit_date', '>=', req.ctx.today);
+      if (req.ctx.ownDoctorId) rq.where('doctor_id', req.ctx.ownDoctorId);
+      const [{ n }] = await rq.count({ n: '*' });
+      badges.repRequests = Number(n);
     }
     if (perms.has('payroll.approve')) {
       const [{ n }] = await knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).count({ n: '*' });

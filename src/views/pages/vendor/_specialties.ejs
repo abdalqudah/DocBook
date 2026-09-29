@@ -1,0 +1,17 @@
+<%
+  // Target specialty checkboxes. Locals: specialtyOptions, selected (array), fieldName (default 'specialties'), legend, help.
+  var _name = typeof fieldName !== 'undefined' ? fieldName : 'specialties';
+  var _hasOld = typeof old !== 'undefined' && old && Object.keys(old).length > 0;
+  var _sel = _hasOld ? [].concat(old[_name] || []) : (typeof selected !== 'undefined' && selected ? selected : []);
+  var _err = typeof errors !== 'undefined' && errors ? errors[_name] : null;
+%>
+<fieldset class="fieldset field full">
+  <legend class="label"><%= typeof legend !== 'undefined' ? legend : t('vendors.target_specialties') %><span class="req">*</span></legend>
+  <% if (typeof help !== 'undefined' && help) { %><p class="help" style="margin:0 0 8px"><%= help %></p><% } %>
+  <div class="spec-grid<%= _err ? ' is-invalid' : '' %>">
+    <% specialtyOptions.forEach(function (o) { %>
+    <label class="check"><input type="checkbox" name="<%= _name %>" value="<%= o.value %>"<%= _sel.indexOf(o.value) !== -1 ? ' checked' : '' %>><span><%= o.label %></span></label>
+    <% }) %>
+  </div>
+  <% if (_err) { %><span class="field-error"><%= _err %></span><% } %>
+</fieldset>

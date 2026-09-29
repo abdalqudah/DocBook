@@ -1,0 +1,27 @@
+<%
+  var _p = typeof prod !== 'undefined' && prod ? prod : null;
+  var _open = typeof openDialog !== 'undefined' && openDialog === 'supply-dialog';
+  var _showCost = can('finance.view');
+%>
+<dialog class="dialog" id="supply-dialog" aria-labelledby="supply-dialog-title"<% if (_open) { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= _p ? '/app/marketplace/products/' + _p.id + '/supplies' : '/app/marketplace' %>" novalidate>
+    <div class="dialog-head"><h2 id="supply-dialog-title"><%= t('market.supply_dialog_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="_return" value="<%= returnTo %>">
+      <%- include('../../partials/form-error') %>
+      <p class="small muted mb-2"><%= t('market.supply_dialog_text') %></p>
+      <div class="form-grid">
+        <div class="field full"><label class="label" for="f-product_label"><%= t('market.product') %></label><input class="input" id="f-product_label" name="product_label" type="text" readonly tabindex="-1" value="<%= _p ? L(_p.name, _p.name_en) + (_p.pack_size ? ' (' + _p.pack_size + ')' : '') : '' %>"></div>
+        <%- include('../../partials/field', { name: 'reorder_level', label: t('market.reorder_level'), type: 'text', attrs: 'inputmode="decimal"', value: '', help: t('market.reorder_help') }) %>
+        <%- include('../../partials/field', { name: 'current_stock', label: t('market.opening_stock'), type: 'text', attrs: 'inputmode="decimal"', value: '' }) %>
+        <% if (_showCost) { %>
+          <%- include('../../partials/field', { name: 'unit_cost', label: t('market.unit_cost'), type: 'text', attrs: 'inputmode="decimal"', suffix: currency, value: _p && _p.price !== null && _p.price !== undefined ? String(Number(_p.price)) : '' }) %>
+        <% } else { %>
+          <input type="hidden" name="unit_cost" value="<%= _p && _p.price !== null && _p.price !== undefined ? String(Number(_p.price)) : '' %>">
+        <% } %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('market.add_to_supplies') %></button></div>
+  </form>
+</dialog>

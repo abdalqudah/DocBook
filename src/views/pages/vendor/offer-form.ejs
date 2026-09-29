@@ -1,0 +1,64 @@
+<%
+  var _o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var val = function (k) { return _o ? _o[k] : (o ? o[k] : ''); };
+  var selProducts = _o ? [].concat(_o.product_ids || []).map(Number) : (o ? o.product_ids : []);
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var isPublished = o && o.status === 'published';
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/vendor/offers"><%= t('vendor_portal.nav_offers') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1 class="row-sm wrap"><%= o ? L(o.title, o.title_en) : t('vendor_portal.offer_new') %><% if (o) { %> <span class="badge badge-dot <%= o.status === 'published' ? 'badge-success' : 'badge-neutral' %>"><%= t('vendor_portal.offer_status.' + o.status) %></span><% } %></h1>
+    <p><%= o ? t('vendor_portal.seen_by', { n: fmt.number(o.views) }) : t('vendor_portal.offer_form_lead') %></p>
+  </div>
+</div>
+<form class="panel" method="post" action="<%= o ? '/vendor/offers/' + o.id : '/vendor/offers' %>" enctype="multipart/form-data" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack-lg">
+    <%- include('../../partials/form-error') %>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'title', label: t('vendor_portal.f_title'), required: true, value: val('title') }) %>
+      <%- include('../../partials/field', { name: 'title_en', label: t('vendor_portal.f_title_en'), value: val('title_en'), attrs: 'dir="ltr"' }) %>
+      <%- include('../../partials/field', { name: 'body', label: t('vendor_portal.f_body'), type: 'textarea', value: val('body') }) %>
+      <%- include('../../partials/field', { name: 'body_en', label: t('vendor_portal.f_body_en'), type: 'textarea', value: val('body_en') }) %>
+      <%- include('../../partials/field', { name: 'starts_on', label: t('vendor_portal.f_starts'), type: 'date', value: val('starts_on'), help: t('vendor_portal.f_starts_help') }) %>
+      <%- include('../../partials/field', { name: 'ends_on', label: t('vendor_portal.f_ends'), type: 'date', value: val('ends_on'), help: t('vendor_portal.f_ends_help') }) %>
+      <%- include('_specialties', { selected: defaultSpecialties, help: t('vendor_portal.offer_specialties_help') }) %>
+      <fieldset class="fieldset field full">
+        <legend class="label"><%= t('vendor_portal.f_products') %></legend>
+        <% if (!products.length) { %>
+          <p class="small muted"><%= t('vendor_portal.f_products_none') %> <a class="link" href="/vendor/products/new"><%= t('vendor_portal.product_new') %></a></p>
+        <% } else { %>
+          <p class="help" style="margin:0 0 8px"><%= t('vendor_portal.f_products_help') %></p>
+          <div class="spec-grid">
+            <% products.forEach(function (pr) { %><label class="check"><input type="checkbox" name="product_ids" value="<%= pr.id %>"<%= selProducts.indexOf(pr.id) !== -1 ? ' checked' : '' %>><span><%= L(pr.name, pr.name_en) %><% if (!pr.is_active) { %> <span class="tiny muted">(<%= t('vendor_portal.hidden') %>)</span><% } %></span></label><% }) %>
+          </div>
+        <% } %>
+        <% if (errors.product_ids) { %><span class="field-error"><%= errors.product_ids %></span><% } %>
+      </fieldset>
+    </div>
+    <fieldset class="fieldset field">
+      <legend class="label"><%= t('vendor_portal.f_offer_image') %></legend>
+      <div class="row">
+        <span class="vendor-logo-lg wide"><% if (o && o.image_url) { %><img src="<%= o.image_url %>" alt=""><% } else { %><%- icon('image') %><% } %></span>
+        <div class="stack-sm grow" style="min-width:0">
+          <input class="input<%= errors.image ? ' is-invalid' : '' %>" type="file" name="image" accept="image/png,image/jpeg,image/webp" aria-label="<%= t('vendor_portal.f_offer_image') %>">
+          <% if (errors.image) { %><span class="field-error"><%= errors.image %></span><% } else { %><span class="help"><%= t('vendor_portal.image_help') %></span><% } %>
+          <% if (o && o.image_url) { %><label class="check"><input type="checkbox" name="remove_image" value="1"><span><%= t('vendor_portal.remove_image') %></span></label><% } %>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+  <div class="panel-foot row between wrap">
+    <span class="small muted"><% if (vendor.status !== 'active' && !isPublished) { %><%- icon('clock', 'icon-sm') %> <%= t('vendor_portal.publish_after_approval') %><% } %></span>
+    <div class="row-sm wrap">
+      <a class="btn btn-ghost" href="/vendor/offers"><%= t('common.cancel') %></a>
+      <% if (isPublished) { %>
+        <button class="btn btn-primary" type="submit" name="intent" value="save"><%= t('common.save_changes') %></button>
+      <% } else { %>
+        <button class="btn btn-secondary" type="submit" name="intent" value="save"><%= t('vendor_portal.save_draft') %></button>
+        <button class="btn btn-primary" type="submit" name="intent" value="publish"><%- icon('send', 'icon-sm') %><%= t('vendor_portal.save_publish') %></button>
+      <% } %>
+    </div>
+  </div>
+</form>

@@ -1,0 +1,62 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var total = Object.keys(counts).reduce(function (s, k) { return s + counts[k]; }, 0);
+  var tabs = [['', 'all', total], ['published', 'published', counts.published || 0], ['draft', 'draft', counts.draft || 0], ['archived', 'archived', counts.archived || 0]];
+  var sp = function (list) { return list.map(function (s) { return t('specialties.' + s); }).join(locale === 'ar' ? '، ' : ', '); };
+%>
+<div class="page-head">
+  <div><h1><%= t('vendor_portal.nav_offers') %></h1><p><%= t('vendor_portal.offers_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="/vendor/offers/new"><%- icon('plus', 'icon-sm') %><%= t('vendor_portal.offer_new') %></a></div>
+</div>
+<nav class="pill-filter mb-4" aria-label="<%= t('common.status') %>">
+  <% tabs.forEach(function (tb) { %><a href="/vendor/offers<%= tb[0] ? '?status=' + tb[0] : '' %>" class="<%= status === tb[0] ? 'active' : '' %>"<% if (status === tb[0]) { %> aria-current="page"<% } %>><%= t('vendor_portal.offer_tab.' + tb[1]) %> · <%= fmt.number(tb[2]) %></a><% }) %>
+</nav>
+<section class="panel flush">
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'megaphone', emptyTitle: status ? t('vendor_portal.no_offers_status') : t('vendor_portal.no_offers'), emptyText: status ? '' : t('vendor_portal.no_offers_text'), emptyAction: status ? '' : '<a class="btn btn-primary btn-sm" href="/vendor/offers/new">' + escapeHtml(t('vendor_portal.offer_new')) + '</a>' }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('vendor_portal.col_offer') %></th><th><%= t('vendor_portal.col_period') %></th><th><%= t('vendors.target_specialties') %></th><th><%= t('common.status') %></th><th class="num"><%= t('vendor_portal.col_views') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (o) { var ended = o.ends_on && o.ends_on < todayStr; %>
+        <tr>
+          <td class="primary-cell"><div class="person">
+            <span class="vendor-thumb"><% if (o.image_url) { %><img src="<%= o.image_url %>" alt="" loading="lazy"><% } else { %><%- icon('megaphone', 'icon-sm') %><% } %></span>
+            <div style="min-width:0"><a class="person-name" href="/vendor/offers/<%= o.id %>"><%= L(o.title, o.title_en) %></a><div class="person-sub"><%= o.products ? t('vendor_portal.n_products', { n: fmt.number(o.products) }) : t('vendor_portal.no_linked_products') %></div></div>
+          </div></td>
+          <td data-label="<%= t('vendor_portal.col_period') %>" class="small nowrap"><%= o.starts_on ? fmt.date(o.starts_on) : t('vendor_portal.from_publish') %> – <%= o.ends_on ? fmt.date(o.ends_on) : t('vendor_portal.no_end') %></td>
+          <td data-label="<%= t('vendors.target_specialties') %>" class="small muted"><%= sp(o.specialties) || '—' %></td>
+          <td data-label="<%= t('common.status') %>">
+            <% if (o.status === 'published' && ended) { %><span class="badge badge-dot badge-neutral"><%= t('vendor_portal.offer_status.ended') %></span>
+            <% } else { %><span class="badge badge-dot <%= o.status === 'published' ? 'badge-success' : 'badge-neutral' %>"><%= t('vendor_portal.offer_status.' + o.status) %></span><% } %>
+          </td>
+          <td class="num" data-label="<%= t('vendor_portal.col_views') %>"><span title="<%= t('vendor_portal.views_help') %>"><%= fmt.number(o.views) %></span></td>
+          <td class="actions nowrap">
+            <% if (o.status !== 'published') { %>
+            <form method="post" action="/vendor/offers/<%= o.id %>/publish" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"<% if (vendor.status !== 'active') { %> title="<%= t('vendor_portal.publish_after_approval') %>"<% } %>><%- icon('send', 'icon-sm') %><%= t('vendor_portal.publish') %></button></form>
+            <% } %>
+            <a class="btn btn-ghost btn-icon btn-sm" href="/vendor/offers/<%= o.id %>" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>"><%- icon('pencil', 'icon-sm') %></a>
+            <details class="dropdown" style="display:inline-block">
+              <summary class="btn btn-ghost btn-icon btn-sm" aria-label="<%= t('common.more') %>"><%- icon('ellipsis', 'icon-sm') %></summary>
+              <div class="menu">
+                <form method="post" action="/vendor/offers/<%= o.id %>/duplicate"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('copy', 'icon-sm') %><%= t('vendor_portal.duplicate') %></button></form>
+                <% if (o.status === 'published') { %>
+                <form method="post" action="/vendor/offers/<%= o.id %>/unpublish" data-confirm="<%= t('vendor_portal.unpublish_confirm') %>" data-confirm-yes="<%= t('vendor_portal.unpublish') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('eye-off', 'icon-sm') %><%= t('vendor_portal.unpublish') %></button></form>
+                <% } %>
+                <% if (o.status !== 'archived') { %>
+                <form method="post" action="/vendor/offers/<%= o.id %>/archive" data-confirm="<%= t('vendor_portal.archive_confirm') %>" data-confirm-yes="<%= t('vendor_portal.archive') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('archive-restore', 'icon-sm') %><%= t('vendor_portal.archive') %></button></form>
+                <% } %>
+                <div class="sep"></div>
+                <form method="post" action="/vendor/offers/<%= o.id %>/delete" data-confirm="<%= t('vendor_portal.offer_delete_confirm') %>" data-confirm-title="<%= t('common.confirm_delete_title') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit" class="text-danger"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button></form>
+              </div>
+            </details>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</section>
+<p class="small muted mt-4"><%- icon('info', 'icon-sm') %> <%= t('vendor_portal.views_help') %></p>

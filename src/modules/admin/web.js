@@ -23,6 +23,7 @@ router.use(requireAuth, (req, res, next) => {
   return next();
 });
 router.use('/', require('./identity.web')); // Google sign-in + clinic custom domains (identity area)
+router.use('/', require('./vendors.web')); // reps & warehouses: approval and moderation
 
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });
 const like = (q) => `%${String(q).trim().replace(/[%_\\]/g, (m) => `\\${m}`)}%`;

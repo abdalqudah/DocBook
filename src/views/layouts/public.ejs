@@ -106,6 +106,7 @@
     <div class="site-footer-bottom">
       <span>© <%= new Date().getFullYear() %> <%= footer && footer.copyright ? footer.copyright : brandName %>. <%= t('site.rights') %></span>
       <span class="row wrap site-footer-links">
+        <a href="/vendors"><%= t('vendors.footer_link') %></a>
         <a href="/preferences/cookies"><%= t('growth.cookie_prefs') %></a>
         <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%= locale === 'ar' ? 'English' : 'العربية' %></a>
       </span>

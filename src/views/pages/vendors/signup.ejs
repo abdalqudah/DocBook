@@ -1,0 +1,66 @@
+<%
+  var _type = (old && old.type) || 'rep';
+%>
+<section class="section vendors-signup">
+  <div class="container vendors-form-wrap">
+    <div class="breadcrumbs"><a href="/vendors"><%= t('vendors.kicker') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= existing ? t('vendors.register_existing_title') : t('vendors.signup_title') %></h1>
+    <p class="lead muted"><%= existing ? t('vendors.register_existing_lead', { email: currentUser.email }) : t('vendors.signup_lead') %></p>
+    <form class="panel mt-6" method="post" action="/vendors/signup" novalidate>
+      <div class="panel-body stack-lg">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/form-error') %>
+        <% if (formError && (formError.code === 'VENDOR_EMAIL_TAKEN' || formError.code === 'EMAIL_TAKEN')) { %>
+          <div><a class="btn btn-secondary btn-sm" href="/login"><%- icon('log-out', 'icon-sm flip-rtl') %><%= t('vendors.sign_in') %></a></div>
+        <% } %>
+
+        <fieldset class="fieldset stack">
+          <legend class="fieldset-title"><%= t('vendors.section_type') %></legend>
+          <div class="choice-grid vendors-types">
+            <% typeOptions.forEach(function (k) { %>
+            <label class="choice"><input type="radio" name="type" value="<%= k %>"<%= _type === k ? ' checked' : '' %>><span class="box"><span class="name"><%= t('vendors.types.' + k) %></span><span class="meta"><%= t('vendors.type_help.' + k) %></span></span></label>
+            <% }) %>
+          </div>
+          <% if (errors.type) { %><span class="field-error"><%= errors.type %></span><% } %>
+        </fieldset>
+
+        <fieldset class="fieldset stack">
+          <legend class="fieldset-title"><%= t('vendors.section_business') %></legend>
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'name', label: t('vendors.f_name'), required: true, cls: 'full', autocomplete: 'organization', help: t('vendors.f_name_help') }) %>
+            <%- include('../../partials/field', { name: 'name_en', label: t('vendors.f_name_en'), cls: 'full', attrs: 'dir="ltr"' }) %>
+            <%- include('../../partials/field', { name: 'contact_name', label: t('vendors.f_contact'), required: true, autocomplete: 'name', value: existing ? currentUser.name : '' }) %>
+            <%- include('../../partials/field', { name: 'phone', label: t('vendors.f_phone'), type: 'tel', autocomplete: 'tel', attrs: 'dir="ltr" inputmode="tel"' }) %>
+            <%- include('../../partials/field', { name: 'whatsapp', label: t('vendors.f_whatsapp'), type: 'tel', attrs: 'dir="ltr" inputmode="tel"', help: t('vendors.f_whatsapp_help') }) %>
+            <%- include('../../partials/field', { name: 'country', label: t('vendors.f_country'), type: 'select', value: 'JO', placeholder: t('common.select'), options: countryOptions }) %>
+            <%- include('../../partials/field', { name: 'city', label: t('vendors.f_city'), autocomplete: 'address-level2' }) %>
+          </div>
+        </fieldset>
+
+        <%- include('../vendor/_specialties', { selected: [], help: t('vendors.target_specialties_help') }) %>
+
+        <% if (!existing) { %>
+        <fieldset class="fieldset stack">
+          <legend class="fieldset-title"><%= t('vendors.section_account') %></legend>
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, autocomplete: 'email', attrs: 'inputmode="email" dir="ltr"' }) %>
+            <div class="field">
+              <label class="label" for="f-password"><%= t('auth.password') %><span class="req">*</span></label>
+              <input class="input<%= errors.password ? ' is-invalid' : '' %>" id="f-password" name="password" type="password" required minlength="8" autocomplete="new-password">
+              <div class="pw-meter" data-pw-meter="f-password"><span></span></div>
+              <% if (errors.password) { %><span class="field-error"><%= errors.password %></span><% } else { %><span class="help"><%= t('auth.password_help') %></span><% } %>
+            </div>
+          </div>
+        </fieldset>
+        <% } %>
+
+        <div>
+          <label class="check"><input type="checkbox" name="terms" required<%= old.terms ? ' checked' : '' %>><span><%= t('vendors.terms_agree') %></span></label>
+          <% if (errors.terms) { %><div class="field-error"><%= errors.terms %></div><% } %>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" type="submit"><%= existing ? t('vendors.register_existing_submit') : t('vendors.signup_submit') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button>
+      </div>
+    </form>
+    <% if (!existing) { %><p class="mt-6 small muted text-center"><%= t('vendors.have_account') %> <a class="link" href="/login"><%= t('vendors.sign_in') %></a></p><% } %>
+  </div>
+</section>

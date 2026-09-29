@@ -1,0 +1,41 @@
+<% var desc = L(p.description, p.description_en); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/marketplace"><%= t('nav.marketplace') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/marketplace?tab=products"><%= t('market.tab_products') %></a></div>
+    <h1><%= L(p.name, p.name_en) %></h1>
+    <p><%= L(p.vendor_name, p.vendor_name_en) %><%= p.brand ? ' · ' + p.brand : '' %></p>
+  </div>
+  <div class="page-actions">
+    <% if (p.supply_item_id) { %>
+      <span class="badge badge-dot badge-success"><%= t('market.in_supplies') %></span>
+      <% if (can('supplies.view')) { %><a class="btn btn-secondary" href="/app/supplies/items/<%= p.supply_item_id %>"><%= t('market.open_item') %></a><% } %>
+    <% } else if (canLink) { %>
+      <a class="btn btn-primary" href="?add=1" data-open-dialog="supply-dialog"><%- icon('plus', 'icon-sm') %><%= t('market.add_to_supplies') %></a>
+    <% } %>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <div class="panel">
+    <div class="panel-body mk-product">
+      <div class="mk-product-media"><% if (p.image_mime) { %><img src="/app/marketplace/img/product/<%= p.id %>" alt=""><% } else { %><span class="mk-thumb-empty mk-product-empty"><%- icon('package') %></span><% } %></div>
+      <div class="stack grow">
+        <dl class="dl mk-dl">
+          <% if (p.brand) { %><dt><%= t('market.brand') %></dt><dd><%= p.brand %></dd><% } %>
+          <% if (p.sku) { %><dt><%= t('market.sku') %></dt><dd dir="ltr" class="mono mk-ltr"><%= p.sku %></dd><% } %>
+          <dt><%= t('market.unit') %></dt><dd><%= p.unit || '—' %></dd>
+          <dt><%= t('market.pack_size') %></dt><dd><%= p.pack_size || '—' %></dd>
+          <dt><%= t('market.price') %></dt><dd><%= p.price !== null && p.price !== undefined ? fmt.money(p.price, p.currency || currency) : t('market.price_on_request') %></dd>
+          <% if (p.specialties.length) { %><dt><%= t('market.specialties') %></dt><dd><%= p.specialties.map(specialtyLabel).join('، ') %></dd><% } %>
+        </dl>
+        <% if (desc) { %><div><div class="label"><%= t('market.description') %></div><p class="mk-pre small"><%= desc %></p></div><% } %>
+      </div>
+    </div>
+  </div>
+  <div class="stack">
+    <% if (p.vendor) { %>
+      <%- include('_vendor-contact', { vend: p.vendor, supplierLinked: supplierLinked }) %>
+    <% } %>
+  </div>
+</div>
+<% if (canLink && !p.supply_item_id) { %><%- include('_supply-dialog', { prod: p, returnTo: '/app/marketplace/products/' + p.id, openDialog: (typeof openDialog !== 'undefined' && openDialog) || (query.add === '1' ? 'supply-dialog' : '') }) %><% } %>

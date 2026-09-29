@@ -1,0 +1,36 @@
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/vendor/visits"><%= t('rep_visits.vendor_side.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('rep_visits.vendor_side.find_title') %></div>
+    <h1><%= t('rep_visits.vendor_side.find_title') %></h1>
+    <p><%= t('rep_visits.vendor_side.find_lead') %></p>
+  </div>
+</div>
+
+<% if (!vendorActive) { %>
+<div class="alert" role="status"><%- icon('clock') %><div class="grow"><div class="alert-title"><%= t('rep_visits.vendor_side.pending_title') %></div><div class="small"><%= t('rep_visits.vendor_side.pending_text') %></div></div></div>
+<% } else { %>
+<div class="panel flush">
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('rep_visits.vendor_side.search') %>" aria-label="<%= t('common.search') %>"></div>
+    <select class="select" name="specialty" aria-label="<%= t('market.specialty') %>"><option value=""><%= t('rep_visits.vendor_side.any_specialty') %></option><% specialties.forEach(function (s) { %><option value="<%= s %>"<%= specialty === s ? ' selected' : '' %>><%= specialtyLabel(s) %></option><% }) %></select>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+  </form>
+  <% if (!clinics.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'hospital', emptyTitle: t('rep_visits.vendor_side.no_clinics_title'), emptyText: t('rep_visits.vendor_side.no_clinics_text') }) %>
+  <% } else { %>
+  <ul class="mk-list">
+    <% clinics.forEach(function (c) { %>
+    <li>
+      <span class="avatar"><%= initials(L(c.name, c.name_en)) %></span>
+      <div class="grow">
+        <div class="strong"><%= L(c.name, c.name_en) %></div>
+        <div class="tiny muted"><%= [c.city, specialtyLabel(c.specialty)].filter(Boolean).join(' · ') %></div>
+        <% if (c.doctors.length) { %><div class="small muted mt-1"><%= t('rep_visits.vendor_side.doctors') %>: <%= c.doctors.map(function (d) { return L(d.full_name, d.full_name_en); }).join('، ') %></div><% } %>
+      </div>
+      <a class="btn btn-secondary btn-sm" href="/vendor/visits/new?clinic=<%= c.id %>"><%= t('rep_visits.vendor_side.choose') %></a>
+    </li>
+    <% }) %>
+  </ul>
+  <% } %>
+</div>
+<% } %>

@@ -1,0 +1,46 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="page-head">
+  <div><h1><%= t('vendor_portal.nav_products') %></h1><p><%= t('vendor_portal.products_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="/vendor/products/new"><%- icon('plus', 'icon-sm') %><%= t('vendor_portal.product_new') %></a></div>
+</div>
+<section class="panel flush">
+  <form class="table-toolbar" method="get" action="/vendor/products" data-autosubmit>
+    <div class="input-group"><%- icon('search') %><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('vendor_portal.search_products') %>" aria-label="<%= t('vendor_portal.search_products') %>"></div>
+    <select class="select" name="status" aria-label="<%= t('common.status') %>">
+      <option value=""><%= t('common.all') %></option>
+      <option value="active"<%= status === 'active' ? ' selected' : '' %>><%= t('vendor_portal.shown') %></option>
+      <option value="inactive"<%= status === 'inactive' ? ' selected' : '' %>><%= t('vendor_portal.hidden') %></option>
+    </select>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button></noscript>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'package', emptyTitle: q || status ? t('vendor_portal.no_products_match') : t('vendor_portal.no_products'), emptyText: q || status ? '' : t('vendor_portal.no_products_text'), emptyAction: q || status ? '' : '<a class="btn btn-primary btn-sm" href="/vendor/products/new">' + escapeHtml(t('vendor_portal.product_new')) + '</a>' }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('vendor_portal.col_product') %></th><th><%= t('vendor_portal.col_pack') %></th><th class="num"><%= t('vendor_portal.col_price') %></th><th><%= t('vendors.target_specialties') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (p) { %>
+        <tr>
+          <td class="primary-cell"><div class="person">
+            <span class="vendor-thumb"><% if (p.image_url) { %><img src="<%= p.image_url %>" alt="" loading="lazy"><% } else { %><%- icon('package', 'icon-sm') %><% } %></span>
+            <div style="min-width:0"><a class="person-name" href="/vendor/products/<%= p.id %>"><%= L(p.name, p.name_en) %></a><div class="person-sub truncate"><%= [p.brand, p.sku].filter(Boolean).join(' · ') || '—' %></div></div>
+          </div></td>
+          <td data-label="<%= t('vendor_portal.col_pack') %>"><%= [p.pack_size, p.unit].filter(Boolean).join(' / ') || '—' %></td>
+          <td class="num" data-label="<%= t('vendor_portal.col_price') %>"><%= p.price !== null ? fmt.money(p.price, p.currency || 'JOD') : '—' %></td>
+          <td data-label="<%= t('vendors.target_specialties') %>" class="small muted"><%= p.specialties.map(function (s) { return t('specialties.' + s); }).join(locale === 'ar' ? '، ' : ', ') %></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= p.is_active ? 'badge-success' : 'badge-neutral' %>"><%= p.is_active ? t('vendor_portal.shown') : t('vendor_portal.hidden') %></span><% if (p.used_by) { %><div class="tiny muted mt-1"><%= t('vendor_portal.used_by', { n: fmt.number(p.used_by) }) %></div><% } %></td>
+          <td class="actions nowrap">
+            <a class="btn btn-ghost btn-icon btn-sm" href="/vendor/products/<%= p.id %>" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>"><%- icon('pencil', 'icon-sm') %></a>
+            <form method="post" action="/vendor/products/<%= p.id %>/toggle" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= fullPath %>">
+              <button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= p.is_active ? t('vendor_portal.hide') : t('vendor_portal.show') %>" title="<%= p.is_active ? t('vendor_portal.hide') : t('vendor_portal.show') %>"><%- icon(p.is_active ? 'eye-off' : 'eye', 'icon-sm') %></button></form>
+            <%- include('../../partials/delete-form', { action: '/vendor/products/' + p.id + '/delete', confirmText: p.used_by ? t('vendor_portal.product_delete_used', { n: p.used_by }) : t('vendor_portal.product_delete_confirm') }) %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</section>

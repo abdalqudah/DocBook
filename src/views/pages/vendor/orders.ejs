@@ -1,0 +1,44 @@
+<%
+  var st = query.status || 'all';
+  var n = function (k) { return counts[k] || 0; };
+  var all = Object.keys(counts).reduce(function (a, k) { return a + counts[k]; }, 0);
+  var tabs = [['all', t('common.all'), all], ['sent', t('purchasing.vendor.tab_new'), n('sent')], ['acknowledged', t('purchasing.vendor.tab_confirmed'), n('acknowledged')], ['received', t('purchasing.tab.received'), n('received')], ['cancelled', t('purchasing.tab.cancelled'), n('cancelled')]];
+  var clinicName = function (r) { return locale === 'en' && r.clinic_name_en ? r.clinic_name_en : r.clinic_name; };
+%>
+<div class="page-head">
+  <div>
+    <h1><%= t('purchasing.vendor.title') %></h1>
+    <p><%= t('purchasing.vendor.lead') %></p>
+  </div>
+</div>
+
+<% if (all) { %>
+<nav class="tabs" aria-label="<%= t('common.status') %>">
+  <% tabs.forEach(function (tb) { var on = st === tb[0]; %><a href="/vendor/orders<%= tb[0] === 'all' ? '' : '?status=' + tb[0] %>" class="<%= on ? 'active' : '' %>"<%= on ? ' aria-current="page"' : '' %>><%= tb[1] %> <span class="count"><%= fmt.number(tb[2]) %></span></a><% }) %>
+</nav>
+<% } %>
+
+<div class="panel flush<%= all ? ' mt-4' : '' %>">
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'clipboard-list', emptyTitle: all ? t('table.no_matches') : (pending ? t('purchasing.vendor.pending_title') : t('purchasing.vendor.empty_title')), emptyText: all ? '' : (pending ? t('purchasing.vendor.pending_text') : t('purchasing.vendor.empty_text')), emptyAction: '' }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('purchasing.number') %></th><th><%= t('purchasing.vendor.clinic') %></th><th class="num"><%= t('purchasing.lines') %></th><th><%= t('purchasing.sent_at') %></th><th><%= t('common.status') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { %>
+        <tr>
+          <td class="primary-cell"><a class="strong" href="/vendor/orders/<%= r.id %>">#<%= r.po_number %></a></td>
+          <td data-label="<%= t('purchasing.vendor.clinic') %>"><%= clinicName(r) %><% if (r.clinic_city) { %><div class="tiny muted"><%= r.clinic_city %></div><% } %></td>
+          <td class="num" data-label="<%= t('purchasing.lines') %>"><%= fmt.number(r.line_count) %></td>
+          <td data-label="<%= t('purchasing.sent_at') %>"><span class="small"><%= when(r.sent_at, r.clinic_timezone) %></span></td>
+          <td data-label="<%= t('common.status') %>"><% if (r.status === 'sent') { %><span class="badge badge-brand badge-dot"><%= t('purchasing.vendor.status_new') %></span><% } else if (r.status === 'acknowledged') { %><span class="badge badge-info badge-dot"><%= t('purchasing.vendor.tab_confirmed') %></span><% } else { %><%- include('../purchasing/_status', { status: r.status }) %><% } %></td>
+          <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="/vendor/orders/<%= r.id %>" aria-label="<%= t('purchasing.open') %>" title="<%= t('purchasing.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</div>

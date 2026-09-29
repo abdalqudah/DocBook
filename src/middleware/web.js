@@ -110,7 +110,8 @@ function flash(req, type, message) {
 }
 
 // Multipart bodies are only parsed by these routes; their token is checked after parsing.
-const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/logo\/?$/, /^\/app\/settings\/data\/(restore|import)\/?$/, /^\/app\/[a-z-]+\/import\/?$/];
+const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/logo\/?$/, /^\/app\/settings\/data\/(restore|import)\/?$/, /^\/app\/[a-z-]+\/import\/?$/,
+  /^\/vendor\/(profile\/logo|products|products\/\d+|offers|offers\/\d+)\/?$/]; // vendor portal images
 
 const tokenValid = (req, sent) => Boolean(req.session?.csrf && sent && safeEqual(sent, req.session.csrf));
 

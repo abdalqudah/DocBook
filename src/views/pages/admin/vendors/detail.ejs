@@ -1,0 +1,95 @@
+<%
+  var badge = function (s) { return s === 'active' ? 'badge-success' : s === 'suspended' ? 'badge-danger' : 'badge-warning'; };
+  var sp = function (list) { return list.map(function (s) { return t('specialties.' + s); }).join(locale === 'ar' ? '، ' : ', '); };
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/admin/vendors"><%= t('vendors.admin.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1 class="row-sm wrap"><%= v.name %> <span class="badge badge-dot <%= badge(v.status) %>"><%= t('vendors.status.' + v.status) %></span></h1>
+    <p><%= t('vendors.types.' + v.type) %><%= v.name_en ? ' · ' + v.name_en : '' %></p>
+  </div>
+  <div class="page-actions">
+    <% if (v.status === 'pending') { %>
+      <form method="post" action="/admin/vendors/<%= v.id %>/status" data-confirm="<%= t('vendors.admin.approve_confirm', { name: v.name }) %>" data-confirm-yes="<%= t('vendors.admin.approve') %>" data-confirm-tone="primary">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="active">
+        <button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('vendors.admin.approve') %></button>
+      </form>
+    <% } %>
+    <% if (v.status === 'suspended') { %>
+      <form method="post" action="/admin/vendors/<%= v.id %>/status" data-confirm="<%= t('vendors.admin.reactivate_confirm', { name: v.name }) %>" data-confirm-yes="<%= t('vendors.admin.reactivate') %>" data-confirm-tone="primary">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="active">
+        <button class="btn btn-primary" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('vendors.admin.reactivate') %></button>
+      </form>
+    <% } else { %>
+      <form method="post" action="/admin/vendors/<%= v.id %>/status" data-confirm="<%= t('vendors.admin.suspend_confirm', { name: v.name }) %>" data-confirm-yes="<%= t('vendors.admin.suspend') %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="suspended">
+        <button class="btn btn-danger-ghost" type="submit"><%- icon('lock', 'icon-sm') %><%= t('vendors.admin.suspend') %></button>
+      </form>
+    <% } %>
+  </div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-label"><%= t('vendors.admin.col_products') %><span class="stat-icon"><%- icon('package') %></span></div><div class="stat-value"><%= fmt.number(products.length) %></div><div class="stat-meta"><%= t('vendors.admin.active_n', { n: fmt.number(products.filter(function (p) { return p.is_active; }).length) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('vendors.admin.col_offers') %><span class="stat-icon"><%- icon('megaphone') %></span></div><div class="stat-value"><%= fmt.number(offers.filter(function (o) { return o.status === 'published'; }).length) %></div><div class="stat-meta"><%= t('vendors.admin.total_n', { n: fmt.number(offers.length) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('vendors.admin.visits') %><span class="stat-icon"><%- icon('calendar-clock') %></span></div><div class="stat-value"><%= fmt.number(counts.visits) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('vendors.admin.orders') %><span class="stat-icon"><%- icon('clipboard-list') %></span></div><div class="stat-value"><%= fmt.number(counts.orders) %></div></div>
+</div>
+<div class="grid grid-main mt-6">
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('vendors.admin.profile') %></h2></div>
+    <div class="panel-body">
+      <div class="row mb-4"><span class="vendor-logo-lg"><% if (v.logo_url) { %><img src="<%= v.logo_url %>" alt=""><% } else { %><%- icon('building-2') %><% } %></span><div class="small muted grow"><%= L(v.about, v.about_en) || t('vendors.admin.no_about') %></div></div>
+      <dl class="dl">
+        <dt><%= t('vendors.f_contact') %></dt><dd><%= v.contact_name || '—' %></dd>
+        <dt><%= t('vendors.f_email') %></dt><dd dir="ltr" style="text-align:start"><%= v.email %></dd>
+        <dt><%= t('vendors.f_phone') %></dt><dd dir="ltr" style="text-align:start"><%= v.phone || '—' %></dd>
+        <dt><%= t('vendors.f_whatsapp') %></dt><dd dir="ltr" style="text-align:start"><%= v.whatsapp || '—' %></dd>
+        <dt><%= t('vendors.f_city') %></dt><dd><%= [v.city, v.country].filter(Boolean).join(' · ') || '—' %></dd>
+        <dt><%= t('vendors.target_specialties') %></dt><dd><%= sp(v.specialties) || '—' %></dd>
+        <dt><%= t('vendors.admin.col_created') %></dt><dd><%= fmt.date(v.created_at) %></dd>
+        <% if (v.approved_at) { %><dt><%= t('vendors.admin.approved') %></dt><dd><%= fmt.date(v.approved_at) %><%= v.approved_by_name ? ' · ' + v.approved_by_name : '' %></dd><% } %>
+      </dl>
+    </div>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('vendors.admin.users') %></h2></div>
+    <ul class="vendor-list">
+      <% users.forEach(function (u) { %>
+      <li><span class="avatar"><%= initials(u.name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= u.name %></div><div class="small muted truncate" dir="ltr" style="text-align:start"><%= u.email %></div></div>
+        <span class="small muted nowrap"><%= u.email_verified_at ? t('vendors.admin.verified') : t('vendors.admin.unverified') %></span></li>
+      <% }) %>
+    </ul>
+  </section>
+</div>
+
+<section class="panel flush mt-6" id="products">
+  <div class="panel-head"><h2><%= t('vendors.admin.col_products') %></h2><span class="small muted"><%= fmt.number(products.length) %></span></div>
+  <% if (!products.length) { %><%- include('../../../partials/empty', { emptyIcon: 'package', emptyTitle: t('vendors.admin.no_products'), compact: true }) %><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('vendor_portal.col_product') %></th><th><%= t('vendors.target_specialties') %></th><th class="num"><%= t('vendor_portal.col_price') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+    <tbody><% products.forEach(function (p) { %><tr>
+      <td class="primary-cell"><div class="person"><span class="vendor-thumb"><% if (p.image_url) { %><img src="<%= p.image_url %>" alt="" loading="lazy"><% } else { %><%- icon('package', 'icon-sm') %><% } %></span><div style="min-width:0"><div class="person-name"><%= L(p.name, p.name_en) %></div><div class="person-sub truncate"><%= [p.brand, p.pack_size, p.unit].filter(Boolean).join(' · ') || '—' %></div></div></div></td>
+      <td data-label="<%= t('vendors.target_specialties') %>" class="small muted"><%= sp(p.specialties) || '—' %></td>
+      <td class="num" data-label="<%= t('vendor_portal.col_price') %>"><%= p.price !== null ? fmt.money(p.price, p.currency || 'JOD') : '—' %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= p.is_active ? 'badge-success' : 'badge-neutral' %>"><%= p.is_active ? t('vendor_portal.shown') : t('vendor_portal.hidden') %></span></td>
+      <td class="actions"><% if (p.is_active) { %><form method="post" action="/admin/vendors/products/<%= p.id %>/hide" data-confirm="<%= t('vendors.admin.hide_product_confirm') %>" data-confirm-yes="<%= t('vendors.admin.hide') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('eye-off', 'icon-sm') %><%= t('vendors.admin.hide') %></button></form><% } %></td>
+    </tr><% }) %></tbody>
+  </table></div><% } %>
+</section>
+
+<section class="panel flush mt-6" id="offers">
+  <div class="panel-head"><h2><%= t('vendor_portal.nav_offers') %></h2><span class="small muted"><%= fmt.number(offers.length) %></span></div>
+  <% if (!offers.length) { %><%- include('../../../partials/empty', { emptyIcon: 'megaphone', emptyTitle: t('vendors.admin.no_offers'), compact: true }) %><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('vendor_portal.col_offer') %></th><th><%= t('vendor_portal.col_period') %></th><th><%= t('vendors.target_specialties') %></th><th><%= t('common.status') %></th><th class="num"><%= t('vendor_portal.col_views') %></th><th class="actions"></th></tr></thead>
+    <tbody><% offers.forEach(function (o) { %><tr>
+      <td class="primary-cell"><div class="person"><span class="vendor-thumb"><% if (o.image_url) { %><img src="<%= o.image_url %>" alt="" loading="lazy"><% } else { %><%- icon('megaphone', 'icon-sm') %><% } %></span><div style="min-width:0"><div class="person-name"><%= L(o.title, o.title_en) %></div><div class="person-sub vendor-clamp"><%= L(o.body, o.body_en) || '' %></div></div></div></td>
+      <td data-label="<%= t('vendor_portal.col_period') %>" class="small nowrap"><%= o.starts_on ? fmt.date(o.starts_on) : '—' %> – <%= o.ends_on ? fmt.date(o.ends_on) : '—' %></td>
+      <td data-label="<%= t('vendors.target_specialties') %>" class="small muted"><%= sp(o.specialties) || '—' %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= o.status === 'published' ? 'badge-success' : 'badge-neutral' %>"><%= t('vendor_portal.offer_status.' + o.status) %></span></td>
+      <td class="num" data-label="<%= t('vendor_portal.col_views') %>"><%= fmt.number(o.views) %></td>
+      <td class="actions"><% if (o.status !== 'archived') { %><form method="post" action="/admin/vendors/offers/<%= o.id %>/hide" data-confirm="<%= t('vendors.admin.hide_offer_confirm') %>" data-confirm-yes="<%= t('vendors.admin.hide') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('eye-off', 'icon-sm') %><%= t('vendors.admin.hide') %></button></form><% } %></td>
+    </tr><% }) %></tbody>
+  </table></div><% } %>
+</section>

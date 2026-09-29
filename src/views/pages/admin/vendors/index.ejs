@@ -1,0 +1,53 @@
+<%
+  var total = Object.keys(counts).reduce(function (s, k) { return s + counts[k]; }, 0);
+  var badge = function (s) { return s === 'active' ? 'badge-success' : s === 'suspended' ? 'badge-danger' : 'badge-warning'; };
+  var sp = function (list) { return list.map(function (s) { return t('specialties.' + s); }).join(locale === 'ar' ? '، ' : ', '); };
+%>
+<div class="page-head"><div><h1><%= t('vendors.admin.title') %></h1><p><%= t('vendors.admin.lead') %></p></div></div>
+<nav class="pill-filter mb-4" aria-label="<%= t('common.status') %>">
+  <% [['', 'all', total], ['pending', 'pending', counts.pending || 0], ['active', 'active', counts.active || 0], ['suspended', 'suspended', counts.suspended || 0]].forEach(function (tb) { %>
+  <a href="/admin/vendors<%= tb[0] ? '?status=' + tb[0] : '' %><%= q ? (tb[0] ? '&' : '?') + 'q=' + encodeURIComponent(q) : '' %>" class="<%= status === tb[0] ? 'active' : '' %>"><%= tb[1] === 'all' ? t('common.all') : t('vendors.status.' + tb[1]) %> · <%= fmt.number(tb[2]) %></a>
+  <% }) %>
+</nav>
+<section class="panel flush">
+  <form class="table-toolbar" method="get" action="/admin/vendors" data-autosubmit>
+    <div class="input-group"><%- icon('search') %><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('vendors.admin.search') %>" aria-label="<%= t('vendors.admin.search') %>"></div>
+    <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button></noscript>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include('../../../partials/empty', { emptyIcon: 'briefcase-business', emptyTitle: t('vendors.admin.empty') }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('vendors.admin.col_vendor') %></th><th><%= t('vendors.f_type') %></th><th><%= t('vendors.target_specialties') %></th><th class="num"><%= t('vendors.admin.col_products') %></th><th class="num"><%= t('vendors.admin.col_offers') %></th><th><%= t('common.status') %></th><th><%= t('vendors.admin.col_created') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (v) { %>
+        <tr>
+          <td class="primary-cell"><div class="person">
+            <span class="vendor-thumb"><% if (v.logo_url) { %><img src="<%= v.logo_url %>" alt=""><% } else { %><%= initials(v.name) %><% } %></span>
+            <div style="min-width:0"><a class="person-name" href="/admin/vendors/<%= v.id %>"><%= v.name %></a><div class="person-sub truncate"><%= [v.contact_name, v.city].filter(Boolean).join(' · ') %> · <span dir="ltr"><%= v.email %></span></div></div>
+          </div></td>
+          <td data-label="<%= t('vendors.f_type') %>"><%= t('vendors.types.' + v.type) %></td>
+          <td data-label="<%= t('vendors.target_specialties') %>" class="small muted"><%= sp(v.specialties) || '—' %></td>
+          <td class="num" data-label="<%= t('vendors.admin.col_products') %>"><%= fmt.number(v.products) %></td>
+          <td class="num" data-label="<%= t('vendors.admin.col_offers') %>"><%= fmt.number(v.offers) %></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= badge(v.status) %>"><%= t('vendors.status.' + v.status) %></span></td>
+          <td data-label="<%= t('vendors.admin.col_created') %>" class="nowrap"><%= fmt.date(v.created_at) %></td>
+          <td class="actions nowrap">
+            <% if (v.status === 'pending') { %>
+            <form method="post" action="/admin/vendors/<%= v.id %>/status" style="display:inline" data-confirm="<%= t('vendors.admin.approve_confirm', { name: v.name }) %>" data-confirm-yes="<%= t('vendors.admin.approve') %>" data-confirm-tone="primary">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="active"><input type="hidden" name="back" value="list">
+              <button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('vendors.admin.approve') %></button>
+            </form>
+            <% } %>
+            <a class="btn btn-ghost btn-sm" href="/admin/vendors/<%= v.id %>"><%= t('vendors.admin.review') %></a>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</section>

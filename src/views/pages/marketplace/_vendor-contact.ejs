@@ -1,0 +1,28 @@
+<% var _v = vend; var _wa = _v && _v.whatsapp ? String(_v.whatsapp).replace(/[^0-9]/g, '') : ''; %>
+<div class="panel">
+  <div class="panel-head"><h2><%= t('market.vendor_contact') %></h2></div>
+  <div class="panel-body stack">
+    <div class="person">
+      <% if (_v.logo_mime) { %><img class="avatar avatar-lg mk-logo" src="/app/marketplace/img/vendor/<%= _v.id %>" alt=""><% } else { %><span class="avatar avatar-lg"><%= initials(L(_v.name, _v.name_en)) %></span><% } %>
+      <div class="grow"><div class="person-name"><%= L(_v.name, _v.name_en) %></div><div class="person-sub"><%= t('market.type_' + _v.type) %><%= _v.city ? ' · ' + _v.city : '' %></div></div>
+    </div>
+    <% var _about = L(_v.about, _v.about_en); if (_about) { %><p class="small muted mk-pre"><%= _about %></p><% } %>
+    <dl class="dl mk-dl-stack">
+      <% if (_v.contact_name) { %><dt><%= t('market.contact_person') %></dt><dd><%= _v.contact_name %></dd><% } %>
+      <% if (_v.phone) { %><dt><%= t('market.phone') %></dt><dd><a href="tel:<%= _v.phone %>" dir="ltr"><%= _v.phone %></a></dd><% } %>
+      <% if (_wa) { %><dt><%= t('market.whatsapp') %></dt><dd><a href="https://wa.me/<%= _wa %>" target="_blank" rel="noopener" dir="ltr"><%= _v.whatsapp %></a></dd><% } %>
+      <% if (_v.email) { %><dt><%= t('market.email') %></dt><dd><a href="mailto:<%= _v.email %>"><%= _v.email %></a></dd><% } %>
+    </dl>
+    <div class="row-sm wrap">
+      <% if (_v.phone) { %><a class="btn btn-secondary btn-sm" href="tel:<%= _v.phone %>"><%- icon('phone', 'icon-sm') %><%= t('market.call') %></a><% } %>
+      <% if (_wa) { %><a class="btn btn-secondary btn-sm" href="https://wa.me/<%= _wa %>" target="_blank" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= t('market.whatsapp') %></a><% } %>
+      <% if (_v.email) { %><a class="btn btn-secondary btn-sm" href="mailto:<%= _v.email %>"><%- icon('mail', 'icon-sm') %><%= t('market.write_email') %></a><% } %>
+    </div>
+    <% if (typeof supplierLinked !== 'undefined') { %>
+      <div class="mk-supplier-state">
+        <% if (supplierLinked) { %><span class="badge badge-dot badge-success"><%= t('market.is_supplier') %></span>
+        <% } else if (canLink) { %><form method="post" action="/app/marketplace/vendors/<%= _v.id %>/supplier"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('market.add_supplier') %></button></form><% } %>
+      </div>
+    <% } %>
+  </div>
+</div>

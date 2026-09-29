@@ -1,0 +1,67 @@
+/* Purchase orders (clinic + vendor portal). Theme tokens only; calm: neutral surfaces, one accent. */
+
+/* ---------- Order form ---------- */
+.po-pick .panel-body { align-items: flex-end; gap: 12px 20px; }
+.po-pick .field { min-width: 220px; max-width: 420px; margin: 0; }
+.po-recipient { display: flex; align-items: center; gap: 8px; color: var(--text-muted); padding-bottom: 9px; flex: 1 1 260px; min-width: 0; }
+.po-recipient .icon { color: var(--text-subtle); flex: none; }
+.po-lines .qty-col { width: 130px; }
+.po-lines .cost-col { width: 140px; }
+.po-qty, .po-cost { height: 36px; text-align: end; font-variant-numeric: tabular-nums; }
+.qty-col .input { width: 100%; max-width: 130px; }
+.po-stock { display: inline-flex; align-items: center; gap: 6px; }
+.po-low { color: var(--warning); font-weight: var(--fw-semibold); }
+.po-use { font-variant-numeric: tabular-nums; min-width: 44px; justify-content: center; text-decoration: underline dotted; text-underline-offset: 3px; }
+.po-lines .field-error { display: block; margin-top: 4px; }
+
+.po-extra { display: grid; gap: 0; }
+.po-extra-row { display: flex; gap: 12px; align-items: flex-start; padding: 14px var(--card-pad, 20px); border-top: 1px solid var(--border); }
+.po-extra-row:first-child { border-top: 0; }
+.po-extra-row .field { margin: 0; min-width: 0; }
+.po-extra-row .po-unit { flex: 0 0 150px; }
+.po-extra-row .po-q { flex: 0 0 120px; }
+.po-extra-row .po-c { flex: 0 0 130px; }
+.po-extra-row .po-q .input, .po-extra-row .po-c .input { text-align: end; }
+.po-remove { margin-top: 26px; flex: none; }
+
+.po-submit { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.po-submit .grow { min-width: 180px; }
+
+/* ---------- Order page ---------- */
+.po-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.po-timeline li { position: relative; display: flex; gap: 12px; padding-bottom: 16px; }
+.po-timeline li:last-child { padding-bottom: 0; }
+.po-timeline li::before { content: ''; position: absolute; inset-inline-start: 5px; top: 14px; bottom: 0; width: 2px; background: var(--border); }
+.po-timeline li:last-child::before { display: none; }
+.po-timeline li.done::before { background: var(--border-strong); }
+.po-tl-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--surface); flex: none; margin-top: 3px; position: relative; z-index: 1; }
+.po-timeline li.done .po-tl-dot { background: var(--text-subtle); border-color: var(--text-subtle); }
+.po-timeline li.current .po-tl-dot { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.po-timeline li.cancelled .po-tl-dot { background: var(--danger); border-color: var(--danger); box-shadow: none; }
+.po-timeline li:not(.done) .strong { color: var(--text-subtle); font-weight: var(--fw-medium); }
+
+.po-check { color: var(--success); display: inline-flex; vertical-align: middle; }
+.po-pre { white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.7; }
+.po-share { display: flex; flex-wrap: wrap; gap: 8px; }
+.po-mark { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; display: grid; gap: 4px; justify-items: start; }
+.po-dl { grid-template-columns: minmax(90px, 120px) 1fr; }
+
+/* ---------- Printable purchase order ---------- */
+.po-print-title { font-size: 20px; margin: 0 0 4px; }
+.po-print-table th, .po-print-table td { padding: 8px 10px; }
+
+@media (max-width: 720px) {
+  .po-pick .field { max-width: none; width: 100%; }
+  .po-recipient { padding-bottom: 0; }
+  .po-lines .qty-col, .po-lines .cost-col { width: auto; }
+  .qty-col .input, .cost-col .input { max-width: 140px; }
+  .po-extra-row { flex-wrap: wrap; padding: 12px 16px; }
+  .po-extra-row .field.grow { flex: 1 1 100%; }
+  .po-extra-row .po-unit, .po-extra-row .po-q, .po-extra-row .po-c { flex: 1 1 30%; }
+  .po-remove { margin-top: 0; margin-inline-start: auto; }
+  .po-submit { position: static; }
+  .po-submit .grow { flex: 1 1 100%; }
+  .po-submit .btn { flex: 1 1 auto; justify-content: center; }
+  .po-dl { grid-template-columns: 1fr; }
+}
+.po-form .panel-head > div:first-child { flex: 1 1 360px; min-width: 0; }

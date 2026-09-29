@@ -1,0 +1,54 @@
+<%
+  var _o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var val = function (k) { return _o ? _o[k] : (p ? p[k] : ''); };
+  var active = _o ? Boolean(_o.is_active) : (p ? Boolean(p.is_active) : true);
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/vendor/products"><%= t('vendor_portal.nav_products') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= p ? (locale === 'en' && p.name_en ? p.name_en : p.name) : t('vendor_portal.product_new') %></h1>
+    <p><%= t('vendor_portal.product_form_lead') %></p>
+  </div>
+</div>
+<form class="panel" method="post" action="<%= p ? '/vendor/products/' + p.id : '/vendor/products' %>" enctype="multipart/form-data" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack-lg">
+    <%- include('../../partials/form-error') %>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'name', label: t('vendor_portal.f_product_name'), required: true, value: val('name') }) %>
+      <%- include('../../partials/field', { name: 'name_en', label: t('vendor_portal.f_product_name_en'), value: val('name_en'), attrs: 'dir="ltr"' }) %>
+      <%- include('../../partials/field', { name: 'brand', label: t('vendor_portal.f_brand'), value: val('brand') }) %>
+      <%- include('../../partials/field', { name: 'sku', label: t('vendor_portal.f_sku'), value: val('sku'), attrs: 'dir="ltr"', help: t('vendor_portal.f_sku_help') }) %>
+      <%- include('../../partials/field', { name: 'unit', label: t('vendor_portal.f_unit'), value: val('unit'), placeholder: t('vendor_portal.f_unit_ph') }) %>
+      <%- include('../../partials/field', { name: 'pack_size', label: t('vendor_portal.f_pack'), value: val('pack_size'), placeholder: t('vendor_portal.f_pack_ph') }) %>
+      <%- include('../../partials/field', { name: 'price', label: t('vendor_portal.f_price'), value: val('price') === null ? '' : val('price'), attrs: 'inputmode="decimal" dir="ltr"', help: t('vendor_portal.f_price_help') }) %>
+      <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', value: val('currency') || 'JOD', options: currencies.map(function (c) { return { value: c, label: c + ' — ' + t('currencies.' + c) }; }) }) %>
+      <%- include('../../partials/field', { name: 'description', label: t('vendor_portal.f_description'), type: 'textarea', value: val('description') }) %>
+      <%- include('../../partials/field', { name: 'description_en', label: t('vendor_portal.f_description_en'), type: 'textarea', value: val('description_en') }) %>
+      <%- include('_specialties', { selected: defaultSpecialties, help: t('vendor_portal.product_specialties_help') }) %>
+      <div class="full"><label class="check"><input type="checkbox" name="is_active" value="1"<%= active ? ' checked' : '' %>><span><%= t('vendor_portal.f_active') %></span></label><div class="help"><%= t('vendor_portal.f_active_help') %></div></div>
+    </div>
+    <fieldset class="fieldset field">
+      <legend class="label"><%= t('vendor_portal.f_image') %></legend>
+      <div class="row">
+        <span class="vendor-logo-lg"><% if (p && p.image_url) { %><img src="<%= p.image_url %>" alt=""><% } else { %><%- icon('image') %><% } %></span>
+        <div class="stack-sm grow" style="min-width:0">
+          <input class="input<%= errors.image ? ' is-invalid' : '' %>" type="file" name="image" accept="image/png,image/jpeg,image/webp" aria-label="<%= t('vendor_portal.f_image') %>">
+          <% if (errors.image) { %><span class="field-error"><%= errors.image %></span><% } else { %><span class="help"><%= t('vendor_portal.image_help') %></span><% } %>
+          <% if (p && p.image_url) { %><label class="check"><input type="checkbox" name="remove_image" value="1"><span><%= t('vendor_portal.remove_image') %></span></label><% } %>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+  <div class="panel-foot row between wrap">
+    <span class="small muted"><% if (p && p.used_by) { %><%- icon('info', 'icon-sm') %> <%= t('vendor_portal.used_by', { n: fmt.number(p.used_by) }) %><% } %></span>
+    <div class="row-sm"><a class="btn btn-ghost" href="/vendor/products"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </div>
+</form>
+<% if (p) { %>
+<div class="row mt-6">
+  <form method="post" action="/vendor/products/<%= p.id %>/delete" data-confirm="<%= p.used_by ? t('vendor_portal.product_delete_used', { n: p.used_by }) : t('vendor_portal.product_delete_confirm') %>" data-confirm-title="<%= t('common.confirm_delete_title') %>" data-confirm-yes="<%= t('common.delete') %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('vendor_portal.product_delete') %></button>
+  </form>
+</div>
+<% } %>

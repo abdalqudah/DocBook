@@ -1,0 +1,77 @@
+<%
+  // Vendor portal layout (medical reps / drug warehouses / supplier companies). Pages from other areas
+  // (/vendor/visits, /vendor/orders) render with layout: 'vendor' and a `title`.
+  var _p = fullPath.split('?')[0].replace(/\/$/, '') || '/vendor';
+  var _v = typeof vendor !== 'undefined' && vendor ? vendor : {};
+  var _nav = [
+    { href: '/vendor', icon: 'layout-dashboard', key: 'nav_dashboard', exact: true, bottom: 1 },
+    { href: '/vendor/products', icon: 'package', key: 'nav_products', bottom: 2 },
+    { href: '/vendor/offers', icon: 'megaphone', key: 'nav_offers', bottom: 3 },
+    { href: '/vendor/visits', icon: 'calendar-clock', key: 'nav_visits', group: 'clinics', bottom: 4 },
+    { href: '/vendor/orders', icon: 'clipboard-list', key: 'nav_orders', group: 'clinics' },
+    { href: '/vendor/profile', icon: 'building-2', key: 'nav_profile', group: 'account' },
+    { href: '/vendor/account', icon: 'user-cog', key: 'nav_account', group: 'account' }
+  ];
+  var _on = function (n) { return n.exact ? _p === n.href : (_p === n.href || _p.indexOf(n.href + '/') === 0); };
+  var _groups = [['main', _nav.filter(function (n) { return !n.group; })], ['clinics', _nav.filter(function (n) { return n.group === 'clinics'; })], ['account', _nav.filter(function (n) { return n.group === 'account'; })]];
+  var _logo = _v.logo_mime ? '/vendors/media/logo/' + _v.id + '/' + Math.floor(new Date(_v.updated_at || 0).getTime() / 1000).toString(36) + '.' + String(_v.logo_mime).split('/')[1] : null;
+%><!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
+<head><%- include('../partials/head') %><% if ((typeof pageStyles !== 'undefined' ? pageStyles : []).indexOf('/css/vendors.css') === -1) { %><link rel="stylesheet" href="/css/vendors.css?v=<%= assetV %>"><% } %><meta name="robots" content="noindex"></head>
+<body class="vendor-body">
+<div class="loading-bar" aria-hidden="true"></div>
+<a class="sr-only" href="#main"><%= t('common.skip_to_content') %></a>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a class="row-sm" href="/vendor" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a></div>
+    <div class="vendor-id">
+      <span class="ws-mark vendor-mark"><% if (_logo) { %><img src="<%= _logo %>" alt=""><% } else { %><%= initials(_v.name) %><% } %></span>
+      <span class="grow" style="min-width:0"><span class="ws-name truncate"><%= locale === 'en' && _v.name_en ? _v.name_en : _v.name %></span><span class="ws-meta"><%= t('vendors.types.' + (_v.type || 'rep')) %></span></span>
+    </div>
+    <nav class="nav" aria-label="<%= t('vendor_portal.title') %>">
+      <% _groups.forEach(function (g) { %>
+      <div class="nav-group">
+        <div class="nav-title"><%= t('vendor_portal.group_' + g[0]) %></div>
+        <% g[1].forEach(function (n) { %><a href="<%= n.href %>" class="<%= _on(n) ? 'active' : '' %>"<% if (_on(n)) { %> aria-current="page"<% } %>><%- icon(n.icon) %><span class="truncate"><%= t('vendor_portal.' + n.key) %></span></a><% }) %>
+      </div>
+      <% }) %>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="row-sm small muted"><span class="status-dot-sm <%= _v.status === 'active' ? 'is-ok' : 'is-wait' %>" aria-hidden="true"></span><span class="truncate"><%= t('vendors.status.' + (_v.status || 'pending')) %></span></div>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" data-nav-close></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon mobile-only" type="button" data-nav-toggle aria-label="<%= t('nav.menu') %>"><%- icon('menu') %></button>
+      <span class="small muted vendor-portal-label"><%= t('vendor_portal.title') %></span>
+      <div class="topbar-actions">
+        <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" title="<%= t('common.language') %>" data-lang-switch="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
+        <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
+        <details class="dropdown">
+          <summary class="user-chip"><span class="avatar"><%= initials(currentUser.name) %></span><span class="user-name small strong"><%= currentUser.name %></span><%- icon('chevron-down', 'icon-sm muted') %></summary>
+          <div class="menu">
+            <div class="menu-label truncate"><%= currentUser.email %></div>
+            <a href="/vendor/account"><%- icon('user-cog', 'icon-sm') %><%= t('vendor_portal.nav_account') %></a>
+            <a href="/vendor/profile"><%- icon('building-2', 'icon-sm') %><%= t('vendor_portal.nav_profile') %></a>
+            <div class="sep"></div>
+            <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('log-out', 'icon-sm') %><%= t('auth.logout') %></button></form>
+          </div>
+        </details>
+      </div>
+    </header>
+    <% if (_v.status === 'pending') { %><div class="banner info" role="status"><%- icon('clock', 'icon-sm') %><span><strong><%= t('vendor_portal.pending_title') %></strong> <%= t('vendor_portal.pending_text') %></span></div><% } %>
+    <main class="content" id="main">
+      <%- body %>
+    </main>
+  </div>
+</div>
+<nav class="bottom-nav" aria-label="<%= t('nav.quick') %>">
+  <% _nav.filter(function (n) { return n.bottom; }).forEach(function (n) { %><a href="<%= n.href %>" class="<%= _on(n) ? 'active' : '' %>"><%- icon(n.icon) %><span><%= t('vendor_portal.short_' + n.key) %></span></a><% }) %>
+  <a href="#" data-nav-toggle><%- icon('menu') %><span><%= t('nav.more') %></span></a>
+</nav>
+<%- include('../partials/toasts') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
+</body>
+</html>

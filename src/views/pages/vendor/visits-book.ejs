@@ -1,0 +1,64 @@
+<%
+  var _err = typeof errors !== 'undefined' && errors ? errors : {};
+  var _old = typeof old !== 'undefined' && old ? old : {};
+  var chosen = [].concat(_old.products || []).map(String);
+  var docOpts = (clinic.hasClinicWide ? [{ value: '', label: t('rep_visits.clinic_wide') }] : []).concat(clinic.doctors.map(function (d) { return { value: String(d.id), label: L(d.full_name, d.full_name_en) + (L(d.specialization, d.specialization_en) ? ' — ' + L(d.specialization, d.specialization_en) : '') }; }));
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/vendor/visits"><%= t('rep_visits.vendor_side.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/vendor/visits/new"><%= t('rep_visits.vendor_side.find_title') %></a></div>
+    <h1><%= L(clinic.name, clinic.name_en) %></h1>
+    <p><%= [clinic.city, specialtyLabel(clinic.specialty), clinic.address].filter(Boolean).join(' · ') %></p>
+  </div>
+  <div class="page-actions"><a class="btn btn-ghost" href="/vendor/visits/new"><%= t('rep_visits.vendor_side.change_clinic') %></a></div>
+</div>
+
+<div class="mk-book">
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('rep_visits.vendor_side.step_when') %></h2><% if (clinic.rep_visits_auto_confirm) { %><span class="small muted"><%= t('rep_visits.vendor_side.auto_confirm_note') %></span><% } %></div>
+    <form class="panel-body" method="get" action="/vendor/visits/new" data-autosubmit>
+      <input type="hidden" name="clinic" value="<%= clinic.id %>">
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'doctor_id', id: 'q-doctor', label: t('rep_visits.vendor_side.with'), type: 'select', options: docOpts, value: doctorId, old: {}, errors: {} }) %>
+        <%- include('../../partials/field', { name: 'date', id: 'q-date', label: t('rep_visits.vendor_side.date'), type: 'date', value: date, attrs: 'min="' + today + '" max="' + maxDate + '"', old: {}, errors: {} }) %>
+      </div>
+      <noscript><button class="btn btn-secondary btn-sm mt-2" type="submit"><%= t('rep_visits.vendor_side.show_times') %></button></noscript>
+    </form>
+  </div>
+
+  <form class="panel" method="post" action="/vendor/visits" novalidate>
+    <div class="panel-head"><h2><%= t('rep_visits.vendor_side.free_times') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="business_id" value="<%= clinic.id %>">
+      <input type="hidden" name="doctor_id" value="<%= doctorId %>">
+      <input type="hidden" name="visit_date" value="<%= date %>">
+      <%- include('../../partials/form-error') %>
+      <% if (!date) { %>
+        <p class="small muted"><%= t('rep_visits.vendor_side.pick_date') %></p>
+      <% } else if (slotError) { %>
+        <p class="small mk-warn"><%= slotError %></p>
+      <% } else if (!slots.length) { %>
+        <p class="small muted"><%= t('rep_visits.vendor_side.no_times') %></p>
+      <% } else { %>
+        <fieldset class="mk-times">
+          <legend class="label"><%= t('rep_visits.vendor_side.time') %> · <%= fmt.date(date, { weekday: 'long', month: 'long', day: 'numeric' }) %></legend>
+          <div class="mk-slots">
+            <% slots.forEach(function (s, i) { %><label class="mk-slot"><input type="radio" name="visit_time" value="<%= s.time %>"<%= (_old.visit_time ? _old.visit_time === s.time : i === 0) ? ' checked' : '' %>><span dir="ltr"><%= s.time %></span></label><% }) %>
+          </div>
+          <% if (_err.visit_time) { %><span class="field-error"><%= _err.visit_time %></span><% } %>
+        </fieldset>
+        <%- include('../../partials/field', { name: 'purpose', label: t('rep_visits.vendor_side.purpose'), type: 'textarea', required: true, placeholder: t('rep_visits.vendor_side.purpose_placeholder'), value: '' }) %>
+        <% if (products.length) { %>
+        <fieldset>
+          <legend class="label"><%= t('rep_visits.vendor_side.products') %></legend>
+          <div class="mk-product-checks">
+            <% products.forEach(function (p) { %><label class="check"><input type="checkbox" name="products" value="<%= p.id %>"<%= chosen.indexOf(String(p.id)) >= 0 ? ' checked' : '' %>><span><%= L(p.name, p.name_en) %></span></label><% }) %>
+          </div>
+        </fieldset>
+        <% } %>
+      <% } %>
+    </div>
+    <% if (date && !slotError && slots.length) { %><div class="panel-foot"><button class="btn btn-primary" type="submit"><%= clinic.rep_visits_auto_confirm ? t('rep_visits.vendor_side.book_now') : t('rep_visits.vendor_side.send_request') %></button></div><% } %>
+  </form>
+</div>

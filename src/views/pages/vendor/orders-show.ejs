@@ -1,0 +1,95 @@
+<%
+  var clinicName = locale === 'en' && po.clinic_name_en ? po.clinic_name_en : po.clinic_name;
+  var st = po.status;
+  var steps = [
+    { key: 'sent', at: po.sent_at, done: true },
+    { key: 'acknowledged', at: po.acknowledged_at, done: !!po.acknowledged_at },
+    st === 'cancelled' ? { key: 'cancelled', at: po.cancelled_at, done: true } : { key: 'received', at: po.received_at, done: st === 'received' },
+  ];
+  var currentIdx = -1; steps.forEach(function (s, k) { if (s.done) currentIdx = k; });
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/vendor/orders"><%= t('purchasing.vendor.title') %></a><%- icon('chevron-right', 'flip-rtl') %>#<%= po.po_number %></div>
+    <div class="row wrap"><h1><%= t('purchasing.po_no', { n: po.po_number }) %></h1><% if (st === 'sent') { %><span class="badge badge-brand badge-dot"><%= t('purchasing.vendor.status_new') %></span><% } else if (st === 'acknowledged') { %><span class="badge badge-info badge-dot"><%= t('purchasing.vendor.tab_confirmed') %></span><% } else { %><%- include('../purchasing/_status', { status: st }) %><% } %></div>
+    <p><%= clinicName %> · <%= t('purchasing.sent_on', { d: when(po.sent_at) }) %></p>
+  </div>
+</div>
+
+<% if (st === 'cancelled') { %>
+<div class="alert alert-danger mb-4" role="status"><%- icon('circle-x') %><div class="grow"><div class="alert-title"><%= t('purchasing.vendor.cancelled_title') %></div><div class="small"><%= t('purchasing.vendor.cancelled_text') %></div></div></div>
+<% } %>
+
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('purchasing.items') %></h2><span class="small muted"><%= t('purchasing.lines_count', { n: fmt.number(po.lines.length) }) %></span></div>
+      <div class="table-wrap">
+        <table class="table responsive">
+          <thead><tr><th>#</th><th><%= t('purchasing.item') %></th><th><%= t('purchasing.unit') %></th><th class="num"><%= t('purchasing.quantity') %></th></tr></thead>
+          <tbody>
+            <% po.lines.forEach(function (l, k) { %>
+            <tr>
+              <td data-label="#" class="muted"><%= k + 1 %></td>
+              <td class="primary-cell"><div class="strong"><%= l.name %></div><% if (l.product_sku || (l.product_name && l.product_name !== l.name)) { %><div class="tiny muted"><%= [l.product_name && l.product_name !== l.name ? l.product_name : null, l.product_sku ? t('purchasing.vendor.sku', { sku: l.product_sku }) : null].filter(Boolean).join(' · ') %></div><% } %></td>
+              <td data-label="<%= t('purchasing.unit') %>"><%= l.unit || '—' %></td>
+              <td class="num strong" data-label="<%= t('purchasing.quantity') %>"><%= fmt.number(l.quantity) %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <% if (po.notes) { %>
+    <div class="panel"><div class="panel-head"><h2><%= t('purchasing.vendor.clinic_notes') %></h2></div><div class="panel-body"><p class="po-pre"><%= po.notes %></p></div></div>
+    <% } %>
+
+    <% if (st === 'sent') { %>
+    <div class="panel">
+      <div class="panel-head"><div><h2><%= t('purchasing.vendor.confirm_title') %></h2><div class="small muted"><%= t('purchasing.vendor.confirm_hint', { clinic: clinicName }) %></div></div></div>
+      <form method="post" action="/vendor/orders/<%= po.id %>/acknowledge" class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/field', { name: 'note', label: t('purchasing.vendor.note_optional'), type: 'textarea', placeholder: t('purchasing.vendor.note_ph'), value: '' }) %>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('purchasing.vendor.confirm') %></button></div>
+      </form>
+    </div>
+    <% } else if (st !== 'cancelled') { %>
+    <div class="panel">
+      <div class="panel-head"><div><h2><%= t('purchasing.vendor.note_title') %></h2><% if (po.vendor_noted_at) { %><div class="small muted"><%= t('purchasing.vendor.note_last', { d: when(po.vendor_noted_at) }) %></div><% } %></div></div>
+      <form method="post" action="/vendor/orders/<%= po.id %>/note" class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/field', { name: 'note', label: t('purchasing.vendor.note'), type: 'textarea', placeholder: t('purchasing.vendor.note_ph'), value: po.vendor_note || '', required: true }) %>
+        <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('send', 'icon-sm') %><%= t('purchasing.vendor.save_note') %></button></div>
+      </form>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('purchasing.vendor.clinic') %></h2></div>
+      <div class="panel-body">
+        <dl class="dl po-dl">
+          <dt><%= t('purchasing.mail.clinic') %></dt><dd><%= clinicName %></dd>
+          <% if (po.clinic_city || po.clinic_address) { %><dt><%= t('purchasing.mail.address') %></dt><dd><%= [po.clinic_address, po.clinic_city].filter(Boolean).join('، ') %><% if (po.clinic_map_url) { %> · <a class="link" href="<%= po.clinic_map_url %>" target="_blank" rel="noopener"><%= t('purchasing.vendor.map') %></a><% } %></dd><% } %>
+          <% if (po.clinic_phone) { %><dt><%= t('purchasing.mail.phone') %></dt><dd><a class="link" dir="ltr" href="tel:<%= po.clinic_phone.replace(/[^0-9+]/g, '') %>"><%= po.clinic_phone %></a></dd><% } %>
+          <% if (po.contact_name) { %><dt><%= t('purchasing.contact') %></dt><dd><%= po.contact_name %><% if (po.contact_phone && po.contact_phone !== po.clinic_phone) { %><div><a class="link" dir="ltr" href="tel:<%= po.contact_phone.replace(/[^0-9+]/g, '') %>"><%= po.contact_phone %></a></div><% } %><% if (po.contact_email) { %><div><a class="link" dir="ltr" href="mailto:<%= po.contact_email %>"><%= po.contact_email %></a></div><% } %></dd><% } %>
+        </dl>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('purchasing.timeline') %></h2></div>
+      <div class="panel-body">
+        <ol class="po-timeline">
+          <% steps.forEach(function (s, k) { %>
+          <li class="<%= s.done ? 'done' : '' %><%= k === currentIdx ? ' current' : '' %><%= s.key === 'cancelled' ? ' cancelled' : '' %>">
+            <span class="po-tl-dot" aria-hidden="true"></span>
+            <div><div class="strong small"><%= t('purchasing.vendor.tl.' + s.key) %></div><div class="tiny muted"><%= s.done ? when(s.at) : t('purchasing.tl.waiting') %></div></div>
+          </li>
+          <% }) %>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>

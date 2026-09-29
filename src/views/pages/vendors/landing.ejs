@@ -1,0 +1,56 @@
+<%
+  var _features = [['target', 'f_reach'], ['package', 'f_products'], ['megaphone', 'f_offers'], ['calendar-clock', 'f_visits'], ['mail', 'f_orders'], ['shield-check', 'f_privacy']];
+%>
+<section class="section vendors-hero">
+  <div class="container vendors-narrow">
+    <span class="lp-kicker"><%= t('vendors.kicker') %></span>
+    <h1><%= t('vendors.landing_title') %></h1>
+    <p class="lead"><%= t('vendors.landing_lead') %></p>
+    <div class="row wrap vendors-cta">
+      <% if (mine) { %>
+        <a class="btn btn-primary btn-lg" href="/vendor"><%= t('vendors.open_portal') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
+      <% } else if (currentUser) { %>
+        <a class="btn btn-primary btn-lg" href="/vendors/signup"><%= t('vendors.register_existing_cta') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
+      <% } else { %>
+        <a class="btn btn-primary btn-lg" href="/vendors/signup"><%= t('vendors.signup_cta') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
+        <a class="btn btn-secondary btn-lg" href="/login"><%= t('vendors.sign_in') %></a>
+      <% } %>
+    </div>
+    <p class="small muted mt-4"><%= t('vendors.landing_note') %></p>
+  </div>
+</section>
+
+<section class="section sec-muted" id="benefits">
+  <div class="container">
+    <div class="section-head center"><h2><%= t('vendors.benefits_title') %></h2><p><%= t('vendors.benefits_lead') %></p></div>
+    <div class="lp-feature-grid">
+      <% _features.forEach(function (f) { %>
+      <article class="lp-feature">
+        <span class="lp-icon"><%- icon(f[0]) %></span>
+        <h3><%= t('vendors.' + f[1] + '_title') %></h3>
+        <p><%= t('vendors.' + f[1] + '_text') %></p>
+      </article>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-head center"><h2><%= t('vendors.steps_title') %></h2></div>
+    <ol class="lp-step-list">
+      <% [1, 2, 3, 4].forEach(function (n) { %>
+      <li class="lp-step"><span class="lp-step-n num"><%= n %></span><h3><%= t('vendors.step' + n + '_title') %></h3><p><%= t('vendors.step' + n + '_text') %></p></li>
+      <% }) %>
+    </ol>
+  </div>
+</section>
+
+<section class="section vendors-end">
+  <div class="container vendors-narrow">
+    <div class="panel"><div class="panel-body vendors-end-body">
+      <div class="grow"><h2><%= t('vendors.end_title') %></h2><p class="muted"><%= t('vendors.end_text') %></p></div>
+      <% if (mine) { %><a class="btn btn-primary" href="/vendor"><%= t('vendors.open_portal') %></a><% } else { %><a class="btn btn-primary" href="/vendors/signup"><%= currentUser ? t('vendors.register_existing_cta') : t('vendors.signup_cta') %></a><% } %>
+    </div></div>
+  </div>
+</section>

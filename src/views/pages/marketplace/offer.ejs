@@ -1,0 +1,54 @@
+<%
+  var body = L(o.body, o.body_en);
+  var validity = o.starts_on && o.ends_on ? t('market.valid_from_to', { from: fmt.date(o.starts_on), to: fmt.date(o.ends_on) }) : o.ends_on ? t('market.valid_until', { date: fmt.date(o.ends_on) }) : o.starts_on ? t('market.valid_from', { date: fmt.date(o.starts_on) }) : t('market.open_ended');
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/marketplace"><%= t('nav.marketplace') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/marketplace?tab=offers"><%= t('market.tab_offers') %></a></div>
+    <h1><%= L(o.title, o.title_en) %></h1>
+    <p><%= L(o.vendor_name, o.vendor_name_en) %> · <%= validity %></p>
+  </div>
+  <% if (can('vendors.manage')) { %>
+  <div class="page-actions">
+    <% if (o.dismissed_at) { %>
+      <form method="post" action="/app/marketplace/offers/<%= o.id %>/dismiss"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="undo" value="1"><button class="btn btn-secondary" type="submit"><%- icon('archive-restore', 'icon-sm') %><%= t('market.restore') %></button></form>
+    <% } else { %>
+      <form method="post" action="/app/marketplace/offers/<%= o.id %>/dismiss" data-confirm="<%= t('market.dismiss_confirm') %>" data-confirm-title="<%= t('market.dismiss_title') %>" data-confirm-yes="<%= t('market.dismiss') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('eye-off', 'icon-sm') %><%= t('market.dismiss') %></button></form>
+    <% } %>
+  </div>
+  <% } %>
+</div>
+
+<% if (o.dismissed_at) { %><div class="alert mb-4" role="status"><%- icon('eye-off') %><div class="grow"><%= t('market.dismissed_note') %></div></div><% } %>
+
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel">
+      <% if (o.image_mime) { %><div class="mk-hero"><img src="/app/marketplace/img/offer/<%= o.id %>" alt=""></div><% } %>
+      <div class="panel-body stack">
+        <% if (body) { %><div class="mk-pre mk-body"><%= body %></div><% } %>
+        <dl class="dl mk-dl">
+          <dt><%= t('market.validity') %></dt><dd><%= validity %></dd>
+          <% if (o.specialties.length) { %><dt><%= t('market.specialties') %></dt><dd><%= o.specialties.map(specialtyLabel).join('، ') %></dd><% } %>
+        </dl>
+      </div>
+    </div>
+    <% if (o.products.length) { %>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('market.linked_products') %></h2></div>
+      <ul class="mk-list">
+        <% o.products.forEach(function (p) { %>
+        <li>
+          <% if (p.image_mime) { %><img class="mk-thumb" src="/app/marketplace/img/product/<%= p.id %>" alt="" loading="lazy"><% } else { %><span class="mk-thumb mk-thumb-empty"><%- icon('package', 'icon-sm') %></span><% } %>
+          <div class="grow"><a class="strong" href="/app/marketplace/products/<%= p.id %>"><%= L(p.name, p.name_en) %></a><div class="tiny muted"><%= [p.brand, p.unit, p.pack_size].filter(Boolean).join(' · ') %></div></div>
+          <% if (p.supply_item_id) { %><span class="badge badge-dot badge-success"><%= t('market.in_supplies') %></span><% } else if (canLink) { %><a class="btn btn-ghost btn-sm" href="/app/marketplace/products/<%= p.id %>?add=1"><%- icon('plus', 'icon-sm') %><%= t('market.add_to_supplies') %></a><% } %>
+        </li>
+        <% }) %>
+      </ul>
+    </div>
+    <% } %>
+  </div>
+  <div class="stack">
+    <% if (o.vendor) { %><%- include('_vendor-contact', { vend: o.vendor, supplierLinked: supplierLinked }) %><% } %>
+  </div>
+</div>

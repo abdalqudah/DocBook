@@ -32,7 +32,7 @@ async function lowStockCheck(ctx, itemId, trx = knex) {
     if (it.supplier_email) {
       const clinic = await businesses.get(ctx.businessId);
       mailer.send({ to: it.supplier_email, subject: `Restock request — ${it.name} — ${clinic.name}`,
-        html: mailer.layout({ locale: 'ar', title: `طلب إعادة تعبئة — ${it.name}`, body: `${it.supplier_name || ''}: وصل مخزون ${it.name} في ${clinic.name} إلى ${Number(it.current_stock)} ${it.unit || ''} (حد إعادة الطلب ${Number(it.reorder_level)}). يرجى تجهيز طلبية جديدة. / Stock of ${it.name} reached ${Number(it.current_stock)} ${it.unit || ''} (reorder level ${Number(it.reorder_level)}). Please prepare a new delivery.` }) }).catch(() => {});
+        html: mailer.layout({ locale: 'ar', title: `طلب إعادة تعبئة — ${it.name}`, body: `${it.supplier_name || ''}: وصل مخزون ${it.name} في ${clinic.name} إلى ${Number(it.current_stock)} ${it.unit || ''} (حد إعادة الطلب ${Number(it.reorder_level)}). سيصلكم أمر شراء بالكميات المطلوبة قريبًا. / Stock of ${it.name} reached ${Number(it.current_stock)} ${it.unit || ''} (reorder level ${Number(it.reorder_level)}). A purchase order with the quantities will follow.` }) }).catch(() => {});
     }
   } else if (!low && it.last_reorder_requested_at) {
     await trx('supply_items').where({ id: it.id }).update({ last_reorder_requested_at: null });

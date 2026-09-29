@@ -1,0 +1,77 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var steps = [
+    { done: Boolean(profile.phone || profile.whatsapp) && Boolean(profile.about || profile.about_en) && Boolean(profile.logo_mime), href: '/vendor/profile', key: 'step_profile' },
+    { done: counts.productsAll > 0, href: '/vendor/products/new', key: 'step_product' },
+    { done: counts.offers > 0, href: '/vendor/offers/new', key: 'step_offer' },
+    { done: vendor.status === 'active', href: null, key: 'step_approval' }
+  ];
+  var pendingSteps = steps.filter(function (s) { return !s.done; }).length;
+%>
+<div class="page-head">
+  <div><h1><%= t('vendor_portal.welcome', { name: L(vendor.name, vendor.name_en) }) %></h1><p><%= t('vendor_portal.dashboard_lead') %></p></div>
+  <div class="page-actions">
+    <% if (counts.productsAll === 0) { %><a class="btn btn-primary" href="/vendor/products/new"><%- icon('plus', 'icon-sm') %><%= t('vendor_portal.product_new') %></a>
+    <% } else { %><a class="btn btn-secondary" href="/vendor/products/new"><%- icon('plus', 'icon-sm') %><%= t('vendor_portal.product_new') %></a><a class="btn btn-primary" href="/vendor/offers/new"><%- icon('megaphone', 'icon-sm') %><%= t('vendor_portal.offer_new') %></a><% } %>
+  </div>
+</div>
+<% if (verifyNeeded) { %>
+<div class="alert alert-info mb-4"><%- icon('mail') %><div class="grow small"><%= t('verify.banner', { email: currentUser.email }) %></div><form method="post" action="/verify-email/resend"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('verify.resend') %></button></form></div>
+<% } %>
+<div class="stats cols-5">
+  <a class="stat card-link" href="/vendor/products?status=active"><div class="stat-label"><%= t('vendor_portal.stat_products') %><span class="stat-icon"><%- icon('package') %></span></div><div class="stat-value"><%= fmt.number(counts.products) %></div><div class="stat-meta"><%= t('vendor_portal.stat_products_meta', { n: fmt.number(counts.productsAll) }) %></div></a>
+  <a class="stat card-link" href="/vendor/offers?status=published"><div class="stat-label"><%= t('vendor_portal.stat_offers') %><span class="stat-icon"><%- icon('megaphone') %></span></div><div class="stat-value"><%= fmt.number(counts.offers) %></div><div class="stat-meta"><%= t('vendor_portal.stat_offers_meta', { n: fmt.number(counts.drafts) }) %></div></a>
+  <a class="stat card-link" href="/vendor/offers"><div class="stat-label"><%= t('vendor_portal.stat_views') %><span class="stat-icon"><%- icon('eye') %></span></div><div class="stat-value"><%= fmt.number(counts.views) %></div><div class="stat-meta"><%= t('vendor_portal.stat_views_meta') %></div></a>
+  <a class="stat card-link" href="/vendor/visits"><div class="stat-label"><%= t('vendor_portal.stat_visits') %><span class="stat-icon"><%- icon('calendar-clock') %></span></div><div class="stat-value"><%= fmt.number(counts.visits) %></div><div class="stat-meta"><%= t('vendor_portal.stat_visits_meta') %></div></a>
+  <a class="stat card-link" href="/vendor/orders"><div class="stat-label"><%= t('vendor_portal.stat_orders') %><span class="stat-icon"><%- icon('clipboard-list') %></span></div><div class="stat-value"><%= fmt.number(counts.orders) %></div><div class="stat-meta"><%= t('vendor_portal.stat_orders_meta') %></div></a>
+</div>
+
+<div class="grid grid-main mt-6">
+  <div class="stack-lg">
+    <section class="panel flush">
+      <div class="panel-head"><h2><%= t('vendor_portal.next_visits') %></h2><a class="link small" href="/vendor/visits"><%= t('common.view_all') %></a></div>
+      <% if (!nextVisits.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'calendar-clock', emptyTitle: t('vendor_portal.no_visits'), emptyText: vendor.status === 'active' ? t('vendor_portal.no_visits_text') : t('vendor_portal.no_visits_pending'), compact: true }) %>
+      <% } else { %>
+      <ul class="vendor-list">
+        <% nextVisits.forEach(function (r) { %>
+        <li>
+          <div class="vendor-date num"><span><%= fmt.date(r.visit_date, { day: 'numeric', month: 'short' }) %></span><span class="muted" dir="ltr"><%= r.visit_time %></span></div>
+          <div class="grow" style="min-width:0"><div class="strong truncate"><%= L(r.clinic_name, r.clinic_name_en) %></div><div class="small muted truncate"><%= [L(r.doctor_name, r.doctor_name_en), r.clinic_city].filter(Boolean).join(' · ') %></div></div>
+          <span class="badge badge-dot <%= r.status === 'confirmed' ? 'badge-success' : 'badge-neutral' %>"><%= t('vendor_portal.visit_status.' + r.status) %></span>
+        </li>
+        <% }) %>
+      </ul>
+      <% } %>
+    </section>
+    <section class="panel flush">
+      <div class="panel-head"><h2><%= t('vendor_portal.live_offers') %></h2><a class="link small" href="/vendor/offers"><%= t('common.view_all') %></a></div>
+      <% if (!topOffers.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'megaphone', emptyTitle: t('vendor_portal.no_live_offers'), emptyText: t('vendor_portal.no_live_offers_text'), compact: true }) %>
+      <% } else { %>
+      <ul class="vendor-list">
+        <% topOffers.forEach(function (o) { %>
+        <li>
+          <div class="grow" style="min-width:0"><a class="strong truncate" href="/vendor/offers/<%= o.id %>"><%= L(o.title, o.title_en) %></a><div class="small muted"><%= o.ends_on ? t('vendor_portal.until', { date: fmt.date(o.ends_on) }) : t('vendor_portal.no_end') %></div></div>
+          <span class="small muted nowrap"><%- icon('eye', 'icon-sm') %> <%= t('vendor_portal.seen_by', { n: fmt.number(o.views) }) %></span>
+        </li>
+        <% }) %>
+      </ul>
+      <% } %>
+    </section>
+  </div>
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('vendor_portal.getting_started') %></h2><span class="small muted"><%= t('vendor_portal.steps_left', { n: pendingSteps }) %></span></div>
+    <div class="panel-body">
+      <ul class="checklist">
+        <% steps.forEach(function (s) { %>
+        <li class="<%= s.done ? 'done' : '' %>"><span class="check-dot"><% if (s.done) { %><%- icon('check', 'icon-sm') %><% } %></span>
+          <span class="grow"><%= t('vendor_portal.' + s.key) %><% if (s.key === 'step_approval' && !s.done) { %><span class="tiny muted" style="display:block"><%= t('vendor_portal.step_approval_help') %></span><% } %></span>
+          <% if (!s.done && s.href) { %><a class="link small" href="<%= s.href %>"><%= t('vendor_portal.go') %></a><% } %>
+        </li>
+        <% }) %>
+      </ul>
+      <p class="small muted mt-4"><%- icon('shield-check', 'icon-sm') %> <%= t('vendor_portal.privacy_note') %></p>
+    </div>
+  </section>
+</div>

@@ -13,13 +13,14 @@
   </div>
   <div class="page-actions">
     <% if (tab === 'items' && summary.count) { %><%- include('../../../partials/export-menu', { href: '/app/supplies/export' }) %><% } %>
+    <a class="btn btn-secondary" href="/app/supplies/orders"><%- icon('clipboard-list', 'icon-sm') %><%= t('purchasing.orders_link') %></a>
     <% if (canManage && tab === 'items') { %><button class="btn btn-primary" type="button" data-open-dialog="item-dialog" data-reset-form data-action="/app/supplies/items" data-dialog-title="<%= t('supplies.add_item') %>"><%- icon('plus', 'icon-sm') %><%= t('supplies.add_item') %></button><% } %>
     <% if (canManage && tab === 'suppliers') { %><button class="btn btn-primary" type="button" data-open-dialog="supplier-dialog" data-reset-form data-action="/app/supplies/suppliers" data-dialog-title="<%= t('supplies.add_supplier') %>"><%- icon('plus', 'icon-sm') %><%= t('supplies.add_supplier') %></button><% } %>
   </div>
 </div>
 
 <% if (summary.low && !lowOnly) { %>
-<div class="alert alert-warning mb-4" role="status"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('supplies.low_banner', { n: fmt.number(summary.low) }) %></div><div class="small"><%= t('supplies.low_banner_text') %></div></div><a class="btn btn-secondary btn-sm" href="/app/supplies?low=yes"><%= t('supplies.show_low') %></a></div>
+<div class="alert alert-warning mb-4" role="status"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('supplies.low_banner', { n: fmt.number(summary.low) }) %></div><div class="small"><%= t('supplies.low_banner_text') %></div></div><div class="row-sm wrap"><a class="btn btn-secondary btn-sm" href="/app/supplies?low=yes"><%= t('supplies.show_low') %></a><% if (canManage) { %><form method="post" action="/app/supplies/orders/low-stock" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('clipboard-list', 'icon-sm') %><%= t('purchasing.order_low_short') %></button></form><% } %></div></div>
 <% } %>
 
 <div class="stats ops-stats">
@@ -101,6 +102,7 @@
           <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= s.is_active ? 'badge-success' : 'badge-neutral' %>"><%= s.is_active ? t('common.active') : t('common.inactive') %></span></td>
           <td class="actions">
             <% if (canManage) { %>
+              <a class="btn btn-ghost btn-icon btn-sm" href="/app/supplies/orders/new?supplier=<%= s.id %>" aria-label="<%= t('purchasing.new_for_supplier') %>" title="<%= t('purchasing.new_for_supplier') %>"><%- icon('clipboard-plus', 'icon-sm') %></a>
               <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="supplier-dialog" data-action="/app/supplies/suppliers/<%= s.id %>" data-dialog-title="<%= t('supplies.edit_supplier') %>" data-fill="<%= json({ name: s.name, email: s.email, phone: s.phone, notes: s.notes, is_active: !!s.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button>
               <% if (s.items) { %><button class="btn btn-ghost btn-icon btn-sm" type="button" disabled aria-label="<%= t('common.delete') %>" title="<%= t('errors_ops.SUPPLIER_IN_USE', { n: s.items }) %>"><%- icon('trash-2', 'icon-sm') %></button>
               <% } else { %><%- include('../../../partials/delete-form', { action: '/app/supplies/suppliers/' + s.id + '/delete', confirmText: t('supplies.delete_supplier_confirm', { name: s.name }) }) %><% } %>

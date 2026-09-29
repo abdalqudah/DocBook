@@ -1,0 +1,64 @@
+<%
+  var canManage = can('supplies.manage');
+  var st = query.status || 'all';
+  var tabUrl = function (s) { var o = []; if (s !== 'all') o.push('status=' + s); if (query.supplier && query.supplier !== 'all') o.push('supplier=' + encodeURIComponent(query.supplier)); return '/app/supplies/orders' + (o.length ? '?' + o.join('&') : ''); };
+  var n = function (k) { return counts[k] || 0; };
+  var all = Object.keys(counts).reduce(function (a, k) { return a + counts[k]; }, 0);
+  var tabs = [['all', t('common.all'), all], ['draft', t('purchasing.tab.draft'), n('draft')], ['open', t('purchasing.tab.open'), n('sent') + n('acknowledged')], ['received', t('purchasing.tab.received'), n('received')], ['cancelled', t('purchasing.tab.cancelled'), n('cancelled')]];
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/supplies"><%= t('supplies.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('purchasing.title') %></div>
+    <h1><%= t('purchasing.title') %></h1>
+    <p><%= t('purchasing.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (all) { %><%- include('../../partials/export-menu', { href: '/app/supplies/orders/export' }) %><% } %>
+    <% if (canManage && lowToOrder) { %>
+      <form method="post" action="/app/supplies/orders/low-stock" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('triangle-alert', 'icon-sm') %><%= t('purchasing.order_low', { n: fmt.number(lowToOrder) }) %></button></form>
+    <% } %>
+    <% if (canManage) { %><a class="btn btn-primary" href="/app/supplies/orders/new"><%- icon('plus', 'icon-sm') %><%= t('purchasing.new') %></a><% } %>
+  </div>
+</div>
+
+<nav class="tabs" aria-label="<%= t('common.status') %>">
+  <% tabs.forEach(function (tb) { var on = st === tb[0]; %><a href="<%= tabUrl(tb[0]) %>" class="<%= on ? 'active' : '' %>"<%= on ? ' aria-current="page"' : '' %>><%= tb[1] %> <span class="count"><%= fmt.number(tb[2]) %></span></a><% }) %>
+</nav>
+
+<div class="panel flush mt-4">
+  <% if (all) { %>
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <% if (st !== 'all') { %><input type="hidden" name="status" value="<%= st %>"><% } %>
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" inputmode="numeric" value="<%= query.q || '' %>" placeholder="<%= t('purchasing.search') %>" aria-label="<%= t('common.search') %>"></div>
+    <% if (suppliers.length) { %><select class="select" name="supplier" aria-label="<%= t('purchasing.supplier') %>"><option value="all"><%= t('supplies.all_suppliers') %></option><% suppliers.forEach(function (s) { %><option value="<%= s.id %>"<%= String(query.supplier) === String(s.id) ? ' selected' : '' %>><%= s.name %></option><% }) %></select><% } %>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+    <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/supplies/orders"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+  <% } %>
+  <% if (!rows.length) { %>
+    <% if (all) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/supplies/orders">' + t('table.clear_filters') + '</a>' }) %>
+    <% } else { %>
+      <%- include('../../partials/empty', { emptyIcon: 'clipboard-list', emptyTitle: t('purchasing.empty_title'), emptyText: t('purchasing.empty_text'), emptyAction: canManage ? '<a class="btn btn-primary btn-sm" href="/app/supplies/orders/new">' + t('purchasing.new') + '</a>' : '' }) %>
+    <% } %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('purchasing.number') %></th><th><%= t('purchasing.supplier') %></th><th class="num"><%= t('purchasing.lines') %></th><th><%= t('common.date') %></th><th><%= t('common.status') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { var partial = r.qty_received > 0 && r.qty_received < r.qty_total; %>
+        <tr>
+          <td class="primary-cell"><a class="strong" href="/app/supplies/orders/<%= r.id %>"><%= r.po_number ? '#' + r.po_number : t('purchasing.draft') %></a><% if (r.status === 'draft') { %><div class="tiny muted"><%= t('purchasing.no_number_yet') %></div><% } %></td>
+          <td data-label="<%= t('purchasing.supplier') %>"><%= r.supplier_name %><% if (r.vendor_id) { %> <span class="tiny muted">· <%= t('purchasing.on_docbook', { brand: brandName }) %></span><% } %></td>
+          <td class="num" data-label="<%= t('purchasing.lines') %>"><%= fmt.number(r.line_count) %></td>
+          <td data-label="<%= t('common.date') %>"><span class="small"><%= when(r.sent_at || r.created_at) %></span><div class="tiny muted"><%= r.sent_at ? (r.sent_to_email ? t('purchasing.by_email') : t('purchasing.sent_other')) : t('purchasing.created') %></div></td>
+          <td data-label="<%= t('common.status') %>"><%- include('_status', { status: r.status, partial: partial }) %></td>
+          <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="/app/supplies/orders/<%= r.id %>" aria-label="<%= t('purchasing.open') %>" title="<%= t('purchasing.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</div>

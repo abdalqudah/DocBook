@@ -1,0 +1,157 @@
+<%
+  var vName = function (r) { return L(r.vendor_name, r.vendor_name_en); };
+  var excerpt = function (s, n) { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+  var qs = function (extra) { var o = Object.assign({}, query, extra); return '?' + Object.keys(o).filter(function (k) { return o[k] !== undefined && o[k] !== '' && o[k] !== null; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(o[k]); }).join('&'); };
+  var spec = typeof filterSpecialty !== 'undefined' ? filterSpecialty : null;
+  var specQs = !ownSpecialty && spec ? '&specialty=' + spec : '';
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_operations') %></div>
+    <h1><%= t('nav.marketplace') %></h1>
+    <p><%= t('market.lead') %></p>
+  </div>
+</div>
+
+<div class="mk-scope">
+  <% if (ownSpecialty) { %>
+    <span class="badge badge-dot badge-brand"><%= t('market.for_specialty', { specialty: specialtyLabel(ownSpecialty) }) %></span>
+  <% } else { %>
+    <form method="get" class="row-sm" data-autosubmit>
+      <input type="hidden" name="tab" value="<%= tab %>">
+      <label class="sr-only" for="mk-spec"><%= t('market.specialty') %></label>
+      <select class="select" id="mk-spec" name="specialty"><option value="all"><%= t('market.all_specialties') %></option><% specialtyOptions.forEach(function (s) { %><option value="<%= s %>"<%= spec === s ? ' selected' : '' %>><%= specialtyLabel(s) %></option><% }) %></select>
+      <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+    </form>
+  <% } %>
+  <span class="small muted mk-note"><%= t('market.catalog_note') %></span>
+</div>
+
+<nav class="tabs mt-4" aria-label="<%= t('nav.marketplace') %>">
+  <a href="/app/marketplace?tab=offers<%= specQs %>" class="<%= tab === 'offers' ? 'active' : '' %>"<%= tab === 'offers' ? ' aria-current="page"' : '' %>><%- icon('megaphone', 'icon-sm') %><%= t('market.tab_offers') %><% if (newCount) { %> <span class="count"><%= fmt.number(newCount) %></span><% } %></a>
+  <a href="/app/marketplace?tab=products<%= specQs %>" class="<%= tab === 'products' ? 'active' : '' %>"<%= tab === 'products' ? ' aria-current="page"' : '' %>><%- icon('package', 'icon-sm') %><%= t('market.tab_products') %></a>
+  <a href="/app/marketplace?tab=vendors<%= specQs %>" class="<%= tab === 'vendors' ? 'active' : '' %>"<%= tab === 'vendors' ? ' aria-current="page"' : '' %>><%- icon('building-2', 'icon-sm') %><%= t('market.tab_vendors') %></a>
+</nav>
+
+<% if (tab === 'offers') { %>
+  <div class="between mt-4 mk-subbar">
+    <span class="small muted"><%= showDismissed ? t('market.show_dismissed') : t('market.show_active') %></span>
+    <a class="btn btn-ghost btn-sm" href="/app/marketplace?tab=offers<%= specQs %><%= showDismissed ? '' : '&show=dismissed' %>"><%- icon(showDismissed ? 'megaphone' : 'eye-off', 'icon-sm') %><%= showDismissed ? t('market.show_active') : t('market.show_dismissed') %></a>
+  </div>
+  <% if (!offers.length) { %>
+    <div class="panel mt-2"><%- include('../../partials/empty', { emptyIcon: 'megaphone', emptyTitle: showDismissed ? t('market.dismissed_empty_title') : t('market.offers_empty_title'), emptyText: showDismissed ? t('market.dismissed_empty_text') : t('market.offers_empty_text') }) %></div>
+  <% } else { %>
+  <div class="mk-grid mt-2">
+    <% offers.forEach(function (o) { %>
+    <a class="panel card-link mk-card" href="/app/marketplace/offers/<%= o.id %>">
+      <% if (o.image_mime) { %><div class="mk-media"><img src="/app/marketplace/img/offer/<%= o.id %>" alt="" loading="lazy"></div><% } %>
+      <div class="mk-card-body">
+        <div class="person mk-vendor">
+          <% if (o.vendor_logo_mime) { %><img class="avatar mk-logo" src="/app/marketplace/img/vendor/<%= o.vendor_id %>" alt=""><% } else { %><span class="avatar"><%= initials(vName(o)) %></span><% } %>
+          <div class="grow"><div class="small strong truncate"><%= vName(o) %></div><div class="tiny muted"><%= t('market.type_' + o.vendor_type) %></div></div>
+          <% if (!o.seen_at) { %><span class="badge badge-dot badge-brand"><%= t('market.new') %></span><% } %>
+        </div>
+        <h3 class="mk-title"><%= L(o.title, o.title_en) %></h3>
+        <p class="small muted mk-excerpt"><%= excerpt(L(o.body, o.body_en), 150) %></p>
+        <div class="tiny muted mk-meta"><%- icon('calendar', 'icon-sm') %><%= o.ends_on ? t('market.valid_until', { date: fmt.date(o.ends_on) }) : t('market.open_ended') %></div>
+      </div>
+    </a>
+    <% }) %>
+  </div>
+  <% } %>
+<% } %>
+
+<% if (tab === 'products') { %>
+<div class="panel flush mt-4">
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <input type="hidden" name="tab" value="products"><% if (!ownSpecialty && spec) { %><input type="hidden" name="specialty" value="<%= spec %>"><% } %>
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('market.search_products') %>" aria-label="<%= t('common.search') %>"></div>
+    <% if (vendorOptions.length) { %><select class="select" name="vendor" aria-label="<%= t('market.vendor') %>"><option value=""><%= t('market.all_vendors') %></option><% vendorOptions.forEach(function (v) { %><option value="<%= v.id %>"<%= String(query.vendor) === String(v.id) ? ' selected' : '' %>><%= L(v.name, v.name_en) %></option><% }) %></select><% } %>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+    <% if (query.q || query.vendor) { %><a class="btn btn-ghost btn-sm" href="/app/marketplace?tab=products<%= specQs %>"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+  <% if (!products.length) { %>
+    <% if (query.q || query.vendor) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/marketplace?tab=products' + specQs + '">' + t('table.clear_filters') + '</a>' }) %>
+    <% } else { %>
+      <%- include('../../partials/empty', { emptyIcon: 'package', emptyTitle: t('market.products_empty_title'), emptyText: t('market.products_empty_text') }) %>
+    <% } %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('market.product') %></th><th><%= t('market.vendor') %></th><th><%= t('market.pack_size') %></th><th class="num"><%= t('market.price') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% products.forEach(function (p) { %>
+        <tr>
+          <td class="primary-cell">
+            <div class="person">
+              <% if (p.image_mime) { %><img class="mk-thumb" src="/app/marketplace/img/product/<%= p.id %>" alt="" loading="lazy"><% } else { %><span class="mk-thumb mk-thumb-empty"><%- icon('package', 'icon-sm') %></span><% } %>
+              <div class="grow"><a class="strong" href="/app/marketplace/products/<%= p.id %>"><%= L(p.name, p.name_en) %></a><div class="tiny muted"><%= [p.brand, p.sku].filter(Boolean).join(' · ') || '—' %></div></div>
+            </div>
+          </td>
+          <td data-label="<%= t('market.vendor') %>"><%= vName(p) %></td>
+          <td data-label="<%= t('market.pack_size') %>" dir="auto"><%= [p.unit, p.pack_size].filter(Boolean).join(' · ') || '—' %></td>
+          <td data-label="<%= t('market.price') %>" class="num"><%= p.price !== null && p.price !== undefined ? fmt.money(p.price, p.currency || currency) : '—' %></td>
+          <td class="actions nowrap">
+            <% if (p.supply_item_id) { %>
+              <span class="badge badge-dot badge-success"><%= t('market.in_supplies') %></span>
+            <% } else if (canLink) { %>
+              <a class="btn btn-secondary btn-sm" href="/app/marketplace/products/<%= p.id %>?add=1" data-open-dialog="supply-dialog" data-action="/app/marketplace/products/<%= p.id %>/supplies" data-fill="<%= json({ product_label: L(p.name, p.name_en) + (p.pack_size ? ' (' + p.pack_size + ')' : ''), unit_cost: p.price !== null && p.price !== undefined ? String(Number(p.price)) : '', reorder_level: '', current_stock: '' }) %>"><%- icon('plus', 'icon-sm') %><%= t('market.add_to_supplies') %></a>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</div>
+<% if (canLink) { %><%- include('_supply-dialog', { returnTo: fullPath }) %><% } %>
+<% } %>
+
+<% if (tab === 'vendors') { %>
+<div class="panel flush mt-4">
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <input type="hidden" name="tab" value="vendors"><% if (!ownSpecialty && spec) { %><input type="hidden" name="specialty" value="<%= spec %>"><% } %>
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('market.search_vendors') %>" aria-label="<%= t('common.search') %>"></div>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+  </form>
+  <% if (!vendors.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'building-2', emptyTitle: query.q ? t('table.no_matches') : t('market.vendors_empty_title'), emptyText: query.q ? '' : t('market.vendors_empty_text') }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('market.vendor') %></th><th><%= t('market.city') %></th><th class="num"><%= t('market.products_count') %></th><th><%= t('rep_visits.contact') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% vendors.forEach(function (v) { var nm = L(v.name, v.name_en); %>
+        <tr>
+          <td class="primary-cell">
+            <div class="person">
+              <% if (v.logo_mime) { %><img class="avatar mk-logo" src="/app/marketplace/img/vendor/<%= v.id %>" alt=""><% } else { %><span class="avatar"><%= initials(nm) %></span><% } %>
+              <div class="grow"><div class="person-name"><%= nm %></div><div class="person-sub"><%= t('market.type_' + v.type) %><%= v.contact_name ? ' · ' + v.contact_name : '' %></div></div>
+            </div>
+          </td>
+          <td data-label="<%= t('market.city') %>"><%= v.city || '—' %></td>
+          <td data-label="<%= t('market.products_count') %>" class="num"><% if (Number(v.products_count)) { %><a href="/app/marketplace?tab=products&vendor=<%= v.id %><%= specQs %>"><%= fmt.number(v.products_count) %></a><% } else { %>0<% } %></td>
+          <td data-label="<%= t('rep_visits.contact') %>">
+            <div class="mk-contact-inline">
+              <% if (v.phone) { %><a href="tel:<%= v.phone %>" dir="ltr"><%= v.phone %></a><% } %>
+              <% if (v.email) { %><a class="small" href="mailto:<%= v.email %>"><%= v.email %></a><% } %>
+            </div>
+          </td>
+          <td class="actions nowrap">
+            <% if (v.supplier_id) { %>
+              <span class="badge badge-dot badge-success"><%= t('market.is_supplier') %></span>
+            <% } else if (canLink) { %>
+              <form method="post" action="/app/marketplace/vendors/<%= v.id %>/supplier" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('market.add_supplier') %></button></form>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+<% } %>

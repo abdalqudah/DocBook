@@ -1,0 +1,6 @@
+<%
+  // Calm status badge: neutral pill with a dot; coloured text only for cancelled. `partial` = some items arrived.
+  var _st = status; var _partial = typeof partial !== 'undefined' && partial && (_st === 'sent' || _st === 'acknowledged');
+  var _key = _partial ? 'partial' : _st;
+  var _cls = { draft: 'badge-neutral', sent: 'badge-info', acknowledged: 'badge-info', partial: 'badge-warning', received: 'badge-success', cancelled: 'badge-danger' }[_key] || 'badge-neutral';
+%><span class="badge badge-dot <%= _cls %>"><%= t('purchasing.status.' + _key) %></span>

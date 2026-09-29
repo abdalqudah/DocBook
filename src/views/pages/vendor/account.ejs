@@ -1,0 +1,28 @@
+<div class="page-head">
+  <div><h1><%= t('vendor_portal.nav_account') %></h1><p><%= t('vendor_portal.account_lead') %></p></div>
+</div>
+<div class="grid grid-2">
+  <form class="panel" method="post" action="/vendor/account" novalidate>
+    <div class="panel-head"><h2><%= t('vendor_portal.your_details') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (typeof pwForm === 'undefined' || !pwForm) { %><%- include('../../partials/form-error') %><% } %>
+      <%- include('../../partials/field', { name: 'name', label: t('auth.full_name'), required: true, value: me.name, errors: typeof pwForm !== 'undefined' && pwForm ? {} : errors, old: typeof pwForm !== 'undefined' && pwForm ? {} : old }) %>
+      <div class="field"><label class="label" for="f-email"><%= t('common.email') %></label><input class="input" id="f-email" type="email" value="<%= me.email %>" dir="ltr" readonly><span class="help"><%= t('vendor_portal.email_fixed') %></span></div>
+      <%- include('../../partials/field', { name: 'locale', label: t('common.language'), type: 'select', value: me.locale, options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }] }) %>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+  </form>
+  <form class="panel" method="post" action="/vendor/account/password" novalidate>
+    <div class="panel-head"><h2><%= t('vendor_portal.change_password') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (typeof pwForm !== 'undefined' && pwForm) { %><%- include('../../partials/form-error') %><% } %>
+      <% var pe = typeof pwForm !== 'undefined' && pwForm ? errors : {}; %>
+      <%- include('../../partials/field', { name: 'current_password', label: t('vendor_portal.current_password'), type: 'password', required: true, autocomplete: 'current-password', errors: pe }) %>
+      <%- include('../../partials/field', { name: 'new_password', label: t('vendor_portal.new_password'), type: 'password', required: true, autocomplete: 'new-password', help: t('auth.password_help'), errors: pe }) %>
+      <%- include('../../partials/field', { name: 'new_password_confirm', label: t('vendor_portal.confirm_password'), type: 'password', required: true, autocomplete: 'new-password', errors: pe }) %>
+    </div>
+    <div class="panel-foot"><button class="btn btn-secondary" type="submit"><%= t('vendor_portal.change_password') %></button></div>
+  </form>
+</div>

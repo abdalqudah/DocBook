@@ -1,0 +1,133 @@
+<%
+  var canCost = can('finance.view');
+  var _errs = typeof errors !== 'undefined' && errors ? errors : {};
+  var _old = typeof old !== 'undefined' && old ? old : {};
+  var action = po ? '/app/supplies/orders/' + po.id : '/app/supplies/orders';
+  var pickAction = po ? '/app/supplies/orders/' + po.id + '/edit' : '/app/supplies/orders/new';
+  var val = function (v) { return v === '' || v === null || v === undefined ? '' : String(v); };
+  var err = function (i, f) { return _errs['lines.' + i + '.' + f]; };
+  var canMail = plan && plan.mailConfigured && plan.to;
+  var canSend = plan && (canMail || plan.vendor);
+  var i = 0;
+  var otherOptions = function (selected) {
+    return others.map(function (o) { return '<option value="' + o.id + '" data-stock="' + escapeHtml(fmt.number(o.stock)) + '" data-level="' + escapeHtml(fmt.number(o.level)) + '" data-unit="' + escapeHtml(o.unit) + '" data-suggested="' + (o.suggested || '') + '"' + (String(selected) === String(o.id) ? ' selected' : '') + '>' + escapeHtml(o.name) + (o.unit ? ' (' + escapeHtml(o.unit) + ')' : '') + '</option>'; }).join('');
+  };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/supplies"><%= t('supplies.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/supplies/orders"><%= t('purchasing.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= po ? t('purchasing.edit_draft') : t('purchasing.new') %></div>
+    <h1><%= po ? t('purchasing.edit_draft') : t('purchasing.new') %></h1>
+    <p><%= t('purchasing.form_lead') %></p>
+  </div>
+</div>
+
+<form class="panel po-pick" method="get" action="<%= pickAction %>" data-autosubmit>
+  <div class="panel-body row wrap">
+    <div class="field grow">
+      <label class="label" for="f-supplier"><%= t('purchasing.supplier') %></label>
+      <% if (suppliers.length) { %>
+      <select class="select" id="f-supplier" name="supplier">
+        <% if (!supplier) { %><option value=""><%= t('purchasing.choose_supplier') %></option><% } %>
+        <% suppliers.forEach(function (s) { %><option value="<%= s.id %>"<%= supplier && supplier.id === s.id ? ' selected' : '' %>><%= s.name %></option><% }) %>
+      </select>
+      <% } %>
+    </div>
+    <noscript><button class="btn btn-secondary" type="submit"><%= t('purchasing.continue') %></button></noscript>
+    <% if (supplier) { %>
+    <div class="po-recipient small">
+      <% if (canMail) { %><%- icon('mail', 'icon-sm') %><span><%= t('purchasing.will_email', { to: plan.to }) %><% if (plan.vendor) { %> · <%= t('purchasing.and_portal', { brand: brandName }) %><% } %></span>
+      <% } else if (plan.vendor) { %><%- icon('send', 'icon-sm') %><span><%= t('purchasing.portal_only', { brand: brandName }) %></span>
+      <% } else { %><%- icon('info', 'icon-sm') %><span class="muted"><%= plan.mailConfigured ? t('purchasing.no_email_hint') : t('purchasing.mail_off_hint') %></span><% } %>
+    </div>
+    <% } %>
+  </div>
+</form>
+
+<% if (!suppliers.length) { %>
+<div class="panel flush mt-4">
+  <%- include('../../partials/empty', { emptyIcon: 'building-2', emptyTitle: t('supplies.no_suppliers'), emptyText: t('purchasing.need_supplier'), emptyAction: '<a class="btn btn-primary btn-sm" href="/app/supplies?tab=suppliers">' + t('supplies.add_supplier') + '</a>' }) %>
+</div>
+<% } else if (!supplier) { %>
+<div class="panel flush mt-4">
+  <%- include('../../partials/empty', { emptyIcon: 'clipboard-list', emptyTitle: t('purchasing.pick_title'), emptyText: t('purchasing.pick_text'), emptyAction: '' }) %>
+</div>
+<% } else { %>
+<form method="post" action="<%= action %>" novalidate class="po-form" id="po-form">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <input type="hidden" name="supplier_id" value="<%= supplier.id %>">
+  <% if (typeof formError !== 'undefined' && formError) { %><div class="mt-4"><%- include('../../partials/form-error') %></div><% } %>
+
+  <div class="panel flush mt-4">
+    <div class="panel-head">
+      <div><h2><%= t('purchasing.supplier_items', { name: supplier.name }) %></h2><div class="small muted"><%= t('purchasing.rule') %></div></div>
+      <% if (lowCount) { %><button class="btn btn-ghost btn-sm" type="button" data-use-all hidden><%- icon('refresh-cw', 'icon-sm') %><%= t('purchasing.use_all') %></button><% } %>
+    </div>
+    <% if (!own.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'package', emptyTitle: t('purchasing.no_supplier_items'), emptyText: t('purchasing.no_supplier_items_text'), compact: true }) %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive po-lines">
+        <thead><tr><th><%= t('purchasing.item') %></th><th class="num"><%= t('purchasing.in_stock') %></th><th class="num"><%= t('supplies.reorder_level') %></th><th class="num"><%= t('purchasing.suggested') %></th><th class="qty-col"><%= t('purchasing.quantity') %></th><% if (canCost) { %><th class="cost-col"><%= t('purchasing.unit_cost') %> (<%= currency %>)</th><% } %></tr></thead>
+        <tbody>
+          <% own.forEach(function (r) { var k = i++; %>
+          <tr>
+            <td class="primary-cell"><div class="strong"><%= r.name %></div><div class="tiny muted"><%= r.unit || '—' %><% if (r.onOrder) { %> · <%= t('purchasing.on_order', { n: fmt.number(r.onOrder) }) %><% } %></div><input type="hidden" name="lines[<%= k %>][supply_item_id]" value="<%= r.supply_item_id %>"><% if (!canCost) { %><input type="hidden" name="lines[<%= k %>][unit_cost]" value="<%= val(r.unit_cost) %>"><% } %></td>
+            <td class="num" data-label="<%= t('purchasing.in_stock') %>"><span class="po-stock"><span class="<%= r.low ? 'po-low' : '' %>"><%= fmt.number(r.stock) %></span><% if (r.stock <= 0) { %> <span class="badge badge-danger"><%= t('supplies.level.out') %></span><% } else if (r.low) { %> <span class="badge badge-warning"><%= t('supplies.level.low') %></span><% } %></span></td>
+            <td class="num" data-label="<%= t('supplies.reorder_level') %>"><%= fmt.number(r.level) %></td>
+            <td class="num" data-label="<%= t('purchasing.suggested') %>"><% if (r.suggested) { %><button class="btn btn-ghost btn-sm po-use" type="button" data-use-qty="<%= r.suggested %>" title="<%= t('purchasing.use_suggested') %>"><%= fmt.number(r.suggested) %></button><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="qty-col" data-label="<%= t('purchasing.quantity') %>"><input class="input po-qty<%= err(k, 'quantity') ? ' is-invalid' : '' %>" name="lines[<%= k %>][quantity]" value="<%= val(r.quantity) %>" inputmode="decimal" placeholder="0" aria-label="<%= t('purchasing.quantity') %> — <%= r.name %>"<% if (r.suggested) { %> data-suggested="<%= r.suggested %>"<% } %>><% if (err(k, 'quantity')) { %><span class="field-error"><%= err(k, 'quantity') %></span><% } %></td>
+            <% if (canCost) { %><td class="cost-col" data-label="<%= t('purchasing.unit_cost') %>"><input class="input po-cost<%= err(k, 'unit_cost') ? ' is-invalid' : '' %>" name="lines[<%= k %>][unit_cost]" value="<%= val(r.unit_cost) %>" inputmode="decimal" placeholder="<%= t('purchasing.optional') %>" aria-label="<%= t('purchasing.unit_cost') %> — <%= r.name %>"></td><% } %>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="panel flush mt-4">
+    <div class="panel-head"><div><h2><%= t('purchasing.more_lines') %></h2><div class="small muted"><%= t('purchasing.more_lines_hint') %></div></div></div>
+    <div class="po-extra" data-lines data-next="<%= i + extras.length + 2 %>">
+      <% var extraRow = function (r, k) { %>
+      <div class="po-extra-row" data-line>
+        <% if (r.kind === 'other') { %>
+          <div class="field grow"><label class="label" for="l<%= k %>-item"><%= t('purchasing.clinic_item') %></label><select class="select<%= err(k, 'supply_item_id') ? ' is-invalid' : '' %>" id="l<%= k %>-item" name="lines[<%= k %>][supply_item_id]" data-other-item><option value=""><%= t('purchasing.choose_item') %></option><%- otherOptions(r.supply_item_id) %></select><span class="help" data-item-info><%= r.supply_item_id && r.stock !== undefined ? t('purchasing.item_info', { stock: fmt.number(r.stock), level: fmt.number(r.level) }) : '' %></span></div>
+        <% } else { %>
+          <div class="field grow"><label class="label" for="l<%= k %>-name"><%= t('purchasing.free_item') %></label><input class="input<%= err(k, 'name') ? ' is-invalid' : '' %>" id="l<%= k %>-name" name="lines[<%= k %>][name]" value="<%= r.name || '' %>" maxlength="190" placeholder="<%= t('purchasing.free_item_ph') %>"><% if (err(k, 'name')) { %><span class="field-error"><%= err(k, 'name') %></span><% } %></div>
+          <div class="field po-unit"><label class="label" for="l<%= k %>-unit"><%= t('purchasing.unit') %></label><input class="input" id="l<%= k %>-unit" name="lines[<%= k %>][unit]" value="<%= r.unit || '' %>" maxlength="40" placeholder="<%= t('supplies.unit_ph') %>"></div>
+        <% } %>
+        <div class="field po-q"><label class="label" for="l<%= k %>-q"><%= t('purchasing.quantity') %></label><input class="input<%= err(k, 'quantity') ? ' is-invalid' : '' %>" id="l<%= k %>-q" name="lines[<%= k %>][quantity]" value="<%= val(r.quantity) %>" inputmode="decimal" placeholder="0"><% if (err(k, 'quantity')) { %><span class="field-error"><%= err(k, 'quantity') %></span><% } %></div>
+        <% if (canCost) { %><div class="field po-c"><label class="label" for="l<%= k %>-c"><%= t('purchasing.unit_cost') %></label><input class="input" id="l<%= k %>-c" name="lines[<%= k %>][unit_cost]" value="<%= val(r.unit_cost) %>" inputmode="decimal" placeholder="<%= t('purchasing.optional') %>"></div><% } else { %><input type="hidden" name="lines[<%= k %>][unit_cost]" value="<%= val(r.unit_cost) %>"><% } %>
+        <button class="btn btn-ghost btn-icon btn-sm po-remove" type="button" data-remove-line aria-label="<%= t('purchasing.remove_line') %>" title="<%= t('purchasing.remove_line') %>" hidden><%- icon('x', 'icon-sm') %></button>
+      </div>
+      <% }; %>
+      <% extras.forEach(function (r) { extraRow(r, i++); }) %>
+      <% if (others.length) { extraRow({ kind: 'other' }, i++); } %>
+      <% extraRow({ kind: 'free' }, i++); %>
+    </div>
+    <div class="panel-foot row-sm wrap po-add" hidden data-add-bar>
+      <% if (others.length) { %><button class="btn btn-secondary btn-sm" type="button" data-add-line="tpl-other"><%- icon('plus', 'icon-sm') %><%= t('purchasing.add_clinic_item') %></button><% } %>
+      <button class="btn btn-secondary btn-sm" type="button" data-add-line="tpl-free"><%- icon('plus', 'icon-sm') %><%= t('purchasing.add_free') %></button>
+    </div>
+    <template id="tpl-other"><% extraRow({ kind: 'other' }, '__i__'); %></template>
+    <template id="tpl-free"><% extraRow({ kind: 'free' }, '__i__'); %></template>
+  </div>
+
+  <div class="panel mt-4">
+    <div class="panel-body">
+      <%- include('../../partials/field', { name: 'notes', label: t('purchasing.notes'), type: 'textarea', value: _old.notes || '', placeholder: t('purchasing.notes_ph'), help: t('purchasing.notes_help'), errors: _errs }) %>
+    </div>
+  </div>
+
+  <div class="po-submit mt-4">
+    <div class="small muted grow" data-po-summary><%= t('purchasing.summary_hint') %></div>
+    <a class="btn btn-ghost" href="<%= po ? '/app/supplies/orders/' + po.id : '/app/supplies/orders' %>"><%= t('common.cancel') %></a>
+    <% if (canSend) { %>
+      <button class="btn btn-secondary" type="submit" name="intent" value="draft"><%= t('purchasing.save_draft') %></button>
+      <button class="btn btn-primary" type="submit" name="intent" value="send"><%- icon('send', 'icon-sm') %><%= canMail ? t('purchasing.send_email') : t('purchasing.send_portal') %></button>
+    <% } else { %>
+      <button class="btn btn-primary" type="submit" name="intent" value="draft"><%= t('purchasing.save_draft') %></button>
+    <% } %>
+  </div>
+</form>
+<% } %>

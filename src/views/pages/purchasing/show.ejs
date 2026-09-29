@@ -1,0 +1,175 @@
+<%
+  var canManage = can('supplies.manage'); var canCost = can('finance.view');
+  var st = po.status; var isOpen = st === 'sent' || st === 'acknowledged';
+  var title = po.po_number ? t('purchasing.po_no', { n: po.po_number }) : t('purchasing.draft_po');
+  var hasCost = canCost && po.lines.some(function (l) { return l.unit_cost !== null && Number(l.unit_cost) > 0; });
+  var costTotal = po.lines.reduce(function (a, l) { return a + (l.unit_cost !== null ? Number(l.unit_cost) * Number(l.quantity) : 0); }, 0);
+  var canMail = plan.mailConfigured && plan.to;
+  var canSend = canMail || plan.vendorId;
+  var remaining = function (l) { return Math.max(0, Math.round((Number(l.quantity) - Number(l.received_quantity)) * 100) / 100); };
+  var _open = typeof openDialog !== 'undefined' ? openDialog : '';
+%>
+<% if (printMode) { %>
+<section class="po-print">
+  <div class="row between wrap">
+    <div><h1 class="po-print-title"><%= title %></h1><div class="muted small"><%= t('purchasing.txt.date') %>: <%= when(po.sent_at || po.created_at) %></div></div>
+    <div class="text-end small"><div class="strong"><%= t('purchasing.to') %>: <%= po.supplier_name %></div><% if (po.sent_to_email) { %><div class="muted" dir="ltr"><%= po.sent_to_email %></div><% } %></div>
+  </div>
+  <table class="table po-print-table mt-4">
+    <thead><tr><th>#</th><th><%= t('purchasing.item') %></th><th><%= t('purchasing.unit') %></th><th class="num"><%= t('purchasing.quantity') %></th></tr></thead>
+    <tbody><% po.lines.forEach(function (l, k) { %><tr><td><%= k + 1 %></td><td><%= l.name %></td><td><%= l.unit || '—' %></td><td class="num strong"><%= fmt.number(l.quantity) %></td></tr><% }) %></tbody>
+  </table>
+  <% if (po.notes) { %><p class="mt-4"><span class="strong"><%= t('purchasing.txt.notes') %>:</span> <%= po.notes %></p><% } %>
+  <dl class="dl mt-4">
+    <dt><%= t('purchasing.contact') %></dt><dd><%= [po.contact_name || currentUser.name, po.contact_phone || business.phone].filter(Boolean).join(' · ') || '—' %></dd>
+    <% if (business.address) { %><dt><%= t('purchasing.mail.address') %></dt><dd><%= [business.address, business.city].filter(Boolean).join('، ') %></dd><% } %>
+  </dl>
+  <p class="mt-4 strong"><%= t('purchasing.txt.please_confirm') %></p>
+</section>
+<% } else { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/supplies"><%= t('supplies.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/supplies/orders"><%= t('purchasing.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= title %></div>
+    <div class="row wrap"><h1><%= title %></h1><%- include('_status', { status: st, partial: po.progress.partial }) %></div>
+    <p><%= po.supplier_name %> · <%= st === 'draft' ? t('purchasing.created_on', { d: when(po.created_at) }) : t('purchasing.sent_on', { d: when(po.sent_at) }) %></p>
+  </div>
+  <div class="page-actions">
+    <% if (st === 'draft' && canManage) { %>
+      <form method="post" action="/app/supplies/orders/<%= po.id %>/delete" style="display:inline" data-confirm="<%= t('purchasing.delete_confirm') %>" data-confirm-title="<%= t('common.confirm_delete_title') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('purchasing.delete_draft') %></button></form>
+      <a class="btn btn-secondary" href="/app/supplies/orders/<%= po.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a>
+      <% if (canSend) { %><form method="post" action="/app/supplies/orders/<%= po.id %>/send" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= canMail ? t('purchasing.send_email') : t('purchasing.send_portal') %></button></form><% } %>
+    <% } else if (isOpen && canManage) { %>
+      <form method="post" action="/app/supplies/orders/<%= po.id %>/cancel" style="display:inline" data-confirm="<%= t('purchasing.cancel_confirm') %>" data-confirm-title="<%= t('purchasing.cancel_title') %>" data-confirm-yes="<%= t('purchasing.cancel_yes') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost" type="submit"><%- icon('circle-x', 'icon-sm') %><%= t('purchasing.cancel_po') %></button></form>
+      <% if (canMail) { %><form method="post" action="/app/supplies/orders/<%= po.id %>/resend" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('mail', 'icon-sm') %><%= t('purchasing.resend') %></button></form><% } %>
+      <a class="btn btn-secondary" href="?print=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+      <button class="btn btn-primary" type="button" data-open-dialog="receive-dialog"><%- icon('package', 'icon-sm') %><%= t('purchasing.receive') %></button>
+    <% } else { %>
+      <a class="btn btn-secondary" href="?print=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+    <% } %>
+  </div>
+</div>
+
+<% if (st === 'draft' && !canSend) { %>
+<div class="alert alert-warning mb-4" role="status"><%- icon('triangle-alert') %><div class="grow">
+  <div class="alert-title"><%= t('purchasing.not_sent_title') %></div>
+  <div class="small"><%= plan.mailConfigured ? t('purchasing.not_sent_no_email') : t('purchasing.not_sent_mail_off') %></div>
+</div></div>
+<% } %>
+
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('purchasing.items') %></h2><span class="small muted"><%= t('purchasing.lines_count', { n: fmt.number(po.lines.length) }) %></span></div>
+      <div class="table-wrap">
+        <table class="table responsive">
+          <thead><tr><th><%= t('purchasing.item') %></th><th><%= t('purchasing.unit') %></th><th class="num"><%= t('purchasing.qty_ordered') %></th><% if (st !== 'draft') { %><th class="num"><%= t('purchasing.qty_received') %></th><% } %><% if (hasCost) { %><th class="num"><%= t('purchasing.unit_cost') %></th><th class="num"><%= t('purchasing.line_total') %></th><% } %></tr></thead>
+          <tbody>
+            <% po.lines.forEach(function (l) { var rec = Number(l.received_quantity), q = Number(l.quantity); %>
+            <tr>
+              <td class="primary-cell"><% if (l.supply_item_id) { %><a class="strong" href="/app/supplies/items/<%= l.supply_item_id %>"><%= l.name %></a><% } else { %><span class="strong"><%= l.name %></span><div class="tiny muted"><%= t('purchasing.free_line') %></div><% } %></td>
+              <td data-label="<%= t('purchasing.unit') %>"><%= l.unit || '—' %></td>
+              <td class="num strong" data-label="<%= t('purchasing.qty_ordered') %>"><%= fmt.number(q) %></td>
+              <% if (st !== 'draft') { %><td class="num" data-label="<%= t('purchasing.qty_received') %>"><%= fmt.number(rec) %><% if (rec >= q && rec > 0) { %> <span class="po-check" title="<%= t('purchasing.complete') %>"><%- icon('check', 'icon-sm') %></span><% } %></td><% } %>
+              <% if (hasCost) { %><td class="num" data-label="<%= t('purchasing.unit_cost') %>"><%= l.unit_cost !== null ? fmt.amount(l.unit_cost) : '—' %></td><td class="num" data-label="<%= t('purchasing.line_total') %>"><%= l.unit_cost !== null ? fmt.amount(Number(l.unit_cost) * q) : '—' %></td><% } %>
+            </tr>
+            <% }) %>
+          </tbody>
+          <% if (hasCost) { %><tfoot><tr><td colspan="<%= st !== 'draft' ? 4 : 3 %>" class="strong"><%= t('purchasing.est_cost') %></td><td></td><td class="num strong"><%= fmt.money(costTotal) %></td></tr></tfoot><% } %>
+        </table>
+      </div>
+    </div>
+
+    <% if (po.notes) { %>
+    <div class="panel"><div class="panel-head"><h2><%= t('purchasing.notes') %></h2></div><div class="panel-body"><p class="po-pre"><%= po.notes %></p></div></div>
+    <% } %>
+
+    <% if (po.vendor_note) { %>
+    <div class="panel"><div class="panel-head"><h2><%= t('purchasing.vendor_note') %></h2><span class="small muted"><%= when(po.vendor_noted_at) %></span></div><div class="panel-body"><p class="po-pre"><%= po.vendor_note %></p></div></div>
+    <% } %>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('purchasing.timeline') %></h2></div>
+      <div class="panel-body">
+        <%
+          var steps = [{ key: 'draft', at: po.created_at, done: true, sub: po.created_by_name }];
+          steps.push({ key: 'sent', at: po.sent_at, done: !!po.sent_at, sub: po.sent_at ? (po.sent_to_email ? t('purchasing.to_email', { to: po.sent_to_email }) : (po.vendor_id ? t('purchasing.via_portal', { brand: brandName }) : t('purchasing.sent_other'))) : '' });
+          if (po.vendor_id || po.acknowledged_at) steps.push({ key: 'acknowledged', at: po.acknowledged_at, done: !!po.acknowledged_at, sub: '' });
+          if (st === 'cancelled') steps.push({ key: 'cancelled', at: po.cancelled_at, done: true, sub: po.progress.received ? t('purchasing.partly_before_cancel') : '' });
+          else steps.push({ key: 'received', at: po.received_at, done: st === 'received', sub: po.progress.partial ? t('purchasing.progress', { r: fmt.number(po.progress.received), q: fmt.number(po.progress.ordered) }) : '' });
+          var currentIdx = -1; steps.forEach(function (s, k) { if (s.done) currentIdx = k; });
+        %>
+        <ol class="po-timeline">
+          <% steps.forEach(function (s, k) { %>
+          <li class="<%= s.done ? 'done' : '' %><%= k === currentIdx ? ' current' : '' %><%= s.key === 'cancelled' ? ' cancelled' : '' %>">
+            <span class="po-tl-dot" aria-hidden="true"></span>
+            <div><div class="strong small"><%= t('purchasing.tl.' + s.key) %></div><div class="tiny muted"><%= s.done ? when(s.at) : t('purchasing.tl.waiting') %><%= s.sub ? ' · ' + s.sub : '' %></div></div>
+          </li>
+          <% }) %>
+        </ol>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('purchasing.supplier') %></h2><% if (po.vendor_id && po.vendor_status === 'active') { %><span class="badge badge-neutral badge-dot"><%= t('purchasing.on_docbook', { brand: brandName }) %></span><% } %></div>
+      <div class="panel-body">
+        <div class="strong"><%= supplier ? supplier.name : po.supplier_name %></div>
+        <div class="stack-sm mt-1 small">
+          <% if (plan.to) { %><a class="link" href="mailto:<%= plan.to %>" dir="ltr"><%= plan.to %></a><% } else { %><span class="muted"><%= t('purchasing.no_email') %></span><% } %>
+          <% if (supplier && supplier.phone) { %><a class="link" dir="ltr" href="tel:<%= supplier.phone.replace(/[^0-9+]/g, '') %>"><%= supplier.phone %></a><% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('purchasing.share') %></h2></div>
+      <div class="panel-body stack-sm">
+        <p class="small muted"><%= t('purchasing.share_hint') %></p>
+        <textarea class="sr-only" id="po-text" readonly tabindex="-1" aria-hidden="true"><%= text %></textarea>
+        <div class="po-share">
+          <button class="btn btn-secondary btn-sm" type="button" data-copy="po-text"><%- icon('copy', 'icon-sm') %><%= t('purchasing.copy_text') %></button>
+          <a class="btn btn-secondary btn-sm" href="<%= waUrl %>" target="_blank" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= t('purchasing.whatsapp') %></a>
+          <a class="btn btn-secondary btn-sm" href="?print=1"><%- icon('printer', 'icon-sm') %><%= t('purchasing.print_po') %></a>
+        </div>
+        <% if (st === 'draft' && canManage && !canSend) { %>
+        <form method="post" action="/app/supplies/orders/<%= po.id %>/mark-sent" class="po-mark" data-confirm="<%= t('purchasing.mark_sent_confirm') %>" data-confirm-title="<%= t('purchasing.mark_sent') %>" data-confirm-yes="<%= t('purchasing.mark_sent_yes') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-ghost btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('purchasing.mark_sent') %></button>
+          <div class="tiny muted"><%= t('purchasing.mark_sent_hint') %></div>
+        </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (isOpen && canManage) { %>
+<dialog class="dialog wide" id="receive-dialog" aria-labelledby="receive-title"<% if (_open === 'receive-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/supplies/orders/<%= po.id %>/receive" novalidate>
+    <div class="dialog-head"><h2 id="receive-title"><%= t('purchasing.receive_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <p class="small muted"><%= t('purchasing.receive_hint', { n: po.po_number }) %></p>
+      <div class="row-sm wrap" data-recv-tools hidden><button class="btn btn-ghost btn-sm" type="button" data-recv="all"><%= t('purchasing.recv_all') %></button><button class="btn btn-ghost btn-sm" type="button" data-recv="none"><%= t('purchasing.recv_none') %></button></div>
+      <div class="table-wrap">
+        <table class="table responsive">
+          <thead><tr><th><%= t('purchasing.item') %></th><th class="num"><%= t('purchasing.qty_ordered') %></th><th class="num"><%= t('purchasing.qty_received') %></th><th class="qty-col"><%= t('purchasing.receive_now') %></th></tr></thead>
+          <tbody>
+            <% po.lines.forEach(function (l) { var rem = remaining(l); %>
+            <tr>
+              <td class="primary-cell"><div class="strong"><%= l.name %></div><div class="tiny muted"><%= l.unit || '' %><%= l.supply_item_id ? '' : (l.unit ? ' · ' : '') + t('purchasing.not_stocked') %></div></td>
+              <td class="num" data-label="<%= t('purchasing.qty_ordered') %>"><%= fmt.number(l.quantity) %></td>
+              <td class="num" data-label="<%= t('purchasing.qty_received') %>"><%= fmt.number(l.received_quantity) %></td>
+              <td class="qty-col" data-label="<%= t('purchasing.receive_now') %>"><% if (rem > 0) { %><input class="input po-qty" name="recv[l<%= l.id %>]" value="<%= rem %>" inputmode="decimal" data-max="<%= rem %>" aria-label="<%= t('purchasing.receive_now') %> — <%= l.name %>"><% } else { %><span class="small muted"><%= t('purchasing.complete') %></span><% } %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('purchasing.record_receipt') %></button></div>
+  </form>
+</dialog>
+<% } %>
+<% } %>

@@ -1,0 +1,48 @@
+<%
+  var statusCls = { requested: 'badge-warning', confirmed: 'badge-brand', declined: 'badge-neutral', cancelled: 'badge-danger', done: 'badge-success' };
+  var endOf = function (time, mins) { var p = String(time).split(':'); var m = Number(p[0]) * 60 + Number(p[1]) + Number(mins || 0); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+%>
+<div class="page-head">
+  <div>
+    <h1><%= t('rep_visits.vendor_side.title') %></h1>
+    <p><%= t('rep_visits.vendor_side.lead') %></p>
+  </div>
+  <% if (vendorActive) { %><div class="page-actions"><a class="btn btn-primary" href="/vendor/visits/new"><%- icon('calendar-plus', 'icon-sm') %><%= t('rep_visits.vendor_side.book') %></a></div><% } %>
+</div>
+
+<% if (!vendorActive) { %>
+<div class="alert mb-4" role="status"><%- icon('clock') %><div class="grow"><div class="alert-title"><%= t('rep_visits.vendor_side.pending_title') %></div><div class="small"><%= t('rep_visits.vendor_side.pending_text') %></div></div></div>
+<% } %>
+
+<div class="panel flush">
+  <div class="panel-head"><h2><%= t('rep_visits.vendor_side.my_visits') %></h2></div>
+  <% if (!visits.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'calendar-clock', emptyTitle: t('rep_visits.vendor_side.empty_title'), emptyText: t('rep_visits.vendor_side.empty_text'), emptyAction: vendorActive ? '<a class="btn btn-secondary btn-sm" href="/vendor/visits/new">' + t('rep_visits.vendor_side.book') + '</a>' : '' }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('rep_visits.when') %></th><th><%= t('rep_visits.vendor_side.clinic') %></th><th><%= t('rep_visits.doctor') %></th><th><%= t('rep_visits.purpose') %></th><th><%= t('common.status') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <tbody>
+        <% visits.forEach(function (r) { %>
+        <tr>
+          <td class="primary-cell nowrap"><div class="strong"><%= fmt.date(r.visit_date, { weekday: 'short', month: 'short', day: 'numeric' }) %></div><div class="small muted" dir="ltr"><%= r.visit_time %>–<%= endOf(r.visit_time, r.duration_minutes) %></div></td>
+          <td data-label="<%= t('rep_visits.vendor_side.clinic') %>"><div>
+            <div class="strong"><%= L(r.clinic_name, r.clinic_name_en) %></div>
+            <div class="tiny muted"><%= [r.clinic_city, r.clinic_address].filter(Boolean).join(' · ') %></div>
+            <% if (r.clinic_map_url && /^https?:\/\//.test(r.clinic_map_url)) { %><a class="tiny" href="<%= r.clinic_map_url %>" target="_blank" rel="noopener"><%= t('rep_visits.vendor_side.map') %></a><% } %>
+          </div></td>
+          <td data-label="<%= t('rep_visits.doctor') %>"><%= r.doctor_name ? L(r.doctor_name, r.doctor_name_en) : t('rep_visits.clinic_wide') %></td>
+          <td data-label="<%= t('rep_visits.purpose') %>" class="mk-purpose"><div><div class="small mk-pre" dir="auto"><%= r.purpose || '—' %></div><% if (r.clinic_note) { %><div class="tiny muted mt-1"><%= t('rep_visits.vendor_side.clinic_note') %>: <%= r.clinic_note %></div><% } %></div></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= statusCls[r.status] || 'badge-neutral' %>"><%= t('rep_visits.status.' + r.status) %></span></td>
+          <td class="actions">
+            <% if ((r.status === 'requested' || r.status === 'confirmed') && !r.isPast) { %>
+            <form method="post" action="/vendor/visits/<%= r.id %>/cancel" data-confirm="<%= t('rep_visits.vendor_side.cancel_confirm') %>" data-confirm-title="<%= t('rep_visits.cancel_visit') %>" data-confirm-yes="<%= t('rep_visits.cancel_visit') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('rep_visits.vendor_side.cancel') %></button></form>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
