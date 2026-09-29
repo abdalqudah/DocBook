@@ -1,0 +1,22 @@
+<main class="kiosk" data-kiosk-src="/app/attendance/kiosk/qr" data-expires="<%= qr.expiresIn %>" data-step="<%= qr.stepSeconds %>" data-tz="<%= business.timezone || 'UTC' %>">
+  <header class="kiosk-head">
+    <div class="kiosk-clinic">
+      <% if (business.logo_mime) { %><img class="kiosk-logo" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt=""><% } %>
+      <strong><%= business.name %></strong>
+    </div>
+    <div class="kiosk-tools">
+      <span class="kiosk-clock" data-kiosk-clock dir="ltr" aria-hidden="true">--:--</span>
+      <button class="btn btn-ghost btn-sm" type="button" data-kiosk-fullscreen hidden><%- icon('monitor', 'icon-sm') %><%= t('attendance.fullscreen') %></button>
+      <a class="btn btn-ghost btn-sm" href="/app/attendance/kiosk/setup"><%- icon('x', 'icon-sm') %><%= t('attendance.exit') %></a>
+    </div>
+  </header>
+  <section class="kiosk-main">
+    <h1><%= t('attendance.scan_to_clock') %></h1>
+    <p class="kiosk-sub"><%= t('attendance.scan_sub') %></p>
+    <div class="kiosk-qr" data-kiosk-qr><%- qr.svg %></div>
+    <div class="kiosk-timer" aria-live="off"><span><%= t('attendance.changes_in') %></span> <strong data-kiosk-left dir="ltr"><%= qr.expiresIn %></strong><span><%= t('attendance.seconds') %></span></div>
+    <div class="kiosk-bar" aria-hidden="true"><span data-kiosk-bar></span></div>
+    <p class="kiosk-offline" data-kiosk-offline hidden role="status"><%- icon('triangle-alert', 'icon-sm') %><%= t('attendance.offline') %></p>
+  </section>
+  <footer class="kiosk-foot"><%= brandName %></footer>
+</main>

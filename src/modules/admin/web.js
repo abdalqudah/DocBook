@@ -43,7 +43,11 @@ router.get('/', wrap(async (req, res) => {
     knex('audit_logs as l').leftJoin('users as u', 'u.id', 'l.user_id').whereNull('l.business_id').where('l.action', 'like', 'platform.%')
       .orderBy('l.id', 'desc').limit(8).select('l.action', 'l.entity_type', 'l.entity_id', 'l.new_values', 'l.created_at', 'u.name as user_name'),
   ]);
-  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online }, recentClinics, activity });
+  // Links in e-mails, invitations, resets and the attendance QR need the real site address (APP_URL).
+  const { isLocalUrl, isLocalHost } = require('../../middleware/web'); // eslint-disable-line global-require
+  const appUrlWarning = (!process.env.APP_URL || isLocalUrl(process.env.APP_URL)) && !isLocalHost(req.hostname)
+    ? { current: process.env.APP_URL || '', suggested: `https://${req.hostname}` } : null;
+  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online }, recentClinics, activity, appUrlWarning });
 }));
 
 // ---------------------------------------------------------------- clinics

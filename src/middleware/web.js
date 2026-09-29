@@ -7,6 +7,22 @@ const config = require('../config');
 const brand = require('../config/brand');
 
 const ASSET_V = require('../../package.json').version;
+// The site's real public address. APP_URL wins when it is a real address; when it is missing or still
+// "localhost" (a common set-up slip), links use the address the browser actually opened. The host comes from
+// X-Forwarded-Host only when Express trusts the proxy (TRUST_PROXY), and must look like a host name.
+const isLocalUrl = (u) => /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(u || '');
+const isLocalHost = (h) => /^(localhost|127\.|0\.0\.0\.0|\[::1\]|::1$)/i.test(h || '');
+function requestHost(req) {
+  const host = req.app && req.app.enabled('trust proxy') && req.get('x-forwarded-host') ? String(req.get('x-forwarded-host')).split(',')[0].trim() : req.get('host');
+  return /^[a-z0-9.-]+(:\d{1,5})?$|^\[[0-9a-f:.]+\](:\d{1,5})?$/i.test(host || '') ? host.toLowerCase() : null;
+}
+function publicBase(req) {
+  const configured = process.env.APP_URL ? config.appUrl.replace(/\/+$/, '') : '';
+  const host = requestHost(req);
+  if (configured && (!isLocalUrl(configured) || !host)) return configured;
+  return host ? `${req.protocol === 'https' ? 'https' : 'http'}://${host}` : config.appUrl.replace(/\/+$/, '');
+}
+
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 function locals(req, res, next) {
@@ -33,6 +49,7 @@ function locals(req, res, next) {
     tagline: brand.tagline[locale] || brand.tagline.en,
     csrfToken: req.session?.csrf,
     currentUser: req.user || null,
+    baseUrl: publicBase(req),
     path: req.path,
     fullPath: req.originalUrl,
     query: req.query,
@@ -95,4 +112,4 @@ function verifyCsrfAfterUpload(req, res, next) {
   return tokenValid(req, req.body?._csrf || req.get('x-csrf-token')) ? next() : next(E.csrf());
 }
 
-module.exports = { locals, flash, csrf, verifyCsrfAfterUpload };
+module.exports = { locals, flash, csrf, verifyCsrfAfterUpload, publicBase, isLocalUrl, isLocalHost };

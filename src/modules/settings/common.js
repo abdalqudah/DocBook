@@ -23,6 +23,7 @@ const SECTIONS = [
   ] },
   { group: 'data', items: [
     { key: 'data', href: '/app/settings/data', icon: 'database', perms: ['audit.view', 'data.export', 'data.manage'] },
+    { key: 'database', href: '/app/settings/database', icon: 'plug', perms: ['data.manage'] },
   ] },
 ];
 

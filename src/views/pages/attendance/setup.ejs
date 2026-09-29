@@ -1,0 +1,37 @@
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/attendance"><%= t('attendance.title') %></a></div>
+    <h1><%= t('attendance.kiosk_title') %></h1>
+    <p><%= t('attendance.setup_lead') %></p>
+  </div>
+  <div class="page-actions"><a class="btn btn-primary" href="/app/attendance/kiosk" target="_blank" rel="noopener"><%- icon('qr-code', 'icon-sm') %><%= t('attendance.open_screen') %></a></div>
+</div>
+
+<div class="grid grid-main">
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('attendance.setup_how') %></h2></div>
+    <div class="panel-body">
+      <ol class="att-steps">
+        <li><%= t('attendance.how_1') %></li>
+        <li><%= t('attendance.how_2') %></li>
+        <li><%= t('attendance.how_3') %></li>
+        <li><%= t('attendance.how_4') %></li>
+      </ol>
+      <div class="field mt-6">
+        <label class="label" for="kiosk-url"><%= t('attendance.screen_link') %></label>
+        <div class="row-sm"><input class="input grow" id="kiosk-url" value="<%= kioskUrl %>" readonly dir="ltr"><button class="btn btn-secondary" type="button" data-copy="kiosk-url"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+        <span class="help"><%= t('attendance.screen_link_help') %></span>
+      </div>
+      <p class="small muted mt-4 row-sm"><%- icon('lock', 'icon-sm') %><span><%= t('attendance.kiosk_security') %></span></p>
+    </div>
+  </section>
+  <form class="panel" method="post" action="/app/attendance/settings">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><h2><%= t('attendance.policy') %></h2></div>
+    <div class="panel-body">
+      <label class="check"><input type="checkbox" name="qr_only" value="1"<%= settings.qrOnly ? ' checked' : '' %>><span><%= t('attendance.qr_only') %></span></label>
+      <p class="help mt-2"><%= t('attendance.qr_only_help') %></p>
+    </div>
+    <div class="panel-foot"><button class="btn btn-secondary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</div>

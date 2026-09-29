@@ -1,0 +1,70 @@
+/* Staff attendance: own status, team tables, the attendance screen (kiosk) and the phone scan page. Theme tokens only. */
+
+/* ---------- Own status card ---------- */
+.att-now-body { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px var(--card-pad, 20px); flex-wrap: wrap; }
+.att-now-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 260px; }
+.att-state { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.att-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); flex: none; }
+.att-dot.on { background: var(--success); }
+.att-now-icon { color: var(--text-muted); display: inline-flex; width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--surface-sunken); align-items: center; justify-content: center; }
+.att-clock-btn { min-width: 160px; justify-content: center; }
+@media (max-width: 560px) { .att-now-action, .att-clock-btn { width: 100%; } .att-clock-btn { height: 48px; font-size: 15px; } }
+
+/* ---------- Tables ---------- */
+.att-shifts { display: flex; flex-direction: column; gap: 4px; }
+.att-shift { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+.att-tag { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--surface-sunken); color: var(--text-muted); white-space: nowrap; }
+.att-tag.warn { color: var(--warning); }
+.att-how { font-size: 11px; color: var(--text-subtle); }
+.att-warn { color: var(--warning); }
+.att-note { margin-top: 2px; max-width: 360px; white-space: normal; }
+.att-avatar { width: 28px; height: 28px; font-size: 11px; }
+.att-people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 18px; }
+.att-people li { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.att-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 16px; }
+.att-toolbar .select, .att-toolbar .input { width: auto; height: 36px; font-size: 13px; }
+.att-toolbar .select { min-width: 140px; }
+@media (max-width: 560px) { .att-toolbar > .select, .att-toolbar > .row-sm { flex: 1 1 100%; } .att-toolbar .select { width: 100%; } .att-toolbar .row-sm .input { flex: 1; } }
+.att-steps { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 10px; color: var(--text-muted); line-height: 1.6; }
+
+/* ---------- Attendance screen (kiosk) and scan page share this layout ---------- */
+.att-body { background: var(--background); color: var(--text); min-height: 100vh; min-height: 100dvh; margin: 0; }
+.kiosk { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; padding: 20px clamp(16px, 4vw, 40px); box-sizing: border-box; }
+.kiosk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.kiosk-clinic { display: flex; align-items: center; gap: 12px; font-size: 18px; min-width: 0; }
+.kiosk-logo { height: 36px; width: auto; max-width: 140px; object-fit: contain; }
+.kiosk-tools { display: flex; align-items: center; gap: 6px; }
+.kiosk-clock { font-size: 18px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; padding-inline-end: 8px; }
+.kiosk-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; padding: 24px 0; }
+.kiosk-main h1 { font-size: clamp(22px, 3.2vw, 34px); margin: 0; letter-spacing: -.01em; }
+.kiosk-sub { margin: 0; color: var(--text-muted); font-size: clamp(14px, 1.6vw, 17px); }
+/* The code always sits on a light square with dark modules so every phone camera reads it (also in dark mode). */
+.kiosk-qr { width: min(62vh, 78vw, 460px); aspect-ratio: 1; padding: clamp(14px, 2.4vw, 26px); margin-top: 12px; border-radius: var(--radius-lg); background: var(--surface); color: var(--text); border: 1px solid var(--border); box-sizing: border-box; transition: opacity .2s; }
+.kiosk-qr svg { display: block; width: 100%; height: 100%; }
+.kiosk-qr.is-changing { opacity: .55; }
+:root[data-theme="dark"] .kiosk-qr { background: var(--text); color: var(--surface); border-color: transparent; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .kiosk-qr { background: var(--text); color: var(--surface); border-color: transparent; } }
+.kiosk-timer { display: flex; align-items: baseline; gap: 4px; color: var(--text-muted); font-size: 14px; margin-top: 6px; }
+.kiosk-timer strong { color: var(--text); font-variant-numeric: tabular-nums; min-width: 1.4em; display: inline-block; }
+.kiosk-bar { width: min(62vh, 78vw, 460px); height: 3px; border-radius: 3px; background: var(--surface-sunken); overflow: hidden; }
+.kiosk-bar span { display: block; height: 100%; width: 100%; background: var(--primary); transition: width 1s linear; }
+.kiosk-offline { display: flex; align-items: center; gap: 6px; color: var(--warning); font-size: 14px; margin: 4px 0 0; }
+.kiosk-offline[hidden] { display: none; }
+.kiosk-foot { text-align: center; color: var(--text-subtle); font-size: 12px; }
+
+/* ---------- Scan page (phones) ---------- */
+.scan { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; box-sizing: border-box; }
+.scan-card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 22px; text-align: center; box-sizing: border-box; }
+.scan-clinic { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; color: var(--text-muted); font-size: 14px; }
+.scan-clinic .kiosk-logo { height: 28px; }
+.scan-icon { width: 56px; height: 56px; margin: 22px auto 12px; border-radius: 50%; background: var(--surface-sunken); color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
+.scan-icon .icon { width: 26px; height: 26px; }
+.scan-icon.done { color: var(--success); }
+.scan-card h1 { font-size: 22px; margin: 0; }
+.scan-lead { color: var(--text-muted); margin: 10px 0 0; line-height: 1.6; }
+.scan-time { font-size: 40px; font-weight: 700; margin: 8px 0 4px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.scan-btn { height: 56px; font-size: 17px; justify-content: center; }
+.scan-card .alert { text-align: start; }
+@media (max-width: 480px) { .scan { align-items: flex-start; padding-top: 32px; } .scan-card { border: 0; background: transparent; padding: 8px 4px; } }
+/* Three small tiles stay side by side on phones. */
+@media (max-width: 720px) { .stats.att-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .att-stats .stat { padding: 12px; } .att-stats .stat-value { font-size: 20px; margin-top: 4px; } .att-stats .stat-meta { display: none; } .att-stats .stat-label { font-size: 12px; } }

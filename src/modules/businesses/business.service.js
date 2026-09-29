@@ -127,6 +127,10 @@ async function claimInvoiceNumber(businessId, trx) {
 }
 
 // ---------------------------------------------------------------- staff
+// Invitation / reset links: the site's real address when the caller passes it (ctx.baseUrl = publicBase(req) from
+// middleware/web.js, which falls back to the opened address when APP_URL is missing or localhost), else APP_URL.
+const linkBase = (ctx) => String((ctx && ctx.baseUrl) || config.appUrl).replace(/\/+$/, '');
+
 async function listMembers(businessId) {
   return knex('memberships as m').join('users as u', 'u.id', 'm.user_id').join('roles as r', 'r.id', 'm.role_id')
     .leftJoin('doctors as d', 'd.id', 'm.doctor_id')
@@ -226,7 +230,7 @@ async function addStaff(ctx, { name, email, phone, roleId, doctorId, jobTitle, m
   }
   const token = randomToken(32);
   await knex('invitations').insert({ business_id: ctx.businessId, email, name: name || null, role_id: role.id, doctor_id: doc ? doc.id : null, token_hash: sha256(token), invited_by: ctx.userId, expires_at: new Date(Date.now() + 7 * 86400_000) });
-  const link = `${config.appUrl.replace(/\/+$/, '')}/invite/${token}`;
+  const link = `${linkBase(ctx)}/invite/${token}`;
   const clinic = await get(ctx.businessId);
   const t = translator(locale || 'ar');
   const sent = await mailer.send({
@@ -248,7 +252,7 @@ async function adminResetLink(ctx, membershipId) {
   const user = await knex('users').where({ id: m.user_id }).first();
   const token = randomToken(32);
   await knex('password_resets').insert({ user_id: user.id, token_hash: sha256(token), created_by: ctx.userId, expires_at: new Date(Date.now() + 24 * 3600_000) });
-  const link = `${config.appUrl.replace(/\/+$/, '')}/reset/${token}`;
+  const link = `${linkBase(ctx)}/reset/${token}`;
   if (Number(n) > 0) {
     // The account also belongs to another clinic: only the person may receive the link, by e-mail.
     if (!mailer.configured()) {

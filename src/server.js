@@ -59,6 +59,11 @@ async function start() {
   await require('./modules/rbac/rbac.service').syncSystemRoles(); // eslint-disable-line global-require
   await require('./modules/auth/auth.service').ensureSuperAdmin() // eslint-disable-line global-require
     .catch((e) => console.error('[auth] could not ensure the platform admin:', e.message)); // eslint-disable-line no-console
+  // Copies of clinic data to their own databases (Settings → Your database), checked every 5 minutes.
+  if (config.env !== 'test') {
+    const syncTick = () => require('./modules/datasync/datasync.service').runDue().catch((e) => console.error('[datasync]', e.message)); // eslint-disable-line global-require, no-console
+    setInterval(syncTick, 5 * 60_000).unref();
+  }
   const app = createApp();
   const server = app.listen(PORT, () => console.log(`[${brand.name}] listening on ${PORT} (${config.env})`)); // eslint-disable-line no-console
   const shutdown = () => server.close(() => knex.destroy().then(() => process.exit(0)));
