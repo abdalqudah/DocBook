@@ -10,7 +10,7 @@
     <div class="text-end small muted"><%= fmt.date(new Date(), { dateStyle: 'long' }) %></div>
   </header>
   <%- body %>
-  <footer class="print-footer muted tiny"><span><%= t('reports.generated_by', { name: brandName, user: currentUser ? currentUser.name : '' }) %></span><span><%= business.currency %></span></footer>
+  <footer class="print-footer muted tiny"><span><%= t('reports.generated_by', { name: brandName, user: currentUser ? currentUser.name : '' }) %></span><% if (!/^\/app\/certificates/.test(path)) { %><span><%= business.currency %></span><% } %></footer>
 </main>
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
 <% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>

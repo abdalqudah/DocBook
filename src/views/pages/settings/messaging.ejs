@@ -1,0 +1,215 @@
+<%
+  var o = (typeof old !== 'undefined' && old) || {};
+  var posted = o.message_locale !== undefined;
+  var errs = (typeof errors !== 'undefined' && errors) || {};
+  var c = cfg;
+  var v = function (k, d) { return posted ? (o[k] !== undefined ? o[k] : '') : (c[k] !== undefined && c[k] !== null ? c[k] : (d === undefined ? '' : d)); };
+  var on = function (k) { return posted ? o[k] === '1' : Boolean(c[k]); };
+  var hours = function (i) { if (posted) return o['reminder_' + i] || ''; var m = c.reminder_offsets[i - 1]; return m ? String(Math.round(m / 60 * 100) / 100) : ''; };
+  var when = function (d) { return d ? fmt.date(d, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'; };
+  var stBadge = function (s) { return s === 'failed' ? 'badge-danger' : s === 'opted_out' ? 'badge-warning' : 'badge-neutral'; };
+  var chk = function (name, labelText, help) {
+    return '<label class="check eg-check"><input type="checkbox" name="' + name + '" value="1"' + (on(name) ? ' checked' : '') + '><span><span class="strong">' + escapeHtml(labelText) + '</span>' + (help ? '<span class="tiny muted" style="display:block">' + escapeHtml(help) + '</span>' : '') + '</span></label>';
+  };
+  var chState = function (okFlag, configured) { return okFlag ? ['badge-neutral', t('messaging.ch_active')] : configured ? ['badge-neutral', t('messaging.ch_off')] : ['badge-neutral', t('messaging.ch_not_set')]; };
+%>
+<%- include('_head', { heading: t('settings.nav_messaging'), lead: t('messaging.settings_lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('../../partials/form-error') %>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('messaging.status_title') %></h2><div class="panel-sub"><%= t('messaging.status_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <ul class="eg-channels">
+          <% [['whatsapp', 'message-circle', ready.whatsapp, ready.waConfigured], ['sms', 'smartphone', ready.sms, ready.smsConfigured], ['email', 'mail', ready.email, ready.mailConfigured]].forEach(function (x) { var s = chState(x[2], x[3]); %>
+          <li><span class="eg-ch-icon"><%- icon(x[1], 'icon-sm') %></span><span class="grow"><span class="strong small"><%= t('messaging.channels.' + x[0]) %></span><span class="tiny muted" style="display:block"><%= t('messaging.ch_help.' + x[0]) %></span></span><span class="badge badge-dot <%= s[0] %><%= x[2] ? ' eg-on' : '' %>"><%= s[1] %></span></li>
+          <% }) %>
+        </ul>
+        <% if (!ready.any) { %>
+        <div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('messaging.fallback_title') %></div><div><%= t('messaging.fallback_text') %></div></div></div>
+        <% } %>
+        <% if (c.wa_last_error) { %>
+        <div class="alert alert-error small"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('messaging.wa_last_error') %></div><div dir="ltr" class="mono tiny"><%= c.wa_last_error %></div></div></div>
+        <% } %>
+        <div class="eg-mini-stats">
+          <div><span class="tiny muted"><%= t('messaging.sent_30') %></span><strong class="num"><%= fmt.number((summary.sent || 0) + (summary.delivered || 0) + (summary.read || 0)) %></strong></div>
+          <div><span class="tiny muted"><%= t('messaging.failed_30') %></span><strong class="num"><%= fmt.number(summary.failed || 0) %></strong></div>
+          <div><span class="tiny muted"><%= t('messaging.opted_out_patients') %></span><strong class="num"><%= fmt.number(optedOut) %></strong></div>
+        </div>
+      </div>
+    </section>
+
+    <form method="post" action="/app/settings/messaging" class="stack-lg" novalidate autocomplete="off">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <section class="panel">
+        <div class="panel-head"><div><h2><%= t('messaging.what_title') %></h2><div class="panel-sub"><%= t('messaging.what_sub') %></div></div></div>
+        <div class="panel-body stack">
+          <%- chk('confirmations_enabled', t('messaging.opt_confirmations'), t('messaging.opt_confirmations_help')) %>
+          <div class="stack-sm">
+            <%- chk('reminders_enabled', t('messaging.opt_reminders'), t('messaging.opt_reminders_help')) %>
+            <div class="form-grid eg-indent">
+              <%- include('../../partials/field', { name: 'reminder_1', label: t('messaging.reminder_first'), type: 'number', value: hours(1), suffix: t('messaging.hours_before'), attrs: 'min="0.25" max="168" step="0.25" inputmode="decimal"', errors: errs }) %>
+              <%- include('../../partials/field', { name: 'reminder_2', label: t('messaging.reminder_second'), type: 'number', value: hours(2), suffix: t('messaging.hours_before'), attrs: 'min="0.25" max="168" step="0.25" inputmode="decimal"', errors: errs }) %>
+            </div>
+          </div>
+          <div class="stack-sm">
+            <%- chk('reviews_enabled', t('messaging.opt_reviews'), t('messaging.opt_reviews_help')) %>
+            <div class="form-grid eg-indent">
+              <%- include('../../partials/field', { name: 'review_delay_minutes', label: t('messaging.review_delay'), type: 'number', value: v('review_delay_minutes', 120), suffix: t('messaging.minutes_after'), attrs: 'min="0" max="10080" inputmode="numeric"', errors: errs }) %>
+              <%- include('../../partials/field', { name: 'message_locale', label: t('messaging.message_language'), type: 'select', value: v('message_locale', 'ar'), options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }], errors: errs }) %>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2><%= t('messaging.self_title') %></h2><div class="panel-sub"><%= t('messaging.self_sub') %></div></div></div>
+        <div class="panel-body stack">
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'cancel_cutoff_hours', label: t('messaging.cutoff'), type: 'number', value: v('cancel_cutoff_hours', 3), suffix: t('messaging.hours'), attrs: 'min="0" max="72" inputmode="numeric"', help: t('messaging.cutoff_help'), errors: errs }) %>
+          </div>
+          <%- chk('allow_reschedule', t('messaging.opt_reschedule'), t('messaging.opt_reschedule_help')) %>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2><%= t('messaging.channels_title') %></h2><div class="panel-sub"><%= t('messaging.channels_sub') %></div></div></div>
+        <div class="panel-body stack">
+          <%- chk('use_whatsapp', t('messaging.use_whatsapp'), t('messaging.use_whatsapp_help')) %>
+          <%- chk('use_sms', t('messaging.use_sms'), t('messaging.use_sms_help')) %>
+          <%- chk('use_email', t('messaging.use_email'), ready.mailConfigured ? t('messaging.use_email_help') : t('messaging.email_not_set')) %>
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'default_dial', label: t('messaging.default_dial'), value: v('default_dial', dial || ''), placeholder: '962', attrs: 'dir="ltr" inputmode="numeric" maxlength="5"', help: t('messaging.default_dial_help'), errors: errs }) %>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="whatsapp">
+        <div class="panel-head"><div><h2><%= t('messaging.wa_title') %></h2><div class="panel-sub"><%= t('messaging.wa_sub') %></div></div></div>
+        <div class="panel-body stack">
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'wa_phone_number_id', label: t('messaging.wa_phone_id'), value: v('wa_phone_number_id'), attrs: 'dir="ltr" inputmode="numeric" spellcheck="false"', help: t('messaging.wa_phone_id_help'), errors: errs }) %>
+            <%- include('../../partials/field', { name: 'wa_token', label: t('messaging.wa_token'), type: 'password', attrs: 'dir="ltr" autocomplete="new-password" spellcheck="false"', help: masks.waToken ? t('messaging.secret_saved', { hint: masks.waToken }) : t('messaging.wa_token_help'), errors: errs }) %>
+          </div>
+          <% if (masks.waToken) { %><label class="check"><input type="checkbox" name="clear_wa_token" value="1"><span class="small"><%= t('messaging.remove_token') %></span></label><% } %>
+          <h3 class="eg-h3"><%= t('messaging.templates') %></h3>
+          <div class="form-grid cols-3">
+            <%- include('../../partials/field', { name: 'wa_tpl_confirmation', label: t('messaging.kinds.confirmation'), value: v('wa_tpl_confirmation'), placeholder: 'appointment_booked', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'wa_tpl_reminder', label: t('messaging.kinds.reminder'), value: v('wa_tpl_reminder'), placeholder: 'appointment_reminder', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'wa_tpl_review', label: t('messaging.kinds.review'), value: v('wa_tpl_review'), placeholder: 'visit_review', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'wa_lang_ar', label: t('messaging.lang_ar'), value: v('wa_lang_ar', 'ar'), attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'wa_lang_en', label: t('messaging.lang_en'), value: v('wa_lang_en', 'en'), attrs: 'dir="ltr" spellcheck="false"', help: t('messaging.lang_help'), errors: errs }) %>
+          </div>
+          <%- chk('wa_quick_confirm', t('messaging.quick_confirm'), t('messaging.quick_confirm_help')) %>
+          <details class="eg-tpl-help">
+            <summary class="link small"><%= t('messaging.tpl_show') %></summary>
+            <div class="stack-sm mt-2 small">
+              <p class="muted"><%= t('messaging.tpl_intro') %></p>
+              <% ['confirmation', 'reminder', 'review'].forEach(function (k) { %>
+              <div class="eg-tpl">
+                <div class="strong"><%= t('messaging.kinds.' + k) %></div>
+                <div class="eg-tpl-grid">
+                  <div><span class="tiny muted">العربية</span><p dir="rtl"><%= t('messaging.tpl.' + k + '_ar') %></p></div>
+                  <div><span class="tiny muted">English</span><p dir="ltr"><%= t('messaging.tpl.' + k + '_en') %></p></div>
+                </div>
+                <div class="tiny muted" dir="ltr"><%= t('messaging.tpl_button') %>: <code><%= k === 'review' ? hooks.reviewBase : hooks.actionBase %>{{1}}</code></div>
+              </div>
+              <% }) %>
+            </div>
+          </details>
+          <h3 class="eg-h3"><%= t('messaging.webhook') %></h3>
+          <p class="small muted"><%= t('messaging.webhook_help') %></p>
+          <% if (hooks.whatsapp) { %>
+          <div class="stack-sm">
+            <div class="set-url"><span class="tiny muted eg-url-label"><%= t('messaging.callback_url') %></span><code class="grow truncate" dir="ltr"><%= hooks.whatsapp %></code><button class="btn btn-secondary btn-sm" type="button" data-copy="<%= hooks.whatsapp %>"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+            <div class="set-url"><span class="tiny muted eg-url-label"><%= t('messaging.verify_token') %></span><code class="grow truncate" dir="ltr"><%= hooks.verifyToken %></code><button class="btn btn-secondary btn-sm" type="button" data-copy="<%= hooks.verifyToken %>"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+            <% if (c.wa_verified_at) { %><span class="tiny muted"><%- icon('check', 'icon-sm') %> <%= t('messaging.webhook_verified', { date: when(c.wa_verified_at) }) %></span><% } %>
+          </div>
+          <% } else { %><p class="tiny muted"><%= t('messaging.webhook_after_save') %></p><% } %>
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'wa_app_secret', label: t('messaging.app_secret'), type: 'password', attrs: 'dir="ltr" autocomplete="new-password" spellcheck="false"', help: masks.appSecret ? t('messaging.secret_saved', { hint: '••••' }) : t('messaging.app_secret_help'), errors: errs }) %>
+          </div>
+          <input type="hidden" name="wa_verify_token" value="<%= c.wa_verify_token || '' %>">
+        </div>
+      </section>
+
+      <section class="panel" id="sms">
+        <div class="panel-head"><div><h2><%= t('messaging.sms_title') %></h2><div class="panel-sub"><%= t('messaging.sms_sub') %></div></div></div>
+        <div class="panel-body stack">
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'sms_url', label: t('messaging.sms_url'), value: v('sms_url'), placeholder: 'https://api.provider.com/send', attrs: 'dir="ltr" spellcheck="false"', cls: 'full', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'sms_method', label: t('messaging.sms_method'), type: 'select', value: v('sms_method', 'POST'), options: [{ value: 'POST', label: 'POST' }, { value: 'GET', label: 'GET' }], errors: errs }) %>
+            <%- include('../../partials/field', { name: 'sms_content_type', label: t('messaging.sms_type'), type: 'select', value: v('sms_content_type', 'application/json'), options: [{ value: 'application/json', label: 'JSON' }, { value: 'application/x-www-form-urlencoded', label: 'Form (x-www-form-urlencoded)' }], errors: errs }) %>
+          </div>
+          <div class="field">
+            <label class="label" for="f-sms_body_template"><%= t('messaging.sms_body') %></label>
+            <textarea class="textarea mono" id="f-sms_body_template" name="sms_body_template" rows="3" dir="ltr" spellcheck="false" placeholder='{"to": "{to}", "text": "{text}"}'><%= v('sms_body_template') %></textarea>
+            <% if (errs.sms_body_template) { %><span class="field-error"><%= errs.sms_body_template %></span><% } else { %><span class="help"><%= t('messaging.sms_body_help') %></span><% } %>
+          </div>
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'sms_auth_header', label: t('messaging.sms_auth_header'), value: v('sms_auth_header'), placeholder: 'Authorization', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'sms_auth', label: t('messaging.sms_auth_value'), type: 'password', attrs: 'dir="ltr" autocomplete="new-password" spellcheck="false"', help: masks.smsAuth ? t('messaging.secret_saved', { hint: '••••' }) : t('messaging.sms_auth_help'), errors: errs }) %>
+          </div>
+          <% if (masks.smsAuth) { %><label class="check"><input type="checkbox" name="clear_sms_auth" value="1"><span class="small"><%= t('messaging.remove_auth') %></span></label><% } %>
+          <% if (hooks.sms) { %>
+          <div class="set-url"><span class="tiny muted eg-url-label"><%= t('messaging.sms_inbound') %></span><code class="grow truncate" dir="ltr"><%= hooks.sms %></code><button class="btn btn-secondary btn-sm" type="button" data-copy="<%= hooks.sms %>"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+          <span class="tiny muted"><%= t('messaging.sms_inbound_help') %></span>
+          <% } %>
+        </div>
+      </section>
+
+      <div class="eg-save"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+    </form>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('messaging.preview_title') %></h2><div class="panel-sub"><%= t('messaging.preview_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="eg-previews">
+          <% ['ar', 'en'].forEach(function (lc) { %>
+          <div class="stack-sm">
+            <span class="tiny muted strong"><%= lc === 'ar' ? 'العربية' : 'English' %></span>
+            <% preview[lc].forEach(function (p) { %>
+            <div class="eg-bubble" dir="<%= lc === 'ar' ? 'rtl' : 'ltr' %>" lang="<%= lc %>"><span class="tiny muted"><%= t('messaging.kinds.' + p.kind) %></span><p><%= p.text %></p></div>
+            <% }) %>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="test">
+      <div class="panel-head"><div><h2><%= t('messaging.test_title') %></h2><div class="panel-sub"><%= t('messaging.test_sub') %></div></div></div>
+      <div class="panel-body">
+        <form method="post" action="/app/settings/messaging/test" class="row wrap eg-test">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input class="input" type="tel" name="test_phone" placeholder="+962 7X XXX XXXX" dir="ltr" aria-label="<%= t('common.phone') %>" required>
+          <button class="btn btn-secondary" type="submit"<%= ready.waConfigured || ready.smsConfigured ? '' : ' disabled' %>><%- icon('send', 'icon-sm') %><%= t('messaging.test_send') %></button>
+        </form>
+        <% if (!ready.waConfigured && !ready.smsConfigured) { %><p class="tiny muted mt-2"><%= t('messaging.test_needs') %></p><% } %>
+      </div>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('messaging.log_title') %></h2><div class="panel-sub"><%= t('messaging.log_sub') %></div></div></div>
+      <% if (!logRows.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'history', emptyTitle: t('messaging.log_empty'), emptyText: t('messaging.log_empty_text'), compact: true }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('messaging.log_when') %></th><th><%= t('messaging.log_message') %></th><th><%= t('messaging.log_channel') %></th><th><%= t('messaging.log_to') %></th><th><%= t('common.status') %></th></tr></thead>
+        <tbody><% logRows.forEach(function (r) { var kind = /^reminder_/.test(r.stage) ? 'reminder' : r.stage; %>
+          <tr>
+            <td class="primary-cell nowrap"><span class="num"><%= when(r.created_at) %></span></td>
+            <td data-label="<%= t('messaging.log_message') %>"><%= t('messaging.stages.' + kind) %><% if (/^reminder_/.test(r.stage)) { %> <span class="tiny muted">(<%= t('messaging.hours_short', { n: Math.round(Number(r.stage.slice(9)) / 60 * 100) / 100 }) %>)</span><% } %><% if (r.appointment_id && r.appointment_date) { %><div class="tiny muted"><a class="link" href="/app/appointments/<%= r.appointment_id %>"><%= fmt.date(r.appointment_date) %> · <bdi dir="ltr"><%= r.appointment_time %></bdi></a></div><% } %></td>
+            <td data-label="<%= t('messaging.log_channel') %>"><%= t('messaging.channels.' + r.channel) %></td>
+            <td data-label="<%= t('messaging.log_to') %>"><bdi dir="ltr" class="mono tiny"><%= r.recipient || '—' %></bdi></td>
+            <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= stBadge(r.status) %>"><%= t('messaging.log_status.' + r.status) %></span><% if (r.error) { %><div class="tiny muted eg-err" dir="ltr"><%= r.error %></div><% } %></td>
+          </tr>
+        <% }) %></tbody>
+      </table></div>
+      <% } %>
+    </section>
+  </div>
+</div>
