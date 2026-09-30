@@ -134,10 +134,10 @@ async function sendSms(cfg, to, text) {
 }
 
 // ---------------------------------------------------------------- e-mail
-async function sendEmail({ to, subject, html, replyTo }) {
-  if (!mailer.configured()) return { ok: false, error: 'not_configured' };
+async function sendEmail({ to, subject, html, replyTo, businessId }) {
+  if (!(await mailer.configuredFor(businessId))) return { ok: false, error: 'not_configured' };
   try {
-    const sent = await mailer.send({ to, subject, html, replyTo });
+    const sent = await mailer.send({ to, subject, html, replyTo, businessId, kind: 'reminders' });
     return sent ? { ok: true } : { ok: false, error: 'not_configured' };
   } catch (err) {
     return { ok: false, error: short(err.message) };

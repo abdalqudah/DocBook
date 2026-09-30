@@ -126,7 +126,7 @@ async function share(ctx, apptId, input) {
   });
 
   let emailed = false;
-  if (input.email !== '0' && mailer.configured() && v.a.patient_email) {
+  if (input.email !== '0' && v.a.patient_email && await mailer.configuredFor(ctx.businessId)) {
     const attachments = [];
     for (const p of picks) {
       const out = await render(ctx, v.a.id, p, locale); // eslint-disable-line no-await-in-loop
@@ -158,7 +158,7 @@ async function sendMail({ to, clinic, locale, attachments, link, doctor }) {
 ${link ? `<p style="margin:16px 0 6px">${esc(t('patient_docs.mail.also_online'))}</p><p style="font-size:12px;word-break:break-all" dir="ltr"><a href="${esc(link)}" style="color:${c.primary}">${esc(link)}</a></p>` : ''}
 <p style="font-size:12px;color:${c.textMuted};margin-top:20px">${esc(t('patient_docs.mail.foot'))}</p>
 <div style="font-size:11px;color:${c.textMuted};margin-top:24px">${esc(brand.name)}</div></div></body></html>`;
-  await mailer.send({ to, subject, html, replyTo: clinic.email || undefined, attachments });
+  await mailer.send({ to, subject, html, replyTo: clinic.email || undefined, attachments, businessId: ctx.businessId, kind: 'patient_letters' });
 }
 
 async function revoke(ctx, apptId, docId) {

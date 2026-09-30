@@ -204,4 +204,56 @@ router.post('/domain/alias/verify', can('website.domain'), domainGate, act(async
 }, null, '/app/website/domain#alias'));
 router.post('/domain/alias/delete', can('website.domain'), act((req) => domains.removeAlias(req.ctx), 'website.alias_removed', '/app/website/domain'));
 
+// ---------------------------------------------------------------- clinic e-mail (send from the clinic's own address)
+const mailSvc = () => require('../clinicmail/clinicmail.service'); // eslint-disable-line global-require
+router.get('/email', can('website.email'), wrap(async (req, res) => {
+  const m = mailSvc();
+  const [acc, entOk, providers, log] = await Promise.all([m.status(req.ctx.businessId), entitled(req, 'website.clinic_email'), m.providers(), m.recentLog(req.ctx.businessId)]);
+  if (!entOk && !acc) return lockedPage(req, res, 'email');
+  const dns = req.query.dns === '1' && acc ? await m.deliverability(acc.from_address, String(req.query.selector || '')) : null;
+  return page(req, res, 'email', {
+    title: req.t('website.email_title'), acc, entOk, providers, log, dns, kinds: m.KINDS, me: req.user,
+    redirectUri: require('../clinicmail/oauth').redirectUri(), // eslint-disable-line global-require
+  });
+}));
+const mailGate = wrap(async (req, res, next) => (await entitled(req, 'website.clinic_email') ? next() : lockedPage(req, res, 'email')));
+router.post('/email/smtp', can('website.email'), mailGate, act((req) => mailSvc().saveSmtp(req.ctx, req.body), 'website.email_saved', '/app/website/email'));
+router.post('/email/sender', can('website.email'), mailGate, act((req) => mailSvc().saveSender(req.ctx, req.body), 'website.saved', '/app/website/email'));
+router.post('/email/test', can('website.email'), mailGate, act(async (req) => {
+  const r = await mailSvc().testConnection(req.ctx);
+  flash(req, r.ok ? 'success' : 'error', r.ok ? req.t('website.email_test_ok') : req.t('website.email_test_failed', { error: r.error || '' }));
+}, null, '/app/website/email'));
+router.post('/email/test-send', can('website.email'), mailGate, act(async (req) => {
+  const mailer = require('../../core/mailer'); // eslint-disable-line global-require
+  const subject = req.t('website.email_test_subject');
+  const r = await mailSvc().testSend(req.ctx, req.user.email, { subject, html: mailer.layout({ locale: req.locale, title: subject, body: req.t('website.email_test_body', { clinic: req.business.name }) }) });
+  flash(req, r.ok ? 'success' : 'error', r.ok ? req.t('website.email_sent_to', { to: req.user.email }) : req.t('website.email_test_failed', { error: r.error || '' }));
+}, null, '/app/website/email'));
+router.post('/email/disconnect', can('website.email'), act((req) => mailSvc().disconnect(req.ctx), 'website.email_disconnected', '/app/website/email'));
+router.get('/email/oauth/:provider(google|microsoft)/start', can('website.email'), mailGate, wrap(async (req, res) => {
+  try {
+    const { url, pending } = await require('../clinicmail/oauth').start(req.params.provider, req.ctx.businessId); // eslint-disable-line global-require
+    req.session.mailOAuth = pending;
+    return res.redirect(url);
+  } catch (e) {
+    if (!(e instanceof AppError)) throw e;
+    flash(req, 'error', errText(req, e));
+    return res.redirect('/app/website/email');
+  }
+}));
+router.get('/email/oauth/callback', can('website.email'), mailGate, wrap(async (req, res) => {
+  const pending = req.session.mailOAuth;
+  delete req.session.mailOAuth;
+  try {
+    const r = await require('../clinicmail/oauth').finish(pending, req.query, req.ctx.businessId); // eslint-disable-line global-require
+    await mailSvc()._saveOAuth(req.ctx, r.provider, r);
+    const test = await mailSvc().testConnection(req.ctx);
+    flash(req, test.ok ? 'success' : 'warning', test.ok ? req.t('website.email_oauth_ok', { account: r.account }) : req.t('website.email_test_failed', { error: test.error || '' }));
+  } catch (e) {
+    if (!(e instanceof AppError)) throw e;
+    flash(req, 'error', errText(req, e));
+  }
+  return res.redirect('/app/website/email');
+}));
+
 module.exports = router;

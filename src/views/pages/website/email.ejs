@@ -1,0 +1,102 @@
+<%
+  // Website → E-mail: send patient-facing e-mails from the clinic's own address. Passwords and tokens are write-only:
+  // this page only ever knows whether one is saved.
+  var hidden = '<input type="hidden" name="_csrf" value="' + csrfToken + '">';
+  var st = acc ? acc.status : 'none';
+  var tone = st === 'verified' ? 'success' : st === 'failed' ? 'danger' : 'neutral';
+  var smtp = acc && acc.provider === 'smtp' ? acc : null;
+%>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.email_title') %></h1><p><%= t('website.email_lead') %></p></div></div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('website.email_status') %></h2><p class="panel-sub"><%= t('website.email_account_note') %></p></div><span class="badge badge-dot badge-<%= tone %>"><%= t('website.mail_st.' + st) %></span></div>
+  <div class="panel-body stack-sm">
+    <% if (acc) { %>
+      <div class="row-sm wrap"><span class="strong" dir="ltr"><%= acc.from_address %></span><span class="badge"><%= t('website.provider.' + acc.provider) %></span><% if (acc.oauth_account) { %><span class="small muted" dir="ltr"><%= acc.oauth_account %></span><% } %></div>
+      <% if (acc.last_error && st !== 'verified') { %><div class="alert alert-error small"><%- icon('circle-alert') %><div class="grow" dir="auto"><%= acc.last_error %></div></div><% } %>
+      <% if (acc.last_test_at) { %><div class="small muted"><%= t('website.email_last_test', { date: fmt.date(acc.last_test_at, { dateStyle: 'medium', timeStyle: 'short' }) }) %></div><% } %>
+      <% if (entOk) { %>
+      <div class="row wrap" style="gap:8px">
+        <form method="post" action="/app/website/email/test"><%- hidden %><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plug', 'icon-sm') %><%= t('website.email_test') %></button></form>
+        <form method="post" action="/app/website/email/test-send"><%- hidden %><button class="btn btn-secondary btn-sm" type="submit"><%- icon('send', 'icon-sm') %><%= t('website.email_test_send', { to: me.email }) %></button></form>
+      </div>
+      <% } else { %><div class="alert alert-info small"><%- icon('lock') %><div class="grow"><%= t('website.email_not_in_package_now') %></div></div><% } %>
+      <form method="post" action="/app/website/email/disconnect" data-confirm="<%= t('website.email_disconnect_confirm') %>" data-confirm-tone="danger"><%- hidden %><button class="btn btn-ghost btn-danger-ghost btn-sm" type="submit"><%- icon('unplug', 'icon-sm') %><%= t('website.email_disconnect') %></button></form>
+    <% } else { %>
+      <p class="small muted"><%= t('website.email_none_text') %></p>
+    <% } %>
+  </div>
+</section>
+
+<% if (entOk) { %>
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.email_connect') %></h2><p class="panel-sub"><%= t('website.email_connect_sub') %></p></div></div>
+  <div class="panel-body stack">
+    <div class="row wrap" style="gap:8px">
+      <% if (providers.google) { %><a class="btn btn-secondary" href="/app/website/email/oauth/google/start"><%- icon('mail', 'icon-sm') %><%= t('website.email_connect_google') %></a><% } %>
+      <% if (providers.microsoft) { %><a class="btn btn-secondary" href="/app/website/email/oauth/microsoft/start"><%- icon('mail', 'icon-sm') %><%= t('website.email_connect_microsoft') %></a><% } %>
+    </div>
+    <% if (!providers.google || !providers.microsoft) { %><p class="tiny muted"><%= t('website.email_oauth_unavailable') %></p><% } %>
+    <details<%= smtp ? ' open' : '' %>><summary class="strong"><%= t('website.email_smtp_title') %></summary>
+      <form class="stack mt-3" method="post" action="/app/website/email/smtp" autocomplete="off" novalidate>
+        <%- hidden %>
+        <div class="grid grid-2">
+          <div class="field"><label class="label" for="m-host"><%= t('website.smtp.host') %></label><input class="input" id="m-host" name="smtp_host" value="<%= smtp ? smtp.smtp_host : '' %>" placeholder="smtp.yourprovider.com" dir="ltr" required maxlength="253"></div>
+          <div class="field"><label class="label" for="m-port"><%= t('website.smtp.port') %></label><select class="select" id="m-port" name="smtp_port"><% [[465, 'SSL'], [587, 'STARTTLS'], [2525, 'STARTTLS'], [25, 'STARTTLS']].forEach(function (p) { %><option value="<%= p[0] %>"<%= smtp && smtp.smtp_port === p[0] ? ' selected' : '' %>><%= p[0] %> · <%= p[1] %></option><% }) %></select></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label class="label" for="m-user"><%= t('website.smtp.user') %></label><input class="input" id="m-user" name="smtp_user" value="<%= smtp ? smtp.smtp_user : '' %>" dir="ltr" required maxlength="190" autocomplete="off"></div>
+          <div class="field"><label class="label" for="m-pass"><%= t('website.smtp.password') %></label><input class="input" id="m-pass" name="smtp_password" type="password" value="" dir="ltr" maxlength="500" autocomplete="new-password" placeholder="<%= smtp && smtp.hasSecret ? t('website.smtp.password_saved') : '' %>"><span class="help"><%= smtp && smtp.hasSecret ? t('website.smtp.password_keep') : t('website.smtp.password_help') %></span></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label class="label" for="m-from"><%= t('website.smtp.from_address') %></label><input class="input" id="m-from" name="from_address" type="email" value="<%= acc ? acc.from_address : '' %>" placeholder="appointments@yourclinic.com" dir="ltr" required maxlength="190"></div>
+          <div class="field"><label class="label" for="m-name"><%= t('website.smtp.from_name') %></label><input class="input" id="m-name" name="from_name" value="<%= acc ? acc.from_name || '' : business.name %>" maxlength="120"></div>
+        </div>
+        <div class="field"><label class="label" for="m-reply"><%= t('website.smtp.reply_to') %></label><input class="input" id="m-reply" name="reply_to" type="email" value="<%= acc ? acc.reply_to || '' : '' %>" placeholder="info@yourclinic.com" dir="ltr" maxlength="190"></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('website.email_save_smtp') %></button></div>
+      </form>
+    </details>
+  </div>
+</section>
+<% } %>
+
+<% if (acc) { %>
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.email_uses_title') %></h2><p class="panel-sub"><%= t('website.email_uses_sub') %></p></div></div>
+  <form class="panel-body stack" method="post" action="/app/website/email/sender">
+    <%- hidden %><input type="hidden" name="uses_field" value="1">
+    <% kinds.forEach(function (k) { %><label class="check"><input type="checkbox" name="uses" value="<%= k %>"<%= acc.uses.indexOf(k) !== -1 ? ' checked' : '' %>><span><span class="strong small"><%= t('website.mail_kind.' + k) %></span> <span class="small muted"><%= t('website.mail_kind_help.' + k) %></span></span></label><% }) %>
+    <p class="small muted"><%= t('website.email_always_platform') %></p>
+    <div class="grid grid-2">
+      <div class="field"><label class="label" for="s-name"><%= t('website.smtp.from_name') %></label><input class="input" id="s-name" name="from_name" value="<%= acc.from_name || '' %>" maxlength="120"></div>
+      <div class="field"><label class="label" for="s-reply"><%= t('website.smtp.reply_to') %></label><input class="input" id="s-reply" name="reply_to" type="email" value="<%= acc.reply_to || '' %>" dir="ltr" maxlength="190"></div>
+    </div>
+    <% if (acc.provider === 'smtp') { %><input type="hidden" name="from_address" value="<%= acc.from_address %>"><% } %>
+    <div class="form-actions"><button class="btn btn-secondary" type="submit"><%= t('website.save') %></button></div>
+  </form>
+</section>
+
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.email_dns_title') %></h2><p class="panel-sub"><%= t('website.email_dns_sub') %></p></div></div>
+  <div class="panel-body stack-sm">
+    <form class="row wrap" style="gap:8px" method="get" action="/app/website/email"><input type="hidden" name="dns" value="1"><input class="input" name="selector" value="<%= dns && dns.selector ? dns.selector : '' %>" placeholder="<%= t('website.dkim_selector') %>" dir="ltr" maxlength="63" style="max-width:220px" aria-label="<%= t('website.dkim_selector') %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('search', 'icon-sm') %><%= t('website.email_dns_check') %></button></form>
+    <% if (dns) { %>
+      <ul class="checklist">
+        <li class="<%= dns.spf ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><strong>SPF</strong> · <span class="small"><%= dns.spf ? t('website.dns_found') : t('website.spf_missing', { domain: dns.domain }) %></span><% if (dns.spf) { %><code class="tiny d-block" dir="ltr"><%= dns.spf %></code><% } %></span></li>
+        <li class="<%= dns.dmarc ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><strong>DMARC</strong> · <span class="small"><%= dns.dmarc ? t('website.dns_found') : t('website.dmarc_missing', { domain: dns.domain }) %></span></span></li>
+        <% if (dns.dkim !== undefined) { %><li class="<%= dns.dkim ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><strong>DKIM</strong> · <span class="small"><%= dns.dkim ? t('website.dns_found') : t('website.dkim_missing') %></span></span></li><% } %>
+      </ul>
+      <p class="tiny muted"><%= t('website.dns_explain') %></p>
+    <% } %>
+  </div>
+</section>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><h2><%= t('website.email_log') %></h2></div>
+  <% if (!log.length) { %><div class="panel-body small muted"><%= t('website.email_log_empty') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('website.mail_to') %></th><th><%= t('website.mail_kind_col') %></th><th><%= t('common.status') %></th></tr></thead>
+    <tbody><% log.forEach(function (l) { %><tr><td class="nowrap small"><%= fmt.date(l.created_at, { dateStyle: 'short', timeStyle: 'short' }) %></td><td class="small" dir="ltr"><%= l.to_email %></td><td class="small"><%= l.kind === 'test' ? t('website.mail_kind.test') : t('website.mail_kind.' + l.kind) %></td><td><span class="badge badge-<%= l.status === 'sent' || l.status === 'test' ? 'success' : l.status === 'fallback' ? 'warning' : 'danger' %>"><%= t('website.mail_log_st.' + l.status) %></span><% if (l.error) { %><div class="tiny muted" dir="auto"><%= l.error %></div><% } %></td></tr><% }) %></tbody>
+  </table></div><% } %>
+</section>
+<% } %>

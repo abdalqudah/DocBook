@@ -301,3 +301,93 @@ test('domain: alias (www ↔ bare) needs the main domain, redirects when both ar
   await domains.remove(A.ctx);
   assert.equal(await domains.aliasFor(A.ctx.businessId), null, 'removing the main domain removes the alias');
 });
+
+test('clinic e-mail: validation, write-only encrypted password, test, routing by kind, fallback, isolation', async () => {
+  const m = require('../src/modules/clinicmail/clinicmail.service'); // eslint-disable-line global-require
+  const mailer = require('../src/core/mailer'); // eslint-disable-line global-require
+  const sent = [];
+  let failNext = false;
+  m._setBuild(() => ({ verify: async () => true, sendMail: async (msg) => { if (failNext) { failNext = false; throw Object.assign(new Error('boom'), { code: 'EAUTH' }); } sent.push(msg); return { messageId: `<${sent.length}@t>` }; }, close() {} }));
+  try {
+    await assert.rejects(m.saveSmtp(A.ctx, { smtp_host: 'localhost', smtp_port: '587', smtp_user: 'u', smtp_password: 'p', from_address: 'a@clinic-a.test' }), (e) => Boolean(e.details && e.details.smtp_host));
+    await assert.rejects(m.saveSmtp(A.ctx, { smtp_host: '10.0.0.5', smtp_port: '587', smtp_user: 'u', smtp_password: 'p', from_address: 'a@clinic-a.test' }), (e) => Boolean(e.details && e.details.smtp_host));
+    await assert.rejects(m.saveSmtp(A.ctx, { smtp_host: 'smtp.clinic-a.test', smtp_port: '8080', smtp_user: 'u', smtp_password: 'p', from_address: 'a@clinic-a.test' }), (e) => Boolean(e.details && e.details.smtp_port));
+    await assert.rejects(m.saveSmtp(A.ctx, { smtp_host: 'smtp.clinic-a.test', smtp_port: '587', smtp_user: 'u', from_address: 'a@clinic-a.test' }), (e) => Boolean(e.details && e.details.smtp_password), 'a password is required the first time');
+    await m.saveSmtp(A.ctx, { smtp_host: 'smtp.clinic-a.test', smtp_port: '465', smtp_user: 'appointments', smtp_password: 'S3cret-Pass!', from_address: 'appointments@clinic-a.test', from_name: 'Clinic A' });
+    const row = await knex('clinic_mail_accounts').where({ business_id: A.ctx.businessId }).first();
+    assert.ok(row.secret_enc && !row.secret_enc.includes('S3cret'), 'stored encrypted');
+    assert.equal(row.smtp_security, 'ssl');
+    assert.equal(row.status, 'pending');
+    // Same server & user without a password keeps the saved one (write-only form).
+    await m.saveSmtp(A.ctx, { smtp_host: 'smtp.clinic-a.test', smtp_port: '465', smtp_user: 'appointments', smtp_password: '', from_address: 'appointments@clinic-a.test' });
+    assert.equal((await knex('clinic_mail_accounts').where({ business_id: A.ctx.businessId }).first()).secret_enc, row.secret_enc);
+    // The page never shows the secret.
+    const o = app.agent();
+    await o.login(mail('owner-a'));
+    let r = await o.get('/app/website/email');
+    assert.equal(r.status, 200);
+    assert.ok(!r.text.includes('S3cret'));
+    assert.ok(!r.text.includes(row.secret_enc));
+    // Not verified yet → the platform sends (not configured in tests → false) and nothing leaves from the clinic.
+    assert.equal(await mailer.send({ to: 'p@x.test', subject: 's', html: 'h', businessId: A.ctx.businessId, kind: 'reminders' }), false);
+    assert.equal(sent.length, 0);
+    assert.equal((await m.testConnection(A.ctx)).ok, true);
+    assert.equal((await m.status(A.ctx.businessId)).status, 'verified');
+    // Verified → clinic e-mails go out from the clinic address; account e-mails never do.
+    assert.equal(await mailer.send({ to: 'p@x.test', subject: 'Reminder', html: 'h', businessId: A.ctx.businessId, kind: 'reminders' }), true);
+    assert.equal(sent[0].from.address, 'appointments@clinic-a.test');
+    await mailer.send({ to: 'u@x.test', subject: 'Reset your password', html: 'h' });
+    assert.equal(sent.length, 1, 'no businessId → platform only');
+    // Kinds the clinic turned off use the platform.
+    await m.saveSender(A.ctx, { uses: ['patient_letters'], from_name: 'Clinic A', from_address: 'appointments@clinic-a.test' });
+    await mailer.send({ to: 'p@x.test', subject: 'Reminder 2', html: 'h', businessId: A.ctx.businessId, kind: 'reminders' });
+    assert.equal(sent.length, 1);
+    // A failure falls back to the platform and is logged.
+    failNext = true;
+    await mailer.send({ to: 'p@x.test', subject: 'Letter', html: 'h', businessId: A.ctx.businessId, kind: 'patient_letters' });
+    assert.ok(await knex('clinic_mail_log').where({ business_id: A.ctx.businessId, status: 'fallback' }).first());
+    // Isolation: clinic B has no account and cannot see A's.
+    assert.equal(await m.status(B.ctx.businessId), null);
+    const b = app.agent();
+    await b.login(mail('owner-b'));
+    r = await b.get('/app/website/email');
+    assert.ok(!r.text.includes('appointments@clinic-a.test'));
+    // Test sends are limited per hour.
+    for (let i = 0; i < 5; i += 1) await m.testSend(A.ctx, 'owner@x.test', { subject: 't', html: 'h' }); // eslint-disable-line no-await-in-loop
+    await assert.rejects(m.testSend(A.ctx, 'owner@x.test', { subject: 't', html: 'h' }), { code: 'RATE_LIMITED' });
+    await m.disconnect(A.ctx);
+    assert.equal(await m.status(A.ctx.businessId), null);
+    assert.ok(await knex('audit_logs').where({ business_id: A.ctx.businessId, action: 'email.disconnected' }).first());
+  } finally {
+    m._setBuild(null);
+  }
+  // Private networks are refused when the host resolves to them.
+  await assert.rejects(m.resolvePublic('smtp.evil.test', { resolve4: async () => ['127.0.0.1', '10.1.2.3'] }), { code: 'MAIL_HOST_PRIVATE' });
+  assert.equal(await m.resolvePublic('smtp.ok.test', { resolve4: async () => ['10.0.0.1', '93.184.216.34'] }), '93.184.216.34');
+});
+
+test('clinic e-mail OAuth: state is bound to this browser and clinic; the account comes from the token response', async () => {
+  const oauth = require('../src/modules/clinicmail/oauth'); // eslint-disable-line global-require
+  process.env.MS_CLIENT_ID = 'ms-client'; process.env.MS_CLIENT_SECRET = 'ms-secret';
+  try {
+    const { url, pending } = await oauth.start('microsoft', A.ctx.businessId);
+    const u = new URL(url);
+    assert.equal(u.searchParams.get('code_challenge_method'), 'S256');
+    assert.match(u.searchParams.get('scope'), /SMTP\.Send/);
+    await assert.rejects(oauth.finish(pending, { state: 'wrong', code: 'c' }, A.ctx.businessId), { code: 'MAIL_OAUTH_STATE' });
+    await assert.rejects(oauth.finish(pending, { state: pending.state, code: 'c' }, B.ctx.businessId), { code: 'MAIL_OAUTH_STATE' }, 'another clinic cannot finish it');
+    const payload = Buffer.from(JSON.stringify({ email: 'Front@Clinic-A.test' })).toString('base64url');
+    oauth._setFetch(async (href, init) => {
+      assert.match(String(init.body), /code_verifier=/);
+      return { ok: true, json: async () => ({ refresh_token: 'rt-1', id_token: `x.${payload}.y` }) };
+    });
+    const r = await oauth.finish(pending, { state: pending.state, code: 'c' }, A.ctx.businessId);
+    assert.deepEqual(r, { provider: 'microsoft', account: 'front@clinic-a.test', refreshToken: 'rt-1' });
+    const opts = await oauth.transportOptions('microsoft', { user: r.account, refreshToken: r.refreshToken });
+    assert.equal(opts.auth.type, 'OAuth2');
+    assert.equal(opts.host, 'smtp.office365.com');
+  } finally {
+    delete process.env.MS_CLIENT_ID; delete process.env.MS_CLIENT_SECRET;
+    oauth._setFetch((...a) => fetch(...a));
+  }
+});

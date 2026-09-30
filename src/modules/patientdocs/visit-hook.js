@@ -31,7 +31,7 @@ router.get('/:id(\\d+)', async (req, res, next) => {
       const clinicName = (req.locale === 'en' && req.business.name_en) || req.business.name;
       Object.assign(out, {
         docs: { ...ch, shared: shared.map((d) => ({ ...d, label: docs.labelOf(d, req.t, certs) })) },
-        link, mailOn: mailer.configured(), patientEmail: a.patient_email || null,
+        link, mailOn: await mailer.configuredFor(ctx.businessId), patientEmail: a.patient_email || null,
         waHref: link && digits(a.patient_phone) ? `https://wa.me/${digits(a.patient_phone)}?text=${encodeURIComponent(req.t('patient_docs.wa_text', { clinic: clinicName, link }))}` : null,
         locale: req.locale === 'en' ? 'en' : 'ar',
       });

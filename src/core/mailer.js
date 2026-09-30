@@ -39,7 +39,17 @@ function fromWithName(from, name) {
   return { name: String(name).replace(/[\r\n<>"]/g, ' ').trim().slice(0, 120), address: m ? m[1].trim() : String(from).trim() };
 }
 
-async function send({ to, subject, html, replyTo, attachments, fromName }) {
+/**
+ * Sends an e-mail. With `businessId` + `kind` (patient_letters, reminders, telehealth, suppliers), a clinic that
+ * connected its own address sends from it (src/modules/clinicmail); otherwise — or if that fails — the platform
+ * account sends it with the clinic's address as Reply-To. Account e-mails never pass a businessId.
+ */
+async function send({ to, subject, html, replyTo, attachments, fromName, businessId, kind }) {
+  if (businessId && kind) {
+    const r = await require('../modules/clinicmail/clinicmail.service').trySend(businessId, kind, { to, subject, html, replyTo, attachments, fromName }); // eslint-disable-line global-require
+    if (r.sent) return true;
+    if (r.replyTo && !replyTo) replyTo = r.replyTo; // eslint-disable-line no-param-reassign
+  }
   const t = tx();
   if (!t) return false;
   const from = process.env.MAIL_FROM || `${brand.name} <no-reply@localhost>`;
@@ -47,4 +57,10 @@ async function send({ to, subject, html, replyTo, attachments, fromName }) {
   return true;
 }
 
-module.exports = { configured, send, layout };
+/** Can e-mail go out for this clinic (the platform account, or the clinic's own verified account)? */
+async function configuredFor(businessId) {
+  if (configured()) return true;
+  return businessId ? require('../modules/clinicmail/clinicmail.service').canSend(businessId) : false; // eslint-disable-line global-require
+}
+
+module.exports = { configured, configuredFor, send, layout };

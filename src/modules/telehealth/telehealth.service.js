@@ -576,7 +576,7 @@ function icsFor(row, clinic, link, t) {
  * Returns true when sent, false when e-mail is not configured or there is no address.
  */
 async function sendPatientMail(kind, row, clinic, token, base) {
-  if (!mailer.configured() || !row.patient_email) return false;
+  if (!row.patient_email || !(await mailer.configuredFor(clinic.id))) return false;
   const locale = row.locale === 'en' ? 'en' : 'ar';
   const t = translator(locale);
   const tz = isZone(row.patient_timezone) ? row.patient_timezone : clinic.timezone;
@@ -603,7 +603,7 @@ async function sendPatientMail(kind, row, clinic, token, base) {
     foot: t('telehealth.mail.foot'),
   });
   const attachments = kind === 'confirmed' ? [{ filename: 'consultation.ics', content: icsFor(row, clinic, link, t), contentType: 'text/calendar; charset=utf-8' }] : undefined;
-  await mailer.send({ to: row.patient_email, subject, html, replyTo: clinic.email || undefined, attachments });
+  await mailer.send({ to: row.patient_email, subject, html, replyTo: clinic.email || undefined, attachments, businessId: clinic.id, kind: 'telehealth' });
   return true;
 }
 

@@ -31,7 +31,7 @@ async function lowStockCheck(ctx, itemId, trx = knex) {
     await notifications.notify(ctx.businessId, { permission: 'supplies.view', type: 'supplies.low_stock', severity: 'warning', dedupeKey: `low:${it.id}:${Date.now()}`, title: `${it.name}: ${Number(it.current_stock)} ${it.unit || ''}`.trim(), body: `≤ ${Number(it.reorder_level)}`, link: '/app/supplies?low=yes' }, trx);
     if (it.supplier_email) {
       const clinic = await businesses.get(ctx.businessId);
-      mailer.send({ to: it.supplier_email, subject: `Restock request — ${it.name} — ${clinic.name}`,
+      mailer.send({ businessId: ctx.businessId, kind: 'suppliers', to: it.supplier_email, subject: `Restock request — ${it.name} — ${clinic.name}`,
         html: mailer.layout({ locale: 'ar', title: `طلب إعادة تعبئة — ${it.name}`, body: `${it.supplier_name || ''}: وصل مخزون ${it.name} في ${clinic.name} إلى ${Number(it.current_stock)} ${it.unit || ''} (حد إعادة الطلب ${Number(it.reorder_level)}). سيصلكم أمر شراء بالكميات المطلوبة قريبًا. / Stock of ${it.name} reached ${Number(it.current_stock)} ${it.unit || ''} (reorder level ${Number(it.reorder_level)}). A purchase order with the quantities will follow.` }) }).catch(() => {});
     }
   } else if (!low && it.last_reorder_requested_at) {

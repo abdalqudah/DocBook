@@ -284,7 +284,7 @@ async function decide(ctx, id, action, note) {
     const clinic = await knex('businesses').where({ id: ctx.businessId }).first('name');
     const words = { confirmed: 'تم تأكيد زيارتك · Your visit is confirmed', declined: 'تعذّر قبول زيارتك · Your visit was declined', cancelled: 'أُلغيت زيارتك · Your visit was cancelled' };
     if (vendor && vendor.email) {
-      mailer.send({ to: vendor.email, subject: `${clinic.name} — ${v.visit_date} ${v.visit_time}`,
+      mailer.send({ businessId: ctx.businessId, kind: 'suppliers', to: vendor.email, subject: `${clinic.name} — ${v.visit_date} ${v.visit_time}`,
         html: mailer.layout({ locale: 'ar', title: words[tr[1]], body: `${clinic.name} · ${v.visit_date} ${v.visit_time}${cleanNote ? ` — ${cleanNote}` : ''}` }) }).catch(() => {});
     }
   }

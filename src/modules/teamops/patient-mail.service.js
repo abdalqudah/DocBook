@@ -65,7 +65,7 @@ async function history(ctx, target, limit = 5) {
 async function context(ctx, { patientId, apptId }) {
   const target = await patientFor(ctx, patientId, apptId);
   const [docs, sent] = await Promise.all([sharedDocs(ctx, target), history(ctx, target)]);
-  return { name: target.name, email: target.email, docs, history: sent, mailConfigured: mailer.configured() };
+  return { name: target.name, email: target.email, docs, history: sent, mailConfigured: await mailer.configuredFor(ctx.businessId) };
 }
 
 async function sender(ctx, business) {
@@ -105,7 +105,7 @@ async function send(ctx, business, { patientId, apptId }, input, deps = {}) {
   const d = validate(schema, input);
   const target = await patientFor(ctx, patientId, apptId);
   if (!target.email) throw new AppError('PATIENT_NO_EMAIL', 'This patient has no e-mail address.', 422);
-  if (!mail.configured()) throw new AppError('MAIL_NOT_CONFIGURED', 'E-mail is not set up on this server.', 409);
+  if (!(mail.configuredFor ? await mail.configuredFor(ctx.businessId) : mail.configured())) throw new AppError('MAIL_NOT_CONFIGURED', 'E-mail is not set up on this server.', 409);
   const since = new Date(Date.now() - 60 * 60 * 1000);
   if (await recentCount({ business_id: ctx.businessId, user_id: ctx.userId }, since) >= LIMITS.perUserHour) throw new AppError('RATE_LIMITED', 'Too many e-mails. Please try again later.', 429);
   if (target.patient && await recentCount({ business_id: ctx.businessId, patient_id: target.patient.id }, since) >= LIMITS.perPatientHour) throw new AppError('RATE_LIMITED', 'Too many e-mails to this patient. Please try again later.', 429);
@@ -136,7 +136,7 @@ async function send(ctx, business, { patientId, apptId }, input, deps = {}) {
 
   let status = 'sent'; let error = null;
   try {
-    await mail.send({ to: target.email, subject: d.subject, html, replyTo, attachments: attachments.length ? attachments : undefined, fromName: doctorName ? `${doctorName} — ${clinicName}` : clinicName });
+    await mail.send({ to: target.email, subject: d.subject, html, replyTo, attachments: attachments.length ? attachments : undefined, fromName: doctorName ? `${doctorName} — ${clinicName}` : clinicName, businessId: ctx.businessId, kind: 'patient_letters' });
   } catch (err) {
     status = 'failed'; error = String(err.message || err).slice(0, 250);
   }

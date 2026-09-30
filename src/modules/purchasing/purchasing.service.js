@@ -272,7 +272,7 @@ async function mailOrder(ctx, id, to, baseUrl, kind = 'order') {
   const vendorLink = po.vendor_id && po.vendor_status === 'active' && baseUrl ? `${String(baseUrl).replace(/\/+$/, '')}/vendor/orders/${po.id}` : null;
   const { subject, html } = buildEmail({ po, clinic, vendorLink, kind });
   // Supplier replies go straight to the clinic's contact person (not to the platform's no-reply address).
-  await mailer.send({ to, subject, html, replyTo: po.contact_email || clinic.email || undefined });
+  await mailer.send({ to, subject, html, replyTo: po.contact_email || clinic.email || undefined, businessId: ctx.businessId, kind: 'suppliers' });
 }
 
 /**

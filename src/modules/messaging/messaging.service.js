@@ -367,7 +367,7 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
     const t = translator(locale);
     const subject = t(`messaging.mail.${kind}_subject`, vars);
     const html = mailer.layout({ locale, title: subject, body: t(`messaging.mail.${kind}_body`, vars), cta: t(`messaging.mail.${kind}_cta`), href: link });
-    const r = await ch.sendEmail({ to: a.patient_email, subject, html, replyTo: clinic.email || undefined });
+    const r = await ch.sendEmail({ to: a.patient_email, subject, html, replyTo: clinic.email || undefined, businessId: clinic.id });
     results.push(r.ok);
     await log({ business_id: a.business_id, appointment_id: a.id, dispatch_id: dispatchId, stage, channel: 'email', recipient: ch.maskEmail(a.patient_email), status: r.ok ? 'sent' : 'failed', error: r.error });
   }
