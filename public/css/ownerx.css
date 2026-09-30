@@ -1,0 +1,116 @@
+/* Owner journey (worker: owner): setup wizard + role-aware home. Theme tokens only. */
+
+/* ---------- Wizard: step list ---------- */
+.ox-steps { margin-bottom: 28px; }
+.ox-steps ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.ox-steps li a { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 10px; border-top: 3px solid var(--border); color: var(--text-subtle); font-size: var(--fs-xs); font-weight: var(--fw-semibold); min-width: 0; }
+.ox-steps li a:hover { color: var(--text); }
+.ox-steps li.done a { border-top-color: var(--primary); color: var(--text-muted); }
+.ox-steps li.current a { border-top-color: var(--primary); color: var(--text); }
+.ox-num { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: var(--fw-bold); background: var(--surface-sunken); color: var(--text-muted); flex: none; }
+.ox-num .icon { width: 13px; height: 13px; stroke-width: 3; }
+.ox-steps li.done .ox-num { color: var(--primary); }
+.ox-steps li.current .ox-num { background: var(--primary); color: var(--primary-ink); }
+.ox-step-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.ox-steps-sm { display: none; }
+.ox-steps-sm .meter { margin-top: 8px; }
+.ox-show-sm { display: none; }
+.ox-lead { max-width: 60ch; line-height: 1.6; }
+
+/* ---------- Wizard: clinic ---------- */
+.ox-logo { display: flex; gap: 16px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.ox-logo-box { width: 76px; height: 76px; border-radius: var(--radius); border: 1px dashed var(--border-strong); background: var(--surface-sunken); color: var(--text-subtle); display: inline-flex; align-items: center; justify-content: center; flex: none; overflow: hidden; }
+.ox-logo-box img { width: 100%; height: 100%; object-fit: contain; background: var(--surface); }
+.ox-logo-box .icon { width: 26px; height: 26px; }
+.ox-file { position: relative; overflow: hidden; cursor: pointer; }
+.ox-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ox-file:focus-within { box-shadow: var(--focus-ring); }
+.ox-same { margin-top: -4px; }
+.ox-more { border-top: 1px solid var(--border); padding-top: 14px; }
+.ox-more > summary { cursor: pointer; list-style: none; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.ox-more > summary::-webkit-details-marker { display: none; }
+.ox-more > summary::before { content: '+'; color: var(--text-subtle); font-weight: var(--fw-bold); width: 12px; }
+.ox-more[open] > summary::before { content: '−'; }
+
+/* ---------- Wizard: hours ---------- */
+.ox-shift { display: grid; gap: 8px; }
+.ox-shift[hidden] { display: none; }
+
+/* ---------- Wizard: suggested services ---------- */
+.ox-svc-list { display: grid; }
+.ox-svc-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) 170px 130px; gap: 10px; align-items: start; padding: 10px var(--card-pad, 18px); border-bottom: 1px solid var(--border); }
+.ox-svc-row.is-on { background: var(--surface-muted); }
+.ox-svc-head { padding-top: 12px; padding-bottom: 8px; font-weight: var(--fw-semibold); }
+.ox-svc-row .input, .ox-svc-row .select { height: 38px; }
+.ox-svc-check { display: inline-flex; align-items: center; justify-content: center; height: 38px; cursor: pointer; }
+.ox-svc-check input { width: 18px; height: 18px; accent-color: var(--primary); }
+.ox-svc-row .field-error { display: block; margin-top: 4px; }
+details.ox-own > summary, details.ox-trends > summary { cursor: pointer; list-style: none; }
+details.ox-own > summary::-webkit-details-marker, details.ox-trends > summary::-webkit-details-marker { display: none; }
+details.ox-own:not([open]) > summary, details.ox-trends:not([open]) > summary { border-bottom: 0; }
+.ox-chev { transition: transform .15s; flex: none; }
+details[open] > summary .ox-chev { transform: rotate(180deg); }
+
+/* ---------- Wizard: done ---------- */
+.ox-done { text-align: center; margin: 8px auto 24px; max-width: 560px; }
+.ox-done .ox-lead { margin-inline: auto; }
+.ox-done-mark { display: inline-flex; color: var(--primary); margin-bottom: 6px; }
+.ox-done-mark .icon { width: 44px; height: 44px; }
+.ox-next { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: var(--card-pad, 18px); }
+.ox-next-item { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); min-height: 96px; transition: border-color .15s; }
+.ox-next-item:hover { border-color: var(--border-strong); }
+.ox-next-item > .icon { color: var(--text-muted); flex: none; margin-top: 2px; }
+.ox-next-item > span { display: flex; flex-direction: column; gap: 4px; }
+.ox-next-item.is-main { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.ox-next-item.is-main > .icon { color: var(--primary-ink); }
+.ox-next-item.is-main:hover { background: var(--primary-hover); }
+
+/* ---------- Home ---------- */
+.ox-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.ox-action { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-weight: var(--fw-semibold); transition: border-color .15s; }
+.ox-action:hover { border-color: var(--border-strong); }
+.ox-action > .icon { color: var(--text-muted); flex: none; }
+.ox-action.is-main { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.ox-action.is-main > .icon { color: var(--primary-ink); }
+.ox-action.is-main:hover { background: var(--primary-hover); }
+.ox-stats .stat.card-link { color: inherit; }
+.ox-attn { color: var(--warning); }
+.ox-check { border-color: var(--border-strong); }
+.ox-check-pct { font-size: var(--fs-lg, 18px); color: var(--primary); }
+.ox-check-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ox-check-list a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); min-height: 56px; }
+.ox-check-list a:hover { border-color: var(--border-strong); }
+.ox-check-list .ox-check-hint { display: block; }
+.ox-check-list li.done a { color: var(--text-subtle); }
+.ox-check-list li.done .strong { font-weight: var(--fw-medium); text-decoration: line-through; text-decoration-color: var(--border-strong); }
+.ox-check-list li.done .check-dot { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.ox-month { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: var(--card-pad, 18px); }
+.ox-month > div { min-width: 0; }
+.ox-month dt { font-size: var(--fs-xs, 12px); color: var(--text-subtle); font-weight: var(--fw-semibold); }
+.ox-month dd { margin: 4px 0 0; font-size: 18px; font-weight: var(--fw-bold); overflow-wrap: anywhere; }
+.ox-month .ox-net dd { color: var(--text); }
+.ox-month dd.ox-neg { color: var(--danger); }
+.grid-2 .ox-month { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+
+@media (max-width: 900px) {
+  .ox-steps ol { display: none; }
+  .ox-steps-sm { display: block; }
+  .ox-next { grid-template-columns: 1fr; }
+  .ox-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ox-check-list { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .ox-show-sm { display: inline; }
+  .ox-svc-row { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr); }
+  .ox-svc-row .ox-svc-name { grid-column: 2 / -1; }
+  .ox-svc-row .ox-svc-price { grid-column: 2; }
+  .ox-svc-row .ox-svc-min { grid-column: 3; }
+  .ox-svc-head { display: none; }
+  .ox-logo { align-items: flex-start; }
+  .ox-month { grid-template-columns: 1fr 1fr; }
+  .ox-month .ox-net { grid-column: 1 / -1; }
+  .ox-action { min-height: 64px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; }
+}
+.ox-pad { padding: 14px var(--card-pad, 18px); }
+@media (max-width: 640px) { .ox-check-list li.done { display: none; } }
+@media (max-width: 480px) { .onb-top { padding: 0 12px; } .onb-top .brand-word { display: none; } }

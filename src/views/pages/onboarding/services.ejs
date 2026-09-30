@@ -1,28 +1,59 @@
-<% var o = old || {}; %>
+<% var o = old || {}; var po = typeof pickErrors !== 'undefined' && pickErrors ? o : {}; var oo = typeof ownErrors !== 'undefined' && ownErrors ? o : {};
+   var picked = [].concat(po.pick || []); var svcOld = po.svc || {}; var err = errors || {};
+   var mins = [5, 10, 15, 20, 30, 45, 60, 90, 120]; var open = suggested.filter(function (s) { return !s.added; });
+   var specName = b.specialty && ['multi', 'other'].indexOf(b.specialty) < 0 ? label('specialties', b.specialty) : label('specialties', 'general'); %>
 <%- include('_top') %>
 <div class="stack-lg">
   <% if (services.length) { %>
   <section class="panel flush">
-    <div class="panel-head"><h2><%= t('onboarding.services_added', { n: services.length }) %></h2><a class="link small" href="/app/services" target="_blank" rel="noopener"><%= t('onboarding.edit_later') %></a></div>
+    <div class="panel-head"><h2><%= t('ownerx.wiz.services_added', { n: services.length }) %></h2><a class="btn btn-ghost btn-sm" href="/app/services"><%= t('ownerx.wiz.edit_details') %></a></div>
     <ul class="action-list">
-      <% services.forEach(function (s) { %><li><div><span class="action-icon"><%- icon('clipboard-list', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= s.name %></div><div class="small muted"><%= [fmt.money(s.price), s.duration_minutes + ' ' + t('common.minutes'), s.doctor_name || t('services.any_doctor')].join(' · ') %></div></div><%- icon('circle-check', 'icon-sm onb-ok') %></div></li><% }) %>
+      <% services.forEach(function (s) { %><li><div><span class="action-icon"><%- icon('clipboard-list', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= locale === 'en' && s.name_en ? s.name_en : s.name %></div><div class="small muted"><%= [fmt.money(s.price), s.duration_minutes + ' ' + t('common.minutes')].join(' · ') %></div></div><%- icon('circle-check', 'icon-sm onb-ok') %></div></li><% }) %>
     </ul>
   </section>
   <% } %>
-  <form class="panel" method="post" action="/app/onboarding/services/add" novalidate>
-    <div class="panel-head"><div><h2><%= t('onboarding.add_service') %></h2><div class="panel-sub"><%= t('onboarding.add_service_sub') %></div></div></div>
-    <div class="panel-body stack">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <%- include('../../partials/form-error') %>
-      <div class="form-grid">
-        <%- include('../../partials/field', { name: 'name', label: t('onboarding.service_name'), required: true, placeholder: t('onboarding.service_name_ph'), cls: 'full' }) %>
-        <%- include('../../partials/field', { name: 'price', label: t('onboarding.price'), required: true, suffix: b.currency, attrs: 'inputmode="decimal"' }) %>
-        <%- include('../../partials/field', { name: 'duration_minutes', label: t('onboarding.duration'), type: 'select', value: o.duration_minutes || 30, options: [10, 15, 20, 30, 45, 60, 90, 120].map(function (m) { return { value: m, label: m + ' ' + t('common.minutes') }; }) }) %>
-        <% if (doctors.length > 1) { %><%- include('../../partials/field', { name: 'doctor_id', label: t('common.doctor'), type: 'select', placeholder: t('services.any_doctor'), options: doctors.map(function (d) { return { value: d.id, label: d.full_name }; }) }) %><% } %>
+
+  <% if (can('services.manage')) { %>
+  <% if (open.length) { %>
+  <form class="panel flush" method="post" action="/app/onboarding/services/pick" novalidate data-ox-pick>
+    <div class="panel-head"><div><h2><%= t('ownerx.wiz.suggested_title', { specialty: specName }) %></h2><div class="panel-sub"><%= t('ownerx.wiz.suggested_sub') %></div></div></div>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% if (po.pick !== undefined || err.pick) { %><div class="panel-body" style="padding-bottom:0"><%- include('../../partials/form-error') %></div><% } %>
+    <div class="ox-svc-list">
+      <div class="ox-svc-row ox-svc-head small muted" aria-hidden="true"><span></span><span><%= t('ownerx.wiz.service_name') %></span><span><%= t('ownerx.wiz.price') %></span><span><%= t('ownerx.wiz.duration') %></span></div>
+      <% open.forEach(function (s) { var r = svcOld[s.key] || {}; var on = picked.indexOf(s.key) >= 0; var pe = err['svc.' + s.key + '.price']; var ne = err['svc.' + s.key + '.name']; %>
+      <div class="ox-svc-row<%= on ? ' is-on' : '' %>" data-ox-svc>
+        <label class="ox-svc-check"><input type="checkbox" name="pick" value="<%= s.key %>"<%= on ? ' checked' : '' %> data-ox-svc-pick aria-label="<%= s.label %>"></label>
+        <div class="ox-svc-name"><input class="input input-sm<%= ne ? ' is-invalid' : '' %>" name="svc[<%= s.key %>][name]" value="<%= r.name !== undefined ? r.name : s.label %>" aria-label="<%= t('ownerx.wiz.service_name') %>" dir="auto"><% if (ne) { %><span class="field-error"><%= ne %></span><% } %></div>
+        <div class="ox-svc-price"><div class="input-affix"><input class="input input-sm<%= pe ? ' is-invalid' : '' %>" name="svc[<%= s.key %>][price]" value="<%= r.price || '' %>" inputmode="decimal" dir="ltr" placeholder="<%= t('ownerx.wiz.price_ph') %>" aria-label="<%= t('ownerx.wiz.price') %>" data-ox-svc-price><span class="affix"><%= b.currency %></span></div><% if (pe) { %><span class="field-error"><%= pe %></span><% } %></div>
+        <div class="ox-svc-min"><select class="select select-sm" name="svc[<%= s.key %>][min]" aria-label="<%= t('ownerx.wiz.duration') %>"><% mins.forEach(function (m) { %><option value="<%= m %>"<%= String(r.min || s.min) === String(m) ? ' selected' : '' %>><%= m %> <%= t('common.minutes') %></option><% }) %></select></div>
       </div>
-      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('onboarding.save_service') %></button></div>
+      <% }) %>
+    </div>
+    <div class="panel-foot row between wrap">
+      <span class="small muted" data-ox-pick-count data-text="<%= t('ownerx.wiz.picked_n') %>"><%= t('ownerx.wiz.pick_hint') %></span>
+      <button class="btn btn-secondary" type="submit"><%- icon('check', 'icon-sm') %><%= t('ownerx.wiz.save_picked') %></button>
     </div>
   </form>
+  <% } else if (suggested.length) { %>
+  <div class="panel"><div class="panel-body small muted row-sm"><%- icon('circle-check', 'icon-sm') %><%= t('ownerx.wiz.suggested_all_added') %></div></div>
+  <% } %>
+
+  <details class="panel ox-own" id="own"<%= oo.name !== undefined || !open.length ? ' open' : '' %>>
+    <summary class="panel-head"><div><h2><%= t('ownerx.wiz.own_service') %></h2><div class="panel-sub"><%= t('ownerx.wiz.own_service_sub') %></div></div><%- icon('chevron-down', 'icon-sm muted ox-chev') %></summary>
+    <form class="panel-body stack" method="post" action="/app/onboarding/services/add" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (oo.name !== undefined) { %><%- include('../../partials/form-error') %><% } %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('ownerx.wiz.service_name'), required: true, placeholder: t('ownerx.wiz.service_name_ph'), cls: 'full', old: oo, errors: oo.name !== undefined ? errors : {} }) %>
+        <%- include('../../partials/field', { name: 'price', label: t('ownerx.wiz.price'), required: true, suffix: b.currency, attrs: 'inputmode="decimal" dir="ltr"', old: oo, errors: oo.name !== undefined ? errors : {} }) %>
+        <%- include('../../partials/field', { name: 'duration_minutes', label: t('ownerx.wiz.duration'), type: 'select', value: oo.duration_minutes || 20, options: mins.map(function (m) { return { value: m, label: m + ' ' + t('common.minutes') }; }), old: oo }) %>
+        <% if (doctors.length > 1) { %><%- include('../../partials/field', { name: 'doctor_id', label: t('common.doctor'), type: 'select', placeholder: t('services.any_doctor'), options: doctors.map(function (d) { return { value: d.id, label: d.full_name }; }), old: oo }) %><% } %>
+      </div>
+      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('ownerx.wiz.add_service') %></button></div>
+    </form>
+  </details>
+  <% } %>
 </div>
 <form id="step-form" method="post" action="/app/onboarding/services"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form>
-<%- include('_foot', { formId: 'step-form' }) %>
+<%- include('_foot', { formId: 'step-form', continueLabel: t('ownerx.wiz.continue') }) %>

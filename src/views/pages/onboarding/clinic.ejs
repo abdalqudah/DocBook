@@ -1,16 +1,44 @@
+<% var o = old || {}; var val = function (k) { return o[k] !== undefined ? o[k] : b[k]; }; %>
 <%- include('_top') %>
-<form id="step-form" class="panel" method="post" action="/app/onboarding/clinic" novalidate>
-  <div class="panel-body stack">
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <%- include('../../partials/form-error') %>
-    <div class="form-grid">
-      <%- include('../../partials/field', { name: 'name', label: t('settings.f_name_ar'), required: true, value: b.name, attrs: 'dir="auto"' }) %>
-      <%- include('../../partials/field', { name: 'name_en', label: t('settings.f_name_en'), value: b.name_en, attrs: 'dir="ltr"', help: t('onboarding.name_en_help') }) %>
-      <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), value: b.specialty, options: specialtyOptions }) %>
-      <%- include('../../partials/field', { name: 'city', label: t('auth.city'), value: b.city }) %>
-      <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: b.phone, attrs: 'dir="ltr" inputmode="tel"' }) %>
-      <%- include('../../partials/field', { name: 'whatsapp', label: t('settings.f_whatsapp'), type: 'tel', value: b.whatsapp, attrs: 'dir="ltr" inputmode="tel"' }) %>
+<form id="step-form" method="post" action="/app/onboarding/clinic" novalidate data-ox-clinic>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <section class="panel">
+    <div class="panel-body stack">
+      <div class="ox-logo" id="logo">
+        <div class="ox-logo-box" data-ox-logo-preview><% if (logoUrl) { %><img src="<%= logoUrl %>" alt=""><% } else { %><%- icon('image') %><% } %></div>
+        <div class="stack-sm grow" style="min-width:0">
+          <div class="strong"><%= t('ownerx.wiz.logo') %></div>
+          <div class="small muted"><%= t('ownerx.wiz.logo_help') %></div>
+          <div class="row-sm wrap">
+            <label class="btn btn-secondary btn-sm ox-file"><%- icon('upload', 'icon-sm') %><span><%= logoUrl ? t('ownerx.wiz.logo_change') : t('ownerx.wiz.logo_choose') %></span><input type="file" accept="image/png,image/jpeg,image/webp" data-ox-logo-input data-max="1048576" data-too-big="<%= t('ownerx.wiz.logo_too_big') %>" data-bad="<%= t('ownerx.wiz.logo_bad') %>"></label>
+            <span class="small muted" data-ox-logo-name></span>
+          </div>
+          <input type="hidden" name="logo_data" value="" data-ox-logo-data>
+          <% if (errors.logo) { %><span class="field-error"><%= errors.logo %></span><% } %>
+          <noscript><span class="help"><%= t('ownerx.wiz.logo_nojs') %> <a class="link" href="/app/settings/appearance"><%= t('ownerx.wiz.logo_nojs_link') %></a></span></noscript>
+        </div>
+      </div>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('ownerx.wiz.clinic_name'), required: true, value: val('name'), attrs: 'dir="auto" autocomplete="organization"' }) %>
+        <%- include('../../partials/field', { name: 'name_en', label: t('ownerx.wiz.clinic_name_en'), value: val('name_en'), attrs: 'dir="ltr"', help: t('ownerx.wiz.clinic_name_en_help') }) %>
+        <%- include('../../partials/field', { name: 'specialty', label: t('ownerx.wiz.specialty'), type: 'select', placeholder: t('common.select'), value: val('specialty'), options: specialtyOptions, help: t('ownerx.wiz.specialty_help') }) %>
+        <%- include('../../partials/field', { name: 'city', label: t('auth.city'), value: val('city') }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('ownerx.wiz.phone'), type: 'tel', value: val('phone'), attrs: 'dir="ltr" inputmode="tel" data-ox-phone', placeholder: '07XXXXXXXX' }) %>
+        <div class="stack-sm">
+          <%- include('../../partials/field', { name: 'whatsapp', label: t('ownerx.wiz.whatsapp'), type: 'tel', value: val('whatsapp'), attrs: 'dir="ltr" inputmode="tel" data-ox-whatsapp' }) %>
+          <label class="check small ox-same" hidden data-ox-same-wrap><input type="checkbox" data-ox-same><span><%= t('ownerx.wiz.same_as_phone') %></span></label>
+        </div>
+        <%- include('../../partials/field', { name: 'address', label: t('ownerx.wiz.address'), value: val('address'), cls: 'full', placeholder: t('ownerx.wiz.address_ph'), help: t('ownerx.wiz.address_help') }) %>
+      </div>
+      <details class="ox-more"<%= errors.timezone || errors.currency ? ' open' : '' %>>
+        <summary><span class="strong"><%= t('ownerx.wiz.region') %></span> <span class="small muted"><%= t('ownerx.wiz.region_now', { currency: b.currency, zone: b.timezone }) %></span></summary>
+        <div class="form-grid mt-4">
+          <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', value: val('timezone'), options: zoneOptions, help: t('settings.f_tz_help') }) %>
+          <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', value: val('currency'), options: currencyOptions, help: t('settings.f_currency_help') }) %>
+        </div>
+      </details>
     </div>
-  </div>
+  </section>
 </form>
 <%- include('_foot', { formId: 'step-form' }) %>

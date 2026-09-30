@@ -1,26 +1,55 @@
+<% var o = old || {}; var ROLE_ICON = { receptionist: 'clipboard-list', nurse: 'heart-pulse', accountant: 'wallet', clinic_manager: 'building-2', doctor: 'stethoscope' };
+   var offered = roles.filter(function (r) { return r.key !== 'doctor' || freeDoctors.length; });
+   var chosen = o.role_id || (offered[0] || {}).id; var others = members.filter(function (m) { return m.user_id !== ctx.userId; }); %>
 <%- include('_top') %>
 <div class="stack-lg">
   <%- include('../settings/_result', { result: result, publicUrl: null }) %>
-  <% if (members.length > 1 || invitations.length) { %>
+  <% if (others.length || invitations.length) { %>
   <section class="panel flush">
-    <div class="panel-head"><h2><%= t('onboarding.team_so_far', { n: members.length }) %></h2></div>
+    <div class="panel-head"><h2><%= t('ownerx.wiz.team_so_far', { n: others.length + invitations.length }) %></h2><a class="btn btn-ghost btn-sm" href="/app/settings/team"><%= t('ownerx.wiz.edit_details') %></a></div>
     <ul class="action-list">
-      <% members.forEach(function (m) { %><li><div><span class="avatar"><%= initials(m.name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= m.name %></div><div class="small muted truncate" dir="ltr" style="text-align:start"><%= m.email %></div></div><span class="badge badge-info"><%= roleName(m) %></span></div></li><% }) %>
-      <% invitations.forEach(function (i) { %><li><div><span class="avatar"><%- icon('mail', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= i.name || i.email %></div><div class="small muted"><%= t('onboarding.invited') %></div></div><span class="badge badge-neutral"><%= roleName(i) %></span></div></li><% }) %>
+      <% others.forEach(function (m) { %><li><div><span class="avatar"><%= initials(m.name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= m.name %></div><div class="small muted truncate" dir="ltr" style="text-align:start"><%= m.email %></div></div><span class="badge badge-neutral"><%= roleName(m) %></span></div></li><% }) %>
+      <% invitations.forEach(function (i) { %><li><div><span class="avatar"><%- icon('mail', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= i.name || i.email %></div><div class="small muted"><%= t('ownerx.wiz.invited') %></div></div><span class="badge badge-neutral"><%= roleName(i) %></span></div></li><% }) %>
     </ul>
   </section>
   <% } %>
   <% if (can('users.manage')) { %>
-  <form class="panel" method="post" action="/app/onboarding/team/add" novalidate data-staff-form>
-    <div class="panel-head"><div><h2><%= t('team.add') %></h2><div class="panel-sub"><%= t('onboarding.team_sub') %></div></div></div>
+  <form class="panel" method="post" action="/app/onboarding/team/add" novalidate data-ox-staff>
+    <div class="panel-head"><div><h2><%= others.length || invitations.length ? t('ownerx.wiz.add_another_login') : t('ownerx.wiz.add_login') %></h2><div class="panel-sub"><%= t('ownerx.wiz.add_login_sub') %></div></div></div>
     <div class="panel-body stack">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="locale" value="<%= o.locale || locale %>">
       <%- include('../../partials/form-error') %>
-      <%- include('../settings/_staff-form', { prefill: null }) %>
-      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('team.create') %></button></div>
+      <div class="field">
+        <span class="label"><%= t('ownerx.wiz.who') %></span>
+        <div class="choice-grid ox-roles">
+          <% offered.forEach(function (r) { %>
+          <label class="choice"><input type="radio" name="role_id" value="<%= r.id %>" data-key="<%= r.key %>"<%= String(chosen) === String(r.id) ? ' checked' : '' %> data-ox-role><span class="box"><span class="row-sm"><%- icon(ROLE_ICON[r.key] || 'user', 'icon-sm muted') %><span class="name"><%= t('roles.' + r.key) %></span></span><span class="meta"><%= t('ownerx.wiz.role_' + r.key) %></span></span></label>
+          <% }) %>
+        </div>
+        <% if (errors.role_id) { %><span class="field-error"><%= errors.role_id %></span><% } %>
+      </div>
+      <% if (freeDoctors.length) { %>
+      <div data-ox-doctor-field>
+        <%- include('../../partials/field', { name: 'doctor_id', label: t('ownerx.wiz.which_doctor'), type: 'select', placeholder: t('common.select'), options: freeDoctors.map(function (d) { return { value: d.id, label: d.full_name }; }), help: t('ownerx.wiz.which_doctor_help') }) %>
+      </div>
+      <% } %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('ownerx.wiz.person_name'), required: true, autocomplete: 'off' }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, help: t('ownerx.wiz.email_help'), attrs: 'dir="ltr" inputmode="email" autocomplete="off"' }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('ownerx.wiz.mobile'), type: 'tel', attrs: 'dir="ltr" inputmode="tel"' }) %>
+      </div>
+      <div class="field">
+        <span class="label"><%= t('ownerx.wiz.how_sign_in') %></span>
+        <div class="choice-grid set-method">
+          <label class="choice"><input type="radio" name="mode" value="password"<%= (o.mode || 'password') === 'password' ? ' checked' : '' %>><span class="box"><span class="row-sm"><%- icon('key-round', 'icon-sm muted') %><span class="name"><%= t('ownerx.wiz.mode_password') %></span></span><span class="meta"><%= t('ownerx.wiz.mode_password_text') %></span></span></label>
+          <label class="choice"><input type="radio" name="mode" value="invite"<%= o.mode === 'invite' ? ' checked' : '' %>><span class="box"><span class="row-sm"><%- icon('link', 'icon-sm muted') %><span class="name"><%= t('ownerx.wiz.mode_invite') %></span></span><span class="meta"><%= emailEnabled ? t('ownerx.wiz.mode_invite_text') : t('ownerx.wiz.mode_invite_noemail') %></span></span></label>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('ownerx.wiz.create_login') %></button></div>
     </div>
   </form>
   <% } %>
 </div>
 <form id="step-form" method="post" action="/app/onboarding/team"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form>
-<%- include('_foot', { formId: 'step-form' }) %>
+<%- include('_foot', { formId: 'step-form', continueLabel: t('ownerx.wiz.continue') }) %>

@@ -1,0 +1,31 @@
+<div class="ox-done">
+  <span class="ox-done-mark"><%- icon('circle-check') %></span>
+  <h1 class="onb-title"><%= t('ownerx.wiz.title_done') %></h1>
+  <p class="muted ox-lead"><%= t('ownerx.wiz.lead_done', { name: b.name }) %></p>
+</div>
+
+<section class="panel flush">
+  <div class="panel-head"><h2><%= t('ownerx.wiz.next_title') %></h2></div>
+  <div class="ox-next">
+    <% if (can('appointments.manage')) { %><a class="ox-next-item is-main" href="/app/appointments/new"><%- icon('calendar-plus') %><span><strong><%= t('ownerx.wiz.next_book') %></strong><span class="small"><%= t('ownerx.wiz.next_book_text') %></span></span></a><% } %>
+    <% if (can('frontdesk.use')) { %><a class="ox-next-item" href="/app/front-desk"><%- icon('armchair') %><span><strong><%= t('ownerx.wiz.next_reception') %></strong><span class="small muted"><%= t('ownerx.wiz.next_reception_text') %></span></span></a><% } %>
+    <% if (can('billing.manage')) { %><a class="ox-next-item" href="/app/cashier"><%- icon('banknote') %><span><strong><%= t('ownerx.wiz.next_cash') %></strong><span class="small muted"><%= t('ownerx.wiz.next_cash_text') %></span></span></a><% } %>
+  </div>
+</section>
+
+<section class="panel flush mt-4">
+  <div class="panel-head"><div><h2><%= t('ownerx.wiz.summary_title') %></h2><div class="panel-sub"><%= t('ownerx.wiz.summary_sub') %></div></div></div>
+  <ul class="action-list">
+    <li><a href="/app/onboarding/doctors"><span class="action-icon"><%- icon('stethoscope', 'icon-sm') %></span><span class="grow"><%= t('ownerx.wiz.sum_doctors', { n: summary.doctors }) %></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a></li>
+    <li><a href="/app/onboarding/services"><span class="action-icon"><%- icon('clipboard-list', 'icon-sm') %></span><span class="grow"><%= t('ownerx.wiz.sum_services', { n: summary.services }) %></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a></li>
+    <li><a href="/app/onboarding/team"><span class="action-icon"><%- icon('users', 'icon-sm') %></span><span class="grow"><%= t('ownerx.wiz.sum_team', { n: summary.team }) %></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a></li>
+    <li><a href="/app/onboarding/booking"><span class="action-icon"><%- icon('globe', 'icon-sm') %></span><span class="grow"><%= summary.booking ? t('ownerx.wiz.sum_booking_on') : t('ownerx.wiz.sum_booking_off') %></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a></li>
+  </ul>
+</section>
+
+<div class="mt-4"><%- include('../platformops/_demo-panel') %></div>
+
+<div class="onb-foot">
+  <a class="btn btn-ghost" href="/app/onboarding/booking"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a>
+  <a class="btn btn-secondary" href="/app"><%- icon('house', 'icon-sm') %><%= t('ownerx.wiz.go_home') %></a>
+</div>

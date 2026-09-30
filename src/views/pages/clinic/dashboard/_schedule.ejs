@@ -1,0 +1,29 @@
+<% var P = '../../../partials/'; var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   var apptHref = function (id) { return can('clinical.view') ? '/app/visits/' + id : '/app/appointments/' + id; };
+   var stateOf = function (a) { if (a.status === 'cancelled' || a.status === 'no_show' || a.status === 'completed') return { key: 'statuses.' + a.status, tone: a.status === 'no_show' ? 'danger' : 'neutral' }; if (a.with_doctor) return { key: 'with_doctor', tone: 'neutral' }; if (a.checked_in) return { key: 'waiting', tone: 'warning' }; return { key: 'statuses.' + a.status, tone: 'neutral' }; }; %>
+<div class="panel flush">
+  <div class="panel-head"><div><h2><%= t('ownerx.home.schedule') %></h2><p class="panel-sub"><%= t('ownerx.home.schedule_sub', { n: fmt.number(counts.total) }) %></p></div><% if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments"><%= t('dashboard.open_calendar') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></div>
+  <% if (!schedule.length) { %>
+    <%- include(P + 'empty', { compact: true, emptyIcon: 'calendar-days', emptyTitle: t('dashboard.schedule_empty'), emptyText: t('dashboard.schedule_empty_text'), emptyAction: can('appointments.manage') ? '<a class="btn btn-secondary btn-sm" href="/app/appointments/new">' + t('ownerx.home.act_new_appointment') + '</a>' : '' }) %>
+  <% } else { %>
+  <ul class="rec-sched">
+    <% schedule.forEach(function (a) { var st = stateOf(a); var past = a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show'; %>
+    <li class="<%= past ? 'is-dim' : '' %>">
+      <a href="<%= apptHref(a.id) %>">
+        <span class="rec-sched-time mono" dir="ltr"><%= a.appointment_time %></span>
+        <span class="rec-sched-bar" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span>
+        <span class="grow" style="min-width:0">
+          <span class="strong truncate" style="display:block" dir="auto"><%= a.patient_name %></span>
+          <span class="small muted truncate" style="display:block"><%= [L(a.doctor_name, a.doctor_name_en), L(a.service_name, a.service_name_en)].filter(Boolean).join(' · ') || '—' %></span>
+        </span>
+        <span class="row-sm wrap end">
+          <% if (a.source === 'website') { %><span class="badge" title="<%= t('dashboard.sources.website') %>"><%- icon('globe', 'icon-sm') %></span><% } %>
+          <% if (a.payment_status === 'paid') { %><span class="badge badge-neutral"><%= t('billing.paid') %></span><% } %>
+          <span class="badge badge-<%= st.tone %> badge-dot"><%= t('dashboard.' + st.key) %></span>
+        </span>
+      </a>
+    </li>
+    <% }) %>
+  </ul>
+  <% } %>
+</div>

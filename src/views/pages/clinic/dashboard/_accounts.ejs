@@ -1,0 +1,20 @@
+<%# Accountant's home (worker: owner): collections, unpaid visits, cash drawer, this month. %>
+<div class="stats ox-stats">
+  <% if (cash) { %><a class="stat card-link" href="/app/billing"><div class="stat-label"><%= t('ownerx.home.collected_today') %></div><div class="stat-value"><%= fmt.money(cash.today.value) %></div><div class="stat-meta"><%= t('ownerx.home.receipts_n', { n: fmt.number(cash.today.count) }) %> · <%= t('ownerx.home.yesterday_x', { amount: fmt.money(cash.yesterday.value) }) %></div></a><% } %>
+  <% if (unpaid) { %><a class="stat card-link" href="<%= can('billing.manage') ? '/app/cashier' : '/app/billing' %>"><div class="stat-label"><%= t('ownerx.home.unpaid') %></div><div class="stat-value<%= unpaid.count ? ' ox-attn' : '' %>"><%= fmt.number(unpaid.count) %></div><div class="stat-meta"><%= unpaid.count ? (unpaid.amount ? t('ownerx.home.unpaid_due', { amount: fmt.money(unpaid.amount) }) : t('ownerx.home.unpaid_last30')) : t('ownerx.home.unpaid_none') %></div></a><% } %>
+  <% if (drawer) { %><a class="stat card-link" href="/app/cashier/closings"><div class="stat-label"><%= t('ownerx.home.drawer') %></div><div class="stat-value"><%= fmt.money(drawer.expected) %></div><div class="stat-meta"><%= drawer.last ? t('ownerx.home.drawer_since', { when: fmt.date(localTime(drawer.last.period_end).date, { day: 'numeric', month: 'short' }) + ' ' + localTime(drawer.last.period_end).time }) : t('ownerx.home.drawer_never') %></div></a><% } %>
+  <% if (expenses) { %><a class="stat card-link" href="/app/expenses"><div class="stat-label"><%= t('ownerx.home.expenses_month') %></div><div class="stat-value"><%= fmt.money(expenses.total) %></div><div class="stat-meta"><%= t('ownerx.home.entries_n', { n: fmt.number(expenses.count) }) %></div></a><% } %>
+</div>
+<div class="grid grid-2 mt-6">
+  <% if (byMethod) { %>
+  <div class="panel flush">
+    <div class="panel-head"><div><h2><%= t('ownerx.home.by_method') %></h2><p class="panel-sub"><%= t('common.today') %></p></div><% if (can('billing.manage')) { %><a class="btn btn-ghost btn-sm" href="/app/cashier/closings"><%= t('ownerx.home.close_drawer') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></div>
+    <dl class="ox-month">
+      <% methods.forEach(function (m) { if (!byMethod.byMethod[m] && ['cash', 'card'].indexOf(m) < 0) return; %><div><dt><%= t('payment_methods.' + m) %></dt><dd><%= fmt.money(byMethod.byMethod[m] || 0) %></dd></div><% }) %>
+      <div class="ox-net"><dt><%= t('common.total') %></dt><dd><%= fmt.money(byMethod.total) %></dd></div>
+    </dl>
+    <% if (drawer) { %><div class="panel-foot small muted"><%= t('ownerx.home.drawer_cash', { amount: fmt.money(drawer.expected), n: fmt.number(drawer.count) }) %></div><% } %>
+  </div>
+  <% } %>
+  <% if (month) { %><%- include('_month') %><% } %>
+</div>

@@ -1,0 +1,31 @@
+<% var o = old || {}; var hasOld = Object.keys(o).length > 0; var slugVal = hasOld && o.slug !== undefined ? o.slug : suggestion; var on = hasOld ? o.booking_enabled === '1' : (b.booking_enabled || !b.onboarding_completed_at);
+   var share = publicUrl ? t('ownerx.wiz.share_text', { clinic: b.name, url: publicUrl }) : ''; %>
+<%- include('_top') %>
+<form id="step-form" method="post" action="/app/onboarding/booking" novalidate data-slug-form>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <section class="panel">
+    <div class="panel-body stack">
+      <label class="check set-me"><input type="checkbox" name="booking_enabled" value="1"<%= on ? ' checked' : '' %>><span><strong><%= t('ownerx.wiz.booking_on') %></strong> — <span class="muted"><%= t('ownerx.wiz.booking_on_text') %></span></span></label>
+      <div class="field">
+        <label class="label" for="f-slug"><%= t('ownerx.wiz.page_address') %></label>
+        <div class="input-affix set-slug-input" dir="ltr"><span class="affix"><%= base.replace(/^https?:\/\//, '') %>/</span><input class="input<%= errors.slug ? ' is-invalid' : '' %>" id="f-slug" name="slug" value="<%= slugVal %>" autocomplete="off" spellcheck="false" maxlength="40" data-slug-input data-check-url="/app/settings/portal/check"></div>
+        <% if (errors.slug) { %><span class="field-error"><%= errors.slug %></span><% } else { %><span class="help" data-slug-status data-checking="<%= t('settings.slug_checking') %>" data-available="<%= t('settings.slug_available') %>" data-current="<%= t('settings.slug_current') %>"><%= t('ownerx.wiz.page_address_help') %></span><% } %>
+      </div>
+    </div>
+  </section>
+  <% if (publicUrl) { %>
+  <section class="panel mt-4">
+    <div class="panel-head"><div><h2><%= t('ownerx.wiz.your_link') %></h2><div class="panel-sub"><%= t('ownerx.wiz.your_link_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <div class="set-url"><%- icon('link', 'icon-sm muted') %><code class="grow truncate" data-copy-source dir="ltr"><%= publicUrl %></code><button class="btn btn-secondary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+      <div class="row-sm wrap">
+        <a class="btn btn-secondary" href="https://wa.me/?text=<%= encodeURIComponent(share) %>" target="_blank" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= t('ownerx.wiz.share_whatsapp') %></a>
+        <a class="btn btn-ghost" href="/<%= b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('ownerx.wiz.open_page') %></a>
+      </div>
+      <% if (!b.booking_enabled) { %><p class="small muted"><%= t('ownerx.wiz.booking_off_note') %></p><% } %>
+    </div>
+  </section>
+  <% } %>
+</form>
+<%- include('_foot', { formId: 'step-form', continueLabel: t('ownerx.wiz.save_finish') }) %>

@@ -1,0 +1,8 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="panel flush">
+  <div class="panel-head"><div><h2><%= t('dashboard.online_pending') %></h2><p class="panel-sub"><%= t('dashboard.online_pending_sub') %></p></div><% if (online.count) { %><span class="badge badge-neutral"><%= fmt.number(online.count) %></span><% } %></div>
+  <% if (!online.rows.length) { %><div class="ox-pad small muted row-sm"><%- icon('circle-check', 'icon-sm') %><%= t('dashboard.online_none') %></div><% } else { %>
+  <ul class="action-list"><% online.rows.forEach(function (a) { %><li><a href="/app/appointments/<%= a.id %>"><span class="action-icon"><%- icon('globe', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate" dir="auto"><%= a.patient_name %></div><div class="small muted"><%= a.appointment_date === clinicToday ? t('common.today') : fmt.date(a.appointment_date, { weekday: 'short', day: 'numeric', month: 'short' }) %> · <span dir="ltr"><%= a.appointment_time %></span><% if (a.doctor_name) { %> · <%= L(a.doctor_name, a.doctor_name_en) %><% } %></div></div><span class="btn btn-secondary btn-sm"><%= t('dashboard.review') %></span></a></li><% }) %></ul>
+  <% if (online.count > online.rows.length) { %><div class="panel-foot"><a class="btn btn-ghost btn-sm" href="/app/appointments?status=pending"><%= t('dashboard.see_all_n', { n: fmt.number(online.count) }) %></a></div><% } %>
+  <% } %>
+</div>

@@ -1,8 +1,8 @@
-<%# Footer of a step form: back, skip, continue. Pass form: id of the form the buttons submit. %>
+<%# Footer of a step: back, skip, save and continue. Pass formId: the form the buttons submit. %>
 <div class="onb-foot">
   <% if (prev) { %><a class="btn btn-ghost" href="/app/onboarding/<%= prev %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a><% } else { %><span></span><% } %>
   <div class="row-sm">
-    <button class="btn btn-ghost" type="submit" form="<%= formId %>" name="_action" value="skip" formnovalidate><%= t('onboarding.skip_step') %></button>
-    <button class="btn btn-primary" type="submit" form="<%= formId %>" name="_action" value="save"><%= step === steps[steps.length - 1] ? t('onboarding.finish') : t('onboarding.continue') %><%- icon(step === steps[steps.length - 1] ? 'check' : 'arrow-right', 'icon-sm flip-rtl') %></button>
+    <button class="btn btn-ghost" type="submit" form="<%= formId %>" name="_action" value="skip" formnovalidate><%= t('ownerx.wiz.skip') %></button>
+    <button class="btn btn-primary" type="submit" form="<%= formId %>" name="_action" value="save"><%= typeof continueLabel !== 'undefined' ? continueLabel : t('ownerx.wiz.save_continue') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button>
   </div>
 </div>

@@ -1,6 +1,12 @@
 <% var P = '../../../partials/'; var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   /* The doctor's day (round 8 doctor journey): the next patient with ONE big action, then today's patients in order
+      with a clear state. Live: live.js refreshes the page when reception checks a patient in or sends them in. */
+   var canStart = can('clinical.edit');
    var visitHref = function (id) { return can('clinical.view') ? '/app/visits/' + id : '/app/appointments/' + id; };
-   var stateLabel = function (a) { if (a.state === 'with') return { text: t('dashboard.with_doctor'), tone: 'brand' }; if (a.state === 'waiting') return { text: t('dashboard.waiting'), tone: 'warning' }; return { text: t('dashboard.statuses.' + a.status), tone: statusTone[a.status] || 'neutral' }; }; %>
+   var stateText = function (a) { return a.state === 'cancelled' || a.state === 'no_show' ? t('dashboard.statuses.' + a.state) : t('dflow.state.' + a.state); };
+   var stateTone = function (a) { return a.state === 'with_me' || a.state === 'sent_in' ? 'brand' : a.state === 'cancelled' ? 'danger' : a.state === 'waiting' && a.waitedMin !== null && a.waitedMin >= 30 ? 'warning' : 'neutral'; };
+   var startable = function (a) { return isToday && canStart && can('clinical.view') && ['booked', 'waiting', 'sent_in'].indexOf(a.state) !== -1; };
+   var np = nextPatient; %>
 <div class="page-head"<% if (autoRefresh) { %> data-autorefresh="90"<% } %>>
   <div>
     <div class="breadcrumbs"><%= L(doctor.full_name, doctor.full_name_en) %></div>
@@ -20,43 +26,71 @@
 
 <% if (offToday) { %><div class="alert alert-info mb-4"><%- icon('calendar-x') %><div class="grow"><div class="alert-title"><%= t('my_day.day_off') %></div><% if (offToday.reason) { %><div><%= offToday.reason %></div><% } %></div></div><% } else if (!day.enabled && !items.length) { %><div class="alert alert-info mb-4"><%- icon('calendar') %><div class="grow"><div class="alert-title"><%= t('my_day.not_working') %></div></div></div><% } %>
 
-<div class="stats cols-5 rec-kpis">
-  <div class="stat"><div class="stat-label"><%= t('my_day.total') %></div><div class="stat-value"><%= fmt.number(counts.total) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('dashboard.waiting') %></div><div class="stat-value"><%= fmt.number(counts.waiting) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('my_day.remaining') %></div><div class="stat-value"><%= fmt.number(counts.remaining) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('dashboard.statuses.completed') %></div><div class="stat-value"><%= fmt.number(counts.completed) %></div></div>
-  <% if (revenue) { %><div class="stat"><div class="stat-label"><%= t('my_day.revenue') %></div><div class="stat-value" style="font-size:20px"><%= fmt.money(revenue.value) %></div></div><% } else { %><div class="stat"><div class="stat-label"><%= t('dashboard.statuses.no_show') %></div><div class="stat-value"><%= fmt.number(counts.noShows) %></div></div><% } %>
-</div>
+<%/* ---------------- next patient: the one obvious action ---------------- */%>
+<% if (isToday) { %>
+<section class="panel df-next" aria-labelledby="df-next-title">
+  <div class="panel-body">
+    <% if (np) { %>
+    <div class="df-next-main">
+      <div class="df-next-kicker" id="df-next-title"><%= np.state === 'with_me' ? t('my_day.with_me') : t('my_day.next_patient') %></div>
+      <div class="df-next-name" dir="auto"><%= np.patient_name %></div>
+      <div class="df-next-meta">
+        <span dir="ltr" class="mono"><%= np.appointment_time %></span>
+        <span><%= L(np.service_name, np.service_name_en) || t('my_day.visit') %></span>
+        <span class="df-status df-st-<%= np.state %>"><i></i><%= stateText(np) %><% if (np.state === 'waiting' && np.waitedMin !== null) { %> · <%= t('my_day.minutes_n', { n: fmt.number(np.waitedMin) }) %><% } %></span>
+      </div>
+    </div>
+    <div class="df-next-actions">
+      <% if (np.state === 'with_me' || !startable(np)) { %>
+      <a class="btn btn-primary btn-lg df-big" href="<%= visitHref(np.id) %>"><%- icon('stethoscope', 'icon-sm') %><%= np.state === 'with_me' ? t('dflow.continue_visit') : t('my_day.open_visit') %></a>
+      <% } else { %>
+      <form method="post" action="/app/visits/<%= np.id %>/start"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-lg df-big" type="submit"><%- icon('stethoscope', 'icon-sm') %><%= t('dflow.start_visit') %></button></form>
+      <% } %>
+      <% if (np.patient_id && can('patients.view')) { %><a class="btn btn-ghost" href="/app/patients/<%= np.patient_id %>"><%= t('my_day.patient_file') %></a><% } %>
+    </div>
+    <% } else { %>
+    <div class="df-next-main"><div class="df-next-kicker"><%= t('my_day.next_patient') %></div><div class="df-next-empty"><%= counts.total ? t('dflow.all_done') : t('my_day.empty_today') %></div></div>
+    <% } %>
+  </div>
+  <div class="df-counts">
+    <span><strong><%= fmt.number(counts.total) %></strong> <%= t('my_day.total') %></span>
+    <span><strong><%= fmt.number(counts.waiting) %></strong> <%= t('dflow.count_waiting') %></span>
+    <span><strong><%= fmt.number(counts.remaining) %></strong> <%= t('my_day.remaining') %></span>
+    <span><strong><%= fmt.number(counts.toPay) %></strong> <%= t('dflow.count_to_pay') %></span>
+    <span><strong><%= fmt.number(counts.completed) %></strong> <%= t('dflow.count_finished') %></span>
+    <% if (revenue) { %><span><strong><%= fmt.money(revenue.value) %></strong> <%= t('my_day.revenue') %></span><% } %>
+  </div>
+</section>
+<% } %>
 
 <div class="grid grid-main mt-6">
   <div class="stack">
-    <% if (withMe) { %>
-    <a class="panel card-link rec-now" href="<%= visitHref(withMe.id) %>"><div class="panel-body row">
-      <span class="avatar avatar-lg"><%= initials(withMe.patient_name) %></span>
-      <div class="grow" style="min-width:0"><div class="rec-kicker"><%- icon('stethoscope', 'icon-sm') %><%= t('my_day.with_me') %></div><div class="strong rec-big" dir="auto"><%= withMe.patient_name %></div><div class="small muted"><span dir="ltr"><%= withMe.appointment_time %></span> · <%= L(withMe.service_name, withMe.service_name_en) || t('my_day.visit') %></div></div>
-      <span class="btn btn-primary btn-sm"><%= t('my_day.open_visit') %></span>
-    </div></a>
-    <% } %>
     <div class="panel flush">
-      <div class="panel-head"><h2><%= t('my_day.timeline') %></h2><% if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments?date=<%= date %>"><%= t('dashboard.open_calendar') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></div>
+      <div class="panel-head"><h2><%= isToday ? t('dflow.today_patients') : t('my_day.timeline') %></h2><% if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments?date=<%= date %>"><%= t('dashboard.open_calendar') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></div>
       <% if (!items.length) { %>
         <%- include(P + 'empty', { compact: true, emptyIcon: 'calendar-check', emptyTitle: t('my_day.empty'), emptyText: isToday ? t('my_day.empty_today') : t('my_day.empty_other') }) %>
       <% } else { %>
-      <ol class="rec-day">
-        <% items.forEach(function (a) { var st = stateLabel(a); %>
+      <ol class="df-day">
+        <% items.forEach(function (a) { %>
         <% if (a.state === 'blocked') { %>
-        <li class="is-block"><div class="rec-day-time mono" dir="ltr"><%= a.appointment_time %><span class="tiny muted"><%= a.end %></span></div><div class="rec-day-card"><span class="small muted row-sm"><%- icon('lock', 'icon-sm') %><%= a.notes || t('my_day.blocked') %></span></div></li>
+        <li class="df-day-row is-block"><span class="df-day-time mono" dir="ltr"><%= a.appointment_time %></span><span class="small muted row-sm grow"><%- icon('lock', 'icon-sm') %><%= a.notes || t('my_day.blocked') %></span></li>
         <% } else { %>
-        <li class="state-<%= a.state %><%= a.past && a.state !== 'with' && a.state !== 'waiting' ? ' is-past' : '' %>">
-          <div class="rec-day-time mono" dir="ltr"><%= a.appointment_time %><span class="tiny muted"><%= a.end %></span></div>
-          <a class="rec-day-card" href="<%= visitHref(a.id) %>">
-            <span class="grow" style="min-width:0">
-              <span class="strong" dir="auto"><%= a.patient_name %></span>
-              <span class="small muted" style="display:block"><%= L(a.service_name, a.service_name_en) || t('my_day.visit') %><% if (a.appointment_type === 'online') { %> · <%= t('dashboard.online') %><% } %><% if (a.parent_appointment_id) { %> · <%= t('patients.follow_up') %><% } %></span>
-              <% if (a.state === 'waiting' && a.arrivedTime) { %><span class="small rec-wait" style="display:flex"><%- icon('clock', 'icon-sm') %><%= t('my_day.waiting_since', { time: a.arrivedTime }) %><% if (a.waitedMin !== null) { %> · <%= t('my_day.minutes_n', { n: fmt.number(a.waitedMin) }) %><% } %></span><% } %>
-            </span>
-            <span class="badge badge-<%= st.tone %> badge-dot"><%= st.text %></span>
+        <li class="df-day-row st-<%= a.state %><%= np && np.id === a.id && isToday ? ' is-next' : '' %><%= a.past && ['booked', 'cancelled', 'no_show'].indexOf(a.state) !== -1 ? ' is-past' : '' %>">
+          <span class="df-day-time mono" dir="ltr"><%= a.appointment_time %></span>
+          <a class="df-day-main" href="<%= visitHref(a.id) %>">
+            <span class="strong df-day-name" dir="auto"><%= a.patient_name %></span>
+            <span class="small muted"><%= L(a.service_name, a.service_name_en) || t('my_day.visit') %><% if (a.appointment_type === 'online') { %> · <%= t('dashboard.online') %><% } %><% if (a.parent_appointment_id) { %> · <%= t('patients.follow_up') %><% } %></span>
           </a>
+          <span class="df-day-state">
+            <span class="badge badge-<%= stateTone(a) %> badge-dot"><%= stateText(a) %></span>
+            <% if (a.state === 'waiting' && a.arrivedTime) { %><span class="tiny muted"><%= t('my_day.waiting_since', { time: a.arrivedTime }) %></span><% } %>
+            <% if (a.state === 'to_pay' || a.state === 'paid') { %><span class="tiny muted mono" dir="ltr"><%= fmt.money(a.amount_due) %></span><% } %>
+          </span>
+          <span class="df-day-act">
+            <% if (a.state === 'with_me') { %><a class="btn btn-secondary btn-sm" href="<%= visitHref(a.id) %>"><%= t('dflow.continue') %></a>
+            <% } else if (startable(a) && (a.state === 'waiting' || a.state === 'sent_in')) { %><form method="post" action="/app/visits/<%= a.id %>/start"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('dflow.start') %></button></form>
+            <% } else { %><a class="btn btn-ghost btn-sm btn-icon" href="<%= visitHref(a.id) %>" aria-label="<%= t('my_day.open_visit') %>" title="<%= t('my_day.open_visit') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %>
+          </span>
         </li>
         <% } %>
         <% }) %>
@@ -66,20 +100,9 @@
   </div>
 
   <div class="stack">
-    <div class="panel">
-      <div class="panel-head"><h2><%= t('my_day.next_patient') %></h2></div>
-      <div class="panel-body">
-        <% if (nextPatient) { %>
-        <div class="row"><span class="avatar"><%= initials(nextPatient.patient_name) %></span><div class="grow" style="min-width:0"><div class="strong truncate" dir="auto"><%= nextPatient.patient_name %></div><div class="small muted"><span dir="ltr"><%= nextPatient.appointment_time %></span> · <%= nextPatient.state === 'waiting' ? t('my_day.in_waiting_room') : t('my_day.not_arrived') %></div></div></div>
-        <div class="row mt-3 wrap"><a class="btn btn-secondary btn-sm" href="<%= visitHref(nextPatient.id) %>"><%= t('my_day.open_visit') %></a><% if (nextPatient.patient_id && can('patients.view')) { %><a class="btn btn-ghost btn-sm" href="/app/patients/<%= nextPatient.patient_id %>"><%= t('my_day.patient_file') %></a><% } %></div>
-        <% } else { %><p class="small muted"><%= t('my_day.no_next') %></p><% } %>
-      </div>
-      <% if (waitingQueue.length > 1) { %><div class="panel-foot small muted"><%= t('my_day.queue_n', { n: fmt.number(waitingQueue.length) }) %></div><% } %>
-    </div>
-
     <div class="panel flush"><div class="panel-head"><h2><%= t('my_day.coming_days') %></h2></div>
       <ul class="rec-week">
-        <% week.forEach(function (w) { %><li><a href="/app/my-day?date=<%= w.date %>"><span class="small"><%= fmt.date(w.date, { weekday: 'short' }) %></span><span class="strong"><%= fmt.date(w.date, { day: 'numeric' }) %></span><span class="badge <%= w.n ? 'badge-brand' : 'badge-neutral' %>"><%= fmt.number(w.n) %></span></a></li><% }) %>
+        <% week.forEach(function (w) { %><li><a href="/app/my-day?date=<%= w.date %>"><span class="small"><%= fmt.date(w.date, { weekday: 'short' }) %></span><span class="strong"><%= fmt.date(w.date, { day: 'numeric' }) %></span><span class="badge badge-neutral"><%= fmt.number(w.n) %></span></a></li><% }) %>
       </ul>
     </div>
 

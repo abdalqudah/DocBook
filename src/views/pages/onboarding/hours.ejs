@@ -1,0 +1,38 @@
+<% var o = old || {}; var hasOld = Object.keys(o).length > 0; var days = hasOld ? [].concat(o.days || []) : hours.days; var split = hasOld ? (o.split === '1') : hours.split;
+   var v = function (k) { return hasOld && o[k] !== undefined ? o[k] : hours[k]; }; %>
+<%- include('_top') %>
+<form id="step-form" method="post" action="/app/onboarding/hours" novalidate data-ox-hours>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <section class="panel">
+    <div class="panel-body stack">
+      <div class="field">
+        <span class="label"><%= t('ownerx.wiz.work_days') %></span>
+        <div class="onb-days">
+          <% week.forEach(function (d) { %><label class="onb-day"><input type="checkbox" name="days" value="<%= d %>"<%= days.indexOf(d) >= 0 ? ' checked' : '' %>><span><%= t('days.' + d) %></span></label><% }) %>
+        </div>
+        <% if (errors.days) { %><span class="field-error"><%= errors.days %></span><% } %>
+      </div>
+      <div class="ox-shift">
+        <div class="small strong muted"><%= t('ownerx.wiz.shift1') %></div>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 's1', label: t('ownerx.wiz.opens'), type: 'time', value: v('s1') }) %>
+          <%- include('../../partials/field', { name: 'e1', label: t('ownerx.wiz.closes'), type: 'time', value: v('e1') }) %>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" name="split" value="1"<%= split ? ' checked' : '' %> data-ox-split><span><strong><%= t('ownerx.wiz.split') %></strong> — <span class="muted"><%= t('ownerx.wiz.split_text') %></span></span></label>
+      <div class="ox-shift" data-ox-split-box<%= split ? '' : ' data-off' %>>
+        <div class="small strong muted"><%= t('ownerx.wiz.shift2') %></div>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 's2', label: t('ownerx.wiz.opens'), type: 'time', value: v('s2') }) %>
+          <%- include('../../partials/field', { name: 'e2', label: t('ownerx.wiz.closes'), type: 'time', value: v('e2') }) %>
+        </div>
+      </div>
+      <% if (doctorCount) { %>
+      <label class="check set-me"><input type="checkbox" name="apply_doctors" value="1"<%= (hasOld ? o.apply_doctors === '1' : !hours.saved) ? ' checked' : '' %>><span><strong><%= t('ownerx.wiz.apply_doctors', { n: doctorCount }) %></strong> — <span class="muted"><%= t('ownerx.wiz.apply_doctors_text') %></span></span></label>
+      <% } %>
+      <p class="small muted row-sm" style="align-items:flex-start"><%- icon('info', 'icon-sm') %><span><%= t('ownerx.wiz.hours_note') %></span></p>
+    </div>
+  </section>
+</form>
+<%- include('_foot', { formId: 'step-form' }) %>

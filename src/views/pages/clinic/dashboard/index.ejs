@@ -1,110 +1,78 @@
-<% var P = '../../../partials/'; var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
-   var apptHref = function (id) { return can('clinical.view') ? '/app/visits/' + id : '/app/appointments/' + id; };
-   var stateOf = function (a) { if (a.status === 'cancelled' || a.status === 'no_show' || a.status === 'completed') return { key: 'statuses.' + a.status, tone: statusTone[a.status] }; if (a.with_doctor) return { key: 'with_doctor', tone: 'brand' }; if (a.checked_in) return { key: 'waiting', tone: 'warning' }; return { key: 'statuses.' + a.status, tone: statusTone[a.status] }; }; %>
-<div class="page-head" data-autorefresh="120">
+<% var actions = [];
+   if (kind === 'owner') {
+     if (can('appointments.manage')) actions.push({ href: '/app/appointments/new', icon: 'calendar-plus', key: 'new_appointment' });
+     if (can('frontdesk.use')) actions.push({ href: '/app/front-desk', icon: 'armchair', key: 'reception' });
+     if (can('billing.manage')) actions.push({ href: '/app/cashier', icon: 'banknote', key: 'cash' });
+     if (can('expenses.manage')) actions.push({ href: '/app/expenses?new=1', icon: 'receipt-text', key: 'expense' });
+   } else if (kind === 'reception') {
+     if (can('frontdesk.use')) actions.push({ href: '/app/front-desk', icon: 'armchair', key: 'reception' });
+     if (can('appointments.manage')) actions.push({ href: '/app/appointments/new', icon: 'calendar-plus', key: 'new_appointment' });
+     if (can('billing.manage')) actions.push({ href: '/app/cashier', icon: 'banknote', key: 'cash' });
+     if (can('patients.create')) actions.push({ href: '/app/patients?new=1', icon: 'user-plus', key: 'new_patient' });
+   } else {
+     if (can('billing.manage')) actions.push({ href: '/app/cashier', icon: 'banknote', key: 'cash' });
+     if (can('expenses.manage')) actions.push({ href: '/app/expenses?new=1', icon: 'receipt-text', key: 'expense' });
+     if (can('billing.view')) actions.push({ href: '/app/billing', icon: 'receipt', key: 'invoices' });
+     if (can('finance.view')) actions.push({ href: '/app/finance', icon: 'trending-up', key: 'pnl' }); else if (can('reports.view')) actions.push({ href: '/app/reports', icon: 'chart-pie', key: 'reports' });
+   } %>
+<div class="page-head ox-home-head" data-autorefresh="120">
   <div>
     <div class="breadcrumbs"><%= business.name %></div>
     <h1><%= greeting %></h1>
     <p><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span dir="ltr"><%= nowTime %></span></p>
   </div>
-  <div class="page-actions">
-    <% if (ctx.doctorId) { %><a class="btn btn-secondary" href="/app/my-day"><%- icon('stethoscope', 'icon-sm') %><%= t('nav.my_day') %></a><% } %>
-    <% if (can('frontdesk.use')) { %><a class="btn btn-secondary" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('nav.front_desk') %></a><% } %>
-    <% if (can('appointments.manage')) { %><a class="btn btn-primary" href="/app/appointments/new"><%- icon('calendar-plus', 'icon-sm') %><%= t('dashboard.new_appointment') %></a><% } %>
-  </div>
 </div>
 
-<% if (showSetup) { var doneN = setupItems.filter(function (i) { return i.done; }).length; %>
-<div class="panel mb-4 rec-setup">
-  <div class="panel-head"><div><h2><%= t('dashboard.setup_title') %></h2><p class="panel-sub"><%= t('dashboard.setup_lead') %></p></div><span class="badge badge-brand"><%= t('dashboard.setup_progress', { done: doneN, total: setupItems.length }) %></span></div>
-  <div class="panel-body">
-    <div class="meter thin mb-4"><span style="width:<%= Math.round(doneN * 100 / setupItems.length) %>%"></span></div>
-    <ul class="checklist rec-setup-list">
-      <% setupItems.forEach(function (i) { %>
-      <li class="<%= i.done ? 'done' : '' %>"><span class="check-dot"><%- icon(i.done ? 'check' : i.icon, 'icon-sm') %></span><span class="grow"><strong><%= t('dashboard.setup.' + i.key) %></strong><span class="small muted" style="display:block"><%= t('dashboard.setup.' + i.key + '_hint') %></span></span><% if (!i.done) { %><a class="btn btn-secondary btn-sm" href="<%= i.href %>"><%= t('dashboard.setup_go') %></a><% } %></li>
-      <% }) %>
-    </ul>
-  </div>
-</div>
+<% if (actions.length) { %>
+<nav class="ox-actions" aria-label="<%= t('ownerx.home.quick') %>">
+  <% actions.forEach(function (a, i) { %><a class="ox-action<%= i === 0 ? ' is-main' : '' %>" href="<%= a.href %>"><%- icon(a.icon) %><span><%= t('ownerx.home.act_' + a.key) %></span></a><% }) %>
+</nav>
 <% } %>
 
-<div class="stats rec-kpis">
-  <div class="stat"><div class="stat-label"><%= t('dashboard.kpi_today') %><span class="stat-icon"><%- icon('calendar-days') %></span></div><div class="stat-value"><%= fmt.number(kpi.today) %></div><div class="stat-meta"><%= t('dashboard.remaining_n', { n: fmt.number(kpi.remaining) }) %><% if (kpi.cancelled) { %> · <%= t('dashboard.cancelled_n', { n: fmt.number(kpi.cancelled) }) %><% } %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('dashboard.kpi_waiting') %><span class="stat-icon warning"><%- icon('armchair') %></span></div><div class="stat-value"><%= fmt.number(kpi.waiting) %></div><div class="stat-meta"><%= t('dashboard.with_doctor_n', { n: fmt.number(kpi.withDoctor) }) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('dashboard.kpi_completed') %><span class="stat-icon info"><%- icon('circle-check') %></span></div><div class="stat-value"><%= fmt.number(kpi.completed) %></div><div class="stat-meta"><%= kpi.today ? t('dashboard.of_today', { pct: fmt.pct(kpi.completed * 100 / kpi.today, 0) }) : '—' %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('dashboard.kpi_no_show') %><span class="stat-icon danger"><%- icon('calendar-x') %></span></div><div class="stat-value"><%= fmt.number(kpi.noShows) %></div><div class="stat-meta"><%= t('dashboard.next_7', { n: fmt.number(kpi.upcoming) }) %></div></div>
-</div>
+<% if (checklist) { %><%- include('_checklist') %><% } %>
 
-<% if (money) { %>
-<div class="stats cols-3 mt-4 rec-kpis">
-  <div class="stat hero"><div class="stat-label"><%= t('dashboard.revenue_today') %><span class="stat-icon"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.money(money.today.value) %></div><div class="stat-meta"><%= t('dashboard.invoices_n', { n: fmt.number(money.today.count) }) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('dashboard.revenue_month') %><span class="stat-icon"><%- icon('trending-up') %></span></div><div class="stat-value"><%= fmt.money(money.month.value) %></div>
-    <div class="stat-meta"><% if (money.change !== null) { %><span class="rec-trend <%= money.change >= 0 ? 'up' : 'down' %>"><%- icon(money.change >= 0 ? 'arrow-up-right' : 'arrow-down-right', 'icon-sm') %><%= fmt.pct(Math.abs(money.change), 0) %></span> <%= t('dashboard.vs_last_month_same') %><% } else { %><%= t('dashboard.no_last_month') %><% } %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('dashboard.revenue_last_month') %><span class="stat-icon accent"><%- icon('history') %></span></div><div class="stat-value"><%= fmt.money(money.lastFull.value) %></div><div class="stat-meta"><%= t('dashboard.invoices_n', { n: fmt.number(money.lastFull.count) }) %></div></div>
-</div>
-<% } %>
-
-<div class="grid grid-main mt-6">
-  <div class="panel flush">
-    <div class="panel-head"><div><h2><%= t('dashboard.schedule') %></h2><p class="panel-sub"><%= ctx.ownDoctorId ? t('dashboard.schedule_own') : t('dashboard.schedule_sub') %></p></div><% if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments"><%= t('dashboard.open_calendar') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></div>
-    <% if (!schedule.length) { %>
-      <%- include(P + 'empty', { compact: true, emptyIcon: 'calendar-days', emptyTitle: t('dashboard.schedule_empty'), emptyText: t('dashboard.schedule_empty_text'), emptyAction: can('appointments.manage') ? '<a class="btn btn-primary btn-sm" href="/app/appointments/new">' + t('dashboard.new_appointment') + '</a>' : '' }) %>
-    <% } else { %>
-    <ul class="rec-sched">
-      <% schedule.forEach(function (a) { var st = stateOf(a); var past = a.appointment_time < nowTime && (a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show'); %>
-      <li class="<%= past || a.status === 'cancelled' ? 'is-dim' : '' %><%= a.with_doctor && (a.status === 'pending' || a.status === 'confirmed') ? ' is-now' : '' %>">
-        <a href="<%= apptHref(a.id) %>">
-          <span class="rec-sched-time mono" dir="ltr"><%= a.appointment_time %></span>
-          <span class="rec-sched-bar" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span>
-          <span class="grow" style="min-width:0">
-            <span class="strong truncate" style="display:block" dir="auto"><%= a.patient_name %></span>
-            <span class="small muted truncate" style="display:block"><%= [L(a.doctor_name, a.doctor_name_en), L(a.service_name, a.service_name_en)].filter(Boolean).join(' · ') || '—' %></span>
-          </span>
-          <span class="row-sm wrap end">
-            <% if (a.source === 'website') { %><span class="badge" title="<%= t('dashboard.sources.website') %>"><%- icon('globe', 'icon-sm') %></span><% } %>
-            <% if (a.payment_status === 'paid') { %><span class="badge badge-success"><%= t('billing.paid') %></span><% } %>
-            <span class="badge badge-<%= st.tone %> badge-dot"><%= t('dashboard.' + st.key) %></span>
-          </span>
-        </a>
-      </li>
-      <% }) %>
-    </ul>
-    <% } %>
-  </div>
-
-  <div class="stack">
-    <div class="panel flush">
-      <div class="panel-head"><div><h2><%= t('dashboard.online_pending') %></h2><p class="panel-sub"><%= t('dashboard.online_pending_sub') %></p></div><% if (pendingCount) { %><span class="badge badge-warning"><%= fmt.number(pendingCount) %></span><% } %></div>
-      <% if (!pendingOnline.length) { %><div class="panel-body rec-pad small muted row-sm"><%- icon('circle-check', 'icon-sm') %><%= t('dashboard.online_none') %></div><% } else { %>
-      <ul class="action-list"><% pendingOnline.forEach(function (a) { %><li><a href="/app/appointments/<%= a.id %>"><span class="action-icon warning"><%- icon('globe') %></span><div class="grow" style="min-width:0"><div class="strong truncate" dir="auto"><%= a.patient_name %></div><div class="small muted"><%= a.appointment_date === clinicToday ? t('common.today') : fmt.date(a.appointment_date, { weekday: 'short', day: 'numeric', month: 'short' }) %> · <span dir="ltr"><%= a.appointment_time %></span><% if (a.doctor_name) { %> · <%= L(a.doctor_name, a.doctor_name_en) %><% } %></div></div><span class="btn btn-secondary btn-sm"><%= t('dashboard.review') %></span></a></li><% }) %></ul>
-      <% if (pendingCount > pendingOnline.length) { %><div class="panel-foot"><a class="btn btn-ghost btn-sm" href="/app/appointments?status=pending"><%= t('dashboard.see_all_n', { n: fmt.number(pendingCount) }) %></a></div><% } %>
-      <% } %>
-    </div>
-
-    <% if (lowStock !== null) { %>
-    <a class="panel card-link" href="/app/supplies?low=yes"><div class="panel-body row"><span class="action-icon <%= lowStock ? 'danger' : 'success' %>"><%- icon('package') %></span><div class="grow"><div class="strong"><%= lowStock ? t('dashboard.low_stock_n', { n: fmt.number(lowStock) }) : t('dashboard.stock_ok') %></div><div class="small muted"><%= t('dashboard.low_stock_sub') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></div></a>
-    <% } %>
-
-    <div class="panel flush"><div class="panel-head"><h2><%= t('dashboard.shortcuts') %></h2></div>
-      <ul class="action-list">
-        <% if (can('patients.create')) { %><li><a href="/app/patients?new=1"><span class="action-icon brand"><%- icon('user-plus') %></span><span class="grow"><%= t('dashboard.sc_patient') %></span></a></li><% } %>
-        <% if (can('patients.view')) { %><li><a href="/app/patients"><span class="action-icon"><%- icon('users') %></span><span class="grow"><%= t('dashboard.sc_patients') %></span></a></li><% } %>
-        <% if (can('billing.view')) { %><li><a href="/app/billing?tab=unpaid"><span class="action-icon"><%- icon('receipt') %></span><span class="grow"><%= t('dashboard.sc_unpaid') %></span></a></li><% } %>
-        <% if (can('reports.view')) { %><li><a href="/app/reports"><span class="action-icon"><%- icon('chart-pie') %></span><span class="grow"><%= t('dashboard.sc_reports') %></span></a></li><% } %>
-      </ul>
-    </div>
-  </div>
-</div>
-
-<div class="grid <%= money && money.byDoctor ? 'grid-main' : '' %> mt-6">
-  <div class="panel">
-    <div class="panel-head"><div><h2><%= t('dashboard.chart_30') %></h2><p class="panel-sub"><%= t('dashboard.chart_30_sub') %></p></div><div class="legend"><span><i class="l1"></i><%= t('dashboard.legend_booked') %></span><span><i class="l2"></i><%= t('dashboard.legend_done') %></span></div></div>
-    <div class="panel-body"><% if (apptChart) { %><%- apptChart %><% } else { %><p class="small muted"><%= t('dashboard.chart_empty') %></p><% } %></div>
-  </div>
-  <% if (money && money.byDoctor) { %>
-  <div class="panel">
-    <div class="panel-head"><div><h2><%= t('dashboard.revenue_by_doctor') %></h2><p class="panel-sub"><%= fmt.month(clinicToday.slice(0, 7)) %></p></div></div>
-    <div class="panel-body rec-hbars-stacked"><%- money.byDoctor %></div>
-  </div>
+<% if (kind === 'accounts') { %>
+  <%- include('_accounts') %>
+<% } else { %>
+<div class="stats ox-stats">
+  <a class="stat card-link" href="<%= can('appointments.view') ? '/app/appointments' : '#' %>"><div class="stat-label"><%= t('ownerx.home.appts_today') %></div><div class="stat-value"><%= fmt.number(counts.total) %></div><div class="stat-meta"><%= t('ownerx.home.to_come_done', { come: fmt.number(counts.toArrive), done: fmt.number(counts.done) }) %></div></a>
+  <a class="stat card-link" href="<%= can('frontdesk.use') ? '/app/front-desk' : '#' %>"><div class="stat-label"><%= t('ownerx.home.waiting_now') %></div><div class="stat-value"><%= fmt.number(counts.waiting) %></div><div class="stat-meta"><%= t('ownerx.home.with_doctor_n', { n: fmt.number(counts.withDoctor) }) %></div></a>
+  <% if (cash) { %>
+  <a class="stat card-link" href="<%= can('billing.view') ? '/app/billing' : '#' %>"><div class="stat-label"><%= t('ownerx.home.collected_today') %></div><div class="stat-value"><%= fmt.money(cash.today.value) %></div><div class="stat-meta"><%= t('ownerx.home.yesterday_x', { amount: fmt.money(cash.yesterday.value) }) %></div></a>
+  <% } else { %>
+  <div class="stat"><div class="stat-label"><%= t('ownerx.home.done_today') %></div><div class="stat-value"><%= fmt.number(counts.done) %></div><div class="stat-meta"><%= counts.noShows ? t('ownerx.home.no_shows_n', { n: fmt.number(counts.noShows) }) : '—' %></div></div>
+  <% } %>
+  <% if (unpaid) { %>
+  <a class="stat card-link" href="<%= can('billing.manage') ? '/app/cashier' : '/app/billing' %>"><div class="stat-label"><%= t('ownerx.home.unpaid') %></div><div class="stat-value<%= unpaid.count ? ' ox-attn' : '' %>"><%= fmt.number(unpaid.count) %></div><div class="stat-meta"><%= unpaid.count ? (unpaid.amount ? t('ownerx.home.unpaid_due', { amount: fmt.money(unpaid.amount) }) : t('ownerx.home.unpaid_last30')) : t('ownerx.home.unpaid_none') %></div></a>
+  <% } else { %>
+  <div class="stat"><div class="stat-label"><%= t('ownerx.home.still_to_arrive') %></div><div class="stat-value"><%= fmt.number(counts.toArrive) %></div><div class="stat-meta"><%= counts.cancelled ? t('ownerx.home.cancelled_n', { n: fmt.number(counts.cancelled) }) : '—' %></div></div>
   <% } %>
 </div>
+
+<div class="grid grid-main mt-6">
+  <%- include('_schedule') %>
+  <div class="stack">
+    <% if (kind === 'owner' && typeof attention !== 'undefined') { var att = attention.filter(function (x) { return x.n > 0; }); %>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('ownerx.home.attention') %></h2></div>
+      <% if (!att.length) { %><div class="ox-pad small muted row-sm"><%- icon('circle-check', 'icon-sm') %><%= t('ownerx.home.attention_none') %></div><% } else { %>
+      <ul class="action-list"><% att.forEach(function (x) { %><li><a href="<%= x.href %>"><span class="action-icon"><%- icon(x.icon, 'icon-sm') %></span><span class="grow"><%= t('ownerx.home.att_' + x.key, { n: fmt.number(x.n) }) %></span><span class="badge <%= x.tone === 'danger' ? 'badge-danger' : 'badge-neutral' %>"><%= fmt.number(x.n) %></span></a></li><% }) %></ul>
+      <% } %>
+    </div>
+    <% } else if (online) { %>
+    <%- include('_online') %>
+    <% } %>
+    <% if (month) { %><%- include('_month') %><% } %>
+  </div>
+</div>
+
+<% if (kind === 'owner' && typeof trends !== 'undefined' && (trends.apptChart || trends.byDoctor)) { %>
+<details class="panel ox-trends mt-6">
+  <summary class="panel-head"><div><h2><%= t('ownerx.home.trends') %></h2><p class="panel-sub"><%= t('ownerx.home.trends_sub') %></p></div><%- icon('chevron-down', 'icon-sm muted ox-chev') %></summary>
+  <div class="panel-body stack-lg">
+    <% if (trends.apptChart) { %><div><div class="row between wrap mb-2"><span class="strong small"><%= t('dashboard.chart_30') %></span><div class="legend"><span><i class="l1"></i><%= t('dashboard.legend_booked') %></span><span><i class="l2"></i><%= t('dashboard.legend_done') %></span></div></div><%- trends.apptChart %></div><% } %>
+    <% if (trends.byDoctor) { %><div><div class="strong small mb-2"><%= t('dashboard.revenue_by_doctor') %> · <%= fmt.month(clinicToday.slice(0, 7)) %></div><div class="rec-hbars-stacked"><%- trends.byDoctor %></div></div><% } %>
+  </div>
+</details>
+<% } %>
+<% } %>

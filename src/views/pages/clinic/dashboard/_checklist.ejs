@@ -1,0 +1,18 @@
+<%# Setup checklist on the owner's home (worker: owner). Needs: checklist { items, done, total, percent } %>
+<section class="panel ox-check mb-4" data-ox-check>
+  <div class="panel-head">
+    <div><h2><%= t('ownerx.check.title') %></h2><p class="panel-sub"><%= t('ownerx.check.sub', { done: checklist.done, total: checklist.total }) %></p></div>
+    <div class="row-sm">
+      <span class="strong ox-check-pct"><%= checklist.percent %>%</span>
+      <form method="post" action="/app/setup-checklist/dismiss" data-confirm="<%= t('ownerx.check.hide_confirm') %>" data-confirm-title="<%= t('ownerx.check.hide') %>" data-confirm-yes="<%= t('ownerx.check.hide') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('ownerx.check.hide') %>" title="<%= t('ownerx.check.hide') %>"><%- icon('x', 'icon-sm') %></button></form>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="meter thin mb-4"><span style="width:<%= checklist.percent %>%"></span></div>
+    <ul class="ox-check-list">
+      <% checklist.items.forEach(function (i) { %>
+      <li class="<%= i.done ? 'done' : '' %>"><a href="<%= i.href %>"><span class="check-dot"><% if (i.done) { %><%- icon('check', 'icon-sm') %><% } %></span><span class="grow"><span class="strong"><%= t('ownerx.check.' + i.key) %></span><span class="small muted ox-check-hint"><%= t('ownerx.check.' + i.key + '_hint') %></span></span><% if (!i.done) { %><%- icon('chevron-right', 'icon-sm muted flip-rtl') %><% } %></a></li>
+      <% }) %>
+    </ul>
+  </div>
+</section>

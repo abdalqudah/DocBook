@@ -1,0 +1,9 @@
+<div class="panel flush">
+  <div class="panel-head"><div><h2><%= t('ownerx.home.this_month') %></h2><p class="panel-sub"><%= fmt.month(month.month) %> · <%= t('ownerx.home.so_far') %></p></div><a class="btn btn-ghost btn-sm" href="/app/finance"><%= t('ownerx.home.open_pnl') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></div>
+  <dl class="ox-month">
+    <div><dt><%= t('ownerx.home.income') %></dt><dd><%= fmt.money(month.income) %></dd></div>
+    <div><dt><%= t('ownerx.home.expenses') %></dt><dd><%= fmt.money(month.expenses) %></dd><% if (month.payroll) { %><span class="tiny muted"><%= t('ownerx.home.incl_salaries', { amount: fmt.money(month.payroll) }) %></span><% } %></div>
+    <div class="ox-net"><dt><%= t('ownerx.home.net') %></dt><dd class="<%= month.net < 0 ? 'ox-neg' : '' %>"><%= fmt.money(month.net) %></dd></div>
+  </dl>
+  <div class="panel-foot small muted"><%= t('ownerx.home.last_month_income', { amount: fmt.money(month.prevIncome) }) %></div>
+</div>

@@ -2,21 +2,34 @@
 <html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
 <head><%- include('../partials/head') %></head>
 <body>
+<% var _steps = typeof steps !== 'undefined' ? steps : []; var _idx = _steps.indexOf(typeof step !== 'undefined' ? step : ''); var _done = typeof completed !== 'undefined' && completed; %>
 <div class="onb-shell">
   <div class="onb-top">
-    <div class="row-sm"><%- include('../partials/logo') %></div>
+    <div class="row-sm" style="min-width:0"><%- include('../partials/logo') %></div>
     <div class="row-sm">
-      <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>"><%- icon('languages') %><%= locale === 'ar' ? 'EN' : 'ع' %></a>
+      <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>"><%- icon('languages') %><span class="hide-sm"><%= locale === 'ar' ? 'English' : 'العربية' %></span><span class="ox-show-sm"><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
       <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
-      <form method="post" action="/app/onboarding/finish" data-confirm="<%= t('onboarding.skip_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('onboarding.skip_all') %></button></form>
+      <% if (_done) { %>
+        <a class="btn btn-secondary btn-sm" href="/app"><%- icon('house', 'icon-sm') %><%= t('ownerx.wiz.back_home') %></a>
+      <% } else { %>
+        <form method="post" action="/app/onboarding/finish" data-confirm="<%= t('ownerx.wiz.later_confirm') %>" data-confirm-title="<%= t('ownerx.wiz.later') %>" data-confirm-yes="<%= t('ownerx.wiz.later') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('ownerx.wiz.later') %></button></form>
+      <% } %>
     </div>
   </div>
   <div class="onb-body">
-    <div class="steps" aria-label="<%= t('onboarding.progress') %>">
-      <% steps.forEach(function (s, i) { var idx = steps.indexOf(step); %>
-        <div class="step <%= i < idx ? 'done' : i === idx ? 'current' : '' %>"><div class="bar"></div><div class="step-label"><%= i + 1 %>. <%= t('onboarding.step_' + s) %></div></div>
-      <% }) %>
-    </div>
+    <% if (_steps.length) { %>
+    <nav class="ox-steps" aria-label="<%= t('onboarding.progress') %>">
+      <ol>
+        <% _steps.forEach(function (s, i) { var st = i === _idx ? 'current' : (i < (typeof reached !== 'undefined' ? reached : _idx) ? 'done' : ''); %>
+        <li class="<%= st %>"><a href="/app/onboarding/<%= s %>"<%= i === _idx ? ' aria-current="step"' : '' %>><span class="ox-num"><% if (st === 'done') { %><%- icon('check', 'icon-sm') %><% } else { %><%= i + 1 %><% } %></span><span class="ox-step-label"><%= t('ownerx.wiz.step_' + s) %></span></a></li>
+        <% }) %>
+      </ol>
+      <div class="ox-steps-sm" aria-hidden="true">
+        <div class="row between small"><span class="strong"><%= t('ownerx.wiz.step_x', { n: _idx + 1, total: _steps.length }) %> · <%= t('ownerx.wiz.step_' + step) %></span><span class="muted"><%= Math.round((_idx + 1) * 100 / _steps.length) %>%</span></div>
+        <div class="meter thin"><span style="width:<%= Math.round((_idx + 1) * 100 / _steps.length) %>%"></span></div>
+      </div>
+    </nav>
+    <% } %>
     <%- body %>
   </div>
 </div>

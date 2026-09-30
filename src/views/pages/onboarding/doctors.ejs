@@ -1,38 +1,36 @@
-<% var o = old || {}; var chosenDays = o.days ? [].concat(o.days) : ['sat', 'sun', 'mon', 'tue', 'wed', 'thu']; %>
+<% var o = old || {}; var spec = b.specialty && ['multi', 'other', 'general'].indexOf(b.specialty) < 0 ? label('specialties', b.specialty) : '';
+   var hoursText = hours ? hours.days.map(function (d) { return t('days.' + d); }).join('، ') + ' · ' + hours.s1 + '–' + hours.e1 + (hours.split ? ' / ' + hours.s2 + '–' + hours.e2 : '') : null; %>
 <%- include('_top') %>
 <div class="stack-lg">
   <% if (doctors.length) { %>
   <section class="panel flush">
-    <div class="panel-head"><h2><%= t('onboarding.doctors_added', { n: doctors.length }) %></h2><a class="link small" href="/app/doctors" target="_blank" rel="noopener"><%= t('onboarding.edit_later') %></a></div>
+    <div class="panel-head"><h2><%= t('ownerx.wiz.doctors_added', { n: doctors.length }) %></h2><a class="btn btn-ghost btn-sm" href="/app/doctors"><%= t('ownerx.wiz.edit_details') %></a></div>
     <ul class="action-list">
-      <% doctors.forEach(function (d) { %><li><div><span class="avatar"><%= initials(d.full_name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= d.full_name %></div><div class="small muted"><%= [d.specialization, fmt.money(d.consultation_fee), d.slot_duration_minutes + ' ' + t('common.minutes')].filter(Boolean).join(' · ') %></div></div><%- icon('circle-check', 'icon-sm onb-ok') %></div></li><% }) %>
+      <% doctors.forEach(function (d) { %><li><div><span class="avatar"><%= initials(d.full_name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= d.full_name %></div><div class="small muted"><%= [d.specialization, t('ownerx.wiz.fee_x', { fee: fmt.money(d.consultation_fee) }), d.slot_duration_minutes + ' ' + t('common.minutes')].filter(Boolean).join(' · ') %></div></div><%- icon('circle-check', 'icon-sm onb-ok') %></div></li><% }) %>
     </ul>
   </section>
   <% } %>
-  <form class="panel" method="post" action="/app/onboarding/doctors/add" novalidate data-doctor-quick>
-    <div class="panel-head"><div><h2><%= doctors.length ? t('onboarding.add_another_doctor') : t('onboarding.add_doctor') %></h2><div class="panel-sub"><%= t('onboarding.add_doctor_sub') %></div></div></div>
+  <% if (can('doctors.manage')) { %>
+  <form class="panel" method="post" action="/app/onboarding/doctors/add" novalidate>
+    <div class="panel-head"><div><h2><%= doctors.length ? t('ownerx.wiz.add_another_doctor') : t('ownerx.wiz.add_doctor') %></h2><div class="panel-sub"><%= t('ownerx.wiz.add_doctor_sub') %></div></div></div>
     <div class="panel-body stack">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <%- include('../../partials/form-error') %>
-      <% if (!ownerLinked) { %><label class="check set-me"><input type="checkbox" name="is_me" value="1"<%= o.is_me ? ' checked' : '' %> data-is-me data-my-name="<%= currentUser.name %>"><span><strong><%= t('onboarding.i_am_doctor') %></strong> — <span class="muted"><%= t('onboarding.i_am_doctor_text') %></span></span></label><% } %>
+      <% if (!ownerLinked) { %>
+      <label class="check set-me"><input type="checkbox" name="is_me" value="1"<%= o.is_me ? ' checked' : '' %> data-is-me data-my-name="<%= currentUser.name %>"><span><strong><%= t('ownerx.wiz.i_am_doctor') %></strong> — <span class="muted"><%= t('ownerx.wiz.i_am_doctor_text') %></span></span></label>
+      <% if (errors.is_me) { %><span class="field-error"><%= errors.is_me %></span><% } %>
+      <% } %>
       <div class="form-grid">
-        <%- include('../../partials/field', { name: 'full_name', label: t('onboarding.doctor_name'), required: true, placeholder: t('onboarding.doctor_name_ph'), attrs: 'data-doctor-name' }) %>
-        <%- include('../../partials/field', { name: 'specialization', label: t('auth.industry'), placeholder: b.specialty && b.specialty !== 'multi' && b.specialty !== 'other' ? label('specialties', b.specialty) : '', value: o.specialization !== undefined ? o.specialization : (b.specialty && b.specialty !== 'multi' && b.specialty !== 'other' ? label('specialties', b.specialty) : '') }) %>
-        <%- include('../../partials/field', { name: 'consultation_fee', label: t('onboarding.fee'), suffix: b.currency, value: '', attrs: 'inputmode="decimal"' }) %>
-        <%- include('../../partials/field', { name: 'slot_duration_minutes', label: t('onboarding.slot'), type: 'select', value: o.slot_duration_minutes || 30, options: [10, 15, 20, 30, 45, 60].map(function (m) { return { value: m, label: m + ' ' + t('common.minutes') }; }) }) %>
+        <%- include('../../partials/field', { name: 'full_name', label: t('ownerx.wiz.doctor_name'), required: true, placeholder: t('ownerx.wiz.doctor_name_ph'), attrs: 'data-doctor-name autocomplete="off"' }) %>
+        <%- include('../../partials/field', { name: 'specialization', label: t('ownerx.wiz.doctor_specialty'), value: spec }) %>
+        <%- include('../../partials/field', { name: 'consultation_fee', label: t('ownerx.wiz.fee'), suffix: b.currency, value: '', attrs: 'inputmode="decimal" dir="ltr" placeholder="0"', help: t('ownerx.wiz.fee_help') }) %>
+        <%- include('../../partials/field', { name: 'slot_duration_minutes', label: t('ownerx.wiz.slot'), type: 'select', value: o.slot_duration_minutes || 20, options: slotChoices.map(function (m) { return { value: m, label: m + ' ' + t('common.minutes') }; }), help: t('ownerx.wiz.slot_help') }) %>
       </div>
-      <div class="field"><span class="label"><%= t('onboarding.work_days') %></span>
-        <div class="onb-days">
-          <% days.forEach(function (d) { %><label class="onb-day"><input type="checkbox" name="days" value="<%= d %>"<%= chosenDays.indexOf(d) >= 0 ? ' checked' : '' %>><span><%= t('days.' + d) %></span></label><% }) %>
-        </div>
-      </div>
-      <div class="form-grid">
-        <%- include('../../partials/field', { name: 'start', label: t('onboarding.from'), type: 'time', value: o.start || '09:00' }) %>
-        <%- include('../../partials/field', { name: 'end', label: t('onboarding.to'), type: 'time', value: o.end || '17:00' }) %>
-      </div>
-      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('onboarding.save_doctor') %></button></div>
+      <p class="small muted row-sm" style="align-items:flex-start"><%- icon('clock', 'icon-sm') %><span><% if (hoursText) { %><%= t('ownerx.wiz.doctor_hours', { hours: hoursText }) %><% } else { %><%= t('ownerx.wiz.doctor_hours_default') %> <a class="link" href="/app/onboarding/hours"><%= t('ownerx.wiz.set_hours') %></a><% } %></span></p>
+      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('ownerx.wiz.save_doctor') %></button></div>
     </div>
   </form>
+  <% } %>
 </div>
 <form id="step-form" method="post" action="/app/onboarding/doctors"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form>
-<%- include('_foot', { formId: 'step-form' }) %>
+<%- include('_foot', { formId: 'step-form', continueLabel: t('ownerx.wiz.continue') }) %>

@@ -1,10 +1,11 @@
-// Clinic dashboard (GET /app) and a doctor's own day (GET /app/my-day).
+// Clinic home (GET /app, role-aware — worker: owner) and a doctor's own day (GET /app/my-day).
 const express = require('express');
 const knex = require('../../db/knex');
 const charts = require('../../core/charts');
 const fmtCore = require('../../core/format');
 const { E } = require('../../core/errors');
-const { wrap } = require('../../routes/helpers');
+const { wrap, flash } = require('../../routes/helpers');
+const { can } = require('../../middleware/context');
 const { entryFor } = require('../rbac/permissions');
 const scheduling = require('./scheduling');
 const lib = require('./records.lib');
@@ -44,56 +45,106 @@ function fallbackFor(req, res) {
   return first ? first.href : null;
 }
 
-router.get('/', wrap(async (req, res) => {
-  const { ctx } = req;
-  const perms = ctx.permissions;
-  if (!perms.has('dashboard.view')) {
-    const to = fallbackFor(req, res);
-    if (to) return res.redirect(to);
-    return res.redirect('/app/settings');
-  }
-  const today = ctx.today;
-  const tz = ctx.timezone;
-  const finance = perms.has('finance.view');
-  const month = today.slice(0, 7);
-  const lastMonth = lib.addMonths(month, -1);
-  const dayOfMonth = Number(today.slice(8, 10));
-  const lastMonthBounds = lib.monthBounds(lastMonth);
-  const lastMonthSameDay = `${lastMonth}-${String(Math.min(dayOfMonth, Number(lastMonthBounds.to.slice(8, 10)))).padStart(2, '0')}`;
-  const from30 = lib.addDays(today, -29);
+// ---------------------------------------------------------------- home (/app), by role
+// owner / manager → today at a glance, quick actions, this month, setup checklist
+// receptionist / nurse → today's queue and big buttons (they normally land on the reception board)
+// accountant → today's collections, unpaid visits, cash drawer, this month's expenses
+// doctor → their own day (/app/my-day)
+function homeKind(ctx) {
+  const p = ctx.permissions;
+  if (['owner', 'clinic_manager'].includes(ctx.roleKey)) return 'owner';
+  if (ctx.roleKey === 'doctor') return ctx.doctorId ? 'doctor' : 'owner';
+  if (['receptionist', 'nurse'].includes(ctx.roleKey)) return 'reception';
+  if (ctx.roleKey === 'accountant') return 'accounts';
+  // Custom roles: by what they can do.
+  if (p.has('settings.manage')) return 'owner';
+  if (p.has('frontdesk.use')) return 'reception';
+  if (p.has('finance.view') || p.has('expenses.manage')) return 'accounts';
+  return 'owner';
+}
 
-  const [statusRows, waitingRow, withDoctorRow, schedule, pendingOnline, pendingCount, perDay, setup, lowStock, upcomingCount] = await Promise.all([
-    apptBase(ctx).where('a.appointment_date', today).groupBy('a.status').select('a.status').count({ n: '*' }),
-    apptBase(ctx).where({ 'a.appointment_date': today, 'a.checked_in': true, 'a.with_doctor': false }).whereIn('a.status', ACTIVE).count({ n: '*' }).first(),
-    apptBase(ctx).where({ 'a.appointment_date': today, 'a.with_doctor': true }).whereIn('a.status', ACTIVE).count({ n: '*' }).first(),
-    apptBase(ctx).leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id').where('a.appointment_date', today)
-      .orderBy('a.appointment_time').limit(60).select('a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en'),
-    apptBase(ctx).leftJoin('doctors as d', 'd.id', 'a.doctor_id').where({ 'a.source': 'website', 'a.status': 'pending' }).where('a.appointment_date', '>=', today)
-      .orderBy([{ column: 'a.appointment_date' }, { column: 'a.appointment_time' }]).limit(6).select('a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color'),
-    apptBase(ctx).where({ 'a.source': 'website', 'a.status': 'pending' }).where('a.appointment_date', '>=', today).count({ n: '*' }).first(),
-    apptBase(ctx).whereBetween('a.appointment_date', [from30, today]).whereNot('a.status', 'cancelled').groupBy('a.appointment_date').select('a.appointment_date as d').count({ n: '*' })
-      .select(knex.raw("SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as done")),
-    Promise.all([
-      knex('doctors').where({ business_id: ctx.businessId, is_active: true }).count({ n: '*' }).first(),
-      knex('services').where({ business_id: ctx.businessId, is_active: true }).count({ n: '*' }).first(),
-    ]),
-    perms.has('supplies.view') ? knex('supply_items').where({ business_id: ctx.businessId }).whereRaw('current_stock <= reorder_level').count({ n: '*' }).first() : null,
-    apptBase(ctx).whereBetween('a.appointment_date', [lib.addDays(today, 1), lib.addDays(today, 7)]).whereIn('a.status', ACTIVE).count({ n: '*' }).first(),
-  ]);
+const num = (v) => Number(v) || 0;
+const invoicesOn = (ctx, from, to) => lib.whereLocalDates(invBase(ctx), 'i.created_at', from, to, ctx.timezone);
 
-  const byStatus = Object.fromEntries(statusRows.map((r) => [r.status, Number(r.n)]));
-  const kpi = {
-    today: Object.entries(byStatus).filter(([s]) => s !== 'cancelled').reduce((s, [, n]) => s + n, 0),
-    cancelled: byStatus.cancelled || 0,
-    waiting: Number(waitingRow.n) || 0,
-    withDoctor: Number(withDoctorRow.n) || 0,
-    completed: byStatus.completed || 0,
-    noShows: byStatus.no_show || 0,
-    remaining: schedule.filter((a) => ACTIVE.includes(a.status) && !a.checked_in).length,
-    upcoming: Number(upcomingCount.n) || 0,
+/** Finished visits of the last 30 days nobody has collected yet (count + amount the doctor entered). */
+async function unpaidFinished(ctx) {
+  const q = apptBase(ctx).where({ 'a.status': 'completed', 'a.payment_status': 'unpaid' }).whereBetween('a.appointment_date', [lib.addDays(ctx.today, -30), ctx.today]);
+  const r = await q.first(knex.raw('COUNT(*) as n'), knex.raw('COALESCE(SUM(a.amount_due),0) as v'), knex.raw("SUM(CASE WHEN a.appointment_date = ? THEN 1 ELSE 0 END) as today", [ctx.today]));
+  return { count: num(r.n), amount: num(r.v), today: num(r.today) };
+}
+
+async function todayCounts(ctx) {
+  const rows = await apptBase(ctx).where('a.appointment_date', ctx.today)
+    .select(knex.raw("SUM(CASE WHEN a.status <> 'cancelled' THEN 1 ELSE 0 END) as total"),
+      knex.raw("SUM(CASE WHEN a.status IN ('pending','confirmed') AND a.checked_in = 0 AND a.with_doctor = 0 THEN 1 ELSE 0 END) as to_arrive"),
+      knex.raw("SUM(CASE WHEN a.status IN ('pending','confirmed') AND a.checked_in = 1 AND a.with_doctor = 0 THEN 1 ELSE 0 END) as waiting"),
+      knex.raw("SUM(CASE WHEN a.status IN ('pending','confirmed') AND a.with_doctor = 1 THEN 1 ELSE 0 END) as with_doctor"),
+      knex.raw("SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as done"),
+      knex.raw("SUM(CASE WHEN a.status = 'no_show' THEN 1 ELSE 0 END) as no_show"),
+      knex.raw("SUM(CASE WHEN a.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"))
+    .first();
+  return {
+    total: num(rows.total), toArrive: num(rows.to_arrive), waiting: num(rows.waiting), withDoctor: num(rows.with_doctor),
+    done: num(rows.done), noShows: num(rows.no_show), cancelled: num(rows.cancelled),
   };
+}
 
-  // Last 30 days of appointments (every day shown, zero days included).
+const todaySchedule = (ctx) => apptBase(ctx).leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id').where('a.appointment_date', ctx.today)
+  .orderBy('a.appointment_time').limit(60).select('a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en');
+
+async function onlineRequests(ctx) {
+  const base = () => apptBase(ctx).where({ 'a.source': 'website', 'a.status': 'pending' }).where('a.appointment_date', '>=', ctx.today);
+  const [rows, count] = await Promise.all([
+    base().leftJoin('doctors as d', 'd.id', 'a.doctor_id').orderBy([{ column: 'a.appointment_date' }, { column: 'a.appointment_time' }]).limit(5)
+      .select('a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color'),
+    base().count({ n: '*' }).first(),
+  ]);
+  return { rows, count: num(count.n) };
+}
+
+async function collected(ctx) {
+  const yesterday = lib.addDays(ctx.today, -1);
+  const [today, before] = await Promise.all([sumOf(invoicesOn(ctx, ctx.today, ctx.today)), sumOf(invoicesOn(ctx, yesterday, yesterday))]);
+  return { today, yesterday: before };
+}
+
+/** This month so far, the same way the profit & loss page counts it (cash basis). */
+async function thisMonth(ctx) {
+  const pnl = require('../finance/pnl.service'); // eslint-disable-line global-require
+  const month = ctx.today.slice(0, 7);
+  const [cur, prev] = await Promise.all([pnl.monthNet(ctx, month), pnl.monthNet(ctx, lib.addMonths(month, -1))]);
+  return { month, income: cur.revenue, expenses: cur.costs, opex: cur.opex, payroll: cur.payroll, net: cur.net, prevIncome: prev.revenue };
+}
+
+async function expensesThisMonth(ctx) {
+  const month = ctx.today.slice(0, 7);
+  const r = await knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [`${month}-01`, ctx.today]).first(knex.raw('COALESCE(SUM(amount),0) as v'), knex.raw('COUNT(*) as n'));
+  return { total: num(r.v), count: num(r.n) };
+}
+
+/** Things waiting for a decision: online requests, low stock, rep visit requests, pay adjustments to approve. */
+async function attention(ctx, online) {
+  const p = ctx.permissions;
+  const b = ctx.businessId;
+  const [low, reps, adj] = await Promise.all([
+    p.has('supplies.view') ? knex('supply_items').where({ business_id: b }).whereRaw('current_stock <= reorder_level').count({ n: '*' }).first() : null,
+    p.has('vendors.view') ? knex('rep_visits').where({ business_id: b, status: 'requested' }).where('visit_date', '>=', ctx.today).modify((q) => { if (ctx.ownDoctorId) q.where('doctor_id', ctx.ownDoctorId); }).count({ n: '*' }).first() : null,
+    p.has('payroll.approve') ? knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).count({ n: '*' }).first() : null,
+  ]);
+  return [
+    online && p.has('appointments.view') ? { key: 'online', n: online.count, href: '/app/appointments?status=pending', icon: 'globe' } : null,
+    low ? { key: 'low_stock', n: num(low.n), href: '/app/supplies?low=yes', icon: 'package', tone: 'danger' } : null,
+    reps ? { key: 'rep_visits', n: num(reps.n), href: '/app/rep-visits', icon: 'briefcase-business' } : null,
+    adj ? { key: 'pay_approvals', n: num(adj.n), href: '/app/payroll', icon: 'wallet' } : null,
+  ].filter(Boolean);
+}
+
+/** Appointments per day for the last 30 days + this month's income by doctor (the "last 30 days" section). */
+async function trends(req) {
+  const { ctx } = req;
+  const from30 = lib.addDays(ctx.today, -29);
+  const perDay = await apptBase(ctx).whereBetween('a.appointment_date', [from30, ctx.today]).whereNot('a.status', 'cancelled').groupBy('a.appointment_date').select('a.appointment_date as d').count({ n: '*' })
+    .select(knex.raw("SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as done"));
   const counts = Object.fromEntries(perDay.map((r) => [r.d, { n: Number(r.n), done: Number(r.done) }]));
   const L = (d, o) => fmtCore.formatDate(d, req.locale, o);
   const points = [];
@@ -106,41 +157,66 @@ router.get('/', wrap(async (req, res) => {
     points, title: req.t('dashboard.chart_30'), fmt: nf, height: 220, width: 720, series: [{ key: 'value', cls: '' }, { key: 'done', cls: 's2' }],
     tipFmt: (p) => `${req.t('dashboard.booked_n', { n: nf(p.value) })} · ${req.t('dashboard.done_n', { n: nf(p.done) })}`, labelMax: false,
   }) : null;
-
-  let money = null;
-  if (finance) {
-    const [todayRev, monthRev, lastSame, lastFull, byDoctor] = await Promise.all([
-      sumOf(lib.whereLocalDates(invBase(ctx), 'i.created_at', today, today, tz)),
-      sumOf(lib.whereLocalDates(invBase(ctx), 'i.created_at', `${month}-01`, today, tz)),
-      sumOf(lib.whereLocalDates(invBase(ctx), 'i.created_at', lastMonthBounds.from, lastMonthSameDay, tz)),
-      sumOf(lib.whereLocalDates(invBase(ctx), 'i.created_at', lastMonthBounds.from, lastMonthBounds.to, tz)),
-      lib.whereLocalDates(invBase(ctx), 'i.created_at', `${month}-01`, today, tz).leftJoin('doctors as d', 'd.id', 'i.doctor_id')
-        .groupBy('i.doctor_id', 'i.doctor_name', 'd.full_name_en').select('i.doctor_id', 'i.doctor_name', 'd.full_name_en').sum({ v: 'i.amount' }).count({ n: '*' }).orderBy('v', 'desc'),
-    ]);
-    const change = lastSame.value > 0 ? ((monthRev.value - lastSame.value) / lastSame.value) * 100 : null;
+  let byDoctor = null;
+  if (ctx.permissions.has('finance.view')) {
+    const month = ctx.today.slice(0, 7);
+    const rows = await invoicesOn(ctx, `${month}-01`, ctx.today).leftJoin('doctors as d', 'd.id', 'i.doctor_id')
+      .groupBy('i.doctor_id', 'i.doctor_name', 'd.full_name_en').select('i.doctor_id', 'i.doctor_name', 'd.full_name_en').sum({ v: 'i.amount' }).count({ n: '*' }).orderBy('v', 'desc');
     const money2 = (v) => fmtCore.formatCompact(v, ctx.currency, req.locale);
-    money = {
-      today: todayRev, month: monthRev, lastSame, lastFull, change,
-      byDoctor: byDoctor.length ? charts.bars({ items: byDoctor.slice(0, 8).map((r) => ({ label: (req.locale === 'en' && r.full_name_en) || r.doctor_name || req.t('dashboard.no_doctor'), value: Number(r.v), note: `(${nf(r.n)})` })), fmt: money2 }) : null,
-    };
+    byDoctor = rows.length ? charts.bars({ items: rows.slice(0, 8).map((r) => ({ label: (req.locale === 'en' && r.full_name_en) || r.doctor_name || req.t('dashboard.no_doctor'), value: Number(r.v), note: `(${nf(r.n)})` })), fmt: money2 }) : null;
+  }
+  return { apptChart, byDoctor };
+}
+
+router.get('/', wrap(async (req, res) => {
+  const { ctx } = req;
+  const perms = ctx.permissions;
+  if (!perms.has('dashboard.view')) {
+    const to = fallbackFor(req, res);
+    if (to) return res.redirect(to);
+    return res.redirect('/app/settings');
+  }
+  const kind = homeKind(ctx);
+  if (kind === 'doctor') return res.redirect('/app/my-day');
+  const money = perms.has('finance.view') || perms.has('billing.view');
+  const cashier = require('./cashier.service'); // eslint-disable-line global-require
+
+  const [counts, schedule, online, unpaid, cash, month, checklist] = await Promise.all([
+    todayCounts(ctx),
+    kind !== 'accounts' ? todaySchedule(ctx) : [],
+    kind !== 'accounts' && perms.has('appointments.view') ? onlineRequests(ctx) : null,
+    perms.has('billing.view') ? unpaidFinished(ctx) : null,
+    money ? collected(ctx) : null,
+    perms.has('finance.view') && kind !== 'reception' ? thisMonth(ctx) : null,
+    kind === 'owner' && perms.has('settings.manage') ? require('../onboarding/setup.service').checklist(ctx.businessId) : null, // eslint-disable-line global-require
+  ]);
+  const data = { kind, counts, schedule, online, unpaid, cash, month, checklist: checklist && !checklist.dismissed && !checklist.complete ? checklist : null };
+  if (kind === 'owner') {
+    data.attention = await attention(ctx, online);
+    data.trends = await trends(req);
+  }
+  if (kind === 'accounts') {
+    const [byMethod, drawer, expenses] = await Promise.all([
+      perms.has('billing.view') ? cashier.todayTotals(ctx) : null,
+      perms.has('billing.view') ? cashier.openPeriod(ctx) : null,
+      perms.has('expenses.view') ? expensesThisMonth(ctx) : null,
+    ]);
+    Object.assign(data, { byMethod, drawer, expenses, methods: cashier.PAYMENT_METHODS });
   }
 
-  const b = req.business;
-  const setupItems = [
-    { key: 'doctors', done: Number(setup[0].n) > 0, href: '/app/doctors/new', perm: 'doctors.manage', icon: 'stethoscope' },
-    { key: 'services', done: Number(setup[1].n) > 0, href: '/app/services', perm: 'services.manage', icon: 'clipboard-list' },
-    { key: 'portal', done: Boolean(b.slug), href: '/app/settings/portal', perm: 'settings.manage', icon: 'globe' },
-    { key: 'logo', done: Boolean(b.logo_mime), href: '/app/settings/appearance', perm: 'settings.manage', icon: 'image' },
-  ].filter((i) => perms.has(i.perm));
-  const showSetup = setupItems.some((i) => !i.done);
-
   return res.page('pages/clinic/dashboard/index', {
-    title: req.t('nav.dashboard'), greeting: req.t(greetingKey(tz), { name: String(ctx.userName || '').split(/\s+/)[0] }),
-    kpi, schedule, pendingOnline, pendingCount: Number(pendingCount.n) || 0, lowStock: lowStock ? Number(lowStock.n) : null,
-    apptChart, money, finance, setupItems, showSetup, statusTone: lib.STATUS_TONE,
-    nowTime: scheduling.minutesToTime(scheduling.clinicNow(tz).minutes), localTime: (d) => lib.localTime(d, tz),
-    ...PAGE,
+    title: req.t('nav.dashboard'), greeting: req.t(greetingKey(ctx.timezone), { name: String(ctx.userName || '').split(/\s+/).filter((w) => !/^(د\.?|dr\.?|دكتور|الدكتور|doctor)$/i.test(w))[0] || '' }),
+    ...data, statusTone: lib.STATUS_TONE, nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), localTime: (d) => lib.localTime(d, ctx.timezone),
+    pageScripts: ['/js/records.js', '/js/ownerx.js'], pageStyles: ['/css/records.css', '/css/ownerx.css'],
   });
+}));
+
+// The owner hides the "finish setting up" card (it can still be reached from Settings and the setup wizard).
+router.post('/setup-checklist/dismiss', can('settings.manage'), wrap(async (req, res) => {
+  await require('../onboarding/setup.service').dismissChecklist(req.ctx); // eslint-disable-line global-require
+  if (req.xhr || (req.get('accept') || '').includes('application/json')) return res.json({ ok: true });
+  flash(req, 'info', req.t('ownerx.check.hidden'));
+  return res.redirect('/app');
 }));
 
 // ---------------------------------------------------------------- my day
@@ -168,6 +244,18 @@ router.get('/my-day', wrap(async (req, res) => {
       .whereNot('appointment_type', 'blocked').whereIn('status', ACTIVE).groupBy('appointment_date').select('appointment_date as d').count({ n: '*' }),
   ]);
   const isToday = date === today;
+  // Doctor journey (round 8, dflow): a consultation timer that is running / paused means the patient is with the doctor.
+  const openTimers = new Set(rows.length ? await knex('consultation_timers').where('business_id', ctx.businessId)
+    .whereIn('appointment_id', rows.map((r) => r.id)).whereNull('ended_at').pluck('appointment_id') : []);
+  const stateOf = (a) => {
+    if (a.appointment_type === 'blocked') return 'blocked';
+    if (a.status === 'cancelled' || a.status === 'no_show') return a.status;
+    if (a.payment_status === 'paid') return 'paid';
+    if (a.status === 'completed') return 'to_pay';
+    if (a.with_doctor) return openTimers.has(a.id) ? 'with_me' : 'sent_in';
+    if (a.checked_in) return 'waiting';
+    return 'booked';
+  };
   const items = rows.map((a) => {
     const arrived = a.arrived_at ? lib.localTime(a.arrived_at, tz) : null;
     let waitedMin = null;
@@ -175,25 +263,26 @@ router.get('/my-day', wrap(async (req, res) => {
     const endMin = scheduling.timeToMinutes(a.appointment_time) + Number(a.length || 30);
     return {
       ...a, arrivedTime: arrived ? arrived.time : null, waitedMin, end: scheduling.minutesToTime(endMin % (24 * 60)),
-      state: a.appointment_type === 'blocked' ? 'blocked' : (a.with_doctor && ACTIVE.includes(a.status) ? 'with' : (a.checked_in && ACTIVE.includes(a.status) ? 'waiting' : a.status)),
-      past: isToday ? endMin <= now.minutes : date < today,
+      state: stateOf(a), past: isToday ? endMin <= now.minutes : date < today,
     };
   });
   const patients = items.filter((a) => a.state !== 'blocked');
   const counts = {
     total: patients.filter((a) => a.status !== 'cancelled').length,
     completed: patients.filter((a) => a.status === 'completed').length,
-    waiting: patients.filter((a) => a.state === 'waiting').length,
-    remaining: patients.filter((a) => a.state === 'pending' || a.state === 'confirmed').length,
+    waiting: patients.filter((a) => a.state === 'waiting' || a.state === 'sent_in').length,
+    remaining: patients.filter((a) => a.state === 'booked').length,
+    toPay: patients.filter((a) => a.state === 'to_pay').length,
     noShows: patients.filter((a) => a.status === 'no_show').length,
   };
-  const withMe = patients.find((a) => a.state === 'with') || null;
-  const waitingQueue = patients.filter((a) => a.state === 'waiting').sort((x, y) => String(x.arrived_at || '').localeCompare(String(y.arrived_at || '')));
-  let next = waitingQueue[0] || null;
+  const withMe = patients.find((a) => a.state === 'with_me') || null;
+  const byArrival = (x, y) => String(x.arrived_at || '').localeCompare(String(y.arrived_at || ''));
+  const waitingQueue = patients.filter((a) => a.state === 'sent_in').sort(byArrival).concat(patients.filter((a) => a.state === 'waiting').sort(byArrival));
+  let next = withMe || waitingQueue[0] || null;
   if (!next) {
     const nowT = scheduling.minutesToTime(now.minutes);
-    next = patients.find((a) => ACTIVE.includes(a.status) && !a.checked_in && (!isToday || a.appointment_time >= nowT))
-      || (isToday ? patients.find((a) => ACTIVE.includes(a.status) && !a.checked_in) : null) || null;
+    next = patients.find((a) => a.state === 'booked' && (!isToday || a.appointment_time >= nowT))
+      || (isToday ? patients.find((a) => a.state === 'booked') : null) || null;
   }
   const wh = typeof doctor.working_hours === 'string' ? JSON.parse(doctor.working_hours || 'null') : doctor.working_hours;
   const day = scheduling.normalizeDayConfig((wh || {})[scheduling.dayKeyOf(date)]);
@@ -208,7 +297,8 @@ router.get('/my-day', wrap(async (req, res) => {
 
   return res.page('pages/clinic/dashboard/my-day', {
     title: req.t('my_day.title'), doctor, date, isToday, prev: lib.addDays(date, -1), next: lib.addDays(date, 1), items, counts, withMe, nextPatient: next,
-    waitingQueue, daysOff, offToday, day, revenue, week, statusTone: lib.STATUS_TONE, autoRefresh: isToday, ...PAGE,
+    waitingQueue, daysOff, offToday, day, revenue, week, statusTone: lib.STATUS_TONE, autoRefresh: isToday,
+    pageScripts: [...PAGE.pageScripts, '/js/dflow.js'], pageStyles: [...PAGE.pageStyles, '/css/dflow.css'],
   });
 }));
 
