@@ -127,8 +127,13 @@ async function thread(ctx, tk) {
 }
 
 async function markRead(ctx, ticketId) {
-  await knex('support_ticket_reads').insert({ ticket_id: ticketId, user_id: ctx.userId, read_at: new Date() })
-    .onConflict(['ticket_id', 'user_id']).merge({ read_at: new Date() });
+  // DATETIME columns round to whole seconds, so "now" can be stored earlier than a reply posted a moment ago:
+  // never record a read time before the ticket's last activity, or an opened ticket would still show as unread.
+  const tk = await knex('support_tickets').where({ id: ticketId, business_id: ctx.businessId }).first('last_activity_at');
+  const now = new Date();
+  const at = tk && tk.last_activity_at && new Date(tk.last_activity_at) > now ? new Date(tk.last_activity_at) : now;
+  await knex('support_ticket_reads').insert({ ticket_id: ticketId, user_id: ctx.userId, read_at: at })
+    .onConflict(['ticket_id', 'user_id']).merge({ read_at: at });
 }
 
 /** Active members who can be assigned (and whose names are shown). */

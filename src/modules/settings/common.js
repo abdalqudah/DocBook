@@ -13,7 +13,7 @@ const SECTIONS = [
     { key: 'subscription', href: '/app/settings/subscription', icon: 'receipt', perms: ['settings.manage'] },
     { key: 'modules', href: '/app/settings/modules', icon: 'toggle-right', perms: ['settings.manage'] },
     { key: 'invoice_template', href: '/app/settings/invoice', icon: 'printer', perms: ['settings.manage'] },
-    { key: 'notifications', href: '/app/settings/notifications', icon: 'bell', perms: ['settings.manage'] },
+    { key: 'notifications', href: '/app/settings/notifications', icon: 'bell', perms: [] }, // clinic-wide part needs settings.manage; personal part is for everyone
     { key: 'media', href: '/app/settings/media', icon: 'images', perms: ['settings.manage'] },
   ] },
   { group: 'team', items: [

@@ -87,7 +87,7 @@
       <ul class="action-list"><% upcoming.slice(0, 4).forEach(function (a) { %><li><a href="<%= can('appointments.view') ? '/app/appointments/' + a.id : visitHref(a.id) %>"><span class="action-icon brand"><%- icon('calendar-days') %></span><div class="grow"><div class="strong"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></div><div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') %></div></div><span class="badge badge-<%= statusTone[a.status] %>"><%= t('dashboard.statuses.' + a.status) %></span></a></li><% }) %></ul>
     </div>
     <% } %>
-    <% if (!restrictedView) { %><%- include('../../specialty/_patient-panel') %><% } %>
+    <% if (!restrictedView && (typeof moduleOn !== 'function' || moduleOn('specialty_records'))) { %><%- include('../../specialty/_patient-panel') %><% } %>
     <% if (latestDiagnosis) { %><div class="panel"><div class="panel-body"><div class="small muted strong"><%= t('patients.latest_diagnosis') %></div><div class="mt-1"><%= latestDiagnosis %></div></div></div><% } %>
     <div class="panel"><div class="panel-head"><h2><%= t('patients.details') %></h2></div><div class="panel-body"><dl class="dl rec-dl-narrow">
       <dt><%= t('patients.dob') %></dt><dd><%= p.date_of_birth ? fmt.date(p.date_of_birth) : '—' %></dd>

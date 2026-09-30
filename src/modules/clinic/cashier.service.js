@@ -19,6 +19,7 @@ const { AppError, E } = require('../../core/errors');
 const { round } = require('../../core/money');
 const businesses = require('../businesses/business.service');
 const lib = require('./records.lib');
+const notifications = require('../notifications/notification.service');
 
 const PAYMENT_METHODS = ['cash', 'card', 'bank_transfer', 'insurance', 'digital_wallet'];
 const SEARCH_DAYS = 30;
@@ -221,6 +222,11 @@ async function pay(ctx, apptId, input) {
       number, source: 'cashier', lines: bill.lines.length, subtotal: bill.subtotal, discount_percent: bill.discountPercent, discount_amount: bill.discountAmount,
       amount: bill.total, method: d.payment_method, received, change, coverage: d.payment_method === 'insurance' ? (d.coverage ?? null) : null,
     } }, trx);
+    // "Invoice paid" event: in-app for billing staff, and e-mailed only to whoever Settings → Notifications routes it to.
+    await notifications.notify(ctx.businessId, {
+      permission: 'billing.manage', type: 'invoice.paid', title: `فاتورة مدفوعة · Invoice paid #${number} — ${a.patient_name}`,
+      body: `${bill.total} ${ctx.currency || ''}`.trim(), link: `/app/billing/${invId}`, dedupeKey: `inv:${invId}:paid`,
+    }, trx);
     return { id: invId, number, total: bill.total, change };
   });
 }
