@@ -1,0 +1,106 @@
+<%
+  var o = (typeof old !== 'undefined' && old) || {};
+  var posted = o._csrf !== undefined;
+  var errs = (typeof errors !== 'undefined' && errors) || {};
+  var onVal = posted ? o.enabled === '1' : clinic.enabled;
+  var pickedRoles = posted ? [].concat(o.roles || []) : clinic.allowed_roles;
+  var acknowledged = clinic.enabled && clinic.acknowledged_at;
+  var cap = platform.monthly_cap;
+  var pct = cap > 0 ? Math.min(100, Math.round(usage.total / cap * 100)) : 0;
+  var stDot = function (s) { return s === 'ok' ? 'badge-neutral' : s === 'error' ? 'badge-danger' : s === 'pending' ? 'badge-neutral' : 'badge-warning'; };
+%>
+<%- include('_head', { heading: t('settings.nav_ai'), lead: t('ai.settings_lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('../../partials/form-error') %>
+
+    <% if (!platform.active) { %>
+    <div class="alert alert-info"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('ai.platform_off_title') %></div><div><%= t('ai.platform_off_text') %></div></div></div>
+    <% } %>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2><%= t('ai.status_title') %></h2><div class="panel-sub"><%= t('ai.status_sub') %></div></div>
+        <span class="badge badge-dot <%= clinic.enabled && platform.active ? 'badge-success' : 'badge-neutral' %>"><%= clinic.enabled && platform.active ? t('ai.status_on') : t('ai.status_off') %></span>
+      </div>
+      <div class="panel-body stack">
+        <div class="stack-sm">
+          <div class="row between small"><span class="muted"><%= t('ai.usage_month') %></span><span class="strong num"><%= fmt.number(usage.total) %><% if (cap > 0) { %><span class="muted"> / <%= fmt.number(cap) %></span><% } else { %><span class="muted"> · <%= t('ai.no_cap') %></span><% } %></span></div>
+          <% if (cap > 0) { %><div class="meter<%= pct >= 100 ? ' full' : pct >= 85 ? ' warn' : '' %>" role="progressbar" aria-valuemin="0" aria-valuemax="<%= cap %>" aria-valuenow="<%= usage.total %>"><span style="width:<%= pct %>%"></span></div><% } %>
+        </div>
+        <div class="ai-mini-stats ai-mini-stats-plain">
+          <% ['summary', 'second_opinion', 'rx_check'].forEach(function (k) { %>
+          <div><span class="tiny muted"><%= t('ai.kinds.' + k) %></span><strong class="num"><%= fmt.number(usage.byKind[k] || 0) %></strong></div>
+          <% }) %>
+        </div>
+        <p class="tiny muted"><%= t('ai.usage_help', { n: platform.hourly_limit }) %></p>
+      </div>
+    </section>
+
+    <form method="post" action="/app/settings/ai" class="stack-lg" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <section class="panel">
+        <div class="panel-head"><div><h2><%= t('ai.optin_title') %></h2><div class="panel-sub"><%= t('ai.optin_sub') %></div></div></div>
+        <div class="panel-body stack">
+          <label class="check ai-check"><input type="checkbox" name="enabled" value="1"<%= onVal ? ' checked' : '' %><%= platform.active ? '' : ' disabled' %>><span><span class="strong"><%= t('ai.enable') %></span><span class="tiny muted ai-block"><%= t('ai.enable_help') %></span></span></label>
+
+          <div class="ai-notice">
+            <div class="strong small row-sm"><%- icon('shield-alert', 'icon-sm') %><%= t('ai.notice_title') %></div>
+            <ul class="ai-notice-list small">
+              <li><%= t('ai.notice_sent') %></li>
+              <li><%= t('ai.notice_not_sent') %></li>
+              <li><%= t('ai.notice_storage') %></li>
+              <li><%= t('ai.notice_judgement') %></li>
+            </ul>
+            <% if (notice) { %><div class="ai-notice-platform small" dir="auto"><%= notice %></div><% } %>
+          </div>
+
+          <% if (acknowledged && !(posted && o.enabled !== '1')) { %>
+            <p class="small muted row-sm"><%- icon('circle-check', 'icon-sm') %><%= t('ai.acknowledged_by', { name: ackName || '—', date: fmt.date(clinic.acknowledged_at, { day: 'numeric', month: 'short', year: 'numeric' }) }) %></p>
+          <% } else { %>
+            <div class="field">
+              <label class="check ai-check"><input type="checkbox" name="acknowledge" value="1"<%= posted && o.acknowledge === '1' ? ' checked' : '' %><%= platform.active ? '' : ' disabled' %>><span><%= t('ai.acknowledge') %></span></label>
+              <% if (errs.acknowledge) { %><span class="field-error"><%= errs.acknowledge %></span><% } %>
+            </div>
+          <% } %>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2><%= t('ai.roles_title') %></h2><div class="panel-sub"><%= t('ai.roles_sub') %></div></div></div>
+        <div class="panel-body stack-sm">
+          <% roles.forEach(function (r) { %>
+          <label class="check ai-check<%= r.clinical ? '' : ' is-disabled' %>">
+            <input type="checkbox" name="roles" value="<%= r.key %>"<%= r.clinical && pickedRoles.indexOf(r.key) !== -1 ? ' checked' : '' %><%= r.clinical && platform.active ? '' : ' disabled' %>>
+            <span><span class="strong"><%= r.name %></span><% if (!r.clinical) { %><span class="tiny muted ai-block"><%= t('ai.role_no_clinical') %></span><% } %></span>
+          </label>
+          <% }) %>
+          <% if (errs.roles) { %><span class="field-error"><%= errs.roles %></span><% } %>
+        </div>
+        <div class="panel-foot"><button class="btn btn-primary" type="submit"<%= platform.active ? '' : ' disabled' %>><%= t('common.save') %></button></div>
+      </section>
+    </form>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('ai.recent_title') %></h2><div class="panel-sub"><%= t('ai.recent_sub') %></div></div></div>
+      <% if (!recent.length) { %>
+        <div class="ai-empty small muted"><%= t('ai.recent_empty') %></div>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('common.date') %></th><th><%= t('ai.user') %></th><th><%= t('ai.action') %></th><th><%= t('common.status') %></th></tr></thead>
+        <tbody>
+        <% recent.forEach(function (r) { %>
+          <tr>
+            <td class="primary-cell"><%= fmt.date(r.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></td>
+            <td data-label="<%= t('ai.user') %>"><%= r.user_name || '—' %></td>
+            <td data-label="<%= t('ai.action') %>"><%= t('ai.kinds.' + r.kind) %><% if (r.appointment_id) { %> · <a class="link" href="/app/visits/<%= r.appointment_id %>">#<%= r.appointment_id %></a><% } %></td>
+            <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= stDot(r.status) %>"><%= t('ai.statuses.' + r.status) %></span></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+      <% } %>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,105 @@
+<%
+  var o = old || {};
+  var posted = Object.keys(o).length > 0;
+  var errs = errors || {};
+  var val = function (k) { return posted ? (o[k] !== undefined ? o[k] : '') : (s[k] !== undefined && s[k] !== null ? s[k] : ''); };
+  var onVal = posted ? o.enabled === '1' : s.enabled;
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+%>
+<div class="page-head">
+  <div><h1><%= t('ai_admin.title') %></h1><p><%= t('ai_admin.lead') %></p></div>
+  <div class="page-actions"><span class="badge badge-dot <%= s.active ? 'badge-success' : 'badge-neutral' %>"><%= s.active ? t('ai_admin.status_on') : (s.enabled ? t('ai_admin.status_no_key') : t('ai_admin.status_off')) %></span></div>
+</div>
+
+<% if (s.keyUnreadable) { %>
+<div class="alert alert-warning mb-4"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('ai_admin.key_unreadable_title') %></div><div><%= t('ai_admin.key_unreadable') %></div></div></div>
+<% } %>
+
+<div class="grid grid-main ai-admin" style="align-items:start">
+  <form method="post" action="/admin/ai" class="panel" novalidate autocomplete="off">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%= t('ai_admin.settings_title') %></h2><div class="panel-sub"><%= t('ai_admin.settings_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <%- include('../../partials/form-error') %>
+      <label class="check ai-check"><input type="checkbox" name="enabled" value="1"<%= onVal ? ' checked' : '' %>><span><span class="strong"><%= t('ai_admin.enable') %></span><span class="tiny muted ai-block"><%= t('ai_admin.enable_help') %></span></span></label>
+
+      <div class="field">
+        <label class="label" for="f-api_key"><%= t('ai_admin.api_key') %></label>
+        <input class="input<%= errs.api_key ? ' is-invalid' : '' %>" id="f-api_key" name="api_key" type="password" autocomplete="new-password" dir="ltr" spellcheck="false" placeholder="<%= s.keyHint ? s.keyHint : 'sk-ant-…' %>">
+        <% if (errs.api_key) { %><span class="field-error"><%= errs.api_key %></span><% } else { %><span class="help"><%= s.keyHint ? t('ai_admin.key_saved', { hint: s.keyHint }) : t('ai_admin.key_help') %></span><% } %>
+      </div>
+      <% if (s.hasKey || s.keyUnreadable) { %>
+      <label class="check"><input type="checkbox" name="remove_key" value="1"<%= posted && o.remove_key === '1' ? ' checked' : '' %>><span><%= t('ai_admin.remove_key') %></span></label>
+      <% } %>
+
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { name: 'model', label: t('ai_admin.model'), value: val('model') || defaultModel, attrs: 'dir="ltr" spellcheck="false" maxlength="80"', help: t('ai_admin.model_help', { model: defaultModel }), errors: errs, old: null }) %>
+        <%- include('../../partials/field', { name: 'monthly_cap', label: t('ai_admin.monthly_cap'), type: 'number', value: val('monthly_cap'), attrs: 'min="0" max="1000000" inputmode="numeric"', help: t('ai_admin.monthly_cap_help'), errors: errs, old: null }) %>
+        <%- include('../../partials/field', { name: 'hourly_limit', label: t('ai_admin.hourly_limit'), type: 'number', value: val('hourly_limit'), attrs: 'min="1" max="1000" inputmode="numeric"', help: t('ai_admin.hourly_limit_help'), errors: errs, old: null }) %>
+      </div>
+
+      <div class="stack-sm">
+        <div><div class="strong small"><%= t('ai_admin.notice_title') %></div><div class="tiny muted"><%= t('ai_admin.notice_help') %></div></div>
+        <div class="form-grid">
+          <div class="field">
+            <label class="label" for="f-notice_ar"><%= t('ai_admin.notice_ar') %></label>
+            <textarea class="textarea<%= errs.notice_ar ? ' is-invalid' : '' %>" id="f-notice_ar" name="notice_ar" rows="6" dir="rtl" maxlength="3000"><%= val('notice_ar') %></textarea>
+            <% if (errs.notice_ar) { %><span class="field-error"><%= errs.notice_ar %></span><% } %>
+          </div>
+          <div class="field">
+            <label class="label" for="f-notice_en"><%= t('ai_admin.notice_en') %></label>
+            <textarea class="textarea<%= errs.notice_en ? ' is-invalid' : '' %>" id="f-notice_en" name="notice_en" rows="6" dir="ltr" maxlength="3000"><%= val('notice_en') %></textarea>
+            <% if (errs.notice_en) { %><span class="field-error"><%= errs.notice_en %></span><% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+
+  <div class="stack">
+    <section class="panel" id="test">
+      <div class="panel-head"><div><h2><%= t('ai_admin.test_title') %></h2><div class="panel-sub"><%= t('ai_admin.test_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <% if (test) { %>
+          <% if (test.ok) { %>
+          <div class="alert alert-success"><%- icon('circle-check', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('ai_admin.test_ok') %></div><div class="small"><%= t('ai_admin.test_ok_model') %> <bdi class="mono" dir="ltr"><%= test.model %></bdi></div></div></div>
+          <% } else { %>
+          <div class="alert alert-error"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('ai_admin.test_failed') %></div><div><%= t('errors_ai.' + (test.code || 'AI_API_ERROR')) %></div><% if (test.message) { %><div class="mono tiny" dir="ltr"><%= test.message %></div><% } %></div></div>
+          <% } %>
+        <% } %>
+        <form method="post" action="/admin/ai/test">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-secondary" type="submit"<%= s.hasKey ? '' : ' disabled' %>><%- icon('plug', 'icon-sm') %><%= t('ai_admin.test_button') %></button>
+          <% if (!s.hasKey) { %><p class="tiny muted mt-1"><%= t('ai_admin.test_needs_key') %></p><% } %>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('ai_admin.usage_title') %></h2><div class="panel-sub"><%= t('ai_admin.usage_sub') %></div></div></div>
+      <div class="ai-mini-stats">
+        <div><span class="tiny muted"><%= t('ai_admin.requests_month') %></span><strong class="num"><%= fmt.number(totals.billed) %></strong></div>
+        <div><span class="tiny muted"><%= t('ai_admin.failed_month') %></span><strong class="num"><%= fmt.number(totals.failed) %></strong></div>
+        <div><span class="tiny muted"><%= t('ai_admin.opted_in') %></span><strong class="num"><%= fmt.number(totals.optedIn) %></strong></div>
+      </div>
+      <% if (!clinics.length) { %>
+        <div class="ai-empty small muted"><%= t('ai_admin.no_usage') %></div>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('ai_admin.clinic') %></th><th class="num"><%= t('ai_admin.requests') %></th><th class="num"><%= t('ai_admin.tokens') %></th></tr></thead>
+        <tbody>
+          <% clinics.forEach(function (c) { %>
+          <tr>
+            <td class="primary-cell"><a class="link" href="/admin/clinics/<%= c.id %>"><%= L(c.name, c.name_en) %></a></td>
+            <td class="num" data-label="<%= t('ai_admin.requests') %>"><span class="nowrap" dir="ltr"><%= fmt.number(Number(c.n)) %><% if (s.monthly_cap > 0) { %><span class="tiny muted"> / <%= fmt.number(s.monthly_cap) %></span><% } %></span></td>
+            <td class="num" data-label="<%= t('ai_admin.tokens') %>"><span dir="ltr"><%= fmt.number(Number(c.tin || 0)) %> / <%= fmt.number(Number(c.tout || 0)) %></span></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table></div>
+      <div class="panel-foot tiny muted"><%= t('ai_admin.tokens_help') %></div>
+      <% } %>
+    </section>
+  </div>
+</div>

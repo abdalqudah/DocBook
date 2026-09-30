@@ -1,1 +1,65 @@
-<%# AI assistant panel on the visit page (worker: ai). Locals: a (appointment), business. %>
+<%# AI assistant panel on the visit page (worker: ai). Renders nothing unless ai/web.js prepared `aiPanel`
+    (platform + clinic switched on, role allowed, clinical.view). Results are rendered by /js/ai.js. %>
+<% if (typeof aiPanel !== 'undefined' && aiPanel) {
+  var P = aiPanel;
+  var KINDS = [
+    { k: 'summary', icon: 'file-text' },
+    { k: 'second_opinion', icon: 'brain' },
+    { k: 'rx_check', icon: 'pill' },
+  ];
+  var lastOut = {};
+  Object.keys(P.last || {}).forEach(function (k) {
+    var r = P.last[k];
+    lastOut[k] = { result: r.result, when: fmt.date(r.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }), by: r.user_name || '' };
+  });
+  var i18nKeys = ['running', 'running_hint', 'error_generic', 'copy', 'copied', 'add_assessment', 'add_plan', 'added', 'suggestion', 'generated', 'generated_now', 'by',
+    'none', 'r_chief_complaint', 'r_key_findings', 'r_assessment', 'r_plan', 'r_medications', 'r_follow_up', 'r_summary_text',
+    'r_differentials', 'r_red_flags', 'r_investigations', 'r_questions', 'r_missing_information',
+    'r_interactions', 'r_dose_concerns', 'r_allergy_concerns', 'r_condition_concerns', 'r_notes', 'r_overall',
+    'likelihood_high', 'likelihood_moderate', 'likelihood_low', 'severity_minor', 'severity_moderate', 'severity_major',
+    'overall_no_concerns', 'overall_review', 'overall_serious', 'rerun', 'fallback_used'];
+  var I = {}; i18nKeys.forEach(function (k) { I[k] = t('ai.js.' + k); });
+%>
+<link rel="stylesheet" href="/css/ai.css?v=<%= assetV %>">
+<section class="panel ai-panel" id="ai-assistant" data-ai-panel data-appt="<%= P.apptId %>">
+  <div class="panel-head">
+    <h2><%- icon('sparkles', 'icon-sm') %> <%= t('ai.panel_title') %></h2>
+    <% if (P.cap > 0) { %><span class="tiny muted num" title="<%= t('ai.usage_month') %>"><%= fmt.number(P.used) %> / <%= fmt.number(P.cap) %></span><% } %>
+  </div>
+  <div class="panel-body stack">
+    <p class="ai-disclaimer tiny"><%- icon('shield-alert', 'icon-sm') %><span><%= t('ai.disclaimer') %></span></p>
+    <noscript><p class="small muted"><%= t('ai.needs_js') %></p></noscript>
+
+    <div class="ai-tabs" role="tablist" data-ai-tabs hidden>
+      <% KINDS.forEach(function (x, i) { %>
+      <button type="button" role="tab" class="ai-tab" data-ai-tab="<%= x.k %>" aria-controls="ai-k-<%= x.k %>" aria-selected="<%= i === 0 ? 'true' : 'false' %>"><%- icon(x.icon, 'icon-sm') %><span><%= t('ai.kinds_short.' + x.k) %></span></button>
+      <% }) %>
+    </div>
+
+    <% KINDS.forEach(function (x, i) { var k = x.k; %>
+    <div class="ai-kind stack-sm" id="ai-k-<%= k %>" data-ai-kind="<%= k %>" role="tabpanel">
+      <div>
+        <div class="strong small"><%= t('ai.kinds.' + k) %></div>
+        <p class="tiny muted"><%= t('ai.kind_help.' + k) %></p>
+      </div>
+      <details class="ai-preview">
+        <summary class="small"><%- icon('lock', 'icon-sm') %><span><%= t('ai.preview') %></span></summary>
+        <p class="tiny muted"><%= t('ai.preview_help') %></p>
+        <pre class="ai-preview-text" dir="ltr"><%= P.previews[k] %></pre>
+      </details>
+      <% if (!P.ready[k]) { %>
+        <p class="tiny muted" data-ai-not-ready><%= t('ai.not_ready.' + k) %></p>
+      <% } else { %>
+        <div class="row-sm wrap">
+          <button type="button" class="btn btn-secondary btn-sm" data-ai-run="<%= k %>" hidden><%- icon('send', 'icon-sm flip-rtl') %><span data-ai-run-label><%= P.last[k] ? t('ai.js.rerun') : t('ai.send.' + k) %></span></button>
+        </div>
+      <% } %>
+      <div class="ai-status" data-ai-status aria-live="polite"></div>
+      <div class="ai-result" data-ai-result></div>
+    </div>
+    <% }) %>
+  </div>
+  <script type="application/json" id="ai-data"><%- json({ apptId: P.apptId, last: lastOut, canNote: P.canNote, i18n: I }) %></script>
+  <script src="/js/ai.js?v=<%= assetV %>" defer></script>
+</section>
+<% } %>
