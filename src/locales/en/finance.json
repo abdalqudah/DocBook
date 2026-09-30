@@ -96,7 +96,7 @@
     "sign_employee": "Employee's signature"
   },
   "partners": {
-    "title": "Partners & capital",
+    "title": "Partner accounts",
     "lead": "Partners' shares, capital injections and drawings, and each month's profit share.",
     "add": "Add partner",
     "edit": "Edit partner",
@@ -199,7 +199,7 @@
     "notify_body": "Spent {spent} of {limit} this month."
   },
   "pnl": {
-    "title": "Profit & loss",
+    "title": "Income statement",
     "lead": "Income statement from the clinic's invoices, expenses and salaries.",
     "kind": { "month": "Month", "quarter": "Quarter", "year": "Year" },
     "period_kind": "Period",

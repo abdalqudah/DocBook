@@ -1,5 +1,6 @@
 <%
-  // Section tabs: the pages of the current sidebar section (2+ visible), shown above the page content.
+  // Section tabs: the pages of the current occasional group (2+ visible), shown above the page content.
+  // Daily pages, settings and help never show them (see tabsFor in src/routes/nav.js).
   var _st = (typeof navGroups !== 'undefined' && navGroups && navGroups.tabsFor && typeof fullPath !== 'undefined') ? navGroups.tabsFor(fullPath) : null;
   var _nb = typeof navBadges !== 'undefined' ? navBadges : null;
 %>

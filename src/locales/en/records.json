@@ -69,7 +69,7 @@
     "registered": "Registered"
   },
   "billing": {
-    "title": "Billing & invoices",
+    "title": "Invoices & receipts",
     "lead": "Invoices issued at checkout, and visits still waiting for payment.",
     "invoices": "Invoices",
     "unpaid_tab": "Unpaid visits",

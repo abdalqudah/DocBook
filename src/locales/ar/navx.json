@@ -1,10 +1,9 @@
 {
   "navx": {
-    "sec_home": "الرئيسية",
-    "sec_clinic": "العيادة",
-    "sec_finance": "المالية",
-    "sec_team": "الفريق",
-    "sec_operations": "التشغيل",
+    "sec_daily": "العمل اليومي",
+    "sec_finance": "الإدارة المالية",
+    "sec_management": "إدارة العيادة",
+    "sec_stock": "المخزون والموردون",
     "sec_reports": "التقارير",
     "sec_more": "الإعدادات والمساعدة",
     "section_pages": "صفحات {section}",

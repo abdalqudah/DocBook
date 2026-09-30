@@ -193,7 +193,7 @@
     "log_to": "To"
   },
   "reviews": {
-    "title": "Reviews",
+    "title": "Patient reviews",
     "lead": "Verified reviews from patients after their visit. Reviews cannot be edited or deleted — reply publicly, or report one to the platform.",
     "view_public": "View on the clinic page",
     "request_settings": "Review requests",

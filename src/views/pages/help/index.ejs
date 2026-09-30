@@ -4,6 +4,8 @@
     <h1><%= t('help.title') %></h1>
     <p><%= t('help.lead') %></p>
   </div>
+  <% var _tk = (typeof navGroups !== 'undefined' ? navGroups : []).some(function (g) { return g.items.some(function (i) { return i.key === 'tickets'; }); }); %>
+  <% if (_tk) { %><div class="page-actions"><a class="btn btn-secondary" href="/app/tickets"><%- icon('message-square', 'icon-sm') %><%= t('nav.tickets') %></a></div><% } %>
 </div>
 
 <div class="help-search">

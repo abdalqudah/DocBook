@@ -1,6 +1,6 @@
 {
   "attendance": {
-    "title": "Staff attendance",
+    "title": "Attendance",
     "lead": "Clock in when you arrive and clock out when you leave. Times are taken from the server clock.",
     "tab_me": "My attendance",
     "tab_team": "Team",

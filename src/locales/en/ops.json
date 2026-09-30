@@ -1,6 +1,6 @@
 {
   "payroll": {
-    "title": "Doctor payroll",
+    "title": "Doctor pay & commissions",
     "lead": "Monthly pay for each doctor: base salary plus commission on their invoices, with approved bonuses, deductions and advances.",
     "prev_month": "Previous month", "next_month": "Next month", "this_month": "This month",
     "empty_title": "No doctors yet", "empty_text": "Add your doctors with their base salary to start calculating monthly pay.", "add_doctor": "Add a doctor",
@@ -48,7 +48,7 @@
     "sign_prepared": "Prepared by", "sign_doctor": "Doctor's signature"
   },
   "supplies": {
-    "title": "Supplies",
+    "title": "Supplies & stock",
     "lead": "Medical and clinic consumables, how much is left, and who supplies them.",
     "tab_items": "Items", "tab_suppliers": "Suppliers",
     "add_item": "Add item", "edit_item": "Edit item", "item_saved": "Item saved.", "item_deleted": "Item deleted.", "delete_item": "Delete item",
@@ -80,13 +80,13 @@
     "SUPPLIER_IN_USE": "This supplier is linked to {n} item(s). Move those items to another supplier first."
   },
   "help": {
-    "title": "Help center",
+    "title": "Help & support",
     "lead": "Answers for the clinic team — from the first booking to month-end payroll.",
     "search_ph": "Search the help center…", "no_results": "No answers match your search.", "no_results_text": "Try another word, or browse the topics.",
     "topics": "Topics", "go_to": "Open {name}", "roles_heading": "What each role can do", "roles_all": "Everything in the clinic.", "roles_except": "Everything except:",
     "role_entry": "Opens on", "contact_title": "Still need help?", "contact_text": "Write to us with the clinic name and what you were trying to do — a screenshot helps.",
     "contact_btn": "E-mail support", "contact_none": "Ask your clinic owner or manager — they can adjust roles, settings and staff logins.",
-    "entries": { "/app": "Dashboard", "/app/my-day": "My day", "/app/front-desk": "Front desk", "/app/billing": "Billing & invoices" },
+    "entries": { "/app": "Dashboard", "/app/my-day": "My day", "/app/front-desk": "Reception & waiting list", "/app/billing": "Invoices & receipts" },
     "sections": [
       { "id": "getting-started", "icon": "rocket", "title": "Getting started", "items": [
         { "q": "What should I set up first?", "a": "Add your doctors with their working hours and consultation fee, then your services and prices. After that, create logins for your staff so each person signs in with their own account." },
@@ -112,9 +112,9 @@
         { "q": "Where is the consultation fee used?", "a": "It is the default price of a visit when no service with its own price is chosen. You can hide it from the public booking page." }
       ] },
       { "id": "roles", "icon": "user-cog", "title": "Staff logins & roles", "items": [
-        { "q": "How do I add a staff member?", "a": "Go to Staff & logins, add the person's name and e-mail and pick a role. Each person signs in with their own account and sets their own password — never share one login." },
+        { "q": "How do I add a staff member?", "a": "Go to Staff & permissions, add the person's name and e-mail and pick a role. Each person signs in with their own account and sets their own password — never share one login." },
         { "q": "Can I change what a role can do?", "a": "The clinic owner can adjust permissions or create custom roles. The built-in roles below are a good starting point for most clinics." },
-        { "q": "Someone left the clinic.", "a": "Disable their login from Staff & logins. They are signed out immediately and their past work stays on record." }
+        { "q": "Someone left the clinic.", "a": "Disable their login from Staff & permissions. They are signed out immediately and their past work stays on record." }
       ] },
       { "id": "clinical", "icon": "notebook-pen", "title": "Clinical records & prescriptions", "items": [
         { "q": "Who can read and write clinical notes?", "a": "Doctors write the notes, diagnosis and prescriptions. Nurses record vital signs and can read the record. Reception and accounting staff don't see clinical notes." },

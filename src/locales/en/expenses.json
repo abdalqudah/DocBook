@@ -1,6 +1,6 @@
 {
   "expenses": {
-    "title": "Expenses",
+    "title": "Operating expenses",
     "lead": "Clinic running costs — rent, utilities, medical supplies, lab fees, maintenance and everything else that keeps the clinic open.",
     "add": "Record expense",
     "edit": "Edit expense",

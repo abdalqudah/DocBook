@@ -1,6 +1,6 @@
 {
   "certificates": {
-    "title": "Medical documents",
+    "title": "Sick leave & medical reports",
     "lead": "Sick leaves, medical reports and attendance certificates issued by the clinic. Each one carries a QR code to verify its authenticity.",
     "types": { "sick_leave": "Sick leave", "medical_report": "Medical report", "attendance": "Attendance certificate" },
     "panel_title": "Documents",

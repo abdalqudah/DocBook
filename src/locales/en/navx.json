@@ -1,10 +1,9 @@
 {
   "navx": {
-    "sec_home": "Home",
-    "sec_clinic": "Clinic",
-    "sec_finance": "Finance",
-    "sec_team": "Team",
-    "sec_operations": "Operations",
+    "sec_daily": "Daily work",
+    "sec_finance": "Financial management",
+    "sec_management": "Clinic management",
+    "sec_stock": "Stock & suppliers",
     "sec_reports": "Reports",
     "sec_more": "Settings & help",
     "section_pages": "{section} pages",

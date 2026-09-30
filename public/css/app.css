@@ -420,24 +420,27 @@ body.is-navigating .loading-bar { display: block; }
 .nav a.active .nav-count { background: var(--primary); color: var(--primary-ink); }
 .nav a .nav-count.warn { background: var(--surface-sunken); color: var(--text); }
 .sidebar-foot { padding: 12px; border-top: 1px solid var(--border); }
-/* Sidebar sections (accordion) — nav.js remembers open state; works without JS via <details>. */
+/* Sidebar (src/routes/nav.js): daily pages as plain always-visible links, then a few collapsible groups for occasional
+   work (nav.js remembers open state; works without JS via <details>), then settings/help at the bottom. */
 .nav-sections { display: flex; flex-direction: column; gap: 2px; padding-top: 10px; }
 .nav-flat { display: flex; flex-direction: column; gap: 2px; }
-.nav-flat + .nav-sec, .nav-sec + .nav-flat:not(.nav-foot-links) { margin-top: 2px; }
+.nav-groups { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.nav-sections > .nav-groups:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .nav-foot-links { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); }
-.nav-sections > :first-child + .nav-foot-links, .nav-sections > .nav-foot-links:first-child { margin-top: 0; }
+.nav-groups + .nav-foot-links, .nav-daily + .nav-foot-links { margin-top: auto; }
+.nav-sections > .nav-foot-links:first-child { margin-top: 0; border-top: 0; }
 .nav-sec > summary { list-style: none; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: var(--radius-sm); color: var(--text-muted); font-weight: var(--fw-medium); font-size: 13px; cursor: pointer; user-select: none; }
 .nav-sec > summary::-webkit-details-marker { display: none; }
 .nav-sec > summary:hover { background: var(--surface-sunken); color: var(--text); }
-.nav-sec > summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.nav-sec > summary:focus-visible, .nav a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .nav-sec.has-active > summary { color: var(--text); font-weight: var(--fw-semibold); }
 .nav-sec.has-active:not([open]) > summary { background: var(--primary-soft); }
 .nav-sec.has-active:not([open]) > summary .icon:first-child { color: var(--primary); }
-.nav-sec > summary .nav-count { margin-inline-start: auto; font-size: 10px; font-weight: var(--fw-bold); min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--pill); background: var(--surface-sunken); color: var(--text); display: inline-flex; align-items: center; justify-content: center; }
-.nav-sec[open] > summary .nav-count { display: none; }
-.nav-sec > summary .nav-chev { flex: none; color: var(--text-subtle); transition: transform .15s ease; transform: rotate(-90deg); }
-.nav-sec > summary .nav-count + .nav-chev { margin-inline-start: 0; }
 .nav-sec > summary > .truncate { flex: 1; min-width: 0; }
+/* A closed group with something waiting inside shows a small dot (the counts themselves are on the pages' lines). */
+.nav-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+.nav-sec[open] > summary .nav-dot { display: none; }
+.nav-sec > summary .nav-chev { flex: none; color: var(--text-subtle); transition: transform .15s ease; transform: rotate(-90deg); }
 [dir="rtl"] .nav-sec > summary .nav-chev { transform: rotate(90deg); }
 .nav-sec[open] > summary .nav-chev, [dir="rtl"] .nav-sec[open] > summary .nav-chev { transform: none; }
 .nav-sec-items { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 6px; margin-inline-start: 19px; padding-inline-start: 10px; border-inline-start: 1px solid var(--border); }
@@ -445,18 +448,17 @@ body.is-navigating .loading-bar { display: block; }
 .nav .nav-sec-items a.nav-sub.active::before { inset-inline-start: -11px; top: 6px; bottom: 6px; border-radius: 3px; }
 @media (prefers-reduced-motion: reduce) { .nav-sec > summary .nav-chev { transition: none; } }
 /* Section tabs — the pages of the current section, above the page content (distinct from the page's own .tabs). */
-.section-tabs { display: flex; align-items: center; gap: 12px; margin: -6px 0 18px; min-width: 0; }
-.section-tabs-label { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--text-subtle); text-transform: uppercase; letter-spacing: .06em; }
-[dir="rtl"] .section-tabs-label { letter-spacing: 0; }
-.section-tabs-list { display: flex; gap: 2px; padding: 3px; border-radius: var(--pill); background: var(--surface-sunken); overflow-x: auto; scrollbar-width: none; min-width: 0; max-width: 100%; }
+/* Section tabs: the sibling pages of an occasional group (finance, clinic management, stock, reports) as a quiet
+   underlined strip above the page; daily pages never show it. */
+.section-tabs { margin: -8px 0 20px; min-width: 0; border-bottom: 1px solid var(--border); }
+.section-tabs-list { display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; min-width: 0; max-width: 100%; }
 .section-tabs-list::-webkit-scrollbar { display: none; }
-.section-tabs-list a { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: var(--pill); font-size: 12.5px; font-weight: var(--fw-medium); color: var(--text-muted); white-space: nowrap; flex: none; }
+.section-tabs-list a { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 2px; margin-bottom: -1px; border-bottom: 2px solid transparent; font-size: 13px; font-weight: var(--fw-medium); color: var(--text-muted); white-space: nowrap; flex: none; }
 .section-tabs-list a:hover { color: var(--text); }
-.section-tabs-list a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
-.section-tabs-list a.active { background: var(--surface); color: var(--primary); font-weight: var(--fw-semibold); box-shadow: 0 0 0 1px var(--border); }
-.section-tabs-count { font-size: 10px; font-weight: var(--fw-bold); min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--pill); background: var(--surface); color: var(--text); display: inline-flex; align-items: center; justify-content: center; }
-.section-tabs-list a.active .section-tabs-count { background: var(--surface-sunken); }
-@media (max-width: 720px) { .section-tabs { margin: -4px calc(-1 * var(--page-pad)) 14px; padding: 0 var(--page-pad); } .section-tabs-label { display: none; } .section-tabs-list { border-radius: var(--radius); } }
+.section-tabs-list a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; border-radius: var(--radius-sm); }
+.section-tabs-list a.active { color: var(--text); font-weight: var(--fw-semibold); border-bottom-color: var(--primary); }
+.section-tabs-count { font-size: 10px; font-weight: var(--fw-bold); min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--pill); background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 720px) { .section-tabs { margin: -4px calc(-1 * var(--page-pad)) 16px; padding: 0 var(--page-pad); } .section-tabs-list { gap: 16px; } }
 @media print { .section-tabs { display: none !important; } }
 /* Platform admin shell (layouts/admin.ejs) — same sidebar + top bar as the clinic app. */
 .admin-body { background: var(--background); }
@@ -508,6 +510,8 @@ body.is-navigating .loading-bar { display: block; }
   .bottom-nav a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: var(--fw-semibold); color: var(--text-subtle); padding: 4px 2px; border-radius: var(--radius-sm); text-align: center; }
   .bottom-nav a.active { color: var(--primary); }
   .bottom-nav .icon { width: 20px; height: 20px; }
+  .bottom-nav-icon { position: relative; display: inline-flex; }
+  .bottom-nav-dot { position: absolute; top: -1px; inset-inline-end: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px var(--surface); }
   .toasts { inset-block-end: 80px; }
 }
 @media (max-width: 600px) {

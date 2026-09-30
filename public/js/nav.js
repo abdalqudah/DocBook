@@ -1,5 +1,5 @@
-/* Sidebar sections (accordion). Works without JS through <details>/<summary>; this script only remembers which
-   sections the user left open (per user and clinic, in localStorage) and keeps the active item in view. */
+/* Sidebar groups (occasional work: finance, clinic management, stock, reports). Works without JS through <details>/<summary>;
+   this script only remembers which groups the user left open (per user and clinic, in localStorage) and keeps the active item in view. */
 (function () {
   'use strict';
   var nav = document.querySelector('[data-nav-sections]');
