@@ -1,0 +1,19 @@
+<%# Own status + clock in / out button (hidden when the clinic records by QR only). Locals: open, openSince, settings %>
+<section class="panel att-now mb-4 no-print">
+  <div class="att-now-body">
+    <div class="att-now-text">
+      <div class="att-state"><span class="att-dot<%= open ? ' on' : '' %>" aria-hidden="true"></span><strong><%= open ? t('attendance.status_in', { time: openSince }) : t('attendance.status_out') %></strong></div>
+      <div class="small muted"><%= settings.qrOnly ? t('attendance.qr_only_hint') : (open ? t('attendance.status_in_sub') : t('attendance.status_out_sub')) %></div>
+    </div>
+    <% if (!settings.qrOnly) { %>
+    <form method="post" action="/app/attendance/clock" class="att-now-action">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="expect" value="<%= open ? 'out' : 'in' %>">
+      <input type="hidden" name="_return" value="<%= fullPath %>">
+      <button class="btn <%= open ? 'btn-secondary' : 'btn-primary' %> att-clock-btn" type="submit"><%- icon(open ? 'log-out' : 'clock', 'icon-sm') %><%= open ? t('attendance.clock_out') : t('attendance.clock_in') %></button>
+    </form>
+    <% } else { %>
+    <span class="att-now-icon" aria-hidden="true"><%- icon('qr-code') %></span>
+    <% } %>
+  </div>
+</section>

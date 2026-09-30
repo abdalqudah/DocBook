@@ -1,3 +1,9 @@
+<%
+  var plan = typeof today !== 'undefined' && today ? today.plan : null;
+  var planText = plan && plan !== 'off' ? plan.start + '–' + plan.end : null;
+  var toMin = function (s) { var p = String(s).split(':'); return Number(p[0]) * 60 + Number(p[1]); };
+  var lateBy = (typeof done !== 'undefined' && done && done.action === 'in' && planText) ? toMin(done.time) - toMin(plan.start) : 0;
+%>
 <main class="scan">
   <div class="scan-card">
     <div class="scan-clinic">
@@ -8,23 +14,30 @@
       <div class="scan-icon" aria-hidden="true"><%- icon('qr-code') %></div>
       <h1><%= t('attendance.scan_title') %></h1>
       <div class="alert alert-warning mt-4" role="alert"><%- icon('triangle-alert') %><div class="grow"><%= failed %></div></div>
-      <a class="btn btn-secondary btn-block mt-6" href="/app/attendance"><%= t('attendance.open_mine') %></a>
+      <a class="btn btn-secondary btn-block mt-6" href="/app/attendance?view=me"><%= t('attendance.open_mine') %></a>
     <% } else if (typeof done !== 'undefined' && done) { %>
       <div class="scan-icon done" aria-hidden="true"><%- icon('circle-check') %></div>
       <h1><%= done.action === 'in' ? t('attendance.done_in_title') : t('attendance.done_out_title') %></h1>
       <p class="scan-time" dir="ltr"><%= done.time %></p>
-      <% if (done.action === 'out' && done.minutes) { %><p class="muted"><%= t('attendance.done_worked', { hours: Math.floor(done.minutes / 60) + ':' + String(done.minutes % 60).padStart(2, '0') }) %></p><% } %>
+      <% if (done.action === 'in') { %>
+        <p class="muted"><%= t('attendance.done_in_sub') %></p>
+        <% if (planText && lateBy > today.grace) { %><p class="scan-note att-warn"><%= t('attendance.done_late', { n: fmt.number(lateBy), time: plan.start }) %></p><% } %>
+      <% } else { %>
+        <p class="muted"><%= t('attendance.done_out_sub') %></p>
+        <% if (done.minutes) { %><p class="scan-note"><%= t('attendance.done_worked', { hours: Math.floor(done.minutes / 60) + ':' + String(done.minutes % 60).padStart(2, '0') }) %></p><% } %>
+      <% } %>
       <p class="small muted mt-4"><%= t('attendance.signed_as', { name: currentUser.name }) %></p>
-      <a class="btn btn-secondary btn-block mt-6" href="/app/attendance"><%= t('attendance.open_mine') %></a>
+      <a class="btn btn-secondary btn-block mt-6" href="/app/attendance?view=me"><%= t('attendance.open_mine') %></a>
     <% } else { %>
-      <div class="scan-icon" aria-hidden="true"><%- icon('clock') %></div>
-      <h1><%= t('attendance.scan_title') %></h1>
+      <div class="scan-icon" aria-hidden="true"><%- icon(open ? 'log-out' : 'clock') %></div>
+      <h1><%= open ? t('attendance.confirm_out_title') : t('attendance.confirm_in_title') %></h1>
       <% if (typeof notice !== 'undefined' && notice) { %><div class="alert alert-info mt-4" role="status"><%- icon('info') %><div class="grow"><%= notice %></div></div><% } %>
       <p class="scan-lead"><%= open ? t('attendance.confirm_out', { time: openSince }) : t('attendance.confirm_in') %></p>
+      <% if (planText) { %><p class="scan-plan"><%= t('attendance.your_shift') %> <bdi dir="ltr" class="strong"><%= planText %></bdi></p><% } %>
       <form method="post" action="/app/attendance/scan" class="mt-6">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="hidden" name="expect" value="<%= open ? 'out' : 'in' %>">
-        <button class="btn btn-primary btn-lg btn-block scan-btn" type="submit"><%- icon(open ? 'log-out' : 'clock') %><%= open ? t('attendance.clock_out') : t('attendance.clock_in') %></button>
+        <button class="btn btn-primary btn-lg btn-block scan-btn" type="submit" autofocus><%- icon(open ? 'log-out' : 'clock') %><%= open ? t('attendance.clock_out') : t('attendance.clock_in') %></button>
       </form>
       <p class="small muted mt-4"><%= t('attendance.signed_as', { name: currentUser.name }) %></p>
     <% } %>

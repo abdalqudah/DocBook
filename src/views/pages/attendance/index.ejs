@@ -1,206 +1,124 @@
 <%
   var canView = can('attendance.view'); var canManage = can('attendance.manage');
-  var hm = function (m) { m = Math.max(0, Math.round(m || 0)); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); };
-  var dayName = function (d) { return fmt.date(d, { weekday: 'short', day: 'numeric', month: 'short' }); };
   var isPrint = query.print === '1';
+  var qs = function (over) { var o = Object.assign({ view: view, date: typeof date !== 'undefined' ? date : '', month: month, role: roleId || '', user: userId || '' }, over || {}); if (o.view !== 'today') delete o.date; if (o.view === 'today') delete o.month; return '?' + Object.keys(o).filter(function (k) { return o[k] !== '' && o[k] !== null && o[k] !== undefined; }).map(function (k) { return k + '=' + encodeURIComponent(o[k]); }).join('&'); };
 %>
 <div class="page-head">
   <div>
-    <div class="breadcrumbs"><%= t('nav.group_operations') %></div>
     <h1><%= t('attendance.title') %></h1>
-    <p><%= t('attendance.lead') %></p>
+    <p><%= view === 'me' ? t('attendance.lead') : (view === 'today' ? fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : t('attendance.report_lead', { month: fmt.month(month) })) %></p>
   </div>
   <div class="page-actions no-print">
-    <% if (view === 'team') { %>
+    <% if (view !== 'me') { %>
       <%- include('../../partials/export-menu', { href: '/app/attendance/export' }) %>
-      <a class="btn btn-ghost" href="?<%= Object.keys(query).filter(function (k) { return k !== 'print'; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(query[k]); }).concat(['print=1']).join('&') %>"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+      <a class="btn btn-ghost" href="<%= qs({}) %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
     <% } %>
-    <% if (canManage) { %><a class="btn btn-secondary" href="/app/attendance/kiosk/setup"><%- icon('qr-code', 'icon-sm') %><%= t('attendance.kiosk_open') %></a><% } %>
+    <% if (canManage) { %>
+      <a class="btn btn-ghost" href="/app/attendance/settings"><%- icon('calendar-clock', 'icon-sm') %><%= t('attendance.hours_title') %></a>
+      <a class="btn btn-secondary" href="/app/attendance/screens"><%- icon('qr-code', 'icon-sm') %><%= t('attendance.screens_title') %></a>
+    <% } %>
   </div>
 </div>
 
 <% if (!isPrint) { %>
-<section class="panel att-now mb-4">
-  <div class="att-now-body">
-    <div class="att-now-text">
-      <div class="att-state"><span class="att-dot<%= open ? ' on' : '' %>" aria-hidden="true"></span><strong><%= open ? t('attendance.status_in', { time: openSince }) : t('attendance.status_out') %></strong></div>
-      <div class="small muted"><%= settings.qrOnly ? t('attendance.qr_only_hint') : (open ? t('attendance.status_in_sub') : t('attendance.status_out_sub')) %></div>
-    </div>
-    <% if (!settings.qrOnly) { %>
-    <form method="post" action="/app/attendance/clock" class="att-now-action">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <input type="hidden" name="expect" value="<%= open ? 'out' : 'in' %>">
-      <button class="btn <%= open ? 'btn-secondary' : 'btn-primary' %> att-clock-btn" type="submit"><%- icon(open ? 'log-out' : 'clock', 'icon-sm') %><%= open ? t('attendance.clock_out') : t('attendance.clock_in') %></button>
-    </form>
-    <% } else { %>
-    <span class="att-now-icon" aria-hidden="true"><%- icon('qr-code') %></span>
-    <% } %>
-  </div>
-</section>
-
+<%- include('_clock') %>
 <% if (canView) { %>
 <nav class="tabs mb-4" aria-label="<%= t('attendance.title') %>">
-  <a href="/app/attendance?month=<%= month %>" class="<%= view === 'me' ? 'active' : '' %>"<%- view === 'me' ? ' aria-current="page"' : '' %>><%- icon('user', 'icon-sm') %><%= t('attendance.tab_me') %></a>
-  <a href="/app/attendance?view=team" class="<%= view === 'team' ? 'active' : '' %>"<%- view === 'team' ? ' aria-current="page"' : '' %>><%- icon('users', 'icon-sm') %><%= t('attendance.tab_team') %></a>
+  <a href="/app/attendance?view=today" class="<%= view === 'today' ? 'active' : '' %>"<%- view === 'today' ? ' aria-current="page"' : '' %>><%= t('attendance.tab_today') %></a>
+  <a href="/app/attendance?view=month&month=<%= month %>" class="<%= view === 'month' ? 'active' : '' %>"<%- view === 'month' ? ' aria-current="page"' : '' %>><%= t('attendance.tab_month') %></a>
+  <a href="/app/attendance?view=me&month=<%= month %>" class="<%= view === 'me' ? 'active' : '' %>"<%- view === 'me' ? ' aria-current="page"' : '' %>><%= t('attendance.tab_me') %></a>
 </nav>
 <% } %>
 <% } %>
 
 <% if (view === 'me') { %>
-  <div class="row between wrap mb-4 no-print">
-    <form method="get" class="row-sm" data-autosubmit>
-      <label class="sr-only" for="att-month"><%= t('common.month') %></label>
-      <select class="select" id="att-month" name="month" style="width:auto;height:36px">
-        <% months.forEach(function (m) { %><option value="<%= m %>"<%= m === month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %>
-      </select>
-      <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
-    </form>
-  </div>
-  <div class="stats cols-3 att-stats mb-4">
-    <div class="stat"><div class="stat-label"><%= t('attendance.days') %></div><div class="stat-value"><%= fmt.number(mine.dayCount) %></div><div class="stat-meta"><%= fmt.month(month) %></div></div>
-    <div class="stat"><div class="stat-label"><%= t('attendance.hours_total') %></div><div class="stat-value" dir="ltr"><%= hm(mine.totalMinutes) %></div><div class="stat-meta"><%= t('attendance.hours') %></div></div>
-    <div class="stat"><div class="stat-label"><%= t('attendance.missing_out') %></div><div class="stat-value<%= mine.openCount ? ' att-warn' : '' %>"><%= fmt.number(mine.openCount) %></div><div class="stat-meta"><%= mine.openCount ? t('attendance.missing_out_meta') : '—' %></div></div>
-  </div>
-  <div class="panel flush">
-    <% if (!mine.days.length) { %>
-      <%- include('../../partials/empty', { emptyIcon: 'clock', emptyTitle: t('attendance.empty_me_title'), emptyText: t('attendance.empty_me_text') }) %>
-    <% } else { %>
-    <div class="table-wrap"><table class="table responsive">
-      <thead><tr><th><%= t('common.date') %></th><th><%= t('attendance.times') %></th><th class="num"><%= t('attendance.hours') %></th></tr></thead>
-      <tbody>
-      <% mine.days.forEach(function (d) { %>
-        <tr>
-          <td class="primary-cell"><span class="strong"><%= dayName(d.date) %></span></td>
-          <td data-label="<%= t('attendance.times') %>">
-            <div class="att-shifts">
-            <% d.shifts.forEach(function (s) { %>
-              <span class="att-shift"><bdi dir="ltr" class="strong"><%= s.inTime %> – <%= s.outTime ? s.outTime : '…' %></bdi><% if (s.isOpen) { %><span class="att-tag"><%= t('attendance.in_now') %></span><% } else if (s.missingOut) { %><span class="att-tag warn"><%= t('attendance.missing_out') %></span><% } %><% if (s.in_method === 'qr' || s.out_method === 'qr') { %><span class="att-tag">QR</span><% } %><% if (s.corrected_at) { %><span class="att-tag" title="<%= s.correction_reason || '' %>"><%= t('attendance.method_manual') %></span><% } %></span>
-            <% }) %>
-            </div>
-          </td>
-          <td class="num strong" data-label="<%= t('attendance.hours') %>" dir="ltr"><%= d.minutes ? hm(d.minutes) : '—' %></td>
-        </tr>
-      <% }) %>
-      </tbody>
-    </table></div>
-    <% } %>
-  </div>
+  <form method="get" class="row-sm mb-4 no-print" data-autosubmit>
+    <input type="hidden" name="view" value="me">
+    <label class="sr-only" for="att-month"><%= t('common.month') %></label>
+    <select class="select att-select" id="att-month" name="month"><% months.forEach(function (m) { %><option value="<%= m %>"<%= m === month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %></select>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+  </form>
+  <%- include('_timesheet', { sheet: sheet }) %>
 <% } else { %>
-  <% var qs = function (over) { var o = Object.assign({ view: 'team', mode: mode, date: date, month: month, role: roleId || '', user: userId || '' }, over || {}); return '?' + Object.keys(o).filter(function (k) { return o[k] !== '' && o[k] !== null && o[k] !== undefined; }).map(function (k) { return k + '=' + encodeURIComponent(o[k]); }).join('&'); }; %>
-  <form method="get" class="panel att-toolbar mb-4 no-print" data-autosubmit>
-    <input type="hidden" name="view" value="team">
-    <input type="hidden" name="mode" value="<%= mode %>">
-    <div class="segmented" role="tablist">
-      <a href="<%= qs({ mode: 'day' }) %>" class="<%= mode === 'day' ? 'active' : '' %>"><%= t('attendance.by_day') %></a>
-      <a href="<%= qs({ mode: 'month' }) %>" class="<%= mode === 'month' ? 'active' : '' %>"><%= t('attendance.by_month') %></a>
-    </div>
-    <% if (mode === 'day') { %>
+  <form method="get" class="att-toolbar mb-4 no-print" data-autosubmit>
+    <input type="hidden" name="view" value="<%= view %>">
+    <% if (view === 'today') { %>
       <div class="row-sm">
         <a class="btn btn-ghost btn-icon btn-sm" href="<%= qs({ date: prevDate }) %>" aria-label="<%= t('attendance.prev_day') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
         <input class="input" type="date" name="date" value="<%= date %>" max="<%= clinicToday %>" aria-label="<%= t('common.date') %>">
         <% if (nextDate) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= qs({ date: nextDate }) %>" aria-label="<%= t('attendance.next_day') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %>
+        <% if (date !== clinicToday) { %><a class="btn btn-ghost btn-sm" href="<%= qs({ date: clinicToday }) %>"><%= t('common.today') %></a><% } %>
       </div>
     <% } else { %>
       <select class="select" name="month" aria-label="<%= t('common.month') %>"><% months.forEach(function (m) { %><option value="<%= m %>"<%= m === month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %></select>
     <% } %>
     <select class="select" name="role" aria-label="<%= t('attendance.role') %>"><option value=""><%= t('attendance.all_roles') %></option><% roles.forEach(function (r) { %><option value="<%= r.role_id %>"<%= roleId === r.role_id ? ' selected' : '' %>><%= r.label %></option><% }) %></select>
-    <select class="select" name="user" aria-label="<%= t('attendance.person') %>"><option value=""><%= t('attendance.all_people') %></option><% staffOptions.forEach(function (s) { %><option value="<%= s.user_id %>"<%= userId === s.user_id ? ' selected' : '' %>><%= s.name %></option><% }) %></select>
+    <% if (view === 'today') { %><select class="select" name="user" aria-label="<%= t('attendance.person') %>"><option value=""><%= t('attendance.all_people') %></option><% staffOptions.forEach(function (s) { %><option value="<%= s.user_id %>"<%= userId === s.user_id ? ' selected' : '' %>><%= s.name %></option><% }) %></select><% } %>
     <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="<%= qs({ role: '', user: '' }) %>"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
     <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+    <% if (canManage) { %><button class="btn btn-ghost btn-sm att-toolbar-end" type="button" data-open-dialog="add-dialog" data-fill="<%= json({ user_id: '', work_date: view === 'today' ? date : clinicToday, clock_in: '', clock_out: '', reason: '' }) %>"><%- icon('plus', 'icon-sm') %><%= t('attendance.add_shift') %></button><% } %>
   </form>
+  <% if (isPrint) { %><h2 class="mb-4"><%= view === 'today' ? fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : fmt.month(month) %></h2><% } %>
 
-  <% if (isPrint) { %><h2 class="mb-4"><%= mode === 'day' ? fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : fmt.month(month) %></h2><% } %>
-
-  <div class="stats cols-3 att-stats mb-4">
-    <div class="stat"><div class="stat-label"><%= t('attendance.people_present') %></div><div class="stat-value"><%= fmt.number(totals.people) %></div><div class="stat-meta"><%= mode === 'day' ? fmt.date(date) : fmt.month(month) %></div></div>
-    <div class="stat"><div class="stat-label"><%= t('attendance.hours_total') %></div><div class="stat-value" dir="ltr"><%= hm(totals.minutes) %></div><div class="stat-meta"><%= t('attendance.hours') %></div></div>
-    <div class="stat"><div class="stat-label"><%= t('attendance.in_now_count') %></div><div class="stat-value"><%= fmt.number(totals.open) %></div><div class="stat-meta">&nbsp;</div></div>
-  </div>
-
-  <% if (mode === 'month') { %>
-  <section class="panel flush mb-4">
-    <div class="panel-head"><h2><%= t('attendance.per_person') %></h2></div>
-    <% if (!people.length) { %>
-      <%- include('../../partials/empty', { emptyIcon: 'clock', emptyTitle: t('attendance.empty_team_title'), emptyText: t('attendance.empty_team_text'), compact: true }) %>
-    <% } else { %>
-    <div class="table-wrap"><table class="table responsive">
-      <thead><tr><th><%= t('attendance.person') %></th><th><%= t('attendance.role') %></th><th class="num"><%= t('attendance.days') %></th><th class="num"><%= t('attendance.shifts') %></th><th class="num"><%= t('attendance.hours') %></th><th><%= t('attendance.missing_out') %></th><th class="actions no-print"></th></tr></thead>
-      <tbody>
-      <% people.forEach(function (p) { %>
-        <tr>
-          <td class="primary-cell"><div class="row-sm"><span class="avatar att-avatar"><%= initials(p.name) %></span><span class="strong"><%= p.name %></span><% if (p.open) { %><span class="att-tag"><%= t('attendance.in_now') %></span><% } %></div></td>
-          <td data-label="<%= t('attendance.role') %>" class="muted"><%= roleLabel(p) %></td>
-          <td class="num" data-label="<%= t('attendance.days') %>"><%= fmt.number(p.dayCount) %></td>
-          <td class="num" data-label="<%= t('attendance.shifts') %>"><%= fmt.number(p.shifts) %></td>
-          <td class="num strong" data-label="<%= t('attendance.hours') %>" dir="ltr"><%= p.minutes ? hm(p.minutes) : "—" %></td>
-          <td data-label="<%= t('attendance.missing_out') %>"><% if (p.missingOut) { %><span class="att-tag warn"><%= fmt.number(p.missingOut) %></span><% } else { %><span class="muted">—</span><% } %></td>
-          <td class="actions no-print"><% if (userId !== p.user_id) { %><a class="btn btn-ghost btn-sm" href="<%= qs({ user: p.user_id }) %>"><%= t('attendance.view_records') %></a><% } %></td>
-        </tr>
-      <% }) %>
-      </tbody>
-    </table></div>
-    <% } %>
-  </section>
-  <% } %>
-
-  <% if (mode === 'day' || userId) { %>
-  <section class="panel flush mb-4">
-    <div class="panel-head"><h2><%= t('attendance.records') %></h2></div>
-    <% if (!rows.length) { %>
-      <%- include('../../partials/empty', { emptyIcon: 'clock', emptyTitle: t('attendance.empty_team_title'), emptyText: t('attendance.empty_team_text'), compact: true }) %>
-    <% } else { %>
-    <div class="table-wrap"><table class="table responsive">
-      <thead><tr><th><%= t('attendance.person') %></th><% if (mode === 'month') { %><th><%= t('common.date') %></th><% } %><th><%= t('attendance.clock_in') %></th><th><%= t('attendance.clock_out') %></th><th class="num"><%= t('attendance.hours') %></th><th class="actions no-print"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
-      <tbody>
-      <% rows.forEach(function (r) { %>
-        <tr>
-          <td class="primary-cell"><div class="strong"><%= r.user_name %></div><div class="small muted"><%= roleLabel(r) %></div><% if (r.corrected_at) { %><div class="tiny muted att-note"><%= t('attendance.corrected_by', { name: r.corrected_by_name || '—', reason: r.correction_reason || '' }) %></div><% } %></td>
-          <% if (mode === 'month') { %><td data-label="<%= t('common.date') %>" class="nowrap"><%= dayName(r.work_date) %></td><% } %>
-          <td data-label="<%= t('attendance.clock_in') %>"><span dir="ltr" class="strong"><%= r.inTime %></span> <span class="att-how"><%= t('attendance.method_' + r.in_method) %></span></td>
-          <td data-label="<%= t('attendance.clock_out') %>"><% if (r.clock_out) { %><span dir="ltr" class="strong"><%= r.outTime %></span><% if (r.outDate !== r.work_date) { %> <span class="tiny muted"><%= fmt.date(r.outDate, { day: 'numeric', month: 'short' }) %></span><% } %> <span class="att-how"><%= t('attendance.method_' + r.out_method) %></span><% } else if (r.isOpen) { %><span class="att-tag"><%= t('attendance.in_now') %></span><% } else { %><span class="att-tag warn"><%= t('attendance.missing_out') %></span><% } %></td>
-          <td class="num strong" data-label="<%= t('attendance.hours') %>" dir="ltr"><%= r.clock_out ? hm(r.minutes) : '—' %></td>
-          <td class="actions no-print">
-            <% if (canManage) { %>
-              <button class="btn btn-ghost btn-sm" type="button" data-open-dialog="correct-dialog" data-action="/app/attendance/records/<%= r.id %>" data-fill="<%= json({ work_date: r.work_date, clock_in: r.inTime, clock_out: r.outTime || '', reason: '', person: r.user_name }) %>"><%- icon('pencil', 'icon-sm') %><%= t('attendance.correct') %></button>
-              <%- include('../../partials/delete-form', { action: '/app/attendance/records/' + r.id + '/delete', confirmText: t('attendance.delete_confirm', { name: r.user_name }) }) %>
-            <% } %>
-          </td>
-        </tr>
-      <% }) %>
-      </tbody>
-    </table></div>
-    <% } %>
-  </section>
-  <% } %>
-
-  <% if (mode === 'day' && noRecord.length) { %>
-  <section class="panel mb-4">
-    <div class="panel-head"><div><h2><%= t('attendance.no_record') %></h2><div class="panel-sub"><%= t('attendance.no_record_sub') %></div></div><span class="badge"><%= fmt.number(noRecord.length) %></span></div>
-    <div class="panel-body"><ul class="att-people">
-      <% noRecord.forEach(function (s) { %><li><span class="avatar att-avatar"><%= initials(s.name) %></span><span><span class="strong"><%= s.name %></span><span class="small muted"> · <%= roleLabel(s) %></span></span></li><% }) %>
-    </ul></div>
-  </section>
-  <% } %>
-<% } %>
-
-<% if (canManage && view === 'team') { %>
-<dialog class="dialog" id="correct-dialog" aria-labelledby="correct-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'correct-dialog') { %> data-open-on-load<% } %>>
-  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/attendance' %>" novalidate>
-    <div class="dialog-head"><h2 id="correct-dialog-title"><%= t('attendance.correct_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
-    <div class="dialog-body">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <input type="hidden" name="_return" value="<%= fullPath %>">
-      <%- include('../../partials/form-error') %>
-      <div class="field mb-4"><label class="label" for="f-person"><%= t('attendance.person') %></label><input class="input" id="f-person" name="person" value="<%= old && old.person ? old.person : '' %>" readonly tabindex="-1"></div>
-      <div class="form-grid cols-3">
-        <%- include('../../partials/field', { name: 'work_date', label: t('common.date'), type: 'date', required: true, attrs: 'max="' + clinicToday + '"' }) %>
-        <%- include('../../partials/field', { name: 'clock_in', label: t('attendance.clock_in'), type: 'time', required: true }) %>
-        <%- include('../../partials/field', { name: 'clock_out', label: t('attendance.clock_out'), type: 'time' }) %>
-      </div>
-      <p class="help mt-2"><%= t('attendance.correct_help') %></p>
-      <div class="mt-4"><%- include('../../partials/field', { name: 'reason', label: t('attendance.reason'), type: 'textarea', required: true, placeholder: t('attendance.reason_ph') }) %></div>
+  <% if (view === 'today') { var s = board.summary; %>
+    <div class="stats att-stats mb-4">
+      <div class="stat"><div class="stat-label"><%= t('attendance.st_present') %></div><div class="stat-value"><%= fmt.number(s.present) %></div><div class="stat-meta"><%= t('attendance.in_now_n', { n: fmt.number(s.in_now) }) %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.st_late') %></div><div class="stat-value<%= s.late ? ' att-warn' : '' %>"><%= fmt.number(s.late) %></div><div class="stat-meta"><%= t('attendance.grace_meta', { n: fmt.number(board.settings.grace) }) %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.st_absent') %></div><div class="stat-value<%= s.absent ? ' att-danger' : '' %>"><%= fmt.number(s.absent) %></div><div class="stat-meta"><%= s.not_yet ? t('attendance.not_yet_n', { n: fmt.number(s.not_yet) }) : '—' %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.hours_worked') %></div><div class="stat-value" dir="ltr"><%= hm(s.minutes) %></div><div class="stat-meta"><%= s.off ? t('attendance.off_n', { n: fmt.number(s.off) }) : '—' %></div></div>
     </div>
-    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
-  </form>
-</dialog>
+    <% if (!board.hasAnyPlan) { %><div class="alert alert-info mb-4 no-print"><%- icon('info') %><div class="grow"><%= t('attendance.no_plan_note') %><% if (canManage) { %> <a href="/app/attendance/settings"><%= t('attendance.set_hours') %></a><% } %></div></div><% } %>
+    <div class="panel flush mb-4">
+      <% if (!board.rows.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'users', emptyTitle: t('attendance.empty_team_title'), emptyText: t('attendance.empty_team_text'), compact: true }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive att-board">
+        <thead><tr><th><%= t('attendance.person') %></th><th><%= t('common.status') %></th><th><%= t('attendance.planned') %></th><th><%= t('attendance.times') %></th><th class="num"><%= t('attendance.hours') %></th><th class="actions no-print"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+        <% board.rows.forEach(function (p) { %>
+          <tr>
+            <td class="primary-cell"><a class="att-person" href="/app/attendance/staff/<%= p.user_id %>?month=<%= date.slice(0, 7) %>"><span class="avatar att-avatar"><%= initials(p.name) %></span><span><span class="strong"><%= p.name %></span><span class="small muted att-role"><%= roleLabel(p) %></span></span></a></td>
+            <td data-label="<%= t('common.status') %>"><%- include('_status', { st: p, isIn: p.isIn }) %></td>
+            <td data-label="<%= t('attendance.planned') %>" class="muted"><% if (p.plan && p.plan !== 'off') { %><bdi dir="ltr"><%= p.plan.start %>–<%= p.plan.end %></bdi><% } else if (p.plan === 'off') { %><%= t('attendance.st_off') %><% } else { %>—<% } %></td>
+            <td data-label="<%= t('attendance.times') %>"><% if (p.shifts.length) { %><%- include('_shifts', { shifts: p.shifts, personName: p.name }) %><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="num strong" data-label="<%= t('attendance.hours') %>" dir="ltr"><%= p.worked ? hm(p.worked) : '—' %></td>
+            <td class="actions no-print"><% if (canManage) { %><button class="btn btn-ghost btn-sm" type="button" data-open-dialog="add-dialog" data-fill="<%= json({ user_id: p.user_id, work_date: date, clock_in: p.plan && p.plan !== 'off' ? p.plan.start : '', clock_out: '', reason: '' }) %>"><%- icon('plus', 'icon-sm') %><%= t('attendance.add_shift') %></button><% } %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+      <% } %>
+    </div>
+  <% } else { var r = report; %>
+    <div class="stats att-stats mb-4">
+      <div class="stat"><div class="stat-label"><%= t('attendance.people_present') %></div><div class="stat-value"><%= fmt.number(r.totals.people) %></div><div class="stat-meta"><%= fmt.month(month) %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.hours_worked') %></div><div class="stat-value" dir="ltr"><%= hm(r.totals.worked) %></div><div class="stat-meta"><%= r.totals.overtime ? t('attendance.overtime_meta', { h: hm(r.totals.overtime) }) : '—' %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.late_days') %></div><div class="stat-value<%= r.totals.late ? ' att-warn' : '' %>"><%= fmt.number(r.totals.late) %></div><div class="stat-meta">&nbsp;</div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.absent_days') %></div><div class="stat-value<%= r.totals.absent ? ' att-danger' : '' %>"><%= fmt.number(r.totals.absent) %></div><div class="stat-meta">&nbsp;</div></div>
+    </div>
+    <div class="panel flush mb-4">
+      <% if (!r.rows.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'users', emptyTitle: t('attendance.empty_team_title'), emptyText: t('attendance.empty_team_text'), compact: true }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('attendance.person') %></th><th class="num"><%= t('attendance.days_present') %></th><th class="num"><%= t('attendance.hours_worked') %></th><th class="num"><%= t('attendance.late_days') %></th><th class="num"><%= t('attendance.absent_days') %></th><th class="num"><%= t('attendance.overtime') %></th><th class="num"><%= t('attendance.missing_out') %></th><th class="actions no-print"></th></tr></thead>
+        <tbody>
+        <% r.rows.forEach(function (p) { %>
+          <tr>
+            <td class="primary-cell"><a class="att-person" href="/app/attendance/staff/<%= p.user_id %>?month=<%= month %>"><span class="avatar att-avatar"><%= initials(p.name) %></span><span><span class="strong"><%= p.name %></span><span class="small muted att-role"><%= roleLabel(p) %></span></span></a></td>
+            <td class="num" data-label="<%= t('attendance.days_present') %>"><%= fmt.number(p.present) %></td>
+            <td class="num strong" data-label="<%= t('attendance.hours_worked') %>" dir="ltr"><%= p.worked ? hm(p.worked) : '—' %></td>
+            <td class="num" data-label="<%= t('attendance.late_days') %>"><% if (p.late) { %><span class="att-warn"><%= fmt.number(p.late) %></span> <span class="tiny muted"><%= t('attendance.min_n', { n: fmt.number(p.lateMinutes) }) %></span><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="num" data-label="<%= t('attendance.absent_days') %>"><% if (p.absent) { %><span class="att-danger"><%= fmt.number(p.absent) %></span><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="num" data-label="<%= t('attendance.overtime') %>" dir="ltr"><%= p.overtime ? hm(p.overtime) : '—' %></td>
+            <td class="num" data-label="<%= t('attendance.missing_out') %>"><% if (p.missingOut) { %><span class="att-tag warn"><%= fmt.number(p.missingOut) %></span><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="actions no-print"><a class="btn btn-ghost btn-sm" href="/app/attendance/staff/<%= p.user_id %>?month=<%= month %>"><%= t('attendance.open_timesheet') %></a></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+      <% } %>
+    </div>
+  <% } %>
 <% } %>
+<%- include('_manual') %>

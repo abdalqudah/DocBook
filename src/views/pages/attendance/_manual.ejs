@@ -1,0 +1,42 @@
+<%# Manager dialogs: correct a shift / add a shift that was never clocked. Reason required, audited. Locals: staffOptions %>
+<% if (can('attendance.manage') && query.print !== '1') { var od = typeof openDialog !== 'undefined' ? openDialog : null; var fa = typeof formAction !== 'undefined' ? formAction : null; %>
+<dialog class="dialog" id="correct-dialog" aria-labelledby="correct-dialog-title"<% if (od === 'correct-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= od === 'correct-dialog' && fa ? fa : '/app/attendance' %>" novalidate>
+    <div class="dialog-head"><div><h2 id="correct-dialog-title"><%= t('attendance.correct_title') %></h2><p class="muted small mt-1"><%= t('attendance.correct_sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="_return" value="<%= fullPath %>">
+      <% if (od === 'correct-dialog') { %><%- include('../../partials/form-error') %><% } %>
+      <div class="field mb-4"><label class="label" for="c-person"><%= t('attendance.person') %></label><input class="input" id="c-person" name="person" value="<%= od === 'correct-dialog' && old && old.person ? old.person : '' %>" readonly tabindex="-1"></div>
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { id: 'c-date', name: 'work_date', label: t('common.date'), type: 'date', required: true, attrs: 'max="' + clinicToday + '"', errors: od === 'correct-dialog' ? errors : {}, old: od === 'correct-dialog' ? old : {} }) %>
+        <%- include('../../partials/field', { id: 'c-in', name: 'clock_in', label: t('attendance.clock_in'), type: 'time', required: true, errors: od === 'correct-dialog' ? errors : {}, old: od === 'correct-dialog' ? old : {} }) %>
+        <%- include('../../partials/field', { id: 'c-out', name: 'clock_out', label: t('attendance.clock_out'), type: 'time', errors: od === 'correct-dialog' ? errors : {}, old: od === 'correct-dialog' ? old : {} }) %>
+      </div>
+      <p class="help mt-2"><%= t('attendance.correct_help') %></p>
+      <div class="mt-4"><%- include('../../partials/field', { id: 'c-reason', name: 'reason', label: t('attendance.reason'), type: 'textarea', required: true, placeholder: t('attendance.reason_ph'), errors: od === 'correct-dialog' ? errors : {}, old: od === 'correct-dialog' ? old : {} }) %></div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="add-dialog" aria-labelledby="add-dialog-title"<% if (od === 'add-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/attendance/records" novalidate>
+    <div class="dialog-head"><div><h2 id="add-dialog-title"><%= t('attendance.add_title') %></h2><p class="muted small mt-1"><%= t('attendance.add_sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="_return" value="<%= fullPath %>">
+      <% if (od === 'add-dialog') { %><%- include('../../partials/form-error') %><% } %>
+      <div class="mb-4"><%- include('../../partials/field', { id: 'a-user', name: 'user_id', label: t('attendance.person'), type: 'select', required: true, placeholder: t('attendance.choose_person'), options: staffOptions.map(function (s) { return { value: s.user_id, label: s.name }; }), errors: od === 'add-dialog' ? errors : {}, old: od === 'add-dialog' ? old : {} }) %></div>
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { id: 'a-date', name: 'work_date', label: t('common.date'), type: 'date', required: true, attrs: 'max="' + clinicToday + '"', errors: od === 'add-dialog' ? errors : {}, old: od === 'add-dialog' ? old : {} }) %>
+        <%- include('../../partials/field', { id: 'a-in', name: 'clock_in', label: t('attendance.clock_in'), type: 'time', required: true, errors: od === 'add-dialog' ? errors : {}, old: od === 'add-dialog' ? old : {} }) %>
+        <%- include('../../partials/field', { id: 'a-out', name: 'clock_out', label: t('attendance.clock_out'), type: 'time', errors: od === 'add-dialog' ? errors : {}, old: od === 'add-dialog' ? old : {} }) %>
+      </div>
+      <p class="help mt-2"><%= t('attendance.correct_help') %></p>
+      <div class="mt-4"><%- include('../../partials/field', { id: 'a-reason', name: 'reason', label: t('attendance.reason'), type: 'textarea', required: true, placeholder: t('attendance.add_reason_ph'), errors: od === 'add-dialog' ? errors : {}, old: od === 'add-dialog' ? old : {} }) %></div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('attendance.add_shift') %></button></div>
+  </form>
+</dialog>
+<% } %>

@@ -1,0 +1,19 @@
+<%# The shifts of one day: in – out, how, correction note, and (managers) correct / delete. Locals: shifts, personName %>
+<div class="att-shifts">
+<% shifts.forEach(function (s) { %>
+  <div class="att-shift">
+    <bdi dir="ltr" class="strong"><%= s.inTime %> – <%= s.clock_out ? s.outTime : '…' %></bdi><% if (s.clock_out && s.outDate !== s.work_date) { %><span class="tiny muted">+1</span><% } %>
+    <% if (s.isOpen) { %><span class="att-tag"><%= t('attendance.in_now') %></span><% } else if (s.missingOut) { %><span class="att-tag warn"><%= t('attendance.missing_out') %></span><% } %>
+    <% if (s.in_method === 'qr' || s.out_method === 'qr') { %><span class="att-tag" title="<%= t('attendance.method_qr_title') %>">QR</span><% } %>
+    <% if (s.off_network) { %><span class="att-tag warn" title="<%= t('attendance.off_network_title') %>"><%= t('attendance.off_network') %></span><% } %>
+    <% if (s.corrected_at) { %><span class="att-tag" title="<%= t('attendance.corrected_by', { name: s.corrected_by_name || '—', reason: s.correction_reason || '' }) %>"><%= t('attendance.method_manual') %></span><% } %>
+    <% if (can('attendance.manage') && query.print !== '1') { %>
+      <span class="att-shift-actions no-print">
+        <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('attendance.correct') %>" title="<%= t('attendance.correct') %>" data-open-dialog="correct-dialog" data-action="/app/attendance/records/<%= s.id %>" data-fill="<%= json({ work_date: s.work_date, clock_in: s.inTime, clock_out: s.outTime || '', reason: '', person: personName }) %>"><%- icon('pencil', 'icon-sm') %></button>
+        <%- include('../../partials/delete-form', { action: '/app/attendance/records/' + s.id + '/delete', confirmText: t('attendance.delete_confirm', { name: personName }) }) %>
+      </span>
+    <% } %>
+  </div>
+  <% if (s.corrected_at && s.correction_reason) { %><div class="tiny muted att-note"><%= t('attendance.corrected_by', { name: s.corrected_by_name || '—', reason: s.correction_reason }) %></div><% } %>
+<% }) %>
+</div>

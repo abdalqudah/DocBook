@@ -208,3 +208,142 @@ test('HTTP: scan → one tap clock in; another clinic\'s code is refused; sign-i
     server.close();
   }
 });
+
+// ---------------------------------------------------------------- round 2: working hours, board, screens
+const kiosks = require('../src/modules/attendance/kiosk.service');
+
+test('working hours decide present / late / absent / not yet / day off; own hours win over the clinic hours', async () => {
+  const s = await att.saveSettings(A, { workDays: ['sat', 'sun', 'mon', 'tue', 'wed', 'thu'], workStart: '09:00', workEnd: '17:00', grace: 10 });
+  assert.deepEqual(s.workDays, ['sat', 'sun', 'mon', 'tue', 'wed', 'thu']);
+  assert.equal(s.hasPlan, true);
+  await assert.rejects(att.saveSettings(A, { workDays: [], workStart: '09:00', workEnd: 'x' }), (e) => e.code === 'VALIDATION_FAILED' && Boolean(e.details.work_end && e.details.work_days));
+  const { planFor } = await att.planner(A.businessId, '2026-09-01', '2026-09-30');
+  // 2026-09-25 is a Friday, 2026-09-26 a Saturday.
+  assert.equal(planFor(nurse.userId, '2026-09-25'), 'off');
+  assert.deepEqual(planFor(nurse.userId, '2026-09-26'), { start: '09:00', end: '17:00', minutes: 480, source: 'clinic' });
+  const now = { date: '2026-09-30', minutes: 9 * 60 + 5 };
+  const plan = planFor(nurse.userId, '2026-09-30');
+  const shift = (inTime, minutes, out = true) => ({ inTime, minutes, clock_out: out ? new Date() : null });
+  assert.equal(att.dayStatus(plan, [shift('09:08', 480)], '2026-09-30', now, 10).status, 'present', 'within the grace minutes');
+  const late = att.dayStatus(plan, [shift('09:25', 400)], '2026-09-30', now, 10);
+  assert.equal(late.status, 'late');
+  assert.equal(late.lateMinutes, 25);
+  assert.equal(att.dayStatus(plan, [shift('08:00', 600)], '2026-09-30', now, 10).overtime, 120);
+  assert.equal(att.dayStatus(plan, [], '2026-09-30', now, 10).status, 'not_yet', 'before start + grace');
+  assert.equal(att.dayStatus(plan, [], '2026-09-30', { date: '2026-09-30', minutes: 9 * 60 + 11 }, 10).status, 'absent');
+  assert.equal(att.dayStatus(plan, [], '2026-09-29', now, 10).status, 'absent', 'a past working day');
+  assert.equal(att.dayStatus(plan, [], '2026-09-29', now, 10, '2026-09-30').status, 'no_record', 'before tracking started: never an absence');
+  assert.equal(s.planSince, A.today, 'tracking starts the day the hours are set');
+  assert.equal(att.dayStatus('off', [], '2026-09-25', now, 10).status, 'off');
+  assert.equal(att.dayStatus(null, [], '2026-09-29', now, 10).status, 'no_record', 'no plan: nothing is called absent');
+  // Own hours (evening shift) replace the clinic hours; removing them brings the clinic hours back.
+  await att.saveSchedule(A, nurse.userId, { days: ['sat', 'mon'], start: '16:00', end: '22:00' });
+  const p2 = (await att.planner(A.businessId, '2026-09-26', '2026-09-27')).planFor;
+  assert.deepEqual(p2(nurse.userId, '2026-09-26'), { start: '16:00', end: '22:00', minutes: 360, source: 'own' });
+  assert.equal(p2(nurse.userId, '2026-09-27'), 'off');
+  await assert.rejects(att.saveSchedule(B, nurse.userId, { days: ['sat'], start: '09:00', end: '10:00' }), { code: 'NOT_FOUND' }, 'not a member of clinic B');
+  await att.removeSchedule(A, nurse.userId);
+  assert.equal((await att.planner(A.businessId, '2026-09-26', '2026-09-26')).planFor(nurse.userId, '2026-09-26').source, 'clinic');
+  assert.ok(await knex('audit_logs').where({ business_id: A.businessId, action: 'attendance.schedule_saved' }).first());
+});
+
+test('a manager adds a missed shift (reason required, audited, no overlap); board and monthly report count it', async () => {
+  const d = att.shiftDay(A.today, -1);
+  await assert.rejects(att.addManual(A, { user_id: nurse.userId, work_date: d, clock_in: '09:20', clock_out: '12:00', reason: '' }), (e) => e.code === 'VALIDATION_FAILED' && Boolean(e.details.reason));
+  await assert.rejects(att.addManual(A, { user_id: B.userId, work_date: d, clock_in: '09:20', clock_out: '12:00', reason: 'x' }), (e) => e.code === 'VALIDATION_FAILED' && Boolean(e.details.user_id), 'only staff of this clinic');
+  const id = await att.addManual(A, { user_id: nurse.userId, work_date: d, clock_in: '09:20', clock_out: '12:00', reason: 'Phone battery was empty' });
+  await assert.rejects(att.addManual(A, { user_id: nurse.userId, work_date: d, clock_in: '11:00', clock_out: '13:00', reason: 'x' }), { code: 'ATTENDANCE_OVERLAP' });
+  const row = await knex('attendance_records').where({ id }).first();
+  assert.equal(row.in_method, 'manual');
+  assert.equal(row.corrected_by, A.userId);
+  assert.ok(await knex('audit_logs').where({ business_id: A.businessId, action: 'attendance.added', entity_id: String(id) }).first());
+  const b = await att.board(A, d);
+  const n = b.rows.find((p) => p.user_id === nurse.userId);
+  assert.equal(n.worked, 160);
+  assert.equal(n.firstIn, '09:20');
+  if (att.DAY_KEYS[new Date(`${d}T00:00:00Z`).getUTCDay()] !== 'fri') {
+    assert.equal(n.status, 'late');
+    assert.equal(n.lateMinutes, 20);
+  }
+  assert.ok(b.rows.every((p) => p.status !== 'not_yet'), 'yesterday: nobody is "not in yet"');
+  const rep = await att.monthReport(A, d.slice(0, 7));
+  const rn = rep.rows.find((p) => p.user_id === nurse.userId);
+  assert.ok(rn.worked >= 160);
+  const sheet = await att.timesheet(A, nurse.userId, d.slice(0, 7));
+  assert.equal(sheet.days.find((x) => x.date === d).shifts.length, 1);
+  await assert.rejects(att.timesheet(B, nurse.userId, d.slice(0, 7)), { code: 'NOT_FOUND' });
+  await att.remove(A, id);
+});
+
+test('door screens: secret link, new link, switch off, other clinic; same-network rule', async () => {
+  const id = await kiosks.create(A, { name: 'Main entrance' });
+  const k = await kiosks.get(A, id);
+  await assert.rejects(kiosks.get(B, id), { code: 'NOT_FOUND' });
+  const url = kiosks.displayUrl(k, 'http://clinic.test');
+  const token = url.split('/kiosk/')[1];
+  assert.match(url, /^http:\/\/clinic\.test\/kiosk\/[A-Za-z0-9_-]{20,}$/);
+  assert.equal((await kiosks.byDisplayToken(token)).id, id);
+  assert.notEqual(k.display_token_hash, token, 'the link is stored hashed');
+  await kiosks.regenerate(A, id);
+  assert.equal(await kiosks.byDisplayToken(token), null, 'a new link stops the old one');
+  const fresh = await kiosks.get(A, id);
+  const token2 = kiosks.displayUrl(fresh, 'x').split('/kiosk/')[1];
+  await kiosks.update(A, id, { is_active: false });
+  assert.equal(await kiosks.byDisplayToken(token2), null, 'switched off');
+  await kiosks.update(A, id, { is_active: true });
+  // Network: no screen on → nothing to compare with; then the screen reports from a public address.
+  assert.deepEqual(await kiosks.networkCheck(A.businessId, '203.0.113.9'), { known: false, same: true });
+  await kiosks.touch(await kiosks.get(A, id), '::ffff:198.51.100.7');
+  assert.equal((await kiosks.networkCheck(A.businessId, '198.51.100.7')).same, true, 'same internet connection');
+  assert.equal((await kiosks.networkCheck(A.businessId, '203.0.113.9')).same, false, 'another network');
+  await kiosks.touch({ ...(await kiosks.get(A, id)), last_seen_at: null }, '127.0.0.1');
+  assert.equal((await kiosks.networkCheck(A.businessId, '192.168.1.20')).same, true, 'DocBook on a clinic PC: phones on its Wi-Fi');
+  assert.ok(await knex('audit_logs').where({ business_id: A.businessId, action: 'attendance.screen_new_link' }).first());
+});
+
+test('HTTP: door screen link works without signing in; scan while signed out → login → the scan still counts', async () => {
+  const { server, get, post, csrf } = await serve();
+  try {
+    const [k] = await kiosks.list(A.businessId);
+    const token = kiosks.displayUrl(k, 'http://x').split('/kiosk/')[1];
+    let r = await get(`/kiosk/${token}`);
+    assert.equal(r.status, 200);
+    assert.match(r.text, /data-kiosk-qr/);
+    assert.match(r.text, /Clinic A/);
+    assert.doesNotMatch(r.text, /\/app\/attendance\/screens/, 'no way into the app from the door screen');
+    r = await get(`/kiosk/${token}/qr`);
+    const j = JSON.parse(r.text);
+    assert.ok(j.data.svg.startsWith('<svg'));
+    assert.ok(j.data.expiresIn >= 1 && j.data.expiresIn <= 10);
+    assert.ok(Array.isArray(j.data.feed));
+    assert.equal((await get('/kiosk/not-a-real-token-000000000/qr')).status, 404);
+    // Phone, not signed in: scans the code, signs in after the code has changed, and the scan still counts.
+    const before = await knex('attendance_records').where({ business_id: A.businessId, user_id: nurse.userId }).count({ n: '*' }).first();
+    const open = await att.openShift(A.businessId, nurse.userId);
+    r = await get(`/app/attendance/scan?t=${att.issueToken(A.businessId).token}`);
+    assert.equal(r.status, 302);
+    assert.equal(r.location, '/login');
+    r = await get('/login');
+    r = await post('/login', { _csrf: csrf(r.text), email: 'nurse@att-a.test', password: 'Passw0rd!x' });
+    assert.equal(r.status, 302);
+    assert.equal(r.location, '/app/attendance/scan?resume=1');
+    r = await get(r.location);
+    assert.equal(r.status, 200, 'the confirmation screen, not "scan again"');
+    const expect = (r.text.match(/name="expect" value="(\w+)"/) || [])[1];
+    assert.equal(expect, open ? 'out' : 'in');
+    r = await post('/app/attendance/scan', { _csrf: csrf(r.text), expect });
+    assert.equal(r.status, 302);
+    const last = await knex('attendance_records').where({ business_id: A.businessId, user_id: nurse.userId }).orderBy('updated_at', 'desc').orderBy('id', 'desc').first();
+    assert.equal(expect === 'in' ? last.in_method : last.out_method, 'qr');
+    if (expect === 'in') assert.equal(Number((await knex('attendance_records').where({ business_id: A.businessId, user_id: nurse.userId }).count({ n: '*' }).first()).n), Number(before.n) + 1);
+    // Staff without attendance.manage cannot open screens or working hours; with attendance.view missing, no board.
+    assert.equal((await get('/app/attendance/screens')).status, 403);
+    assert.equal((await get('/app/attendance/settings')).status, 403);
+    assert.equal((await get(`/app/attendance/staff/${A.userId}`)).status, 403);
+    assert.equal((await get(`/app/attendance/staff/${nurse.userId}`)).status, 200, 'own timesheet');
+    r = await get('/app/attendance?view=today');
+    assert.doesNotMatch(r.text, /att-board/);
+  } finally {
+    server.close();
+  }
+});

@@ -20,6 +20,7 @@ router.use('/vendors', require('../modules/vendors/public.web'));
   router.use('/vendor', vendor);
 }
 router.use('/verify', require('../modules/certificates/verify.web')); // public check of sick leaves / medical reports (QR)
+router.use('/kiosk', require('../modules/attendance/kiosk.web')); // attendance door screen, opened by its own secret link (no staff sign-in on the door tablet)
 router.use('/calendar', require('../modules/live/public.web')); // a doctor's private iCal subscription (/calendar/<token>.ics)
 router.use('/m', require('../modules/integrations/public.web')); // public images of a clinic's media library (/m/<slug>/<id>)
 // Clinic pages (docbook/<slug>, /<slug>/login, /<slug>/book…) come LAST so they never shadow a platform path;

@@ -1,0 +1,3 @@
+<%# One day's status as a calm badge. Locals: st = { status, lateMinutes }, isIn (optional) %>
+<% var _s = st.status; var _cls = { present: 'badge-success badge-dot', late: 'badge-warning badge-dot', absent: 'badge-danger badge-dot', not_yet: 'badge-neutral', off: 'badge-neutral', no_record: 'badge-neutral' }[_s] || 'badge-neutral'; %>
+<span class="badge <%= _cls %>"><%= _s === 'late' ? t('attendance.st_late_by', { n: fmt.number(st.lateMinutes) }) : t('attendance.st_' + _s) %></span><% if (typeof isIn !== 'undefined' && isIn) { %> <span class="att-tag"><%= t('attendance.in_now') %></span><% } %>

@@ -1,0 +1,118 @@
+<%
+  var order = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+  var o = typeof old !== 'undefined' && old && old.section === 'hours' ? old : null;
+  var chosen = o ? [].concat(o.work_days || []) : settings.workDays;
+  var od = typeof openDialog !== 'undefined' ? openDialog : null;
+  var fa = typeof formAction !== 'undefined' ? formAction : null;
+  var errs = typeof errors !== 'undefined' && errors ? errors : {};
+  // "Saturday – Thursday · 09:00–17:00": days with the same hours, consecutive days shown as a range.
+  var weekText = function (days) {
+    var groups = {}; var keys = [];
+    order.forEach(function (k, i) { var d = days[k]; if (d && d !== 'off') { var key = d.start + '–' + d.end; if (!groups[key]) { groups[key] = []; keys.push(key); } groups[key].push(i); } });
+    return keys.map(function (key) {
+      var idx = groups[key]; var parts = []; var a = idx[0]; var b = idx[0];
+      for (var j = 1; j <= idx.length; j++) {
+        if (j < idx.length && idx[j] === b + 1) { b = idx[j]; continue; }
+        parts.push(a === b ? t('days.' + order[a]) : (b === a + 1 ? t('days.' + order[a]) + (locale === 'ar' ? '، ' : ', ') + t('days.' + order[b]) : t('days.' + order[a]) + ' – ' + t('days.' + order[b])));
+        if (j < idx.length) { a = idx[j]; b = idx[j]; }
+      }
+      return { days: parts.join(locale === 'ar' ? '، ' : ', '), hours: key };
+    });
+  };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/attendance"><%= t('attendance.title') %></a></div>
+    <h1><%= t('attendance.hours_title') %></h1>
+    <p><%= t('attendance.hours_lead') %></p>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <form class="panel" method="post" action="/app/attendance/settings" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="section" value="hours">
+    <div class="panel-head"><div><h2><%= t('attendance.clinic_hours') %></h2><div class="panel-sub"><%= t('attendance.clinic_hours_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <% if (o && typeof formError !== 'undefined' && formError) { %><%- include('../../partials/form-error') %><% } %>
+      <fieldset class="att-days">
+        <legend class="label"><%= t('attendance.work_days') %></legend>
+        <div class="att-day-picks">
+          <% order.forEach(function (k) { %><label class="att-day"><input type="checkbox" name="work_days" value="<%= k %>"<%= chosen.indexOf(k) >= 0 ? ' checked' : '' %>><span><%= t('days.' + k) %></span></label><% }) %>
+        </div>
+        <% if (errs.work_days) { %><span class="field-error"><%= errs.work_days %></span><% } %>
+      </fieldset>
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { name: 'work_start', label: t('attendance.work_start'), type: 'time', value: settings.workStart || '', old: o || {}, errors: errs }) %>
+        <%- include('../../partials/field', { name: 'work_end', label: t('attendance.work_end'), type: 'time', value: settings.workEnd || '', old: o || {}, errors: errs }) %>
+        <%- include('../../partials/field', { name: 'late_grace_minutes', label: t('attendance.grace'), type: 'number', value: settings.grace, suffix: t('attendance.min'), attrs: 'min="0" max="120" step="1" inputmode="numeric"', old: o || {}, errors: errs }) %>
+      </div>
+      <p class="help"><%= t('attendance.clinic_hours_help') %><% if (settings.hasPlan && settings.planSince) { %> <%= t('attendance.plan_since', { date: fmt.date(settings.planSince) }) %><% } %></p>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('attendance.how_status') %></h2></div>
+    <div class="panel-body">
+      <ul class="att-legend">
+        <li><%- include('_status', { st: { status: 'present' } }) %><span><%= t('attendance.legend_present') %></span></li>
+        <li><%- include('_status', { st: { status: 'late', lateMinutes: 20 } }) %><span><%= t('attendance.legend_late') %></span></li>
+        <li><%- include('_status', { st: { status: 'absent' } }) %><span><%= t('attendance.legend_absent') %></span></li>
+        <li><%- include('_status', { st: { status: 'not_yet' } }) %><span><%= t('attendance.legend_not_yet') %></span></li>
+        <li><%- include('_status', { st: { status: 'off' } }) %><span><%= t('attendance.legend_off') %></span></li>
+      </ul>
+      <p class="small muted mt-4"><%= t('attendance.legend_order') %></p>
+    </div>
+  </section>
+</div>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('attendance.staff_hours') %></h2><div class="panel-sub"><%= t('attendance.staff_hours_sub') %></div></div></div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('attendance.person') %></th><th><%= t('attendance.hours_from') %></th><th><%= t('attendance.this_week') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+    <tbody>
+    <% staff.forEach(function (s) { var wt = weekText(s.week); var ownDays = s.own ? Object.keys(s.own) : []; var first = ownDays.length ? s.own[ownDays[0]] : null; %>
+      <tr>
+        <td class="primary-cell"><div class="row-sm"><span class="avatar att-avatar"><%= initials(s.name) %></span><span><span class="strong"><%= s.name %></span><span class="small muted att-role"><%= roleLabel(s) %></span></span></div></td>
+        <td data-label="<%= t('attendance.hours_from') %>"><span class="badge badge-neutral"><%= t('attendance.src_' + (s.source || 'none')) %></span></td>
+        <td data-label="<%= t('attendance.this_week') %>" class="small"><% if (!wt.length) { %>—<% } wt.forEach(function (g) { %><div><%= g.days %> · <bdi dir="ltr"><%= g.hours %></bdi></div><% }) %></td>
+        <td class="actions"><div class="row-sm att-actions">
+          <button class="btn btn-ghost btn-sm" type="button" data-open-dialog="schedule-dialog" data-action="/app/attendance/settings/staff/<%= s.user_id %>" data-fill="<%= json({ person: s.name, days: ownDays.length ? ownDays : settings.workDays, start: first ? first.start : (settings.workStart || ''), end: first ? first.end : (settings.workEnd || '') }) %>"><%- icon('pencil', 'icon-sm') %><%= t('attendance.set_own_hours') %></button>
+          <% if (s.own) { %>
+          <form method="post" action="/app/attendance/settings/staff/<%= s.user_id %>/delete" class="inline" data-confirm="<%= t('attendance.use_default_confirm', { name: s.name }) %>" data-confirm-yes="<%= t('attendance.use_default') %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-ghost btn-sm" type="submit"><%- icon('rotate-ccw', 'icon-sm') %><%= t('attendance.use_default') %></button>
+          </form>
+          <% } %>
+        </div></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+
+<dialog class="dialog" id="schedule-dialog" aria-labelledby="schedule-dialog-title"<% if (od === 'schedule-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= od === 'schedule-dialog' && fa ? fa : '/app/attendance/settings' %>" novalidate>
+    <div class="dialog-head"><div><h2 id="schedule-dialog-title"><%= t('attendance.own_hours_title') %></h2><p class="muted small mt-1"><%= t('attendance.own_hours_sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (od === 'schedule-dialog') { %><%- include('../../partials/form-error') %><% } %>
+      <div class="field"><label class="label" for="s-person"><%= t('attendance.person') %></label><input class="input" id="s-person" name="person" value="<%= od === 'schedule-dialog' && old ? old.person || '' : '' %>" readonly tabindex="-1"></div>
+      <fieldset class="att-days">
+        <legend class="label"><%= t('attendance.work_days') %></legend>
+        <div class="att-day-picks">
+          <% var sd = od === 'schedule-dialog' && old ? [].concat(old.days || []) : []; order.forEach(function (k) { %><label class="att-day"><input type="checkbox" name="days" value="<%= k %>"<%= sd.indexOf(k) >= 0 ? ' checked' : '' %>><span><%= t('days.' + k) %></span></label><% }) %>
+        </div>
+        <% if (od === 'schedule-dialog' && errs.days) { %><span class="field-error"><%= errs.days %></span><% } %>
+      </fieldset>
+      <div class="form-grid">
+        <%- include('../../partials/field', { id: 's-start', name: 'start', label: t('attendance.work_start'), type: 'time', required: true, old: od === 'schedule-dialog' ? old : {}, errors: {} }) %>
+        <%- include('../../partials/field', { id: 's-end', name: 'end', label: t('attendance.work_end'), type: 'time', required: true, old: od === 'schedule-dialog' ? old : {}, errors: {} }) %>
+      </div>
+      <% if (od === 'schedule-dialog' && Object.keys(errs).some(function (k) { return /_(start|end)$/.test(k); })) { %><span class="field-error"><%= t('attendance.hours_invalid') %></span><% } %>
+      <p class="help"><%= t('attendance.own_hours_help') %></p>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

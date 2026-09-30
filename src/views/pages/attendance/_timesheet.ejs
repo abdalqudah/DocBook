@@ -1,0 +1,27 @@
+<%# A month of one person, every day. Locals: sheet, hm %>
+<% var tt = sheet.totals; var isPrint = query.print === '1'; %>
+<div class="stats att-stats mb-4">
+  <div class="stat"><div class="stat-label"><%= t('attendance.days_present') %></div><div class="stat-value"><%= fmt.number(tt.present) %></div><div class="stat-meta"><%= fmt.month(sheet.month) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('attendance.hours_worked') %></div><div class="stat-value" dir="ltr"><%= hm(tt.worked) %></div><div class="stat-meta"><%= tt.overtime ? t('attendance.overtime_meta', { h: hm(tt.overtime) }) : (tt.planned ? t('attendance.planned_meta', { h: hm(tt.planned) }) : '—') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('attendance.late_days') %></div><div class="stat-value<%= tt.late ? ' att-warn' : '' %>"><%= fmt.number(tt.late) %></div><div class="stat-meta"><%= tt.late ? t('attendance.late_total', { n: fmt.number(tt.lateMinutes) }) : '—' %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('attendance.absent_days') %></div><div class="stat-value<%= tt.absent ? ' att-danger' : '' %>"><%= fmt.number(tt.absent) %></div><div class="stat-meta"><%= tt.missingOut ? t('attendance.missing_out_n', { n: fmt.number(tt.missingOut) }) : '—' %></div></div>
+</div>
+<% if (!sheet.hasAnyPlan) { %><div class="alert alert-info mb-4 no-print"><%- icon('info') %><div class="grow"><%= t('attendance.no_plan_note') %><% if (can('attendance.manage')) { %> <a href="/app/attendance/settings"><%= t('attendance.set_hours') %></a><% } %></div></div><% } %>
+<div class="panel flush">
+  <div class="table-wrap"><table class="table responsive att-sheet">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('common.status') %></th><th><%= t('attendance.planned') %></th><th><%= t('attendance.times') %></th><th class="num"><%= t('attendance.hours') %></th><th class="num"><%= t('attendance.overtime') %></th><% if (can('attendance.manage') && !isPrint) { %><th class="actions no-print"><span class="sr-only"><%= t('common.actions') %></span></th><% } %></tr></thead>
+    <tbody>
+    <% sheet.days.slice().reverse().forEach(function (d) { if (d.future) return; %>
+      <tr class="<%= d.status === 'off' && !d.shifts.length ? 'att-row-off' : '' %>">
+        <td class="primary-cell nowrap"><span class="strong"><%= fmt.date(d.date, { weekday: 'short', day: 'numeric', month: 'short' }) %></span></td>
+        <td data-label="<%= t('common.status') %>"><%- include('_status', { st: d, isIn: d.shifts.some(function (s) { return s.isOpen; }) }) %></td>
+        <td data-label="<%= t('attendance.planned') %>" class="muted"><% if (d.plan && d.plan !== 'off') { %><bdi dir="ltr"><%= d.plan.start %>–<%= d.plan.end %></bdi><% } else { %>—<% } %></td>
+        <td data-label="<%= t('attendance.times') %>"><% if (d.shifts.length) { %><%- include('_shifts', { shifts: d.shifts, personName: sheet.person.name }) %><% } else { %><span class="muted">—</span><% } %></td>
+        <td class="num strong" data-label="<%= t('attendance.hours') %>" dir="ltr"><%= d.worked ? hm(d.worked) : '—' %></td>
+        <td class="num" data-label="<%= t('attendance.overtime') %>" dir="ltr"><%= d.overtime ? hm(d.overtime) : '—' %></td>
+        <% if (can('attendance.manage') && !isPrint) { %><td class="actions no-print"><button class="btn btn-ghost btn-sm" type="button" data-open-dialog="add-dialog" data-fill="<%= json({ user_id: sheet.person.user_id, work_date: d.date, clock_in: d.plan && d.plan !== 'off' ? d.plan.start : '', clock_out: d.plan && d.plan !== 'off' && d.date < clinicToday ? d.plan.end : '', reason: '' }) %>"><%- icon('plus', 'icon-sm') %><%= t('attendance.add_shift') %></button></td><% } %>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</div>

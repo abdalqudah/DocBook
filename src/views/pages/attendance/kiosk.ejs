@@ -1,24 +1,53 @@
-<main class="kiosk" data-kiosk-src="/app/attendance/kiosk/qr" data-expires="<%= qr.expiresIn %>" data-step="<%= qr.stepSeconds %>" data-tz="<%= business.timezone || 'UTC' %>">
+<%# Door screen: full-screen, rotating QR, live clock, instruction, last check-ins. Used by /kiosk/<token> and /app/attendance/kiosk. %>
+<main class="kiosk" data-kiosk-src="<%= src %>" data-expires="<%= qr.expiresIn %>" data-step="<%= qr.stepSeconds %>" data-tz="<%= clinic.timezone || 'UTC' %>" data-locale="<%= locale %>"
+  data-label-in="<%= t('attendance.feed_in') %>" data-label-out="<%= t('attendance.feed_out') %>">
   <header class="kiosk-head">
     <div class="kiosk-clinic">
-      <% if (business.logo_mime) { %><img class="kiosk-logo" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt=""><% } %>
-      <strong><%= business.name %></strong>
+      <% if (clinic.logoUrl) { %><img class="kiosk-logo" src="<%= clinic.logoUrl %>" alt=""><% } %>
+      <div class="kiosk-clinic-text"><strong><%= clinic.name %></strong><% if (screenName) { %><span><%= screenName %></span><% } %></div>
     </div>
-    <div class="kiosk-tools">
-      <span class="kiosk-clock" data-kiosk-clock dir="ltr" aria-hidden="true">--:--</span>
-      <button class="btn btn-ghost btn-sm" type="button" data-kiosk-fullscreen hidden><%- icon('monitor', 'icon-sm') %><%= t('attendance.fullscreen') %></button>
-      <a class="btn btn-ghost btn-sm" href="/app/attendance/kiosk/setup"><%- icon('x', 'icon-sm') %><%= t('attendance.exit') %></a>
+    <div class="kiosk-time">
+      <div class="kiosk-clock" data-kiosk-clock dir="ltr">--:--</div>
+      <div class="kiosk-date" data-kiosk-date></div>
     </div>
   </header>
-  <section class="kiosk-main">
-    <h1><%= t('attendance.scan_to_clock') %></h1>
-    <p class="kiosk-sub"><%= t('attendance.scan_sub') %></p>
-    <% if (typeof reach !== 'undefined' && reach.via === 'lan') { %><p class="kiosk-reach small muted"><%= t('attendance.reach_lan') %> <span dir="ltr" class="mono"><%= reach.base %></span></p><% } %>
-    <% if (typeof reach !== 'undefined' && reach.via === 'local') { %><div class="alert alert-warning kiosk-reach"><%- icon('triangle-alert') %><div><%= t('attendance.reach_local') %></div></div><% } %>
-    <div class="kiosk-qr" data-kiosk-qr><%- qr.svg %></div>
-    <div class="kiosk-timer" aria-live="off"><span><%= t('attendance.changes_in') %></span> <strong data-kiosk-left dir="ltr"><%= qr.expiresIn %></strong><span><%= t('attendance.seconds') %></span></div>
-    <div class="kiosk-bar" aria-hidden="true"><span data-kiosk-bar></span></div>
-    <p class="kiosk-offline" data-kiosk-offline hidden role="status"><%- icon('triangle-alert', 'icon-sm') %><%= t('attendance.offline') %></p>
-  </section>
-  <footer class="kiosk-foot"><%= brandName %></footer>
+
+  <div class="kiosk-body-grid">
+    <section class="kiosk-main">
+      <h1><%= t('attendance.scan_to_clock') %></h1>
+      <p class="kiosk-sub"><%= t('attendance.scan_sub') %></p>
+      <div class="kiosk-qr" data-kiosk-qr><%- qr.svg %></div>
+      <div class="kiosk-timer" aria-live="off"><span><%= t('attendance.changes_in') %></span> <strong data-kiosk-left dir="ltr"><%= qr.expiresIn %></strong><span><%= t('attendance.seconds') %></span></div>
+      <div class="kiosk-bar" aria-hidden="true"><span data-kiosk-bar></span></div>
+      <p class="kiosk-offline" data-kiosk-offline hidden role="status"><%- icon('triangle-alert', 'icon-sm') %><%= t('attendance.offline') %></p>
+      <p class="kiosk-offline" data-kiosk-gone hidden role="status"><%- icon('triangle-alert', 'icon-sm') %><%= t('attendance.screen_gone') %></p>
+      <% if (reach.via === 'lan') { %><p class="kiosk-reach small muted"><%= t('attendance.reach_lan') %> <bdi dir="ltr" class="mono"><%= reach.base %></bdi></p><% } %>
+      <% if (reach.via === 'local') { %><div class="alert alert-warning kiosk-reach"><%- icon('triangle-alert') %><div><%= t('attendance.reach_local') %></div></div><% } %>
+    </section>
+
+    <aside class="kiosk-side">
+      <ol class="kiosk-steps">
+        <li><span class="kiosk-step-n">1</span><span><%= t('attendance.kiosk_step_1') %></span></li>
+        <li><span class="kiosk-step-n">2</span><span><%= t('attendance.kiosk_step_2') %></span></li>
+        <li><span class="kiosk-step-n">3</span><span><%= t('attendance.kiosk_step_3') %></span></li>
+      </ol>
+      <div class="kiosk-feed-wrap">
+        <h2><%= t('attendance.feed_title') %></h2>
+        <ul class="kiosk-feed" data-kiosk-feed>
+          <% feed.forEach(function (e) { %>
+            <li><span class="avatar"><%= e.initials %></span><bdi class="kiosk-feed-name"><%= e.name %></bdi><span class="kiosk-feed-act"><%= e.action === 'in' ? t('attendance.feed_in') : t('attendance.feed_out') %></span><bdi class="kiosk-feed-time" dir="ltr"><%= e.time %></bdi></li>
+          <% }) %>
+        </ul>
+        <p class="kiosk-feed-empty" data-kiosk-feed-empty<%= feed.length ? ' hidden' : '' %>><%= t('attendance.feed_empty') %></p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="kiosk-foot">
+    <span><%= brandName %></span>
+    <span class="kiosk-foot-tools">
+      <button class="btn btn-ghost btn-sm" type="button" data-kiosk-fullscreen hidden><%- icon('maximize', 'icon-sm') %><%= t('attendance.fullscreen') %></button>
+      <% if (exitHref) { %><a class="btn btn-ghost btn-sm" href="<%= exitHref %>"><%- icon('x', 'icon-sm') %><%= t('attendance.exit') %></a><% } %>
+    </span>
+  </footer>
 </main>

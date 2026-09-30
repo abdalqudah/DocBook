@@ -1,0 +1,20 @@
+<% var p = sheet.person; var self = p.user_id === currentUser.id; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><% if (can('attendance.view')) { %><a href="/app/attendance?view=month&month=<%= month %>"><%= t('attendance.title') %></a><% } else { %><a href="/app/attendance"><%= t('attendance.title') %></a><% } %></div>
+    <h1><%= p.name %></h1>
+    <p><%= roleLabel(p) %> · <%= t('attendance.timesheet') %> · <%= fmt.month(month) %></p>
+  </div>
+  <div class="page-actions no-print">
+    <% if (can('attendance.view')) { %><%- include('../../partials/export-menu', { href: '/app/attendance/export' }) %><% } %>
+    <a class="btn btn-ghost" href="?month=<%= month %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<form method="get" class="row-sm wrap mb-4 no-print att-staff-filter" data-autosubmit>
+  <label class="sr-only" for="st-month"><%= t('common.month') %></label>
+  <select class="select att-select" id="st-month" name="month"><% months.forEach(function (m) { %><option value="<%= m %>"<%= m === month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %></select>
+  <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+</form>
+<% if (typeof query !== 'undefined' && query.print === '1') { %><h2 class="mb-4"><%= p.name %> · <%= fmt.month(month) %></h2><% } %>
+<%- include('_timesheet', { sheet: sheet }) %>
+<%- include('_manual') %>
