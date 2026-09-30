@@ -12,11 +12,13 @@ const clinical = require('./clinical.service');
 const icd = require('../clinicalplus/icd.service');
 const timer = require('../clinicalplus/timer.service');
 const privacy = require('../clinicalplus/privacy.service');
+const dflow = require('./dflow.service');
 
 const router = express.Router();
 router.use(canAny('clinical.view', 'vitals.edit', 'frontdesk.use'));
 
-const ASSETS = { pageScripts: ['/js/appointments.js', '/js/clinicalplus.js'], pageStyles: ['/css/appointments.css', '/css/clinicalplus.css'] };
+const ASSETS = { pageScripts: ['/js/appointments.js', '/js/clinicalplus.js', '/js/dflow.js'], pageStyles: ['/css/appointments.css', '/css/clinicalplus.css', '/css/dflow.css'] };
+const PRINT_ASSETS = { pageScripts: ['/js/appointments.js', '/js/clinicalplus.js'], pageStyles: ['/css/appointments.css', '/css/clinicalplus.css'] };
 
 /** Whole years between a date of birth and the clinic's today. */
 function ageOn(dob, today) {
@@ -52,6 +54,15 @@ async function accessFor(req, a, need) {
   return acc;
 }
 
+/** Who the doctor sees after this visit: someone already sent in, else the longest waiting, else the next booked one. */
+async function nextPatientOf(ctx, a) {
+  const rows = await knex('appointments').where({ business_id: ctx.businessId, doctor_id: a.doctor_id, appointment_date: ctx.today })
+    .whereNot('id', a.id).whereNot('appointment_type', 'blocked').whereIn('status', ['pending', 'confirmed'])
+    .orderBy('appointment_time').select('id', 'patient_name', 'appointment_time', 'checked_in', 'with_doctor', 'arrived_at');
+  const byArrival = (x, y) => String(x.arrived_at || '').localeCompare(String(y.arrived_at || ''));
+  return rows.find((r) => r.with_doctor) || rows.filter((r) => r.checked_in).sort(byArrival)[0] || rows[0] || null;
+}
+
 async function renderVisit(req, res, extra = {}) {
   const { ctx } = req;
   const { a, patient } = await load(req);
@@ -74,6 +85,13 @@ async function renderVisit(req, res, extra = {}) {
     clinicalView ? icd.listFor(ctx.businessId, a.id) : [],
     clinicalView ? timer.get(ctx.businessId, a.id) : null,
   ]);
+  // Doctor journey: the bill the doctor sets ("amount to collect"), the next patient (after finishing) and a
+  // confirmation after "Finish visit & send to reception" (?done=1).
+  const canFinish = perms.has('clinical.edit') || perms.has('appointments.manage');
+  const [bill, nextUp] = await Promise.all([
+    canFinish ? dflow.billFor(ctx, a.id) : null,
+    a.doctor_id && a.appointment_date === ctx.today ? nextPatientOf(ctx, a) : null,
+  ]);
   const historyCodes = history.length ? await icd.diagnosesByAppointment(ctx.businessId, history.map((h) => h.appointment_id)) : new Map();
   const vitals = (consult && consult.vital_signs) || {};
   // Online consultation: link, patient's time zone, reason and files, and the doctor's side of the video call.
@@ -81,7 +99,8 @@ async function renderVisit(req, res, extra = {}) {
   res.page('pages/clinic/visits/show', {
     title: `${a.patient_name} · ${req.t('visits.title')}`, a, patient, consult, vitals, bmi: bmiOf(vitals), rxs, history, meds, invoice,
     age: patient ? ageOn(patient.date_of_birth, ctx.today) : null, ...ASSETS, online,
-    access, diagnoses, historyCodes, timerView: timer.view(timerRow), icdTitle: (r) => icd.titleOf(r, req.locale),
+    access, diagnoses, historyCodes, bill, nextUp, canFinish, justFinished: req.query.done === '1' && a.status === 'completed',
+    printRxId: Number(req.query.print) || null, timerView: timer.view(timerRow), icdTitle: (r) => icd.titleOf(r, req.locale),
     ...(online ? { pageScripts: [...ASSETS.pageScripts, '/js/telehealth.js'], pageStyles: [...ASSETS.pageStyles, '/css/telehealth.css'] } : {}), ...extra,
   });
 }
@@ -133,6 +152,50 @@ router.post('/:id(\\d+)/complete', canAny('clinical.edit', 'appointments.manage'
   res.redirect(`/app/visits/${a.id}`);
 }));
 
+// ---------------------------------------------------------------- doctor journey (dflow.service)
+/** What the member may write on this visit: the note needs clinical.edit, the quick prescription prescriptions.create,
+ *  both only when the record-privacy rule opens the clinical record. */
+async function clinicalRights(req, a) {
+  const perms = req.ctx.permissions;
+  if (!perms.has('clinical.edit') && !perms.has('prescriptions.create')) return { note: false, rx: false };
+  const acc = await privacy.access(req.ctx, { appointment: a });
+  return { note: perms.has('clinical.edit') && acc.clinical, rx: perms.has('prescriptions.create') && acc.clinical };
+}
+const dflowRerender = (req, res, extra) => {
+  const bad = extra.formError && extra.formError.details && extra.formError.details.icd_codes;
+  if (bad) extra.errors = { ...extra.errors, icd_codes: req.t('icd.err_unknown', { codes: bad }) };
+  if (extra.formError && extra.formError.code === 'VISIT_NO_SHOW') extra.formError = { ...extra.formError, message: req.t('errors_dflow.VISIT_NO_SHOW') };
+  return renderVisit(req, res, { ...extra, failed: 'dflow' });
+};
+
+// Finish visit & send to reception: note + quick prescription + amount to collect, one click.
+router.post('/:id(\\d+)/finish', canAny('clinical.edit', 'appointments.manage'), form(async (req, res) => {
+  const { a } = await load(req);
+  const rights = await clinicalRights(req, a);
+  const r = await dflow.finish(req.ctx, a.id, req.body, rights);
+  const print = req.body.print_rx === '1' && r.rxId ? `&print=${r.rxId}` : '';
+  flash(req, 'success', req.t('dflow.sent_flash', { amount: res.locals.fmt.money(r.total) }));
+  res.redirect(`/app/visits/${a.id}?done=1${print}`);
+}, dflowRerender));
+
+// Save the note + prescription without finishing.
+router.post('/:id(\\d+)/save', canAny('clinical.edit', 'prescriptions.create'), form(async (req, res) => {
+  const { a } = await load(req);
+  const rights = await clinicalRights(req, a);
+  if (!rights.note && !rights.rx) { flash(req, 'error', req.t('errors_clinicalplus.RECORD_RESTRICTED')); return res.redirect(`/app/visits/${a.id}`); }
+  await dflow.saveDraft(req.ctx, a.id, req.body, rights);
+  flash(req, 'success', req.t('dflow.saved'));
+  return res.redirect(`/app/visits/${a.id}?saved=1#note`);
+}, dflowRerender));
+
+// "Start visit" (My day): the patient goes into the room and the consultation timer starts; then the visit opens.
+router.post('/:id(\\d+)/start', can('clinical.edit'), wrap(async (req, res) => {
+  const { a } = await load(req);
+  const acc = await privacy.access(req.ctx, { appointment: a });
+  await dflow.start(req.ctx, a.id, { timer: acc.clinical });
+  res.redirect(`/app/visits/${a.id}`);
+}));
+
 router.get('/:id(\\d+)/prescriptions/:rx(\\d+)', can('clinical.view'), restricted(async (req, res) => {
   const { a, patient } = await load(req);
   await accessFor(req, a, 'clinical');
@@ -140,7 +203,7 @@ router.get('/:id(\\d+)/prescriptions/:rx(\\d+)', can('clinical.view'), restricte
   if (rx.appointment_id !== a.id) throw E.notFound('Prescription');
   const diagnoses = await icd.listFor(req.ctx.businessId, a.id); // for the Rx sheet (ICD-10 codes of the visit)
   res.page('pages/clinic/visits/prescription', {
-    title: `${req.t('visits.rx_title')} · ${a.patient_name}`, printable: true, a, patient, rx, age: patient ? ageOn(patient.date_of_birth, req.ctx.today) : null, ...ASSETS,
+    title: `${req.t('visits.rx_title')} · ${a.patient_name}`, printable: true, a, patient, rx, age: patient ? ageOn(patient.date_of_birth, req.ctx.today) : null, ...PRINT_ASSETS,
     diagnoses, icdTitle: (r) => icd.titleOf(r, req.locale),
   });
 }));

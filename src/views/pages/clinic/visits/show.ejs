@@ -1,6 +1,8 @@
 <%
+  /* Visit page — the doctor's journey (round 8): header (who, allergies, when, status) → vitals → visit note →
+     prescription → sticky "Finish visit & send to reception" bar (amount to collect). Everything else (timer,
+     history, documents, specialty records, AI assistant, e-mail, separate prescription) lives in the side column. */
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
-  var stDot = function (s) { return '<span class="st"><i class="st-dot st-' + s + '"></i>' + escapeHtml(t('appointments.statuses.' + s)) + '</span>'; };
   var acc = typeof access !== 'undefined' && access ? access : { clinical: true, vitals: true, reason: 'open' };
   var restrictedView = can('clinical.view') && !acc.clinical;
   var clinicalView = can('clinical.view') && acc.clinical;
@@ -13,12 +15,14 @@
   var tv = typeof timerView !== 'undefined' && timerView ? timerView : null;
   var failed = typeof failed !== 'undefined' ? failed : null;
   var vOld = failed === 'vitals' ? old : {};
-  var nOld = failed === 'note' ? old : {};
+  var nOld = failed === 'note' || failed === 'dflow' ? old : {};
   var rOld = failed === 'rx' ? old : {};
   var errFor = function (sec) { return failed === sec ? errors : {}; };
+  var dErr = errFor('dflow');
   var c = consult || {};
   var p = patient || {};
   var val = function (src, k, fallback) { return src && src[k] !== undefined ? src[k] : (fallback === undefined || fallback === null ? '' : fallback); };
+  var listOf = function (v) { return Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.keys(v).sort(function (x, y) { return x - y; }).map(function (k) { return v[k]; }) : []); };
   var VITALS = [
     { k: 'weightKg', unit: t('visits.units.kg'), icon: 'weight' },
     { k: 'heightCm', unit: t('visits.units.cm'), icon: 'arrow-up-down' },
@@ -30,140 +34,206 @@
     { k: 'bloodSugar', unit: t('visits.units.mgdl'), icon: 'droplet' },
   ];
   var hasVitals = Object.keys(vitals || {}).length > 0;
-  var rxItems = (rOld.items ? (Array.isArray(rOld.items) ? rOld.items : Object.keys(rOld.items).map(function (k) { return rOld.items[k]; })) : []).filter(function (i) { return i; });
-  if (!rxItems.length) rxItems = [{}];
   var closed = a.status === 'cancelled' || a.status === 'no_show';
+  var paid = a.payment_status === 'paid';
   var newRx = Number(query.rx) || null;
+  var _finish = typeof canFinish !== 'undefined' ? canFinish : canAny('clinical.edit', 'appointments.manage');
+  var B = typeof bill !== 'undefined' && bill ? bill : null;
+  var showBar = (B && _finish && !closed && !paid) || canNote || canRx;
+  var useForm = showBar;
+
+  /* quick prescription: edits the latest prescription of this visit; older ones are listed with their print link */
+  var rxEdit = canRx && rxs.length ? rxs[0] : null;
+  var rxRows = failed === 'dflow' ? listOf(nOld.rx).filter(function (i) { return i; }) : (rxEdit ? rxEdit.items : []);
+  if (!rxRows.length) rxRows = [{}];
+  var rxOthers = rxEdit ? rxs.slice(1) : rxs;
+  var rxIdVal = failed === 'dflow' ? (nOld.rx_id || '') : (rxEdit ? rxEdit.id : '');
+  var rxNotesVal = failed === 'dflow' ? (nOld.rx_notes || '') : (rxEdit && rxEdit.notes ? rxEdit.notes : '');
+
+  /* bill lines: [0] = base (booked service or consultation), the rest = services the doctor added */
+  var lines = B ? (failed === 'dflow' && nOld.lines ? listOf(nOld.lines) : B.lines) : [];
+  if (B && !lines.length) lines = [{ qty: 1, unit_price: '' }];
+  var base = lines[0] || {};
+  var extras = lines.slice(1);
+  var lineName = function (l) { return l.service_id || l.name ? L(l.name, l.name_en) : t('dflow.consultation'); };
+  var priceVal = function (v) { return v === null || v === undefined || v === '' ? '' : String(v); };
+  var hasRx = rxs.length > 0;
+  var statusText = closed ? t('appointments.statuses.' + a.status) : paid ? t('dflow.state.paid') : a.status === 'completed' ? t('dflow.state.to_pay') : a.with_doctor ? t('dflow.state.with_doctor') : a.checked_in ? t('dflow.state.waiting') : t('dflow.state.booked');
+  var decimals = (function () { try { return new Intl.NumberFormat('en', { style: 'currency', currency: currency }).resolvedOptions().maximumFractionDigits; } catch (e) { return 2; } })();
 %>
-<div class="page-head">
-  <div>
+<div class="page-head df-head">
+  <div class="df-who">
     <div class="breadcrumbs">
-      <% if (can('appointments.view')) { %><a href="/app/appointments?date=<%= a.appointment_date %>"><%= t('appointments.title') %></a><%- icon('chevron-right', 'flip-rtl') %><% } %>
+      <% if (can('clinical.view')) { %><a href="/app/my-day"><%= t('dflow.my_day') %></a><%- icon('chevron-right', 'flip-rtl') %><% } else if (can('appointments.view')) { %><a href="/app/appointments?date=<%= a.appointment_date %>"><%= t('appointments.title') %></a><%- icon('chevron-right', 'flip-rtl') %><% } %>
       <%= t('visits.title') %>
     </div>
-    <div class="row">
-      <span class="avatar avatar-lg appt-avatar"><%= initials(a.patient_name) %></span>
-      <div>
-        <h1><%= patient ? patient.full_name : a.patient_name %></h1>
-        <p>
-          <%= [age !== null ? t('visits.age_years', { n: age }) : null, p.gender ? t('visits.gender.' + p.gender) : null].filter(Boolean).join(' · ') %>
-          <% if (a.patient_phone) { %><% if (age !== null || p.gender) { %> · <% } %><span dir="ltr"><%= a.patient_phone %></span><% } %>
-          <% if (p.insurance_name) { %> · <%- icon('shield-check', 'icon-sm') %> <%= p.insurance_name %><% if (p.insurance_number) { %> <span class="muted" dir="ltr">(<%= p.insurance_number %>)</span><% } %><% } %>
-        </p>
-      </div>
+    <h1 dir="auto"><%= patient ? patient.full_name : a.patient_name %></h1>
+    <p class="df-meta">
+      <% var metaBits = [age !== null ? t('visits.age_years', { n: age }) : null, p.gender ? t('visits.gender.' + p.gender) : null].filter(Boolean); %>
+      <% if (metaBits.length) { %><span><%= metaBits.join(' · ') %></span><% } %>
+      <% if (a.patient_phone) { %><span dir="ltr"><%= a.patient_phone %></span><% } %>
+      <% if (p.insurance_name) { %><span class="row-sm"><%- icon('shield-check', 'icon-sm') %><%= p.insurance_name %><% if (p.insurance_number) { %> <span class="muted" dir="ltr">(<%= p.insurance_number %>)</span><% } %></span><% } %>
+    </p>
+    <% if (can('clinical.view') && (p.allergies || p.chronic_conditions)) { %><%/* safety information: shown even when the record is restricted */%>
+    <div class="df-flags">
+      <% if (p.allergies) { %><span class="df-flag df-flag-danger" role="note"><%- icon('triangle-alert', 'icon-sm') %><strong><%= t('visits.allergies') %>:</strong> <bdi><%= p.allergies %></bdi></span><% } %>
+      <% if (p.chronic_conditions) { %><span class="df-flag" role="note"><%- icon('heart-pulse', 'icon-sm') %><strong><%= t('visits.chronic') %>:</strong> <bdi><%= p.chronic_conditions %></bdi></span><% } %>
     </div>
+    <% } %>
   </div>
   <div class="page-actions">
     <%- include('../../teamops/_email-patient', { part: 'button', mailPatientId: a.patient_id, mailVisitId: a.id, mailTo: (patient && patient.email) || a.patient_email, mailReturn: '/app/visits/' + a.id }) %>
     <% if (a.patient_id && can('patients.view')) { %><a class="btn btn-secondary" href="/app/patients/<%= a.patient_id %>"><%- icon('id-card', 'icon-sm') %><%= t('visits.patient_file') %></a><% } %>
-    <% if (can('appointments.view')) { %><a class="btn btn-secondary" href="/app/appointments/<%= a.id %>"><%- icon('calendar-days', 'icon-sm') %><%= t('visits.appointment') %></a><% } %>
-    <% if (canAny('clinical.edit', 'appointments.manage') && a.status !== 'completed' && !closed) { %>
-      <form method="post" action="/app/visits/<%= a.id %>/complete" data-confirm="<%= t('visits.complete_confirm') %>" data-confirm-title="<%= t('visits.complete') %>" data-confirm-yes="<%= t('visits.complete') %>" data-confirm-tone="primary"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('circle-check', 'icon-sm') %><%= t('visits.complete') %></button></form>
-    <% } %>
+    <% if (can('appointments.view')) { %><a class="btn btn-ghost" href="/app/appointments/<%= a.id %>"><%- icon('calendar-days', 'icon-sm') %><%= t('visits.appointment') %></a><% } %>
   </div>
 </div>
 
-<div class="visit-strip panel">
-  <div><span class="tiny muted"><%= t('common.date') %></span><strong><%= fmt.date(a.appointment_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %> · <span dir="ltr"><%= a.appointment_time %></span></strong></div>
-  <div><span class="tiny muted"><%= t('common.doctor') %></span><strong class="row-sm"><span class="doc-dot" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></strong></div>
-  <div><span class="tiny muted"><%= t('common.service') %></span><strong><%= a.service_name ? L(a.service_name, a.service_name_en) : t('appointments.general_visit') %></strong></div>
-  <div><span class="tiny muted"><%= t('common.status') %></span><span class="row-sm wrap"><%- stDot(a.status) %><% if (closed || a.status === 'completed') { %><% } else if (a.with_doctor) { %><span class="badge"><%= t('appointments.with_doctor') %></span><% } else if (a.checked_in) { %><span class="badge"><%= t('appointments.arrived') %></span><% } %><% if (a.payment_status === 'paid') { %><span class="badge"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } %></span></div>
+<div class="df-strip">
+  <span><span class="tiny muted"><%= t('common.date') %></span><strong><%= fmt.date(a.appointment_date, { weekday: 'short', day: 'numeric', month: 'short' }) %> · <span dir="ltr"><%= a.appointment_time %></span></strong></span>
+  <span><span class="tiny muted"><%= t('common.service') %></span><strong><%= a.service_name ? L(a.service_name, a.service_name_en) : t('appointments.general_visit') %></strong></span>
+  <span><span class="tiny muted"><%= t('common.doctor') %></span><strong class="row-sm"><span class="doc-dot" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></strong></span>
+  <span><span class="tiny muted"><%= t('common.status') %></span><strong class="df-status df-st-<%= closed ? 'closed' : paid ? 'paid' : a.status === 'completed' ? 'topay' : a.with_doctor ? 'with' : a.checked_in ? 'waiting' : 'booked' %>"><i></i><%= statusText %></strong></span>
 </div>
 
 <% if (typeof online !== 'undefined' && online) { %><%- include('../../telehealth/_visit-panel') %><% } %>
-
-<% if (clinicalView && tv && (tv.state !== 'idle' || (!closed && canNote))) { %><%- include('../../clinicalplus/_timer', { tv: tv, canTimer: canNote && !closed }) %><% } %>
 <% if (acc.reason === 'emergency' && acc.grant) { %>
 <div class="alert alert-warning mt-4" role="note"><%- icon('shield-alert') %><div class="grow"><div class="alert-title"><%= t('privacy.bg_active_title') %></div><div class="small"><%= t('privacy.bg_active_text', { when: fmt.date(acc.grant.expires_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) %></div></div></div>
 <% } %>
 
-<% if (can('clinical.view') && (p.allergies || p.chronic_conditions)) { %><%/* safety information: shown even when the record is restricted */%>
-<div class="grid grid-2 mt-4">
-  <% if (p.allergies) { %><div class="alert alert-error" role="note"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('visits.allergies') %></div><div class="small" style="white-space:pre-line"><%= p.allergies %></div></div></div><% } %>
-  <% if (p.chronic_conditions) { %><div class="alert alert-warning" role="note"><%- icon('heart-pulse') %><div class="grow"><div class="alert-title"><%= t('visits.chronic') %></div><div class="small" style="white-space:pre-line"><%= p.chronic_conditions %></div></div></div><% } %>
-</div>
-<% } %>
+<div class="grid grid-main mt-4 df-grid">
+  <div class="stack df-main">
+    <% if (failed === 'dflow') { %><%- include('../../../partials/form-error') %><% } %>
 
-<div class="grid grid-main mt-4">
-  <div class="stack">
-    <%/* ---------------- vital signs ---------------- */%>
+    <%/* ---------------- (a) vital signs ---------------- */%>
     <% if (clinicalView || canVitals) { %>
-    <section class="panel" id="vitals">
-      <div class="panel-head"><h2><%- icon('activity', 'icon-sm') %> <%= t('visits.vitals') %></h2><% if (hasVitals && !canVitals) { %><span class="small muted"><%= t('visits.recorded') %></span><% } %></div>
+    <section class="panel df-vitals" id="vitals">
+      <div class="panel-head"><h2><%- icon('activity', 'icon-sm') %> <%= t('visits.vitals') %></h2><% if (hasVitals) { %><span class="small muted"><%= c.updated_at ? t('visits.last_saved', { when: fmt.date(c.updated_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) : t('visits.recorded') %></span><% } %></div>
+      <% if (hasVitals) { %>
+      <div class="panel-body df-vitals-read">
+        <% VITALS.forEach(function (f) { if (vitals[f.k] === undefined) return; %><span><span class="tiny muted"><%= t('visits.v.' + f.k) %></span><strong dir="ltr"><%= vitals[f.k] %> <small class="muted"><%= f.unit %></small></strong></span><% }) %>
+        <% if (bmi !== null) { %><span><span class="tiny muted"><%= t('visits.v.bmi') %></span><strong><%= fmt.number(bmi, 1) %></strong></span><% } %>
+      </div>
+      <% } else if (!canVitals) { %>
+      <div class="panel-body small muted"><%= t('visits.no_vitals') %></div>
+      <% } %>
       <% if (canVitals) { %>
-      <form method="post" action="/app/visits/<%= a.id %>/vitals" novalidate data-vitals data-bmi-labels="<%= json({ under: t('visits.bmi.under'), normal: t('visits.bmi.normal'), over: t('visits.bmi.over'), obese: t('visits.bmi.obese') }) %>">
-        <div class="panel-body">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <% if (failed === 'vitals') { %><%- include('../../../partials/form-error') %><% } %>
-          <div class="vitals-grid">
-            <% VITALS.forEach(function (f) { var e = errFor('vitals')[f.k]; %>
-            <div class="field">
-              <label class="label" for="v-<%= f.k %>"><%= t('visits.v.' + f.k) %></label>
-              <div class="input-affix"><input class="input<%= e ? ' is-invalid' : '' %>" id="v-<%= f.k %>" name="<%= f.k %>" value="<%= val(vOld, f.k, vitals[f.k]) %>" inputmode="<%= f.k === 'bloodPressure' ? 'text' : 'decimal' %>" dir="ltr" autocomplete="off"<% if (f.ph) { %> placeholder="<%= f.ph %>"<% } %>><span class="affix"><%= f.unit %></span></div>
-              <% if (e) { %><span class="field-error"><%= e %></span><% } %>
-            </div>
-            <% }) %>
-            <div class="field bmi-box">
-              <span class="label"><%= t('visits.v.bmi') %></span>
-              <div class="bmi-value"><strong data-bmi-out><%= bmi !== null ? fmt.number(bmi, 1) : '—' %></strong><span class="tiny muted" data-bmi-label></span></div>
+      <details class="df-disclose"<% if (failed === 'vitals' || (!hasVitals && !canNote)) { %> open<% } %>>
+        <summary><%- icon(hasVitals ? 'pencil' : 'plus', 'icon-sm') %><%= hasVitals ? t('dflow.edit_vitals') : t('dflow.record_vitals') %></summary>
+        <form method="post" action="/app/visits/<%= a.id %>/vitals" novalidate data-vitals data-bmi-labels="<%= json({ under: t('visits.bmi.under'), normal: t('visits.bmi.normal'), over: t('visits.bmi.over'), obese: t('visits.bmi.obese') }) %>">
+          <div class="panel-body">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <% if (failed === 'vitals') { %><%- include('../../../partials/form-error') %><% } %>
+            <div class="vitals-grid">
+              <% VITALS.forEach(function (f) { var e = errFor('vitals')[f.k]; %>
+              <div class="field">
+                <label class="label" for="v-<%= f.k %>"><%= t('visits.v.' + f.k) %></label>
+                <div class="input-affix"><input class="input<%= e ? ' is-invalid' : '' %>" id="v-<%= f.k %>" name="<%= f.k %>" value="<%= val(vOld, f.k, vitals[f.k]) %>" inputmode="<%= f.k === 'bloodPressure' ? 'text' : 'decimal' %>" dir="ltr" autocomplete="off"<% if (f.ph) { %> placeholder="<%= f.ph %>"<% } %>><span class="affix"><%= f.unit %></span></div>
+                <% if (e) { %><span class="field-error"><%= e %></span><% } %>
+              </div>
+              <% }) %>
+              <div class="field bmi-box">
+                <span class="label"><%= t('visits.v.bmi') %></span>
+                <div class="bmi-value"><strong data-bmi-out><%= bmi !== null ? fmt.number(bmi, 1) : '—' %></strong><span class="tiny muted" data-bmi-label></span></div>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="panel-foot row between wrap"><span class="tiny muted"><%= hasVitals && c.updated_at ? t('visits.last_saved', { when: fmt.date(c.updated_at) }) : t('visits.vitals_help') %></span><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('visits.save_vitals') %></button></div>
-      </form>
-      <% } else if (!hasVitals) { %>
-        <div class="panel-body small muted"><%= t('visits.no_vitals') %></div>
-      <% } else { %>
-        <div class="panel-body"><div class="vitals-read">
-          <% VITALS.forEach(function (f) { if (vitals[f.k] === undefined) return; %><div><span class="tiny muted"><%= t('visits.v.' + f.k) %></span><strong dir="ltr"><%= vitals[f.k] %> <small class="muted"><%= f.unit %></small></strong></div><% }) %>
-          <% if (bmi !== null) { %><div><span class="tiny muted"><%= t('visits.v.bmi') %></span><strong><%= fmt.number(bmi, 1) %></strong></div><% } %>
-        </div></div>
+          <div class="panel-foot row between wrap"><span class="tiny muted"><%= t('visits.vitals_help') %></span><button class="btn btn-<%= canNote ? 'secondary' : 'primary' %> btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('visits.save_vitals') %></button></div>
+        </form>
+      </details>
       <% } %>
     </section>
     <% } %>
 
-    <%/* ---------------- SOAP note ---------------- */%>
+    <% if (useForm) { %>
+    <form id="df-form" method="post" action="/app/visits/<%= a.id %>/finish" novalidate class="stack df-form" data-dflow data-visit="<%= a.id %>" data-draft-key="dflow:<%= business.id %>:<%= a.id %>" data-currency="<%= currency %>" data-decimals="<%= decimals %>" data-locale="<%= locale === 'en' ? 'en-US' : 'ar-EG-u-nu-latn' %>" data-t-draft-saved="<%= t('dflow.draft_saved') %>" data-t-draft-restored="<%= t('dflow.draft_restored') %>" data-t-draft-discard="<%= t('dflow.draft_discard') %>"<% if (query.saved === '1' || query.done === '1') { %> data-clear-draft<% } %>>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% } %>
+
+    <%/* ---------------- (b) visit note ---------------- */%>
     <% if (clinicalView) { %>
     <section class="panel" id="note">
-      <div class="panel-head"><h2><%- icon('notebook-pen', 'icon-sm') %> <%= t('visits.note') %></h2><span class="small muted"><%= t('visits.soap') %></span></div>
+      <div class="panel-head"><h2><%- icon('notebook-pen', 'icon-sm') %> <%= t('dflow.note') %></h2><span class="small muted" data-df-draft-state></span></div>
       <% if (canNote) { %>
-      <form method="post" action="/app/visits/<%= a.id %>/note" novalidate>
-        <div class="panel-body">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <% if (failed === 'note') { %><%- include('../../../partials/form-error') %><% } %>
-          <div class="form-grid">
-            <div class="field full">
-              <label class="label" for="n-diagnosis"><%= t('visits.diagnosis') %></label>
-              <input class="input" id="n-diagnosis" name="diagnosis" value="<%= val(nOld, 'diagnosis', c.diagnosis) %>" placeholder="<%= t('visits.diagnosis_ph') %>">
-            </div>
-            <%- include('../../clinicalplus/_icd-field', { dx: dx, dxTitle: dxTitle, nOld: nOld, icdError: errFor('note').icd_codes }) %>
-            <% ['subjective', 'objective', 'assessment', 'plan_text'].forEach(function (k) { %>
-            <div class="field">
-              <label class="label" for="n-<%= k %>"><span class="soap-letter"><%= t('visits.soap_letter.' + k) %></span><%= t('visits.soap_fields.' + k) %></label>
-              <textarea class="textarea" id="n-<%= k %>" name="<%= k %>" rows="4" placeholder="<%= t('visits.soap_ph.' + k) %>"><%= val(nOld, k, c[k]) %></textarea>
-            </div>
-            <% }) %>
+      <div class="panel-body">
+        <div class="form-grid df-note">
+          <div class="field full">
+            <label class="label" for="n-subjective"><%= t('dflow.f.subjective') %></label>
+            <textarea class="textarea" id="n-subjective" name="subjective" rows="3" placeholder="<%= t('dflow.ph.subjective') %>" data-autogrow><%= val(nOld, 'subjective', c.subjective) %></textarea>
           </div>
+          <div class="field full">
+            <label class="label" for="n-objective"><%= t('dflow.f.objective') %></label>
+            <textarea class="textarea" id="n-objective" name="objective" rows="3" placeholder="<%= t('dflow.ph.objective') %>" data-autogrow><%= val(nOld, 'objective', c.objective) %></textarea>
+          </div>
+          <div class="field full">
+            <label class="label" for="n-diagnosis"><%= t('dflow.f.diagnosis') %></label>
+            <input class="input" id="n-diagnosis" name="diagnosis" value="<%= val(nOld, 'diagnosis', c.diagnosis) %>" placeholder="<%= t('visits.diagnosis_ph') %>">
+          </div>
+          <%- include('../../clinicalplus/_icd-field', { dx: dx, dxTitle: dxTitle, nOld: nOld, icdError: dErr.icd_codes || errFor('note').icd_codes }) %>
+          <div class="field full">
+            <label class="label" for="n-plan_text"><%= t('dflow.f.plan_text') %></label>
+            <textarea class="textarea" id="n-plan_text" name="plan_text" rows="3" placeholder="<%= t('dflow.ph.plan_text') %>" data-autogrow><%= val(nOld, 'plan_text', c.plan_text) %></textarea>
+          </div>
+          <details class="field full df-disclose df-disclose-inline"<% if (val(nOld, 'assessment', c.assessment)) { %> open<% } %>>
+            <summary><%- icon('plus', 'icon-sm') %><%= t('dflow.f.assessment') %> <span class="muted small">· <%= t('dflow.optional') %></span></summary>
+            <textarea class="textarea mt-2" id="n-assessment" name="assessment" rows="3" aria-label="<%= t('dflow.f.assessment') %>" placeholder="<%= t('visits.soap_ph.assessment') %>" data-autogrow><%= val(nOld, 'assessment', c.assessment) %></textarea>
+          </details>
         </div>
-        <div class="panel-foot row end"><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('visits.save_note') %></button></div>
-      </form>
+      </div>
       <% } else if (!c.diagnosis && !dx.length && !c.subjective && !c.objective && !c.assessment && !c.plan_text) { %>
         <div class="panel-body small muted"><%= t('visits.no_note') %></div>
       <% } else { %>
         <div class="panel-body"><dl class="dl">
-          <dt><%= t('visits.diagnosis') %></dt><dd><%= c.diagnosis || '—' %></dd>
+          <dt><%= t('dflow.f.subjective') %></dt><dd style="white-space:pre-line"><%= c.subjective || '—' %></dd>
+          <dt><%= t('dflow.f.objective') %></dt><dd style="white-space:pre-line"><%= c.objective || '—' %></dd>
+          <dt><%= t('dflow.f.diagnosis') %></dt><dd><%= c.diagnosis || '—' %></dd>
           <% if (dx.length) { %><dt><%= t('icd.codes') %></dt><dd><%- include('../../clinicalplus/_codes', { dx: dx, dxTitle: dxTitle }) %></dd><% } %>
-          <% ['subjective', 'objective', 'assessment', 'plan_text'].forEach(function (k) { %><dt><%= t('visits.soap_fields.' + k) %></dt><dd style="white-space:pre-line"><%= c[k] || '—' %></dd><% }) %>
+          <dt><%= t('dflow.f.plan_text') %></dt><dd style="white-space:pre-line"><%= c.plan_text || '—' %></dd>
+          <% if (c.assessment) { %><dt><%= t('dflow.f.assessment') %></dt><dd style="white-space:pre-line"><%= c.assessment %></dd><% } %>
         </dl></div>
       <% } %>
     </section>
 
-    <%/* ---------------- prescriptions ---------------- */%>
+    <%/* ---------------- (c) prescription ---------------- */%>
     <section class="panel" id="prescriptions">
-      <div class="panel-head"><h2><%- icon('pill', 'icon-sm') %> <%= t('visits.prescriptions') %></h2><span class="badge"><%= fmt.number(rxs.length) %></span></div>
-      <% if (rxs.length) { %>
+      <div class="panel-head">
+        <h2><%- icon('pill', 'icon-sm') %> <%= t('dflow.rx') %></h2>
+        <% if (rxEdit) { %><a class="btn btn-ghost btn-sm" href="/app/visits/<%= a.id %>/prescriptions/<%= rxEdit.id %>?print=1"><%- icon('printer', 'icon-sm') %><%= t('dflow.print_rx') %></a><% } %>
+      </div>
+      <% if (canRx) { %>
+      <div class="panel-body">
+        <input type="hidden" name="rx_id" value="<%= rxIdVal %>">
+        <datalist id="med-list"><% meds.forEach(function (m) { %><option value="<%= m.name %>"><% }) %></datalist>
+        <datalist id="df-freq"><% t('dflow.freq_list').split('|').forEach(function (o) { %><option value="<%= o %>"><% }) %></datalist>
+        <datalist id="df-dur"><% t('dflow.dur_list').split('|').forEach(function (o) { %><option value="<%= o %>"><% }) %></datalist>
+        <div class="df-rx-head" aria-hidden="true"><span><%= t('visits.rx.medicationName') %></span><span><%= t('visits.rx.dosage') %></span><span><%= t('visits.rx.frequency') %></span><span><%= t('visits.rx.duration') %></span><span><%= t('dflow.rx_instructions') %></span><span></span></div>
+        <div class="df-rx-rows" data-df-rx>
+          <% rxRows.forEach(function (it, i) { %>
+          <div class="df-rx-row" data-df-rx-row>
+            <% ['medicationName', 'dosage', 'frequency', 'duration', 'instructions'].forEach(function (k) { var ek = dErr['rx.' + i + '.' + k]; %>
+            <label class="df-cell df-cell-<%= k %>"><span class="df-cell-label"><%= k === 'instructions' ? t('dflow.rx_instructions') : t('visits.rx.' + k) %></span><input class="input<%= ek ? ' is-invalid' : '' %>" data-name="<%= k %>" name="rx[<%= i %>][<%= k %>]" value="<%= it[k] || '' %>" autocomplete="off"<%- k === 'medicationName' ? ' list="med-list" placeholder="' + escapeHtml(t('visits.rx_med_ph')) + '"' : (k === 'frequency' ? ' list="df-freq"' : k === 'duration' ? ' list="df-dur"' : '') + ' placeholder="' + escapeHtml(t('visits.rx_ph.' + k)) + '"' %>></label>
+            <% }) %>
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-df-rx-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('trash-2', 'icon-sm') %></button>
+          </div>
+          <% }) %>
+        </div>
+        <template data-df-rx-template>
+          <div class="df-rx-row" data-df-rx-row>
+            <% ['medicationName', 'dosage', 'frequency', 'duration', 'instructions'].forEach(function (k) { %>
+            <label class="df-cell df-cell-<%= k %>"><span class="df-cell-label"><%= k === 'instructions' ? t('dflow.rx_instructions') : t('visits.rx.' + k) %></span><input class="input" data-name="<%= k %>" name="" value="" autocomplete="off"<%- k === 'medicationName' ? ' list="med-list" placeholder="' + escapeHtml(t('visits.rx_med_ph')) + '"' : (k === 'frequency' ? ' list="df-freq"' : k === 'duration' ? ' list="df-dur"' : '') + ' placeholder="' + escapeHtml(t('visits.rx_ph.' + k)) + '"' %>></label>
+            <% }) %>
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-df-rx-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('trash-2', 'icon-sm') %></button>
+          </div>
+        </template>
+        <div class="row wrap mt-2 df-rx-foot">
+          <button class="btn btn-ghost btn-sm" type="button" data-df-rx-add><%- icon('plus', 'icon-sm') %><%= t('visits.add_item') %></button>
+          <input class="input grow" name="rx_notes" value="<%= rxNotesVal %>" placeholder="<%= t('visits.rx_notes_ph') %>" aria-label="<%= t('visits.rx_notes') %>">
+        </div>
+        <p class="tiny muted mt-2"><%= t('dflow.rx_help') %></p>
+      </div>
+      <% } else if (!rxs.length) { %><div class="panel-body small muted"><%= t('visits.no_rx') %></div><% } %>
+      <% if (rxOthers.length) { %>
       <ul class="rx-list">
-        <% rxs.forEach(function (rx) { %>
+        <% rxOthers.forEach(function (rx) { %>
         <li class="<%= newRx === rx.id ? 'is-new' : '' %>">
           <div class="row between wrap">
             <div><div class="strong"><%= t('visits.rx_number', { n: rx.id }) %></div><div class="tiny muted"><%= fmt.date(rx.created_at) %><%= rx.diagnosis ? ' · ' + rx.diagnosis : '' %></div></div>
@@ -175,41 +245,6 @@
         </li>
         <% }) %>
       </ul>
-      <% } else if (!canRx) { %><div class="panel-body small muted"><%= t('visits.no_rx') %></div><% } %>
-      <% if (canRx) { %>
-      <form method="post" action="/app/visits/<%= a.id %>/prescriptions" novalidate data-rx-form class="rx-form">
-        <div class="panel-body">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <% if (failed === 'rx') { %><%- include('../../../partials/form-error') %><% } %>
-          <h3 class="small strong mb-3"><%= t('visits.new_rx') %></h3>
-          <datalist id="med-list"><% meds.forEach(function (m) { %><option value="<%= m.name %>"><% }) %></datalist>
-          <div class="rx-head" aria-hidden="true"><span><%= t('visits.rx.medicationName') %></span><span><%= t('visits.rx.dosage') %></span><span><%= t('visits.rx.frequency') %></span><span><%= t('visits.rx.duration') %></span><span><%= t('visits.rx.instructions') %></span><span></span></div>
-          <div class="rx-lines" data-rx-lines>
-            <% rxItems.forEach(function (it, i) { %>
-            <div class="rx-line" data-rx-line>
-              <% ['medicationName', 'dosage', 'frequency', 'duration', 'instructions'].forEach(function (k) { %>
-              <label class="rx-cell"><span class="rx-cell-label"><%= t('visits.rx.' + k) %></span><input class="input" data-name="<%= k %>" name="items[<%= i %>][<%= k %>]" value="<%= it[k] || '' %>" autocomplete="off"<%- k === 'medicationName' ? ' list="med-list" placeholder="' + escapeHtml(t('visits.rx_med_ph')) + '"' : ' placeholder="' + escapeHtml(t('visits.rx_ph.' + k)) + '"' %>></label>
-              <% }) %>
-              <button class="btn btn-ghost btn-icon btn-sm" type="button" data-rx-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('trash-2', 'icon-sm') %></button>
-            </div>
-            <% }) %>
-          </div>
-          <template data-rx-template>
-            <div class="rx-line" data-rx-line>
-              <% ['medicationName', 'dosage', 'frequency', 'duration', 'instructions'].forEach(function (k) { %>
-              <label class="rx-cell"><span class="rx-cell-label"><%= t('visits.rx.' + k) %></span><input class="input" data-name="<%= k %>" name="" value="" autocomplete="off"<%- k === 'medicationName' ? ' list="med-list" placeholder="' + escapeHtml(t('visits.rx_med_ph')) + '"' : ' placeholder="' + escapeHtml(t('visits.rx_ph.' + k)) + '"' %>></label>
-              <% }) %>
-              <button class="btn btn-ghost btn-icon btn-sm" type="button" data-rx-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('trash-2', 'icon-sm') %></button>
-            </div>
-          </template>
-          <button class="btn btn-ghost btn-sm mt-2" type="button" data-rx-add><%- icon('plus', 'icon-sm') %><%= t('visits.add_item') %></button>
-          <div class="form-grid mt-4">
-            <div class="field"><label class="label" for="rx-diagnosis"><%= t('visits.diagnosis') %></label><input class="input" id="rx-diagnosis" name="diagnosis" value="<%= val(rOld, 'diagnosis', c.diagnosis) %>"></div>
-            <div class="field"><label class="label" for="rx-notes"><%= t('visits.rx_notes') %></label><input class="input" id="rx-notes" name="notes" value="<%= val(rOld, 'notes', '') %>" placeholder="<%= t('visits.rx_notes_ph') %>"></div>
-          </div>
-        </div>
-        <div class="panel-foot row end"><button class="btn btn-primary btn-sm" type="submit"><%- icon('pill', 'icon-sm') %><%= t('visits.save_rx') %></button></div>
-      </form>
       <% } %>
     </section>
     <% } else if (restrictedView) { %>
@@ -217,21 +252,13 @@
     <% } else { %>
       <div class="panel"><div class="panel-body row"><span class="action-icon"><%- icon('lock') %></span><p class="small muted grow"><%= t('visits.clinical_hidden') %></p></div></div>
     <% } %>
+
+    <% if (useForm) { %></form><% } %>
   </div>
 
-  <div class="stack">
-    <% if (clinicalView) { %>
-    <div class="panel flush">
-      <div class="panel-head"><h2><%- icon('history', 'icon-sm') %> <%= t('visits.previous') %></h2></div>
-      <% if (!history.length) { %><div class="flush-empty small muted"><%= t('visits.no_previous') %></div><% } else { %>
-      <ul class="action-list">
-        <% history.forEach(function (h) { %>
-        <li><a href="/app/visits/<%= h.appointment_id %>"><span class="action-icon"><%- icon('file-text') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= fmt.date(h.appointment_date, { day: 'numeric', month: 'short', year: 'numeric' }) %><span class="muted"> · <%= L(h.doctor_name, h.doctor_name_en) || '—' %></span></div><% var hc = hCodes && hCodes.get(h.appointment_id); var hTxt = h.diagnosis || (hc && hc.length ? dxTitle(hc[0]) : ''); %><div class="small <%= hTxt ? '' : 'muted' %> truncate"><%= hTxt || t('visits.no_diagnosis') %></div><% if (hc && hc.length) { %><div class="cp-code-line"><% hc.forEach(function (d) { %><span class="cp-code" title="<%= dxTitle(d) %>" dir="ltr"><%= d.code %></span><% }) %></div><% } %></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
-        <% }) %>
-      </ul>
-      <% } %>
-    </div>
-    <% } %>
+  <%/* ---------------- side column: tools ---------------- */%>
+  <aside class="stack df-side" aria-label="<%= t('dflow.tools') %>">
+    <% if (clinicalView && tv && (tv.state !== 'idle' || (!closed && canNote))) { %><%- include('../../clinicalplus/_timer', { tv: tv, canTimer: canNote && !closed }) %><% } %>
     <div class="panel">
       <div class="panel-head"><h2><%- icon('user-round', 'icon-sm') %> <%= t('visits.patient') %></h2></div>
       <div class="panel-body"><dl class="dl">
@@ -246,6 +273,20 @@
         <% if (a.notes) { %><dt><%= t('visits.booking_notes') %></dt><dd style="white-space:pre-line"><%= a.notes %></dd><% } %>
       </dl></div>
     </div>
+    <% if (clinicalView) { %>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%- icon('history', 'icon-sm') %> <%= t('visits.previous') %></h2></div>
+      <% if (!history.length) { %><div class="flush-empty small muted"><%= t('visits.no_previous') %></div><% } else { %>
+      <ul class="action-list">
+        <% history.forEach(function (h) { %>
+        <li><a href="/app/visits/<%= h.appointment_id %>"><span class="action-icon"><%- icon('file-text') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= fmt.date(h.appointment_date, { day: 'numeric', month: 'short', year: 'numeric' }) %><span class="muted"> · <%= L(h.doctor_name, h.doctor_name_en) || '—' %></span></div><% var hc = hCodes && hCodes.get(h.appointment_id); var hTxt = h.diagnosis || (hc && hc.length ? dxTitle(hc[0]) : ''); %><div class="small <%= hTxt ? '' : 'muted' %> truncate"><%= hTxt || t('visits.no_diagnosis') %></div><% if (hc && hc.length) { %><div class="cp-code-line"><% hc.forEach(function (d) { %><span class="cp-code" title="<%= dxTitle(d) %>" dir="ltr"><%= d.code %></span><% }) %></div><% } %></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+        <% }) %>
+      </ul>
+      <% } %>
+    </div>
+    <% } %>
+
+    <h2 class="df-tools-title"><%= t('dflow.more_tools') %></h2>
     <% if (!restrictedView) { %>
     <% var _mOn = function (k) { return typeof moduleOn !== 'function' || moduleOn(k); }; %>
     <% if (typeof certPanel !== 'undefined' && certPanel && _mOn('certificates')) { %><%- include('../../certificates/_visit-panel') %><% } %>
@@ -255,7 +296,148 @@
     <% if (invoice && can('billing.view')) { %>
     <a class="panel card-link" href="/app/billing/<%= invoice.id %>?print=1"><div class="panel-body row"><span class="action-icon"><%- icon('receipt') %></span><div class="grow"><div class="strong small"><%= t('appointments.invoice') %> #<%= invoice.invoice_number %></div><div class="tiny muted"><%= t('appointments.print_invoice') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></div></a>
     <% } %>
-  </div>
+    <% if (canRx) { %>
+    <%/* a second, separate prescription (e.g. a medication the patient buys elsewhere) — the original full form */%>
+    <details class="panel df-more"<% if (failed === 'rx') { %> open<% } %>>
+      <summary class="panel-head"><h2><%- icon('clipboard-plus', 'icon-sm') %> <%= t('dflow.separate_rx') %></h2><%- icon('chevron-down', 'icon-sm muted') %></summary>
+      <% var sepItems = (rOld.items ? listOf(rOld.items) : []).filter(function (i) { return i; }); if (!sepItems.length) sepItems = [{}]; %>
+      <form method="post" action="/app/visits/<%= a.id %>/prescriptions" novalidate data-rx-form class="rx-form">
+        <div class="panel-body">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <% if (failed === 'rx') { %><%- include('../../../partials/form-error') %><% } %>
+          <p class="tiny muted mb-3"><%= t('dflow.separate_rx_help') %></p>
+          <div class="rx-lines" data-rx-lines>
+            <% sepItems.forEach(function (it, i) { %>
+            <div class="rx-line" data-rx-line>
+              <% ['medicationName', 'dosage', 'frequency', 'duration', 'instructions'].forEach(function (k) { %>
+              <label class="rx-cell"><span class="rx-cell-label"><%= t('visits.rx.' + k) %></span><input class="input" data-name="<%= k %>" name="items[<%= i %>][<%= k %>]" value="<%= it[k] || '' %>" autocomplete="off"<%- k === 'medicationName' ? ' list="med-list"' : '' %>></label>
+              <% }) %>
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" data-rx-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('trash-2', 'icon-sm') %></button>
+            </div>
+            <% }) %>
+          </div>
+          <template data-rx-template>
+            <div class="rx-line" data-rx-line>
+              <% ['medicationName', 'dosage', 'frequency', 'duration', 'instructions'].forEach(function (k) { %>
+              <label class="rx-cell"><span class="rx-cell-label"><%= t('visits.rx.' + k) %></span><input class="input" data-name="<%= k %>" name="" value="" autocomplete="off"<%- k === 'medicationName' ? ' list="med-list"' : '' %>></label>
+              <% }) %>
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" data-rx-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('trash-2', 'icon-sm') %></button>
+            </div>
+          </template>
+          <button class="btn btn-ghost btn-sm mt-2" type="button" data-rx-add><%- icon('plus', 'icon-sm') %><%= t('visits.add_item') %></button>
+          <div class="form-grid mt-3">
+            <div class="field"><label class="label" for="rx-diagnosis"><%= t('visits.diagnosis') %></label><input class="input" id="rx-diagnosis" name="diagnosis" value="<%= val(rOld, 'diagnosis', c.diagnosis) %>"></div>
+            <div class="field"><label class="label" for="rx-notes"><%= t('visits.rx_notes') %></label><input class="input" id="rx-notes" name="notes" value="<%= val(rOld, 'notes', '') %>" placeholder="<%= t('visits.rx_notes_ph') %>"></div>
+          </div>
+        </div>
+        <div class="panel-foot row end"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('pill', 'icon-sm') %><%= t('visits.save_rx') %></button></div>
+      </form>
+    </details>
+    <% } %>
+  </aside>
 </div>
 <% if (typeof visitExtras !== 'undefined' && visitExtras && !restrictedView) { %><%- include('../../patientdocs/_visit') %><% } %>
 <%- include('../../teamops/_email-patient', { part: 'dialog', mailPatientId: a.patient_id, mailVisitId: a.id, mailTo: (patient && patient.email) || a.patient_email, mailReturn: '/app/visits/' + a.id }) %>
+
+<%/* ---------------- sticky "Finish visit" bar (fields belong to #df-form) ---------------- */%>
+<% if (showBar) { %>
+<div class="df-bar" role="region" aria-label="<%= t('dflow.finish_region') %>" data-df-bar data-services-n="<%= t('dflow.services_n', { n: '{n}' }) %>" data-add-label="<%= t('dflow.add_service') %>">
+  <% if (B && _finish && !closed && !paid) { %>
+  <details class="df-lines" data-df-lines-box<% if (extras.length || dErr.amount) { %> data-has-extras<% } %>>
+    <summary class="df-lines-summary small"><%= t('dflow.bill_details') %></summary>
+    <div class="df-lines-body">
+      <div class="df-lines-title strong small"><%= t('dflow.bill_details') %></div>
+      <ul class="df-lines-list" data-df-lines>
+        <li class="df-line is-base"><span class="grow"><%= lineName(base) %></span><strong class="mono" dir="ltr" data-df-base-echo></strong></li>
+        <% extras.forEach(function (l, i) { var idx = i + 1; %>
+        <li class="df-line" data-df-line>
+          <input type="hidden" form="df-form" data-lname="service_id" name="lines[<%= idx %>][service_id]" value="<%= l.service_id || '' %>">
+          <input type="hidden" form="df-form" data-lname="name" name="lines[<%= idx %>][name]" value="<%= l.name || '' %>">
+          <input type="hidden" form="df-form" data-lname="name_en" name="lines[<%= idx %>][name_en]" value="<%= l.name_en || '' %>">
+          <span class="grow"><%= lineName(l) %></span>
+          <span class="input-affix df-line-price"><input class="input" form="df-form" data-lname="unit_price" name="lines[<%= idx %>][unit_price]" value="<%= priceVal(l.unit_price) %>" inputmode="decimal" dir="ltr" aria-label="<%= t('common.amount') %>" data-df-price><span class="affix"><%= currency %></span></span>
+          <button class="btn btn-ghost btn-icon btn-sm" type="button" data-df-line-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('x', 'icon-sm') %></button>
+        </li>
+        <% }) %>
+      </ul>
+      <% if (B.services.length) { %>
+      <div class="row-sm df-add-service">
+        <select class="select grow" form="df-form" name="lines[<%= extras.length + 1 %>][service_id]" data-df-service aria-label="<%= t('dflow.add_service') %>">
+          <option value=""><%= t('dflow.add_service_ph') %></option>
+          <% B.services.forEach(function (s) { %><option value="<%= s.id %>" data-name="<%= s.name %>" data-name-en="<%= s.name_en || '' %>" data-price="<%= Number(s.price) || 0 %>"><%= L(s.name, s.name_en) %> · <%= fmt.money(s.price) %></option><% }) %>
+        </select>
+        <button class="btn btn-secondary btn-sm df-js-only" type="button" data-df-service-add><%- icon('plus', 'icon-sm') %><%= t('dflow.add') %></button>
+      </div>
+      <% } %>
+      <template data-df-line-template>
+        <li class="df-line" data-df-line>
+          <input type="hidden" form="df-form" data-lname="service_id" value="">
+          <input type="hidden" form="df-form" data-lname="name" value="">
+          <input type="hidden" form="df-form" data-lname="name_en" value="">
+          <span class="grow" data-df-line-name></span>
+          <span class="input-affix df-line-price"><input class="input" form="df-form" data-lname="unit_price" value="" inputmode="decimal" dir="ltr" aria-label="<%= t('common.amount') %>" data-df-price><span class="affix"><%= currency %></span></span>
+          <button class="btn btn-ghost btn-icon btn-sm" type="button" data-df-line-remove aria-label="<%= t('visits.remove_item') %>" title="<%= t('visits.remove_item') %>"><%- icon('x', 'icon-sm') %></button>
+        </li>
+      </template>
+    </div>
+  </details>
+  <% } %>
+  <div class="df-bar-inner">
+    <% if (B && _finish && !closed && !paid) { %>
+    <div class="df-amount">
+      <label class="df-amount-label" for="df-base-price"><%= t('dflow.amount') %> <span class="tiny muted">· <%= lineName(base) %></span></label>
+      <div class="row-sm">
+        <input type="hidden" form="df-form" name="lines[0][service_id]" value="<%= base.service_id || '' %>">
+        <input type="hidden" form="df-form" name="lines[0][name]" value="<%= base.name || '' %>">
+        <input type="hidden" form="df-form" name="lines[0][name_en]" value="<%= base.name_en || '' %>">
+        <span class="input-affix df-price"><input class="input<%= dErr.amount ? ' is-invalid' : '' %>" id="df-base-price" form="df-form" name="lines[0][unit_price]" value="<%= priceVal(base.unit_price) %>" inputmode="decimal" dir="ltr" autocomplete="off" required data-df-price data-df-base><span class="affix"><%= currency %></span></span>
+        <button class="btn btn-ghost btn-sm df-lines-toggle df-js-only" type="button" data-df-lines-toggle aria-expanded="false"><%- icon('plus', 'icon-sm') %><span data-df-extra-label><%= extras.length ? t('dflow.services_n', { n: fmt.number(extras.length) }) : t('dflow.add_service') %></span></button>
+      </div>
+      <div class="tiny df-total" data-df-total-line<% if (!extras.length) { %> hidden<% } %>><%= t('dflow.total') %> <strong class="mono" dir="ltr" data-df-total><%= fmt.money(B.total) %></strong></div>
+      <% if (dErr.amount) { %><span class="field-error"><%= dErr.amount %></span><% } %>
+    </div>
+    <% } else if (paid) { %>
+    <div class="df-amount"><span class="df-amount-label"><%= t('dflow.state.paid') %></span><strong class="mono" dir="ltr"><%= fmt.money(a.amount_due) %></strong></div>
+    <% } else if (closed) { %>
+    <div class="df-amount"><span class="small muted"><%= t('dflow.closed_help', { status: t('appointments.statuses.' + a.status) }) %></span></div>
+    <% } else { %>
+    <div class="df-amount"></div>
+    <% } %>
+    <div class="df-actions">
+      <% if (B && _finish && !closed && !paid && canRx) { %>
+      <label class="check df-print"><input type="checkbox" form="df-form" name="print_rx" value="1"<% if (failed === 'dflow' ? nOld.print_rx === '1' : hasRx) { %> checked<% } %> data-df-print><span><%= t('dflow.print_rx_check') %></span></label>
+      <% } %>
+      <% if (canNote || canRx) { %><button class="btn btn-ghost" type="submit" form="df-form" formaction="/app/visits/<%= a.id %>/save" data-df-save><%- icon('check', 'icon-sm') %><%= t('dflow.save') %></button><% } %>
+      <% if (B && _finish && !closed && !paid) { %>
+      <button class="btn btn-primary df-finish" type="submit" form="df-form" data-df-finish title="Ctrl + Enter"><%- icon('send', 'icon-sm flip-rtl') %><span><%= a.status === 'completed' && B.finishedAt ? t('dflow.finish_again') : t('dflow.finish') %></span></button>
+      <% } %>
+    </div>
+  </div>
+  <% if (B && B.finishedAt && a.status === 'completed' && !paid) { %><div class="df-bar-note tiny muted"><%- icon('circle-check', 'icon-sm') %><%= t('dflow.sent_at', { time: fmt.date(B.finishedAt, { hour: '2-digit', minute: '2-digit' }), amount: fmt.money(a.amount_due) }) %></div><% } %>
+</div>
+<% } %>
+
+<%/* ---------------- confirmation after "Finish visit" ---------------- */%>
+<% if (typeof justFinished !== 'undefined' && justFinished) { %>
+<% var printRx = printRxId && rxs.some(function (r) { return r.id === printRxId; }) ? printRxId : null; var anyRx = printRx || (rxs[0] && rxs[0].id); %>
+<dialog class="dialog df-done" id="df-done" data-open-on-load aria-labelledby="df-done-title">
+  <div class="dialog-head"><h2 id="df-done-title"><%- icon('circle-check', 'icon-sm') %> <%= t('dflow.done_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+  <div class="dialog-body">
+    <p class="df-done-amount"><strong class="mono" dir="ltr"><%= fmt.money(a.amount_due) %></strong><span class="muted"><%= t('dflow.to_collect') %></span></p>
+    <% if (B && B.lines.length > 1) { %><ul class="df-done-lines small"><% B.lines.forEach(function (l) { %><li><span><%= lineName(l) %></span><span class="mono" dir="ltr"><%= fmt.money(Number(l.qty || 1) * Number(l.unit_price || 0)) %></span></li><% }) %></ul><% } %>
+    <p class="small muted"><%= t('dflow.done_text', { name: a.patient_name }) %></p>
+  </div>
+  <div class="dialog-foot df-done-foot">
+    <% if (anyRx) { %><a class="btn <%= printRx ? 'btn-primary' : 'btn-secondary' %>" href="/app/visits/<%= a.id %>/prescriptions/<%= anyRx %>?print=1&autoprint=1" target="_blank" rel="noopener" data-df-print-link><%- icon('printer', 'icon-sm') %><%= t('dflow.print_rx') %></a><% } %>
+    <% if (typeof nextUp !== 'undefined' && nextUp) { %>
+      <% if (can('clinical.edit')) { %>
+      <form method="post" action="/app/visits/<%= nextUp.id %>/start"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn <%= printRx ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%- icon('arrow-right', 'icon-sm flip-rtl') %><%= t('dflow.next_patient_name', { name: nextUp.patient_name }) %></button></form>
+      <% } else { %>
+      <a class="btn <%= printRx ? 'btn-secondary' : 'btn-primary' %>" href="/app/visits/<%= nextUp.id %>"><%- icon('arrow-right', 'icon-sm flip-rtl') %><%= t('dflow.next_patient_name', { name: nextUp.patient_name }) %></a>
+      <% } %>
+    <% } else if (can('clinical.view')) { %>
+      <a class="btn <%= printRx ? 'btn-secondary' : 'btn-primary' %>" href="/app/my-day"><%- icon('arrow-right', 'icon-sm flip-rtl') %><%= t('dflow.back_my_day') %></a>
+    <% } %>
+  </div>
+</dialog>
+<% } %>

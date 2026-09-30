@@ -1,0 +1,155 @@
+/* Doctor journey (round 8): visit page (note → prescription → sticky "Finish visit" bar) and My day.
+   Calm design: neutral surfaces, one primary action, status as a small dot + text. */
+
+/* ---------------- visit header ---------------- */
+.df-head h1 { margin-bottom: 2px; }
+.df-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--text-muted); }
+.df-meta .icon { color: var(--text-muted); }
+.df-flags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.df-flag { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 10px; border-radius: 999px; font-size: var(--fs-sm, 13px); background: var(--surface-sunken); color: var(--text); }
+.df-flag .icon { color: var(--text-muted); flex: none; }
+.df-flag bdi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 44ch; }
+.df-flag-danger { background: var(--danger-soft); color: var(--danger); }
+.df-flag-danger .icon { color: var(--danger); }
+
+.df-strip { display: flex; flex-wrap: wrap; gap: 10px 28px; padding: 12px 0 2px; border-top: 1px solid var(--border); margin-top: 4px; }
+.df-strip > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.df-strip strong { font-weight: var(--fw-semibold, 600); }
+
+/* status: small dot + neutral text; the current step (with the doctor) uses the brand colour */
+.df-status { display: inline-flex; align-items: center; gap: 6px; }
+.df-status > i { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); flex: none; }
+.df-st-with > i, .df-st-with_me > i, .df-st-sent_in > i { background: var(--primary); }
+.df-st-waiting > i { background: var(--text-subtle); }
+.df-st-topay > i, .df-st-to_pay > i { background: var(--warning); }
+.df-st-paid > i { background: var(--success); }
+.df-st-closed > i, .df-st-cancelled > i { background: var(--danger); }
+
+/* ---------------- main column ---------------- */
+.df-grid { align-items: start; }
+.df-vitals-read { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.df-vitals-read > span { display: flex; flex-direction: column; gap: 2px; }
+.df-disclose > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 10px var(--card-pad, 18px); color: var(--primary); font-weight: var(--fw-semibold, 600); font-size: 13px; }
+.df-disclose > summary::-webkit-details-marker { display: none; }
+.df-disclose[open] > summary { color: var(--text-muted); }
+.df-disclose-inline > summary { padding: 4px 0; }
+
+.df-note .textarea { min-height: 76px; resize: vertical; }
+
+/* quick prescription rows */
+.df-rx-head, .df-rx-row { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(70px, 1fr) minmax(90px, 1.2fr) minmax(70px, 1fr) minmax(90px, 1.4fr) 36px; gap: 8px; align-items: center; }
+.df-rx-head { font-size: 12px; color: var(--text-muted); font-weight: var(--fw-semibold, 600); padding-bottom: 6px; }
+.df-rx-rows { display: flex; flex-direction: column; gap: 8px; }
+.df-cell { display: block; min-width: 0; }
+.df-cell .input { width: 100%; }
+.df-cell-label { display: none; }
+.df-rx-foot .input { min-width: 200px; }
+
+/* ---------------- side column ---------------- */
+.df-side .cp-timer { margin-top: 0; }
+.df-tools-title { font-size: 12px; font-weight: var(--fw-semibold, 600); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin: 8px 0 -4px; }
+.df-more > summary { list-style: none; cursor: pointer; }
+.df-more > summary::-webkit-details-marker { display: none; }
+.df-more:not([open]) > summary { border-bottom: 0; }
+.df-more[open] > summary .icon:last-child { transform: rotate(180deg); }
+.df-more .rx-line { grid-template-columns: 1fr 1fr; }
+
+/* ---------------- sticky finish bar ---------------- */
+.df-bar { position: sticky; bottom: 0; z-index: 20; margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.df-bar-inner { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 12px 16px; }
+.df-amount { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.df-amount-label { font-size: 13px; font-weight: var(--fw-semibold, 600); }
+.df-price { width: 170px; }
+.df-price .input { font-size: 18px; font-weight: var(--fw-bold, 700); height: 44px; }
+.df-total { color: var(--text-muted); }
+.df-total strong { color: var(--text); font-size: 14px; }
+.df-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-inline-start: auto; }
+.df-finish { min-height: 44px; padding-inline: 18px; font-size: 15px; }
+.df-print { white-space: nowrap; }
+.df-bar-note { display: flex; align-items: center; gap: 6px; padding: 0 16px 10px; }
+.df-bar-note .icon { color: var(--success); }
+
+.df-lines { border-bottom: 1px solid var(--border); }
+.df-lines:not([open]) { border-bottom: 0; }
+.df-lines-summary { cursor: pointer; padding: 8px 16px 0; color: var(--primary); }
+.df-bar.df-js .df-lines-summary { display: none; }
+.df-bar:not(.df-js) .df-js-only { display: none; }
+.df-lines-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; max-height: 45vh; overflow: auto; }
+.df-lines-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.df-line { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.df-line.is-base { color: var(--text-muted); }
+.df-line-price { width: 140px; flex: none; }
+.df-add-service .select { min-width: 0; }
+
+/* confirmation */
+.df-done .dialog-head h2 { display: flex; align-items: center; gap: 8px; }
+.df-done .dialog-head h2 .icon { color: var(--success); }
+.df-done-amount { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.df-done-amount strong { font-size: 28px; font-weight: var(--fw-bold, 700); }
+.df-done-lines { list-style: none; margin: 0 0 12px; padding: 10px 12px; background: var(--surface-muted); border-radius: var(--radius); display: flex; flex-direction: column; gap: 4px; }
+.df-done-lines li { display: flex; justify-content: space-between; gap: 12px; }
+.df-done-foot { flex-wrap: wrap; }
+.df-done-foot form { display: contents; }
+
+/* ---------------- My day ---------------- */
+.df-next { overflow: hidden; }
+.df-next > .panel-body { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; padding-block: 22px; }
+.df-next-main { min-width: 0; }
+.df-next-kicker { font-size: 12px; font-weight: var(--fw-semibold, 600); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.df-next-name { font-size: 26px; font-weight: var(--fw-bold, 700); line-height: 1.25; margin: 4px 0 6px; overflow-wrap: anywhere; }
+.df-next-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--text-muted); font-size: 14px; }
+.df-next-empty { font-size: 18px; margin-top: 6px; color: var(--text-muted); }
+.df-next-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.df-next-actions form { display: contents; }
+.df-big { min-height: 52px; padding-inline: 26px; font-size: 16px; }
+.df-counts { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 12px var(--card-pad, 18px); border-top: 1px solid var(--border); background: var(--surface-muted); color: var(--text-muted); font-size: 13px; }
+.df-counts strong { color: var(--text); font-size: 15px; }
+
+.df-day { list-style: none; margin: 0; padding: 4px 0; }
+.df-day-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px var(--card-pad, 18px); border-top: 1px solid var(--border); }
+.df-day-row:first-child { border-top: 0; }
+.df-day-row.is-next { box-shadow: inset 3px 0 0 var(--primary); background: var(--surface-muted); }
+[dir="rtl"] .df-day-row.is-next { box-shadow: inset -3px 0 0 var(--primary); }
+.df-day-row.is-past .df-day-main, .df-day-row.st-paid .df-day-main { opacity: .7; }
+.df-day-row.st-cancelled .df-day-name { text-decoration: line-through; text-decoration-color: var(--text-subtle); }
+.df-day-row.is-block { grid-template-columns: 56px minmax(0, 1fr); color: var(--text-muted); }
+.df-day-time { font-weight: var(--fw-bold, 700); font-size: 13px; }
+.df-day-main { display: flex; flex-direction: column; min-width: 0; color: var(--text); }
+.df-day-main:hover .df-day-name { color: var(--primary); }
+.df-day-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.df-day-state { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: end; }
+.df-day-act form { display: inline; }
+
+/* ---------------- phone ---------------- */
+@media (max-width: 1024px) {
+  .df-bar { bottom: calc(62px + env(safe-area-inset-bottom)); border-radius: var(--radius); }
+}
+@media (max-width: 720px) {
+  .df-rx-head { display: none; }
+  .df-rx-row { grid-template-columns: 1fr 1fr; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); position: relative; }
+  .df-rx-row .df-cell-medicationName { grid-column: 1 / -1; padding-inline-end: 36px; }
+  .df-rx-row .df-cell-instructions { grid-column: 1 / -1; }
+  .df-rx-row > .btn { position: absolute; top: 8px; inset-inline-end: 6px; }
+  .df-cell-label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+  .df-rx-foot .input { min-width: 0; flex-basis: 100%; }
+  .df-bar-inner { padding: 10px 12px; gap: 8px; align-items: stretch; flex-direction: column; }
+  .df-amount { width: 100%; }
+  .df-amount .row-sm { flex-wrap: nowrap; }
+  .df-price { width: auto; flex: 1; min-width: 0; }
+  .df-price .input { min-width: 0; }
+  .df-lines-toggle { flex: none; }
+  .df-actions { margin-inline-start: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+  .df-actions .df-print { grid-column: 1 / -1; }
+  .df-finish { font-size: 14px; white-space: normal; min-width: 0; line-height: 1.25; }
+  .df-line-price { width: 110px; }
+  .df-next > .panel-body { padding-block: 16px; }
+  .df-next-name { font-size: 22px; }
+  .df-next-actions { width: 100%; }
+  .df-big { flex: 1; justify-content: center; }
+  .df-day-row { grid-template-columns: 46px minmax(0, 1fr) auto; row-gap: 4px; }
+  .df-day-state { grid-column: 2; grid-row: 2; align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 6px; text-align: start; }
+  .df-day-act { grid-column: 3; grid-row: 1 / span 2; }
+  .df-strip { gap: 8px 18px; }
+}
+@media print { .df-bar, .df-side { display: none !important; } }
+.df-line.is-base strong { margin-inline-end: 46px; }
