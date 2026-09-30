@@ -253,7 +253,11 @@
     "needs_js": "Choosing images needs JavaScript. You can still manage files in the",
     "page_save": "Save images",
     "page_saved": "Clinic page images saved.",
-    "public_gallery": "Gallery"
+    "public_gallery": "Gallery",
+    "doctor_photo": "Photo",
+    "doctor_photo_sub": "Shown on the clinic page, the booking page and staff screens.",
+    "doctor_photo_help": "Choose a square photo from the media library (or upload one there). The photo becomes public because the clinic page shows it.",
+    "doctor_photo_manager_only": "Only a clinic manager can choose the photo (it comes from the media library)."
   },
   "errors_integrations": {
     "OTHER": "Something went wrong",

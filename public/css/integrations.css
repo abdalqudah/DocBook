@@ -79,3 +79,7 @@
 .pg-grid a { display: block; border-radius: var(--radius); overflow: hidden; background: var(--surface-sunken); }
 .pg-grid img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
 @media (max-width: 480px) { .pg-cover { aspect-ratio: 16 / 9; } .pg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Doctor photo on the doctor form */
+.doc-photo { display: flex; align-items: center; justify-content: center; width: 96px; height: 96px; border-radius: 50%; border: 1px dashed var(--border-strong); background: var(--surface-sunken); color: var(--text-muted); overflow: hidden; flex: none; }
+.doc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }

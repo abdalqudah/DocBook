@@ -7,6 +7,7 @@ const svc = require('./doctors.service');
 const payroll = require('./payroll.service');
 const tele = require('../telehealth/telehealth.service');
 const signatures = require('../signatures/signatures.service');
+const media = require('../integrations/media.service');
 
 const router = express.Router();
 router.use(canAny('doctors.manage', 'appointments.view_all'));
@@ -16,7 +17,8 @@ router.get('/', wrap(async (req, res) => {
   const today = req.ctx.today;
   const counts = await knex('appointments').where({ business_id: req.ctx.businessId, appointment_date: today }).whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').groupBy('doctor_id').select('doctor_id').count({ n: '*' });
   const accounts = await knex('memberships').where({ business_id: req.ctx.businessId }).whereNotNull('doctor_id').select('doctor_id', 'status');
-  res.page('pages/clinic/doctors/index', { title: req.t('nav.doctors'), rows, todayCounts: Object.fromEntries(counts.map((c) => [c.doctor_id, Number(c.n)])), accounts: Object.fromEntries(accounts.map((a) => [a.doctor_id, a.status])), dayKey: scheduling.dayKeyOf(today), parseWh: svc.parseWh });
+  const photos = await media.doctorPhotos(req.ctx.businessId, rows.map((r) => r.id));
+  res.page('pages/clinic/doctors/index', { title: req.t('nav.doctors'), rows, photos, todayCounts: Object.fromEntries(counts.map((c) => [c.doctor_id, Number(c.n)])), accounts: Object.fromEntries(accounts.map((a) => [a.doctor_id, a.status])), dayKey: scheduling.dayKeyOf(today), parseWh: svc.parseWh });
 }));
 
 const renderForm = async (req, res, extra = {}) => {
@@ -24,7 +26,8 @@ const renderForm = async (req, res, extra = {}) => {
   const onlineWindows = tele.windowsByDay(doctor ? await tele.windowsOf(req.ctx.businessId, doctor.id) : []);
   res.page('pages/clinic/doctors/form', {
     title: doctor ? req.t('doctors.edit') : req.t('doctors.add'), doctor, wh: doctor ? svc.parseWh(doctor.working_hours) : scheduling.defaultWorkingHours(), days: scheduling.DAY_KEYS,
-    onlineWindows, jitsiReady: Boolean(tele.jitsiBase()), clinicOnline: Boolean(req.business.online_enabled), ...extra,
+    onlineWindows, jitsiReady: Boolean(tele.jitsiBase()), clinicOnline: Boolean(req.business.online_enabled),
+    photo: doctor ? (await media.doctorPhotos(req.ctx.businessId, [doctor.id]))[doctor.id] || null : null, ...extra,
   });
 };
 router.get('/new', can('doctors.manage'), wrap((req, res) => renderForm(req, res)));
@@ -53,7 +56,7 @@ const renderShow = async (req, res, extra = {}) => {
   // Signature panel: only for whoever may manage this doctor's signature (settings.manage or the doctor's own login).
   const sig = signatures.canManage(req.ctx, doctor.id) ? (await signatures.doctorsFor(req.ctx)).find((x) => x.id === doctor.id) || null : null;
   res.page('pages/clinic/doctors/show', {
-    title: doctor.full_name, doctor, wh: svc.parseWh(doctor.working_hours), days: scheduling.DAY_KEYS, daysOff, services, account, rule, upcoming, online, sig, maxBytes: signatures.MAX_BYTES,
+    title: doctor.full_name, doctor, photo: (await media.doctorPhotos(req.ctx.businessId, [doctor.id]))[doctor.id] || null, wh: svc.parseWh(doctor.working_hours), days: scheduling.DAY_KEYS, daysOff, services, account, rule, upcoming, online, sig, maxBytes: signatures.MAX_BYTES,
     ...(sig ? { pageScripts: ['/js/signatures.js'], pageStyles: ['/css/signatures.css'] } : {}),
     ...extra,
   });

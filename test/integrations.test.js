@@ -204,6 +204,34 @@ test('media: upload, clinic page usage, public serving and delete protection', a
 });
 
 // ---------------------------------------------------------------- sheet payload
+test('media: doctor photo — library images of the same clinic only, made public, tracked and cleared', async () => {
+  const ctxA = { businessId: A.businessId, userId: A.userId };
+  const [doctorId] = await knex('doctors').insert({ business_id: A.businessId, full_name: 'د. صورة', slot_duration_minutes: 30, is_active: true, working_hours: '{}' });
+  const img = await media.upload(ctxA, { buffer: PNG_2x2, originalname: 'doctor.png' }, {});
+  const pdf = await media.upload(ctxA, { buffer: PDF, originalname: 'cv.pdf' }, {});
+  const foreign = await media.upload({ businessId: B.businessId, userId: B.userId }, { buffer: PNG_2x2, originalname: 'x.png' }, {});
+  await assert.rejects(media.setDoctorPhoto(ctxA, doctorId, pdf.id), (e) => e.code === 'MEDIA_NOT_IMAGE');
+  await assert.rejects(media.setDoctorPhoto(ctxA, doctorId, foreign.id), (e) => e.code === 'MEDIA_NOT_IMAGE');
+  // Another clinic cannot set a photo on this clinic's doctor.
+  assert.equal(await media.setDoctorPhoto({ businessId: B.businessId, userId: B.userId }, doctorId, foreign.id), null);
+
+  await media.setDoctorPhoto(ctxA, doctorId, String(img.id));
+  assert.equal((await knex('doctors').where({ id: doctorId }).first('photo_media_id')).photo_media_id, img.id);
+  assert.equal((await media.get(A.businessId, img.id)).is_public, true, 'the clinic page shows it, so it becomes public');
+  assert.deepEqual((await media.usages(A.businessId, img.id)).map((u) => u.context), ['doctor.photo']);
+  assert.ok((await media.doctorPhotos(A.businessId, [doctorId]))[doctorId].url.startsWith(`/app/media/${img.id}`));
+  assert.ok((await media.publicDoctorPhotos({ id: A.businessId, slug: A.slug }))[doctorId].startsWith(`/m/${A.slug}/${img.id}`));
+  await assert.rejects(media.update(ctxA, img.id, { is_public: '' }), (e) => e.code === 'MEDIA_PUBLIC_IN_USE');
+
+  await media.setDoctorPhoto(ctxA, doctorId, '');
+  assert.equal((await knex('doctors').where({ id: doctorId }).first('photo_media_id')).photo_media_id, null);
+  assert.equal((await media.usages(A.businessId, img.id)).length, 0);
+  // Deleting a library image that is a doctor's photo clears the photo.
+  await media.setDoctorPhoto(ctxA, doctorId, img.id);
+  await media.remove(ctxA, img.id, { force: true });
+  assert.equal((await knex('doctors').where({ id: doctorId }).first('photo_media_id')).photo_media_id, null);
+});
+
 test('sheets: payload has translated headers, no clinical fields, and no patients without the acknowledgement', async () => {
   const opts = { businessId: A.businessId, timezone: 'Asia/Amman', today: '2026-09-30', monthsBack: 12 };
   const noPatients = await sheets.buildTabs({ ...opts, tabs: sheets.TABS, locale: 'en', includePatients: false });

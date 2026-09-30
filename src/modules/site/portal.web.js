@@ -52,10 +52,14 @@ const doctorView = (req) => (d) => {
     bio: bio.length > 180 ? `${bio.slice(0, 177).trim()}…` : bio, slot: d.slot_duration_minutes, online: Boolean(d.online_enabled),
   };
 };
-const listDoctors = async (req, clinic) => (await knex('doctors').where({ business_id: clinic.id, is_active: true })
-  .orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
-  .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled'))
-  .map(doctorView(req));
+const listDoctors = async (req, clinic) => {
+  const [rows, photos] = await Promise.all([
+    knex('doctors').where({ business_id: clinic.id, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+      .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled'),
+    require('../integrations/media.service').publicDoctorPhotos(clinic), // eslint-disable-line global-require
+  ]);
+  return rows.map(doctorView(req)).map((d) => ({ ...d, photo: photos[d.id] || null })); // photo: public media-library URL (or null)
+};
 // Services with their (active) category, if any — the pages group them by category (platformops).
 const listServices = async (req, clinic) => (await knex('services as s').leftJoin('service_categories as c', function j() { this.on('c.id', 's.category_id').andOn('c.business_id', 's.business_id').andOnVal('c.is_active', true); })
   .where({ 's.business_id': clinic.id, 's.is_active': true })

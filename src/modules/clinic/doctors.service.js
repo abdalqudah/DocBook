@@ -37,6 +37,8 @@ async function saveDoctor(ctx, id, input) {
     id = await doctors.create(ctx, row); // eslint-disable-line no-param-reassign
   }
   if (online) await tele.applyDoctorOnline(ctx, id, online);
+  // Photo from the media library (the form sends photo_form so a cleared photo is saved as "none").
+  if (input.photo_form) await require('../integrations/media.service').setDoctorPhoto(ctx, id, input.photo_media_id); // eslint-disable-line global-require
   return id;
 }
 

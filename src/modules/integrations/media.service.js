@@ -159,7 +159,7 @@ async function update(ctx, id, body = {}) {
     is_public: m.isImage ? (body.is_public !== undefined ? bool(body.is_public) : m.is_public) : false,
   };
   if (m.is_public && !next.is_public) {
-    const used = (await usages(ctx.businessId, m.id)).filter((u) => u.context.startsWith('portal.'));
+    const used = (await usages(ctx.businessId, m.id)).filter((u) => u.context.startsWith('portal.') || u.context === 'doctor.photo');
     if (used.length) throw fail('MEDIA_PUBLIC_IN_USE', 'This image is shown on the clinic page. Remove it there before making it private.', 409);
   }
   const d = audit.diff(m, next);
@@ -181,6 +181,7 @@ async function remove(ctx, id, { force = false } = {}) {
     await audit.record(ctx, 'media.deleted', { entityType: 'media', entityId: m.id, oldValues: { name: m.name, mime: m.mime, size: m.size, usages: used.map((u) => u.context) } }, trx);
   });
   cache.forgetPrefix(`media:page:${ctx.businessId}`);
+  cache.forgetPrefix(`media:docs:${ctx.businessId}`);
 }
 
 /** The stored bytes for a member of the clinic. */
@@ -246,7 +247,50 @@ async function publicPage(clinic, locale) {
   return { cover: view(rows.cover), gallery: rows.gallery.map(view).filter(Boolean) };
 }
 
+// ---------------------------------------------------------------- doctor photos
+/**
+ * Sets (or clears, with a falsy mediaId) a doctor's photo from the library. The image becomes public because the
+ * clinic page and booking page show it; the use is tracked so the library warns before deleting it.
+ */
+async function setDoctorPhoto(ctx, doctorId, mediaId, trx = knex) {
+  const id = toIds(mediaId)[0] || null;
+  const doc = await trx('doctors').where({ id: Number(doctorId), business_id: ctx.businessId }).first('id', 'photo_media_id');
+  if (!doc) return null;
+  if ((doc.photo_media_id || null) === id) return id;
+  if (id) {
+    const m = await trx('clinic_media').where({ business_id: ctx.businessId, id }).first('id', 'mime', 'is_public');
+    if (!m || !isImage(m)) throw fail('MEDIA_NOT_IMAGE', 'Choose images from the media library.', 422);
+    if (!m.is_public) await trx('clinic_media').where({ business_id: ctx.businessId, id }).update({ is_public: true, updated_at: new Date() });
+  }
+  await trx('doctors').where({ id: doc.id, business_id: ctx.businessId }).update({ photo_media_id: id, updated_at: new Date() });
+  await trx('media_usages').where({ business_id: ctx.businessId, context: 'doctor.photo', ref_id: doc.id }).del();
+  if (id) await trx('media_usages').insert({ business_id: ctx.businessId, media_id: id, context: 'doctor.photo', ref_id: doc.id, sort_order: 0 });
+  cache.forgetPrefix(`media:docs:${ctx.businessId}`);
+  await audit.record(ctx, 'doctor.photo_updated', { entityType: 'doctor', entityId: doc.id, oldValues: { photo_media_id: doc.photo_media_id || null }, newValues: { photo_media_id: id } }, trx);
+  return id;
+}
+
+/** { [doctorId]: { id, url } } for staff screens (member-only URLs). */
+async function doctorPhotos(businessId, doctorIds) {
+  const ids = [...new Set((doctorIds || []).map(Number).filter(Boolean))];
+  if (!ids.length) return {};
+  const rows = await knex('doctors as d').join('clinic_media as m', function j() { this.on('m.id', 'd.photo_media_id').andOn('m.business_id', 'd.business_id'); })
+    .where('d.business_id', businessId).whereIn('d.id', ids).whereIn('m.mime', IMAGE_MIMES).select('d.id as doctor_id', 'm.id', 'm.sha');
+  return Object.fromEntries(rows.map((r) => [r.doctor_id, { id: r.id, url: urlOf(r) }]));
+}
+
+/** { [doctorId]: public URL } for the public clinic / booking pages (public images of an active clinic only). */
+async function publicDoctorPhotos(clinic) {
+  if (!clinic || !clinic.id || !clinic.slug) return {};
+  return cache.remember(`media:docs:${clinic.id}`, async () => {
+    const rows = await knex('doctors as d').join('clinic_media as m', function j() { this.on('m.id', 'd.photo_media_id').andOn('m.business_id', 'd.business_id'); })
+      .where({ 'd.business_id': clinic.id, 'd.is_active': true, 'm.is_public': true }).whereIn('m.mime', IMAGE_MIMES).select('d.id as doctor_id', 'm.id', 'm.sha');
+    return Object.fromEntries(rows.map((r) => [r.doctor_id, publicUrlOf(clinic.slug, r)]));
+  }, 60_000).catch(() => ({}));
+}
+
 module.exports = {
+  setDoctorPhoto, doctorPhotos, publicDoctorPhotos,
   MAX_BYTES, QUOTA_BYTES, MIMES, IMAGE_MIMES, EXT, GALLERY_MAX,
   sniff, looksLikeMarkup, dimensions, inspect, isImage, cleanFolder,
   list, folders, stats, get, upload, update, usages, remove, file, publicFile, urlOf, publicUrlOf,

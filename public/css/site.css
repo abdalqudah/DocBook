@@ -273,6 +273,8 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .doc-card:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); box-shadow: var(--shadow); }
 .doc-av { width: 56px; height: 56px; border-radius: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: var(--fw-heavy); font-size: 18px; flex: none; background: var(--primary); color: var(--primary-ink); }
 .doc-av.sm { width: 42px; height: 42px; border-radius: 13px; font-size: 14px; }
+.doc-av.has-photo { background: var(--surface-sunken); overflow: hidden; padding: 0; }
+.doc-av.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .doc-av[style] { color: var(--surface); }
 .doc-info { min-width: 0; display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .doc-info h3 { font-size: 16px; }

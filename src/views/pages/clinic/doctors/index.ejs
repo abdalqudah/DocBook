@@ -10,7 +10,7 @@
   <% rows.forEach(function (d) { var wh = parseWh(d.working_hours); var today = wh[dayKey]; var works = today && (today.enabled !== false) && ((today.shifts && today.shifts.length) || today.start); %>
   <a class="panel card-link" href="/app/doctors/<%= d.id %>"<% if (!d.is_active) { %> style="opacity:.65"<% } %>>
     <div class="panel-body stack-sm">
-      <div class="row"><span class="avatar avatar-lg"><%= initials(L(d.full_name, d.full_name_en)) %></span>
+      <div class="row"><span class="avatar avatar-lg doc-photo-av"><% if (typeof photos !== 'undefined' && photos[d.id]) { %><img src="<%= photos[d.id].url %>" alt="" loading="lazy"><% } else { %><%= initials(L(d.full_name, d.full_name_en)) %><% } %></span>
         <div class="grow" style="min-width:0"><div class="strong truncate"><%= L(d.full_name, d.full_name_en) %></div><div class="small muted truncate"><%= L(d.specialization, d.specialization_en) || '—' %></div></div></div>
       <div class="row wrap small" style="gap:6px">
         <% if (!d.is_active) { %><span class="badge badge-neutral"><%= t('doctors.inactive') %></span><% } else if (works) { %><span class="badge badge-success badge-dot"><%= t('doctors.works_today') %></span><% } else { %><span class="badge"><%= t('doctors.off_today') %></span><% } %>

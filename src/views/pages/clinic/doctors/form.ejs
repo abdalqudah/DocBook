@@ -20,6 +20,25 @@
       <%- include('../../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: v('email', '') }) %>
       <%- include('../../../partials/field', { name: 'license_number', label: t('doctors.license'), value: v('license_number', '') }) %>
     </div></div>
+  <% var _ph = typeof photo !== 'undefined' ? photo : null; var _phId = old.photo_media_id !== undefined ? old.photo_media_id : (_ph ? _ph.id : ''); %>
+  <div class="panel"><div class="panel-head"><div><h2><%= t('media_lib.doctor_photo') %></h2><div class="panel-sub"><%= t('media_lib.doctor_photo_sub') %></div></div></div>
+    <div class="panel-body row wrap" style="gap:16px;align-items:center">
+      <input type="hidden" name="photo_form" value="1">
+      <div class="doc-photo" data-media-preview="photo_media_id">
+        <% if (_ph && String(_phId) === String(_ph.id)) { %><img src="<%= _ph.url %>" alt="<%= d.full_name || '' %>"><% } else { %><span class="pm-placeholder small muted"><%- icon('user') %></span><% } %>
+      </div>
+      <input type="hidden" name="photo_media_id" value="<%= _phId %>">
+      <div class="stack-sm grow" style="min-width:220px">
+        <% if (can('settings.manage')) { %>
+        <div class="row-sm wrap">
+          <button class="btn btn-secondary btn-sm" type="button" data-media-pick="photo_media_id"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button>
+          <button class="btn btn-ghost btn-sm" type="button" data-media-clear="photo_media_id"<%= _phId ? '' : ' hidden' %>><%= t('media_lib.remove') %></button>
+        </div>
+        <span class="help"><%= t('media_lib.doctor_photo_help') %></span>
+        <noscript><span class="small muted"><%= t('media_lib.needs_js') %></span></noscript>
+        <% } else { %><span class="help"><%= t('media_lib.doctor_photo_manager_only') %></span><% } %>
+      </div>
+    </div></div>
   <div class="panel"><div class="panel-head"><h2><%= t('doctors.section_booking') %></h2></div>
     <div class="panel-body form-grid cols-3">
       <%- include('../../../partials/field', { name: 'consultation_fee', label: t('doctors.fee'), value: v('consultation_fee', 0), suffix: currency, attrs: 'inputmode="decimal"' }) %>
@@ -48,3 +67,4 @@
   <%- include('../../telehealth/_doctor-form') %>
   <div class="form-actions"><a class="btn btn-ghost" href="<%= doctor ? '/app/doctors/' + doctor.id : '/app/doctors' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
 </form>
+<%- include('../../integrations/_media-picker') %>
