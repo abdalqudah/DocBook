@@ -1,0 +1,184 @@
+<%
+  var F = figures; var C = F.current; var P = F.previous; var CH = F.changes_percent;
+  var cap = platform.monthly_cap;
+  var staffTotal = typeof C.staff_salaries_paid === 'object' ? C.staff_salaries_paid.total : 0;
+  var delta = function (v, goodUp) {
+    if (v === null || v === undefined) return '<span class="tiny muted">' + t('aifin.no_compare') + '</span>';
+    var up = v > 0; var flat = v === 0;
+    var tone = flat ? '' : ((up === goodUp) ? ' is-good' : ' is-bad');
+    return '<span class="aifin-delta tiny' + tone + '">' + (flat ? '' : icon(up ? 'arrow-up-right' : 'arrow-down-right', 'icon-sm')) + fmt.pct(Math.abs(v)) + ' <span class="muted">' + t('aifin.vs_prev') + '</span></span>';
+  };
+  var R = last ? last.result : null;
+  var canAnalyse = !denied;
+  var suggestions = ['s1', 's2', 's3', 's4'];
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/finance"><%= t('nav.profit_loss') %></a> <%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %> <%= t('aifin.title') %></div>
+    <h1><%= t('aifin.title') %></h1>
+    <p><%= t('aifin.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <form class="period-picker" method="get" action="/app/finance/assistant" data-autosubmit>
+      <label class="sr-only" for="aifin-month"><%= t('aifin.month') %></label>
+      <%- icon('calendar', 'muted') %>
+      <select class="select aifin-month" id="aifin-month" name="month">
+        <% months.forEach(function (m) { %><option value="<%= m %>"<%= m === month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %>
+      </select>
+      <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('aifin.show') %></button></noscript>
+    </form>
+  </div>
+</div>
+
+<p class="aifin-disclaimer tiny"><%- icon('info', 'icon-sm') %><span><%= t('aifin.disclaimer') %></span></p>
+
+<% if (denied) { %>
+<div class="alert alert-info aifin-off">
+  <%- icon('bot', 'icon-sm') %>
+  <div class="grow">
+    <div class="alert-title"><%= t('aifin.off_title') %></div>
+    <div><%= deniedText %></div>
+    <% if (can('settings.manage') && ['AIFIN_CLINIC_OFF', 'AI_ROLE_NOT_ALLOWED'].indexOf(denied) !== -1) { %><div><a class="link" href="/app/settings/ai#finance"><%= t('aifin.open_settings') %></a></div><% } %>
+  </div>
+</div>
+<% } %>
+
+<section class="aifin-section" aria-labelledby="aifin-figures-h">
+  <div class="row between wrap aifin-section-head">
+    <h2 id="aifin-figures-h"><%= t('aifin.figures_title', { month: fmt.month(month) }) %></h2>
+    <% if (F.partial_month) { %><span class="badge badge-dot badge-neutral"><%= t('aifin.partial', { d: F.partial_month.days_elapsed, n: F.partial_month.days_in_month }) %></span><% } %>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label"><%= t('aifin.k_revenue') %></div><div class="kpi-value"><%= fmt.money(C.revenue.total) %></div><%- delta(CH.revenue, true) %></div>
+    <div class="kpi"><div class="kpi-label"><%= t('aifin.k_expenses') %></div><div class="kpi-value"><%= fmt.money(C.expenses.total) %></div><%- delta(CH.expenses, false) %></div>
+    <div class="kpi"><div class="kpi-label"><%= t('aifin.k_payroll') %></div><div class="kpi-value"><%= fmt.money(C.doctor_payroll_paid.total + staffTotal) %></div><span class="tiny muted"><%= typeof C.staff_salaries_paid === 'object' ? t('aifin.payroll_incl_staff') : t('aifin.payroll_doctors') %></span></div>
+    <div class="kpi"><div class="kpi-label"><%= t('aifin.k_net') %></div><div class="kpi-value<%= C.net_result < 0 ? ' aifin-neg' : '' %>"><%= fmt.money(C.net_result) %></div><%- delta(CH.net_result, true) %></div>
+  </div>
+  <div class="aifin-minis">
+    <div><span class="tiny muted"><%= t('aifin.k_appointments') %></span><strong class="num"><%= fmt.number(C.appointments.total) %></strong></div>
+    <div><span class="tiny muted"><%= t('aifin.k_no_show') %></span><strong class="num"><%= fmt.pct(C.appointments.no_show_rate_percent) %></strong></div>
+    <div><span class="tiny muted"><%= t('aifin.k_invoices') %></span><strong class="num"><%= fmt.number(C.revenue.invoices) %></strong></div>
+    <div><span class="tiny muted"><%= t('aifin.k_avg_invoice') %></span><strong class="num"><%= fmt.money(C.revenue.average_invoice) %></strong></div>
+    <div><span class="tiny muted"><%= t('aifin.k_discounts') %></span><strong class="num"><%= fmt.money(C.revenue.discounts.total) %></strong></div>
+    <div><span class="tiny muted"><%= t('aifin.k_online') %></span><strong class="num"><%= fmt.number(C.appointments.by_source.website || 0) %></strong></div>
+  </div>
+</section>
+
+<div class="grid grid-main aifin-grid">
+  <div class="stack-lg">
+    <section class="panel" id="analysis">
+      <div class="panel-head">
+        <div><h2><%= t('aifin.analysis_title') %></h2><div class="panel-sub"><%= t('aifin.analysis_sub') %></div></div>
+      </div>
+      <div class="panel-body stack" data-aifin-analysis>
+        <% if (R) { %>
+          <p class="aifin-summary" dir="auto"><%= R.summary %></p>
+          <% [['strengths', 'circle-check'], ['warnings', 'triangle-alert']].forEach(function (s) { var list = R[s[0]] || []; if (!list.length) return; %>
+          <div class="stack-sm">
+            <h3 class="aifin-h3"><%- icon(s[1], 'icon-sm') %><%= t('aifin.r_' + s[0]) %></h3>
+            <ul class="aifin-list<%= s[0] === 'warnings' ? ' is-warn' : '' %>"><% list.forEach(function (x) { %><li dir="auto"><%= x %></li><% }) %></ul>
+          </div>
+          <% }) %>
+          <% if ((R.action_steps || []).length) { %>
+          <div class="stack-sm">
+            <h3 class="aifin-h3"><%- icon('list-checks', 'icon-sm') %><%= t('aifin.r_action_steps') %></h3>
+            <ol class="aifin-steps"><% R.action_steps.forEach(function (x) { %><li dir="auto"><%= x %></li><% }) %></ol>
+          </div>
+          <% } %>
+          <% if (R.metrics_notes) { %><p class="small muted aifin-notes" dir="auto"><span class="strong"><%= t('aifin.r_metrics_notes') %>:</span> <%= R.metrics_notes %></p><% } %>
+          <p class="tiny muted"><%= t('aifin.generated', { name: last.user_name || '—', date: fmt.date(last.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) %></p>
+        <% } else { %>
+          <div class="aifin-empty">
+            <%- icon('lightbulb') %>
+            <div class="strong"><%= t('aifin.no_analysis_title') %></div>
+            <p class="small muted"><%= canAnalyse ? t('aifin.no_analysis_text') : t('aifin.no_analysis_off') %></p>
+          </div>
+        <% } %>
+      </div>
+      <% if (canAnalyse) { %>
+      <div class="panel-foot">
+        <form method="post" action="/app/finance/assistant/analyze" class="row wrap between w-full" data-aifin-analyze>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="month" value="<%= month %>">
+          <span class="tiny muted" data-aifin-analyze-hint><%= t('aifin.analyse_hint') %></span>
+          <button class="btn btn-primary" type="submit" data-busy-text="<%= t('aifin.analysing') %>"><%- icon('sparkles', 'icon-sm') %><span><%= R ? t('aifin.reanalyse') : t('aifin.analyse', { month: fmt.month(month) }) %></span></button>
+        </form>
+      </div>
+      <% } %>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('aifin.breakdown_title') %></h2><div class="panel-sub"><%= t('aifin.breakdown_sub') %></div></div></div>
+      <div class="aifin-breakdown">
+        <div>
+          <h3 class="aifin-h3"><%= t('aifin.by_doctor') %></h3>
+          <% if (!C.by_doctor.length) { %><p class="small muted"><%= t('aifin.nothing_yet') %></p><% } else { %>
+          <div class="table-wrap"><table class="table responsive">
+            <thead><tr><th><%= t('common.doctor') %></th><th class="num"><%= t('aifin.k_revenue') %></th><th class="num"><%= t('aifin.k_appointments') %></th><th class="num"><%= t('aifin.no_shows') %></th></tr></thead>
+            <tbody><% C.by_doctor.forEach(function (d) { %>
+              <tr><td class="primary-cell"><%= d.doctor %></td><td class="num nowrap" data-label="<%= t('aifin.k_revenue') %>"><%= fmt.money(d.revenue) %></td><td class="num" data-label="<%= t('aifin.k_appointments') %>"><%= fmt.number(d.appointments) %></td><td class="num" data-label="<%= t('aifin.no_shows') %>"><%= fmt.number(d.no_show) %></td></tr>
+            <% }) %></tbody>
+          </table></div>
+          <% } %>
+        </div>
+        <div class="aifin-breakdown-side">
+          <div>
+          <h3 class="aifin-h3"><%= t('aifin.by_category') %></h3>
+          <% if (!C.expenses.by_category.length) { %><p class="small muted"><%= t('aifin.no_expenses') %></p><% } else { var maxC = C.expenses.by_category[0].amount || 1; %>
+          <div class="hbars">
+            <% C.expenses.by_category.slice(0, 8).forEach(function (c) { %>
+            <div class="hbar"><span class="hbar-label" title="<%= c.category %>"><%= c.category %></span><span class="hbar-track"><span class="hbar-fill" style="width:<%= Math.max(2, Math.round(c.amount / maxC * 100)) %>%"></span></span><span class="hbar-value"><%= fmt.compact(c.amount) %></span></div>
+            <% }) %>
+          </div>
+          <% } %>
+          </div>
+          <div>
+          <h3 class="aifin-h3"><%= t('aifin.by_method') %></h3>
+          <% if (!C.revenue.by_method.length) { %><p class="small muted"><%= t('aifin.nothing_yet') %></p><% } else { %>
+          <ul class="aifin-kv small"><% C.revenue.by_method.forEach(function (m) { %><li><span class="muted"><%= label('payment_methods', m.method) %></span><span class="num strong"><%= fmt.money(m.amount) %></span></li><% }) %></ul>
+          <% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel flush aifin-chat" id="chat" aria-labelledby="aifin-chat-h">
+    <div class="panel-head">
+      <div><h2 id="aifin-chat-h"><%= t('aifin.chat_title') %></h2><div class="panel-sub"><%= t('aifin.chat_sub') %></div></div>
+      <div class="row-sm">
+        <span class="tiny muted num" title="<%= t('aifin.usage_title') %>" data-aifin-usage><%= cap > 0 ? fmt.number(usage.month) + ' / ' + fmt.number(cap) : '' %></span>
+        <% if (!denied && conversation.length) { %>
+        <form method="post" action="/app/finance/assistant/chat/clear" data-confirm="<%= t('aifin.clear_confirm') %>" data-confirm-yes="<%= t('aifin.clear') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-ghost btn-sm btn-icon" type="submit" aria-label="<%= t('aifin.clear') %>" title="<%= t('aifin.clear') %>"><%- icon('trash-2', 'icon-sm') %></button>
+        </form>
+        <% } %>
+      </div>
+    </div>
+    <div class="thread aifin-thread" data-aifin-thread aria-live="polite">
+      <% if (!conversation.length) { %>
+      <div class="aifin-welcome" data-aifin-welcome>
+        <%- icon('bot') %>
+        <p class="small muted"><%= denied ? t('aifin.chat_off') : t('aifin.welcome') %></p>
+        <% if (!denied) { %>
+        <div class="aifin-suggest">
+          <% suggestions.forEach(function (k) { %><button class="btn btn-secondary btn-sm" type="button" data-aifin-suggest="<%= t('aifin.suggest.' + k) %>"><%= t('aifin.suggest.' + k) %></button><% }) %>
+        </div>
+        <% } %>
+      </div>
+      <% } else { %>
+        <%- include('finance_messages', { messages: conversation, catName: catName }) %>
+      <% } %>
+    </div>
+    <% if (!denied) { %>
+    <form class="aifin-compose" method="post" action="/app/finance/assistant/chat" data-aifin-chat data-error="<%= t('aifin.error_generic') %>" data-you="<%= t('aifin.you') %>" data-thinking="<%= t('aifin.thinking') %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="month" value="<%= month %>">
+      <label class="sr-only" for="aifin-input"><%= t('aifin.ask') %></label>
+      <textarea class="textarea" id="aifin-input" name="message" rows="1" maxlength="2000" required placeholder="<%= t('aifin.placeholder') %>"></textarea>
+      <button class="btn btn-secondary btn-icon" type="submit" aria-label="<%= t('aifin.send') %>" title="<%= t('aifin.send') %>"><%- icon('send', 'icon-sm aifin-send-icon') %></button>
+    </form>
+    <% } %>
+  </section>
+</div>

@@ -1,0 +1,52 @@
+<%# One action proposed by the finance assistant (add expense / add supplier). Nothing is saved until Confirm.
+    Locals: a (decorated action), catName (key → label). %>
+<%
+  var p = a.payload || {};
+  var allowed = can(a.perm);
+  var stTone = a.status === 'failed' ? 'badge-danger' : 'badge-neutral';
+  var catLabel = typeof catName === 'function' ? catName : function (k) { return k; };
+%>
+<div class="aifin-action" id="aifin-action-<%= a.id %>" data-aifin-action="<%= a.id %>">
+  <div class="aifin-action-head">
+    <span class="aifin-action-icon"><%- icon(a.kind === 'add_expense' ? 'receipt' : 'truck', 'icon-sm') %></span>
+    <div class="grow">
+      <div class="strong small"><%= t('aifin.action_' + a.kind) %></div>
+      <div class="tiny muted"><%= t('aifin.action_hint') %></div>
+    </div>
+    <span class="badge badge-dot <%= stTone %>"><%= t('aifin.action_status.' + a.status) %></span>
+  </div>
+  <dl class="dl aifin-dl small">
+    <% if (a.kind === 'add_expense') { %>
+      <dt><%= t('common.date') %></dt><dd><%= fmt.date(p.date) %></dd>
+      <dt><%= t('common.category') %></dt><dd><%= catLabel(p.category) %></dd>
+      <dt><%= t('aifin.f_description') %></dt><dd dir="auto"><%= p.description %></dd>
+      <dt><%= t('common.amount') %></dt><dd class="strong num"><%= fmt.money(p.amount) %></dd>
+      <dt><%= t('aifin.f_method') %></dt><dd><%= label('payment_methods', p.method) %></dd>
+    <% } else { %>
+      <dt><%= t('aifin.f_name') %></dt><dd dir="auto"><%= p.name %></dd>
+      <dt><%= t('aifin.f_phone') %></dt><dd dir="ltr" class="aifin-ltr"><%= p.phone || '—' %></dd>
+      <dt><%= t('aifin.f_email') %></dt><dd dir="ltr" class="aifin-ltr"><%= p.email || '—' %></dd>
+    <% } %>
+  </dl>
+  <% if (a.status === 'pending') { %>
+  <div class="aifin-action-foot">
+    <% if (allowed) { %>
+      <form method="post" action="/app/finance/assistant/actions/<%= a.id %>/confirm" data-aifin-decide>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('aifin.confirm') %></button>
+      </form>
+    <% } else { %>
+      <span class="tiny muted grow"><%= t('aifin.no_perm_' + a.kind) %></span>
+    <% } %>
+    <form method="post" action="/app/finance/assistant/actions/<%= a.id %>/cancel" data-aifin-decide>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-ghost btn-sm" type="submit"><%= t('common.cancel') %></button>
+    </form>
+  </div>
+  <% } else if (a.status === 'done') { %>
+  <div class="aifin-action-foot tiny muted">
+    <%- icon('circle-check', 'icon-sm') %><span class="grow"><%= t('aifin.saved_by_you') %></span>
+    <a class="link" href="<%= a.kind === 'add_expense' ? '/app/expenses' : '/app/supplies?tab=suppliers' %>"><%= t('aifin.open_' + a.kind) %></a>
+  </div>
+  <% } %>
+</div>

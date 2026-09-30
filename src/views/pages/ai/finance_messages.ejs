@@ -1,0 +1,9 @@
+<%# Chat messages of the finance assistant. Locals: messages [{ id, role, content, status, actions, created_at }], catName. %>
+<% messages.forEach(function (m) { var mine = m.role === 'user'; %>
+<div class="aifin-turn<%= mine ? ' is-me' : '' %>" data-msg-id="<%= m.id %>">
+  <div class="msg<%= mine ? ' me' : '' %><%= m.status === 'refused' || m.status === 'error' ? ' aifin-msg-note' : '' %>" dir="auto"><%= m.content %><div class="msg-meta"><%= mine ? t('aifin.you') : t('aifin.assistant') %> · <%= fmt.date(m.created_at, { hour: '2-digit', minute: '2-digit' }) %><% if (m.status === 'truncated') { %> · <%= t('aifin.truncated') %><% } %></div></div>
+  <% (m.actions || []).forEach(function (a) { %>
+    <%- include('finance_action', { a: a, catName: catName }) %>
+  <% }) %>
+</div>
+<% }) %>

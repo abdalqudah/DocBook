@@ -1,0 +1,79 @@
+/* AI finance assistant (/app/finance/assistant) — calm: neutral surfaces, one brand colour for the main action. */
+.aifin-disclaimer { display: flex; gap: 8px; align-items: flex-start; color: var(--text-muted); margin: -4px 0 16px; }
+.aifin-disclaimer .icon { color: var(--text-subtle); flex: none; margin-top: 1px; }
+.aifin-off { margin-bottom: 20px; }
+.aifin-month { height: 36px; width: auto; }
+
+.aifin-section { margin-bottom: 20px; }
+.aifin-section-head { margin-bottom: 10px; gap: 8px; }
+.aifin-section-head h2 { font-size: 15px; margin: 0; }
+.aifin-delta { display: inline-flex; align-items: center; gap: 3px; margin-top: 4px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.aifin-delta.is-bad { color: var(--danger); }
+.aifin-delta .icon { width: 14px; height: 14px; }
+.aifin-neg { color: var(--danger); }
+.aifin-minis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-top: 12px; padding: 12px 16px; background: var(--surface-muted); border-radius: var(--radius); }
+.aifin-minis > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.aifin-minis strong { font-size: 15px; }
+
+.aifin-grid { align-items: start; }
+.aifin-summary { margin: 0; font-size: 14px; line-height: 1.8; }
+.aifin-h3 { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: var(--fw-semibold); margin: 0; color: var(--text); }
+.aifin-h3 .icon { color: var(--text-muted); }
+.aifin-mt { margin-top: 18px; margin-bottom: 8px; }
+.aifin-list, .aifin-steps { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.7; }
+.aifin-list li::marker { color: var(--text-subtle); }
+.aifin-list.is-warn li::marker { color: var(--warning); }
+.aifin-steps li::marker { color: var(--text-muted); font-weight: var(--fw-semibold); }
+.aifin-notes { margin: 0; padding-top: 12px; border-top: 1px solid var(--border); }
+.aifin-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 20px 8px; }
+.aifin-empty > .icon { width: 28px; height: 28px; color: var(--text-subtle); }
+.aifin-empty p { margin: 0; max-width: 440px; }
+
+.aifin-breakdown { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 16px var(--card-pad, 20px) 20px; }
+.aifin-breakdown .aifin-h3 { margin-bottom: 8px; }
+.aifin-breakdown-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.aifin-breakdown .table-wrap { border: 0; }
+.aifin-kv { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.aifin-kv li { display: flex; justify-content: space-between; gap: 12px; }
+
+/* chat */
+.aifin-chat { position: sticky; top: 16px; display: flex; flex-direction: column; height: min(760px, calc(100vh - 110px)); min-height: 460px; }
+.aifin-chat .panel-head form { margin: 0; }
+.aifin-thread { flex: 1; overflow-y: auto; padding: 16px var(--card-pad, 20px); }
+.aifin-compose { border-top: 1px solid var(--border); padding: 12px; display: flex; gap: 8px; align-items: flex-end; }
+.aifin-compose textarea { flex: 1; min-height: 44px; height: 44px; max-height: 160px; resize: none; }
+.aifin-chat .panel-head { border-bottom: 1px solid var(--border); }
+.aifin-turn { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.aifin-turn.is-me { align-items: flex-end; }
+.aifin-turn .msg { max-width: 92%; }
+.aifin-msg-note { color: var(--text-muted); font-style: italic; }
+.aifin-typing { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); }
+.aifin-error { color: var(--danger); font-size: 12px; }
+.aifin-welcome { margin: auto 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 12px; }
+.aifin-welcome > .icon { width: 28px; height: 28px; color: var(--text-subtle); }
+.aifin-welcome p { margin: 0; max-width: 360px; }
+.aifin-suggest { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.aifin-suggest .btn { white-space: normal; text-align: start; height: auto; min-height: 32px; padding-block: 6px; }
+[dir="rtl"] .aifin-send-icon { transform: scaleX(-1); }
+
+.aifin-action { width: min(100%, 420px); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.aifin-action-head { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px 8px; }
+.aifin-action-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text-muted); }
+.aifin-dl { grid-template-columns: minmax(80px, 120px) 1fr; gap: 6px 14px; padding: 4px 14px 12px; }
+.aifin-ltr { text-align: start; unicode-bidi: plaintext; }
+.aifin-action-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.aifin-action-foot form { margin: 0; }
+.aifin-action-error { padding: 0 14px 8px; }
+.aifin-action-foot .icon { color: var(--text-muted); }
+
+@media (max-width: 1100px) {
+  .aifin-minis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .aifin-chat { position: static; height: min(640px, calc(100vh - 80px)); }
+}
+@media (max-width: 700px) {
+  .aifin-breakdown-side { grid-template-columns: 1fr; }
+  .aifin-minis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .aifin-dl { grid-template-columns: minmax(70px, 100px) 1fr; }
+  .aifin-dl dd { margin-bottom: 0; }
+}
+@media (min-width: 701px) { .aifin-breakdown td.primary-cell { white-space: nowrap; } }
