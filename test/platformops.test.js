@@ -260,6 +260,9 @@ test('update (RemoteWay flow): lenient package check, one-step install, restore 
     fs.mkdirSync(path.join(root, 'src/views'), { recursive: true });
     fs.writeFileSync(path.join(root, 'src/views/a.ejs'), 'v2.0.0');
     fs.writeFileSync(path.join(root, '.env'), 'SECRET=keep');
+    // A dist unpacked over an older source upload keeps leftover src/*.js files: still the installed build.
+    fs.writeFileSync(path.join(root, 'src/server.js'), 'module.exports = {};');
+    assert.ok(updater.isDistBuild(root), 'app.js decides, not leftover source files');
     const r = updater.install(z.toBuffer(), { root, by: 'admin@x', fileName: 'u.zip' });
     assert.deepEqual([r.from, r.to, r.ok], ['2.0.0', '2.0.1', true]);
     assert.equal(fs.readFileSync(path.join(root, 'src/views/a.ejs'), 'utf8'), 'v2.0.1');

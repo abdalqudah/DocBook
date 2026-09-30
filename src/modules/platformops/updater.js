@@ -37,8 +37,11 @@ function readHead(file, bytes = 400) {
   try { fd = fs.openSync(file, 'r'); const buf = Buffer.alloc(bytes); const n = fs.readSync(fd, buf, 0, bytes, 0); return buf.slice(0, n).toString('utf8'); } catch { return ''; } finally { if (fd !== undefined) fs.closeSync(fd); }
 }
 
-/** The app root runs the installed dist build (not the source tree). */
-const isDistBuild = (root = DEFAULT_ROOT) => hasDistBanner(readHead(path.join(root, 'app.js'))) && !fs.existsSync(path.join(root, 'src', 'server.js'));
+/**
+ * The app root runs the installed dist build (not the source tree). Decided by app.js alone — the file the host starts:
+ * a dist unpacked over an older source upload still has leftover src/*.js files, but they are never loaded.
+ */
+const isDistBuild = (root = DEFAULT_ROOT) => hasDistBanner(readHead(path.join(root, 'app.js')));
 
 function readVersion(dir) {
   try { const p = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')); return p.version || null; } catch { return null; }
