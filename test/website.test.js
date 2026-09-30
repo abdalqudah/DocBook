@@ -391,3 +391,71 @@ test('clinic e-mail OAuth: state is bound to this browser and clinic; the accoun
     oauth._setFetch((...a) => fetch(...a));
   }
 });
+
+test('SEO tab: title/description go live on publish; share image and hide from search (advanced)', async () => {
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  let r = await o.get('/app/website/seo');
+  assert.equal(r.status, 200);
+  await o.submit('/app/website/seo', '/app/website/seo', { title_en: 'Best dental care in town', description_en: 'Gentle dentists.', image_media_id: String(A.mediaId), hide: '1' });
+  r = await app.agent().get(`/${A.slug}?lang=en`);
+  assert.ok(!/Best dental care in town/.test(r.text), 'not before publishing');
+  await o.submit('/app/website/builder', '/app/website/publish', {});
+  r = await app.agent().get(`/${A.slug}?lang=en`);
+  assert.match(r.text, /<title>Best dental care in town/);
+  assert.match(r.text, /name="robots" content="noindex/);
+  assert.match(r.text, new RegExp(`og:image" content="[^"]*/m/${A.slug}/${A.mediaId}`));
+  await o.submit('/app/website/seo', '/app/website/seo', { title_en: 'Best dental care in town', description_en: 'Gentle dentists.', image_media_id: String(A.mediaId) });
+  await o.submit('/app/website/builder', '/app/website/publish', {});
+});
+
+test('statistics: anonymous visits counted per day and kind; staff and robots are not; the page shows them', async () => {
+  const today = require('../src/modules/clinic/scheduling').clinicNow('Asia/Amman').date; // eslint-disable-line global-require
+  const count = async (kind) => Number(((await knex('clinic_site_stats').where({ business_id: A.ctx.businessId, day: today, kind }).first()) || {}).views || 0);
+  const before = await count('home');
+  const visitor = app.agent();
+  await visitor.get(`/${A.slug}`);
+  await visitor.get(`/${A.slug}`, { 'user-agent': 'Googlebot/2.1' });
+  await visitor.get(`/${A.slug}/book`);
+  await visitor.get(`/${A.slug}/doctors/${A.doctorId}`);
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  await o.get(`/${A.slug}`);
+  await new Promise((res) => setTimeout(res, 150)); // counters are written without waiting
+  assert.equal(await count('home'), before + 1, 'one anonymous visit; robot and staff not counted');
+  assert.ok(await count('book') >= 1);
+  assert.ok(await count('doctor') >= 1);
+  const r = await o.get('/app/website/analytics');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /ws-days/);
+  const cookie = (await visitor.get(`/${A.slug}`)).text;
+  assert.ok(cookie.length > 0);
+});
+
+test('daily domain re-check: never takes a domain down, notifies the people who manage it', async () => {
+  const host = `recheck${tag}.com`;
+  await domains.save(B.ctx, host);
+  const d = await domains.forClinic(B.ctx.businessId);
+  await knex('clinic_domains').where({ id: d.id }).update({ status: 'verified', checked_at: new Date(Date.now() - 3 * 86_400_000) });
+  const resolver = { resolveTxt: async () => [[`docbook-verify=${d.token}`]], resolveCname: async () => [], resolve4: async (h) => (h === host ? ['203.0.113.9'] : ['198.51.100.1']) }; // the domain now points elsewhere
+  const r = await domains.recheckDue({ resolver, probe: async () => ({ reachable: true, authorized: true, validTo: new Date(Date.now() + 90 * 86_400_000) }) });
+  assert.ok(r.checked >= 1);
+  const after = await domains.forClinic(B.ctx.businessId);
+  assert.equal(after.status, 'verified', 'still live');
+  const n = await knex('notifications').where({ business_id: B.ctx.businessId, type: 'domain.problem' }).first();
+  assert.ok(n, 'the pointing problem is reported');
+  await domains.remove(B.ctx);
+});
+
+test('Today: the optional "put your clinic online" card after the setup checklist, until the site is live', async () => {
+  await knex('businesses').where({ id: B.ctx.businessId }).update({ setup_dismissed_at: new Date() });
+  const b = app.agent();
+  await b.login(mail('owner-b'));
+  let r = await b.get('/app');
+  assert.match(r.text, /today-online/);
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  await knex('businesses').where({ id: A.ctx.businessId }).update({ setup_dismissed_at: new Date() });
+  r = await o.get('/app');
+  assert.ok(!/today-online/.test(r.text), 'A is live');
+});

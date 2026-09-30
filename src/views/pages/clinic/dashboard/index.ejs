@@ -16,6 +16,12 @@
 </section>
 
 <% if (checklist) { %><%- include('_checklist') %><% } %>
+<% if (typeof goOnline !== 'undefined' && goOnline) { %>
+<section class="panel today-online mb-4"><div class="panel-body row wrap between">
+  <div class="row-sm grow" style="min-width:240px"><span class="action-icon"><%- icon('globe', 'icon-sm') %></span><div><div class="strong"><%= t('website.go_online_title') %></div><div class="small muted"><%= goOnline.status === 'unpublished' ? t('website.go_online_down') : t('website.go_online_text') %></div></div></div>
+  <a class="btn btn-secondary btn-sm" href="/app/website"><%= t('website.go_online_cta') %><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %></a>
+</div></section>
+<% } %>
 
 <% if (kind === 'accounts') { %>
   <%- include('_accounts') %>

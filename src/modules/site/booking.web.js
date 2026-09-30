@@ -85,6 +85,7 @@ async function renderBook(req, res, clinic, extra = {}) {
 router.get('/:slug/book', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
+  require('../website/stats').hit(req, clinic, 'book'); // eslint-disable-line global-require -- first-party daily counter
   return renderBook(req, res, clinic);
 }));
 

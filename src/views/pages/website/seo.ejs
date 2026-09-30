@@ -1,0 +1,46 @@
+<%
+  // Website → Search engines: the title and description shown in search results and when the site is shared.
+  // Saved in the draft; they go live with the next publish. Structured data (clinic, doctors, reviews) is automatic.
+  var seo = doc.seo || {};
+  var im = seo.image && media[seo.image] ? media[seo.image] : null;
+  var titleOf = function (l) { return (seo.title && seo.title[l]) || ''; };
+  var descOf = function (l) { return (seo.description && seo.description[l]) || ''; };
+  var shownTitle = titleOf(locale) || business.name; var shownDesc = descOf(locale) || (locale === 'en' ? business.about_en || business.about : business.about || business.about_en) || '';
+%>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.seo_title') %></h1><p><%= t('website.seo_lead') %></p></div></div>
+<div class="grid grid-main">
+  <section class="panel">
+    <form class="panel-body stack" method="post" action="/app/website/seo">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.seo_page_title') %></legend>
+        <div class="ws-lang-row"><label class="ws-lang-tag" for="seo-t-ar">ع</label><input class="input" id="seo-t-ar" name="title_ar" value="<%= titleOf('ar') %>" maxlength="70" dir="rtl"></div>
+        <div class="ws-lang-row"><label class="ws-lang-tag" for="seo-t-en">EN</label><input class="input" id="seo-t-en" name="title_en" value="<%= titleOf('en') %>" maxlength="70" dir="ltr"></div>
+        <span class="help"><%= t('website.seo_title_help') %></span></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.seo_description') %></legend>
+        <div class="ws-lang-row"><label class="ws-lang-tag" for="seo-d-ar">ع</label><textarea class="textarea" id="seo-d-ar" name="description_ar" rows="3" maxlength="160" dir="rtl"><%= descOf('ar') %></textarea></div>
+        <div class="ws-lang-row"><label class="ws-lang-tag" for="seo-d-en">EN</label><textarea class="textarea" id="seo-d-en" name="description_en" rows="3" maxlength="160" dir="ltr"><%= descOf('en') %></textarea></div>
+        <span class="help"><%= t('website.seo_description_help') %></span></fieldset>
+      <% if (advanced) { %>
+      <div class="stack-sm"><span class="label"><%= t('website.seo_image') %></span>
+        <div class="pm-cover ws-pick-preview" data-media-preview="image_media_id"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div>
+        <input type="hidden" name="image_media_id" value="<%= seo.image || '' %>">
+        <div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="button" data-media-pick="image_media_id"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button><button class="btn btn-ghost btn-sm" type="button" data-media-clear="image_media_id"<%= im ? '' : ' hidden' %>><%= t('media_lib.remove') %></button></div>
+        <span class="help"><%= t('website.seo_image_help') %></span></div>
+      <label class="check"><input type="checkbox" name="hide" value="1"<%= seo.hide ? ' checked' : '' %>><span><span class="strong small"><%= t('website.seo_hide') %></span> <span class="small muted"><%= t('website.seo_hide_help') %></span></span></label>
+      <% } else { %>
+      <div class="alert alert-info small"><%- icon('lock') %><div class="grow"><%= t('website.seo_advanced_locked') %></div></div>
+      <% } %>
+      <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('website.save') %></button><span class="small muted"><%= t('website.goes_live_on_publish') %></span></div>
+    </form>
+  </section>
+  <aside class="stack">
+    <section class="panel"><div class="panel-head"><h2><%= t('website.seo_preview') %></h2></div>
+      <div class="panel-body ws-serp">
+        <div class="ws-serp-url" dir="ltr"><%= base.replace(/^https?:\/\//, '') %>/<%= business.slug || '' %></div>
+        <div class="ws-serp-title"><%= shownTitle %></div>
+        <div class="ws-serp-desc"><%= shownDesc.slice(0, 160) %></div>
+      </div></section>
+    <section class="panel"><div class="panel-body small muted"><%= t('website.seo_auto') %></div></section>
+  </aside>
+</div>
+<%- include('../integrations/_media-picker') %>

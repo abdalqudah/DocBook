@@ -204,6 +204,30 @@ router.post('/domain/alias/verify', can('website.domain'), domainGate, act(async
 }, null, '/app/website/domain#alias'));
 router.post('/domain/alias/delete', can('website.domain'), act((req) => domains.removeAlias(req.ctx), 'website.alias_removed', '/app/website/domain'));
 
+// ---------------------------------------------------------------- search engines (the draft's SEO; live on publish)
+router.get('/seo', can('website.seo'), wrap(async (req, res) => {
+  if (!(await entitled(req, 'website.builder'))) return lockedPage(req, res, 'builder');
+  const l = await builderLocals(req);
+  const media = await render.mediaUrls({ ...req.business, id: req.ctx.businessId }, l.doc, { preview: true });
+  return page(req, res, 'seo', { title: req.t('website.seo_title'), ...l, media, advanced: await entitled(req, 'website.advanced_seo'), base: baseUrl(req) });
+}));
+router.post('/seo', can('website.seo'), builderGate, act(async (req) => {
+  const advanced = await entitled(req, 'website.advanced_seo');
+  const b = req.body || {};
+  return site.edit(req.ctx, req.business, (doc) => {
+    const seo = { title: { ar: b.title_ar, en: b.title_en }, description: { ar: b.description_ar, en: b.description_en }, image: doc.seo.image || null, hide: doc.seo.hide || false };
+    if (advanced) { seo.image = b.image_media_id || null; seo.hide = b.hide === '1'; }
+    return site.ops.seo(seo)(doc);
+  }, { note: 'website.seo_changed' });
+}, 'website.saved', '/app/website/seo'));
+
+// ---------------------------------------------------------------- statistics (first-party counters + bookings)
+router.get('/analytics', can('website.analytics'), wrap(async (req, res) => {
+  if (!(await entitled(req, 'website.analytics'))) return lockedPage(req, res, 'analytics');
+  const data = await require('./stats').summary(req.ctx.businessId, req.ctx.today); // eslint-disable-line global-require
+  return page(req, res, 'analytics', { title: req.t('website.analytics_title'), s: data });
+}));
+
 // ---------------------------------------------------------------- clinic e-mail (send from the clinic's own address)
 const mailSvc = () => require('../clinicmail/clinicmail.service'); // eslint-disable-line global-require
 router.get('/email', can('website.email'), wrap(async (req, res) => {

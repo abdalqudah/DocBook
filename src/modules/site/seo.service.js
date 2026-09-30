@@ -374,7 +374,7 @@ async function llmsDefault({ s, site, base }) {
  * Tags for a public page. kind: 'home' | 'cookies' (marketing pages, may load pixels after consent) |
  * 'clinic' (clinic page: structured data, never pixels) | 'private' (noindex, nothing else).
  */
-async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, description: pageDesc }) {
+async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, description: pageDesc, shareImage = null, hide = false }) {
   const [s, mkt, media] = await Promise.all([get(), marketing(), require('./media.service').map()]); // eslint-disable-line global-require
   const locale = req.locale;
   const base = baseUrl(req, s);
@@ -390,7 +390,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   } else if (kind === 'clinic') {
     title = pageTitle || clinic.displayName;
     description = pageDesc || '';
-    noindex = !s.index_clinics || !clinic.booking_enabled || !clinic.onboarding_completed_at;
+    noindex = !s.index_clinics || !clinic.booking_enabled || !clinic.onboarding_completed_at || Boolean(hide);
   } else {
     title = `${pageTitle} · ${name}`;
     description = pageDesc || '';
@@ -412,14 +412,15 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   m('og:title', title, 'property');
   m('og:description', description, 'property');
   m('og:url', `${url}?lang=${locale}`, 'property');
-  if (clinicImg) m('og:image', clinicImg, 'property');
+  if (kind === 'clinic' && shareImage) m('og:image', `${base}${shareImage}`, 'property'); // the website's own share image
+  else if (clinicImg) m('og:image', clinicImg, 'property');
   else if (og) {
     m('og:image', `${base}${og.url}`, 'property');
     if (og.width && og.height) { m('og:image:width', String(og.width), 'property'); m('og:image:height', String(og.height), 'property'); }
   }
   m('og:locale', locale === 'ar' ? 'ar_AR' : 'en_US', 'property');
   m('og:locale:alternate', locale === 'ar' ? 'en_US' : 'ar_AR', 'property');
-  m('twitter:card', og && !clinicImg ? 'summary_large_image' : 'summary');
+  m('twitter:card', (kind === 'clinic' && shareImage) || (og && !clinicImg) ? 'summary_large_image' : 'summary');
   if (s.x_handle) m('twitter:site', `@${s.x_handle}`);
   if (kind === 'home') { m('google-site-verification', s.verify.google); m('msvalidate.01', s.verify.bing); }
   const ld = kind === 'home' ? homeLd({ s, mkt, site: siteContent, base, locale, description, logoUrl: `${base}${brand.favicon || '/favicon.svg'}` })

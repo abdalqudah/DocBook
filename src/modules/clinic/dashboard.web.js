@@ -204,6 +204,11 @@ router.get('/', wrap(async (req, res) => {
   ]);
   const data = { kind, counts, schedule, online, unpaid, cash, month, checklist: checklist && !checklist.dismissed && !checklist.complete ? checklist : null };
   data.attention = await attention(ctx, { online, unpaid });
+  // Going online is optional and comes after the clinic works: shown once the setup checklist is done or hidden.
+  if (perms.has('website.view') && !data.checklist && kind === 'owner') {
+    const st = await require('../website/site.service').state(ctx.businessId); // eslint-disable-line global-require
+    if (st.status !== 'live') data.goOnline = { status: st.status };
+  }
   if (kind === 'owner') data.trends = await trends(req);
   if (kind === 'accounts') {
     const [byMethod, drawer, expenses] = await Promise.all([

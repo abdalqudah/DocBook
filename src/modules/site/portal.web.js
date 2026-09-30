@@ -90,7 +90,8 @@ async function renderSite(req, res, clinic, doc, { preview = false } = {}) {
   const L = (v) => (v && (v[req.locale] || v[req.locale === 'en' ? 'ar' : 'en'])) || '';
   const title = L(doc.seo && doc.seo.title) || clinic.displayName;
   const description = L(doc.seo && doc.seo.description) || clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ');
-  const seoHead = preview ? null : await seo.head(req, res, { kind: 'clinic', clinic, doctors: data.doctors, title, description });
+  const share = doc.seo && doc.seo.image ? data.img(doc.seo.image) : null;
+  const seoHead = preview ? null : await seo.head(req, res, { kind: 'clinic', clinic, doctors: data.doctors, title, description, shareImage: share ? share.url : null, hide: Boolean(doc.seo && doc.seo.hide) });
   const fav = doc.brand && doc.brand.faviconMediaId ? data.img(doc.brand.faviconMediaId) : null;
   return res.page('pages/portal/site', {
     layout: 'public', title, pageTitle: title, metaDescription: description.slice(0, 160), seoHead, noindex: preview, clinic, ...data,
@@ -120,6 +121,7 @@ async function renderClassic(req, res, clinic) {
 router.get('/:slug', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
+  require('../website/stats').hit(req, clinic, 'home'); // eslint-disable-line global-require -- first-party daily counter, no cookies
   const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
   if (state.status === 'live' && state.doc) return renderSite(req, res, clinic, state.doc);
   if (state.status === 'unpublished') {
@@ -136,6 +138,7 @@ router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
   const [doctors, services] = await Promise.all([listDoctors(req, clinic), listServices(req, clinic)]);
   const d = doctors.find((x) => x.id === Number(req.params.id));
   if (!d) return next();
+  require('../website/stats').hit(req, clinic, 'doctor'); // eslint-disable-line global-require
   const full = await knex('doctors').where({ business_id: clinic.id, id: d.id }).first('bio', 'bio_en');
   d.bioFull = (req.locale === 'en' ? full.bio_en || full.bio : full.bio || full.bio_en) || '';
   clinic.reviews = await require('../reviews/reviews.service').publicSummary(clinic.id); // eslint-disable-line global-require

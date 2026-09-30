@@ -67,7 +67,9 @@ const NAV = [
     { key: 'website_media', href: '/app/website/media', icon: 'images', perms: ['website.edit'] },
     { key: 'website_domain', href: '/app/website/domain', icon: 'link', perms: ['website.domain'] },
     { key: 'website_email', href: '/app/website/email', icon: 'mail', perms: ['website.email'] },
+    { key: 'website_seo', href: '/app/website/seo', icon: 'search', perms: ['website.seo'] },
     { key: 'reviews', href: '/app/website/reviews', icon: 'star', perms: ['reviews.view'], also: ['/app/reviews'] },
+    { key: 'website_analytics', href: '/app/website/analytics', icon: 'chart-pie', perms: ['website.analytics'] },
     { key: 'website_settings', href: '/app/website/settings', icon: 'settings', perms: ['website.edit'] },
   ] },
   { group: 'reports', icon: 'chart-pie', items: [

@@ -259,6 +259,38 @@ async function checkSsl(ctx, businessId, { role = 'primary', probe = defaultProb
   return { ...values, host: row.host };
 }
 
+// ---------------------------------------------------------------- daily re-check (notify only)
+/**
+ * Re-checks verified domains (at most `limit` per run, oldest check first): DNS still proving ownership and pointing,
+ * and the HTTPS certificate. It never takes a domain down by itself — it tells the people who manage the clinic's
+ * domain (website.domain) what to fix, once a day per problem.
+ */
+async function recheckDue({ limit = 50, resolver, probe = defaultProbe, now = new Date() } = {}) {
+  const notifications = require('../notifications/notification.service'); // eslint-disable-line global-require
+  const { translator } = require('../../core/i18n'); // eslint-disable-line global-require
+  const dayAgo = new Date(now.getTime() - 20 * 3600_000);
+  const rows = await knex('clinic_domains as d').join('businesses as b', 'b.id', 'd.business_id').where({ 'd.status': 'verified', 'b.status': 'active' })
+    .where((w) => w.whereNull('d.checked_at').orWhere('d.checked_at', '<', dayAgo)).orderBy('d.checked_at').limit(limit).select('d.*');
+  let problems = 0;
+  for (const row of rows) {
+    const dns = await inspect(row, resolver); // eslint-disable-line no-await-in-loop
+    const tls = await probe(row.host).catch(() => ({ reachable: false, error: 'ERROR' })); // eslint-disable-line no-await-in-loop
+    const ssl = sslStatusOf(tls, now);
+    await knex('clinic_domains').where({ id: row.id }).update({ last_check: JSON.stringify(dns), checked_at: now, ssl_status: ssl, ssl_checked_at: now, ssl_expires_at: tls.validTo || null, ssl_error: tls.error ? String(tls.error).slice(0, 120) : null }); // eslint-disable-line no-await-in-loop
+    const ar = translator('ar'); const en = translator('en');
+    const day = now.toISOString().slice(0, 10);
+    const issue = !dns.pointed ? 'dns' : !dns.owned ? 'txt' : ssl === 'failed' ? 'ssl' : ssl === 'expiring' ? 'ssl_soon' : null;
+    if (!issue) continue;
+    problems += 1;
+    await notifications.notify(row.business_id, { // eslint-disable-line no-await-in-loop
+      permission: 'website.domain', type: 'domain.problem', severity: issue === 'ssl_soon' ? 'info' : 'warning', dedupeKey: `domain:${row.id}:${issue}:${day}`,
+      title: `${ar(`website.domain_issue.${issue}`, { host: row.host })} · ${en(`website.domain_issue.${issue}`, { host: row.host })}`, body: row.host, link: '/app/website/domain',
+    });
+  }
+  if (rows.length) forget();
+  return { checked: rows.length, problems };
+}
+
 // ---------------------------------------------------------------- platform admin
 async function list() {
   const rows = await knex('clinic_domains as d').join('businesses as b', 'b.id', 'd.business_id')
@@ -309,5 +341,5 @@ async function approve(ctx, id) {
 module.exports = {
   TXT_PREFIX, txtValue, platformHost, normalizeHost, validateHost, records, forClinic, aliasFor, liveHosts, clinicForHost, forget,
   save, remove, inspect, check, list, byId, suspend, resume, approve,
-  counterpart, saveAlias, removeAlias, sslStatusOf, checkSsl, defaultProbe, isPrivate,
+  counterpart, saveAlias, removeAlias, sslStatusOf, checkSsl, defaultProbe, isPrivate, recheckDue,
 };

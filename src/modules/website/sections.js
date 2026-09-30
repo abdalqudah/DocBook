@@ -174,6 +174,8 @@ function sanitize(doc, refs = {}) {
     seo: {
       title: { ar: cleanLine(seo.title && seo.title.ar, 70), en: cleanLine(seo.title && seo.title.en, 70) },
       description: { ar: cleanLine(seo.description && seo.description.ar, 160), en: cleanLine(seo.description && seo.description.en, 160) },
+      image: mediaOk(seo.image), // share image (advanced search settings)
+      hide: seo.hide === true || seo.hide === '1', // ask search engines not to list the site (advanced)
     },
   };
 }
@@ -184,6 +186,7 @@ function mediaIn(doc) {
   const b = (doc && doc.brand) || {};
   if (b.logoMediaId) out.add(b.logoMediaId);
   if (b.faviconMediaId) out.add(b.faviconMediaId);
+  if (doc && doc.seo && doc.seo.image) out.add(doc.seo.image);
   for (const p of (doc && doc.pages) || []) for (const s of p.sections || []) {
     const def = TYPES[s.type]; if (!def) continue;
     for (const f of def.settings) {

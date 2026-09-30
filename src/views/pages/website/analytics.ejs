@@ -1,0 +1,34 @@
+<%
+  // Website → Statistics: the last 30 days, from DocBook's own counters (no cookies, no personal data) and bookings.
+  var max = Math.max(1, Math.max.apply(null, s.perDay.map(function (d) { return d.home + d.doctor + d.book; })));
+%>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.analytics_title') %></h1><p><%= t('website.analytics_lead', { from: fmt.date(s.since) }) %></p></div>
+  <% if (can('reports.view')) { %><div class="page-actions"><a class="btn btn-secondary" href="/app/reports/bookings"><%- icon('chart-pie', 'icon-sm') %><%= t('website.bookings_report') %></a></div><% } %></div>
+
+<div class="stats mb-4">
+  <div class="stat"><div class="stat-label"><%= t('website.stat_home') %></div><div class="stat-value"><%= fmt.number(s.totals.home) %></div><div class="stat-meta"><%= t('website.stat_doctor', { n: fmt.number(s.totals.doctor) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('website.stat_book') %></div><div class="stat-value"><%= fmt.number(s.totals.book) %></div><div class="stat-meta"><%= t('website.stat_book_hint') %></div></div>
+  <div class="stat hero"><div class="stat-label"><%= t('website.stat_online') %></div><div class="stat-value"><%= fmt.number(s.online) %></div><div class="stat-meta"><%= s.conversion === null ? '—' : t('website.stat_conversion', { pct: fmt.number(s.conversion, 1) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('website.stat_reviews') %></div><div class="stat-value"><%= fmt.number(s.reviews.n) %></div><div class="stat-meta"><%= s.reviews.avg ? t('website.stat_avg', { avg: fmt.number(s.reviews.avg, 1) }) : '—' %></div></div>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('website.views_per_day') %></h2><p class="panel-sub"><%= t('website.views_per_day_sub') %></p></div></div>
+  <div class="panel-body">
+    <ol class="ws-days" aria-label="<%= t('website.views_per_day') %>">
+      <% s.perDay.forEach(function (d) { var n = d.home + d.doctor + d.book; %><li title="<%= fmt.date(d.day) %>: <%= fmt.number(n) %>"><span class="ws-day-bar" style="height:<%= Math.round(n / max * 100) %>%"></span><span class="sr-only"><%= fmt.date(d.day) %>: <%= fmt.number(n) %></span></li><% }) %>
+    </ol>
+  </div>
+</section>
+
+<div class="grid grid-2 mt-6">
+  <section class="panel flush"><div class="panel-head"><h2><%= t('website.by_channel') %></h2></div>
+    <% if (!s.channels.length) { %><div class="panel-body small muted"><%= t('website.no_online_bookings') %></div><% } else { %>
+    <ul class="action-list"><% s.channels.forEach(function (c) { %><li><div><span class="grow"><%= t('channels.names.' + c.channel) === 'channels.names.' + c.channel ? c.channel : t('channels.names.' + c.channel) %></span><span class="strong num"><%= fmt.number(c.n) %></span></div></li><% }) %></ul><% } %>
+  </section>
+  <section class="panel flush"><div class="panel-head"><h2><%= t('website.top_doctors') %></h2></div>
+    <% if (!s.byDoctor.length) { %><div class="panel-body small muted"><%= t('website.no_online_bookings') %></div><% } else { %>
+    <ul class="action-list"><% s.byDoctor.forEach(function (d) { %><li><div><span class="grow"><%= (locale === 'en' && d.name_en) || d.name || t('dashboard.no_doctor') %></span><span class="strong num"><%= fmt.number(d.n) %></span></div></li><% }) %></ul><% } %>
+  </section>
+</div>
+<p class="small muted mt-4"><%- icon('shield-check', 'icon-sm') %> <%= t('website.analytics_privacy') %></p>
