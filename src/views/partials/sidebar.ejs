@@ -1,6 +1,13 @@
 <%
-  var p = fullPath.split('?')[0];
-  var isActive = function (item) { return item.exact ? p === item.href : (p === item.href || p.indexOf(item.href + '/') === 0); };
+  var _here = navGroups.locate ? navGroups.locate(fullPath) : { item: null, group: null };
+  var _count = function (i) { return i.badge && navBadges ? Number(navBadges[i.badge]) || 0 : 0; };
+  var _fmtCount = function (n) { return n > 99 ? '99+' : n; };
+  var _link = function (item, cls) {
+    var on = _here.item === item, n = _count(item);
+    return '<a href="' + item.href + '" class="' + (cls || '') + (on ? ' active' : '') + '"' + (on ? ' aria-current="page"' : '') + '>'
+      + (cls === 'nav-sub' ? '' : icon(item.icon)) + '<span class="truncate">' + escapeFn(t('nav.' + item.key)) + '</span>'
+      + (n ? '<span class="nav-count">' + _fmtCount(n) + '</span>' : '') + '</a>';
+  };
 %>
 <div class="sidebar-brand"><a class="row-sm" href="/app" aria-label="<%= brandName %>"><%- include('logo') %></a></div>
 <details class="dropdown ws-switch">
@@ -20,14 +27,20 @@
     <a href="/workspaces/new"><%- icon('plus', 'icon-sm') %><%= t('nav.new_workspace') %></a>
   </div>
 </details>
-<nav class="nav" aria-label="<%= t('nav.main') %>">
+<nav class="nav nav-sections" aria-label="<%= t('nav.main') %>" data-nav-sections data-nav-user="<%= currentUser ? currentUser.id : '' %>-<%= business.id %>">
   <% navGroups.forEach(function (g) { %>
-  <div class="nav-group">
-    <div class="nav-title"><%= t('nav.group_' + g.group) %></div>
-    <% g.items.forEach(function (item) { var count = item.badge && navBadges ? navBadges[item.badge] : 0; %>
-      <a href="<%= item.href %>" class="<%= isActive(item) ? 'active' : '' %>"<% if (isActive(item)) { %> aria-current="page"<% } %>><%- icon(item.icon) %><span class="truncate"><%= t('nav.' + item.key) %></span><% if (count) { %><span class="nav-count<%= item.badge === 'pendingDeliveries' ? ' warn' : '' %>"><%= count > 99 ? '99+' : count %></span><% } %></a>
-    <% }) %>
-  </div>
+    <% if (g.flat || g.items.length === 1) { %>
+    <div class="nav-flat<%= g.group === 'more' ? ' nav-foot-links' : '' %>">
+      <% g.items.forEach(function (item) { %><%- _link(item) %><% }) %>
+    </div>
+    <% } else { var mine = _here.group && _here.group.group === g.group, total = navGroups.sectionCount(g, navBadges); %>
+    <details class="nav-sec<%= mine ? ' has-active' : '' %>" data-nav-sec="<%= g.group %>"<% if (mine) { %> open<% } %>>
+      <summary class="nav-sec-head"><%- icon(g.icon) %><span class="truncate"><%= t(g.label) %></span><% if (total) { %><span class="nav-count" aria-label="<%= t('navx.pending', { count: total }) %>"><%= _fmtCount(total) %></span><% } %><%- icon('chevron-down', 'icon-sm nav-chev') %></summary>
+      <div class="nav-sec-items">
+        <% g.items.forEach(function (item) { %><%- _link(item, 'nav-sub') %><% }) %>
+      </div>
+    </details>
+    <% } %>
   <% }) %>
 </nav>
 <div class="sidebar-foot">

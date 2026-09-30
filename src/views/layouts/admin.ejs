@@ -7,6 +7,14 @@
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav'], ['/admin/ai', 'sparkles', 'ai_admin.nav'], ['/admin/updates', 'cloud-upload', 'platformops.admin_nav']);
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
+  // Sidebar groups: an entry may name its group in a 5th field (n[4]); otherwise it is looked up by href; unknown → platform.
+  var _groupOf = { '/admin': 'overview', '/admin/clinics': 'clinics', '/admin/plans': 'clinics', '/admin/users': 'clinics',
+    '/admin/site': 'website', '/admin/seo': 'website', '/admin/growth': 'website', '/admin/domains': 'website', '/admin/google': 'website',
+    '/admin/vendors': 'market', '/admin/reviews': 'market', '/admin/ai': 'platform', '/admin/updates': 'platform' };
+  var _groups = ['overview', 'clinics', 'website', 'market', 'platform'].map(function (g) {
+    return { key: g, items: _nav.filter(function (n) { return (n[4] || _groupOf[n[0]] || 'platform') === g; }) };
+  }).filter(function (g) { return g.items.length; });
+  var _label = function (n) { return t(n[2].indexOf('.') > 0 ? n[2] : 'admin.' + n[2]); };
 %><!doctype html>
 <html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
 <head>
@@ -23,34 +31,48 @@
 </head>
 <body class="admin-body">
 <a class="sr-only" href="#main"><%= t('common.skip_to_content') %></a>
-<header class="admin-top">
-  <div class="admin-top-inner">
-    <a class="row-sm" href="/admin" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
-    <span class="badge badge-brand admin-badge"><%- icon('shield-check', 'icon-sm') %><%= t('admin.title') %></span>
-    <div class="admin-top-actions">
-      <a class="btn btn-ghost btn-sm hide-sm-admin" href="/" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('admin.view_site') %></a>
-      <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages', 'icon-sm') %><span class="hide-sm-admin"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a>
-      <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
-      <details class="dropdown">
-        <summary class="user-chip" aria-label="<%= currentUser.name %>"><span class="avatar"><%= initials(currentUser.name) %></span></summary>
-        <div class="menu">
-          <div class="menu-label"><%= currentUser.email %></div>
-          <a href="/app"><%- icon('layout-dashboard', 'icon-sm') %><%= t('admin.back_to_app') %></a>
-          <div class="sep"></div>
-          <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('log-out', 'icon-sm') %><%= t('admin.sign_out') %></button></form>
-        </div>
-      </details>
+<div class="shell admin-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand admin-brand">
+      <a class="row-sm" href="/admin" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
+      <span class="badge badge-neutral admin-badge"><%- icon('shield-check', 'icon-sm') %><%= t('admin.title') %></span>
     </div>
+    <nav class="nav" aria-label="<%= t('navx.admin_nav') %>">
+      <% _groups.forEach(function (g) { %>
+      <div class="nav-group">
+        <% if (g.key !== 'overview') { %><div class="nav-title"><%= t('navx.admin_grp_' + g.key) %></div><% } %>
+        <% g.items.forEach(function (n) { var on = _active(n); %><a href="<%= n[0] %>" class="<%= on ? 'active' : '' %>"<% if (on) { %> aria-current="page"<% } %>><%- icon(n[1]) %><span class="truncate"><%= _label(n) %></span></a><% }) %>
+      </div>
+      <% }) %>
+    </nav>
+    <div class="sidebar-foot">
+      <a href="/app"><%- icon('layout-dashboard', 'icon-sm') %><span class="truncate"><%= t('admin.back_to_app') %></span></a>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" data-nav-close></div>
+  <div class="main">
+    <header class="topbar admin-topbar">
+      <button class="btn btn-ghost btn-icon mobile-only" type="button" data-nav-toggle aria-controls="sidebar" aria-label="<%= t('nav.menu') %>"><%- icon('menu') %></button>
+      <div class="topbar-actions">
+        <a class="btn btn-ghost btn-sm hide-sm-admin" href="/" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('admin.view_site') %></a>
+        <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages', 'icon-sm') %><span class="hide-sm-admin"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a>
+        <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
+        <details class="dropdown">
+          <summary class="user-chip" aria-label="<%= currentUser.name %>"><span class="avatar"><%= initials(currentUser.name) %></span></summary>
+          <div class="menu">
+            <div class="menu-label"><%= currentUser.email %></div>
+            <a href="/app"><%- icon('layout-dashboard', 'icon-sm') %><%= t('admin.back_to_app') %></a>
+            <div class="sep"></div>
+            <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('log-out', 'icon-sm') %><%= t('admin.sign_out') %></button></form>
+          </div>
+        </details>
+      </div>
+    </header>
+    <main class="content admin-content" id="main">
+      <%- body %>
+    </main>
   </div>
-  <nav class="admin-nav" aria-label="<%= t('admin.title') %>">
-    <div class="admin-nav-inner tabs">
-      <% _nav.forEach(function (n) { %><a href="<%= n[0] %>" class="<%= _active(n) ? 'active' : '' %>"<% if (_active(n)) { %> aria-current="page"<% } %>><%- icon(n[1], 'icon-sm') %><%= t(n[2].indexOf('.') > 0 ? n[2] : 'admin.' + n[2]) %></a><% }) %>
-    </div>
-  </nav>
-</header>
-<main class="content admin-content" id="main">
-  <%- body %>
-</main>
+</div>
 <%- include('../partials/toasts') %>
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
 <% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>

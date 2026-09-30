@@ -1,0 +1,19 @@
+{
+  "navx": {
+    "sec_home": "الرئيسية",
+    "sec_clinic": "العيادة",
+    "sec_finance": "المالية",
+    "sec_team": "الفريق",
+    "sec_operations": "التشغيل",
+    "sec_reports": "التقارير",
+    "sec_more": "الإعدادات والمساعدة",
+    "section_pages": "صفحات {section}",
+    "pending": "{count} بانتظار المتابعة",
+    "admin_nav": "إدارة المنصة",
+    "admin_grp_clinics": "العيادات",
+    "admin_grp_website": "الموقع",
+    "admin_grp_market": "السوق",
+    "admin_grp_platform": "المنصة",
+    "close_menu": "إغلاق القائمة"
+  }
+}

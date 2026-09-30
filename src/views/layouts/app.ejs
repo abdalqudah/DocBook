@@ -12,6 +12,7 @@
     <% if (typeof verifyBanner !== 'undefined' && verifyBanner) { %><div class="banner info"><%- icon('mail') %><span><%= t('verify.banner', { email: currentUser.email }) %></span><form method="post" action="/verify-email/resend"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('verify.resend') %></button></form></div><% } %>
     <%- include('../pages/subscriptions/_banner') %>
     <main class="content" id="main">
+      <%- include('../partials/section-tabs') %>
       <%- body %>
     </main>
   </div>
@@ -22,6 +23,7 @@
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
 <script src="/js/live.js?v=<%= assetV %>" defer></script>
 <script src="/js/teamops.js?v=<%= assetV %>" defer></script>
+<script src="/js/nav.js?v=<%= assetV %>" defer></script>
 <% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
 </body>
 </html>

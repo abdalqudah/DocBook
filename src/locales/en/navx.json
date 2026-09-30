@@ -1,0 +1,19 @@
+{
+  "navx": {
+    "sec_home": "Home",
+    "sec_clinic": "Clinic",
+    "sec_finance": "Finance",
+    "sec_team": "Team",
+    "sec_operations": "Operations",
+    "sec_reports": "Reports",
+    "sec_more": "Settings & help",
+    "section_pages": "{section} pages",
+    "pending": "{count} pending",
+    "admin_nav": "Platform administration",
+    "admin_grp_clinics": "Clinics",
+    "admin_grp_website": "Website",
+    "admin_grp_market": "Marketplace",
+    "admin_grp_platform": "Platform",
+    "close_menu": "Close menu"
+  }
+}
