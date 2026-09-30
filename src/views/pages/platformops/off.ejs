@@ -1,0 +1,13 @@
+<div class="po-off">
+  <div class="panel po-off-card">
+    <div class="panel-body stack">
+      <span class="po-off-icon" aria-hidden="true"><%- icon(notInPlan ? 'lock' : 'toggle-left') %></span>
+      <h1 class="po-off-title"><%= t('modules_cfg.off_title') %></h1>
+      <p class="muted"><%= t(notInPlan ? 'modules_cfg.off_plan_text' : 'modules_cfg.off_text', { name: t('modules_cfg.m.' + moduleKey) }) %></p>
+      <div class="row-sm wrap po-off-actions">
+        <a class="btn btn-secondary" href="/app"><%- icon('layout-dashboard', 'icon-sm') %><%= t('modules_cfg.off_home') %></a>
+        <% if (manager) { %><a class="btn btn-primary" href="<%= notInPlan ? '/app/settings/subscription' : '/app/settings/modules' %>"><%- icon('settings', 'icon-sm') %><%= t(notInPlan ? 'modules_cfg.off_plan_link' : 'modules_cfg.off_link') %></a><% } else { %><p class="small muted"><%= t('modules_cfg.off_ask') %></p><% } %>
+      </div>
+    </div>
+  </div>
+</div>

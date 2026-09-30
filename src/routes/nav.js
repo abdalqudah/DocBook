@@ -50,11 +50,14 @@ const ACTIONS = [
   { key: 'booking_page', href: '/app/settings/portal', icon: 'globe', perms: ['settings.manage'] },
 ];
 
+// ctx.modulesOff: nav/action keys of the optional areas the clinic turned off (Settings → Modules, see platformops/gate.js).
+const hidden = (ctx, key) => Boolean(ctx && ctx.modulesOff && ctx.modulesOff.has(key));
+
 function forUser(permissions, ctx = {}) {
-  const ok = (item) => (!item.perms.length || item.perms.some((p) => permissions.has(p))) && (!item.needsDoctor || ctx.doctorId);
+  const ok = (item) => (!item.perms.length || item.perms.some((p) => permissions.has(p))) && (!item.needsDoctor || ctx.doctorId) && !hidden(ctx, item.key);
   return NAV.map((g) => ({ group: g.group, items: g.items.filter(ok) })).filter((g) => g.items.length);
 }
 
-const actionsFor = (permissions) => ACTIONS.filter((a) => a.perms.some((p) => permissions.has(p)));
+const actionsFor = (permissions, ctx = {}) => ACTIONS.filter((a) => a.perms.some((p) => permissions.has(p)) && !hidden(ctx, a.key));
 
 module.exports = { NAV, forUser, actionsFor };

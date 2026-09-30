@@ -76,6 +76,7 @@ router.use((req, res, next) => {
 });
 
 router.use(require('../modules/subscriptions/enforce')); // trial / plan gate (off unless the platform enables subscriptions)
+router.use(require('../modules/platformops/gate')); // clinic modules on/off: hides their menu items and blocks their pages
 router.use('/onboarding', require('../modules/onboarding/web'));
 router.use('/api', require('../modules/clinic/api.web'));
 router.use('/search', require('../modules/clinic/search.web'));
@@ -95,6 +96,7 @@ router.use('/payments', require('../modules/payments/staff.web')); // online car
 router.use('/telehealth', require('../modules/telehealth/web'));
 router.use('/cashier', require('../modules/clinic/cashier.web'));
 router.use('/billing', require('../modules/clinic/billing.web'));
+router.use(require('../modules/finance/hooks')); // budget checks right after expenses / doctor pay are saved
 router.use('/payroll', require('../modules/clinic/payroll.web'));
 router.use('/expenses', require('../modules/expenses/web'));
 router.use('/doctors', require('../modules/clinic/doctors.web'));

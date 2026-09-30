@@ -1,0 +1,105 @@
+/* Platform operations: modules on/off, invoice template, service categories, sample data, in-app update. Theme tokens only. */
+
+/* ---------- switch (a checkbox styled as an on/off switch) ---------- */
+.po-switch { position: relative; display: inline-flex; flex: none; width: 38px; height: 22px; }
+.po-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.po-switch input:disabled { cursor: not-allowed; }
+.po-switch-track { width: 38px; height: 22px; border-radius: 999px; background: var(--border-strong); transition: background .15s; position: relative; }
+.po-switch-track::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 25%, transparent); transition: transform .15s; }
+.po-switch input:checked + .po-switch-track { background: var(--primary); }
+.po-switch input:checked + .po-switch-track::after { transform: translateX(16px); }
+[dir="rtl"] .po-switch input:checked + .po-switch-track::after { transform: translateX(-16px); }
+.po-switch input:focus-visible + .po-switch-track { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.po-switch input:disabled + .po-switch-track { opacity: .45; }
+
+/* ---------- module / field lists ---------- */
+.po-mod-list { list-style: none; margin: 0; padding: 0; }
+.po-mod { display: flex; align-items: center; gap: 14px; padding: 14px var(--card-pad, 20px); border-bottom: 1px solid var(--border); }
+.po-mod:last-child { border-bottom: 0; }
+.po-mod-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; flex: none; background: var(--surface-sunken); color: var(--text-muted); }
+.po-mod-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; cursor: pointer; }
+.po-mod.is-locked .po-mod-text { cursor: default; }
+.po-mod.is-locked .strong { color: var(--text-muted); }
+.po-mod-plan { align-self: flex-start; margin-top: 4px; }
+.po-core { display: flex; flex-wrap: wrap; gap: 8px; }
+.po-block { display: block; }
+.po-bullets { margin: 6px 0 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+
+/* ---------- "section turned off" / restarting pages ---------- */
+.po-off { display: flex; justify-content: center; padding: 40px 0; }
+.po-off-card { max-width: 520px; width: 100%; text-align: center; }
+.po-off-card .panel-body { align-items: center; padding: 32px 24px; }
+.po-off-icon { width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-sunken); color: var(--text-muted); }
+.po-off-title { font-size: 20px; margin: 0; }
+.po-off-actions { justify-content: center; }
+
+/* ---------- invoice template settings ---------- */
+.po-inv-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+.po-inv-side { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.po-mini { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-inline: auto; width: 100%; transition: max-width .2s; }
+.po-mini-a5 { max-width: 220px; }
+.po-mini-receipt80 { max-width: 170px; padding: 12px; font-size: 11px; }
+.po-mini-head { display: flex; gap: 10px; align-items: flex-start; }
+.po-mini-logo { width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.po-mini-no { font-weight: var(--fw-bold); font-size: 15px; }
+.po-mini-lines { display: grid; gap: 6px; border-top: 1px dashed var(--border-strong); padding-top: 10px; }
+.po-mini-lines > div { display: flex; justify-content: space-between; gap: 8px; }
+.po-mini-stamp { align-self: flex-end; width: 34px; height: 34px; border-radius: 50%; border: 1px dashed var(--border-strong); color: var(--text-subtle); display: inline-flex; align-items: center; justify-content: center; }
+.po-mini-foot { border-top: 1px dashed var(--border-strong); padding-top: 8px; }
+.po-mini-receipt80 .po-mini-head { flex-direction: column; align-items: center; text-align: center; }
+@media (max-width: 1100px) { .po-inv-grid { grid-template-columns: 1fr; } .po-inv-side { position: static; } }
+
+/* ---------- services: categories ---------- */
+.po-cat-filter { max-width: 100%; }
+.po-cat-panel { align-self: start; }
+.po-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.po-chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 13px; font-weight: var(--fw-semibold); text-decoration: none; }
+.po-chip:hover { border-color: var(--border-strong); color: var(--text); }
+.po-chip.is-active { border-color: var(--primary); color: var(--primary); }
+.po-svc-group-title { font-size: 15px; margin: 0 0 8px; color: var(--text); }
+.po-svc-group[hidden] { display: none; }
+.po-book-cat { margin-bottom: 10px; }
+
+/* ---------- sample data ---------- */
+.po-demo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.po-demo-list li { display: flex; align-items: center; gap: 8px; }
+.po-demo-list .icon { color: var(--text-subtle); }
+
+/* ---------- in-app update ---------- */
+.po-versions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.po-versions > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); min-width: 120px; }
+.po-versions strong { font-size: 18px; }
+.po-progress { height: 6px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; }
+.po-progress > span { display: block; height: 100%; background: var(--primary); transition: width .2s; }
+
+/* ---------- printed invoice (billing/show.ejs ?print=1): paper sizes and the 80 mm receipt ---------- */
+.print-sheet:has(.po-inv) .print-letterhead { display: none; }
+.po-inv-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-strong); }
+.po-inv-logo { height: 44px; width: auto; max-width: 140px; object-fit: contain; }
+.po-inv-clinic { font-size: 16px; }
+.print-sheet:has(.po-paper-a5) { max-width: 560px; }
+.print-sheet:has(.po-paper-receipt80) { max-width: 80mm; padding: 12px 8px; }
+.po-paper-receipt80 { font-size: 11px; gap: 10px !important; }
+.po-paper-receipt80 .po-inv-head { flex-direction: column; text-align: center; gap: 6px; }
+.po-paper-receipt80 .po-inv-logo { height: 32px; }
+.po-paper-receipt80 .po-inv-clinic { font-size: 13px; }
+.po-paper-receipt80 .rec-inv-top { flex-direction: column; gap: 4px; }
+.po-paper-receipt80 .rec-inv-top .text-end { text-align: start; }
+.po-paper-receipt80 .rec-inv-no { font-size: 16px; }
+.po-paper-receipt80 .rec-inv-parties { grid-template-columns: 1fr; gap: 6px; }
+.po-paper-receipt80 .rec-inv-lines { border: 0; border-radius: 0; border-top: 1px dashed var(--border-strong); border-bottom: 1px dashed var(--border-strong); }
+.po-paper-receipt80 .rec-inv-lines td { padding: 4px 0; font-size: 11px; }
+.po-paper-receipt80 .rec-inv-pay { max-width: none; font-size: 11px; }
+.po-paper-receipt80 .rec-inv-stamp img { max-height: 64px !important; }
+.print-sheet:has(.po-paper-receipt80) .print-footer { display: none; }
+.print-sheet:has(.po-paper-receipt80) .print-actions { flex-wrap: wrap; }
+@media print {
+  .print-sheet:has(.po-paper-a4) { page: po-a4; }
+  .print-sheet:has(.po-paper-a5) { page: po-a5; max-width: none; }
+  .print-sheet:has(.po-paper-receipt80) { page: po-receipt; max-width: none; padding: 0; }
+}
+@page po-a4 { size: A4; margin: 14mm; }
+@page po-a5 { size: A5; margin: 10mm; }
+@page po-receipt { size: 80mm 297mm; margin: 3mm; }
+.po-cat-filter { margin-bottom: 0; }
+.panel-body.po-pad { padding: 14px var(--card-pad, 20px); }

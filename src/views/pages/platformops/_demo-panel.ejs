@@ -1,0 +1,30 @@
+<%# Sample data panel (platformops): onboarding's last step and Settings → Data. Renders nothing without the data or the permission. %>
+<% if (typeof demoState !== 'undefined' && demoState && (can('settings.manage') || can('data.manage'))) { var _dw = t('demo.confirm_word'); %>
+<section class="panel po-demo" id="sample-data">
+  <div class="panel-head"><div><h2><%= t('demo.title') %></h2><div class="panel-sub"><%= t(demoState.total ? 'demo.sub_has' : 'demo.sub_none') %></div></div>
+    <% if (demoState.total) { %><span class="badge badge-neutral badge-dot"><%= t('demo.count', { n: demoState.total }) %></span><% } %></div>
+  <div class="panel-body stack">
+    <% if (!demoState.total) { %>
+      <ul class="po-demo-list small muted">
+        <li><%- icon('stethoscope', 'icon-sm') %><%= t('demo.what_doctors') %></li>
+        <li><%- icon('clipboard-list', 'icon-sm') %><%= t('demo.what_services') %></li>
+        <li><%- icon('users', 'icon-sm') %><%= t('demo.what_patients') %></li>
+        <li><%- icon('calendar-days', 'icon-sm') %><%= t('demo.what_appointments') %></li>
+        <li><%- icon('receipt', 'icon-sm') %><%= t('demo.what_invoice') %></li>
+      </ul>
+      <p class="small muted"><%= t('demo.labelled') %></p>
+      <form method="post" action="/app/settings/demo/add"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-secondary" type="submit"><%- icon('wand-sparkles', 'icon-sm') %><%= t('demo.add') %></button>
+      </form>
+    <% } else { %>
+      <p class="small muted"><%= t('demo.remove_help') %></p>
+      <form method="post" action="/app/settings/demo/remove" data-confirm="<%= t('demo.remove_confirm', { word: _dw }) %>" data-confirm-title="<%= t('demo.remove') %>" data-confirm-yes="<%= t('demo.remove') %>" data-confirm-type="<%= _dw %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <noscript><label class="field"><span class="label"><%= t('demo.type_word', { word: _dw }) %></span><input class="input" name="confirm_name" autocomplete="off"></label></noscript>
+        <input type="hidden" name="confirm_name" value="">
+        <button class="btn btn-danger-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('demo.remove') %></button>
+      </form>
+    <% } %>
+  </div>
+</section>
+<% } %>

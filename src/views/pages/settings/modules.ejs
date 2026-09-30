@@ -1,0 +1,53 @@
+<%
+  var o = (typeof old !== 'undefined' && old && old._csrf !== undefined) ? old : null;
+  var isOn = function (m) { return o ? (o[m.key] === '1') : m.toggled; };
+  var groups = [
+    { key: 'patients_care', items: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant'] },
+    { key: 'money', items: ['billing', 'doctor_payroll', 'staff_salaries', 'finance'] },
+    { key: 'operations', items: ['supplies', 'marketplace', 'attendance', 'reports'] }
+  ];
+  var byKey = {}; st.list.forEach(function (m) { byKey[m.key] = m; });
+%>
+<%- include('_head', { heading: t('settings.nav_modules'), lead: t('modules_cfg.lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('../../partials/form-error') %>
+    <div class="alert alert-info"><%- icon('info', 'icon-sm') %><div class="grow"><div><%= t('modules_cfg.data_kept') %></div></div></div>
+
+    <form method="post" action="/app/settings/modules" class="stack-lg" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% groups.forEach(function (g) { %>
+      <section class="panel flush">
+        <div class="panel-head"><div><h2><%= t('modules_cfg.group_' + g.key) %></h2></div></div>
+        <ul class="po-mod-list">
+          <% g.items.forEach(function (k) { var m = byKey[k]; if (!m) return; var on = isOn(m); %>
+          <li class="po-mod<%= m.inPlan ? '' : ' is-locked' %>">
+            <span class="po-mod-icon" aria-hidden="true"><%- icon(m.icon, 'icon-sm') %></span>
+            <label class="grow po-mod-text" for="mod-<%= k %>">
+              <span class="strong"><%= t('modules_cfg.m.' + k) %></span>
+              <span class="small muted"><%= t('modules_cfg.d.' + k) %></span>
+              <% if (!m.inPlan) { %><span class="badge badge-neutral badge-dot po-mod-plan"><%- icon('lock', 'icon-sm') %><%= t('modules_cfg.not_in_plan') %></span><% } %>
+            </label>
+            <span class="po-switch">
+              <input type="checkbox" role="switch" id="mod-<%= k %>" name="<%= k %>" value="1"<%= on && m.inPlan ? ' checked' : '' %><%= m.inPlan ? '' : ' disabled' %> aria-describedby="mod-<%= k %>-state">
+              <span class="po-switch-track" aria-hidden="true"></span>
+              <span class="sr-only" id="mod-<%= k %>-state"><%= m.inPlan ? '' : t('modules_cfg.not_in_plan') %></span>
+            </span>
+          </li>
+          <% }) %>
+        </ul>
+      </section>
+      <% }) %>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2><%= t('modules_cfg.core_title') %></h2><div class="panel-sub"><%= t('modules_cfg.core_sub') %></div></div></div>
+        <div class="panel-body"><div class="po-core">
+          <% core.forEach(function (k) { %><span class="badge badge-neutral"><%- icon('lock', 'icon-sm') %><%= t('modules_cfg.core.' + k) %></span><% }) %>
+        </div></div>
+      </section>
+
+      <div class="form-actions"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button></div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,91 @@
+<%
+  var mb = function (b) { return fmt.number(Math.round((Number(b) || 0) / 104857.6) / 10); };
+  var when = function (iso) { return iso ? fmt.date(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' }) : '—'; };
+  var s = st.staged;
+  var cmp = s ? compare(s.version, st.version) : 0;
+%>
+<div class="page-head">
+  <div><h1><%= t('updater.title') %></h1><p><%= t('updater.lead') %></p></div>
+  <div class="page-actions"><span class="badge badge-neutral"><%= t('updater.current') %>: <strong class="mono" dir="ltr"><%= st.version || '—' %></strong></span></div>
+</div>
+
+<% if (!st.dist) { %>
+<div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('updater.source_title') %></div><div><%= t('updater.source_text') %></div></div></div>
+<% } %>
+
+<div class="grid grid-main po-upd" style="align-items:start">
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('updater.upload_title') %></h2><div class="panel-sub"><%= t('updater.upload_sub', { mb: st.maxMb }) %></div></div></div>
+      <div class="panel-body stack">
+        <form class="stack" method="post" action="/admin/updates/upload" data-po-upload data-csrf="<%= csrfToken %>" data-msg-choose="<%= t('updater.choose_first') %>" data-msg-uploading="<%= t('updater.uploading') %>" data-msg-too-big="<%= t('errors_platformops.UPDATE_TOO_BIG', { mb: st.maxMb }) %>" data-msg-failed="<%= t('updater.upload_failed') %>" data-max="<%= st.maxMb * 1048576 %>">
+          <div class="field">
+            <label class="label" for="f-zip"><%= t('updater.file') %></label>
+            <input class="input" type="file" id="f-zip" accept=".zip,application/zip" data-po-file<%= st.dist ? '' : ' disabled' %>>
+            <span class="help"><%= t('updater.file_help') %></span>
+          </div>
+          <div class="po-progress" hidden data-po-progress><span style="width:0%"></span></div>
+          <p class="small" role="status" aria-live="polite" data-po-status></p>
+          <noscript><p class="small muted"><%= t('updater.needs_js') %></p></noscript>
+          <div><button class="btn btn-secondary" type="submit"<%= st.dist ? '' : ' disabled' %>><%- icon('cloud-upload', 'icon-sm') %><%= t('updater.upload') %></button></div>
+        </form>
+      </div>
+    </section>
+
+    <% if (s) { %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('updater.staged_title') %></h2><div class="panel-sub"><%= t('updater.staged_sub', { when: when(s.uploadedAt) }) %></div></div></div>
+      <div class="panel-body stack">
+        <div class="po-versions">
+          <div><span class="tiny muted"><%= t('updater.current') %></span><strong class="mono" dir="ltr"><%= st.version || '—' %></strong></div>
+          <span class="muted" aria-hidden="true"><%- icon('arrow-right', 'icon-sm flip-rtl') %></span>
+          <div><span class="tiny muted"><%= t('updater.uploaded') %></span><strong class="mono" dir="ltr"><%= s.version || '—' %></strong></div>
+        </div>
+        <p class="small muted"><%= t('updater.staged_files', { n: fmt.number(s.files || 0), mb: mb(s.bytes) }) %></p>
+        <% if (cmp < 0) { %><div class="alert alert-warning"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('updater.older_warning') %></div></div><% } else if (cmp === 0) { %><div class="alert alert-info"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('updater.same_warning') %></div></div><% } %>
+        <div class="alert alert-warning"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('updater.before_title') %></div>
+          <ul class="po-bullets small"><li><%= t('updater.before_backup') %></li><li><%= t('updater.before_restart') %></li><li><%= t('updater.before_db') %></li><li><%= t('updater.before_env') %></li></ul></div></div>
+      </div>
+      <div class="panel-foot row-sm wrap">
+        <form method="post" action="/admin/updates/activate" data-confirm="<%= t('updater.activate_confirm', { v: s.version }) %>" data-confirm-title="<%= t('updater.activate') %>" data-confirm-yes="<%= t('updater.activate') %>" data-confirm-type="<%= s.version %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <noscript><label class="field"><span class="label"><%= t('updater.type_version', { v: s.version }) %></span><input class="input" name="confirm_name" dir="ltr" autocomplete="off"></label></noscript>
+          <input type="hidden" name="confirm_name" value="">
+          <button class="btn btn-primary" type="submit"<%= st.dist ? '' : ' disabled' %>><%- icon('rocket', 'icon-sm') %><%= t('updater.activate') %></button>
+        </form>
+        <form method="post" action="/admin/updates/discard" data-confirm="<%= t('updater.discard_confirm') %>" data-confirm-yes="<%= t('updater.discard') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('updater.discard') %></button>
+        </form>
+      </div>
+    </section>
+    <% } %>
+  </div>
+
+  <aside class="stack-lg">
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('updater.backups_title') %></h2><div class="panel-sub"><%= t('updater.backups_sub') %></div></div></div>
+      <% if (!st.backups.length) { %><div class="panel-body po-pad"><p class="small muted"><%= t('updater.no_backups') %></p></div><% } else { %>
+      <ul class="action-list">
+        <% st.backups.forEach(function (b, i) { %><li><div>
+          <span class="po-mod-icon" aria-hidden="true"><%- icon('archive-restore', 'icon-sm') %></span>
+          <span class="grow" style="min-width:0"><span class="strong mono" dir="ltr"><%= b.version || '—' %></span><span class="tiny muted po-block"><%= when(b.createdAt) %><% if (b.replacedBy) { %> · <%= t('updater.replaced_by', { v: b.replacedBy }) %><% } %></span></span>
+          <% if (i === 0) { %><span class="badge badge-neutral"><%= t('updater.latest') %></span><% } %>
+        </div></li><% }) %>
+      </ul>
+      <div class="panel-foot">
+        <form method="post" action="/admin/updates/rollback" data-confirm="<%= t('updater.rollback_confirm', { v: st.backups[0].version || '—' }) %>" data-confirm-title="<%= t('updater.rollback') %>" data-confirm-yes="<%= t('updater.rollback') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-danger-ghost btn-sm" type="submit"<%= st.dist ? '' : ' disabled' %>><%- icon('history', 'icon-sm') %><%= t('updater.rollback_to', { v: st.backups[0].version || '—' }) %></button>
+        </form>
+      </div>
+      <% } %>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('updater.how_title') %></h2></div></div>
+      <div class="panel-body"><ol class="po-bullets small muted">
+        <li><%- t('updater.how_1') %></li><li><%= t('updater.how_2') %></li><li><%= t('updater.how_3') %></li><li><%= t('updater.how_4') %></li>
+      </ol></div>
+    </section>
+  </aside>
+</div>

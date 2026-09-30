@@ -1,0 +1,88 @@
+<%
+  var o = (typeof old !== 'undefined' && old && old._csrf !== undefined) ? old : null;
+  var errs = (typeof errors !== 'undefined' && errors) || {};
+  var v = function (k) { return o ? o[k] : tpl[k]; };
+  var on = function (k) { return o ? o[k] === '1' : !!tpl[k]; };
+  var fieldIcons = { show_logo: 'image', show_contact: 'phone', show_tax: 'landmark', show_doctor: 'stethoscope', show_service: 'clipboard-list', show_insurance: 'shield-plus', show_discount: 'percent', show_method: 'wallet', show_stamp: 'stamp' };
+  var paper = v('paper') || 'a4';
+%>
+<%- include('_head', { heading: t('settings.nav_invoice_template'), lead: t('invoice_tpl.lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('../../partials/form-error') %>
+    <% if (!billingOn) { %><div class="alert alert-info"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('invoice_tpl.billing_off') %> <a class="link" href="/app/settings/modules"><%= t('settings.nav_modules') %></a></div></div><% } %>
+    <form method="post" action="/app/settings/invoice" class="po-inv-grid" novalidate data-po-invoice>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="stack-lg">
+        <section class="panel">
+          <div class="panel-head"><div><h2><%= t('invoice_tpl.paper_title') %></h2><div class="panel-sub"><%= t('invoice_tpl.paper_sub') %></div></div></div>
+          <div class="panel-body">
+            <div class="segmented" role="radiogroup" aria-label="<%= t('invoice_tpl.paper_title') %>">
+              <% papers.forEach(function (p) { %><label><input type="radio" name="paper" value="<%= p %>"<%= paper === p ? ' checked' : '' %> data-po-paper><span><%= t('invoice_tpl.paper.' + p) %></span></label><% }) %>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel flush">
+          <div class="panel-head"><div><h2><%= t('invoice_tpl.fields_title') %></h2><div class="panel-sub"><%= t('invoice_tpl.fields_sub') %></div></div></div>
+          <ul class="po-mod-list">
+            <% fields.forEach(function (f) { %>
+            <li class="po-mod">
+              <span class="po-mod-icon" aria-hidden="true"><%- icon(fieldIcons[f] || 'check', 'icon-sm') %></span>
+              <label class="grow po-mod-text" for="inv-<%= f %>"><span class="strong"><%= t('invoice_tpl.f.' + f) %></span><% if (f === 'show_stamp') { %><span class="small muted"><%= t('invoice_tpl.stamp_help') %> <a class="link" href="/app/settings/signatures"><%= t('settings.nav_signatures') %></a></span><% } %></label>
+              <span class="po-switch"><input type="checkbox" role="switch" id="inv-<%= f %>" name="<%= f %>" value="1"<%= on(f) ? ' checked' : '' %> data-po-toggle="<%= f %>"><span class="po-switch-track" aria-hidden="true"></span></span>
+            </li>
+            <% }) %>
+          </ul>
+          <div class="panel-foot small muted"><%- icon('qr-code', 'icon-sm') %> <%= t('invoice_tpl.qr_note') %></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><div><h2><%= t('invoice_tpl.numbers_title') %></h2><div class="panel-sub"><%= t('invoice_tpl.numbers_sub') %></div></div></div>
+          <div class="panel-body stack">
+            <div class="form-grid">
+              <%- include('../../partials/field', { name: 'prefix', label: t('invoice_tpl.prefix'), value: v('prefix'), help: t('invoice_tpl.prefix_help'), placeholder: 'INV-', attrs: 'dir="ltr" maxlength="12" data-po-prefix' }) %>
+              <%- include('../../partials/field', { name: 'next_number', label: t('invoice_tpl.next_number'), value: o ? o.next_number : nextNumber, help: t('invoice_tpl.next_help', { n: fmt.number(nextNumber) }), attrs: 'inputmode="numeric" dir="ltr" min="' + nextNumber + '"' }) %>
+            </div>
+            <p class="small muted"><%= lastIssued ? t('invoice_tpl.last_issued', { n: lastIssued }) : t('invoice_tpl.none_issued') %></p>
+            <%- include('../../partials/field', { name: 'tax_number', label: t('invoice_tpl.tax_number'), value: o ? o.tax_number : taxNumber, help: t('invoice_tpl.tax_help'), attrs: 'dir="ltr" maxlength="60"' }) %>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><div><h2><%= t('invoice_tpl.footer_title') %></h2><div class="panel-sub"><%= t('invoice_tpl.footer_sub') %></div></div></div>
+          <div class="panel-body form-grid">
+            <%- include('../../partials/field', { name: 'footer', label: t('invoice_tpl.footer_ar'), type: 'textarea', value: v('footer'), attrs: 'dir="rtl" maxlength="300" rows="2" data-po-footer="ar"' }) %>
+            <%- include('../../partials/field', { name: 'footer_en', label: t('invoice_tpl.footer_en'), type: 'textarea', value: v('footer_en'), attrs: 'dir="ltr" maxlength="300" rows="2" data-po-footer="en"' }) %>
+          </div>
+        </section>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button><% if (sampleId && billingOn) { %><a class="btn btn-ghost" href="/app/billing/<%= sampleId %>?print=1" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('invoice_tpl.preview_last') %></a><% } %></div>
+      </div>
+
+      <aside class="po-inv-side" aria-label="<%= t('invoice_tpl.preview') %>">
+        <div class="small muted po-inv-side-label"><%= t('invoice_tpl.preview') %></div>
+        <div class="po-mini po-mini-<%= paper %>" data-po-mini>
+          <div class="po-mini-head">
+            <span class="po-mini-logo" data-po-field="show_logo"<%= on('show_logo') ? '' : ' hidden' %>><%- icon('image', 'icon-sm') %></span>
+            <div class="grow"><div class="strong small"><%= locale === 'en' && business.name_en ? business.name_en : business.name %></div>
+              <div class="tiny muted" data-po-field="show_contact"<%= on('show_contact') ? '' : ' hidden' %>><%= [business.address, business.phone].filter(Boolean).join(' · ') || t('invoice_tpl.sample_contact') %></div>
+              <div class="tiny muted" data-po-field="show_tax"<%= on('show_tax') ? '' : ' hidden' %>><%= t('invoice_tpl.tax_number') %>: <span dir="ltr"><%= taxNumber || '—' %></span></div>
+            </div>
+          </div>
+          <div class="po-mini-no mono"><span data-po-prefix-out><%= v('prefix') %></span><%= nextNumber %></div>
+          <div class="po-mini-lines tiny">
+            <div data-po-field="show_doctor"<%= on('show_doctor') ? '' : ' hidden' %>><span class="muted"><%= t('common.doctor') %></span><span>—</span></div>
+            <div data-po-field="show_service"<%= on('show_service') ? '' : ' hidden' %>><span class="muted"><%= t('common.service') %></span><span>—</span></div>
+            <div data-po-field="show_insurance"<%= on('show_insurance') ? '' : ' hidden' %>><span class="muted"><%= t('invoice_tpl.f.show_insurance') %></span><span>—</span></div>
+            <div data-po-field="show_discount"<%= on('show_discount') ? '' : ' hidden' %>><span class="muted"><%= t('invoice_tpl.f.show_discount') %></span><span>—</span></div>
+            <div class="strong"><span><%= t('common.total') %></span><span class="num"><%= fmt.money(0) %></span></div>
+            <div data-po-field="show_method"<%= on('show_method') ? '' : ' hidden' %>><span class="muted"><%= t('invoice_tpl.f.show_method') %></span><span><%= t('payment_methods.cash') %></span></div>
+          </div>
+          <div class="po-mini-stamp" data-po-field="show_stamp"<%= on('show_stamp') ? '' : ' hidden' %>><%- icon('stamp', 'icon-sm') %></div>
+          <div class="po-mini-foot tiny muted" data-po-footer-out><%= (locale === 'en' ? v('footer_en') || v('footer') : v('footer') || v('footer_en')) || t('billing.thanks') %></div>
+        </div>
+      </aside>
+    </form>
+  </div>
+</div>
