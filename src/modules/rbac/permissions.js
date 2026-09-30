@@ -2,7 +2,7 @@
 // Based on DocBook's clinic RBAC (owner, clinic_manager, doctor, receptionist, accountant) with a nurse role added.
 // "view" / "manage" pairs: managing always implies viewing (normalise()).
 const GROUPS = [
-  { key: 'overview', perms: ['dashboard.view', 'finance.view'] },
+  { key: 'overview', perms: ['dashboard.view', 'finance.view', 'finance.manage'] },
   { key: 'appointments', perms: ['appointments.view', 'appointments.manage', 'appointments.view_all'] },
   { key: 'frontdesk', perms: ['frontdesk.use', 'billing.view', 'billing.manage'] },
   { key: 'patients', perms: ['patients.view', 'patients.create', 'patients.edit', 'patients.delete'] },
@@ -25,11 +25,12 @@ const IMPLIES = {
   'patients.create': 'patients.view', 'patients.edit': 'patients.view', 'patients.delete': 'patients.view',
   'clinical.edit': 'clinical.view', 'vitals.edit': 'clinical.view', 'prescriptions.create': 'clinical.view',
   'attendance.manage': 'attendance.view', 'certificates.issue': 'certificates.view', 'vendors.manage': 'vendors.view', 'reviews.manage': 'reviews.view','payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',
+  'finance.manage': 'finance.view',
 };
 
 const SYSTEM_ROLES = [
   { key: 'owner', permissions: ALL, entry: '/app' },
-  { key: 'clinic_manager', permissions: without('data.manage'), entry: '/app' },
+  { key: 'clinic_manager', permissions: without('data.manage', 'finance.manage'), entry: '/app' },
   {
     key: 'doctor', // sees and treats their own patients; appointments are limited to their own schedule
     permissions: ['dashboard.view', 'vendors.view', 'appointments.view', 'reviews.view', 'patients.view', 'patients.edit', 'clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create', 'certificates.issue'],

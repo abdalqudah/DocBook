@@ -1,0 +1,196 @@
+<%
+  var canManage = can('finance.manage');
+  var P = ov.partners; var eq = ov.equity;
+  var active = P.filter(function (p) { return p.status === 'active'; });
+  var back = '/app/partners?month=' + month;
+  var allTx = [];
+  P.forEach(function (p) { p.transactions.forEach(function (x) { allTx.push(Object.assign({}, x, { partner_name: p.name })); }); });
+  allTx.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || b.id - a.id; });
+  var sign = function (x) { return x.type === 'withdrawal' ? '−' : (Number(x.amount) < 0 ? '−' : '+'); };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <h1><%= t('partners.title') %></h1>
+    <p><%= t('partners.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (canManage) { %><button class="btn btn-primary" type="button" data-open-dialog="partner-dialog" data-reset-form data-action="/app/partners" data-dialog-title="<%= t('partners.add') %>"><%- icon('plus', 'icon-sm') %><%= t('partners.add') %></button><% } %>
+  </div>
+</div>
+
+<% if (!P.length) { %>
+  <div class="panel"><%- include('../../partials/empty', { emptyIcon: 'handshake', emptyTitle: t('partners.empty_title'), emptyText: t('partners.empty_text'), emptyAction: canManage ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="partner-dialog" data-reset-form>' + t('partners.add') + '</button>' : '' }) %></div>
+<% } else { %>
+
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('partners.total_balance') %><span class="stat-icon"><%- icon('vault') %></span></div><div class="stat-value"><%= fmt.money(ov.totals.balance) %></div><div class="stat-meta"><%= t('partners.balance_formula') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('partners.capital') %><span class="stat-icon"><%- icon('landmark') %></span></div><div class="stat-value"><%= fmt.money(ov.totals.investment) %></div><div class="stat-meta"><%= t('partners.capital_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('partners.profits_allocated') %><span class="stat-icon"><%- icon('trending-up') %></span></div><div class="stat-value"><%= fmt.money(ov.totals.profits) %></div><div class="stat-meta"><%= t('partners.n_distributions', { n: fmt.number(dists.length) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('partners.withdrawals') %><span class="stat-icon"><%- icon('hand-coins') %></span></div><div class="stat-value"><%= fmt.money(ov.totals.withdrawals) %></div><div class="stat-meta"><%= t('partners.n_active', { n: fmt.number(active.length) }) %></div></div>
+</div>
+
+<div class="mt-6">
+  <div class="panel flush">
+    <div class="panel-head"><h2><%= t('partners.list_title') %></h2></div>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('partners.partner') %></th><th class="num"><%= t('partners.equity') %></th><th class="num"><%= t('partners.investment') %></th><th class="num"><%= t('partners.injections') %></th><th class="num"><%= t('partners.profit_shares') %></th><th class="num"><%= t('partners.withdrawals') %></th><th class="num"><%= t('partners.balance') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+          <% P.forEach(function (p) { %>
+          <tr>
+            <td class="primary-cell"><div class="strong"><%= p.name %></div><div class="tiny muted"><%= [p.phone, p.email].filter(Boolean).join(' · ') || '—' %><% if (p.status !== 'active') { %> · <%= t('common.inactive') %><% } %></div></td>
+            <td class="num" data-label="<%= t('partners.equity') %>"><%= fmt.pct(p.equity_percent, 2) %></td>
+            <td class="num" data-label="<%= t('partners.investment') %>"><%= fmt.amount(p.investment) %></td>
+            <td class="num" data-label="<%= t('partners.injections') %>"><%= fmt.amount(p.injections) %></td>
+            <td class="num" data-label="<%= t('partners.profit_shares') %>"><%= fmt.amount(p.profits) %></td>
+            <td class="num" data-label="<%= t('partners.withdrawals') %>"><%= fmt.amount(p.withdrawals) %></td>
+            <td class="num strong" data-label="<%= t('partners.balance') %>"><%= fmt.amount(p.balance) %></td>
+            <td class="actions"><% if (canManage) { %><div class="row-sm fin-actions">
+              <button class="btn btn-secondary btn-sm" type="button" data-open-dialog="tx-dialog" data-reset-form data-action="/app/partners/<%= p.id %>/transactions" data-dialog-title="<%= t('partners.tx_for', { name: p.name }) %>"><%= t('partners.add_tx') %></button>
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" data-open-dialog="partner-dialog" data-action="/app/partners/<%= p.id %>" data-dialog-title="<%= t('partners.edit') %>" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-fill="<%= json({ name: p.name, phone: p.phone, email: p.email, initial_investment: p.initial_investment, equity_percent: p.equity_percent, joined_on: p.joined_on, status: p.status, notes: p.notes }) %>"><%- icon('pencil', 'icon-sm') %></button>
+              <%- include('../../partials/delete-form', { action: '/app/partners/' + p.id + '/delete', confirmText: t('partners.delete_confirm', { name: p.name }) }) %>
+            </div><% } %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+        <tfoot><tr><td><%= t('common.total') %></td><td class="num" data-label="<%= t('partners.equity') %>"><%= fmt.pct(eq.total, 2) %></td><td></td><td></td><td class="num" data-label="<%= t('partners.profit_shares') %>"><%= fmt.amount(ov.totals.profits) %></td><td class="num" data-label="<%= t('partners.withdrawals') %>"><%= fmt.amount(ov.totals.withdrawals) %></td><td class="num" data-label="<%= t('partners.balance') %>"><%= fmt.amount(ov.totals.balance) %></td><td></td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="grid grid-main mt-6">
+  <div class="stack">
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('partners.tx_title') %></h2></div>
+      <% if (!allTx.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'coins', emptyTitle: t('partners.tx_empty'), emptyText: t('partners.tx_empty_text'), compact: true }) %>
+      <% } else { %>
+      <div class="table-wrap">
+        <table class="table responsive">
+          <thead><tr><th><%= t('common.date') %></th><th><%= t('partners.partner') %></th><th><%= t('common.type') %></th><th class="num"><%= t('common.amount') %></th><th><%= t('common.notes') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+          <tbody>
+            <% allTx.slice(0, 50).forEach(function (x) { %>
+            <tr>
+              <td class="nowrap" data-label="<%= t('common.date') %>"><%= fmt.date(x.date) %></td>
+              <td class="primary-cell"><span class="strong"><%= x.partner_name %></span></td>
+              <td data-label="<%= t('common.type') %>"><%= t('partners.tx.' + x.type) %><% if (x.period) { %> <span class="muted small">· <%= fmt.month(x.period) %></span><% } %></td>
+              <td class="num strong" data-label="<%= t('common.amount') %>"><bdi dir="ltr"><%= sign(x) %><%= fmt.amount(Math.abs(Number(x.amount))) %></bdi></td>
+              <td data-label="<%= t('common.notes') %>" class="small muted"><%= x.note || '—' %></td>
+              <td class="actions"><div class="row-sm fin-actions">
+                <a class="btn btn-ghost btn-icon btn-sm" href="/app/partners/transactions/<%= x.id %>/voucher" aria-label="<%= t('partners.voucher') %>" title="<%= t('partners.voucher') %>"><%- icon('file-text', 'icon-sm') %></a>
+                <% if (canManage && x.type !== 'profit_share') { %><%- include('../../partials/delete-form', { action: '/app/partners/transactions/' + x.id + '/delete', confirmText: t('partners.tx_delete_confirm') }) %><% } %>
+              </div></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('partners.equity_title') %></h2><span class="strong num"><%= fmt.pct(eq.total, 2) %></span></div>
+      <div class="panel-body stack-sm">
+        <div class="fin-equity" role="img" aria-label="<%= t('partners.equity_total', { pct: fmt.pct(eq.total, 2) }) %>">
+          <% active.forEach(function (p, i) { if (p.equity_percent > 0) { %><span class="fin-eq-seg s<%= (i % 4) + 1 %>" style="width:<%= Math.min(100, p.equity_percent) %>%" title="<%= p.name %> · <%= fmt.pct(p.equity_percent, 2) %>"></span><% } }) %>
+        </div>
+        <ul class="fin-eq-legend">
+          <% active.forEach(function (p, i) { %><li><i class="s<%= (i % 4) + 1 %>"></i><span class="grow"><%= p.name %></span><span class="num strong"><%= fmt.pct(p.equity_percent, 2) %></span></li><% }) %>
+        </ul>
+        <% if (eq.state === 'over') { %><div class="alert alert-danger" role="alert"><%- icon('circle-alert') %><div class="grow"><%= t('partners.equity_over', { pct: fmt.pct(eq.total, 2) }) %></div></div>
+        <% } else if (eq.state === 'under') { %><div class="alert alert-warning" role="status"><%- icon('triangle-alert') %><div class="grow"><%= t('partners.equity_under', { pct: fmt.pct(eq.total, 2), rest: fmt.pct(100 - eq.total, 2) }) %></div></div>
+        <% } else { %><p class="small muted"><%- icon('check', 'icon-sm') %> <%= t('partners.equity_ok') %></p><% } %>
+      </div>
+    </div>
+
+    <div class="panel" id="distribution">
+      <div class="panel-head"><h2><%= t('partners.share_title') %></h2></div>
+      <div class="panel-body stack">
+        <%- include('_month', { pname: 'month' }) %>
+        <dl class="dl fin-dl-tight">
+          <dt><%= t('pnl.revenue') %></dt><dd class="num"><%= fmt.money(monthNet.revenue) %></dd>
+          <dt><%= t('pnl.total_costs') %></dt><dd class="num"><%= fmt.money(monthNet.costs) %></dd>
+          <dt><%= monthNet.net < 0 ? t('pnl.net_loss') : t('pnl.net_profit') %></dt><dd class="num strong"><%= fmt.money(monthNet.net) %></dd>
+        </dl>
+        <% if (distributed) { %>
+          <div class="alert alert-success"><%- icon('circle-check') %><div class="grow"><div class="alert-title"><%= t('partners.distributed_on', { month: fmt.month(month) }) %></div><div class="small muted"><%= t('partners.distributed_meta', { date: fmt.date(distributed.created_at), name: distributed.created_by_name || '—', amount: fmt.money(distributed.net_profit) }) %></div></div></div>
+        <% } %>
+        <table class="statement fin-share-table"><tbody>
+          <% active.forEach(function (p) { var allocated = p.transactions.find(function (x) { return x.type === 'profit_share' && x.period === month; }); %>
+          <tr><td><bdi><%= p.name %></bdi> <span class="muted small">· <%= fmt.pct(p.equity_percent, 2) %></span></td><td><%= fmt.money(allocated ? allocated.amount : p.share) %><% if (allocated) { %> <a class="fin-inline-link" href="/app/partners/transactions/<%= allocated.id %>/voucher" title="<%= t('partners.voucher') %>" aria-label="<%= t('partners.voucher') %>"><%- icon('file-text', 'icon-sm') %></a><% } %></td></tr>
+          <% }) %>
+        </tbody></table>
+        <% if (!distributed) { %>
+          <% if (!closed) { %><p class="small muted"><%- icon('clock', 'icon-sm') %> <%= t('partners.month_open') %></p>
+          <% } else if (eq.state !== 'ok') { %><p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('partners.need_100') %></p>
+          <% } else if (canManage) { %>
+            <form method="post" action="/app/partners/distribute" data-confirm="<%= t('partners.distribute_confirm', { month: fmt.month(month), amount: fmt.money(monthNet.net) }) %>" data-confirm-title="<%= t('partners.distribute') %>" data-confirm-yes="<%= t('partners.distribute') %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="month" value="<%= month %>"><input type="hidden" name="_return" value="<%= back %>">
+              <button class="btn btn-secondary btn-block" type="submit"><%- icon('handshake', 'icon-sm') %><%= t('partners.distribute_month', { month: fmt.month(month) }) %></button>
+            </form>
+            <p class="tiny muted"><%= t('partners.distribute_help') %></p>
+          <% } else { %><p class="small muted"><%= t('partners.estimate_note') %></p><% } %>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (dists.length) { %>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('partners.history_title') %></h2></div>
+      <ul class="action-list">
+        <% dists.forEach(function (d) { %>
+        <li><div class="row between wrap">
+          <div class="grow"><a class="strong" href="/app/partners?month=<%= d.period %>#distribution"><%= fmt.month(d.period) %></a><div class="small muted"><%= Number(d.net_profit) < 0 ? t('pnl.net_loss') : t('pnl.net_profit') %> <bdi class="num"><%= fmt.money(d.net_profit) %></bdi> · <%= d.created_by_name || '—' %></div></div>
+          <% if (canManage) { %><form method="post" action="/app/partners/distributions/<%= d.id %>/cancel" data-confirm="<%= t('partners.cancel_confirm', { month: fmt.month(d.period) }) %>" data-confirm-title="<%= t('partners.cancel_distribution') %>" data-confirm-yes="<%= t('partners.cancel_distribution') %>" data-confirm-type="<%= d.period %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('partners.cancel_distribution') %></button></form><% } %>
+        </div></li>
+        <% }) %>
+      </ul>
+    </div>
+    <% } %>
+  </div>
+</div>
+<% } %>
+
+<% if (canManage) { %>
+<script type="application/json" id="fin-equity-data"><%- json({ partners: P.map(function (p) { return { id: p.id, pct: p.equity_percent, active: p.status === 'active' }; }), total: t('partners.equity_after'), over: t('errors_finance.EQUITY_OVER_100', { total: '{total}' }) }) %></script>
+<dialog class="dialog wide" id="partner-dialog" data-new-dialog aria-labelledby="partner-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'partner-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/partners' %>" novalidate>
+    <div class="dialog-head"><h2 id="partner-dialog-title" data-dialog-title-target><%= t('partners.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, cls: 'full' }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'initial_investment', label: t('partners.investment'), required: true, suffix: currency, attrs: 'inputmode="decimal"', value: '' }) %>
+        <%- include('../../partials/field', { name: 'equity_percent', label: t('partners.equity'), required: true, suffix: '%', attrs: 'inputmode="decimal" data-equity-input data-equity-others="0"', value: '', help: t('partners.equity_help', { pct: fmt.pct(eq.total, 2) }) }) %>
+        <%- include('../../partials/field', { name: 'joined_on', label: t('partners.joined_on'), type: 'date' }) %>
+        <%- include('../../partials/field', { name: 'status', label: t('common.status'), type: 'select', options: [{ value: 'active', label: t('common.active') }, { value: 'inactive', label: t('common.inactive') }], value: 'active' }) %>
+        <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<dialog class="dialog" id="tx-dialog" aria-labelledby="tx-dialog-title">
+  <form method="post" action="">
+    <div class="dialog-head"><h2 id="tx-dialog-title" data-dialog-title-target><%= t('partners.add_tx') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>">
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'type', id: 'tx-type', label: t('common.type'), type: 'select', required: true, options: txTypes.map(function (x) { return { value: x, label: t('partners.tx.' + x) }; }), value: 'injection', old: null, errors: null }) %>
+        <%- include('../../partials/field', { name: 'amount', id: 'tx-amount', label: t('common.amount'), required: true, suffix: currency, attrs: 'inputmode="decimal"', value: '', old: null, errors: null }) %>
+        <%- include('../../partials/field', { name: 'date', id: 'tx-date', label: t('common.date'), type: 'date', required: true, value: clinicToday, attrs: 'data-default="' + clinicToday + '"', old: null, errors: null }) %>
+        <%- include('../../partials/field', { name: 'note', id: 'tx-note', label: t('common.notes'), value: '', old: null, errors: null }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>

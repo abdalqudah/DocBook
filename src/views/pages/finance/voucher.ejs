@@ -1,0 +1,43 @@
+<% var isPrint = query.print === '1'; var x = tx; %>
+<% if (!isPrint) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/partners"><%= t('partners.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('partners.voucher') %></div>
+    <h1><%= t('partners.voucher_title.' + x.type) %></h1>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="?format=pdf&download=1"><%- icon('download', 'icon-sm') %><%= t('staffpay.download_pdf') %></a>
+    <a class="btn btn-primary" href="?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+<div class="fin-slip<%= isPrint ? '' : ' panel' %>">
+  <div class="<%= isPrint ? '' : 'panel-body' %> stack">
+    <div class="row between wrap fin-slip-head">
+      <div>
+        <div class="tiny muted"><%= t('partners.voucher_title.' + x.type) %></div>
+        <div class="fin-slip-name"><%= partner.name %></div>
+        <div class="small muted"><%= t('partners.equity') %> <%= fmt.pct(x.equity_percent !== null && x.equity_percent !== undefined ? x.equity_percent : partner.equity_percent, 2) %></div>
+      </div>
+      <div class="fin-slip-status"><div class="strong"><%= t('partners.voucher_no') %> <bdi dir="ltr">P-<%= x.id %></bdi></div><div class="tiny muted mt-1"><%= fmt.date(x.date) %></div></div>
+    </div>
+    <table class="statement"><tbody>
+      <% if (dist) { %>
+        <tr><td><%= t('partners.month') %></td><td><%= fmt.month(dist.period) %></td></tr>
+        <tr><td><%= t('pnl.revenue') %></td><td><%= fmt.money(dist.revenue) %></td></tr>
+        <tr><td><%= t('pnl.total_costs') %></td><td><bdi dir="ltr">− <%= fmt.money(dist.costs) %></bdi></td></tr>
+        <tr class="total"><td><%= Number(dist.net_profit) < 0 ? t('pnl.net_loss') : t('pnl.net_profit') %></td><td><%= fmt.money(dist.net_profit) %></td></tr>
+        <tr class="grand"><td><%= t('partners.share_line', { pct: fmt.pct(x.equity_percent, 2) }) %></td><td><%= fmt.money(x.amount) %></td></tr>
+      <% } else { %>
+        <tr><td><%= t('common.type') %></td><td><%= t('partners.tx.' + x.type) %></td></tr>
+        <tr class="grand"><td><%= t('common.amount') %></td><td><%= fmt.money(x.amount) %></td></tr>
+      <% } %>
+    </tbody></table>
+    <% if (x.note) { %><p class="small muted"><%= x.note %></p><% } %>
+    <p class="tiny muted"><%= t('partners.recorded_by', { name: x.created_by_name || '—' }) %></p>
+    <div class="fin-sign">
+      <div><span class="tiny muted"><%= t('partners.sign_accountant') %></span></div>
+      <div><span class="tiny muted"><%= t('partners.sign_partner') %></span></div>
+    </div>
+  </div>
+</div>

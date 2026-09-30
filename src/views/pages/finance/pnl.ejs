@@ -1,0 +1,138 @@
+<%
+  var isPrint = query.print === '1';
+  var s = data.cur; var b = data.before;
+  var dl = function (cur, prev) { if (!prev) return null; return Math.round(((cur - prev) * 1000) / Math.abs(prev)) / 10; };
+  var deltaHtml = function (cur, prev, costLike) {
+    var d = dl(cur, prev);
+    if (d === null) return '<span class="muted">—</span>';
+    var bad = costLike ? d > 0 : d < 0;
+    return '<span class="fin-delta' + (bad && Math.abs(d) >= 10 ? ' is-bad' : '') + '"><bdi dir="ltr">' + (d > 0 ? '+' : d < 0 ? '−' : '') + fmt.number(Math.abs(d), 1) + '%</bdi></span>';
+  };
+  var baseQs = 'kind=' + p.kind + '&key=' + encodeURIComponent(p.key);
+  var cats = [];
+  s.expenses.forEach(function (e) { cats.push(e.category); });
+  b.expenses.forEach(function (e) { if (cats.indexOf(e.category) < 0) cats.push(e.category); });
+  var amt = function (list, c) { var x = list.find(function (e) { return e.category === c; }); return x ? x.amount : 0; };
+%>
+<% if (!isPrint) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <h1><%= t('pnl.title') %></h1>
+    <p><%= t('pnl.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/finance/assistant"><%- icon('sparkles', 'icon-sm') %><%= t('aifin.title') %></a>
+    <%- include('../../partials/export-menu', { href: '/app/finance/export', query: { kind: p.kind, key: p.key } }) %>
+    <a class="btn btn-secondary" href="/app/finance?<%= baseQs %>&format=pdf&download=1"><%- icon('download', 'icon-sm') %><%= t('pnl.pdf') %></a>
+    <a class="btn btn-primary" href="/app/finance?<%= baseQs %>&print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('pnl.print_statement') %></a>
+  </div>
+</div>
+
+<div class="fin-toolbar">
+  <nav class="segmented" aria-label="<%= t('pnl.period_kind') %>">
+    <% ['month', 'quarter', 'year'].forEach(function (k) { %><a href="/app/finance?kind=<%= k %>" class="<%= p.kind === k ? 'active' : '' %>"<%= p.kind === k ? ' aria-current=page' : '' %>><%= t('pnl.kind.' + k) %></a><% }) %>
+  </nav>
+  <div class="fin-month">
+    <a class="btn btn-secondary btn-icon" href="/app/finance?kind=<%= p.kind %>&key=<%= prevKey %>" aria-label="<%= t('pnl.prev_period') %>" title="<%= t('pnl.prev_period') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
+    <form method="get" data-autosubmit class="fin-month-form">
+      <input type="hidden" name="kind" value="<%= p.kind %>">
+      <label class="sr-only" for="pnl-key"><%= t('common.period') %></label>
+      <select class="select" id="pnl-key" name="key"><% choices.forEach(function (c) { %><option value="<%= c.key %>"<%= c.key === p.key ? ' selected' : '' %>><%= c.label %></option><% }) %><% if (!choices.some(function (c) { return c.key === p.key; })) { %><option value="<%= p.key %>" selected><%= label %></option><% } %></select>
+      <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+    </form>
+    <a class="btn btn-secondary btn-icon" href="/app/finance?kind=<%= p.kind %>&key=<%= nextKey %>" aria-label="<%= t('pnl.next_period') %>" title="<%= t('pnl.next_period') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+  </div>
+  <span class="small muted fin-basis-chip"><%- icon('info', 'icon-sm') %> <%= t('pnl.basis_short') %></span>
+</div>
+
+<div class="stats mt-4">
+  <div class="stat"><div class="stat-label"><%= t('pnl.revenue') %><span class="stat-icon"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.money(s.revenue) %></div><div class="stat-meta"><%- deltaHtml(s.revenue, b.revenue, false) %> <%= t('pnl.vs', { period: prevLabel }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('pnl.total_costs') %><span class="stat-icon"><%- icon('receipt-text') %></span></div><div class="stat-value"><%= fmt.money(s.costs) %></div><div class="stat-meta"><%- deltaHtml(s.costs, b.costs, true) %> <%= t('pnl.vs', { period: prevLabel }) %></div></div>
+  <div class="stat hero"><div class="stat-label"><%= s.net < 0 ? t('pnl.net_loss') : t('pnl.net_profit') %><span class="stat-icon"><%- icon(s.net < 0 ? 'trending-down' : 'trending-up') %></span></div><div class="stat-value<%= s.net < 0 ? ' fin-neg' : '' %>"><%= fmt.money(s.net) %></div><div class="stat-meta"><%- deltaHtml(s.net, b.net, false) %> <%= t('pnl.vs', { period: prevLabel }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('pnl.margin') %><span class="stat-icon"><%- icon('percent') %></span></div><div class="stat-value"><%= s.margin === null ? '—' : fmt.pct(s.margin, 1) %></div><div class="stat-meta"><%= t('pnl.prev_margin', { pct: b.margin === null ? '—' : fmt.pct(b.margin, 1) }) %></div></div>
+</div>
+<% if (s.salaryOverlap) { %>
+<div class="alert alert-warning mt-4" role="status"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('pnl.overlap_title') %></div><div class="small"><%= t('pnl.overlap_text') %></div></div></div>
+<% } %>
+<% } else { %>
+  <h1 class="fin-print-title"><%= t('pnl.title') %> · <%= label %></h1>
+  <p class="small muted"><%= t('pnl.basis_short') %></p>
+<% } %>
+
+<div class="<%= isPrint ? '' : 'grid grid-main mt-6' %>">
+  <div class="stack">
+    <div class="<%= isPrint ? '' : 'panel flush' %>">
+      <% if (!isPrint) { %><div class="panel-head"><h2><%= t('pnl.statement_title', { period: label }) %></h2></div><% } %>
+      <div class="table-wrap">
+        <table class="statement fin-statement">
+          <thead><tr><th><span class="sr-only"><%= t('pnl.line') %></span></th><th class="num"><%= label %></th><th class="num fin-prev"><%= prevLabel %></th><th class="num fin-prev">Δ</th></tr></thead>
+          <tbody>
+            <tr><td><%= t('pnl.gross_revenue') %></td><td><%= fmt.amount(s.gross) %></td><td class="fin-prev"><%= fmt.amount(b.gross) %></td><td class="fin-prev"><%- deltaHtml(s.gross, b.gross, false) %></td></tr>
+            <tr class="sub"><td><%= t('pnl.discounts') %></td><td><bdi dir="ltr">−<%= fmt.amount(s.discounts) %></bdi></td><td class="fin-prev"><bdi dir="ltr">−<%= fmt.amount(b.discounts) %></bdi></td><td class="fin-prev"></td></tr>
+            <tr class="total"><td><%= t('pnl.revenue') %> <span class="muted small">· <%= t('pnl.n_invoices', { n: fmt.number(s.invoices) }) %></span></td><td><%= fmt.amount(s.revenue) %></td><td class="fin-prev"><%= fmt.amount(b.revenue) %></td><td class="fin-prev"><%- deltaHtml(s.revenue, b.revenue, false) %></td></tr>
+            <% if (s.online || b.online) { %><tr class="sub"><td><%= t('pnl.of_which_online') %></td><td><%= fmt.amount(s.online) %></td><td class="fin-prev"><%= fmt.amount(b.online) %></td><td class="fin-prev"></td></tr><% } %>
+            <tr class="fin-section"><td colspan="4"><%= t('pnl.operating_expenses') %></td></tr>
+            <% if (!cats.length) { %><tr class="sub"><td><%= t('pnl.no_expenses') %></td><td>—</td><td class="fin-prev">—</td><td class="fin-prev"></td></tr><% } %>
+            <% cats.forEach(function (c) { %><tr class="sub"><td><%= catName(c) %></td><td><%= fmt.amount(amt(s.expenses, c)) %></td><td class="fin-prev"><%= fmt.amount(amt(b.expenses, c)) %></td><td class="fin-prev"><%- deltaHtml(amt(s.expenses, c), amt(b.expenses, c), true) %></td></tr><% }) %>
+            <tr><td><%= t('pnl.opex_total') %></td><td><%= fmt.amount(s.opex) %></td><td class="fin-prev"><%= fmt.amount(b.opex) %></td><td class="fin-prev"><%- deltaHtml(s.opex, b.opex, true) %></td></tr>
+            <tr class="fin-section"><td colspan="4"><%= t('pnl.payroll') %></td></tr>
+            <tr class="sub"><td><%= t('pnl.doctor_payroll') %></td><td><%= fmt.amount(s.doctorPayroll) %></td><td class="fin-prev"><%= fmt.amount(b.doctorPayroll) %></td><td class="fin-prev"><%- deltaHtml(s.doctorPayroll, b.doctorPayroll, true) %></td></tr>
+            <tr class="sub"><td><%= t('pnl.staff_salaries') %></td><td><%= fmt.amount(s.staffSalaries) %></td><td class="fin-prev"><%= fmt.amount(b.staffSalaries) %></td><td class="fin-prev"><%- deltaHtml(s.staffSalaries, b.staffSalaries, true) %></td></tr>
+            <tr class="total"><td><%= t('pnl.total_costs') %></td><td><%= fmt.amount(s.costs) %></td><td class="fin-prev"><%= fmt.amount(b.costs) %></td><td class="fin-prev"><%- deltaHtml(s.costs, b.costs, true) %></td></tr>
+            <tr class="grand"><td><%= s.net < 0 ? t('pnl.net_loss') : t('pnl.net_profit') %> <span class="small fin-margin">· <%= t('pnl.margin') %> <%= s.margin === null ? '—' : fmt.pct(s.margin, 1) %></span></td><td><%= fmt.amount(s.net) %></td><td class="fin-prev"><%= fmt.amount(b.net) %></td><td class="fin-prev"><%- deltaHtml(s.net, b.net, false) %></td></tr>
+            <tr class="fin-section"><td colspan="4"><%= t('pnl.memo') %></td></tr>
+            <tr class="sub"><td><%= t('pnl.refunds_memo') %></td><td><%= fmt.amount(s.refunds) %></td><td class="fin-prev"><%= fmt.amount(b.refunds) %></td><td class="fin-prev"></td></tr>
+            <tr class="sub"><td><%= t('pnl.supplies_memo') %></td><td><%= fmt.amount(s.suppliesReceived) %></td><td class="fin-prev"><%= fmt.amount(b.suppliesReceived) %></td><td class="fin-prev"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="<%= isPrint ? 'mt-4' : 'panel-foot' %> small muted fin-basis"><%- icon('info', 'icon-sm') %> <span><%= t('pnl.basis_text') %> <%= t('pnl.amounts_in', { currency: currency }) %></span></div>
+    </div>
+
+    <% if (!isPrint) { %>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('pnl.trend_title') %></h2>
+        <div class="legend"><span><i class="l1"></i><%= t('pnl.revenue') %></span><span><i class="l3"></i><%= t('pnl.total_costs') %></span><span><i class="l2"></i><%= t('pnl.net') %></span></div>
+      </div>
+      <div class="panel-body"><% if (trendChart) { %><%- trendChart %><% } else { %><p class="small muted"><%= t('pnl.no_trend') %></p><% } %></div>
+    </div>
+    <% } %>
+  </div>
+
+  <% if (!isPrint) { %>
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('pnl.cost_breakdown') %></h2></div>
+      <div class="panel-body"><% if (donut) { %><%- donut %><% } else { %><p class="small muted"><%= t('pnl.no_costs') %></p><% } %></div>
+    </div>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('pnl.budget_alerts') %></h2><a class="small link" href="/app/budgets"><%= t('pnl.open_budgets') %></a></div>
+      <% if (!budgetCount) { %><div class="panel-body"><p class="small muted"><%= t('pnl.no_budgets') %></p></div>
+      <% } else if (!budgetAlerts.length) { %><div class="panel-body"><p class="small muted"><%- icon('check', 'icon-sm') %> <%= t('pnl.budgets_ok') %></p></div>
+      <% } else { %>
+      <ul class="fin-budget-list compact">
+        <% budgetAlerts.forEach(function (x) { var st = x.status; %>
+        <li><div class="fin-budget-main">
+          <div class="row between wrap fin-budget-top"><span class="strong small"><%= x.label %></span><span class="badge <%= st.over ? 'badge-danger' : 'badge-warning' %>"><%= t('budgets.state.' + st.state) %></span></div>
+          <div class="meter thin <%= st.over ? 'full' : 'warn' %>"><span style="width:<%= Math.min(100, st.usage === null ? 100 : st.usage) %>%"></span></div>
+          <div class="tiny muted"><bdi dir="ltr"><%= fmt.money(st.spent) %> / <%= fmt.money(st.limit) %></bdi></div>
+        </div></li>
+        <% }) %>
+      </ul>
+      <% } %>
+    </div>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('pnl.partners_title') %></h2><a class="small link" href="/app/partners"><%= t('pnl.open_partners') %></a></div>
+      <% var act = ov.partners.filter(function (x) { return x.status === 'active'; }); %>
+      <% if (!act.length) { %><div class="panel-body"><p class="small muted"><%= t('pnl.no_partners') %></p></div>
+      <% } else { %>
+      <table class="statement fin-share-table"><tbody>
+        <% act.forEach(function (x) { %><tr><td><bdi><%= x.name %></bdi> <span class="muted small">· <%= fmt.pct(x.equity_percent, 2) %></span></td><td><%= fmt.money(x.share) %></td></tr><% }) %>
+      </tbody></table>
+      <div class="panel-foot tiny muted"><%= t('pnl.partners_note', { period: label }) %><% if (ov.equity.state !== 'ok') { %> · <%= t('partners.equity_total', { pct: fmt.pct(ov.equity.total, 2) }) %><% } %></div>
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+</div>

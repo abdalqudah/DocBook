@@ -1,0 +1,228 @@
+<%
+  var canManage = can('payroll.manage');
+  var isPrint = query.print === '1';
+  var rows = sheet.rows; var tot = sheet.totals; var missing = sheet.missing;
+  var drafts = rows.filter(function (r) { return r.status === 'draft'; });
+  var back = '/app/staff-payroll?period=' + period;
+  var methodOptions = methods.map(function (mm) { return { value: mm, label: label('payment_methods', mm) }; });
+  var activeCount = employees.filter(function (e) { return e.status === 'active'; }).length;
+  var hasErr = function (n) { return typeof errors !== 'undefined' && errors && errors[n]; };
+%>
+<% if (isPrint) { %>
+  <h1 class="fin-print-title"><%= t('staffpay.sheet_title', { month: fmt.month(period) }) %></h1>
+  <table class="table fin-print-table">
+    <thead><tr><th><%= t('staffpay.employee') %></th><th class="num"><%= t('staffpay.base_salary') %></th><th class="num"><%= t('staffpay.allowances') %></th><th class="num"><%= t('staffpay.bonuses') %></th><th class="num"><%= t('staffpay.deductions') %></th><th class="num"><%= t('staffpay.advances') %></th><th class="num"><%= t('staffpay.net_pay') %></th><th><%= t('common.status') %></th><th><%= t('staffpay.signature') %></th></tr></thead>
+    <tbody>
+      <% rows.forEach(function (r) { %><tr><td><strong><%= r.employee_name %></strong><div class="tiny muted"><%= r.job_title || '' %></div></td><td class="num"><%= fmt.amount(r.f.base) %></td><td class="num"><%= fmt.amount(r.f.allowances) %></td><td class="num"><%= fmt.amount(r.f.bonuses) %></td><td class="num"><%= fmt.amount(r.f.deductions + r.f.extraDeductions) %></td><td class="num"><%= fmt.amount(r.f.advances) %></td><td class="num strong"><%= fmt.amount(r.f.net) %></td><td><%= t('staffpay.status.' + r.status) %><% if (r.paid_on) { %><div class="tiny muted"><%= fmt.date(r.paid_on) %></div><% } %></td><td class="fin-sign-cell"></td></tr><% }) %>
+    </tbody>
+    <tfoot><tr><td><%= t('common.total') %></td><td class="num"><%= fmt.amount(tot.base) %></td><td class="num"><%= fmt.amount(tot.allowances) %></td><td class="num"><%= fmt.amount(tot.bonuses) %></td><td class="num"><%= fmt.amount(tot.deductions) %></td><td class="num"><%= fmt.amount(tot.advances) %></td><td class="num"><%= fmt.amount(tot.net) %></td><td></td><td></td></tr></tfoot>
+  </table>
+  <p class="tiny muted mt-4"><%= t('staffpay.amounts_in', { currency: currency }) %> · <%= t('staffpay.net_formula') %></p>
+<% } else { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <h1><%= t('staffpay.title') %></h1>
+    <p><%= t('staffpay.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (tab === 'run') { %>
+      <%- include('_month') %>
+      <% if (rows.length) { %>
+        <%- include('../../partials/export-menu', { href: '/app/staff-payroll/export', query: { period: period } }) %>
+        <a class="btn btn-secondary" href="/app/staff-payroll?period=<%= period %>&print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+      <% } %>
+      <% if (canManage && missing.length) { %>
+        <form method="post" action="/app/staff-payroll/prepare"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-primary" type="submit"><%- icon('list-checks', 'icon-sm') %><%= t('staffpay.prepare') %></button></form>
+      <% } else if (canManage && drafts.length) { %>
+        <button class="btn btn-primary" type="button" data-open-dialog="payall-dialog"><%- icon('banknote', 'icon-sm') %><%= t('staffpay.pay_all') %></button>
+      <% } %>
+    <% } else if (canManage) { %>
+      <button class="btn btn-primary" type="button" data-open-dialog="employee-dialog" data-reset-form data-action="/app/staff-payroll/employees" data-dialog-title="<%= t('staffpay.add_employee') %>"><%- icon('plus', 'icon-sm') %><%= t('staffpay.add_employee') %></button>
+    <% } %>
+  </div>
+</div>
+
+<nav class="tabs mb-4" aria-label="<%= t('staffpay.title') %>">
+  <a href="/app/staff-payroll?period=<%= period %>" class="<%= tab === 'run' ? 'active' : '' %>"<%= tab === 'run' ? ' aria-current=page' : '' %>><%- icon('calendar', 'icon-sm') %><%= t('staffpay.tab_run') %></a>
+  <a href="/app/staff-payroll?tab=employees&period=<%= period %>" class="<%= tab === 'employees' ? 'active' : '' %>"<%= tab === 'employees' ? ' aria-current=page' : '' %>><%- icon('users', 'icon-sm') %><%= t('staffpay.tab_employees') %> <span class="count"><%= fmt.number(employees.length) %></span></a>
+</nav>
+
+<% if (tab === 'run') { %>
+  <% if (!employees.length) { %>
+    <div class="panel"><%- include('../../partials/empty', { emptyIcon: 'users', emptyTitle: t('staffpay.empty_title'), emptyText: t('staffpay.empty_text'), emptyAction: canManage ? '<a class="btn btn-primary btn-sm" href="/app/staff-payroll?tab=employees&new=1">' + t('staffpay.add_employee') + '</a>' : '' }) %></div>
+  <% } else { %>
+  <div class="stats">
+    <div class="stat hero"><div class="stat-label"><%= t('staffpay.total_net') %><span class="stat-icon"><%- icon('wallet') %></span></div><div class="stat-value"><%= fmt.money(tot.net) %></div><div class="stat-meta"><%= fmt.month(period) %></div></div>
+    <div class="stat"><div class="stat-label"><%= t('staffpay.paid') %><span class="stat-icon"><%- icon('circle-check') %></span></div><div class="stat-value"><%= fmt.number(tot.paidCount) %> <span class="small muted">/ <%= fmt.number(rows.length) %></span></div><div class="stat-meta"><%= tot.paidCount ? fmt.money(tot.paid) : t('staffpay.none_paid') %></div></div>
+    <div class="stat"><div class="stat-label"><%= t('staffpay.base_and_allowances') %><span class="stat-icon"><%- icon('banknote') %></span></div><div class="stat-value"><%= fmt.money(tot.base + tot.allowances) %></div><div class="stat-meta"><bdi dir="ltr"><%= t('staffpay.adj_summary', { plus: fmt.money(tot.bonuses), minus: fmt.money(tot.deductions + tot.advances) }) %></bdi></div></div>
+    <div class="stat"><div class="stat-label"><%= t('staffpay.active_employees') %><span class="stat-icon"><%- icon('users') %></span></div><div class="stat-value"><%= fmt.number(activeCount) %></div><div class="stat-meta"><%= t('staffpay.in_run', { n: fmt.number(rows.length) }) %></div></div>
+  </div>
+
+  <% if (missing.length) { %>
+    <div class="alert alert-info mt-6" role="status"><%- icon('info') %><div class="grow"><div class="alert-title"><%= t('staffpay.missing_title', { n: fmt.number(missing.length) }) %></div><div class="small muted"><%= missing.map(function (e) { return e.name; }).join('، ') %></div><% if (!canManage) { %><div class="small"><%= t('staffpay.missing_ask') %></div><% } %></div></div>
+  <% } %>
+
+  <div class="panel flush mt-6">
+    <div class="panel-head"><h2><%= t('staffpay.sheet_title', { month: fmt.month(period) }) %></h2><span class="small muted"><%= t('staffpay.net_formula') %></span></div>
+    <% if (!rows.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'calendar', emptyTitle: t('staffpay.no_run_title'), emptyText: t('staffpay.no_run_text'), compact: true }) %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive fin-sheet">
+        <thead><tr>
+          <th><%= t('staffpay.employee') %></th><th class="num"><%= t('staffpay.base_salary') %></th><th class="num"><%= t('staffpay.allowances') %></th>
+          <th class="num"><%= t('staffpay.bonuses') %></th><th class="num"><%= t('staffpay.deductions') %></th><th class="num"><%= t('staffpay.advances') %></th>
+          <th class="num"><%= t('staffpay.net_pay') %></th><th><%= t('common.status') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th>
+        </tr></thead>
+        <tbody>
+          <% rows.forEach(function (r) { var draft = r.status === 'draft'; %>
+          <tr>
+            <td class="primary-cell"><div class="fin-cell">
+              <div class="strong"><%= r.employee_name %></div>
+              <div class="tiny muted"><%= r.job_title || '—' %><% if (r.employee_status === 'inactive') { %> · <%= t('common.inactive') %><% } %></div>
+              <% if (r.adjustments.length) { %><ul class="fin-adj-list">
+                <% r.adjustments.forEach(function (a) { %><li>
+                  <span><%= t('staffpay.types.' + a.type) %> <bdi dir="ltr" class="num"><%= a.type === 'bonus' ? '+' : '−' %><%= fmt.amount(a.amount) %></bdi> — <%= a.reason %></span>
+                  <% if (draft && canManage) { %><form method="post" action="/app/staff-payroll/adjustments/<%= a.id %>/delete" data-confirm="<%= t('staffpay.adj_remove_confirm') %>" data-confirm-title="<%= t('staffpay.adj_remove') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-ghost btn-icon fin-btn-xs" type="submit" aria-label="<%= t('staffpay.adj_remove') %>" title="<%= t('staffpay.adj_remove') %>"><%- icon('x', 'icon-sm') %></button></form><% } %>
+                </li><% }) %>
+              </ul><% } %>
+            </div></td>
+            <td class="num" data-label="<%= t('staffpay.base_salary') %>"><%= fmt.amount(r.f.base) %></td>
+            <td class="num" data-label="<%= t('staffpay.allowances') %>"><%= fmt.amount(r.f.allowances) %></td>
+            <td class="num" data-label="<%= t('staffpay.bonuses') %>"><% if (r.f.bonuses) { %><bdi dir="ltr">+<%= fmt.amount(r.f.bonuses) %></bdi><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="num" data-label="<%= t('staffpay.deductions') %>"><% if (r.f.deductions + r.f.extraDeductions) { %><bdi dir="ltr">−<%= fmt.amount(r.f.deductions + r.f.extraDeductions) %></bdi><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="num" data-label="<%= t('staffpay.advances') %>"><% if (r.f.advances) { %><bdi dir="ltr">−<%= fmt.amount(r.f.advances) %></bdi><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="num strong" data-label="<%= t('staffpay.net_pay') %>"><%= fmt.amount(r.f.net) %></td>
+            <td data-label="<%= t('common.status') %>">
+              <% if (draft) { %><span class="badge badge-dot badge-neutral"><%= t('staffpay.status.draft') %></span><% if (r.reopened_at) { %><div class="tiny muted mt-1" title="<%= r.reopen_reason %>"><%= t('staffpay.was_reopened') %></div><% } %>
+              <% } else { %><span class="badge badge-dot badge-neutral fin-paid"><%- icon('lock', 'icon-sm fin-icon-xs') %><%= t('staffpay.status.paid') %></span><div class="tiny muted mt-1"><%= fmt.date(r.paid_on) %> · <%= label('payment_methods', r.payment_method) %></div><% } %>
+            </td>
+            <td class="actions"><div class="row-sm fin-actions">
+              <% if (canManage && draft) { %>
+                <button class="btn btn-ghost btn-icon btn-sm" type="button" data-open-dialog="adj-dialog" data-reset-form data-action="/app/staff-payroll/lines/<%= r.id %>/adjustments" data-dialog-title="<%= t('staffpay.adj_for', { name: r.employee_name }) %>" aria-label="<%= t('staffpay.add_adjustment') %>" title="<%= t('staffpay.add_adjustment') %>"><%- icon('circle-plus', 'icon-sm') %></button>
+                <button class="btn btn-secondary btn-sm" type="button" data-open-dialog="pay-dialog" data-reset-form data-action="/app/staff-payroll/lines/<%= r.id %>/pay" data-dialog-title="<%= t('staffpay.pay_for', { name: r.employee_name, amount: fmt.money(r.f.net) }) %>"><%= t('staffpay.mark_paid') %></button>
+              <% } %>
+              <a class="btn btn-ghost btn-icon btn-sm" href="/app/staff-payroll/lines/<%= r.id %>/payslip" aria-label="<%= t('staffpay.payslip') %>" title="<%= t('staffpay.payslip') %>"><%- icon('file-text', 'icon-sm') %></a>
+              <% if (canManage && !draft) { %>
+                <button class="btn btn-ghost btn-icon btn-sm" type="button" data-open-dialog="reopen-dialog" data-reset-form data-action="/app/staff-payroll/lines/<%= r.id %>/reopen" data-dialog-title="<%= t('staffpay.reopen_for', { name: r.employee_name }) %>" aria-label="<%= t('staffpay.reopen') %>" title="<%= t('staffpay.reopen') %>"><%- icon('history', 'icon-sm') %></button>
+              <% } %>
+              <% if (canManage && draft) { %><%- include('../../partials/delete-form', { action: '/app/staff-payroll/lines/' + r.id + '/delete', confirmText: t('staffpay.line_remove_confirm', { name: r.employee_name }) }) %><% } %>
+            </div></td>
+          </tr>
+          <% }) %>
+        </tbody>
+        <tfoot><tr>
+          <td><%= t('common.total') %></td><td class="num" data-label="<%= t('staffpay.base_salary') %>"><%= fmt.amount(tot.base) %></td><td class="num" data-label="<%= t('staffpay.allowances') %>"><%= fmt.amount(tot.allowances) %></td>
+          <td class="num" data-label="<%= t('staffpay.bonuses') %>"><%= fmt.amount(tot.bonuses) %></td><td class="num" data-label="<%= t('staffpay.deductions') %>"><%= fmt.amount(tot.deductions) %></td><td class="num" data-label="<%= t('staffpay.advances') %>"><%= fmt.amount(tot.advances) %></td>
+          <td class="num" data-label="<%= t('staffpay.net_pay') %>"><%= fmt.amount(tot.net) %></td><td></td><td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="panel-foot small muted"><%- icon('info', 'icon-sm') %> <%= t('staffpay.sheet_note', { currency: currency }) %></div>
+    <% } %>
+  </div>
+  <% } %>
+<% } else { %>
+  <div class="panel flush">
+    <% if (!employees.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'users', emptyTitle: t('staffpay.empty_title'), emptyText: t('staffpay.empty_text'), emptyAction: canManage ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="employee-dialog" data-reset-form>' + t('staffpay.add_employee') + '</button>' : '' }) %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('staffpay.employee') %></th><th><%= t('staffpay.contact') %></th><th class="num"><%= t('staffpay.base_salary') %></th><th class="num"><%= t('staffpay.allowances') %></th><th class="num"><%= t('staffpay.fixed_deductions') %></th><th class="num"><%= t('staffpay.monthly_net') %></th><th><%= t('common.status') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+          <% employees.forEach(function (e) { var fixedNet = Number(e.base_salary) + Number(e.allowances) - Number(e.deductions); %>
+          <tr>
+            <td class="primary-cell"><div class="strong"><%= e.name %></div><div class="tiny muted"><%= [e.job_title, e.hire_date ? t('staffpay.since', { date: fmt.date(e.hire_date) }) : null].filter(Boolean).join(' · ') || '—' %></div><% if (e.user_name) { %><div class="tiny muted"><%- icon('user-check', 'icon-sm fin-icon-xs') %> <%= t('staffpay.linked_to', { name: e.user_name }) %></div><% } %></td>
+            <td data-label="<%= t('staffpay.contact') %>"><% if (e.phone) { %><div dir="ltr" class="small fin-ltr"><%= e.phone %></div><% } %><% if (e.email) { %><div class="small muted fin-ltr" dir="ltr"><%= e.email %></div><% } %><% if (!e.phone && !e.email) { %><span class="muted">—</span><% } %></td>
+            <td class="num" data-label="<%= t('staffpay.base_salary') %>"><%= fmt.amount(e.base_salary) %></td>
+            <td class="num" data-label="<%= t('staffpay.allowances') %>"><%= fmt.amount(e.allowances) %></td>
+            <td class="num" data-label="<%= t('staffpay.fixed_deductions') %>"><%= fmt.amount(e.deductions) %></td>
+            <td class="num strong" data-label="<%= t('staffpay.monthly_net') %>"><%= fmt.amount(fixedNet) %></td>
+            <td data-label="<%= t('common.status') %>"><span class="badge badge-dot badge-neutral"><%= t('common.' + e.status) %></span></td>
+            <td class="actions"><% if (canManage) { %><div class="row-sm fin-actions">
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" data-open-dialog="employee-dialog" data-action="/app/staff-payroll/employees/<%= e.id %>" data-dialog-title="<%= t('staffpay.edit_employee') %>" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-fill="<%= json({ name: e.name, job_title: e.job_title, phone: e.phone, email: e.email, bank_name: e.bank_name, iban: e.iban, base_salary: e.base_salary, allowances: e.allowances, deductions: e.deductions, hire_date: e.hire_date, status: e.status, membership_id: e.membership_id || '', notes: e.notes }) %>"><%- icon('pencil', 'icon-sm') %></button>
+              <%- include('../../partials/delete-form', { action: '/app/staff-payroll/employees/' + e.id + '/delete', confirmText: t('staffpay.employee_delete_confirm', { name: e.name }) }) %>
+            </div><% } %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel-foot small muted"><%- icon('info', 'icon-sm') %> <%= t('staffpay.employees_note') %></div>
+    <% } %>
+  </div>
+<% } %>
+
+<% if (canManage) { %>
+<dialog class="dialog" id="adj-dialog" aria-labelledby="adj-dialog-title">
+  <form method="post" action="">
+    <div class="dialog-head"><h2 id="adj-dialog-title" data-dialog-title-target><%= t('staffpay.add_adjustment') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>">
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'type', label: t('common.type'), type: 'select', required: true, options: adjTypes.map(function (a) { return { value: a, label: t('staffpay.types.' + a) }; }), value: 'bonus', old: null, errors: null }) %>
+        <%- include('../../partials/field', { name: 'amount', label: t('common.amount'), required: true, suffix: currency, attrs: 'inputmode="decimal"', value: '', old: null, errors: null }) %>
+        <%- include('../../partials/field', { name: 'reason', label: t('staffpay.reason'), required: true, cls: 'full', value: '', old: null, errors: null, placeholder: t('staffpay.reason_placeholder') }) %>
+      </div>
+      <p class="help mt-2"><%= t('staffpay.adj_help') %></p>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.add') %></button></div>
+  </form>
+</dialog>
+<% [['pay-dialog', ''], ['payall-dialog', '/app/staff-payroll/pay-all']].forEach(function (d) { %>
+<dialog class="dialog" id="<%= d[0] %>" aria-labelledby="<%= d[0] %>-title">
+  <form method="post" action="<%= d[1] %>">
+    <div class="dialog-head"><h2 id="<%= d[0] %>-title" data-dialog-title-target><%= d[0] === 'payall-dialog' ? t('staffpay.pay_all_title', { n: fmt.number(drafts.length), amount: fmt.money(drafts.reduce(function (s, r) { return s + r.f.net; }, 0)) }) : t('staffpay.mark_paid') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>"><input type="hidden" name="period" value="<%= period %>">
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'paid_on', id: d[0] + '-date', label: t('staffpay.paid_on'), type: 'date', required: true, value: clinicToday, attrs: 'data-default="' + clinicToday + '"', old: null, errors: null }) %>
+        <%- include('../../partials/field', { name: 'payment_method', id: d[0] + '-method', label: t('staffpay.method'), type: 'select', required: true, options: methodOptions, value: 'bank_transfer', old: null, errors: null }) %>
+        <%- include('../../partials/field', { name: 'reference', id: d[0] + '-ref', label: t('staffpay.reference'), cls: 'full', value: '', old: null, errors: null, placeholder: t('staffpay.reference_placeholder') }) %>
+      </div>
+      <p class="help mt-2"><%- icon('lock', 'icon-sm fin-icon-xs') %> <%= t('staffpay.pay_lock_help') %></p>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('staffpay.confirm_paid') %></button></div>
+  </form>
+</dialog>
+<% }) %>
+<dialog class="dialog" id="reopen-dialog" aria-labelledby="reopen-dialog-title">
+  <form method="post" action="">
+    <div class="dialog-head"><h2 id="reopen-dialog-title" data-dialog-title-target><%= t('staffpay.reopen') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>">
+      <div class="alert alert-warning mb-4"><%- icon('triangle-alert') %><div class="grow"><%= t('staffpay.reopen_warning') %></div></div>
+      <%- include('../../partials/field', { name: 'reason', id: 'reopen-reason', label: t('staffpay.reopen_reason'), type: 'textarea', required: true, value: '', old: null, errors: null }) %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-danger" type="submit"><%= t('staffpay.reopen') %></button></div>
+  </form>
+</dialog>
+<dialog class="dialog wide" id="employee-dialog" data-new-dialog aria-labelledby="employee-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'employee-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/staff-payroll/employees' %>" novalidate>
+    <div class="dialog-head"><h2 id="employee-dialog-title" data-dialog-title-target><%= t('staffpay.add_employee') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, cls: 'span-2' }) %>
+        <%- include('../../partials/field', { name: 'job_title', label: t('staffpay.job_title'), placeholder: t('staffpay.job_title_placeholder') }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'hire_date', label: t('staffpay.hire_date'), type: 'date' }) %>
+        <%- include('../../partials/field', { name: 'base_salary', label: t('staffpay.base_salary'), required: true, suffix: currency, attrs: 'inputmode="decimal"', value: '' }) %>
+        <%- include('../../partials/field', { name: 'allowances', label: t('staffpay.fixed_allowances'), suffix: currency, attrs: 'inputmode="decimal"', value: '0' }) %>
+        <%- include('../../partials/field', { name: 'deductions', label: t('staffpay.fixed_deductions'), suffix: currency, attrs: 'inputmode="decimal"', value: '0', help: t('staffpay.fixed_deductions_help') }) %>
+        <%- include('../../partials/field', { name: 'bank_name', label: t('staffpay.bank') }) %>
+        <%- include('../../partials/field', { name: 'iban', label: t('staffpay.iban'), cls: 'span-2', attrs: 'dir="ltr" autocomplete="off"' }) %>
+        <%- include('../../partials/field', { name: 'membership_id', label: t('staffpay.link_login'), type: 'select', options: [{ value: '', label: t('staffpay.no_login') }].concat(members.map(function (mm) { return { value: mm.id, label: mm.name + (mm.role_key ? ' · ' + label('roles', mm.role_key) : '') }; })), value: '', help: t('staffpay.link_help'), cls: 'span-2' }) %>
+        <%- include('../../partials/field', { name: 'status', label: t('common.status'), type: 'select', options: [{ value: 'active', label: t('common.active') }, { value: 'inactive', label: t('common.inactive') }], value: 'active' }) %>
+        <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>
+<% } %>

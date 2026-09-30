@@ -1,0 +1,11 @@
+<% var _p = typeof pname !== 'undefined' ? pname : 'period'; var _extra = typeof keep !== 'undefined' ? keep : {}; var _qs = Object.keys(_extra).map(function (k) { return '&' + k + '=' + encodeURIComponent(_extra[k]); }).join(''); %>
+<div class="fin-month">
+  <a class="btn btn-secondary btn-icon" href="?<%= _p %>=<%= prevPeriod %><%= _qs %>" aria-label="<%= t('staffpay.prev_month') %>" title="<%= t('staffpay.prev_month') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
+  <form method="get" data-autosubmit class="fin-month-form">
+    <% Object.keys(_extra).forEach(function (k) { %><input type="hidden" name="<%= k %>" value="<%= _extra[k] %>"><% }) %>
+    <label class="sr-only" for="fin-month-input"><%= t('common.month') %></label>
+    <input class="input" type="month" id="fin-month-input" name="<%= _p %>" value="<%= period %>" required>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+  </form>
+  <a class="btn btn-secondary btn-icon" href="?<%= _p %>=<%= nextPeriod %><%= _qs %>" aria-label="<%= t('staffpay.next_month') %>" title="<%= t('staffpay.next_month') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+</div>

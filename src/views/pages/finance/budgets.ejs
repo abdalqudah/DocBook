@@ -1,0 +1,94 @@
+<%
+  var canManage = can('expenses.manage');
+  var back = '/app/budgets?month=' + month;
+  var used = rows.map(function (b) { return b.scope_key; });
+  var scopeOptions = scopeList.map(function (s) { return { value: s.key, label: labelOf(s.key) + (s.special ? ' · ' + t('budgets.special') : '') }; });
+  var histMonths = rows.length ? rows[0].history.map(function (h) { return h.month; }) : [];
+  var pctText = function (st) { return st.usage === null ? t('budgets.no_limit') : fmt.pct(st.usage, 0); };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <h1><%= t('budgets.title') %></h1>
+    <p><%= t('budgets.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include('_month', { pname: 'month' }) %>
+    <% if (canManage) { %><button class="btn btn-primary" type="button" data-open-dialog="budget-dialog" data-reset-form data-action="/app/budgets" data-dialog-title="<%= t('budgets.add') %>"><%- icon('plus', 'icon-sm') %><%= t('budgets.add') %></button><% } %>
+  </div>
+</div>
+
+<% if (!rows.length) { %>
+  <div class="panel"><%- include('../../partials/empty', { emptyIcon: 'target', emptyTitle: t('budgets.empty_title'), emptyText: t('budgets.empty_text'), emptyAction: canManage ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="budget-dialog" data-reset-form>' + t('budgets.add') + '</button>' : '' }) %></div>
+<% } else { %>
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('budgets.total_limit') %><span class="stat-icon"><%- icon('target') %></span></div><div class="stat-value"><%= fmt.money(totals.limit) %></div><div class="stat-meta"><%= fmt.month(month) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('budgets.spent') %><span class="stat-icon"><%- icon('receipt') %></span></div><div class="stat-value"><%= fmt.money(totals.spent) %></div><div class="stat-meta"><%= totals.limit ? t('budgets.of_total', { pct: fmt.pct((totals.spent * 100) / totals.limit, 0) }) : '—' %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('budgets.remaining') %><span class="stat-icon"><%- icon('wallet') %></span></div><div class="stat-value"><%= fmt.money(Math.max(0, totals.limit - totals.spent)) %></div><div class="stat-meta"><%= t('budgets.active_n', { n: fmt.number(rows.filter(function (b) { return b.is_active; }).length) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('budgets.alerts') %><span class="stat-icon"><%- icon('bell') %></span></div><div class="stat-value"><%= fmt.number(totals.over + totals.warn) %></div><div class="stat-meta"><%= t('budgets.alerts_meta', { over: fmt.number(totals.over), warn: fmt.number(totals.warn) }) %></div></div>
+</div>
+
+<div class="panel flush mt-6">
+  <div class="panel-head"><h2><%= t('budgets.usage_title', { month: fmt.month(month) }) %></h2></div>
+  <ul class="fin-budget-list">
+    <% rows.forEach(function (b) { var st = b.status; %>
+    <li class="<%= b.is_active ? '' : 'is-off' %>">
+      <div class="fin-budget-main">
+        <div class="row between wrap fin-budget-top">
+          <div class="strong"><%= labelOf(b.scope_key) %> <% if (!b.is_active) { %><span class="badge badge-neutral"><%= t('budgets.paused') %></span><% } else if (st.over) { %><span class="badge badge-danger"><%= t('budgets.state.over') %></span><% } else if (st.warn) { %><span class="badge badge-warning"><%= t('budgets.state.warn') %></span><% } %></div>
+          <bdi dir="ltr" class="num small"><span class="strong"><%= fmt.money(st.spent) %></span> <span class="muted">/ <%= fmt.money(st.limit) %></span></bdi>
+        </div>
+        <div class="meter <%= st.over ? 'full' : st.warn ? 'warn' : '' %>" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= Math.min(100, st.usage || 0) %>" aria-label="<%= labelOf(b.scope_key) %>"><span style="width:<%= Math.min(100, st.usage === null ? 100 : st.usage) %>%"></span></div>
+        <div class="row between wrap tiny muted">
+          <span><%= pctText(st) %> · <%= st.over ? t('budgets.over_by', { amount: fmt.money(st.spent - st.limit) }) : t('budgets.left', { amount: fmt.money(st.remaining) }) %></span>
+          <span><%= t('budgets.alert_at', { pct: b.threshold_percent }) %></span>
+        </div>
+      </div>
+      <% if (canManage) { %><div class="row-sm fin-actions">
+        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-open-dialog="budget-dialog" data-action="/app/budgets/<%= b.id %>" data-dialog-title="<%= t('budgets.edit') %>" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-fill="<%= json({ scope_key: b.scope_key, monthly_limit: b.monthly_limit, threshold_percent: b.threshold_percent, is_active: !!b.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button>
+        <%- include('../../partials/delete-form', { action: '/app/budgets/' + b.id + '/delete', confirmText: t('budgets.delete_confirm', { name: labelOf(b.scope_key) }) }) %>
+      </div><% } %>
+    </li>
+    <% }) %>
+  </ul>
+  <div class="panel-foot small muted"><%- icon('info', 'icon-sm') %> <%= t('budgets.sources_note') %></div>
+</div>
+
+<div class="panel flush mt-6">
+  <div class="panel-head"><h2><%= t('budgets.history_title') %></h2><span class="small muted"><%= t('budgets.history_hint') %></span></div>
+  <div class="table-wrap">
+    <table class="table fin-history">
+      <thead><tr><th><%= t('budgets.budget') %></th><% histMonths.forEach(function (mo) { %><th class="num"><%= fmt.date(mo + '-01', { month: 'short', year: '2-digit' }) %></th><% }) %></tr></thead>
+      <tbody>
+        <% rows.forEach(function (b) { %>
+        <tr>
+          <td class="strong"><%= labelOf(b.scope_key) %><div class="tiny muted"><%= fmt.money(b.monthly_limit) %></div></td>
+          <% b.history.forEach(function (h) { var st = h.status; %>
+          <td class="num"><div class="fin-hist-cell <%= st.over ? 'is-over' : st.warn ? 'is-warn' : '' %>" title="<%= fmt.month(h.month) %>: <%= fmt.money(st.spent) %>"><span><%= st.spent ? pctText(st) : '—' %></span><div class="meter thin <%= st.over ? 'full' : st.warn ? 'warn' : '' %>"><span style="width:<%= Math.min(100, st.usage === null ? 100 : st.usage) %>%"></span></div></div></td>
+          <% }) %>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
+
+<% if (canManage) { %>
+<dialog class="dialog" id="budget-dialog" data-new-dialog aria-labelledby="budget-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'budget-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/budgets' %>" novalidate>
+    <div class="dialog-head"><h2 id="budget-dialog-title" data-dialog-title-target><%= t('budgets.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'scope_key', label: t('budgets.budget'), type: 'select', required: true, options: scopeOptions, value: '', placeholder: t('budgets.choose_scope'), cls: 'full', help: t('budgets.scope_help') }) %>
+        <%- include('../../partials/field', { name: 'monthly_limit', label: t('budgets.monthly_limit'), required: true, suffix: currency, attrs: 'inputmode="decimal"', value: '' }) %>
+        <%- include('../../partials/field', { name: 'threshold_percent', label: t('budgets.threshold'), required: true, suffix: '%', attrs: 'inputmode="numeric" data-default="80"', value: '80', help: t('budgets.threshold_help') }) %>
+        <div class="field full"><label class="check"><input type="checkbox" name="is_active" value="1" checked><span><%= t('budgets.is_active') %></span></label></div>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>

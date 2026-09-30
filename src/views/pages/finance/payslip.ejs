@@ -1,0 +1,63 @@
+<%
+  var isPrint = query.print === '1';
+  var l = line; var e = employee || {};
+  var paid = l.status === 'paid';
+%>
+<% if (!isPrint) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/staff-payroll?period=<%= l.period %>"><%= t('staffpay.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('staffpay.payslip') %></div>
+    <h1><%= t('staffpay.payslip') %></h1>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="?format=pdf&download=1"><%- icon('download', 'icon-sm') %><%= t('staffpay.download_pdf') %></a>
+    <a class="btn btn-primary" href="?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+<div class="fin-slip<%= isPrint ? '' : ' panel' %>">
+  <div class="<%= isPrint ? '' : 'panel-body' %> stack">
+    <div class="row between wrap fin-slip-head">
+      <div>
+        <div class="tiny muted"><%= t('staffpay.payslip') %> · <%= fmt.month(l.period) %></div>
+        <div class="fin-slip-name"><%= l.employee_name %></div>
+        <div class="small muted"><%= l.job_title || '—' %></div>
+      </div>
+      <div class="fin-slip-status">
+        <% if (!paid) { %><span class="badge badge-dot badge-warning"><%= t('staffpay.draft') %></span><div class="tiny muted mt-1"><%= t('staffpay.draft_note') %></div>
+        <% } else { %><span class="badge badge-dot badge-neutral"><%= t('staffpay.status.paid') %></span><div class="tiny muted mt-1"><%= fmt.date(l.paid_on) %> · <%= label('payment_methods', l.payment_method) %><%= l.reference ? ' · ' + l.reference : '' %></div><% } %>
+      </div>
+    </div>
+
+    <dl class="dl fin-slip-dl">
+      <% if (e.bank_name || e.iban) { %><dt><%= t('staffpay.bank') %></dt><dd><%= e.bank_name || '' %> <% if (e.iban) { %><bdi dir="ltr" class="mono"><%= e.iban %></bdi><% } %></dd><% } %>
+      <% if (e.hire_date) { %><dt><%= t('staffpay.hire_date') %></dt><dd><%= fmt.date(e.hire_date) %></dd><% } %>
+    </dl>
+
+    <table class="statement">
+      <tbody>
+        <tr><td><%= t('staffpay.base_salary') %></td><td><%= fmt.money(f.base) %></td></tr>
+        <tr><td><%= t('staffpay.allowances') %></td><td><bdi dir="ltr">+ <%= fmt.money(f.allowances) %></bdi></td></tr>
+        <tr><td><%= t('staffpay.bonuses') %></td><td><bdi dir="ltr">+ <%= fmt.money(f.bonuses) %></bdi></td></tr>
+        <tr><td><%= t('staffpay.fixed_deductions') %></td><td><bdi dir="ltr">− <%= fmt.money(f.deductions) %></bdi></td></tr>
+        <tr><td><%= t('staffpay.extra_deductions') %></td><td><bdi dir="ltr">− <%= fmt.money(f.extraDeductions) %></bdi></td></tr>
+        <tr><td><%= t('staffpay.advances') %></td><td><bdi dir="ltr">− <%= fmt.money(f.advances) %></bdi></td></tr>
+        <tr class="grand"><td><%= t('staffpay.net_pay') %></td><td><%= fmt.money(f.net) %></td></tr>
+      </tbody>
+    </table>
+
+    <% if (adjustments.length) { %>
+    <div>
+      <div class="strong small mb-2"><%= t('staffpay.adjustments') %></div>
+      <table class="statement"><tbody>
+        <% adjustments.forEach(function (a) { %><tr class="sub"><td><%= t('staffpay.types.' + a.type) %> — <%= a.reason %></td><td><bdi dir="ltr"><%= a.type === 'bonus' ? '+' : '−' %> <%= fmt.money(a.amount) %></bdi></td></tr><% }) %>
+      </tbody></table>
+    </div>
+    <% } %>
+
+    <div class="fin-sign">
+      <div><span class="tiny muted"><%= t('staffpay.sign_prepared') %></span><%= paid && l.paid_by_name ? l.paid_by_name : '' %></div>
+      <div><span class="tiny muted"><%= t('staffpay.sign_employee') %></span></div>
+    </div>
+  </div>
+</div>

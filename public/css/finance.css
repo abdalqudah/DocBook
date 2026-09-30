@@ -1,0 +1,99 @@
+/* Finance pages: staff salaries, partners, budgets, profit & loss. Theme tokens only. */
+.fin-month { display: inline-flex; align-items: center; gap: 6px; }
+.fin-month-form { display: flex; gap: 6px; }
+.fin-month .input[type="month"], .fin-month .select { height: 36px; width: 180px; font-size: 13px; }
+.fin-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fin-basis-chip { display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto; }
+.fin-actions { justify-content: flex-end; flex-wrap: nowrap; }
+.fin-ltr { unicode-bidi: plaintext; text-align: start; }
+
+/* one-off adjustments listed under the employee */
+.fin-adj-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.fin-adj-list li { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.fin-adj-list form { display: inline; }
+.fin-btn-xs { width: 22px; height: 22px; min-height: 22px; padding: 0; }
+.fin-icon-xs { width: 12px; height: 12px; }
+.fin-paid { gap: 4px; }
+.fin-paid .icon { color: var(--text-subtle); }
+
+/* payslip & voucher */
+.fin-slip-head { align-items: flex-start; gap: 16px; }
+.fin-slip-name { font-size: 20px; font-weight: var(--fw-bold); margin-top: 2px; }
+.fin-slip-status { text-align: end; }
+.fin-slip .statement td:first-child { padding-inline-start: 0; }
+.fin-slip .statement td:last-child { padding-inline-end: 0; }
+.fin-slip .statement tr.sub td:first-child { padding-inline-start: 16px; font-size: 12px; }
+.fin-slip .statement tr.grand td { padding-inline: 12px; }
+.fin-slip-dl { grid-template-columns: minmax(100px, 160px) 1fr; }
+.fin-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+.fin-sign > div { border-top: 1px solid var(--border-strong); padding-top: 6px; min-height: 48px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+
+/* partners */
+.fin-equity { display: flex; height: 10px; border-radius: var(--pill); overflow: hidden; background: var(--surface-sunken); gap: 2px; }
+.fin-eq-seg { display: block; height: 100%; }
+.fin-eq-seg.s1, .fin-eq-legend i.s1 { background: var(--primary); }
+.fin-eq-seg.s2, .fin-eq-legend i.s2 { background: var(--text-muted); }
+.fin-eq-seg.s3, .fin-eq-legend i.s3 { background: var(--border-strong); }
+.fin-eq-seg.s4, .fin-eq-legend i.s4 { background: var(--primary-soft-2); }
+.fin-eq-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.fin-eq-legend li { display: flex; align-items: center; gap: 8px; }
+.fin-eq-legend i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.fin-dl-tight { grid-template-columns: 1fr auto; gap: 6px 16px; }
+.fin-dl-tight dd { text-align: end; }
+.fin-share-table td { padding-block: 8px; }
+.fin-inline-link { color: var(--text-subtle); vertical-align: middle; margin-inline-start: 4px; }
+.fin-inline-link:hover { color: var(--primary); }
+.fin-equity-live { display: block; }
+.fin-equity-live.is-over { color: var(--danger); }
+
+/* budgets */
+.fin-budget-list { list-style: none; margin: 0; padding: 0; }
+.fin-budget-list > li { display: flex; align-items: center; gap: 16px; padding: 14px var(--card-pad); border-bottom: 1px solid var(--border); }
+.fin-budget-list > li:last-child { border-bottom: 0; }
+.fin-budget-list > li.is-off { opacity: .6; }
+.fin-budget-list.compact > li { padding: 10px var(--card-pad); }
+.fin-budget-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.fin-budget-top { gap: 8px; }
+.fin-history th, .fin-history td { white-space: nowrap; }
+.fin-hist-cell { display: inline-flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 64px; font-size: 12px; color: var(--text-muted); }
+.fin-hist-cell.is-over { color: var(--danger); font-weight: var(--fw-semibold); }
+.fin-hist-cell.is-warn { color: var(--text); font-weight: var(--fw-semibold); }
+
+/* profit & loss */
+.fin-statement thead th { font-size: 12px; font-weight: var(--fw-semibold); color: var(--text-subtle); padding: 10px var(--card-pad); text-align: end; border-bottom: 1px solid var(--border); }
+.fin-statement thead th:first-child { text-align: start; }
+.fin-statement td + td { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fin-statement tr.fin-section td { font-size: 11px; font-weight: var(--fw-bold); color: var(--text-subtle); text-transform: uppercase; letter-spacing: .04em; padding-top: 16px; border-bottom: 0; }
+[dir="rtl"] .fin-statement tr.fin-section td { letter-spacing: 0; }
+.fin-statement tr.grand td { background: var(--surface-muted); }
+.fin-statement .fin-prev { color: var(--text-muted); }
+.fin-margin { font-weight: var(--fw-medium); color: var(--text-muted); }
+.fin-delta { font-variant-numeric: tabular-nums; }
+.fin-delta.is-bad { color: var(--danger); }
+.fin-neg { color: var(--danger); }
+.fin-basis { display: flex; gap: 8px; align-items: flex-start; }
+.fin-basis .icon { flex: none; margin-top: 2px; }
+
+/* printed sheet */
+.fin-print-title { font-size: 18px; margin: 0 0 12px; }
+.fin-print-table { font-size: 12px; }
+.fin-sign-cell { min-width: 90px; }
+
+@media (max-width: 720px) {
+  .fin-month { width: 100%; } .fin-month-form { flex: 1; } .fin-month .input[type="month"], .fin-month .select { width: 100%; }
+  .fin-toolbar { align-items: stretch; } .fin-basis-chip { margin-inline-start: 0; }
+  .fin-statement .fin-prev { display: none; }
+  .fin-budget-list > li { align-items: flex-start; }
+}
+@media (max-width: 520px) { .fin-slip-status { text-align: start; } .fin-sign { grid-template-columns: 1fr; } }
+@media print {
+  .fin-statement tr.grand td { background: transparent; border-top: 2px solid var(--text); }
+  .fin-slip .statement tr.grand td { background: transparent; border-top: 2px solid var(--text); }
+  .fin-statement .fin-prev { display: table-cell; }
+}
+.fin-statement tr.fin-section td { text-align: start; }
+.stat.hero .stat-value.fin-neg, .stat .stat-value.fin-neg { color: var(--danger); }
+@media (max-width: 720px) {
+  .table.responsive td.primary-cell { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2px; text-align: start; }
+  .table.responsive td.actions .fin-actions { flex-wrap: wrap; }
+}

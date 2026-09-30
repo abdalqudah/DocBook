@@ -326,7 +326,8 @@
     "reviews.view": "Read patient reviews (doctors: of their own visits)",
     "reviews.manage": "Reply to reviews and report them to the platform",
     "certificates.view": "View and print sick leaves and medical reports",
-    "certificates.issue": "Issue and revoke sick leaves and medical reports"
+    "certificates.issue": "Issue and revoke sick leaves and medical reports",
+    "finance.manage": "Manage partners, capital and profit distribution"
   },
   "categories": {
     "rent": "Rent",
