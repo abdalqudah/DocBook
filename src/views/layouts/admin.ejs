@@ -4,6 +4,7 @@
   _nav.push(['/admin/domains', 'globe', 'identity.nav_domains'], ['/admin/google', 'key-round', 'identity.nav_google']); // identity area
   _nav.push(['/admin/vendors', 'briefcase-business', 'vendors.admin.nav']); // reps & warehouses
   _nav.push(['/admin/reviews', 'star', 'reviews.admin.nav']); // patient reviews moderation
+  _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav'], ['/admin/ai', 'sparkles', 'ai_admin.nav']);
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_p === n[0] || _p.indexOf(n[0] + '/') === 0); };
 %><!doctype html>
 <html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>

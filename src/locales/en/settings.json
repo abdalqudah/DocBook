@@ -404,7 +404,15 @@
     "nav_database": "Your database",
     "desc_database": "Copy the clinic data to your own MySQL or PostgreSQL database.",
     "nav_messaging": "Messages & reminders",
-    "desc_messaging": "WhatsApp, SMS and e-mail confirmations, reminders and review requests."
+    "desc_messaging": "WhatsApp, SMS and e-mail confirmations, reminders and review requests.",
+    "nav_subscription": "Subscription",
+    "desc_subscription": "Your plan, trial and payments",
+    "nav_signatures": "Signatures & stamp",
+    "desc_signatures": "Doctor signatures and the clinic stamp on documents",
+    "nav_privacy": "Record privacy",
+    "desc_privacy": "Who can open medical records, and the access log",
+    "nav_ai": "AI assistant",
+    "desc_ai": "Clinical assistant for doctors"
   },
   "team": {
     "lead": "Everyone who signs in to your clinic — doctors, nurses, reception, accounting and management. Each person gets their own login and sees only what their role allows.",

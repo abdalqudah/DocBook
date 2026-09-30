@@ -10,6 +10,7 @@ const SECTIONS = [
     { key: 'payments', href: '/app/settings/payments', icon: 'wallet', perms: ['settings.manage'] },
     { key: 'booking_links', href: '/app/settings/booking-links', icon: 'link', perms: ['settings.manage'] },
     { key: 'messaging', href: '/app/settings/messaging', icon: 'message-circle', perms: ['settings.manage'] },
+    { key: 'subscription', href: '/app/settings/subscription', icon: 'receipt', perms: ['settings.manage'] },
   ] },
   { group: 'team', items: [
     { key: 'team', href: '/app/settings/team', icon: 'user-cog', perms: ['users.manage'] },
@@ -18,6 +19,9 @@ const SECTIONS = [
   { group: 'clinical', items: [
     { key: 'insurance', href: '/app/settings/insurance', icon: 'shield-plus', perms: ['settings.manage'] },
     { key: 'medications', href: '/app/settings/medications', icon: 'pill', perms: ['settings.manage', 'prescriptions.create'] },
+    { key: 'signatures', href: '/app/settings/signatures', icon: 'pen-line', perms: ['settings.manage', 'prescriptions.create'] },
+    { key: 'privacy', href: '/app/settings/privacy', icon: 'lock', perms: ['settings.manage', 'audit.view'] },
+    { key: 'ai', href: '/app/settings/ai', icon: 'sparkles', perms: ['settings.manage'] },
   ] },
   { group: 'personal', items: [
     { key: 'account', href: '/app/settings/account', icon: 'user', perms: [] },

@@ -75,6 +75,7 @@ router.use((req, res, next) => {
   return next();
 });
 
+router.use(require('../modules/subscriptions/enforce')); // trial / plan gate (off unless the platform enables subscriptions)
 router.use('/onboarding', require('../modules/onboarding/web'));
 router.use('/api', require('../modules/clinic/api.web'));
 router.use('/search', require('../modules/clinic/search.web'));
@@ -84,6 +85,9 @@ router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));
 router.use('/patients', require('../modules/clinic/patients.web'));
 router.use(require('../modules/certificates/web')); // /certificates + the visit page's "Documents" panel data (before /visits)
+router.use('/', require('../modules/clinicalplus/web')); // ICD-10 codes, consultation timer, record privacy + access log
+router.use('/', require('../modules/specialty/web')); // dental chart, child growth, pregnancy follow-up
+router.use('/', require('../modules/ai/web')); // AI clinical assistant
 router.use('/visits', require('../modules/patientdocs/visit-hook')); // data for the "Documents for the patient" panel
 router.use('/visits', require('../modules/clinic/visits.web'));
 router.use('/patient-docs', require('../modules/patientdocs/web')); // prescription / report PDFs, send to patient
@@ -107,6 +111,9 @@ router.use('/settings/messaging', require('../modules/messaging/web')); // Setti
 router.use('/attendance', require('../modules/attendance/web'));
 router.use('/settings/database', require('../modules/datasync/web'));
 router.use('/help', require('../modules/support/web'));
+router.use('/', require('../modules/live/web')); // live agenda events + calendar import
+router.use('/', require('../modules/signatures/web')); // doctor signatures + clinic stamp
+router.use('/', require('../modules/subscriptions/web')); // Settings → Subscription
 router.use('/settings/payments', require('../modules/payments/settings.web')); // Settings → Online payments
 router.use('/settings', require('../modules/settings/web'));
 

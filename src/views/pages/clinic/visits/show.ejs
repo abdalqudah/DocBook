@@ -231,6 +231,8 @@
       </dl></div>
     </div>
     <% if (typeof certPanel !== 'undefined' && certPanel) { %><%- include('../../certificates/_visit-panel') %><% } %>
+    <%- include('../../specialty/_visit-panel') %>
+    <%- include('../../ai/_visit-panel') %>
     <% if (invoice && can('billing.view')) { %>
     <a class="panel card-link" href="/app/billing/<%= invoice.id %>?print=1"><div class="panel-body row"><span class="action-icon"><%- icon('receipt') %></span><div class="grow"><div class="strong small"><%= t('appointments.invoice') %> #<%= invoice.invoice_number %></div><div class="tiny muted"><%= t('appointments.print_invoice') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></div></a>
     <% } %>
