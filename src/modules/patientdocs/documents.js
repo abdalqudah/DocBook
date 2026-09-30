@@ -109,6 +109,14 @@ function patientFields(d, locale, t) {
  * Prescription.
  * @param d { clinic, rx: { id, created_at, diagnosis, notes, items[] }, doctor fields, patient_name, age, gender, visit_date, online }
  */
+/** ICD-10 codes of the visit, one per line: "E11.9 — title" (primary first). */
+function codeLines(w, codes, locale) {
+  (codes || []).forEach((c) => {
+    const title = (locale === 'en' ? c.title_en || c.title_ar : c.title_ar || c.title_en) || '';
+    w.text(`${ltr(c.code)} — ${title}`, { size: 10, gap: 2, bold: Boolean(c.is_primary) });
+  });
+}
+
 async function prescription(d, locale = 'ar') {
   const t = translator(locale);
   const en = locale === 'en';
@@ -118,7 +126,11 @@ async function prescription(d, locale = 'ar') {
   titleRow(w, t('patient_docs.kinds.prescription'), [t('patient_docs.pdf.rx_no', { n: d.rx.id }), dateText(d.rx.created_at, locale)]);
   w.fields(doctorFields(d, locale, t), { cols: 3, size: 10 });
   w.fields(patientFields(d, locale, t), { cols: 4, size: 10 });
-  if (d.rx.diagnosis) { section(w, t('patient_docs.pdf.diagnosis')); w.text(d.rx.diagnosis, { size: 10.5, gap: 4 }); }
+  if (d.rx.diagnosis || (d.codes && d.codes.length)) {
+    section(w, t('patient_docs.pdf.diagnosis'));
+    if (d.rx.diagnosis) w.text(d.rx.diagnosis, { size: 10.5, gap: 4 });
+    codeLines(w, d.codes, locale);
+  }
   w.rule({ gap: 8 });
   w.text('Rx', { size: 18, bold: true, color: C.primary, gap: 2, align: 'start' });
   const numW = 24;
@@ -176,9 +188,11 @@ async function report(d, locale = 'ar') {
       wrote += 1;
       return;
     }
-    if (!c[s]) return;
+    const codes = s === 'diagnosis' && d.codes && d.codes.length ? d.codes : null;
+    if (!c[s] && !codes) return;
     section(w, t(`patient_docs.sections.${s}`));
-    w.text(c[s], { size: s === 'diagnosis' ? 12 : 10.5, bold: s === 'diagnosis', gap: 6 });
+    if (c[s]) w.text(c[s], { size: s === 'diagnosis' ? 12 : 10.5, bold: s === 'diagnosis', gap: 6 });
+    if (codes) codeLines(w, codes, locale);
     wrote += 1;
   });
   if (!wrote) w.text(t('patient_docs.pdf.nothing'), { size: 10, color: C.textMuted });

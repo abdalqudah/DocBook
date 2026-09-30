@@ -34,7 +34,8 @@
     <div><span class="muted small"><%= t('visits.gender_label') %></span><strong><%= p.gender ? t('visits.gender.' + p.gender) : '—' %></strong></div>
     <div><span class="muted small"><%= t('common.phone') %></span><strong dir="ltr"><%= rx.patient_phone || '—' %></strong></div>
   </div>
-  <% if (rx.diagnosis) { %><div class="rx-diagnosis"><span class="muted small"><%= t('visits.diagnosis') %></span><div><%= rx.diagnosis %></div></div><% } %>
+  <% var _codes = typeof diagnoses !== 'undefined' && diagnoses ? diagnoses : []; %>
+  <% if (rx.diagnosis || _codes.length) { %><div class="rx-diagnosis"><span class="muted small"><%= t('visits.diagnosis') %></span><% if (rx.diagnosis) { %><div><%= rx.diagnosis %></div><% } %><% _codes.forEach(function (c) { %><div class="small"<%- c.is_primary ? ' style="font-weight:600"' : '' %>><span dir="ltr"><%= c.code %></span> — <%= typeof icdTitle === 'function' ? icdTitle(c) : (c.title_ar || c.title_en) %></div><% }) %></div><% } %>
   <div class="rx-symbol" aria-hidden="true">℞</div>
   <ol class="rx-print-items">
     <% rx.items.forEach(function (it) { %>

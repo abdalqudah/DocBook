@@ -5,7 +5,8 @@
   _nav.push(['/admin/vendors', 'briefcase-business', 'vendors.admin.nav']); // reps & warehouses
   _nav.push(['/admin/reviews', 'star', 'reviews.admin.nav']); // patient reviews moderation
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav'], ['/admin/ai', 'sparkles', 'ai_admin.nav']);
-  var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_p === n[0] || _p.indexOf(n[0] + '/') === 0); };
+  var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
+  var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
 %><!doctype html>
 <html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
 <head>

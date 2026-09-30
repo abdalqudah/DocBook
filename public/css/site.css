@@ -390,6 +390,7 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .admin-badge { height: 26px; }
 .admin-top-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 4px; }
 .admin-nav-inner { max-width: var(--content-max); margin: 0 auto; padding: 0 var(--page-pad); border-bottom: 0; }
+@media (min-width: 721px) { .admin-nav-inner.tabs { flex-wrap: wrap; } .admin-nav-inner.tabs a { padding: 10px 11px; } }
 .admin-content { padding-top: 28px; }
 @media (max-width: 720px) { .hide-sm-admin, .hide-xs-admin { display: none; } .admin-top-inner, .admin-nav-inner { padding: 0 16px; } .admin-badge { display: none; } }
 

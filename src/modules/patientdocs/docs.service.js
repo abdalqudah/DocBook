@@ -10,6 +10,7 @@ const { translator } = require('../../core/i18n');
 const { E } = require('../../core/errors');
 const appts = require('../clinic/appointments.service');
 const clinical = require('../clinic/clinical.service');
+const icd = require('../clinicalplus/icd.service'); // ICD-10 codes of the visit
 const documents = require('./documents');
 const { isPdfImage } = require('./pdf');
 
@@ -72,13 +73,15 @@ async function render(ctx, apptId, doc, locale = 'ar') {
   if (doc.kind === 'prescription') {
     const rx = await clinical.prescription(ctx, Number(doc.ref_id));
     if (rx.appointment_id !== v.a.id) throw E.notFound('Prescription');
-    return { filename: `prescription-${rx.id}.pdf`, pdf: await documents.prescription({ ...v, clinic, rx }, locale) };
+    const codes = await icd.diagnosesFor(ctx.businessId, v.a.id);
+    return { filename: `prescription-${rx.id}.pdf`, pdf: await documents.prescription({ ...v, clinic, rx, codes }, locale) };
   }
   if (doc.kind === 'report') {
     const consult = await clinical.consultation(ctx, v.a.id);
     const opts = typeof doc.options === 'string' ? JSON.parse(doc.options || '{}') : (doc.options || {});
     const sections = (opts.sections || []).filter((s) => SECTIONS.includes(s));
-    return { filename: `consultation-report-${v.a.id}.pdf`, pdf: await documents.report({ ...v, clinic, consult, sections }, locale) };
+    const codes = await icd.diagnosesFor(ctx.businessId, v.a.id);
+    return { filename: `consultation-report-${v.a.id}.pdf`, pdf: await documents.report({ ...v, clinic, consult, sections, codes }, locale) };
   }
   if (doc.kind === 'certificate') {
     const svc = certificatesService();
