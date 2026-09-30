@@ -63,8 +63,13 @@ function records(row) {
 const parse = (row) => (row ? { ...row, check: row.last_check ? (() => { try { return JSON.parse(row.last_check); } catch { return null; } })() : null } : null);
 
 async function forClinic(businessId) {
-  return parse(await knex('clinic_domains').where({ business_id: businessId }).first());
+  return parse(await knex('clinic_domains').where({ business_id: businessId, role: 'primary' }).first());
 }
+/** The clinic's alias (the www / bare-domain form of its address that redirects to the main one), if any. */
+async function aliasFor(businessId) {
+  return parse(await knex('clinic_domains').where({ business_id: businessId, role: 'alias' }).first());
+}
+const rowFor = (businessId, role = 'primary') => (role === 'alias' ? aliasFor(businessId) : forClinic(businessId));
 
 // ---------------------------------------------------------------- live hosts (used on every request)
 /** Map host → { businessId, slug } of verified domains of active clinics with a public address. */
@@ -72,8 +77,11 @@ function liveHosts() {
   return cache.remember('domains:live', async () => {
     const rows = await knex('clinic_domains as d').join('businesses as b', 'b.id', 'd.business_id')
       .where({ 'd.status': 'verified', 'b.status': 'active' }).whereNotNull('b.slug')
-      .select('d.host', 'd.business_id', 'b.slug');
-    return new Map(rows.map((r) => [r.host, { businessId: r.business_id, slug: r.slug }]));
+      .select('d.host', 'd.business_id', 'd.role', 'b.slug');
+    const primary = new Map(rows.filter((r) => r.role !== 'alias').map((r) => [r.business_id, r.host]));
+    // An alias is live only while its clinic's main domain is: it answers with a redirect to the main address.
+    return new Map(rows.filter((r) => r.role !== 'alias' || primary.has(r.business_id))
+      .map((r) => [r.host, { businessId: r.business_id, slug: r.slug, ...(r.role === 'alias' ? { redirectTo: primary.get(r.business_id) } : {}) }]));
   }, 30_000);
 }
 const forget = () => cache.forgetPrefix('domains:');
@@ -107,7 +115,7 @@ async function remove(ctx) {
   const cur = await forClinic(ctx.businessId);
   if (!cur) return false;
   if (cur.status === 'suspended') throw new AppError('DOMAIN_SUSPENDED', 'The platform team stopped this domain. Contact support.', 409);
-  await knex('clinic_domains').where({ id: cur.id }).del();
+  await knex('clinic_domains').where({ business_id: ctx.businessId }).whereIn('role', ['primary', 'alias']).del(); // the alias depends on it
   forget();
   await audit.record(ctx, 'domain.removed', { entityType: 'clinic_domain', entityId: ctx.businessId, oldValues: { host: cur.host, status: cur.status } });
   return true;
@@ -144,8 +152,8 @@ async function inspect(row, resolver = defaultResolver(), { timeoutMs = DNS_TIME
 }
 
 /** Checks DNS now and turns the domain on when both records are right. */
-async function check(ctx, businessId, { resolver, timeoutMs } = {}) {
-  const row = await forClinic(businessId);
+async function check(ctx, businessId, { resolver, timeoutMs, role = 'primary' } = {}) {
+  const row = await rowFor(businessId, role);
   if (!row) throw E.notFound('Domain');
   if (row.status === 'suspended') throw new AppError('DOMAIN_SUSPENDED', 'The platform team stopped this domain. Contact support.', 409);
   const result = await inspect(row, resolver, { timeoutMs });
@@ -165,6 +173,90 @@ async function check(ctx, businessId, { resolver, timeoutMs } = {}) {
     await audit.record({ ...ctx, businessId }, 'domain.checked', { entityType: 'clinic_domain', entityId: businessId, newValues: { host: row.host, owned: result.owned, pointed: result.pointed } });
   }
   return { ...result, live, conflict, justVerified: live && row.status !== 'verified' };
+}
+
+// ---------------------------------------------------------------- www ↔ bare domain alias
+/** The other form of a host: www.example.com ↔ example.com (null when there is none, e.g. book.example.com). */
+function counterpart(host) {
+  if (!host) return null;
+  if (host.startsWith('www.')) return host.slice(4).includes('.') ? host.slice(4) : null;
+  return host.split('.').length === 2 ? `www.${host}` : null;
+}
+
+/** Connects the other form of the main address as an alias (proved the same way: TXT + pointing). */
+async function saveAlias(ctx) {
+  const main = await forClinic(ctx.businessId);
+  if (!main) throw new AppError('DOMAIN_NONE', 'Connect the main domain first.', 409);
+  const host = counterpart(main.host);
+  if (!host || validateHost(host)) throw new AppError('DOMAIN_NO_ALIAS', 'This address has no www / bare form to connect.', 409);
+  const cur = await aliasFor(ctx.businessId);
+  if (cur && cur.host === host) return cur;
+  const taken = await knex('clinic_domains').where({ host, status: 'verified' }).whereNot({ business_id: ctx.businessId }).first('id');
+  if (taken) throw new AppError('DOMAIN_TAKEN', 'This domain is already connected to another clinic.', 409);
+  const values = { host, status: 'pending', token: newToken(), checked_at: null, verified_at: null, last_check: null, created_by: ctx.userId || null, updated_at: new Date() };
+  if (cur) await knex('clinic_domains').where({ id: cur.id }).update(values);
+  else await knex('clinic_domains').insert({ business_id: ctx.businessId, role: 'alias', ...values });
+  forget();
+  await audit.record(ctx, 'domain.alias_saved', { entityType: 'clinic_domain', entityId: ctx.businessId, newValues: { host, redirects_to: main.host } });
+  return aliasFor(ctx.businessId);
+}
+
+async function removeAlias(ctx) {
+  const cur = await aliasFor(ctx.businessId);
+  if (!cur) return false;
+  await knex('clinic_domains').where({ id: cur.id }).del();
+  forget();
+  await audit.record(ctx, 'domain.alias_removed', { entityType: 'clinic_domain', entityId: ctx.businessId, oldValues: { host: cur.host } });
+  return true;
+}
+
+// ---------------------------------------------------------------- HTTPS certificate (observed, never issued)
+// The hosting issues the certificate (e.g. AutoSSL). DocBook connects to https://<host> and reads what is served.
+// The host's addresses are resolved first and private/loopback ones refused (no probing of internal services).
+const tls = require('tls');
+const PRIVATE_V4 = [/^10\./, /^127\./, /^169\.254\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./, /^0\./, /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./];
+const isPrivate = (ip) => PRIVATE_V4.some((re) => re.test(ip));
+const SSL_SOON_DAYS = 14;
+
+function defaultProbe(host, { timeoutMs = 6000 } = {}) {
+  return new Promise((resolve) => {
+    safe(defaultResolver().resolve4(host), timeoutMs).then((addrs) => {
+      if (!Array.isArray(addrs) || !addrs.length) return resolve({ reachable: false, error: (addrs && addrs.error) || 'NO_ADDRESS' });
+      const ip = addrs.find((a) => !isPrivate(a));
+      if (!ip) return resolve({ reachable: false, error: 'PRIVATE_ADDRESS' });
+      let done = false;
+      const finish = (v) => { if (!done) { done = true; resolve(v); } };
+      const socket = tls.connect({ host: ip, port: 443, servername: host, rejectUnauthorized: false, timeout: timeoutMs }, () => {
+        const cert = socket.getPeerCertificate() || {};
+        const out = { reachable: true, authorized: socket.authorized, error: socket.authorized ? null : String(socket.authorizationError || 'UNTRUSTED'), validTo: cert.valid_to ? new Date(cert.valid_to) : null };
+        socket.end();
+        finish(out);
+      });
+      socket.on('timeout', () => { socket.destroy(); finish({ reachable: false, error: 'ETIMEOUT' }); });
+      socket.on('error', (e) => finish({ reachable: false, error: e.code || 'ERROR' }));
+      return null;
+    });
+  });
+}
+
+/** Maps a probe result to ssl_status. A certificate for another name (the host's default one) means "being issued". */
+function sslStatusOf(r, now = new Date()) {
+  if (!r.reachable) return 'pending';
+  if (r.authorized && r.validTo) return (r.validTo - now) / 86_400_000 < SSL_SOON_DAYS ? 'expiring' : 'active';
+  if (/ALTNAME|SELF_SIGNED|DEPTH_ZERO|UNABLE_TO_GET_ISSUER/.test(String(r.error))) return 'pending';
+  return 'failed';
+}
+
+/** Checks the HTTPS certificate of the clinic's (verified) domain now and records it. */
+async function checkSsl(ctx, businessId, { role = 'primary', probe = defaultProbe } = {}) {
+  const row = await rowFor(businessId, role);
+  if (!row) throw E.notFound('Domain');
+  const r = await probe(row.host);
+  const status = sslStatusOf(r);
+  const values = { ssl_status: status, ssl_checked_at: new Date(), ssl_expires_at: r.validTo || null, ssl_error: r.error ? String(r.error).slice(0, 120) : null };
+  await knex('clinic_domains').where({ id: row.id }).update(values);
+  await audit.record({ ...ctx, businessId }, 'domain.ssl_checked', { entityType: 'clinic_domain', entityId: businessId, newValues: { host: row.host, ssl: status } });
+  return { ...values, host: row.host };
 }
 
 // ---------------------------------------------------------------- platform admin
@@ -215,6 +307,7 @@ async function approve(ctx, id) {
 }
 
 module.exports = {
-  TXT_PREFIX, txtValue, platformHost, normalizeHost, validateHost, records, forClinic, liveHosts, clinicForHost, forget,
+  TXT_PREFIX, txtValue, platformHost, normalizeHost, validateHost, records, forClinic, aliasFor, liveHosts, clinicForHost, forget,
   save, remove, inspect, check, list, byId, suspend, resume, approve,
+  counterpart, saveAlias, removeAlias, sslStatusOf, checkSsl, defaultProbe, isPrivate,
 };

@@ -11,13 +11,14 @@ const { z, validate, optionalString } = require('../../core/validate');
 const { AppError, E } = require('../../core/errors');
 const businesses = require('../businesses/business.service');
 const subs = require('../subscriptions/subscriptions.service');
+const entitlements = require('../subscriptions/entitlements');
 
 // Path prefix (relative to /app) that matches the segment and everything under it.
 const seg = (p) => new RegExp(`^/${p}(?:/|$)`);
 
 // nav: keys of src/routes/nav.js items; feature: subscriptions plan feature; paths: /app sub-paths that are blocked.
 const MODULES = [
-  { key: 'online_booking', icon: 'globe', proxy: 'booking_enabled', paths: [seg('settings/booking-links'), seg('reports/bookings')] },
+  { key: 'online_booking', icon: 'globe', proxy: 'booking_enabled', paths: [seg('settings/booking-links'), seg('website/booking/links'), seg('reports/bookings')] },
   { key: 'online_consultations', icon: 'video', feature: 'online_consultations', paths: [seg('telehealth')] },
   { key: 'billing', icon: 'banknote', nav: ['cashier', 'billing', 'payments_all', 'cash_closings'], actions: ['collect_payment'], paths: [seg('cashier'), seg('billing'), seg('payments'), seg('settings/payments')] },
   { key: 'doctor_payroll', icon: 'wallet', nav: ['payroll'], paths: [seg('payroll')] },
@@ -26,7 +27,7 @@ const MODULES = [
   { key: 'supplies', icon: 'package', nav: ['supplies'], paths: [seg('supplies')] },
   { key: 'marketplace', icon: 'package-search', nav: ['marketplace', 'rep_visits'], paths: [seg('marketplace'), seg('rep-visits')] },
   { key: 'certificates', icon: 'badge-check', nav: ['certificates'], actions: ['new_certificate'], paths: [seg('certificates')] },
-  { key: 'reviews', icon: 'star', nav: ['reviews'], paths: [seg('reviews')] },
+  { key: 'reviews', icon: 'star', nav: ['reviews'], paths: [seg('reviews'), seg('website/reviews')] },
   { key: 'specialty_records', icon: 'heart-pulse', feature: 'specialty_modules', paths: [seg('specialty'), /^\/patients\/\d+\/(?:dental|growth|pregnancy)(?:\/|$)/] },
   { key: 'ai_assistant', icon: 'sparkles', feature: 'ai_assistant', paths: [seg('settings/ai'), /^\/visits\/\d+\/ai(?:\/|$)/, seg('finance/assistant'), seg('ai')] },
   { key: 'attendance', icon: 'clock', nav: ['attendance'], paths: [seg('attendance')] },
@@ -62,6 +63,14 @@ async function planFeatures(business) {
     const plan = await subs.getPlan(sub && sub.plan_id);
     return plan ? plan.features : null;
   }, 30_000);
+}
+
+/**
+ * A plan entitlement for this clinic (src/modules/subscriptions/entitlements.js): bool, limit (null = none) or list
+ * ('*' = all). Everything is included while subscriptions are off, without a plan, or for a comped clinic.
+ */
+async function entitled(business, key) {
+  return entitlements.valueIn(await planFeatures(business), key);
 }
 
 /**
@@ -256,6 +265,7 @@ function groupByCategory(rows, categories, catOf = (r) => r.category_id) {
 }
 
 module.exports = {
+  entitled,
   MODULES, KEYS, CORE, state, moduleForPath, hiddenNav, saveModules, forget,
   PAPERS, FIELDS, INVOICE_DEFAULTS, invoiceTemplate, saveInvoiceTemplate, raiseInvoiceNumber,
   listCategories, saveCategory, removeCategory, checkCategory, setServiceCategory, groupByCategory,

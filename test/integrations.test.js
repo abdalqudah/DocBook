@@ -449,9 +449,10 @@ test('oauth: consent URL, code exchange, token refresh, spreadsheet creation, re
 // ---------------------------------------------------------------- access control (HTTP)
 test('access: pages, APIs and files follow permissions and clinic boundaries', async () => {
   const nurse = await login(await staff(A, 'nurse', `nurse${tag}@integ.test`));
-  for (const p of ['/app/settings/google-sheets', '/app/settings/media', '/app/media/api']) {
+  for (const p of ['/app/settings/google-sheets', '/app/website/media', '/app/media/api']) {
     assert.equal((await nurse.get(p)).status, 403, p);
   }
+  assert.equal((await nurse.get('/app/settings/media')).status, 301, 'old address redirects (the new one checks access)');
   assert.equal((await nurse.post('/app/settings/google-sheets/run')).status, 403);
   assert.equal((await nurse.post('/app/settings/media/page', { cover_media_id: '' })).status, 403);
 
@@ -468,7 +469,7 @@ test('access: pages, APIs and files follow permissions and clinic boundaries', a
 
   const owner = await login(A.email);
   assert.equal((await owner.get('/app/settings/google-sheets')).status, 200);
-  const media1 = await owner.get('/app/settings/media');
+  const media1 = await owner.get('/app/website/media');
   assert.equal(media1.status, 200);
   const up = await owner.upload('/app/settings/media/upload', PNG_2x2, 'x.png', 'image/png');
   assert.equal(up.status, 200);

@@ -80,6 +80,7 @@ router.use(require('../modules/platformops/gate'));
 router.use(require('../modules/access/gate')); // per-member page access: hides denied pages from the menu and blocks their addresses
 router.use(require('../modules/teamops/presence.service').middleware); // "last seen" on every page load // clinic modules on/off: hides their menu items and blocks their pages
 router.use('/onboarding', require('../modules/onboarding/web'));
+router.use(require('./moved')); // pages that moved to another workspace: old GET addresses answer 301 (redesign)
 router.use('/api', require('../modules/clinic/api.web'));
 router.use('/search', require('../modules/clinic/search.web'));
 router.use('/notifications', require('../modules/notifications/web'));
@@ -109,7 +110,9 @@ router.use('/marketplace', require('../modules/marketplace/web'));
 router.use('/rep-visits', require('../modules/marketplace/rep-visits.web'));
 router.use('/', require('../modules/discover/app.web')); // /settings/booking-links, /reports/bookings
 router.use('/reports', require('../modules/clinic/reports.web'));
-router.use('/reviews', require('../modules/reviews/web')); // verified patient reviews
+router.use('/reviews', require('../modules/reviews/web')); // verified patient reviews (old address: posts)
+router.use('/website/reviews', require('../modules/reviews/web')); // Website → Reviews
+router.use('/website', require('../modules/website/web')); // Website workspace (overview, builder, theme, booking, domain, settings)
 router.use('/messaging', require('../modules/messaging/staff.web')); // WhatsApp click-to-chat for staff
 router.use('/settings/messaging', require('../modules/messaging/web')); // Settings → Messaging (reminders, channels, log)
 router.use('/attendance', require('../modules/attendance/web'));
@@ -124,7 +127,6 @@ router.use('/', require('../modules/live/web')); // live agenda events + calenda
 router.use('/', require('../modules/signatures/web')); // doctor signatures + clinic stamp
 router.use('/', require('../modules/subscriptions/web')); // Settings → Subscription
 router.use('/settings/payments', require('../modules/payments/settings.web'));
-router.use(require('./moved')); // pages that moved to another workspace: old GET addresses answer 301 (redesign 3.2)
 router.use('/clinic/team', require('../modules/settings/team.web')); // Clinic → Team (members, page access)
 router.use('/clinic/roles', require('../modules/settings/roles.web')); // Clinic → Team → Roles
 router.use('/clinic/setup', require('../modules/clinic/setup.web')); // Clinic → Clinical setup (hub of the clinical lists) // Settings → Online payments

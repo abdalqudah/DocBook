@@ -60,7 +60,14 @@ const NAV = [
     { key: 'rep_visits', href: '/app/rep-visits', icon: 'briefcase-business', perms: ['vendors.view'], badge: 'repRequests' },
   ] },
   { group: 'website', icon: 'globe', items: [
-    { key: 'reviews', href: '/app/reviews', icon: 'star', perms: ['reviews.view'] },
+    { key: 'website', href: '/app/website', icon: 'globe', perms: ['website.view'], exact: true },
+    { key: 'website_builder', href: '/app/website/builder', icon: 'layout-template', perms: ['website.edit'], lights: ['/app/website/preview'] },
+    { key: 'website_theme', href: '/app/website/theme', icon: 'palette', perms: ['website.edit'] },
+    { key: 'website_booking', href: '/app/website/booking', icon: 'calendar-plus', perms: ['website.edit'] },
+    { key: 'website_media', href: '/app/website/media', icon: 'images', perms: ['website.edit'] },
+    { key: 'website_domain', href: '/app/website/domain', icon: 'link', perms: ['website.domain'] },
+    { key: 'reviews', href: '/app/website/reviews', icon: 'star', perms: ['reviews.view'], also: ['/app/reviews'] },
+    { key: 'website_settings', href: '/app/website/settings', icon: 'settings', perms: ['website.edit'] },
   ] },
   { group: 'reports', icon: 'chart-pie', items: [
     { key: 'reports', href: '/app/reports', icon: 'chart-pie', perms: ['reports.view'] },
@@ -95,7 +102,7 @@ const ACTIONS = [
   { key: 'new_certificate', href: '/app/certificates/new', icon: 'badge-check', perms: ['certificates.issue'], create: true },
   { key: 'add_staff', href: '/app/clinic/team?new=1', icon: 'user-cog', perms: ['users.manage'], create: true },
   { key: 'waiting_room', href: '/app/front-desk', icon: 'armchair', perms: ['frontdesk.use'] },
-  { key: 'booking_page', href: '/app/settings/portal', icon: 'globe', perms: ['settings.manage'] },
+  { key: 'booking_page', href: '/app/website', icon: 'globe', perms: ['website.view'] },
 ];
 
 // Pages under these prefixes never show the workspace tabs (settings has its own sub-navigation).

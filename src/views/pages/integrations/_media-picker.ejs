@@ -2,7 +2,7 @@
     <input type="hidden" name="cover_media_id"> and <button type="button" data-media-pick="cover_media_id">.
     Add data-media-multiple to append to a list (container [data-media-list="name"]); [data-media-preview="name"] shows the choice.
     Loads its own script/style (the page may not have them). Only for people with settings.manage (the list API needs it). %>
-<% if (typeof can === 'function' && can('settings.manage')) { %>
+<% if (typeof can === 'function' && (can('settings.manage') || can('website.edit'))) { %>
 <link rel="stylesheet" href="/css/integrations.css?v=<%= assetV %>">
 <script src="/js/integrations.js?v=<%= assetV %>" defer></script>
 <dialog class="dialog wide mp-dialog" id="media-picker" aria-labelledby="media-picker-title"

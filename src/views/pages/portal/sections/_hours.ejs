@@ -1,0 +1,10 @@
+<% if (hours.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container ws-narrow">
+    <div class="ws-head"><h2 class="ws-title"><%= c.title || t('portal.hours') %></h2></div>
+    <div class="portal-card flush"><table class="ws-hours">
+      <% hours.forEach(function (h) { %><tr><th scope="row"><%= t('website.day.' + h.day) %></th><td><% if (h.shifts.length) { %><span dir="ltr"><%= h.shifts.map(function (x) { return x.start + '–' + x.end; }).join(' · ') %></span><% } else { %><span class="muted"><%= t('website.closed') %></span><% } %></td></tr><% }) %>
+    </table></div>
+  </div>
+</section>
+<% } %>

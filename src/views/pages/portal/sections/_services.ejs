@@ -1,0 +1,33 @@
+<% if (services.length) {
+  var groups = []; var gi = {};
+  services.forEach(function (x) { var k = s.settings.group && x.category ? String(x.category.id) : ''; if (gi[k] === undefined) { gi[k] = groups.length; groups.push({ key: k, name: x.category && s.settings.group ? x.category.name : null, sort: x.category ? x.category.sort : 9999, items: [] }); } groups[gi[k]].items.push(x); });
+  groups.sort(function (a, b) { return (a.sort - b.sort) || (a.key === '' ? 1 : b.key === '' ? -1 : 0); });
+  var grouped = groups.length > 1 || (groups.length === 1 && groups[0].key !== ''); %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container">
+    <div class="ws-head"><h2 class="ws-title"><%= c.title || t('portal.services') %></h2><p><%= c.intro || t('portal.services_sub') %></p></div>
+    <div class="stack ws-services-<%= s.variant %>">
+    <% groups.forEach(function (g) { %>
+      <div>
+        <% if (grouped) { %><h3 class="po-svc-group-title"><%= g.name || t('svc_cat.other') %></h3><% } %>
+        <div class="portal-card flush">
+        <ul class="svc-list">
+          <% g.items.forEach(function (x) { %>
+          <li>
+            <span class="svc-icon"><%- icon('clipboard-plus', 'icon-sm') %></span>
+            <span class="grow">
+              <strong><%= x.name %></strong>
+              <span class="svc-meta"><span><%- icon('clock', 'icon-sm') %><%= t('portal.min', { n: x.duration }) %></span><% if (x.doctorId && doctorNames[x.doctorId]) { %><span><%- icon('stethoscope', 'icon-sm') %><%= doctorNames[x.doctorId] %></span><% } %></span>
+              <% if (x.description) { %><span class="svc-desc"><%= x.description %></span><% } %>
+            </span>
+            <% if (s.settings.show_prices && x.price !== null) { %><span class="svc-price num"><%= fmt.money(x.price, clinic.currency) %></span><% } %>
+          </li>
+          <% }) %>
+        </ul>
+        </div>
+      </div>
+    <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>

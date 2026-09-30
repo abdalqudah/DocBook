@@ -1,0 +1,5 @@
+<% if (reviewsSummary && reviewsSummary.count) { var rv = Object.assign({}, reviewsSummary, { latest: reviewsSummary.latest.slice(0, s.settings.max || 6) }); %>
+<div class="container" id="s-<%= s.id %>">
+  <%- include('../../../partials/site/reviews', { part: 'section', clinic: Object.assign({}, clinic, { reviews: rv }), rvTitle: c.title }) %>
+</div>
+<% } %>

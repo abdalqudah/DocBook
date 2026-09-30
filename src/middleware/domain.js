@@ -20,6 +20,8 @@ async function customDomain(req, res, next) {
   let site;
   try { site = await domains.clinicForHost(hostOf(req)); } catch { site = null; }
   if (!site) return next();
+  // An alias (www ↔ bare form) answers with a permanent redirect to the clinic's main domain, same path.
+  if (site.redirectTo) return res.redirect(301, `${req.protocol}://${site.redirectTo}${req.originalUrl}`);
   const { slug } = site;
   const q = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
   const p = req.path;
@@ -35,8 +37,10 @@ async function customDomain(req, res, next) {
   if (p === '/') { req.url = `/${slug}${q}`; return next(); }
   if (p === '/book' || p.startsWith('/book/')) { req.url = `/${slug}${p}${q}`; return next(); }
   if (p === '/logo') { req.url = `/${slug}/logo${q}`; return next(); }
+  if (p.startsWith('/doctors/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: a doctor's page
+  if (p.startsWith(`/m/${slug}/`)) return next(); // the page's public images (same origin — the page's CSP allows only 'self')
   if (p === `/${slug}`) return res.redirect(302, `/${q}`);
-  if (p.startsWith(`/${slug}/book`) || p === `/${slug}/logo` || p === `/${slug}/theme.css`) return next();
+  if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/doctors/`) || p === `/${slug}/logo` || p === `/${slug}/theme.css`) return next();
   if (p === '/robots.txt') return res.type('text/plain').send('User-agent: *\nAllow: /\n');
   // Anything else belongs to the main address.
   return toMain(req.originalUrl);

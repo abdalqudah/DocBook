@@ -22,11 +22,13 @@ const { AppError, E } = require('../../core/errors');
 const { translator } = require('../../core/i18n');
 const { clinicNow } = require('../clinic/scheduling');
 
+const entitlements = require('./entitlements');
+// The six clinic features (their keys predate the entitlement registry, which lists them first).
 const FEATURES = ['online_consultations', 'online_payments', 'reminders', 'ai_assistant', 'specialty_modules', 'data_sync'];
 const STATUSES = ['trialing', 'active', 'past_due', 'expired', 'cancelled', 'comped'];
 const CYCLES = ['monthly', 'yearly'];
 const METHODS = ['bank_transfer', 'cliq', 'cash'];
-const LIMITS = { doctors: 'max_doctors', staff: 'max_staff', appointments: 'max_appointments_month' };
+const LIMITS = { doctors: 'max_doctors', staff: 'max_staff', appointments: 'max_appointments_month', patients: 'limits.max_patients' }; // patients: an entitlement in plan.features
 const REMIND_DAYS = [7, 3, 1];
 const KEY = 'subscriptions';
 const DEFAULTS = {
@@ -121,7 +123,7 @@ const planSchema = z.object({
 
 async function savePlan(ctx, id, input) {
   const d = validate(planSchema, input);
-  const features = Object.fromEntries(FEATURES.map((k) => [k, input[`f_${k}`] === '1' || input[`f_${k}`] === 'on' || (input.features && input.features[k] === true)]));
+  const features = entitlements.fromForm(input); // every key of the registry, typed (src/modules/subscriptions/entitlements.js)
   const row = { ...d, name_en: d.name_en || null, description: d.description || null, description_en: d.description_en || null, features: JSON.stringify(features), updated_at: new Date() };
   if (id) {
     const before = await knex('subscription_plans').where({ id }).first();
@@ -210,9 +212,12 @@ function allowedWhileReadOnly(method, path) {
 function limitFor(method, path, body = {}) {
   if (String(method).toUpperCase() !== 'POST') return null;
   if (/^\/doctors\/new\/?$/.test(path)) return body.is_active === undefined || body.is_active === '1' || body.is_active === 'on' ? 'doctors' : null;
-  if (/^\/settings\/team\/?$/.test(path)) return 'staff';
-  if (/^\/settings\/team\/\d+\/status\/?$/.test(path)) return body.status === 'active' ? 'staff' : null;
-  if (/^\/settings\/team\/invitations\/\d+\/renew\/?$/.test(path)) return 'staff';
+  // Team lives at /clinic/team (old address /settings/team still accepts posts).
+  if (/^\/(?:settings|clinic)\/team\/?$/.test(path)) return 'staff';
+  if (/^\/(?:settings|clinic)\/team\/\d+\/status\/?$/.test(path)) return body.status === 'active' ? 'staff' : null;
+  if (/^\/(?:settings|clinic)\/team\/invitations\/\d+\/renew\/?$/.test(path)) return 'staff';
+  // Only the explicit "new patient" form: a booking or a walk-in never stops at a limit (patient care comes first).
+  if (/^\/patients\/?$/.test(path)) return 'patients';
   if (/^\/appointments\/new\/?$/.test(path)) return body.appointment_type === 'blocked' ? null : 'appointments';
   return null;
 }
@@ -244,21 +249,22 @@ async function ensure(business, today = todayOf(business), st = null) {
 }
 
 function limitsOf(sub, plan) {
-  if (!plan || (sub && sub.status === 'comped' && !sub.plan_id)) return { doctors: null, staff: null, appointments: null };
-  return { doctors: plan.max_doctors, staff: plan.max_staff, appointments: plan.max_appointments_month };
+  if (!plan || (sub && sub.status === 'comped' && !sub.plan_id)) return { doctors: null, staff: null, appointments: null, patients: null };
+  return { doctors: plan.max_doctors, staff: plan.max_staff, appointments: plan.max_appointments_month, patients: entitlements.valueIn(plan.features, 'limits.max_patients') };
 }
 
 async function usage(businessId, today) {
   const month = String(today).slice(0, 7);
   const count = async (q) => Number((await q.count({ n: '*' }))[0].n);
-  const [doctors, members, invites, appointments] = await Promise.all([
+  const [doctors, members, invites, appointments, patients] = await Promise.all([
     count(knex('doctors').where({ business_id: businessId, is_active: true })),
     count(knex('memberships').where({ business_id: businessId, status: 'active' })),
     count(knex('invitations').where({ business_id: businessId }).whereNull('accepted_at').whereNull('revoked_at').where('expires_at', '>', new Date())),
     count(knex('appointments').where({ business_id: businessId }).whereNot('appointment_type', 'blocked').whereNot('status', 'cancelled')
       .whereBetween('appointment_date', [`${month}-01`, `${month}-31`])),
+    count(knex('patients').where({ business_id: businessId })),
   ]);
-  return { doctors, staff: members + invites, appointments };
+  return { doctors, staff: members + invites, appointments, patients };
 }
 
 /** Everything the pages need about a clinic's subscription (null when subscriptions are off). */

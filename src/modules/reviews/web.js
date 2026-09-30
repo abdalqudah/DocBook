@@ -1,4 +1,4 @@
-// /app/reviews: the clinic's verified reviews — filters (doctor, rating, status), average and distribution,
+// /app/website/reviews (Website → Reviews; old address /app/reviews): the clinic's verified reviews — filters (doctor, rating, status), average and distribution,
 // one public reply per review and "report to the platform". Reviews cannot be edited or deleted by the clinic.
 // Members with reviews.view but without reviews.manage (doctors) see only the reviews of their own visits.
 const express = require('express');
@@ -40,13 +40,13 @@ router.get('/', wrap((req, res) => page(req, res)));
 router.post('/:id(\\d+)/reply', can('reviews.manage'), form(async (req, res) => {
   await reviews.reply(scope(req), req.params.id, req.body);
   flash(req, 'success', req.t('reviews.replied'));
-  res.redirect(`/app/reviews?focus=${Number(req.params.id)}#review-${Number(req.params.id)}`);
+  res.redirect(`/app/website/reviews?focus=${Number(req.params.id)}#review-${Number(req.params.id)}`);
 }, (req, res, extra) => page(req, res, { ...tr(req, extra), replyFor: Number(req.params.id) })));
 
 router.post('/:id(\\d+)/report', can('reviews.manage'), form(async (req, res) => {
   await reviews.report(scope(req), req.params.id, req.body);
   flash(req, 'success', req.t('reviews.reported_ok'));
-  res.redirect(`/app/reviews?focus=${Number(req.params.id)}#review-${Number(req.params.id)}`);
+  res.redirect(`/app/website/reviews?focus=${Number(req.params.id)}#review-${Number(req.params.id)}`);
 }, (req, res, extra) => page(req, res, { ...tr(req, extra), reportFor: Number(req.params.id) })));
 
 module.exports = router;

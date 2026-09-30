@@ -160,7 +160,10 @@ async function mediaPage(req, res, extra = {}) {
   });
 }
 
-router.get('/settings/media', can('settings.manage'), wrap((req, res) => mediaPage(req, res)));
+router.get(['/settings/media', '/website/media'], canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
+  res.locals.portalMedia = await media.pageMedia(req.ctx.businessId); // the clinic page's cover + gallery, on the same page
+  return mediaPage(req, res);
+}));
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: media.MAX_BYTES + 1, files: 10, fields: 12, parts: 24 } });
 const uploadFiles = (req, res, next) => upload.array('files', 10)(req, res, (e) => {
@@ -173,7 +176,7 @@ const itemJson = (req, m) => ({
   folder: m.folder, alt: (req.locale === 'en' ? m.alt_en || m.alt_ar : m.alt_ar || m.alt_en) || '', isPublic: m.is_public,
 });
 
-router.post('/settings/media/upload', can('settings.manage'), uploadFiles, verifyCsrfAfterUpload, wrap(async (req, res) => {
+router.post('/settings/media/upload', canAny('website.edit', 'settings.manage'), uploadFiles, verifyCsrfAfterUpload, wrap(async (req, res) => {
   const saved = []; const errors = [];
   if (req.uploadError) errors.push({ name: '', message: errText(req, { code: req.uploadError, message: '' }) });
   else if (!req.files || !req.files.length) errors.push({ name: '', message: errText(req, { code: 'MEDIA_EMPTY', message: '' }) });
@@ -189,10 +192,10 @@ router.post('/settings/media/upload', can('settings.manage'), uploadFiles, verif
   if (saved.length) flash(req, 'success', req.t('media_lib.uploaded', { n: saved.length }));
   errors.forEach((er) => flash(req, 'error', er.name ? `${er.name}: ${er.message}` : er.message));
   const back = String(req.body.return || '');
-  return res.redirect(/^\/app\/settings\/[a-z-]+$/.test(back) ? back : '/app/settings/media');
+  return res.redirect(/^\/app\/(?:settings|website)\/[a-z-]+$/.test(back) ? back : '/app/website/media');
 }));
 
-router.post('/settings/media/page', can('settings.manage'), wrap(async (req, res) => {
+router.post('/settings/media/page', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   try {
     await media.setPageMedia(req.ctx, req.body);
     flash(req, 'success', req.t('media_lib.page_saved'));
@@ -200,10 +203,10 @@ router.post('/settings/media/page', can('settings.manage'), wrap(async (req, res
     if (!(e instanceof AppError) || e.status >= 500) throw e;
     flash(req, 'error', errText(req, e));
   }
-  res.redirect('/app/settings/portal#page-media');
+  res.redirect('/app/website/media#page-media');
 }));
 
-router.post('/settings/media/:id(\\d+)', can('settings.manage'), wrap(async (req, res) => {
+router.post('/settings/media/:id(\\d+)', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   try {
     const body = { ...req.body };
     if (body.public_field === '1' && body.is_public === undefined) body.is_public = '0'; // unchecked box
@@ -213,10 +216,10 @@ router.post('/settings/media/:id(\\d+)', can('settings.manage'), wrap(async (req
     if (!(e instanceof AppError) || e.status >= 500) throw e;
     flash(req, 'error', errText(req, e));
   }
-  res.redirect('/app/settings/media');
+  res.redirect('/app/website/media');
 }));
 
-router.post('/settings/media/:id(\\d+)/delete', can('settings.manage'), wrap(async (req, res) => {
+router.post('/settings/media/:id(\\d+)/delete', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   try {
     await media.remove(req.ctx, req.params.id, { force: req.body.force === '1' });
     flash(req, 'success', req.t('media_lib.deleted'));
@@ -224,7 +227,7 @@ router.post('/settings/media/:id(\\d+)/delete', can('settings.manage'), wrap(asy
     if (!(e instanceof AppError) || e.status >= 500) throw e;
     flash(req, 'error', e.code === 'MEDIA_IN_USE' ? req.t('errors_integrations.MEDIA_IN_USE') : errText(req, e));
   }
-  res.redirect('/app/settings/media');
+  res.redirect('/app/website/media');
 }));
 
 // Loader for the clinic page settings (Settings → Clinic page): the cover/gallery panel reads res.locals.portalMedia.
@@ -233,7 +236,7 @@ router.get('/settings/portal', (req, res, next) => {
   return media.pageMedia(req.ctx.businessId).then((m) => { res.locals.portalMedia = m; next(); }, next);
 });
 
-router.get('/media/api', can('settings.manage'), wrap(async (req, res) => {
+router.get('/media/api', canAny('settings.manage', 'website.edit'), wrap(async (req, res) => {
   const kind = LIST_KINDS.includes(req.query.kind) ? req.query.kind : '';
   const folder = typeof req.query.folder === 'string' && req.query.folder !== '' ? req.query.folder : null;
   const [items, folders] = await Promise.all([media.list(req.ctx.businessId, { q: req.query.q, folder, kind }), media.folders(req.ctx.businessId)]);

@@ -1,0 +1,120 @@
+<%
+  // Website → Builder (server-rendered): sections (order, show/hide, add, remove) · live preview of the draft ·
+  // settings of the selected section. Every change saves the draft only; "Publish" puts it live.
+  var L2 = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var secName = function (type) { return t('website.sec.' + type); };
+  var used = {}; list.forEach(function (x) { used[x.type] = true; });
+  var addable = TYPE_KEYS.filter(function (k) { return !(TYPES[k].single && used[k]); });
+  var sel = selected; var def = sel ? TYPES[sel.type] : null;
+  var fieldLabel = function (k) { return t('website.field.' + k); };
+  var val = function (lang, k) { return sel && sel.content[lang] && sel.content[lang][k] !== undefined ? sel.content[lang][k] : ''; };
+  var imgOf = function (id) { return id && media[id] ? media[id] : null; };
+%>
+<div class="page-head ws-builder-head">
+  <div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.builder_title') %></h1>
+    <p class="small muted"><% if (row.draft_updated_at) { %><%= t('website.draft_saved_at', { date: fmt.date(row.draft_updated_at, { dateStyle: 'medium', timeStyle: 'short' }) }) %><% } else { %><%= t('website.draft_new') %><% } %> · <%= st.status === 'live' ? t('website.st_live') : st.status === 'unpublished' ? t('website.st_unpublished') : t('website.st_classic') %></p></div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/website/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('website.preview_full') %></a>
+    <% if (st.draftChanged) { %><form method="post" action="/app/website/builder/discard" data-confirm="<%= t('website.discard_confirm') %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('website.discard') %></button></form><% } %>
+    <% if (can('website.publish')) { %><form method="post" action="/app/website/publish" data-confirm="<%= st.status === 'live' ? t('website.publish_confirm_update') : t('website.publish_confirm_first') %>" data-confirm-yes="<%= t('website.publish') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('rocket', 'icon-sm') %><%= t('website.publish') %></button></form><% } %>
+  </div>
+</div>
+
+<div class="ws-builder" data-ws-builder>
+  <aside class="panel flush ws-b-list" aria-label="<%= t('website.sections') %>">
+    <div class="panel-head"><h2><%= t('website.sections') %></h2><span class="badge"><%= fmt.number(list.length) %></span></div>
+    <ol class="ws-sec-list" data-ws-order>
+      <% list.forEach(function (x, i) { %>
+      <li class="ws-sec<%= sel && sel.id === x.id ? ' is-selected' : '' %><%= x.visible ? '' : ' is-hidden' %>" data-id="<%= x.id %>" draggable="true">
+        <span class="ws-grip" aria-hidden="true"><%- icon('grip-vertical', 'icon-sm') %></span>
+        <a class="ws-sec-name" href="/app/website/builder?s=<%= x.id %>"<% if (sel && sel.id === x.id) { %> aria-current="true"<% } %>><%- icon(TYPES[x.type].icon, 'icon-sm') %><span class="truncate"><%= secName(x.type) %></span><% if (!x.visible) { %><span class="badge badge-neutral"><%= t('website.hidden') %></span><% } %></a>
+        <span class="ws-sec-tools">
+          <form method="post" action="/app/website/builder/sections/<%= x.id %>/move"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="dir" value="up"><button class="btn btn-ghost btn-icon btn-sm" type="submit"<%= i === 0 ? ' disabled' : '' %> aria-label="<%= t('website.move_up') %>" title="<%= t('website.move_up') %>"><%- icon('arrow-up', 'icon-sm') %></button></form>
+          <form method="post" action="/app/website/builder/sections/<%= x.id %>/move"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="dir" value="down"><button class="btn btn-ghost btn-icon btn-sm" type="submit"<%= i === list.length - 1 ? ' disabled' : '' %> aria-label="<%= t('website.move_down') %>" title="<%= t('website.move_down') %>"><%- icon('arrow-down', 'icon-sm') %></button></form>
+          <form method="post" action="/app/website/builder/sections/<%= x.id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= x.visible ? t('website.hide') : t('website.show') %>" title="<%= x.visible ? t('website.hide') : t('website.show') %>"><%- icon(x.visible ? 'eye' : 'eye-off', 'icon-sm') %></button></form>
+        </span>
+      </li>
+      <% }) %>
+    </ol>
+    <form class="ws-add" method="post" action="/app/website/builder/sections">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (sel) { %><input type="hidden" name="after" value="<%= sel.id %>"><% } %>
+      <label class="sr-only" for="ws-add-type"><%= t('website.add_section') %></label>
+      <select class="select" id="ws-add-type" name="type" required><% addable.forEach(function (k) { %><option value="<%= k %>"><%= secName(k) %></option><% }) %></select>
+      <button class="btn btn-secondary" type="submit"<%= addable.length ? '' : ' disabled' %>><%- icon('plus', 'icon-sm') %><%= t('website.add_section') %></button>
+    </form>
+  </aside>
+
+  <section class="ws-b-preview" aria-label="<%= t('website.preview') %>">
+    <div class="ws-b-bar">
+      <div class="segmented" role="group" aria-label="<%= t('website.device') %>"><button type="button" class="active" data-ws-device="desktop"><%- icon('monitor', 'icon-sm') %><span class="sr-only"><%= t('website.desktop') %></span></button><button type="button" data-ws-device="mobile"><%- icon('smartphone', 'icon-sm') %><span class="sr-only"><%= t('website.mobile') %></span></button></div>
+      <div class="segmented" role="group" aria-label="<%= t('common.language') %>"><button type="button" class="<%= locale === 'ar' ? 'active' : '' %>" data-ws-lang="ar">ع</button><button type="button" class="<%= locale === 'en' ? 'active' : '' %>" data-ws-lang="en">EN</button></div>
+    </div>
+    <div class="ws-frame-wrap" data-ws-frame-wrap><iframe class="ws-frame" data-ws-frame src="/app/website/preview?lang=<%= locale %><%= sel ? '#s-' + sel.id : '' %>" title="<%= t('website.preview') %>" loading="lazy"></iframe></div>
+  </section>
+
+  <aside class="panel ws-b-edit" aria-label="<%= t('website.section_settings') %>">
+    <% if (!sel) { %>
+      <div class="panel-body ws-b-hint"><%- icon('mouse-pointer-click') %><p><%= t('website.pick_section') %></p><a class="link small" href="/app/website/theme"><%- icon('palette', 'icon-sm') %><%= t('website.theme_title') %></a></div>
+    <% } else { %>
+    <div class="panel-head"><h2><%- icon(def.icon, 'icon-sm') %> <%= secName(sel.type) %></h2></div>
+    <form class="panel-body stack" method="post" action="/app/website/builder/sections/<%= sel.id %>" data-ws-section-form>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (def.variants.length > 1) { %>
+      <div class="field"><label class="label" for="ws-variant"><%= t('website.layout') %></label>
+        <select class="select" id="ws-variant" name="variant"><% def.variants.forEach(function (v) { %><option value="<%= v %>"<%= sel.variant === v ? ' selected' : '' %>><%= t('website.variant.' + v) %></option><% }) %></select></div>
+      <% } %>
+      <% def.text.forEach(function (f) { %>
+      <fieldset class="ws-i18n"><legend class="label"><%= fieldLabel(f.key) %></legend>
+        <% ['ar', 'en'].forEach(function (lang) { var id = 'f-' + f.key + '-' + lang; %>
+        <div class="ws-lang-row"><label class="ws-lang-tag" for="<%= id %>"><%= lang === 'ar' ? 'ع' : 'EN' %></label>
+          <% if (f.kind === 'textarea') { %><textarea class="textarea" id="<%= id %>" name="content[<%= lang %>][<%= f.key %>]" rows="3" maxlength="<%= f.max %>" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>" placeholder="<%= t('website.hint.' + sel.type + '_' + f.key, {}) === ('website.hint.' + sel.type + '_' + f.key) ? '' : t('website.hint.' + sel.type + '_' + f.key) %>"><%= val(lang, f.key) %></textarea>
+          <% } else { %><input class="input" id="<%= id %>" name="content[<%= lang %>][<%= f.key %>]" value="<%= val(lang, f.key) %>" maxlength="<%= f.max %>" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>"><% } %>
+        </div>
+        <% }) %>
+      </fieldset>
+      <% }) %>
+      <% def.settings.forEach(function (f) { var v = sel.settings[f.key]; var fid = 's-' + f.key; %>
+        <% if (f.kind === 'bool') { %><input type="hidden" name="settings[<%= f.key %>]" value="0"><label class="check"><input type="checkbox" name="settings[<%= f.key %>]" value="1"<%= v ? ' checked' : '' %>><span><%= fieldLabel(f.key) %></span></label>
+        <% } else if (f.kind === 'select') { %><div class="field"><label class="label" for="<%= fid %>"><%= fieldLabel(f.key) %></label><select class="select" id="<%= fid %>" name="settings[<%= f.key %>]"><% f.options.forEach(function (o) { %><option value="<%= o %>"<%= v === o ? ' selected' : '' %>><%= t('website.opt.' + o) %></option><% }) %></select></div>
+        <% } else if (f.kind === 'number') { %><div class="field"><label class="label" for="<%= fid %>"><%= fieldLabel(f.key) %></label><input class="input" type="number" id="<%= fid %>" name="settings[<%= f.key %>]" value="<%= v %>" min="<%= f.min %>" max="<%= f.max %>" dir="ltr"></div>
+        <% } else if (f.kind === 'date') { %><div class="field"><label class="label" for="<%= fid %>"><%= fieldLabel(f.key) %></label><input class="input" type="date" id="<%= fid %>" name="settings[<%= f.key %>]" value="<%= v || '' %>"></div>
+        <% } else if (f.kind === 'media') { var im = imgOf(v); %>
+          <div class="stack-sm"><span class="label"><%= fieldLabel(f.key) %></span>
+            <div class="pm-cover ws-pick-preview" data-media-preview="settings[<%= f.key %>]"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div>
+            <input type="hidden" name="settings[<%= f.key %>]" value="<%= v || '' %>">
+            <div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="button" data-media-pick="settings[<%= f.key %>]"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button><button class="btn btn-ghost btn-sm" type="button" data-media-clear="settings[<%= f.key %>]"<%= im ? '' : ' hidden' %>><%= t('media_lib.remove') %></button></div></div>
+        <% } else if (f.kind === 'media_list') { %>
+          <div class="stack-sm"><span class="label"><%= fieldLabel(f.key) %></span>
+            <ul class="pm-gallery" data-media-list="settings[<%= f.key %>]"><% (v || []).forEach(function (id) { var im = imgOf(id); if (!im) return; %><li class="pm-item"><img src="<%= im.url %>" alt=""><input type="hidden" name="settings[<%= f.key %>]" value="<%= id %>"><button class="btn btn-secondary btn-sm btn-icon pm-remove" type="button" data-media-remove aria-label="<%= t('media_lib.remove') %>"><%- icon('x', 'icon-sm') %></button></li><% }) %></ul>
+            <input type="hidden" name="settings[<%= f.key %>]" value="">
+            <div><button class="btn btn-secondary btn-sm" type="button" data-media-pick="settings[<%= f.key %>]" data-media-multiple data-media-max="<%= f.max || 12 %>"><%- icon('images', 'icon-sm') %><%= t('media_lib.choose') %></button></div></div>
+        <% } else if (f.kind === 'doctors') { %>
+          <fieldset class="ws-doctors-pick"><legend class="label"><%= fieldLabel(f.key) %></legend><input type="hidden" name="settings[<%= f.key %>]" value="">
+            <% doctors.forEach(function (d) { %><label class="check"><input type="checkbox" name="settings[<%= f.key %>]" value="<%= d.id %>"<%= (v || []).indexOf(d.id) !== -1 ? ' checked' : '' %>><span><%= L2(d.full_name, d.full_name_en) %></span></label><% }) %>
+            <span class="help"><%= t('website.doctors_pick_help') %></span></fieldset>
+        <% } %>
+      <% }) %>
+      <% if (def.list) { var items = { ar: sel.content.ar[def.list.key] || [], en: sel.content.en[def.list.key] || [] }; var extras = sel.settings[def.list.key] || []; var n = Math.min(def.list.max, Math.max(items.ar.length, items.en.length) + 1); %>
+      <fieldset class="ws-list"><legend class="label"><%= fieldLabel(def.list.key) %></legend>
+        <% for (var i = 0; i < n; i += 1) { %>
+        <div class="ws-list-item"><span class="small muted"><%= t('website.item_n', { n: i + 1 }) %><%= i === n - 1 ? ' · ' + t('website.item_new') : '' %></span>
+          <% def.list.fields.forEach(function (f) { %>
+            <% if (f.i18n === false) { var cur = (extras[i] || {})[f.key]; %>
+              <% if (f.kind === 'icon') { %><select class="select" name="settings[<%= def.list.key %>][<%= i %>][<%= f.key %>]" aria-label="<%= fieldLabel(f.key) %>"><% ICONS.forEach(function (ic) { %><option value="<%= ic %>"<%= cur === ic ? ' selected' : '' %>><%= ic %></option><% }) %></select><% } %>
+            <% } else { ['ar', 'en'].forEach(function (lang) { var cv = (items[lang][i] || {})[f.key] || ''; %>
+              <div class="ws-lang-row"><span class="ws-lang-tag"><%= lang === 'ar' ? 'ع' : 'EN' %></span><% if (f.kind === 'textarea') { %><textarea class="textarea" rows="2" name="content[<%= lang %>][<%= def.list.key %>][<%= i %>][<%= f.key %>]" maxlength="<%= f.max %>" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>" aria-label="<%= fieldLabel(f.key) %>" placeholder="<%= fieldLabel(f.key) %>"><%= cv %></textarea><% } else { %><input class="input" name="content[<%= lang %>][<%= def.list.key %>][<%= i %>][<%= f.key %>]" value="<%= cv %>" maxlength="<%= f.max %>" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>" aria-label="<%= fieldLabel(f.key) %>" placeholder="<%= fieldLabel(f.key) %>"><% } %></div>
+            <% }); } %>
+          <% }) %>
+        </div>
+        <% } %>
+        <span class="help"><%= t('website.list_help') %></span>
+      </fieldset>
+      <% } %>
+      <% if (['doctors', 'services', 'reviews', 'insurance', 'contact', 'hours'].indexOf(sel.type) !== -1) { %><div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('website.live_data.' + sel.type) %></div></div><% } %>
+      <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('website.save_section') %></button></div>
+    </form>
+    <div class="panel-foot"><form method="post" action="/app/website/builder/sections/<%= sel.id %>/delete" data-confirm="<%= t('website.remove_confirm', { name: secName(sel.type) }) %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('website.remove_section') %></button></form></div>
+    <% } %>
+  </aside>
+</div>
+<%- include('../integrations/_media-picker') %>

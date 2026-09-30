@@ -11,7 +11,7 @@
 <% if (_rv && part === 'section') { %>
 <link rel="stylesheet" href="/css/engage.css?v=<%= assetV %>">
 <section class="portal-section" id="reviews">
-  <div class="portal-section-head"><h2><%= t('reviews.public_title') %></h2><p><%= t('reviews.public_sub') %></p></div>
+  <div class="portal-section-head"><h2><%= typeof rvTitle !== 'undefined' && rvTitle ? rvTitle : t('reviews.public_title') %></h2><p><%= t('reviews.public_sub') %></p></div>
   <div class="portal-card rv-summary">
     <div class="rv-avg">
       <strong class="rv-avg-num num"><%= _one(_rv.avg) %></strong>

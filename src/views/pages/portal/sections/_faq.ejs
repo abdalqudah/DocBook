@@ -1,0 +1,10 @@
+<% var items = (c.items || []).filter(function (x) { return x && x.q && x.a; }); if (items.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container ws-narrow">
+    <div class="ws-head"><h2 class="ws-title"><%= c.title || t('website.faq_default_title') %></h2></div>
+    <div class="ws-faq">
+      <% items.forEach(function (x) { %><details class="portal-card"><summary><%= x.q %><%- icon('chevron-down', 'icon-sm') %></summary><div class="lp-prose"><% String(x.a).split(/\n\s*\n/).forEach(function (p) { if (p.trim()) { %><p><%= p.trim() %></p><% } }) %></div></details><% }) %>
+    </div>
+  </div>
+</section>
+<% } %>

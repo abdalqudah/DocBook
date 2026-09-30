@@ -15,7 +15,7 @@
   <input type="hidden" name="online_form" value="1">
   <div class="panel-head"><div><h2><%- icon('video', 'icon-sm') %> <%= t('telehealth.doctor.section') %></h2><div class="panel-sub"><%= t('telehealth.doctor.section_sub') %></div></div></div>
   <div class="panel-body stack">
-    <% if (!clinicOnline) { %><div class="alert alert-info small"><%- icon('info') %><div class="grow"><%= t('telehealth.doctor.clinic_off') %><% if (can('settings.manage')) { %> <a class="link" href="/app/settings/portal#telehealth"><%= t('telehealth.settings.title') %></a><% } %></div></div><% } %>
+    <% if (!clinicOnline) { %><div class="alert alert-info small"><%- icon('info') %><div class="grow"><%= t('telehealth.doctor.clinic_off') %><% if (can('settings.manage')) { %> <a class="link" href="/app/website/booking#telehealth"><%= t('telehealth.settings.title') %></a><% } %></div></div><% } %>
     <label class="check"><input type="checkbox" name="online_enabled" value="1"<%= on ? ' checked' : '' %>><span class="strong"><%= t('telehealth.doctor.enabled') %></span></label>
     <div class="form-grid cols-3">
       <%- include('../../partials/field', { name: 'online_fee', label: t('telehealth.doctor.fee'), value: v('online_fee', ''), suffix: currency, attrs: 'inputmode="decimal" placeholder="' + escapeHtml(String(v('consultation_fee', ''))) + '"', help: t('telehealth.doctor.fee_help') }) %>

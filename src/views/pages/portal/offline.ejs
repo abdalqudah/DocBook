@@ -1,0 +1,14 @@
+<%# The clinic took its website down: name, contact and booking stay so printed QR codes and reminder links work. %>
+<section class="container ws-offline" id="main">
+  <div class="portal-card ws-offline-card">
+    <span class="portal-logo"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
+    <h1><%= clinic.displayName %></h1>
+    <% if (clinic.specialty || clinic.city) { %><p class="muted"><%= [clinic.specialty, clinic.city].filter(Boolean).join(' · ') %></p><% } %>
+    <div class="ws-hero-actions">
+      <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus') %><%= t('portal.book') %></a><% } %>
+      <% if (clinic.telHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.telHref %>"><%- icon('phone') %><%= t('portal.call') %></a><% } %>
+      <% if (clinic.mapHref) { %><a class="btn btn-ghost btn-lg" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%- icon('map-pin') %><%= t('portal.directions') %></a><% } %>
+    </div>
+    <% if (clinic.address) { %><p class="small muted mt-2"><%= clinic.address %></p><% } %>
+  </div>
+</section>

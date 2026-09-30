@@ -1,0 +1,52 @@
+<%
+  // Website → Overview: is the site live, at which address, is the domain connected, is booking on, is e-mail set up.
+  var live = st.status === 'live', classic = st.status === 'classic' || st.status === 'draft', down = st.status === 'unpublished';
+  var siteTone = down ? 'warning' : 'success';
+  var siteLabel = down ? t('website.st_unpublished') : live ? t('website.st_live') : t('website.st_classic');
+  var dTone = !domain ? 'neutral' : domain.status === 'verified' ? 'success' : domain.status === 'suspended' ? 'danger' : 'warning';
+  var dLabel = !domain ? t('website.domain_none') : t('identity.domain_status_' + domain.status);
+  var mTone = mail && mail.status === 'verified' ? 'success' : mail && mail.status === 'failed' ? 'danger' : 'neutral';
+  var mLabel = mail && mail.status ? t('website.mail_st.' + mail.status) : t('website.mail_st.none');
+  var steps = [
+    { ok: Boolean(b.slug), key: 'address', href: '/app/website/settings' },
+    { ok: counts.doctors > 0, key: 'doctors', href: '/app/doctors' },
+    { ok: counts.services > 0, key: 'services', href: '/app/services' },
+    { ok: st.status !== 'classic', key: 'design', href: '/app/website/builder', ent: ent.builder },
+    { ok: live, key: 'publish', href: '/app/website/builder', ent: ent.builder },
+    { ok: Boolean(domain && domain.status === 'verified'), key: 'domain', href: '/app/website/domain', ent: ent.domain, optional: true },
+    { ok: Boolean(mail && mail.status === 'verified'), key: 'email', href: '/app/website/email', ent: ent.email, optional: true },
+  ].filter(function (x) { return x.ent !== false; });
+  var done = steps.filter(function (x) { return x.ok; }).length;
+%>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('navx.sec_website') %></div><h1><%= t('website.overview_title') %></h1><p><%= t('website.overview_lead') %></p></div>
+  <div class="page-actions">
+    <% if (b.slug) { %><a class="btn btn-secondary" href="/<%= b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('website.view_live') %></a><% } %>
+    <% if (ent.builder && can('website.edit')) { %><a class="btn btn-secondary" href="/app/website/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('website.preview') %></a><a class="btn btn-primary" href="/app/website/builder"><%- icon('layout-template', 'icon-sm') %><%= t('website.edit_site') %></a><% } %>
+  </div>
+</div>
+
+<section class="ws-status-grid">
+  <div class="card ws-status"><span class="small muted"><%= t('website.card_site') %></span><span class="badge badge-dot badge-<%= siteTone %>"><%= siteLabel %></span>
+    <span class="small"><% if (live && st.publishedAt) { %><%= t('website.published_on', { date: fmt.date(st.publishedAt, { dateStyle: 'medium', timeStyle: 'short' }) }) %><% } else if (classic) { %><%= t('website.classic_hint') %><% } else { %><%= t('website.down_hint') %><% } %></span>
+    <% if (st.draftChanged) { %><span class="small ws-draft-dot"><%- icon('circle-dot', 'icon-sm') %><%= t('website.draft_has_changes') %></span><% } %></div>
+  <div class="card ws-status"><span class="small muted"><%= t('website.card_address') %></span>
+    <% if (publicUrl) { %><code class="truncate" dir="ltr"><%= (domain && domain.status === 'verified' ? 'https://' + domain.host : publicUrl).replace(/^https?:\/\//, '') %></code><% } else { %><span class="badge badge-warning"><%= t('website.no_address') %></span><% } %>
+    <a class="link small" href="/app/website/settings"><%= t('website.change') %></a></div>
+  <div class="card ws-status"><span class="small muted"><%= t('website.card_domain') %></span><span class="badge badge-dot badge-<%= dTone %>"><%= dLabel %></span>
+    <% if (!ent.domain && !domain) { %><span class="small muted"><%= t('website.not_in_package') %></span><% } else if (can('website.domain')) { %><a class="link small" href="/app/website/domain"><%= domain ? t('website.manage') : t('website.connect') %></a><% } %></div>
+  <div class="card ws-status"><span class="small muted"><%= t('website.card_booking') %></span><span class="badge badge-dot badge-<%= b.booking_enabled ? 'success' : 'neutral' %>"><%= b.booking_enabled ? t('settings.booking_on') : t('settings.booking_off') %></span>
+    <a class="link small" href="/app/website/booking"><%= t('website.manage') %></a></div>
+  <div class="card ws-status"><span class="small muted"><%= t('website.card_email') %></span><span class="badge badge-dot badge-<%= mTone %>"><%= mLabel %></span>
+    <% if (!ent.email && !(mail && mail.status)) { %><span class="small muted"><%= t('website.not_in_package') %></span><% } else if (can('website.email')) { %><a class="link small" href="/app/website/email"><%= mail && mail.status ? t('website.manage') : t('website.connect') %></a><% } %></div>
+</section>
+
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.checklist_title') %></h2><p class="panel-sub"><%= t('website.checklist_sub', { done: done, total: steps.length }) %></p></div></div>
+  <ul class="checklist ws-checklist">
+    <% steps.forEach(function (x) { %><li class="<%= x.ok ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= t('website.step.' + x.key) %><% if (x.optional) { %> <span class="small muted">(<%= t('website.optional') %>)</span><% } %></span><% if (!x.ok) { %><a class="link small" href="<%= x.href %>"><%= t('website.do_it') %></a><% } %></li><% }) %>
+  </ul>
+</section>
+<% if (!ent.builder) { %>
+<div class="alert alert-info mt-4"><%- icon('lock') %><div class="grow"><div class="alert-title"><%= t('website.lock.builder_title') %></div><%= t('website.lock.builder_text') %></div><% if (can('settings.manage')) { %><a class="btn btn-secondary btn-sm" href="/app/settings/subscription"><%= t('website.lock.see_packages') %></a><% } %></div>
+<% } %>

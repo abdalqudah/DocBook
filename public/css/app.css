@@ -147,6 +147,7 @@ input[type="date"].input, input[type="month"].input { min-width: 0; }
 .panel-foot { padding: 12px var(--card-pad); border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .panel.flush .panel-body { padding: 0; }
 .panel.accent { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
 .card-link { display: block; transition: border-color .15s, box-shadow .15s; }
 .card-link:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
 

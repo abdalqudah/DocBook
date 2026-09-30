@@ -1,0 +1,25 @@
+<%# A doctor's page on the clinic website: who they are, what they do, rating, booking with them. %>
+<section class="container ws-section" id="main">
+  <nav class="breadcrumbs mb-4"><a href="/<%= clinic.slug %>"><%= clinic.displayName %></a> <%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %> <span><%= d.name %></span></nav>
+  <div class="ws-doctor">
+    <span class="doc-av doc-av-lg<%= d.photo ? ' has-photo' : '' %>"><% if (d.photo) { %><img src="<%= d.photo %>" alt="<%= d.name %>"><% } else { %><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %><% } %></span>
+    <div class="grow">
+      <h1><%= d.name %></h1>
+      <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
+      <%- include('../../partials/site/reviews', { part: 'doctor', doctorId: d.id }) %>
+      <div class="ws-hero-actions mt-4">
+        <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%- icon('calendar-plus') %><%= t('portal.book_with') %></a><% } %>
+        <% if (clinic.booking_enabled && clinic.online_enabled && d.online) { %><a class="btn btn-secondary btn-lg" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video') %><%= t('telehealth.book_online_cta') %></a><% } %>
+      </div>
+      <% if (d.fee !== null) { %><p class="small muted mt-2"><%= t('portal.fee') %> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></p><% } %>
+    </div>
+  </div>
+  <% if (d.bioFull) { %><div class="portal-card mt-6"><div class="lp-prose"><% d.bioFull.split(/\n\s*\n/).forEach(function (p) { if (p.trim()) { %><p><%= p.trim() %></p><% } }) %></div></div><% } %>
+  <% if (services.length) { %>
+  <div class="ws-head mt-6"><h2 class="ws-title"><%= t('portal.services') %></h2></div>
+  <div class="portal-card flush"><ul class="svc-list">
+    <% services.forEach(function (x) { %><li><span class="svc-icon"><%- icon('clipboard-plus', 'icon-sm') %></span><span class="grow"><strong><%= x.name %></strong><span class="svc-meta"><span><%- icon('clock', 'icon-sm') %><%= t('portal.min', { n: x.duration }) %></span></span><% if (x.description) { %><span class="svc-desc"><%= x.description %></span><% } %></span><% if (x.price !== null) { %><span class="svc-price num"><%= fmt.money(x.price, clinic.currency) %></span><% } %></li><% }) %>
+  </ul></div>
+  <% } %>
+  <p class="mt-6"><a class="link" href="/<%= clinic.slug %>"><%- icon(dir === 'rtl' ? 'arrow-right' : 'arrow-left', 'icon-sm') %> <%= t('website.back_to_clinic', { clinic: clinic.displayName }) %></a></p>
+</section>

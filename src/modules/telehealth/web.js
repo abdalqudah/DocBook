@@ -62,7 +62,7 @@ async function linksFor(req, rows) {
 }
 
 // ---------------------------------------------------------------- clinic settings (Settings → Clinic page)
-router.post('/settings', can('settings.manage'), wrap(async (req, res) => {
+router.post('/settings', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   try {
     await tele.saveSettings(req.ctx, req.body);
     flash(req, 'success', req.t('telehealth.settings.saved'));
@@ -70,7 +70,7 @@ router.post('/settings', can('settings.manage'), wrap(async (req, res) => {
     if (!(e instanceof AppError) || e.status >= 500) throw e;
     flash(req, 'error', e.code === 'VALIDATION_FAILED' && e.details && e.details.online_payment_instructions ? req.t('telehealth.settings.instructions_required') : errText(req, e));
   }
-  res.redirect('/app/settings/portal#telehealth');
+  res.redirect('/app/website/booking#telehealth');
 }));
 
 // ---------------------------------------------------------------- one consultation

@@ -1,0 +1,17 @@
+<% var im = img(s.settings.image); var head = c.headline || clinic.displayName; var sub = c.subtext || (clinic.aboutText ? clinic.aboutText.split(/\n/)[0].slice(0, 220) : [clinic.specialty, clinic.city].filter(Boolean).join(' · ')); %>
+<section class="ws-hero ws-hero-<%= s.variant %><%= im ? ' has-image' : '' %>" id="s-<%= s.id %>">
+  <div class="container ws-hero-inner">
+    <div class="ws-hero-text">
+      <h1><%= head %></h1>
+      <% if (sub) { %><p class="ws-lead"><%= sub %></p><% } %>
+      <div class="ws-hero-actions">
+        <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus') %><%= c.button || t('portal.book') %></a><% } %>
+        <% if (s.settings.show_call && clinic.telHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.telHref %>"><%- icon('phone') %><%= t('portal.call') %></a><% } %>
+        <% if (s.settings.show_whatsapp && clinic.waHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square') %><%= t('portal.whatsapp') %></a><% } %>
+        <% if (s.settings.show_directions && clinic.mapHref) { %><a class="btn btn-ghost btn-lg" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%- icon('map-pin') %><%= t('portal.directions') %></a><% } %>
+      </div>
+      <% if (!clinic.booking_enabled) { %><p class="small muted mt-2"><%= t('portal.booking_off') %></p><% } %>
+    </div>
+    <% if (im) { %><figure class="ws-hero-media"><img src="<%= im.url %>" alt="<%= (locale === 'en' ? im.alt_en || im.alt_ar : im.alt_ar || im.alt_en) || '' %>"<% if (im.width && im.height) { %> width="<%= im.width %>" height="<%= im.height %>"<% } %>></figure><% } %>
+  </div>
+</section>

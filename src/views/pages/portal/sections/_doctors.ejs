@@ -1,0 +1,27 @@
+<% var list = s.settings.mode === 'selected' && s.settings.doctor_ids && s.settings.doctor_ids.length ? s.settings.doctor_ids.map(function (id) { return doctors.find(function (d) { return d.id === id; }); }).filter(Boolean) : doctors;
+   var teleOn = clinic.booking_enabled && clinic.online_enabled; %>
+<% if (list.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container">
+    <div class="ws-head"><h2 class="ws-title"><%= c.title || t('portal.doctors') %></h2><% if (c.intro) { %><p><%= c.intro %></p><% } else if (clinic.booking_enabled) { %><p><%= t('portal.doctors_sub') %></p><% } %></div>
+    <div class="portal-doctors ws-doctors-<%= s.variant %>">
+      <% list.forEach(function (d) { %>
+      <article class="doc-card">
+        <span class="doc-av<%= d.photo ? ' has-photo' : '' %>"><% if (d.photo) { %><img src="<%= d.photo %>" alt="<%= d.name %>" loading="lazy"><% } else { %><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %><% } %></span>
+        <div class="doc-info">
+          <h3><a class="ws-doc-link" href="/<%= clinic.slug %>/doctors/<%= d.id %>"><%= d.name %></a></h3>
+          <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
+          <%- include('../../../partials/site/reviews', { part: 'doctor', doctorId: d.id, clinic: Object.assign({}, clinic, { reviews: reviewsSummary }) }) %>
+          <% if (d.bio) { %><p><%= d.bio %></p><% } %>
+          <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
+          <div class="doc-foot">
+            <% if (s.settings.show_fee && d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } else { %><span></span><% } %>
+            <% if (clinic.booking_enabled) { %><a class="btn btn-secondary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%= t('portal.book_with') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
+          </div>
+        </div>
+      </article>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>

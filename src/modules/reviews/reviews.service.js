@@ -76,7 +76,7 @@ async function submit(link, input, meta = {}) {
   await audit.record({ businessId: link.business_id, userId: null, ip: meta.ip, userAgent: meta.userAgent }, 'review.submitted', { entityType: 'review', entityId: id, newValues: { rating: d.rating, appointment_id: link.id } });
   const cfg = await knex('clinic_messaging').where({ business_id: link.business_id }).first('message_locale');
   const t = translator(cfg && cfg.message_locale === 'en' ? 'en' : 'ar');
-  await notifications.notify(link.business_id, { permission: 'reviews.manage', type: 'review.new', severity: d.rating <= 2 ? 'warning' : 'info', title: t('reviews.notify_new', { n: d.rating }), link: `/app/reviews?focus=${id}` });
+  await notifications.notify(link.business_id, { permission: 'reviews.manage', type: 'review.new', severity: d.rating <= 2 ? 'warning' : 'info', title: t('reviews.notify_new', { n: d.rating }), link: `/app/website/reviews?focus=${id}` });
   return id;
 }
 

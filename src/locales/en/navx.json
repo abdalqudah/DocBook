@@ -56,7 +56,8 @@
       "supplies": "Inventory",
       "marketplace": "Offers",
       "front_desk": "Front desk",
-      "certificates": "Certificates"
+      "certificates": "Certificates",
+      "reviews": "Reviews"
     }
   }
 }

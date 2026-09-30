@@ -87,7 +87,7 @@ const renderPortal = async (req, res, extra = {}) => {
   });
 };
 router.get('/portal', can('settings.manage'), wrap((req, res) => renderPortal(req, res)));
-router.get('/portal/check', can('settings.manage'), wrap(async (req, res) => {
+router.get('/portal/check', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   const slug = businesses.normalizeSlug(req.query.slug);
   let error = businesses.validateSlug(slug);
   if (!error) {
@@ -96,39 +96,39 @@ router.get('/portal/check', can('settings.manage'), wrap(async (req, res) => {
   }
   res.json({ ok: !error, slug, url: `${baseUrl(req)}/${slug}`, error: error ? message(req.locale, error) : null, current: slug === req.business.slug });
 }));
-router.post('/portal/slug', can('settings.manage'), form(async (req, res) => {
+router.post('/portal/slug', canAny('website.edit', 'settings.manage'), form(async (req, res) => {
   await businesses.setSlug(req.ctx, req.body.slug);
   flash(req, 'success', req.t('settings.portal_saved'));
-  res.redirect('/app/settings/portal');
+  res.redirect('/app/website/settings');
 }, renderPortal));
 // ---------------------------------------------------------------- custom domain for the clinic page
 async function domainData(req) {
   const d = await domains.forClinic(req.ctx.businessId);
   return { domain: d, domainRecords: domains.records(d), platformHost: domains.platformHost() };
 }
-router.post('/portal/domain', can('settings.manage'), form(async (req, res) => {
+router.post('/portal/domain', canAny('website.domain', 'settings.manage'), form(async (req, res) => {
   await domains.save(req.ctx, req.body.host);
   flash(req, 'success', req.t('identity.domain_saved'));
-  res.redirect('/app/settings/portal#domain');
+  res.redirect('/app/website/domain');
 }, (req, res, extra) => renderPortal(req, res, { ...extra, formError: null, domainErrors: extra.errors, domainFormError: extra.formError && extra.formError.code !== 'VALIDATION_FAILED' ? { ...extra.formError, message: identityError(req, extra.formError) } : null, errors: {} })));
-router.post('/portal/domain/verify', can('settings.manage'), form(async (req, res) => {
+router.post('/portal/domain/verify', canAny('website.domain', 'settings.manage'), form(async (req, res) => {
   const r = await domains.check(req.ctx, req.ctx.businessId);
   if (r.justVerified) flash(req, 'success', req.t('identity.domain_now_live'));
   else if (r.live) flash(req, r.owned ? 'success' : 'warning', req.t(r.owned ? 'identity.domain_still_live' : 'identity.domain_keep_txt'));
   else if (r.conflict) flash(req, 'error', req.t('errors_identity.DOMAIN_TAKEN'));
   else flash(req, 'warning', req.t(!r.owned ? 'identity.domain_missing_txt' : 'identity.domain_missing_cname'));
-  res.redirect('/app/settings/portal#domain');
+  res.redirect('/app/website/domain');
 }, (req, res, extra) => renderPortal(req, res, { ...extra, formError: null, domainFormError: extra.formError ? { ...extra.formError, message: identityError(req, extra.formError) } : null })));
-router.post('/portal/domain/delete', can('settings.manage'), form(async (req, res) => {
+router.post('/portal/domain/delete', canAny('website.domain', 'settings.manage'), form(async (req, res) => {
   await domains.remove(req.ctx);
   flash(req, 'success', req.t('identity.domain_removed'));
-  res.redirect('/app/settings/portal#domain');
+  res.redirect('/app/website/domain');
 }, (req, res, extra) => renderPortal(req, res, { ...extra, formError: null, domainFormError: extra.formError ? { ...extra.formError, message: identityError(req, extra.formError) } : null })));
-router.post('/portal/booking', can('settings.manage'), wrap(async (req, res) => {
+router.post('/portal/booking', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   const on = req.body.booking_enabled === '1';
   await businesses.updateProfile(req.ctx, { booking_enabled: on });
   flash(req, 'success', on ? req.t('settings.booking_on_done') : req.t('settings.booking_off_done'));
-  res.redirect('/app/settings/portal');
+  res.redirect('/app/website/booking');
 }));
 
 // ---------------------------------------------------------------- appearance (personal display + clinic branding)

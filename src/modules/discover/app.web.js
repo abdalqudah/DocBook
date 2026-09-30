@@ -10,7 +10,7 @@ const exporter = require('../../core/exporter');
 const fmtCore = require('../../core/format');
 const cache = require('../../core/cache');
 const { wrap, flash } = require('../../routes/helpers');
-const { can } = require('../../middleware/context');
+const { can, canAny } = require('../../middleware/context');
 const { publicBase } = require('../../middleware/web');
 const businesses = require('../businesses/business.service');
 const { render } = require('../settings/common');
@@ -42,9 +42,9 @@ async function renderLinks(req, res, extra = {}) {
   });
 }
 
-router.get('/settings/booking-links', can('settings.manage'), wrap((req, res) => renderLinks(req, res)));
+router.get(['/settings/booking-links', '/website/booking/links'], canAny('website.edit', 'settings.manage'), wrap((req, res) => renderLinks(req, res)));
 
-router.post('/settings/booking-links/directory', can('settings.manage'), wrap(async (req, res) => {
+router.post('/settings/booking-links/directory', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   const on = req.body.directory_listed === '1';
   const before = await knex('businesses').where({ id: req.ctx.businessId }).first('directory_listed');
   await knex('businesses').where({ id: req.ctx.businessId }).update({ directory_listed: on, updated_at: new Date() });
@@ -52,10 +52,10 @@ router.post('/settings/booking-links/directory', can('settings.manage'), wrap(as
   dir.forget(req.ctx.businessId);
   await audit.record(req.ctx, on ? 'clinic.directory_listed' : 'clinic.directory_unlisted', { entityType: 'clinic', entityId: req.ctx.businessId, oldValues: { directory_listed: Boolean(before.directory_listed) }, newValues: { directory_listed: on } });
   flash(req, 'success', req.t(on ? 'directory.on_done' : 'directory.off_done'));
-  res.redirect('/app/settings/booking-links');
+  res.redirect('/app/website/booking/links');
 }));
 
-router.post('/settings/booking-links/origins', can('settings.manage'), wrap(async (req, res) => {
+router.post('/settings/booking-links/origins', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   const text = String(req.body.widget_origins || '').slice(0, 4000);
   const { origins, invalid } = embed.parseOrigins(text);
   if (invalid.length) {
@@ -69,12 +69,12 @@ router.post('/settings/booking-links/origins', can('settings.manage'), wrap(asyn
   cache.forgetPrefix(`discover:origins:${req.ctx.businessId}`);
   await audit.record(req.ctx, 'clinic.widget_origins_changed', { entityType: 'clinic', entityId: req.ctx.businessId, oldValues: { widget_origins: before.widget_origins }, newValues: { widget_origins: value } });
   flash(req, 'success', req.t('widget.origins_saved'));
-  return res.redirect('/app/settings/booking-links#widget');
+  return res.redirect('/app/website/booking/links#widget');
 }));
 
-router.get('/settings/booking-links/qr.:ext(png|svg)', can('settings.manage'), wrap(async (req, res) => {
+router.get('/settings/booking-links/qr.:ext(png|svg)', canAny('website.edit', 'settings.manage'), wrap(async (req, res) => {
   const slug = req.business.slug;
-  if (!slug) return res.redirect('/app/settings/booking-links');
+  if (!slug) return res.redirect('/app/website/booking/links');
   const url = channels.link(publicBase(req), slug, 'qr');
   const name = `${slug}-booking-qr.${req.params.ext}`;
   res.set({ 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'private, no-store' });

@@ -1,0 +1,12 @@
+<%# A website capability that the clinic's package does not include: shown in context, never inside clinical work. %>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.lock.' + feature + '_title') %></h1></div></div>
+<section class="panel ws-locked">
+  <div class="panel-body">
+    <span class="ws-locked-icon"><%- icon('lock') %></span>
+    <div class="grow">
+      <p><%= t('website.lock.' + feature + '_text') %></p>
+      <p class="small muted"><%= t('website.lock.still_works') %></p>
+      <% if (manager) { %><a class="btn btn-primary" href="/app/settings/subscription"><%= t('website.lock.see_packages') %></a><% } else { %><p class="small strong"><%= t('website.lock.ask_owner') %></p><% } %>
+    </div>
+  </div>
+</section>

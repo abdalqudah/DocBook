@@ -1,0 +1,8 @@
+<% var items = (c.items || []).map(function (x, i) { return { title: x && x.title, text: x && x.text, icon: ((s.settings.items || [])[i] || {}).icon || 'star' }; }).filter(function (x) { return x.title; }); if (items.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title) { %><div class="ws-head"><h2 class="ws-title"><%= c.title %></h2></div><% } %>
+    <ul class="ws-features"><% items.forEach(function (x) { %><li class="portal-card"><span class="ws-feature-icon"><%- icon(x.icon) %></span><strong><%= x.title %></strong><% if (x.text) { %><p class="small muted"><%= x.text %></p><% } %></li><% }) %></ul>
+  </div>
+</section>
+<% } %>

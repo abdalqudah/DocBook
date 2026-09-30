@@ -36,7 +36,8 @@
     "usage": {
       "doctors": "Active doctors",
       "staff": "Staff logins",
-      "appointments": "Appointments this month"
+      "appointments": "Appointments this month",
+      "patients": "Patient records"
     },
     "unlimited": "Unlimited",
     "pay_title": "Payment",
@@ -123,7 +124,24 @@
     "remind_trial_body": "The DocBook trial of {clinic} ends on {date}. Choose a plan to keep working without interruption.",
     "remind_period_title": "Your paid period ends in {n} days",
     "remind_period_body": "The paid period of {clinic} ends on {date}. Pay the next period to avoid interruption.",
-    "remind_cta": "Open subscription"
+    "remind_cta": "Open subscription",
+    "ent": {
+      "online_consultations": "Online consultations",
+      "online_payments": "Online card payments",
+      "reminders": "WhatsApp / SMS reminders",
+      "ai_assistant": "AI clinical assistant",
+      "specialty_modules": "Specialty modules",
+      "data_sync": "Copy to your own database",
+      "website_builder": "Website builder (sections, pages, templates)",
+      "website_templates": "Available templates",
+      "website_custom_domain": "Own domain",
+      "website_clinic_email": "Clinic sending e-mail",
+      "website_analytics": "Website statistics",
+      "website_advanced_seo": "Advanced search engine settings",
+      "website_max_pages": "Extra pages",
+      "media_storage_mb": "Media storage (MB)",
+      "limits_max_patients": "Maximum patient records"
+    }
   },
   "subscriptions_admin": {
     "nav": "Plans",
@@ -249,13 +267,21 @@
     "payment_recorded": "Payment recorded. Paid until {date}.",
     "comped": "The clinic now uses DocBook for free.",
     "cancelled": "Subscription cancelled.",
-    "invoice_voided": "Invoice voided."
+    "invoice_voided": "Invoice voided.",
+    "ent_group": {
+      "clinic": "Clinic features",
+      "website": "Website",
+      "limits": "Limits"
+    },
+    "unlimited": "No limit",
+    "all_options": "All"
   },
   "errors_subscriptions": {
     "SUBSCRIPTION_EXPIRED": "The clinic's subscription has ended, so it is read-only. Renew the subscription to save changes.",
     "PLAN_LIMIT_DOCTORS": "Your plan allows {limit} active doctors and the clinic has {used}. Upgrade the plan to add more.",
     "PLAN_LIMIT_STAFF": "Your plan allows {limit} staff logins and the clinic has {used} (including pending invitations). Upgrade the plan to add more.",
     "PLAN_LIMIT_APPOINTMENTS": "Your plan allows {limit} appointments per month and this month has {used}. Upgrade the plan to add more.",
-    "INVOICE_CLOSED": "This invoice is already paid or void."
+    "INVOICE_CLOSED": "This invoice is already paid or void.",
+    "PLAN_LIMIT_PATIENTS": "Your plan allows {limit} patient records and the clinic has {used}. Existing records stay available; choose another package to add more."
   }
 }

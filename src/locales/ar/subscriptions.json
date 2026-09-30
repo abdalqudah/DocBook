@@ -36,7 +36,8 @@
     "usage": {
       "doctors": "الأطباء النشطون",
       "staff": "حسابات الموظفين",
-      "appointments": "مواعيد هذا الشهر"
+      "appointments": "مواعيد هذا الشهر",
+      "patients": "ملفات المرضى"
     },
     "unlimited": "غير محدود",
     "pay_title": "الدفع",
@@ -123,7 +124,24 @@
     "remind_trial_body": "تنتهي تجربة DocBook لعيادة {clinic} بتاريخ {date}. اختر باقة لمتابعة العمل دون انقطاع.",
     "remind_period_title": "الأيام المتبقية من فترة اشتراكك المدفوعة: {n}",
     "remind_period_body": "تنتهي الفترة المدفوعة لعيادة {clinic} بتاريخ {date}. ادفع الفترة التالية لتجنّب الانقطاع.",
-    "remind_cta": "فتح صفحة الاشتراك"
+    "remind_cta": "فتح صفحة الاشتراك",
+    "ent": {
+      "online_consultations": "الاستشارات عن بُعد",
+      "online_payments": "الدفع الإلكتروني بالبطاقة",
+      "reminders": "تذكيرات واتساب / SMS",
+      "ai_assistant": "المساعد الطبي الذكي",
+      "specialty_modules": "السجلات التخصصية",
+      "data_sync": "نسخ البيانات إلى قاعدة بياناتك",
+      "website_builder": "محرّر الموقع (الأقسام والصفحات والقوالب)",
+      "website_templates": "القوالب المتاحة",
+      "website_custom_domain": "ربط نطاق خاص",
+      "website_clinic_email": "بريد العيادة للإرسال",
+      "website_analytics": "إحصاءات الموقع",
+      "website_advanced_seo": "إعدادات متقدمة لمحركات البحث",
+      "website_max_pages": "عدد الصفحات الإضافية",
+      "media_storage_mb": "مساحة الوسائط (ميغابايت)",
+      "limits_max_patients": "الحد الأقصى لملفات المرضى"
+    }
   },
   "subscriptions_admin": {
     "nav": "الباقات",
@@ -249,13 +267,21 @@
     "payment_recorded": "سُجّلت الدفعة. مدفوع حتى {date}.",
     "comped": "أصبحت العيادة تستخدم DocBook مجانًا.",
     "cancelled": "أُلغي الاشتراك.",
-    "invoice_voided": "أُلغيت الفاتورة."
+    "invoice_voided": "أُلغيت الفاتورة.",
+    "ent_group": {
+      "clinic": "ميزات العيادة",
+      "website": "الموقع الإلكتروني",
+      "limits": "حدود"
+    },
+    "unlimited": "بلا حد",
+    "all_options": "الكل"
   },
   "errors_subscriptions": {
     "SUBSCRIPTION_EXPIRED": "انتهى اشتراك العيادة، لذا فهي في وضع القراءة فقط. جدّد الاشتراك لحفظ التعديلات.",
     "PLAN_LIMIT_DOCTORS": "تسمح باقتك بـ {limit} من الأطباء النشطين ولدى العيادة {used}. رقِّ الباقة لإضافة المزيد.",
     "PLAN_LIMIT_STAFF": "تسمح باقتك بـ {limit} من حسابات الموظفين ولدى العيادة {used} (بما فيها الدعوات المعلّقة). رقِّ الباقة لإضافة المزيد.",
     "PLAN_LIMIT_APPOINTMENTS": "تسمح باقتك بـ {limit} موعدًا شهريًا وبلغ هذا الشهر {used}. رقِّ الباقة لإضافة المزيد.",
-    "INVOICE_CLOSED": "هذه الفاتورة مدفوعة أو ملغاة."
+    "INVOICE_CLOSED": "هذه الفاتورة مدفوعة أو ملغاة.",
+    "PLAN_LIMIT_PATIENTS": "باقتك تسمح بـ {limit} ملف مريض والعيادة فيها {used}. الملفات الحالية تبقى متاحة؛ لإضافة المزيد اختر باقة أخرى."
   }
 }

@@ -206,3 +206,5 @@ dialog.cx-done-dialog { width: min(760px, calc(100vw - 24px)); }
   .cx-receipt { border: 0; margin: 0; width: 80mm; padding: 3mm; }
   .cx-receipt.is-sheet { width: auto; padding: 0; }
 }
+/* Phones: an empty column shrinks to its header so the patients who are actually here stay on screen. */
+@media (max-width: 720px) { .fx-col:has(> .fx-col-body > .fx-empty:only-child) .fx-col-body { display: none; } }

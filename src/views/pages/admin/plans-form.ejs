@@ -5,6 +5,11 @@
   var val = function (k, d) { if (o) return o[k] !== undefined ? o[k] : ''; return p[k] !== undefined && p[k] !== null ? p[k] : (d === undefined ? '' : d); };
   var on = function (k, d) { if (o) return o[k] === '1'; return p[k] !== undefined ? Boolean(p[k]) : d; };
   var feat = function (f) { if (o) return o['f_' + f] === '1'; return Boolean(p.features && p.features[f]); };
+  // Entitlements (registry: src/modules/subscriptions/entitlements.js) — limits and lists besides the yes/no features.
+  var has = function (k) { return p.features && Object.prototype.hasOwnProperty.call(p.features, k); };
+  var num = function (k) { if (o) return o['n_' + k] || ''; var v = has(k) ? p.features[k] : null; return v === null || v === undefined ? '' : v; };
+  var listAll = function (k) { if (o) return o['l_' + k + '_all'] === '1'; return !has(k) || p.features[k] === '*'; };
+  var listHas = function (k, x) { if (o) return [].concat(o['l_' + k] || []).indexOf(x) !== -1; return has(k) && Array.isArray(p.features[k]) && p.features[k].indexOf(x) !== -1; };
   var action = plan ? '/admin/plans/' + plan.id : '/admin/plans/new';
 %>
 <div class="page-head">
@@ -47,11 +52,24 @@
   <section class="panel">
     <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_features') %></h2><div class="panel-sub"><%= t('subscriptions_admin.features_help') %></div></div></div>
     <div class="panel-body">
+      <% entGroups.forEach(function (g) { var items = entitlements.filter(function (e) { return e.group === g; }); %>
+      <h3 class="ent-group"><%= t('subscriptions_admin.ent_group.' + g) %></h3>
       <div class="sub-feature-grid">
-        <% features.forEach(function (f) { %>
-        <label class="check"><input type="checkbox" name="f_<%= f %>" value="1"<%= feat(f) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions.features.' + f) %></span> <span class="tiny muted mono" dir="ltr"><%= f %></span></span></label>
+        <% items.filter(function (e) { return e.type === 'bool'; }).forEach(function (e) { %>
+        <label class="check"><input type="checkbox" name="f_<%= e.key %>" value="1"<%= feat(e.key) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions.ent.' + e.key.replace(/\./g, '_')) %></span> <span class="tiny muted mono" dir="ltr"><%= e.key %></span></span></label>
         <% }) %>
       </div>
+      <% items.filter(function (e) { return e.type === 'int'; }).forEach(function (e) { %>
+      <div class="field ent-limit"><label for="n_<%= e.key %>"><%= t('subscriptions.ent.' + e.key.replace(/\./g, '_')) %> <span class="tiny muted mono" dir="ltr"><%= e.key %></span></label>
+        <input class="input" type="number" min="0" step="1" id="n_<%= e.key %>" name="n_<%= e.key %>" value="<%= num(e.key) %>" placeholder="<%= t('subscriptions_admin.unlimited') %>" dir="ltr"></div>
+      <% }) %>
+      <% items.filter(function (e) { return e.type === 'list'; }).forEach(function (e) { %>
+      <fieldset class="ent-list"><legend class="small strong"><%= t('subscriptions.ent.' + e.key.replace(/\./g, '_')) %> <span class="tiny muted mono" dir="ltr"><%= e.key %></span></legend>
+        <label class="check"><input type="checkbox" name="l_<%= e.key %>_all" value="1" data-ent-all<%= listAll(e.key) ? ' checked' : '' %>><span class="small strong"><%= t('subscriptions_admin.all_options') %></span></label>
+        <div class="sub-feature-grid"><% e.options.forEach(function (x) { %><label class="check"><input type="checkbox" name="l_<%= e.key %>" value="<%= x %>"<%= listHas(e.key, x) ? ' checked' : '' %>><span class="small"><%= t('website.template.' + x) %></span></label><% }) %></div>
+      </fieldset>
+      <% }) %>
+      <% }) %>
     </div>
   </section>
   <section class="panel">

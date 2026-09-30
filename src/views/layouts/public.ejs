@@ -19,7 +19,7 @@
 <meta property="og:title" content="<%= seoTitle %>">
 <% if (typeof noindex !== 'undefined' && noindex) { %><meta name="robots" content="noindex, nofollow"><% } %>
 <% } %><meta name="color-scheme" content="light dark">
-<link rel="icon" type="image/svg+xml" href="<%= brand.favicon || '/favicon.svg' %>">
+<% if (typeof faviconHref !== 'undefined' && faviconHref) { %><link rel="icon" href="<%= faviconHref %>"><% } else { %><link rel="icon" type="image/svg+xml" href="<%= brand.favicon || '/favicon.svg' %>"><% } %>
 <link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
@@ -28,7 +28,7 @@
 <meta name="csrf-token" content="<%= csrfToken %>">
 <% if (head && head.pixels) { %><meta name="db-pixels" content="<%= JSON.stringify({ ids: head.pixels }) %>"><% } %>
 </head>
-<body class="site<%= portalClinic ? ' site-portal' : '' %><%= embed ? ' site-embed' : '' %>">
+<body class="site<%= portalClinic ? ' site-portal' : '' %><%= embed ? ' site-embed' : '' %><%= typeof bodyClass !== 'undefined' && bodyClass ? ' ' + bodyClass : '' %>">
 <a class="sr-only" href="#main"><%= t('site.skip') %></a>
 <% if (embed) { %><div class="embed-bar"><span class="strong truncate"><%= portalClinic.displayName %></span><a href="/" target="_blank" rel="noopener"><%= t('portal.powered', { brand: brandName }) %></a></div><% } else { %>
 <header class="site-nav">

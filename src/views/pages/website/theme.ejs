@@ -1,0 +1,66 @@
+<%
+  // Website → Theme & brand: a template (starting layout), a theme (presentation preset) and the brand kit. Changing
+  // any of them never touches the content; everything goes to the draft.
+  var br = doc.brand || {};
+  var imgOf = function (id) { return id && media[id] ? media[id] : null; };
+  var allowed = function (k) { return allowedTemplates === '*' || (Array.isArray(allowedTemplates) && allowedTemplates.indexOf(k) !== -1); };
+%>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.theme_title') %></h1><p><%= t('website.theme_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/app/website/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('website.preview') %></a><a class="btn btn-primary" href="/app/website/builder"><%- icon('layout-template', 'icon-sm') %><%= t('website.builder_title') %></a></div></div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('website.themes') %></h2><p class="panel-sub"><%= t('website.themes_sub') %></p></div></div>
+  <form class="panel-body" method="post" action="/app/website/theme">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="ws-choice-grid">
+      <% THEMES.forEach(function (k) { %>
+      <label class="ws-choice ws-choice-theme ws-swatch-<%= k %>"><input type="radio" name="theme" value="<%= k %>"<%= doc.theme === k ? ' checked' : '' %>><span class="ws-choice-art" aria-hidden="true"><i></i><i></i><i></i></span><span class="strong"><%= t('website.theme.' + k) %></span><span class="small muted"><%= t('website.theme_desc.' + k) %></span></label>
+      <% }) %>
+    </div>
+    <div class="form-actions mt-4"><button class="btn btn-primary" type="submit"><%= t('website.apply_theme') %></button></div>
+  </form>
+</section>
+
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.brand_kit') %></h2><p class="panel-sub"><%= t('website.brand_kit_sub') %></p></div></div>
+  <form class="panel-body stack" method="post" action="/app/website/brand">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="grid grid-2">
+      <% [['logo_media_id', 'logoMediaId', 'logo'], ['favicon_media_id', 'faviconMediaId', 'favicon']].forEach(function (m) { var im = imgOf(br[m[1]]); %>
+      <div class="stack-sm"><span class="label"><%= t('website.brand.' + m[2]) %></span>
+        <div class="pm-cover ws-pick-preview ws-pick-small" data-media-preview="<%= m[0] %>"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div>
+        <input type="hidden" name="<%= m[0] %>" value="<%= br[m[1]] || '' %>">
+        <div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="button" data-media-pick="<%= m[0] %>"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button><button class="btn btn-ghost btn-sm" type="button" data-media-clear="<%= m[0] %>"<%= im ? '' : ' hidden' %>><%= t('media_lib.remove') %></button></div>
+        <span class="help"><%= t('website.brand.' + m[2] + '_help') %></span></div>
+      <% }) %>
+    </div>
+    <div class="grid grid-2">
+      <% [['primary', br.primary], ['secondary', br.secondary]].forEach(function (c) { %>
+      <fieldset class="ws-color"><legend class="label"><%= t('website.brand.' + c[0]) %></legend>
+        <label class="check"><input type="checkbox" name="use_<%= c[0] %>" value="1"<%= c[1] ? ' checked' : '' %>><span><%= t('website.brand.custom_color') %></span></label>
+        <input class="input ws-color-input" type="color" name="<%= c[0] %>" value="<%= c[1] || colorDefaults[c[0]] %>" aria-label="<%= t('website.brand.' + c[0]) %>">
+        <span class="help"><%= t('website.brand.' + c[0] + '_help') %></span></fieldset>
+      <% }) %>
+    </div>
+    <div class="grid grid-2">
+      <div class="field"><label class="label" for="ws-font"><%= t('website.brand.font') %></label><select class="select" id="ws-font" name="font"><% FONTS.forEach(function (f) { %><option value="<%= f %>"<%= br.font === f ? ' selected' : '' %>><%= t('website.font.' + f) %></option><% }) %></select><span class="help"><%= t('website.brand.font_help') %></span></div>
+      <div class="field"><label class="label" for="ws-radius"><%= t('website.brand.radius') %></label><select class="select" id="ws-radius" name="radius"><% RADII.forEach(function (r) { %><option value="<%= r %>"<%= br.radius === r ? ' selected' : '' %>><%= t('website.radius.' + r) %></option><% }) %></select></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('website.save_brand') %></button></div>
+  </form>
+</section>
+
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.templates') %></h2><p class="panel-sub"><%= t('website.templates_sub') %></p></div></div>
+  <form class="panel-body" method="post" action="/app/website/builder/template" data-confirm="<%= t('website.template_confirm') %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="ws-choice-grid">
+      <% TEMPLATES.forEach(function (k) { var ok = allowed(k); %>
+      <label class="ws-choice<%= ok ? '' : ' is-locked' %>"><input type="radio" name="template" value="<%= k %>"<%= doc.template === k ? ' checked' : '' %><%= ok ? '' : ' disabled' %>><span class="strong"><%= t('website.template.' + k) %></span><% if (!ok) { %><span class="badge badge-neutral"><%- icon('lock', 'icon-sm') %><%= t('website.not_in_package') %></span><% } %></label>
+      <% }) %>
+    </div>
+    <label class="check mt-4"><input type="checkbox" name="add_missing" value="1"><span><%= t('website.template_add_missing') %></span></label>
+    <div class="form-actions mt-4"><button class="btn btn-secondary" type="submit"><%= t('website.apply_template') %></button></div>
+  </form>
+</section>
+<%- include('../integrations/_media-picker') %>

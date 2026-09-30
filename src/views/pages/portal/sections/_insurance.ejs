@@ -1,0 +1,8 @@
+<% if (insurers.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container">
+    <div class="ws-head"><h2 class="ws-title"><%= c.title || t('website.insurance_default_title') %></h2><% if (c.note) { %><p><%= c.note %></p><% } %></div>
+    <ul class="ws-chips"><% insurers.forEach(function (n) { %><li><%- icon('shield-check', 'icon-sm') %><%= n %></li><% }) %></ul>
+  </div>
+</section>
+<% } %>

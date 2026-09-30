@@ -64,7 +64,7 @@
       <div class="panel-head"><div><h2><%= t('subscriptions.usage_title') %></h2><div class="panel-sub"><%= t('subscriptions.usage_sub') %></div></div></div>
       <div class="panel-body">
         <div class="sub-usage">
-          <% [['doctors', 'stethoscope'], ['staff', 'users'], ['appointments', 'calendar']].forEach(function (u) { var lim = st.limits[u[0]]; var used = usage[u[0]]; var pct = lim ? Math.min(100, Math.round(used / Math.max(1, lim) * 100)) : 0; %>
+          <% [['doctors', 'stethoscope'], ['staff', 'users'], ['appointments', 'calendar'], ['patients', 'user-round']].forEach(function (u) { var lim = st.limits[u[0]]; var used = usage[u[0]]; var pct = lim ? Math.min(100, Math.round(used / Math.max(1, lim) * 100)) : 0; %>
           <div class="sub-usage-item">
             <div class="row-sm between"><span class="small strong"><%- icon(u[1], 'icon-sm muted') %> <%= t('subscriptions.usage.' + u[0]) %></span><span class="small num"><%= fmt.number(used) %> / <%= limitText(lim) %></span></div>
             <% if (lim !== null && lim !== undefined) { %><div class="meter thin<%= used > lim ? ' full' : pct >= 85 ? ' warn' : '' %>"><span style="width:<%= pct %>%"></span></div><% } else { %><div class="tiny muted"><%= t('subscriptions.unlimited') %></div><% } %>

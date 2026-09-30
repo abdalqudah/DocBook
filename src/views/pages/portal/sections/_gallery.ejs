@@ -1,0 +1,10 @@
+<% var pics = (s.settings.images || []).map(img).filter(Boolean); if (pics.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title) { %><div class="ws-head"><h2 class="ws-title"><%= c.title %></h2></div><% } %>
+    <ul class="ws-gallery ws-gallery-<%= s.variant %>">
+      <% pics.forEach(function (p) { %><li><img src="<%= p.url %>" alt="<%= (locale === 'en' ? p.alt_en || p.alt_ar : p.alt_ar || p.alt_en) || '' %>" loading="lazy"<% if (p.width && p.height) { %> width="<%= p.width %>" height="<%= p.height %>"<% } %>></li><% }) %>
+    </ul>
+  </div>
+</section>
+<% } %>

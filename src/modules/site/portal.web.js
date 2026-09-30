@@ -29,8 +29,12 @@ async function loadClinic(req) {
   if (!b || b.status !== 'active') return null;
   const en = req.locale === 'en';
   const digits = (v) => String(v || '').replace(/[^0-9]/g, '');
+  // The specialty as words in the visitor's language (the setting stores a key such as "dentistry").
+  const specialtyLabel = b.specialty ? ((k) => { const v = req.t(k); return v === k ? b.specialty : v; })(`specialties.${b.specialty}`) : '';
   return {
     ...b,
+    specialtyKey: b.specialty || null,
+    specialty: specialtyLabel,
     displayName: (en && b.name_en) || b.name,
     otherName: en ? (b.name_en ? b.name : null) : b.name_en,
     aboutText: (en ? b.about_en || b.about : b.about || b.about_en) || '',
@@ -77,9 +81,26 @@ const membershipOf = (userId, businessId) => knex('memberships as m').join('role
   .where({ 'm.user_id': userId, 'm.business_id': businessId, 'm.status': 'active' }).first('r.key as role_key', 'r.name as role_name', 'r.is_system');
 
 // ---------------------------------------------------------------- clinic page
-router.get('/:slug', wrap(async (req, res, next) => {
-  const clinic = await loadClinic(req);
-  if (!clinic) return next();
+/** Renders a website document (the published version, or the draft in the member-only preview). */
+async function renderSite(req, res, clinic, doc, { preview = false } = {}) {
+  const site = require('../website/render'); // eslint-disable-line global-require
+  const data = await site.locals(req, clinic, doc, { preview, portal: { listDoctors, listServices } });
+  res.locals.currency = clinic.currency;
+  clinic.reviews = data.reviewsSummary;
+  const L = (v) => (v && (v[req.locale] || v[req.locale === 'en' ? 'ar' : 'en'])) || '';
+  const title = L(doc.seo && doc.seo.title) || clinic.displayName;
+  const description = L(doc.seo && doc.seo.description) || clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ');
+  const seoHead = preview ? null : await seo.head(req, res, { kind: 'clinic', clinic, doctors: data.doctors, title, description });
+  const fav = doc.brand && doc.brand.faviconMediaId ? data.img(doc.brand.faviconMediaId) : null;
+  return res.page('pages/portal/site', {
+    layout: 'public', title, pageTitle: title, metaDescription: description.slice(0, 160), seoHead, noindex: preview, clinic, ...data,
+    bodyClass: `ws-body ws-theme-${doc.theme}`, faviconHref: fav ? fav.url : null,
+    pageStyles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', preview ? '/app/website/preview/theme.css' : `/${clinic.slug}/theme.css`, '/css/telehealth.css'],
+  });
+}
+
+// The classic clinic page (clinics that never published from the website builder see exactly this, as before).
+async function renderClassic(req, res, clinic) {
   const [doctors, services, member] = await Promise.all([
     listDoctors(req, clinic), listServices(req, clinic), req.user ? membershipOf(req.user.id, clinic.id) : null,
   ]);
@@ -93,6 +114,39 @@ router.get('/:slug', wrap(async (req, res, next) => {
     layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, metaDescription: clinic.aboutText.slice(0, 160), seoHead,
     clinic, doctors, services, doctorNames, member, memberRole: member ? roleLabel(req, member) : null,
     roles: PORTAL_ROLES, pageStyles: [...clinicStyles(clinic), '/css/telehealth.css'],
+  });
+}
+
+router.get('/:slug', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  if (state.status === 'live' && state.doc) return renderSite(req, res, clinic, state.doc);
+  if (state.status === 'unpublished') {
+    // Taken down by the clinic: its name, contact and the booking button stay (printed QR codes and reminder links).
+    return res.page('pages/portal/offline', { layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, noindex: true, clinic, pageStyles: [...clinicStyles(clinic), '/css/website.css'] });
+  }
+  return renderClassic(req, res, clinic);
+}));
+
+// A doctor's own page (website): photo, specialty, full bio, their services, rating, and booking with them.
+router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const [doctors, services] = await Promise.all([listDoctors(req, clinic), listServices(req, clinic)]);
+  const d = doctors.find((x) => x.id === Number(req.params.id));
+  if (!d) return next();
+  const full = await knex('doctors').where({ business_id: clinic.id, id: d.id }).first('bio', 'bio_en');
+  d.bioFull = (req.locale === 'en' ? full.bio_en || full.bio : full.bio || full.bio_en) || '';
+  clinic.reviews = await require('../reviews/reviews.service').publicSummary(clinic.id); // eslint-disable-line global-require
+  res.locals.currency = clinic.currency;
+  const title = `${d.name} · ${clinic.displayName}`;
+  const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors: [d], title, description: [d.specialty, d.bioFull].filter(Boolean).join(' · ').slice(0, 160) });
+  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  return res.page('pages/portal/doctor', {
+    layout: 'public', title, pageTitle: title, seoHead, clinic, d, services: services.filter((x) => !x.doctorId || x.doctorId === d.id),
+    bodyClass: state.doc ? `ws-body ws-theme-${state.doc.theme}` : '',
+    pageStyles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', `/${clinic.slug}/theme.css`],
   });
 }));
 
@@ -111,6 +165,8 @@ router.get('/:slug/theme.css', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
   res.set({ 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
+  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  if (state.status === 'live' && state.doc) return res.send(require('../website/render').css(state.doc, clinic)); // eslint-disable-line global-require
   return res.send(theme.businessCss(clinic.color));
 }));
 
@@ -177,3 +233,4 @@ module.exports.loadClinic = loadClinic;
 module.exports.clinicStyles = clinicStyles;
 module.exports.listDoctors = listDoctors;
 module.exports.listServices = listServices;
+module.exports.renderSite = renderSite;

@@ -409,7 +409,8 @@ test('the clinic replies once and reports, but cannot edit or delete; platform h
   const c = client();
   await c.get('/login');
   assert.equal((await c.post('/login', { email: amman.email, password: 'Passw0rd!x' })).status, 302);
-  assert.equal((await c.get('/app/reviews')).status, 200);
+  assert.equal((await c.get('/app/reviews')).status, 301, 'moved to Website → Reviews');
+  assert.equal((await c.get('/app/website/reviews')).status, 200);
   assert.equal((await c.post(`/app/reviews/${rid}/delete`)).status, 404);
   assert.equal((await c.post(`/app/reviews/${rid}/edit`, { comment: 'x' })).status, 404);
   assert.equal((await c.post(`/app/reviews/${rid}/reply`, { reply: 'Second reply' })).status, 409);

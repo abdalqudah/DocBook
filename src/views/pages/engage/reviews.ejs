@@ -43,11 +43,11 @@
       <select class="select" name="rating" aria-label="<%= t('reviews.rating') %>"><option value=""><%= t('reviews.all_ratings') %></option><% [5, 4, 3, 2, 1].forEach(function (k) { %><option value="<%= k %>"<%= String(f.rating) === String(k) ? ' selected' : '' %>><%= t('reviews.stars_n', { n: k }) %></option><% }) %></select>
       <select class="select" name="status" aria-label="<%= t('common.status') %>"><option value=""><%= t('common.all') %></option><% ['unanswered', 'reported', 'hidden'].forEach(function (k) { %><option value="<%= k %>"<%= f.status === k ? ' selected' : '' %>><%= t('reviews.filter.' + k) %></option><% }) %></select>
       <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
-      <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/reviews"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+      <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/website/reviews"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
     </form>
     <% if (!rows.length) { %>
       <% if (filtered) { %>
-        <%- include('../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/reviews">' + t('table.clear_filters') + '</a>' }) %>
+        <%- include('../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/website/reviews">' + t('table.clear_filters') + '</a>' }) %>
       <% } else { %>
         <%- include('../../partials/empty', { emptyIcon: 'star', emptyTitle: t('reviews.empty_title'), emptyText: t('reviews.empty_text') }) %>
       <% } %>
@@ -89,7 +89,7 @@
           <% if (!r.reply && r.status === 'published') { %>
           <details class="rv-details"<%= rf === r.id ? ' open' : '' %>>
             <summary class="btn btn-secondary btn-sm"><%- icon('message-square', 'icon-sm') %><%= t('reviews.reply') %></summary>
-            <form method="post" action="/app/reviews/<%= r.id %>/reply" class="stack-sm mt-2" data-confirm="<%= t('reviews.reply_confirm') %>" data-confirm-title="<%= t('reviews.reply') %>" data-confirm-yes="<%= t('reviews.publish_reply') %>" data-confirm-tone="primary">
+            <form method="post" action="/app/website/reviews/<%= r.id %>/reply" class="stack-sm mt-2" data-confirm="<%= t('reviews.reply_confirm') %>" data-confirm-title="<%= t('reviews.reply') %>" data-confirm-yes="<%= t('reviews.publish_reply') %>" data-confirm-tone="primary">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <% if (rf === r.id && fe) { %><div class="alert alert-error small"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= errs.reply || fe.message %></div></div><% } %>
               <textarea class="textarea" name="reply" rows="3" maxlength="1000" dir="auto" required aria-label="<%= t('reviews.reply') %>" placeholder="<%= t('reviews.reply_ph') %>"><%= rf === r.id ? (o.reply || '') : '' %></textarea>
@@ -101,7 +101,7 @@
           <% if (!r.reported_at && r.status === 'published') { %>
           <details class="rv-details"<%= pf === r.id ? ' open' : '' %>>
             <summary class="btn btn-ghost btn-sm"><%- icon('triangle-alert', 'icon-sm') %><%= t('reviews.report') %></summary>
-            <form method="post" action="/app/reviews/<%= r.id %>/report" class="stack-sm mt-2">
+            <form method="post" action="/app/website/reviews/<%= r.id %>/report" class="stack-sm mt-2">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <% if (pf === r.id && fe) { %><div class="alert alert-error small"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= errs.reason || fe.message %></div></div><% } %>
               <textarea class="textarea" name="reason" rows="2" maxlength="500" dir="auto" required aria-label="<%= t('reviews.report_reason') %>" placeholder="<%= t('reviews.report_ph') %>"><%= pf === r.id ? (o.reason || '') : '' %></textarea>

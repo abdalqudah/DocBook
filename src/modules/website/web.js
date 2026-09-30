@@ -1,0 +1,207 @@
+// Website workspace (/app/website, DocBook 2.0 redesign phase 4): the home of the clinic's online presence.
+//   Overview · Builder · Theme & brand · Booking · Media · Domain · Reviews · Settings (address, publish state, versions)
+// Permissions: website.view to look, website.edit to change the draft, website.publish to put it live or take it down,
+// website.domain for the domain. The builder and the domain follow the clinic's package (entitlements) — the classic
+// clinic page and online booking never do.
+const express = require('express');
+const knex = require('../../db/knex');
+const { E, AppError } = require('../../core/errors');
+const { translateMessage } = require('../../core/i18n');
+const { wrap, flash } = require('../../routes/helpers');
+const { can, canAny } = require('../../middleware/context');
+const businesses = require('../businesses/business.service');
+const domains = require('../branding/domain.service');
+const ops = require('../platformops/ops.service');
+const site = require('./site.service');
+const sections = require('./sections');
+const render = require('./render');
+const { THEMES, TEMPLATES } = require('./catalog');
+
+const router = express.Router();
+const ASSETS = { pageStyles: ['/css/admin.css', '/css/website-admin.css', '/css/integrations.css'], pageScripts: ['/js/admin.js', '/js/integrations.js', '/js/website.js'] };
+const baseUrl = (req) => (process.env.APP_URL ? require('../../config').appUrl.replace(/\/+$/, '') : `${req.protocol}://${req.get('host')}`); // eslint-disable-line global-require
+const page = (req, res, view, data = {}) => res.page(`pages/website/${view}`, { ...ASSETS, ...data, pageStyles: [...ASSETS.pageStyles, ...(data.pageStyles || [])], pageScripts: [...ASSETS.pageScripts, ...(data.pageScripts || [])] });
+const errText = (req, e) => { for (const k of [`errors_website.${e.code}`, `errors.${e.code}`]) { const s = req.t(k); if (s !== k) return s; } return e.message; };
+/** Runs a change and comes back with a flash message (expected refusals become a message, not an error page). */
+const act = (fn, okKey, back) => wrap(async (req, res) => {
+  try {
+    const r = await fn(req);
+    if (okKey) flash(req, 'success', req.t(okKey));
+    return res.redirect(typeof back === 'function' ? back(req, r) : back);
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500 || e.status === 403) throw e;
+    const first = e.details && typeof e.details === 'object' ? Object.values(e.details).find((v) => typeof v === 'string') : null;
+    flash(req, 'error', e.code === 'VALIDATION_FAILED' ? (first ? translateMessage(req.locale, first) : req.t('website.invalid')) : errText(req, e));
+    return res.redirect(typeof back === 'function' ? back(req) : back);
+  }
+});
+const entitled = (req, key) => ops.entitled(req.business, key);
+
+// ---------------------------------------------------------------- overview
+router.get('/', can('website.view'), wrap(async (req, res) => {
+  const b = req.business;
+  const [st, domain, builderOk, domainOk, emailOk, doctors, services] = await Promise.all([
+    site.state(b.id), domains.forClinic(b.id), entitled(req, 'website.builder'), entitled(req, 'website.custom_domain'), entitled(req, 'website.clinic_email'),
+    knex('doctors').where({ business_id: b.id, is_active: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
+    knex('services').where({ business_id: b.id, is_active: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
+  ]);
+  let mail = null;
+  try { mail = await require('../clinicmail/clinicmail.service').status(b.id); } catch { mail = null; } // eslint-disable-line global-require
+  page(req, res, 'overview', {
+    title: req.t('navx.sec_website'), st, domain, b, publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null, mail,
+    ent: { builder: builderOk, domain: domainOk, email: emailOk }, counts: { doctors, services },
+  });
+}));
+
+// ---------------------------------------------------------------- builder
+async function builderLocals(req) {
+  const { row, doc } = await site.draft(req.ctx, req.business);
+  const st = await site.state(req.ctx.businessId);
+  const list = doc.pages[0].sections;
+  const selected = list.find((s) => s.id === req.query.s) || null;
+  const [doctors, allowedTemplates] = await Promise.all([
+    knex('doctors').where({ business_id: req.ctx.businessId, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en'),
+    entitled(req, 'website.templates'),
+  ]);
+  const media = await render.mediaUrls({ ...req.business, id: req.ctx.businessId }, doc, { preview: true });
+  return { row, doc, st, list, selected, doctors, media, TYPES: sections.TYPES, TYPE_KEYS: sections.TYPE_KEYS, ICONS: sections.ICONS, allowedTemplates, TEMPLATES };
+}
+const lockedPage = (req, res, feature) => page(req, res, 'locked', { title: req.t('navx.sec_website'), feature, manager: req.ctx.permissions.has('settings.manage') });
+
+router.get('/builder', can('website.edit'), wrap(async (req, res) => {
+  if (!(await entitled(req, 'website.builder'))) return lockedPage(req, res, 'builder');
+  return page(req, res, 'builder', { title: req.t('website.builder_title'), ...(await builderLocals(req)) });
+}));
+const toBuilder = (req, r) => `/app/website/builder${req.params && req.params.id ? `?s=${req.params.id}` : (r && typeof r === 'string' ? `?s=${r}` : '')}`;
+const builderGate = wrap(async (req, res, next) => (await entitled(req, 'website.builder') ? next() : lockedPage(req, res, 'builder')));
+
+router.post('/builder/sections', can('website.edit'), builderGate, act(async (req) => {
+  const doc = await site.edit(req.ctx, req.business, site.ops.add(String(req.body.type || ''), String(req.body.after || '') || null), { note: 'website.section_added', details: { type: req.body.type } });
+  const list = doc.pages[0].sections;
+  const added = req.body.after ? list[list.findIndex((s) => s.id === req.body.after) + 1] : list[list.length - 1];
+  return added ? added.id : null;
+}, 'website.section_added_ok', toBuilder));
+router.post('/builder/sections/:id([a-f0-9]{10})', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.update(req.params.id, {
+  variant: req.body.variant, content: req.body.content || {}, settings: req.body.settings || {},
+}), { note: null }), 'website.saved', toBuilder));
+router.post('/builder/sections/:id([a-f0-9]{10})/move', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.move(req.params.id, req.body.dir === 'up' ? 'up' : 'down'), { note: null }), null, toBuilder));
+router.post('/builder/sections/:id([a-f0-9]{10})/toggle', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.toggle(req.params.id), { note: null }), 'website.saved', toBuilder));
+router.post('/builder/sections/:id([a-f0-9]{10})/delete', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.remove(req.params.id), { note: 'website.section_removed' }), 'website.section_removed_ok', '/app/website/builder'));
+router.post('/builder/order', can('website.edit'), builderGate, wrap(async (req, res) => {
+  await site.edit(req.ctx, req.business, site.ops.order(req.body.ids), { note: null });
+  return res.json({ ok: true });
+}));
+router.post('/builder/template', can('website.edit'), builderGate, act(async (req) => site.edit(req.ctx, req.business, site.ops.template(String(req.body.template || ''), req.body.add_missing === '1', await entitled(req, 'website.templates')), { note: 'website.template_applied', details: { template: req.body.template } }), 'website.saved', '/app/website/theme'));
+router.post('/builder/discard', can('website.edit'), builderGate, act((req) => site.discard(req.ctx, req.business), 'website.discarded', '/app/website/builder'));
+router.post('/publish', can('website.publish'), builderGate, act((req) => site.publish(req.ctx, req.business), 'website.published_ok', '/app/website'));
+
+// Member-only preview of the draft (framed by the builder; never indexed).
+const sameOriginFrame = (res) => {
+  const csp = res.getHeader('Content-Security-Policy');
+  if (csp) res.setHeader('Content-Security-Policy', /frame-ancestors[^;]*/.test(csp) ? String(csp).replace(/frame-ancestors[^;]*/, "frame-ancestors 'self'") : `${csp};frame-ancestors 'self'`);
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+};
+router.get('/preview', can('website.view'), wrap(async (req, res) => {
+  const { doc } = await site.draft(req.ctx, req.business);
+  const portal = require('../site/portal.web'); // eslint-disable-line global-require
+  const clinic = await portal.loadClinic({ ...req, params: { slug: req.business.slug || '' } }) || null;
+  if (!clinic) { flash(req, 'warning', req.t('website.need_address')); return res.redirect('/app/website/settings'); }
+  sameOriginFrame(res);
+  res.set('Cache-Control', 'no-store');
+  return portal.renderSite(req, res, clinic, doc, { preview: true });
+}));
+router.get('/preview/theme.css', can('website.view'), wrap(async (req, res) => {
+  const { doc } = await site.draft(req.ctx, req.business);
+  res.set({ 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'no-store' });
+  return res.send(render.css(doc, req.business));
+}));
+
+// ---------------------------------------------------------------- theme & brand
+router.get('/theme', can('website.edit'), wrap(async (req, res) => {
+  if (!(await entitled(req, 'website.builder'))) return lockedPage(req, res, 'builder');
+  const l = await builderLocals(req);
+  const brandCfg = require('../../config/brand'); // eslint-disable-line global-require
+  const colorDefaults = { primary: /^#[0-9a-fA-F]{6}$/.test(req.business.color || '') ? req.business.color : brandCfg.colors.light.primary, secondary: brandCfg.colors.light.accent };
+  return page(req, res, 'theme', { title: req.t('website.theme_title'), ...l, THEMES, FONTS: sections.FONTS, RADII: sections.RADII, colorDefaults });
+}));
+router.post('/theme', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.theme(String(req.body.theme || '')), { note: 'website.theme_changed', details: { theme: req.body.theme } }), 'website.saved', '/app/website/theme'));
+router.post('/brand', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.brand({
+  primary: req.body.use_primary === '1' ? String(req.body.primary || '') : null,
+  secondary: req.body.use_secondary === '1' ? String(req.body.secondary || '') : null,
+  font: req.body.font, radius: req.body.radius, logoMediaId: req.body.logo_media_id, faviconMediaId: req.body.favicon_media_id,
+}), { note: 'website.brand_changed' }), 'website.saved', '/app/website/theme'));
+
+// ---------------------------------------------------------------- settings: address, publish state, versions
+router.get('/settings', can('website.edit'), wrap(async (req, res) => {
+  const b = req.business;
+  const [st, versions] = await Promise.all([site.state(b.id), site.versions(b.id)]);
+  page(req, res, 'settings', {
+    title: req.t('website.settings_title'), b, st, versions, base: baseUrl(req), publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null,
+    suggestion: b.slug ? null : await businesses.suggestSlug(b.name_en || b.name), errors: {}, old: null,
+  });
+}));
+router.post('/settings/slug', can('website.edit'), act(async (req) => businesses.setSlug(req.ctx, req.body.slug), 'settings.portal_saved', '/app/website/settings'));
+router.post('/unpublish', can('website.publish'), act((req) => site.unpublish(req.ctx), 'website.unpublished_ok', '/app/website/settings'));
+router.post('/republish', can('website.publish'), act((req) => site.republish(req.ctx), 'website.republished_ok', '/app/website/settings'));
+router.post('/versions/:id(\\d+)/restore', can('website.edit'), builderGate, act((req) => site.restore(req.ctx, req.business, req.params.id), 'website.restored_ok', '/app/website/builder'));
+
+// ---------------------------------------------------------------- booking (online booking on/off, online consultations)
+router.get('/booking', can('website.edit'), wrap(async (req, res) => {
+  const b = req.business;
+  const [doctors, services, onlineDoctors] = await Promise.all([
+    knex('doctors').where({ business_id: b.id, is_active: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
+    knex('services').where({ business_id: b.id, is_active: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
+    knex('doctors').where({ business_id: b.id, is_active: true, online_enabled: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
+  ]);
+  page(req, res, 'booking', { title: req.t('website.booking_title'), b, readiness: { doctors, services }, onlineDoctors });
+}));
+router.post('/booking', can('website.edit'), act(async (req) => {
+  const on = req.body.booking_enabled === '1';
+  await businesses.updateProfile(req.ctx, { booking_enabled: on });
+  flash(req, 'success', req.t(on ? 'settings.booking_on_done' : 'settings.booking_off_done'));
+}, null, '/app/website/booking'));
+
+// ---------------------------------------------------------------- domain (wizard around the verified-domain engine)
+router.get('/domain', can('website.domain'), wrap(async (req, res) => {
+  if (!(await entitled(req, 'website.custom_domain'))) {
+    const d = await domains.forClinic(req.ctx.businessId);
+    if (!d) return lockedPage(req, res, 'domain'); // a domain connected before stays visible (it keeps working)
+  }
+  const [d, alias] = await Promise.all([domains.forClinic(req.ctx.businessId), domains.aliasFor(req.ctx.businessId)]);
+  page(req, res, 'domain', {
+    title: req.t('website.domain_title'), d, alias, rec: domains.records(d), aliasRec: domains.records(alias), counterpart: d ? domains.counterpart(d.host) : null,
+    platformHost: domains.platformHost(), b: req.business, errors: {}, old: null,
+  });
+}));
+const domainGate = wrap(async (req, res, next) => {
+  if (await entitled(req, 'website.custom_domain')) return next();
+  if (req.path.endsWith('/delete') && await domains.forClinic(req.ctx.businessId)) return next(); // removing is always allowed
+  return lockedPage(req, res, 'domain');
+});
+router.post('/domain', can('website.domain'), domainGate, act((req) => domains.save(req.ctx, req.body.host), 'identity.domain_saved', '/app/website/domain'));
+router.post('/domain/verify', can('website.domain'), domainGate, wrap(async (req, res) => {
+  try {
+    const r = await domains.check(req.ctx, req.ctx.businessId);
+    if (r.justVerified) flash(req, 'success', req.t('identity.domain_now_live'));
+    else if (r.live) flash(req, r.owned ? 'success' : 'warning', req.t(r.owned ? 'identity.domain_still_live' : 'identity.domain_keep_txt'));
+    else if (r.conflict) flash(req, 'error', req.t('errors_identity.DOMAIN_TAKEN'));
+    else flash(req, 'warning', req.t(!r.owned ? 'identity.domain_missing_txt' : 'identity.domain_missing_cname'));
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    flash(req, 'error', errText(req, e));
+  }
+  res.redirect('/app/website/domain');
+}));
+router.post('/domain/delete', can('website.domain'), domainGate, act((req) => domains.remove(req.ctx), 'identity.domain_removed', '/app/website/domain'));
+router.post('/domain/ssl', can('website.domain'), domainGate, act(async (req) => {
+  const r = await domains.checkSsl(req.ctx, req.ctx.businessId, { role: req.body.role === 'alias' ? 'alias' : 'primary' });
+  flash(req, r.ssl_status === 'active' ? 'success' : r.ssl_status === 'failed' ? 'error' : 'warning', req.t(`website.ssl_msg.${r.ssl_status}`));
+}, null, '/app/website/domain'));
+router.post('/domain/alias', can('website.domain'), domainGate, act((req) => domains.saveAlias(req.ctx), 'website.alias_saved', '/app/website/domain#alias'));
+router.post('/domain/alias/verify', can('website.domain'), domainGate, act(async (req) => {
+  const r = await domains.check(req.ctx, req.ctx.businessId, { role: 'alias' });
+  flash(req, r.live ? 'success' : 'warning', req.t(r.live ? 'website.alias_live' : (!r.owned ? 'identity.domain_missing_txt' : 'identity.domain_missing_cname')));
+}, null, '/app/website/domain#alias'));
+router.post('/domain/alias/delete', can('website.domain'), act((req) => domains.removeAlias(req.ctx), 'website.alias_removed', '/app/website/domain'));
+
+module.exports = router;

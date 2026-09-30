@@ -1,0 +1,8 @@
+<% if (clinic.booking_enabled) { %>
+<section class="ws-section ws-cta ws-cta-<%= s.variant %>" id="s-<%= s.id %>">
+  <div class="container ws-cta-inner">
+    <div class="grow"><h2 class="ws-title"><%= c.title || t('website.cta_default_title') %></h2><p><%= c.text || t('website.cta_default_text') %></p></div>
+    <a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus') %><%= c.button || t('portal.book') %></a>
+  </div>
+</section>
+<% } %>

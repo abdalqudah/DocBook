@@ -7,11 +7,11 @@ const SECTIONS = [
   { group: 'profile', items: [
     { key: 'clinic', href: '/app/settings/clinic', icon: 'building-2', perms: ['settings.manage'] },
   ] },
-  // The clinic online (moves to the Website workspace, redesign phase 4).
+  // The clinic online — moved to the Website workspace (redesign 4.3); kept for page access (settings_<key>).
   { group: 'online', items: [
-    { key: 'portal', href: '/app/settings/portal', icon: 'globe', perms: ['settings.manage'] },
-    { key: 'booking_links', href: '/app/settings/booking-links', icon: 'link', perms: ['settings.manage'] },
-    { key: 'media', href: '/app/settings/media', icon: 'images', perms: ['settings.manage'] },
+    { key: 'portal', href: '/app/website/settings', icon: 'globe', perms: ['settings.manage', 'website.edit'], moved: true },
+    { key: 'booking_links', href: '/app/website/booking/links', icon: 'link', perms: ['settings.manage', 'website.edit'], moved: true },
+    { key: 'media', href: '/app/website/media', icon: 'images', perms: ['settings.manage', 'website.edit'], moved: true },
   ] },
   { group: 'documents', items: [
     { key: 'invoice_template', href: '/app/settings/invoice', icon: 'printer', perms: ['settings.manage'] },
@@ -65,7 +65,7 @@ function sectionsFor(permissions) {
 
 /** Renders a settings screen inside the settings layout (sidebar + content). */
 // Screens that belong to another workspace render without the settings sidebar (team, roles, clinical lists → Clinic).
-const WORKSPACE_OF = { team: 'clinic', roles: 'clinic', insurance: 'clinic', medications: 'clinic', diagnosis_codes: 'clinic', signatures: 'clinic' };
+const WORKSPACE_OF = { team: 'clinic', roles: 'clinic', insurance: 'clinic', medications: 'clinic', diagnosis_codes: 'clinic', signatures: 'clinic', media: 'website', booking_links: 'website', portal: 'website' };
 function render(req, res, view, section, data = {}) {
   return res.page(`pages/settings/${view}`, {
     workspace: WORKSPACE_OF[section] || null,

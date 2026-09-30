@@ -1,0 +1,23 @@
+<%# Website → Booking: online booking on/off (the engine is unchanged), what it needs, online consultations, links & QR. %>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.booking_title') %></h1><p><%= t('website.booking_lead') %></p></div></div>
+<nav class="tabs mb-4" aria-label="<%= t('website.booking_title') %>">
+  <a href="/app/website/booking" class="active" aria-current="page"><%- icon('calendar-plus', 'icon-sm') %><%= t('settings.booking_title') %></a>
+  <a href="/app/website/booking/links"><%- icon('qr-code', 'icon-sm') %><%= t('website.links_qr') %></a>
+</nav>
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('settings.booking_title') %></h2><div class="panel-sub"><%= t('settings.booking_sub') %></div></div>
+    <span class="badge badge-dot <%= b.booking_enabled ? 'badge-success' : 'badge-neutral' %>"><%= b.booking_enabled ? t('settings.booking_on') : t('settings.booking_off') %></span></div>
+  <div class="panel-body stack">
+    <ul class="checklist">
+      <li class="<%= readiness.doctors ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= t('settings.ready_doctors', { n: readiness.doctors }) %></span><a class="link small" href="/app/doctors"><%= t('common.manage') %></a></li>
+      <li class="<%= readiness.services ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= t('settings.ready_services', { n: readiness.services }) %></span><a class="link small" href="/app/services"><%= t('common.manage') %></a></li>
+      <li class="<%= b.slug ? 'done' : '' %>"><span class="check-dot"><%- icon('check') %></span><span class="grow"><%= t('settings.ready_slug') %></span><% if (!b.slug) { %><a class="link small" href="/app/website/settings"><%= t('website.do_it') %></a><% } %></li>
+    </ul>
+    <form method="post" action="/app/website/booking" class="row between wrap set-toggle-row"<% if (b.booking_enabled) { %> data-confirm="<%= t('settings.booking_off_confirm') %>" data-confirm-title="<%= t('settings.booking_title') %>" data-confirm-yes="<%= t('settings.booking_turn_off') %>"<% } %>>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="booking_enabled" value="<%= b.booking_enabled ? '0' : '1' %>">
+      <div class="small muted grow" style="min-width:220px"><%= b.booking_enabled ? t('settings.booking_on_text') : t('settings.booking_off_text') %></div>
+      <button class="btn <%= b.booking_enabled ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%- icon(b.booking_enabled ? 'toggle-right' : 'toggle-left', 'icon-sm') %><%= b.booking_enabled ? t('settings.booking_turn_off') : t('settings.booking_turn_on') %></button>
+    </form>
+  </div>
+</section>
+<div class="mt-6"><%- include('../telehealth/_settings') %></div>

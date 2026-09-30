@@ -1,6 +1,6 @@
-<%# Settings → Clinic page: cover image + gallery chosen from the media library (worker: integrations).
+<%# Website → Media: the clinic page's cover image + gallery, chosen from the media library (worker: integrations).
     Data comes from res.locals.portalMedia (loader in modules/integrations/web.js). Renders nothing without it. %>
-<% if (typeof portalMedia !== 'undefined' && portalMedia && typeof can === 'function' && can('settings.manage')) { var pm = portalMedia; %>
+<% if (typeof portalMedia !== 'undefined' && portalMedia && typeof can === 'function' && (can('settings.manage') || can('website.edit'))) { var pm = portalMedia; %>
 <section class="panel" id="page-media">
   <div class="panel-head"><div><h2><%= t('media_lib.page_title') %></h2><div class="panel-sub"><%= t('media_lib.page_sub') %></div></div></div>
   <form method="post" action="/app/settings/media/page" class="panel-body stack" data-media-form>

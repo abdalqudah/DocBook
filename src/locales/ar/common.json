@@ -162,7 +162,17 @@
     "new": "جديد",
     "new_menu": "إنشاء جديد",
     "personal": "إعداداتي",
-    "my_notifications": "تنبيهاتي"
+    "my_notifications": "تنبيهاتي",
+    "website": "نظرة عامة",
+    "website_builder": "المحرّر",
+    "website_theme": "التصميم والهوية",
+    "website_booking": "الحجز",
+    "website_media": "الصور والوسائط",
+    "website_domain": "النطاق",
+    "website_settings": "العنوان والنشر",
+    "website_email": "البريد",
+    "website_seo": "محركات البحث",
+    "website_analytics": "الإحصاءات"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",
@@ -302,7 +312,8 @@
     "admin": "الإدارة",
     "attendance": "دوام الموظفين",
     "vendors": "المناديب والموردون",
-    "reviews": "تقييمات المرضى"
+    "reviews": "تقييمات المرضى",
+    "website": "الموقع الإلكتروني"
   },
   "perms": {
     "dashboard.view": "عرض لوحة تحكم العيادة",
@@ -345,7 +356,14 @@
     "reviews.manage": "الرد على التقييمات والإبلاغ عنها لإدارة المنصة",
     "certificates.view": "عرض الإجازات المرضية والتقارير الطبية وطباعتها",
     "certificates.issue": "إصدار الإجازات المرضية والتقارير الطبية وإلغاؤها",
-    "finance.manage": "إدارة الشركاء ورأس المال وتوزيع الأرباح"
+    "finance.manage": "إدارة الشركاء ورأس المال وتوزيع الأرباح",
+    "website.view": "رؤية موقع العيادة وحالته",
+    "website.edit": "تعديل محتوى الموقع وتصميمه",
+    "website.publish": "نشر الموقع أو إيقافه",
+    "website.seo": "إعدادات الظهور في محركات البحث",
+    "website.domain": "ربط نطاق خاص بالعيادة",
+    "website.email": "ربط بريد العيادة للإرسال",
+    "website.analytics": "رؤية إحصاءات الموقع"
   },
   "categories": {
     "rent": "الإيجار",

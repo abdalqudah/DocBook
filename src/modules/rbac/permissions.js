@@ -13,6 +13,8 @@ const GROUPS = [
   { key: 'attendance', perms: ['attendance.view', 'attendance.manage'] },
   { key: 'vendors', perms: ['vendors.view', 'vendors.manage'] },
   { key: 'reviews', perms: ['reviews.view', 'reviews.manage'] },
+  // The clinic's website (Website workspace): managing it does not need the clinic's settings rights.
+  { key: 'website', perms: ['website.view', 'website.edit', 'website.publish', 'website.seo', 'website.domain', 'website.email', 'website.analytics'] },
   { key: 'reports', perms: ['reports.view', 'data.export'] },
   { key: 'admin', perms: ['users.manage', 'roles.manage', 'settings.manage', 'data.manage', 'audit.view'] },
 ];
@@ -26,6 +28,8 @@ const IMPLIES = {
   'clinical.edit': 'clinical.view', 'vitals.edit': 'clinical.view', 'prescriptions.create': 'clinical.view',
   'attendance.manage': 'attendance.view', 'certificates.issue': 'certificates.view', 'vendors.manage': 'vendors.view', 'reviews.manage': 'reviews.view','payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',
   'finance.manage': 'finance.view',
+  'website.edit': 'website.view', 'website.publish': 'website.edit', 'website.seo': 'website.view', 'website.domain': 'website.view',
+  'website.email': 'website.view', 'website.analytics': 'website.view',
 };
 
 const SYSTEM_ROLES = [
@@ -66,7 +70,8 @@ const PORTAL_ROLES = [
 
 function normalise(perms) {
   const set = new Set(perms.filter((p) => ALL.includes(p)));
-  for (const p of [...set]) if (IMPLIES[p]) set.add(IMPLIES[p]);
+  // Transitive: website.publish → website.edit → website.view.
+  for (let grew = true; grew;) { grew = false; for (const p of [...set]) if (IMPLIES[p] && !set.has(IMPLIES[p])) { set.add(IMPLIES[p]); grew = true; } }
   return ALL.filter((p) => set.has(p));
 }
 

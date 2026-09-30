@@ -162,7 +162,17 @@
     "new": "New",
     "new_menu": "Create new",
     "personal": "My settings",
-    "my_notifications": "My notifications"
+    "my_notifications": "My notifications",
+    "website": "Overview",
+    "website_builder": "Builder",
+    "website_theme": "Theme & brand",
+    "website_booking": "Booking",
+    "website_media": "Media",
+    "website_domain": "Domain",
+    "website_settings": "Address & publishing",
+    "website_email": "E-mail",
+    "website_seo": "Search engines",
+    "website_analytics": "Statistics"
   },
   "search": {
     "open": "Search and quick actions",
@@ -302,7 +312,8 @@
     "admin": "Administration",
     "attendance": "Staff attendance",
     "vendors": "Reps & suppliers",
-    "reviews": "Patient reviews"
+    "reviews": "Patient reviews",
+    "website": "Clinic website"
   },
   "perms": {
     "dashboard.view": "View the clinic dashboard",
@@ -345,7 +356,14 @@
     "reviews.manage": "Reply to reviews and report them to the platform",
     "certificates.view": "View and print sick leaves and medical reports",
     "certificates.issue": "Issue and revoke sick leaves and medical reports",
-    "finance.manage": "Manage partners, capital and profit distribution"
+    "finance.manage": "Manage partners, capital and profit distribution",
+    "website.view": "See the clinic website and its status",
+    "website.edit": "Edit the website content and design",
+    "website.publish": "Publish or take down the website",
+    "website.seo": "Search engine settings",
+    "website.domain": "Connect the clinic's own domain",
+    "website.email": "Connect the clinic's sending e-mail",
+    "website.analytics": "See website statistics"
   },
   "categories": {
     "rent": "Rent",

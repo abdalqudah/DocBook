@@ -1,0 +1,11 @@
+<%# Clinic website (builder): the sections of the published version — or of the draft in the member-only preview.
+    Clinic facts come from the clinic's own records at every visit. Only the clinic's plain text is shown (escaped). %>
+<% if (preview) { %>
+<div class="ws-preview-bar" role="status"><%- icon('eye', 'icon-sm') %><span class="grow"><%= t('website.preview_bar') %></span><a class="btn btn-secondary btn-sm" href="/app/website/builder"><%= t('website.back_to_builder') %></a></div>
+<% } %>
+<div class="ws-page ws-theme-<%= doc.theme %>" id="main">
+  <% sections.forEach(function (s) { %>
+    <%- include('sections/_' + s.type, { s: s, c: s.c }) %>
+  <% }) %>
+  <% if (!sections.length) { %><div class="container ws-empty"><%= t('website.nothing_shown') %></div><% } %>
+</div>

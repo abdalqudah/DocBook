@@ -1,0 +1,50 @@
+<%
+  // Website → Address & publishing: the clinic's address, whether the site is up, and the published versions.
+  var slugVal = old && old.slug !== undefined ? old.slug : (b.slug || suggestion || '');
+%>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.settings_title') %></h1><p><%= t('website.settings_lead') %></p></div></div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('settings.portal_address') %></h2><div class="panel-sub"><%= t('settings.portal_address_sub') %></div></div></div>
+  <div class="panel-body stack">
+    <% if (publicUrl) { %>
+    <div class="set-url"><%- icon('globe', 'icon-sm muted') %><code class="grow truncate" data-copy-source dir="ltr"><%= publicUrl %></code>
+      <button class="btn btn-secondary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button>
+      <a class="btn btn-ghost btn-sm" href="/<%= b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><span class="hide-sm"><%= t('common.open') %></span></a></div>
+    <% } %>
+    <form class="stack" method="post" action="/app/website/settings/slug" novalidate data-slug-form>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label class="label" for="f-slug"><%= t('settings.portal_slug') %></label>
+        <div class="input-affix set-slug-input" dir="ltr"><span class="affix"><%= base.replace(/^https?:\/\//, '') %>/</span><input class="input<%= errors.slug ? ' is-invalid' : '' %>" id="f-slug" name="slug" value="<%= slugVal %>" autocomplete="off" spellcheck="false" maxlength="40" required data-slug-input data-check-url="/app/settings/portal/check"></div>
+        <% if (errors.slug) { %><span class="field-error"><%= errors.slug %></span><% } else { %><span class="help" data-slug-status data-checking="<%= t('settings.slug_checking') %>" data-available="<%= t('settings.slug_available') %>" data-current="<%= t('settings.slug_current') %>"><%= t('settings.portal_slug_help') %></span><% } %>
+      </div>
+      <% if (b.slug) { %><div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><%= t('settings.portal_change_warn') %></div></div><% } %>
+      <div class="form-actions"><button class="btn btn-primary" type="submit"><%= b.slug ? t('settings.portal_change') : t('settings.portal_set') %></button></div>
+    </form>
+  </div>
+</section>
+
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.publishing') %></h2><div class="panel-sub"><%= t('website.publishing_sub') %></div></div>
+    <span class="badge badge-dot badge-<%= st.status === 'unpublished' ? 'warning' : 'success' %>"><%= st.status === 'unpublished' ? t('website.st_unpublished') : st.status === 'live' ? t('website.st_live') : t('website.st_classic') %></span></div>
+  <div class="panel-body stack">
+    <p class="small muted"><%= st.status === 'unpublished' ? t('website.down_explain') : t('website.up_explain') %></p>
+    <% if (can('website.publish')) { %>
+      <% if (st.status === 'unpublished') { %>
+      <form method="post" action="/app/website/republish"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('rocket', 'icon-sm') %><%= t('website.republish') %></button></form>
+      <% } else { %>
+      <form method="post" action="/app/website/unpublish" data-confirm="<%= t('website.unpublish_confirm') %>" data-confirm-tone="danger" data-confirm-yes="<%= t('website.unpublish') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('eye-off', 'icon-sm') %><%= t('website.unpublish') %></button></form>
+      <% } %>
+    <% } %>
+  </div>
+</section>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('website.versions') %></h2><div class="panel-sub"><%= t('website.versions_sub') %></div></div></div>
+  <% if (!versions.length) { %><div class="panel-body small muted"><%= t('website.no_versions') %></div>
+  <% } else { %><ul class="action-list"><% versions.forEach(function (v) { %>
+    <li><div><span class="action-icon"><%- icon(v.kind === 'published' ? 'circle-check' : 'history', 'icon-sm') %></span><span class="grow"><span class="strong"><%= fmt.date(v.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %></span><span class="small muted d-block"><%= v.kind === 'published' ? t('website.version_live') : t('website.version_old') %><%= v.by ? ' · ' + v.by : '' %></span></span>
+      <% if (can('website.edit')) { %><form method="post" action="/app/website/versions/<%= v.id %>/restore" data-confirm="<%= t('website.restore_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('archive-restore', 'icon-sm') %><%= t('website.restore') %></button></form><% } %></div></li>
+  <% }) %></ul><% } %>
+</section>

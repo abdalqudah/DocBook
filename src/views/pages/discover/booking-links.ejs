@@ -2,22 +2,28 @@
   var st = !ready.listed ? 'off' : (ready.visible ? 'on' : 'wait');
   var stText = { off: t('directory.status_off'), on: t('directory.status_listed'), wait: t('directory.status_waiting') }[st];
   var checks = [
-    { ok: ready.checks.booking, text: t('directory.check_booking'), href: '/app/settings/portal' },
+    { ok: ready.checks.booking, text: t('directory.check_booking'), href: '/app/website/booking' },
     { ok: ready.checks.doctors, text: t('directory.check_doctors'), href: '/app/doctors' },
-    { ok: ready.checks.slug, text: t('directory.check_slug'), href: '/app/settings/portal' },
+    { ok: ready.checks.slug, text: t('directory.check_slug'), href: '/app/website/booking' },
     { ok: ready.checks.setup, text: t('directory.check_setup'), href: '/app/onboarding' },
     { ok: ready.checks.city, text: t('directory.check_city'), href: '/app/settings/clinic', optional: true },
     { ok: ready.checks.specialty, text: t('directory.check_specialty'), href: '/app/settings/clinic', optional: true },
   ];
 %>
 <%- include('../settings/_head', { heading: t('widget.title'), lead: t('widget.lead'), actions: can('reports.view') ? '<a class="btn btn-secondary" href="/app/reports/bookings">' + icon('chart-pie', 'icon-sm') + escapeHtml(t('widget.report_link')) + '</a>' : '' }) %>
-<div class="settings-layout">
+<% if (typeof workspace !== 'undefined' && workspace === 'website') { %>
+<nav class="tabs mb-4" aria-label="<%= t('website.booking_title') %>">
+  <a href="/app/website/booking"><%- icon('calendar-plus', 'icon-sm') %><%= t('settings.booking_title') %></a>
+  <a href="/app/website/booking/links" class="active" aria-current="page"><%- icon('qr-code', 'icon-sm') %><%= t('website.links_qr') %></a>
+</nav>
+<% } %>
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('../settings/_nav') %>
   <div class="stack-lg">
     <% if (!b.slug) { %>
-    <div class="alert alert-warning"><%- icon('triangle-alert') %><div class="grow"><%= t('widget.need_slug') %></div><a class="btn btn-secondary btn-sm" href="/app/settings/portal"><%= t('widget.need_slug_action') %></a></div>
+    <div class="alert alert-warning"><%- icon('triangle-alert') %><div class="grow"><%= t('widget.need_slug') %></div><a class="btn btn-secondary btn-sm" href="/app/website/settings"><%= t('widget.need_slug_action') %></a></div>
     <% } else if (!b.booking_enabled) { %>
-    <div class="alert alert-warning"><%- icon('triangle-alert') %><div class="grow"><%= t('widget.booking_off') %></div><a class="btn btn-secondary btn-sm" href="/app/settings/portal"><%= t('widget.booking_off_action') %></a></div>
+    <div class="alert alert-warning"><%- icon('triangle-alert') %><div class="grow"><%= t('widget.booking_off') %></div><a class="btn btn-secondary btn-sm" href="/app/website/settings"><%= t('widget.booking_off_action') %></a></div>
     <% } %>
 
     <section class="panel" id="directory">
