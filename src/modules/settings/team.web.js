@@ -16,7 +16,7 @@ const { render, stash, takeStash, baseUrl } = require('./common');
 
 const router = express.Router();
 router.use(can('users.manage'));
-router.use(require('../access/web')); // per-member page access: /app/settings/team/:id/access
+router.use(require('../access/web')); // per-member page access: /app/clinic/team/:id/access
 
 // Readable sections of the team list.
 const GROUPS = [
@@ -92,7 +92,7 @@ router.post('/', form(async (req, res) => {
   const result = await addLogin(req, req.body);
   stash(req, 'teamResult', result);
   flash(req, 'success', req.t(`team.added_${result.type}`, { name: result.name }));
-  res.redirect('/app/settings/team');
+  res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null, openDialog: 'add-dialog' })));
 
 // ---------------------------------------------------------------- change a member
@@ -106,14 +106,14 @@ router.post('/:id(\\d+)', form(async (req, res) => {
   const d = validate(editSchema, req.body);
   await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title });
   flash(req, 'success', req.t('team.member_updated'));
-  res.redirect('/app/settings/team');
+  res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null, openDialog: 'edit-dialog', editAction: req.originalUrl })));
 
 router.post('/:id(\\d+)/status', form(async (req, res) => {
   const status = req.body.status === 'active' ? 'active' : 'disabled';
   await businesses.changeMember(req.ctx, Number(req.params.id), { status });
   flash(req, 'success', req.t(status === 'active' ? 'team.enabled_done' : 'team.disabled_done'));
-  res.redirect('/app/settings/team');
+  res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));
 
 router.post('/:id(\\d+)/remove', form(async (req, res) => {
@@ -122,20 +122,20 @@ router.post('/:id(\\d+)/remove', form(async (req, res) => {
   if (String(req.body.confirm_name || '').trim() !== m.name.trim()) throw E.validation({ confirm_name: 'Type the name exactly to confirm.' });
   await businesses.removeMember(req.ctx, Number(req.params.id));
   flash(req, 'success', req.t('team.removed', { name: m.name }));
-  res.redirect('/app/settings/team');
+  res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));
 
 router.post('/:id(\\d+)/reset-link', form(async (req, res) => {
   const out = await businesses.adminResetLink(req.ctx, Number(req.params.id));
   stash(req, 'teamResult', out.link ? { type: 'reset', name: out.name, email: out.email, link: out.link } : { type: 'reset_emailed', name: out.name, email: out.email });
-  res.redirect('/app/settings/team');
+  res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));
 
 // ---------------------------------------------------------------- invitations
 router.post('/invitations/:id(\\d+)/revoke', form(async (req, res) => {
   await businesses.revokeInvitation(req.ctx, Number(req.params.id));
   flash(req, 'success', req.t('team.invite_revoked'));
-  res.redirect('/app/settings/team');
+  res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));
 
 // A new link for a pending invitation (the old one stops working). Links are stored hashed, so they can't be shown again.
@@ -146,7 +146,7 @@ router.post('/invitations/:id(\\d+)/renew', form(async (req, res) => {
   const out = await businesses.addStaff(req.ctx, { name: inv.name, email: inv.email, roleId: inv.role_id, doctorId: inv.doctor_id || undefined, mode: 'invite', locale: req.locale });
   const role = await knex('roles').where({ id: inv.role_id }).first('key', 'name', 'is_system');
   stash(req, 'teamResult', { type: 'invite', name: inv.name || inv.email, email: inv.email, role, link: out.link, sent: Boolean(out.sent), renewed: true });
-  res.redirect('/app/settings/team');
+  res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));
 
 module.exports = router;

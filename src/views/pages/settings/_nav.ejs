@@ -1,3 +1,4 @@
+<% if (typeof workspace === 'undefined' || !workspace) { %>
 <nav class="settings-nav" aria-label="<%= t('settings.title') %>" data-settings-nav>
   <a href="/app/settings" class="<%= section === 'overview' ? 'active' : '' %>"<%- section === 'overview' ? ' aria-current="page"' : '' %>><%- icon('settings', 'icon-sm') %><%= t('settings.nav_overview') %></a>
   <% settingsNav.forEach(function (g) { %>
@@ -5,3 +6,4 @@
     <% g.items.forEach(function (i) { %><a href="<%= i.href %>" class="<%= section === i.key ? 'active' : '' %>"<%- section === i.key ? ' aria-current="page"' : '' %>><%- icon(i.icon, 'icon-sm') %><%= t('settings.nav_' + i.key) %></a><% }) %>
   <% }) %>
 </nav>
+<% } %>

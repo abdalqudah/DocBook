@@ -60,7 +60,7 @@
             <div class="set-role-chips mt-2"><% portalRoles.forEach(function (r) { %><span class="set-role-chip"><%- icon(r.icon, 'icon-sm') %><%= t('roles.' + r.key) %></span><% }) %></div></div></li>
           <li><span class="set-step-no">3</span><div><div class="strong"><%= t('settings.staff_entry_3') %></div><div class="small muted"><%= t('settings.staff_entry_3_text') %></div></div></li>
         </ol>
-        <% if (can('users.manage')) { %><div><a class="btn btn-secondary btn-sm" href="/app/settings/team"><%- icon('user-cog', 'icon-sm') %><%= t('settings.nav_team') %></a></div><% } %>
+        <% if (can('users.manage')) { %><div><a class="btn btn-secondary btn-sm" href="/app/clinic/team"><%- icon('user-cog', 'icon-sm') %><%= t('settings.nav_team') %></a></div><% } %>
       </div>
     </section>
   </div>

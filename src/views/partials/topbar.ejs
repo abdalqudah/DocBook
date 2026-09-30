@@ -1,6 +1,16 @@
 <header class="topbar">
   <button class="btn btn-ghost btn-icon mobile-only" type="button" data-nav-toggle aria-label="<%= t('nav.menu') %>"><%- icon('menu') %></button>
   <button class="search-trigger" type="button" data-cmdk-open aria-label="<%= t('search.open') %>"><%- icon('search', 'icon-sm') %><span class="label-text"><%= t('search.placeholder') %></span><span class="kbd">Ctrl K</span></button>
+  <% var _create = navActions.filter(function (a) { return a.create; }); %>
+  <% if (_create.length) { %>
+  <details class="dropdown new-menu desktop-only">
+    <summary class="btn btn-primary btn-sm" aria-label="<%= t('nav.new_menu') %>"><%- icon('plus', 'icon-sm') %><span><%= t('nav.new') %></span></summary>
+    <div class="menu">
+      <div class="menu-label"><%= t('nav.new_menu') %></div>
+      <% _create.forEach(function (a) { %><a href="<%= a.href %>"><%- icon(a.icon, 'icon-sm') %><%= t('search.actions.' + a.key) %></a><% }) %>
+    </div>
+  </details>
+  <% } %>
   <div class="topbar-actions">
     <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" title="<%= t('common.language') %>" data-lang-switch="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
     <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
@@ -9,9 +19,13 @@
       <summary class="user-chip"><span class="avatar"><%= initials(currentUser.name) %></span><span class="user-name small strong"><%= currentUser.name %></span><%- icon('chevron-down', 'icon-sm muted') %></summary>
       <div class="menu">
         <div class="menu-label truncate"><%= currentUser.email %></div>
+        <% if (!(typeof moduleOn === 'function') || moduleOn('attendance')) { %><a href="/app/attendance"><%- icon('clock', 'icon-sm') %><%= t('navx.clock') %></a><% } %>
+        <div class="sep"></div>
+        <div class="menu-label"><%= t('nav.personal') %></div>
         <a href="/app/settings/account"><%- icon('user', 'icon-sm') %><%= t('settings.account') %></a>
         <a href="/app/settings/security"><%- icon('shield-check', 'icon-sm') %><%= t('settings.security') %></a>
         <a href="/app/settings/appearance"><%- icon('palette', 'icon-sm') %><%= t('settings.appearance') %></a>
+        <a href="/app/settings/notifications"><%- icon('bell', 'icon-sm') %><%= t('nav.my_notifications') %></a>
         <a href="/app/help"><%- icon('circle-help', 'icon-sm') %><%= t('nav.support') %></a>
         <div class="sep"></div>
         <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('log-out', 'icon-sm') %><%= t('auth.logout') %></button></form>

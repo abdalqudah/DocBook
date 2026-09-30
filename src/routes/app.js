@@ -123,7 +123,11 @@ router.use('/', require('../modules/integrations/web')); // Google Sheets sync, 
 router.use('/', require('../modules/live/web')); // live agenda events + calendar import
 router.use('/', require('../modules/signatures/web')); // doctor signatures + clinic stamp
 router.use('/', require('../modules/subscriptions/web')); // Settings → Subscription
-router.use('/settings/payments', require('../modules/payments/settings.web')); // Settings → Online payments
+router.use('/settings/payments', require('../modules/payments/settings.web'));
+router.use(require('./moved')); // pages that moved to another workspace: old GET addresses answer 301 (redesign 3.2)
+router.use('/clinic/team', require('../modules/settings/team.web')); // Clinic → Team (members, page access)
+router.use('/clinic/roles', require('../modules/settings/roles.web')); // Clinic → Team → Roles
+router.use('/clinic/setup', require('../modules/clinic/setup.web')); // Clinic → Clinical setup (hub of the clinical lists) // Settings → Online payments
 router.use('/settings', require('../modules/settings/web'));
 
 module.exports = router;

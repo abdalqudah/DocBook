@@ -420,33 +420,12 @@ body.is-navigating .loading-bar { display: block; }
 .nav a.active .nav-count { background: var(--primary); color: var(--primary-ink); }
 .nav a .nav-count.warn { background: var(--surface-sunken); color: var(--text); }
 .sidebar-foot { padding: 12px; border-top: 1px solid var(--border); }
-/* Sidebar (src/routes/nav.js): daily pages as plain always-visible links, then a few collapsible groups for occasional
-   work (nav.js remembers open state; works without JS via <details>), then settings/help at the bottom. */
-.nav-sections { display: flex; flex-direction: column; gap: 2px; padding-top: 10px; }
+/* Sidebar (src/routes/nav.js): one line per workspace, then settings/help at the bottom. A workspace's pages are the
+   tabs above the page content (.section-tabs) — never nested in the sidebar. */
+.nav-workspaces { display: flex; flex-direction: column; gap: 2px; padding-top: 10px; flex: 1; }
 .nav-flat { display: flex; flex-direction: column; gap: 2px; }
-.nav-groups { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-.nav-sections > .nav-groups:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .nav-foot-links { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); }
-.nav-groups + .nav-foot-links, .nav-daily + .nav-foot-links { margin-top: auto; }
-.nav-sections > .nav-foot-links:first-child { margin-top: 0; border-top: 0; }
-.nav-sec > summary { list-style: none; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: var(--radius-sm); color: var(--text-muted); font-weight: var(--fw-medium); font-size: 13px; cursor: pointer; user-select: none; }
-.nav-sec > summary::-webkit-details-marker { display: none; }
-.nav-sec > summary:hover { background: var(--surface-sunken); color: var(--text); }
-.nav-sec > summary:focus-visible, .nav a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
-.nav-sec.has-active > summary { color: var(--text); font-weight: var(--fw-semibold); }
-.nav-sec.has-active:not([open]) > summary { background: var(--primary-soft); }
-.nav-sec.has-active:not([open]) > summary .icon:first-child { color: var(--primary); }
-.nav-sec > summary > .truncate { flex: 1; min-width: 0; }
-/* A closed group with something waiting inside shows a small dot (the counts themselves are on the pages' lines). */
-.nav-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
-.nav-sec[open] > summary .nav-dot { display: none; }
-.nav-sec > summary .nav-chev { flex: none; color: var(--text-subtle); transition: transform .15s ease; transform: rotate(-90deg); }
-[dir="rtl"] .nav-sec > summary .nav-chev { transform: rotate(90deg); }
-.nav-sec[open] > summary .nav-chev, [dir="rtl"] .nav-sec[open] > summary .nav-chev { transform: none; }
-.nav-sec-items { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 6px; margin-inline-start: 19px; padding-inline-start: 10px; border-inline-start: 1px solid var(--border); }
-.nav .nav-sec-items a.nav-sub { height: 32px; padding: 0 10px; font-size: 13px; }
-.nav .nav-sec-items a.nav-sub.active::before { inset-inline-start: -11px; top: 6px; bottom: 6px; border-radius: 3px; }
-@media (prefers-reduced-motion: reduce) { .nav-sec > summary .nav-chev { transition: none; } }
+.nav a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 /* Section tabs — the pages of the current section, above the page content (distinct from the page's own .tabs). */
 /* Section tabs: the sibling pages of an occasional group (finance, clinic management, stock, reports) as a quiet
    underlined strip above the page; daily pages never show it. */
@@ -457,6 +436,7 @@ body.is-navigating .loading-bar { display: block; }
 .section-tabs-list a:hover { color: var(--text); }
 .section-tabs-list a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; border-radius: var(--radius-sm); }
 .section-tabs-list a.active { color: var(--text); font-weight: var(--fw-semibold); border-bottom-color: var(--primary); }
+.section-tabs-sep { flex: none; align-self: center; width: 1px; height: 18px; background: var(--border); }
 .section-tabs-count { font-size: 10px; font-weight: var(--fw-bold); min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--pill); background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; }
 @media (max-width: 720px) { .section-tabs { margin: -4px calc(-1 * var(--page-pad)) 16px; padding: 0 var(--page-pad); } .section-tabs-list { gap: 16px; } }
 @media print { .section-tabs { display: none !important; } }
@@ -490,6 +470,15 @@ body.is-navigating .loading-bar { display: block; }
 .banner.warning { background: var(--warning-soft); } .banner.info { background: var(--surface-muted); }
 .banner .btn { margin-inline-start: auto; }
 .mobile-only { display: none !important; }
+/* Global "+ New" (top bar on desktop, middle of the bottom bar on phones). */
+.new-menu > summary { list-style: none; gap: 6px; }
+.new-menu > summary::-webkit-details-marker { display: none; }
+.new-menu .menu { min-width: 220px; }
+.bottom-new { position: relative; display: flex; justify-content: center; }
+.bottom-new > summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: var(--primary-ink); cursor: pointer; box-shadow: var(--shadow-md); }
+.bottom-new > summary::-webkit-details-marker { display: none; }
+.bottom-new .menu { position: absolute; bottom: calc(100% + 10px); inset-inline-start: 50%; transform: translateX(-50%); min-width: 230px; }
+[dir="rtl"] .bottom-new .menu { transform: translateX(50%); }
 .sidebar-backdrop { display: none; }
 .bottom-nav { display: none; }
 @media (max-width: 1024px) {
@@ -501,6 +490,7 @@ body.is-navigating .loading-bar { display: block; }
   body.nav-open .sidebar-backdrop { display: block; position: fixed; inset: 0; background: var(--overlay); z-index: 35; }
   body.nav-open { overflow: hidden; }
   .mobile-only { display: inline-flex !important; }
+  .desktop-only { display: none !important; }
   .search-trigger .kbd, .search-trigger .label-text { display: none; }
   .search-trigger { width: 36px; padding: 0; justify-content: center; border-radius: var(--radius-sm); }
   .user-chip .user-name { display: none; }
@@ -741,3 +731,12 @@ body.print-page { background: var(--surface); }
   .statement tr.grand td, .statement tr.total td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   a { text-decoration: none; }
 }
+
+/* Clinic → Clinical setup hub (src/views/pages/clinic/setup). */
+.setup-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.setup-card { display: flex; align-items: center; gap: 14px; padding: 16px; color: var(--text); text-decoration: none; transition: border-color .15s ease, box-shadow .15s ease; }
+.setup-card:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+.setup-card:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.setup-card-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--primary-soft); color: var(--primary); }
+.setup-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ivx-mini { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }

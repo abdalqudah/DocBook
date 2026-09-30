@@ -1,7 +1,7 @@
 // Settings → Team → Page access (worker: access). Mounted inside settings/team.web.js (behind users.manage).
-//   GET  /app/settings/team/:id/access          the member's pages, grouped like the menu: role default / allow / deny
-//   POST /app/settings/team/:id/access          save (fields p__<pageKey> = default|allow|deny, l__<pageKey> = manage)
-//   POST /app/settings/team/:id/access/reset    back to the role (removes every per-page setting)
+//   GET  /app/clinic/team/:id/access          the member's pages, grouped like the menu: role default / allow / deny
+//   POST /app/clinic/team/:id/access          save (fields p__<pageKey> = default|allow|deny, l__<pageKey> = manage)
+//   POST /app/clinic/team/:id/access/reset    back to the role (removes every per-page setting)
 // Rules (enforced in access.service.save): the owner can't be restricted, nobody changes their own access, a manager
 // who isn't the owner can only give pages they can open themselves, core pages can't be denied. Every change is audited.
 const express = require('express');
@@ -49,7 +49,7 @@ router.get('/:id(\\d+)/access', wrap((req, res) => renderAccess(req, res)));
 const errorText = (req, err) => { const k = `errors_access.${err.code}`; const s = req.t(k); return s === k ? (req.t(`errors.${err.code}`) !== `errors.${err.code}` ? req.t(`errors.${err.code}`) : err.message) : s; };
 
 const run = (action) => wrap(async (req, res) => {
-  const back = `/app/settings/team/${Number(req.params.id)}/access`;
+  const back = `/app/clinic/team/${Number(req.params.id)}/access`;
   try {
     const n = await action(req);
     flash(req, n ? 'success' : 'info', n ? req.t('access.saved', { n }) : req.t('access.nothing_changed'));

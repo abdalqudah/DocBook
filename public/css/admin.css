@@ -137,3 +137,7 @@
 @media (max-width: 900px) { .settings-layout { grid-template-columns: minmax(0, 1fr); } .settings-layout > * { min-width: 0; } }
 .field .segmented { align-self: flex-start; }
 .set-method { grid-template-columns: repeat(2, minmax(0, 1fr)); } @media (max-width: 560px) { .set-method { grid-template-columns: 1fr; } }
+
+/* Screens of another workspace rendered by the settings module (Clinic → Team, Roles): no settings sidebar. */
+.settings-layout.is-bare { display: block; }
+.team-tabs { margin-bottom: 16px; }

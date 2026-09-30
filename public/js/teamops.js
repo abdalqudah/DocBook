@@ -124,7 +124,7 @@
 
   // ---------------------------------------------------------------- Settings → Team: presence dots
   if (/^\/app\/settings\/team\/?$/.test(location.pathname)) {
-    var editBtns = document.querySelectorAll('[data-open-dialog="edit-dialog"][data-action^="/app/settings/team/"]');
+    var editBtns = document.querySelectorAll('[data-open-dialog="edit-dialog"][data-action^="/app/clinic/team/"]');
     if (editBtns.length) {
       loadCss();
       getJson('/app/teamops/presence', function (d) {

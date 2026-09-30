@@ -114,7 +114,7 @@
     "group_operations": "إدارة العيادة",
     "group_insights": "التقارير",
     "group_admin": "الإعدادات والمساعدة",
-    "dashboard": "لوحة التحكم",
+    "dashboard": "نظرة عامة",
     "my_day": "يومي",
     "appointments": "المواعيد",
     "front_desk": "الاستقبال وقائمة الانتظار",
@@ -131,14 +131,17 @@
     "settings": "الإعدادات",
     "support": "الدعم والمساعدة",
     "short": {
-      "dashboard": "الرئيسية",
+      "dashboard": "اليوم",
       "my_day": "يومي",
       "appointments": "المواعيد",
       "front_desk": "الاستقبال",
       "patients": "المرضى",
-      "cashier": "المحاسبة",
+      "cashier": "الصندوق",
       "billing": "الفواتير",
-      "certificates": "الإجازات"
+      "certificates": "الإجازات",
+      "profit_loss": "المالية",
+      "new": "جديد",
+      "today": "اليوم"
     },
     "cashier": "محاسبة المرضى",
     "attendance": "الحضور والانصراف",
@@ -147,13 +150,19 @@
     "certificates": "الإجازات والتقارير الطبية",
     "staff_payroll": "رواتب الموظفين",
     "budgets": "الميزانيات",
-    "profit_loss": "قائمة الدخل",
+    "profit_loss": "نظرة عامة",
     "partners": "حسابات الشركاء",
     "tickets": "طلبات الدعم",
     "group_stock": "المخزون والموردون",
     "group_reports": "التقارير",
     "cash_closings": "الإقفال اليومي للصندوق",
-    "purchase_orders": "طلبات الشراء"
+    "purchase_orders": "طلبات الشراء",
+    "payments_all": "المدفوعات",
+    "clinical_setup": "الإعداد الطبي",
+    "new": "جديد",
+    "new_menu": "إنشاء جديد",
+    "personal": "إعداداتي",
+    "my_notifications": "تنبيهاتي"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",
@@ -168,8 +177,11 @@
       "new_patient": "إضافة مريض",
       "waiting_room": "فتح غرفة الانتظار",
       "new_expense": "تسجيل مصروف",
-      "add_staff": "إضافة دخول لموظف",
-      "booking_page": "صفحة العيادة والحجز الإلكتروني"
+      "add_staff": "إضافة موظف",
+      "booking_page": "صفحة العيادة والحجز الإلكتروني",
+      "check_in": "تسجيل وصول مريض",
+      "collect_payment": "تحصيل دفعة",
+      "new_certificate": "إصدار إجازة أو تقرير"
     }
   },
   "table": {

@@ -4,7 +4,7 @@
 %>
 <div class="page-head">
   <div>
-    <div class="breadcrumbs"><% if (can('billing.view')) { %><a href="/app/billing"><%= t('payments.list.billing') %></a><%- icon('chevron-right', 'flip-rtl') %><% } %><%= t('payments.list.title') %></div>
+    <div class="breadcrumbs"><% if (can('billing.view')) { %><a href="/app/billing/payments"><%= t('nav.payments_all') %></a><%- icon('chevron-right', 'flip-rtl') %><% } %><%= t('payments.list.title') %></div>
     <h1><%= t('payments.list.title') %></h1>
     <p><%= t('payments.list.lead') %></p>
   </div>

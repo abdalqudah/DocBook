@@ -163,4 +163,4 @@ function describe(t, parts, { insuranceName = null, amount = (v) => String(v) } 
 /** Amount paid by `method` in a list of parts (0 when none) — per-method export columns. */
 const amountBy = (parts, method) => r3((parts || []).filter((p) => p.method === method).reduce((s, p) => s + n(p.amount), 0));
 
-module.exports = { METHODS, keyOf, partsMap, partsOf, attach, aggregate, totalsByMethod, totalsByMethodGrouped, whereHasMethod, partLabel, describe, amountBy };
+module.exports = { METHODS, keyOf, partsMap, partsOf, attach, aggregate, totalsByMethod, totalsByMethodGrouped, whereHasMethod, partsUnion, partLabel, describe, amountBy };

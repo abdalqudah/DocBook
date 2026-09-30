@@ -1,4 +1,10 @@
 <div class="page-head">
-  <div><div class="breadcrumbs"><a href="/app/settings"><%= t('settings.title') %></a></div><h1><%= heading %></h1><% if (typeof lead !== 'undefined' && lead) { %><p><%= lead %></p><% } %></div>
+  <div><div class="breadcrumbs"><% if (typeof workspace !== 'undefined' && workspace) { %><%= t('navx.sec_' + workspace) %><% if (workspace === 'clinic' && section !== 'team' && section !== 'roles') { %> <%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %> <a href="/app/clinic/setup"><%= t('nav.clinical_setup') %></a><% } %><% } else { %><a href="/app/settings"><%= t('settings.title') %></a><% } %></div><h1><%= heading %></h1><% if (typeof lead !== 'undefined' && lead) { %><p><%= lead %></p><% } %></div>
   <% if (typeof actions !== 'undefined' && actions) { %><div class="page-actions"><%- actions %></div><% } %>
 </div>
+<% if (typeof workspace !== 'undefined' && workspace === 'clinic' && typeof section !== 'undefined' && (section === 'team' || section === 'roles')) { %>
+<nav class="tabs team-tabs" aria-label="<%= t('settings.nav_team') %>">
+  <% if (can('users.manage')) { %><a href="/app/clinic/team" class="<%= section === 'team' ? 'active' : '' %>"<%- section === 'team' ? ' aria-current="page"' : '' %>><%- icon('users', 'icon-sm') %><%= t('navx.team_members') %></a><% } %>
+  <% if (can('roles.manage')) { %><a href="/app/clinic/roles" class="<%= section === 'roles' ? 'active' : '' %>"<%- section === 'roles' ? ' aria-current="page"' : '' %>><%- icon('shield-check', 'icon-sm') %><%= t('settings.nav_roles') %></a><% } %>
+</nav>
+<% } %>

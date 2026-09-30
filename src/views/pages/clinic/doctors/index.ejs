@@ -1,6 +1,6 @@
 <% var canManage = can('doctors.manage'); var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
 <div class="page-head">
-  <div><div class="breadcrumbs"><%= t('nav.group_operations') %></div><h1><%= t('doctors.title') %></h1><p><%= t('doctors.lead') %></p></div>
+  <div><div class="breadcrumbs"><%= t('navx.sec_clinic') %></div><h1><%= t('doctors.title') %></h1><p><%= t('doctors.lead') %></p></div>
   <div class="page-actions"><% if (canManage) { %><a class="btn btn-primary" href="/app/doctors/new"><%- icon('user-plus', 'icon-sm') %><%= t('doctors.add') %></a><% } %></div>
 </div>
 <% if (!rows.length) { %>

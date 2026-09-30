@@ -205,7 +205,7 @@ router.get('/', wrap(async (req, res) => {
   }
 
   return res.page('pages/clinic/dashboard/index', {
-    title: req.t('nav.dashboard'), greeting: req.t(greetingKey(ctx.timezone), { name: String(ctx.userName || '').split(/\s+/).filter((w) => !/^(د\.?|dr\.?|دكتور|الدكتور|doctor)$/i.test(w))[0] || '' }),
+    title: req.t('navx.sec_today'), greeting: req.t(greetingKey(ctx.timezone), { name: String(ctx.userName || '').split(/\s+/).filter((w) => !/^(د\.?|dr\.?|دكتور|الدكتور|doctor)$/i.test(w))[0] || '' }),
     ...data, statusTone: lib.STATUS_TONE, nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), localTime: (d) => lib.localTime(d, ctx.timezone),
     pageScripts: ['/js/records.js', '/js/ownerx.js'], pageStyles: ['/css/records.css', '/css/ownerx.css'],
   });

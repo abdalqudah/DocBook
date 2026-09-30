@@ -51,7 +51,7 @@ function pages() {
   const byHref = new Map();
   for (const g of NAV) {
     for (const i of g.items) {
-      const p = { key: i.key, href: i.href, perms: i.perms || [], exact: Boolean(i.exact || i.exactSettings), needsDoctor: Boolean(i.needsDoctor), group: g.group, groupLabel: g.label || `nav.group_${g.group}`, groupFallback: `nav.group_${g.group}`, label: `nav.${i.key}`, icon: i.icon, settings: false, aliases: [] };
+      const p = { key: i.key, href: i.href, perms: i.perms || [], exact: Boolean(i.exact || i.exactSettings), needsDoctor: Boolean(i.needsDoctor), group: g.group, groupLabel: g.label || `nav.group_${g.group}`, groupFallback: `nav.group_${g.group}`, label: `nav.${i.key}`, icon: i.icon, settings: false, aliases: [], also: i.also || [] };
       list.push(p);
       byHref.set(i.href, p);
     }
@@ -60,7 +60,7 @@ function pages() {
     for (const i of g.items) {
       const key = `settings_${i.key}`;
       if (byHref.has(i.href)) { byHref.get(i.href).aliases.push(key); continue; }
-      list.push({ key, href: i.href, perms: i.perms || [], exact: false, needsDoctor: false, group: `settings_${g.group}`, groupLabel: `settings.group_${g.group}`, label: `settings.nav_${i.key}`, icon: i.icon, settings: true, aliases: [] });
+      list.push({ key, href: i.href, perms: i.perms || [], exact: false, needsDoctor: false, group: `settings_${g.group}`, groupLabel: `settings.group_${g.group}`, label: `settings.nav_${i.key}`, icon: i.icon, settings: true, aliases: [], also: [] });
     }
   }
   for (const p of list) {
@@ -139,10 +139,12 @@ function pageForPath(fullPath) {
   if (INDEPENDENT.some((x) => path === x || path.startsWith(`${x}/`))) return null;
   let best = null;
   for (const p of pages()) {
-    const hit = p.exact ? path === p.href : (path === p.href || path.startsWith(`${p.href}/`));
-    if (hit && (!best || p.href.length > best.href.length)) best = p;
+    const within = (h) => path === h || path.startsWith(`${h}/`);
+    const hrefs = p.exact ? [] : [p.href, ...(p.also || [])];
+    const len = p.exact ? (path === p.href ? p.href.length : 0) : Math.max(0, ...hrefs.filter(within).map((h) => h.length));
+    if (len && (!best || len > best.len)) best = { page: p, len };
   }
-  return best;
+  return best ? best.page : null;
 }
 
 const parse = (v) => (Array.isArray(v) ? v : (() => { try { return JSON.parse(v || '[]'); } catch { return []; } })());

@@ -11,7 +11,7 @@ const LINKS = {
   appointments: { href: '/app/appointments', nav: 'appointments', perms: ['appointments.view'] },
   'front-desk': { href: '/app/front-desk', nav: 'front_desk', perms: ['frontdesk.use'] },
   doctors: { href: '/app/doctors', nav: 'doctors', perms: ['doctors.manage', 'appointments.view_all'] },
-  roles: { href: '/app/settings/team', nav: 'team', perms: ['users.manage'] },
+  roles: { href: '/app/clinic/team', nav: 'team', perms: ['users.manage'] },
   clinical: { href: '/app/patients', nav: 'patients', perms: ['patients.view'] },
   payroll: { href: '/app/payroll', nav: 'payroll', perms: ['payroll.view'] },
   supplies: { href: '/app/supplies', nav: 'supplies', perms: ['supplies.view'] },

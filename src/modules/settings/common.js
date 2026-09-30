@@ -17,14 +17,15 @@ const SECTIONS = [
     { key: 'media', href: '/app/settings/media', icon: 'images', perms: ['settings.manage'] },
   ] },
   { group: 'team', items: [
-    { key: 'team', href: '/app/settings/team', icon: 'user-cog', perms: ['users.manage'] },
-    { key: 'roles', href: '/app/settings/roles', icon: 'shield-check', perms: ['roles.manage'] },
+    // Moved to the Clinic workspace (redesign 3.2); kept here for page access and the old addresses (they redirect).
+    { key: 'team', href: '/app/clinic/team', icon: 'user-cog', perms: ['users.manage'], moved: true },
+    { key: 'roles', href: '/app/clinic/roles', icon: 'shield-check', perms: ['roles.manage'], moved: true },
   ] },
   { group: 'clinical', items: [
-    { key: 'insurance', href: '/app/settings/insurance', icon: 'shield-plus', perms: ['settings.manage'] },
-    { key: 'medications', href: '/app/settings/medications', icon: 'pill', perms: ['settings.manage', 'prescriptions.create'] },
-    { key: 'diagnosis_codes', href: '/app/settings/diagnosis-codes', icon: 'stethoscope', perms: ['settings.manage', 'clinical.edit'] },
-    { key: 'signatures', href: '/app/settings/signatures', icon: 'pen-line', perms: ['settings.manage', 'prescriptions.create'] },
+    { key: 'insurance', href: '/app/settings/insurance', icon: 'shield-plus', perms: ['settings.manage'], moved: true },
+    { key: 'medications', href: '/app/settings/medications', icon: 'pill', perms: ['settings.manage', 'prescriptions.create'], moved: true },
+    { key: 'diagnosis_codes', href: '/app/settings/diagnosis-codes', icon: 'stethoscope', perms: ['settings.manage', 'clinical.edit'], moved: true },
+    { key: 'signatures', href: '/app/settings/signatures', icon: 'pen-line', perms: ['settings.manage', 'prescriptions.create'], moved: true },
     { key: 'privacy', href: '/app/settings/privacy', icon: 'lock', perms: ['settings.manage', 'audit.view'] },
     { key: 'ai', href: '/app/settings/ai', icon: 'sparkles', perms: ['settings.manage'] },
   ] },
@@ -44,12 +45,15 @@ function sectionsFor(permissions) {
   // permissions.pagesOff: Settings sections closed for this member (per-member page access, src/modules/access).
   const off = permissions.pagesOff;
   const ok = (item) => (!item.perms.length || item.perms.some((p) => permissions.has(p))) && !(off && off.has(`settings_${item.key}`));
-  return SECTIONS.map((g) => ({ group: g.group, items: g.items.filter(ok) })).filter((g) => g.items.length);
+  return SECTIONS.map((g) => ({ group: g.group, items: g.items.filter((i) => !i.moved && ok(i)) })).filter((g) => g.items.length);
 }
 
 /** Renders a settings screen inside the settings layout (sidebar + content). */
+// Screens that belong to another workspace render without the settings sidebar (team, roles, clinical lists → Clinic).
+const WORKSPACE_OF = { team: 'clinic', roles: 'clinic', insurance: 'clinic', medications: 'clinic', diagnosis_codes: 'clinic', signatures: 'clinic' };
 function render(req, res, view, section, data = {}) {
   return res.page(`pages/settings/${view}`, {
+    workspace: WORKSPACE_OF[section] || null,
     title: data.title || req.t(`settings.nav_${section}`),
     section,
     settingsNav: sectionsFor(req.ctx.permissions),

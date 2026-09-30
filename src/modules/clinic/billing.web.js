@@ -105,6 +105,54 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
   });
 }));
 
+// ---------------------------------------------------------------- payments (Finance → Payments)
+// Every payment part as its own line: an invoice paid cash 20 + card 20 is two payments. Invoices issued without parts
+// count as one part (payment_method × amount), exactly like the totals on the invoices tab (payment-parts.js).
+const PAYMENTS_PER_PAGE = 50;
+function paymentsQuery(ctx, query) {
+  const inv = invoiceQuery(ctx, { ...query, method: undefined });
+  const q = knex.from(payParts.partsUnion(inv, 'invoices.id', ctx.businessId).as('x'))
+    .join('invoices as i', function j() { this.on('i.id', 'x.invoice_id').andOnVal('i.business_id', ctx.businessId); })
+    .leftJoin('users as u', 'u.id', 'i.created_by');
+  if (payParts.METHODS.includes(query.method)) q.where('x.method', query.method);
+  return q;
+}
+const paymentRange = (ctx, query) => ({ from: lib.isIso(query.from) ? query.from : ctx.today.slice(0, 8) + '01', to: lib.isIso(query.to) ? query.to : ctx.today });
+
+router.get('/payments', wrap(async (req, res) => {
+  const range = paymentRange(req.ctx, req.query);
+  const query = { ...req.query, ...range };
+  const base = paymentsQuery(req.ctx, query);
+  const [{ rows, meta }, sums, opts] = await Promise.all([
+    lib.paginate(base.clone().select('x.method', 'x.amount', 'i.id as invoice_id', 'i.invoice_number', 'i.created_at', 'i.patient_id', 'i.patient_name',
+      'i.doctor_name', 'i.insurance_provider_name', 'u.name as received_by').orderBy('i.created_at', 'desc').orderBy('i.id', 'desc'), { page: req.query.page, perPage: PAYMENTS_PER_PAGE }),
+    base.clone().groupBy('x.method').select('x.method').select(knex.raw('COALESCE(SUM(x.amount), 0) AS v')).select(knex.raw('COUNT(*) AS c')),
+    filterOptions(req.ctx),
+  ]);
+  const byMethod = {};
+  let total = 0; let count = 0;
+  sums.forEach((r) => { const m = payParts.METHODS.includes(r.method) ? r.method : 'other'; byMethod[m] = (byMethod[m] || 0) + Number(r.v); total += Number(r.v); count += Number(r.c); });
+  return res.page('pages/clinic/billing/payments', {
+    title: req.t('nav.payments_all'), rows, meta, range, byMethod, total, count, methods: payParts.METHODS,
+    filtered: ['q', 'doctor', 'method', 'insurance'].some((k) => req.query[k] && req.query[k] !== 'all'),
+    localTime: (d) => lib.localTime(d, req.ctx.timezone), ...opts, ...PAGE,
+  });
+}));
+
+router.get('/payments/export', can('data.export'), wrap(async (req, res) => {
+  const range = paymentRange(req.ctx, req.query);
+  const rows = await paymentsQuery(req.ctx, { ...req.query, ...range }).orderBy('i.created_at', 'desc').limit(50000)
+    .select('x.method', 'x.amount', 'i.invoice_number', 'i.created_at', 'i.patient_name', 'i.doctor_name', 'i.insurance_provider_name', 'u.name as received_by');
+  const t = req.t;
+  const prefix = (res.locals.invoiceTpl && res.locals.invoiceTpl.prefix) || '';
+  exporter.send(req, res, {
+    name: t('nav.payments_all'),
+    header: [t('common.date'), t('common.time'), t('billing.number'), t('common.patient'), t('common.doctor'), t('billing.method'), t('common.amount'), t('invoicex.received_by')],
+    rows: rows.map((r) => { const lt = lib.localTime(r.created_at, req.ctx.timezone) || {}; return [lt.date || '', lt.time || '', `${prefix}${r.invoice_number}`, r.patient_name, r.doctor_name || '',
+      payParts.partLabel(t, r.method, r.insurance_provider_name), Number(r.amount), r.received_by || '']; }),
+  });
+}));
+
 /** Plain number with the currency's decimals (for export text). */
 const fmtAmount = (v, req) => fmtCore.formatAmount(v, req.ctx.currency, 'en');
 

@@ -6,7 +6,7 @@
   <%- include('../settings/_result', { result: result, publicUrl: null }) %>
   <% if (others.length || invitations.length) { %>
   <section class="panel flush">
-    <div class="panel-head"><h2><%= t('ownerx.wiz.team_so_far', { n: others.length + invitations.length }) %></h2><a class="btn btn-ghost btn-sm" href="/app/settings/team"><%= t('ownerx.wiz.edit_details') %></a></div>
+    <div class="panel-head"><h2><%= t('ownerx.wiz.team_so_far', { n: others.length + invitations.length }) %></h2><a class="btn btn-ghost btn-sm" href="/app/clinic/team"><%= t('ownerx.wiz.edit_details') %></a></div>
     <ul class="action-list">
       <% others.forEach(function (m) { %><li><div><span class="avatar"><%= initials(m.name) %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= m.name %></div><div class="small muted truncate" dir="ltr" style="text-align:start"><%= m.email %></div></div><span class="badge badge-neutral"><%= roleName(m) %></span></div></li><% }) %>
       <% invitations.forEach(function (i) { %><li><div><span class="avatar"><%- icon('mail', 'icon-sm') %></span><div class="grow" style="min-width:0"><div class="strong truncate"><%= i.name || i.email %></div><div class="small muted"><%= t('ownerx.wiz.invited') %></div></div><span class="badge badge-neutral"><%= roleName(i) %></span></div></li><% }) %>

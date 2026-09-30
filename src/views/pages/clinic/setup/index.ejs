@@ -1,0 +1,16 @@
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('navx.sec_clinic') %></div><h1><%= t('nav.clinical_setup') %></h1><p><%= t('navx.setup_lead') %></p></div>
+</div>
+<div class="setup-cards">
+  <% cards.forEach(function (c) { %>
+  <a class="card setup-card" href="<%= c.href %>">
+    <span class="setup-card-icon"><%- icon(c.icon) %></span>
+    <span class="setup-card-body">
+      <span class="strong"><%= t('navx.setup_' + c.key) %></span>
+      <span class="small muted"><%= t('navx.setup_' + c.key + '_text') %></span>
+    </span>
+    <% if (c.count !== null && c.count !== undefined) { %><span class="badge"><%= fmt.number ? fmt.number(c.count) : c.count %></span><% } %>
+    <%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm muted') %>
+  </a>
+  <% }) %>
+</div>

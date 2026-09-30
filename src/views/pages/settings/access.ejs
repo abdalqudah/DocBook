@@ -1,9 +1,9 @@
 <%
-  var back = '<a class="btn btn-ghost" href="/app/settings/team">' + icon('arrow-left', 'icon-sm flip-rtl') + escapeHtml(t('access.back_team')) + '</a>';
+  var back = '<a class="btn btn-ghost" href="/app/clinic/team">' + icon('arrow-left', 'icon-sm flip-rtl') + escapeHtml(t('access.back_team')) + '</a>';
   var off = !!locked;
 %>
 <%- include('_head', { heading: t('access.heading'), lead: t('access.lead'), actions: back }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg acc-page">
     <%- include('../../partials/form-error') %>
@@ -22,7 +22,7 @@
         <div class="panel-foot acc-legend">
           <span class="small muted"><%= t('access.legend') %></span>
           <% if (summary.custom) { %>
-          <form method="post" action="/app/settings/team/<%= member.id %>/access/reset" data-confirm="<%= t('access.reset_confirm', { name: member.name }) %>" data-confirm-title="<%= t('access.reset') %>" data-confirm-yes="<%= t('access.reset') %>" data-confirm-tone="primary">
+          <form method="post" action="/app/clinic/team/<%= member.id %>/access/reset" data-confirm="<%= t('access.reset_confirm', { name: member.name }) %>" data-confirm-title="<%= t('access.reset') %>" data-confirm-yes="<%= t('access.reset') %>" data-confirm-tone="primary">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('access.reset') %></button>
           </form>
           <% } %>
@@ -30,7 +30,7 @@
       <% } %>
     </section>
 
-    <form method="post" action="/app/settings/team/<%= member.id %>/access" class="stack-lg" data-acc-form>
+    <form method="post" action="/app/clinic/team/<%= member.id %>/access" class="stack-lg" data-acc-form>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <% var roleOnly = []; var always = [];
          groups.forEach(function (g) {

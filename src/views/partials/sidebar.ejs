@@ -1,19 +1,16 @@
 <%
+  // One line per workspace (src/routes/nav.js); the workspace's pages are the tabs above the page content.
   var _here = navGroups.locate ? navGroups.locate(fullPath) : { item: null, group: null };
-  // A page without its own line (support tickets) lights up the line it's reached from.
-  var _activeKey = _here.item ? (_here.item.parent || _here.item.key) : null;
-  var _count = function (i) { return i.badge && navBadges ? Number(navBadges[i.badge]) || 0 : 0; };
+  var _activeGroup = _here.group ? _here.group.group : null;
   var _fmtCount = function (n) { return n > 99 ? '99+' : n; };
-  var _link = function (item, cls) {
-    var on = item.key === _activeKey, n = _count(item);
-    return '<a href="' + item.href + '" class="' + (cls || '') + (on ? ' active' : '') + '"' + (on ? ' aria-current="page"' : '') + '>'
-      + (cls === 'nav-sub' ? '' : icon(item.icon)) + '<span class="truncate">' + escapeFn(t('nav.' + item.key)) + '</span>'
+  var _line = function (g) {
+    var on = g.group === _activeGroup, n = navGroups.sectionCount(g, navBadges);
+    return '<a href="' + g.home.href + '" class="' + (on ? 'active' : '') + '"' + (on ? ' aria-current="page"' : '') + ' data-nav-ws="' + g.group + '">'
+      + icon(g.icon) + '<span class="truncate">' + escapeFn(t(g.label)) + '</span>'
       + (n ? '<span class="nav-count" aria-label="' + escapeFn(t('navx.pending', { count: n })) + '">' + _fmtCount(n) + '</span>' : '') + '</a>';
   };
-  var _shown = function (g) { return g.items.filter(function (i) { return i.sidebar !== false; }); };
-  var _daily = navGroups.filter(function (g) { return g.group === 'daily'; });
-  var _groups = navGroups.filter(function (g) { return !g.flat && _shown(g).length; });
-  var _foot = navGroups.filter(function (g) { return g.flat && g.group !== 'daily'; });
+  var _main = navGroups.filter(function (g) { return g.inSidebar && !g.foot; });
+  var _foot = navGroups.filter(function (g) { return g.inSidebar && g.foot; });
 %>
 <div class="sidebar-brand"><a class="row-sm" href="/app" aria-label="<%= brandName %>"><%- include('logo') %></a></div>
 <details class="dropdown ws-switch">
@@ -33,32 +30,15 @@
     <a href="/workspaces/new"><%- icon('plus', 'icon-sm') %><%= t('nav.new_workspace') %></a>
   </div>
 </details>
-<nav class="nav nav-sections" aria-label="<%= t('nav.main') %>" data-nav-sections data-nav-user="<%= currentUser ? currentUser.id : '' %>-<%= business.id %>">
-  <% _daily.forEach(function (g) { %>
-  <div class="nav-flat nav-daily">
-    <% _shown(g).forEach(function (item) { %><%- _link(item) %><% }) %>
+<nav class="nav nav-workspaces" aria-label="<%= t('nav.main') %>">
+  <div class="nav-flat nav-main">
+    <% _main.forEach(function (g) { %><%- _line(g) %><% }) %>
   </div>
-  <% }) %>
-  <% if (_groups.length) { %>
-  <div class="nav-groups">
-    <% _groups.forEach(function (g) { var items = _shown(g); %>
-      <% if (items.length === 1) { %><%- _link(items[0]) %>
-      <% } else { var mine = _here.group && _here.group.group === g.group, total = navGroups.sectionCount(g, navBadges); %>
-      <details class="nav-sec<%= mine ? ' has-active' : '' %>" data-nav-sec="<%= g.group %>"<% if (mine) { %> open<% } %>>
-        <summary class="nav-sec-head"><%- icon(g.icon) %><span class="truncate"><%= t(g.label) %></span><% if (total) { %><span class="nav-dot" role="img" aria-label="<%= t('navx.pending', { count: total }) %>"></span><% } %><%- icon('chevron-down', 'icon-sm nav-chev') %></summary>
-        <div class="nav-sec-items">
-          <% items.forEach(function (item) { %><%- _link(item, 'nav-sub') %><% }) %>
-        </div>
-      </details>
-      <% } %>
-    <% }) %>
+  <% if (_foot.length) { %>
+  <div class="nav-flat nav-foot-links">
+    <% _foot.forEach(function (g) { %><%- _line(g) %><% }) %>
   </div>
   <% } %>
-  <% _foot.forEach(function (g) { %>
-  <div class="nav-flat nav-foot-links">
-    <% _shown(g).forEach(function (item) { %><%- _link(item) %><% }) %>
-  </div>
-  <% }) %>
 </nav>
 <div class="sidebar-foot">
   <div class="row-sm small muted"><%- icon('shield-check', 'icon-sm') %><span class="truncate"><%= tagline %></span></div>

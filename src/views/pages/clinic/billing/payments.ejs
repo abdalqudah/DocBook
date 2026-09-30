@@ -1,0 +1,59 @@
+<% var P = '../../../partials/'; var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   var invPrefix = (typeof invoiceTpl !== 'undefined' && invoiceTpl && invoiceTpl.prefix) || '';
+   var qs = function (extra) { var p = []; Object.keys(query).forEach(function (k) { if (k !== 'page' && query[k]) p.push(encodeURIComponent(k) + '=' + encodeURIComponent(query[k])); }); if (!query.from) p.push('from=' + range.from); if (!query.to) p.push('to=' + range.to); return p.join('&'); }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('navx.sec_finance') %></div>
+    <h1><%= t('nav.payments_all') %></h1>
+    <p><%= t('navx.payments_lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (can('data.export')) { %><%- include(P + 'export-menu', { href: '/app/billing/payments/export?' + qs() }) %><% } %>
+    <% if (can('billing.manage')) { %><a class="btn btn-primary" href="/app/cashier/screen"><%- icon('banknote', 'icon-sm') %><%= t('search.actions.collect_payment') %></a><% } %>
+  </div>
+</div>
+
+<nav class="tabs mb-4" aria-label="<%= t('nav.payments_all') %>">
+  <a href="/app/billing/payments" class="active" aria-current="page"><%- icon('coins', 'icon-sm') %><%= t('navx.payments_received') %></a>
+  <% if (typeof moduleOn !== 'function' || moduleOn('billing')) { %><a href="/app/payments"><%- icon('credit-card', 'icon-sm') %><%= t('navx.payments_online') %></a><% } %>
+</nav>
+
+<div class="stats cols-3 mb-4 rec-kpis">
+  <div class="stat hero"><div class="stat-label"><%= t('navx.payments_total') %><span class="stat-icon"><%- icon('coins') %></span></div><div class="stat-value"><%= fmt.money(total) %></div><div class="stat-meta"><%= fmt.date(range.from) %> – <%= fmt.date(range.to) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('navx.payments_count') %><span class="stat-icon"><%- icon('receipt') %></span></div><div class="stat-value"><%= fmt.number(count) %></div><div class="stat-meta"><%= filtered ? t('billing.for_filters') : t('navx.payments_parts_hint') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('invoicex.by_method') %><span class="stat-icon"><%- icon('wallet') %></span></div>
+    <div class="ivx-mini">
+      <% var shown = methods.filter(function (m) { return byMethod[m]; }); if (!shown.length) { %><span class="muted">—</span><% } %>
+      <% shown.forEach(function (m) { %><div class="row-sm small"><span class="grow"><%= t('invoicex.m.' + m) %></span><span class="num strong"><%= fmt.amount(byMethod[m]) %></span></div><% }) %>
+    </div>
+  </div>
+</div>
+
+<div class="panel flush">
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('billing.search') %>" aria-label="<%= t('common.search') %>"></div>
+    <% if (!ctx.ownDoctorId) { %><select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value="all"><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(query.doctor) === String(d.id) ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% } %>
+    <select class="select" name="method" aria-label="<%= t('billing.method') %>"><option value="all"><%= t('billing.all_methods') %></option><% methods.forEach(function (m) { %><option value="<%= m %>"<%= query.method === m ? ' selected' : '' %>><%= t('invoicex.m.' + m) %></option><% }) %></select>
+    <input class="input" type="date" name="from" value="<%= range.from %>" aria-label="<%= t('common.from') %>" title="<%= t('common.from') %>">
+    <input class="input" type="date" name="to" value="<%= range.to %>" aria-label="<%= t('common.to') %>" title="<%= t('common.to') %>">
+    <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/billing/payments"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include(P + 'empty', { emptyIcon: 'coins', emptyTitle: t('navx.payments_empty'), emptyText: t('navx.payments_empty_text') }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('common.patient') %></th><th><%= t('billing.number') %></th><th><%= t('billing.method') %></th><th class="num"><%= t('common.amount') %> (<%= currency %>)</th><th><%= t('invoicex.received_by') %></th></tr></thead>
+    <tbody><% rows.forEach(function (r) { var lt = localTime(r.created_at) || {}; %>
+      <tr>
+        <td class="primary-cell nowrap"><%= fmt.date(lt.date) %> <span class="small muted" dir="ltr"><%= lt.time %></span></td>
+        <td data-label="<%= t('common.patient') %>"><% if (r.patient_id && can('patients.view')) { %><a href="/app/patients/<%= r.patient_id %>" dir="auto"><%= r.patient_name %></a><% } else { %><span dir="auto"><%= r.patient_name %></span><% } %><div class="small muted"><%= r.doctor_name || '' %></div></td>
+        <td data-label="<%= t('billing.number') %>"><a class="mono" href="/app/billing/<%= r.invoice_id %>" dir="ltr">#<%= invPrefix %><%= r.invoice_number %></a></td>
+        <td data-label="<%= t('billing.method') %>"><span class="badge"><%= r.method === 'insurance' && r.insurance_provider_name ? t('invoicex.insurance_of', { name: r.insurance_provider_name }) : t('invoicex.m.' + (methods.indexOf(r.method) === -1 ? 'other' : r.method)) %></span></td>
+        <td data-label="<%= t('common.amount') %>" class="num strong"><%= fmt.amount(r.amount) %></td>
+        <td data-label="<%= t('invoicex.received_by') %>" class="small"><%= r.received_by || '—' %></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+  <%- include(P + 'pagination', { meta: meta }) %>
+  <% } %>
+</div>

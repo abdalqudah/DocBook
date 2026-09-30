@@ -14,7 +14,7 @@
   <div class="stat"><div class="stat-label"><%= t('doctors.fee') %></div><div class="stat-value"><%= fmt.money(d.consultation_fee) %></div><div class="stat-meta"><%= d.show_consultation_fee ? t('doctors.fee_public') : t('doctors.fee_hidden') %></div></div>
   <div class="stat"><div class="stat-label"><%= t('doctors.slot') %></div><div class="stat-value"><%= d.slot_duration_minutes %> <span class="small"><%= t('common.minutes') %></span></div></div>
   <div class="stat"><div class="stat-label"><%= t('doctors.commission') %></div><div class="stat-value" style="font-size:18px"><%= rule ? (rule.basis === 'percentage' ? fmt.number(rule.rate) + '%' : fmt.money(rule.rate)) : '—' %></div><div class="stat-meta"><%= rule ? t('commission.basis.' + rule.basis) : t('doctors.no_rule') %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('doctors.login') %></div><div class="stat-value" style="font-size:16px"><%= account ? account.name : t('doctors.no_login') %></div><div class="stat-meta"><% if (account) { %><%= account.email %><% } else if (can('users.manage')) { %><a class="link" href="/app/settings/team?new=1&doctor=<%= d.id %>"><%= t('doctors.create_login') %></a><% } %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('doctors.login') %></div><div class="stat-value" style="font-size:16px"><%= account ? account.name : t('doctors.no_login') %></div><div class="stat-meta"><% if (account) { %><%= account.email %><% } else if (can('users.manage')) { %><a class="link" href="/app/clinic/team?new=1&doctor=<%= d.id %>"><%= t('doctors.create_login') %></a><% } %></div></div>
 </div>
 <div class="grid grid-main mt-6">
   <div class="stack">

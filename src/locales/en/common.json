@@ -114,7 +114,7 @@
     "group_operations": "Clinic management",
     "group_insights": "Reports",
     "group_admin": "Settings & help",
-    "dashboard": "Dashboard",
+    "dashboard": "Overview",
     "my_day": "My day",
     "appointments": "Appointments",
     "front_desk": "Reception & waiting list",
@@ -131,14 +131,17 @@
     "settings": "Settings",
     "support": "Help & support",
     "short": {
-      "dashboard": "Home",
+      "dashboard": "Today",
       "my_day": "My day",
-      "appointments": "Calendar",
+      "appointments": "Appointments",
       "front_desk": "Reception",
       "patients": "Patients",
-      "cashier": "Billing",
+      "cashier": "Cashier",
       "billing": "Invoices",
-      "certificates": "Leave"
+      "certificates": "Leave",
+      "profit_loss": "Finance",
+      "new": "New",
+      "today": "Today"
     },
     "cashier": "Patient billing",
     "attendance": "Attendance",
@@ -147,13 +150,19 @@
     "certificates": "Sick leave & medical reports",
     "staff_payroll": "Staff salaries",
     "budgets": "Budgets",
-    "profit_loss": "Income statement",
+    "profit_loss": "Overview",
     "partners": "Partner accounts",
     "tickets": "Support requests",
     "group_stock": "Stock & suppliers",
     "group_reports": "Reports",
     "cash_closings": "Daily cash closing",
-    "purchase_orders": "Purchase orders"
+    "purchase_orders": "Purchase orders",
+    "payments_all": "Payments",
+    "clinical_setup": "Clinical setup",
+    "new": "New",
+    "new_menu": "Create new",
+    "personal": "My settings",
+    "my_notifications": "My notifications"
   },
   "search": {
     "open": "Search and quick actions",
@@ -168,8 +177,11 @@
       "new_patient": "Add a patient",
       "waiting_room": "Open the waiting room",
       "new_expense": "Record an expense",
-      "add_staff": "Add a staff login",
-      "booking_page": "Clinic page & online booking"
+      "add_staff": "Add a staff member",
+      "booking_page": "Clinic page & online booking",
+      "check_in": "Check in a patient",
+      "collect_payment": "Collect a payment",
+      "new_certificate": "Issue a certificate"
     }
   },
   "table": {

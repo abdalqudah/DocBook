@@ -4,8 +4,8 @@
   var all = system.concat(custom);
   var hasP = function (r, p) { return r.key === 'owner' || r.permissions.indexOf(p) >= 0; };
 %>
-<%- include('_head', { heading: t('settings.nav_roles'), lead: t('settings.roles_lead'), actions: '<button class="btn btn-primary" type="button" data-open-dialog="role-dialog" data-reset-form data-action="/app/settings/roles" data-dialog-title="' + escapeHtml(t('settings.role_new')) + '">' + icon('plus', 'icon-sm') + escapeHtml(t('settings.role_new')) + '</button>' }) %>
-<div class="settings-layout">
+<%- include('_head', { heading: t('settings.nav_roles'), lead: t('settings.roles_lead'), actions: '<button class="btn btn-primary" type="button" data-open-dialog="role-dialog" data-reset-form data-action="/app/clinic/roles" data-dialog-title="' + escapeHtml(t('settings.role_new')) + '">' + icon('plus', 'icon-sm') + escapeHtml(t('settings.role_new')) + '</button>' }) %>
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <% if (typeof openDialog === 'undefined' || openDialog !== 'role-dialog') { %><%- include('../../partials/form-error') %><% } %>
@@ -25,7 +25,7 @@
     <section class="panel flush">
       <div class="panel-head"><div><h2><%= t('settings.custom_roles') %></h2><div class="panel-sub"><%= t('settings.custom_roles_sub') %></div></div></div>
       <% if (!custom.length) { %>
-        <%- include('../../partials/empty', { emptyIcon: 'shield-check', emptyTitle: t('settings.custom_empty_title'), emptyText: t('settings.custom_empty_text'), compact: true, emptyAction: '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="role-dialog" data-reset-form data-action="/app/settings/roles" data-dialog-title="' + escapeHtml(t('settings.role_new')) + '">' + escapeHtml(t('settings.role_new')) + '</button>' }) %>
+        <%- include('../../partials/empty', { emptyIcon: 'shield-check', emptyTitle: t('settings.custom_empty_title'), emptyText: t('settings.custom_empty_text'), compact: true, emptyAction: '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="role-dialog" data-reset-form data-action="/app/clinic/roles" data-dialog-title="' + escapeHtml(t('settings.role_new')) + '">' + escapeHtml(t('settings.role_new')) + '</button>' }) %>
       <% } else { %>
       <div class="table-wrap"><table class="table responsive">
         <thead><tr><th><%= t('settings.role') %></th><th><%= t('settings.permissions') %></th><th><%= t('settings.members') %></th><th class="actions"></th></tr></thead>
@@ -34,8 +34,8 @@
           <td data-label="<%= t('settings.permissions') %>"><%= t('settings.n_permissions', { n: r.permissions.length }) %></td>
           <td data-label="<%= t('settings.members') %>"><%= fmt.number(r.members) %></td>
           <td class="actions nowrap">
-            <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="role-dialog" data-action="/app/settings/roles/<%= r.id %>" data-dialog-title="<%= t('settings.role_edit') %>" data-fill="<%= json({ name: r.name, description: r.description || '', permissions: r.permissions }) %>"><%- icon('pencil', 'icon-sm') %></button>
-            <% if (!r.members) { %><%- include('../../partials/delete-form', { action: '/app/settings/roles/' + r.id + '/delete', confirmText: t('settings.role_delete_confirm', { name: r.name }) }) %><% } else { %><span class="btn btn-ghost btn-icon btn-sm" title="<%= t('errors.ROLE_IN_USE') %>" aria-disabled="true" style="opacity:.4"><%- icon('trash-2', 'icon-sm') %></span><% } %>
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="role-dialog" data-action="/app/clinic/roles/<%= r.id %>" data-dialog-title="<%= t('settings.role_edit') %>" data-fill="<%= json({ name: r.name, description: r.description || '', permissions: r.permissions }) %>"><%- icon('pencil', 'icon-sm') %></button>
+            <% if (!r.members) { %><%- include('../../partials/delete-form', { action: '/app/clinic/roles/' + r.id + '/delete', confirmText: t('settings.role_delete_confirm', { name: r.name }) }) %><% } else { %><span class="btn btn-ghost btn-icon btn-sm" title="<%= t('errors.ROLE_IN_USE') %>" aria-disabled="true" style="opacity:.4"><%- icon('trash-2', 'icon-sm') %></span><% } %>
           </td></tr><% }) %></tbody>
       </table></div>
       <% } %>
@@ -59,7 +59,7 @@
 </div>
 
 <dialog class="dialog wide" id="role-dialog" aria-labelledby="role-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'role-dialog') { %> data-open-on-load<% } %>>
-  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/settings/roles' %>" novalidate>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/clinic/roles' %>" novalidate>
     <div class="dialog-head"><h2 id="role-title" data-dialog-title-target><%= t('settings.role_new') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
     <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <% if (typeof openDialog !== 'undefined' && openDialog === 'role-dialog') { %><%- include('../../partials/form-error') %><% } %>

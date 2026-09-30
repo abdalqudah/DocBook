@@ -1,13 +1,25 @@
 <%
-  // Thumb-reach bar on phones: the role's daily pages (see BOTTOM_ORDER in src/routes/nav.js) + the full menu.
+  // Thumb-reach bar on phones: three pages for the role (BOTTOM_ORDER in src/routes/nav.js), "+ New" in the middle, the full menu.
   var _bn = navGroups.bottom ? navGroups.bottom() : [];
   var _bnHere = navGroups.locate ? navGroups.locate(fullPath).item : null;
+  var _bnNew = navActions.filter(function (a) { return a.create; });
+  var _bnLink = function (i) { var active = _bnHere === i, n = i.badge && navBadges ? Number(navBadges[i.badge]) || 0 : 0;
+    return '<a href="' + i.href + '" class="' + (active ? 'active' : '') + '"' + (active ? ' aria-current="page"' : '') + '><span class="bottom-nav-icon">' + icon(i.icon)
+      + (n ? '<span class="bottom-nav-dot" role="img" aria-label="' + escapeFn(t('navx.pending', { count: n })) + '"></span>' : '') + '</span><span>' + escapeFn(t('nav.short.' + i.key)) + '</span></a>'; };
 %>
 <% if (_bn.length) { %>
 <nav class="bottom-nav" aria-label="<%= t('nav.quick') %>">
-  <% _bn.forEach(function (i) { var active = _bnHere === i, n = i.badge && navBadges ? Number(navBadges[i.badge]) || 0 : 0; %>
-    <a href="<%= i.href %>" class="<%= active ? 'active' : '' %>"<% if (active) { %> aria-current="page"<% } %>><span class="bottom-nav-icon"><%- icon(i.icon) %><% if (n) { %><span class="bottom-nav-dot" role="img" aria-label="<%= t('navx.pending', { count: n }) %>"></span><% } %></span><span><%= t('nav.short.' + i.key) %></span></a>
-  <% }) %>
+  <% _bn.slice(0, 2).forEach(function (i) { %><%- _bnLink(i) %><% }) %>
+  <% if (_bnNew.length) { %>
+  <details class="dropdown bottom-new">
+    <summary aria-label="<%= t('nav.new_menu') %>"><%- icon('plus') %></summary>
+    <div class="menu">
+      <div class="menu-label"><%= t('nav.new_menu') %></div>
+      <% _bnNew.forEach(function (a) { %><a href="<%= a.href %>"><%- icon(a.icon, 'icon-sm') %><%= t('search.actions.' + a.key) %></a><% }) %>
+    </div>
+  </details>
+  <% } %>
+  <% _bn.slice(2).forEach(function (i) { %><%- _bnLink(i) %><% }) %>
   <a href="#" data-nav-toggle aria-controls="sidebar"><%- icon('menu') %><span><%= t('nav.more') %></span></a>
 </nav>
 <% } %>
