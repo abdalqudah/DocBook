@@ -18,6 +18,7 @@ const audit = require('../../core/audit');
 const secrets = require('../../core/secrets');
 const http = require('../../core/http');
 const { translator, has } = require('../../core/i18n');
+const payParts = require('../clinic/payment-parts');
 const { AppError, E } = require('../../core/errors');
 const { clinicNow } = require('../clinic/scheduling');
 const google = require('../auth/google.service');
@@ -453,15 +454,16 @@ async function buildTabs(o) {
       ]));
     } else if (key === 'invoices') {
       const q = knex('invoices').where({ business_id: b }).orderBy('id')
-        .select('invoice_number', 'created_at', 'patient_name', 'doctor_id', 'doctor_name', 'service_name', 'subtotal', 'discount_amount', 'amount', 'payment_method', 'insurance_provider_name', 'insurance_coverage_percent')
+        .select('id', 'invoice_number', 'created_at', 'patient_name', 'doctor_id', 'doctor_name', 'service_name', 'subtotal', 'discount_amount', 'amount', 'payment_method', 'insurance_provider_name', 'insurance_coverage_percent')
         .limit(MAX_ROWS + 1);
       if (since) q.where('created_at', '>=', `${since} 00:00:00`);
       const rows = await q;
+      await payParts.attach(b, rows); // the payment column spells out the parts ("Cash 20 + Card 20"), never "mixed"
       const cols = ['invoice_no', 'date', ...(pat ? ['patient'] : []), 'doctor', 'service', 'subtotal', 'discount', 'amount', 'payment_method', 'insurer', 'coverage'];
       push(key, h(cols), rows.map((i) => [
         i.invoice_number, dayOf(i.created_at, tz), ...(pat ? [i.patient_name] : []), doctorNames[i.doctor_id] || i.doctor_name || '', i.service_name || '',
         n2(i.subtotal !== null && i.subtotal !== undefined ? i.subtotal : Number(i.amount) + Number(i.discount_amount || 0)), n2(i.discount_amount), n2(i.amount),
-        L('payment_methods', i.payment_method), i.insurance_provider_name || '', i.insurance_coverage_percent === null || i.insurance_coverage_percent === undefined ? '' : Number(i.insurance_coverage_percent),
+        payParts.describe(t, i.parts, { insuranceName: i.insurance_provider_name, amount: n2 }), i.insurance_provider_name || '', i.insurance_coverage_percent === null || i.insurance_coverage_percent === undefined ? '' : Number(i.insurance_coverage_percent),
       ]));
     } else if (key === 'expenses') {
       const q = knex('expenses').where({ business_id: b }).orderBy([{ column: 'date' }, { column: 'id' }])

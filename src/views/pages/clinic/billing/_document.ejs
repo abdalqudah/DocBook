@@ -1,0 +1,92 @@
+<%
+  /*
+   * The printed invoice — one document for every paper: A4, A5 and the 80 mm till receipt. Headed with the clinic's
+   * letterhead (_letterhead), the payment shown part by part (_payment-lines), the clinic stamp when it is switched
+   * on for invoices, and the footer note of the invoice template. Respects the template's field toggles.
+   * Locals: doc = { inv, parts, lines, subtotal, insuranceAmount, patientAmount, issued: { date, time },
+   *                 paper: 'a4'|'a5'|'receipt80', patient?: { national_id, insurance_number }, stampOn?: boolean }
+   * (cashier.service receipt() returns inv / parts / lines / subtotal / insuranceAmount / patientAmount.)
+   */
+  var d = doc;
+  var i = d.inv;
+  var tpl = (typeof invoiceTpl !== 'undefined' && invoiceTpl) || {};
+  var on = function (f) { return tpl[f] !== false; };
+  var paper = ['a4', 'a5', 'receipt80'].indexOf(d.paper) >= 0 ? d.paper : 'a4';
+  var narrow = paper === 'receipt80';
+  var number = (tpl.prefix || '') + i.invoice_number;
+  var foot = (locale === 'en' ? tpl.footer_en || tpl.footer : tpl.footer || tpl.footer_en) || '';
+  var lines = Array.isArray(d.lines) ? d.lines : [];
+  var lineTotal = function (l) { return l.total !== undefined && l.total !== null ? Number(l.total) : (Number(l.qty) || 1) * (Number(l.unitPrice) || 0); };
+  var subtotal = d.subtotal !== undefined && d.subtotal !== null ? Number(d.subtotal) : Number(i.amount) + Number(i.discount_amount || 0);
+  var hasDiscount = Number(i.discount_amount) > 0;
+  var insAmt = Number(d.insuranceAmount) || 0;
+  var showStamp = on('show_stamp') && d.stampOn !== false;
+  var pt = d.patient || null;
+  var issued = d.issued || {};
+  var money = function (v) { return fmt.amount(v); };
+%>
+<link rel="stylesheet" href="/css/invoice.css?v=<%= assetV %>">
+<article class="ivd is-<%= paper %>" aria-label="<%= t('billing.invoice_no', { n: number }) %>">
+  <%- include('_letterhead', { lh: { paper: paper, title: narrow ? t('invoicex.receipt') : t('invoicex.invoice'), number: number, date: issued.date, time: issued.time, status: t('invoicex.paid') } }) %>
+
+  <section class="ivd-parties">
+    <div class="ivd-party">
+      <div class="ivd-label"><%= t('invoicex.patient') %></div>
+      <div class="ivd-strong" dir="auto"><%= i.patient_name %></div>
+      <% if (i.patient_phone) { %><div class="ivd-meta"><bdi dir="ltr"><%= i.patient_phone %></bdi></div><% } %>
+      <% if (pt && pt.national_id && !narrow) { %><div class="ivd-meta"><%= t('invoicex.national_id') %>: <bdi dir="ltr"><%= pt.national_id %></bdi></div><% } %>
+    </div>
+    <% if ((i.doctor_name && on('show_doctor')) || i.appointment_date || (i.insurance_provider_name && on('show_insurance'))) { %>
+    <div class="ivd-party">
+      <div class="ivd-label"><%= t('billing.visit') %></div>
+      <% if (i.doctor_name && on('show_doctor')) { %><div class="ivd-strong" dir="auto"><%= i.doctor_name %></div><% } %>
+      <% if (i.appointment_date) { %><div class="ivd-meta"><%= fmt.date(i.appointment_date) %><% if (i.appointment_time) { %> · <bdi dir="ltr"><%= i.appointment_time %></bdi><% } %></div><% } %>
+      <% if (i.insurance_provider_name && on('show_insurance')) { %><div class="ivd-meta"><%= t('invoicex.m.insurance') %>: <span dir="auto"><%= i.insurance_provider_name %></span><% if (pt && pt.insurance_number) { %> · <bdi dir="ltr"><%= pt.insurance_number %></bdi><% } %></div><% } %>
+    </div>
+    <% } %>
+  </section>
+
+  <table class="ivd-lines">
+    <% if (!narrow) { %><thead><tr><th><%= t('invoicex.item') %></th><th class="ivd-n"><%= t('invoicex.qty') %></th><th class="ivd-n"><%= t('invoicex.unit_price') %></th><th class="ivd-n"><%= t('invoicex.line_total') %></th></tr></thead><% } %>
+    <tbody>
+      <% if (on('show_service') && lines.length) { lines.forEach(function (l) { var q = Number(l.qty) || 1; var tot = lineTotal(l); %>
+      <tr>
+        <td><span dir="auto"><%= l.name || i.service_name || t('billing.consultation') %></span><% if (narrow && q > 1) { %><div class="ivd-meta ivd-num"><%= fmt.number(q) %> × <%= money(l.unitPrice) %></div><% } %></td>
+        <% if (!narrow) { %><td class="ivd-n"><%= fmt.number(q) %></td><td class="ivd-n"><%= money(l.unitPrice !== undefined ? l.unitPrice : tot / q) %></td><% } %>
+        <td class="ivd-n"><%= money(tot) %></td>
+      </tr>
+      <% }); } else { %>
+      <tr>
+        <td><span dir="auto"><%= on('show_service') ? (i.service_name || t('billing.consultation')) : t('invoice_tpl.services_line') %></span></td>
+        <% if (!narrow) { %><td class="ivd-n">1</td><td class="ivd-n"><%= money(subtotal) %></td><% } %>
+        <td class="ivd-n"><%= money(subtotal) %></td>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+
+  <div class="ivd-totals">
+    <% if (hasDiscount && on('show_discount')) { %>
+    <div class="ivd-kv"><span><%= t('invoicex.subtotal') %></span><span class="ivd-num"><%= money(subtotal) %></span></div>
+    <div class="ivd-kv"><span><%= t('invoicex.discount') %><% if (Number(i.discount_percent)) { %> (<%= fmt.number(i.discount_percent) %>%)<% } %></span><span class="ivd-num"><bdi dir="ltr">−<%= money(i.discount_amount) %></bdi></span></div>
+    <% } %>
+    <div class="ivd-kv ivd-grand"><span><%= t('invoicex.total') %></span><span class="ivd-num"><bdi dir="ltr"><%= money(i.amount) %> <span class="ivd-cur"><%= currency %></span></bdi></span></div>
+    <% if (insAmt > 0 && on('show_insurance')) { %>
+    <div class="ivd-kv"><span><%= t('invoicex.insurance_pays') %><% if (i.insurance_coverage_percent !== null && i.insurance_coverage_percent !== undefined && Number(i.insurance_coverage_percent) < 100) { %> (<%= fmt.number(i.insurance_coverage_percent) %>%)<% } %></span><span class="ivd-num"><%= money(insAmt) %></span></div>
+    <div class="ivd-kv ivd-strong"><span><%= t('invoicex.patient_pays') %></span><span class="ivd-num"><%= money(d.patientAmount) %></span></div>
+    <% } %>
+  </div>
+
+  <% if (on('show_method')) { %>
+  <section class="ivd-pay">
+    <div class="ivd-label"><%= t('invoicex.payments') %></div>
+    <%- include('_payment-lines', { pl: { parts: d.parts, insuranceName: on('show_insurance') ? i.insurance_provider_name : null, mode: 'rows' } }) %>
+    <% if (i.cashier) { %><div class="ivd-meta"><%= t('invoicex.received_by') %>: <span dir="auto"><%= i.cashier %></span></div><% } %>
+  </section>
+  <% } %>
+
+  <footer class="ivd-foot">
+    <p class="ivd-note" dir="auto"><%= foot || t('invoicex.thanks') %></p>
+    <% if (showStamp) { %><img class="ivd-stamp" src="/app/signatures/invoices/<%= i.id %>/stamp.png" alt="<%= t('invoicex.stamp') %>"><% } %>
+  </footer>
+</article>

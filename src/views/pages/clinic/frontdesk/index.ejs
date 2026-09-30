@@ -14,7 +14,8 @@
   var main = function (id, path, label, iconName, onVal) { return post(id, path, label, iconName, 'btn btn-secondary fx-main', onVal); };
   var item = function (id, path, label, iconName, onVal, confirmMsg) { return post(id, path, label, iconName, '', onVal, confirmMsg); };
   var payLink = function (a, cls, label) {
-    return '<a class="' + cls + '" href="/app/cashier?visit=' + a.id + '" data-cx-open="' + a.id + '" data-cx-return="front-desk">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(label) + '</span></a>';
+    // "Collect payment" opens the cash screen with this visit already selected for payment.
+    return '<a class="' + cls + '" href="/app/cashier/screen?add=' + a.id + '">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(label) + '</span></a>';
   };
   var cols = [
     { key: 'expected', items: group.expected },

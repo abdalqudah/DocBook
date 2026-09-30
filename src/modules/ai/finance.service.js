@@ -17,6 +17,7 @@ const audit = require('../../core/audit');
 const { translator } = require('../../core/i18n');
 const { AppError, E } = require('../../core/errors');
 const lib = require('../clinic/records.lib');
+const payParts = require('../clinic/payment-parts');
 const expenseSvc = require('../expenses/expense.service');
 const supplies = require('../clinic/supplies.service');
 const ai = require('./ai.service');
@@ -180,7 +181,8 @@ async function categoryLabeler(businessId, locale) {
 async function periodData(ctx, from, to, locale = 'ar') {
   const hasPayments = await knex.schema.hasTable('payments');
   const [methodRows, discount, docRev, docAppts, doctors, statusRows, sourceRows, expRows, payroll, staff, refunds, catLabel] = await Promise.all([
-    invBase(ctx, from, to).groupBy('i.payment_method').select('i.payment_method').sum({ v: 'i.amount' }).count({ n: '*' }),
+    // By payment method from the payment parts (a cash + card invoice counts under both; never "mixed").
+    payParts.totalsByMethod(invBase(ctx, from, to), 'i.id', ctx.businessId),
     invBase(ctx, from, to).first(knex.raw('COALESCE(SUM(i.discount_amount),0) as total'), knex.raw('SUM(CASE WHEN i.discount_amount > 0 THEN 1 ELSE 0 END) as n'),
       knex.raw('COALESCE(AVG(CASE WHEN i.discount_percent > 0 THEN i.discount_percent END),0) as avg_pct')),
     invBase(ctx, from, to).groupBy('i.doctor_id').select('i.doctor_id', knex.raw('MAX(i.doctor_name) as doctor_name')).sum({ v: 'i.amount' }).count({ n: '*' }),
@@ -204,7 +206,7 @@ async function periodData(ctx, from, to, locale = 'ar') {
   const docName = Object.fromEntries(doctors.map((d) => [d.id, (en && d.full_name_en) || d.full_name]));
   return {
     from, to, currency: ctx.currency, en,
-    methodRows, discount, docRev, docAppts, docName, statusRows, sourceRows, payroll, staff, refunds,
+    methodRows: methodRows.rows.map((r) => ({ payment_method: r.method, v: r.amount, n: r.invoices })), invoiceCount: methodRows.count, discount, docRev, docAppts, docName, statusRows, sourceRows, payroll, staff, refunds,
     expRows: expRows.map((r) => ({ ...r, label: catLabel(r.category) })),
   };
 }
@@ -218,7 +220,8 @@ const STATUSES = ['pending', 'confirmed', 'completed', 'no_show', 'cancelled'];
 function composeFigures(d) {
   const byMethod = d.methodRows.map((r) => ({ method: r.payment_method, amount: round2(r.v), invoices: num(r.n) })).sort((a, b) => b.amount - a.amount);
   const revenue = round2(byMethod.reduce((s, r) => s + r.amount, 0));
-  const invoices = byMethod.reduce((s, r) => s + r.invoices, 0);
+  // An invoice paid in two ways appears under both methods: count invoices once when the total is known.
+  const invoices = d.invoiceCount !== undefined ? num(d.invoiceCount) : byMethod.reduce((s, r) => s + r.invoices, 0);
   const byStatus = Object.fromEntries(STATUSES.map((s) => [s, 0]));
   (d.statusRows || []).forEach((r) => { byStatus[r.status] = num(r.n); });
   const apptTotal = Object.values(byStatus).reduce((s, v) => s + v, 0);

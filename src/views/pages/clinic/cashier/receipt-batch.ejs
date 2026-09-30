@@ -1,0 +1,14 @@
+<%
+  /* The receipts of one cash-screen payment (several visits → one invoice each), printed one after the other with the
+     same paper as /app/cashier/receipt/:id (pages/clinic/cashier/receipt.ejs, which hides its own toolbar when `recs` is set). Locals: recs [{ rec, issued }], paper. */
+  var ids = recs.map(function (x) { return x.rec.inv.id; }).join(',');
+%>
+<div class="cx-rc-actions no-print">
+  <button class="btn btn-primary btn-sm" type="button" data-print><%- icon('printer', 'icon-sm') %><%= t('common.print') %></button>
+  <% [['receipt80', '80 mm'], ['a5', 'A5'], ['a4', 'A4']].forEach(function (p) { if (p[0] === paper) return; %><a class="btn btn-ghost btn-sm" href="/app/cashier/receipt/batch?ids=<%= ids %><%= p[0] === 'receipt80' ? '' : '&paper=' + p[0] %>"><%- icon(p[0] === 'receipt80' ? 'receipt-text' : 'file-text', 'icon-sm') %><%= p[1] %></a><% }) %>
+</div>
+<div class="pos-batch">
+  <% recs.forEach(function (x) { %>
+  <div class="pos-batch-one"><%- include('receipt', { rec: x.rec, issued: x.issued, paper: paper }) %></div>
+  <% }) %>
+</div>

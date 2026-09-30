@@ -14,6 +14,7 @@ const clinical = require('./clinical.service');
 const lib = require('./records.lib');
 const icd = require('../clinicalplus/icd.service');
 const privacy = require('../clinicalplus/privacy.service');
+const payParts = require('./payment-parts');
 
 const router = express.Router();
 router.use(can('patients.view'));
@@ -120,6 +121,7 @@ async function renderShow(req, res, extra = {}) {
     .select('l.created_at', 'l.what', 'l.access', 'l.user_id', 'u.name as user_name') : [];
   await privacy.log(req.ctx, { patientId: p.id, what: 'patient', access: privacy.levelOf(access) });
   const tl = await appts.timeline(req.ctx, p.id);
+  if (tl.invoices && tl.invoices.length) await payParts.attach(req.ctx.businessId, tl.invoices); // how each invoice was paid (parts)
   const clinicalOk = req.ctx.permissions.has('clinical.view') && access.clinical;
   const codes = clinicalOk ? await icd.diagnosesByAppointment(req.ctx.businessId, tl.appointments.map((a) => a.id)) : new Map();
   const mine = (r) => !req.ctx.ownDoctorId || r.doctor_id === req.ctx.ownDoctorId;

@@ -70,9 +70,10 @@
     <% if (!data.methods.length) { %><div class="panel-body rec-pad small muted"><%= t('reports.no_invoices') %></div><% } else { %>
     <div class="table-wrap"><table class="table">
       <thead><tr><th><%= t('billing.method') %></th><th class="num"><%= t('reports.invoices') %></th><th class="num"><%= t('reports.revenue') %></th></tr></thead>
-      <tbody><% data.methods.forEach(function (m) { %><tr><td><%= label('payment_methods', m.key) %></td><td class="num"><%= fmt.number(m.n) %></td><td class="num"><%= fmt.money(m.v) %></td></tr><% }) %></tbody>
+      <tbody><% data.methods.forEach(function (m) { %><tr><td><%= t('invoicex.m.' + m.key) %></td><td class="num"><%= fmt.number(m.n) %></td><td class="num"><%= fmt.money(m.v) %></td></tr><% }) %></tbody>
       <tfoot><tr><td><%= t('common.total') %></td><td class="num"><%= fmt.number(data.discounts.invoices) %></td><td class="num"><%= fmt.money(data.revenue) %></td></tr></tfoot>
     </table></div>
+    <div class="panel-body rec-pad tiny muted"><%= t('invoicex.by_method_hint') %></div>
     <% } %>
     <div class="panel-foot rec-discounts">
       <div><div class="small muted"><%= t('reports.discounts_total') %></div><div class="strong"><%= fmt.money(data.discounts.total) %></div></div>

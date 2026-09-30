@@ -1,39 +1,139 @@
 <%
-  /* Full-screen cash screen (layout: cashscreen). Locals: scr, panel (payment panel locals or null), done (paid panel or undefined). */
+  /* Full-screen cash screen (layout: cashscreen) — the POS: today's unpaid visits as cards (search, tap to add) and the
+     payment being prepared (several visits, each with its amount, discount % and insurance company; one payment
+     method). Everything below the header is drawn by public/js/cashpos.js from the JSON island. Locals: pos. */
   var clinicName = locale === 'en' && business.name_en ? business.name_en : business.name;
+  var methods = ['cash', 'card', 'mixed', 'insurance'];
+  var methodIcons = { cash: 'banknote', card: 'credit-card', mixed: 'coins', insurance: 'shield-check' };
 %>
-<div class="cx-screen" data-cx-screen data-board-url="/app/cashier/screen/board" data-ready-key="<%= scr.readyKey %>">
-  <header class="cx-top">
-    <div class="cx-top-id">
-      <div class="cx-top-clinic truncate"><%= clinicName %></div>
-      <div class="cx-top-sub">
-        <span><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long' }) %></span>
-        <span class="num" dir="ltr" data-cx-clock data-tz="<%= business.timezone || 'UTC' %>"></span>
-        <span class="cx-top-user"><%- icon('user', 'icon-sm') %><%= currentUser.name %></span>
-        <span class="cx-live" data-cx-live title="<%= t('cashx.live_off') %>"><i aria-hidden="true"></i><span data-cx-live-text><%= t('cashx.live_off') %></span></span>
+<div class="pos" data-pos>
+  <header class="pos-head">
+    <div class="pos-id">
+      <% if (business.logo_mime) { %><img class="pos-logo" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= clinicName %>"><% } else { %><span class="pos-mark" aria-hidden="true"><%= initials(clinicName) %></span><% } %>
+      <div class="pos-id-text">
+        <div class="pos-clinic truncate"><%= clinicName %></div>
+        <div class="pos-sub">
+          <span><%= t('cashpos.title') %></span>
+          <span class="num" dir="ltr" data-pos-clock data-tz="<%= business.timezone || 'UTC' %>"></span>
+          <span class="pos-live" data-pos-live><i aria-hidden="true"></i><span data-pos-live-text><%= t('cashpos.live_off') %></span></span>
+        </div>
       </div>
     </div>
-    <div class="cx-top-totals" data-cx-totals><%- include('_screen-totals', { scr: scr }) %></div>
-    <div class="cx-top-actions">
-      <button class="btn btn-ghost btn-icon" type="button" data-cx-sound aria-pressed="true" title="<%= t('cashx.sound') %>" aria-label="<%= t('cashx.sound') %>"><span data-cx-sound-on><%- icon('volume-2') %></span><span data-cx-sound-off hidden><%- icon('volume-x') %></span></button>
-      <button class="btn btn-secondary" type="button" data-cx-fullscreen hidden><%- icon('maximize', 'icon-sm') %><span data-cx-fs-label data-on="<%= t('cashx.exit_full_screen') %>" data-off="<%= t('cashx.full_screen') %>"><%= t('cashx.full_screen') %></span></button>
-      <a class="btn btn-ghost" href="/app/cashier" data-cx-exit><%- icon('x', 'icon-sm') %><span><%= t('cashx.close_screen') %></span></a>
+    <dl class="pos-today" data-pos-today aria-label="<%= t('cashpos.collected_today') %>"></dl>
+    <div class="pos-head-actions">
+      <button class="btn btn-ghost btn-icon" type="button" data-pos-sound aria-pressed="true" title="<%= t('cashpos.sound') %>" aria-label="<%= t('cashpos.sound') %>"><span data-pos-sound-on><%- icon('volume-2') %></span><span data-pos-sound-off hidden><%- icon('volume-x') %></span></button>
+      <button class="btn btn-ghost btn-icon" type="button" data-pos-fs hidden title="<%= t('cashpos.full_screen') %>" aria-label="<%= t('cashpos.full_screen') %>" data-on="<%= t('cashpos.exit_full_screen') %>" data-off="<%= t('cashpos.full_screen') %>"><span data-pos-fs-enter><%- icon('maximize') %></span><span data-pos-fs-exit hidden><%- icon('minimize') %></span></button>
+      <a class="btn btn-ghost btn-icon" href="/app/cashier" data-pos-exit title="<%= t('cashpos.close') %>" aria-label="<%= t('cashpos.close') %>"><%- icon('x') %></a>
     </div>
   </header>
 
-  <div class="cx-notice" data-cx-notice role="status" aria-live="polite" hidden></div>
+  <div class="pos-alert" data-pos-alert role="alert" hidden><span data-pos-alert-text></span><button class="btn btn-ghost btn-icon btn-sm" type="button" data-pos-alert-close aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+  <div class="pos-notice" data-pos-notice role="status" aria-live="polite" hidden></div>
 
-  <main class="cx-board" data-cx-board aria-live="off"><%- include('_screen-board', { scr: scr }) %></main>
+  <noscript><div class="pos-alert"><span><%= t('cashpos.noscript') %> <a href="/app/cashier"><%= t('cashpos.open_billing') %></a></span></div></noscript>
+
+  <div class="pos-cols">
+    <section class="pos-pad" aria-label="<%= t('cashpos.visits_label') %>">
+      <label class="pos-search">
+        <%- icon('search', 'icon-sm') %>
+        <span class="sr-only"><%= t('cashpos.search_label') %></span>
+        <input type="search" data-pos-search placeholder="<%= t('cashpos.search_ph') %>" autocomplete="off" enterkeyhint="done">
+        <span class="pos-count small muted" data-pos-count></span>
+      </label>
+      <div class="pos-grid-wrap"><div class="pos-grid" data-pos-grid aria-live="off"></div></div>
+      <button class="pos-mobile-bar" type="button" data-pos-sheet-open hidden>
+        <span class="pos-mb-l"><%- icon('receipt-text', 'icon-sm') %><span data-pos-mb-label></span></span>
+        <span class="pos-mb-r num" data-pos-mb-total></span>
+      </button>
+    </section>
+
+    <div class="pos-scrim" data-pos-scrim hidden></div>
+    <aside class="pos-bill" data-pos-bill aria-label="<%= t('cashpos.bill_title') %>">
+      <div class="pos-bill-head">
+        <span class="pos-grip" aria-hidden="true"></span>
+        <h2><%= t('cashpos.bill_title') %> <span class="pos-bill-n muted" data-pos-bill-n></span></h2>
+        <button class="btn btn-ghost btn-sm" type="button" data-pos-clear hidden><%= t('cashpos.clear') %></button>
+        <button class="btn btn-ghost btn-icon btn-sm pos-sheet-close" type="button" data-pos-sheet-close aria-label="<%= t('common.close') %>"><%- icon('x') %></button>
+      </div>
+      <div class="pos-lines" data-pos-lines></div>
+
+      <div class="pos-foot">
+        <div class="pos-methods" role="radiogroup" aria-label="<%= t('cashpos.method_label') %>">
+          <% methods.forEach(function (m) { %>
+          <label class="pos-method"><input type="radio" name="pos_method" value="<%= m %>"<%= m === 'cash' ? ' checked' : '' %>><span><%- icon(methodIcons[m], 'icon-sm') %><%= t('cashpos.method.' + m) %></span></label>
+          <% }) %>
+        </div>
+
+        <div class="pos-when" data-pos-when="cash">
+          <div class="pos-recv">
+            <input class="input num" type="text" inputmode="decimal" dir="ltr" data-pos-received placeholder="<%= t('cashpos.received_ph') %>" aria-label="<%= t('cashpos.received_ph') %>">
+            <span class="pos-change" data-pos-change hidden><%= t('cashpos.change') %> <strong class="num" data-pos-change-v></strong></span>
+          </div>
+          <div class="pos-quick" data-pos-quick></div>
+        </div>
+        <div class="pos-when" data-pos-when="mixed" hidden>
+          <div class="pos-split">
+            <label><span class="small muted"><%= t('cashpos.cash_part') %></span><input class="input num" type="text" inputmode="decimal" dir="ltr" data-pos-split="cash"></label>
+            <label><span class="small muted"><%= t('cashpos.card_part') %></span><input class="input num" type="text" inputmode="decimal" dir="ltr" data-pos-split="card"></label>
+          </div>
+          <div class="pos-recv">
+            <input class="input num" type="text" inputmode="decimal" dir="ltr" data-pos-received-mixed placeholder="<%= t('cashpos.received_cash_ph') %>" aria-label="<%= t('cashpos.received_cash_ph') %>">
+            <span class="pos-change" data-pos-change-mixed hidden><%= t('cashpos.change') %> <strong class="num" data-pos-change-mixed-v></strong></span>
+          </div>
+          <p class="pos-note" data-pos-split-note></p>
+        </div>
+        <p class="pos-note" data-pos-when="insurance" hidden><%= t('cashpos.insurance_hint') %></p>
+
+      </div>
+      <div class="pos-paybox">
+        <dl class="pos-sum">
+          <div data-pos-row="discount" hidden><dt><%= t('cashpos.discounts') %></dt><dd class="num" data-pos-out="discount"></dd></div>
+          <div data-pos-row="insurance" hidden><dt><%= t('cashpos.insurance_total') %></dt><dd class="num" data-pos-out="insurance"></dd></div>
+          <div class="pos-sum-total"><dt><%= t('cashpos.to_collect') %></dt><dd><span class="num" data-pos-out="total"></span> <span class="pos-cur"><%= currency %></span></dd></div>
+        </dl>
+        <p class="pos-warn" data-pos-warn hidden></p>
+        <button class="btn btn-primary pos-pay" type="button" data-pos-pay disabled><%- icon('circle-check', 'icon-sm') %><span data-pos-pay-label><%= t('cashpos.checkout') %></span></button>
+        <p class="pos-keys tiny muted"><kbd>Enter</kbd> <%= t('cashpos.key_pay') %> · <kbd>Esc</kbd> <%= t('cashpos.key_clear') %></p>
+      </div>
+    </aside>
+  </div>
 </div>
 
-<dialog class="dialog cx-dialog" id="cx-pay-dialog" aria-label="<%= t('cashx.panel_title') %>" data-cx-dialog<% if (panel) { %> data-open-on-load<% } %>>
-  <div class="dialog-inner" data-cx-dialog-body><% if (panel) { %><%- include('_panel', panel) %><% } %></div>
+<dialog class="dialog pos-done" data-pos-done aria-labelledby="pos-done-title">
+  <div class="pos-done-body">
+    <button class="btn btn-ghost btn-icon btn-sm pos-done-x" type="button" data-pos-new aria-label="<%= t('common.close') %>"><%- icon('x') %></button>
+    <span class="pos-done-icon" aria-hidden="true"><%- icon('circle-check') %></span>
+    <h2 id="pos-done-title"><%= t('cashpos.done_title') %></h2>
+    <p class="pos-done-total"><span class="num" data-pos-done-total></span> <span class="pos-cur"><%= currency %></span></p>
+    <p class="pos-done-change" data-pos-done-change hidden></p>
+    <p class="pos-done-nums num" data-pos-done-nums></p>
+    <ul class="pos-done-lines" data-pos-done-lines></ul>
+    <p class="pos-done-method small muted" data-pos-done-method></p>
+    <div class="pos-done-actions">
+      <button class="btn btn-secondary" type="button" data-pos-print><%- icon('printer', 'icon-sm') %><span data-pos-print-label><%= t('cashpos.print') %></span></button>
+      <button class="btn btn-primary" type="button" data-pos-new><%= t('cashpos.new_sale') %></button>
+    </div>
+  </div>
 </dialog>
+<iframe class="pos-print-frame" title="<%= t('cashpos.print') %>" tabindex="-1" aria-hidden="true" data-pos-frame></iframe>
 
-<% if (typeof done !== 'undefined' && done) { %>
-<dialog class="dialog cx-dialog cx-done-dialog" id="cx-done-dialog" data-open-on-load data-cx-done>
-  <div class="dialog-inner"><%- include('_done', { done: done }) %></div>
-</dialog>
-<% } %>
-
-<script type="application/json" id="cx-texts"><%- json({ newReady: t('cashx.new_ready'), live_on: t('cashx.live_on'), live_off: t('cashx.live_off'), loading: t('cashx.loading'), failed: t('cashx.panel_failed') }) %></script>
+<script type="application/json" id="pos-data"><%- json({
+  visits: pos.visits, totals: pos.totals, readyKey: pos.readyKey, add: pos.add, insurers: pos.insurers,
+  decimals: pos.decimals, currency: currency, locale: locale, today: clinicToday, csrf: csrfToken,
+  canInsure: pos.insurers.length > 0,
+  icons: { online: icon('video', 'icon-xs'), clinic: icon('building-2', 'icon-xs'), trash: icon('trash-2', 'icon-sm'), pill: icon('pill', 'icon-sm'), shield: icon('shield-check', 'icon-xs') },
+  texts: {
+    state: { ready: t('cashpos.state.ready'), with_doctor: t('cashpos.state.with_doctor'), arrived: t('cashpos.state.arrived'), expected: t('cashpos.state.expected') },
+    online: t('cashpos.online'), in_person: t('cashpos.in_person'), no_amount: t('cashpos.no_amount'), set_by_doctor: t('cashpos.set_by_doctor'), expected_fee: t('cashpos.expected_fee'),
+    added: t('cashpos.added'), empty_title: t('cashpos.empty_title'), empty_text: t('cashpos.empty_text'), no_match: t('cashpos.no_match'), count: t('cashpos.count'),
+    bill_empty: t('cashpos.bill_empty'), remove: t('cashpos.remove'), amount: t('cashpos.amount'), discount_pct: t('cashpos.discount_pct'), insurer: t('cashpos.insurer'),
+    no_insurance: t('cashpos.no_insurance'), coverage_pct: t('cashpos.coverage_pct'), after_discount: t('cashpos.after_discount'), insurer_pays: t('cashpos.insurer_pays'),
+    patient_pays: t('cashpos.patient_pays'), reason_ph: t('cashpos.reason_ph'), reason_needed: t('cashpos.reason_needed'), rx: t('cashpos.rx'), no_doctor: t('cashpos.no_doctor'),
+    split_left: t('cashpos.split_left'), split_over: t('cashpos.split_over'), split_ok: t('cashpos.split_ok'), cash_short: t('cashpos.cash_short'), exact: t('cashpos.exact'),
+    checkout: t('cashpos.checkout'), paying: t('cashpos.paying'), view_bill: t('cashpos.view_bill'), invoice_n: t('cashpos.invoice_n'), give_change: t('cashpos.give_change'),
+    print: t('cashpos.print'), print_n: t('cashpos.print_n'), method: { cash: t('cashpos.method.cash'), card: t('cashpos.method.card'), mixed: t('cashpos.method.mixed'), insurance: t('cashpos.method.insurance') },
+    method_used: t('cashpos.method_used'), new_ready: t('cashpos.new_ready'), failed: t('cashpos.failed'), paid_elsewhere: t('cashpos.paid_elsewhere'),
+    collected_today: t('cashpos.collected_today'), receipts: t('cashpos.receipts'), live_on: t('cashpos.live_on'), live_off: t('cashpos.live_off'), full_screen: t('cashpos.full_screen'),
+    exit_full_screen: t('cashpos.exit_full_screen'), today: t('common.today'), line_error: t('cashpos.line_error')
+  }
+}) %></script>

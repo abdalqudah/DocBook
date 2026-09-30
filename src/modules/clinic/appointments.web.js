@@ -10,6 +10,7 @@ const { translateMessage } = require('../../core/i18n');
 const scheduling = require('./scheduling');
 const appts = require('./appointments.service');
 const doctorsSvc = require('./doctors.service');
+const payParts = require('./payment-parts');
 
 const router = express.Router();
 router.use(can('appointments.view'));
@@ -299,13 +300,14 @@ async function renderShow(req, res, extra = {}) {
   if (a.appointment_type === 'blocked') return res.redirect(`/app/appointments?date=${a.appointment_date}`);
   const lenOf = await lengths(ctx);
   const [invoice, children, parent, doctors, patient, consult] = await Promise.all([
-    knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number', 'amount', 'payment_method', 'discount_percent', 'created_at'),
+    knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number', 'amount', 'payment_method', 'discount_percent', 'created_at', 'insurance_provider_name'),
     knex('appointments').where({ business_id: ctx.businessId, parent_appointment_id: a.id }).orderBy([{ column: 'appointment_date' }, { column: 'appointment_time' }]).select('id', 'appointment_date', 'appointment_time', 'status'),
     a.parent_appointment_id ? knex('appointments').where({ business_id: ctx.businessId, id: a.parent_appointment_id }).first('id', 'appointment_date', 'appointment_time') : null,
     bookableDoctors(ctx),
     a.patient_id ? knex('patients').where({ business_id: ctx.businessId, id: a.patient_id }).first('id', 'full_name', 'date_of_birth', 'gender') : null,
     knex('consultations').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'diagnosis'),
   ]);
+  if (invoice) await payParts.attach(ctx.businessId, [invoice]); // how it was paid (parts), never "mixed"
   const online = await require('../telehealth/web').panelData(req, a); // eslint-disable-line global-require
   return res.page('pages/clinic/appointments/show', {
     title: `${a.patient_name} · ${a.appointment_date}`, a: { ...a, length: lenOf(a), end_time: withEnd(lenOf)(a).end_time }, invoice, children, parent, doctors, patient, consult, online,

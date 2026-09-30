@@ -360,7 +360,7 @@
     "bank_transfer": "تحويل بنكي",
     "insurance": "تأمين",
     "digital_wallet": "محفظة إلكترونية",
-    "mixed": "مختلط (نقدًا + بطاقة)"
+    "mixed": "نقدًا + بطاقة"
   },
   "notifications": {
     "title": "الإشعارات",

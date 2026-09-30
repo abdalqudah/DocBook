@@ -1,104 +1,49 @@
-<% var printing = query.print === '1';
-   /* Invoice print template (Settings → Invoice template, platformops): paper size, printed fields, number prefix, footer. Applies to the printed copy. */
-   var tpl = (typeof invoiceTpl !== 'undefined' && invoiceTpl) || { paper: 'a4', prefix: '', footer: '', footer_en: '', show_logo: true, show_contact: true, show_tax: true, show_doctor: true, show_service: true, show_insurance: true, show_discount: true, show_method: true, show_stamp: true };
-   var shows = function (f) { return !printing || tpl[f] !== false; };
-   var invNo = (tpl.prefix || '') + inv.invoice_number;
-   var footNote = (locale === 'en' ? tpl.footer_en || tpl.footer : tpl.footer || tpl.footer_en) || '';
-   var original = Number(inv.amount) + Number(inv.discount_amount);
-   var billLines = Array.isArray(inv.items) ? inv.items : (function () { try { var p = JSON.parse(inv.items || 'null'); return Array.isArray(p) ? p : []; } catch (e) { return []; } })(); var hasDiscount = Number(inv.discount_amount) > 0 || Number(inv.discount_percent) > 0; %>
+<%
+  /* One invoice: the paper exactly as it prints (clinic letterhead, lines, payment parts, stamp, footer note) and,
+     on screen, the summary and the void action. ?print=1 renders the paper alone (layouts/print); ?paper= picks
+     A4 / A5 / 80 mm (default: Settings → Invoice template). */
+  var printing = query.print === '1';
+  var original = Number(inv.amount) + Number(inv.discount_amount);
+  var paperHref = function (p, extra) { return '/app/billing/' + inv.id + '?paper=' + p + (extra || ''); };
+%>
 <% if (!printing) { %>
 <div class="page-head">
   <div>
-    <div class="breadcrumbs"><a href="/app/billing"><%= t('billing.title') %></a><%- icon('chevron-right', 'flip-rtl') %><span class="mono">#<%= invNo %></span></div>
-    <h1><%= t('billing.invoice_no', { n: invNo }) %></h1>
-    <p><%= inv.patient_name %> · <%= fmt.date(issued.date) %></p>
+    <div class="breadcrumbs"><a href="/app/billing"><%= t('billing.title') %></a><%- icon('chevron-right', 'flip-rtl') %><bdi class="mono" dir="ltr">#<%= number %></bdi></div>
+    <h1><%= t('billing.invoice_no', { n: number }) %></h1>
+    <p><span dir="auto"><%= inv.patient_name %></span> · <%= fmt.date(issued.date) %></p>
   </div>
   <div class="page-actions">
-    <a class="btn btn-secondary" href="/app/billing/<%= inv.id %>?print=1"><%- icon('file-text', 'icon-sm') %><%= t('billing.print_view') %></a>
-    <a class="btn btn-primary" href="/app/billing/<%= inv.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+    <a class="btn btn-secondary" href="<%= paperHref(paper, '&print=1') %>"><%- icon('file-text', 'icon-sm') %><%= t('billing.print_view') %></a>
+    <a class="btn btn-primary" href="<%= paperHref(paper, '&print=1&autoprint=1') %>"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
   </div>
 </div>
-<% } %>
-<% if (printing) { %><link rel="stylesheet" href="/css/platformops.css?v=<%= assetV %>"><% } %>
 
-<div class="<%= printing ? '' : 'grid grid-main' %>">
-  <article class="<%= printing ? 'rec-invoice is-print po-inv po-paper-' + tpl.paper : 'panel rec-invoice' %>" aria-label="<%= t('billing.invoice_no', { n: invNo }) %>">
-    <% if (printing) { %>
-    <header class="po-inv-head">
-      <% if (tpl.show_logo && business.logo_mime) { %><img class="po-inv-logo" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= business.name %>"><% } %>
-      <div class="grow">
-        <div class="strong po-inv-clinic"><%= locale === 'en' && business.name_en ? business.name_en : business.name %></div>
-        <% if (tpl.show_contact && (business.address || business.phone)) { %><div class="small muted"><%= [business.address, business.phone].filter(Boolean).join(' · ') %></div><% } %>
-      </div>
-    </header>
-    <% } %>
-    <div class="rec-inv-top">
-      <div>
-        <div class="rec-inv-kind"><%= t('billing.doc_title') %></div>
-        <div class="rec-inv-no mono">#<%= invNo %></div>
-      </div>
-      <div class="text-end">
-        <span class="badge badge-success badge-dot"><%= t('billing.paid') %></span>
-        <div class="small muted mt-2"><%= t('billing.issued') %>: <strong><%= fmt.date(issued.date) %></strong> <span dir="ltr"><%= issued.time %></span></div>
-        <% if (business.tax_number && shows('show_tax')) { %><div class="small muted"><%= t('billing.tax_no') %>: <strong dir="ltr"><%= business.tax_number %></strong></div><% } %>
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="ivd-bar no-print">
+      <span class="small muted"><%= t('invoicex.print_as') %></span>
+      <div class="segmented" role="group" aria-label="<%= t('invoicex.print_as') %>">
+        <% ['a4', 'a5', 'receipt80'].forEach(function (p) { %><a href="<%= paperHref(p) %>" class="<%= paper === p ? 'active' : '' %>"<%- paper === p ? ' aria-current="true"' : '' %>><%= t('invoicex.paper.' + p) %></a><% }) %>
       </div>
     </div>
-    <% if (!printing) { %><div class="rec-inv-clinic"><strong><%= business.name %></strong><% if (business.name_en && locale === 'en') { %> · <%= business.name_en %><% } %><div class="small muted"><%= [business.address, business.phone].filter(Boolean).join(' · ') %></div></div><% } %>
+    <%- include('_document', { doc: doc }) %>
+  </div>
 
-    <div class="rec-inv-parties">
-      <div>
-        <div class="rec-inv-label"><%= t('billing.billed_to') %></div>
-        <div class="strong" dir="auto"><% if (patient && can('patients.view') && !printing) { %><a class="link" href="/app/patients/<%= patient.id %>"><%= inv.patient_name %></a><% } else { %><%= inv.patient_name %><% } %></div>
-        <% if (inv.patient_phone) { %><div class="small"><span dir="ltr"><%= inv.patient_phone %></span></div><% } %>
-        <% if (patient && patient.national_id) { %><div class="small muted"><%= t('patients.national_id') %>: <span dir="ltr"><%= patient.national_id %></span></div><% } %>
-      </div>
-      <div>
-        <div class="rec-inv-label"><%= t('billing.visit') %></div>
-        <% if (shows('show_doctor')) { %><div class="strong"><%= inv.doctor_name || '—' %></div><% } %>
-        <% if (inv.appointment_date) { %><div class="small"><%= fmt.date(inv.appointment_date) %> · <span dir="ltr"><%= inv.appointment_time %></span></div><% } %>
-        <% if (inv.insurance_provider_name && shows('show_insurance')) { %><div class="small muted"><%= t('billing.insurance') %>: <%= inv.insurance_provider_name %><% if (patient && patient.insurance_number) { %> · <span dir="ltr"><%= patient.insurance_number %></span><% } %></div><% } %>
-      </div>
-    </div>
-
-    <table class="statement rec-inv-lines">
-      <tbody>
-        <% if (billLines.length && shows('show_service')) { billLines.forEach(function (l) { %>
-        <tr><td><div class="strong" dir="auto"><%= l.name %></div><div class="small muted"><% if (Number(l.qty) > 1) { %><span class="num"><%= fmt.number(l.qty) %> × <%= fmt.amount(l.unitPrice) %></span><% } else if (shows('show_doctor')) { %><%= inv.doctor_name || '' %><% } %></div></td><td><%= fmt.money(l.total !== undefined ? l.total : Number(l.qty) * Number(l.unitPrice)) %></td></tr>
-        <% }); if ((billLines.length > 1 || hasDiscount) && shows('show_discount')) { %><tr class="sub"><td><%= t('cashier.subtotal') %></td><td><%= fmt.money(original) %></td></tr><% } %>
-        <% } else { %>
-        <tr><td><div class="strong"><%= shows('show_service') ? inv.service_name || t('billing.consultation') : t('invoice_tpl.services_line') %></div><% if (shows('show_doctor')) { %><div class="small muted"><%= inv.doctor_name || '' %></div><% } %></td><td><%= fmt.money(shows('show_discount') ? original : inv.amount) %></td></tr>
-        <% } %>
-        <% if (hasDiscount && shows('show_discount')) { %><tr class="sub"><td><%= t('billing.discount') %> (<%= fmt.number(inv.discount_percent) %>%)</td><td>− <%= fmt.money(inv.discount_amount) %></td></tr><% } %>
-        <tr class="grand"><td><%= t('billing.net_paid') %></td><td><%= fmt.money(inv.amount) %></td></tr>
-        <% if (inv.insurance_coverage_percent !== null && inv.insurance_coverage_percent !== undefined && shows('show_insurance')) { var _cov = Number(inv.insurance_coverage_percent); var _ins = Math.round(Number(inv.amount) * _cov) / 100; %>
-        <tr class="sub"><td><%= t('billing.insurer_share', { pct: fmt.number(_cov) }) %></td><td><%= fmt.money(_ins) %></td></tr>
-        <tr class="sub"><td class="strong"><%= t('billing.patient_share') %></td><td class="strong"><%= fmt.money(Number(inv.amount) - _ins) %></td></tr>
-        <% } %>
-      </tbody>
-    </table>
-
-    <dl class="dl rec-inv-pay">
-      <% if (shows('show_method')) { %><dt><%= t('billing.method') %></dt><dd><%= label('payment_methods', inv.payment_method) %></dd><% } %>
-      <% if (inv.amount_received !== null && inv.amount_received !== undefined) { %><dt><%= t('cashier.received') %></dt><dd><%= fmt.money(inv.amount_received) %></dd><dt><%= t('cashier.change_due') %></dt><dd><%= fmt.money(inv.change_due || 0) %></dd><% } %>
-      <% if (hasDiscount && shows('show_discount')) { %><dt><%= t('billing.original_price') %></dt><dd><%= fmt.money(original) %></dd><% } %>
-      <% if (inv.cashier) { %><dt><%= t('billing.received_by') %></dt><dd><%= inv.cashier %></dd><% } %>
-    </dl>
-    <% if (printing && tpl.show_stamp !== false) { %><div class="rec-inv-stamp" style="display:flex;justify-content:flex-end;margin-top:8px"><img src="/app/signatures/invoices/<%= inv.id %>/stamp.png" alt="" style="max-height:96px;max-width:130px;object-fit:contain"></div><% } %><%/* clinic stamp when enabled for invoices (transparent pixel otherwise) */%>
-    <p class="rec-inv-thanks small muted" dir="auto"><%= printing && footNote ? footNote : t('billing.thanks') %></p>
-  </article>
-
-  <% if (!printing) { %>
   <div class="stack">
     <div class="panel"><div class="panel-head"><h2><%= t('billing.summary') %></h2></div><div class="panel-body"><dl class="dl rec-dl-narrow">
       <dt><%= t('billing.original_price') %></dt><dd><%= fmt.money(original) %></dd>
-      <dt><%= t('billing.discount_pct') %></dt><dd><%= fmt.number(inv.discount_percent) %>%</dd>
-      <dt><%= t('billing.discount_amount') %></dt><dd><%= fmt.money(inv.discount_amount) %></dd>
+      <% if (Number(inv.discount_amount) > 0) { %>
+      <dt><%= t('billing.discount') %></dt><dd><%= fmt.money(inv.discount_amount) %> <span class="muted small">(<%= fmt.number(inv.discount_percent) %>%)</span></dd>
+      <% if (inv.discount_reason) { %><dt class="muted"></dt><dd class="small muted" dir="auto"><%= inv.discount_reason %></dd><% } %>
+      <% } %>
       <dt><%= t('billing.net_paid') %></dt><dd class="strong"><%= fmt.money(inv.amount) %></dd>
+      <dt><%= t('invoicex.paid_by') %></dt><dd><%- include('_payment-lines', { pl: { parts: doc.parts, insuranceName: inv.insurance_provider_name, mode: 'rows' } }) %></dd>
     </dl></div>
     <% if (inv.appointment_id && (can('appointments.view') || can('clinical.view'))) { %><div class="panel-foot"><a class="btn btn-ghost btn-sm" href="<%= can('clinical.view') ? '/app/visits/' : '/app/appointments/' %><%= inv.appointment_id %>"><%- icon('calendar-days', 'icon-sm') %><%= t('billing.open_visit') %></a></div><% } %>
     </div>
     <% if (can('billing.manage')) { %>
-    <div class="panel rec-danger"><div class="panel-body stack-sm">
+    <div class="panel"><div class="panel-body stack-sm">
       <div class="strong"><%= t('billing.void') %></div>
       <p class="small muted"><%= t('billing.void_help') %></p>
       <form method="post" action="/app/billing/<%= inv.id %>/void" data-confirm="<%= t('billing.void_confirm', { n: inv.invoice_number }) %>" data-confirm-title="<%= t('billing.void') %>" data-confirm-yes="<%= t('billing.void_yes') %>" data-confirm-type="<%= inv.invoice_number %>">
@@ -108,5 +53,7 @@
     </div></div>
     <% } %>
   </div>
-  <% } %>
 </div>
+<% } else { %>
+<%- include('_document', { doc: doc }) %>
+<% } %>

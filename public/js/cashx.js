@@ -3,8 +3,6 @@
      cash / card / mixed, change — opened in a dialog from the cash screen and the reception board ([data-cx-open]),
      or inline on the cashier page. The server recomputes every figure; this is only a preview + friendly checks.
    • "Paid" panel: prints the receipt on its own in a hidden frame; print links open in the same frame.
-   • Cash screen: clock, full screen, live refresh of the doctor columns (SSE /app/live/events, 10 s polling as a
-     fallback) with a soft chime and a flash when a doctor finishes a visit ("ready to collect").
    No inline scripts (CSP): texts come from JSON islands. */
 (function () {
   'use strict';
@@ -12,7 +10,6 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function jsonOf(el) { try { return el ? JSON.parse(el.textContent || '{}') : {}; } catch (e) { return {}; } }
-  function store(fn) { try { return fn(window.localStorage); } catch (e) { return null; } }
   function sstore(fn) { try { return fn(window.sessionStorage); } catch (e) { return null; } }
   var pageTexts = jsonOf(document.getElementById('cx-texts'));
 
@@ -330,153 +327,5 @@
     });
   }
 
-  /* ================================================================ cash screen */
-  var screen = document.querySelector('[data-cx-screen]');
-  if (!screen) return;
-  var board = screen.querySelector('[data-cx-board]');
-  var totalsBox = screen.querySelector('[data-cx-totals]');
-  var notice = screen.querySelector('[data-cx-notice]');
-  var liveBox = screen.querySelector('[data-cx-live]');
-  var readyKey = screen.getAttribute('data-ready-key') || '';
-  var boardUrl = screen.getAttribute('data-board-url');
-
-  // Clock in the clinic's time zone.
-  var clock = screen.querySelector('[data-cx-clock]');
-  if (clock) {
-    var tz = clock.getAttribute('data-tz') || undefined;
-    var tf = null;
-    try { tf = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }); } catch (e) { tf = null; }
-    var tick = function () { var d = new Date(); clock.textContent = tf ? tf.format(d) : d.toTimeString().slice(0, 5); };
-    tick(); setInterval(tick, 10000);
-  }
-
-  // Full screen (only when the user asks — the Fullscreen API needs a click).
-  var fsBtn = screen.querySelector('[data-cx-fullscreen]');
-  var root = document.documentElement;
-  var fsOk = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
-  function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
-  function enterFs() { var fn = root.requestFullscreen || root.webkitRequestFullscreen; if (fn && !isFs()) { try { var p = fn.call(root); if (p && p.catch) p.catch(function () {}); } catch (e) { /* refused */ } } }
-  function exitFs() { var fn = document.exitFullscreen || document.webkitExitFullscreen; if (fn && isFs()) { try { var p = fn.call(document); if (p && p.catch) p.catch(function () {}); } catch (e) { /* ignore */ } } }
-  function fsLabel() {
-    if (!fsBtn) return;
-    var l = fsBtn.querySelector('[data-cx-fs-label]');
-    if (l) l.textContent = isFs() ? l.getAttribute('data-on') : l.getAttribute('data-off');
-    document.body.classList.toggle('cx-is-fs', isFs());
-  }
-  if (fsBtn && fsOk) {
-    fsBtn.hidden = false;
-    fsBtn.addEventListener('click', function () { if (isFs()) exitFs(); else enterFs(); });
-    document.addEventListener('fullscreenchange', fsLabel);
-    document.addEventListener('webkitfullscreenchange', fsLabel);
-  }
-  // Opened with "Open cash screen" (?fs=1): the first tap on the screen goes full screen.
-  if (fsOk && /[?&]fs=1/.test(location.search)) {
-    var once = function (e) { if (e.target.closest && e.target.closest('[data-cx-exit]')) return; enterFs(); document.removeEventListener('pointerdown', once, true); };
-    document.addEventListener('pointerdown', once, true);
-  }
-  var exitLink = screen.querySelector('[data-cx-exit]');
-  if (exitLink) exitLink.addEventListener('click', function () { exitFs(); });
-
-  // Soft chime (Web Audio; unlocked by the first click / key press — browsers block sound before that).
-  var soundBtn = screen.querySelector('[data-cx-sound]');
-  var soundOn = store(function (s) { return s.getItem('cx-sound'); }) !== '0';
-  var audio = null;
-  function unlock() { if (audio || !(window.AudioContext || window.webkitAudioContext)) return; try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audio = null; } }
-  document.addEventListener('pointerdown', unlock, { once: true, capture: true });
-  document.addEventListener('keydown', unlock, { once: true, capture: true });
-  function soundUi() {
-    if (!soundBtn) return;
-    soundBtn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
-    var on = soundBtn.querySelector('[data-cx-sound-on]'); var off = soundBtn.querySelector('[data-cx-sound-off]');
-    if (on) on.hidden = !soundOn; if (off) off.hidden = soundOn;
-  }
-  if (soundBtn) soundBtn.addEventListener('click', function () { soundOn = !soundOn; store(function (s) { s.setItem('cx-sound', soundOn ? '1' : '0'); }); soundUi(); if (soundOn) chime(); });
-  soundUi();
-  function chime() {
-    if (!soundOn || !audio) return;
-    try {
-      if (audio.state === 'suspended' && audio.resume) audio.resume();
-      var t0 = audio.currentTime;
-      [[659.25, 0], [880, 0.16]].forEach(function (n) {
-        var o = audio.createOscillator(); var g = audio.createGain();
-        o.type = 'sine'; o.frequency.value = n[0];
-        g.gain.setValueAtTime(0.0001, t0 + n[1]);
-        g.gain.exponentialRampToValueAtTime(0.12, t0 + n[1] + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + 0.5);
-        o.connect(g); g.connect(audio.destination);
-        o.start(t0 + n[1]); o.stop(t0 + n[1] + 0.55);
-      });
-    } catch (e) { /* no sound */ }
-  }
-
-  function idsOf(key) { return String(key || '').split(',').filter(Boolean).map(function (x) { return x.split(':')[0]; }); }
-  var noticeTimer = null;
-  function announce(ids) {
-    var names = [];
-    ids.forEach(function (id) {
-      var li = board.querySelector('[data-cx-id="' + id + '"]');
-      if (!li) return;
-      li.classList.add('is-new');
-      setTimeout(function () { li.classList.remove('is-new'); }, 6000);
-      var n = li.querySelector('.cx-v-name'); var a = li.querySelector('.cx-v-amount .num');
-      names.push(String(pageTexts.newReady || '{name}').replace('{name}', n ? n.textContent.trim() : '').replace('{amount}', a ? a.textContent.trim() : ''));
-    });
-    if (!names.length || !notice) return;
-    notice.textContent = names.join(' · ');
-    notice.hidden = false;
-    clearTimeout(noticeTimer);
-    noticeTimer = setTimeout(function () { notice.hidden = true; }, 9000);
-    chime();
-  }
-
-  var loading = false; var again = false; var lastLoad = 0;
-  function busy() { return !!board.querySelector('details.dropdown[open]'); }
-  function refresh() {
-    if (loading) { again = true; return; }
-    if (busy()) { setTimeout(refresh, 2000); return; }
-    loading = true; lastLoad = Date.now();
-    fetch(boardUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
-      .then(function (r) { if (r.status === 401 || r.status === 403) { location.reload(); throw new Error('auth'); } if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then(function (d) {
-        var before = idsOf(readyKey);
-        board.innerHTML = d.board;
-        if (totalsBox) totalsBox.innerHTML = d.totals;
-        var fresh = idsOf(d.readyKey).filter(function (id) { return before.indexOf(id) < 0; });
-        readyKey = d.readyKey || '';
-        if (fresh.length) announce(fresh);
-      })
-      .catch(function () { /* next tick */ })
-      .then(function () { loading = false; if (again) { again = false; setTimeout(refresh, 300); } });
-  }
-
-  // Live: the clinic's agenda feed (SSE). Without it (or while it is down) poll every 10 s.
-  function liveUi(on) {
-    if (!liveBox) return;
-    liveBox.classList.toggle('is-on', on);
-    var tx = liveBox.querySelector('[data-cx-live-text]');
-    if (tx) tx.textContent = on ? pageTexts.live_on : pageTexts.live_off;
-    liveBox.setAttribute('title', on ? pageTexts.live_on : pageTexts.live_off);
-  }
-  var connected = false;
-  setInterval(function () { if (!connected || Date.now() - lastLoad > 60000) refresh(); }, 10000);
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refresh(); });
-  if (window.EventSource) {
-    var es = null; var failures = 0;
-    var connect = function () {
-      es = new EventSource('/app/live/events');
-      es.addEventListener('hello', function () { connected = true; failures = 0; liveUi(true); });
-      es.addEventListener('appointments', function (e) {
-        var ev; try { ev = JSON.parse(e.data); } catch (x) { ev = {}; }
-        var dates = ev.dates || (ev.date ? [ev.date] : []);
-        if (!ev.today || !dates.length || dates.indexOf(ev.today) >= 0) refresh();
-      });
-      es.onerror = function () {
-        connected = false; liveUi(false); failures += 1;
-        if (failures > 5 && es) { es.close(); es = null; setTimeout(function () { failures = 0; connect(); }, 60000); }
-      };
-    };
-    connect();
-    window.addEventListener('beforeunload', function () { if (es) es.close(); });
-  }
-  // Payments made on this screen also refresh the totals: the "paid" dialog comes back with a fresh board anyway.
+  // The full-screen cash screen (POS) has its own script: public/js/cashpos.js.
 }());

@@ -2,16 +2,19 @@
 const express = require('express');
 const knex = require('../../db/knex');
 const exporter = require('../../core/exporter');
+const fmtCore = require('../../core/format');
 const { E } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const appts = require('./appointments.service');
 const lib = require('./records.lib');
+const payParts = require('./payment-parts');
+const invoiceDoc = require('./invoice-doc');
 
 const router = express.Router();
 router.use(can('billing.view'));
 
-const PAGE = { pageScripts: ['/js/records.js'], pageStyles: ['/css/records.css'] };
+const PAGE = { pageScripts: ['/js/records.js'], pageStyles: ['/css/records.css', '/css/invoice.css'] };
 
 /** Invoices matching the filters (clinic-time-zone dates, invoice-number search, a doctor's own scope). */
 function invoiceQuery(ctx, query) {
@@ -19,7 +22,8 @@ function invoiceQuery(ctx, query) {
   const s = String(query.q || '').trim();
   if (s) {
     const term = lib.likeTerm(s);
-    const num = s.replace(/^#|^inv-?/i, '');
+    // "#159", "INV-159" or the template's own letter prefix.
+    const num = s.replace(/^#/, '').replace(/^[A-Za-z\-/_.]+/, '');
     q.andWhere((w) => {
       ['patient_name', 'patient_phone', 'doctor_name', 'service_name'].forEach((c) => w.orWhere(`invoices.${c}`, 'like', term));
       if (/^\d+$/.test(num)) w.orWhere('invoices.invoice_number', Number(num));
@@ -27,7 +31,8 @@ function invoiceQuery(ctx, query) {
   }
   if (ctx.ownDoctorId) q.where('invoices.doctor_id', ctx.ownDoctorId);
   else if (/^\d+$/.test(query.doctor || '')) q.where('invoices.doctor_id', Number(query.doctor));
-  if (appts.PAYMENT_METHODS.includes(query.method)) q.where('invoices.payment_method', query.method);
+  // An invoice paid cash + card matches both "cash" and "card" (its parts), never a "mixed" bucket.
+  if (payParts.METHODS.includes(query.method)) payParts.whereHasMethod(q, query.method, 'invoices.id', 'invoices.payment_method');
   if (query.insurance === 'none') q.whereNull('invoices.insurance_provider_id');
   else if (/^\d+$/.test(query.insurance || '')) q.where('invoices.insurance_provider_id', Number(query.insurance));
   const from = lib.isIso(query.from) ? query.from : null;
@@ -67,26 +72,41 @@ router.get('/', wrap(async (req, res) => {
   const [sums] = await base.clone().select(knex.raw('COUNT(*) as n'), knex.raw('COALESCE(SUM(amount),0) as amount'), knex.raw('COALESCE(SUM(discount_amount),0) as discount'),
     knex.raw('SUM(CASE WHEN discount_amount > 0 THEN 1 ELSE 0 END) as discounted'));
   const sortCol = { amount: 'invoices.amount', date: 'invoices.created_at' }[req.query.sort] || 'invoices.invoice_number';
-  const { rows, meta } = await lib.paginate(base.clone().select('invoices.*').orderBy(sortCol, req.query.dir === 'asc' ? 'asc' : 'desc').orderBy('invoices.id', 'desc'), { page: req.query.page, perPage: 25 });
+  const [{ rows, meta }, byMethod] = await Promise.all([
+    lib.paginate(base.clone().select('invoices.*').orderBy(sortCol, req.query.dir === 'asc' ? 'asc' : 'desc').orderBy('invoices.id', 'desc'), { page: req.query.page, perPage: 25 }),
+    payParts.totalsByMethod(base, 'invoices.id', req.ctx.businessId),
+  ]);
+  await payParts.attach(req.ctx.businessId, rows);
   const filtered = ['q', 'doctor', 'method', 'insurance', 'from', 'to'].some((k) => req.query[k] && req.query[k] !== 'all');
   return res.page('pages/clinic/billing/index', {
     title: req.t('billing.title'), tab, rows, meta, totals: { count: Number(sums.n) || 0, amount: Number(sums.amount) || 0, discount: Number(sums.discount) || 0, discounted: Number(sums.discounted) || 0 },
-    filtered, unpaidCount: Number(unpaidCount), methods: appts.PAYMENT_METHODS, localTime: (d) => lib.localTime(d, req.ctx.timezone), ...opts, ...PAGE,
+    filtered, unpaidCount: Number(unpaidCount), methods: payParts.METHODS, byMethod, localTime: (d) => lib.localTime(d, req.ctx.timezone), ...opts, ...PAGE,
   });
 }));
 
 router.get('/export', can('data.export'), wrap(async (req, res) => {
   const rows = await invoiceQuery(req.ctx, req.query).orderBy('invoices.invoice_number', 'desc').limit(50000).select('invoices.*');
+  await payParts.attach(req.ctx.businessId, rows);
   const t = req.t;
   const tz = req.ctx.timezone;
+  const prefix = (res.locals.invoiceTpl && res.locals.invoiceTpl.prefix) || '';
+  const amount = (v) => fmtAmount(v, req);
+  // The method column spells out the parts ("Cash 20.000 + Card 20.000"); one column per method carries the amounts
+  // so the file adds up by method in a spreadsheet.
   exporter.send(req, res, {
     name: t('billing.invoices'),
     header: [t('billing.number'), t('common.date'), t('common.time'), t('common.patient'), t('common.phone'), t('common.doctor'), t('common.service'),
-      t('billing.original_price'), t('billing.discount_pct'), t('billing.discount_amount'), t('billing.net_paid'), t('billing.method'), t('billing.insurance')],
-    rows: rows.map((r) => { const lt = lib.localTime(r.created_at, tz) || {}; return [r.invoice_number, lt.date || '', lt.time || '', r.patient_name, r.patient_phone || '', r.doctor_name || '', r.service_name || '',
-      Number(r.amount) + Number(r.discount_amount), Number(r.discount_percent), Number(r.discount_amount), Number(r.amount), t(`payment_methods.${r.payment_method}`), r.insurance_provider_name || '']; }),
+      t('billing.original_price'), t('billing.discount_pct'), t('billing.discount_amount'), t('billing.net_paid'), t('billing.method'),
+      ...payParts.METHODS.map((m) => t(`invoicex.col_${m}`)), t('billing.insurance')],
+    rows: rows.map((r) => { const lt = lib.localTime(r.created_at, tz) || {}; return [`${prefix}${r.invoice_number}`, lt.date || '', lt.time || '', r.patient_name, r.patient_phone || '', r.doctor_name || '', r.service_name || '',
+      Number(r.amount) + Number(r.discount_amount), Number(r.discount_percent), Number(r.discount_amount), Number(r.amount),
+      payParts.describe(t, r.parts, { insuranceName: r.insurance_provider_name, amount }),
+      ...payParts.METHODS.map((m) => payParts.amountBy(r.parts, m)), r.insurance_provider_name || '']; }),
   });
 }));
+
+/** Plain number with the currency's decimals (for export text). */
+const fmtAmount = (v, req) => fmtCore.formatAmount(v, req.ctx.currency, 'en');
 
 async function loadInvoice(req) {
   const inv = await knex('invoices as i').leftJoin('users as u', 'u.id', 'i.created_by').leftJoin('appointments as a', function j() { this.on('a.id', 'i.appointment_id').andOn('a.business_id', 'i.business_id'); })
@@ -97,10 +117,11 @@ async function loadInvoice(req) {
 }
 
 router.get('/:id(\\d+)', wrap(async (req, res) => {
-  const inv = await loadInvoice(req);
-  const patient = inv.patient_id ? await knex('patients').where({ id: inv.patient_id, business_id: req.ctx.businessId }).first('id', 'full_name', 'phone', 'national_id', 'insurance_number') : null;
+  const paper = invoiceDoc.paperOf(req.query, res.locals.invoiceTpl);
+  const doc = await invoiceDoc.load(req.ctx, req.params.id, { paper });
+  const number = `${(res.locals.invoiceTpl && res.locals.invoiceTpl.prefix) || ''}${doc.inv.invoice_number}`;
   res.page('pages/clinic/billing/show', {
-    title: req.t('billing.invoice_no', { n: inv.invoice_number }), inv, patient, issued: lib.localTime(inv.created_at, req.ctx.timezone), printable: true, ...PAGE,
+    title: req.t('billing.invoice_no', { n: number }), doc, inv: doc.inv, patient: doc.patient, issued: doc.issued, paper, number, printable: true, ...PAGE,
   });
 }));
 

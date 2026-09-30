@@ -1,0 +1,47 @@
+<%
+  /*
+   * The clinic's letterhead on every printed financial paper (invoice A4 / A5, 80 mm receipt). One partial for all
+   * of them — the pos worker's cash screen may include it too. Driven by the clinic's own identity (businesses row)
+   * and the invoice template (Settings → Invoice template: show_logo / show_contact / show_tax, number prefix).
+   * Locals: lh = { paper: 'a4'|'a5'|'receipt80', title, number (already prefixed), date, time, status }.
+   * Uses `business`, `invoiceTpl` (optional), `locale`, `t`, `fmt` from the page. Renders nothing without a clinic.
+   */
+  var _lh = typeof lh !== 'undefined' && lh ? lh : {};
+  var _b = typeof business !== 'undefined' && business ? business : null;
+  var _tpl = (typeof invoiceTpl !== 'undefined' && invoiceTpl) || {};
+  var _on = function (f) { return _tpl[f] !== false; };
+  var _narrow = _lh.paper === 'receipt80';
+  var _en = locale === 'en';
+%>
+<% if (_b) {
+  var _primary = _en && _b.name_en ? _b.name_en : _b.name;
+  var _secondary = _en ? (_b.name_en && _b.name_en !== _b.name ? _b.name : '') : (_b.name_en && _b.name_en !== _b.name ? _b.name_en : '');
+  var _place = [_b.address, _b.city].filter(Boolean).join('، ');
+  if (_en) _place = [_b.address, _b.city].filter(Boolean).join(', ');
+  var _contact = [];
+  if (_b.phone) _contact.push({ k: t('invoicex.phone'), v: _b.phone, ltr: true });
+  if (_b.whatsapp && _b.whatsapp !== _b.phone) _contact.push({ k: t('invoicex.whatsapp'), v: _b.whatsapp, ltr: true });
+  if (_b.email) _contact.push({ k: t('invoicex.email'), v: _b.email, ltr: true });
+  var _logo = _on('show_logo') && _b.logo_mime;
+%>
+<header class="ivd-lh<%= _narrow ? ' is-narrow' : '' %>">
+  <div class="ivd-lh-id">
+    <% if (_logo) { %><img class="ivd-lh-logo" src="/app/logo/<%= _b.id %>?v=<%= _b.logo_version %>" alt="<%= _primary %>"><% } %>
+    <div class="ivd-lh-who">
+      <div class="ivd-lh-name" dir="auto"><%= _primary %></div>
+      <% if (_secondary) { %><div class="ivd-lh-name2" dir="auto"><%= _secondary %></div><% } %>
+      <% if (_on('show_contact')) { %>
+        <% if (_place) { %><div class="ivd-lh-meta" dir="auto"><%= _place %></div><% } %>
+        <% if (_contact.length) { %><div class="ivd-lh-meta ivd-lh-contacts"><% _contact.forEach(function (c, i) { %><% if (i) { %><span class="ivd-sep" aria-hidden="true">·</span><% } %><span><%= c.k %> <bdi dir="ltr"><%= c.v %></bdi></span><% }) %></div><% } %>
+      <% } %>
+      <% if (_on('show_tax') && _b.tax_number) { %><div class="ivd-lh-meta"><%= t('invoicex.tax_no') %>: <bdi dir="ltr"><%= _b.tax_number %></bdi></div><% } %>
+    </div>
+  </div>
+  <div class="ivd-lh-doc">
+    <div class="ivd-lh-title"><%= _lh.title || t('invoicex.invoice') %></div>
+    <% if (_lh.number) { %><div class="ivd-lh-no"><bdi dir="ltr">#<%= _lh.number %></bdi></div><% } %>
+    <% if (_lh.date) { %><div class="ivd-lh-meta"><%= fmt.date(_lh.date) %><% if (_lh.time) { %> · <bdi dir="ltr"><%= _lh.time %></bdi><% } %></div><% } %>
+    <% if (_lh.status) { %><div class="ivd-lh-status"><span class="ivd-dot" aria-hidden="true"></span><%= _lh.status %></div><% } %>
+  </div>
+</header>
+<% } %>

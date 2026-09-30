@@ -8,6 +8,7 @@ const fmtCore = require('../../core/format');
 const { wrap } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const lib = require('./records.lib');
+const payParts = require('./payment-parts');
 
 const router = express.Router();
 router.use(can('reports.view'));
@@ -43,7 +44,8 @@ async function build(req, range) {
       .select('ia.service_id', 'i.service_name').sum({ v: 'i.amount' }).count({ n: '*' }),
     apptBase(ctx, range).groupBy('a.source').select('a.source').count({ n: '*' })
       .select(knex.raw("SUM(CASE WHEN a.status = 'completed' THEN 1 ELSE 0 END) as done"), knex.raw("SUM(CASE WHEN a.status IN ('cancelled','no_show') THEN 1 ELSE 0 END) as lost")),
-    invBase(ctx, range).groupBy('i.payment_method').select('i.payment_method').sum({ v: 'i.amount' }).count({ n: '*' }),
+    // Revenue by payment method from the payment parts (cash + card counts under both; no "mixed" bucket).
+    payParts.totalsByMethod(invBase(ctx, range), 'i.id', ctx.businessId),
     invBase(ctx, range).first(knex.raw('COALESCE(SUM(i.discount_amount),0) as total'), knex.raw('SUM(CASE WHEN i.discount_amount > 0 THEN 1 ELSE 0 END) as n'),
       knex.raw('COALESCE(AVG(CASE WHEN i.discount_percent > 0 THEN i.discount_percent END),0) as avg_pct'), knex.raw('COALESCE(SUM(i.amount),0) as revenue'), knex.raw('COUNT(*) as invoices')),
     // First-ever visit of each patient seen in the range (new = first visit falls inside the range).
@@ -90,7 +92,7 @@ async function build(req, range) {
   const patients = { seen: patientRows.length, new: newCount, returning: patientRows.length - newCount, registered: num(registered.n) };
 
   // ---- money
-  const methods = methodRows.map((r) => ({ key: r.payment_method, n: num(r.n), v: num(r.v) })).sort((a, b) => b.v - a.v);
+  const methods = methodRows.rows.map((r) => ({ key: r.method, n: r.invoices, v: r.amount }));
   const revenue = num(discountRow.revenue);
   const discounts = { total: num(discountRow.total), n: num(discountRow.n), avgPct: num(discountRow.avg_pct), invoices: num(discountRow.invoices), gross: revenue + num(discountRow.total) };
 
@@ -126,7 +128,7 @@ function sectionTable(req, data, section) {
     case 'services': return { header: [t('common.service'), t('reports.appointments'), t('reports.completed'), t('reports.invoices'), t('reports.revenue')], rows: data.byService.map((s) => [s.name, s.n, s.done, s.invoices, s.revenue]) };
     case 'sources': return { header: [t('reports.source'), t('reports.appointments'), t('reports.completed'), t('reports.lost')], rows: data.bySource.map((s) => [t(`dashboard.sources.${s.key}`), s.n, s.done, s.lost]) };
     case 'patients': return { header: [t('reports.metric'), t('reports.count')], rows: [[t('reports.patients_seen'), data.patients.seen], [t('reports.new_patients'), data.patients.new], [t('reports.returning_patients'), data.patients.returning], [t('reports.registered'), data.patients.registered]] };
-    case 'methods': return { header: [t('billing.method'), t('reports.invoices'), t('reports.revenue')], rows: data.methods.map((m) => [t(`payment_methods.${m.key}`), m.n, m.v]).concat([[t('reports.discounts_total'), data.discounts.n, data.discounts.total]]) };
+    case 'methods': return { header: [t('billing.method'), t('reports.invoices'), t('reports.revenue')], rows: data.methods.map((m) => [t(`invoicex.m.${m.key}`), m.n, m.v]).concat([[t('reports.discounts_total'), data.discounts.n, data.discounts.total]]) };
     case 'daily': return { header: [data.byMonth ? t('common.month') : t('common.date'), t('reports.appointments'), t('reports.revenue')], rows: data.daily.map((d) => [d.key, d.appts, d.revenue]) };
     case 'finance': return data.fin ? { header: [t('reports.metric'), t('common.amount')], rows: [[t('reports.revenue'), data.fin.revenue], [t('reports.expenses'), data.fin.expenses], [t('reports.payroll'), data.fin.payroll], [t('reports.net'), data.fin.net]] } : null;
     default: return null;
@@ -156,7 +158,7 @@ router.get('/', wrap(async (req, res) => {
     revenue: points.some((p) => p.revenue) ? charts.line({ points, title: req.t('reports.chart_revenue'), fmt: mf, series: [{ key: 'revenue', cls: '' }], height: 220, width: 720 }) : null,
     status: hasAppts ? charts.donut({ items: data.status.rows.map((r) => ({ label: req.t(`dashboard.statuses.${r.key}`), value: r.n })), fmt: nf, title: req.t('reports.sec.status'), otherLabel: req.t('reports.other') }) : null,
     doctors: data.byDoctor.some((d) => d.revenue) ? charts.bars({ items: data.byDoctor.slice(0, 10).map((d) => ({ label: d.name, value: d.revenue })), fmt: mf }) : null,
-    methods: data.methods.length ? charts.donut({ items: data.methods.map((m) => ({ label: req.t(`payment_methods.${m.key}`), value: m.v })), fmt: mf, title: req.t('reports.sec.methods'), otherLabel: req.t('reports.other') }) : null,
+    methods: data.methods.length ? charts.donut({ items: data.methods.map((m) => ({ label: req.t(`invoicex.m.${m.key}`), value: m.v })), fmt: mf, title: req.t('reports.sec.methods'), otherLabel: req.t('reports.other') }) : null,
     services: data.byService.some((s) => s.n) ? charts.bars({ items: data.byService.slice(0, 8).map((s) => ({ label: s.name, value: s.n, cls: 's2' })), fmt: nf }) : null,
   };
   const months = [];

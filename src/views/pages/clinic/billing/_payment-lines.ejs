@@ -1,0 +1,35 @@
+<%
+  /*
+   * How an invoice was paid — its parts, never the summary word "mixed". Shared by the invoice list, the invoice
+   * paper, the 80 mm receipt and the cash screen (pos worker may include it).
+   * Locals: pl = { parts: [{ method, amount, received?, change? }], insuranceName, mode: 'chips'|'rows'|'text', total? }
+   *   chips  compact chips for tables: one part → its label; several → "Cash 20.000" "Card 20.000"
+   *   rows   label … amount rows (+ cash received / change) for papers
+   *   text   "Cash 20.000 + Card 20.000"
+   * Parts come from invoice_payments; an invoice without parts passes [{ method: payment_method, amount }].
+   */
+  var _pl = typeof pl !== 'undefined' && pl ? pl : {};
+  var _M = ['cash', 'card', 'bank_transfer', 'digital_wallet', 'insurance'];
+  var _parts = (_pl.parts || []).filter(function (p) { return p && p.method; }).map(function (p) {
+    return { method: _M.indexOf(p.method) >= 0 ? p.method : 'other', amount: Number(p.amount) || 0, received: p.received, change: p.change };
+  }).sort(function (a, b) { return (a.method === 'insurance' ? 0 : 1) - (b.method === 'insurance' ? 0 : 1); });
+  var _label = function (m) { return m === 'insurance' && _pl.insuranceName ? t('invoicex.insurance_of', { name: _pl.insuranceName }) : t('invoicex.m.' + m); };
+  var _mode = _pl.mode || 'chips';
+%>
+<% if (_parts.length) { %>
+<% if (_mode === 'chips') { %>
+<span class="ivx-parts">
+  <% _parts.forEach(function (p, i) { %><% if (i) { %><span class="ivx-plus" aria-hidden="true">+</span><% } %><span class="ivx-chip" dir="auto"><%= _label(p.method) %><% if (_parts.length > 1) { %> <span class="ivx-amt"><%= fmt.amount(p.amount) %></span><% } %></span><% }) %>
+</span>
+<% } else if (_mode === 'text') { %><%= _parts.length === 1 ? _label(_parts[0].method) : _parts.map(function (p) { return _label(p.method) + ' ' + fmt.amount(p.amount); }).join(' + ') %><% } else { %>
+<div class="ivx-rows">
+  <% _parts.forEach(function (p) { %>
+  <div class="ivx-row"><span dir="auto"><%= _label(p.method) %></span><span class="ivx-num"><%= fmt.amount(p.amount) %></span></div>
+  <% if (p.method === 'cash' && p.received !== null && p.received !== undefined && Number(p.received) > Number(p.amount)) { %>
+  <div class="ivx-row is-sub"><span><%= t('invoicex.received') %></span><span class="ivx-num"><%= fmt.amount(p.received) %></span></div>
+  <div class="ivx-row is-sub"><span><%= t('invoicex.change') %></span><span class="ivx-num"><%= fmt.amount(p.change || 0) %></span></div>
+  <% } %>
+  <% }) %>
+</div>
+<% } %>
+<% } %>

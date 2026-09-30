@@ -334,6 +334,8 @@ router.get('/finance/export', can('finance.view'), wrap(async (req, res) => {
   const rows = [
     r(t('pnl.gross_revenue'), s.gross, b.gross), r(t('pnl.discounts'), -s.discounts, -b.discounts), r(t('pnl.revenue'), s.revenue, b.revenue),
     r(t('pnl.of_which_online'), s.online, b.online),
+    ...[...new Set([...(s.byMethod || []), ...(b.byMethod || [])].map((x) => x.method))].map((k) => r(t('invoicex.of_which', { m: t(`invoicex.m.${k}`) }),
+      ((s.byMethod || []).find((x) => x.method === k) || {}).amount || 0, ((b.byMethod || []).find((x) => x.method === k) || {}).amount || 0)),
     ...[...new Set([...s.expenses.map((e) => e.category), ...b.expenses.map((e) => e.category)])].map((c) => r(`${t('pnl.operating_expenses')} · ${catName(c)}`,
       -((s.expenses.find((e) => e.category === c) || {}).amount || 0), -((b.expenses.find((e) => e.category === c) || {}).amount || 0))),
     r(t('pnl.doctor_payroll'), -s.doctorPayroll, -b.doctorPayroll), r(t('pnl.staff_salaries'), -s.staffSalaries, -b.staffSalaries),

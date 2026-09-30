@@ -72,6 +72,9 @@
             <tr class="sub"><td><%= t('pnl.discounts') %></td><td><bdi dir="ltr">−<%= fmt.amount(s.discounts) %></bdi></td><td class="fin-prev"><bdi dir="ltr">−<%= fmt.amount(b.discounts) %></bdi></td><td class="fin-prev"></td></tr>
             <tr class="total"><td><%= t('pnl.revenue') %> <span class="muted small">· <%= t('pnl.n_invoices', { n: fmt.number(s.invoices) }) %></span></td><td><%= fmt.amount(s.revenue) %></td><td class="fin-prev"><%= fmt.amount(b.revenue) %></td><td class="fin-prev"><%- deltaHtml(s.revenue, b.revenue, false) %></td></tr>
             <% if (s.online || b.online) { %><tr class="sub"><td><%= t('pnl.of_which_online') %></td><td><%= fmt.amount(s.online) %></td><td class="fin-prev"><%= fmt.amount(b.online) %></td><td class="fin-prev"></td></tr><% } %>
+            <% var _mAmt = function (list, k) { var x = (list || []).filter(function (r) { return r.method === k; })[0]; return x ? x.amount : 0; };
+               var _mKeys = (s.byMethod || []).map(function (r) { return r.method; }); (b.byMethod || []).forEach(function (r) { if (_mKeys.indexOf(r.method) < 0) _mKeys.push(r.method); });
+               _mKeys.forEach(function (k) { %><tr class="sub"><td><%= t('invoicex.of_which', { m: t('invoicex.m.' + k) }) %></td><td><%= fmt.amount(_mAmt(s.byMethod, k)) %></td><td class="fin-prev"><%= fmt.amount(_mAmt(b.byMethod, k)) %></td><td class="fin-prev"></td></tr><% }) %>
             <tr class="fin-section"><td colspan="4"><%= t('pnl.operating_expenses') %></td></tr>
             <% if (!cats.length) { %><tr class="sub"><td><%= t('pnl.no_expenses') %></td><td>—</td><td class="fin-prev">—</td><td class="fin-prev"></td></tr><% } %>
             <% cats.forEach(function (c) { %><tr class="sub"><td><%= catName(c) %></td><td><%= fmt.amount(amt(s.expenses, c)) %></td><td class="fin-prev"><%= fmt.amount(amt(b.expenses, c)) %></td><td class="fin-prev"><%- deltaHtml(amt(s.expenses, c), amt(b.expenses, c), true) %></td></tr><% }) %>

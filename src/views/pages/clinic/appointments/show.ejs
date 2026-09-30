@@ -101,7 +101,7 @@
         <dl class="dl">
           <dt><%= t('appointments.amount_due') %></dt><dd class="strong"><%= fmt.money(a.amount_due) %></dd>
           <dt><%= t('common.status') %></dt><dd><span class="st"><i class="st-dot <%= a.payment_status === 'paid' ? 'st-completed' : '' %>"></i><%= t('appointments.payment_statuses.' + a.payment_status) %></span></dd>
-          <% if (invoice) { %><dt><%= t('appointments.invoice') %></dt><dd><% if (can('billing.view')) { %><a class="link" href="/app/billing/<%= invoice.id %>">#<%= invoice.invoice_number %></a><% } else { %>#<%= invoice.invoice_number %><% } %> · <%= label('payment_methods', invoice.payment_method) %></dd><% } %>
+          <% if (invoice) { %><dt><%= t('appointments.invoice') %></dt><dd><% if (can('billing.view')) { %><a class="link" href="/app/billing/<%= invoice.id %>">#<%= invoice.invoice_number %></a><% } else { %>#<%= invoice.invoice_number %><% } %> · <%- include('../billing/_payment-lines', { pl: { parts: invoice.parts || [{ method: invoice.payment_method, amount: invoice.amount }], insuranceName: invoice.insurance_provider_name, mode: 'text' } }) %></dd><% } %>
         </dl>
         <% if (invoice && can('billing.view')) { %><a class="btn btn-secondary btn-sm mt-4" href="/app/billing/<%= invoice.id %>?print=1"><%- icon('printer', 'icon-sm') %><%= t('appointments.print_invoice') %></a><% } else if (!invoice && a.status !== 'cancelled' && can('frontdesk.use') && can('billing.manage') && a.appointment_date === clinicToday) { %><a class="btn btn-secondary btn-sm mt-4" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('appointments.checkout_at_desk') %></a><% } %>
       </div>

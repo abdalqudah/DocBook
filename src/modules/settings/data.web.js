@@ -10,6 +10,7 @@ const { can, canAny } = require('../../middleware/context');
 const businesses = require('../businesses/business.service');
 const { form } = require('./form');
 const { render } = require('./common');
+const payParts = require('../clinic/payment-parts');
 
 const router = express.Router();
 router.use(canAny('audit.view', 'data.export', 'data.manage'));
@@ -85,6 +86,7 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
     knex('expenses').where({ business_id: b }).orderBy('date'),
     knex('insurance_providers').where({ business_id: b }).select('id', 'name'),
   ]);
+  await payParts.attach(b, invoices); // the method column spells out the parts, never "mixed"
   const insName = Object.fromEntries(insurers.map((i) => [i.id, i.name]));
   const n = (v) => (v === null || v === undefined || v === '' ? '' : Number(v));
   const dt = (v) => (v instanceof Date ? v.toISOString().replace('T', ' ').slice(0, 16) : v || '');
@@ -94,7 +96,7 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
     { name: t('settings.sheet_appointments'), header: ['ID', t('common.date'), t('common.time'), t('settings.x_duration'), t('common.patient'), t('common.phone'), t('common.doctor'), t('common.service'), t('common.status'), t('common.type'), t('settings.x_source'), t('settings.x_amount_due'), t('settings.x_payment'), t('common.notes')],
       rows: appointments.map((r) => [r.id, r.appointment_date, r.appointment_time, n(r.duration_minutes), r.patient_name, r.patient_phone || '', r.doctor_name || '', r.service_name || '', L('settings.x_status', r.status), L('settings.x_type', r.appointment_type), L('settings.x_src', r.source), n(r.amount_due), L('settings.x_pay', r.payment_status), r.notes || '']) },
     { name: t('settings.sheet_invoices'), header: [t('settings.x_invoice_no'), t('common.date'), t('common.patient'), t('common.phone'), t('common.doctor'), t('common.service'), t('settings.x_discount_pct'), t('settings.x_discount'), t('common.amount'), t('settings.x_method'), t('settings.x_insurance')],
-      rows: invoices.map((r) => [n(r.invoice_number), dt(r.created_at), r.patient_name, r.patient_phone || '', r.doctor_name || '', r.service_name || '', n(r.discount_percent), n(r.discount_amount), n(r.amount), L('payment_methods', r.payment_method), r.insurance_provider_name || '']) },
+      rows: invoices.map((r) => [n(r.invoice_number), dt(r.created_at), r.patient_name, r.patient_phone || '', r.doctor_name || '', r.service_name || '', n(r.discount_percent), n(r.discount_amount), n(r.amount), payParts.describe(t, r.parts, { insuranceName: r.insurance_provider_name, amount: n }), r.insurance_provider_name || '']) },
     { name: t('settings.sheet_doctors'), header: ['ID', t('common.name'), t('settings.x_name_en'), t('settings.x_specialty'), t('common.phone'), t('common.email'), t('settings.x_license'), t('settings.x_fee'), t('settings.x_slot'), t('settings.x_salary'), t('common.active')],
       rows: doctors.map((r) => [r.id, r.full_name, r.full_name_en || '', r.specialization || '', r.phone || '', r.email || '', r.license_number || '', n(r.consultation_fee), n(r.slot_duration_minutes), n(r.base_salary), yn(r.is_active)]) },
     { name: t('settings.sheet_services'), header: ['ID', t('common.name'), t('settings.x_name_en'), t('common.doctor'), t('settings.x_duration'), t('settings.x_price'), t('common.active')],

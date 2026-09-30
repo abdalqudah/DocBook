@@ -1,4 +1,5 @@
-<% var P = '../../../partials/'; var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<% var P = '../../../partials/'; var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   var invPrefix = (typeof invoiceTpl !== 'undefined' && invoiceTpl && invoiceTpl.prefix) || ''; %>
 <div class="page-head">
   <div>
     <div class="breadcrumbs"><%= t('nav.group_clinic') %></div>
@@ -45,11 +46,20 @@
     <div class="stat"><div class="stat-label"><%= t('billing.discounts') %><span class="stat-icon warning"><%- icon('percent') %></span></div><div class="stat-value"><%= fmt.money(totals.discount) %></div><div class="stat-meta"><%= t('billing.discounted_n', { n: fmt.number(totals.discounted) }) %></div></div>
   </div>
 
+  <% if (byMethod && byMethod.rows.length) { %>
+  <div class="panel flush mb-4">
+    <div class="panel-head"><div><h2><%= t('invoicex.by_method') %></h2><p class="panel-sub"><%= t('invoicex.by_method_hint') %></p></div></div>
+    <dl class="ivx-methods">
+      <% byMethod.rows.forEach(function (m) { %><div><dt><%= t('invoicex.m.' + m.method) %></dt><dd class="num"><%= fmt.money(m.amount) %> <div class="ivx-sub"><%= t('invoicex.n_invoices', { n: fmt.number(m.invoices) }) %></div></dd></div><% }) %>
+    </dl>
+  </div>
+  <% } %>
+
   <div class="panel flush">
     <form class="table-toolbar" method="get" data-autosubmit role="search">
       <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('billing.search') %>" aria-label="<%= t('common.search') %>"></div>
       <% if (!ctx.ownDoctorId) { %><select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value="all"><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(query.doctor) === String(d.id) ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% } %>
-      <select class="select" name="method" aria-label="<%= t('billing.method') %>"><option value="all"><%= t('billing.all_methods') %></option><% methods.forEach(function (m) { %><option value="<%= m %>"<%= query.method === m ? ' selected' : '' %>><%= label('payment_methods', m) %></option><% }) %></select>
+      <select class="select" name="method" aria-label="<%= t('billing.method') %>"><option value="all"><%= t('billing.all_methods') %></option><% methods.forEach(function (m) { %><option value="<%= m %>"<%= query.method === m ? ' selected' : '' %>><%= t('invoicex.m.' + m) %></option><% }) %></select>
       <% if (insurance.length) { %><select class="select" name="insurance" aria-label="<%= t('billing.insurance') %>"><option value="all"><%= t('billing.all_insurance') %></option><option value="none"<%= query.insurance === 'none' ? ' selected' : '' %>><%= t('billing.no_insurance') %></option><% insurance.forEach(function (i) { %><option value="<%= i.id %>"<%= String(query.insurance) === String(i.id) ? ' selected' : '' %>><%= i.name %></option><% }) %></select><% } %>
       <input class="input" type="date" name="from" value="<%= query.from || '' %>" aria-label="<%= t('common.from') %>" title="<%= t('common.from') %>">
       <input class="input" type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('common.to') %>" title="<%= t('common.to') %>">
@@ -66,11 +76,11 @@
       <thead><tr><th><%= t('billing.number') %></th><th><%= t('common.date') %></th><th><%= t('common.patient') %></th><th><%= t('common.doctor') %> / <%= t('common.service') %></th><th><%= t('billing.method') %></th><th class="num"><%= t('billing.discount') %></th><th class="num"><%= t('billing.net_paid') %> (<%= currency %>)</th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
       <tbody><% rows.forEach(function (r) { var lt = localTime(r.created_at) || {}; %>
         <tr>
-          <td class="primary-cell"><a class="strong mono" href="/app/billing/<%= r.id %>">#<%= r.invoice_number %></a><span class="mobile-only small muted"> · <%= r.patient_name %></span></td>
+          <td class="primary-cell ivx-no"><a class="strong mono" href="/app/billing/<%= r.id %>" dir="ltr">#<%= invPrefix %><%= r.invoice_number %></a><span class="mobile-only small muted"> · <%= r.patient_name %></span></td>
           <td data-label="<%= t('common.date') %>" class="nowrap"><%= fmt.date(lt.date) %> <span class="small muted" dir="ltr"><%= lt.time %></span></td>
           <td data-label="<%= t('common.patient') %>"><% if (r.patient_id && can('patients.view')) { %><a href="/app/patients/<%= r.patient_id %>" dir="auto"><%= r.patient_name %></a><% } else { %><span dir="auto"><%= r.patient_name %></span><% } %></td>
           <td data-label="<%= t('common.doctor') %>"><div><%= r.doctor_name || '—' %></div><div class="small muted"><%= r.service_name || '' %></div></td>
-          <td data-label="<%= t('billing.method') %>"><span class="badge"><%= label('payment_methods', r.payment_method) %></span><% if (r.insurance_provider_name) { %><div class="small muted mt-1"><%= r.insurance_provider_name %></div><% } %></td>
+          <td data-label="<%= t('billing.method') %>"><%- include('_payment-lines', { pl: { parts: r.parts, insuranceName: r.insurance_provider_name, mode: 'chips' } }) %><% if (r.insurance_provider_name && !r.parts.some(function (p) { return p.method === 'insurance'; })) { %><div class="small muted mt-1"><%= r.insurance_provider_name %></div><% } %></td>
           <td data-label="<%= t('billing.discount') %>" class="num"><% if (Number(r.discount_amount) > 0) { %><span class="small"><%= fmt.amount(r.discount_amount) %></span> <span class="badge badge-warning"><%= fmt.number(r.discount_percent) %>%</span><% } else { %><span class="muted">—</span><% } %></td>
           <td data-label="<%= t('billing.net_paid') %>" class="num strong"><%= fmt.amount(r.amount) %></td>
           <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="/app/billing/<%= r.id %>?print=1&autoprint=1" aria-label="<%= t('common.print') %>" title="<%= t('common.print') %>"><%- icon('printer', 'icon-sm') %></a><a class="btn btn-ghost btn-icon btn-sm" href="/app/billing/<%= r.id %>" aria-label="<%= t('common.open') %>" title="<%= t('common.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>

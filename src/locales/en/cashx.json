@@ -1,6 +1,6 @@
 {
   "cashx": {
-    "method_mixed": "Mixed (cash + card)",
+    "method_mixed": "Cash + card",
     "screen_title": "Cash screen",
     "open_screen": "Open cash screen",
     "full_screen": "Full screen",
@@ -18,7 +18,7 @@
     "method": {
       "cash": "Cash",
       "card": "Card (Visa / Mastercard)",
-      "mixed": "Mixed (cash + card)",
+      "mixed": "Cash + card",
       "insurance": "Insurance only",
       "insurance_part": "Insurance",
       "bank_transfer": "Bank transfer / CliQ",

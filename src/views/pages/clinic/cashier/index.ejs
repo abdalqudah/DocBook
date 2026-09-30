@@ -91,7 +91,7 @@
             <span class="grow truncate"><bdi><%= r.patient_name %></bdi></span>
             <span class="num strong"><%= money(r.amount) %></span>
           </a>
-          <span class="cs-receipt-meta"><span dir="ltr"><%= lt.time %></span> · <%= label('payment_methods', r.payment_method) %></span>
+          <span class="cs-receipt-meta"><span dir="ltr"><%= lt.time %></span> · <%- include('../billing/_payment-lines', { pl: { parts: r.parts || [{ method: r.payment_method, amount: r.amount }], insuranceName: r.insurance_provider_name, mode: 'text' } }) %></span>
           <a class="btn btn-ghost btn-icon btn-sm" href="/app/billing/<%= r.id %>?print=1&autoprint=1" title="<%= t('cashier.reprint') %>" aria-label="<%= t('cashier.reprint') %> #<%= r.invoice_number %>"><%- icon('printer', 'icon-sm') %></a>
         </li>
         <% }) %>

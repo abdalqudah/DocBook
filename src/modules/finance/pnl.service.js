@@ -12,6 +12,7 @@
 //    "medical supplies"), so adding the order value too would count the same purchase twice. It is a memo line.
 const knex = require('../../db/knex');
 const lib = require('../clinic/records.lib');
+const payParts = require('../clinic/payment-parts');
 const staff = require('./staff.service');
 const m = require('./math');
 
@@ -26,7 +27,7 @@ async function monthly(businessId, timezone, fromMonth, toMonth) {
   const from = `${fromMonth}-01`;
   const to = m.monthEnd(toMonth);
   const localMonth = (col) => knex.raw(`DATE_FORMAT(${lib.localDateSql(col, timezone).toString()}, '%Y-%m')`);
-  const [inv, online, refunds, exp, docPay, staffPay, supplies] = await Promise.all([
+  const [inv, online, refunds, exp, docPay, staffPay, supplies, methods] = await Promise.all([
     lib.whereLocalDates(knex('invoices as i').where('i.business_id', businessId), 'i.created_at', from, to, timezone)
       .groupBy('mon').select(localMonth('i.created_at').wrap('', ' as mon'))
       .sum({ v: 'i.amount' }).sum({ disc: 'i.discount_amount' }).count({ n: '*' }),
@@ -44,9 +45,12 @@ async function monthly(businessId, timezone, fromMonth, toMonth) {
       .where({ 'po.business_id': businessId, 'po.status': 'received' }), 'po.received_at', from, to, timezone)
       .groupBy('mon').select(localMonth('po.received_at').wrap('', ' as mon'))
       .select(knex.raw('COALESCE(SUM(LEAST(l.received_quantity, l.quantity) * COALESCE(l.unit_cost, 0)), 0) as v')),
+    // Revenue by payment method from the payment parts (a cash + card invoice adds to both; never "mixed").
+    payParts.totalsByMethodGrouped(lib.whereLocalDates(knex('invoices as i').where('i.business_id', businessId), 'i.created_at', from, to, timezone),
+      'i.id', businessId, localMonth),
   ]);
   const months = {};
-  m.monthsBetween(fromMonth, toMonth).forEach((k) => { months[k] = { revenue: 0, discounts: 0, invoices: 0, online: 0, refunds: 0, byCat: {}, opex: 0, doctorPayroll: 0, staffSalaries: 0, supplies: 0 }; });
+  m.monthsBetween(fromMonth, toMonth).forEach((k) => { months[k] = { revenue: 0, discounts: 0, invoices: 0, online: 0, refunds: 0, byCat: {}, byMethod: {}, opex: 0, doctorPayroll: 0, staffSalaries: 0, supplies: 0 }; });
   const at = (k) => months[ym(k)];
   inv.forEach((r) => { const x = at(r.mon); if (x) { x.revenue = m.round(num(r.v)); x.discounts = m.round(num(r.disc)); x.invoices = num(r.n); } });
   online.forEach((r) => { const x = at(r.mon); if (x) x.online = m.round(num(r.v)); });
@@ -55,17 +59,19 @@ async function monthly(businessId, timezone, fromMonth, toMonth) {
   docPay.forEach((r) => { const x = at(r.period); if (x) x.doctorPayroll = m.round(num(r.net) + num(r.adv)); });
   Object.entries(staffPay).forEach(([k, v]) => { const x = at(k); if (x) x.staffSalaries = v; });
   supplies.forEach((r) => { const x = at(r.mon); if (x) x.supplies = m.round(num(r.v)); });
+  methods.forEach((v, k) => { const x = at(k); if (x) x.byMethod = v; });
   return months;
 }
 
 /** Sums monthly figures over a list of months. */
 function sum(months, keys) {
-  const t = { revenue: 0, discounts: 0, invoices: 0, online: 0, refunds: 0, byCat: {}, opex: 0, doctorPayroll: 0, staffSalaries: 0, supplies: 0 };
+  const t = { revenue: 0, discounts: 0, invoices: 0, online: 0, refunds: 0, byCat: {}, byMethod: {}, opex: 0, doctorPayroll: 0, staffSalaries: 0, supplies: 0 };
   keys.forEach((k) => {
     const x = months[k];
     if (!x) return;
     ['revenue', 'discounts', 'invoices', 'online', 'refunds', 'opex', 'doctorPayroll', 'staffSalaries', 'supplies'].forEach((f) => { t[f] = m.round(t[f] + x[f]); });
     Object.entries(x.byCat).forEach(([c, v]) => { t.byCat[c] = m.round((t.byCat[c] || 0) + v); });
+    Object.entries(x.byMethod || {}).forEach(([k, v]) => { t.byMethod[k] = m.round((t.byMethod[k] || 0) + v); });
   });
   return t;
 }
@@ -75,6 +81,8 @@ function toStatement(t) {
   const expenses = Object.entries(t.byCat).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
   return { ...m.statement({ revenue: t.revenue, discounts: t.discounts, expenses, doctorPayroll: t.doctorPayroll, staffSalaries: t.staffSalaries, suppliesReceived: t.supplies }),
     invoices: t.invoices, online: t.online, refunds: t.refunds,
+    // "of which" lines: revenue by payment method (parts), largest first.
+    byMethod: Object.entries(t.byMethod || {}).filter(([, v]) => v).map(([method, amount]) => ({ method, amount })).sort((a, b) => b.amount - a.amount),
     // A clinic that also records staff pay as an expense ("staff salaries" category) in a month it ran staff payroll.
     salaryOverlap: (t.byCat.staff_salaries || 0) > 0 && t.staffSalaries > 0 };
 }

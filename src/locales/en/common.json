@@ -360,7 +360,7 @@
     "bank_transfer": "Bank transfer",
     "insurance": "Insurance",
     "digital_wallet": "Digital wallet",
-    "mixed": "Mixed (cash + card)"
+    "mixed": "Cash + card"
   },
   "notifications": {
     "title": "Notifications",

@@ -1,54 +1,18 @@
 <%
-  /* 80 mm till receipt of an invoice (layout: cashscreen, prints on its own with ?autoprint=1). Locals: rec, issued. */
+  /* The paper of an invoice printed from the cash screen (layout: cashscreen, light theme, prints on its own with
+     ?autoprint=1): the 80 mm till receipt, or A4 / A5 with ?paper=. Same document as the invoice page
+     (pages/clinic/billing/_document: clinic letterhead, lines, payment parts, stamp, footer note).
+     Locals: rec (cashier.service receipt), issued, paper. */
   var i = rec.inv;
-  var tpl = (typeof invoiceTpl !== 'undefined' && invoiceTpl) || {};
-  var clinicName = locale === 'en' && business.name_en ? business.name_en : business.name;
-  var foot = (locale === 'en' ? tpl.footer_en || tpl.footer : tpl.footer || tpl.footer_en) || '';
-  var hasDiscount = Number(i.discount_amount) > 0;
+  var doc = { inv: i, parts: rec.parts, lines: rec.lines, subtotal: rec.subtotal, insuranceAmount: rec.insuranceAmount, patientAmount: rec.patientAmount,
+    issued: issued, paper: paper, patient: typeof rec.patient !== 'undefined' ? rec.patient : null, stampOn: typeof rec.stampOn !== 'undefined' ? rec.stampOn : undefined };
 %>
-<div class="cx-rc-actions no-print">
+<% if (typeof recs === 'undefined') { /* the batch page (receipt-batch.ejs) has its own toolbar */ %>
+<div class="ivd-bar no-print">
   <button class="btn btn-primary btn-sm" type="button" data-print><%- icon('printer', 'icon-sm') %><%= t('common.print') %></button>
-  <% if (paper === 'receipt80') { %><a class="btn btn-ghost btn-sm" href="/app/cashier/receipt/<%= i.id %>?paper=a4"><%- icon('file-text', 'icon-sm') %>A4</a><% } else { %><a class="btn btn-ghost btn-sm" href="/app/cashier/receipt/<%= i.id %>"><%- icon('receipt-text', 'icon-sm') %>80 mm</a><% } %>
+  <div class="segmented" role="group" aria-label="<%= t('invoicex.print_as') %>">
+    <% ['receipt80', 'a5', 'a4'].forEach(function (p) { %><a href="/app/cashier/receipt/<%= i.id %><%= p === 'receipt80' ? '' : '?paper=' + p %>" class="<%= paper === p ? 'active' : '' %>"<%- paper === p ? ' aria-current="true"' : '' %>><%= t('invoicex.paper.' + p) %></a><% }) %>
+  </div>
 </div>
-<article class="cx-receipt<%= paper !== 'receipt80' ? ' is-sheet is-' + paper : '' %>" aria-label="<%= t('cashx.receipt_no', { n: (tpl.prefix || '') + i.invoice_number }) %>">
-  <header class="cx-rc-head">
-    <% if (tpl.show_logo !== false && business.logo_mime) { %><img class="cx-rc-logo" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt=""><% } %>
-    <div class="cx-rc-clinic"><%= clinicName %></div>
-    <% if (tpl.show_contact !== false) { %><div class="cx-rc-small"><%= [business.address, business.phone].filter(Boolean).join(' · ') %></div><% } %>
-    <% if (tpl.show_tax !== false && business.tax_number) { %><div class="cx-rc-small"><%= t('billing.tax_no') %>: <span dir="ltr"><%= business.tax_number %></span></div><% } %>
-  </header>
-  <div class="cx-rc-rule"></div>
-  <div class="cx-rc-kv"><span><%= t('cashx.receipt') %></span><strong dir="ltr">#<%= (tpl.prefix || '') + i.invoice_number %></strong></div>
-  <div class="cx-rc-kv"><span><%= t('common.date') %></span><span><%= fmt.date(issued.date) %> <span dir="ltr"><%= issued.time %></span></span></div>
-  <div class="cx-rc-kv"><span><%= t('common.patient') %></span><bdi><%= i.patient_name %></bdi></div>
-  <% if (i.doctor_name && tpl.show_doctor !== false) { %><div class="cx-rc-kv"><span><%= t('common.doctor') %></span><span><%= i.doctor_name %></span></div><% } %>
-  <div class="cx-rc-rule"></div>
-  <table class="cx-rc-lines">
-    <tbody>
-      <% rec.lines.forEach(function (l) { var tot = l.total !== undefined ? Number(l.total) : Number(l.qty || 1) * Number(l.unitPrice || 0); %>
-      <tr><td><span dir="auto"><%= l.name || t('billing.consultation') %></span><% if (Number(l.qty) > 1) { %><div class="cx-rc-small num"><%= fmt.number(l.qty) %> × <%= fmt.amount(l.unitPrice) %></div><% } %></td><td class="num"><%= fmt.amount(tot) %></td></tr>
-      <% }) %>
-    </tbody>
-  </table>
-  <div class="cx-rc-rule"></div>
-  <% if (hasDiscount) { %>
-  <div class="cx-rc-kv"><span><%= t('cashier.subtotal') %></span><span class="num"><%= fmt.amount(rec.subtotal) %></span></div>
-  <div class="cx-rc-kv"><span><%= t('cashx.discount') %><% if (Number(i.discount_percent)) { %> (<%= fmt.number(i.discount_percent) %>%)<% } %></span><span class="num" dir="ltr">− <%= fmt.amount(i.discount_amount) %></span></div>
-  <% } %>
-  <div class="cx-rc-kv cx-rc-total"><span><%= t('cashx.total') %></span><strong class="num"><%= fmt.money(i.amount) %></strong></div>
-  <% if (rec.insuranceAmount > 0) { %>
-  <div class="cx-rc-kv"><span><%= t('cashx.insurance_pays') %><% if (i.insurance_provider_name) { %> · <%= i.insurance_provider_name %><% } %></span><span class="num"><%= fmt.amount(rec.insuranceAmount) %></span></div>
-  <div class="cx-rc-kv strong"><span><%= t('cashx.patient_pays') %></span><span class="num"><%= fmt.amount(rec.patientAmount) %></span></div>
-  <% } %>
-  <div class="cx-rc-rule"></div>
-  <% rec.parts.filter(function (p) { return p.method !== 'insurance'; }).forEach(function (p) { %>
-  <div class="cx-rc-kv"><span><%= t('cashx.method.' + p.method) %></span><span class="num"><%= fmt.amount(p.amount) %></span></div>
-  <% if (p.method === 'cash' && p.received !== null && p.received !== undefined) { %>
-  <div class="cx-rc-kv cx-rc-small"><span><%= t('cashx.received') %></span><span class="num"><%= fmt.amount(p.received) %></span></div>
-  <div class="cx-rc-kv cx-rc-small"><span><%= t('cashx.change') %></span><span class="num"><%= fmt.amount(p.change || 0) %></span></div>
-  <% } %>
-  <% }) %>
-  <% if (i.cashier) { %><div class="cx-rc-kv cx-rc-small"><span><%= t('billing.received_by') %></span><span><%= i.cashier %></span></div><% } %>
-  <div class="cx-rc-rule"></div>
-  <p class="cx-rc-foot" dir="auto"><%= foot || t('billing.thanks') %></p>
-</article>
+<% } %>
+<%- include('../billing/_document', { doc: doc }) %>

@@ -1,10 +1,12 @@
 // Cashier (POS-style patient payments), the full-screen cash screen and cash-drawer closings — DocBook's cash register.
 //   GET  /app/cashier                          queue of visits waiting to pay + the payment panel of ?visit=<id>    (billing.manage)
-//   GET  /app/cashier/screen                   full-screen cash screen: one column per doctor, "ready to collect"   (billing.manage)
-//   GET  /app/cashier/screen/board             the screen's columns + totals as JSON {board, totals, readyKey} (live refresh)
+//   GET  /app/cashier/screen                   full-screen cash screen (POS): today's unpaid visits + the payment (?add=<id,…>)  (billing.manage)
+//   GET  /app/cashier/screen/data              the screen's visits + today's totals as JSON (live refresh)          (billing.manage)
+//   POST /app/cashier/screen/checkout          pay several visits at once (JSON) — one invoice per visit           (billing.manage)
 //   GET  /app/cashier/screen/panel/:id         the payment panel of a visit (HTML fragment for the dialogs)
 //   POST /app/cashier/:id/pay                  take the payment (server recomputes every figure), then ?paid=<invoice>  (billing.manage)
 //   GET  /app/cashier/receipt/:id              80 mm receipt of an invoice (with its cash / card parts)             (billing.view)
+//   GET  /app/cashier/receipt/batch?ids=1,2    the receipts of one cash-screen payment, one after the other         (billing.view)
 //   GET  /app/cashier/papers/:id/prescription/:rx.pdf   a visit's prescription for reception to print           (billing.view)
 //   POST /app/cashier/papers/:id/send          send the visit's prescription(s) / certificates to the patient       (billing.manage)
 //   GET  /app/cashier/closings                 open drawer period + closing history                                 (billing.view)
@@ -17,7 +19,7 @@ const audit = require('../../core/audit');
 const exporter = require('../../core/exporter');
 const { AppError, E } = require('../../core/errors');
 const { translateMessage } = require('../../core/i18n');
-const { decimalsOf } = require('../../core/money');
+const { decimalsOf, round } = require('../../core/money');
 const { wrap, flash } = require('../../routes/helpers');
 const { can, canAny } = require('../../middleware/context');
 const svc = require('./cashier.service');
@@ -118,31 +120,99 @@ router.get('/', wrap(async (req, res) => {
   return renderScreen(req, res);
 }));
 
-// ---------------------------------------------------------------- full-screen cash screen
-async function renderCashScreen(req, res, extra = {}) {
+// ---------------------------------------------------------------- full-screen cash screen (POS)
+// Today's unpaid visits as cards on one side, the payment being prepared on the other: several visits can be paid in
+// one go, each with its own amount, discount % and insurance company; one payment method for the whole amount.
+
+/** A visit as the cash screen shows it (card + prefilled line). */
+function posVisit(req, a) {
   const { ctx } = req;
-  const scr = await svc.screen(ctx);
-  let panel = null;
-  const visitId = Number(extra.visitId || req.query.visit) || null;
-  if (visitId) {
-    try { panel = await panelLocals(req, visitId, { ...extra, ret: 'screen' }); } catch (e) { if (!(e instanceof AppError) || e.status !== 404) throw e; }
-  }
-  const done = Number(req.query.paid) ? await doneLocals(req, res, Number(req.query.paid), 'screen') : null;
-  res.status(extra.status || 200);
-  return res.page('pages/clinic/cashier/screen', {
-    title: req.t('cashx.screen_title'), layout: 'cashscreen', scr, panel, ...(done || {}), decimals: decimalsOf(ctx.currency),
-    pageScripts: ['/js/cashx.js'], pageStyles: ['/css/cashx.css'],
-  });
+  const L = (ar, en) => (req.locale === 'en' && en ? en : ar);
+  const lines = svc.defaultLines(a);
+  const fromDoctor = Boolean(svc.doctorBill(a));
+  const due = round(lines.reduce((t, l) => t + (Number(l.qty) || 1) * (Number(l.unit_price) || 0), 0), ctx.currency);
+  const consult = req.t('billing.consultation');
+  const clinical = ctx.permissions.has('clinical.view');
+  return {
+    id: a.id, patient: a.patient_name, phone: a.patient_phone || '', doctor: a.doctor_id ? L(a.doctor_name, a.doctor_name_en) || '' : '',
+    doctorColor: a.doctor_color || null, time: String(a.appointment_time || '').slice(0, 5), date: a.appointment_date,
+    dateText: shortDate(req, a.appointment_date), online: a.appointment_type === 'online', state: a.state || svc.flowState(a),
+    due, fromDoctor, what: lines.map((l) => (req.locale === 'en' && l.name_en ? l.name_en : l.name) || consult).join(' + '),
+    rxs: (a.rxs || []).map((rx) => (clinical ? `/app/visits/${a.id}/prescriptions/${rx.id}?print=1&autoprint=1` : `/app/cashier/papers/${a.id}/prescription/${rx.id}.pdf`)),
+    finished: a.doctor_finished_at ? new Date(a.doctor_finished_at).getTime() : 0,
+  };
+}
+function shortDate(req, d) {
+  try { return new Intl.DateTimeFormat(req.locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T00:00:00Z`)); } catch { return d; }
 }
 
-router.get('/screen', can('billing.manage'), wrap((req, res) => renderCashScreen(req, res)));
+const POS_RANK = { ready: 0, with_doctor: 1, arrived: 2, expected: 3 };
+/** Today's unpaid visits (ready to pay first), plus any visit asked for by ?add= (e.g. an older unpaid one). */
+async function posData(req, addIds = []) {
+  const { ctx } = req;
+  const [rows, totals] = await Promise.all([svc.today(ctx), svc.todayTotals(ctx)]);
+  const open = rows.filter((a) => a.payment_status !== 'paid' && a.state !== 'missed');
+  const extra = [];
+  for (const id of addIds.filter((x) => !open.some((a) => a.id === x))) { // eslint-disable-line no-restricted-syntax
+    try {
+      const a = await svc.visit(ctx, id); // eslint-disable-line no-await-in-loop
+      if (a.payment_status !== 'paid' && a.status !== 'cancelled' && a.status !== 'no_show') extra.push({ ...a, state: svc.flowState(a) });
+    } catch (e) { if (!(e instanceof AppError) || e.status !== 404) throw e; }
+  }
+  const visits = open.concat(extra).map((a) => posVisit(req, a)).sort((x, y) => (POS_RANK[x.state] ?? 4) - (POS_RANK[y.state] ?? 4)
+    || (x.state === 'ready' ? x.finished - y.finished : 0) || String(x.date).localeCompare(String(y.date)) || String(x.time).localeCompare(String(y.time)));
+  const ready = visits.filter((v) => v.state === 'ready');
+  return { visits, totals, readyKey: ready.map((v) => `${v.id}:${v.due}`).sort().join(',') };
+}
 
-router.get('/screen/board', can('billing.manage'), wrap(async (req, res) => {
-  const scr = await svc.screen(req.ctx);
-  const locals = { ...res.locals, scr };
-  const render = (view) => new Promise((ok, ko) => { req.app.render(view, locals, (err, html) => (err ? ko(err) : ok(html))); });
-  const [board, totals] = await Promise.all([render('pages/clinic/cashier/_screen-board'), render('pages/clinic/cashier/_screen-totals')]);
-  res.set('Cache-Control', 'no-store').json({ board, totals, readyKey: scr.readyKey, ready: scr.ready });
+/** The clinic's chosen invoice paper (Settings → Invoice template): 'a4' | 'a5' | null (80 mm till receipt). */
+async function paperOf(ctx) {
+  const saved = await knex('clinic_ops_settings').where({ business_id: ctx.businessId }).first('invoice_template').catch(() => null);
+  try {
+    const p = saved && saved.invoice_template ? (typeof saved.invoice_template === 'string' ? JSON.parse(saved.invoice_template) : saved.invoice_template).paper : null;
+    return p === 'a4' || p === 'a5' ? p : null;
+  } catch { return null; }
+}
+
+const addIdsOf = (v) => String(v || '').split(',').map(Number).filter((x) => Number.isInteger(x) && x > 0).slice(0, svc.MAX_SALE);
+
+router.get('/screen', can('billing.manage'), wrap(async (req, res) => {
+  const { ctx } = req;
+  const add = addIdsOf(req.query.add);
+  const [data, insurers] = await Promise.all([posData(req, add), svc.activeInsurance(ctx)]);
+  res.set('Cache-Control', 'no-store');
+  return res.page('pages/clinic/cashier/screen', {
+    title: req.t('cashpos.title'), layout: 'cashscreen', bodyClass: 'pos-body',
+    pos: { ...data, add, insurers: insurers.map((i) => ({ id: i.id, name: i.name, coverage: Number(i.coverage_percent) || 0 })), decimals: decimalsOf(ctx.currency) },
+    pageScripts: ['/js/cashpos.js'], pageStyles: ['/css/cashpos.css'],
+  });
+}));
+
+router.get('/screen/data', can('billing.manage'), wrap(async (req, res) => {
+  const data = await posData(req, addIdsOf(req.query.keep));
+  res.set('Cache-Control', 'no-store').json(data);
+}));
+
+router.post('/screen/checkout', can('billing.manage'), wrap(async (req, res) => {
+  const { ctx } = req;
+  const b = req.body || {};
+  try {
+    const r = await svc.payMany(ctx, b, { consultationLabel: req.t('billing.consultation'), source: 'screen' });
+    const paper = await paperOf(ctx);
+    const ids = r.invoices.map((i) => i.id);
+    const q = `autoprint=1${paper ? `&paper=${paper}` : ''}`;
+    return res.json({
+      ok: true, ...r,
+      invoices: r.invoices.map((i) => ({ id: i.id, number: i.number, appointmentId: i.appointmentId, total: i.total, patientAmount: i.patientAmount, insuranceAmount: i.insuranceAmount, method: i.method })),
+      printUrl: ids.length === 1 ? `/app/cashier/receipt/${ids[0]}?${q}` : `/app/cashier/receipt/batch?ids=${ids.join(',')}&${q}`,
+    });
+  } catch (err) {
+    if (!(err instanceof AppError) || !EXPECTED_ERRORS.includes(err.status)) throw err;
+    const fields = fieldErrors(req, err);
+    const firstField = Object.keys(fields)[0];
+    const message = err.code === 'VALIDATION_FAILED' && firstField ? fields[firstField] : errorText(req, err);
+    return res.status(err.status).json({ ok: false, code: err.code, error: message, line: err.line || null, field: firstField || null });
+  }
 }));
 
 router.get('/screen/panel/:id(\\d+)', can('billing.manage'), wrap(async (req, res) => {
@@ -169,7 +239,6 @@ router.post('/:id(\\d+)/pay', can('billing.manage'), wrap(async (req, res) => {
     if (!(err instanceof AppError) || !EXPECTED_ERRORS.includes(err.status)) throw err;
     if (err.code === 'ALREADY_PAID' || err.status === 404) { flash(req, 'error', errorText(req, err)); return res.redirect(RETURNS[ret]); }
     const extra = { status: err.status, old: req.body, errors: fieldErrors(req, err), formError: { code: err.code, message: errorText(req, err) }, visitId: apptId };
-    if (ret === 'screen') return renderCashScreen(req, res, extra);
     if (ret === 'front-desk') {
       const panel = await panelLocals(req, apptId, { ...extra, ret });
       res.status(err.status);
@@ -194,6 +263,18 @@ router.get('/receipt/:id(\\d+)', wrap(async (req, res) => {
   res.page('pages/clinic/cashier/receipt', { paper: ['a4', 'a5'].includes(req.query.paper) ? req.query.paper : 'receipt80',
     title: req.t('cashx.receipt_no', { n: rec.inv.invoice_number }), layout: 'cashscreen', bodyClass: 'cx-receipt-page', paperLight: true, rec,
     issued: lib.localTime(rec.inv.created_at, req.ctx.timezone), pageStyles: ['/css/cashx.css'], pageScripts: ['/js/cashx.js'],
+  });
+}));
+
+router.get('/receipt/batch', wrap(async (req, res) => {
+  const ids = [...new Set(addIdsOf(req.query.ids))];
+  if (!ids.length) throw E.notFound('Invoice');
+  const recs = [];
+  for (const id of ids) recs.push(await svc.receipt(req.ctx, id)); // eslint-disable-line no-await-in-loop
+  allowSameOriginFrame(res);
+  res.page('pages/clinic/cashier/receipt-batch', { paper: ['a4', 'a5'].includes(req.query.paper) ? req.query.paper : 'receipt80',
+    title: req.t('cashpos.batch_title'), layout: 'cashscreen', bodyClass: 'cx-receipt-page', paperLight: true,
+    recs: recs.map((rec) => ({ rec, issued: lib.localTime(rec.inv.created_at, req.ctx.timezone) })), pageStyles: ['/css/cashx.css', '/css/cashpos.css'], pageScripts: ['/js/cashx.js'],
   });
 }));
 

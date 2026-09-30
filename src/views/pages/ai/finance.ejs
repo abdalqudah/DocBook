@@ -135,7 +135,7 @@
           <div>
           <h3 class="aifin-h3"><%= t('aifin.by_method') %></h3>
           <% if (!C.revenue.by_method.length) { %><p class="small muted"><%= t('aifin.nothing_yet') %></p><% } else { %>
-          <ul class="aifin-kv small"><% C.revenue.by_method.forEach(function (m) { %><li><span class="muted"><%= label('payment_methods', m.method) %></span><span class="num strong"><%= fmt.money(m.amount) %></span></li><% }) %></ul>
+          <ul class="aifin-kv small"><% C.revenue.by_method.forEach(function (m) { %><li><span class="muted"><%= t('invoicex.m.' + m.method) %></span><span class="num strong"><%= fmt.money(m.amount) %></span></li><% }) %></ul>
           <% } %>
           </div>
         </div>

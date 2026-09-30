@@ -139,6 +139,7 @@ async function statement(ctx, data, t, locale, catName, periodLabel) {
   line(w, t('pnl.discounts'), money(s.discounts, '−'), { sub: true });
   line(w, t('pnl.revenue'), money(s.revenue), { strong: true });
   if (s.online) line(w, t('pnl.of_which_online'), money(s.online), { sub: true, muted: true });
+  (s.byMethod || []).forEach((x) => line(w, t('invoicex.of_which', { m: t(`invoicex.m.${x.method}`) }), money(x.amount), { sub: true, muted: true }));
   w.space(8);
   w.text(t('pnl.operating_expenses'), { size: 9, bold: true, color: C.textSubtle });
   if (!s.expenses.length) line(w, t('pnl.no_expenses'), money(0), { sub: true, muted: true });

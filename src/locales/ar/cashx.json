@@ -1,6 +1,6 @@
 {
   "cashx": {
-    "method_mixed": "مختلط (نقدًا + بطاقة)",
+    "method_mixed": "نقدًا + بطاقة",
     "screen_title": "شاشة الصندوق",
     "open_screen": "فتح شاشة الصندوق",
     "full_screen": "ملء الشاشة",
@@ -18,7 +18,7 @@
     "method": {
       "cash": "نقدًا",
       "card": "بطاقة (فيزا / ماستركارد)",
-      "mixed": "مختلط (نقدًا + بطاقة)",
+      "mixed": "نقدًا + بطاقة",
       "insurance": "تأمين فقط",
       "insurance_part": "التأمين",
       "bank_transfer": "تحويل بنكي / كليك",

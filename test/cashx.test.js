@@ -23,7 +23,9 @@ function nextSunday() {
 }
 async function visit() {
   seq += 1;
-  return appts.book(ctx, { doctor_id: doctorId, service_id: serviceId, patient_name: `Cash ${seq}`, patient_phone: `07911100${String(seq).padStart(2, '0')}`, appointment_date: date, appointment_time: times[seq - 1] });
+  // 12 times a day: later visits go to the same weekday of the following weeks.
+  const d = new Date(`${date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 7 * Math.floor((seq - 1) / times.length));
+  return appts.book(ctx, { doctor_id: doctorId, service_id: serviceId, patient_name: `Cash ${seq}`, patient_phone: `07911100${String(seq).padStart(2, '0')}`, appointment_date: d.toISOString().slice(0, 10), appointment_time: times[(seq - 1) % times.length] });
 }
 /** What doctor-flow does when the doctor presses "Finish visit": lines + amount_due + completed. */
 async function doctorFinishes(id, lines) {
@@ -156,4 +158,87 @@ test('voiding an invoice removes its payment parts', async () => {
   await appts.voidInvoice(ctx, r.id);
   assert.equal((await knex('invoice_payments').where({ invoice_id: r.id })).length, 0);
   assert.equal((await knex('appointments').where({ id }).first()).payment_status, 'unpaid');
+});
+
+// ---------------------------------------------------------------- cash screen: one payment for several visits
+const saleLine = (id, amount, extra = {}) => ({ appointment_id: String(id), amount: String(amount), ...extra });
+
+test('planSale: per-line discount % and insurance, totals, mixed split spread over the lines', () => {
+  const lines = [
+    { appointment_id: 1, amount: 30, discount_percent: 10 },                          // 27 to the patient
+    { appointment_id: 2, amount: 25, discount_percent: 0, insurance_provider_id: 9, coverage: 80 }, // insurer 20, patient 5
+    { appointment_id: 3, amount: 12.5, discount_percent: 0, coverage: 50 },           // coverage without a company: ignored
+  ];
+  const p = cashier.planSale({ lines, payment_method: 'mixed', split_cash: 30, split_card: 14.5, amount_received: 50 }, 'JOD');
+  assert.deepEqual(p.lines.map((l) => [l.total, l.insurance, l.patient]), [[27, 0, 27], [25, 20, 5], [12.5, 0, 12.5]]);
+  assert.deepEqual([p.total, p.insuranceTotal, p.patientTotal, p.cashTotal, p.cardTotal, p.change], [64.5, 20, 44.5, 30, 14.5, 20]);
+  // Cash goes to the lines in order: 27 (cash) · 3 cash + 2 card (mixed) · 12.5 card.
+  assert.deepEqual(p.lines.map((l) => [l.method, l.cash, l.card]), [['cash', 27, 0], ['mixed', 3, 2], ['card', 0, 12.5]]);
+  assert.equal(p.lines.reduce((s, l) => s + l.cash, 0), 30, 'the cash parts add up to the cash handed over (minus change)');
+  assert.deepEqual(p.lines.map((l) => l.received), [27, 23, undefined], 'the change is returned on the last line paid in cash');
+
+  assert.throws(() => cashier.planSale({ lines, payment_method: 'mixed', split_cash: 30, split_card: 10 }, 'JOD'), { code: 'SPLIT_MISMATCH' });
+  assert.throws(() => cashier.planSale({ lines, payment_method: 'cash', amount_received: 40 }, 'JOD'), { code: 'CASH_SHORT' });
+  const cash = cashier.planSale({ lines, payment_method: 'cash', amount_received: 50 }, 'JOD');
+  assert.deepEqual([cash.cashTotal, cash.change, cash.lines[2].received], [44.5, 5.5, 18]);
+  const ins = cashier.planSale({ lines, payment_method: 'insurance' }, 'JOD');
+  assert.deepEqual([ins.insuranceTotal, ins.patientTotal, ins.cashTotal, ins.change], [64.5, 0, 0, null]);
+});
+
+test('payMany: one invoice per visit, the doctor\'s lines kept, discounts / insurance per line, mixed parts add up', async () => {
+  const a = await visit(); const b = await visit(); const c = await visit();
+  await doctorFinishes(a, [{ name: null, service_id: null, qty: 1, unit_price: 20 }, { name: 'X-ray', service_id: null, qty: 1, unit_price: 10 }]);
+  await doctorFinishes(b, [{ name: null, service_id: null, qty: 1, unit_price: 25 }]);
+  const before = (await knex('businesses').where({ id: ctx.businessId }).first('invoice_next_number')).invoice_next_number;
+  const r = await cashier.payMany(ctx, {
+    payment_method: 'mixed', split_cash: '20', split_card: '27', amount_received: '50',
+    lines: [saleLine(a, 30, { discount_percent: '10' }), saleLine(b, 25, { insurance_provider_id: String(insurerId), coverage: '80' }), saleLine(c, 15)],
+  }, { consultationLabel: 'Consultation' });
+  assert.equal(r.invoices.length, 3);
+  assert.deepEqual([r.total, r.insuranceTotal, r.patientTotal, r.cashTotal, r.cardTotal, r.change], [67, 20, 47, 20, 27, 30]);
+  const invs = await knex('invoices').whereIn('id', r.invoices.map((i) => i.id)).orderBy('id');
+  assert.deepEqual(invs.map((i) => i.appointment_id), [a, b, c], 'one invoice per visit, in order');
+  assert.deepEqual(invs.map((i) => i.invoice_number), [before, before + 1, before + 2]);
+  assert.deepEqual(invs.map((i) => Number(i.amount)), [27, 25, 15]);
+  assert.equal(Number(invs[0].discount_percent), 10);
+  assert.deepEqual((typeof invs[0].items === 'string' ? JSON.parse(invs[0].items) : invs[0].items).map((l) => [l.name, l.total]), [['Consultation', 20], ['X-ray', 10]], "the doctor's two lines stay on the invoice");
+  assert.deepEqual([invs[1].insurance_provider_name, Number(invs[1].insurance_amount)], ['Gulf Care', 20]);
+  const parts = await knex('invoice_payments').whereIn('invoice_id', invs.map((i) => i.id)).orderBy('id');
+  const sum = (m) => parts.filter((p) => p.method === m).reduce((s, p) => s + Number(p.amount), 0);
+  assert.deepEqual([sum('cash'), sum('card'), sum('insurance')], [20, 27, 20], 'the parts of all invoices add up to the payment');
+  invs.forEach((inv) => {
+    const own = parts.filter((p) => p.invoice_id === inv.id).reduce((s, p) => s + Number(p.amount), 0);
+    assert.equal(Math.round(own * 1000) / 1000, Number(inv.amount), `invoice #${inv.invoice_number}: its parts add up to its amount`);
+  });
+  assert.equal(Number(invs[0].change_due), 30, 'the change is on the invoice that took the cash');
+  const paid = await knex('appointments').whereIn('id', [a, b, c]).pluck('payment_status');
+  assert.deepEqual(paid, ['paid', 'paid', 'paid']);
+  const audits = await knex('audit_logs').where({ business_id: ctx.businessId, action: 'invoice.created' }).whereIn('entity_id', invs.map((i) => i.id)).select('new_values');
+  assert.equal(audits.length, 3);
+  assert.ok(audits.every((x) => (typeof x.new_values === 'string' ? JSON.parse(x.new_values) : x.new_values).source === 'cash_screen'));
+});
+
+test('payMany: all or nothing — an already-paid visit, a changed doctor bill without a reason or a repeated visit pays nothing', async () => {
+  const paidOne = await visit(); const fresh = await visit();
+  await cashier.pay(ctx, paidOne, { items: [line('Check-up', 1, 15)], payment_method: 'card' });
+  const count = async () => Number((await knex('invoices').where({ business_id: ctx.businessId }).count({ n: '*' }))[0].n);
+  const n0 = await count();
+  await assert.rejects(cashier.payMany(ctx, { payment_method: 'cash', lines: [saleLine(fresh, 15), saleLine(paidOne, 15)] }), (e) => e.code === 'ALREADY_PAID' && e.line === paidOne);
+  assert.equal(await count(), n0, 'nothing was paid');
+  assert.equal((await knex('appointments').where({ id: fresh }).first()).payment_status, 'unpaid');
+
+  await doctorFinishes(fresh, [{ name: null, service_id: null, qty: 1, unit_price: 20 }]);
+  await assert.rejects(cashier.payMany(ctx, { payment_method: 'cash', lines: [saleLine(fresh, 15)] }), (e) => e.code === 'ADJUST_REASON' && e.line === fresh);
+  await assert.rejects(cashier.payMany(ctx, { payment_method: 'cash', lines: [saleLine(fresh, 20), saleLine(fresh, 20)] }), { code: 'VALIDATION_FAILED' });
+  await assert.rejects(cashier.payMany(ctx, { payment_method: 'cash', lines: [] }), { code: 'VALIDATION_FAILED' });
+  const r = await cashier.payMany(ctx, { payment_method: 'cash', amount_received: '20', lines: [saleLine(fresh, 15, { adjust_reason: 'agreed with the doctor' })] });
+  const inv = await knex('invoices').where({ id: r.invoices[0].id }).first();
+  assert.deepEqual([Number(inv.amount), inv.adjust_reason, Number(inv.change_due)], [15, 'agreed with the doctor', 5]);
+  // Two cashiers paying the same visits at the same moment: one wins, the other is refused.
+  const x = await visit(); const y = await visit();
+  const body = { payment_method: 'card', lines: [saleLine(x, 10), saleLine(y, 10)] };
+  const res = await Promise.allSettled([cashier.payMany(ctx, body), cashier.payMany(ctx, body)]);
+  assert.equal(res.filter((q) => q.status === 'fulfilled').length, 1);
+  assert.equal(res.find((q) => q.status === 'rejected').reason.code, 'ALREADY_PAID');
+  assert.equal(Number((await knex('invoices').whereIn('appointment_id', [x, y]).count({ n: '*' }))[0].n), 2);
 });

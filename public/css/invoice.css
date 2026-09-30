@@ -1,0 +1,136 @@
+/* Printed financial papers (worker: invoice): the clinic letterhead, the invoice on A4 / A5 and the 80 mm receipt,
+   and the payment breakdown chips used in lists. Theme tokens only; the paper pages force the light theme. */
+
+/* ---------------------------------------------------------------- payment breakdown */
+.ivx-parts { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ivx-chip { display: inline-flex; align-items: baseline; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--surface-sunken); color: var(--text); font-size: var(--fs-xs, 12px); line-height: 1.6; white-space: nowrap; }
+.ivx-amt { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.ivx-plus { color: var(--text-subtle); font-size: 11px; }
+.ivx-rows { display: flex; flex-direction: column; gap: 2px; }
+.ivx-row { display: flex; justify-content: space-between; gap: 12px; }
+.ivx-row > :last-child { text-align: end; }
+.ivx-row.is-sub { color: var(--text-muted); font-size: .92em; padding-inline-start: 12px; }
+.ivx-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Totals by method (invoice list, reports) */
+.ivx-methods { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 0; padding: 4px var(--card-pad, 20px) 16px; }
+.ivx-methods > div { display: flex; flex-direction: column; gap: 2px; min-width: 96px; }
+.ivx-methods dt { font-size: var(--fs-xs, 12px); color: var(--text-muted); }
+.ivx-methods dd { margin: 0; font-weight: var(--fw-bold, 600); font-variant-numeric: tabular-nums; }
+.ivx-methods .ivx-sub { font-weight: normal; font-size: 11px; color: var(--text-subtle); }
+
+/* ---------------------------------------------------------------- the paper */
+.ivd { --ivd-pad: 14mm; background: var(--surface); color: var(--text); font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 18px;
+  width: 210mm; max-width: 100%; margin: 0 auto; padding: var(--ivd-pad); box-sizing: border-box; border: 1px solid var(--border); border-radius: var(--radius-sm, 6px); }
+.ivd.is-a5 { --ivd-pad: 9mm; width: 148mm; font-size: 12px; gap: 14px; }
+.ivd.is-receipt80 { --ivd-pad: 4mm; width: 80mm; font-size: 11.5px; gap: 8px; line-height: 1.4; border-radius: 0; }
+.ivd * { box-sizing: border-box; }
+.ivd-num, .ivd-n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ivd-meta { color: var(--text-muted); font-size: .92em; }
+.ivd-strong { font-weight: var(--fw-bold, 600); }
+.ivd-label { font-size: 11px; color: var(--text-subtle); font-weight: var(--fw-bold, 600); letter-spacing: .02em; margin-bottom: 2px; }
+.ivd-sep { margin: 0 6px; color: var(--text-subtle); }
+.ivd-lh-meta > span { white-space: nowrap; }
+.ivd-cur { font-size: .8em; font-weight: var(--fw-bold, 600); color: var(--text-muted); }
+.ivd-lh-contacts { display: flex; flex-wrap: wrap; align-items: baseline; }
+.ivd-lh.is-narrow .ivd-lh-contacts { justify-content: center; }
+.ivx-no { white-space: nowrap; }
+
+/* letterhead: logo + identity on the start side, the document title / number / date on the end side */
+.ivd-lh { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-strong); }
+.ivd-lh-id { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
+.ivd-lh-logo { height: 56px; width: auto; max-width: 150px; object-fit: contain; flex-shrink: 0; }
+.ivd-lh-who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ivd-lh-name { font-size: 18px; font-weight: var(--fw-heavy, 700); line-height: 1.25; }
+.ivd-lh-name2 { font-size: 13px; color: var(--text-muted); font-weight: var(--fw-bold, 600); }
+.ivd-lh-meta { color: var(--text-muted); font-size: 12px; }
+.ivd-lh-doc { text-align: end; flex-shrink: 0; display: flex; flex-direction: column; gap: 1px; }
+.ivd-lh-title { font-size: 20px; font-weight: var(--fw-heavy, 700); letter-spacing: .01em; }
+.ivd-lh-no { font-family: var(--font-mono); font-size: 14px; font-weight: var(--fw-bold, 600); }
+.ivd-lh-status { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.ivd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.is-a5 .ivd-lh-logo { height: 44px; }
+.is-a5 .ivd-lh-name { font-size: 16px; }
+.is-a5 .ivd-lh-title { font-size: 17px; }
+
+/* 80 mm: everything stacked and centred, small logo */
+.ivd-lh.is-narrow { flex-direction: column; align-items: stretch; gap: 6px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-strong); }
+.ivd-lh.is-narrow .ivd-lh-id { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.ivd-lh.is-narrow .ivd-lh-logo { height: 30px; max-width: 50%; }
+.ivd-lh.is-narrow .ivd-lh-who { align-items: center; }
+.ivd-lh.is-narrow .ivd-lh-name { font-size: 14px; }
+.ivd-lh.is-narrow .ivd-lh-name2 { font-size: 11px; }
+.ivd-lh.is-narrow .ivd-lh-meta { font-size: 10.5px; }
+.ivd-lh.is-narrow .ivd-lh-doc { text-align: center; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border-strong); }
+.ivd-lh.is-narrow .ivd-lh-title { font-size: 13px; }
+.ivd-lh.is-narrow .ivd-lh-no { font-size: 13px; }
+
+.ivd-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ivd-party { display: flex; flex-direction: column; gap: 1px; }
+.is-receipt80 .ivd-parties { grid-template-columns: 1fr; gap: 4px; }
+.is-receipt80 .ivd-party .ivd-label { display: none; }
+
+.ivd-lines { width: 100%; border-collapse: collapse; }
+.ivd-lines th { text-align: start; font-size: 11px; font-weight: var(--fw-bold, 600); color: var(--text-muted); padding: 7px 8px; border-bottom: 1px solid var(--border-strong); background: var(--surface-muted); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.ivd-lines td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.ivd-lines .ivd-n { text-align: end; width: 1%; padding-inline-start: 16px; }
+.is-receipt80 .ivd-lines td { padding: 3px 0; border-bottom: 0; }
+.is-receipt80 .ivd-lines { border-top: 1px dashed var(--border-strong); border-bottom: 1px dashed var(--border-strong); }
+.is-receipt80 .ivd-lines tr:first-child td { padding-top: 5px; }
+.is-receipt80 .ivd-lines tr:last-child td { padding-bottom: 5px; }
+
+.ivd-totals { display: flex; flex-direction: column; gap: 3px; margin-inline-start: auto; width: min(100%, 300px); }
+.is-receipt80 .ivd-totals { width: 100%; }
+.ivd-kv { display: flex; justify-content: space-between; gap: 12px; }
+.ivd-kv > :last-child { text-align: end; }
+.ivd-grand { font-size: 15px; font-weight: var(--fw-heavy, 700); padding: 6px 0; border-top: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); margin: 3px 0; }
+.is-receipt80 .ivd-grand { font-size: 13px; border-top-style: dashed; border-bottom-style: dashed; }
+
+.ivd-pay { display: flex; flex-direction: column; gap: 3px; width: min(100%, 300px); margin-inline-start: auto; }
+.is-receipt80 .ivd-pay { width: 100%; }
+
+.ivd-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto; }
+.ivd-note { margin: 0; color: var(--text-muted); font-size: 12px; white-space: pre-line; }
+.ivd-stamp { max-height: 96px; max-width: 130px; object-fit: contain; flex-shrink: 0; }
+.is-receipt80 .ivd-foot { flex-direction: column; align-items: center; text-align: center; border-top-style: dashed; padding-top: 6px; gap: 6px; }
+.is-receipt80 .ivd-note { font-size: 10.5px; }
+.is-receipt80 .ivd-stamp { max-height: 56px; }
+
+/* monospaced amounts on the till receipt */
+.is-receipt80 .ivd-num, .is-receipt80 .ivd-n, .is-receipt80 .ivx-num { font-family: var(--font-mono); font-size: 11px; }
+.is-receipt80 .ivd-grand .ivd-num { font-size: 12.5px; }
+
+/* the paper toolbar (screen only) */
+.ivd-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; }
+.ivd-bar .segmented a { text-decoration: none; }
+
+/* inside the generic print layout: the paper carries its own letterhead */
+.print-sheet:has(.ivd) .print-letterhead, .print-sheet:has(.ivd) .print-footer { display: none; }
+.print-sheet:has(.ivd) { max-width: none; padding: 24px 16px; }
+.cx-receipt-page:has(.ivd) { background: var(--surface-muted); min-height: 100vh; padding-bottom: 32px; }
+.pos-batch-one + .pos-batch-one .ivd { margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .ivd:not(.is-receipt80) { --ivd-pad: 18px; }
+  .ivd-lh:not(.is-narrow) { flex-direction: column; }
+  .ivd-lh:not(.is-narrow) .ivd-lh-doc { text-align: start; }
+  .ivd-lh-status { justify-content: flex-start; }
+  .ivd-parties { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------- print */
+@media print {
+  .ivd { border: 0; border-radius: 0; margin: 0; width: auto; max-width: none; padding: 0; }
+  .ivd.is-a4 { page: ivd-a4; }
+  .ivd.is-a5 { page: ivd-a5; }
+  .ivd.is-receipt80 { page: ivd-r80; width: 72mm; margin: 0 auto; }
+  .print-sheet:has(.ivd) { padding: 0; }
+  .cx-receipt-page:has(.ivd) { background: var(--surface); min-height: 0; }
+  .ivd-bar, .no-print { display: none !important; }
+  .ivd-lines tr, .ivd-kv, .ivd-foot { break-inside: avoid; }
+  .pos-batch-one + .pos-batch-one .ivd:not(.is-receipt80) { break-before: page; }
+  .pos-batch-one + .pos-batch-one .ivd.is-receipt80 { margin-top: 6mm; }
+}
+@page ivd-a4 { size: A4; margin: 14mm; }
+@page ivd-a5 { size: A5; margin: 9mm; }
+@page ivd-r80 { size: 80mm 297mm; margin: 3mm 2mm; }
