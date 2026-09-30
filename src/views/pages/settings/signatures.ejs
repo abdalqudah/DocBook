@@ -1,0 +1,86 @@
+<%
+  var own = !managesAll;
+  var DN = function (d) { return locale === 'en' && d.full_name_en ? d.full_name_en : d.full_name; };
+  var SP = function (d) { return locale === 'en' && d.specialization_en ? d.specialization_en : d.specialization; };
+%>
+<%- include('_head', { heading: t('signatures.title'), lead: own ? t('signatures.lead_doctor') : t('signatures.lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <p class="sig-note small muted"><%- icon('lock', 'icon-sm') %><span><%= t('signatures.privacy_note') %></span></p>
+
+    <% if (managesAll && stamp) { var hasStamp = Boolean(stamp.mime); %>
+    <section class="panel" id="stamp">
+      <div class="panel-head"><div><h2><%= t('signatures.stamp_title') %></h2><div class="panel-sub"><%= t('signatures.stamp_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="sig-doctor">
+          <div class="sig-preview-col">
+            <div class="sig-paper sig-paper-stamp" data-sig-preview>
+              <% if (hasStamp) { %><img src="/app/signatures/stamp.png?v=<%= stamp.version %>" alt="<%= t('signatures.alt_stamp') %>"><% } else { %><span class="small muted"><%= t('signatures.stamp_none') %></span><% } %>
+            </div>
+          </div>
+          <div class="sig-editor stack-sm">
+            <form method="post" action="/app/settings/signatures/stamp" enctype="multipart/form-data" class="stack-sm"<% if (hasStamp) { %> data-confirm="<%= t('signatures.stamp_replace_confirm') %>" data-confirm-title="<%= t('signatures.stamp_replace_title') %>" data-confirm-yes="<%= t('signatures.replace_yes') %>"<% } %>>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <label class="label" for="sig-stamp-file"><%= t('signatures.stamp_file') %></label>
+              <input class="input" id="sig-stamp-file" type="file" name="stamp" accept="image/png,image/jpeg" required data-sig-file data-max="<%= maxBytes %>" data-too-big="<%= t('signatures.too_big') %>" data-wrong-type="<%= t('signatures.wrong_type') %>">
+              <span class="help" data-sig-help><%= t('signatures.stamp_help') %></span>
+              <div class="row-sm"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= hasStamp ? t('signatures.stamp_replace') : t('signatures.stamp_upload') %></button></div>
+            </form>
+            <% if (hasStamp) { %>
+            <form method="post" action="/app/settings/signatures/stamp/delete" data-confirm="<%= t('signatures.stamp_remove_confirm') %>" data-confirm-title="<%= t('signatures.stamp_remove_title') %>" data-confirm-yes="<%= t('signatures.remove') %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('signatures.stamp_remove') %></button>
+            </form>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <form method="post" action="/app/settings/signatures/stamp/places" class="panel-foot sig-places">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <fieldset class="sig-fieldset">
+          <legend class="strong small"><%= t('signatures.places_title') %></legend>
+          <div class="sig-checks">
+            <% places.forEach(function (k) { %>
+            <label class="check"><input type="checkbox" name="<%= k %>" value="1"<%= stamp['on_' + k] ? ' checked' : '' %>><span><%= t('signatures.place.' + k) %></span></label>
+            <% }) %>
+          </div>
+          <span class="help"><%= t('signatures.places_help') %></span>
+        </fieldset>
+        <div><button class="btn btn-primary btn-sm" type="submit"><%= t('signatures.places_save') %></button></div>
+      </form>
+    </section>
+    <% } %>
+
+    <section class="panel flush" id="doctors">
+      <div class="panel-head"><div><h2><%= own ? t('signatures.my_title') : t('signatures.doctors_title') %></h2><div class="panel-sub"><%= own ? t('signatures.my_sub') : t('signatures.doctors_sub') %></div></div></div>
+      <% if (!doctors.length) { %>
+        <div class="panel-body">
+        <% if (own) { %>
+          <%- include('../../partials/empty', { emptyIcon: 'pen-line', emptyTitle: t('signatures.not_linked'), emptyText: t('signatures.not_linked_text'), compact: true }) %>
+        <% } else { %>
+          <%- include('../../partials/empty', { emptyIcon: 'pen-line', emptyTitle: t('signatures.no_doctors'), emptyText: t('signatures.no_doctors_text'), emptyAction: can('doctors.manage') ? '<a class="btn btn-secondary btn-sm" href="/app/doctors/new">' + escapeHtml(t('doctors.add')) + '</a>' : '', compact: true }) %>
+        <% } %>
+        </div>
+      <% } else { %>
+      <ul class="sig-list">
+        <% doctors.forEach(function (d) { %>
+        <li class="sig-item" id="doctor-<%= d.id %>">
+          <div class="sig-item-head">
+            <div class="row-sm">
+              <span class="sig-dot" style="background:<%= d.color || 'var(--border-strong)' %>" aria-hidden="true"></span>
+              <div>
+                <div class="strong"><%= DN(d) %></div>
+                <% if (SP(d)) { %><div class="small muted"><%= SP(d) %></div><% } %>
+              </div>
+            </div>
+            <% if (d.signature) { %><span class="badge badge-success badge-dot"><%= t('signatures.on_file') %></span><% } else { %><span class="badge badge-dot"><%= t('signatures.none_yet') %></span><% } %>
+          </div>
+          <%- include('../signatures/_doctor', { d: d }) %>
+        </li>
+        <% }) %>
+      </ul>
+      <% } %>
+    </section>
+  </div>
+</div>

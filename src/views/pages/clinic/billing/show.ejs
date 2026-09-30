@@ -67,6 +67,7 @@
       <% if (hasDiscount) { %><dt><%= t('billing.original_price') %></dt><dd><%= fmt.money(original) %></dd><% } %>
       <% if (inv.cashier) { %><dt><%= t('billing.received_by') %></dt><dd><%= inv.cashier %></dd><% } %>
     </dl>
+    <% if (printing) { %><div class="rec-inv-stamp" style="display:flex;justify-content:flex-end;margin-top:8px"><img src="/app/signatures/invoices/<%= inv.id %>/stamp.png" alt="" style="max-height:96px;max-width:130px;object-fit:contain"></div><% } %><%/* clinic stamp when enabled for invoices (transparent pixel otherwise) */%>
     <p class="rec-inv-thanks small muted"><%= t('billing.thanks') %></p>
   </article>
 

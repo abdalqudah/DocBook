@@ -1,0 +1,50 @@
+<%/* One doctor's signature: preview, upload or draw, remove. Locals: d (doctor + signature), returnTo (optional). */%>
+<%
+  var S = d.signature;
+  var name = locale === 'en' && d.full_name_en ? d.full_name_en : d.full_name;
+  var back = typeof returnTo !== 'undefined' && returnTo ? returnTo : '';
+  var base = '/app/settings/signatures/doctors/' + d.id;
+  var confirmAttrs = S ? ' data-confirm="' + escapeHtml(t('signatures.replace_confirm')) + '" data-confirm-title="' + escapeHtml(t('signatures.replace_title')) + '" data-confirm-yes="' + escapeHtml(t('signatures.replace_yes')) + '"' : '';
+%>
+<div class="sig-doctor" data-sig-doctor>
+  <div class="sig-preview-col">
+    <div class="sig-paper" data-sig-preview>
+      <% if (S) { %><img src="/app/signatures/doctors/<%= d.id %>.png?v=<%= S.version %>" alt="<%= t('signatures.alt_signature', { name: name }) %>"><% } else { %><span class="small muted"><%= t('signatures.empty_preview') %></span><% } %>
+    </div>
+    <div class="tiny muted sig-meta">
+      <% if (S) { %><%= t('signatures.source.' + S.source) %> · <%= S.updated_by_name ? t('signatures.updated_by', { date: fmt.date(S.updated_at), name: S.updated_by_name }) : t('signatures.updated', { date: fmt.date(S.updated_at) }) %><% } %>
+    </div>
+  </div>
+  <div class="sig-editor stack-sm">
+    <div class="segmented sig-modes" role="tablist" aria-label="<%= t('signatures.mode_label') %>" data-sig-modes hidden>
+      <label><input type="radio" name="sig-mode-<%= d.id %>" value="upload" checked data-sig-mode><span><%= t('signatures.mode_upload') %></span></label>
+      <label><input type="radio" name="sig-mode-<%= d.id %>" value="draw" data-sig-mode><span><%= t('signatures.mode_draw') %></span></label>
+    </div>
+    <form method="post" action="<%= base %>/upload" enctype="multipart/form-data" class="stack-sm" data-sig-pane="upload"<%- confirmAttrs %>>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (back) { %><input type="hidden" name="return" value="<%= back %>"><% } %>
+      <label class="label" for="sig-file-<%= d.id %>"><%= t('signatures.file_label') %></label>
+      <input class="input" id="sig-file-<%= d.id %>" type="file" name="signature" accept="image/png,image/jpeg" required data-sig-file data-max="<%= typeof maxBytes !== 'undefined' ? maxBytes : 1048576 %>" data-too-big="<%= t('signatures.too_big') %>" data-wrong-type="<%= t('signatures.wrong_type') %>">
+      <span class="help" data-sig-help><%= t('signatures.upload_help') %></span>
+      <div class="row-sm"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('signatures.upload_btn') %></button></div>
+    </form>
+    <form method="post" action="<%= base %>/draw" class="stack-sm" data-sig-pane="draw" data-sig-draw-form hidden<%- confirmAttrs %>>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (back) { %><input type="hidden" name="return" value="<%= back %>"><% } %>
+      <input type="hidden" name="drawing" value="" data-sig-data>
+      <div class="sig-paper sig-pad"><canvas data-sig-canvas role="img" aria-label="<%= t('signatures.pad_label', { name: name }) %>"></canvas><span class="sig-pad-line" aria-hidden="true"></span></div>
+      <span class="help" data-sig-draw-help data-empty="<%= t('signatures.draw_first') %>"><%= t('signatures.draw_help') %></span>
+      <div class="row-sm">
+        <button class="btn btn-ghost btn-sm" type="button" data-sig-clear><%- icon('refresh-cw', 'icon-sm') %><%= t('signatures.clear') %></button>
+        <button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('signatures.save_drawing') %></button>
+      </div>
+    </form>
+    <% if (S) { %>
+    <form method="post" action="<%= base %>/delete" data-confirm="<%= t('signatures.remove_confirm', { name: name }) %>" data-confirm-title="<%= t('signatures.remove_title') %>" data-confirm-yes="<%= t('signatures.remove') %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (back) { %><input type="hidden" name="return" value="<%= back %>"><% } %>
+      <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('signatures.remove') %></button>
+    </form>
+    <% } %>
+  </div>
+</div>

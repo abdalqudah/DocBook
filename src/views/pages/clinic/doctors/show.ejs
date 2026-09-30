@@ -34,6 +34,11 @@
         <% if (!daysOff.length) { %><p class="small muted"><%= t('doctors.no_days_off') %></p><% } else { %><ul class="checklist"><% daysOff.forEach(function (o) { %><li><%- icon('calendar', 'icon-sm') %><span class="grow"><strong><%= fmt.date(o.off_date) %></strong><% if (o.reason) { %> · <%= o.reason %><% } %></span><% if (canManage) { %><form method="post" action="/app/doctors/<%= d.id %>/days-off/<%= o.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('common.delete') %>"><%- icon('x', 'icon-sm') %></button></form><% } %></li><% }) %></ul><% } %>
         <% if (canManage) { %><form method="post" action="/app/doctors/<%= d.id %>/days-off" class="row wrap" novalidate><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input class="input" type="date" name="off_date" min="<%= clinicToday %>" required aria-label="<%= t('common.date') %>" style="width:auto"><input class="input grow" name="reason" placeholder="<%= t('doctors.reason') %>" aria-label="<%= t('doctors.reason') %>" style="width:auto"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('doctors.add_day_off') %></button></form><% if (errors.off_date) { %><span class="field-error"><%= errors.off_date %></span><% } %><% } %>
       </div></div>
+    <% if (typeof sig !== 'undefined' && sig) { %>
+    <div class="panel" id="signature"><div class="panel-head"><div><h2><%= t('signatures.profile_title') %></h2><div class="panel-sub"><%= t('signatures.profile_sub') %></div></div><% if (sig.signature) { %><span class="badge badge-success badge-dot"><%= t('signatures.on_file') %></span><% } else { %><span class="badge badge-dot"><%= t('signatures.none_yet') %></span><% } %></div>
+      <div class="panel-body sig-in-profile"><%- include('../../signatures/_doctor', { d: sig, returnTo: '/app/doctors/' + d.id }) %></div>
+    </div>
+    <% } %>
     <%- include('../../telehealth/_doctor-show') %>
     <div class="panel"><div class="panel-head"><h2><%= t('doctors.contact') %></h2></div><div class="panel-body"><dl class="dl">
       <dt><%= t('common.phone') %></dt><dd dir="ltr" style="text-align:start"><%= d.phone || '—' %></dd>

@@ -224,6 +224,11 @@ class Writer {
     } catch { return null; }
   }
 
+  /** Image (PNG/JPEG buffer) fitted inside a box, aligned in it; false when it cannot be drawn. */
+  fitImage(buf, x, y, w, h, { align = 'center', valign = 'bottom' } = {}) {
+    try { this.doc.image(buf, x, y, { fit: [w, h], align, valign }); return true; } catch { return false; }
+  }
+
   /** Footer on every page: a note at the start side and "page / total" at the end side. */
   footer(note, pageLabel) {
     const range = this.doc.bufferedPageRange();

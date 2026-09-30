@@ -46,8 +46,10 @@
     <% }) %>
   </ol>
   <% if (rx.notes) { %><div class="rx-notes"><span class="muted small"><%= t('visits.rx_notes') %></span><div style="white-space:pre-line"><%= rx.notes %></div></div><% } %>
+  <%/* The prescribing doctor's signature and the clinic stamp (when enabled for prescriptions); the image routes
+       answer with a transparent pixel when there is nothing to print, so the boxes stay clean for signing by hand. */%>
   <div class="rx-sign">
-    <div><div class="rx-sign-line"></div><div class="small muted"><%= t('visits.signature') %></div></div>
-    <div><div class="rx-sign-line"></div><div class="small muted"><%= t('visits.stamp') %></div></div>
+    <div><div class="rx-sign-line" style="height:64px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px"><img src="/app/signatures/rx/<%= rx.id %>/signature.png" alt="" style="max-height:60px;max-width:100%;object-fit:contain"></div><div class="small muted"><%= t('visits.signature') %></div></div>
+    <div><div class="rx-sign-line" style="height:64px;position:relative"><img src="/app/signatures/rx/<%= rx.id %>/stamp.png" alt="" style="position:absolute;inset-inline:0;bottom:-18px;margin:0 auto;max-height:88px;max-width:130px;object-fit:contain"></div><div class="small muted"><%= t('visits.stamp') %></div></div>
   </div>
 </article>

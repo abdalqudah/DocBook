@@ -1,0 +1,47 @@
+/* Signatures & stamp (Settings → Signatures & stamp, doctor profile). */
+.sig-note { display: flex; gap: 8px; align-items: flex-start; margin: 0; }
+.sig-note .icon { flex: none; margin-top: 2px; color: var(--text-muted); }
+
+/* "Paper": signatures are dark ink, so previews and the pad stay light in both themes. */
+.sig-paper { --sig-paper: var(--surface); --sig-ink: var(--text); position: relative; display: flex; align-items: center; justify-content: center; background: var(--sig-paper); color: var(--sig-ink); border: 1px solid var(--border); border-radius: var(--radius); min-height: 120px; padding: 12px; overflow: hidden; }
+:root[data-theme="dark"] .sig-paper { --sig-paper: var(--text); --sig-ink: var(--background); border-color: var(--border-strong); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sig-paper { --sig-paper: var(--text); --sig-ink: var(--background); border-color: var(--border-strong); } }
+.sig-paper img { max-width: 100%; max-height: 110px; object-fit: contain; }
+.sig-paper .muted { color: var(--sig-ink); opacity: .55; }
+.sig-paper-stamp { min-height: 140px; }
+.sig-paper-stamp img { max-height: 130px; }
+
+.sig-doctor { display: grid; grid-template-columns: minmax(0, 280px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.sig-preview-col { display: flex; flex-direction: column; gap: 6px; }
+.sig-meta { min-height: 1em; }
+.sig-editor .label { margin: 0; }
+.sig-modes { align-self: flex-start; }
+.sig-modes[hidden], [data-sig-pane][hidden] { display: none; }
+
+.sig-list { list-style: none; margin: 0; padding: 0; }
+.sig-item { padding: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
+.sig-item:first-child { border-top: 0; }
+.sig-item-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sig-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+/* Drawing pad */
+.sig-pad { padding: 0; min-height: 0; height: 180px; touch-action: none; cursor: crosshair; }
+.sig-pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.sig-pad-line { position: absolute; inset-inline: 24px; bottom: 44px; border-bottom: 1px dashed var(--border-strong); pointer-events: none; }
+.sig-pad:focus-within { box-shadow: 0 0 0 3px var(--focus-ring); }
+.help.is-error { color: var(--danger); }
+
+.sig-places { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; }
+.sig-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.sig-fieldset legend { padding: 0; margin-bottom: 8px; }
+.sig-checks { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+
+@media (max-width: 720px) {
+  .sig-doctor { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .sig-item { padding: 16px; }
+  .sig-pad { height: 160px; }
+  .sig-checks { flex-direction: column; gap: 10px; }
+}
+
+/* In the narrow column of the doctor's profile: preview above the editor. */
+.sig-in-profile .sig-doctor { grid-template-columns: minmax(0, 1fr); gap: 16px; }

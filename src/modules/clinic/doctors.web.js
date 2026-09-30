@@ -6,6 +6,7 @@ const scheduling = require('./scheduling');
 const svc = require('./doctors.service');
 const payroll = require('./payroll.service');
 const tele = require('../telehealth/telehealth.service');
+const signatures = require('../signatures/signatures.service');
 
 const router = express.Router();
 router.use(canAny('doctors.manage', 'appointments.view_all'));
@@ -49,7 +50,13 @@ const renderShow = async (req, res, extra = {}) => {
     knex('appointments').where({ business_id: req.ctx.businessId, doctor_id: doctor.id }).where('appointment_date', '>=', req.ctx.today).whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').orderBy([{ column: 'appointment_date' }, { column: 'appointment_time' }]).limit(8),
   ]);
   const online = { ...tele.doctorOnline(doctor), method: tele.effectiveMethod(doctor), windows: tele.windowsByDay(await tele.windowsOf(req.ctx.businessId, doctor.id)), clinicOn: Boolean(req.business.online_enabled) };
-  res.page('pages/clinic/doctors/show', { title: doctor.full_name, doctor, wh: svc.parseWh(doctor.working_hours), days: scheduling.DAY_KEYS, daysOff, services, account, rule, upcoming, online, ...extra });
+  // Signature panel: only for whoever may manage this doctor's signature (settings.manage or the doctor's own login).
+  const sig = signatures.canManage(req.ctx, doctor.id) ? (await signatures.doctorsFor(req.ctx)).find((x) => x.id === doctor.id) || null : null;
+  res.page('pages/clinic/doctors/show', {
+    title: doctor.full_name, doctor, wh: svc.parseWh(doctor.working_hours), days: scheduling.DAY_KEYS, daysOff, services, account, rule, upcoming, online, sig, maxBytes: signatures.MAX_BYTES,
+    ...(sig ? { pageScripts: ['/js/signatures.js'], pageStyles: ['/css/signatures.css'] } : {}),
+    ...extra,
+  });
 };
 router.get('/:id(\\d+)', wrap((req, res) => renderShow(req, res)));
 router.post('/:id(\\d+)/days-off', can('doctors.manage'), form(async (req, res) => {

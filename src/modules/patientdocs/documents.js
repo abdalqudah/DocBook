@@ -5,6 +5,7 @@ const QRCode = require('qrcode');
 const { translator } = require('../../core/i18n');
 const { formatDate } = require('../../core/format');
 const { Writer, ltr, colors: C } = require('./pdf');
+const signatures = require('../signatures/signatures.service');
 
 const pick = (en, a, b) => (en ? b || a : a || b) || '';
 
@@ -47,14 +48,39 @@ function section(w, label) {
   w.text(label, { size: 9, color: C.textSubtle, bold: true, gap: 0 });
 }
 
-function signature(w, doctorName, t) {
-  w.ensure(90);
-  w.space(34);
+/**
+ * The images of the signature area: `d.marks` when the caller passed them, else the clinic's stamp (if switched on
+ * for this kind of document) and the signature of `doctorId` — the doctor printed on the document, nobody else.
+ */
+async function marksFor(d, kind, doctorId) {
+  if (d.marks !== undefined) return d.marks || {};
+  if (!d.clinic || !d.clinic.id) return {};
+  try { return await signatures.forDocument(d.clinic.id, kind, doctorId); } catch { return {}; }
+}
+
+/**
+ * Signature line at the end side with the doctor's name under it. With `marks.signature` the signature image sits
+ * on the line; with `marks.stamp` the stamp sits beside the signature (towards the page's start side).
+ */
+function signature(w, doctorName, t, marks = {}) {
+  const sig = marks.signature || null;
+  const stamp = marks.stamp || null;
   const lineW = 190;
+  const stampSize = 84;
+  const lift = sig || stamp ? 62 : 34; // room above the line
+  w.ensure(lift + 60);
+  w.space(lift);
   const x = w.rtl ? w.left : w.right - lineW; // the signature sits at the end side
+  const lineY = w.y;
+  if (sig) w.fitImage(sig, x + 20, w.y - 58, lineW - 40, 56, { align: 'center', valign: 'bottom' });
+  if (stamp) {
+    const sx = w.rtl ? x + lineW + 18 : x - 18 - stampSize;
+    w.fitImage(stamp, sx, w.y - 58, stampSize, stampSize, { align: 'center', valign: 'center' });
+  }
   w.doc.moveTo(x, w.y).lineTo(x + lineW, w.y).lineWidth(0.8).strokeColor(C.borderStrong).stroke();
   w.space(4);
   w.text(doctorName ? `${t('patient_docs.pdf.signature')} — ${doctorName}` : t('patient_docs.pdf.signature'), { size: 9, color: C.textMuted, x, width: lineW, align: 'center' });
+  if (stamp) w.y = Math.max(w.y, lineY - 58 + stampSize + 4); // below the stamp
 }
 
 function footer(w, clinicName, ref, t) {
@@ -110,7 +136,9 @@ async function prescription(d, locale = 'ar') {
   });
   if (d.rx.notes) { section(w, t('patient_docs.pdf.notes')); w.text(d.rx.notes, { size: 10, gap: 4 }); }
   if (d.online) { w.space(6); w.text(t('patient_docs.pdf.online_note'), { size: 9, color: C.textMuted }); }
-  signature(w, pick(en, d.doctor_name, d.doctor_name_en), t);
+  // The signature of the visit's doctor (the one printed above) — only when the prescription is theirs.
+  const rxDoctor = d.a && d.a.doctor_id && (!d.rx.doctor_id || d.rx.doctor_id === d.a.doctor_id) ? d.a.doctor_id : null;
+  signature(w, pick(en, d.doctor_name, d.doctor_name_en), t, await marksFor(d, 'prescriptions', rxDoctor));
   footer(w, clinicName, t('patient_docs.pdf.rx_no', { n: d.rx.id }), t);
   return w.end();
 }
@@ -154,7 +182,7 @@ async function report(d, locale = 'ar') {
     wrote += 1;
   });
   if (!wrote) w.text(t('patient_docs.pdf.nothing'), { size: 10, color: C.textMuted });
-  signature(w, pick(en, d.doctor_name, d.doctor_name_en), t);
+  signature(w, pick(en, d.doctor_name, d.doctor_name_en), t, await marksFor(d, 'reports', d.a ? d.a.doctor_id : null));
   footer(w, clinicName, t('patient_docs.pdf.visit_no', { n: d.appointment_id }), t);
   return w.end();
 }
@@ -219,9 +247,10 @@ async function certificate(d, locale) {
     w.text(ltr(d.verifyUrl), { size: 8.5, color: C.textMuted, x: tx, width: tw, y: y0 + 18, fixed: true });
     w.y += size + 6;
   }
-  signature(w, pick(en, cert.doctor_name, cert.doctor_name_en), t);
+  // A withdrawn certificate keeps no signature or stamp.
+  signature(w, pick(en, cert.doctor_name, cert.doctor_name_en), t, cert.revoked_at ? {} : await marksFor(d, 'certificates', cert.doctor_id));
   footer(w, clinicName, ltr(cert.serial), t);
   return w.end();
 }
 
-module.exports = { prescription, report, certificate, REPORT_SECTIONS, VITAL_KEYS };
+module.exports = { prescription, report, certificate, marksFor, REPORT_SECTIONS, VITAL_KEYS };

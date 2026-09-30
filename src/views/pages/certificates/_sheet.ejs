@@ -48,10 +48,17 @@
       <div class="strong"><%= DL(doc.doctor_name, doc.doctor_name_en) %></div>
       <% var spec = DL(doc.doctor_specialty, doc.doctor_specialty_en); if (spec) { %><div class="small"><%= spec %></div><% } %>
       <% if (doc.doctor_license) { %><div class="small"><%= dt('certificates.doc.licence') %>: <bdi dir="ltr"><%= doc.doctor_license %></bdi></div><% } %>
-      <div class="cert-line"></div>
+      <%/* Signature of the issuing doctor and the clinic stamp (staff pages only; none on a revoked document). The image
+           routes answer with a transparent pixel when there is nothing to print. */%>
+      <% var marks = !doc.revoked_at && typeof path !== 'undefined' && /^\/app\//.test(path); %>
+      <div class="cert-line"<% if (marks) { %> style="height:60px;display:flex;align-items:flex-end;justify-content:center"<% } %>><% if (marks) { %><img src="/app/signatures/certificates/<%= doc.id %>/signature.png" alt="" style="max-height:56px;max-width:100%;object-fit:contain"><% } %></div>
       <div class="tiny muted"><%= dt('certificates.doc.signature') %></div>
     </div>
+    <% if (marks) { %>
+    <div class="cert-stamp-slot" style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-height:108px;justify-self:center"><img src="/app/signatures/certificates/<%= doc.id %>/stamp.png" alt="" style="max-width:130px;max-height:96px;object-fit:contain"><span class="tiny muted"><%= dt('certificates.doc.stamp') %></span></div>
+    <% } else { %>
     <div class="cert-stamp"><span class="tiny muted"><%= dt('certificates.doc.stamp') %></span></div>
+    <% } %>
     <div class="cert-qr">
       <div class="cert-qr-box"><%- qr %></div>
       <div class="cert-qr-text">
