@@ -231,3 +231,51 @@ test('update: stage, activate (backup, keep .env), rollback, keep 3 backups', ()
     fs.rmSync(src, { recursive: true, force: true });
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+
+test('update (RemoteWay flow): lenient package check, one-step install, restore a chosen backup, history', () => {
+  // Wrapper folder + __MACOSX + .DS_Store + stray files are accepted/ignored; .env and node_modules are skipped.
+  const z = new AdmZip();
+  z.addFile('docbook/app.js', Buffer.from(BANNER));
+  z.addFile('docbook/package.json', Buffer.from(JSON.stringify({ name: 'docbook', version: '2.0.1' })));
+  z.addFile('docbook/src/views/a.ejs', Buffer.from('v2.0.1'));
+  z.addFile('docbook/.DS_Store', Buffer.from('x'));
+  z.addFile('docbook/notes.txt', Buffer.from('x'));
+  z.addFile('docbook/.env', Buffer.from('DB_PASSWORD=evil'));
+  z.addFile('docbook/node_modules/x/index.js', Buffer.from('x'));
+  z.addFile('__MACOSX/docbook/._app.js', Buffer.from('x'));
+  const pkg = updater.inspectPackage(z.toBuffer());
+  assert.equal(pkg.version, '2.0.1');
+  assert.deepEqual([...pkg.files.keys()].sort(), ['app.js', 'package.json', 'src/views/a.ejs']);
+  assert.equal(code(() => updater.inspectPackage(distZip({ name: 'other' }))), 'UPDATE_WRONG_NAME');
+  assert.equal(code(() => updater.inspectPackage(distZip({ skip: ['app.js'] }))), 'UPDATE_MISSING_APP');
+  assert.equal(code(() => updater.inspectPackage(Buffer.from('nope'))), 'UPDATE_NOT_ZIP');
+  const slip = new AdmZip(); slip.addFile('app.js', Buffer.from(BANNER)); slip.addFile('package.json', Buffer.from('{"name":"docbook"}'));
+  slip.getEntries()[0].entryName = '../evil.js';
+  assert.equal(code(() => updater.inspectPackage(slip.toBuffer())), 'UPDATE_UNSAFE_PATH');
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docbook-upd2-'));
+  try {
+    fs.writeFileSync(path.join(root, 'app.js'), BANNER);
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'docbook', version: '2.0.0' }));
+    fs.mkdirSync(path.join(root, 'src/views'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'src/views/a.ejs'), 'v2.0.0');
+    fs.writeFileSync(path.join(root, '.env'), 'SECRET=keep');
+    const r = updater.install(z.toBuffer(), { root, by: 'admin@x', fileName: 'u.zip' });
+    assert.deepEqual([r.from, r.to, r.ok], ['2.0.0', '2.0.1', true]);
+    assert.equal(fs.readFileSync(path.join(root, 'src/views/a.ejs'), 'utf8'), 'v2.0.1');
+    assert.equal(fs.readFileSync(path.join(root, '.env'), 'utf8'), 'SECRET=keep');
+    assert.ok(!fs.existsSync(path.join(root, 'notes.txt')) && !fs.existsSync(path.join(root, 'node_modules')));
+    assert.ok(fs.existsSync(path.join(root, 'tmp/restart.txt')));
+    const backups = updater.listBackups(root);
+    assert.equal(backups.length, 1); assert.equal(backups[0].version, '2.0.0');
+    // A failing package changes nothing.
+    assert.equal(code(() => updater.install(distZip({ name: 'other' }), { root })), 'UPDATE_WRONG_NAME');
+    assert.equal(fs.readFileSync(path.join(root, 'src/views/a.ejs'), 'utf8'), 'v2.0.1');
+    const back = updater.restore(backups[0].id, { root, by: 'admin@x' });
+    assert.deepEqual([back.from, back.to], ['2.0.1', '2.0.0']);
+    assert.equal(fs.readFileSync(path.join(root, 'src/views/a.ejs'), 'utf8'), 'v2.0.0');
+    assert.equal(updater.listBackups(root).length, 2, 'the version before the restore is kept as a backup');
+    assert.equal(code(() => updater.restore('backup-nope', { root })), 'UPDATE_NO_BACKUP');
+    assert.deepEqual(updater.readLog(root).map((l) => l.action), ['restore', 'update']);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});

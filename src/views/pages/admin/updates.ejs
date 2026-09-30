@@ -1,91 +1,75 @@
-<%
-  var mb = function (b) { return fmt.number(Math.round((Number(b) || 0) / 104857.6) / 10); };
-  var when = function (iso) { return iso ? fmt.date(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' }) : '—'; };
-  var s = st.staged;
-  var cmp = s ? compare(s.version, st.version) : 0;
-%>
-<div class="page-head">
-  <div><h1><%= t('updater.title') %></h1><p><%= t('updater.lead') %></p></div>
-  <div class="page-actions"><span class="badge badge-neutral"><%= t('updater.current') %>: <strong class="mono" dir="ltr"><%= st.version || '—' %></strong></span></div>
-</div>
+<%# System update — same screen and flow as RemoteWay's system update: version card, install form (zip + password),
+    backups with restore, update history. %>
+<% var when = function (iso) { return iso ? fmt.date(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }; %>
+<div class="page-head"><div><h1><%= t('updater.title') %></h1><p><%= t('updater.lead') %></p></div></div>
 
-<% if (!st.dist) { %>
+<% if (updated || restored) { %>
+<div class="alert alert-success mb-4"><%- icon('rocket') %><div class="grow"><div class="alert-title"><%= updated ? t('updater.update_started', { v: updated }) : t('updater.restore_started', { v: restored }) %></div><div class="small"><%= t('updater.restart_note') %></div></div><a class="btn btn-secondary btn-sm" href="/admin/updates"><%= t('updater.refresh') %></a></div>
+<% } %>
+<% if (!dist) { %>
 <div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('updater.source_title') %></div><div><%= t('updater.source_text') %></div></div></div>
 <% } %>
 
-<div class="grid grid-main po-upd" style="align-items:start">
-  <div class="stack-lg">
-    <section class="panel">
-      <div class="panel-head"><div><h2><%= t('updater.upload_title') %></h2><div class="panel-sub"><%= t('updater.upload_sub', { mb: st.maxMb }) %></div></div></div>
-      <div class="panel-body stack">
-        <form class="stack" method="post" action="/admin/updates/upload" data-po-upload data-csrf="<%= csrfToken %>" data-msg-choose="<%= t('updater.choose_first') %>" data-msg-uploading="<%= t('updater.uploading') %>" data-msg-too-big="<%= t('errors_platformops.UPDATE_TOO_BIG', { mb: st.maxMb }) %>" data-msg-failed="<%= t('updater.upload_failed') %>" data-max="<%= st.maxMb * 1048576 %>">
-          <div class="field">
-            <label class="label" for="f-zip"><%= t('updater.file') %></label>
-            <input class="input" type="file" id="f-zip" accept=".zip,application/zip" data-po-file<%= st.dist ? '' : ' disabled' %>>
-            <span class="help"><%= t('updater.file_help') %></span>
-          </div>
-          <div class="po-progress" hidden data-po-progress><span style="width:0%"></span></div>
-          <p class="small" role="status" aria-live="polite" data-po-status></p>
-          <noscript><p class="small muted"><%= t('updater.needs_js') %></p></noscript>
-          <div><button class="btn btn-secondary" type="submit"<%= st.dist ? '' : ' disabled' %>><%- icon('cloud-upload', 'icon-sm') %><%= t('updater.upload') %></button></div>
-        </form>
-      </div>
-    </section>
+<div class="grid grid-3" style="align-items:start">
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('updater.current_version') %></h2></div>
+    <div class="panel-body">
+      <div class="num" dir="ltr" style="font-size:30px;font-weight:800;text-align:start">v<%= current.version || '—' %></div>
+      <dl class="dl mt-4">
+        <dt>Node.js</dt><dd class="mono" dir="ltr"><%= current.node %></dd>
+        <dt><%= t('updater.database') %></dt><dd class="mono small" dir="ltr"><%= dbVersion %></dd>
+      </dl>
+    </div>
+  </section>
 
-    <% if (s) { %>
-    <section class="panel">
-      <div class="panel-head"><div><h2><%= t('updater.staged_title') %></h2><div class="panel-sub"><%= t('updater.staged_sub', { when: when(s.uploadedAt) }) %></div></div></div>
-      <div class="panel-body stack">
-        <div class="po-versions">
-          <div><span class="tiny muted"><%= t('updater.current') %></span><strong class="mono" dir="ltr"><%= st.version || '—' %></strong></div>
-          <span class="muted" aria-hidden="true"><%- icon('arrow-right', 'icon-sm flip-rtl') %></span>
-          <div><span class="tiny muted"><%= t('updater.uploaded') %></span><strong class="mono" dir="ltr"><%= s.version || '—' %></strong></div>
-        </div>
-        <p class="small muted"><%= t('updater.staged_files', { n: fmt.number(s.files || 0), mb: mb(s.bytes) }) %></p>
-        <% if (cmp < 0) { %><div class="alert alert-warning"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('updater.older_warning') %></div></div><% } else if (cmp === 0) { %><div class="alert alert-info"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('updater.same_warning') %></div></div><% } %>
-        <div class="alert alert-warning"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('updater.before_title') %></div>
-          <ul class="po-bullets small"><li><%= t('updater.before_backup') %></li><li><%= t('updater.before_restart') %></li><li><%= t('updater.before_db') %></li><li><%= t('updater.before_env') %></li></ul></div></div>
-      </div>
-      <div class="panel-foot row-sm wrap">
-        <form method="post" action="/admin/updates/activate" data-confirm="<%= t('updater.activate_confirm', { v: s.version }) %>" data-confirm-title="<%= t('updater.activate') %>" data-confirm-yes="<%= t('updater.activate') %>" data-confirm-type="<%= s.version %>">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <noscript><label class="field"><span class="label"><%= t('updater.type_version', { v: s.version }) %></span><input class="input" name="confirm_name" dir="ltr" autocomplete="off"></label></noscript>
-          <input type="hidden" name="confirm_name" value="">
-          <button class="btn btn-primary" type="submit"<%= st.dist ? '' : ' disabled' %>><%- icon('rocket', 'icon-sm') %><%= t('updater.activate') %></button>
-        </form>
-        <form method="post" action="/admin/updates/discard" data-confirm="<%= t('updater.discard_confirm') %>" data-confirm-yes="<%= t('updater.discard') %>">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="btn btn-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('updater.discard') %></button>
-        </form>
-      </div>
-    </section>
-    <% } %>
-  </div>
-
-  <aside class="stack-lg">
-    <section class="panel flush">
-      <div class="panel-head"><div><h2><%= t('updater.backups_title') %></h2><div class="panel-sub"><%= t('updater.backups_sub') %></div></div></div>
-      <% if (!st.backups.length) { %><div class="panel-body po-pad"><p class="small muted"><%= t('updater.no_backups') %></p></div><% } else { %>
-      <ul class="action-list">
-        <% st.backups.forEach(function (b, i) { %><li><div>
-          <span class="po-mod-icon" aria-hidden="true"><%- icon('archive-restore', 'icon-sm') %></span>
-          <span class="grow" style="min-width:0"><span class="strong mono" dir="ltr"><%= b.version || '—' %></span><span class="tiny muted po-block"><%= when(b.createdAt) %><% if (b.replacedBy) { %> · <%= t('updater.replaced_by', { v: b.replacedBy }) %><% } %></span></span>
-          <% if (i === 0) { %><span class="badge badge-neutral"><%= t('updater.latest') %></span><% } %>
-        </div></li><% }) %>
+  <form method="post" action="/admin/updates/install" enctype="multipart/form-data" class="panel span-2" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%= t('updater.install_title') %></h2><div class="panel-sub"><%= t('updater.install_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <div class="field"><label class="label" for="upd-file"><%= t('updater.package') %><span class="req">*</span></label>
+        <input class="input" id="upd-file" type="file" name="file" accept=".zip,application/zip" required<%= dist ? '' : ' disabled' %>>
+        <% if (errors.file) { %><span class="field-error"><%= errors.file %></span><% } else { %><span class="help"><%= t('updater.package_help', { mb: maxMb }) %></span><% } %></div>
+      <div class="field"><label class="label" for="upd-pass"><%= t('updater.confirm_password') %><span class="req">*</span></label>
+        <input class="input" id="upd-pass" type="password" name="password" required autocomplete="current-password"<%= dist ? '' : ' disabled' %>>
+        <% if (errors.password) { %><span class="field-error"><%= t('updater.wrong_password') %></span><% } %></div>
+      <ul class="small muted" style="margin:0;padding-inline-start:18px;display:grid;gap:4px">
+        <li><%= t('updater.step_backup') %></li>
+        <li><%= t('updater.step_keep') %></li>
+        <li><%= t('updater.step_migrate') %></li>
+        <li><%= t('updater.step_restart') %></li>
       </ul>
-      <div class="panel-foot">
-        <form method="post" action="/admin/updates/rollback" data-confirm="<%= t('updater.rollback_confirm', { v: st.backups[0].version || '—' }) %>" data-confirm-title="<%= t('updater.rollback') %>" data-confirm-yes="<%= t('updater.rollback') %>">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <button class="btn btn-danger-ghost btn-sm" type="submit"<%= st.dist ? '' : ' disabled' %>><%- icon('history', 'icon-sm') %><%= t('updater.rollback_to', { v: st.backups[0].version || '—' }) %></button>
-        </form>
-      </div>
-      <% } %>
-    </section>
-    <section class="panel">
-      <div class="panel-head"><div><h2><%= t('updater.how_title') %></h2></div></div>
-      <div class="panel-body"><ol class="po-bullets small muted">
-        <li><%- t('updater.how_1') %></li><li><%= t('updater.how_2') %></li><li><%= t('updater.how_3') %></li><li><%= t('updater.how_4') %></li>
-      </ol></div>
-    </section>
-  </aside>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"<%= dist ? '' : ' disabled' %>><%- icon('upload', 'icon-sm') %><%= t('updater.install') %></button></div>
+  </form>
 </div>
+
+<div class="grid grid-2 mt-6" style="align-items:start">
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('updater.backups_title') %></h2><div class="panel-sub"><%= t('updater.backups_sub') %></div></div></div>
+    <% if (errors.backup) { %><div class="panel-body"><span class="field-error"><%= errors.backup %></span></div><% } %>
+    <% if (!backups.length) { %><div class="empty"><p><%= t('updater.no_backups') %></p></div><% } else { %>
+    <div class="table-wrap"><table class="table"><tbody>
+      <% backups.forEach(function (b) { %>
+      <tr><td><strong class="num" dir="ltr">v<%= b.version %></strong><div class="muted tiny"><%= when(b.createdAt) %><%= b.replacedBy ? ' · ' + t('updater.replaced_by', { v: b.replacedBy }) : '' %></div></td>
+        <td class="actions"><button class="btn btn-secondary btn-sm" type="button" data-open-dialog="restore-dialog" data-fill="<%= JSON.stringify({ backup: b.id }) %>"<%= dist ? '' : ' disabled' %>><%- icon('history', 'icon-sm') %><%= t('updater.restore') %></button></td></tr>
+      <% }) %>
+    </tbody></table></div><% } %>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('updater.history_title') %></h2></div>
+    <% if (!log.length) { %><div class="empty"><p><%= t('updater.no_history') %></p></div><% } else { %>
+    <ul class="feed"><% log.forEach(function (l) { %>
+      <li><span class="dot" style="<%= l.ok ? '' : 'background:var(--danger)' %>"></span><div class="grow"><div class="what"><strong><%= t('updater.log_' + l.action) %></strong> <span dir="ltr">v<%= l.from %> → v<%= l.to %></span><% if (!l.ok) { %> · <span class="field-error"><%= l.error %></span><% } %></div><div class="when"><%= when(l.at) %> · <%= l.by || '—' %><%= l.sha256 ? ' · sha256 ' + l.sha256.slice(0, 12) : '' %></div></div></li>
+    <% }) %></ul><% } %>
+  </section>
+</div>
+
+<dialog class="dialog" id="restore-dialog"<%= typeof openRestore !== 'undefined' && openRestore ? ' data-open-on-load' : '' %>>
+  <form method="post" action="/admin/updates/restore" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="backup" value="<%= typeof openRestore !== 'undefined' && openRestore ? openRestore : '' %>">
+    <div class="dialog-head"><div><h2><%= t('updater.restore_title') %></h2><p class="muted small mt-1"><%= t('updater.restore_sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x') %></button></div>
+    <div class="dialog-body"><div class="field"><label class="label" for="rs-pass"><%= t('updater.confirm_password') %></label><input class="input" id="rs-pass" type="password" name="password" required autocomplete="current-password">
+      <% if (errors.password && typeof openRestore !== 'undefined' && openRestore) { %><span class="field-error"><%= t('updater.wrong_password') %></span><% } %></div></div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-danger" type="submit"><%= t('updater.restore') %></button></div>
+  </form>
+</dialog>

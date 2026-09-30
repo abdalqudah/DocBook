@@ -222,7 +222,119 @@ function restartAfter(res, delayMs = 400) {
   res.on('finish', () => setTimeout(() => process.exit(0), delayMs));
 }
 
+// ---------------------------------------------------------------- one-step install (same flow as RemoteWay's system update)
+// Upload the package in a normal form → validate → back up the running files → write the new files → restart.
+// Lenient like RemoteWay: a zip whose files sit inside one top folder (e.g. "docbook/") is accepted, and files that are
+// not part of the build (__MACOSX, .DS_Store, notes…) are skipped instead of rejecting the package. Unsafe paths,
+// links, node_modules and .env files are still refused.
+const SKIP_TOPS = new Set(['__MACOSX', 'node_modules', 'tmp', '.updates', '.git']);
+const LOG = 'update-log.json';
+
+function inspectPackage(buffer) {
+  if (!buffer || !buffer.length) throw fail('UPDATE_EMPTY', 'Choose the zip file.');
+  if (buffer.length > MAX_ZIP_BYTES) throw fail('UPDATE_TOO_BIG', 'The file is too big.', { mb: MAX_ZIP_BYTES / 1048576 });
+  if (buffer.length < 4 || buffer.readUInt32LE(0) !== 0x04034b50) throw fail('UPDATE_NOT_ZIP', 'This is not a zip file.');
+  let entries;
+  try { entries = new AdmZip(buffer).getEntries(); } catch { throw fail('UPDATE_NOT_ZIP', 'This is not a zip file.'); }
+  if (!entries.length) throw fail('UPDATE_NOT_ZIP', 'This is not a zip file.');
+  if (entries.length > MAX_ENTRIES) throw fail('UPDATE_TOO_BIG', 'The file is too big.', { mb: MAX_ZIP_BYTES / 1048576 });
+  const all = entries.map((e) => ({ e, name: String(e.entryName || '').replace(/^(\.\/)+/, '') })).filter((x) => !x.name.startsWith('__MACOSX/'));
+  // One wrapper folder around everything (a re-zipped folder) → strip it.
+  const tops = new Set(all.map((x) => x.name.split('/')[0]));
+  const prefix = tops.size === 1 && !all.some((x) => x.name === 'app.js') && all.some((x) => x.name.endsWith('/app.js')) ? `${[...tops][0]}/` : '';
+  const files = new Map();
+  let bytes = 0;
+  for (const { e, name } of all) {
+    if (e.isDirectory || !name.startsWith(prefix)) continue;
+    const rel = safeName(name.slice(prefix.length));
+    const parts = rel.split('/').filter(Boolean);
+    if (!parts.length || SKIP_TOPS.has(parts[0]) || parts.includes('.DS_Store')) continue;
+    if (parts.includes('node_modules')) continue;
+    if (parts.some((p) => /^\.env($|\.)/.test(p) && p !== '.env.example')) continue; // never overwrite settings
+    if (!OWNED.includes(parts[0])) continue; // not part of the build: ignored
+    if (isSymlink(e)) throw fail('UPDATE_SYMLINK', 'The zip contains a link.', { entry: rel });
+    bytes += Number(e.header.size) || 0;
+    if (bytes > MAX_UNPACKED_BYTES) throw fail('UPDATE_TOO_BIG', 'The file is too big.', { mb: MAX_ZIP_BYTES / 1048576 });
+    files.set(rel, e);
+  }
+  const app = files.get('app.js');
+  if (!app) throw fail('UPDATE_MISSING_APP', 'app.js is missing at the top of the zip.');
+  if (!hasDistBanner(app.getData().slice(0, 400).toString('utf8'))) throw fail('UPDATE_NOT_DIST', 'app.js is not a DocBook dist build.');
+  const pkgEntry = files.get('package.json');
+  if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
+  let pkg;
+  try { pkg = JSON.parse(pkgEntry.getData().toString('utf8')); } catch { throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.'); }
+  if (!pkg || pkg.name !== 'docbook') throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
+  return { files, version: String(pkg.version || ''), count: files.size, bytes, sha256: require('crypto').createHash('sha256').update(buffer).digest('hex') }; // eslint-disable-line global-require
+}
+
+function readLog(root = DEFAULT_ROOT) { return readJson(path.join(root, UPDATES, LOG)) || []; }
+function writeLog(root, entry) {
+  const f = path.join(updatesDir(root), LOG);
+  fs.writeFileSync(f, JSON.stringify([entry, ...readLog(root)].slice(0, 20), null, 2));
+}
+
+function listBackups(root = DEFAULT_ROOT) {
+  return list(root, 'backup').map((b) => ({ id: b.id, version: b.version || readVersion(b.dir) || '?', createdAt: b.createdAt || fs.statSync(b.dir).mtime, replacedBy: b.replacedBy || null }));
+}
+
+function makeBackup(root, meta) {
+  let id = `backup-${stamp()}`;
+  for (let n = 1; fs.existsSync(path.join(updatesDir(root), id)); n += 1) id = `backup-${stamp()}-${n}`;
+  const dir = path.join(updatesDir(root), id);
+  fs.mkdirSync(dir, { recursive: true });
+  copyOwned(root, dir);
+  fs.writeFileSync(path.join(dir, '.docbook-update.json'), JSON.stringify({ version: readVersion(root), createdAt: new Date().toISOString(), ...meta }, null, 2));
+  return { id, dir };
+}
+
+/** Validates the package, backs up the running files, writes the new ones and requests a restart. */
+function install(buffer, { root = DEFAULT_ROOT, by = null, fileName = '' } = {}) {
+  requireDist(root);
+  const info = inspectPackage(buffer);
+  const from = readVersion(root);
+  const backup = makeBackup(root, { replacedBy: info.version, by });
+  try {
+    const rootAbs = path.resolve(root);
+    for (const [rel, e] of info.files) {
+      const dest = path.resolve(rootAbs, rel);
+      if (!dest.startsWith(rootAbs + path.sep)) throw fail('UPDATE_UNSAFE_PATH', 'The zip contains an unsafe path.', { entry: rel });
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, e.getData());
+      try { fs.chmodSync(dest, 0o644); } catch { /* keep going */ }
+    }
+  } catch (e) {
+    try { copyOwned(backup.dir, root); } catch { /* reported below */ }
+    writeLog(root, { at: new Date().toISOString(), by, action: 'update', from, to: info.version, ok: false, error: e.message, file: String(fileName).slice(0, 120) });
+    throw e.code ? e : new AppError('UPDATE_COPY_FAILED', `The update could not be copied: ${e.message}`, 500);
+  }
+  prune(root);
+  const entry = { at: new Date().toISOString(), by, action: 'update', from, to: info.version, ok: true, files: info.count, sha256: info.sha256, file: String(fileName).slice(0, 120) };
+  writeLog(root, entry);
+  touchRestart(root);
+  return entry;
+}
+
+/** Puts a chosen backup back (the current files are backed up first) and requests a restart. */
+function restore(backupId, { root = DEFAULT_ROOT, by = null } = {}) {
+  requireDist(root);
+  const id = path.basename(String(backupId || ''));
+  const b = list(root, 'backup').find((x) => x.id === id);
+  if (!b) throw fail('UPDATE_NO_BACKUP', 'There is no backup to restore.');
+  if (!hasDistBanner(readHead(path.join(b.dir, 'app.js')))) throw fail('UPDATE_NOT_DIST', 'app.js is not a DocBook dist build.');
+  const from = readVersion(root);
+  const to = b.version || readVersion(b.dir);
+  makeBackup(root, { replacedBy: to, by, beforeRestore: true });
+  copyOwned(b.dir, root);
+  prune(root);
+  const entry = { at: new Date().toISOString(), by, action: 'restore', from, to, ok: true };
+  writeLog(root, entry);
+  touchRestart(root);
+  return entry;
+}
+
 module.exports = {
+  inspectPackage, install, restore, listBackups, readLog,
   DEFAULT_ROOT, MAX_ZIP_BYTES, OWNED, KEEP_BACKUPS,
   hasDistBanner, isDistBuild, compareVersions, safeName, inspectZip, status, stage, discard, activate, rollback, restartAfter,
 };
