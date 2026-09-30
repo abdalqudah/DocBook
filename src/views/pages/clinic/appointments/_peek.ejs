@@ -1,0 +1,39 @@
+<%
+  // Appointment drawer (GET /app/appointments/:id/peek): essentials + the next step, then "open full details".
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var open = ['pending', 'confirmed'].indexOf(a.status) !== -1;
+  var desk = can('frontdesk.use') && isToday && open;
+  var manage = can('appointments.manage');
+  var hidden = '<input type="hidden" name="_csrf" value="' + csrfToken + '"><input type="hidden" name="return_to" value="' + escapeHtml(back) + '">';
+%>
+<div class="peek" data-peek>
+  <header class="peek-head">
+    <div class="grow">
+      <div class="peek-kicker"><span dir="ltr" class="mono"><%= a.appointment_time %></span> · <%= isToday ? t('common.today') : fmt.date(a.appointment_date, { weekday: 'short', day: 'numeric', month: 'short' }) %></div>
+      <h2 class="peek-name" dir="auto"><%= a.patient_name %></h2>
+      <% if (a.patient_phone) { %><div class="small muted" dir="ltr"><%= a.patient_phone %></div><% } %>
+    </div>
+    <button class="btn btn-ghost btn-icon" type="button" data-peek-close aria-label="<%= t('common.close') %>"><%- icon('x') %></button>
+  </header>
+  <dl class="peek-facts">
+    <div><dt><%= t('common.doctor') %></dt><dd><% if (doctor) { %><span class="doc-dot" aria-hidden="true"<% if (doctor.color) { %> style="background:<%= doctor.color %>"<% } %>></span><%= L(doctor.full_name, doctor.full_name_en) %><% } else { %><%= t('appointments.unassigned') %><% } %></dd></div>
+    <div><dt><%= t('common.service') %></dt><dd><%= service ? L(service.name, service.name_en) : '—' %></dd></div>
+    <div><dt><%= t('common.status') %></dt><dd><span class="st"><i class="st-dot st-<%= a.status %>"></i><%= t('appointments.statuses.' + a.status) %></span><% if (a.checked_in && open) { %> · <%= a.with_doctor ? t('cashx.col.with_doctor') : t('cashx.col.arrived') %><% } %></dd></div>
+    <div><dt><%= t('appointments.payment') %></dt><dd><% if (invoice) { %><a class="link" href="/app/billing/<%= invoice.id %>"><%= t('billing.invoice_no', { n: invoice.invoice_number }) %></a> · <%= fmt.money(invoice.amount) %><% } else { %><%= t('appointments.payment_statuses.' + (a.payment_status || 'unpaid')) %><% } %></dd></div>
+    <% if (a.source === 'website') { %><div><dt><%= t('appointments.source') %></dt><dd><%= t('appointments.sources.website') %></dd></div><% } %>
+    <% if (a.notes) { %><div class="peek-notes"><dt><%= t('common.notes') %></dt><dd dir="auto"><%= a.notes %></dd></div><% } %>
+  </dl>
+  <div class="peek-actions">
+    <% if (desk && !a.checked_in) { %><form method="post" action="/app/front-desk/<%= a.id %>/check-in"><%- hidden %><input type="hidden" name="on" value="1"><button class="btn btn-primary" type="submit"><%- icon('user-check', 'icon-sm') %><%= t('cashx.do.check_in') %></button></form><% } %>
+    <% if (desk && a.checked_in && !a.with_doctor && a.doctor_id) { %><form method="post" action="/app/front-desk/<%= a.id %>/call-in"><%- hidden %><input type="hidden" name="on" value="1"><button class="btn btn-primary" type="submit"><%- icon('door-open', 'icon-sm') %><%= t('cashx.do.send_in') %></button></form><% } %>
+    <% if (can('clinical.view') && isToday && open && (!ctx.ownDoctorId || a.doctor_id === ctx.ownDoctorId)) { %><a class="btn btn-secondary" href="/app/visits/<%= a.id %>"><%- icon('stethoscope', 'icon-sm') %><%= t('cashx.open_visit') %></a><% } %>
+    <% if (can('billing.manage') && a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in)) { %><a class="btn btn-secondary" href="/app/cashier?visit=<%= a.id %>"><%- icon('banknote', 'icon-sm') %><%= t('billing.checkout') %></a><% } %>
+    <% if (manage && open) { %><a class="btn btn-secondary" href="/app/appointments/<%= a.id %>/edit?return=<%= encodeURIComponent(back) %>"><%- icon('calendar-clock', 'icon-sm') %><%= t('appointments.reschedule') %></a><% } %>
+    <% if (manage && open && a.patient_phone) { %><a class="btn btn-ghost" href="/app/messaging/wa/<%= a.id %>" target="_blank" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= t('messaging.wa_send') %></a><% } %>
+    <% if (manage && open) { %><form method="post" action="/app/appointments/<%= a.id %>/status" data-confirm="<%= t('appointments.cancel_confirm') %>"><%- hidden %><input type="hidden" name="status" value="cancelled"><button class="btn btn-ghost btn-danger-ghost" type="submit"><%- icon('calendar-x', 'icon-sm') %><%= t('appointments.cancel_appt') %></button></form><% } %>
+  </div>
+  <footer class="peek-foot">
+    <% if (a.patient_id && can('patients.view')) { %><a class="btn btn-ghost btn-sm" href="/app/patients/<%= a.patient_id %>"><%- icon('user', 'icon-sm') %><%= t('my_day.patient_file') %></a><% } %>
+    <a class="btn btn-ghost btn-sm" href="/app/appointments/<%= a.id %>"><%= t('appointments.full_details') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+  </footer>
+</div>

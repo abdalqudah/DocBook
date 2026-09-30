@@ -34,5 +34,14 @@
       </div>
     </section>
     <% }) %>
+    <%# Pages that moved to their workspaces (redesign): a pointer for people used to finding them here. %>
+    <% var moved = []; if (can('users.manage') || can('roles.manage')) moved.push({ href: '/app/clinic/team', icon: 'user-cog', key: 'team' });
+       if (canAny('settings.manage', 'prescriptions.create', 'clinical.edit')) moved.push({ href: '/app/clinic/setup', icon: 'pill', key: 'clinical' }); %>
+    <% if (moved.length) { %>
+    <aside class="alert alert-info set-moved" role="note"><%- icon('info') %><div class="grow"><div class="alert-title"><%= t('settings.moved_title') %></div>
+      <ul class="set-moved-list"><% moved.forEach(function (m) { %><li><a class="link" href="<%= m.href %>"><%- icon(m.icon, 'icon-sm') %><%= t('settings.moved_' + m.key) %></a></li><% }) %></ul>
+      <div class="small muted"><%= t('settings.moved_personal') %></div>
+    </div></aside>
+    <% } %>
   </div>
 </div>

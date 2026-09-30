@@ -121,3 +121,13 @@ html[dir="rtl"] [dir="auto"] { text-align: right; }
   .stats.rec-kpis .stat-icon { display: none; }
 }
 
+/* Patient workspace (redesign 3.9): tabs, next/last visit glance, timeline filter chips. */
+.pt-tabs { margin-top: -4px; }
+.pt-glance-card { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; color: var(--text); text-decoration: none; }
+.pt-glance-card:hover { border-color: var(--primary); }
+.pt-glance-card:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.pt-filter .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface); color: var(--text-muted); cursor: pointer; font: inherit; font-size: 13px; }
+.pt-filter .chip.is-on { background: var(--primary-soft); border-color: var(--primary); color: var(--text); font-weight: var(--fw-semibold); }
+.d-block { display: block; }
+tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
+[dir="rtl"] tr.is-upcoming td:first-child { box-shadow: inset -3px 0 0 var(--primary); }

@@ -176,7 +176,10 @@
       "closed_day": "Not working",
       "day_off": "Day off",
       "grid_label": "Appointments calendar"
-    }
+    },
+    "cancel_appt": "Cancel appointment",
+    "full_details": "Full details",
+    "peek_error": "Could not open the appointment. Open its full page instead."
   },
   "frontdesk": {
     "title": "Reception & waiting list",
@@ -230,7 +233,8 @@
     "confirm_payment": "Confirm payment",
     "paid": "Payment recorded and invoice issued.",
     "paid_title": "Invoice #{number} issued for {name}",
-    "print_invoice": "Print invoice"
+    "print_invoice": "Print invoice",
+    "take_vitals": "Take vital signs"
   },
   "visits": {
     "title": "Visit",

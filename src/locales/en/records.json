@@ -66,7 +66,40 @@
     "upcoming": "Upcoming appointments",
     "latest_diagnosis": "Latest diagnosis",
     "details": "Patient details",
-    "registered": "Registered"
+    "registered": "Registered",
+    "workspace": "Patient file",
+    "tab": {
+      "overview": "Overview",
+      "clinical": "Clinical",
+      "appointments": "Appointments",
+      "prescriptions": "Prescriptions",
+      "documents": "Documents",
+      "billing": "Billing",
+      "timeline": "Timeline"
+    },
+    "next_appointment": "Next appointment",
+    "no_next": "No upcoming appointment",
+    "no_visits_yet": "No visits yet",
+    "recent_activity": "Recent activity",
+    "see_timeline": "See the full timeline ({n})",
+    "filter": "Filter the timeline",
+    "kind": {
+      "all": "All",
+      "visit": "Visits",
+      "prescription": "Prescriptions",
+      "invoice": "Invoices",
+      "diagnosis": "Diagnoses"
+    },
+    "clinical_visits": "Visits and diagnoses",
+    "clinical_visits_sub": "Each visit with its diagnosis, codes and prescriptions.",
+    "no_clinical": "No clinical notes yet",
+    "no_prescriptions": "No prescriptions yet",
+    "no_certificates": "No certificates or reports for this patient",
+    "revoked": "Revoked",
+    "visit_reports": "Visit reports",
+    "visit_reports_sub": "A PDF report for each visit with clinical notes.",
+    "unpaid_visits": "Unpaid visits",
+    "no_invoices": "No invoices yet"
   },
   "billing": {
     "title": "Invoices & receipts",
@@ -206,7 +239,14 @@
     },
     "search": {
       "patient": "Patient",
-      "doctor": "Doctor"
+      "doctor": "Doctor",
+      "book": "Book",
+      "check_in": "Check in",
+      "group_patients": "Patients",
+      "group_appointments": "Appointments",
+      "group_invoices": "Invoices",
+      "group_doctors": "Doctors",
+      "recent": "Recently opened"
     }
   },
   "my_day": {
@@ -236,7 +276,8 @@
     "queue_n": "{n} patients waiting",
     "coming_days": "Coming days",
     "days_off": "Your days off",
-    "no_days_off": "No upcoming days off."
+    "no_days_off": "No upcoming days off.",
+    "recent_patients": "Recent patients"
   },
   "reports": {
     "title": "Reports",

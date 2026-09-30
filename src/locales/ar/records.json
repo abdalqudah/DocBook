@@ -66,7 +66,40 @@
     "upcoming": "المواعيد القادمة",
     "latest_diagnosis": "آخر تشخيص",
     "details": "بيانات المريض",
-    "registered": "تاريخ التسجيل"
+    "registered": "تاريخ التسجيل",
+    "workspace": "ملف المريض",
+    "tab": {
+      "overview": "نظرة عامة",
+      "clinical": "السجل الطبي",
+      "appointments": "المواعيد",
+      "prescriptions": "الوصفات",
+      "documents": "المستندات",
+      "billing": "الحساب المالي",
+      "timeline": "السجل الزمني"
+    },
+    "next_appointment": "الموعد القادم",
+    "no_next": "لا يوجد موعد قادم",
+    "no_visits_yet": "لا توجد زيارات بعد",
+    "recent_activity": "آخر النشاطات",
+    "see_timeline": "عرض السجل الزمني كاملاً ({n})",
+    "filter": "تصفية السجل",
+    "kind": {
+      "all": "الكل",
+      "visit": "الزيارات",
+      "prescription": "الوصفات",
+      "invoice": "الفواتير",
+      "diagnosis": "التشخيصات"
+    },
+    "clinical_visits": "الزيارات والتشخيصات",
+    "clinical_visits_sub": "كل زيارة مع تشخيصها ورموزها ووصفاتها.",
+    "no_clinical": "لا توجد ملاحظات طبية بعد",
+    "no_prescriptions": "لا توجد وصفات بعد",
+    "no_certificates": "لم تصدر إجازات أو تقارير لهذا المريض",
+    "revoked": "ملغاة",
+    "visit_reports": "تقارير الزيارات",
+    "visit_reports_sub": "تقرير PDF لكل زيارة فيها ملاحظات طبية.",
+    "unpaid_visits": "زيارات غير مدفوعة",
+    "no_invoices": "لا توجد فواتير بعد"
   },
   "billing": {
     "title": "الفواتير والإيصالات",
@@ -206,7 +239,14 @@
     },
     "search": {
       "patient": "مريض",
-      "doctor": "طبيب"
+      "doctor": "طبيب",
+      "book": "احجز",
+      "check_in": "سجّل الوصول",
+      "group_patients": "المرضى",
+      "group_appointments": "المواعيد",
+      "group_invoices": "الفواتير",
+      "group_doctors": "الأطباء",
+      "recent": "فتحتها مؤخراً"
     }
   },
   "my_day": {
@@ -236,7 +276,8 @@
     "queue_n": "{n} مرضى في الانتظار",
     "coming_days": "الأيام القادمة",
     "days_off": "إجازاتك",
-    "no_days_off": "لا توجد إجازات قادمة."
+    "no_days_off": "لا توجد إجازات قادمة.",
+    "recent_patients": "مرضى رأيتهم مؤخراً"
   },
   "reports": {
     "title": "التقارير",

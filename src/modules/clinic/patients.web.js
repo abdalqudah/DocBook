@@ -139,9 +139,27 @@ async function renderShow(req, res, extra = {}) {
   const upcoming = apptsMine.filter((a) => a.appointment_date >= today && ['pending', 'confirmed'].includes(a.status))
     .sort((a, b) => `${a.appointment_date} ${a.appointment_time}`.localeCompare(`${b.appointment_date} ${b.appointment_time}`));
   const latestDiagnosis = clinicalOk ? ((tl.consultations.filter(mine).find((c) => c.diagnosis) || {}).diagnosis || null) : null;
+  const timeline = buildTimeline(tl, req.ctx.permissions, req.ctx.ownDoctorId, access.clinical, codes);
+  // Patient workspace tabs (redesign 3.9): one address, ?tab=…; a tab shows only to members who may see its records.
+  const perms = req.ctx.permissions;
+  const tabs = ['overview', clinicalOk || (perms.has('clinical.view') && !access.clinical) ? 'clinical' : null, 'appointments', clinicalOk ? 'prescriptions' : null,
+    perms.has('certificates.view') || clinicalOk ? 'documents' : null, perms.has('billing.view') ? 'billing' : null, 'timeline'].filter(Boolean);
+  const tab = tabs.includes(req.query.tab) ? req.query.tab : 'overview';
+  const byDateDesc = (a, b) => `${b.appointment_date} ${b.appointment_time}`.localeCompare(`${a.appointment_date} ${a.appointment_time}`);
+  const prescriptions = clinicalOk ? timeline.flatMap((e) => (e.kind === 'visit' ? e.prescriptions.map((rx) => ({ ...rx, appt: e.appt })) : e.kind === 'prescription' ? [e.row] : [])) : [];
+  let certificates = [];
+  if (tab === 'documents' && perms.has('certificates.view')) {
+    const q = knex('certificates').where({ business_id: req.ctx.businessId, patient_id: p.id }).orderBy('issued_at', 'desc').limit(100)
+      .select('id', 'doc_type', 'serial', 'issued_at', 'revoked_at', 'doctor_name', 'doctor_name_en', 'appointment_id', 'doctor_id');
+    if (req.ctx.ownDoctorId) q.where('doctor_id', req.ctx.ownDoctorId);
+    certificates = await q;
+  }
+  const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
   res.page('pages/clinic/patients/show', {
+    tab, tabs, prescriptions, certificates, unpaid, allAppointments: apptsMine.slice().sort(byDateDesc),
+    reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
-    timeline: buildTimeline(tl, req.ctx.permissions, req.ctx.ownDoctorId, access.clinical, codes),
+    timeline, invoices: tl.invoices.filter(mine),
     age: lib.ageOf(p.date_of_birth, today), wa: lib.waNumber(p.phone), statusTone: lib.STATUS_TONE,
     pageScripts: PAGE_SCRIPTS, pageStyles: SHOW_STYLES, ...extra,
   });

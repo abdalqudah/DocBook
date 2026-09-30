@@ -110,23 +110,10 @@
     </section>
     <% } %>
 
-    <section class="portal-card staff-card" id="staff">
-      <h2><%- icon('lock', 'icon-sm') %><%= t('portal.staff_title') %></h2>
-      <% if (member) { %>
-        <p class="muted small"><%= t('portal.staff_continue', { name: currentUser.name }) %> <span class="badge badge-brand"><%= memberRole %></span></p>
-        <form method="post" action="/<%= clinic.slug %>/enter" class="mt-3"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-block" type="submit"><%= t('portal.staff_open') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button></form>
-      <% } else { %>
-        <p class="muted small"><%= t('portal.staff_sub') %></p>
-        <div class="role-list">
-          <% roles.forEach(function (r) { %>
-          <a class="role-pick" href="/<%= clinic.slug %>/login?as=<%= r.key %>">
-            <span class="role-icon"><%- icon(r.icon, 'icon-sm') %></span>
-            <span class="grow"><strong><%= t('roles.' + r.key) %></strong><span class="muted tiny"><%= t('portal.role_hint.' + r.key) %></span></span>
-            <%- icon('chevron-right', 'icon-sm flip-rtl muted') %>
-          </a>
-          <% }) %>
-        </div>
-      <% } %>
-    </section>
+    <%# Staff sign-in is not offered on the patients' page (redesign 3.13): staff use /<slug>/login or /login. A member who
+       is already signed in gets one quiet link back to the clinic workspace. %>
+    <% if (member) { %>
+    <form method="post" action="/<%= clinic.slug %>/enter" class="staff-return"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('lock', 'icon-sm') %><%= t('portal.staff_open') %></button></form>
+    <% } %>
   </aside>
 </div>

@@ -202,7 +202,11 @@
       "entries_n": "{n} entries",
       "by_method": "Collected by payment method",
       "close_drawer": "Close the drawer",
-      "drawer_cash": "Cash expected in the drawer: {amount} ({n} cash receipts)."
+      "drawer_cash": "Cash expected in the drawer: {amount} ({n} cash receipts).",
+      "attention_now": "Needs your attention now",
+      "att_to_pay": "Visits finished today, not paid yet",
+      "att_late": "Patients late for their appointment",
+      "att_unpaid_old": "Earlier visits still unpaid"
     },
     "check": {
       "title": "Finish setting up your clinic",

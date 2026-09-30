@@ -137,17 +137,18 @@
     clone.addEventListener('click', function () { confirmDlg.close(); onYes(input.value); });
     if (typeof confirmDlg.showModal === 'function') { confirmDlg.showModal(); (opts.typeToConfirm ? input : clone).focus(); } else if (window.confirm(message)) onYes();
   }
-  $$('form[data-confirm]').forEach(function (form) {
-    form.addEventListener('submit', function (e) {
-      if (form.dataset.confirmed) return;
-      e.preventDefault();
-      confirmBox(form.getAttribute('data-confirm'), function (typed) {
-        var target = form.querySelector('[name="confirm_name"]'); if (target && typed) target.value = typed;
-        form.dataset.confirmed = '1';
-        if (form.requestSubmit) form.requestSubmit(); else form.submit();
-      }, { title: form.getAttribute('data-confirm-title'), yesLabel: form.getAttribute('data-confirm-yes'), tone: form.getAttribute('data-confirm-tone'), typeToConfirm: form.getAttribute('data-confirm-type') });
-    });
-  });
+  // Delegated (capture phase, so it runs before the busy-button feedback below) — also covers forms added later,
+  // e.g. the appointment drawer.
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || !form.matches || !form.matches('form[data-confirm]') || form.dataset.confirmed) return;
+    e.preventDefault();
+    confirmBox(form.getAttribute('data-confirm'), function (typed) {
+      var target = form.querySelector('[name="confirm_name"]'); if (target && typed) target.value = typed;
+      form.dataset.confirmed = '1';
+      if (form.requestSubmit) form.requestSubmit(); else form.submit();
+    }, { title: form.getAttribute('data-confirm-title'), yesLabel: form.getAttribute('data-confirm-yes'), tone: form.getAttribute('data-confirm-tone'), typeToConfirm: form.getAttribute('data-confirm-type') });
+  }, true);
 
   /* ---------- Submit feedback (prevents double submits) ---------- */
   $$('form').forEach(function (form) {
@@ -216,14 +217,26 @@
     var pages = JSON.parse($('[data-cmdk-pages]', cmdk).textContent);
     var i18n = JSON.parse($('[data-cmdk-i18n]', cmdk).textContent);
     var items = []; var active = 0; var seq = 0; var debounce;
+    // Recently opened records (this browser only; a convenience, never required).
+    var RECENT_KEY = 'docbook.recent.' + (cmdk.getAttribute('data-cmdk-scope') || 'x');
+    function recent() { try { return JSON.parse(window.localStorage.getItem(RECENT_KEY) || '[]') || []; } catch (e) { return []; } }
+    function remember(it) {
+      if (!it || !it.group || it.group === 'pages' || it.group === 'actions') return;
+      try {
+        var list = recent().filter(function (x) { return x.href !== it.href; });
+        list.unshift({ title: it.title, subtitle: it.subtitle || '', href: it.href, icon: it.icon, group: 'recent' });
+        window.localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 5)));
+      } catch (e) { /* storage blocked */ }
+    }
     function render(groups) {
       items = []; var html = '';
       groups.forEach(function (g) {
         if (!g.items.length) return;
         html += '<div class="cmdk-group">' + esc(g.title) + '</div>';
         g.items.forEach(function (it) {
-          items.push(it);
-          html += '<a class="cmdk-item" href="' + esc(it.href) + '">' + iconSvg(it.icon || 'arrow-right') + '<span>' + esc(it.title) + '</span>' + (it.subtitle ? '<span class="sub">' + esc(it.subtitle) + '</span>' : '') + '</a>';
+          var i = items.length; items.push(it);
+          html += '<div class="cmdk-row"><a class="cmdk-item" data-i="' + i + '" href="' + esc(it.href) + '">' + iconSvg(it.icon || 'arrow-right') + '<span>' + esc(it.title) + '</span>' + (it.subtitle ? '<span class="sub">' + esc(it.subtitle) + '</span>' : '') + '</a>'
+            + (it.action ? '<a class="btn btn-secondary btn-sm cmdk-act" href="' + esc(it.action.href) + '">' + esc(it.action.label) + '</a>' : '') + '</div>';
         });
       });
       results.innerHTML = html || '<div class="cmdk-empty">' + esc(i18n.empty) + '</div>';
@@ -234,25 +247,34 @@
       var q = input.value.trim().toLowerCase();
       var match = function (p) { return !q || p.title.toLowerCase().indexOf(q) >= 0; };
       var local = [{ title: i18n.actions, items: pages.filter(function (p) { return p.group === 'actions' && match(p); }) }, { title: i18n.pages, items: pages.filter(function (p) { return p.group === 'pages' && match(p); }) }];
-      if (q.length < 2) { render(local); return; }
+      if (q.length < 2) { render((q ? [] : [{ title: i18n.recent, items: recent() }]).concat(local)); return; }
       var mine = ++seq;
       fetch('/app/search?q=' + encodeURIComponent(input.value.trim()), { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
         .then(function (r) { return r.ok ? r.json() : { data: [] }; })
-        .then(function (res) { if (mine !== seq) return; render([{ title: i18n.records, items: res.data || [] }].concat(local)); })
+        .then(function (res) {
+          if (mine !== seq) return;
+          var names = res.groups || {}; var byGroup = {}; var order = [];
+          (res.data || []).forEach(function (it) { var g = it.group || 'records'; if (!byGroup[g]) { byGroup[g] = []; order.push(g); } byGroup[g].push(it); });
+          render(order.map(function (g) { return { title: names[g] || i18n.records, items: byGroup[g] }; }).concat(local));
+        })
         .catch(function () { render(local); });
     }
     function open() { cmdk.classList.add('open'); input.value = ''; search(); setTimeout(function () { input.focus(); }, 10); }
     function close() { cmdk.classList.remove('open'); }
     $$('[data-cmdk-open]').forEach(function (b) { b.addEventListener('click', open); });
     cmdk.addEventListener('click', function (e) { if (e.target === cmdk) close(); });
+    results.addEventListener('click', function (e) { var a = e.target.closest ? e.target.closest('.cmdk-item') : null; if (a) remember(items[Number(a.getAttribute('data-i'))]); });
     input.addEventListener('input', function () { clearTimeout(debounce); debounce = setTimeout(search, 180); });
     input.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(items.length - 1, active + 1); highlight(); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, active - 1); highlight(); }
-      else if (e.key === 'Enter' && items[active]) { e.preventDefault(); window.location.href = items[active].href; }
+      else if (e.key === 'Enter' && items[active]) { e.preventDefault(); remember(items[active]); window.location.href = items[active].href; }
     });
     document.addEventListener('keydown', function (e) {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); if (cmdk.classList.contains('open')) close(); else open(); }
+      // "/" opens search when not typing somewhere.
+      var tag = (e.target && e.target.tagName) || '';
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(tag) && !(e.target && e.target.isContentEditable) && !cmdk.classList.contains('open')) { e.preventDefault(); open(); }
       if (e.key === 'Escape') { close(); document.body.classList.remove('nav-open'); }
     });
     var kbd = $('.search-trigger .kbd');

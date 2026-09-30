@@ -181,3 +181,103 @@ test('"+ New" lists only what the member may create; no free-standing sale', () 
   assert.deepEqual(keys('doctor'), ['new_certificate']);
   assert.ok(!nav.ACTIONS.some((x) => /sale|invoice/.test(x.key)));
 });
+
+test('search: grouped results, Arabic spelling variants and Arabic-Indic digits; inline actions by permission', async () => {
+  const [pid] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'أحمد علي', phone: '0791234567' });
+  const a = app.agent();
+  await a.login(mail('receptionist'));
+  let r = await a.get('/app/search?q=' + encodeURIComponent('احمد'), { accept: 'application/json' });
+  let body = JSON.parse(r.text);
+  const hit = body.data.find((x) => x.href === `/app/patients/${pid}`);
+  assert.ok(hit, 'احمد finds أحمد');
+  assert.equal(hit.group, 'patients');
+  assert.equal(hit.action.href, `/app/appointments/new?patient=${pid}`, 'reception can book from the result');
+  assert.ok(body.groups.patients);
+  r = await a.get('/app/search?q=' + encodeURIComponent('٠٧٩١٢٣'), { accept: 'application/json' });
+  body = JSON.parse(r.text);
+  assert.ok(body.data.some((x) => x.href === `/app/patients/${pid}`), 'Arabic-Indic digits match the phone');
+  const n = app.agent();
+  await n.login(mail('nurse'));
+  body = JSON.parse((await n.get('/app/search?q=' + encodeURIComponent('أحمد'), { accept: 'application/json' })).text);
+  const nh = body.data.find((x) => x.href === `/app/patients/${pid}`);
+  assert.ok(nh && !nh.action, 'no booking action without appointments.manage');
+  assert.ok(!body.data.some((x) => x.group === 'invoices'), 'no invoices without billing.view');
+});
+
+test('appointment drawer: essentials + actions by state and permission; returns to the page', async () => {
+  const today = require('../src/modules/clinic/scheduling').clinicNow('Asia/Amman').date;
+  const [id] = await knex('appointments').insert({ business_id: ctx.businessId, doctor_id: doctorId, patient_name: 'Drawer Patient', patient_phone: '0790000009', appointment_date: today, appointment_time: '23:59', status: 'confirmed' });
+  const a = app.agent();
+  await a.login(mail('receptionist'));
+  let r = await a.get(`/app/appointments/${id}/peek?return=${encodeURIComponent('/app/appointments?view=list')}`);
+  assert.equal(r.status, 200);
+  assert.ok(!/<html/i.test(r.text), 'a fragment, not a page');
+  assert.match(r.text, /Drawer Patient/);
+  assert.match(r.text, new RegExp(`action="/app/front-desk/${id}/check-in"`));
+  assert.match(r.text, /name="return_to" value="\/app\/appointments\?view=list"/);
+  r = await a.submit('/app/appointments', `/app/front-desk/${id}/check-in`, { on: '1', return_to: '/app/appointments?view=list' });
+  assert.equal(r.status, 302);
+  assert.equal(r.location, '/app/appointments?view=list', 'check-in from the drawer comes back to the list');
+  r = await a.submit('/app/appointments', `/app/front-desk/${id}/check-in`, { on: '0', return_to: 'https://evil.test/' });
+  assert.equal(r.location, '/app/front-desk', 'only /app addresses are followed');
+  const d = app.agent();
+  await d.login(mail('doctor'));
+  r = await d.get(`/app/appointments/${id}/peek`);
+  assert.equal(r.status, 200);
+  assert.ok(!r.text.includes('/check-in"'), 'no reception actions for a doctor');
+  assert.ok(!r.text.includes('/status"'), 'no cancel without appointments.manage');
+});
+
+test('patient workspace: tabs by permission; billing and clinical tabs hidden without the rights', async () => {
+  const [pid] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'Tabs Patient', allergies: 'Penicillin' });
+  const o = app.agent();
+  await o.login(mail('owner'));
+  let r = await o.get(`/app/patients/${pid}`);
+  assert.equal(r.status, 200);
+  for (const k of ['clinical', 'appointments', 'prescriptions', 'documents', 'billing', 'timeline']) assert.ok(r.text.includes(`/app/patients/${pid}?tab=${k}`), k);
+  assert.match(r.text, /Penicillin/, 'alerts on every tab');
+  for (const k of ['clinical', 'appointments', 'prescriptions', 'documents', 'billing', 'timeline']) {
+    const t = await o.get(`/app/patients/${pid}?tab=${k}`);
+    assert.equal(t.status, 200, k);
+    assert.match(t.text, /Penicillin/);
+  }
+  const rc = app.agent();
+  await rc.login(mail('receptionist'));
+  r = await rc.get(`/app/patients/${pid}`);
+  assert.ok(!r.text.includes('?tab=clinical') && !r.text.includes('?tab=prescriptions'), 'no clinical tabs for reception');
+  assert.ok(r.text.includes('?tab=billing'));
+  r = await rc.get(`/app/patients/${pid}?tab=clinical`);
+  assert.equal(r.status, 200, 'an unknown/forbidden tab falls back to the overview');
+  assert.ok(!/clinical_visits|Visits and diagnoses/.test(r.text));
+});
+
+test('Today: "needs attention now" lists the late arrival and visits to pay, for reception', async () => {
+  const today = require('../src/modules/clinic/scheduling').clinicNow('Asia/Amman').date;
+  await knex('appointments').insert({ business_id: ctx.businessId, doctor_id: doctorId, patient_name: 'To Pay', appointment_date: today, appointment_time: '00:00', status: 'completed', payment_status: 'unpaid', amount_due: 20 });
+  const a = app.agent();
+  await a.login(mail('receptionist'));
+  const r = await a.get('/app');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /today-attention/);
+  assert.match(r.text, /href="\/app\/cashier\/screen"/, 'visits to pay → cash screen');
+  assert.ok(!/class="ox-actions"/.test(r.text), 'no duplicate action tiles; "+ New" is the one action menu');
+});
+
+test('public clinic page: no staff sign-in cards; the staff link still works', async () => {
+  await knex('businesses').where({ id: ctx.businessId }).update({ slug: `redesign-${tag}`.slice(0, 40) });
+  const b = await knex('businesses').where({ id: ctx.businessId }).first('slug');
+  const anon = app.agent();
+  let r = await anon.get(`/${b.slug}`);
+  assert.equal(r.status, 200);
+  assert.ok(!/role-pick|login\?as=/.test(r.text), 'no staff role cards for patients');
+  r = await anon.get(`/${b.slug}/login`);
+  assert.equal(r.status, 200);
+});
+
+test('settings: grouped by kind of configuration; a pointer to the moved pages', async () => {
+  const a = app.agent();
+  await a.login(mail('owner'));
+  const r = await a.get('/app/settings');
+  for (const g of ['Clinic profile', 'Documents &amp; printing', 'Messages &amp; notifications', 'Features', 'Subscription', 'Data &amp; privacy']) assert.ok(r.text.includes(g), g);
+  assert.match(r.text, /set-moved/);
+});

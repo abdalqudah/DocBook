@@ -100,7 +100,7 @@
       <div class="panel-body">
         <div class="set-how">
           <div class="set-how-item"><span class="set-step-no">1</span><div><div class="strong small"><%= t('team.how_1') %></div><div class="small muted"><%= t('team.how_1_text') %></div></div></div>
-          <div class="set-how-item"><span class="set-step-no">2</span><div><div class="strong small"><%= t('team.how_2') %></div><div class="small muted"><% if (publicUrl) { %><%= t('team.how_2_text') %> <a class="link" href="/<%= business.slug %>" target="_blank" rel="noopener" dir="ltr"><%= publicUrl.replace(/^https?:\/\//, '') %></a><% } else { %><%= t('team.how_2_noslug') %><% } %></div>
+          <div class="set-how-item"><span class="set-step-no">2</span><div><div class="strong small"><%= t('team.how_2') %></div><div class="small muted"><% if (publicUrl) { %><%= t('team.how_2_text') %> <a class="link" href="/<%= business.slug %>/login" target="_blank" rel="noopener" dir="ltr"><%= publicUrl.replace(/^https?:\/\//, '') %>/login</a> <button class="btn btn-ghost btn-icon btn-sm" type="button" data-copy="<%= publicUrl %>/login" aria-label="<%= t('common.copy') %>" title="<%= t('common.copy') %>"><%- icon('copy', 'icon-sm') %></button><% } else { %><%= t('team.how_2_noslug') %><% } %></div>
             <div class="set-role-chips mt-2"><% portalRoles.forEach(function (r) { %><span class="set-role-chip"><%- icon(r.icon, 'icon-sm') %><%= t('roles.' + r.key) %></span><% }) %></div></div></div>
           <div class="set-how-item"><span class="set-step-no">3</span><div><div class="strong small"><%= t('team.how_3') %></div><div class="small muted"><%= t('team.how_3_text') %></div></div></div>
         </div>

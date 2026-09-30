@@ -4,40 +4,55 @@ const config = require('../../config');
 // One definition feeds the settings sidebar (tabs on mobile) and the overview cards.
 // `perms`: any of them grants the section; an empty list means every member.
 const SECTIONS = [
-  { group: 'clinic', items: [
+  { group: 'profile', items: [
     { key: 'clinic', href: '/app/settings/clinic', icon: 'building-2', perms: ['settings.manage'] },
+  ] },
+  // The clinic online (moves to the Website workspace, redesign phase 4).
+  { group: 'online', items: [
     { key: 'portal', href: '/app/settings/portal', icon: 'globe', perms: ['settings.manage'] },
-    { key: 'payments', href: '/app/settings/payments', icon: 'wallet', perms: ['settings.manage'] },
     { key: 'booking_links', href: '/app/settings/booking-links', icon: 'link', perms: ['settings.manage'] },
-    { key: 'messaging', href: '/app/settings/messaging', icon: 'message-circle', perms: ['settings.manage'] },
-    { key: 'subscription', href: '/app/settings/subscription', icon: 'receipt', perms: ['settings.manage'] },
-    { key: 'modules', href: '/app/settings/modules', icon: 'toggle-right', perms: ['settings.manage'] },
-    { key: 'invoice_template', href: '/app/settings/invoice', icon: 'printer', perms: ['settings.manage'] },
-    { key: 'notifications', href: '/app/settings/notifications', icon: 'bell', perms: [] }, // clinic-wide part needs settings.manage; personal part is for everyone
     { key: 'media', href: '/app/settings/media', icon: 'images', perms: ['settings.manage'] },
   ] },
-  { group: 'team', items: [
-    // Moved to the Clinic workspace (redesign 3.2); kept here for page access and the old addresses (they redirect).
+  { group: 'documents', items: [
+    { key: 'invoice_template', href: '/app/settings/invoice', icon: 'printer', perms: ['settings.manage'] },
+  ] },
+  { group: 'communication', items: [
+    { key: 'messaging', href: '/app/settings/messaging', icon: 'message-circle', perms: ['settings.manage'] },
+    { key: 'notifications', href: '/app/settings/notifications', icon: 'bell', perms: [] }, // clinic-wide part needs settings.manage; personal part is for everyone
+  ] },
+  { group: 'payments', items: [
+    { key: 'payments', href: '/app/settings/payments', icon: 'wallet', perms: ['settings.manage'] },
+  ] },
+  { group: 'features', items: [
+    { key: 'modules', href: '/app/settings/modules', icon: 'toggle-right', perms: ['settings.manage'] },
+    { key: 'ai', href: '/app/settings/ai', icon: 'sparkles', perms: ['settings.manage'] },
+  ] },
+  { group: 'integrations', items: [
+    { key: 'sheets', href: '/app/settings/google-sheets', icon: 'file-spreadsheet', perms: ['data.manage', 'data.export'] },
+    { key: 'database', href: '/app/settings/database', icon: 'plug', perms: ['data.manage'] },
+  ] },
+  { group: 'subscription', items: [
+    { key: 'subscription', href: '/app/settings/subscription', icon: 'receipt', perms: ['settings.manage'] },
+  ] },
+  { group: 'data', items: [
+    { key: 'data', href: '/app/settings/data', icon: 'database', perms: ['audit.view', 'data.export', 'data.manage'] },
+    { key: 'privacy', href: '/app/settings/privacy', icon: 'lock', perms: ['settings.manage', 'audit.view'] },
+  ] },
+  // Moved to the Clinic workspace (redesign 3.2/3.3); kept here for page access (settings_<key>) — the old addresses
+  // redirect (team, roles) or render inside the Clinic workspace (clinical lists).
+  { group: 'clinic_moved', items: [
     { key: 'team', href: '/app/clinic/team', icon: 'user-cog', perms: ['users.manage'], moved: true },
     { key: 'roles', href: '/app/clinic/roles', icon: 'shield-check', perms: ['roles.manage'], moved: true },
-  ] },
-  { group: 'clinical', items: [
     { key: 'insurance', href: '/app/settings/insurance', icon: 'shield-plus', perms: ['settings.manage'], moved: true },
     { key: 'medications', href: '/app/settings/medications', icon: 'pill', perms: ['settings.manage', 'prescriptions.create'], moved: true },
     { key: 'diagnosis_codes', href: '/app/settings/diagnosis-codes', icon: 'stethoscope', perms: ['settings.manage', 'clinical.edit'], moved: true },
     { key: 'signatures', href: '/app/settings/signatures', icon: 'pen-line', perms: ['settings.manage', 'prescriptions.create'], moved: true },
-    { key: 'privacy', href: '/app/settings/privacy', icon: 'lock', perms: ['settings.manage', 'audit.view'] },
-    { key: 'ai', href: '/app/settings/ai', icon: 'sparkles', perms: ['settings.manage'] },
   ] },
+  // Personal pages (also in the user menu).
   { group: 'personal', items: [
     { key: 'account', href: '/app/settings/account', icon: 'user', perms: [] },
     { key: 'security', href: '/app/settings/security', icon: 'key-round', perms: [] },
     { key: 'appearance', href: '/app/settings/appearance', icon: 'palette', perms: [] },
-  ] },
-  { group: 'data', items: [
-    { key: 'data', href: '/app/settings/data', icon: 'database', perms: ['audit.view', 'data.export', 'data.manage'] },
-    { key: 'database', href: '/app/settings/database', icon: 'plug', perms: ['data.manage'] },
-    { key: 'sheets', href: '/app/settings/google-sheets', icon: 'file-spreadsheet', perms: ['data.manage', 'data.export'] },
   ] },
 ];
 

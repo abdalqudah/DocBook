@@ -28,3 +28,23 @@
     Array.prototype.forEach.call(menus, function (d) { if (d.open && !d.contains(e.target)) d.open = false; });
   });
 }());
+
+/* Patient timeline filter (patient workspace → Timeline): show one kind of entry at a time. */
+(function () {
+  'use strict';
+  var bar = document.querySelector('[data-pt-filter]');
+  if (!bar) return;
+  var list = document.querySelector('.rec-timeline');
+  bar.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-kind]') : null;
+    if (!b || !list) return;
+    var kind = b.getAttribute('data-kind');
+    Array.prototype.forEach.call(bar.querySelectorAll('[data-kind]'), function (x) { var on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    Array.prototype.forEach.call(list.children, function (li) {
+      var k = li.getAttribute('data-kind');
+      // A visit line also holds its prescriptions and invoice, so it stays visible for those filters when it has them.
+      var has = kind === 'all' || k === kind || (k === 'visit' && ((kind === 'prescription' && li.querySelector('[href*="/prescriptions/"]')) || (kind === 'invoice' && li.querySelector('[href^="/app/billing/"]')) || (kind === 'diagnosis' && li.querySelector('use[href$="#i-stethoscope"]'))));
+      li.hidden = !has;
+    });
+  });
+}());

@@ -89,7 +89,7 @@ const BOTTOM_ORDER = {
 const ACTIONS = [
   { key: 'new_appointment', href: '/app/appointments/new', icon: 'calendar-plus', perms: ['appointments.manage'], create: true },
   { key: 'new_patient', href: '/app/patients?new=1', icon: 'user-plus', perms: ['patients.create'], create: true },
-  { key: 'check_in', href: '/app/front-desk#expected', icon: 'door-open', perms: ['frontdesk.use'], create: true },
+  { key: 'check_in', href: '/app/front-desk#fx-expected', icon: 'door-open', perms: ['frontdesk.use'], create: true },
   { key: 'collect_payment', href: '/app/cashier/screen', icon: 'banknote', perms: ['billing.manage'], create: true },
   { key: 'new_expense', href: '/app/expenses?new=1', icon: 'receipt-text', perms: ['expenses.manage'], create: true },
   { key: 'new_certificate', href: '/app/certificates/new', icon: 'badge-check', perms: ['certificates.issue'], create: true },

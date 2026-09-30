@@ -1,0 +1,27 @@
+<%# Patient timeline list (patient workspace: overview shows the latest entries, the Timeline tab all of them). %>
+<ol class="rec-timeline">
+  <% items.forEach(function (e) { %>
+    <% if (e.kind === 'visit') { var a = e.appt; %>
+    <li class="tone-<%= statusTone[a.status] || 'neutral' %>" data-kind="visit">
+      <div class="rec-tl-head">
+        <a class="strong" href="<%= visitHref(a.id) %>"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></a>
+        <span class="badge badge-<%= statusTone[a.status] || 'neutral' %>"><%= t('dashboard.statuses.' + a.status) %></span>
+        <% if (a.appointment_type === 'online') { %><span class="badge"><%- icon('monitor', 'icon-sm') %><%= t('dashboard.online') %></span><% } %>
+        <% if (a.parent_appointment_id) { %><span class="badge badge-brand"><%= t('patients.follow_up') %></span><% } %>
+      </div>
+      <div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') || t('patients.no_doctor') %></div>
+      <% if (e.consultation && (e.consultation.diagnosis || e.consultation.assessment)) { %><div class="rec-tl-line"><%- icon('stethoscope', 'icon-sm') %><span><span class="muted"><%= t('patients.diagnosis') %>:</span> <%= e.consultation.diagnosis || e.consultation.assessment %></span></div><% } %>
+      <% if (e.codes && e.codes.length) { %><div class="rec-tl-line cp-code-line"><% if (!(e.consultation && (e.consultation.diagnosis || e.consultation.assessment))) { %><%- icon('stethoscope', 'icon-sm') %><% } %><% e.codes.forEach(function (d) { %><span class="cp-code-pair"><span class="cp-code" dir="ltr"><%= d.code %></span><span class="small muted"><%= dxTitle(d) %></span></span><% }) %></div><% } %>
+      <% e.prescriptions.forEach(function (rx) { %><div class="rec-tl-line"><%- icon('pill', 'icon-sm') %><a class="link" href="/app/visits/<%= a.id %>/prescriptions/<%= rx.id %>"><%= t('patients.prescription') %></a><span class="muted"><%= rx.items.map(function (i) { return i.medicationName; }).join('، ') %></span></div><% }) %>
+      <% if (e.invoice) { %><div class="rec-tl-line"><%- icon('receipt', 'icon-sm') %><a class="link" href="/app/billing/<%= e.invoice.id %>"><%= t('billing.invoice_no', { n: e.invoice.invoice_number }) %></a><span class="muted"><%= fmt.money(e.invoice.amount) %> · <%- include('../billing/_payment-lines', { pl: { parts: e.invoice.parts || [{ method: e.invoice.payment_method, amount: e.invoice.amount }], insuranceName: e.invoice.insurance_provider_name, mode: 'text' } }) %></span></div>
+      <% } else if (canBilling && a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= clinicToday) { %><div class="rec-tl-line"><%- icon('circle-alert', 'icon-sm') %><span class="badge badge-warning"><%= t('billing.unpaid') %></span></div><% } %>
+    </li>
+    <% } else if (e.kind === 'invoice') { var inv = e.row; %>
+    <li class="tone-info" data-kind="invoice"><div class="rec-tl-head"><a class="strong" href="/app/billing/<%= inv.id %>"><%= t('billing.invoice_no', { n: inv.invoice_number }) %></a><span class="small muted"><%= stamp(inv.created_at) %></span></div><div class="small muted"><%= [inv.doctor_name, inv.service_name].filter(Boolean).join(' · ') %> · <%= fmt.money(inv.amount) %></div></li>
+    <% } else if (e.kind === 'prescription') { var rx = e.row; %>
+    <li class="tone-brand" data-kind="prescription"><div class="rec-tl-head"><a class="strong" href="/app/visits/<%= rx.appointment_id %>/prescriptions/<%= rx.id %>"><%= t('patients.prescription') %></a><span class="small muted"><%= stamp(rx.created_at) %></span></div><div class="small muted"><%= rx.items.map(function (i) { return i.medicationName; }).join('، ') %></div></li>
+    <% } else if (e.kind === 'diagnosis') { var c = e.row; %>
+    <li class="tone-brand" data-kind="diagnosis"><div class="rec-tl-head"><span class="strong"><%= t('patients.diagnosis') %></span><span class="small muted"><%= stamp(c.created_at) %></span></div><div class="small"><%= c.diagnosis %></div></li>
+    <% } %>
+  <% }) %>
+</ol>

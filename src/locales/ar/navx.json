@@ -41,6 +41,22 @@
     "payments_count": "عدد الدفعات",
     "payments_parts_hint": "كل جزء من الفاتورة دفعة مستقلة",
     "payments_empty": "لا توجد مدفوعات في هذه الفترة",
-    "payments_empty_text": "غيّر الفترة أو الفلاتر، أو حصّل دفعة من شاشة المحاسبة."
+    "payments_empty_text": "غيّر الفترة أو الفلاتر، أو حصّل دفعة من شاشة المحاسبة.",
+    "tab": {
+      "cashier": "الصندوق",
+      "billing": "الفواتير",
+      "payments_all": "المدفوعات",
+      "cash_closings": "الإقفال اليومي",
+      "expenses": "المصروفات",
+      "payroll": "رواتب الأطباء",
+      "staff_payroll": "رواتب الموظفين",
+      "partners": "الشركاء",
+      "team": "الفريق",
+      "services": "الخدمات",
+      "supplies": "المخزون",
+      "marketplace": "العروض",
+      "front_desk": "الاستقبال",
+      "certificates": "الإجازات والتقارير"
+    }
   }
 }

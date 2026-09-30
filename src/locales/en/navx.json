@@ -41,6 +41,22 @@
     "payments_count": "Payments",
     "payments_parts_hint": "Each part of an invoice counts as one payment",
     "payments_empty": "No payments in this period",
-    "payments_empty_text": "Change the period or filters, or collect a payment on the cash screen."
+    "payments_empty_text": "Change the period or filters, or collect a payment on the cash screen.",
+    "tab": {
+      "cashier": "Cash screen",
+      "billing": "Invoices",
+      "payments_all": "Payments",
+      "cash_closings": "Closings",
+      "expenses": "Expenses",
+      "payroll": "Doctor pay",
+      "staff_payroll": "Staff payroll",
+      "partners": "Partners",
+      "team": "Team",
+      "services": "Services",
+      "supplies": "Inventory",
+      "marketplace": "Offers",
+      "front_desk": "Front desk",
+      "certificates": "Certificates"
+    }
   }
 }

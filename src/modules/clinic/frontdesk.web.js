@@ -53,7 +53,10 @@ async function renderBoard(req, res, extra = {}) {
 router.get('/', wrap((req, res) => renderBoard(req, res)));
 
 // Simple state toggles: errors (cancelled, not checked in…) come back as a flash message.
+const safeReturn = (v) => (typeof v === 'string' && /^\/app\/[\w\-/?=&.%]*$/.test(v) && !v.startsWith('//') ? v : null);
 const backTo = (req) => {
+  const back = safeReturn(req.body.return_to); // e.g. the appointment drawer on the Appointments page
+  if (back) return back;
   const d = doctorFilter(req.body.doctor_filter);
   return d ? `/app/front-desk?doctor=${d}` : '/app/front-desk';
 };

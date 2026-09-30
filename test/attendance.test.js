@@ -91,7 +91,9 @@ test('the QR link uses the real address, and the SVG carries no fixed colours', 
 });
 
 test('clock in / clock out toggles on the open shift; a double tap does not undo it', async () => {
-  const t0 = Date.now() - 3 * 3600_000;
+  // 06:00 three clinic days ago (Amman, UTC+3): in the past and inside one clinic day whatever time the suite runs,
+  // and clear of the days the correction (−2) and missed-shift (−1) tests use.
+  const t0 = Date.parse(`${att.shiftDay(A.today, -3)}T06:00:00+03:00`);
   const r1 = await att.toggle(nurse, { method: 'qr', expect: 'in', now: t0 });
   assert.equal(r1.action, 'in');
   await assert.rejects(att.toggle(nurse, { method: 'button', expect: 'in', now: t0 + 1000 }), { code: 'ATTENDANCE_ALREADY_IN' });
@@ -130,8 +132,8 @@ test('correction needs a reason, is audited, and stays inside the clinic', async
   const [rec] = await att.records(nurse, { userId: nurse.userId });
   await assert.rejects(att.correct(A, rec.id, { work_date: rec.work_date, clock_in: '08:00', clock_out: '09:00', reason: ' ' }), (e) => e.code === 'VALIDATION_FAILED' && Boolean(e.details.reason));
   await assert.rejects(att.correct(B, rec.id, { work_date: rec.work_date, clock_in: '08:00', clock_out: '09:00', reason: 'x' }), { code: 'NOT_FOUND' });
-  const yesterday = new Date(Date.now() - 86_400_000);
-  const d = att.localDate('Asia/Amman', yesterday);
+  // Two days back: the night shift (22:00 → 06:30 next morning) is fully in the past at any hour of the run.
+  const d = att.shiftDay(A.today, -2);
   await att.correct(A, rec.id, { work_date: d, clock_in: '22:00', clock_out: '06:30', reason: 'Night shift; forgot to clock out' });
   const row = await knex('attendance_records').where({ id: rec.id }).first();
   assert.equal(att.minutesOf(row), 510, 'a clock-out before the clock-in ends the next day');

@@ -100,6 +100,11 @@
   </div>
 
   <div class="stack">
+    <% if (recent.length) { %>
+    <div class="panel flush"><div class="panel-head"><h2><%= t('my_day.recent_patients') %></h2></div>
+      <ul class="action-list"><% recent.forEach(function (r) { %><li><a href="/app/patients/<%= r.patient_id %>"><span class="action-icon"><%- icon('user', 'icon-sm') %></span><span class="grow" dir="auto"><%= r.name %></span><span class="small muted"><%= fmt.date(r.last, { day: 'numeric', month: 'short' }) %></span></a></li><% }) %></ul>
+    </div>
+    <% } %>
     <div class="panel flush"><div class="panel-head"><h2><%= t('my_day.coming_days') %></h2></div>
       <ul class="rec-week">
         <% week.forEach(function (w) { %><li><a href="/app/my-day?date=<%= w.date %>"><span class="small"><%= fmt.date(w.date, { weekday: 'short' }) %></span><span class="strong"><%= fmt.date(w.date, { day: 'numeric' }) %></span><span class="badge badge-neutral"><%= fmt.number(w.n) %></span></a></li><% }) %>

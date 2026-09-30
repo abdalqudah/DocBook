@@ -123,20 +123,32 @@ async function expensesThisMonth(ctx) {
 }
 
 /** Things waiting for a decision: online requests, low stock, rep visit requests, pay adjustments to approve. */
-async function attention(ctx, online) {
+/**
+ * "Needs attention now" (Today, every role): one line per thing to act on, most urgent first, each opening the page
+ * where it is done. Only what the member may act on; nothing when there is nothing.
+ */
+const LATE_AFTER_MIN = 15;
+async function attention(ctx, { online, unpaid } = {}) {
   const p = ctx.permissions;
   const b = ctx.businessId;
-  const [low, reps, adj] = await Promise.all([
+  const now = scheduling.clinicNow(ctx.timezone);
+  const lateBefore = scheduling.minutesToTime(Math.max(0, now.minutes - LATE_AFTER_MIN));
+  const [late, low, reps, adj] = await Promise.all([
+    p.has('frontdesk.use') || p.has('appointments.manage') ? apptBase(ctx).where('a.appointment_date', ctx.today).whereIn('a.status', ['pending', 'confirmed'])
+      .where({ 'a.checked_in': false, 'a.with_doctor': false }).where('a.appointment_time', '<', lateBefore).count({ n: '*' }).first() : null,
     p.has('supplies.view') ? knex('supply_items').where({ business_id: b }).whereRaw('current_stock <= reorder_level').count({ n: '*' }).first() : null,
     p.has('vendors.view') ? knex('rep_visits').where({ business_id: b, status: 'requested' }).where('visit_date', '>=', ctx.today).modify((q) => { if (ctx.ownDoctorId) q.where('doctor_id', ctx.ownDoctorId); }).count({ n: '*' }).first() : null,
     p.has('payroll.approve') ? knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).count({ n: '*' }).first() : null,
   ]);
   return [
+    unpaid && unpaid.today && p.has('billing.manage') ? { key: 'to_pay', n: unpaid.today, href: '/app/cashier/screen', icon: 'banknote', tone: 'danger' } : null,
+    late ? { key: 'late', n: num(late.n), href: p.has('frontdesk.use') ? '/app/front-desk' : '/app/appointments', icon: 'hourglass', tone: 'danger' } : null,
     online && p.has('appointments.view') ? { key: 'online', n: online.count, href: '/app/appointments?status=pending', icon: 'globe' } : null,
+    unpaid && unpaid.count > unpaid.today && p.has('billing.view') ? { key: 'unpaid_old', n: unpaid.count - unpaid.today, href: '/app/billing?tab=unpaid', icon: 'receipt' } : null,
     low ? { key: 'low_stock', n: num(low.n), href: '/app/supplies?low=yes', icon: 'package', tone: 'danger' } : null,
     reps ? { key: 'rep_visits', n: num(reps.n), href: '/app/rep-visits', icon: 'briefcase-business' } : null,
     adj ? { key: 'pay_approvals', n: num(adj.n), href: '/app/payroll', icon: 'wallet' } : null,
-  ].filter(Boolean);
+  ].filter((x) => x && x.n > 0);
 }
 
 /** Appointments per day for the last 30 days + this month's income by doctor (the "last 30 days" section). */
@@ -191,10 +203,8 @@ router.get('/', wrap(async (req, res) => {
     kind === 'owner' && perms.has('settings.manage') ? require('../onboarding/setup.service').checklist(ctx.businessId) : null, // eslint-disable-line global-require
   ]);
   const data = { kind, counts, schedule, online, unpaid, cash, month, checklist: checklist && !checklist.dismissed && !checklist.complete ? checklist : null };
-  if (kind === 'owner') {
-    data.attention = await attention(ctx, online);
-    data.trends = await trends(req);
-  }
+  data.attention = await attention(ctx, { online, unpaid });
+  if (kind === 'owner') data.trends = await trends(req);
   if (kind === 'accounts') {
     const [byMethod, drawer, expenses] = await Promise.all([
       perms.has('billing.view') ? cashier.todayTotals(ctx) : null,
@@ -295,9 +305,13 @@ router.get('/my-day', wrap(async (req, res) => {
   const wk = Object.fromEntries(weekRows.map((r) => [r.d, Number(r.n)]));
   for (let i = 1; i <= 7; i += 1) { const d = lib.addDays(date, i); week.push({ date: d, n: wk[d] || 0 }); }
 
+  // Recent patients (Today, doctor): the last five people this doctor finished a visit with.
+  const recent = ctx.permissions.has('patients.view') ? await knex('appointments').where({ business_id: ctx.businessId, doctor_id: doctor.id, status: 'completed' }).whereNotNull('patient_id')
+    .where('appointment_date', '<=', today).groupBy('patient_id').select('patient_id').max({ last: 'appointment_date' }).max({ name: 'patient_name' }).orderBy('last', 'desc').limit(5) : [];
+
   return res.page('pages/clinic/dashboard/my-day', {
     title: req.t('my_day.title'), doctor, date, isToday, prev: lib.addDays(date, -1), next: lib.addDays(date, 1), items, counts, withMe, nextPatient: next,
-    waitingQueue, daysOff, offToday, day, revenue, week, statusTone: lib.STATUS_TONE, autoRefresh: isToday,
+    waitingQueue, daysOff, offToday, day, revenue, week, recent, statusTone: lib.STATUS_TONE, autoRefresh: isToday,
     pageScripts: [...PAGE.pageScripts, '/js/dflow.js'], pageStyles: [...PAGE.pageStyles, '/css/dflow.css'],
   });
 }));

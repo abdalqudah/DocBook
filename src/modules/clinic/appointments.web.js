@@ -15,7 +15,7 @@ const payParts = require('./payment-parts');
 const router = express.Router();
 router.use(can('appointments.view'));
 
-const ASSETS = { pageScripts: ['/js/appointments.js'], pageStyles: ['/css/appointments.css'] };
+const ASSETS = { pageScripts: ['/js/appointments.js', '/js/peek.js'], pageStyles: ['/css/appointments.css'] };
 
 // ---------------------------------------------------------------- helpers
 const addDays = (date, n) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -317,6 +317,21 @@ async function renderShow(req, res, extra = {}) {
 }
 
 router.get('/:id(\\d+)', wrap((req, res) => renderShow(req, res)));
+
+// Appointment drawer (Appointments page): the essentials and the next actions, without leaving the list or calendar.
+// A fragment (no layout); every action goes to the existing endpoints and comes back to `return` (a safe /app path).
+router.get('/:id(\\d+)/peek', wrap(async (req, res) => {
+  const { ctx } = req;
+  const a = await appts.get(ctx, Number(req.params.id));
+  if (a.appointment_type === 'blocked') throw E.notFound('Appointment');
+  const [doctor, service, invoice] = await Promise.all([
+    a.doctor_id ? knex('doctors').where({ business_id: ctx.businessId, id: a.doctor_id }).first('full_name', 'full_name_en', 'color') : null,
+    a.service_id ? knex('services').where({ business_id: ctx.businessId, id: a.service_id }).first('name', 'name_en') : null,
+    knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number', 'amount'),
+  ]);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/clinic/appointments/_peek', { ...res.locals, a, doctor, service, invoice, back: safeReturn(req.query.return) || '/app/appointments', isToday: a.appointment_date === ctx.today });
+}));
 
 router.post('/:id(\\d+)/status', can('appointments.manage'), wrap(async (req, res) => {
   const status = String(req.body.status || '');

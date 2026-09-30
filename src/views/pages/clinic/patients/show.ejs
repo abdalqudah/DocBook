@@ -28,6 +28,12 @@
   </div>
 </div>
 
+<% var tabHref = function (k) { return '/app/patients/' + p.id + (k === 'overview' ? '' : '?tab=' + k); };
+   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', prescriptions: 'pill', documents: 'file-text', billing: 'receipt', timeline: 'history' }; %>
+<nav class="tabs mb-4 pt-tabs" aria-label="<%= t('patients.workspace') %>">
+  <% tabs.forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%- icon(tabIcon[k], 'icon-sm') %><%= t('patients.tab.' + k) %></a><% }) %>
+</nav>
+
 <% if (p.allergies || p.chronic_conditions) { %>
 <div class="grid <%= p.allergies && p.chronic_conditions ? 'grid-2' : '' %> mb-4">
   <% if (p.allergies) { %><div class="alert alert-error" role="note"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('patients.allergies') %></div><div class="rec-pre"><%= p.allergies %></div></div></div><% } %>
@@ -35,6 +41,7 @@
 </div>
 <% } %>
 
+<% if (tab === 'overview') { %>
 <div class="stats rec-kpis<%= canBilling ? "" : " cols-3" %>">
   <div class="stat"><div class="stat-label"><%= t('patients.visits') %><span class="stat-icon"><%- icon('calendar-check') %></span></div><div class="stat-value"><%= fmt.number(stats.visits) %></div><div class="stat-meta"><%= stats.cancelled ? t('patients.cancelled_n', { n: fmt.number(stats.cancelled) }) : t('patients.completed_visits') %></div></div>
   <div class="stat"><div class="stat-label"><%= t('patients.no_shows') %><span class="stat-icon <%= stats.noShows ? 'danger' : 'info' %>"><%- icon('calendar-x') %></span></div><div class="stat-value"><%= fmt.number(stats.noShows) %></div><div class="stat-meta"><%= stats.visits + stats.noShows ? t('patients.no_show_rate', { pct: fmt.pct(stats.noShows * 100 / (stats.visits + stats.noShows), 0) }) : '—' %></div></div>
@@ -45,40 +52,17 @@
 </div>
 
 <div class="grid grid-main mt-6">
+  <div>
   <div class="panel flush">
-    <div class="panel-head"><div><h2><%= t('patients.timeline') %></h2><p class="panel-sub"><%= canClinical ? t('patients.timeline_sub') : restrictedView ? t('privacy.timeline_restricted') : t('patients.timeline_sub_basic') %></p></div></div>
+    <div class="panel-head"><div><h2><%= t('patients.recent_activity') %></h2><p class="panel-sub"><%= canClinical ? t('patients.timeline_sub') : restrictedView ? t('privacy.timeline_restricted') : t('patients.timeline_sub_basic') %></p></div></div>
     <% if (!timeline.length) { %>
       <%- include(P + 'empty', { compact: true, emptyIcon: 'history', emptyTitle: t('patients.timeline_empty'), emptyText: t('patients.timeline_empty_text'), emptyAction: can('appointments.manage') ? '<a class="btn btn-primary btn-sm" href="/app/appointments/new?patient=' + p.id + '">' + t('patients.book') + '</a>' : '' }) %>
     <% } else { %>
-    <ol class="rec-timeline">
-      <% timeline.forEach(function (e) { %>
-        <% if (e.kind === 'visit') { var a = e.appt; %>
-        <li class="tone-<%= statusTone[a.status] || 'neutral' %>">
-          <div class="rec-tl-head">
-            <a class="strong" href="<%= visitHref(a.id) %>"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></a>
-            <span class="badge badge-<%= statusTone[a.status] || 'neutral' %>"><%= t('dashboard.statuses.' + a.status) %></span>
-            <% if (a.appointment_type === 'online') { %><span class="badge"><%- icon('monitor', 'icon-sm') %><%= t('dashboard.online') %></span><% } %>
-            <% if (a.parent_appointment_id) { %><span class="badge badge-brand"><%= t('patients.follow_up') %></span><% } %>
-          </div>
-          <div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') || t('patients.no_doctor') %></div>
-          <% if (e.consultation && (e.consultation.diagnosis || e.consultation.assessment)) { %><div class="rec-tl-line"><%- icon('stethoscope', 'icon-sm') %><span><span class="muted"><%= t('patients.diagnosis') %>:</span> <%= e.consultation.diagnosis || e.consultation.assessment %></span></div><% } %>
-          <% if (e.codes && e.codes.length) { %><div class="rec-tl-line cp-code-line"><% if (!(e.consultation && (e.consultation.diagnosis || e.consultation.assessment))) { %><%- icon('stethoscope', 'icon-sm') %><% } %><% e.codes.forEach(function (d) { %><span class="cp-code-pair"><span class="cp-code" dir="ltr"><%= d.code %></span><span class="small muted"><%= dxTitle(d) %></span></span><% }) %></div><% } %>
-          <% e.prescriptions.forEach(function (rx) { %><div class="rec-tl-line"><%- icon('pill', 'icon-sm') %><a class="link" href="/app/visits/<%= a.id %>/prescriptions/<%= rx.id %>"><%= t('patients.prescription') %></a><span class="muted"><%= rx.items.map(function (i) { return i.medicationName; }).join('، ') %></span></div><% }) %>
-          <% if (e.invoice) { %><div class="rec-tl-line"><%- icon('receipt', 'icon-sm') %><a class="link" href="/app/billing/<%= e.invoice.id %>"><%= t('billing.invoice_no', { n: e.invoice.invoice_number }) %></a><span class="muted"><%= fmt.money(e.invoice.amount) %> · <%- include('../billing/_payment-lines', { pl: { parts: e.invoice.parts || [{ method: e.invoice.payment_method, amount: e.invoice.amount }], insuranceName: e.invoice.insurance_provider_name, mode: 'text' } }) %></span></div>
-          <% } else if (canBilling && a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= clinicToday) { %><div class="rec-tl-line"><%- icon('circle-alert', 'icon-sm') %><span class="badge badge-warning"><%= t('billing.unpaid') %></span></div><% } %>
-        </li>
-        <% } else if (e.kind === 'invoice') { var inv = e.row; %>
-        <li class="tone-info"><div class="rec-tl-head"><a class="strong" href="/app/billing/<%= inv.id %>"><%= t('billing.invoice_no', { n: inv.invoice_number }) %></a><span class="small muted"><%= stamp(inv.created_at) %></span></div><div class="small muted"><%= [inv.doctor_name, inv.service_name].filter(Boolean).join(' · ') %> · <%= fmt.money(inv.amount) %></div></li>
-        <% } else if (e.kind === 'prescription') { var rx = e.row; %>
-        <li class="tone-brand"><div class="rec-tl-head"><a class="strong" href="/app/visits/<%= rx.appointment_id %>/prescriptions/<%= rx.id %>"><%= t('patients.prescription') %></a><span class="small muted"><%= stamp(rx.created_at) %></span></div><div class="small muted"><%= rx.items.map(function (i) { return i.medicationName; }).join('، ') %></div></li>
-        <% } else if (e.kind === 'diagnosis') { var c = e.row; %>
-        <li class="tone-brand"><div class="rec-tl-head"><span class="strong"><%= t('patients.diagnosis') %></span><span class="small muted"><%= stamp(c.created_at) %></span></div><div class="small"><%= c.diagnosis %></div></li>
-        <% } %>
-      <% }) %>
-    </ol>
+    <%- include('_timeline', { items: timeline.slice(0, 5), visitHref: visitHref, dxTitle: dxTitle, canBilling: canBilling, stamp: stamp }) %>
     <% } %>
+    <% if (timeline.length > 5) { %><div class="panel-foot"><a class="link small" href="<%= tabHref('timeline') %>"><%= t('patients.see_timeline', { n: fmt.number(timeline.length) }) %></a></div><% } %>
   </div>
-
+  </div>
   <div class="stack">
     <% if (restrictedView) { %><%- include('../../clinicalplus/_restricted', { acc: acc, patientId: p.id, returnTo: '/app/patients/' + p.id }) %><% } %>
     <% if (acc.reason === 'emergency' && acc.grant) { %><div class="alert alert-warning" role="note"><%- icon('shield-alert') %><div class="grow"><div class="alert-title"><%= t('privacy.bg_active_title') %></div><div class="small"><%= t('privacy.bg_active_text', { when: fmt.date(acc.grant.expires_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) %></div></div></div><% } %>
@@ -107,4 +91,114 @@
     </div>
   </div>
 </div>
+<% } %>
+
+<% if (tab === 'timeline') { %>
+<div class="row-sm wrap mb-4 pt-filter" data-pt-filter role="group" aria-label="<%= t('patients.filter') %>">
+  <% ['all', 'visit', 'prescription', 'invoice', 'diagnosis'].forEach(function (k, i) { %><button class="chip<%= i === 0 ? ' is-on' : '' %>" type="button" data-kind="<%= k %>" aria-pressed="<%= i === 0 ? 'true' : 'false' %>"><%= t('patients.kind.' + k) %></button><% }) %>
+</div>
+  <div class="panel flush">
+    <div class="panel-head"><div><h2><%= t('patients.timeline') %></h2><p class="panel-sub"><%= canClinical ? t('patients.timeline_sub') : restrictedView ? t('privacy.timeline_restricted') : t('patients.timeline_sub_basic') %></p></div></div>
+    <% if (!timeline.length) { %>
+      <%- include(P + 'empty', { compact: true, emptyIcon: 'history', emptyTitle: t('patients.timeline_empty'), emptyText: t('patients.timeline_empty_text'), emptyAction: can('appointments.manage') ? '<a class="btn btn-primary btn-sm" href="/app/appointments/new?patient=' + p.id + '">' + t('patients.book') + '</a>' : '' }) %>
+    <% } else { %>
+    <%- include('_timeline', { items: timeline, visitHref: visitHref, dxTitle: dxTitle, canBilling: canBilling, stamp: stamp }) %>
+    <% } %>
+  </div>
+<% } %>
+
+<% if (tab === 'clinical') { %>
+<div class="grid grid-main">
+  <div class="stack">
+    <% if (restrictedView) { %><%- include('../../clinicalplus/_restricted', { acc: acc, patientId: p.id, returnTo: '/app/patients/' + p.id + '?tab=clinical' }) %>
+    <% } else { var cv = timeline.filter(function (e) { return e.kind === 'visit' && (e.consultation || (e.codes && e.codes.length)); }); %>
+    <div class="panel flush">
+      <div class="panel-head"><div><h2><%= t('patients.clinical_visits') %></h2><p class="panel-sub"><%= t('patients.clinical_visits_sub') %></p></div></div>
+      <% if (!cv.length) { %><%- include(P + 'empty', { compact: true, emptyIcon: 'stethoscope', emptyTitle: t('patients.no_clinical'), emptyText: '' }) %>
+      <% } else { %><%- include('_timeline', { items: cv, visitHref: visitHref, dxTitle: dxTitle, canBilling: false, stamp: stamp }) %><% } %>
+    </div>
+    <% } %>
+  </div>
+  <div class="stack">
+    <% if (!restrictedView && (typeof moduleOn !== 'function' || moduleOn('specialty_records'))) { %><%- include('../../specialty/_patient-panel') %><% } %>
+    <% if (latestDiagnosis) { %><div class="panel"><div class="panel-body"><div class="small muted strong"><%= t('patients.latest_diagnosis') %></div><div class="mt-1"><%= latestDiagnosis %></div></div></div><% } %>
+  </div>
+</div>
+<% } %>
+
+<% if (tab === 'appointments') { %>
+<div class="panel flush">
+  <div class="panel-head"><h2><%= t('patients.tab.appointments') %></h2><% if (can('appointments.manage')) { %><a class="btn btn-secondary btn-sm" href="/app/appointments/new?patient=<%= p.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('patients.book') %></a><% } %></div>
+  <% if (!allAppointments.length) { %><%- include(P + 'empty', { compact: true, emptyIcon: 'calendar-days', emptyTitle: t('patients.timeline_empty'), emptyText: '' }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('common.doctor') %></th><th><%= t('common.status') %></th><% if (canBilling) { %><th><%= t('appointments.payment') %></th><% } %><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+    <tbody><% allAppointments.forEach(function (a) { var href = can('appointments.view') ? '/app/appointments/' + a.id : visitHref(a.id); %>
+      <tr<%= a.appointment_date >= clinicToday && ['pending', 'confirmed'].indexOf(a.status) !== -1 ? ' class="is-upcoming"' : '' %>>
+        <td class="primary-cell nowrap"><a class="strong" href="<%= href %>"><%= a.appointment_date === clinicToday ? t('common.today') : fmt.date(a.appointment_date) %></a> <span class="small muted" dir="ltr"><%= a.appointment_time %></span></td>
+        <td data-label="<%= t('common.doctor') %>"><%= a.doctor_name || '—' %><div class="small muted"><%= a.service_name || '' %></div></td>
+        <td data-label="<%= t('common.status') %>"><span class="badge badge-<%= statusTone[a.status] || 'neutral' %>"><%= t('dashboard.statuses.' + a.status) %></span><% if (a.parent_appointment_id) { %> <span class="badge badge-brand"><%= t('patients.follow_up') %></span><% } %></td>
+        <% if (canBilling) { %><td data-label="<%= t('appointments.payment') %>"><%= t('appointments.payment_statuses.' + (a.payment_status || 'unpaid')) %></td><% } %>
+        <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="<%= href %>" aria-label="<%= t('common.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+  <% } %>
+</div>
+<% } %>
+
+<% if (tab === 'prescriptions') { %>
+<div class="panel flush">
+  <div class="panel-head"><h2><%= t('patients.tab.prescriptions') %></h2></div>
+  <% if (!prescriptions.length) { %><%- include(P + 'empty', { compact: true, emptyIcon: 'pill', emptyTitle: t('patients.no_prescriptions'), emptyText: '' }) %>
+  <% } else { %>
+  <ul class="action-list">
+    <% prescriptions.forEach(function (rx) { var aid = rx.appointment_id || (rx.appt && rx.appt.id); %>
+    <li><a href="/app/visits/<%= aid %>/prescriptions/<%= rx.id %>"><span class="action-icon brand"><%- icon('pill', 'icon-sm') %></span><span class="grow"><span class="strong"><%= stamp(rx.created_at) %></span><span class="small muted d-block"><%= (rx.items || []).map(function (i) { return i.medicationName || ''; }).filter(Boolean).join(' · ') %></span></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a></li>
+    <% }) %>
+  </ul>
+  <% } %>
+</div>
+<% } %>
+
+<% if (tab === 'documents') { %>
+<div class="grid grid-2">
+  <% if (can('certificates.view')) { %>
+  <div class="panel flush">
+    <div class="panel-head"><h2><%= t('nav.certificates') %></h2><% if (can('certificates.issue')) { %><a class="btn btn-secondary btn-sm" href="/app/certificates/new?patient=<%= p.id %>"><%- icon('plus', 'icon-sm') %><%= t('search.actions.new_certificate') %></a><% } %></div>
+    <% if (!certificates.length) { %><%- include(P + 'empty', { compact: true, emptyIcon: 'badge-check', emptyTitle: t('patients.no_certificates'), emptyText: '' }) %>
+    <% } else { %><ul class="action-list"><% certificates.forEach(function (c) { %>
+      <li><a href="/app/certificates/<%= c.id %>"><span class="action-icon"><%- icon('badge-check', 'icon-sm') %></span><span class="grow"><span class="strong"><%= t('certificates.types.' + c.doc_type) %></span> <span class="mono small" dir="ltr"><%= c.serial %></span><span class="small muted d-block"><%= stamp(c.issued_at) %><%= c.doctor_name ? ' · ' + (locale === 'en' && c.doctor_name_en ? c.doctor_name_en : c.doctor_name) : '' %></span></span><% if (c.revoked_at) { %><span class="badge badge-danger"><%= t('patients.revoked') %></span><% } %></a></li>
+    <% }) %></ul><% } %>
+  </div>
+  <% } %>
+  <% if (reportVisits.length) { %>
+  <div class="panel flush">
+    <div class="panel-head"><div><h2><%= t('patients.visit_reports') %></h2><p class="panel-sub"><%= t('patients.visit_reports_sub') %></p></div></div>
+    <ul class="action-list"><% reportVisits.forEach(function (a) { %>
+      <li><a href="/app/patient-docs/<%= a.id %>/report.pdf" target="_blank" rel="noopener"><span class="action-icon"><%- icon('file-text', 'icon-sm') %></span><span class="grow"><span class="strong"><%= fmt.date(a.appointment_date) %></span><span class="small muted d-block"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') %></span></span><%- icon('download', 'icon-sm muted') %></a></li>
+    <% }) %></ul>
+  </div>
+  <% } %>
+</div>
+<% } %>
+
+<% if (tab === 'billing') { %>
+<div class="stats cols-3 mb-4 rec-kpis">
+  <div class="stat"><div class="stat-label"><%= t('patients.total_paid') %></div><div class="stat-value"><%= fmt.money(invoices.reduce(function (s, i) { return s + Number(i.amount || 0); }, 0)) %></div><div class="stat-meta"><%= t('patients.invoices_n', { n: fmt.number(invoices.length) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('patients.unpaid_visits') %></div><div class="stat-value<%= unpaid.length ? ' ox-attn' : '' %>"><%= fmt.number(unpaid.length) %></div><div class="stat-meta"><%= unpaid.length ? fmt.money(unpaid.reduce(function (s, a) { return s + Number(a.amount_due || 0); }, 0)) : '—' %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('patients.insurance') %></div><div class="stat-value" style="font-size:18px"><%= p.insurance_name || t('patients.no_insurance') %></div><div class="stat-meta" dir="ltr"><%= p.insurance_number || '' %></div></div>
+</div>
+<% if (unpaid.length) { %>
+<div class="panel flush mb-4"><div class="panel-head"><h2><%= t('patients.unpaid_visits') %></h2></div>
+  <ul class="action-list"><% unpaid.forEach(function (a) { %><li><a href="<%= can('billing.manage') ? '/app/cashier?visit=' + a.id : '/app/appointments/' + a.id %>"><span class="action-icon"><%- icon('banknote', 'icon-sm') %></span><span class="grow"><span class="strong"><%= fmt.date(a.appointment_date) %></span><span class="small muted d-block"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') %></span></span><span class="strong num"><%= fmt.money(a.amount_due) %></span></a></li><% }) %></ul>
+</div>
+<% } %>
+<div class="panel flush"><div class="panel-head"><h2><%= t('billing.invoices') %></h2></div>
+  <% if (!invoices.length) { %><%- include(P + 'empty', { compact: true, emptyIcon: 'receipt', emptyTitle: t('patients.no_invoices'), emptyText: '' }) %>
+  <% } else { %><ul class="action-list"><% invoices.forEach(function (inv) { %>
+    <li><a href="/app/billing/<%= inv.id %>"><span class="action-icon"><%- icon('receipt', 'icon-sm') %></span><span class="grow"><span class="strong"><%= t('billing.invoice_no', { n: inv.invoice_number }) %></span><span class="small muted d-block"><%= stamp(inv.created_at) %> · <%- include('../billing/_payment-lines', { pl: { parts: inv.parts || [{ method: inv.payment_method, amount: inv.amount }], insuranceName: inv.insurance_provider_name, mode: 'text' } }) %></span></span><span class="strong num"><%= fmt.money(inv.amount) %></span></a></li>
+  <% }) %></ul><% } %>
+</div>
+<% } %>
 <%- include('../../teamops/_email-patient', { part: 'dialog', mailPatientId: p.id, mailTo: p.email, mailReturn: '/app/patients/' + p.id }) %>

@@ -1,20 +1,4 @@
-<% var actions = [];
-   if (kind === 'owner') {
-     if (can('appointments.manage')) actions.push({ href: '/app/appointments/new', icon: 'calendar-plus', key: 'new_appointment' });
-     if (can('frontdesk.use')) actions.push({ href: '/app/front-desk', icon: 'armchair', key: 'reception' });
-     if (can('billing.manage')) actions.push({ href: '/app/cashier', icon: 'banknote', key: 'cash' });
-     if (can('expenses.manage')) actions.push({ href: '/app/expenses?new=1', icon: 'receipt-text', key: 'expense' });
-   } else if (kind === 'reception') {
-     if (can('frontdesk.use')) actions.push({ href: '/app/front-desk', icon: 'armchair', key: 'reception' });
-     if (can('appointments.manage')) actions.push({ href: '/app/appointments/new', icon: 'calendar-plus', key: 'new_appointment' });
-     if (can('billing.manage')) actions.push({ href: '/app/cashier', icon: 'banknote', key: 'cash' });
-     if (can('patients.create')) actions.push({ href: '/app/patients?new=1', icon: 'user-plus', key: 'new_patient' });
-   } else {
-     if (can('billing.manage')) actions.push({ href: '/app/cashier', icon: 'banknote', key: 'cash' });
-     if (can('expenses.manage')) actions.push({ href: '/app/expenses?new=1', icon: 'receipt-text', key: 'expense' });
-     if (can('billing.view')) actions.push({ href: '/app/billing', icon: 'receipt', key: 'invoices' });
-     if (can('finance.view')) actions.push({ href: '/app/finance', icon: 'trending-up', key: 'pnl' }); else if (can('reports.view')) actions.push({ href: '/app/reports', icon: 'chart-pie', key: 'reports' });
-   } %>
+<%# Today (redesign 3.6): what needs attention now first, then the live numbers and today's schedule. New things are created from "+ New". %>
 <div class="page-head ox-home-head" data-autorefresh="120">
   <div>
     <div class="breadcrumbs"><%= business.name %></div>
@@ -23,11 +7,13 @@
   </div>
 </div>
 
-<% if (actions.length) { %>
-<nav class="ox-actions" aria-label="<%= t('ownerx.home.quick') %>">
-  <% actions.forEach(function (a, i) { %><a class="ox-action<%= i === 0 ? ' is-main' : '' %>" href="<%= a.href %>"><%- icon(a.icon) %><span><%= t('ownerx.home.act_' + a.key) %></span></a><% }) %>
-</nav>
-<% } %>
+<% var att = (typeof attention !== 'undefined' && attention) ? attention.slice(0, 5) : []; %>
+<section class="panel flush today-attention<%= att.length ? '' : ' is-calm' %>" aria-labelledby="today-attn-h">
+  <div class="panel-head"><h2 id="today-attn-h"><%- icon(att.length ? 'bell' : 'circle-check', 'icon-sm') %><%= att.length ? t('ownerx.home.attention_now') : t('ownerx.home.attention_none') %></h2></div>
+  <% if (att.length) { %>
+  <ul class="action-list"><% att.forEach(function (x) { %><li><a href="<%= x.href %>"><span class="action-icon<%= x.tone === 'danger' ? ' is-danger' : '' %>"><%- icon(x.icon, 'icon-sm') %></span><span class="grow"><%= t('ownerx.home.att_' + x.key, { n: fmt.number(x.n) }) %></span><span class="badge <%= x.tone === 'danger' ? 'badge-danger' : 'badge-neutral' %>"><%= fmt.number(x.n) %></span><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm muted') %></a></li><% }) %></ul>
+  <% } %>
+</section>
 
 <% if (checklist) { %><%- include('_checklist') %><% } %>
 
@@ -52,16 +38,7 @@
 <div class="grid grid-main mt-6">
   <%- include('_schedule') %>
   <div class="stack">
-    <% if (kind === 'owner' && typeof attention !== 'undefined') { var att = attention.filter(function (x) { return x.n > 0; }); %>
-    <div class="panel flush">
-      <div class="panel-head"><h2><%= t('ownerx.home.attention') %></h2></div>
-      <% if (!att.length) { %><div class="ox-pad small muted row-sm"><%- icon('circle-check', 'icon-sm') %><%= t('ownerx.home.attention_none') %></div><% } else { %>
-      <ul class="action-list"><% att.forEach(function (x) { %><li><a href="<%= x.href %>"><span class="action-icon"><%- icon(x.icon, 'icon-sm') %></span><span class="grow"><%= t('ownerx.home.att_' + x.key, { n: fmt.number(x.n) }) %></span><span class="badge <%= x.tone === 'danger' ? 'badge-danger' : 'badge-neutral' %>"><%= fmt.number(x.n) %></span></a></li><% }) %></ul>
-      <% } %>
-    </div>
-    <% } else if (online) { %>
-    <%- include('_online') %>
-    <% } %>
+    <% if (online) { %><%- include('_online') %><% } %>
     <% if (month) { %><%- include('_month') %><% } %>
   </div>
 </div>

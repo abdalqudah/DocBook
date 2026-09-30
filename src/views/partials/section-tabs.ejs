@@ -9,7 +9,7 @@
   <div class="section-tabs-list">
     <% var _cl = null; _st.group.items.forEach(function (i) { var on = i === _st.item, n = i.badge && _nb ? Number(_nb[i.badge]) || 0 : 0; %>
       <% if (i.cluster && _cl && i.cluster !== _cl) { %><span class="section-tabs-sep" aria-hidden="true"></span><% } _cl = i.cluster || _cl; %>
-      <a href="<%= i.href %>" class="<%= on ? 'active' : '' %>"<% if (on) { %> aria-current="page"<% } %>><%= t('nav.' + i.key) %><% if (n) { %><span class="section-tabs-count"><%= n > 99 ? '99+' : n %></span><% } %></a>
+      <a href="<%= i.href %>" class="<%= on ? 'active' : '' %>"<% if (on) { %> aria-current="page"<% } %>><%= (function (k) { var s = t('navx.tab.' + k); return s === 'navx.tab.' + k ? t('nav.' + k) : s; })(i.key) %><% if (n) { %><span class="section-tabs-count"><%= n > 99 ? '99+' : n %></span><% } %></a>
     <% }) %>
   </div>
 </nav>

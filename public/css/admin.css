@@ -141,3 +141,5 @@
 /* Screens of another workspace rendered by the settings module (Clinic → Team, Roles): no settings sidebar. */
 .settings-layout.is-bare { display: block; }
 .team-tabs { margin-bottom: 16px; }
+.set-moved-list { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.set-moved-list a { display: inline-flex; align-items: center; gap: 6px; }
