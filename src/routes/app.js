@@ -111,6 +111,11 @@ router.use('/settings/messaging', require('../modules/messaging/web')); // Setti
 router.use('/attendance', require('../modules/attendance/web'));
 router.use('/settings/database', require('../modules/datasync/web'));
 router.use('/help', require('../modules/support/web'));
+router.use('/', require('../modules/finance/web')); // staff payroll, partners, budgets, profit & loss
+router.use('/', require('../modules/ai/finance.web')); // AI finance assistant
+router.use('/', require('../modules/teamops/web')); // support tickets, presence, notification settings, doctor e-mails
+router.use('/', require('../modules/platformops/web')); // modules on/off, invoice template, service categories, demo data
+router.use('/', require('../modules/integrations/web')); // Google Sheets sync, media library
 router.use('/', require('../modules/live/web')); // live agenda events + calendar import
 router.use('/', require('../modules/signatures/web')); // doctor signatures + clinic stamp
 router.use('/', require('../modules/subscriptions/web')); // Settings → Subscription

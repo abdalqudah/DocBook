@@ -16,6 +16,10 @@ const NAV = [
     { key: 'billing', href: '/app/billing', icon: 'receipt', perms: ['billing.view'] },
     { key: 'payroll', href: '/app/payroll', icon: 'wallet', perms: ['payroll.view'], badge: 'pendingAdjustments' },
     { key: 'expenses', href: '/app/expenses', icon: 'receipt-text', perms: ['expenses.view'] },
+    { key: 'staff_payroll', href: '/app/staff-payroll', icon: 'users', perms: ['payroll.view'] },
+    { key: 'budgets', href: '/app/budgets', icon: 'target', perms: ['expenses.view'] },
+    { key: 'profit_loss', href: '/app/finance', icon: 'trending-up', perms: ['finance.view'] },
+    { key: 'partners', href: '/app/partners', icon: 'handshake', perms: ['finance.view'] },
   ] },
   { group: 'operations', items: [
     { key: 'doctors', href: '/app/doctors', icon: 'stethoscope', perms: ['doctors.manage', 'appointments.view_all'] },
@@ -32,6 +36,7 @@ const NAV = [
   { group: 'admin', items: [
     { key: 'team', href: '/app/settings/team', icon: 'user-cog', perms: ['users.manage'] },
     { key: 'settings', href: '/app/settings', icon: 'settings', perms: [], exactSettings: true },
+    { key: 'tickets', href: '/app/tickets', icon: 'message-square', perms: [] },
     { key: 'support', href: '/app/help', icon: 'life-buoy', perms: [] },
   ] },
 ];

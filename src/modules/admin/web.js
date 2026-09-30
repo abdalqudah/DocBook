@@ -26,7 +26,8 @@ router.use('/', require('./identity.web')); // Google sign-in + clinic custom do
 router.use('/', require('./vendors.web')); // reps & warehouses: approval and moderation
 router.use('/', require('./reviews.web'));
 router.use('/', require('../ai/admin.web')); // AI assistant: provider key and model
-router.use('/', require('../subscriptions/admin.web')); // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)
+router.use('/', require('../subscriptions/admin.web'));
+router.use('/', require('../platformops/admin.web')); // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)
 
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });
 const like = (q) => `%${String(q).trim().replace(/[%_\\]/g, (m) => `\\${m}`)}%`;

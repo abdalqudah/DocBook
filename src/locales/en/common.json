@@ -142,7 +142,12 @@
     "attendance": "Staff attendance",
     "marketplace": "Reps & offers",
     "rep_visits": "Rep visits",
-    "certificates": "Medical documents"
+    "certificates": "Medical documents",
+    "staff_payroll": "Staff salaries",
+    "budgets": "Budgets",
+    "profit_loss": "Profit & loss",
+    "partners": "Partners",
+    "tickets": "Support tickets"
   },
   "search": {
     "open": "Search and quick actions",

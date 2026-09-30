@@ -414,7 +414,17 @@
     "nav_privacy": "Record privacy",
     "desc_privacy": "Who can open medical records, and the access log",
     "nav_ai": "AI assistant",
-    "desc_ai": "Clinical assistant for doctors"
+    "desc_ai": "Clinical assistant for doctors",
+    "nav_modules": "Clinic modules",
+    "desc_modules": "Turn sections of the system on or off",
+    "nav_invoice_template": "Invoice template",
+    "desc_invoice_template": "Paper size, printed fields and numbering",
+    "nav_notifications": "Notifications",
+    "desc_notifications": "E-mail alerts and sound per event",
+    "nav_media": "Media library",
+    "desc_media": "Images and files used across the clinic",
+    "nav_sheets": "Google Sheets",
+    "desc_sheets": "Copy clinic data to a Google spreadsheet"
   },
   "team": {
     "lead": "Everyone who signs in to your clinic — doctors, nurses, reception, accounting and management. Each person gets their own login and sees only what their role allows.",

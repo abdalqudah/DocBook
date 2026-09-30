@@ -142,7 +142,12 @@
     "attendance": "دوام الموظفين",
     "marketplace": "المناديب والعروض",
     "rep_visits": "زيارات المناديب",
-    "certificates": "الوثائق الطبية"
+    "certificates": "الوثائق الطبية",
+    "staff_payroll": "رواتب الموظفين",
+    "budgets": "الميزانيات",
+    "profit_loss": "الأرباح والخسائر",
+    "partners": "الشركاء",
+    "tickets": "تذاكر الدعم"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",

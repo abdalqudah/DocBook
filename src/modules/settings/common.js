@@ -11,6 +11,10 @@ const SECTIONS = [
     { key: 'booking_links', href: '/app/settings/booking-links', icon: 'link', perms: ['settings.manage'] },
     { key: 'messaging', href: '/app/settings/messaging', icon: 'message-circle', perms: ['settings.manage'] },
     { key: 'subscription', href: '/app/settings/subscription', icon: 'receipt', perms: ['settings.manage'] },
+    { key: 'modules', href: '/app/settings/modules', icon: 'toggle-right', perms: ['settings.manage'] },
+    { key: 'invoice_template', href: '/app/settings/invoice', icon: 'printer', perms: ['settings.manage'] },
+    { key: 'notifications', href: '/app/settings/notifications', icon: 'bell', perms: ['settings.manage'] },
+    { key: 'media', href: '/app/settings/media', icon: 'images', perms: ['settings.manage'] },
   ] },
   { group: 'team', items: [
     { key: 'team', href: '/app/settings/team', icon: 'user-cog', perms: ['users.manage'] },
@@ -32,6 +36,7 @@ const SECTIONS = [
   { group: 'data', items: [
     { key: 'data', href: '/app/settings/data', icon: 'database', perms: ['audit.view', 'data.export', 'data.manage'] },
     { key: 'database', href: '/app/settings/database', icon: 'plug', perms: ['data.manage'] },
+    { key: 'sheets', href: '/app/settings/google-sheets', icon: 'file-spreadsheet', perms: ['data.manage', 'data.export'] },
   ] },
 ];
 
