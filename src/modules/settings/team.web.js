@@ -16,6 +16,7 @@ const { render, stash, takeStash, baseUrl } = require('./common');
 
 const router = express.Router();
 router.use(can('users.manage'));
+router.use(require('../access/web')); // per-member page access: /app/settings/team/:id/access
 
 // Readable sections of the team list.
 const GROUPS = [
@@ -31,18 +32,19 @@ const ROLE_ORDER = SYSTEM_ROLES.map((r) => r.key);
 
 async function teamData(req) {
   const b = req.ctx.businessId;
-  const [members, roles, doctors, invitations] = await Promise.all([
+  const [members, roles, doctors, invitations, pageAccess] = await Promise.all([
     businesses.listMembers(b),
     rbac.listRoles(b),
     knex('doctors').where({ business_id: b }).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en', 'specialization', 'is_active'),
     businesses.listInvitations(b),
+    require('../access/access.service').summaries(b), // eslint-disable-line global-require
   ]);
   roles.sort((x, y) => (y.is_system - x.is_system) || (ROLE_ORDER.indexOf(x.key) - ROLE_ORDER.indexOf(y.key)) || (x.id - y.id));
   const linked = new Map(members.filter((m) => m.doctor_id).map((m) => [m.doctor_id, m]));
   const invitedDoctors = new Set(invitations.filter((i) => i.doctor_id).map((i) => i.doctor_id));
   const assignable = roles.filter((r) => r.key !== 'owner' || req.ctx.permissions.has('data.manage'));
   return {
-    members: members.map((m) => ({ ...m, group: groupOf(m.role_key), isSelf: m.user_id === req.ctx.userId })),
+    members: members.map((m) => ({ ...m, group: groupOf(m.role_key), isSelf: m.user_id === req.ctx.userId, pageAccess: pageAccess[m.id] || null })),
     roles, assignable, doctors: doctors.map((d) => ({ ...d, linkedTo: linked.get(d.id) || null, invited: invitedDoctors.has(d.id) })),
     invitations, groups: GROUPS,
   };

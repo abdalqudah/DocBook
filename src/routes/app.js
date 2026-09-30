@@ -77,6 +77,7 @@ router.use((req, res, next) => {
 
 router.use(require('../modules/subscriptions/enforce')); // trial / plan gate (off unless the platform enables subscriptions)
 router.use(require('../modules/platformops/gate'));
+router.use(require('../modules/access/gate')); // per-member page access: hides denied pages from the menu and blocks their addresses
 router.use(require('../modules/teamops/presence.service').middleware); // "last seen" on every page load // clinic modules on/off: hides their menu items and blocks their pages
 router.use('/onboarding', require('../modules/onboarding/web'));
 router.use('/api', require('../modules/clinic/api.web'));

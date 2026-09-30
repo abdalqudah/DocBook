@@ -1,0 +1,96 @@
+<%
+  var back = '<a class="btn btn-ghost" href="/app/settings/team">' + icon('arrow-left', 'icon-sm flip-rtl') + escapeHtml(t('access.back_team')) + '</a>';
+  var off = !!locked;
+%>
+<%- include('_head', { heading: t('access.heading'), lead: t('access.lead'), actions: back }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg acc-page">
+    <%- include('../../partials/form-error') %>
+
+    <section class="panel">
+      <div class="panel-body acc-member">
+        <div class="person"><span class="avatar"><%= initials(member.name) %></span><span style="min-width:0"><span class="person-name"><%= member.name %></span><span class="person-sub truncate" style="display:block" dir="ltr"><%= member.email %></span></span></div>
+        <div class="acc-member-meta">
+          <span class="badge badge-neutral"><%= memberRole %></span>
+          <% if (!off) { %><span class="small muted" data-acc-summary data-tpl-added="<%= t('access.sum_added') %>" data-tpl-removed="<%= t('access.sum_removed') %>" data-tpl-none="<%= t('access.sum_none') %>"><%= summary.added || summary.removed ? [summary.added ? t('access.sum_added', { n: summary.added }) : null, summary.removed ? t('access.sum_removed', { n: summary.removed }) : null].filter(Boolean).join(' · ') : t('access.sum_none') %></span><% } %>
+        </div>
+      </div>
+      <% if (off) { %>
+        <div class="panel-foot acc-locked"><%- icon('lock', 'icon-sm') %><span class="small"><%= t('access.locked_' + locked) %></span></div>
+      <% } else { %>
+        <div class="panel-foot acc-legend">
+          <span class="small muted"><%= t('access.legend') %></span>
+          <% if (summary.custom) { %>
+          <form method="post" action="/app/settings/team/<%= member.id %>/access/reset" data-confirm="<%= t('access.reset_confirm', { name: member.name }) %>" data-confirm-title="<%= t('access.reset') %>" data-confirm-yes="<%= t('access.reset') %>" data-confirm-tone="primary">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('access.reset') %></button>
+          </form>
+          <% } %>
+        </div>
+      <% } %>
+    </section>
+
+    <form method="post" action="/app/settings/team/<%= member.id %>/access" class="stack-lg" data-acc-form>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% var roleOnly = []; var always = [];
+         groups.forEach(function (g) {
+           // Pages the role doesn't give and that can't be allowed one by one have nothing to choose: listed once below.
+           var rows = g.pages.filter(function (p) { if (p.core) { always.push(p.title); return false; } var keep = p.byRole || p.allowable || p.mode !== 'default'; if (!keep) roleOnly.push(p.title); return keep; });
+           if (!rows.length) return; %>
+      <section class="panel flush">
+        <div class="panel-head"><h2><%= g.title %></h2></div>
+        <ul class="acc-list">
+          <% rows.forEach(function (p) {
+               var allowOff = off || !p.allowable || (!p.canGive && p.mode !== 'allow');
+               var denyOff = off || p.core || (!p.byRole && p.mode !== 'deny');
+               var name = 'p__' + p.key;
+          %>
+          <li class="acc-row" data-acc-row data-by-role="<%= p.byRole ? '1' : '' %>">
+            <div class="acc-info">
+              <span class="acc-icon"><%- icon(p.icon || 'file-text', 'icon-sm') %></span>
+              <div style="min-width:0">
+                <div class="acc-title"><%= p.title %> <span class="acc-state" data-acc-state data-open="<%= t('access.state_open') %>" data-closed="<%= t('access.state_closed') %>"><span class="acc-dot<%= p.open ? ' on' : '' %>"></span><span><%= p.open ? t('access.state_open') : t('access.state_closed') %></span></span></div>
+                <div class="tiny muted acc-sub">
+                  <% if (!p.perms.length) { %><%= t('access.role_everyone') %><% } else if (p.byRole) { %><%- icon('check', 'icon-sm') %><%= t('access.role_yes') %><% } else { %><%- icon('x', 'icon-sm') %><%= t('access.role_no') %><% } %>
+                  <% if (p.core) { %> · <%= t('access.core') %><% } else if (!p.allowable && !p.byRole) { %> · <%= t('access.role_only') %><% } else if (p.allowable && !p.canGive && !p.byRole) { %> · <%= t('access.not_yours') %><% } %>
+                  <% if (p.moduleOff) { %> · <%= t('access.module_off') %><% } %>
+                </div>
+              </div>
+            </div>
+            <div class="acc-control">
+              <div class="segmented" role="radiogroup" aria-label="<%= p.title %>">
+                <label title="<%= p.byRole ? t('access.role_yes') : t('access.role_no') %>"><input type="radio" name="<%= name %>" value="default"<%= p.mode === 'default' ? ' checked' : '' %><%= off ? ' disabled' : '' %>><span><%= t('access.opt_default') %> <span class="acc-role-mark" aria-hidden="true"><%- icon(p.byRole ? 'check' : 'x', 'icon-sm') %></span></span></label>
+                <label><input type="radio" name="<%= name %>" value="allow"<%= p.mode === 'allow' ? ' checked' : '' %><%= allowOff ? ' disabled' : '' %>><span><%= t('access.opt_allow') %></span></label>
+                <label><input type="radio" name="<%= name %>" value="deny"<%= p.mode === 'deny' ? ' checked' : '' %><%= denyOff ? ' disabled' : '' %>><span><%= t('access.opt_deny') %></span></label>
+              </div>
+              <% if (p.hasLevels) { %>
+              <label class="check acc-level" data-acc-level<%= p.mode !== 'allow' ? ' hidden' : '' %>><input type="checkbox" name="l__<%= p.key %>" value="manage"<%= p.level === 'manage' ? ' checked' : '' %><%= off || (!p.canGiveManage && p.level !== 'manage') ? ' disabled' : '' %>><span class="small"><%= t('access.level_manage') %></span></label>
+              <% } %>
+            </div>
+          </li>
+          <% }) %>
+        </ul>
+      </section>
+      <% }) %>
+      <% if (always.length) { %>
+      <section class="panel"><div class="panel-body stack-sm">
+        <div class="row-sm"><%- icon('check', 'icon-sm') %><span class="strong small"><%= t('access.always_title') %></span></div>
+        <p class="small muted"><%= always.join(locale === 'ar' ? '، ' : ', ') %></p>
+      </div></section>
+      <% } %>
+      <% if (roleOnly.length) { %>
+      <section class="panel"><div class="panel-body stack-sm">
+        <div class="row-sm"><%- icon('info', 'icon-sm') %><span class="strong small"><%= t('access.role_only_title') %></span></div>
+        <p class="small muted"><%= t('access.role_only_text') %></p>
+        <p class="small"><%= roleOnly.join(locale === 'ar' ? '، ' : ', ') %></p>
+      </div></section>
+      <% } %>
+      <% if (!off) { %>
+      <div class="acc-foot">
+        <span class="small muted" data-acc-summary-foot><%= t('access.takes_effect') %></span>
+        <button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save_changes') %></button>
+      </div>
+      <% } %>
+    </form>
+  </div>
+</div>

@@ -41,7 +41,9 @@ const SECTIONS = [
 ];
 
 function sectionsFor(permissions) {
-  const ok = (item) => !item.perms.length || item.perms.some((p) => permissions.has(p));
+  // permissions.pagesOff: Settings sections closed for this member (per-member page access, src/modules/access).
+  const off = permissions.pagesOff;
+  const ok = (item) => (!item.perms.length || item.perms.some((p) => permissions.has(p))) && !(off && off.has(`settings_${item.key}`));
   return SECTIONS.map((g) => ({ group: g.group, items: g.items.filter(ok) })).filter((g) => g.items.length);
 }
 

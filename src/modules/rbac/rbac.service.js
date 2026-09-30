@@ -29,11 +29,12 @@ async function syncSystemRoles() {
 
 async function loadPermissions(businessId, userId) {
   const row = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id')
-    .where({ 'm.business_id': businessId, 'm.user_id': userId, 'm.status': 'active' }).first('r.permissions', 'r.key');
+    .where({ 'm.business_id': businessId, 'm.user_id': userId, 'm.status': 'active' }).first('r.permissions', 'r.key', 'm.id', 'm.doctor_id');
   if (!row) return new Set();
   // The owner role always holds every permission, even ones added in a later release.
   if (row.key === 'owner') return new Set(require('./permissions').ALL); // eslint-disable-line global-require
-  return new Set(parse(row.permissions));
+  // Per-member page access (Settings → Team → Page access) on top of the role: pages allowed / denied one by one.
+  return require('../access/access.service').effective(businessId, userId, parse(row.permissions), { id: row.id, doctor_id: row.doctor_id }); // eslint-disable-line global-require
 }
 
 const getUserPermissions = (businessId, userId) => cache.remember(`perm:${businessId}:${userId}`, () => loadPermissions(businessId, userId));

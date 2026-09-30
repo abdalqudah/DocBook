@@ -1,0 +1,44 @@
+/* Settings → Team → Page access, and the "no access to this page" screen (worker: access). */
+.acc-member { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.acc-member-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.acc-legend, .acc-locked { justify-content: space-between; align-items: center; }
+.acc-locked { justify-content: flex-start; gap: 8px; color: var(--text-muted); }
+.acc-list { list-style: none; margin: 0; padding: 0; }
+.acc-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px var(--card-pad, 20px); border-top: 1px solid var(--border); }
+.acc-row:first-child { border-top: 0; }
+.acc-info { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.acc-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.acc-title { font-weight: var(--fw-semibold, 600); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.acc-sub { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+.acc-sub .icon { width: 13px; height: 13px; }
+.acc-state { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 400; color: var(--text-subtle); }
+.acc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); display: inline-block; }
+.acc-dot.on { background: var(--success); }
+.acc-control { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
+.acc-control .segmented label span { padding: 5px 12px; display: inline-flex; align-items: center; gap: 4px; }
+.acc-control .segmented input:disabled + span { opacity: .45; cursor: not-allowed; }
+.acc-role-mark .icon { width: 12px; height: 12px; }
+.acc-level[hidden] { display: none; }
+.acc-foot { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.acc-blocked { max-width: 560px; margin: 48px auto; }
+@media (max-width: 720px) {
+  .acc-row { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 16px; }
+  .acc-control { align-items: stretch; }
+  .acc-control .segmented { display: flex; }
+  .acc-control .segmented label { flex: 1; text-align: center; }
+  .acc-control .segmented label span { width: 100%; justify-content: center; }
+  .acc-foot { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .acc-foot .btn { width: 100%; }
+}
+/* Calm states: the chosen option is a quiet grey pill; only "Deny" is tinted, since it takes something away. */
+.acc-control .segmented input:checked + span { background: var(--surface-sunken); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.acc-control .segmented input[value=deny]:checked + span { background: var(--danger-soft); color: var(--danger); box-shadow: none; }
+.acc-control .segmented input:focus-visible + span { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.acc-control .segmented label span { white-space: nowrap; }
+@media (max-width: 720px) {
+  .acc-control .segmented label:first-child { flex: 1.6; }
+  .acc-control .segmented label span { padding: 6px 8px; }
+  .acc-foot { padding: 10px 12px; }
+  .acc-foot > .small { display: none; }
+}
