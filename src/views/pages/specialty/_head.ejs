@@ -1,0 +1,23 @@
+<%# Shared header for the three specialty screens. Locals: patient, visit, settings, age, mod (dental|growth|pregnancy), actions (html). %>
+<% var pt = patient; %>
+<div class="page-head no-print">
+  <div style="min-width:0">
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/patients/<%= pt.id %>" dir="auto"><%= pt.full_name %></a><%- icon('chevron-right', 'flip-rtl') %><span><%= t('specialty_mod.titles.' + mod) %></span></div>
+    <h1><%= t('specialty_mod.titles.' + mod) %></h1>
+    <p class="sp-meta"><span dir="auto" class="strong"><%= pt.full_name %></span><% if (typeof ageText !== 'undefined' && ageText) { %><span><%= ageText %></span><% } else if (age !== null) { %><span><%= t('patients.years', { n: age }) %></span><% } %><% if (pt.gender) { %><span><%= t('patients.genders.' + pt.gender) %></span><% } %><% if (pt.date_of_birth) { %><span><%= t('patients.dob') %>: <%= fmt.date(pt.date_of_birth) %></span><% } %></p>
+  </div>
+  <div class="page-actions"><%- typeof actions !== 'undefined' ? actions : '' %></div>
+</div>
+<% var mods = ['dental', 'growth', 'pregnancy'].filter(function (k) { return settings[k]; }); var icons = { dental: 'smile', growth: 'ruler', pregnancy: 'baby' }; %>
+<% if (mods.length > 1) { %>
+<nav class="tabs sp-tabs no-print" aria-label="<%= t('specialty_mod.panel_title') %>">
+  <% mods.forEach(function (k) { %><a href="/app/patients/<%= pt.id %>/<%= k %><%= visit ? '?visit=' + visit.id : '' %>" class="<%= k === mod ? 'active' : '' %>"<%- k === mod ? ' aria-current="page"' : '' %>><%- icon(icons[k], 'icon-sm') %><%= t('specialty_mod.titles.' + k) %></a><% }) %>
+</nav>
+<% } %>
+<% if (visit) { %>
+<div class="alert alert-info sp-visit no-print"><%- icon('stethoscope') %><div class="grow"><div><%= t('specialty_mod.from_visit', { date: fmt.date(visit.appointment_date), doctor: visit.doctor_name || '—' }) %></div></div><a class="btn btn-ghost btn-sm" href="/app/visits/<%= visit.id %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('specialty_mod.back_to_visit') %></a></div>
+<% } %>
+<div class="sp-print-head">
+  <h1><%= t('specialty_mod.titles.' + mod) %></h1>
+  <div class="sp-meta"><span class="strong" dir="auto"><%= pt.full_name %></span><% if (pt.date_of_birth) { %><span><%= t('patients.dob') %>: <%= fmt.date(pt.date_of_birth) %></span><% } %><% if (pt.gender) { %><span><%= t('patients.genders.' + pt.gender) %></span><% } %><% if (pt.national_id) { %><span><%= t('patients.national_id') %>: <bdi dir="ltr"><%= pt.national_id %></bdi></span><% } %></div>
+</div>

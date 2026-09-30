@@ -1,1 +1,3 @@
-<%# Specialty records panel on the visit page (worker: specialty). Locals: a (appointment), p (patient), business. %>
+<%# Specialty records panel on the visit page (worker: specialty). Data comes from the loader in src/modules/specialty/web.js
+    (res.locals.specialtyPanel, set only when the user has clinical.view and a module applies to this patient). %>
+<% if (typeof specialtyPanel !== 'undefined' && specialtyPanel && typeof can === 'function' && can('clinical.view')) { %><%- include('_summary', { sp: specialtyPanel }) %><% } %>

@@ -1,1 +1,3 @@
-<%# Specialty records panel on the patient page (worker: specialty). Locals: p (patient), business. %>
+<%# Specialty records panel on the patient page (worker: specialty). The patients router renders this page before the specialty
+    router runs, so the summary is fetched by /js/specialty.js from /app/specialty/panel/:id (204 = nothing to show). %>
+<% if (typeof can === 'function' && can('clinical.view') && typeof patient !== 'undefined' && patient && patient.id) { %><div data-specialty-panel="/app/specialty/panel/<%= patient.id %>" hidden></div><script src="/js/specialty.js?v=<%= typeof assetV !== 'undefined' ? assetV : '' %>" defer></script><% } %>

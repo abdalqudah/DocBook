@@ -1,0 +1,27 @@
+<%# Specialty records summary (visit + patient side panels). Locals: sp = { patientId, visitId, settingsLink, modules: [...] }. Only app.css classes (the patient page has no specialty.css). %>
+<% var base = '/app/patients/' + sp.patientId + '/'; var vq = sp.visitId ? '?visit=' + sp.visitId : ''; var canEdit = can('clinical.edit'); var canGrowth = canEdit || can('vitals.edit'); %>
+<div class="panel flush">
+  <div class="panel-head"><h2><%- icon('clipboard-list', 'icon-sm') %> <%= t('specialty_mod.panel_title') %></h2>
+    <% if (sp.settingsLink) { %><a class="btn btn-ghost btn-icon btn-sm" href="/app/specialty/settings" aria-label="<%= t('specialty_mod.settings_title') %>" title="<%= t('specialty_mod.settings_title') %>"><%- icon('settings', 'icon-sm') %></a><% } %>
+  </div>
+  <ul class="action-list">
+    <% sp.modules.forEach(function (m) { %>
+    <% if (m.key === 'dental') { %>
+    <li><a href="<%= base %>dental<%= vq %>"><span class="action-icon"><%- icon('smile') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= t('dental.title') %></div><div class="tiny muted"><%= m.entries ? t('dental.summary_entries', { n: m.entries }) : t('dental.summary_empty') %><% if (m.planned) { %> · <%= t('dental.summary_planned', { n: m.planned }) %><% } %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+    <% } else if (m.key === 'growth') { %>
+    <li><a href="<%= base %>growth<%= vq %>"><span class="action-icon"><%- icon('ruler') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= t('child_growth.title') %></div><div class="tiny muted"><% if (m.last) { %><%= t('child_growth.summary_last', { w: fmt.number(m.last.weight, 2) }) %><% if (m.last.p !== null && m.last.p !== undefined) { %> (P<%= fmt.number(m.last.p, 0) %>)<% } %> · <%= fmt.date(m.last.date) %><% } else { %><%= t('child_growth.summary_empty') %><% } %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+    <% } else if (m.key === 'pregnancy') { %>
+    <li><a href="<%= base %>pregnancy<%= vq %>"><span class="action-icon"><%- icon('baby') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= t('pregnancy.title') %></div><div class="tiny muted"><% if (m.active) { %><span dir="ltr"><%= Math.floor(Math.max(m.active.ga, 0) / 7) %>+<%= Math.max(m.active.ga, 0) % 7 %></span> <%= t('pregnancy.weeks_short') %> · <%= t('pregnancy.edd_short') %> <%= fmt.date(m.active.edd) %><% } else { %><%= t('pregnancy.summary_none') %><% } %></div><% if (m.active && m.active.overdue) { %><div class="mt-1"><span class="badge badge-danger badge-dot"><%= t('pregnancy.summary_overdue', { n: m.active.overdue }) %></span></div><% } %></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+    <% } %>
+    <% }) %>
+  </ul>
+  <% if (sp.visitId && (canEdit || canGrowth)) { %>
+  <div class="panel-foot"><div class="tiny muted" style="margin-bottom:8px"><%= t('specialty_mod.record_from_visit') %></div><div class="row-sm wrap">
+    <% sp.modules.forEach(function (m) { %>
+      <% if (m.key === 'dental' && canEdit) { %><a class="btn btn-secondary btn-sm" href="<%= base %>dental?visit=<%= sp.visitId %>&record=1"><%- icon('plus', 'icon-sm') %><%= t('dental.add_entry_short') %></a><% } %>
+      <% if (m.key === 'growth' && canGrowth) { %><a class="btn btn-secondary btn-sm" href="<%= base %>growth?visit=<%= sp.visitId %>&record=1"><%- icon('plus', 'icon-sm') %><%= t('child_growth.add_short') %></a><% } %>
+      <% if (m.key === 'pregnancy' && canEdit) { %><a class="btn btn-secondary btn-sm" href="<%= base %>pregnancy?visit=<%= sp.visitId %>&record=1"><%- icon('plus', 'icon-sm') %><%= m.active ? t('pregnancy.add_visit_short') : t('pregnancy.start_short') %></a><% } %>
+    <% }) %>
+  </div></div>
+  <% } %>
+</div>

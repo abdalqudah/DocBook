@@ -1,0 +1,129 @@
+/* Specialty records: dental chart, child growth, pregnancy follow-up. Theme tokens only. */
+
+/* ---------- Shared ---------- */
+.sp-meta { display: flex; flex-wrap: wrap; gap: 4px 0; margin: 4px 0 0; color: var(--text-muted); font-size: 13px; }
+.sp-meta > span + span::before { content: "·"; margin: 0 8px; color: var(--text-subtle); }
+.sp-tabs { margin-bottom: 16px; }
+.sp-visit { margin-bottom: 16px; align-items: center; }
+.sp-empty { padding: 20px var(--card-pad, 20px); }
+.sp-hint { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; }
+.sp-source { margin: 12px 0 0; line-height: 1.6; }
+.sp-guide { display: flex; gap: 6px; align-items: flex-start; margin: 0 0 12px; }
+.sp-grid { align-items: start; }
+.sp-print-head { display: none; }
+.print-page .sp-print-head { display: block; margin-bottom: 16px; }
+.print-page .sp-print-head h1 { font-size: 20px; margin: 0 0 4px; }
+.print-page .no-print { display: none !important; }
+.print-page .sp-grid { grid-template-columns: 1fr; }
+.sp-void td { color: var(--text-subtle); }
+.sp-void td:nth-child(3) { text-decoration: line-through; }
+
+/* ---------- Dental chart ---------- */
+.dc-chart { direction: ltr; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 0; }
+.dc-quad { margin: 0; min-width: 0; display: flex; flex-direction: column; }
+.dc-quad figcaption { padding: 0 8px 2px; }
+.dc-q1, .dc-q4 { border-right: 1px dashed var(--border-strong); align-items: flex-end; }
+.dc-q1 figcaption, .dc-q4 figcaption { text-align: left; align-self: stretch; }
+.dc-q2 figcaption, .dc-q3 figcaption { text-align: right; }
+.dc-q1, .dc-q2 { border-bottom: 1px dashed var(--border-strong); padding-bottom: 6px; }
+.dc-q4 figcaption, .dc-q3 figcaption { order: 2; padding-top: 2px; }
+.dc-quad-svg { display: flex; }
+.dc-q1 .dc-quad-svg, .dc-q4 .dc-quad-svg { justify-content: flex-end; }
+.dc-svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+.dc-tooth { outline: none; cursor: default; }
+[data-editable] .dc-tooth, .dc-chart .dc-tooth { cursor: pointer; }
+.dc-hit { fill: transparent; }
+.dc-tooth:hover .dc-hit { fill: var(--surface-muted); }
+.dc-tooth:focus-visible .dc-hit { fill: var(--primary-soft); stroke: var(--focus-ring); stroke-width: 2; }
+.dc-tooth.is-selected .dc-hit { fill: var(--primary-soft); }
+.dc-num { fill: var(--text-muted); font-size: 11px; font-weight: 600; font-family: var(--font-sans); }
+.dc-tooth.is-selected .dc-num { fill: var(--primary); }
+.dc-code { fill: var(--text); font-size: 10px; font-weight: 700; font-family: var(--font-sans); }
+.dc-surf { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1; }
+[data-editable] .dc-surf:hover { stroke: var(--primary); stroke-width: 1.5; }
+.dc-surf.dc-caries { fill: url(#dc-p-caries); stroke: var(--danger); }
+.dc-surf.dc-filling { fill: url(#dc-p-filling); stroke: var(--primary); }
+.dc-surf.dc-sealant { fill: url(#dc-p-sealant); }
+.dc-surf.dc-watch { fill: url(#dc-p-watch); stroke: var(--warning); }
+.dc-surf.dc-fracture { fill: url(#dc-p-fracture); stroke: var(--danger); }
+.dc-pbg-caries { fill: var(--danger-soft); } .dc-pfg-caries { fill: var(--danger); }
+.dc-pbg-filling { fill: var(--primary-soft-2); }
+.dc-pbg-sealant { fill: var(--surface-sunken); } .dc-pfg-sealant { stroke: var(--text-subtle); stroke-width: 1.5; }
+.dc-pbg-watch { fill: var(--warning-soft); } .dc-pfg-watch { stroke: var(--warning); stroke-width: 1; }
+.dc-pbg-fracture { fill: var(--danger-soft); } .dc-pfg-fracture { fill: none; stroke: var(--danger); stroke-width: 1; }
+.dc-crown-ring, .dc-watch-ring, .dc-x, .dc-implant, .dc-fracture, .dc-rc, .dc-bridge { pointer-events: none; fill: none; }
+.dc-crown-ring { stroke: var(--text-muted); stroke-width: 2.5; }
+.dc-watch-ring { stroke: var(--warning); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.is-missing .dc-surf { fill: var(--surface-muted); stroke: var(--border); stroke-dasharray: 2 2; }
+.dc-x { stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; }
+.dc-implant { stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+.dc-fracture { stroke: var(--danger); stroke-width: 1.8; stroke-linejoin: round; }
+.dc-rc { stroke: var(--text-muted); stroke-width: 3; stroke-linecap: round; }
+.dc-bridge { stroke: var(--text-subtle); stroke-width: 3; }
+.dc-legend { list-style: none; margin: 16px 0 0; padding: 12px 0 0; border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 16px; font-size: 12px; color: var(--text-muted); }
+.dc-legend li { display: flex; align-items: center; gap: 8px; }
+.dc-legend-svg { flex: none; overflow: visible; }
+.dc-legend-code { color: var(--text); font-weight: 700; direction: ltr; unicode-bidi: isolate; }
+.sp-surfaces { border: 0; padding: 0; margin: 0; min-width: 0; }
+.sp-surfaces[hidden], .sp-material[hidden], .sp-birth-only[hidden] { display: none; }
+.sp-chip { display: inline-flex; cursor: pointer; }
+.sp-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.sp-chip span { display: inline-flex; gap: 4px; align-items: center; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--text-muted); background: var(--surface); min-height: 40px; }
+.sp-chip input:checked + span { background: var(--secondary); color: var(--secondary-ink); border-color: var(--secondary); }
+.sp-chip input:focus-visible + span { box-shadow: 0 0 0 3px var(--focus-ring); }
+.sp-plan { list-style: none; margin: 0; padding: 0; }
+.sp-plan-item { padding: 12px var(--card-pad, 20px); border-bottom: 1px solid var(--border); }
+.sp-plan-item:last-child { border-bottom: 0; }
+.sp-plan-item.is-done .strong, .sp-plan-item.is-cancelled .strong { color: var(--text-muted); }
+.sp-plan-item.is-cancelled .strong { text-decoration: line-through; }
+.sp-plan-badge { margin-top: 6px; }
+.sp-plan-actions { margin-top: 8px; }
+@media (max-width: 640px) {
+  .dc-chart { grid-template-columns: 1fr; gap: 10px; }
+  .dc-q1, .dc-q4 { border-right: 0; align-items: stretch; }
+  .dc-q1, .dc-q2, .dc-q4, .dc-q3 { border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
+  .dc-q1 figcaption, .dc-q2 figcaption, .dc-q4 figcaption, .dc-q3 figcaption { order: 0; text-align: start; }
+  .dc-q1 .dc-quad-svg, .dc-q4 .dc-quad-svg { justify-content: center; }
+  .dc-quad-svg { justify-content: center; }
+  .dc-svg { width: 100%; }
+}
+
+/* ---------- Growth ---------- */
+.sp-charts { margin-bottom: 16px; }
+.gc-curve { fill: none; stroke: var(--border-strong); stroke-width: 1.2; }
+.gc-curve.is-outer { stroke-dasharray: 4 3; }
+.gc-curve.is-median { stroke: var(--text-subtle); stroke-width: 1.8; }
+.gc-plabel { fill: var(--text-subtle); font-size: 10px; }
+.gc-vgrid { stroke: var(--border); stroke-dasharray: 2 4; }
+.gc-axis { font-size: 10px; }
+.gc .ch-hit:hover, .gc .ch-hit:focus { fill: var(--primary-soft); }
+.sp-pct { display: inline-block; font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--surface-sunken); padding: 0 6px; border-radius: 999px; margin-inline-start: 4px; direction: ltr; }
+.sp-pct.is-attention { color: var(--danger); background: var(--danger-soft); }
+.sp-key { display: inline-block; width: 16px; height: 0; vertical-align: middle; border-top: 2px solid var(--border-strong); }
+.sp-key-child { border-top-color: var(--primary); }
+.sp-key-median { border-top-color: var(--text-subtle); }
+.sp-key-curve { border-top-style: dashed; }
+
+/* ---------- Pregnancy ---------- */
+.sp-stats { margin-bottom: 16px; }
+.sp-stat-date { font-size: 18px; }
+.sp-flags { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 16px; }
+.sp-checklist li { align-items: center; }
+.sp-check-form { display: contents; }
+.sp-check-btn { background: var(--surface); cursor: pointer; padding: 0; color: inherit; }
+.sp-check-btn:hover { border-color: var(--primary); }
+.sp-checklist li.is-na { color: var(--text-subtle); }
+.sp-checklist li.is-na .check-dot { border-style: dashed; }
+.sp-edd-preview { margin: 0; color: var(--text); font-weight: 600; }
+.sp-dl { grid-template-columns: minmax(110px, 150px) 1fr; }
+[data-dating-lmp][hidden], [data-dating-scan][hidden], .sp-edd-preview[hidden] { display: none; }
+.sp-anc td.primary-cell .strong, .sp-anc td.num { white-space: nowrap; }
+
+/* ---------- Settings ---------- */
+.sp-modules { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sp-module { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.sp-module:hover { background: var(--surface-muted); }
+.sp-module input { width: 18px; height: 18px; accent-color: var(--primary); flex: none; }
+.sp-week { width: 72px; text-align: center; }
+.sp-sched .input { min-width: 0; }
+.sp-new-row .input::placeholder { color: var(--text-subtle); }

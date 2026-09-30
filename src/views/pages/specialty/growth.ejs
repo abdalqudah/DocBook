@@ -1,0 +1,88 @@
+<%
+  var P = '../../partials/';
+  var visitField = visit ? '<input type="hidden" name="visit_id" value="' + visit.id + '">' : '';
+  var actions = (measurements.length ? '<a class="btn btn-secondary" href="' + selfUrl('print=1') + '">' + icon('printer', 'icon-sm') + t('common.print') + '</a>' : '')
+    + (canRecord ? '<button class="btn btn-primary" type="button" data-open-dialog="growth-dialog" data-reset-form>' + icon('plus', 'icon-sm') + t('child_growth.add') + '</button>' : '');
+  var oldv = typeof old !== 'undefined' && old && Object.keys(old).length ? old : {};
+  var ov = function (k, d) { return oldv[k] !== undefined ? oldv[k] : (prefill[k] !== undefined && prefill[k] !== '' ? prefill[k] : d); };
+  var zText = function (x) { return x.z === null ? '' : 'z ' + (x.z >= 0 ? '+' : '−') + num(Math.abs(x.z), 2); };
+  var pBadge = function (x) {
+    if (x.p === null) return '';
+    var attention = x.z !== null && (x.z < -2 || x.z > 2);
+    return '<span class="sp-pct' + (attention ? ' is-attention' : '') + '" title="' + zText(x) + '">P' + num(x.p, x.p < 1 || x.p > 99 ? 1 : 0) + '</span>';
+  };
+%>
+<%- include('_head', { mod: 'growth', actions: actions }) %>
+
+<% if (!hasDob || !sex) { %>
+<div class="alert alert-warning"><%- icon('circle-alert') %><div class="grow"><div class="alert-title"><%= t('child_growth.need_profile_title') %></div><div><%= t('child_growth.need_profile') %></div><% if (can('patients.edit')) { %><div><a class="link" href="/app/patients/<%= patient.id %>/edit"><%= t('child_growth.edit_profile') %></a></div><% } %></div></div>
+<% } else if (beyond) { %>
+<div class="alert alert-info"><%- icon('info') %><div class="grow"><%= t('child_growth.beyond_who') %></div></div>
+<% } %>
+
+<% if (fromVisits.length && canRecord) { %>
+<section class="panel flush no-print">
+  <div class="panel-head"><h2><%- icon('stethoscope', 'icon-sm') %> <%= t('child_growth.from_visits') %></h2></div>
+  <ul class="action-list">
+    <% fromVisits.slice(0, 5).forEach(function (v) { %>
+    <li><div><div class="grow"><div class="strong small"><%= fmt.date(v.date) %></div><div class="tiny muted"><%= [v.vit.weightKg ? num(Number(v.vit.weightKg), 2) + ' ' + t('child_growth.units.wfa') : null, v.vit.heightCm ? num(Number(v.vit.heightCm), 1) + ' ' + t('child_growth.units.lhfa') : null].filter(Boolean).join(' · ') %></div></div>
+      <form method="post" action="/app/patients/<%= patient.id %>/growth"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="visit_id" value="<%= v.id %>"><input type="hidden" name="measured_on" value="<%= v.date %>"><input type="hidden" name="weight_kg" value="<%= v.vit.weightKg || '' %>"><input type="hidden" name="length_cm" value="<%= v.vit.heightCm || '' %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('child_growth.add_to_log') %></button></form>
+    </div></li>
+    <% }) %>
+  </ul>
+</section>
+<% } %>
+
+<% if (!measurements.length) { %>
+<div class="panel"><%- include(P + 'empty', { emptyIcon: 'ruler', emptyTitle: t('child_growth.empty_title'), emptyText: t('child_growth.empty_text'), emptyAction: canRecord ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="growth-dialog" data-reset-form>' + t('child_growth.add') + '</button>' : '' }) %></div>
+<% } else { %>
+<% if (charts.length) { %>
+<div class="grid grid-2 sp-charts">
+  <% charts.forEach(function (c) { %>
+  <section class="panel sp-chart-panel" aria-labelledby="ch-<%= c.key %>">
+    <div class="panel-head"><h2 id="ch-<%= c.key %>"><%= t('child_growth.indicators.' + c.key) %></h2><span class="tiny muted"><%= t('child_growth.units.' + c.key) %></span></div>
+    <div class="panel-body"><% if (c.count && c.svg) { %><%- c.svg %><% } else { %><div class="sp-empty small muted"><%= t('child_growth.no_values') %></div><% } %></div>
+  </section>
+  <% }) %>
+</div>
+<% if (sex) { %><p class="tiny muted sp-source"><span class="sp-key sp-key-child"></span> <%= t('child_growth.legend_child') %> &nbsp; <span class="sp-key sp-key-median"></span> P50 &nbsp; <span class="sp-key sp-key-curve"></span> P3 · P15 · P85 · P97 — <%= t('child_growth.source') %></p><% } %>
+<% } %>
+
+<section class="panel flush" aria-labelledby="log-h">
+  <div class="panel-head"><h2 id="log-h"><%= t('child_growth.log') %></h2></div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('child_growth.age') %></th><th class="num"><%= t('child_growth.weight') %></th><th class="num"><%= t('child_growth.length') %></th><th class="num"><%= t('child_growth.head') %></th><th class="num"><%= t('child_growth.bmi') %></th><th class="actions no-print"></th></tr></thead>
+    <tbody><% measurements.forEach(function (m) { %><tr>
+      <td class="primary-cell"><span class="strong"><%= fmt.date(m.measured_on) %></span><% if (m.appointment_id) { %> <a class="tiny link no-print" href="/app/visits/<%= m.appointment_id %>"><%= t('specialty_mod.visit_link') %></a><% } %><% if (m.notes) { %><div class="tiny muted"><%= m.notes %></div><% } %></td>
+      <td data-label="<%= t('child_growth.age') %>"><%= childAge(m.a.ageDays) || '—' %></td>
+      <td class="num" data-label="<%= t('child_growth.weight') %>"><%= m.weight_kg !== null ? num(Number(m.weight_kg), 2) : '—' %> <%- pBadge(m.a.wfa) %></td>
+      <td class="num" data-label="<%= t('child_growth.length') %>"><%= m.length_cm !== null ? num(Number(m.length_cm), 1) : '—' %><% if (m.position) { %> <span class="tiny muted"><%= t('child_growth.positions.' + m.position) %></span><% } %> <%- pBadge(m.a.lhfa) %></td>
+      <td class="num" data-label="<%= t('child_growth.head') %>"><%= m.head_cm !== null ? num(Number(m.head_cm), 1) : '—' %> <%- pBadge(m.a.hcfa) %></td>
+      <td class="num" data-label="<%= t('child_growth.bmi') %>"><%= m.a.bfa.value ? num(m.a.bfa.value, 1) : '—' %> <%- pBadge(m.a.bfa) %></td>
+      <td class="actions no-print"><% if (canRecord) { %><%- include(P + 'delete-form', { action: '/app/patients/' + patient.id + '/growth/' + m.id + '/delete' }) %><% } %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <div class="panel-foot tiny muted"><%= t('child_growth.pct_note') %></div>
+</section>
+<% } %>
+<p class="tiny muted sp-source"><%= t('child_growth.who_note') %></p>
+
+<% if (canRecord) { %>
+<dialog class="dialog" id="growth-dialog" aria-labelledby="growth-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'growth-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients/<%= patient.id %>/growth" novalidate>
+    <div class="dialog-head"><h2 id="growth-title"><%= t('child_growth.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><%- include(P + 'form-error') %>
+      <% if (visit && (prefill.weight_kg || prefill.length_cm)) { %><p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('child_growth.prefilled') %></p><% } %>
+      <div class="form-grid">
+        <%- include(P + 'field', { name: 'measured_on', label: t('common.date'), type: 'date', required: true, value: ov('measured_on', today), attrs: 'max="' + today + '"', cls: 'full' }) %>
+        <%- include(P + 'field', { name: 'weight_kg', label: t('child_growth.weight'), value: ov('weight_kg', ''), suffix: t('child_growth.units.wfa'), attrs: 'inputmode="decimal" data-default="' + (prefill.weight_kg || '') + '"' }) %>
+        <%- include(P + 'field', { name: 'head_cm', label: t('child_growth.head'), value: ov('head_cm', ''), suffix: t('child_growth.units.hcfa'), attrs: 'inputmode="decimal"' }) %>
+        <%- include(P + 'field', { name: 'length_cm', label: t('child_growth.length'), value: ov('length_cm', ''), suffix: t('child_growth.units.lhfa'), attrs: 'inputmode="decimal" data-default="' + (prefill.length_cm || '') + '"' }) %>
+        <%- include(P + 'field', { name: 'position', label: t('child_growth.position'), type: 'select', value: ov('position', ageDays !== null && ageDays >= 731 ? 'standing' : 'lying'), options: [{ value: 'lying', label: t('child_growth.positions.lying') }, { value: 'standing', label: t('child_growth.positions.standing') }], help: t('child_growth.position_help') }) %>
+        <%- include(P + 'field', { name: 'notes', label: t('common.notes'), type: 'textarea', value: ov('notes', ''), cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>

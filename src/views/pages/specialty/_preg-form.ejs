@@ -1,0 +1,37 @@
+<%# Pregnancy dating / details fields. Locals: v (values), idp (id prefix), errs %>
+<% var P = '../../partials/'; var e = errs || {}; var flags = String(v.risk_flags || '').split(','); if (Array.isArray(v.risk_flags)) flags = v.risk_flags; %>
+<div class="form-grid" data-dating>
+  <fieldset class="field full">
+    <legend class="label"><%= t('pregnancy.dating_method') %></legend>
+    <div class="segmented">
+      <label><input type="radio" name="dating_method" value="lmp"<%= v.dating_method !== 'scan' ? ' checked' : '' %> data-dating-method><span><%= t('pregnancy.by_lmp') %></span></label>
+      <label><input type="radio" name="dating_method" value="scan"<%= v.dating_method === 'scan' ? ' checked' : '' %> data-dating-method><span><%= t('pregnancy.by_scan') %></span></label>
+    </div>
+  </fieldset>
+  <div class="full" data-dating-lmp>
+    <%- include(P + 'field', { id: idp + 'lmp', name: 'lmp', label: t('pregnancy.lmp'), type: 'date', value: v.lmp || '', attrs: 'max="' + today + '" data-edd-lmp', help: t('pregnancy.lmp_help'), errors: e, old: null }) %>
+  </div>
+  <div class="full form-grid" data-dating-scan>
+    <%- include(P + 'field', { id: idp + 'scan_date', name: 'scan_date', label: t('pregnancy.scan_date'), type: 'date', value: v.scan_date || '', attrs: 'max="' + today + '" data-edd-scan', errors: e, old: null }) %>
+    <div class="field">
+      <label class="label" for="<%= idp %>scan_ga_weeks"><%= t('pregnancy.scan_ga') %></label>
+      <div class="row-sm">
+        <div class="input-affix grow"><input class="input<%= e.scan_ga_weeks ? ' is-invalid' : '' %>" id="<%= idp %>scan_ga_weeks" name="scan_ga_weeks" inputmode="numeric" value="<%= v.scan_ga_weeks !== undefined ? v.scan_ga_weeks : '' %>" data-edd-gaw><span class="affix"><%= t('pregnancy.weeks') %></span></div>
+        <div class="input-affix grow"><input class="input" id="<%= idp %>scan_ga_days" name="scan_ga_days" inputmode="numeric" value="<%= v.scan_ga_days !== undefined ? v.scan_ga_days : '' %>" aria-label="<%= t('pregnancy.days') %>" data-edd-gad><span class="affix"><%= t('pregnancy.days') %></span></div>
+      </div>
+      <% if (e.scan_ga_weeks) { %><span class="field-error"><%= e.scan_ga_weeks %></span><% } %>
+    </div>
+  </div>
+  <p class="full small sp-edd-preview" data-edd-preview data-label="<%= t('pregnancy.edd') %>" data-locale="<%= locale %>" hidden></p>
+  <%- include(P + 'field', { id: idp + 'gravida', name: 'gravida', label: t('pregnancy.gravida'), value: v.gravida !== null && v.gravida !== undefined ? v.gravida : '', attrs: 'inputmode="numeric"', help: t('pregnancy.gravida_help'), errors: e, old: null }) %>
+  <%- include(P + 'field', { id: idp + 'para', name: 'para', label: t('pregnancy.para'), value: v.para !== null && v.para !== undefined ? v.para : '', attrs: 'inputmode="numeric"', help: t('pregnancy.para_help'), errors: e, old: null }) %>
+  <%- include(P + 'field', { id: idp + 'blood_group', name: 'blood_group', label: t('pregnancy.blood_group'), type: 'select', placeholder: '—', value: v.blood_group || '', options: bloodGroups.map(function (b) { return { value: b, label: b }; }), errors: e, old: null }) %>
+  <%- include(P + 'field', { id: idp + 'rh', name: 'rh', label: t('pregnancy.rh'), type: 'select', placeholder: '—', value: v.rh || '', options: [{ value: 'pos', label: t('pregnancy.rh_pos') }, { value: 'neg', label: t('pregnancy.rh_neg') }], errors: e, old: null }) %>
+  <fieldset class="field full">
+    <legend class="label"><%= t('pregnancy.risk_flags') %></legend>
+    <div class="sp-flags">
+      <% riskFlags.forEach(function (f) { %><label class="check"><input type="checkbox" name="risk_flags" value="<%= f %>"<%= flags.indexOf(f) >= 0 ? ' checked' : '' %>><span><%= t('pregnancy.risks.' + f) %></span></label><% }) %>
+    </div>
+  </fieldset>
+  <%- include(P + 'field', { id: idp + 'notes', name: 'notes', label: t('common.notes'), type: 'textarea', value: v.notes || '', cls: 'full', errors: e, old: null }) %>
+</div>

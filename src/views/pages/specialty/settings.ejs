@@ -1,0 +1,58 @@
+<%
+  var P = '../../partials/';
+  var errs = typeof errors !== 'undefined' && errors ? errors : {};
+  var oldv = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var isOn = function (m) { return oldv ? (oldv[m] === '1') : s[m]; };
+  var defaultKeys = defaults.map(function (d) { return d.key; });
+%>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/app/settings"><%= t('nav.settings') %></a><%- icon('chevron-right', 'flip-rtl') %><span><%= t('specialty_mod.panel_title') %></span></div><h1><%= t('specialty_mod.settings_title') %></h1><p><%= t('specialty_mod.settings_lead') %></p></div>
+</div>
+<form method="post" action="/app/specialty/settings" novalidate class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- include(P + 'form-error') %>
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('specialty_mod.modules') %></h2></div>
+    <div class="panel-body stack">
+      <p class="small muted"><%= t('specialty_mod.modules_help', { specialty: business.specialty ? t('specialties.' + business.specialty) : t('specialty_mod.no_specialty') }) %></p>
+      <ul class="sp-modules">
+        <% modules.forEach(function (m) { %>
+        <li><label class="sp-module"><input type="checkbox" name="<%= m %>" value="1"<%= isOn(m) ? ' checked' : '' %>><span class="action-icon"><%- icon(moduleIcon[m]) %></span><span class="grow"><span class="strong"><%= t('specialty_mod.titles.' + m) %></span><span class="tiny muted" style="display:block"><%= t('specialty_mod.module_desc.' + m) %></span></span><% if (s.defaults.indexOf(m) >= 0) { %><span class="badge badge-neutral"><%= t('specialty_mod.default_for_specialty') %></span><% } %></label></li>
+        <% }) %>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" id="schedule">
+    <div class="panel-head"><h2><%= t('pregnancy.schedule') %></h2><% if (s.customSchedule) { %><span class="badge badge-neutral"><%= t('specialty_mod.customised') %></span><% } %></div>
+    <div class="panel-body stack">
+      <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('specialty_mod.schedule_help') %></p>
+      <div class="table-wrap"><table class="table responsive sp-sched" data-schedule>
+        <thead><tr><th><%= t('specialty_mod.check') %></th><th class="num"><%= t('specialty_mod.from_week') %></th><th class="num"><%= t('specialty_mod.to_week') %></th><th><%= t('pregnancy.rh_neg_only') %></th><th class="actions"><%= t('common.delete') %></th></tr></thead>
+        <tbody>
+          <% items.forEach(function (i, idx) { var isDefault = defaultKeys.indexOf(i.key) >= 0; var e = function (f) { return errs['items.' + idx + '.' + f]; }; %>
+          <tr data-row>
+            <td class="primary-cell"><input type="hidden" name="items[<%= idx %>][key]" value="<%= i.key %>">
+              <input class="input<%= e('label') ? ' is-invalid' : '' %>" name="items[<%= idx %>][label]" value="<%= i.label || '' %>" placeholder="<%= isDefault ? t('pregnancy.schedule_items.' + i.key) : t('specialty_mod.check_name') %>" aria-label="<%= t('specialty_mod.check') %>" maxlength="120">
+              <% if (e('label')) { %><span class="field-error"><%= e('label') %></span><% } %></td>
+            <td class="num" data-label="<%= t('specialty_mod.from_week') %>"><input class="input sp-week<%= e('from') ? ' is-invalid' : '' %>" name="items[<%= idx %>][from]" value="<%= i.from %>" inputmode="numeric" aria-label="<%= t('specialty_mod.from_week') %>"><% if (e('from')) { %><span class="field-error"><%= e('from') %></span><% } %></td>
+            <td class="num" data-label="<%= t('specialty_mod.to_week') %>"><input class="input sp-week<%= e('to') ? ' is-invalid' : '' %>" name="items[<%= idx %>][to]" value="<%= i.to %>" inputmode="numeric" aria-label="<%= t('specialty_mod.to_week') %>"><% if (e('to')) { %><span class="field-error"><%= e('to') %></span><% } %></td>
+            <td data-label="<%= t('pregnancy.rh_neg_only') %>"><label class="check"><input type="checkbox" name="items[<%= idx %>][rhNeg]" value="1"<%= i.rhNeg === true || i.rhNeg === '1' ? ' checked' : '' %>><span class="sr-only"><%= t('pregnancy.rh_neg_only') %></span></label></td>
+            <td class="actions" data-label="<%= t('common.delete') %>"><label class="check"><input type="checkbox" name="items[<%= idx %>][remove]" value="1"><span><%= t('specialty_mod.remove_row') %></span></label></td>
+          </tr>
+          <% }) %>
+          <% for (var k = 0; k < 2; k++) { var idx2 = items.length + k; var e2 = function (f) { return errs['items.' + idx2 + '.' + f]; }; %>
+          <tr class="sp-new-row">
+            <td class="primary-cell"><input class="input<%= e2('label') ? ' is-invalid' : '' %>" name="items[<%= idx2 %>][label]" placeholder="<%= t('specialty_mod.add_check') %>" aria-label="<%= t('specialty_mod.add_check') %>" maxlength="120"><% if (e2('label')) { %><span class="field-error"><%= e2('label') %></span><% } %></td>
+            <td class="num" data-label="<%= t('specialty_mod.from_week') %>"><input class="input sp-week" name="items[<%= idx2 %>][from]" inputmode="numeric" aria-label="<%= t('specialty_mod.from_week') %>"></td>
+            <td class="num" data-label="<%= t('specialty_mod.to_week') %>"><input class="input sp-week" name="items[<%= idx2 %>][to]" inputmode="numeric" aria-label="<%= t('specialty_mod.to_week') %>"></td>
+            <td data-label="<%= t('pregnancy.rh_neg_only') %>"><label class="check"><input type="checkbox" name="items[<%= idx2 %>][rhNeg]" value="1"><span class="sr-only"><%= t('pregnancy.rh_neg_only') %></span></label></td>
+            <td class="actions"></td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table></div>
+      <% if (s.customSchedule) { %><label class="check"><input type="checkbox" name="reset_schedule" value="1"><span><%= t('specialty_mod.reset_schedule') %></span></label><% } %>
+    </div>
+  </section>
+  <div class="row"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>

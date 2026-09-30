@@ -1,0 +1,171 @@
+<%
+  var P = '../../partials/';
+  var canEdit = can('clinical.edit');
+  var visitField = visit ? '<input type="hidden" name="visit_id" value="' + visit.id + '">' : '';
+  var active = current && current.status === 'active';
+  var od = typeof openDialog !== 'undefined' ? openDialog : null;
+  var oldv = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var errs = typeof errors !== 'undefined' && errors ? errors : {};
+  var errsFor = function (id) { return od === id ? errs : {}; };
+  var valsFor = function (id, base) { return od === id && oldv ? oldv : base; };
+  var actions = (current ? '<a class="btn btn-secondary" href="' + selfUrl('p=' + current.id + '&print=1') + '">' + icon('printer', 'icon-sm') + t('pregnancy.print_card') + '</a>' : '')
+    + (canEdit && eligible && active ? '<button class="btn btn-primary" type="button" data-open-dialog="anc-dialog" data-reset-form>' + icon('plus', 'icon-sm') + t('pregnancy.add_visit') + '</button>' : '')
+    + (canEdit && eligible && !list.some(function (x) { return x.status === 'active'; }) ? '<button class="btn btn-primary" type="button" data-open-dialog="preg-dialog" data-reset-form>' + icon('plus', 'icon-sm') + t('pregnancy.start') + '</button>' : '');
+  var flagList = current && current.risk_flags ? current.risk_flags.split(',') : [];
+  var toneOf = { overdue: 'badge-danger', due: 'badge-neutral', upcoming: '', done: '', na: '' };
+%>
+<%- include('_head', { mod: 'pregnancy', actions: actions }) %>
+
+<% if (!eligible) { %>
+<div class="alert alert-info"><%- icon('info') %><div class="grow"><%= t('pregnancy.not_eligible') %></div></div>
+<% } %>
+
+<% if (!current) { %>
+  <% if (eligible) { %><div class="panel"><%- include(P + 'empty', { emptyIcon: 'baby', emptyTitle: t('pregnancy.empty_title'), emptyText: t('pregnancy.empty_text'), emptyAction: canEdit ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="preg-dialog" data-reset-form>' + t('pregnancy.start') + '</button>' : '' }) %></div><% } %>
+<% } else { %>
+<div class="stats sp-stats">
+  <div class="stat"><div class="stat-label"><%= active ? t('pregnancy.ga_today') : t('pregnancy.ga_at_outcome') %></div><div class="stat-value" dir="ltr"><%= gaLabel(ga) %></div><div class="stat-meta"><%= t('pregnancy.weeks_days') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('pregnancy.edd') %></div><div class="stat-value sp-stat-date"><%= fmt.date(current.edd) %></div><div class="stat-meta"><%= current.dating_method === 'scan' ? t('pregnancy.by_scan') : t('pregnancy.by_lmp') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('pregnancy.trimester') %></div><div class="stat-value"><%= trimester ? t('pregnancy.trimesters.t' + trimester) : '—' %></div><div class="stat-meta"><% if (active) { var left = Math.round((Date.parse(current.edd + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 86400000); %><%= left >= 0 ? t('pregnancy.days_to_edd', { n: left }) : t('pregnancy.days_past_edd', { n: -left }) %><% } else { %><%= t('pregnancy.closed') %><% } %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('pregnancy.blood') %></div><div class="stat-value"><bdi dir="ltr"><%= current.blood_group || '—' %><%= current.rh ? (current.rh === 'neg' ? '−' : '+') : '' %></bdi></div><div class="stat-meta"><%= current.gravida !== null ? 'G' + current.gravida : '' %><%= current.para !== null ? ' P' + current.para : '' %></div></div>
+</div>
+
+<% if (!active) { %>
+<div class="alert alert-info"><%- icon('info') %><div class="grow"><div class="alert-title"><%= t('pregnancy.outcomes.' + current.outcome) %> · <%= fmt.date(current.outcome_date) %></div><div><%= [current.delivery_mode ? t('pregnancy.modes.' + current.delivery_mode) : null, current.baby_weight_kg ? t('pregnancy.baby_weight_value', { w: fmt.number(Number(current.baby_weight_kg), 3) }) : null, current.outcome_notes].filter(Boolean).join(' · ') %></div></div>
+<% if (canEdit) { %><form class="no-print" method="post" action="/app/patients/<%= patient.id %>/pregnancy/<%= current.id %>/reopen" data-confirm="<%= t('pregnancy.reopen_confirm') %>" data-confirm-title="<%= t('pregnancy.reopen') %>" data-confirm-yes="<%= t('pregnancy.reopen') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('pregnancy.reopen') %></button></form><% } %></div>
+<% } %>
+
+<div class="grid grid-main sp-grid">
+  <div class="stack">
+    <section class="panel flush" id="visits" aria-labelledby="visits-h">
+      <div class="panel-head"><h2 id="visits-h"><%= t('pregnancy.visits') %></h2><% if (canEdit && active) { %><button class="btn btn-secondary btn-sm no-print" type="button" data-open-dialog="anc-dialog" data-reset-form><%- icon('plus', 'icon-sm') %><%= t('pregnancy.add_visit') %></button><% } %></div>
+      <% if (!visits.length) { %><div class="sp-empty small muted"><%= t('pregnancy.no_visits') %></div><% } else { %>
+      <div class="table-wrap"><table class="table responsive sp-anc">
+        <thead><tr><th><%= t('common.date') %></th><th><%= t('pregnancy.ga') %></th><th class="num"><%= t('pregnancy.weight') %></th><th><%= t('pregnancy.bp') %></th><th class="num"><%= t('pregnancy.fundal') %></th><th class="num"><%= t('pregnancy.fhr') %></th><th><%= t('pregnancy.exam') %></th><th><%= t('pregnancy.urine') %></th><th class="actions no-print"></th></tr></thead>
+        <tbody><% visits.forEach(function (v) { %><tr>
+          <td class="primary-cell"><span class="strong"><%= fmt.date(v.visit_date) %></span><% if (v.appointment_id) { %> <a class="tiny link no-print" href="/app/visits/<%= v.appointment_id %>"><%= t('specialty_mod.visit_link') %></a><% } %><% if (v.notes) { %><div class="tiny muted"><%= v.notes %></div><% } %></td>
+          <td data-label="<%= t('pregnancy.ga') %>"><span dir="ltr"><%= gaOn(v.visit_date) %></span></td>
+          <td class="num" data-label="<%= t('pregnancy.weight') %>"><%= v.weight_kg !== null ? fmt.number(Number(v.weight_kg), 1) : '—' %></td>
+          <td data-label="<%= t('pregnancy.bp') %>"><span dir="ltr"><%= v.bp || '—' %></span></td>
+          <td class="num" data-label="<%= t('pregnancy.fundal') %>"><%= v.fundal_height_cm !== null ? fmt.number(Number(v.fundal_height_cm), 1) : '—' %></td>
+          <td class="num" data-label="<%= t('pregnancy.fhr') %>"><%= v.fhr || '—' %></td>
+          <td data-label="<%= t('pregnancy.exam') %>" class="small"><%= [v.presentation ? t('pregnancy.presentation') + ': ' + t('pregnancy.presentations.' + v.presentation) : null, v.oedema ? t('pregnancy.oedema') + ': ' + t('pregnancy.oedema_levels.' + v.oedema) : null].filter(Boolean).join(' · ') || '—' %></td>
+          <td data-label="<%= t('pregnancy.urine') %>" class="small"><span><%= v.urine_protein || v.urine_glucose ? (t('pregnancy.protein_short') + ' ' + (v.urine_protein ? t('pregnancy.urine_levels.' + v.urine_protein) : '—') + ' · ' + t('pregnancy.glucose_short') + ' ' + (v.urine_glucose ? t('pregnancy.urine_levels.' + v.urine_glucose) : '—')) : '—' %></span></td>
+          <td class="actions no-print"><% if (canEdit) { %><%- include(P + 'delete-form', { action: '/app/patients/' + patient.id + '/pregnancy/' + current.id + '/visits/' + v.id + '/delete' }) %><% } %></td>
+        </tr><% }) %></tbody>
+      </table></div><% } %>
+    </section>
+
+    <section class="panel" id="schedule" aria-labelledby="schedule-h">
+      <div class="panel-head"><h2 id="schedule-h"><%= t('pregnancy.schedule') %></h2><% if (can('settings.manage')) { %><a class="btn btn-ghost btn-sm no-print" href="/app/specialty/settings#schedule"><%- icon('pencil', 'icon-sm') %><%= t('pregnancy.edit_schedule') %></a><% } %></div>
+      <div class="panel-body">
+        <p class="small muted sp-guide"><%- icon('info', 'icon-sm') %> <%= customSchedule ? t('pregnancy.schedule_custom_note') : t('pregnancy.schedule_note') %></p>
+        <ul class="checklist sp-checklist">
+          <% schedule.forEach(function (i) { %>
+          <li class="<%= i.status === 'done' ? 'done' : '' %> is-<%= i.status %>">
+            <% if (canEdit && i.status !== 'na') { %>
+            <form method="post" action="/app/patients/<%= patient.id %>/pregnancy/<%= current.id %>/checks" class="sp-check-form"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="key" value="<%= i.key %>"><input type="hidden" name="done" value="<%= i.status === 'done' ? '0' : '1' %>"><button type="submit" class="check-dot sp-check-btn" aria-pressed="<%= i.status === 'done' %>" aria-label="<%= i.status === 'done' ? t('pregnancy.mark_not_done') : t('pregnancy.mark_done') %>: <%= scheduleLabel(i) %>"><% if (i.status === 'done') { %><%- icon('check') %><% } %></button></form>
+            <% } else { %><span class="check-dot"><% if (i.status === 'done') { %><%- icon('check') %><% } %></span><% } %>
+            <div class="grow" style="min-width:0">
+              <div class="strong"><%= scheduleLabel(i) %></div>
+              <div class="tiny muted"><%= t('pregnancy.window', { from: i.from, to: i.to }) %> · <%= fmt.date(i.dueFrom, { day: 'numeric', month: 'short' }) %> – <%= fmt.date(i.dueTo, { day: 'numeric', month: 'short', year: 'numeric' }) %><% if (i.rhNeg) { %> · <%= t('pregnancy.rh_neg_only') %><% } %></div>
+            </div>
+            <% if (i.status === 'done') { %><span class="tiny muted"><%= fmt.date(i.doneOn) %></span>
+            <% } else if (i.status === 'overdue' || i.status === 'due') { %><span class="badge badge-dot <%= toneOf[i.status] %>"><%= t('pregnancy.status.' + i.status) %></span>
+            <% } else { %><span class="tiny muted"><%= t('pregnancy.status.' + i.status) %></span><% } %>
+          </li>
+          <% }) %>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="panel" aria-labelledby="details-h">
+      <div class="panel-head"><h2 id="details-h"><%= t('pregnancy.details') %></h2><% if (canEdit) { %><button class="btn btn-ghost btn-sm no-print" type="button" data-open-dialog="preg-edit-dialog"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></button><% } %></div>
+      <div class="panel-body"><dl class="dl sp-dl">
+        <% if (current.lmp) { %><dt><%= t('pregnancy.lmp') %></dt><dd><%= fmt.date(current.lmp) %></dd><% } %>
+        <% if (current.dating_method === 'scan') { %><dt><%= t('pregnancy.scan_date') %></dt><dd><%= fmt.date(current.scan_date) %> · <span dir="ltr"><%= gaLabel(current.scan_ga_days) %></span></dd><% } %>
+        <dt><%= t('pregnancy.start_date') %></dt><dd><%= fmt.date(startDate) %></dd>
+        <dt><%= t('pregnancy.edd') %></dt><dd><%= fmt.date(current.edd) %></dd>
+        <dt><%= t('pregnancy.gravida_para') %></dt><dd><%= current.gravida !== null ? 'G' + current.gravida : '—' %> <%= current.para !== null ? 'P' + current.para : '' %></dd>
+        <dt><%= t('pregnancy.blood') %></dt><dd><%= current.blood_group || '—' %> <%= current.rh ? t('pregnancy.rh_' + current.rh) : '' %></dd>
+        <dt><%= t('pregnancy.risk_flags') %></dt><dd><% if (!flagList.length) { %><span class="muted"><%= t('pregnancy.no_risks') %></span><% } else { %><div class="row-sm wrap"><% flagList.forEach(function (f) { %><span class="badge badge-warning"><%= t('pregnancy.risks.' + f) %></span><% }) %></div><% } %></dd>
+        <% if (current.doctor_name) { %><dt><%= t('common.doctor') %></dt><dd><%= locale === 'en' && current.doctor_name_en ? current.doctor_name_en : current.doctor_name %></dd><% } %>
+        <% if (current.notes) { %><dt><%= t('common.notes') %></dt><dd style="white-space:pre-line"><%= current.notes %></dd><% } %>
+      </dl></div>
+      <% if (canEdit && active) { %><div class="panel-foot no-print"><button class="btn btn-secondary btn-sm" type="button" data-open-dialog="close-dialog" data-reset-form><%- icon('check', 'icon-sm') %><%= t('pregnancy.close') %></button></div><% } %>
+    </section>
+    <% if (list.length > 1) { %>
+    <section class="panel flush no-print">
+      <div class="panel-head"><h2><%= t('pregnancy.all') %></h2></div>
+      <ul class="action-list">
+        <% list.forEach(function (x) { %><li><a href="<%= selfUrl('p=' + x.id) %>"<%- x.id === current.id ? ' aria-current="true"' : '' %>><div class="grow"><div class="strong small"><%= t('pregnancy.edd') %> <%= fmt.date(x.edd) %></div><div class="tiny muted"><%= x.status === 'active' ? t('pregnancy.ongoing') : t('pregnancy.outcomes.' + x.outcome) + ' · ' + fmt.date(x.outcome_date) %></div></div><% if (x.id === current.id) { %><span class="badge badge-neutral badge-dot"><%= t('pregnancy.showing') %></span><% } %></a></li><% }) %>
+      </ul>
+    </section>
+    <% } %>
+  </div>
+</div>
+<% } %>
+
+<% if (canEdit && eligible) { %>
+<dialog class="dialog wide" id="preg-dialog" aria-labelledby="preg-title"<% if (od === 'preg-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients/<%= patient.id %>/pregnancy" novalidate>
+    <div class="dialog-head"><h2 id="preg-title"><%= t('pregnancy.start') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><% if (od === 'preg-dialog') { %><%- include(P + 'form-error') %><% } %>
+      <%- include('_preg-form', { v: valsFor('preg-dialog', {}), idp: 'n-', errs: errsFor('preg-dialog') }) %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('pregnancy.start') %></button></div>
+  </form>
+</dialog>
+<% if (current) { var ga0 = current.scan_ga_days; %>
+<dialog class="dialog wide" id="preg-edit-dialog" aria-labelledby="preg-edit-title"<% if (od === 'preg-edit-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients/<%= patient.id %>/pregnancy/<%= current.id %>" novalidate>
+    <div class="dialog-head"><h2 id="preg-edit-title"><%= t('pregnancy.edit') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><% if (od === 'preg-edit-dialog') { %><%- include(P + 'form-error') %><% } %>
+      <%- include('_preg-form', { v: valsFor('preg-edit-dialog', Object.assign({}, current, { scan_ga_weeks: ga0 !== null ? Math.floor(ga0 / 7) : '', scan_ga_days: ga0 !== null ? ga0 % 7 : '' })), idp: 'e-', errs: errsFor('preg-edit-dialog') }) %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>
+<% if (active) { var cv = valsFor('close-dialog', {}); var ce = errsFor('close-dialog'); %>
+<dialog class="dialog" id="close-dialog" aria-labelledby="close-title"<% if (od === 'close-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients/<%= patient.id %>/pregnancy/<%= current.id %>/close" novalidate data-close-form>
+    <div class="dialog-head"><h2 id="close-title"><%= t('pregnancy.close') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (od === 'close-dialog') { %><%- include(P + 'form-error') %><% } %>
+      <div class="form-grid">
+        <%- include(P + 'field', { id: 'c-outcome', name: 'outcome', label: t('pregnancy.outcome'), type: 'select', required: true, value: cv.outcome || 'live_birth', options: outcomes.map(function (o) { return { value: o, label: t('pregnancy.outcomes.' + o) }; }), attrs: 'data-outcome', errors: ce, old: null }) %>
+        <%- include(P + 'field', { id: 'c-date', name: 'outcome_date', label: t('common.date'), type: 'date', required: true, value: cv.outcome_date || today, attrs: 'max="' + today + '"', errors: ce, old: null }) %>
+        <%- include(P + 'field', { id: 'c-mode', name: 'delivery_mode', label: t('pregnancy.delivery_mode'), type: 'select', placeholder: '—', value: cv.delivery_mode || '', options: deliveryModes.map(function (o) { return { value: o, label: t('pregnancy.modes.' + o) }; }), cls: 'sp-birth-only', errors: ce, old: null }) %>
+        <%- include(P + 'field', { id: 'c-bw', name: 'baby_weight_kg', label: t('pregnancy.baby_weight'), value: cv.baby_weight_kg || '', suffix: t('child_growth.units.wfa'), attrs: 'inputmode="decimal"', cls: 'sp-birth-only', errors: ce, old: null }) %>
+        <%- include(P + 'field', { id: 'c-notes', name: 'outcome_notes', label: t('common.notes'), type: 'textarea', value: cv.outcome_notes || '', cls: 'full', errors: ce, old: null }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% var av = valsFor('anc-dialog', prefillVisit); var ae = errsFor('anc-dialog'); %>
+<dialog class="dialog wide" id="anc-dialog" aria-labelledby="anc-title"<% if (od === 'anc-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients/<%= patient.id %>/pregnancy/<%= current.id %>/visits" novalidate>
+    <div class="dialog-head"><h2 id="anc-title"><%= t('pregnancy.add_visit') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><% if (od === 'anc-dialog') { %><%- include(P + 'form-error') %><% } %>
+      <% if (visit && (prefillVisit.weight_kg || prefillVisit.bp)) { %><p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('pregnancy.prefilled') %></p><% } %>
+      <div class="form-grid cols-3">
+        <%- include(P + 'field', { id: 'a-date', name: 'visit_date', label: t('common.date'), type: 'date', required: true, value: av.visit_date || today, attrs: 'max="' + today + '" data-ga-date data-edd="' + current.edd + '"', help: t('pregnancy.ga_auto'), errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-weight', name: 'weight_kg', label: t('pregnancy.weight'), value: av.weight_kg || '', suffix: t('child_growth.units.wfa'), attrs: 'inputmode="decimal"', errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-bp', name: 'bp', label: t('pregnancy.bp'), value: av.bp || '', placeholder: '120/80', attrs: 'dir="ltr" inputmode="numeric"', errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-fundal', name: 'fundal_height_cm', label: t('pregnancy.fundal'), value: av.fundal_height_cm || '', suffix: t('child_growth.units.lhfa'), attrs: 'inputmode="decimal"', errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-fhr', name: 'fhr', label: t('pregnancy.fhr'), value: av.fhr || '', suffix: t('pregnancy.bpm'), attrs: 'inputmode="numeric"', errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-pres', name: 'presentation', label: t('pregnancy.presentation'), type: 'select', placeholder: '—', value: av.presentation || '', options: presentations.map(function (o) { return { value: o, label: t('pregnancy.presentations.' + o) }; }), errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-oed', name: 'oedema', label: t('pregnancy.oedema'), type: 'select', placeholder: '—', value: av.oedema || '', options: oedemaLevels.map(function (o) { return { value: o, label: t('pregnancy.oedema_levels.' + o) }; }), errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-up', name: 'urine_protein', label: t('pregnancy.urine_protein'), type: 'select', placeholder: '—', value: av.urine_protein || '', options: urineLevels.map(function (o) { return { value: o, label: t('pregnancy.urine_levels.' + o) }; }), errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-ug', name: 'urine_glucose', label: t('pregnancy.urine_glucose'), type: 'select', placeholder: '—', value: av.urine_glucose || '', options: urineLevels.map(function (o) { return { value: o, label: t('pregnancy.urine_levels.' + o) }; }), errors: ae, old: null }) %>
+        <%- include(P + 'field', { id: 'a-notes', name: 'notes', label: t('common.notes'), type: 'textarea', value: av.notes || '', cls: 'full', errors: ae, old: null }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>
+<% } %>

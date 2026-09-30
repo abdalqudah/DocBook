@@ -1,0 +1,157 @@
+<%
+  var P = '../../partials/';
+  var canEdit = can('clinical.edit');
+  var visitField = visit ? '<input type="hidden" name="visit_id" value="' + visit.id + '">' : '';
+  var actions = '<a class="btn btn-secondary" href="' + selfUrl((primary ? 'set=primary&' : '') + 'print=1') + '">' + icon('printer', 'icon-sm') + t('common.print') + '</a>'
+    + (canEdit ? '<button class="btn btn-primary" type="button" data-open-dialog="dental-entry-dialog" data-reset-form>' + icon('plus', 'icon-sm') + t('dental.add_entry') + '</button>' : '');
+  var condLabel = function (k) { return t('dental.conditions.' + k); };
+  var surfList = function (s) { return s ? s.split(',').join(' · ') : ''; };
+  var toothOptions = function (set) {
+    var q = set === 'primary' ? { q1: [55,54,53,52,51], q2: [61,62,63,64,65], q4: [85,84,83,82,81], q3: [71,72,73,74,75] } : { q1: [18,17,16,15,14,13,12,11], q2: [21,22,23,24,25,26,27,28], q4: [48,47,46,45,44,43,42,41], q3: [31,32,33,34,35,36,37,38] };
+    return q;
+  };
+  var oldv = typeof old !== 'undefined' && old && Object.keys(old).length ? old : {};
+  var errs = typeof errors !== 'undefined' && errors ? errors : {};
+  var od = typeof openDialog !== 'undefined' ? openDialog : null;
+  var eFor = function (id) { return od === id ? errs : {}; };
+%>
+<%- patternDefs %>
+<%- include('_head', { mod: 'dental', actions: actions }) %>
+
+<div class="grid grid-main sp-grid">
+  <div class="stack">
+    <section class="panel" aria-labelledby="chart-h">
+      <div class="panel-head">
+        <h2 id="chart-h"><%= t('dental.chart') %></h2>
+        <div class="segmented no-print" role="group" aria-label="<%= t('dental.dentition') %>">
+          <a href="<%= selfUrl('set=permanent') %>" class="<%= primary ? '' : 'active' %>"><%= t('dental.permanent') %></a>
+          <a href="<%= selfUrl('set=primary') %>" class="<%= primary ? 'active' : '' %>"><%= t('dental.primary') %></a>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="dc-chart" data-dental-chart<%- canEdit ? ' data-editable' : '' %>>
+          <% quadrants.forEach(function (q) { %>
+          <figure class="dc-quad dc-<%= q.key %>"><figcaption class="tiny muted" dir="<%= dir %>"><%= q.caption %></figcaption><div class="dc-quad-svg"><%- q.svg %></div></figure>
+          <% }) %>
+        </div>
+        <p class="tiny muted no-print sp-hint"><%- icon('info', 'icon-sm') %> <%= canEdit ? t('dental.tap_hint') : t('dental.view_hint') %></p>
+        <ul class="dc-legend" aria-label="<%= t('dental.legend') %>">
+          <% legend.forEach(function (l) { %><li><%- l.svg %><span><strong class="dc-legend-code"><%= l.code %></strong> <%= condLabel(l.key) %></span></li><% }) %>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel flush" aria-labelledby="findings-h">
+      <div class="panel-head"><h2 id="findings-h"><%= t('dental.current_findings') %></h2><% if (selected) { %><a class="btn btn-ghost btn-sm no-print" href="<%= selfUrl(primary ? 'set=primary' : '') %>"><%- icon('x', 'icon-sm') %><%= t('dental.show_all_teeth') %></a><% } %></div>
+      <% if (!charted.length) { %><div class="sp-empty small muted"><%= t('dental.no_findings') %></div><% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('dental.tooth') %></th><th><%= t('dental.findings') %></th></tr></thead>
+        <tbody><% charted.forEach(function (r) { %><tr>
+          <td class="primary-cell"><a class="strong link" href="<%= selfUrl((primary ? 'set=primary&' : '') + 'tooth=' + r.tooth) %>#history"><%= t('dental.tooth') %> <span dir="ltr"><%= r.tooth %></span></a></td>
+          <td data-label="<%= t('dental.findings') %>"><div class="row-sm wrap"><% r.conds.forEach(function (k) { var surfs = surfaces.filter(function (s) { return r.st.surfaces[s] && r.st.surfaces[s].condition === k; }); var mat = k === 'crown' && r.st.crown && r.st.crown !== 'crown' ? r.st.crown : (surfs.length && r.st.surfaces[surfs[0]].material) || null; %><span class="badge badge-neutral"><strong dir="ltr"><%= conditions[k].code %></strong> <%= condLabel(k) %><% if (surfs.length) { %> · <span dir="ltr"><%= surfs.join('') %></span><% } %><% if (mat) { %> · <%= t('dental.materials.' + mat) %><% } %></span><% }) %></div></td>
+        </tr><% }) %></tbody>
+      </table></div><% } %>
+    </section>
+
+    <section class="panel flush no-print" id="history" aria-labelledby="history-h">
+      <div class="panel-head"><h2 id="history-h"><%- icon('history', 'icon-sm') %> <%= selected ? t('dental.history_tooth', { n: selected }) : t('dental.history') %></h2></div>
+      <% if (!entries.length) { %><div class="sp-empty small muted"><%= t('dental.no_history') %></div><% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('common.date') %></th><th><%= t('dental.tooth') %></th><th><%= t('dental.finding') %></th><th><%= t('common.doctor') %></th><th><%= t('common.notes') %></th><th class="actions"></th></tr></thead>
+        <tbody><% entries.forEach(function (e) { %><tr class="<%= e.voided_at ? 'sp-void' : '' %>">
+          <td class="primary-cell"><span class="strong"><%= fmt.date(e.entry_date) %></span><% if (e.appointment_id) { %> <a class="tiny link" href="/app/visits/<%= e.appointment_id %>"><%= t('specialty_mod.visit_link') %></a><% } %></td>
+          <td data-label="<%= t('dental.tooth') %>"><span dir="ltr" class="strong"><%= e.tooth %></span><% if (e.surfaces) { %> <span class="muted" dir="ltr"><%= surfList(e.surfaces) %></span><% } %></td>
+          <td data-label="<%= t('dental.finding') %>"><%= condLabel(e.condition) %><% if (e.material) { %> · <%= t('dental.materials.' + e.material) %><% } %><% if (e.voided_at) { %> <span class="badge badge-neutral"><%= t('dental.removed') %></span><% } %></td>
+          <td data-label="<%= t('common.doctor') %>"><%= L(e.doctor_name, e.doctor_name_en) || e.user_name || '—' %></td>
+          <td data-label="<%= t('common.notes') %>" class="small"><%= e.notes || '—' %></td>
+          <td class="actions"><% if (canEdit && !e.voided_at) { %><form method="post" action="/app/patients/<%= patient.id %>/dental/entries/<%= e.id %>/delete" data-confirm="<%= t('dental.remove_confirm') %>" data-confirm-title="<%= t('dental.remove_title') %>" data-confirm-yes="<%= t('dental.remove') %>" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><button class="btn btn-danger-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('dental.remove') %>" title="<%= t('dental.remove') %>"><%- icon('trash-2', 'icon-sm') %></button></form><% } %></td>
+        </tr><% }) %></tbody>
+      </table></div><% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="panel flush" id="plan" aria-labelledby="plan-h">
+      <div class="panel-head"><h2 id="plan-h"><%= t('dental.plan') %></h2><% if (canEdit) { %><button class="btn btn-secondary btn-sm no-print" type="button" data-open-dialog="plan-dialog" data-reset-form><%- icon('plus', 'icon-sm') %><%= t('dental.add_plan') %></button><% } %></div>
+      <% if (!plan.length) { %><div class="sp-empty small muted"><%= t('dental.no_plan') %></div><% } else { %>
+      <ul class="sp-plan">
+        <% plan.forEach(function (i) { %>
+        <li class="sp-plan-item is-<%= i.status %>">
+          <div class="between" style="align-items:flex-start;gap:8px">
+            <div style="min-width:0">
+              <div class="strong small"><%= i.procedure_name %></div>
+              <div class="tiny muted"><% if (i.tooth) { %><%= t('dental.tooth') %> <span dir="ltr"><%= i.tooth %><%= i.surfaces ? ' ' + i.surfaces.replace(/,/g, '') : '' %></span> · <% } %><% if (i.status === 'done') { %><%= t('dental.done_on', { date: fmt.date(i.done_on) }) %><% } else { %><%= t('dental.plan_status.' + i.status) %><% } %><% if (i.appointment_id) { %> · <a class="link" href="/app/visits/<%= i.appointment_id %>"><%= t('specialty_mod.visit_link') %></a><% } %></div>
+              <% if (i.notes) { %><div class="tiny muted"><%= i.notes %></div><% } %>
+            </div>
+            <div class="strong small" style="white-space:nowrap"><%= i.price !== null ? fmt.money(i.price) : '' %></div>
+          </div>
+          <% if (canEdit) { %>
+          <div class="row-sm wrap no-print sp-plan-actions">
+            <% if (i.status === 'planned') { %>
+            <form method="post" action="/app/patients/<%= patient.id %>/dental/plan/<%= i.id %>/status" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><input type="hidden" name="status" value="done"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('dental.mark_done') %></button></form>
+            <% if (can('appointments.manage')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments/new?patient=<%= patient.id %><%= i.service_id ? '&service=' + i.service_id : '' %><%= i.doctor_id ? '&doctor=' + i.doctor_id : '' %>&return=<%= encodeURIComponent('/app/patients/' + patient.id + '/dental#plan') %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('dental.book') %></a><% } %>
+            <form method="post" action="/app/patients/<%= patient.id %>/dental/plan/<%= i.id %>/status" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><input type="hidden" name="status" value="cancelled"><button class="btn btn-ghost btn-sm" type="submit"><%= t('dental.cancel_item') %></button></form>
+            <% } else { %>
+            <form method="post" action="/app/patients/<%= patient.id %>/dental/plan/<%= i.id %>/status" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><input type="hidden" name="status" value="planned"><button class="btn btn-ghost btn-sm" type="submit"><%= t('dental.back_to_planned') %></button></form>
+            <% } %>
+            <%- include(P + 'delete-form', { action: '/app/patients/' + patient.id + '/dental/plan/' + i.id + '/delete' }) %>
+          </div>
+          <% } %>
+        </li>
+        <% }) %>
+      </ul>
+      <div class="panel-foot between"><span class="small muted"><%= t('dental.planned_total', { n: planned.length }) %></span><span class="strong"><%= fmt.money(plannedTotal) %></span></div>
+      <% } %>
+    </section>
+    <% if (can('settings.manage')) { %><a class="small link no-print" href="/app/specialty/settings"><%- icon('settings', 'icon-sm') %> <%= t('specialty_mod.settings_title') %></a><% } %>
+  </div>
+</div>
+
+<% if (canEdit) { var ovFor = function (id) { return function (k, d) { return od === id && oldv[k] !== undefined ? oldv[k] : d; }; }; var ovE = ovFor('dental-entry-dialog'); var ovP = ovFor('plan-dialog'); var oldSurfE = od === 'dental-entry-dialog' ? [].concat(oldv.surfaces || []) : []; var set = toothOptions(primary ? 'primary' : 'permanent'); var other = toothOptions(primary ? 'permanent' : 'primary'); %>
+<dialog class="dialog wide" id="dental-entry-dialog" aria-labelledby="dental-entry-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'dental-entry-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients/<%= patient.id %>/dental/entries" novalidate data-dental-form>
+    <div class="dialog-head"><h2 id="dental-entry-title" data-dental-title data-base-title="<%= t('dental.add_entry') %>" data-tooth-title="<%= t('dental.tooth') %>"><%= t('dental.add_entry') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><input type="hidden" name="set" value="<%= primary ? 'primary' : 'permanent' %>"><% if (od === 'dental-entry-dialog') { %><%- include(P + 'form-error') %><% } %>
+      <div class="form-grid">
+        <div class="field">
+          <label class="label" for="f-tooth"><%= t('dental.tooth') %><span class="req">*</span></label>
+          <select class="select<%= eFor('dental-entry-dialog').tooth ? ' is-invalid' : '' %>" id="f-tooth" name="tooth" required>
+            <option value=""><%= t('dental.choose_tooth') %></option>
+            <% ['q1','q2','q4','q3'].forEach(function (k) { %><optgroup label="<%= t('dental.quadrants.' + k) %>"><% set[k].forEach(function (n) { %><option value="<%= n %>"<%= String(ovE('tooth', selected || '')) === String(n) ? ' selected' : '' %>><%= n %></option><% }) %></optgroup><% }) %>
+            <optgroup label="<%= primary ? t('dental.permanent') : t('dental.primary') %>"><% ['q1','q2','q4','q3'].forEach(function (k) { other[k].forEach(function (n) { %><option value="<%= n %>"<%= String(ovE('tooth', selected || '')) === String(n) ? ' selected' : '' %>><%= n %></option><% }) }) %></optgroup>
+          </select>
+          <% if (eFor('dental-entry-dialog').tooth) { %><span class="field-error"><%= eFor('dental-entry-dialog').tooth %></span><% } %>
+        </div>
+        <%- include(P + 'field', { errors: eFor('dental-entry-dialog'), old: null, name: 'condition', label: t('dental.finding'), type: 'select', required: true, value: ovE('condition', 'caries'), options: Object.keys(conditions).map(function (k) { return { value: k, label: (conditions[k].code ? conditions[k].code + ' — ' : '') + condLabel(k) }; }), attrs: 'data-dental-condition data-scopes=\'' + JSON.stringify(Object.fromEntries(Object.keys(conditions).map(function (k) { return [k, conditions[k].scope + (conditions[k].material ? '+m' : '')]; }))) + '\'' }) %>
+        <fieldset class="field sp-surfaces" data-dental-surfaces style="grid-column:1/-1">
+          <legend class="label"><%= t('dental.surfaces_label') %> <span class="tiny muted" data-surface-hint><%= t('dental.surfaces_hint') %></span></legend>
+          <div class="row-sm wrap">
+            <% surfaces.forEach(function (s) { %><label class="sp-chip"><input type="checkbox" name="surfaces" value="<%= s %>"<%= oldSurfE.indexOf(s) >= 0 ? ' checked' : '' %>><span><strong dir="ltr"><%= s %></strong> <%= t('dental.surfaces.' + s) %></span></label><% }) %>
+          </div>
+          <% if (eFor('dental-entry-dialog').surfaces) { %><span class="field-error"><%= eFor('dental-entry-dialog').surfaces %></span><% } %>
+        </fieldset>
+        <%- include(P + 'field', { errors: eFor('dental-entry-dialog'), old: null, name: 'material', label: t('dental.material'), type: 'select', placeholder: '—', value: ovE('material', ''), options: materials.map(function (m) { return { value: m, label: t('dental.materials.' + m) }; }), cls: 'sp-material', attrs: 'data-dental-material' }) %>
+        <%- include(P + 'field', { errors: eFor('dental-entry-dialog'), old: null, name: 'entry_date', label: t('common.date'), type: 'date', required: true, value: ovE('entry_date', visit ? visit.appointment_date : today), attrs: 'max="' + today + '"' }) %>
+        <%- include(P + 'field', { errors: eFor('dental-entry-dialog'), old: null, name: 'notes', label: t('common.notes'), type: 'textarea', value: ovE('notes', ''), cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="plan-dialog" aria-labelledby="plan-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'plan-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/patients/<%= patient.id %>/dental/plan" novalidate>
+    <div class="dialog-head"><h2 id="plan-title"><%= t('dental.add_plan') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- visitField %><% if (od === 'plan-dialog') { %><%- include(P + 'form-error') %><% } %>
+      <div class="form-grid">
+        <%- include(P + 'field', { errors: eFor('plan-dialog'), old: null, name: 'service_id', label: t('common.service'), type: 'select', placeholder: t('dental.no_service'), value: ovP('service_id', ''), options: services.map(function (s) { return { value: s.id, label: L(s.name, s.name_en) + ' · ' + fmt.money(s.price) }; }), attrs: 'data-plan-service data-prices=\'' + JSON.stringify(Object.fromEntries(services.map(function (s) { return [s.id, { price: Number(s.price), name: s.name }]; }))) + '\'', help: t('dental.service_help') }) %>
+        <%- include(P + 'field', { errors: eFor('plan-dialog'), old: null, name: 'procedure_name', label: t('dental.procedure'), value: ovP('procedure_name', ''), attrs: 'maxlength="190" data-plan-name', help: t('dental.procedure_help') }) %>
+        <%- include(P + 'field', { errors: eFor('plan-dialog'), old: null, name: 'tooth', label: t('dental.tooth'), type: 'select', placeholder: t('dental.whole_mouth'), value: ovP('tooth', selected || ''), options: ['q1','q2','q4','q3'].reduce(function (a, k) { return a.concat(set[k]); }, []).concat(['q1','q2','q4','q3'].reduce(function (a, k) { return a.concat(other[k]); }, [])).map(function (n) { return { value: n, label: String(n) }; }) }) %>
+        <%- include(P + 'field', { errors: eFor('plan-dialog'), old: null, name: 'price', label: t('common.amount'), value: ovP('price', ''), suffix: currency, attrs: 'inputmode="decimal" data-plan-price' }) %>
+        <%- include(P + 'field', { errors: eFor('plan-dialog'), old: null, name: 'notes', label: t('common.notes'), type: 'textarea', value: ovP('notes', ''), cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>
