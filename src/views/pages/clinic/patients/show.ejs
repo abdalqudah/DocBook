@@ -1,5 +1,8 @@
-<% var p = patient; var P = '../../../partials/'; var canClinical = can('clinical.view'); var canBilling = can('billing.view');
-   var visitHref = function (id) { return canClinical ? '/app/visits/' + id : '/app/appointments/' + id; };
+<% var p = patient; var P = '../../../partials/'; var acc = typeof access !== 'undefined' && access ? access : { clinical: true, reason: 'open' };
+   var canClinical = can('clinical.view') && acc.clinical; var restrictedView = can('clinical.view') && !acc.clinical; var canBilling = can('billing.view');
+   var dxTitle = typeof icdTitle === 'function' ? icdTitle : function (r) { return r.title_ar || r.title_en || ''; };
+   var opened = typeof lastOpened !== 'undefined' && lastOpened ? lastOpened : [];
+   var visitHref = function (id) { return can('clinical.view') ? '/app/visits/' + id : '/app/appointments/' + id; };
    var stamp = function (d) { return d ? fmt.date(d) : '—'; }; %>
 <div class="page-head">
   <div>
@@ -42,7 +45,7 @@
 
 <div class="grid grid-main mt-6">
   <div class="panel flush">
-    <div class="panel-head"><div><h2><%= t('patients.timeline') %></h2><p class="panel-sub"><%= canClinical ? t('patients.timeline_sub') : t('patients.timeline_sub_basic') %></p></div></div>
+    <div class="panel-head"><div><h2><%= t('patients.timeline') %></h2><p class="panel-sub"><%= canClinical ? t('patients.timeline_sub') : restrictedView ? t('privacy.timeline_restricted') : t('patients.timeline_sub_basic') %></p></div></div>
     <% if (!timeline.length) { %>
       <%- include(P + 'empty', { compact: true, emptyIcon: 'history', emptyTitle: t('patients.timeline_empty'), emptyText: t('patients.timeline_empty_text'), emptyAction: can('appointments.manage') ? '<a class="btn btn-primary btn-sm" href="/app/appointments/new?patient=' + p.id + '">' + t('patients.book') + '</a>' : '' }) %>
     <% } else { %>
@@ -58,6 +61,7 @@
           </div>
           <div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') || t('patients.no_doctor') %></div>
           <% if (e.consultation && (e.consultation.diagnosis || e.consultation.assessment)) { %><div class="rec-tl-line"><%- icon('stethoscope', 'icon-sm') %><span><span class="muted"><%= t('patients.diagnosis') %>:</span> <%= e.consultation.diagnosis || e.consultation.assessment %></span></div><% } %>
+          <% if (e.codes && e.codes.length) { %><div class="rec-tl-line cp-code-line"><% if (!(e.consultation && (e.consultation.diagnosis || e.consultation.assessment))) { %><%- icon('stethoscope', 'icon-sm') %><% } %><% e.codes.forEach(function (d) { %><span class="cp-code-pair"><span class="cp-code" dir="ltr"><%= d.code %></span><span class="small muted"><%= dxTitle(d) %></span></span><% }) %></div><% } %>
           <% e.prescriptions.forEach(function (rx) { %><div class="rec-tl-line"><%- icon('pill', 'icon-sm') %><a class="link" href="/app/visits/<%= a.id %>/prescriptions/<%= rx.id %>"><%= t('patients.prescription') %></a><span class="muted"><%= rx.items.map(function (i) { return i.medicationName; }).join('، ') %></span></div><% }) %>
           <% if (e.invoice) { %><div class="rec-tl-line"><%- icon('receipt', 'icon-sm') %><a class="link" href="/app/billing/<%= e.invoice.id %>"><%= t('billing.invoice_no', { n: e.invoice.invoice_number }) %></a><span class="muted"><%= fmt.money(e.invoice.amount) %> · <%= label('payment_methods', e.invoice.payment_method) %></span></div>
           <% } else if (canBilling && a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= clinicToday) { %><div class="rec-tl-line"><%- icon('circle-alert', 'icon-sm') %><span class="badge badge-warning"><%= t('billing.unpaid') %></span></div><% } %>
@@ -75,12 +79,14 @@
   </div>
 
   <div class="stack">
+    <% if (restrictedView) { %><%- include('../../clinicalplus/_restricted', { acc: acc, patientId: p.id, returnTo: '/app/patients/' + p.id }) %><% } %>
+    <% if (acc.reason === 'emergency' && acc.grant) { %><div class="alert alert-warning" role="note"><%- icon('shield-alert') %><div class="grow"><div class="alert-title"><%= t('privacy.bg_active_title') %></div><div class="small"><%= t('privacy.bg_active_text', { when: fmt.date(acc.grant.expires_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) %></div></div></div><% } %>
     <% if (upcoming.length) { %>
     <div class="panel flush"><div class="panel-head"><h2><%= t('patients.upcoming') %></h2></div>
       <ul class="action-list"><% upcoming.slice(0, 4).forEach(function (a) { %><li><a href="<%= can('appointments.view') ? '/app/appointments/' + a.id : visitHref(a.id) %>"><span class="action-icon brand"><%- icon('calendar-days') %></span><div class="grow"><div class="strong"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></div><div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') %></div></div><span class="badge badge-<%= statusTone[a.status] %>"><%= t('dashboard.statuses.' + a.status) %></span></a></li><% }) %></ul>
     </div>
     <% } %>
-    <%- include('../../specialty/_patient-panel') %>
+    <% if (!restrictedView) { %><%- include('../../specialty/_patient-panel') %><% } %>
     <% if (latestDiagnosis) { %><div class="panel"><div class="panel-body"><div class="small muted strong"><%= t('patients.latest_diagnosis') %></div><div class="mt-1"><%= latestDiagnosis %></div></div></div><% } %>
     <div class="panel"><div class="panel-head"><h2><%= t('patients.details') %></h2></div><div class="panel-body"><dl class="dl rec-dl-narrow">
       <dt><%= t('patients.dob') %></dt><dd><%= p.date_of_birth ? fmt.date(p.date_of_birth) : '—' %></dd>
@@ -90,6 +96,12 @@
       <dt><%= t('common.notes') %></dt><dd class="rec-pre"><%= p.notes || '—' %></dd>
       <dt><%= t('patients.registered') %></dt><dd><%= fmt.date(p.created_at) %></dd>
     </dl></div>
+    <% if (can('audit.view')) { %><div class="panel-foot cp-opened">
+      <div class="row between"><span class="small strong"><%- icon('eye', 'icon-sm') %> <%= t('privacy.last_opened') %></span><a class="link small" href="/app/settings/privacy/log?patient=<%= p.id %>"><%= t('privacy.full_log') %></a></div>
+      <% if (!opened.length) { %><p class="tiny muted mt-1"><%= t('privacy.never_opened') %></p><% } else { %>
+      <ul class="cp-opened-list"><% opened.forEach(function (o) { %><li><span class="small"><%= o.user_name || '—' %></span><span class="tiny muted"><%= t('privacy.what.' + o.what) %><% if (o.access !== 'full') { %> · <%= t('privacy.level.' + o.access) %><% } %> · <%= fmt.date(o.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></span></li><% }) %></ul>
+      <% } %>
+    </div><% } %>
     <% if (can('patients.delete')) { %><div class="panel-foot"><form method="post" action="/app/patients/<%= p.id %>/delete" data-confirm="<%= t('patients.delete_confirm') %>" data-confirm-title="<%= t('patients.delete') %>" data-confirm-yes="<%= t('common.delete') %>" data-confirm-type="<%= p.full_name %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('patients.delete') %></button></form></div><% } %>
     </div>
   </div>

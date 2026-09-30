@@ -19,6 +19,7 @@ const SECTIONS = [
   { group: 'clinical', items: [
     { key: 'insurance', href: '/app/settings/insurance', icon: 'shield-plus', perms: ['settings.manage'] },
     { key: 'medications', href: '/app/settings/medications', icon: 'pill', perms: ['settings.manage', 'prescriptions.create'] },
+    { key: 'diagnosis_codes', href: '/app/settings/diagnosis-codes', icon: 'stethoscope', perms: ['settings.manage', 'clinical.edit'] },
     { key: 'signatures', href: '/app/settings/signatures', icon: 'pen-line', perms: ['settings.manage', 'prescriptions.create'] },
     { key: 'privacy', href: '/app/settings/privacy', icon: 'lock', perms: ['settings.manage', 'audit.view'] },
     { key: 'ai', href: '/app/settings/ai', icon: 'sparkles', perms: ['settings.manage'] },

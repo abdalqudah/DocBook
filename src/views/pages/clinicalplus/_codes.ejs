@@ -1,0 +1,4 @@
+<%/* Coded diagnoses (ICD-10) as a compact list: code + title, the primary one marked. Locals: dx, dxTitle */%>
+<ul class="cp-codes">
+  <% dx.forEach(function (d) { %><li><span class="cp-code" dir="ltr"><%= d.code %></span><span class="cp-code-title" dir="auto"><%= dxTitle(d) %></span><% if (d.is_primary) { %><span class="badge badge-neutral cp-primary"><%= t('icd.primary') %></span><% } %></li><% }) %>
+</ul>

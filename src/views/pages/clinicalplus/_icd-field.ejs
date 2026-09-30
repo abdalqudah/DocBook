@@ -1,0 +1,21 @@
+<%/* ICD-10 codes on the consultation note. Without JavaScript: a plain text field "J06.9, R50.9" (first = primary),
+     validated on the server. clinicalplus.js turns it into chips with a bilingual autocomplete.
+     Locals: dx (saved diagnoses), dxTitle, nOld (posted values after a failed save), icdError */%>
+<%
+  var _saved = dx.map(function (d) { return d.code; });
+  var _primary = (dx.filter(function (d) { return d.is_primary; })[0] || dx[0] || {}).code || '';
+  var _raw = nOld && nOld.icd_codes !== undefined ? [].concat(nOld.icd_codes).join(', ') : _saved.join(', ');
+  var _prim = nOld && nOld.icd_primary !== undefined ? nOld.icd_primary : _primary;
+  var _island = dx.map(function (d) { return { code: d.code, title: dxTitle(d) }; });
+%>
+<div class="field full cp-icd" data-cp-icd data-search-url="/app/icd/search" data-labels="<%= json({ primary: t('icd.primary'), make_primary: t('icd.make_primary'), remove: t('icd.remove'), search: t('icd.search_ph'), none: t('icd.no_results'), custom: t('icd.custom'), used: t('icd.used_n'), min: t('icd.min_chars') }) %>">
+  <input type="hidden" name="icd_present" value="1">
+  <input type="hidden" name="icd_primary" value="<%= _prim %>" data-cp-icd-primary>
+  <label class="label" for="n-icd"><%= t('icd.codes') %> <span class="muted small">ICD-10</span></label>
+  <script type="application/json" data-cp-icd-data><%- JSON.stringify(_island).replace(/</g, '\\u003c') %></script>
+  <div class="cp-icd-chips" data-cp-icd-chips hidden></div>
+  <input class="input<%= icdError ? ' is-invalid' : '' %>" id="n-icd" name="icd_codes" value="<%= _raw %>" placeholder="<%= t('icd.raw_ph') %>" dir="ltr" autocomplete="off" spellcheck="false" data-cp-icd-raw aria-describedby="n-icd-help">
+  <span class="help" id="n-icd-help" data-cp-icd-help><%= t('icd.raw_help') %></span>
+  <% if (icdError) { %><span class="field-error"><%= icdError %></span><% } %>
+  <% if (dx.length) { %><noscript><%- include('_codes', { dx: dx, dxTitle: dxTitle }) %></noscript><% } %>
+</div>

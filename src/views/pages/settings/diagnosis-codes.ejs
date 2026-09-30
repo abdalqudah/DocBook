@@ -1,0 +1,61 @@
+<%/* Settings → Diagnosis codes: the clinic's own codes (added to ICD-10 search) and the codes it uses most. */%>
+<% var dlg = typeof openDialog !== 'undefined' && openDialog === 'icd-dialog'; %>
+<%- include('_head', { heading: t('settings.nav_diagnosis_codes'), lead: t('icd.settings_lead'), actions: '<button class="btn btn-primary" type="button" data-open-dialog="icd-dialog" data-reset-form data-action="/app/settings/diagnosis-codes" data-dialog-title="' + escapeHtml(t('icd.add')) + '">' + icon('plus', 'icon-sm') + escapeHtml(t('icd.add')) + '</button>' }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('icd.try_title') %></h2><div class="panel-sub"><%= t('icd.try_sub', { n: fmt.number(source.count) }) %></div></div></div>
+      <div class="panel-body">
+        <div class="cp-icd cp-icd-browse" data-cp-icd data-cp-browse data-search-url="/app/icd/search" data-labels="<%= json({ search: t('icd.search_ph'), none: t('icd.no_results'), custom: t('icd.custom'), used: t('icd.used_n'), min: t('icd.min_chars') }) %>">
+          <label class="label sr-only" for="icd-try"><%= t('icd.search_ph') %></label>
+          <input class="input" id="icd-try" type="search" placeholder="<%= t('icd.search_ph') %>" autocomplete="off" data-cp-icd-raw>
+          <noscript><p class="tiny muted mt-1"><%= t('icd.needs_js') %></p></noscript>
+        </div>
+        <p class="tiny muted mt-2"><%= t('icd.source_note') %></p>
+      </div>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('icd.custom_title') %></h2><div class="panel-sub"><%= t('icd.custom_sub') %></div></div></div>
+      <% if (!totalAll) { %>
+        <%- include('../../partials/empty', { compact: true, emptyIcon: 'stethoscope', emptyTitle: t('icd.custom_empty'), emptyText: t('icd.custom_empty_text'), emptyAction: '<button class="btn btn-secondary btn-sm" type="button" data-open-dialog="icd-dialog" data-reset-form data-action="/app/settings/diagnosis-codes">' + escapeHtml(t('icd.add')) + '</button>' }) %>
+      <% } else { %>
+      <div class="table-toolbar"><form method="get" class="row-sm grow" data-autosubmit role="search"><input class="input" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('icd.custom_search') %>" aria-label="<%= t('common.search') %>" style="max-width:320px"></form></div>
+      <% if (!rows.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'search', emptyTitle: t('table.no_matches'), compact: true, emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/settings/diagnosis-codes">' + escapeHtml(t('table.clear_filters')) + '</a>' }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('icd.code') %></th><th><%= t('icd.title_ar') %></th><th><%= t('icd.title_en') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+        <tbody><% rows.forEach(function (r) { %><tr>
+          <td class="primary-cell"><span class="cp-code" dir="ltr"><%= r.code %></span></td>
+          <td data-label="<%= t('icd.title_ar') %>"><span dir="rtl"><%= r.title_ar %></span></td>
+          <td data-label="<%= t('icd.title_en') %>"><span dir="ltr"><%= r.title_en || '—' %></span></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= r.is_active ? 'badge-success' : 'badge-neutral' %>"><%= r.is_active ? t('common.active') : t('common.inactive') %></span></td>
+          <td class="actions nowrap"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="icd-dialog" data-action="/app/settings/diagnosis-codes/<%= r.id %>" data-dialog-title="<%= t('icd.edit') %>" data-fill="<%= json({ code: r.code, title_ar: r.title_ar, title_en: r.title_en || '', is_active: !!r.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/settings/diagnosis-codes/' + r.id + '/delete', confirmText: t('icd.delete_confirm', { code: r.code }) }) %></td>
+        </tr><% }) %></tbody>
+      </table></div>
+      <% } %>
+      <% } %>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('icd.top_title') %></h2><div class="panel-sub"><%= t('icd.top_sub') %></div></div><% if (can('reports.view') && can('clinical.view')) { %><a class="link small" href="/app/reports/diagnoses"><%= t('icd.open_report') %></a><% } %></div>
+      <% if (!top.length) { %><div class="panel-body cp-pad"><p class="small muted"><%= t('icd.top_empty') %></p></div><% } else { %>
+      <ul class="cp-top-list"><% top.forEach(function (r) { %><li><span class="cp-code" dir="ltr"><%= r.code %></span><span class="grow small" dir="auto"><%= titleOf(r) %></span><span class="small muted num"><%= fmt.number(r.n) %></span></li><% }) %></ul>
+      <% } %>
+    </section>
+  </div>
+</div>
+<dialog class="dialog" id="icd-dialog" data-new-dialog aria-labelledby="icd-title"<% if (dlg) { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= dlg && formAction ? formAction : '/app/settings/diagnosis-codes' %>" novalidate>
+    <div class="dialog-head"><h2 id="icd-title" data-dialog-title-target><%= t('icd.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (dlg) { %><%- include('../../partials/form-error') %><% } %>
+      <%- include('../../partials/field', { name: 'code', label: t('icd.code'), required: true, placeholder: t('icd.code_ph'), help: t('icd.code_help'), attrs: 'dir="ltr" autocomplete="off" maxlength="20"' }) %>
+      <%- include('../../partials/field', { name: 'title_ar', label: t('icd.title_ar'), required: true, attrs: 'dir="rtl" maxlength="255"' }) %>
+      <%- include('../../partials/field', { name: 'title_en', label: t('icd.title_en'), attrs: 'dir="ltr" maxlength="255"' }) %>
+      <label class="check"><input type="checkbox" name="is_active" value="1"<%= !dlg || old.is_active ? ' checked' : '' %>><span><%= t('icd.active') %></span></label>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

@@ -1,0 +1,66 @@
+<%/* Reports → Consultation time: actual minutes (consultation timer) vs the booked slot, by doctor and service. */%>
+<% var printing = query.print === '1'; var canExport = can('data.export') && !printing;
+   var rq = (range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month) + (doctorId ? '&doctor=' + doctorId : '');
+   var exp = function (section) { if (!canExport) return ''; return '<details class="dropdown rec-exp"><summary class="btn btn-ghost btn-sm" aria-label="' + t('common.export') + '">' + icon('download', 'icon-sm') + '<span class="rec-exp-label">' + t('common.export') + '</span></summary><div class="menu"><a href="/app/reports/consultation-time?' + rq + '&export=' + section + '&format=xlsx">' + icon('file-spreadsheet', 'icon-sm') + t('common.export_xlsx') + '</a><a href="/app/reports/consultation-time?' + rq + '&export=' + section + '&format=csv">' + icon('table', 'icon-sm') + t('common.export_csv') + '</a></div></details>'; };
+   var rangeText = range.custom ? fmt.date(range.from) + ' – ' + fmt.date(range.to) : fmt.month(range.month);
+   var m1 = function (v) { return v === null || v === undefined ? '—' : fmt.number(v, 1); };
+   var diffCell = function (v) { if (v === null || v === undefined) return '<span class="muted">—</span>'; var s = (v > 0 ? '+' : '') + fmt.number(v, 1); return '<span class="' + (v >= 5 ? 'cp-over' : 'muted') + '" dir="ltr">' + escapeHtml(s) + '</span>'; };
+   var suggestCell = function (g) { if (!g.suggest) return '<span class="muted">—</span>'; return g.change ? '<span class="strong">' + escapeHtml(t('ctimer.suggest_n', { n: g.suggest })) + '</span>' : '<span class="muted">' + escapeHtml(t('ctimer.keep_n', { n: g.suggest })) + '</span>'; };
+   var table = function (list, firstHead) { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= firstHead %></th><th class="num"><%= t('ctimer.consultations') %></th><th class="num"><%= t('ctimer.avg_actual') %></th><th class="num"><%= t('ctimer.median_actual') %></th><th class="num"><%= t('ctimer.avg_booked') %></th><th class="num"><%= t('ctimer.difference') %></th><th><%= t('ctimer.suggested') %></th></tr></thead>
+    <tbody><% list.forEach(function (g) { %><tr>
+      <td class="primary-cell"><span class="strong"><%= g.label %></span><div class="tiny muted"><%= t('ctimer.summary', { avg: m1(g.avg), booked: m1(g.booked) }) %></div></td>
+      <td class="num" data-label="<%= t('ctimer.consultations') %>"><%= fmt.number(g.n) %></td>
+      <td class="num" data-label="<%= t('ctimer.avg_actual') %>"><%= m1(g.avg) %></td>
+      <td class="num" data-label="<%= t('ctimer.median_actual') %>"><%= m1(g.median) %></td>
+      <td class="num" data-label="<%= t('ctimer.avg_booked') %>"><%= m1(g.booked) %></td>
+      <td class="num" data-label="<%= t('ctimer.difference') %>"><%- diffCell(g.diff) %></td>
+      <td data-label="<%= t('ctimer.suggested') %>"><%- suggestCell(g) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+<% }; %>
+<% if (printing) { %>
+<div class="rec-print-title"><h1><%= t('ctimer.report_title') %></h1><p class="muted"><%= rangeText %></p></div>
+<% } else { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/reports?<%= range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month %>"><%= t('icd.back_reports') %></a></div>
+    <h1><%= t('ctimer.report_title') %></h1>
+    <p><%= t('ctimer.report_lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (can('clinical.view')) { %><a class="btn btn-secondary" href="/app/reports/diagnoses?<%= rq %>"><%- icon('stethoscope', 'icon-sm') %><%= t('icd.report_title') %></a><% } %>
+    <a class="btn btn-secondary" href="/app/reports/consultation-time?<%= rq %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.printable') %></a>
+  </div>
+</div>
+<%- include('_report-range', { base: '/app/reports/consultation-time' }) %>
+<% } %>
+
+<div class="stats rec-kpis">
+  <div class="stat"><div class="stat-label"><%= t('ctimer.kpi_timed') %><span class="stat-icon"><%- icon('timer') %></span></div><div class="stat-value"><%= fmt.number(all.n) %></div><div class="stat-meta"><%= completed ? t('ctimer.kpi_timed_meta', { pct: fmt.pct(Math.min(100, all.n * 100 / completed), 0), n: fmt.number(completed) }) : t('icd.kpi_no_completed') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('ctimer.avg_actual') %><span class="stat-icon"><%- icon('clock') %></span></div><div class="stat-value"><%= m1(all.avg) %> <small class="muted"><%= t('common.minutes') %></small></div><div class="stat-meta"><%= t('ctimer.median_is', { n: m1(all.median) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('ctimer.avg_booked') %><span class="stat-icon"><%- icon('calendar-clock') %></span></div><div class="stat-value"><%= m1(all.booked) %> <small class="muted"><%= t('common.minutes') %></small></div><div class="stat-meta"><%= all.diff === null ? '—' : t(all.diff >= 0 ? 'ctimer.over_by' : 'ctimer.under_by', { n: fmt.number(Math.abs(all.diff), 1) }) %></div></div>
+</div>
+
+<% if (all.n && all.suggest) { %>
+<div class="panel mt-4"><div class="panel-body row cp-insight"><span class="action-icon"><%- icon('lightbulb') %></span><p class="grow small"><%= t('ctimer.insight', { avg: m1(all.avg), booked: m1(all.booked) }) %> <%= all.change ? t('ctimer.insight_change', { n: all.suggest }) : t('ctimer.insight_keep') %></p></div></div>
+<% } %>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('ctimer.by_doctor') %></h2><p class="panel-sub"><%= t('ctimer.by_doctor_sub', { range: rangeText }) %></p></div><%- exp('doctors') %></div>
+  <% if (!perDoctor.length) { %>
+    <%- include('../../partials/empty', { compact: true, emptyIcon: 'timer', emptyTitle: t('ctimer.report_empty'), emptyText: t('ctimer.report_empty_text') }) %>
+  <% } else { %>
+  <div class="panel-body rec-pad"><%- chart %></div>
+  <% table(perDoctor, t('common.doctor')) %>
+  <% } %>
+</section>
+
+<% if (perService.length) { %>
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('ctimer.by_service') %></h2><p class="panel-sub"><%= t('ctimer.by_service_sub') %></p></div><%- exp('services') %></div>
+  <% table(perService, t('common.service')) %>
+</section>
+<% } %>
+<% if (excluded) { %><p class="tiny muted mt-4"><%= t('ctimer.excluded', { n: fmt.number(excluded) }) %></p><% } %>

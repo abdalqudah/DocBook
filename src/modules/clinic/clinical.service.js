@@ -98,4 +98,7 @@ async function saveInsurance(ctx, iid, input) {
 }
 const activeInsurance = (ctx) => knex('insurance_providers').where({ business_id: ctx.businessId, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'name' }]);
 
-module.exports = { consultation, saveVitals, saveNote, prescribe, prescription, prescriptionsFor, medications, insurance, seedMedications, activeMedications, saveMedication, saveInsurance, activeInsurance, parseJson };
+/** Coded (ICD-10) diagnoses of one visit, primary first — see src/modules/clinicalplus/icd.service.js. */
+const diagnosesFor = (businessId, appointmentId) => require('../clinicalplus/icd.service').diagnosesFor(businessId, appointmentId); // eslint-disable-line global-require
+
+module.exports = { diagnosesFor, consultation, saveVitals, saveNote, prescribe, prescription, prescriptionsFor, medications, insurance, seedMedications, activeMedications, saveMedication, saveInsurance, activeInsurance, parseJson };

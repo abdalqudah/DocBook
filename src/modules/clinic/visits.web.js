@@ -1,17 +1,22 @@
 // Visit page (one appointment): patient header with clinical warnings, previous visits, vital signs (nurse),
-// SOAP note + diagnosis (doctor), prescriptions with a printable Rx, and "complete visit".
+// SOAP note + diagnosis with ICD-10 codes (doctor), prescriptions with a printable Rx, the consultation timer and
+// "complete visit". The clinic's record-privacy rule (clinicalplus/privacy.service) decides whether the clinical
+// sections open for this member; every page view is written to the record-access log.
 const express = require('express');
 const knex = require('../../db/knex');
 const { wrap, form, flash } = require('../../routes/helpers');
 const { can, canAny } = require('../../middleware/context');
-const { E } = require('../../core/errors');
+const { AppError, E } = require('../../core/errors');
 const appts = require('./appointments.service');
 const clinical = require('./clinical.service');
+const icd = require('../clinicalplus/icd.service');
+const timer = require('../clinicalplus/timer.service');
+const privacy = require('../clinicalplus/privacy.service');
 
 const router = express.Router();
 router.use(canAny('clinical.view', 'vitals.edit', 'frontdesk.use'));
 
-const ASSETS = { pageScripts: ['/js/appointments.js'], pageStyles: ['/css/appointments.css'] };
+const ASSETS = { pageScripts: ['/js/appointments.js', '/js/clinicalplus.js'], pageStyles: ['/css/appointments.css', '/css/clinicalplus.css'] };
 
 /** Whole years between a date of birth and the clinic's today. */
 function ageOn(dob, today) {
@@ -39,13 +44,23 @@ async function load(req) {
   return { a, patient };
 }
 
+/** The privacy rule for this visit; throws RECORD_RESTRICTED when `need` (clinical | vitals) is not granted. */
+async function accessFor(req, a, need) {
+  const acc = await privacy.access(req.ctx, { appointment: a });
+  if (need === 'clinical' && !acc.clinical) throw new AppError('RECORD_RESTRICTED', 'This clinical record is restricted.', 403);
+  if (need === 'vitals' && !acc.clinical && !acc.vitals) throw new AppError('RECORD_RESTRICTED', 'This clinical record is restricted.', 403);
+  return acc;
+}
+
 async function renderVisit(req, res, extra = {}) {
   const { ctx } = req;
   const { a, patient } = await load(req);
   const perms = ctx.permissions;
-  const clinicalView = perms.has('clinical.view');
-  const [consult, rxs, history, meds, invoice] = await Promise.all([
-    clinical.consultation(ctx, a.id),
+  const access = await privacy.access(ctx, { appointment: a });
+  const clinicalView = perms.has('clinical.view') && access.clinical;
+  if (extra.logView) await privacy.log(ctx, { patientId: a.patient_id, appointmentId: a.id, what: 'visit', access: privacy.levelOf(access) });
+  const [consult, rxs, history, meds, invoice, diagnoses, timerRow] = await Promise.all([
+    clinicalView || access.vitals ? clinical.consultation(ctx, a.id) : null,
     clinicalView ? clinical.prescriptionsFor(ctx, a.id) : [],
     clinicalView && a.patient_id
       ? knex('consultations as c').join('appointments as ap', 'ap.id', 'c.appointment_id').leftJoin('doctors as d', 'd.id', 'c.doctor_id')
@@ -56,32 +71,53 @@ async function renderVisit(req, res, extra = {}) {
       : [],
     perms.has('prescriptions.create') ? clinical.activeMedications(ctx) : [],
     knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number'),
+    clinicalView ? icd.listFor(ctx.businessId, a.id) : [],
+    clinicalView ? timer.get(ctx.businessId, a.id) : null,
   ]);
+  const historyCodes = history.length ? await icd.diagnosesByAppointment(ctx.businessId, history.map((h) => h.appointment_id)) : new Map();
   const vitals = (consult && consult.vital_signs) || {};
   // Online consultation: link, patient's time zone, reason and files, and the doctor's side of the video call.
   const online = await require('../telehealth/web').panelData(req, a, { res }); // eslint-disable-line global-require
   res.page('pages/clinic/visits/show', {
     title: `${a.patient_name} · ${req.t('visits.title')}`, a, patient, consult, vitals, bmi: bmiOf(vitals), rxs, history, meds, invoice,
     age: patient ? ageOn(patient.date_of_birth, ctx.today) : null, ...ASSETS, online,
+    access, diagnoses, historyCodes, timerView: timer.view(timerRow), icdTitle: (r) => icd.titleOf(r, req.locale),
     ...(online ? { pageScripts: [...ASSETS.pageScripts, '/js/telehealth.js'], pageStyles: [...ASSETS.pageStyles, '/css/telehealth.css'] } : {}), ...extra,
   });
 }
 
-router.get('/:id(\\d+)', wrap((req, res) => renderVisit(req, res)));
+router.get('/:id(\\d+)', wrap((req, res) => renderVisit(req, res, { logView: true })));
 
-router.post('/:id(\\d+)/vitals', can('vitals.edit'), form(async (req, res) => {
+// Business errors of the privacy rule go back to the page as a message (the form helper handles 409/422 only).
+const restricted = (fn) => wrap(async (req, res, next) => {
+  try { return await fn(req, res, next); } catch (err) {
+    if (!(err instanceof AppError) || err.code !== 'RECORD_RESTRICTED') throw err;
+    flash(req, 'error', req.t('errors_clinicalplus.RECORD_RESTRICTED'));
+    return res.redirect(`/app/visits/${req.params.id}`);
+  }
+});
+
+router.post('/:id(\\d+)/vitals', can('vitals.edit'), restricted(async (req, res, next) => { await accessFor(req, (await load(req)).a, 'vitals'); next(); }), form(async (req, res) => {
   await clinical.saveVitals(req.ctx, Number(req.params.id), req.body);
   flash(req, 'success', req.t('visits.vitals_saved'));
   res.redirect(`/app/visits/${req.params.id}#vitals`);
 }, (req, res, extra) => renderVisit(req, res, { ...extra, failed: 'vitals' })));
 
-router.post('/:id(\\d+)/note', can('clinical.edit'), form(async (req, res) => {
-  await clinical.saveNote(req.ctx, Number(req.params.id), req.body);
+router.post('/:id(\\d+)/note', can('clinical.edit'), restricted(async (req, res, next) => { await accessFor(req, (await load(req)).a, 'clinical'); next(); }), form(async (req, res) => {
+  const { a } = await load(req);
+  // ICD-10 codes travel with the note (the field is only on the form when the codes block was rendered).
+  const codes = req.body.icd_present === '1' ? await icd.resolveCodes(req.ctx.businessId, req.body.icd_codes) : null;
+  await clinical.saveNote(req.ctx, a.id, req.body);
+  if (codes) await icd.saveDiagnoses(req.ctx, a, codes, req.body.icd_primary);
   flash(req, 'success', req.t('visits.note_saved'));
   res.redirect(`/app/visits/${req.params.id}#note`);
-}, (req, res, extra) => renderVisit(req, res, { ...extra, failed: 'note' })));
+}, (req, res, extra) => {
+  const bad = extra.formError && extra.formError.details && extra.formError.details.icd_codes;
+  if (bad) extra.errors = { ...extra.errors, icd_codes: req.t('icd.err_unknown', { codes: bad }) };
+  return renderVisit(req, res, { ...extra, failed: 'note' });
+}));
 
-router.post('/:id(\\d+)/prescriptions', can('prescriptions.create'), form(async (req, res) => {
+router.post('/:id(\\d+)/prescriptions', can('prescriptions.create'), restricted(async (req, res, next) => { await accessFor(req, (await load(req)).a, 'clinical'); next(); }), form(async (req, res) => {
   const rxId = await clinical.prescribe(req.ctx, Number(req.params.id), req.body);
   flash(req, 'success', req.t('visits.rx_saved'));
   res.redirect(`/app/visits/${req.params.id}?rx=${rxId}#prescriptions`);
@@ -91,17 +127,21 @@ router.post('/:id(\\d+)/complete', canAny('clinical.edit', 'appointments.manage'
   const { a } = await load(req);
   if (a.status === 'cancelled') throw E.conflict('APPOINTMENT_CANCELLED', 'This appointment is cancelled.');
   await appts.setStatus(req.ctx, a.id, 'completed');
+  await timer.stop(req.ctx, a); // finishing the visit ends a running consultation timer (no-op otherwise)
   if (a.with_doctor) await knex('appointments').where({ id: a.id, business_id: req.ctx.businessId }).update({ with_doctor: false, updated_at: new Date() });
   flash(req, 'success', req.t('visits.completed'));
   res.redirect(`/app/visits/${a.id}`);
 }));
 
-router.get('/:id(\\d+)/prescriptions/:rx(\\d+)', can('clinical.view'), wrap(async (req, res) => {
+router.get('/:id(\\d+)/prescriptions/:rx(\\d+)', can('clinical.view'), restricted(async (req, res) => {
   const { a, patient } = await load(req);
+  await accessFor(req, a, 'clinical');
   const rx = await clinical.prescription(req.ctx, Number(req.params.rx));
   if (rx.appointment_id !== a.id) throw E.notFound('Prescription');
+  const diagnoses = await icd.listFor(req.ctx.businessId, a.id); // for the Rx sheet (ICD-10 codes of the visit)
   res.page('pages/clinic/visits/prescription', {
     title: `${req.t('visits.rx_title')} · ${a.patient_name}`, printable: true, a, patient, rx, age: patient ? ageOn(patient.date_of_birth, req.ctx.today) : null, ...ASSETS,
+    diagnoses, icdTitle: (r) => icd.titleOf(r, req.locale),
   });
 }));
 

@@ -1,0 +1,61 @@
+<%/* Reports → Diagnoses: most frequent ICD-10 codes in a period, by doctor. */%>
+<% var printing = query.print === '1'; var canExport = can('data.export') && !printing;
+   var rq = (range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month) + (doctorId ? '&doctor=' + doctorId : '');
+   var exp = function (section) { if (!canExport) return ''; return '<details class="dropdown rec-exp"><summary class="btn btn-ghost btn-sm" aria-label="' + t('common.export') + '">' + icon('download', 'icon-sm') + '<span class="rec-exp-label">' + t('common.export') + '</span></summary><div class="menu"><a href="/app/reports/diagnoses?' + rq + '&export=' + section + '&format=xlsx">' + icon('file-spreadsheet', 'icon-sm') + t('common.export_xlsx') + '</a><a href="/app/reports/diagnoses?' + rq + '&export=' + section + '&format=csv">' + icon('table', 'icon-sm') + t('common.export_csv') + '</a></div></details>'; };
+   var rangeText = range.custom ? fmt.date(range.from) + ' – ' + fmt.date(range.to) : fmt.month(range.month); %>
+<% if (printing) { %>
+<div class="rec-print-title"><h1><%= t('icd.report_title') %></h1><p class="muted"><%= rangeText %></p></div>
+<% } else { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/reports?<%= range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month %>"><%= t('icd.back_reports') %></a></div>
+    <h1><%= t('icd.report_title') %></h1>
+    <p><%= t('icd.report_lead') %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/reports/consultation-time?<%= rq %>"><%- icon('timer', 'icon-sm') %><%= t('ctimer.report_title') %></a>
+    <a class="btn btn-secondary" href="/app/reports/diagnoses?<%= rq %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.printable') %></a>
+  </div>
+</div>
+<%- include('_report-range', { base: '/app/reports/diagnoses' }) %>
+<% } %>
+
+<div class="stats rec-kpis">
+  <div class="stat"><div class="stat-label"><%= t('icd.kpi_visits') %><span class="stat-icon"><%- icon('stethoscope') %></span></div><div class="stat-value"><%= fmt.number(T.visits) %></div><div class="stat-meta"><%= T.completed ? t('icd.kpi_coverage', { pct: fmt.pct(Math.min(100, T.visits * 100 / T.completed), 0), n: fmt.number(T.completed) }) : t('icd.kpi_no_completed') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('icd.kpi_patients') %><span class="stat-icon"><%- icon('users') %></span></div><div class="stat-value"><%= fmt.number(T.patients) %></div><div class="stat-meta"><%= t('icd.kpi_patients_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('icd.kpi_codes') %><span class="stat-icon"><%- icon('list') %></span></div><div class="stat-value"><%= fmt.number(T.codes) %></div><div class="stat-meta"><%= t('icd.kpi_codes_meta', { n: fmt.number(T.n) }) %></div></div>
+</div>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('icd.top_diagnoses') %></h2><p class="panel-sub"><%= t('icd.top_diagnoses_sub', { range: rangeText }) %></p></div><%- exp('codes') %></div>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { compact: true, emptyIcon: 'stethoscope', emptyTitle: t('icd.report_empty'), emptyText: t('icd.report_empty_text') }) %>
+  <% } else { %>
+  <div class="panel-body rec-pad"><%- chart %></div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('icd.diagnosis') %></th><th class="num"><%= t('icd.count') %></th><th class="num"><%= t('icd.patients') %></th><th class="num"><%= t('icd.as_primary') %></th><th class="num"><%= t('icd.share') %></th></tr></thead>
+    <tbody><% rows.forEach(function (r) { %><tr>
+      <td class="primary-cell"><span class="cp-code" dir="ltr"><%= r.code %></span> <span dir="auto"><%= r.title %></span></td>
+      <td class="num" data-label="<%= t('icd.count') %>"><%= fmt.number(r.n) %></td>
+      <td class="num" data-label="<%= t('icd.patients') %>"><%= fmt.number(r.patients) %></td>
+      <td class="num" data-label="<%= t('icd.as_primary') %>"><%= fmt.number(r.primaries) %></td>
+      <td class="num" data-label="<%= t('icd.share') %>"><%= fmt.pct(r.share, 0) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><div><h2><%= t('icd.by_doctor') %></h2><p class="panel-sub"><%= t('icd.by_doctor_sub') %></p></div><%- exp('doctors') %></div>
+  <% if (!perDoc.length) { %><div class="panel-body cp-pad"><p class="small muted"><%= t('icd.report_empty') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.doctor') %></th><th class="num"><%= t('icd.coded_visits') %></th><th class="num"><%= t('icd.patients') %></th><th><%= t('icd.top_codes') %></th></tr></thead>
+    <tbody><% perDoc.forEach(function (d) { %><tr>
+      <td class="primary-cell"><span class="row-sm"><span class="doc-dot cp-doc-dot" style="<%= d.color ? 'background:' + d.color : '' %>"></span><span class="strong"><%= d.name %></span></span></td>
+      <td class="num" data-label="<%= t('icd.coded_visits') %>"><%= fmt.number(d.visits) %></td>
+      <td class="num" data-label="<%= t('icd.patients') %>"><%= fmt.number(d.patients) %></td>
+      <td data-label="<%= t('icd.top_codes') %>"><span class="cp-code-line"><% d.top.forEach(function (c) { %><span class="cp-code" dir="ltr" title="<%= codeTitle.get(c) || '' %>"><%= c %></span><% }) %></span></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

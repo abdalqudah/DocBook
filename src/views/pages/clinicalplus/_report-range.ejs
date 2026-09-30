@@ -1,0 +1,25 @@
+<%/* Period + doctor filter shared by the diagnosis and consultation-time reports. Locals: base, range, months, doctors, doctorId */%>
+<div class="panel mb-4"><div class="panel-body rec-range">
+  <form class="row wrap" method="get" action="<%= base %>" data-autosubmit>
+    <label class="small strong muted" for="rep-month"><%- icon('calendar', 'icon-sm') %> <%= t('reports.month') %></label>
+    <select class="select cp-inline-select" id="rep-month" name="month">
+      <% if (range.custom) { %><option value="" selected><%= t('reports.custom_selected') %></option><% } %>
+      <% months.forEach(function (m) { %><option value="<%= m %>"<%= !range.custom && m === range.month ? ' selected' : '' %>><%= fmt.month(m) %></option><% }) %>
+    </select>
+    <% if (doctors.length > 1) { %>
+    <label class="sr-only" for="rep-doctor"><%= t('common.doctor') %></label>
+    <select class="select cp-inline-select" id="rep-doctor" name="doctor">
+      <option value=""><%= t('common.all_doctors') %></option>
+      <% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= doctorId === d.id ? ' selected' : '' %>><%= locale === 'en' && d.full_name_en ? d.full_name_en : d.full_name %></option><% }) %>
+    </select>
+    <% } %>
+  </form>
+  <form class="row wrap" method="get" action="<%= base %>">
+    <% if (doctorId) { %><input type="hidden" name="doctor" value="<%= doctorId %>"><% } %>
+    <span class="small strong muted"><%= t('reports.or_range') %></span>
+    <input class="input cp-inline-select" type="date" name="from" value="<%= range.from %>" aria-label="<%= t('common.from') %>" required>
+    <span class="muted">–</span>
+    <input class="input cp-inline-select" type="date" name="to" value="<%= range.to %>" aria-label="<%= t('common.to') %>" required>
+    <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button>
+  </form>
+</div></div>

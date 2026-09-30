@@ -1,5 +1,7 @@
 // Patients: searchable register, profile with visit timeline, add / edit / delete.
 // A doctor login limited to its own schedule (ctx.ownDoctorId) only sees patients it has booked at least once.
+// The clinic's record-privacy rule (clinicalplus/privacy.service) decides whether the clinical parts of the
+// profile open for this member; every profile view is written to the record-access log.
 const express = require('express');
 const knex = require('../../db/knex');
 const audit = require('../../core/audit');
@@ -10,12 +12,15 @@ const { can } = require('../../middleware/context');
 const appts = require('./appointments.service');
 const clinical = require('./clinical.service');
 const lib = require('./records.lib');
+const icd = require('../clinicalplus/icd.service');
+const privacy = require('../clinicalplus/privacy.service');
 
 const router = express.Router();
 router.use(can('patients.view'));
 
 const PAGE_SCRIPTS = ['/js/records.js'];
 const PAGE_STYLES = ['/css/records.css'];
+const SHOW_STYLES = ['/css/records.css', '/css/clinicalplus.css'];
 
 function listQuery(ctx, query) {
   const q = knex('patients').leftJoin('insurance_providers as ip', 'ip.id', 'patients.insurance_provider_id')
@@ -83,12 +88,12 @@ async function loadPatient(req) {
 }
 
 /** Visit-centred timeline: each appointment carries its diagnosis, prescriptions and invoice. */
-function buildTimeline(tl, perms, ownDoctorId) {
-  const showClinical = perms.has('clinical.view');
+function buildTimeline(tl, perms, ownDoctorId, clinicalAllowed = true, codes = new Map()) {
+  const showClinical = perms.has('clinical.view') && clinicalAllowed;
   const showBilling = perms.has('billing.view');
   const mine = (r) => !ownDoctorId || r.doctor_id === ownDoctorId;
   const appointments = tl.appointments.filter(mine);
-  const byAppt = new Map(appointments.map((a) => [a.id, { kind: 'visit', appt: a, consultation: null, prescriptions: [], invoice: null, sortKey: `${a.appointment_date} ${a.appointment_time}` }]));
+  const byAppt = new Map(appointments.map((a) => [a.id, { kind: 'visit', appt: a, consultation: null, prescriptions: [], invoice: null, codes: showClinical ? codes.get(a.id) || [] : [], sortKey: `${a.appointment_date} ${a.appointment_time}` }]));
   const loose = [];
   const stamp = (d) => (d ? new Date(d).toISOString().slice(0, 16).replace('T', ' ') : '');
   if (showClinical) {
@@ -107,7 +112,16 @@ function buildTimeline(tl, perms, ownDoctorId) {
 
 async function renderShow(req, res, extra = {}) {
   const p = await loadPatient(req);
+  const access = await privacy.access(req.ctx, { patientId: p.id });
+  const canAudit = req.ctx.permissions.has('audit.view');
+  // "Last opened by" (owners / audit.view) — read before this view is logged.
+  const lastOpened = canAudit ? await knex('record_access_log as l').leftJoin('users as u', 'u.id', 'l.user_id')
+    .where({ 'l.business_id': req.ctx.businessId, 'l.patient_id': p.id }).orderBy('l.id', 'desc').limit(5)
+    .select('l.created_at', 'l.what', 'l.access', 'l.user_id', 'u.name as user_name') : [];
+  await privacy.log(req.ctx, { patientId: p.id, what: 'patient', access: privacy.levelOf(access) });
   const tl = await appts.timeline(req.ctx, p.id);
+  const clinicalOk = req.ctx.permissions.has('clinical.view') && access.clinical;
+  const codes = clinicalOk ? await icd.diagnosesByAppointment(req.ctx.businessId, tl.appointments.map((a) => a.id)) : new Map();
   const mine = (r) => !req.ctx.ownDoctorId || r.doctor_id === req.ctx.ownDoctorId;
   const apptsMine = tl.appointments.filter(mine);
   const today = req.ctx.today;
@@ -122,12 +136,12 @@ async function renderShow(req, res, extra = {}) {
   };
   const upcoming = apptsMine.filter((a) => a.appointment_date >= today && ['pending', 'confirmed'].includes(a.status))
     .sort((a, b) => `${a.appointment_date} ${a.appointment_time}`.localeCompare(`${b.appointment_date} ${b.appointment_time}`));
-  const latestDiagnosis = req.ctx.permissions.has('clinical.view') ? ((tl.consultations.filter(mine).find((c) => c.diagnosis) || {}).diagnosis || null) : null;
+  const latestDiagnosis = clinicalOk ? ((tl.consultations.filter(mine).find((c) => c.diagnosis) || {}).diagnosis || null) : null;
   res.page('pages/clinic/patients/show', {
-    title: p.full_name, patient: p, stats, upcoming, latestDiagnosis,
-    timeline: buildTimeline(tl, req.ctx.permissions, req.ctx.ownDoctorId),
+    title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
+    timeline: buildTimeline(tl, req.ctx.permissions, req.ctx.ownDoctorId, access.clinical, codes),
     age: lib.ageOf(p.date_of_birth, today), wa: lib.waNumber(p.phone), statusTone: lib.STATUS_TONE,
-    pageScripts: PAGE_SCRIPTS, pageStyles: PAGE_STYLES, ...extra,
+    pageScripts: PAGE_SCRIPTS, pageStyles: SHOW_STYLES, ...extra,
   });
 }
 router.get('/:id(\\d+)', wrap((req, res) => renderShow(req, res)));

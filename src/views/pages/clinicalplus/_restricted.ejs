@@ -1,0 +1,35 @@
+<%/* Shown instead of the clinical sections when the clinic's record-privacy rule hides them from this member.
+     Locals: acc (privacy.access()), patientId, returnTo */%>
+<section class="panel cp-restricted" id="note">
+  <div class="panel-body cp-restricted-body">
+    <span class="cp-lock" aria-hidden="true"><%- icon('lock') %></span>
+    <div class="grow stack-sm">
+      <h2 class="cp-restricted-title"><%= t('privacy.restricted_title') %></h2>
+      <p class="small muted"><%= t('privacy.restricted_text') %></p>
+      <% if (acc.vitals) { %><p class="small muted"><%= t('privacy.restricted_vitals') %></p><% } %>
+    </div>
+  </div>
+  <% if (acc.canBreakGlass && patientId) { %>
+  <div class="panel-foot row between wrap">
+    <span class="tiny muted"><%= t('privacy.bg_hint') %></span>
+    <button class="btn btn-secondary btn-sm" type="button" data-open-dialog="bg-dialog"><%- icon('shield-alert', 'icon-sm') %><%= t('privacy.bg_button') %></button>
+  </div>
+  <% } %>
+</section>
+<% if (acc.canBreakGlass && patientId) { %>
+<dialog class="dialog" id="bg-dialog" aria-labelledby="bg-title">
+  <form method="post" action="/app/patients/<%= patientId %>/emergency-access" novalidate>
+    <div class="dialog-head"><h2 id="bg-title"><%= t('privacy.bg_title') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= returnTo %>">
+      <p class="small muted"><%= t('privacy.bg_text', { hours: 24 }) %></p>
+      <div class="field">
+        <label class="label" for="bg-reason"><%= t('privacy.bg_reason') %></label>
+        <textarea class="textarea" id="bg-reason" name="reason" rows="3" required minlength="10" maxlength="500" placeholder="<%= t('privacy.bg_reason_ph') %>"></textarea>
+        <span class="help"><%= t('privacy.bg_reason_help') %></span>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('privacy.bg_confirm') %></button></div>
+  </form>
+</dialog>
+<% } %>

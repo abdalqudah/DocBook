@@ -1,10 +1,16 @@
 <%
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
   var stDot = function (s) { return '<span class="st"><i class="st-dot st-' + s + '"></i>' + escapeHtml(t('appointments.statuses.' + s)) + '</span>'; };
-  var clinicalView = can('clinical.view');
-  var canVitals = can('vitals.edit');
-  var canNote = can('clinical.edit');
-  var canRx = can('prescriptions.create');
+  var acc = typeof access !== 'undefined' && access ? access : { clinical: true, vitals: true, reason: 'open' };
+  var restrictedView = can('clinical.view') && !acc.clinical;
+  var clinicalView = can('clinical.view') && acc.clinical;
+  var canVitals = can('vitals.edit') && (acc.clinical || acc.vitals);
+  var canNote = can('clinical.edit') && acc.clinical;
+  var canRx = can('prescriptions.create') && acc.clinical;
+  var dx = typeof diagnoses !== 'undefined' && diagnoses ? diagnoses : [];
+  var dxTitle = typeof icdTitle === 'function' ? icdTitle : function (r) { return r.title_ar || r.title_en || ''; };
+  var hCodes = typeof historyCodes !== 'undefined' && historyCodes ? historyCodes : null;
+  var tv = typeof timerView !== 'undefined' && timerView ? timerView : null;
   var failed = typeof failed !== 'undefined' ? failed : null;
   var vOld = failed === 'vitals' ? old : {};
   var nOld = failed === 'note' ? old : {};
@@ -65,7 +71,12 @@
 
 <% if (typeof online !== 'undefined' && online) { %><%- include('../../telehealth/_visit-panel') %><% } %>
 
-<% if (clinicalView && (p.allergies || p.chronic_conditions)) { %>
+<% if (clinicalView && tv && (tv.state !== 'idle' || (!closed && canNote))) { %><%- include('../../clinicalplus/_timer', { tv: tv, canTimer: canNote && !closed }) %><% } %>
+<% if (acc.reason === 'emergency' && acc.grant) { %>
+<div class="alert alert-warning mt-4" role="note"><%- icon('shield-alert') %><div class="grow"><div class="alert-title"><%= t('privacy.bg_active_title') %></div><div class="small"><%= t('privacy.bg_active_text', { when: fmt.date(acc.grant.expires_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) %></div></div></div>
+<% } %>
+
+<% if (can('clinical.view') && (p.allergies || p.chronic_conditions)) { %><%/* safety information: shown even when the record is restricted */%>
 <div class="grid grid-2 mt-4">
   <% if (p.allergies) { %><div class="alert alert-error" role="note"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('visits.allergies') %></div><div class="small" style="white-space:pre-line"><%= p.allergies %></div></div></div><% } %>
   <% if (p.chronic_conditions) { %><div class="alert alert-warning" role="note"><%- icon('heart-pulse') %><div class="grow"><div class="alert-title"><%= t('visits.chronic') %></div><div class="small" style="white-space:pre-line"><%= p.chronic_conditions %></div></div></div><% } %>
@@ -124,6 +135,7 @@
               <label class="label" for="n-diagnosis"><%= t('visits.diagnosis') %></label>
               <input class="input" id="n-diagnosis" name="diagnosis" value="<%= val(nOld, 'diagnosis', c.diagnosis) %>" placeholder="<%= t('visits.diagnosis_ph') %>">
             </div>
+            <%- include('../../clinicalplus/_icd-field', { dx: dx, dxTitle: dxTitle, nOld: nOld, icdError: errFor('note').icd_codes }) %>
             <% ['subjective', 'objective', 'assessment', 'plan_text'].forEach(function (k) { %>
             <div class="field">
               <label class="label" for="n-<%= k %>"><span class="soap-letter"><%= t('visits.soap_letter.' + k) %></span><%= t('visits.soap_fields.' + k) %></label>
@@ -134,11 +146,12 @@
         </div>
         <div class="panel-foot row end"><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('visits.save_note') %></button></div>
       </form>
-      <% } else if (!c.diagnosis && !c.subjective && !c.objective && !c.assessment && !c.plan_text) { %>
+      <% } else if (!c.diagnosis && !dx.length && !c.subjective && !c.objective && !c.assessment && !c.plan_text) { %>
         <div class="panel-body small muted"><%= t('visits.no_note') %></div>
       <% } else { %>
         <div class="panel-body"><dl class="dl">
           <dt><%= t('visits.diagnosis') %></dt><dd><%= c.diagnosis || '—' %></dd>
+          <% if (dx.length) { %><dt><%= t('icd.codes') %></dt><dd><%- include('../../clinicalplus/_codes', { dx: dx, dxTitle: dxTitle }) %></dd><% } %>
           <% ['subjective', 'objective', 'assessment', 'plan_text'].forEach(function (k) { %><dt><%= t('visits.soap_fields.' + k) %></dt><dd style="white-space:pre-line"><%= c[k] || '—' %></dd><% }) %>
         </dl></div>
       <% } %>
@@ -198,6 +211,8 @@
       </form>
       <% } %>
     </section>
+    <% } else if (restrictedView) { %>
+      <%- include('../../clinicalplus/_restricted', { acc: acc, patientId: a.patient_id, returnTo: '/app/visits/' + a.id }) %>
     <% } else { %>
       <div class="panel"><div class="panel-body row"><span class="action-icon"><%- icon('lock') %></span><p class="small muted grow"><%= t('visits.clinical_hidden') %></p></div></div>
     <% } %>
@@ -210,7 +225,7 @@
       <% if (!history.length) { %><div class="flush-empty small muted"><%= t('visits.no_previous') %></div><% } else { %>
       <ul class="action-list">
         <% history.forEach(function (h) { %>
-        <li><a href="/app/visits/<%= h.appointment_id %>"><span class="action-icon"><%- icon('file-text') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= fmt.date(h.appointment_date, { day: 'numeric', month: 'short', year: 'numeric' }) %><span class="muted"> · <%= L(h.doctor_name, h.doctor_name_en) || '—' %></span></div><div class="small <%= h.diagnosis ? '' : 'muted' %> truncate"><%= h.diagnosis || t('visits.no_diagnosis') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+        <li><a href="/app/visits/<%= h.appointment_id %>"><span class="action-icon"><%- icon('file-text') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= fmt.date(h.appointment_date, { day: 'numeric', month: 'short', year: 'numeric' }) %><span class="muted"> · <%= L(h.doctor_name, h.doctor_name_en) || '—' %></span></div><% var hc = hCodes && hCodes.get(h.appointment_id); var hTxt = h.diagnosis || (hc && hc.length ? dxTitle(hc[0]) : ''); %><div class="small <%= hTxt ? '' : 'muted' %> truncate"><%= hTxt || t('visits.no_diagnosis') %></div><% if (hc && hc.length) { %><div class="cp-code-line"><% hc.forEach(function (d) { %><span class="cp-code" title="<%= dxTitle(d) %>" dir="ltr"><%= d.code %></span><% }) %></div><% } %></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
         <% }) %>
       </ul>
       <% } %>
@@ -223,19 +238,21 @@
         <dt><%= t('visits.gender_label') %></dt><dd><%= p.gender ? t('visits.gender.' + p.gender) : '—' %></dd>
         <dt><%= t('common.phone') %></dt><dd><bdi dir="ltr"><%= a.patient_phone || '—' %></bdi></dd>
         <dt><%= t('visits.insurance') %></dt><dd><%= p.insurance_name || t('visits.no_insurance') %></dd>
-        <% if (clinicalView) { %>
+        <% if (can('clinical.view')) { %>
         <dt><%= t('visits.allergies') %></dt><dd><%= p.allergies ? p.allergies : t('visits.none_recorded') %></dd>
         <dt><%= t('visits.chronic') %></dt><dd><%= p.chronic_conditions ? p.chronic_conditions : t('visits.none_recorded') %></dd>
         <% } %>
         <% if (a.notes) { %><dt><%= t('visits.booking_notes') %></dt><dd style="white-space:pre-line"><%= a.notes %></dd><% } %>
       </dl></div>
     </div>
+    <% if (!restrictedView) { %>
     <% if (typeof certPanel !== 'undefined' && certPanel) { %><%- include('../../certificates/_visit-panel') %><% } %>
     <%- include('../../specialty/_visit-panel') %>
     <%- include('../../ai/_visit-panel') %>
+    <% } %>
     <% if (invoice && can('billing.view')) { %>
     <a class="panel card-link" href="/app/billing/<%= invoice.id %>?print=1"><div class="panel-body row"><span class="action-icon"><%- icon('receipt') %></span><div class="grow"><div class="strong small"><%= t('appointments.invoice') %> #<%= invoice.invoice_number %></div><div class="tiny muted"><%= t('appointments.print_invoice') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></div></a>
     <% } %>
   </div>
 </div>
-<% if (typeof visitExtras !== 'undefined' && visitExtras) { %><%- include('../../patientdocs/_visit') %><% } %>
+<% if (typeof visitExtras !== 'undefined' && visitExtras && !restrictedView) { %><%- include('../../patientdocs/_visit') %><% } %>

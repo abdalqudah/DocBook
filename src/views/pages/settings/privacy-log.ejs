@@ -1,0 +1,40 @@
+<%/* Settings → Record privacy → Access log: who opened which record, when (filters + export). */%>
+<% var P = '../../partials/'; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/app/settings"><%= t('settings.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/settings/privacy"><%= t('settings.nav_privacy') %></a></div>
+    <h1><%= t('privacy.log_title') %></h1><p><%= t('privacy.log_lead') %></p></div>
+  <div class="page-actions"><%- include(P + 'export-menu', { href: '/app/settings/privacy/log' }) %></div>
+</div>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <section class="panel flush">
+    <form method="get" class="table-toolbar cp-log-filters" role="search">
+      <% if (patient) { %><input type="hidden" name="patient" value="<%= patient.id %>"><% } %>
+      <div class="field"><label class="label" for="lg-user"><%= t('privacy.col_who') %></label>
+        <select class="select" id="lg-user" name="user"><option value=""><%= t('common.all') %></option><% staff.forEach(function (u) { %><option value="<%= u.id %>"<%= String(query.user) === String(u.id) ? ' selected' : '' %>><%= u.name %></option><% }) %></select></div>
+      <div class="field"><label class="label" for="lg-q"><%= t('common.patient') %></label>
+        <input class="input" id="lg-q" type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= patient ? patient.full_name : t('privacy.patient_ph') %>"></div>
+      <div class="field"><label class="label" for="lg-what"><%= t('privacy.col_what') %></label>
+        <select class="select" id="lg-what" name="what"><option value=""><%= t('common.all') %></option><% ['patient', 'visit', 'break_glass'].forEach(function (w) { %><option value="<%= w %>"<%= query.what === w ? ' selected' : '' %>><%= t('privacy.what.' + w) %></option><% }) %></select></div>
+      <div class="field"><label class="label" for="lg-from"><%= t('common.from') %></label><input class="input" id="lg-from" type="date" name="from" value="<%= query.from || '' %>"></div>
+      <div class="field"><label class="label" for="lg-to"><%= t('common.to') %></label><input class="input" id="lg-to" type="date" name="to" value="<%= query.to || '' %>"></div>
+      <div class="cp-log-actions"><button class="btn btn-secondary" type="submit"><%- icon('filter', 'icon-sm') %><%= t('common.apply') %></button><% if (filtered) { %><a class="btn btn-ghost" href="/app/settings/privacy/log"><%= t('table.clear_filters') %></a><% } %></div>
+    </form>
+    <% if (patient) { %><div class="cp-log-patient small"><%- icon('user-round', 'icon-sm') %><span><%= t('privacy.log_for', { name: patient.full_name }) %></span><a class="link" href="/app/patients/<%= patient.id %>"><%= t('privacy.open_file') %></a></div><% } %>
+    <% if (!rows.length) { %>
+      <%- include(P + 'empty', { compact: true, emptyIcon: 'history', emptyTitle: filtered ? t('table.no_matches') : t('privacy.log_empty'), emptyText: filtered ? '' : t('privacy.log_empty_text') }) %>
+    <% } else { %>
+    <div class="table-wrap"><table class="table responsive">
+      <thead><tr><th><%= t('privacy.col_when') %></th><th><%= t('privacy.col_who') %></th><th><%= t('common.patient') %></th><th><%= t('privacy.col_what') %></th><th><%= t('privacy.col_access') %></th></tr></thead>
+      <tbody><% rows.forEach(function (r) { %><tr>
+        <td class="primary-cell nowrap"><span class="strong" dir="ltr"><%= stamp(r.created_at) %></span></td>
+        <td data-label="<%= t('privacy.col_who') %>"><%= r.user_name || '—' %></td>
+        <td data-label="<%= t('common.patient') %>"><% if (r.patient_id && r.patient_name) { %><a class="link" href="/app/settings/privacy/log?patient=<%= r.patient_id %>"><%= r.patient_name %></a><% } else { %><span class="muted">—</span><% } %></td>
+        <td data-label="<%= t('privacy.col_what') %>"><%= t('privacy.what.' + r.what) %><% if (r.appointment_id) { %> <a class="link tiny" href="/app/visits/<%= r.appointment_id %>">#<%= r.appointment_id %></a><% } %></td>
+        <td data-label="<%= t('privacy.col_access') %>"><span class="badge badge-dot <%= r.access === 'emergency' ? 'badge-warning' : 'badge-neutral' %>"><%= t('privacy.level.' + r.access) %></span></td>
+      </tr><% }) %></tbody>
+    </table></div>
+    <%- include(P + 'pagination', { meta: meta }) %>
+    <% } %>
+  </section>
+</div>

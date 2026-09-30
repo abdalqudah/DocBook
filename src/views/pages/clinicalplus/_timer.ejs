@@ -1,0 +1,24 @@
+<%/* Consultation timer strip on the visit page. Locals: tv (timer.view()), canTimer. Live ticking: clinicalplus.js */%>
+<%
+  var _fmt = function (sec) { sec = Math.max(0, Math.floor(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s2 = sec % 60; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return (h ? h + ':' + p(m) : p(m)) + ':' + p(s2); };
+  var _btn = function (action, label, iconName, cls) { return '<form method="post" action="/app/visits/' + a.id + '/timer/' + action + '"><input type="hidden" name="_csrf" value="' + csrfToken + '"><button class="btn ' + cls + ' btn-sm" type="submit" data-cp-timer-action="' + action + '">' + icon(iconName, 'icon-sm') + escapeHtml(label) + '</button></form>'; };
+%>
+<section class="panel cp-timer mt-4" id="timer" data-cp-timer data-state="<%= tv.state %>" data-started="<%= tv.startedAt || '' %>" data-ended="<%= tv.endedAt || '' %>" data-paused-at="<%= tv.pausedAt || '' %>" data-paused-seconds="<%= tv.pausedSeconds %>" data-now="<%= tv.now %>">
+  <div class="cp-timer-body">
+    <span class="cp-timer-icon" aria-hidden="true"><%- icon('timer') %></span>
+    <div class="cp-timer-main">
+      <span class="tiny muted"><%= t('ctimer.label') %></span>
+      <span class="cp-timer-value" data-cp-timer-value dir="ltr"><%= _fmt(tv.seconds) %></span>
+    </div>
+    <span class="cp-timer-state small muted" data-cp-timer-state>
+      <% if (tv.state === 'running') { %><i class="cp-dot cp-dot-live"></i><%= t('ctimer.running') %><% } else if (tv.state === 'paused') { %><i class="cp-dot"></i><%= t('ctimer.paused') %><% } else if (tv.state === 'done') { %><%= t('ctimer.done_at', { time: fmt.date(tv.endedAt, { hour: '2-digit', minute: '2-digit' }) }) %><% } else { %><%= t('ctimer.not_started') %><% } %>
+    </span>
+    <% if (canTimer) { %>
+    <div class="cp-timer-actions">
+      <% if (tv.state === 'idle') { %><%- _btn('start', t('ctimer.start'), 'timer', 'btn-secondary') %>
+      <% } else if (tv.state === 'running') { %><%- _btn('pause', t('ctimer.pause'), 'hourglass', 'btn-ghost') %><%- _btn('stop', t('ctimer.stop'), 'circle-check', 'btn-secondary') %>
+      <% } else if (tv.state === 'paused') { %><%- _btn('resume', t('ctimer.resume'), 'timer', 'btn-secondary') %><%- _btn('stop', t('ctimer.stop'), 'circle-check', 'btn-ghost') %><% } %>
+    </div>
+    <% } %>
+  </div>
+</section>

@@ -1,0 +1,60 @@
+<%/* Settings → Record privacy: the "treating doctor only" rule, recent emergency access and a link to the log. */%>
+<% var canManage = can('settings.manage'); var when = function (d) { return fmt.date(d, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }; %>
+<%- include('_head', { heading: t('settings.nav_privacy'), lead: t('privacy.lead'), actions: can('audit.view') ? '<a class="btn btn-secondary" href="/app/settings/privacy/log">' + icon('history', 'icon-sm') + escapeHtml(t('privacy.open_log')) + '</a>' : '' }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('privacy.rule_title') %></h2><div class="panel-sub"><%= t('privacy.rule_sub') %></div></div>
+        <span class="badge badge-dot <%= on ? 'badge-success' : 'badge-neutral' %>"><%= on ? t('privacy.state_on') : t('privacy.state_off') %></span></div>
+      <form method="post" action="/app/settings/privacy">
+        <div class="panel-body stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label class="check cp-check"><input type="checkbox" name="clinical_privacy" value="1"<%= on ? ' checked' : '' %><%= canManage ? '' : ' disabled' %>>
+            <span><span class="strong"><%= t('privacy.opt_label') %></span><span class="tiny muted cp-block"><%= t('privacy.opt_help') %></span></span></label>
+          <div class="cp-rules">
+            <h3 class="small strong"><%= t('privacy.who_title') %></h3>
+            <ul class="cp-rule-list">
+              <li><%- icon('check', 'icon-sm') %><span><%= t('privacy.who_manager') %></span></li>
+              <li><%- icon('check', 'icon-sm') %><span><%= t('privacy.who_treating') %></span></li>
+              <li><%- icon('check', 'icon-sm') %><span><%= t('privacy.who_nurse') %></span></li>
+              <li><%- icon('shield-alert', 'icon-sm') %><span><%= t('privacy.who_emergency') %></span></li>
+              <li><%- icon('lock', 'icon-sm') %><span><%= t('privacy.who_others') %></span></li>
+            </ul>
+            <p class="tiny muted"><%= t('privacy.safety_note') %></p>
+          </div>
+        </div>
+        <% if (canManage) { %><div class="panel-foot row end"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div><% } %>
+      </form>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('privacy.bg_recent') %></h2><div class="panel-sub"><%= t('privacy.bg_recent_sub') %></div></div></div>
+      <% if (!grants.length) { %>
+        <div class="panel-body cp-pad"><p class="small muted"><%= t('privacy.bg_none') %></p></div>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('privacy.col_who') %></th><th><%= t('common.patient') %></th><th><%= t('privacy.bg_reason') %></th><th><%= t('privacy.col_when') %></th><th><%= t('common.status') %></th></tr></thead>
+        <tbody><% grants.forEach(function (g) { var active = new Date(g.expires_at) > now; %><tr>
+          <td class="primary-cell"><span class="strong"><%= g.user_name || '—' %></span></td>
+          <td data-label="<%= t('common.patient') %>"><% if (g.patient_name) { %><a class="link" href="/app/patients/<%= g.patient_id %>"><%= g.patient_name %></a><% } else { %>—<% } %></td>
+          <td data-label="<%= t('privacy.bg_reason') %>"><span class="small" dir="auto"><%= g.reason %></span></td>
+          <td data-label="<%= t('privacy.col_when') %>" class="nowrap"><%= when(g.created_at) %></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= active ? 'badge-warning' : 'badge-neutral' %>"><%= active ? t('privacy.bg_until', { when: when(g.expires_at) }) : t('privacy.bg_expired') %></span></td>
+        </tr><% }) %></tbody>
+      </table></div>
+      <% } %>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('privacy.log_title') %></h2><div class="panel-sub"><%= t('privacy.log_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="cp-mini-stats">
+          <div><span class="tiny muted"><%= t('privacy.views_30') %></span><strong class="num"><%= fmt.number(views) %></strong></div>
+          <div><span class="tiny muted"><%= t('privacy.limited_30') %></span><strong class="num"><%= fmt.number(limited) %></strong></div>
+        </div>
+      </div>
+      <% if (can('audit.view')) { %><div class="panel-foot row end"><a class="btn btn-secondary btn-sm" href="/app/settings/privacy/log"><%- icon('history', 'icon-sm') %><%= t('privacy.open_log') %></a></div><% } %>
+    </section>
+  </div>
+</div>
