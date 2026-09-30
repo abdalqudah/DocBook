@@ -1,0 +1,73 @@
+/* Team operations: support tickets, notification settings, presence dots, patient e-mail dialog. Theme tokens only. */
+
+/* ---------- tickets list */
+.tk-stats { margin-bottom: 0; }
+.tk-table .tk-subject { display: inline-flex; align-items: baseline; gap: 8px; color: var(--text); font-weight: 600; min-width: 0; }
+.tk-table .tk-subject:hover .tk-title { text-decoration: underline; }
+.tk-no { color: var(--text-subtle); font-weight: 500; font-variant-numeric: tabular-nums; font-size: 12px; }
+.tk-title { overflow-wrap: anywhere; }
+.tk-unread .tk-title { font-weight: 700; }
+.tk-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex: none; align-self: center; }
+.tk-person { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 220px; }
+.tk-avatar { width: 26px; height: 26px; font-size: 11px; background: var(--surface-sunken); color: var(--text-muted); flex: none; }
+.tk-st.badge-dot::before { background: var(--text-subtle); }
+.tk-st-open.badge-dot::before { background: var(--info); }
+.tk-st-in_progress.badge-dot::before { background: var(--primary); }
+.tk-st-resolved.badge-dot::before { background: var(--success); }
+.tk-block, .ns-block { display: block; margin-top: 2px; font-weight: 400; }
+.tk-platform { align-items: flex-start; }
+.tk-platform input { margin-top: 2px; }
+
+/* ---------- one ticket */
+.tk-thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.tk-msg { display: flex; flex-direction: column; gap: 6px; }
+.tk-msg-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.tk-msg-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; font-size: 14px; padding: 12px 14px; background: var(--surface-muted); border-radius: var(--radius); margin-inline-start: 34px; }
+.tk-me .tk-msg-body { background: var(--surface-sunken); }
+.tk-event { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-inline-start: 34px; }
+.tk-event .icon { color: var(--text-subtle); }
+.tk-reply textarea { min-height: 96px; }
+.tk-dl { grid-template-columns: minmax(90px, auto) 1fr; gap: 12px 14px; }
+.tk-dl dd { min-width: 0; }
+.tk-pres { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-subtle); margin-top: 2px; }
+
+/* ---------- presence on the Team page (injected by teamops.js) */
+.to-pres { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-subtle); margin-top: 2px; }
+
+/* ---------- settings → notifications */
+.ns-events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ns-event { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.ns-event:first-child { padding-top: 0; }
+.ns-event:last-child { border-bottom: 0; }
+.ns-event-head { display: flex; gap: 12px; align-items: flex-start; }
+.ns-icon { width: 30px; height: 30px; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.ns-toggle { font-size: 14px; }
+.ns-recipients { margin-top: 8px; margin-inline-start: 42px; }
+.ns-recipients > summary { cursor: pointer; list-style: none; display: inline-flex; gap: 4px; flex-wrap: wrap; color: var(--text-muted); }
+.ns-recipients > summary::-webkit-details-marker { display: none; }
+.ns-recipients > summary::after { content: '▾'; color: var(--text-subtle); font-size: 11px; margin-inline-start: 4px; }
+.ns-recipients[open] > summary::after { content: '▴'; }
+.ns-rec-body { padding: 12px 14px; margin-top: 8px; border-radius: var(--radius); background: var(--surface-muted); }
+.ns-chips { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.ns-chip { font-size: 13px; }
+.ns-event.has-error .ns-rec-body { box-shadow: inset 0 0 0 1px var(--danger); }
+.ns-pref { align-items: flex-start; }
+.ns-pref input { margin-top: 2px; }
+
+/* ---------- patient e-mail dialog */
+.dm-to { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: var(--surface-muted); border-radius: var(--radius-sm); }
+.dm-docs { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 200px; overflow-y: auto; }
+.dm-docs .check { align-items: flex-start; }
+.dm-history > summary { cursor: pointer; color: var(--text-muted); }
+.dm-history-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.dm-history-list li { padding: 10px 12px; background: var(--surface-muted); border-radius: var(--radius-sm); font-size: 13px; }
+.dm-history-list .dm-h-body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-muted); margin-top: 4px; max-height: 6.5em; overflow: hidden; }
+
+@media (max-width: 720px) {
+  .tk-msg-body, .tk-event { margin-inline-start: 0; padding-inline-start: 14px; }
+  .tk-event { padding-inline-start: 0; }
+  .ns-recipients { margin-inline-start: 0; }
+  .tk-person { max-width: none; }
+}
+.dm-off-alert[hidden], [data-dm-off][hidden], [data-dm-history-wrap][hidden] { display: none; }
+@media (max-width: 420px) { .tk-stats { grid-template-columns: 1fr 1fr; } }

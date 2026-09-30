@@ -32,10 +32,18 @@ ${cta ? `<a href="${esc(href)}" style="display:inline-block;background:${c.prima
 </div></body></html>`;
 }
 
-async function send({ to, subject, html, replyTo, attachments }) {
+/** MAIL_FROM with another display name (same sending address), e.g. a doctor's name. */
+function fromWithName(from, name) {
+  if (!name) return from;
+  const m = String(from).match(/<([^>]+)>/);
+  return { name: String(name).replace(/[\r\n<>"]/g, ' ').trim().slice(0, 120), address: m ? m[1].trim() : String(from).trim() };
+}
+
+async function send({ to, subject, html, replyTo, attachments, fromName }) {
   const t = tx();
   if (!t) return false;
-  await t.sendMail({ from: process.env.MAIL_FROM || `${brand.name} <no-reply@localhost>`, to, subject, html, ...(replyTo ? { replyTo } : {}), ...(attachments ? { attachments } : {}) });
+  const from = process.env.MAIL_FROM || `${brand.name} <no-reply@localhost>`;
+  await t.sendMail({ from: fromWithName(from, fromName), to, subject, html, ...(replyTo ? { replyTo } : {}), ...(attachments ? { attachments } : {}) });
   return true;
 }
 

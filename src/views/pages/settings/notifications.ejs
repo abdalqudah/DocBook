@@ -1,0 +1,86 @@
+<%/* Settings → Notifications: e-mail copies per event (settings.manage) and personal preferences (every member). */%>
+<%
+  var inv = typeof invalid !== 'undefined' && invalid ? invalid : {};
+  var o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var arr = function (x) { return Array.isArray(x) ? x : (x === undefined || x === null || x === '' ? [] : [x]); };
+  var roleName = function (r) { return r.is_system ? t('roles.' + r.key) : r.name; };
+%>
+<%- include('_head', { heading: t('settings.nav_notifications'), lead: manage ? t('notify_settings.lead') : t('notify_settings.lead_personal') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <% if (manage) { %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('notify_settings.email_title') %></h2><div class="panel-sub"><%= t('notify_settings.email_sub') %></div></div>
+        <span class="badge badge-dot <%= mailConfigured ? 'badge-success' : 'badge-neutral' %>"><%= mailConfigured ? t('notify_settings.mail_on') : t('notify_settings.mail_off') %></span></div>
+      <form method="post" action="/app/settings/notifications" novalidate>
+        <div class="panel-body stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('../../partials/form-error') %>
+          <% if (!mailConfigured) { %><div class="alert alert-info" role="note"><%- icon('info') %><div class="grow small"><%= t('notify_settings.mail_off_text') %></div></div><% } %>
+          <ul class="ns-events">
+          <% EVENTS.forEach(function (ev) {
+               var k = ev.key; var r = rules[k];
+               var on = o ? ['1', 'on'].indexOf(String(o['enabled_' + k] || '')) !== -1 : r.enabled;
+               var rs = o ? arr(o['roles_' + k]) : r.roles;
+               var us = o ? arr(o['users_' + k]).map(Number) : r.user_ids;
+               var em = o ? (o['emails_' + k] || '') : r.emails.join(', ');
+               var summary = rs.map(function (key) { var role = roles.find(function (x) { return x.key === key; }); return role ? roleName(role) : null; }).filter(Boolean);
+               if (us.length) summary.push(t('notify_settings.n_members', { n: us.length }));
+               var extra = String(em).split(/[\s,;]+/).filter(Boolean).length;
+               if (extra) summary.push(t('notify_settings.n_addresses', { n: extra }));
+          %>
+            <li class="ns-event<%= inv[k] ? ' has-error' : '' %>">
+              <div class="ns-event-head">
+                <span class="ns-icon"><%- icon(ev.icon, 'icon-sm') %></span>
+                <div class="grow">
+                  <label class="check ns-toggle"><input type="checkbox" name="enabled_<%= k %>" value="1"<%= on ? ' checked' : '' %>><span class="strong"><%= t('notify_settings.events.' + k) %></span></label>
+                  <div class="tiny muted"><%= t('notify_settings.events_help.' + k) %></div>
+                </div>
+              </div>
+              <details class="ns-recipients"<%= inv[k] ? ' open' : '' %>>
+                <summary><span class="small"><%= t('notify_settings.recipients') %>:</span> <span class="small muted"><%= summary.length ? summary.join(' · ') : t('notify_settings.nobody') %></span></summary>
+                <div class="ns-rec-body stack-sm">
+                  <div>
+                    <div class="tiny muted strong mb-2"><%= t('notify_settings.by_role') %></div>
+                    <div class="ns-chips"><% roles.forEach(function (role) { %><label class="check ns-chip"><input type="checkbox" name="roles_<%= k %>" value="<%= role.key %>"<%= rs.indexOf(role.key) !== -1 ? ' checked' : '' %>><span><%= roleName(role) %></span></label><% }) %></div>
+                  </div>
+                  <% if (members.length) { %>
+                  <div>
+                    <div class="tiny muted strong mb-2"><%= t('notify_settings.by_member') %></div>
+                    <div class="ns-chips"><% members.forEach(function (m) { %><label class="check ns-chip"><input type="checkbox" name="users_<%= k %>" value="<%= m.id %>"<%= us.indexOf(m.id) !== -1 ? ' checked' : '' %>><span><%= m.name %></span></label><% }) %></div>
+                  </div>
+                  <% } %>
+                  <div class="field">
+                    <label class="label" for="f-emails_<%= k %>"><%= t('notify_settings.extra') %></label>
+                    <input class="input<%= inv[k] ? ' is-invalid' : '' %>" id="f-emails_<%= k %>" name="emails_<%= k %>" value="<%= em %>" dir="ltr" placeholder="name@example.com, …" autocomplete="off">
+                    <% if (inv[k]) { %><span class="field-error"><%= t('notify_settings.bad_emails', { list: inv[k].slice(0, 3).join(', ') }) %></span><% } else { %><span class="help"><%= ev.key === 'ticket_reply' ? t('notify_settings.ticket_help') : t('notify_settings.extra_help') %></span><% } %>
+                  </div>
+                </div>
+              </details>
+            </li>
+          <% }) %>
+          </ul>
+          <p class="tiny muted"><%= t('notify_settings.privacy_note') %></p>
+        </div>
+        <div class="panel-foot row end"><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+      </form>
+    </section>
+    <% } %>
+
+    <section class="panel" id="personal">
+      <div class="panel-head"><div><h2><%= t('notify_settings.personal_title') %></h2><div class="panel-sub"><%= t('notify_settings.personal_sub') %></div></div></div>
+      <form method="post" action="/app/settings/notifications/personal">
+        <div class="panel-body stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label class="check ns-pref"><input type="checkbox" name="sound_enabled" value="1"<%= prefs.sound_enabled ? ' checked' : '' %>>
+            <span><span class="strong"><%= t('notify_settings.sound') %></span><span class="tiny muted ns-block"><%= t('notify_settings.sound_help') %></span></span></label>
+          <div><button class="btn btn-ghost btn-sm" type="button" data-teamops-chime><%- icon('bell', 'icon-sm') %><%= t('notify_settings.sound_test') %></button></div>
+          <label class="check ns-pref"><input type="checkbox" name="presence_hidden" value="1"<%= prefs.presence_hidden ? ' checked' : '' %>>
+            <span><span class="strong"><%= t('notify_settings.presence_hide') %></span><span class="tiny muted ns-block"><%= t('notify_settings.presence_help') %></span></span></label>
+        </div>
+        <div class="panel-foot row end"><button class="btn <%= manage ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%= t('common.save') %></button></div>
+      </form>
+    </section>
+  </div>
+</div>

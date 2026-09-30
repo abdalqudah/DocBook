@@ -1,0 +1,51 @@
+<%/*
+  "E-mail the patient" — button + compose dialog, included twice by the visit page and the patient page:
+    include('../../teamops/_email-patient', { part: 'button' | 'dialog', mailPatientId, mailVisitId, mailTo, mailReturn })
+  Renders nothing without clinical.view / patients.view or when the patient has no e-mail address.
+  The shared documents and the history are loaded by public/js/teamops.js when the dialog opens.
+*/%>
+<%
+  var _part = typeof part !== 'undefined' ? part : 'button';
+  var _pid = typeof mailPatientId !== 'undefined' && mailPatientId ? mailPatientId : '';
+  var _vid = typeof mailVisitId !== 'undefined' && mailVisitId ? mailVisitId : '';
+  var _to = typeof mailTo !== 'undefined' && mailTo ? String(mailTo) : '';
+  var _ret = typeof mailReturn !== 'undefined' && mailReturn ? mailReturn : '';
+  var _ok = (can('clinical.view') || can('patients.view')) && _to && (_pid || _vid);
+%>
+<% if (_ok && _part === 'button') { %>
+<button class="btn btn-secondary" type="button" data-open-dialog="patient-mail-dialog" data-teamops-mail><%- icon('mail', 'icon-sm') %><%= t('doctor_mail.button') %></button>
+<% } else if (_ok && _part === 'dialog') { %>
+<dialog class="dialog wide" id="patient-mail-dialog" aria-labelledby="patient-mail-title" data-teamops-mail-dialog data-src="/app/teamops/patient-email?<%= _pid ? 'patient=' + _pid : '' %><%= _pid && _vid ? '&' : '' %><%= _vid ? 'visit=' + _vid : '' %>">
+  <form method="post" action="/app/teamops/patient-email" novalidate>
+    <div class="dialog-head"><div><h2 id="patient-mail-title"><%= t('doctor_mail.title') %></h2><p class="small muted mt-1"><%= t('doctor_mail.sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="patient" value="<%= _pid %>"><input type="hidden" name="visit" value="<%= _vid %>"><input type="hidden" name="_return" value="<%= _ret %>">
+      <input type="hidden" name="locale" value="<%= locale %>">
+      <div class="dm-to"><span class="tiny muted"><%= t('doctor_mail.to') %></span><span class="strong small" dir="ltr"><%= _to %></span></div>
+      <div class="alert alert-warning" role="note" data-dm-off hidden><%- icon('circle-alert') %><div class="grow small"><%= t('doctor_mail.not_configured') %></div></div>
+      <div class="field">
+        <label class="label" for="dm-subject"><%= t('doctor_mail.f_subject') %><span class="req">*</span></label>
+        <input class="input" id="dm-subject" name="subject" required maxlength="190" dir="auto">
+      </div>
+      <div class="field">
+        <label class="label" for="dm-body"><%= t('doctor_mail.f_body') %><span class="req">*</span></label>
+        <textarea class="textarea" id="dm-body" name="body" rows="7" required maxlength="5000" dir="auto" placeholder="<%= t('doctor_mail.body_ph') %>"></textarea>
+        <span class="help"><%= t('doctor_mail.body_help') %></span>
+      </div>
+      <% if (can('clinical.view')) { %>
+      <div class="field" data-dm-docs-wrap>
+        <span class="label"><%= t('doctor_mail.f_docs') %></span>
+        <div class="dm-docs" data-dm-docs data-empty="<%= t('doctor_mail.no_docs') %>" data-loading="<%= t('doctor_mail.loading') %>"><span class="small muted"><%= t('doctor_mail.loading') %></span></div>
+        <span class="help"><%= t('doctor_mail.docs_help') %></span>
+      </div>
+      <% } %>
+      <details class="dm-history" data-dm-history-wrap hidden>
+        <summary class="small"><%= t('doctor_mail.history') %></summary>
+        <ul class="dm-history-list" data-dm-history data-failed="<%= t('doctor_mail.failed') %>" data-files="<%= t('doctor_mail.files_n') %>"></ul>
+      </details>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit" data-dm-send><%- icon('send', 'icon-sm') %><%= t('doctor_mail.send') %></button></div>
+  </form>
+</dialog>
+<% } %>

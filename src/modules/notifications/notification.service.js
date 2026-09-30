@@ -8,6 +8,10 @@ async function notify(businessId, { userId = null, permission = null, type, titl
     if (exists) return exists.id;
   }
   const [id] = await trx('notifications').insert({ business_id: businessId, user_id: userId, permission, type, title, body, link, severity, dedupe_key: dedupeKey });
+  // E-mail copy when the clinic enabled it for this event (Settings → Notifications). Background only, never throws.
+  try {
+    require('../teamops/notify-mail').schedule(businessId, { id, user_id: userId, permission, type, title, body, link, severity }, trx); // eslint-disable-line global-require
+  } catch (err) { console.error('[notifications] e-mail hook:', err.message); } // eslint-disable-line no-console
   return id;
 }
 

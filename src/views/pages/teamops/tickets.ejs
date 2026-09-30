@@ -1,0 +1,101 @@
+<%/* Support tickets: list with status tabs, filters, search; "New ticket" dialog. */%>
+<%
+  var P = '../../partials/';
+  var qs = function (over) { var o = Object.assign({}, q, over); delete o.page; return '?' + Object.keys(o).filter(function (k) { return o[k] !== undefined && o[k] !== '' && o[k] !== null; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(o[k]); }).join('&'); };
+  var prioBadge = function (p) { return p === 'urgent' ? 'badge-danger' : p === 'high' ? 'badge-warning' : 'badge-neutral'; };
+  var when = function (d) { return fmt.date(d, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
+  var dlgOpen = typeof openDialog !== 'undefined' && openDialog === 'ticket-dialog';
+  var tabs = [{ k: 'active', n: counts.active }, { k: 'open', n: counts.open }, { k: 'in_progress', n: counts.in_progress }, { k: 'resolved', n: counts.resolved }, { k: 'closed', n: counts.closed }, { k: 'all', n: counts.active + counts.closed }];
+  var person = function (name, uid) {
+    if (!name) return '<span class="muted">—</span>';
+    var pr = presenceOf(uid);
+    return '<span class="tk-person"><span class="avatar tk-avatar">' + escapeHtml(initials(name)) + '</span><span class="truncate">' + escapeHtml(name) + '</span>' + (pr && !pr.hidden ? '<span class="status-dot' + (pr.online ? ' on' : '') + '" title="' + escapeHtml(pr.label) + '" aria-label="' + escapeHtml(pr.label) + '"></span>' : '') + '</span>';
+  };
+  var newBtn = '<button class="btn btn-primary" type="button" data-open-dialog="ticket-dialog" data-reset-form>' + icon('plus', 'icon-sm') + escapeHtml(t('tickets.new')) + '</button>';
+%>
+<div class="page-head">
+  <div>
+    <h1><%= t('tickets.title') %></h1>
+    <p><%= manager ? t('tickets.lead_manager') : t('tickets.lead') %></p>
+  </div>
+  <div class="page-actions"><%- newBtn %></div>
+</div>
+
+<div class="stats tk-stats">
+  <div class="stat"><div class="stat-label"><%= t('tickets.stat_open') %></div><div class="stat-value"><%= fmt.number(counts.open + counts.in_progress) %></div><div class="stat-meta"><%= t('tickets.stat_open_meta', { n: fmt.number(counts.in_progress) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('tickets.stat_unread') %></div><div class="stat-value"><%= fmt.number(counts.unread) %></div><div class="stat-meta"><%= t('tickets.stat_unread_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('tickets.stat_assigned') %></div><div class="stat-value"><%= fmt.number(counts.assignedOpen) %></div><div class="stat-meta"><%= t('tickets.stat_assigned_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('tickets.stat_urgent') %></div><div class="stat-value"><%= fmt.number(counts.urgent) %></div><div class="stat-meta"><%= t('tickets.stat_urgent_meta') %></div></div>
+</div>
+
+<div class="panel flush mt-4">
+  <nav class="tabs tk-tabs" aria-label="<%= t('common.status') %>">
+    <% tabs.forEach(function (tb) { %><a href="<%= qs({ status: tb.k }) %>" class="<%= q.status === tb.k ? 'active' : '' %>"><%= t('tickets.tab_' + tb.k) %> <span class="count"><%= fmt.number(tb.n) %></span></a><% }) %>
+  </nav>
+  <form class="table-toolbar" method="get" data-autosubmit role="search">
+    <input type="hidden" name="status" value="<%= q.status %>">
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= q.q || '' %>" placeholder="<%= t('tickets.search') %>" aria-label="<%= t('common.search') %>"></div>
+    <select class="select" name="scope" aria-label="<%= t('tickets.scope') %>">
+      <option value="all"<%= q.scope === 'all' ? ' selected' : '' %>><%= manager ? t('tickets.scope_all') : t('tickets.scope_all_mine') %></option>
+      <option value="mine"<%= q.scope === 'mine' ? ' selected' : '' %>><%= t('tickets.scope_mine') %></option>
+      <option value="assigned"<%= q.scope === 'assigned' ? ' selected' : '' %>><%= t('tickets.scope_assigned') %></option>
+      <% if (manager) { %><option value="unassigned"<%= q.scope === 'unassigned' ? ' selected' : '' %>><%= t('tickets.scope_unassigned') %></option><% } %>
+    </select>
+    <select class="select" name="priority" aria-label="<%= t('tickets.priority') %>"><option value=""><%= t('tickets.all_priorities') %></option><% PRIORITIES.forEach(function (p) { %><option value="<%= p %>"<%= q.priority === p ? ' selected' : '' %>><%= t('tickets.priorities.' + p) %></option><% }) %></select>
+    <select class="select" name="category" aria-label="<%= t('tickets.category') %>"><option value=""><%= t('tickets.all_categories') %></option><% CATEGORIES.forEach(function (c) { %><option value="<%= c %>"<%= q.category === c ? ' selected' : '' %>><%= t('tickets.categories.' + c) %></option><% }) %></select>
+    <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/tickets?status=<%= encodeURIComponent(q.status) %>"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+
+  <% if (!rows.length) { %>
+    <% if (filtered) { %>
+      <%- include(P + 'empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/tickets">' + t('table.clear_filters') + '</a>' }) %>
+    <% } else { %>
+      <%- include(P + 'empty', { emptyIcon: 'life-buoy', emptyTitle: t('tickets.empty_title'), emptyText: t('tickets.empty_text'), emptyAction: '<button class="btn btn-secondary btn-sm" type="button" data-open-dialog="ticket-dialog" data-reset-form>' + escapeHtml(t('tickets.new')) + '</button>' }) %>
+    <% } %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive tk-table">
+      <thead><tr><th><%= t('tickets.subject') %></th><th><%= t('tickets.priority') %></th><th><%= t('common.status') %></th><th><%= t('tickets.author') %></th><th><%= t('tickets.assignee') %></th><th><%= t('tickets.last_activity') %></th></tr></thead>
+      <tbody>
+      <% rows.forEach(function (r) { %>
+        <tr class="<%= r.unread ? 'tk-unread' : '' %>">
+          <td class="primary-cell">
+            <a class="tk-subject" href="/app/tickets/<%= r.id %>">
+              <% if (r.unread) { %><span class="tk-unread-dot" title="<%= t('tickets.unread') %>"><span class="sr-only"><%= t('tickets.unread') %></span></span><% } %>
+              <span class="tk-no" dir="ltr">#<%= r.number %></span><span class="tk-title" dir="auto"><%= r.subject %></span>
+            </a>
+            <div class="tiny muted mt-1"><%= t('tickets.categories.' + r.category) %><% if (r.replies_count) { %> · <%= t('tickets.replies_n', { n: fmt.number(r.replies_count) }) %><% } %><% if (r.platform_sent_at) { %> · <%= t('tickets.sent_platform_short') %><% } %></div>
+          </td>
+          <td data-label="<%= t('tickets.priority') %>"><span class="badge <%= prioBadge(r.priority) %>"><%= t('tickets.priorities.' + r.priority) %></span></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-neutral badge-dot tk-st tk-st-<%= r.status %>"><%= t('tickets.statuses.' + r.status) %></span></td>
+          <td data-label="<%= t('tickets.author') %>"><%- person(r.author_name, r.author_id) %></td>
+          <td data-label="<%= t('tickets.assignee') %>"><%- r.assignee_id ? person(r.assignee_name, r.assignee_id) : '<span class="muted small">' + escapeHtml(t('tickets.unassigned')) + '</span>' %></td>
+          <td data-label="<%= t('tickets.last_activity') %>" class="small muted nowrap"><%= when(r.last_activity_at) %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include(P + 'pagination', { meta: meta, query: q }) %>
+  <% } %>
+</div>
+
+<dialog class="dialog wide" id="ticket-dialog" data-new-dialog aria-labelledby="ticket-dialog-title"<% if (dlgOpen) { %> data-open-on-load<% } %>>
+  <form method="post" action="/app/tickets" novalidate>
+    <div class="dialog-head"><div><h2 id="ticket-dialog-title"><%= t('tickets.new') %></h2><p class="small muted mt-1"><%= t('tickets.new_sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (dlgOpen) { %><%- include(P + 'form-error') %><% } %>
+      <div class="form-grid">
+        <%- include(P + 'field', { name: 'subject', label: t('tickets.subject'), required: true, cls: 'full', placeholder: t('tickets.subject_ph'), attrs: 'maxlength="190"', old: dlgOpen ? old : {} }) %>
+        <%- include(P + 'field', { name: 'category', label: t('tickets.category'), type: 'select', required: true, value: 'technical', options: CATEGORIES.map(function (c) { return { value: c, label: t('tickets.categories.' + c) }; }), old: dlgOpen ? old : {} }) %>
+        <%- include(P + 'field', { name: 'priority', label: t('tickets.priority'), type: 'select', required: true, value: 'normal', options: PRIORITIES.map(function (p) { return { value: p, label: t('tickets.priorities.' + p) }; }), help: t('tickets.priority_help'), old: dlgOpen ? old : {} }) %>
+        <%- include(P + 'field', { name: 'description', label: t('tickets.description'), type: 'textarea', required: true, cls: 'full', placeholder: t('tickets.description_ph'), old: dlgOpen ? old : {} }) %>
+      </div>
+      <% if (platform) { %>
+      <label class="check mt-4 tk-platform"><input type="checkbox" name="platform" value="1"<%= dlgOpen && old.platform === '1' ? ' checked' : '' %>><span><span class="strong"><%= t('tickets.platform_opt') %></span><span class="tiny muted tk-block"><%= t('tickets.platform_opt_help') %></span></span></label>
+      <% } %>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('tickets.submit') %></button></div>
+  </form>
+</dialog>

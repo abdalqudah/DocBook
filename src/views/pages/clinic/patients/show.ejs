@@ -21,6 +21,7 @@
     </div>
   </div>
   <div class="page-actions">
+    <%- include('../../teamops/_email-patient', { part: 'button', mailPatientId: p.id, mailTo: p.email, mailReturn: '/app/patients/' + p.id }) %>
     <% if (wa) { %><a class="btn btn-secondary" href="https://wa.me/<%= wa %>" target="_blank" rel="noopener noreferrer"><%- icon('message-square', 'icon-sm') %><%= t('patients.whatsapp') %></a><% } %>
     <% if (can('patients.edit')) { %><a class="btn btn-secondary" href="/app/patients/<%= p.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %>
     <% if (can('appointments.manage')) { %><a class="btn btn-primary" href="/app/appointments/new?patient=<%= p.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('patients.book') %></a><% } %>
@@ -106,3 +107,4 @@
     </div>
   </div>
 </div>
+<%- include('../../teamops/_email-patient', { part: 'dialog', mailPatientId: p.id, mailTo: p.email, mailReturn: '/app/patients/' + p.id }) %>

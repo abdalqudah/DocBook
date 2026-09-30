@@ -54,6 +54,7 @@
     </div>
   </div>
   <div class="page-actions">
+    <%- include('../../teamops/_email-patient', { part: 'button', mailPatientId: a.patient_id, mailVisitId: a.id, mailTo: (patient && patient.email) || a.patient_email, mailReturn: '/app/visits/' + a.id }) %>
     <% if (a.patient_id && can('patients.view')) { %><a class="btn btn-secondary" href="/app/patients/<%= a.patient_id %>"><%- icon('id-card', 'icon-sm') %><%= t('visits.patient_file') %></a><% } %>
     <% if (can('appointments.view')) { %><a class="btn btn-secondary" href="/app/appointments/<%= a.id %>"><%- icon('calendar-days', 'icon-sm') %><%= t('visits.appointment') %></a><% } %>
     <% if (canAny('clinical.edit', 'appointments.manage') && a.status !== 'completed' && !closed) { %>
@@ -256,3 +257,4 @@
   </div>
 </div>
 <% if (typeof visitExtras !== 'undefined' && visitExtras && !restrictedView) { %><%- include('../../patientdocs/_visit') %><% } %>
+<%- include('../../teamops/_email-patient', { part: 'dialog', mailPatientId: a.patient_id, mailVisitId: a.id, mailTo: (patient && patient.email) || a.patient_email, mailReturn: '/app/visits/' + a.id }) %>

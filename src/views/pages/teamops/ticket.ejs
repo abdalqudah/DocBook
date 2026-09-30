@@ -1,0 +1,109 @@
+<%/* One support ticket: the conversation (description, replies, status/assignment events) and its details. */%>
+<%
+  var P = '../../partials/';
+  var prioBadge = function (p) { return p === 'urgent' ? 'badge-danger' : p === 'high' ? 'badge-warning' : 'badge-neutral'; };
+  var when = function (d) { return fmt.date(d, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+  var presLine = function (uid) { var pr = presenceOf(uid); if (!pr || pr.hidden) return ''; return '<span class="tk-pres"><span class="status-dot' + (pr.online ? ' on' : '') + '"></span>' + escapeHtml(pr.label) + '</span>'; };
+  var statusIcon = { open: 'circle-dot', in_progress: 'clock', resolved: 'circle-check', closed: 'lock' };
+  var lastReply = thread.filter(function (x) { return x.kind === 'reply'; }).slice(-1)[0];
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/tickets"><%= t('tickets.title') %></a><%- icon('chevron-right', 'flip-rtl') %><span dir="ltr">#<%= tk.number %></span></div>
+    <h1 dir="auto"><%= tk.subject %></h1>
+    <div class="row-sm wrap mt-1">
+      <span class="badge badge-neutral badge-dot tk-st tk-st-<%= tk.status %>"><%= t('tickets.statuses.' + tk.status) %></span>
+      <span class="badge <%= prioBadge(tk.priority) %>"><%= t('tickets.priorities.' + tk.priority) %></span>
+      <span class="badge badge-neutral"><%= t('tickets.categories.' + tk.category) %></span>
+    </div>
+  </div>
+  <div class="page-actions">
+    <% rights.statuses.forEach(function (s) { var primary = (s === 'resolved' && rights.statuses.indexOf('in_progress') === -1) || (s === 'in_progress' && tk.status === 'open'); %>
+      <form method="post" action="/app/tickets/<%= tk.id %>/status"<% if (s === 'closed') { %> data-confirm="<%= t('tickets.close_confirm') %>" data-confirm-title="<%= t('tickets.action_closed') %>" data-confirm-yes="<%= t('tickets.action_closed') %>"<% } %>>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= s %>">
+        <button class="btn <%= primary ? 'btn-primary' : 'btn-secondary' %>" type="submit"><%- icon(statusIcon[s], 'icon-sm') %><%= t('tickets.action_' + s) %></button>
+      </form>
+    <% }) %>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('tickets.conversation') %></h2><div class="panel-sub"><%= t('tickets.conversation_sub') %></div></div></div>
+    <div class="panel-body">
+      <ol class="tk-thread">
+        <li class="tk-msg">
+          <div class="tk-msg-head"><span class="avatar tk-avatar"><%= initials(tk.author_name || '?') %></span><span class="strong"><%= tk.author_name || '—' %></span><span class="tiny muted"><%= when(tk.created_at) %></span></div>
+          <div class="tk-msg-body" dir="auto"><%= tk.description %></div>
+        </li>
+        <% thread.forEach(function (r) { %>
+          <% if (r.kind === 'reply') { %>
+          <li class="tk-msg<%= r.user_id === currentUser.id ? ' tk-me' : '' %>"<% if (lastReply && r.id === lastReply.id) { %> id="latest"<% } %>>
+            <div class="tk-msg-head"><span class="avatar tk-avatar"><%= initials(r.user_name || '?') %></span><span class="strong"><%= r.user_name || '—' %></span><span class="tiny muted"><%= when(r.created_at) %></span></div>
+            <div class="tk-msg-body" dir="auto"><%= r.body %></div>
+          </li>
+          <% } else { var m = r.meta || {}; %>
+          <li class="tk-event small muted"><%- icon(m.platform ? 'send' : m.status ? statusIcon[m.status] || 'circle-dot' : 'user-check', 'icon-sm') %>
+            <span><% if (m.platform) { %><%= t('tickets.ev_platform', { name: r.user_name || '—' }) %><% } else if (m.status) { %><%= t('tickets.ev_status', { name: r.user_name || '—', status: t('tickets.statuses.' + m.status) }) %><% } else if (m.assignee) { %><%= t('tickets.ev_assigned', { name: r.user_name || '—', to: m.assignee }) %><% } else { %><%= t('tickets.ev_unassigned', { name: r.user_name || '—' }) %><% } %></span>
+            <span class="tiny"><%= when(r.created_at) %></span></li>
+          <% } %>
+        <% }) %>
+      </ol>
+    </div>
+    <% if (rights.reply) { %>
+    <form class="panel-foot tk-reply stack-sm" method="post" action="/app/tickets/<%= tk.id %>/reply" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label class="label" for="f-body"><%= t('tickets.reply') %></label>
+      <textarea class="textarea" id="f-body" name="body" rows="4" required maxlength="8000" placeholder="<%= t('tickets.reply_ph') %>"></textarea>
+      <div class="row between wrap">
+        <span class="tiny muted"><%= tk.status === 'resolved' && rights.author && !rights.manager ? t('tickets.reply_reopens') : t('tickets.reply_notifies') %></span>
+        <button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('tickets.send_reply') %></button>
+      </div>
+    </form>
+    <% } else { %>
+    <div class="panel-foot small muted row-sm"><%- icon('lock', 'icon-sm') %><%= t('tickets.closed_note') %></div>
+    <% } %>
+  </section>
+
+  <div class="stack">
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('tickets.details') %></h2></div>
+      <div class="panel-body">
+        <dl class="dl tk-dl">
+          <dt><%= t('tickets.author') %></dt><dd><div><%= tk.author_name || '—' %></div><%- presLine(tk.author_id) %></dd>
+          <dt><%= t('tickets.assignee') %></dt><dd><% if (tk.assignee_id) { %><div><%= tk.assignee_name %></div><%- presLine(tk.assignee_id) %><% } else { %><span class="muted"><%= t('tickets.unassigned') %></span><% } %></dd>
+          <dt><%= t('tickets.opened') %></dt><dd><%= when(tk.created_at) %></dd>
+          <dt><%= t('tickets.last_activity') %></dt><dd><%= when(tk.last_activity_at) %></dd>
+          <% if (tk.resolved_at) { %><dt><%= t('tickets.resolved_at') %></dt><dd><%= when(tk.resolved_at) %></dd><% } %>
+          <% if (tk.platform_sent_at) { %><dt><%= t('tickets.platform') %></dt><dd><%= t('tickets.sent_on', { when: when(tk.platform_sent_at) }) %></dd><% } %>
+        </dl>
+      </div>
+      <% if (rights.assign) { %>
+      <form class="panel-foot stack-sm" method="post" action="/app/tickets/<%= tk.id %>/assign">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label class="label" for="f-assignee"><%= t('tickets.assign_to') %></label>
+        <div class="row-sm">
+          <select class="select grow" id="f-assignee" name="assignee_id">
+            <option value=""><%= t('tickets.unassigned') %></option>
+            <% members.forEach(function (m) { %><option value="<%= m.id %>"<%= m.id === tk.assignee_id ? ' selected' : '' %>><%= m.name %> · <%= t('roles.' + m.role_key) !== 'roles.' + m.role_key ? t('roles.' + m.role_key) : m.role_key %></option><% }) %>
+          </select>
+          <button class="btn btn-secondary" type="submit"><%= t('common.save') %></button>
+        </div>
+      </form>
+      <% } %>
+    </section>
+
+    <% if (platform && !tk.platform_sent_at) { %>
+    <section class="panel">
+      <div class="panel-body stack-sm">
+        <div class="row-sm"><%- icon('life-buoy', 'icon-sm muted') %><span class="strong small"><%= t('tickets.platform_title') %></span></div>
+        <p class="small muted"><%= t('tickets.platform_text') %></p>
+        <form method="post" action="/app/tickets/<%= tk.id %>/platform" data-confirm="<%= t('tickets.platform_confirm') %>" data-confirm-title="<%= t('tickets.platform_title') %>" data-confirm-yes="<%= t('tickets.platform_send') %>" data-confirm-tone="primary">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-secondary btn-sm" type="submit"><%- icon('send', 'icon-sm') %><%= t('tickets.platform_send') %></button>
+        </form>
+      </div>
+    </section>
+    <% } %>
+  </div>
+</div>
