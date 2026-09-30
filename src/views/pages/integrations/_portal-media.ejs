@@ -1,0 +1,37 @@
+<%# Settings → Clinic page: cover image + gallery chosen from the media library (worker: integrations).
+    Data comes from res.locals.portalMedia (loader in modules/integrations/web.js). Renders nothing without it. %>
+<% if (typeof portalMedia !== 'undefined' && portalMedia && typeof can === 'function' && can('settings.manage')) { var pm = portalMedia; %>
+<section class="panel" id="page-media">
+  <div class="panel-head"><div><h2><%= t('media_lib.page_title') %></h2><div class="panel-sub"><%= t('media_lib.page_sub') %></div></div></div>
+  <form method="post" action="/app/settings/media/page" class="panel-body stack" data-media-form>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="stack-sm">
+      <span class="label"><%= t('media_lib.cover') %></span>
+      <div class="pm-cover" data-media-preview="cover_media_id">
+        <% if (pm.cover) { %><img src="<%= pm.cover.url %>" alt="<%= (locale === 'en' ? pm.cover.alt_en || pm.cover.alt_ar : pm.cover.alt_ar || pm.cover.alt_en) || '' %>"><% } else { %><span class="pm-placeholder small muted"><%- icon('image') %><%= t('media_lib.no_cover') %></span><% } %>
+      </div>
+      <input type="hidden" name="cover_media_id" value="<%= pm.cover ? pm.cover.id : '' %>">
+      <div class="row-sm wrap">
+        <button class="btn btn-secondary btn-sm" type="button" data-media-pick="cover_media_id"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button>
+        <button class="btn btn-ghost btn-sm" type="button" data-media-clear="cover_media_id"<%= pm.cover ? '' : ' hidden' %>><%= t('media_lib.remove') %></button>
+      </div>
+      <span class="help"><%= t('media_lib.cover_help') %></span>
+    </div>
+    <div class="stack-sm">
+      <span class="label"><%= t('media_lib.gallery') %></span>
+      <ul class="pm-gallery" data-media-list="gallery_media_ids">
+        <% pm.gallery.forEach(function (g) { %>
+        <li class="pm-item"><img src="<%= g.url %>" alt="<%= (locale === 'en' ? g.alt_en || g.alt_ar : g.alt_ar || g.alt_en) || '' %>"><input type="hidden" name="gallery_media_ids" value="<%= g.id %>">
+          <button class="btn btn-secondary btn-sm btn-icon pm-remove" type="button" data-media-remove aria-label="<%= t('media_lib.remove') %>" title="<%= t('media_lib.remove') %>"><%- icon('x', 'icon-sm') %></button></li>
+        <% }) %>
+      </ul>
+      <div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="button" data-media-pick="gallery_media_ids" data-media-multiple data-media-max="12"><%- icon('images', 'icon-sm') %><%= t('media_lib.add_gallery') %></button></div>
+      <span class="help"><%= t('media_lib.gallery_help') %></span>
+    </div>
+    <div class="alert alert-info small"><%- icon('globe', 'icon-sm') %><div class="grow"><%= t('media_lib.page_public_note') %></div></div>
+    <noscript><div class="small muted"><%= t('media_lib.needs_js') %> <a class="link" href="/app/settings/media"><%= t('media_lib.title') %></a></div></noscript>
+    <div class="form-actions"><button class="btn btn-secondary" type="submit"><%= t('media_lib.page_save') %></button></div>
+  </form>
+</section>
+<%- include('_media-picker') %>
+<% } %>

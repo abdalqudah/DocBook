@@ -1,0 +1,214 @@
+<%
+  var c = cfg;
+  var o = (typeof old !== 'undefined' && old) || {};
+  var errs = (typeof errors !== 'undefined' && errors) || {};
+  var posted = o.months_back !== undefined;
+  var chosen = posted ? [].concat(o.tabs || []) : c.tabs;
+  var when = function (d) { return d ? fmt.date(d, { dateStyle: 'medium', timeStyle: 'short' }) : '—'; };
+  var pending = c.method !== 'webhook' && c.webhookSecret;
+  var tabName = function (k) { return t('gsheets.tab_label.' + k); };
+%>
+<%- include('_head', { heading: t('gsheets.title'), lead: t('gsheets.lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('../../partials/form-error') %>
+
+    <% if (c.connected || c.needsReconnect) { %>
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2><%= t('gsheets.status') %></h2>
+          <div class="panel-sub"><%= c.method === 'oauth' ? t('gsheets.method_oauth') : t('gsheets.method_webhook') %><% if (c.oauth_email) { %> · <span dir="ltr"><%= c.oauth_email %></span><% } %></div></div>
+        <% if (c.needsReconnect) { %><span class="badge badge-danger badge-dot"><%= t('gsheets.needs_reconnect') %></span>
+        <% } else if (c.running_since) { %><span class="badge badge-neutral badge-dot"><%= t('gsheets.running') %></span>
+        <% } else if (c.last_status === 'failed' || c.last_status === 'partial') { %><span class="badge badge-danger badge-dot"><%= t('gsheets.st_' + c.last_status) %></span>
+        <% } else if (c.last_status === 'ok') { %><span class="badge badge-success badge-dot"><%= t('gsheets.st_ok') %></span>
+        <% } else { %><span class="badge badge-neutral"><%= t('gsheets.connected_short') %></span><% } %>
+      </div>
+      <div class="panel-body stack">
+        <dl class="dl">
+          <dt><%= t('gsheets.last_run') %></dt><dd><%= when(c.last_run_at) %></dd>
+          <dt><%= t('gsheets.auto') %></dt><dd><%= c.auto_daily ? t('gsheets.auto_on') : t('gsheets.auto_off') %></dd>
+          <dt><%= t('gsheets.exported') %></dt><dd><%= c.tabs.map(tabName).join(locale === 'ar' ? '، ' : ', ') %></dd>
+          <% if (c.method === 'oauth') { %><dt><%= t('gsheets.spreadsheet') %></dt><dd><% if (c.spreadsheetUrl) { %><a class="link" href="<%= c.spreadsheetUrl %>" target="_blank" rel="noopener noreferrer"><%= t('gsheets.open_sheet') %></a><% } else { %><span class="muted"><%= t('gsheets.sheet_on_first_run') %></span><% } %></dd><% } %>
+        </dl>
+        <% if (c.needsReconnect) { %>
+        <div class="alert alert-error"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= t('gsheets.reconnect_text') %></div></div>
+        <% } %>
+        <div class="row wrap">
+          <% if (c.connected && can('data.export')) { %>
+          <form method="post" action="/app/settings/google-sheets/run" data-gs-run><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-primary" type="submit" data-busy-text="<%= t('gsheets.running') %>"><%- icon('refresh-cw', 'icon-sm') %><%= t('gsheets.sync_now') %></button></form>
+          <% } %>
+          <% if (manage && c.needsReconnect) { %><a class="btn btn-primary" href="/app/settings/google-sheets/connect"><%- icon('link', 'icon-sm') %><%= t('gsheets.reconnect') %></a><% } %>
+          <% if (manage && c.connected) { %>
+          <form method="post" action="/app/settings/google-sheets/test"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('plug', 'icon-sm') %><%= t('gsheets.test') %></button></form>
+          <% } %>
+        </div>
+        <p class="small muted" style="margin:0"><%= t('gsheets.oneway') %></p>
+      </div>
+      <% if (manage) { %>
+      <div class="panel-foot between">
+        <span class="small muted"><%= t('gsheets.disconnect_hint') %></span>
+        <button class="btn btn-danger-ghost btn-sm" type="submit" form="gs-disconnect"><%- icon('unplug', 'icon-sm') %><%= t('gsheets.disconnect') %></button>
+      </div>
+      <% } %>
+    </section>
+    <% } else if (!manage) { %>
+    <section class="panel">
+      <%- include('../../partials/empty', { emptyIcon: 'file-spreadsheet', emptyTitle: t('gsheets.not_connected'), emptyText: t('gsheets.ask_manager') }) %>
+    </section>
+    <% } %>
+
+    <% if (manage && !c.connected && !c.needsReconnect) { %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('gsheets.choose_title') %></h2><div class="panel-sub"><%= t('gsheets.choose_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="gs-methods">
+          <div class="gs-method">
+            <div class="row-sm"><span class="gs-method-icon"><%- icon('cloud-upload') %></span><h3><%= t('gsheets.oauth_title') %></h3></div>
+            <p class="small muted"><%= t('gsheets.oauth_text') %></p>
+            <ul class="small muted gs-points">
+              <li><%= t('gsheets.oauth_p1') %></li>
+              <li><%= t('gsheets.oauth_p2') %></li>
+            </ul>
+            <% if (oauthReady) { %>
+              <a class="btn btn-primary" href="/app/settings/google-sheets/connect"><%- icon('link', 'icon-sm') %><%= t('gsheets.connect_google') %></a>
+            <% } else { %>
+              <div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('gsheets.oauth_not_ready') %></div></div>
+            <% } %>
+          </div>
+          <div class="gs-method">
+            <div class="row-sm"><span class="gs-method-icon"><%- icon('file-spreadsheet') %></span><h3><%= t('gsheets.hook_title') %></h3></div>
+            <p class="small muted"><%= t('gsheets.hook_text') %></p>
+            <ul class="small muted gs-points">
+              <li><%= t('gsheets.hook_p1') %></li>
+              <li><%= t('gsheets.hook_p2') %></li>
+            </ul>
+            <% if (!pending) { %>
+            <form method="post" action="/app/settings/google-sheets/webhook/start"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-secondary" type="submit"><%- icon('file-spreadsheet', 'icon-sm') %><%= t('gsheets.hook_start') %></button></form>
+            <% } else { %><a class="btn btn-secondary" href="#apps-script"><%- icon('arrow-down', 'icon-sm') %><%= t('gsheets.hook_continue') %></a><% } %>
+          </div>
+        </div>
+        <details class="gs-admin-note">
+          <summary class="small"><%= t('gsheets.admin_note_title') %></summary>
+          <div class="stack-sm small muted" style="margin-top:8px">
+            <p style="margin:0"><%= t('gsheets.admin_note_text') %></p>
+            <div class="set-url"><code class="grow truncate" dir="ltr" id="gs-redirect"><%= redirectUri %></code><button class="btn btn-secondary btn-sm" type="button" data-copy="gs-redirect"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button></div>
+            <p style="margin:0"><%= t('gsheets.admin_note_scope') %> <code dir="ltr">drive.file</code> · <%= t('gsheets.admin_note_api') %></p>
+          </div>
+        </details>
+      </div>
+    </section>
+    <% } %>
+
+    <% if (manage && script && (c.method === 'webhook' || pending)) { %>
+    <section class="panel" id="apps-script">
+      <div class="panel-head"><div><h2><%= t('gsheets.hook_setup') %></h2><div class="panel-sub"><%= t('gsheets.hook_setup_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <ol class="set-steps gs-steps">
+          <% [1, 2, 3, 4].forEach(function (i) { %>
+          <li><span class="set-step-no"><%= i %></span><div class="small"><%= t('gsheets.hook_step' + i) %></div></li>
+          <% }) %>
+        </ol>
+        <div class="stack-sm">
+          <div class="row between wrap"><span class="label" style="margin:0"><%= t('gsheets.script') %></span>
+            <button class="btn btn-secondary btn-sm" type="button" data-copy="gs-script"><%- icon('copy', 'icon-sm') %><%= t('gsheets.copy_script') %></button></div>
+          <pre class="code-box gs-script" id="gs-script" dir="ltr"><%= script %></pre>
+          <span class="help"><%= t('gsheets.script_secret_note') %></span>
+        </div>
+        <form method="post" action="/app/settings/google-sheets/webhook" class="stack" novalidate autocomplete="off">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('../../partials/field', { name: 'webhook_url', label: t('gsheets.hook_url'), type: 'url', value: o.webhook_url !== undefined ? o.webhook_url : (c.webhookUrl || ''), placeholder: 'https://script.google.com/macros/s/…/exec', attrs: 'dir="ltr" spellcheck="false" inputmode="url"', required: true, help: t('gsheets.hook_url_help') }) %>
+          <div class="form-actions"><button class="btn <%= c.method === 'webhook' ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%= t('gsheets.hook_save') %></button></div>
+        </form>
+      </div>
+      <div class="panel-foot between">
+        <span class="small muted"><%= t('gsheets.rotate_hint') %></span>
+        <form method="post" action="/app/settings/google-sheets/webhook/start" data-confirm="<%= t('gsheets.rotate_confirm') %>" data-confirm-title="<%= t('gsheets.rotate') %>" data-confirm-yes="<%= t('gsheets.rotate') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('key-round', 'icon-sm') %><%= t('gsheets.rotate') %></button></form>
+      </div>
+    </section>
+    <% } %>
+
+    <% if (manage) { %>
+    <form method="post" action="/app/settings/google-sheets/options" class="panel" id="options" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="panel-head"><div><h2><%= t('gsheets.options') %></h2><div class="panel-sub"><%= t('gsheets.options_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <fieldset class="gs-tabs">
+          <legend class="label"><%= t('gsheets.tabs') %></legend>
+          <% TABS.filter(function (k) { return k !== 'patients'; }).forEach(function (k) { %>
+          <label class="gs-tab">
+            <input type="checkbox" name="tabs" value="<%= k %>"<%= chosen.indexOf(k) >= 0 ? ' checked' : '' %>>
+            <span class="grow"><span class="strong small"><%= tabName(k) %></span><span class="small muted gs-tab-text"><%= t('gsheets.tab_text.' + k) %></span></span>
+          </label>
+          <% }) %>
+          <% if (errs.tabs) { %><span class="field-error"><%= errs.tabs %></span><% } %>
+        </fieldset>
+
+        <div class="gs-patients">
+          <label class="gs-tab" style="border:0;padding:0">
+            <input type="checkbox" name="tabs" value="patients" data-gs-patients<%= chosen.indexOf('patients') >= 0 ? ' checked' : '' %>>
+            <span class="grow"><span class="strong small"><%= tabName('patients') %></span>
+              <span class="small muted gs-tab-text"><%= t('gsheets.tab_text.patients') %></span></span>
+          </label>
+          <div class="alert alert-warning" style="margin-top:10px">
+            <%- icon('triangle-alert', 'icon-sm') %>
+            <div class="grow stack-sm">
+              <div class="alert-title"><%= t('gsheets.patients_warn_title') %></div>
+              <div class="small"><%= t('gsheets.patients_warn_text') %></div>
+              <% if (c.include_patients && c.patients_ack_at) { %>
+                <div class="tiny muted"><%= t('gsheets.patients_acked', { when: when(c.patients_ack_at) }) %></div>
+              <% } else { %>
+                <label class="check" style="align-items:flex-start"><input type="checkbox" name="patients_ack" value="1" style="margin-top:2px"<%= o.patients_ack === '1' ? ' checked' : '' %>><span><%= t('gsheets.patients_ack') %></span></label>
+                <% if (errs.patients_ack) { %><span class="field-error"><%= errs.patients_ack %></span><% } %>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 'months_back', label: t('gsheets.period'), type: 'select', value: String(posted ? o.months_back : c.months_back), options: MONTHS.map(function (m) { return { value: String(m), label: m ? t('gsheets.months_n', { n: m }) : t('gsheets.months_all') }; }), help: t('gsheets.period_help') }) %>
+          <%- include('../../partials/field', { name: 'sheet_locale', label: t('gsheets.language'), type: 'select', value: posted ? o.sheet_locale : c.sheet_locale, options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }], help: t('gsheets.language_help') }) %>
+        </div>
+        <label class="check"><input type="checkbox" name="auto_daily" value="1"<%= (posted ? o.auto_daily === '1' : c.auto_daily) ? ' checked' : '' %>><span><%= t('gsheets.auto_label') %></span></label>
+        <ul class="small muted gs-notes">
+          <li><%= t('gsheets.note_oneway') %></li>
+          <li><%= t('gsheets.note_never') %></li>
+          <li><%= t('gsheets.note_rewrite') %></li>
+        </ul>
+      </div>
+      <div class="panel-foot"><button class="btn <%= c.connected ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%= t('common.save') %></button></div>
+    </form>
+    <% } %>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('gsheets.log') %></h2><div class="panel-sub"><%= t('gsheets.log_sub') %></div></div></div>
+      <% if (!runs.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'history', emptyTitle: t('gsheets.log_empty'), emptyText: t('gsheets.log_empty_text'), compact: true }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('gsheets.when') %></th><th><%= t('gsheets.trigger') %></th><th><%= t('gsheets.result') %></th><th><%= t('gsheets.rows') %></th></tr></thead>
+        <tbody><% runs.forEach(function (r) { %>
+          <tr>
+            <td class="primary-cell nowrap"><%= when(r.started_at) %><div class="tiny muted"><%= r.method === 'oauth' ? t('gsheets.method_oauth') : t('gsheets.method_webhook') %></div></td>
+            <td data-label="<%= t('gsheets.trigger') %>"><%= t('gsheets.trigger_' + r.trigger) %><% if (r.started_by_name) { %><div class="tiny muted"><%= r.started_by_name %></div><% } %></td>
+            <td data-label="<%= t('gsheets.result') %>">
+              <% if (r.status === 'ok') { %><span class="badge badge-success badge-dot"><%= t('gsheets.st_ok') %></span>
+              <% } else if (r.status === 'running') { %><span class="badge badge-neutral badge-dot"><%= t('gsheets.running') %></span>
+              <% } else { %><span class="badge badge-danger badge-dot"><%= t('gsheets.st_' + r.status) %></span><div class="tiny muted gs-reason"><%= reasonText(r.error) %></div><% } %>
+            </td>
+            <td data-label="<%= t('gsheets.rows') %>"><%= fmt.number(r.rows_total) %>
+              <% if (r.tabs.length) { %><details class="tiny muted"><summary><%= t('gsheets.tabs_n', { n: r.tabs.length }) %></summary>
+                <ul class="gs-run-tabs"><% r.tabs.forEach(function (x) { %><li><span><%= tabName(x.key) %></span><span class="num"><%= x.skipped ? t('gsheets.skipped') : x.ok ? fmt.number(x.rows) : t('gsheets.st_failed') %><%= x.truncated ? ' · ' + t('gsheets.truncated') : '' %></span></li><% }) %></ul></details><% } %>
+            </td>
+          </tr>
+        <% }) %></tbody>
+      </table></div>
+      <% } %>
+    </section>
+  </div>
+</div>
+<% if (manage && (c.connected || c.needsReconnect)) { %><form id="gs-disconnect" method="post" action="/app/settings/google-sheets/disconnect" data-confirm="<%= t('gsheets.disconnect_confirm') %>" data-confirm-title="<%= t('gsheets.disconnect') %>" data-confirm-yes="<%= t('gsheets.disconnect') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form><% } %>

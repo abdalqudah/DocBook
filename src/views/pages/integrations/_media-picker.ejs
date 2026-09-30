@@ -1,0 +1,27 @@
+<%# Reusable media picker. Usage: include this partial once, then put inside a form
+    <input type="hidden" name="cover_media_id"> and <button type="button" data-media-pick="cover_media_id">.
+    Add data-media-multiple to append to a list (container [data-media-list="name"]); [data-media-preview="name"] shows the choice.
+    Loads its own script/style (the page may not have them). Only for people with settings.manage (the list API needs it). %>
+<% if (typeof can === 'function' && can('settings.manage')) { %>
+<link rel="stylesheet" href="/css/integrations.css?v=<%= assetV %>">
+<script src="/js/integrations.js?v=<%= assetV %>" defer></script>
+<dialog class="dialog wide mp-dialog" id="media-picker" aria-labelledby="media-picker-title"
+  data-api="/app/media/api" data-upload="/app/settings/media/upload" data-csrf="<%= csrfToken %>"
+  data-t-empty="<%= t('media_lib.picker_empty') %>" data-t-error="<%= t('media_lib.picker_error') %>" data-t-uploading="<%= t('media_lib.uploading') %>"
+  data-t-remove="<%= t('media_lib.remove') %>" data-t-all="<%= t('media_lib.all_folders') %>" data-t-nofolder="<%= t('media_lib.no_folder') %>" data-t-private="<%= t('media_lib.becomes_public') %>">
+  <div class="dialog-inner">
+    <div class="dialog-head"><div><h2 id="media-picker-title"><%= t('media_lib.picker_title') %></h2><div class="small muted"><%= t('media_lib.picker_sub') %></div></div>
+      <button class="btn btn-ghost btn-sm btn-icon" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <div class="ml-toolbar">
+        <div class="ml-search"><%- icon('search', 'icon-sm muted') %><input class="input" type="search" data-mp-q placeholder="<%= t('media_lib.search') %>" aria-label="<%= t('media_lib.search') %>"></div>
+        <select class="select" data-mp-folder aria-label="<%= t('media_lib.folder') %>"><option value=""><%= t('media_lib.all_folders') %></option></select>
+        <label class="btn btn-secondary mp-upload"><%- icon('upload', 'icon-sm') %><span><%= t('media_lib.upload_new') %></span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-mp-file hidden></label>
+      </div>
+      <div class="small muted" data-mp-status role="status" aria-live="polite"></div>
+      <div class="mp-grid" data-mp-grid></div>
+    </div>
+    <div class="dialog-foot"><a class="btn btn-ghost" href="/app/settings/media" target="_blank" rel="noopener"><%= t('media_lib.open_library') %></a><button class="btn btn-secondary" type="button" data-close-dialog><%= t('common.close') %></button></div>
+  </div>
+</dialog>
+<% } %>

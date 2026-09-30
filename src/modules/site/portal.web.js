@@ -56,13 +56,16 @@ const listDoctors = async (req, clinic) => (await knex('doctors').where({ busine
   .orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
   .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled'))
   .map(doctorView(req));
-const listServices = async (req, clinic) => (await knex('services').where({ business_id: clinic.id, is_active: true })
-  .orderBy([{ column: 'sort_order' }, { column: 'name' }])
-  .select('id', 'doctor_id', 'name', 'name_en', 'description', 'description_en', 'price', 'show_price', 'duration_minutes'))
+// Services with their (active) category, if any — the pages group them by category (platformops).
+const listServices = async (req, clinic) => (await knex('services as s').leftJoin('service_categories as c', function j() { this.on('c.id', 's.category_id').andOn('c.business_id', 's.business_id').andOnVal('c.is_active', true); })
+  .where({ 's.business_id': clinic.id, 's.is_active': true })
+  .orderBy([{ column: 's.sort_order' }, { column: 's.name' }])
+  .select('s.id', 's.doctor_id', 's.name', 's.name_en', 's.description', 's.description_en', 's.price', 's.show_price', 's.duration_minutes', 'c.id as category_id', 'c.name as category_name', 'c.name_en as category_name_en', 'c.sort_order as category_sort'))
   .map((s) => ({
     id: s.id, doctorId: s.doctor_id, name: (req.locale === 'en' && s.name_en) || s.name,
     description: (req.locale === 'en' ? s.description_en || s.description : s.description || s.description_en) || '',
     price: s.show_price ? Number(s.price) || 0 : null, duration: s.duration_minutes,
+    category: s.category_id ? { id: s.category_id, name: (req.locale === 'en' && s.category_name_en) || s.category_name, sort: s.category_sort } : null,
   }));
 
 const roleLabel = (req, m) => (m.is_system ? req.t(`roles.${m.role_key}`) : m.role_name);
@@ -79,6 +82,7 @@ router.get('/:slug', wrap(async (req, res, next) => {
   const doctorNames = Object.fromEntries(doctors.map((d) => [d.id, d.name]));
   res.locals.currency = clinic.currency;
   clinic.reviews = await require('../reviews/reviews.service').publicSummary(clinic.id); // eslint-disable-line global-require -- verified reviews: page section + JSON-LD
+  clinic.media = await require('../integrations/media.service').publicPage(clinic, req.locale); // eslint-disable-line global-require -- cover + gallery from the media library
   // Search tags and schema.org MedicalClinic + Physician data (never any tracking pixel on clinic pages).
   const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors, title: clinic.displayName, description: clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ') });
   return res.page('pages/portal/home', {

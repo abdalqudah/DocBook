@@ -19,6 +19,7 @@
 
 <div class="container portal-body">
   <div class="portal-main">
+    <%- include('../integrations/_portal-gallery') %>
     <% if (clinic.aboutText) { %>
     <section class="portal-card">
       <h2><%= t('portal.about') %></h2>
@@ -55,9 +56,26 @@
     <% if (services.length) { %>
     <section class="portal-section" id="services">
       <div class="portal-section-head"><h2><%= t('portal.services') %></h2><p><%= t('portal.services_sub') %></p></div>
-      <div class="portal-card flush">
+      <%
+        /* Grouped by category (platformops): categories in their order, services without one last. */
+        var _groups = []; var _gi = {};
+        services.forEach(function (s) { var k = s.category ? String(s.category.id) : ''; if (_gi[k] === undefined) { _gi[k] = _groups.length; _groups.push({ key: k, name: s.category ? s.category.name : null, sort: s.category ? s.category.sort : 1e9, items: [] }); } _groups[_gi[k]].items.push(s); });
+        _groups.sort(function (a, b) { return (a.sort - b.sort) || (a.key === '' ? 1 : b.key === '' ? -1 : 0); });
+        var _grouped = _groups.length > 1 || (_groups.length === 1 && _groups[0].key !== '');
+      %>
+      <% if (_grouped) { %>
+      <nav class="po-chips" aria-label="<%= t('svc_cat.filter') %>" data-po-cat-chips>
+        <a href="#services" class="po-chip is-active" data-po-cat=""><%= t('svc_cat.all_services') %></a>
+        <% _groups.forEach(function (g) { %><a href="#svc-cat-<%= g.key || 'other' %>" class="po-chip" data-po-cat="<%= g.key || 'other' %>"><%= g.name || t('svc_cat.other') %></a><% }) %>
+      </nav>
+      <% } %>
+      <div class="stack po-svc-groups">
+      <% _groups.forEach(function (g) { %>
+      <div class="po-svc-group" id="svc-cat-<%= g.key || 'other' %>" data-po-cat-group="<%= g.key || 'other' %>">
+        <% if (_grouped) { %><h3 class="po-svc-group-title"><%= g.name || t('svc_cat.other') %></h3><% } %>
+        <div class="portal-card flush">
         <ul class="svc-list">
-          <% services.forEach(function (s) { %>
+          <% g.items.forEach(function (s) { %>
           <li>
             <span class="svc-icon"><%- icon('clipboard-plus', 'icon-sm') %></span>
             <span class="grow">
@@ -69,7 +87,11 @@
           </li>
           <% }) %>
         </ul>
+        </div>
       </div>
+      <% }) %>
+      </div>
+      <% if (_grouped) { %><link rel="stylesheet" href="/css/platformops.css?v=<%= assetV %>"><script src="/js/platformops.js?v=<%= assetV %>" defer></script><% } %>
     </section>
     <% } %>
     <%- include('../../partials/site/reviews', { part: 'section' }) %>

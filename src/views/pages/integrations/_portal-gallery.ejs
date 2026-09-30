@@ -1,0 +1,15 @@
+<%# Public clinic page: cover image + gallery from the clinic's media library (worker: integrations). Nothing when unset. %>
+<% if (typeof clinic !== 'undefined' && clinic && clinic.media && (clinic.media.cover || clinic.media.gallery.length)) { var cm = clinic.media; %>
+<link rel="stylesheet" href="/css/integrations.css?v=<%= assetV %>">
+<% if (cm.cover) { %>
+<figure class="pg-cover"><img src="<%= cm.cover.url %>" alt="<%= cm.cover.alt %>"<% if (cm.cover.width && cm.cover.height) { %> width="<%= cm.cover.width %>" height="<%= cm.cover.height %>"<% } %>></figure>
+<% } %>
+<% if (cm.gallery.length) { %>
+<section class="portal-section pg-section" id="gallery">
+  <div class="portal-section-head"><h2><%= t('media_lib.public_gallery') %></h2></div>
+  <ul class="pg-grid">
+    <% cm.gallery.forEach(function (g) { %><li><a href="<%= g.url %>" target="_blank" rel="noopener"><img src="<%= g.url %>" alt="<%= g.alt %>" loading="lazy"<% if (g.width && g.height) { %> width="<%= g.width %>" height="<%= g.height %>"<% } %>></a></li><% }) %>
+  </ul>
+</section>
+<% } %>
+<% } %>

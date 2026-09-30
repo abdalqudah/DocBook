@@ -1,0 +1,125 @@
+<%
+  var kb = function (n) { return n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.max(1, Math.round(n / 1024))) + ' ' + t('media_lib.kb'); };
+  var pct = stats.quota ? Math.min(100, Math.round(stats.bytes * 100 / stats.quota)) : 0;
+  var folderLabel = function (f) { return f ? f : t('media_lib.no_folder'); };
+  var filtered = filters.q || filters.folder !== null || filters.kind;
+%>
+<%- include('_head', { heading: t('media_lib.title'), lead: t('media_lib.lead'), actions: '<button class="btn btn-primary" type="button" data-open-dialog="media-upload" data-reset-form>' + icon('upload', 'icon-sm') + escapeHtml(t('media_lib.upload')) + '</button>' }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <section class="panel">
+      <div class="panel-body stack">
+        <form method="get" action="/app/settings/media" class="ml-toolbar" data-autosubmit role="search">
+          <div class="ml-search"><%- icon('search', 'icon-sm muted') %><input class="input" type="search" name="q" value="<%= filters.q %>" placeholder="<%= t('media_lib.search') %>" aria-label="<%= t('media_lib.search') %>"></div>
+          <select class="select" name="folder" aria-label="<%= t('media_lib.folder') %>">
+            <option value=""><%= t('media_lib.all_folders') %></option>
+            <% folders.forEach(function (f) { %><option value="<%= f.folder %>"<%= filters.folder !== null && filters.folder === f.folder ? ' selected' : '' %>><%= folderLabel(f.folder) %> (<%= fmt.number(f.n) %>)</option><% }) %>
+          </select>
+          <select class="select" name="kind" aria-label="<%= t('media_lib.kind') %>">
+            <option value=""><%= t('media_lib.kind_all') %></option>
+            <option value="image"<%= filters.kind === 'image' ? ' selected' : '' %>><%= t('media_lib.kind_image') %></option>
+            <option value="pdf"<%= filters.kind === 'pdf' ? ' selected' : '' %>><%= t('media_lib.kind_pdf') %></option>
+          </select>
+          <noscript><button class="btn btn-secondary" type="submit"><%= t('common.filter') %></button></noscript>
+        </form>
+        <div class="ml-usage small muted">
+          <span><%= t('media_lib.usage', { n: fmt.number(stats.files), used: kb(stats.bytes), total: kb(stats.quota) }) %></span>
+          <span class="meter ml-meter" aria-hidden="true"><span style="width:<%= pct %>%"></span></span>
+        </div>
+      </div>
+    </section>
+
+    <% if (!items.length) { %>
+    <section class="panel">
+      <%- include('../../partials/empty', filtered
+        ? { emptyIcon: 'search', emptyTitle: t('media_lib.no_match'), emptyText: t('media_lib.no_match_text'), emptyAction: '<a class="btn btn-secondary" href="/app/settings/media">' + escapeHtml(t('common.clear')) + '</a>' }
+        : { emptyIcon: 'images', emptyTitle: t('media_lib.empty'), emptyText: t('media_lib.empty_text'), emptyAction: '<button class="btn btn-primary" type="button" data-open-dialog="media-upload" data-reset-form>' + icon('upload', 'icon-sm') + escapeHtml(t('media_lib.upload')) + '</button>' }) %>
+    </section>
+    <% } else { %>
+    <ul class="ml-grid" aria-label="<%= t('media_lib.title') %>">
+      <% items.forEach(function (m) { var alt = (locale === 'en' ? m.alt_en || m.alt_ar : m.alt_ar || m.alt_en) || ''; %>
+      <li class="ml-card">
+        <a class="ml-thumb" href="<%= m.url %>" target="_blank" rel="noopener" title="<%= m.name %>">
+          <% if (m.isImage) { %><img src="<%= m.url %>" alt="<%= alt %>" loading="lazy"<% if (m.width && m.height) { %> width="<%= m.width %>" height="<%= m.height %>"<% } %>>
+          <% } else { %><span class="ml-doc"><%- icon('file-text') %><span class="tiny strong">PDF</span></span><% } %>
+        </a>
+        <div class="ml-info">
+          <div class="strong small truncate" title="<%= m.name %>"><%= m.name %></div>
+          <div class="tiny muted"><%= m.width && m.height ? m.width + '×' + m.height + ' · ' : '' %><%= kb(m.size) %><%= m.folder ? ' · ' + m.folder : '' %></div>
+          <div class="ml-tags">
+            <% if (m.is_public) { %><span class="badge badge-neutral"><%- icon('globe', 'icon-sm') %><%= t('media_lib.public') %></span><% } %>
+            <% if (m.uses) { %><span class="badge badge-neutral"><%= t('media_lib.in_use', { n: m.uses }) %></span><% } %>
+            <% if (m.isImage && !alt) { %><span class="badge badge-warning"><%= t('media_lib.no_alt') %></span><% } %>
+          </div>
+        </div>
+        <div class="ml-actions">
+          <span hidden id="ml-url-<%= m.id %>"><%= baseUrl %><%= m.url %></span>
+          <button class="btn btn-ghost btn-sm btn-icon" type="button" data-copy="ml-url-<%= m.id %>" title="<%= t('media_lib.copy_url') %>" aria-label="<%= t('media_lib.copy_url') %>"><%- icon('copy', 'icon-sm') %></button>
+          <button class="btn btn-ghost btn-sm btn-icon" type="button" data-open-dialog="media-edit" data-action="/app/settings/media/<%= m.id %>" data-fill='<%= JSON.stringify({ name: m.name, folder: m.folder, alt_ar: m.alt_ar, alt_en: m.alt_en, is_public: m.is_public }) %>' title="<%= t('common.edit') %>" aria-label="<%= t('common.edit') %>"<% if (!m.isImage) { %> data-ml-pdf<% } %>><%- icon('pencil', 'icon-sm') %></button>
+          <form method="post" action="/app/settings/media/<%= m.id %>/delete" data-confirm="<%= m.uses ? t('media_lib.delete_used_confirm', { n: m.uses }) : t('media_lib.delete_confirm') %>" data-confirm-title="<%= t('media_lib.delete') %>" data-confirm-yes="<%= t('common.delete') %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (m.uses) { %><input type="hidden" name="force" value="1"><% } %>
+            <button class="btn btn-ghost btn-sm btn-icon" type="submit" title="<%= t('common.delete') %>" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button>
+          </form>
+        </div>
+      </li>
+      <% }) %>
+    </ul>
+    <% } %>
+
+    <section class="panel">
+      <div class="panel-body small muted stack-sm">
+        <div><%= t('media_lib.rules') %></div>
+        <div><%= t('media_lib.rules_public') %></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<datalist id="ml-folders"><% folders.forEach(function (f) { if (f.folder) { %><option value="<%= f.folder %>"></option><% } }) %></datalist>
+
+<dialog class="dialog" id="media-upload" aria-labelledby="media-upload-title">
+  <form method="post" action="/app/settings/media/upload" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="dialog-head"><h2 id="media-upload-title"><%= t('media_lib.upload') %></h2><button class="btn btn-ghost btn-sm btn-icon" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <div class="field">
+        <label class="label" for="ml-files"><%= t('media_lib.files') %><span class="req">*</span></label>
+        <input class="input" id="ml-files" type="file" name="files" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple required>
+        <span class="help"><%= t('media_lib.files_help') %></span>
+      </div>
+      <div class="field">
+        <label class="label" for="ml-up-folder"><%= t('media_lib.folder') %></label>
+        <input class="input" id="ml-up-folder" name="folder" list="ml-folders" maxlength="60" autocomplete="off">
+        <span class="help"><%= t('media_lib.folder_help') %></span>
+      </div>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'alt_ar', id: 'ml-up-alt-ar', label: t('media_lib.alt_ar'), attrs: 'dir="rtl" maxlength="255"' }) %>
+        <%- include('../../partials/field', { name: 'alt_en', id: 'ml-up-alt-en', label: t('media_lib.alt_en'), attrs: 'dir="ltr" maxlength="255"' }) %>
+      </div>
+      <span class="help" style="margin-top:-8px"><%= t('media_lib.alt_help') %></span>
+      <label class="check"><input type="checkbox" name="is_public" value="1"><span><%= t('media_lib.make_public') %></span></label>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('upload', 'icon-sm') %><%= t('media_lib.upload') %></button></div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="media-edit" aria-labelledby="media-edit-title">
+  <form method="post" action="/app/settings/media">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="public_field" value="1">
+    <div class="dialog-head"><h2 id="media-edit-title"><%= t('media_lib.edit') %></h2><button class="btn btn-ghost btn-sm btn-icon" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack">
+      <%- include('../../partials/field', { name: 'name', id: 'ml-ed-name', label: t('media_lib.name'), attrs: 'maxlength="150"', required: true }) %>
+      <div class="field">
+        <label class="label" for="ml-ed-folder"><%= t('media_lib.folder') %></label>
+        <input class="input" id="ml-ed-folder" name="folder" list="ml-folders" maxlength="60" autocomplete="off">
+      </div>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'alt_ar', id: 'ml-ed-alt-ar', label: t('media_lib.alt_ar'), attrs: 'dir="rtl" maxlength="255"' }) %>
+        <%- include('../../partials/field', { name: 'alt_en', id: 'ml-ed-alt-en', label: t('media_lib.alt_en'), attrs: 'dir="ltr" maxlength="255"' }) %>
+      </div>
+      <label class="check" data-ml-public><input type="checkbox" name="is_public" value="1"><span><%= t('media_lib.make_public') %></span></label>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

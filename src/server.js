@@ -90,6 +90,8 @@ async function start(server) {
     const messagingTick = () => require('./modules/messaging/messaging.service').runDue().catch((e) => console.error('[messaging]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(messagingTick, 60_000).unref();
     setInterval(() => require('./modules/subscriptions/subscriptions.service').runDue().catch((e) => console.error('[subscriptions]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- trials/periods ending, reminders (no-op while subscriptions are off)
+    setInterval(() => require('./modules/finance/budgets.service').runDue().catch((e) => console.error('[budgets]', e.message)), 24 * 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- daily budget threshold / exceeded alerts (once per budget per month)
+    setInterval(() => require('./modules/integrations/sheets.service').runDue().catch((e) => console.error('[gsheets]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- Google Sheets daily export (clinics that switched it on)
   }
   server.removeAllListeners('request');
   server.on('request', createApp());

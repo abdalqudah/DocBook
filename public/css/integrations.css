@@ -1,0 +1,81 @@
+/* Integrations: Google Sheets settings, media library, media picker, clinic page gallery. Theme tokens only. */
+
+/* ---------- Google Sheets ---------- */
+.gs-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.gs-method { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.gs-method h3 { font-size: 15px; margin: 0; }
+.gs-method p { margin: 0; }
+.gs-method .alert { width: 100%; }
+.gs-method-icon { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text-muted); flex: none; }
+.gs-points { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+.gs-points li, .gs-notes li { line-height: 1.6; }
+.gs-notes { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+.gs-admin-note { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.gs-admin-note summary { cursor: pointer; color: var(--text-muted); font-weight: 600; }
+.gs-steps .set-step-no { background: var(--surface-sunken); color: var(--text-muted); }
+.gs-script { max-height: 320px; margin: 0; white-space: pre; word-break: normal; overflow: auto; text-align: left; }
+.gs-tabs { border: 0; padding: 0; margin: 0; min-width: 0; }
+.gs-tabs legend { margin-bottom: 4px; }
+.gs-tab { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
+.gs-tab:first-of-type { border-top: 0; }
+.gs-tab input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--primary); flex: none; }
+.gs-tab-text { display: block; }
+.gs-patients { padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.gs-reason { margin-top: 4px; max-width: 360px; overflow-wrap: anywhere; }
+.gs-run-tabs { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; min-width: 180px; }
+.gs-run-tabs li { display: flex; justify-content: space-between; gap: 12px; }
+@media (max-width: 720px) { .gs-methods { grid-template-columns: 1fr; } }
+
+/* ---------- Media library ---------- */
+.ml-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ml-toolbar .select { width: auto; min-width: 150px; flex: 0 1 auto; }
+.ml-search { position: relative; flex: 1 1 220px; min-width: 0; }
+.ml-search .icon { position: absolute; top: 50%; transform: translateY(-50%); inset-inline-start: 10px; pointer-events: none; }
+.ml-search .input { padding-inline-start: 32px; width: 100%; }
+.ml-usage { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ml-meter { flex: 0 1 180px; min-width: 120px; }
+.ml-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.ml-card { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; min-width: 0; }
+.ml-thumb { display: flex; align-items: center; justify-content: center; aspect-ratio: 4 / 3; background: var(--surface-sunken); overflow: hidden; }
+.ml-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ml-doc { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-muted); }
+.ml-doc .icon { width: 32px; height: 32px; }
+.ml-info { padding: 10px 12px 4px; display: grid; gap: 4px; min-width: 0; }
+.ml-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.ml-tags .badge .icon { width: 12px; height: 12px; }
+.ml-actions { display: flex; justify-content: flex-end; gap: 2px; padding: 4px 6px 8px; margin-top: auto; }
+.ml-actions form { display: inline; }
+@media (max-width: 480px) {
+  .ml-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ml-toolbar .select { flex: 1 1 40%; min-width: 0; }
+}
+
+/* ---------- Picker ---------- */
+.mp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; min-height: 120px; }
+.mp-item { display: flex; flex-direction: column; gap: 4px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; overflow: hidden; text-align: start; color: var(--text); font: inherit; }
+.mp-item:hover { border-color: var(--border-strong); }
+.mp-item:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.mp-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--surface-sunken); display: block; }
+.mp-cap { padding: 0 8px; display: block; }
+.mp-flag { padding: 0 8px 6px; display: block; }
+.mp-empty { grid-column: 1 / -1; margin: 0; }
+.mp-upload { position: relative; cursor: pointer; }
+.mp-dialog .dialog-body { min-height: 260px; }
+
+/* ---------- Clinic page images (settings) ---------- */
+.pm-cover { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 520px; aspect-ratio: 16 / 7; border: 1px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface-sunken); overflow: hidden; }
+.pm-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pm-placeholder { display: inline-flex; align-items: center; gap: 8px; }
+.pm-gallery { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.pm-gallery:empty { display: none; }
+.pm-item { position: relative; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-sunken); }
+.pm-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.pm-remove { position: absolute; top: 6px; inset-inline-end: 6px; }
+
+/* ---------- Public clinic page ---------- */
+.pg-cover { margin: 0 0 20px; border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-sunken); aspect-ratio: 16 / 6; }
+.pg-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pg-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.pg-grid a { display: block; border-radius: var(--radius); overflow: hidden; background: var(--surface-sunken); }
+.pg-grid img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+@media (max-width: 480px) { .pg-cover { aspect-ratio: 16 / 9; } .pg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

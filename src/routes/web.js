@@ -21,6 +21,7 @@ router.use('/vendors', require('../modules/vendors/public.web'));
 }
 router.use('/verify', require('../modules/certificates/verify.web')); // public check of sick leaves / medical reports (QR)
 router.use('/calendar', require('../modules/live/public.web')); // a doctor's private iCal subscription (/calendar/<token>.ics)
+router.use('/m', require('../modules/integrations/public.web')); // public images of a clinic's media library (/m/<slug>/<id>)
 // Clinic pages (docbook/<slug>, /<slug>/login, /<slug>/book…) come LAST so they never shadow a platform path;
 // every top-level path the platform uses is also in businesses.RESERVED so no clinic can take it.
 // Online consultations: the patient's consultation page (/c/<token>) and online booking (/<slug>/book/online).
