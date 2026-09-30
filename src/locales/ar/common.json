@@ -359,7 +359,8 @@
     "card": "بطاقة / نقاط بيع",
     "bank_transfer": "تحويل بنكي",
     "insurance": "تأمين",
-    "digital_wallet": "محفظة إلكترونية"
+    "digital_wallet": "محفظة إلكترونية",
+    "mixed": "مختلط (نقدًا + بطاقة)"
   },
   "notifications": {
     "title": "الإشعارات",

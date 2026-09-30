@@ -1,0 +1,195 @@
+<%
+  /* Payment panel of one visit — the cash screen, the cashier page and the reception board all use it (rendered in a
+     dialog by public/js/cashx.js, or server-side when opened by address / after a validation error).
+     Locals: bill { a, lines, doctorLines, services, insurance, old, invoice }, ret, methods, decimals, errors, formError. */
+  var _L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var a = bill.a; var old = bill.old || {}; var errs = errors || {};
+  var paidAlready = a.payment_status === 'paid';
+  var pick = function (k, dflt) { return old[k] !== undefined && old[k] !== null && old[k] !== '' ? old[k] : dflt; };
+  var discType = old.discount_type === 'amount' ? 'amount' : 'percent';
+  var covType = old.coverage_type === 'amount' ? 'amount' : 'percent';
+  var method = methods.indexOf(old.payment_method) >= 0 ? old.payment_method : 'cash';
+  var fromDoctor = Boolean(bill.doctorLines && bill.doctorLines.length);
+  var doctorTotal = fromDoctor ? bill.doctorLines.reduce(function (s, l) { return s + (Number(l.qty) || 1) * (Number(l.unit_price) || 0); }, 0) : null;
+  var err = function (k) { return errs[k] ? '<span class="field-error">' + escapeHtml(errs[k]) + '</span>' : ''; };
+  var inv = function (k) { return errs[k] ? ' is-invalid' : ''; };
+  var methodIcon = { cash: 'banknote', card: 'credit-card', mixed: 'wallet', insurance: 'shield-check', bank_transfer: 'building-2', digital_wallet: 'smartphone' };
+  var lineRow = function (l, i) {
+    var nm = l.consultation || (!l.name && !l.service_id) ? t('billing.consultation') : _L(l.name, l.name_en);
+    return '<tr class="cx-line" data-cx-line' + (l.fromDoctor ? ' data-from-doctor' : '') + '>'
+      + '<td class="cx-line-name"><input type="hidden" name="items[' + i + '][service_id]" value="' + escapeHtml(l.service_id || '') + '">'
+      + '<input type="hidden" name="items[' + i + '][from_doctor]" value="' + (l.fromDoctor ? '1' : '') + '">'
+      + '<input class="input" name="items[' + i + '][name]" value="' + escapeHtml(nm || '') + '" required maxlength="190" aria-label="' + escapeHtml(t('cashier.item')) + '" dir="auto">'
+      + (l.fromDoctor ? '<span class="cx-line-tag">' + icon('stethoscope', 'icon-sm') + escapeHtml(t('cashx.from_doctor')) + '</span>' : '') + '</td>'
+      + '<td class="cx-line-qty"><input class="input num" name="items[' + i + '][qty]" type="number" min="1" max="999" step="1" value="' + escapeHtml(l.qty || 1) + '" inputmode="numeric" required aria-label="' + escapeHtml(t('cashier.qty')) + '"></td>'
+      + '<td class="cx-line-price"><input class="input num" name="items[' + i + '][unit_price]" type="number" min="0" step="any" value="' + escapeHtml(l.unit_price === undefined || l.unit_price === null || l.unit_price === '' ? '' : Number(l.unit_price)) + '" inputmode="decimal" required aria-label="' + escapeHtml(t('cashier.unit_price')) + '"></td>'
+      + '<td class="cx-line-total num" data-cx-line-total>' + escapeHtml(fmt.amount((Number(l.qty) || 0) * (Number(l.unit_price) || 0))) + '</td>'
+      + '<td class="cx-line-del"><button class="btn btn-ghost btn-icon btn-sm" type="button" data-cx-remove aria-label="' + escapeHtml(t('cashier.remove_line')) + '" title="' + escapeHtml(t('cashier.remove_line')) + '">' + icon('trash-2', 'icon-sm') + '</button></td>'
+      + '</tr>';
+  };
+%>
+<form class="cx-panel" method="post" action="/app/cashier/<%= a.id %>/pay" data-cx-panel novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <input type="hidden" name="return" value="<%= ret %>">
+  <header class="cx-p-head">
+    <div class="grow">
+      <div class="cx-p-eyebrow"><%= t('cashx.panel_title') %></div>
+      <h2 class="cx-p-patient"><bdi><%= a.patient_name %></bdi></h2>
+      <div class="cx-p-sub">
+        <% if (a.doctor_id) { %><span class="row-sm"><span class="cx-dot" aria-hidden="true"<% if (a.doctor_color) { %> style="background:<%= a.doctor_color %>"<% } %>></span><%= _L(a.doctor_name, a.doctor_name_en) %></span><% } %>
+        <span><span dir="ltr"><%= a.appointment_time %></span><% if (a.appointment_date !== clinicToday) { %> · <%= fmt.date(a.appointment_date) %><% } %></span>
+        <% if (a.patient_phone) { %><span dir="ltr"><%= a.patient_phone %></span><% } %>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-icon" type="button" data-cx-close aria-label="<%= t('common.close') %>" title="<%= t('common.close') %> (Esc)"><%- icon('x') %></button>
+  </header>
+
+  <% if (paidAlready) { %>
+  <div class="cx-p-body">
+    <div class="cx-p-note"><%- icon('circle-check') %><div class="grow"><%= t('cashier.already_paid') %></div><% if (bill.invoice) { %><a class="btn btn-secondary btn-sm" href="/app/cashier/receipt/<%= bill.invoice.id %>?autoprint=1" target="_blank" rel="noopener"><%- icon('printer', 'icon-sm') %><%= t('cashx.print_receipt') %></a><% } %></div>
+  </div>
+  <% } else { %>
+  <div class="cx-p-body">
+    <%- include('../../../partials/form-error', { formError: formError, errors: errs }) %>
+    <% if (fromDoctor) { %>
+    <p class="cx-p-doctor"><%- icon('stethoscope', 'icon-sm') %><span><%= t('cashx.doctor_set', { amount: fmt.money(doctorTotal) }) %></span></p>
+    <% } else if (a.status !== 'completed') { %>
+    <p class="cx-p-doctor is-muted"><%- icon('clock', 'icon-sm') %><span><%= t('cashx.not_finished') %></span></p>
+    <% } %>
+
+    <div class="cx-p-grid">
+      <div class="cx-p-main">
+        <section class="cx-sec" aria-labelledby="cx-lines-h">
+          <div class="cx-sec-head"><h3 id="cx-lines-h"><%= t('cashx.bill') %></h3></div>
+          <div class="table-wrap cx-lines-wrap">
+            <table class="cx-lines">
+              <thead><tr><th><%= t('cashier.item') %></th><th class="cx-th-qty"><%= t('cashier.qty') %></th><th class="cx-th-price"><%= t('cashier.unit_price') %></th><th class="num"><%= t('common.total') %></th><th><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+              <tbody data-cx-lines><% bill.lines.forEach(function (l, i) { %><%- lineRow(l, i) %><% }) %></tbody>
+            </table>
+          </div>
+          <template data-cx-line-tpl><%- lineRow({ name: '', service_id: '', qty: 1, unit_price: '' }, '__i__') %></template>
+          <div class="cx-add">
+            <label class="sr-only" for="cx-add-svc-<%= a.id %>"><%= t('cashier.add_service') %></label>
+            <select class="select" id="cx-add-svc-<%= a.id %>" data-cx-add-service>
+              <option value=""><%= t('cashx.add_service_ph') %></option>
+              <% bill.services.forEach(function (s) { %><option value="<%= s.id %>" data-name="<%= _L(s.name, s.name_en) %>" data-price="<%= Number(s.price) %>"><%= _L(s.name, s.name_en) %> · <%= fmt.amount(s.price) %></option><% }) %>
+            </select>
+            <button class="btn btn-secondary" type="button" data-cx-add-custom><%- icon('plus', 'icon-sm') %><%= t('cashier.custom_line') %></button>
+          </div>
+          <div class="field cx-reason" data-cx-reason<%= errs.adjust_reason || old.adjust_reason ? '' : ' hidden' %>>
+            <label class="label" for="cx-adj-<%= a.id %>"><%= t('cashx.adjust_reason') %></label>
+            <input class="input<%= inv('adjust_reason') %>" id="cx-adj-<%= a.id %>" name="adjust_reason" maxlength="255" value="<%= old.adjust_reason || '' %>" placeholder="<%= t('cashx.adjust_reason_ph') %>" autocomplete="off">
+            <%- err('adjust_reason') %>
+          </div>
+        </section>
+
+        <section class="cx-sec" aria-labelledby="cx-disc-h-<%= a.id %>">
+          <div class="cx-sec-head">
+            <h3 id="cx-disc-h-<%= a.id %>"><%= t('cashx.discount') %></h3>
+            <div class="segmented cx-seg" role="radiogroup" aria-labelledby="cx-disc-h-<%= a.id %>">
+              <label><input type="radio" name="discount_type" value="percent"<%= discType === 'percent' ? ' checked' : '' %>><span>%</span></label>
+              <label><input type="radio" name="discount_type" value="amount"<%= discType === 'amount' ? ' checked' : '' %>><span><%= currency %></span></label>
+            </div>
+          </div>
+          <div class="cx-row2">
+            <div class="field">
+              <label class="label" for="cx-disc-<%= a.id %>"><%= t('cashx.discount_value') %></label>
+              <input class="input num<%= inv('discount_value') %>" id="cx-disc-<%= a.id %>" name="discount_value" type="number" min="0" step="any" inputmode="decimal" value="<%= pick('discount_value', '') %>" placeholder="0">
+              <%- err('discount_value') %>
+            </div>
+            <div class="field">
+              <label class="label" for="cx-dreason-<%= a.id %>"><%= t('cashx.discount_reason') %></label>
+              <input class="input<%= inv('discount_reason') %>" id="cx-dreason-<%= a.id %>" name="discount_reason" maxlength="255" value="<%= old.discount_reason || '' %>" placeholder="<%= t('cashx.discount_reason_ph') %>" autocomplete="off">
+              <%- err('discount_reason') %>
+            </div>
+          </div>
+        </section>
+
+        <section class="cx-sec" aria-labelledby="cx-ins-h-<%= a.id %>">
+          <div class="cx-sec-head">
+            <h3 id="cx-ins-h-<%= a.id %>"><%= t('cashx.insurance') %></h3>
+            <div class="segmented cx-seg" role="radiogroup" aria-label="<%= t('cashx.coverage') %>" data-cx-cov-type>
+              <label><input type="radio" name="coverage_type" value="percent"<%= covType === 'percent' ? ' checked' : '' %>><span>%</span></label>
+              <label><input type="radio" name="coverage_type" value="amount"<%= covType === 'amount' ? ' checked' : '' %>><span><%= currency %></span></label>
+            </div>
+          </div>
+          <% if (!bill.insurance.length) { %>
+          <p class="help"><%= t('cashx.no_insurers') %><% if (can('settings.manage')) { %> <a class="link" href="/app/settings/insurance"><%= t('cashx.add_insurers') %></a><% } %></p>
+          <% } %>
+          <div class="cx-row2"<%= bill.insurance.length ? '' : ' hidden' %>>
+            <div class="field">
+              <label class="label" for="cx-insp-<%= a.id %>"><%= t('cashx.insurer') %></label>
+              <select class="select<%= inv('insurance_provider_id') %>" id="cx-insp-<%= a.id %>" name="insurance_provider_id" data-cx-insurer>
+                <option value=""><%= t('cashx.no_insurance') %></option>
+                <% bill.insurance.forEach(function (p) { %><option value="<%= p.id %>" data-coverage="<%= Number(p.coverage_percent) || 0 %>"<%= String(old.insurance_provider_id) === String(p.id) ? ' selected' : '' %>><%= p.name %><%= Number(p.coverage_percent) ? ' · ' + fmt.number(p.coverage_percent) + '%' : '' %></option><% }) %>
+              </select>
+              <%- err('insurance_provider_id') %>
+            </div>
+            <div class="field" data-cx-cov-pct<%= covType === 'amount' ? ' hidden' : '' %>>
+              <label class="label" for="cx-cov-<%= a.id %>"><%= t('cashx.coverage_pct') %></label>
+              <div class="input-affix"><input class="input num<%= inv('coverage') %>" id="cx-cov-<%= a.id %>" name="coverage" type="number" min="0" max="100" step="any" inputmode="decimal" value="<%= pick('coverage', '') %>" data-cx-coverage><span class="affix">%</span></div>
+              <%- err('coverage') %>
+            </div>
+            <div class="field" data-cx-cov-amt<%= covType === 'amount' ? '' : ' hidden' %>>
+              <label class="label" for="cx-cova-<%= a.id %>"><%= t('cashx.coverage_amount') %></label>
+              <div class="input-affix"><input class="input num<%= inv('coverage_amount') %>" id="cx-cova-<%= a.id %>" name="coverage_amount" type="number" min="0" step="any" inputmode="decimal" value="<%= pick('coverage_amount', '') %>"><span class="affix"><%= currency %></span></div>
+              <%- err('coverage_amount') %>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="cx-p-side">
+        <fieldset class="cx-sec cx-methods fieldset">
+          <legend class="cx-legend"><%= t('cashx.how_pays') %></legend>
+          <div class="cx-method-grid">
+            <% methods.forEach(function (m) { %>
+            <label class="cx-method"><input type="radio" name="payment_method" value="<%= m %>"<%= method === m ? ' checked' : '' %>><span><%- icon(methodIcon[m] || 'wallet', 'icon-sm') %><span><%= t('cashx.method.' + m) %></span></span></label>
+            <% }) %>
+          </div>
+          <%- err('payment_method') %>
+        </fieldset>
+
+        <div class="cx-sec" data-cx-when="mixed"<%= method === 'mixed' ? '' : ' hidden' %>>
+          <div class="cx-row2">
+            <div class="field">
+              <label class="label" for="cx-sc-<%= a.id %>"><%= t('cashx.cash_part') %></label>
+              <div class="input-affix"><input class="input num<%= inv('split_cash') %>" id="cx-sc-<%= a.id %>" name="split_cash" type="number" min="0" step="any" inputmode="decimal" value="<%= pick('split_cash', '') %>" data-cx-split="cash"><span class="affix"><%= currency %></span></div>
+              <%- err('split_cash') %>
+            </div>
+            <div class="field">
+              <label class="label" for="cx-sk-<%= a.id %>"><%= t('cashx.card_part') %></label>
+              <div class="input-affix"><input class="input num<%= inv('split_card') %>" id="cx-sk-<%= a.id %>" name="split_card" type="number" min="0" step="any" inputmode="decimal" value="<%= pick('split_card', '') %>" data-cx-split="card"><span class="affix"><%= currency %></span></div>
+              <%- err('split_card') %>
+            </div>
+          </div>
+          <p class="cx-split-note" data-cx-split-note></p>
+        </div>
+
+        <div class="cx-sec" data-cx-when="cash mixed"<%= method === 'cash' || method === 'mixed' ? '' : ' hidden' %>>
+          <label class="label" for="cx-recv-<%= a.id %>"><%= t('cashx.received') %></label>
+          <div class="input-affix"><input class="input num cx-recv<%= inv('amount_received') %>" id="cx-recv-<%= a.id %>" name="amount_received" type="number" min="0" step="any" inputmode="decimal" value="<%= pick('amount_received', '') %>" placeholder="<%= t('cashx.received_ph') %>" data-cx-received><span class="affix"><%= currency %></span></div>
+          <%- err('amount_received') %>
+          <div class="cx-quick" data-cx-quick aria-label="<%= t('cashier.quick_amounts') %>"></div>
+        </div>
+
+        <div class="cx-sum" aria-live="polite">
+          <dl>
+            <div><dt><%= t('cashier.subtotal') %></dt><dd class="num" data-cx-out="subtotal">—</dd></div>
+            <div data-cx-row="discount" hidden><dt><%= t('cashx.discount') %> <bdi class="muted" dir="ltr" data-cx-out="discount_pct"></bdi></dt><dd class="num" dir="ltr" data-cx-out="discount">—</dd></div>
+            <div class="cx-sum-total"><dt><%= t('cashx.total') %></dt><dd><span class="num" data-cx-out="total">—</span> <span class="cx-cur"><%= currency %></span></dd></div>
+            <div data-cx-row="insurance" hidden><dt><%= t('cashx.insurance_pays') %></dt><dd class="num" data-cx-out="insurance">—</dd></div>
+            <div class="cx-sum-patient" data-cx-row="patient" hidden><dt><%= t('cashx.patient_pays') %></dt><dd><span class="num" data-cx-out="patient">—</span> <span class="cx-cur"><%= currency %></span></dd></div>
+          </dl>
+          <div class="cx-change" data-cx-row="change" hidden><span><%= t('cashx.change') %></span><strong><span class="num" data-cx-out="change">0</span> <span class="cx-cur"><%= currency %></span></strong></div>
+          <p class="cx-warn" data-cx-out="warn" hidden></p>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-block cx-confirm" type="submit" data-cx-confirm><%- icon('check', 'icon-sm') %><span><%= t('cashx.confirm') %></span><span class="num" data-cx-out="confirm_amount"></span><kbd class="cx-key" aria-hidden="true">Enter</kbd></button>
+        <p class="tiny muted cx-after"><%= t('cashx.after_confirm') %></p>
+      </aside>
+    </div>
+  </div>
+  <% } %>
+  <script type="application/json" data-cx-panel-data><%- json({ decimals: decimals, locale: locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', doctorLines: (bill.doctorLines || []).map(function (l) { return { qty: Number(l.qty) || 1, price: Number(l.unit_price) || 0 }; }), texts: { split_left: t('cashx.split_left'), split_over: t('cashx.split_over'), split_ok: t('cashx.split_ok'), cash_short: t('errors_cashier.CASH_SHORT'), exact: t('cashier.exact'), reason_needed: t('errors_cashx.ADJUST_REASON'), insurer_needed: t('cashx.insurer_needed'), nothing_to_pay: t('cashx.nothing_to_pay') } }) %></script>
+</form>

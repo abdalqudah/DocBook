@@ -1,0 +1,48 @@
+<%
+  /* Cash screen columns — one per doctor working today. Locals: scr (cashier.service.screen). Re-rendered by /app/cashier/screen/board. */
+  var _L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var _stateText = function (a) {
+    if (a.state === 'ready') return t('cashx.state.ready');
+    if (a.state === 'with_doctor') return t('cashx.state.with_doctor') + (a.inRoom !== null ? ' · ' + t('cashx.minutes', { n: a.inRoom }) : '');
+    if (a.state === 'arrived') return t('cashx.state.arrived') + (a.waited !== null ? ' · ' + t('cashx.minutes', { n: a.waited }) : '');
+    if (a.state === 'paid') return t('cashx.state.paid') + (a.invoice ? ' · #' + a.invoice.invoice_number : '');
+    return t('cashx.state.expected');
+  };
+%>
+<% if (!scr.cols.length) { %>
+<div class="cx-empty">
+  <%- icon('calendar-days') %>
+  <h2><%= t('cashx.no_doctors_title') %></h2>
+  <p class="muted"><%= t('cashx.no_doctors_text') %></p>
+</div>
+<% } else { %>
+<div class="cx-cols" style="--cx-cols:<%= scr.cols.length %>">
+  <% scr.cols.forEach(function (c) {
+       var readyN = c.visits.filter(function (a) { return a.state === 'ready'; }).length;
+       var name = c.doctor ? _L(c.doctor.full_name, c.doctor.full_name_en) : t('cashx.no_doctor'); %>
+  <section class="cx-col" aria-label="<%= name %>">
+    <header class="cx-col-head">
+      <span class="cx-dot" aria-hidden="true"<% if (c.doctor && c.doctor.color) { %> style="background:<%= c.doctor.color %>"<% } %>></span>
+      <h2 class="truncate"><%= name %></h2>
+      <% if (readyN) { %><span class="cx-col-ready"><%= t('cashx.ready_n', { n: fmt.number(readyN) }) %></span><% } %>
+      <span class="cx-col-count" title="<%= t('cashx.visits_today') %>"><%= fmt.number(c.visits.length) %></span>
+    </header>
+    <% if (!c.visits.length) { %><p class="cx-col-empty"><%= t('cashx.col_empty') %></p><% } else { %>
+    <ol class="cx-list">
+      <% c.visits.forEach(function (a) { var ready = a.state === 'ready'; var paid = a.state === 'paid'; var tools = paid || (a.rxs && a.rxs.length) || (a.certs && a.certs.length); %>
+      <li class="cx-item is-<%= a.state %><%= tools ? ' has-tools' : '' %>" data-cx-id="<%= a.id %>">
+        <% if (!paid) { %><a class="cx-visit" href="/app/cashier/screen?visit=<%= a.id %>" data-cx-open="<%= a.id %>" data-cx-return="screen"><% } else { %><div class="cx-visit"><% } %>
+          <span class="cx-v-top"><span class="cx-v-time num" dir="ltr"><%= a.appointment_time %></span><span class="cx-v-state"><i class="cx-sdot is-<%= a.state %>" aria-hidden="true"></i><%= _stateText(a) %></span></span>
+          <span class="cx-v-name"><bdi><%= a.patient_name %></bdi></span>
+          <% if (ready || paid) { %><span class="cx-v-amount"><span class="num"><%= fmt.amount(paid && a.invoice ? a.invoice.amount : a.due) %></span> <span class="cx-cur"><%= currency %></span><% if (ready && a.fromDoctor) { %><span class="cx-v-src"><%= t('cashx.set_by_doctor') %></span><% } %></span><% } %>
+          <% if (ready) { %><span class="cx-v-cta"><%- icon('banknote', 'icon-sm') %><%= t('cashx.collect') %></span><% } %>
+        <% if (!paid) { %></a><% } else { %></div><% } %>
+        <% if (tools) { %><div class="cx-item-tools"><%- include('_papers', { v: a, menuUp: false }) %></div><% } %>
+      </li>
+      <% }) %>
+    </ol>
+    <% } %>
+  </section>
+  <% }) %>
+</div>
+<% } %>

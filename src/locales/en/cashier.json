@@ -1,7 +1,7 @@
 {
   "cashier": {
-    "title": "Cashier",
-    "close_drawer_link": "Cash drawer",
+    "title": "Patient billing",
+    "close_drawer_link": "Daily cash closing",
     "today_totals": "Today's collections",
     "collected_today": "Collected today",
     "receipts_n": "{n} receipts",
@@ -63,7 +63,7 @@
     "visit_not_found": "That visit could not be found.",
     "paid_toast": "Receipt #{n} issued: {v}.",
     "change_toast": "Give back {v} change",
-    "closings_title": "Cash drawer",
+    "closings_title": "Daily cash closing",
     "closings_lead": "Count the cash in the drawer and compare it with the cash receipts recorded since the last closing.",
     "closed_even": "Drawer closed. The count matches the expected cash.",
     "closed_over": "Drawer closed with {v} over.",

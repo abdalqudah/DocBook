@@ -1,146 +1,166 @@
 <%
+  /* Reception board: Expected → Arrived → With the doctor → To pay → Paid. One main action per patient; the rest
+     sits in a "⋯" menu. Live: live.js reloads the board ([data-auto-refresh]) when the clinic's agenda changes. */
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
   var canPay = can('billing.manage');
   var canBook = can('appointments.manage');
   var canVisit = canAny('clinical.view', 'vitals.edit', 'frontdesk.use');
-  var act = function (id, path, label, iconName, cls, onVal, confirmMsg) {
+  var filterInput = doctor ? '<input type="hidden" name="doctor_filter" value="' + escapeHtml(doctor) + '">' : '';
+  var post = function (id, path, label, iconName, cls, onVal, confirmMsg) {
     return '<form method="post" action="/app/front-desk/' + id + '/' + path + '"' + (confirmMsg ? ' data-confirm="' + escapeHtml(confirmMsg) + '" data-confirm-title="' + escapeHtml(label) + '" data-confirm-yes="' + escapeHtml(label) + '"' : '') + '>'
-      + '<input type="hidden" name="_csrf" value="' + csrfToken + '">' + (onVal !== undefined ? '<input type="hidden" name="on" value="' + onVal + '">' : '')
-      + '<button class="btn ' + cls + ' btn-sm" type="submit">' + icon(iconName, 'icon-sm') + '<span>' + escapeHtml(label) + '</span></button></form>';
+      + '<input type="hidden" name="_csrf" value="' + csrfToken + '">' + filterInput + (onVal !== undefined ? '<input type="hidden" name="on" value="' + onVal + '">' : '')
+      + '<button class="' + cls + '" type="submit">' + icon(iconName, 'icon-sm') + '<span>' + escapeHtml(label) + '</span></button></form>';
   };
-  var payBtn = function (a) {
-    if (!canPay || a.payment_status === 'paid') return '';
-    return '<button class="btn btn-secondary btn-sm" type="button" data-open-dialog="checkout-dialog" data-action="/app/front-desk/' + a.id + '/checkout" data-dialog-title="' + escapeHtml(t('frontdesk.checkout_for', { name: a.patient_name })) + '" data-fill="' + escapeHtml(json({ amount_paid: Number(a.amount_due || 0), discount_percent: '', payment_method: 'cash', insurance_provider_id: '' })) + '">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(t('frontdesk.checkout')) + '</span></button>'
-      + '<a class="btn btn-ghost btn-sm" href="/app/cashier?visit=' + a.id + '" title="' + escapeHtml(t('nav.cashier')) + '">' + icon('receipt-text', 'icon-sm') + '<span>' + escapeHtml(t('nav.cashier')) + '</span></a>';
-  };
-  var card = function (a, extraBadge, actions) {
-    var h = '<article class="fd-card">'
-      + '<div class="fd-card-top"><span class="fd-time" dir="ltr">' + escapeHtml(a.appointment_time) + '</span>' + (extraBadge || '') + '</div>'
-      + '<div class="fd-name">' + (canVisit ? '<a href="/app/visits/' + a.id + '">' + escapeHtml(a.patient_name) + '</a>' : escapeHtml(a.patient_name)) + '</div>'
-      + '<div class="fd-meta small muted">' + (a.doctor_id ? '<span class="doc-dot" style="' + (a.doctor_color ? 'background:' + escapeHtml(a.doctor_color) : '') + '"></span>' + escapeHtml(L(a.doctor_name, a.doctor_name_en)) : escapeHtml(t('appointments.unassigned')))
-      + (a.service_name ? ' · ' + escapeHtml(L(a.service_name, a.service_name_en)) : '') + '</div>'
-      + (a.patient_phone ? '<div class="tiny muted"><bdi dir="ltr">' + escapeHtml(a.patient_phone) + '</bdi></div>' : '')
-      + '<div class="fd-badges">'
-      + (a.status === 'pending' ? '<span class="st"><i class="st-dot st-pending"></i>' + escapeHtml(t('appointments.statuses.pending')) + '</span>' : '')
-      + (a.source === 'website' ? '<span class="fd-tag">' + icon('globe', 'icon-sm') + escapeHtml(t('appointments.sources.website')) + '</span>' : '')
-      + (a.appointment_type === 'online' ? '<span class="fd-tag">' + icon('monitor', 'icon-sm') + escapeHtml(t('appointments.types.online')) + '</span>' : '')
-      + '</div>'
-      + (actions ? '<div class="fd-actions">' + actions + '</div>' : '')
-      + '</article>';
-    return h;
+  var main = function (id, path, label, iconName, onVal) { return post(id, path, label, iconName, 'btn btn-secondary fx-main', onVal); };
+  var item = function (id, path, label, iconName, onVal, confirmMsg) { return post(id, path, label, iconName, '', onVal, confirmMsg); };
+  var payLink = function (a, cls, label) {
+    return '<a class="' + cls + '" href="/app/cashier?visit=' + a.id + '" data-cx-open="' + a.id + '" data-cx-return="front-desk">' + icon('banknote', 'icon-sm') + '<span>' + escapeHtml(label) + '</span></a>';
   };
   var cols = [
-    { key: 'expected', icon: 'calendar-clock', items: board.expected },
-    { key: 'waiting', icon: 'armchair', items: board.waiting },
-    { key: 'with_doctor', icon: 'stethoscope', items: board.withDoctor },
-    { key: 'checkout', icon: 'banknote', items: board.toPay.concat(board.done) },
+    { key: 'expected', items: group.expected },
+    { key: 'arrived', items: group.arrived },
+    { key: 'with_doctor', items: group.with_doctor },
+    { key: 'ready', items: group.ready },
+    { key: 'paid', items: group.paid },
   ];
+  var total = cols.reduce(function (s, c) { return s + c.items.length; }, 0);
 %>
-<div class="page-head" data-auto-refresh="60">
+<div class="page-head fx-head" data-auto-refresh="60">
   <div>
-    <div class="breadcrumbs"><%= t('nav.group_clinic') %></div>
     <h1><%= t('frontdesk.title') %></h1>
-    <p><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span class="muted"><%= t('frontdesk.auto_refresh') %></span></p>
+    <p><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span class="muted"><%= t('cashx.board_live') %></span></p>
   </div>
   <div class="page-actions">
-    <% if (can('appointments.view')) { %><a class="btn btn-secondary" href="/app/appointments"><%- icon('calendar-days', 'icon-sm') %><%= t('frontdesk.day_view') %></a><% } %>
-    <% if (canBook) { %><a class="btn btn-primary" href="/app/appointments/new?date=today&return=%2Fapp%2Ffront-desk"><%- icon('user-plus', 'icon-sm') %><%= t('frontdesk.walk_in') %></a><% } %>
+    <% if (canPay) { %><a class="btn btn-secondary" href="/app/cashier/screen?fs=1"><%- icon('maximize', 'icon-sm') %><%= t('cashx.open_screen') %></a><% } %>
+    <% if (canBook) { %><button class="btn btn-primary" type="button" data-open-dialog="fx-walkin"><%- icon('user-plus', 'icon-sm') %><%= t('cashx.walkin') %></button><% } %>
   </div>
 </div>
 
-<% if (justPaid) { %>
-<div class="alert alert-success mb-4" role="status" data-dismissible>
-  <%- icon('circle-check') %>
-  <div class="grow"><div class="alert-title"><%= t('frontdesk.paid_title', { number: justPaid.invoice_number, name: justPaid.patient_name }) %></div><div class="small"><%= fmt.money(justPaid.amount) %></div></div>
-  <a class="btn btn-secondary btn-sm" href="/app/billing/<%= justPaid.id %>?print=1" target="_blank" rel="noopener"><%- icon('printer', 'icon-sm') %><%= t('frontdesk.print_invoice') %></a>
+<div class="fx-bar">
+  <nav class="fx-flow" aria-label="<%= t('cashx.flow_label') %>">
+    <% cols.forEach(function (c, i) { %><a class="fx-step" href="#fx-<%= c.key %>"><span class="fx-step-n num"><%= fmt.number(c.items.length) %></span><span class="fx-step-l"><%= t('cashx.col.' + c.key) %></span></a><% if (i < cols.length - 1) { %><%- icon('chevron-right', 'icon-sm fx-step-arrow flip-rtl') %><% } %><% }) %>
+  </nav>
+  <% if (!ownDoctor && doctors.length > 1) { %>
+  <form class="fx-filter" method="get" action="/app/front-desk" data-autosubmit>
+    <label class="sr-only" for="fx-doctor"><%= t('common.doctor') %></label>
+    <select class="select" id="fx-doctor" name="doctor">
+      <option value=""><%= t('common.all_doctors') %></option>
+      <% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(doctor) === String(d.id) ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %>
+      <option value="none"<%= doctor === 'none' ? ' selected' : '' %>><%= t('appointments.unassigned') %></option>
+    </select>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+  </form>
+  <% } %>
+  <% if (can('billing.view')) { %><div class="fx-collected"><span class="muted small"><%= t('frontdesk.collected') %></span> <strong class="num"><%= fmt.money(collected) %></strong></div><% } %>
 </div>
-<% } %>
 
-<div class="stats cols-5 fd-stats">
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.expected') %></div><div class="stat-value"><%= fmt.number(board.expected.length) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.waiting') %></div><div class="stat-value"><%= fmt.number(board.waiting.length) %></div><div class="stat-meta<%= board.waiting.length && board.waiting[0].waited >= 30 ? ' fd-late' : '' %>"><%= board.waiting.length ? t('frontdesk.longest_wait', { n: board.waiting[0].waited }) : '—' %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.col.with_doctor') %></div><div class="stat-value"><%= fmt.number(board.withDoctor.length) %></div></div>
-  <div class="stat"><div class="stat-label"><%= t('frontdesk.to_pay') %></div><div class="stat-value"><%= fmt.number(board.toPay.length) %></div></div>
-  <% if (can('billing.view')) { %><div class="stat"><div class="stat-label"><%= t('frontdesk.collected') %></div><div class="stat-value"><%= fmt.money(collected) %></div><div class="stat-meta"><%= t('frontdesk.paid_visits', { n: fmt.number(board.done.length) }) %></div></div>
-  <% } else { %><div class="stat"><div class="stat-label"><%= t('frontdesk.col.done') %></div><div class="stat-value"><%= fmt.number(board.done.length) %></div></div><% } %>
-</div>
-
-<div class="fd-board mt-4">
+<% if (!total && !group.missed.length) { %>
+<div class="panel mt-4"><div class="panel-body"><%- include('../../../partials/empty', { emptyIcon: 'calendar-days', emptyTitle: t('cashx.board_empty_title'), emptyText: t('cashx.board_empty_text'), emptyAction: canBook ? '<button class="btn btn-secondary" type="button" data-open-dialog="fx-walkin">' + icon('user-plus', 'icon-sm') + escapeHtml(t('cashx.walkin')) + '</button>' : '' }) %></div></div>
+<% } else { %>
+<div class="fx-board">
   <% cols.forEach(function (c) { %>
-  <section class="fd-col" aria-labelledby="fd-<%= c.key %>">
-    <header class="fd-col-head"><%- icon(c.icon, 'icon-sm fd-col-icon') %><h2 id="fd-<%= c.key %>"><%= t('frontdesk.col.' + c.key) %></h2><span class="badge"><%= fmt.number(c.items.length) %></span></header>
-    <div class="fd-col-body">
-      <% if (!c.items.length) { %><div class="fd-empty small muted"><%= t('frontdesk.empty.' + c.key) %></div><% } %>
+  <section class="fx-col" id="fx-<%= c.key %>" aria-labelledby="fx-h-<%= c.key %>">
+    <header class="fx-col-head"><i class="cx-sdot is-<%= c.key %>" aria-hidden="true"></i><h2 id="fx-h-<%= c.key %>"><%= t('cashx.col.' + c.key) %></h2><span class="fx-count num"><%= fmt.number(c.items.length) %></span></header>
+    <div class="fx-col-body">
+      <% if (!c.items.length) { %><p class="fx-empty"><%= t('cashx.empty.' + c.key) %></p><% } %>
       <% c.items.forEach(function (a) {
-        var badge = ''; var actions = '';
-        if (c.key === 'expected' && a.appointment_type === 'online') {
-          // Online consultations skip the check-in: joining the call marks the patient as arrived.
-          actions = (onlineLinks[a.id] ? '<button class="btn btn-secondary btn-sm" type="button" data-tele-copy="' + escapeHtml(onlineLinks[a.id]) + '" title="' + escapeHtml(t('telehealth.staff.copied_hint')) + '">' + icon('copy', 'icon-sm') + '<span>' + escapeHtml(t('telehealth.staff.copy')) + '</span></button>' : '')
-            + (canVisit ? '<a class="btn btn-ghost btn-sm" href="/app/visits/' + a.id + '#online">' + icon('video', 'icon-sm') + '<span>' + escapeHtml(t('telehealth.staff.go_video')) + '</span></a>' : '')
-            + act(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', 'btn-ghost', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name }));
-        } else if (c.key === 'expected') {
-          actions = act(a.id, 'check-in', t('frontdesk.check_in'), 'user-check', 'btn-secondary', 1)
-            + act(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', 'btn-ghost', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name }));
-          if (a.patient_phone && canBook) actions += '<a class="btn btn-ghost btn-sm" href="/app/messaging/wa/' + a.id + '" target="_blank" rel="noopener" title="' + escapeHtml(t('messaging.wa_send')) + '">' + icon('message-circle', 'icon-sm') + '<span>' + escapeHtml(t('messaging.wa_short')) + '</span></a>'; // WhatsApp click-to-chat reminder
-          if (a.appointment_time < nowTime) badge ='<span class="badge badge-warning">' + escapeHtml(t('frontdesk.late')) + '</span>';
-        } else if (c.key === 'waiting') {
-          badge = '<span class="badge ' + (a.waited >= 30 ? 'badge-danger' : a.waited >= 15 ? 'badge-warning' : 'badge-neutral') + '">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.waited', { n: a.waited })) + '</span>';
-          actions = (a.doctor_id ? act(a.id, 'call-in', t('frontdesk.call_in'), 'door-open', 'btn-secondary', 1) : '')
-            + payBtn(a) + act(a.id, 'check-in', t('frontdesk.undo'), 'refresh-cw', 'btn-ghost', 0);
+        var action = ''; var more = []; var meta = ''; var flag = '';
+        var online = a.appointment_type === 'online';
+        if (c.key === 'expected') {
+          if (online) {
+            action = onlineLinks[a.id] ? '<button class="btn btn-secondary fx-main" type="button" data-tele-copy="' + escapeHtml(onlineLinks[a.id]) + '" title="' + escapeHtml(t('telehealth.staff.copied_hint')) + '">' + icon('copy', 'icon-sm') + '<span>' + escapeHtml(t('telehealth.staff.copy')) + '</span></button>' : '';
+            if (canVisit) more.push('<a href="/app/visits/' + a.id + '#online">' + icon('video', 'icon-sm') + escapeHtml(t('telehealth.staff.go_video')) + '</a>');
+          } else action = main(a.id, 'check-in', t('cashx.do.check_in'), 'user-check', 1);
+          if (a.appointment_time < nowTime) flag = '<span class="fx-flag is-late">' + escapeHtml(t('frontdesk.late')) + '</span>';
+          if (a.patient_phone && canBook) more.push('<a href="/app/messaging/wa/' + a.id + '" target="_blank" rel="noopener">' + icon('message-circle', 'icon-sm') + escapeHtml(t('messaging.wa_send')) + '</a>');
+          more.push(item(a.id, 'no-show', t('frontdesk.no_show'), 'user-x', undefined, t('frontdesk.no_show_confirm', { name: a.patient_name })));
+        } else if (c.key === 'arrived') {
+          meta = a.waited !== null && a.waited !== undefined && a.arrived_at ? t('cashx.waiting_for', { n: a.waited }) : '';
+          if (a.waited >= 30) flag = '<span class="fx-flag is-late">' + escapeHtml(t('cashx.waiting_long')) + '</span>';
+          action = a.doctor_id ? main(a.id, 'call-in', t('cashx.do.send_in'), 'door-open', 1) : '<a class="btn btn-secondary fx-main" href="/app/appointments/' + a.id + '/edit?return=%2Fapp%2Ffront-desk">' + icon('stethoscope', 'icon-sm') + '<span>' + escapeHtml(t('cashx.do.pick_doctor')) + '</span></a>';
+          more.push(item(a.id, 'check-in', t('cashx.do.undo_check_in'), 'refresh-cw', 0));
+          if (canPay) more.push(payLink(a, '', t('cashx.do.collect_early')));
         } else if (c.key === 'with_doctor') {
-          badge = '<span class="badge">' + icon('timer', 'icon-sm') + escapeHtml(t('frontdesk.in_room', { n: a.inRoom })) + '</span>';
-          actions = payBtn(a) + act(a.id, 'call-in', t('frontdesk.back_to_waiting'), 'refresh-cw', 'btn-ghost', 0);
-        } else if (a.payment_status === 'paid') {
-          var inv = invoiceFor[a.id];
-          badge = '<span class="st"><i class="st-dot st-completed"></i>' + escapeHtml(t('appointments.payment_statuses.paid')) + '</span>';
-          actions = inv && can('billing.view') ? '<a class="btn btn-ghost btn-sm" href="/app/billing/' + inv.id + '?print=1">' + icon('printer', 'icon-sm') + '<span>#' + inv.invoice_number + '</span></a><span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>' : '<span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>';
+          meta = a.called_at ? t('cashx.in_room_for', { n: a.inRoom || 0 }) : '';
+          action = '<span class="fx-wait">' + icon('stethoscope', 'icon-sm') + escapeHtml(t('cashx.with_doctor_now')) + '</span>';
+          more.push(item(a.id, 'call-in', t('frontdesk.back_to_waiting'), 'refresh-cw', 0));
+          if (canPay) more.push(payLink(a, '', t('cashx.do.collect_early')));
+        } else if (c.key === 'ready') {
+          meta = a.fromDoctor ? t('cashx.set_by_doctor') : t('cashx.expected_fee');
+          action = canPay ? payLink(a, 'btn btn-secondary fx-main fx-pay', t('cashx.collect')) : '<span class="fx-wait">' + escapeHtml(t('cashx.at_cashier')) + '</span>';
         } else {
-          badge = '<span class="badge">' + escapeHtml(t('frontdesk.to_pay')) + '</span>';
-          actions = payBtn(a) + '<span class="small strong fd-amount">' + escapeHtml(fmt.money(a.amount_due)) + '</span>';
+          meta = a.invoice ? t('cashx.paid_no', { n: a.invoice.invoice_number }) : t('cashx.state.paid');
         }
-      %><%- card(a, badge, actions) %><% }) %>
+        if (canVisit) more.push('<a href="/app/visits/' + a.id + '">' + icon('file-text', 'icon-sm') + escapeHtml(t('cashx.open_visit')) + '</a>');
+      %>
+      <article class="fx-card is-<%= c.key %>">
+        <div class="fx-card-top">
+          <span class="fx-time num" dir="ltr"><%= a.appointment_time %></span>
+          <% if (a.status === 'pending') { %><span class="st"><i class="st-dot st-pending"></i><%= t('appointments.statuses.pending') %></span><% } %>
+          <% if (online) { %><span class="fd-tag"><%- icon('monitor', 'icon-sm') %><%= t('appointments.types.online') %></span><% } %>
+          <%- flag %>
+          <% if (c.key === 'ready' || c.key === 'paid') { %><span class="fx-amount num"><%= fmt.money(c.key === 'paid' && a.invoice ? a.invoice.amount : a.due) %></span><% } %>
+        </div>
+        <div class="fx-name"><% if (canVisit) { %><a href="/app/visits/<%= a.id %>"><bdi><%= a.patient_name %></bdi></a><% } else { %><bdi><%= a.patient_name %></bdi><% } %></div>
+        <div class="fx-meta"><% if (a.doctor_id) { %><span class="doc-dot" aria-hidden="true"<% if (a.doctor_color) { %> style="background:<%= a.doctor_color %>"<% } %>></span><%= L(a.doctor_name, a.doctor_name_en) %><% } else { %><%= t('appointments.unassigned') %><% } %><% if (a.service_name) { %> · <%= L(a.service_name, a.service_name_en) %><% } %></div>
+        <% if (meta) { %><div class="fx-sub"><%= meta %></div><% } %>
+        <div class="fx-actions">
+          <%- action %>
+          <% if (c.key === 'paid' || (a.rxs && a.rxs.length) || (a.certs && a.certs.length)) { %><%- include('../cashier/_papers', { v: a, menuUp: false }) %><% } %>
+          <% if (more.length) { %>
+          <details class="dropdown fx-more">
+            <summary class="btn btn-ghost btn-icon btn-sm" aria-label="<%= t('cashx.more_actions') %> — <%= a.patient_name %>" title="<%= t('cashx.more_actions') %>"><%- icon('ellipsis', 'icon-sm') %></summary>
+            <div class="menu" role="menu"><%- more.join('') %></div>
+          </details>
+          <% } %>
+        </div>
+      </article>
+      <% }) %>
     </div>
   </section>
   <% }) %>
 </div>
+<% } %>
 
-<% if (board.missed.length) { %>
+<% if (group.missed.length) { %>
 <details class="panel fd-missed mt-4">
-  <summary class="panel-head"><h2><%- icon('calendar-x', 'icon-sm') %> <%= t('frontdesk.missed') %> <span class="badge"><%= fmt.number(board.missed.length) %></span></h2><%- icon('chevron-down', 'icon-sm muted') %></summary>
+  <summary class="panel-head"><h2><%- icon('calendar-x', 'icon-sm') %> <%= t('frontdesk.missed') %> <span class="badge"><%= fmt.number(group.missed.length) %></span></h2><%- icon('chevron-down', 'icon-sm muted') %></summary>
   <ul class="action-list">
-    <% board.missed.forEach(function (a) { %>
-    <li><div><span class="small strong" dir="ltr" style="min-width:48px"><%= a.appointment_time %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></div></div><span class="st"><i class="st-dot st-<%= a.status %>"></i><%= t('appointments.statuses.' + a.status) %></span><%- act(a.id, 'restore', t('frontdesk.restore'), 'refresh-cw', 'btn-ghost') %></div></li>
+    <% group.missed.forEach(function (a) { %>
+    <li><div><span class="small strong" dir="ltr" style="min-width:48px"><%= a.appointment_time %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('appointments.unassigned') %></div></div><span class="st"><i class="st-dot st-<%= a.status %>"></i><%= t('appointments.statuses.' + a.status) %></span><%- post(a.id, 'restore', t('frontdesk.restore'), 'refresh-cw', 'btn btn-ghost btn-sm') %></div></li>
     <% }) %>
   </ul>
 </details>
 <% } %>
 
-<% if (canPay) { var cOld = (typeof old !== 'undefined' && old) || {}; %>
-<dialog class="dialog" id="checkout-dialog" aria-labelledby="co-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'checkout-dialog') { %> data-open-on-load<% } %>>
-  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/front-desk' %>" novalidate data-checkout data-decimals="<%= decimals %>" data-locale="<%= locale %>">
-    <div class="dialog-head"><div><h2 id="co-title" data-dialog-title-target><%= t('frontdesk.checkout') %></h2><p class="small muted"><%= t('frontdesk.checkout_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+<% if (canBook) { %>
+<dialog class="dialog" id="fx-walkin" aria-labelledby="fx-walkin-h">
+  <form method="post" action="/app/front-desk/walk-in">
+    <div class="dialog-head"><div><h2 id="fx-walkin-h"><%= t('cashx.walkin') %></h2><p class="small muted"><%= t('cashx.walkin_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
     <div class="dialog-body">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <%- include('../../../partials/form-error') %>
       <div class="form-grid">
-        <%- include('../../../partials/field', { name: 'amount_paid', id: 'co-amount', label: t('frontdesk.amount_paid'), required: true, suffix: currency, attrs: 'inputmode="decimal" autocomplete="off"', help: t('frontdesk.amount_paid_help') }) %>
-        <%- include('../../../partials/field', { name: 'discount_percent', id: 'co-discount', label: t('frontdesk.discount'), suffix: '%', placeholder: '0', attrs: 'inputmode="decimal" autocomplete="off"' }) %>
-        <div class="full co-summary" data-co-summary hidden>
-          <div><span class="muted"><%= t('frontdesk.original_price') %></span><strong data-co-original></strong></div>
-          <div><span class="muted"><%= t('frontdesk.discount_amount') %></span><strong data-co-discount></strong></div>
-          <div class="grand"><span><%= t('frontdesk.net_paid') %></span><strong data-co-net></strong></div>
-        </div>
-        <%- include('../../../partials/field', { name: 'payment_method', id: 'co-method', label: t('frontdesk.payment_method'), type: 'select', required: true, value: 'cash', options: methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }), attrs: 'data-co-method' }) %>
-        <div class="field" data-co-insurance>
-          <label class="label" for="co-insurance"><%= t('frontdesk.insurance') %></label>
-          <% if (insurance.length) { %>
-          <select class="select<%= errors && errors.insurance_provider_id ? ' is-invalid' : '' %>" id="co-insurance" name="insurance_provider_id"><option value=""><%= t('frontdesk.choose_insurance') %></option><% insurance.forEach(function (i) { %><option value="<%= i.id %>"<%= String(cOld.insurance_provider_id) === String(i.id) ? ' selected' : '' %>><%= i.name %><%= Number(i.coverage_percent) ? ' · ' + fmt.number(i.coverage_percent) + '%' : '' %></option><% }) %></select>
-          <% } else { %><p class="help"><%= t('frontdesk.no_insurance') %></p><% } %>
-          <% if (errors && errors.insurance_provider_id) { %><span class="field-error"><%= errors.insurance_provider_id %></span><% } %>
-        </div>
+        <%- include('../../../partials/field', { name: 'patient_name', id: 'fx-wi-name', label: t('cashx.walkin_name'), required: true, attrs: 'autocomplete="off" maxlength="190"' }) %>
+        <%- include('../../../partials/field', { name: 'patient_phone', id: 'fx-wi-phone', label: t('cashx.walkin_phone'), required: true, type: 'tel', attrs: 'autocomplete="off" dir="ltr" inputmode="tel" maxlength="40"' }) %>
+        <% if (walkInDoctors.length) { %>
+        <%- include('../../../partials/field', { name: 'doctor_id', id: 'fx-wi-doctor', label: t('common.doctor'), type: 'select', required: true, value: doctor && doctor !== 'none' ? doctor : walkInDoctors[0].id, options: walkInDoctors.map(function (d) { return { value: d.id, label: L(d.full_name, d.full_name_en) }; }), attrs: '' }) %>
+        <% } else { %><p class="help full"><%= t('cashx.walkin_no_doctor') %></p><% } %>
       </div>
+      <p class="small mt-2"><a class="link" href="/app/appointments/new?date=today&return=%2Fapp%2Ffront-desk"><%= t('cashx.walkin_more') %></a></p>
     </div>
-    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('frontdesk.confirm_payment') %></button></div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"<%= walkInDoctors.length ? '' : ' disabled' %>><%- icon('user-check', 'icon-sm') %><%= t('cashx.walkin_submit') %></button></div>
   </form>
 </dialog>
 <% } %>
+
+<% if (canPay) { %>
+<dialog class="dialog cx-dialog" id="cx-pay-dialog" aria-label="<%= t('cashx.panel_title') %>" data-cx-dialog<% if (typeof panel !== 'undefined' && panel) { %> data-open-on-load<% } %>>
+  <div class="dialog-inner" data-cx-dialog-body><% if (typeof panel !== 'undefined' && panel) { %><%- include('../cashier/_panel', panel) %><% } %></div>
+</dialog>
+<% } %>
+<% if (typeof done !== 'undefined' && done) { %>
+<dialog class="dialog cx-dialog cx-done-dialog" id="cx-done-dialog" data-open-on-load data-cx-done>
+  <div class="dialog-inner"><%- include('../cashier/_done', { done: done }) %></div>
+</dialog>
+<% } %>
+<script type="application/json" id="cx-texts"><%- json({ loading: t('cashx.loading'), failed: t('cashx.panel_failed') }) %></script>

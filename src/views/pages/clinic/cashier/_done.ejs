@@ -1,0 +1,65 @@
+<%
+  /* "Paid" panel after a payment: change to give back, what was paid how, the papers to print / send, back to the board.
+     The receipt prints on its own (hidden frame, public/js/cashx.js). Locals: done. */
+  var i = done.inv; var ret = done.ret;
+  var back = ret === 'screen' ? '/app/cashier/screen' : ret === 'front-desk' ? '/app/front-desk' : '/app/cashier';
+  var cashPart = done.parts.filter(function (p) { return p.method === 'cash'; })[0];
+  var change = i.change_due !== null && i.change_due !== undefined ? Number(i.change_due) : 0;
+%>
+<div class="cx-done" data-cx-autoprint="<%= done.autoPrint %>">
+  <header class="cx-p-head">
+    <div class="grow">
+      <div class="cx-p-eyebrow"><%= t('cashx.done_eyebrow') %></div>
+      <h2 class="cx-p-patient"><%= t('cashx.done_title', { n: i.invoice_number }) %></h2>
+      <div class="cx-p-sub"><bdi><%= i.patient_name %></bdi><% if (i.doctor_name) { %><span><%= i.doctor_name %></span><% } %></div>
+    </div>
+    <a class="btn btn-ghost btn-icon" href="<%= back %>" data-cx-close aria-label="<%= t('common.close') %>"><%- icon('x') %></a>
+  </header>
+  <div class="cx-p-body">
+    <div class="cx-done-grid">
+      <div>
+        <% if (change > 0) { %>
+        <div class="cx-change is-big"><span><%= t('cashx.give_change') %></span><strong><span class="num"><%= fmt.amount(change) %></span> <span class="cx-cur"><%= currency %></span></strong></div>
+        <% } %>
+        <dl class="cx-paid-parts">
+          <div class="cx-sum-total"><dt><%= t('cashx.total') %></dt><dd><%= fmt.money(i.amount) %></dd></div>
+          <% done.parts.forEach(function (p) { %>
+          <div><dt><%= t('cashx.method.' + (p.method === 'insurance' ? 'insurance_part' : p.method)) %><% if (p.method === 'insurance' && i.insurance_provider_name) { %> · <%= i.insurance_provider_name %><% } %></dt><dd><%= fmt.money(p.amount) %></dd></div>
+          <% }) %>
+          <% if (cashPart && cashPart.received !== null && cashPart.received !== undefined) { %><div class="muted"><dt><%= t('cashx.received') %></dt><dd><%= fmt.money(cashPart.received) %></dd></div><% } %>
+        </dl>
+        <p class="small muted cx-autoprint-note" data-cx-autoprint-note><%- icon('printer', 'icon-sm') %><span><%= done.paper === 'a4' || done.paper === 'a5' ? t('cashx.printing_invoice') : t('cashx.printing_receipt') %></span></p>
+      </div>
+      <div class="cx-done-papers">
+        <h3><%= t('cashx.papers') %></h3>
+        <div class="cx-paper-btns">
+          <a class="btn btn-secondary" href="/app/cashier/receipt/<%= i.id %>?autoprint=1" target="_blank" rel="noopener" data-cx-print><%- icon('receipt-text', 'icon-sm') %><%= t('cashx.print_receipt') %></a>
+          <a class="btn btn-secondary" href="/app/billing/<%= i.id %>?print=1&autoprint=1" target="_blank" rel="noopener"><%- icon('file-text', 'icon-sm') %><%= t('cashx.print_invoice') %></a>
+          <% done.rxs.forEach(function (rx, k) { var href = can('clinical.view') ? '/app/visits/' + i.appointment_id + '/prescriptions/' + rx.id + '?print=1&autoprint=1' : '/app/cashier/papers/' + i.appointment_id + '/prescription/' + rx.id + '.pdf'; %>
+          <a class="btn btn-secondary" href="<%= href %>" target="_blank" rel="noopener"><%- icon('pill', 'icon-sm') %><%= t('cashx.print_rx') %><%= done.rxs.length > 1 ? ' ' + (k + 1) : '' %></a>
+          <% }) %>
+          <% done.certs.forEach(function (c) { %>
+          <a class="btn btn-secondary" href="/app/certificates/<%= c.id %>?print=1&autoprint=1" target="_blank" rel="noopener"><%- icon('file-check', 'icon-sm') %><%= t('patient_docs.cert_types.' + c.doc_type) %></a>
+          <% }) %>
+        </div>
+        <% if ((done.rxs.length || done.certs.length) && can('billing.manage') && i.appointment_id) { %>
+        <form class="cx-send" method="post" action="/app/cashier/papers/<%= i.appointment_id %>/send">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="return" value="<%= ret %>">
+          <div class="small strong"><%= t('cashx.send_title') %></div>
+          <div class="cx-send-list">
+            <% done.rxs.forEach(function (rx, k) { %><label class="check"><input type="checkbox" name="rx" value="<%= rx.id %>" checked><span><%= t('cashx.print_rx') %><%= done.rxs.length > 1 ? ' ' + (k + 1) : '' %></span></label><% }) %>
+            <% done.certs.forEach(function (c) { %><label class="check"><input type="checkbox" name="cert" value="<%= c.id %>" checked><span><%= t('patient_docs.cert_types.' + c.doc_type) %></span></label><% }) %>
+          </div>
+          <p class="tiny muted"><%= i.patient_email ? t('cashx.send_email', { email: i.patient_email }) : t('cashx.send_portal') %></p>
+          <button class="btn btn-secondary btn-sm" type="submit"><%- icon('send', 'icon-sm') %><%= t('cashx.send') %></button>
+        </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+  <footer class="cx-p-foot">
+    <a class="btn btn-primary btn-lg" href="<%= back %>" data-cx-close data-cx-autofocus><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= ret === 'screen' ? t('cashx.back_screen') : ret === 'front-desk' ? t('cashx.back_board') : t('cashx.back_cashier') %></a>
+  </footer>
+  <iframe class="cx-print-frame" title="<%= t('cashx.print_receipt') %>" tabindex="-1" aria-hidden="true" data-cx-print-frame></iframe>
+</div>

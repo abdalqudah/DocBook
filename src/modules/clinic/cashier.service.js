@@ -1,5 +1,11 @@
 // Cashier (POS-style patient payments) and cash-drawer closings.
 //
+// Reception & cash screen (round 8): the bill starts from the doctor's lines (appointments.doctor_lines, set when the
+// doctor presses "Finish visit"); changing what the doctor set needs a reason. Insurance takes its share first
+// (percent or fixed amount), the patient pays the rest by cash, card, mixed (cash + card, the two parts must add up),
+// bank transfer / CliQ or a digital wallet. Every payment is stored as parts in invoice_payments; the drawer's
+// expected cash counts ONLY the cash parts (older invoices without parts fall back to payment_method = 'cash').
+//
 // Payment: the bill is built from lines (booked service / doctor's fee + anything the cashier adds), a discount
 // (percentage or fixed amount) and a payment method. Every figure is recomputed here — client totals are never trusted.
 // The invoice keeps DocBook's fields: amount = NET paid, discount_percent / discount_amount derived from the bill,
@@ -20,8 +26,20 @@ const { round } = require('../../core/money');
 const businesses = require('../businesses/business.service');
 const lib = require('./records.lib');
 const notifications = require('../notifications/notification.service');
+const scheduling = require('./scheduling');
 
 const PAYMENT_METHODS = ['cash', 'card', 'bank_transfer', 'insurance', 'digital_wallet'];
+/** What the cashier can choose for the patient's part: the single methods + "mixed" (cash + card). */
+const PAY_METHODS = ['cash', 'card', 'mixed', 'insurance', 'bank_transfer', 'digital_wallet'];
+
+// "mixed" invoices appear in lists and reports that label payment_methods.* (common.json): until the shared table has
+// the key, provide it from this area's own texts (cashx.method_mixed) so no raw key is ever shown.
+(function addMixedLabel() {
+  const { dictionaries } = require('../../core/i18n'); // eslint-disable-line global-require
+  Object.values(dictionaries).forEach((d) => {
+    if (d.payment_methods && !d.payment_methods.mixed && d.cashx && d.cashx.method_mixed) d.payment_methods.mixed = d.cashx.method_mixed;
+  });
+}());
 const SEARCH_DAYS = 30;
 const MAX_LINES = 40;
 
@@ -50,7 +68,7 @@ const denominationsFor = (currency) => DENOMINATIONS[String(currency || '').toUp
 const VISIT_SELECT = ['a.id', 'a.patient_id', 'a.patient_name', 'a.patient_phone', 'a.appointment_date', 'a.appointment_time', 'a.status', 'a.checked_in', 'a.with_doctor',
   'a.arrived_at', 'a.called_at', 'a.amount_due', 'a.payment_status', 'a.doctor_id', 'a.service_id', 'a.appointment_type',
   'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 'd.consultation_fee',
-  's.name as service_name', 's.name_en as service_name_en', 's.price as service_price'];
+  's.name as service_name', 's.name_en as service_name_en', 's.price as service_price', 'a.doctor_lines', 'a.doctor_finished_at'];
 
 function unpaidVisits(ctx) {
   const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
@@ -94,13 +112,116 @@ const todayInvoices = (ctx) => {
 const recentReceipts = (ctx, limit = 10) => todayInvoices(ctx).orderBy('created_at', 'desc').orderBy('id', 'desc').limit(limit)
   .select('id', 'invoice_number', 'patient_name', 'amount', 'payment_method', 'change_due', 'created_at');
 
-/** Today's collections by payment method + number of receipts. */
+/** Payment parts of invoices (Map invoice id → [{ method, amount, received, change_due }]). */
+async function partsFor(ctx, invoiceIds, trx = knex) {
+  const ids = [...new Set((invoiceIds || []).map(Number).filter(Boolean))];
+  const map = new Map();
+  if (!ids.length) return map;
+  const rows = await trx('invoice_payments').where('business_id', ctx.businessId).whereIn('invoice_id', ids).orderBy('id').select('invoice_id', 'method', 'amount', 'received', 'change_due');
+  rows.forEach((r) => { if (!map.has(r.invoice_id)) map.set(r.invoice_id, []); map.get(r.invoice_id).push({ method: r.method, amount: n(r.amount), received: r.received === null ? null : n(r.received), change: r.change_due === null ? null : n(r.change_due) }); });
+  return map;
+}
+
+/** An invoice's parts, or one part from payment_method/amount for invoices issued without parts. */
+const partsOf = (inv, map) => (map.get(inv.id) && map.get(inv.id).length ? map.get(inv.id) : [{ method: inv.payment_method, amount: n(inv.amount) }]);
+
+/** Today's collections by payment method (parts: a mixed receipt adds to cash AND card) + number of receipts. */
 async function todayTotals(ctx) {
-  const rows = await todayInvoices(ctx).groupBy('payment_method').select('payment_method').sum({ v: 'amount' }).count({ c: '*' });
+  const invs = await todayInvoices(ctx).select('id', 'amount', 'payment_method');
+  const map = await partsFor(ctx, invs.map((i) => i.id));
   const byMethod = Object.fromEntries(PAYMENT_METHODS.map((m) => [m, 0]));
-  let total = 0; let count = 0;
-  rows.forEach((r) => { byMethod[r.payment_method] = n(r.v); total += n(r.v); count += n(r.c); });
-  return { byMethod, total, count };
+  let total = 0;
+  invs.forEach((inv) => {
+    total += n(inv.amount);
+    partsOf(inv, map).forEach((p) => { byMethod[p.method] = round(n(byMethod[p.method]) + p.amount, ctx.currency); });
+  });
+  return { byMethod, total: round(total, ctx.currency), count: invs.length };
+}
+
+// ---------------------------------------------------------------- cash screen & reception board
+/**
+ * Where a visit of today stands, in the order reception works: expected → arrived → with the doctor →
+ * ready to collect (finished, not paid) → paid. missed = no-show / cancelled.
+ */
+function flowState(a) {
+  if (a.status === 'cancelled' || a.status === 'no_show') return 'missed';
+  const open = a.status === 'pending' || a.status === 'confirmed';
+  // An online consultation paid in advance stays in the flow until the call is done.
+  if (a.payment_status === 'paid' && !(a.appointment_type === 'online' && open)) return 'paid';
+  // Finished by the doctor (doctor-flow stamps doctor_finished_at and completes the visit): reception collects now.
+  if (a.status === 'completed' || a.doctor_finished_at) return 'ready';
+  if (a.with_doctor) return 'with_doctor';
+  if (a.checked_in) return 'arrived';
+  return 'expected';
+}
+const FLOW = ['expected', 'arrived', 'with_doctor', 'ready', 'paid'];
+
+/** Doctors working on a date: active, the weekday enabled in their hours and not on a day off. */
+async function doctorsWorking(ctx, date) {
+  const [docs, off] = await Promise.all([
+    knex('doctors').where({ business_id: ctx.businessId, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+      .select('id', 'full_name', 'full_name_en', 'color', 'working_hours'),
+    knex('doctor_days_off').where({ business_id: ctx.businessId, off_date: date }).pluck('doctor_id'),
+  ]);
+  const key = scheduling.dayKeyOf(date);
+  return docs.map((d) => {
+    const wh = parseJson(d.working_hours, {}) || {};
+    return { id: d.id, full_name: d.full_name, full_name_en: d.full_name_en, color: d.color, works: scheduling.normalizeDayConfig(wh[key]).enabled && !off.includes(d.id) };
+  });
+}
+
+/**
+ * Today's visits with their flow state, plus the papers each one has (invoice, prescriptions, certificates) for
+ * the "Print" menus. Scoped to a doctor's own visits for a doctor login.
+ */
+async function today(ctx, { doctor } = {}) {
+  const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+    .where({ 'a.business_id': ctx.businessId, 'a.appointment_date': ctx.today }).whereNot('a.appointment_type', 'blocked')
+    .orderBy('a.appointment_time').select(VISIT_SELECT.concat(['a.source', 'a.patient_email', 'a.paid_at']));
+  if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
+  if (doctor) q.where('a.doctor_id', doctor === 'none' ? null : Number(doctor));
+  const rows = await q;
+  const ids = rows.map((a) => a.id);
+  const [invs, rxs, certs] = ids.length ? await Promise.all([
+    knex('invoices').where('business_id', ctx.businessId).whereIn('appointment_id', ids).orderBy('id').select('id', 'appointment_id', 'invoice_number', 'amount', 'payment_method'),
+    knex('prescriptions').where('business_id', ctx.businessId).whereIn('appointment_id', ids).orderBy('id').select('id', 'appointment_id'),
+    ctx.permissions && (ctx.permissions.has('certificates.view') || ctx.permissions.has('certificates.issue'))
+      ? knex('certificates').where('business_id', ctx.businessId).whereIn('appointment_id', ids).whereNull('revoked_at').orderBy('id').select('id', 'appointment_id', 'doc_type', 'serial').catch(() => [])
+      : [],
+  ]) : [[], [], []];
+  const by = (list) => { const m = new Map(); list.forEach((x) => { if (!m.has(x.appointment_id)) m.set(x.appointment_id, []); m.get(x.appointment_id).push(x); }); return m; };
+  const invBy = by(invs); const rxBy = by(rxs); const certBy = by(certs);
+  const now = Date.now();
+  return rows.map((a) => {
+    const state = flowState(a);
+    const doc = doctorBill(a);
+    return {
+      ...a, state, fromDoctor: Boolean(doc),
+      due: doc ? round(doc.reduce((t, l) => t + n(l.qty) * n(l.unit_price), 0), ctx.currency) : n(a.amount_due),
+      waited: state === 'arrived' ? minutesSince(a.arrived_at, now) : null,
+      inRoom: state === 'with_doctor' ? minutesSince(a.called_at, now) : null,
+      invoice: (invBy.get(a.id) || []).slice(-1)[0] || null, rxs: rxBy.get(a.id) || [], certs: certBy.get(a.id) || [],
+    };
+  });
+}
+
+/** The cash screen: one column per doctor working today (or with visits today), ready-to-collect visits on top. */
+async function screen(ctx) {
+  const [visits, doctors, totals] = await Promise.all([today(ctx), doctorsWorking(ctx, ctx.today), todayTotals(ctx)]);
+  const rank = { ready: 0, with_doctor: 1, arrived: 2, expected: 3, paid: 4 };
+  const finished = (a) => (a.doctor_finished_at ? new Date(a.doctor_finished_at).getTime() : 0);
+  const sortCol = (list) => list.filter((a) => a.state !== 'missed').sort((x, y) => rank[x.state] - rank[y.state]
+    || (x.state === 'ready' ? finished(x) - finished(y) : 0) || String(x.appointment_time).localeCompare(String(y.appointment_time)));
+  const cols = doctors.filter((d) => d.works || visits.some((a) => a.doctor_id === d.id))
+    .filter((d) => !ctx.ownDoctorId || d.id === ctx.ownDoctorId)
+    .map((d) => ({ doctor: d, visits: sortCol(visits.filter((a) => a.doctor_id === d.id)) }));
+  const none = visits.filter((a) => !a.doctor_id);
+  if (none.length) cols.push({ doctor: null, visits: sortCol(none) });
+  const ready = visits.filter((a) => a.state === 'ready');
+  return {
+    cols, totals, ready: ready.length, readyTotal: round(ready.reduce((t, a) => t + a.due, 0), ctx.currency),
+    readyKey: ready.map((a) => `${a.id}:${a.due}`).sort().join(','),
+  };
 }
 
 // ---------------------------------------------------------------- the bill
@@ -112,10 +233,45 @@ async function visit(ctx, apptId) {
   return { ...a, stage: stageOf(a), waited: minutesSince(a.arrived_at) };
 }
 
-/** The pre-filled bill line: the booked service, else the doctor's consultation fee (else the expected fee on the visit). */
+const parseJson = (v, d) => { try { return typeof v === 'string' ? JSON.parse(v) : (v === null || v === undefined ? d : v); } catch { return d; } };
+
+/**
+ * What the doctor set when finishing the visit (doctor-flow): their lines, or — "amount only" — one line with the
+ * amount due. null when the doctor did not set a bill.
+ */
+function doctorBill(a) {
+  const saved = parseJson(a.doctor_lines, null);
+  if (Array.isArray(saved) && saved.length) {
+    return saved.map((l) => ({ name: l.name || null, name_en: l.name_en || null, service_id: l.service_id || null, qty: n(l.qty) || 1, unit_price: n(l.unit_price), ...(!l.name && !l.service_id ? { consultation: true } : {}), fromDoctor: true }));
+  }
+  if (a.doctor_finished_at) {
+    if (a.service_id && a.service_name) return [{ name: a.service_name, name_en: a.service_name_en, service_id: a.service_id, qty: 1, unit_price: n(a.amount_due), fromDoctor: true }];
+    return [{ name: null, service_id: null, qty: 1, unit_price: n(a.amount_due), consultation: true, fromDoctor: true }];
+  }
+  return null;
+}
+
+/** The pre-filled bill: the doctor's lines, else the booked service, else the doctor's consultation fee (else the expected fee on the visit). */
 function defaultLines(a) {
+  const doc = doctorBill(a);
+  if (doc) return doc;
   if (a.service_id && a.service_name) return [{ name: a.service_name, name_en: a.service_name_en, service_id: a.service_id, qty: 1, unit_price: n(a.service_price) > 0 ? n(a.service_price) : n(a.amount_due) }];
   return [{ name: null, service_id: null, qty: 1, unit_price: n(a.amount_due) || n(a.consultation_fee), consultation: true }];
+}
+
+/**
+ * True when the bill no longer contains every line the doctor set, unchanged (same quantity and price; names may be
+ * edited and lines may be ADDED freely). Changing or removing the doctor's lines needs a reason.
+ */
+function changesDoctorBill(doctorLines, lines, currency) {
+  if (!doctorLines || !doctorLines.length) return false;
+  const pool = lines.map((l) => `${n(l.qty)}x${round(l.unit_price, currency)}`);
+  return doctorLines.some((d) => {
+    const i = pool.indexOf(`${n(d.qty) || 1}x${round(d.unit_price, currency)}`);
+    if (i < 0) return true;
+    pool.splice(i, 1);
+    return false;
+  });
 }
 
 /** Active services the cashier can add (any doctor's, or this doctor's). */
@@ -137,18 +293,27 @@ const lineSchema = z.object({
   service_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
 });
 
+const optNum = (max = 1e9) => z.preprocess((v) => (v === '' || v === null || v === undefined ? undefined : Number(String(v).replace(/,/g, ''))),
+  z.number({ invalid_type_error: 'Enter a number.' }).finite('Enter a number.').min(0, 'Must be zero or more.').max(max, 'Too large.').optional());
+const reason = () => z.preprocess(emptyToUndefined, z.string().trim().max(255, 'Too large.').optional());
+
 const paySchema = z.object({
   items: z.preprocess((v) => (v && !Array.isArray(v) && typeof v === 'object' ? Object.values(v) : v),
     z.array(lineSchema, { required_error: 'Add at least one item.', invalid_type_error: 'Add at least one item.' }).min(1, 'Add at least one item.').max(MAX_LINES, 'Too large.')),
   discount_type: z.preprocess(emptyToUndefined, z.enum(['percent', 'amount']).default('percent')),
   discount_value: z.preprocess((v) => (v === '' || v === null || v === undefined ? 0 : Number(String(v).replace(/,/g, ''))),
     z.number({ invalid_type_error: 'Enter a number.' }).finite('Enter a number.').min(0, 'Must be zero or more.')),
-  payment_method: z.enum(PAYMENT_METHODS, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
+  discount_reason: reason(),
+  adjust_reason: reason(),
+  payment_method: z.enum(PAY_METHODS, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
   insurance_provider_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
+  coverage_type: z.preprocess(emptyToUndefined, z.enum(['percent', 'amount']).default('percent')),
   coverage: z.preprocess((v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
     z.number({ invalid_type_error: 'Enter a number.' }).min(0, 'Must be between 0 and 100.').max(100, 'Must be between 0 and 100.').optional()),
-  amount_received: z.preprocess((v) => (v === '' || v === null || v === undefined ? undefined : Number(String(v).replace(/,/g, ''))),
-    z.number({ invalid_type_error: 'Enter a number.' }).finite('Enter a number.').min(0, 'Must be zero or more.').max(1e9, 'Too large.').optional()),
+  coverage_amount: optNum(),
+  split_cash: optNum(),
+  split_card: optNum(),
+  amount_received: optNum(),
 });
 
 /**
@@ -171,24 +336,91 @@ function computeBill({ items, discount_type: type, discount_value: value }, curr
   return { lines, subtotal, discountAmount, discountPercent, total };
 }
 
+/**
+ * Pure settlement maths (shared by the service and its tests): who pays what, and how.
+ *   total      the bill after discount
+ *   insurance  { on, type: 'percent'|'amount', percent, amount } — the insurer's share comes off first;
+ *              method 'insurance' ("insurance only") = the insurer pays the whole bill
+ *   method     the patient's part: cash | card | mixed | bank_transfer | digital_wallet | insurance
+ *   splitCash / splitCard   mixed: both parts, each above zero, must add up to the patient's part
+ *   received   cash handed over (cash or the cash part of mixed): at least the cash due; the change is returned
+ * → { insuranceAmount, coveragePercent, patientAmount, parts:[{ method, amount, received?, change? }], paymentMethod, received, change }
+ */
+function settle({ total, method, insurance = null, splitCash, splitCard, received }, currency) {
+  const r = (v) => round(v, currency);
+  let insuranceAmount = 0;
+  let coveragePercent = null;
+  if (method === 'insurance') {
+    insuranceAmount = r(total);
+    coveragePercent = 100;
+  } else if (insurance && insurance.on) {
+    if (insurance.type === 'amount') {
+      const amt = r(insurance.amount || 0);
+      if (amt > total) throw E.validation({ coverage_amount: 'Too large.' });
+      insuranceAmount = amt;
+      coveragePercent = total > 0 ? Math.round((amt / total) * 10000) / 100 : 0;
+    } else {
+      const pct = Number(insurance.percent || 0);
+      if (pct < 0 || pct > 100) throw E.validation({ coverage: 'Must be between 0 and 100.' });
+      insuranceAmount = r(total * (pct / 100));
+      coveragePercent = pct;
+    }
+  }
+  const patientAmount = r(total - insuranceAmount);
+  const parts = [];
+  if (insuranceAmount > 0 || method === 'insurance') parts.push({ method: 'insurance', amount: insuranceAmount });
+  let cashDue = 0;
+  if (patientAmount > 0) {
+    if (method === 'insurance') throw E.validation({ payment_method: 'Choose a valid value.' });
+    if (method === 'mixed') {
+      const c = r(splitCash || 0); const k = r(splitCard || 0);
+      if (!(c > 0)) throw E.validation({ split_cash: 'Too small.' });
+      if (!(k > 0)) throw E.validation({ split_card: 'Too small.' });
+      if (r(c + k) !== patientAmount) throw new AppError('SPLIT_MISMATCH', 'The cash and card parts must add up to the amount to pay.', 422, { split_cash: 'SPLIT_MISMATCH', split_card: 'SPLIT_MISMATCH' });
+      parts.push({ method: 'cash', amount: c }, { method: 'card', amount: k });
+      cashDue = c;
+    } else {
+      parts.push({ method, amount: patientAmount });
+      if (method === 'cash') cashDue = patientAmount;
+    }
+  }
+  let rec = null; let change = null;
+  if (cashDue > 0) {
+    rec = received === undefined || received === null ? cashDue : r(received);
+    if (rec < cashDue) throw cashierError('CASH_SHORT', 'The amount received is less than the total.', 422, { amount_received: 'CASH_SHORT' });
+    change = r(rec - cashDue);
+    const cashPart = parts.find((p) => p.method === 'cash');
+    cashPart.received = rec; cashPart.change = change;
+  } else if (method === 'cash' && patientAmount === 0 && parts.length === 0) {
+    // A free visit (total 0) paid "in cash": one zero cash part, nothing handed over.
+    parts.push({ method: 'cash', amount: 0 });
+  }
+  const methods = [...new Set(parts.map((p) => p.method))];
+  const paymentMethod = methods.length === 1 ? methods[0] : methods.length === 0 ? (method === 'mixed' ? 'cash' : method) : 'mixed';
+  return { insuranceAmount, coveragePercent, patientAmount, parts, paymentMethod, received: rec, change };
+}
+
 async function pay(ctx, apptId, input) {
   const d = validate(paySchema, input);
   const bill = computeBill(d, ctx.currency);
-  const isCash = d.payment_method === 'cash';
-  let received = null; let change = null;
-  if (isCash) {
-    received = d.amount_received === undefined ? bill.total : round(d.amount_received, ctx.currency);
-    if (received < bill.total) throw cashierError('CASH_SHORT', 'The amount received is less than the total.', 422, { amount_received: 'CASH_SHORT' });
-    change = round(received - bill.total, ctx.currency);
-  }
+  const insuranceOn = d.payment_method === 'insurance' || Boolean(d.insurance_provider_id);
+  const s = settle({
+    total: bill.total, method: d.payment_method, splitCash: d.split_cash, splitCard: d.split_card, received: d.amount_received,
+    insurance: { on: insuranceOn, type: d.coverage_type, percent: d.coverage, amount: d.coverage_amount },
+  }, ctx.currency);
   return knex.transaction(async (trx) => {
     // Lock the visit: two cashiers pressing "Pay" at the same time must not issue two invoices.
     const a = await trx('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
       .where({ 'a.business_id': ctx.businessId, 'a.id': Number(apptId) }).modify((q) => { if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); })
-      .forUpdate().first('a.*', 'd.full_name as doctor_name', 's.name as service_name');
+      .forUpdate().first('a.*', 'd.full_name as doctor_name', 's.name as service_name', 's.name_en as service_name_en');
     if (!a || a.appointment_type === 'blocked') throw E.notFound('Appointment');
     if (a.payment_status === 'paid') throw E.conflict('ALREADY_PAID', 'This visit is already paid.');
     if (a.status === 'cancelled') throw E.conflict('APPOINTMENT_CANCELLED', 'This appointment is cancelled.');
+
+    // The doctor's bill may be changed by billing staff, with a reason.
+    const fromDoctor = doctorBill(a);
+    const changed = changesDoctorBill(fromDoctor, bill.lines, ctx.currency);
+    if (changed && !d.adjust_reason) throw new AppError('ADJUST_REASON', 'Say why the doctor\'s bill was changed.', 422, { adjust_reason: 'ADJUST_REASON' });
 
     // Lines that name a service must be a service of this clinic (the name is kept as typed/snapshotted).
     const serviceIds = [...new Set(bill.lines.map((l) => l.service_id).filter(Boolean))];
@@ -197,7 +429,7 @@ async function pay(ctx, apptId, input) {
       if (found.length !== serviceIds.length) throw E.validation({ items: 'Choose a valid value.' });
     }
     let insuranceName = null;
-    if (d.payment_method === 'insurance' && d.insurance_provider_id) {
+    if (insuranceOn && d.insurance_provider_id) {
       const ins = await trx('insurance_providers').where({ id: d.insurance_provider_id, business_id: ctx.businessId }).first('name');
       if (!ins) throw E.validation({ insurance_provider_id: 'Choose a valid value.' });
       insuranceName = ins.name;
@@ -205,6 +437,7 @@ async function pay(ctx, apptId, input) {
     // Commission overrides match on the invoice's service name: keep the booked service's name while its line is on the bill.
     const bookedLine = a.service_id && bill.lines.find((l) => l.service_id === a.service_id);
     const serviceName = bookedLine && a.service_name ? a.service_name : bill.lines[0].name;
+    const withInsurance = s.insuranceAmount > 0 || d.payment_method === 'insurance';
 
     const number = await businesses.claimInvoiceNumber(ctx.businessId, trx);
     const [invId] = await trx('invoices').insert({
@@ -212,34 +445,73 @@ async function pay(ctx, apptId, input) {
       doctor_name: a.doctor_name, service_name: serviceName, patient_name: a.patient_name, patient_phone: a.patient_phone,
       items: JSON.stringify(bill.lines.map((l) => ({ name: l.name, qty: l.qty, unitPrice: l.unit_price, total: l.total, ...(l.service_id ? { serviceId: l.service_id } : {}) }))),
       subtotal: bill.subtotal, discount_percent: bill.discountPercent, discount_amount: bill.discountAmount, amount: bill.total,
-      amount_received: received, change_due: change,
-      payment_method: d.payment_method, insurance_provider_id: d.payment_method === 'insurance' ? (d.insurance_provider_id || null) : null, insurance_provider_name: insuranceName,
-      insurance_coverage_percent: d.payment_method === 'insurance' && d.coverage !== undefined ? d.coverage : null,
+      amount_received: s.received, change_due: s.change,
+      payment_method: s.paymentMethod,
+      insurance_provider_id: withInsurance ? (d.insurance_provider_id || null) : null, insurance_provider_name: withInsurance ? insuranceName : null,
+      insurance_coverage_percent: withInsurance ? s.coveragePercent : null, insurance_amount: withInsurance ? s.insuranceAmount : null,
+      discount_reason: bill.discountAmount > 0 ? (d.discount_reason || null) : null, adjust_reason: changed ? d.adjust_reason : null,
       created_by: ctx.userId,
     });
+    if (s.parts.length) {
+      await trx('invoice_payments').insert(s.parts.map((p) => ({
+        business_id: ctx.businessId, invoice_id: invId, method: p.method, amount: p.amount,
+        received: p.received === undefined ? null : p.received, change_due: p.change === undefined ? null : p.change,
+      })));
+    }
     await trx('appointments').where({ id: a.id }).update({ payment_status: 'paid', paid_at: new Date(), amount_due: bill.total, status: 'completed', with_doctor: false, updated_at: new Date() });
     await audit.record(ctx, 'invoice.created', { entityType: 'invoice', entityId: invId, newValues: {
-      number, source: 'cashier', lines: bill.lines.length, subtotal: bill.subtotal, discount_percent: bill.discountPercent, discount_amount: bill.discountAmount,
-      amount: bill.total, method: d.payment_method, received, change, coverage: d.payment_method === 'insurance' ? (d.coverage ?? null) : null,
+      number, source: input.source === 'screen' ? 'cash_screen' : 'cashier', lines: bill.lines.length, subtotal: bill.subtotal, discount_percent: bill.discountPercent, discount_amount: bill.discountAmount,
+      discount_reason: bill.discountAmount > 0 ? (d.discount_reason || null) : null, doctor_bill_changed: changed || undefined, adjust_reason: changed ? d.adjust_reason : undefined,
+      amount: bill.total, method: s.paymentMethod, parts: s.parts.map((p) => `${p.method}:${p.amount}`).join(', '), received: s.received, change: s.change,
+      insurance: withInsurance ? { provider: insuranceName, percent: s.coveragePercent, amount: s.insuranceAmount } : null,
     } }, trx);
     // "Invoice paid" event: in-app for billing staff, and e-mailed only to whoever Settings → Notifications routes it to.
     await notifications.notify(ctx.businessId, {
       permission: 'billing.manage', type: 'invoice.paid', title: `فاتورة مدفوعة · Invoice paid #${number} — ${a.patient_name}`,
       body: `${bill.total} ${ctx.currency || ''}`.trim(), link: `/app/billing/${invId}`, dedupeKey: `inv:${invId}:paid`,
     }, trx);
-    return { id: invId, number, total: bill.total, change };
+    return { id: invId, number, total: bill.total, change: s.change, patientAmount: s.patientAmount, insuranceAmount: s.insuranceAmount, parts: s.parts, method: s.paymentMethod };
   });
+}
+
+// ---------------------------------------------------------------- receipt
+/** One invoice with its payment parts and bill lines, for the 80 mm receipt and the done panel. */
+async function receipt(ctx, invId) {
+  const inv = await knex('invoices as i').leftJoin('users as u', 'u.id', 'i.created_by').leftJoin('appointments as a', 'a.id', 'i.appointment_id')
+    .where({ 'i.business_id': ctx.businessId, 'i.id': Number(invId) })
+    .first('i.*', 'u.name as cashier', 'a.appointment_date', 'a.appointment_time', 'a.patient_email');
+  if (!inv || (ctx.ownDoctorId && inv.doctor_id !== ctx.ownDoctorId)) throw E.notFound('Invoice');
+  const map = await partsFor(ctx, [inv.id]);
+  const lines = parseJson(inv.items, null);
+  const insuranceAmount = inv.insurance_amount !== null && inv.insurance_amount !== undefined ? n(inv.insurance_amount)
+    : (inv.insurance_coverage_percent !== null && inv.insurance_coverage_percent !== undefined ? round(n(inv.amount) * n(inv.insurance_coverage_percent) / 100, ctx.currency) : 0);
+  return {
+    inv, parts: partsOf(inv, map), lines: Array.isArray(lines) && lines.length ? lines : [{ name: inv.service_name, qty: 1, unitPrice: n(inv.amount) + n(inv.discount_amount), total: n(inv.amount) + n(inv.discount_amount) }],
+    subtotal: inv.subtotal !== null && inv.subtotal !== undefined ? n(inv.subtotal) : n(inv.amount) + n(inv.discount_amount),
+    insuranceAmount, patientAmount: round(n(inv.amount) - insuranceAmount, ctx.currency),
+  };
 }
 
 // ---------------------------------------------------------------- cash drawer
 const dbNow = async (trx = knex) => { const [[row]] = await trx.raw('SELECT NOW() AS now'); return row.now; };
 
-/** DocBook getExpectedCashForPeriod: cash invoices with created_at in (start, end]. */
+/**
+ * Cash of each invoice in a window: the sum of its cash parts (a mixed receipt counts only its cash part); invoices
+ * without parts (older ones, other flows) count in full when their payment_method is cash.
+ */
+function cashRows(ctx, start, end, trx = knex) {
+  const parts = trx('invoice_payments').where('business_id', ctx.businessId).groupBy('invoice_id')
+    .select('invoice_id', knex.raw("SUM(CASE WHEN method = 'cash' THEN amount ELSE 0 END) AS cash"), knex.raw('COUNT(*) AS n')).as('p');
+  return trx('invoices as i').leftJoin(parts, 'p.invoice_id', 'i.id').where('i.business_id', ctx.businessId)
+    .where('i.created_at', '>', start).where('i.created_at', '<=', end)
+    .whereRaw("(CASE WHEN p.n IS NULL THEN (CASE WHEN i.payment_method = 'cash' THEN 1 ELSE 0 END) ELSE (CASE WHEN p.cash > 0 THEN 1 ELSE 0 END) END) = 1");
+}
+const CASH_OF = 'CASE WHEN p.n IS NULL THEN i.amount ELSE p.cash END';
+
+/** DocBook getExpectedCashForPeriod: cash taken in (start, end] — only the cash parts of mixed / insured receipts. */
 async function expectedCash(ctx, start, end, trx = knex) {
-  const row = await trx('invoices').where({ business_id: ctx.businessId, payment_method: 'cash' })
-    .where('created_at', '>', start).where('created_at', '<=', end)
-    .first(knex.raw('COALESCE(SUM(amount), 0) AS v'), knex.raw('COUNT(*) AS c'));
-  return { expected: n(row.v), count: n(row.c) };
+  const row = await cashRows(ctx, start, end, trx).first(knex.raw(`COALESCE(SUM(${CASH_OF}), 0) AS v`), knex.raw('COUNT(*) AS c'));
+  return { expected: round(n(row.v), ctx.currency), count: n(row.c) };
 }
 
 /** Cash expenses recorded in the same window — informational only (not deducted from the stored expected figure). */
@@ -262,7 +534,7 @@ async function openPeriod(ctx, trx = knex) {
   const start = last ? last.period_end : lib.startOfDay(ctx.today, ctx.timezone);
   const [cash, expenses, first] = await Promise.all([
     expectedCash(ctx, start, now, trx), cashExpenses(ctx, start, now, trx),
-    trx('invoices').where({ business_id: ctx.businessId, payment_method: 'cash' }).where('created_at', '>', start).where('created_at', '<=', now).orderBy('created_at').first('created_at'),
+    cashRows(ctx, start, now, trx).orderBy('i.created_at').first('i.created_at'),
   ]);
   return { start, end: now, sinceClosing: Boolean(last), last, ...cash, expenses, firstCashAt: first ? first.created_at : null };
 }
@@ -314,7 +586,8 @@ async function getClosing(ctx, id) {
 }
 
 module.exports = {
-  PAYMENT_METHODS, DENOMINATIONS, denominationsFor, SEARCH_DAYS,
-  queue, search, recentReceipts, todayTotals, visit, defaultLines, servicesFor, activeInsurance, computeBill, pay,
+  PAYMENT_METHODS, PAY_METHODS, DENOMINATIONS, denominationsFor, SEARCH_DAYS,
+  FLOW, flowState, doctorsWorking, today, screen,
+  queue, search, recentReceipts, todayTotals, partsFor, partsOf, visit, doctorBill, defaultLines, changesDoctorBill, servicesFor, activeInsurance, computeBill, settle, pay, receipt,
   expectedCash, cashExpenses, openPeriod, lastClosing, close, listClosings, getClosing,
 };

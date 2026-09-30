@@ -1,0 +1,25 @@
+<%
+  /* "Print" menu of one visit (reception board + cash screen). Locals: v (a visit from cashier.service.today()), menuUp (optional).
+     Links go to the existing print pages; reception without clinical access prints prescriptions through /app/cashier/papers. */
+  var _items = [];
+  if (v.invoice && can('billing.view')) {
+    _items.push('<a href="/app/cashier/receipt/' + v.invoice.id + '?autoprint=1" target="_blank" rel="noopener" data-cx-print>' + icon('receipt-text', 'icon-sm') + escapeHtml(t('cashx.print_receipt')) + '</a>');
+    _items.push('<a href="/app/billing/' + v.invoice.id + '?print=1&autoprint=1" target="_blank" rel="noopener">' + icon('file-text', 'icon-sm') + escapeHtml(t('cashx.print_invoice')) + '</a>');
+  }
+  (v.rxs || []).forEach(function (rx, i) {
+    var href = can('clinical.view') ? '/app/visits/' + v.id + '/prescriptions/' + rx.id + '?print=1&autoprint=1' : (can('billing.view') ? '/app/cashier/papers/' + v.id + '/prescription/' + rx.id + '.pdf' : null);
+    if (href) _items.push('<a href="' + href + '" target="_blank" rel="noopener">' + icon('pill', 'icon-sm') + escapeHtml(t('cashx.print_rx')) + ((v.rxs.length > 1) ? ' ' + (i + 1) : '') + '</a>');
+  });
+  (v.certs || []).forEach(function (c) {
+    _items.push('<a href="/app/certificates/' + c.id + '?print=1&autoprint=1" target="_blank" rel="noopener">' + icon('file-check', 'icon-sm') + escapeHtml(t('patient_docs.cert_types.' + c.doc_type)) + '</a>');
+  });
+  if (can('clinical.view') && v.state && (v.state === 'ready' || v.state === 'paid')) {
+    _items.push('<a href="/app/patient-docs/' + v.id + '/report.pdf" target="_blank" rel="noopener">' + icon('clipboard-list', 'icon-sm') + escapeHtml(t('cashx.print_report')) + '</a>');
+  }
+%>
+<% if (_items.length) { %>
+<details class="dropdown cx-papers">
+  <summary class="btn btn-ghost btn-sm" aria-label="<%= t('cashx.print_menu') %> — <%= v.patient_name %>"><%- icon('printer', 'icon-sm') %><span><%= t('common.print') %></span></summary>
+  <div class="menu<%= typeof menuUp !== 'undefined' && menuUp ? ' up' : '' %>" role="menu"><div class="menu-label"><%= t('cashx.print_menu') %></div><%- _items.join('') %></div>
+</details>
+<% } %>

@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (typeof paperLight !== 'undefined' && paperLight) { %> data-theme="light"<% } else if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
+<head><%- include('../partials/head') %></head>
+<body class="cx-body<%= typeof bodyClass !== 'undefined' && bodyClass ? ' ' + bodyClass : '' %>">
+<%- include('../partials/toasts') %>
+<%- body %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
+</body>
+</html>

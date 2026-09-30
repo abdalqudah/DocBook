@@ -18,11 +18,12 @@
 %>
 <div class="page-head">
   <div>
-    <div class="breadcrumbs"><%= t('nav.group_finance') %></div>
+    <div class="breadcrumbs"><%= t('nav.group_clinic') %></div>
     <h1><%= t('cashier.title') %></h1>
     <p><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></p>
   </div>
   <div class="page-actions">
+    <a class="btn btn-primary" href="/app/cashier/screen?fs=1" data-cx-open-screen><%- icon('maximize', 'icon-sm') %><%= t('cashx.open_screen') %></a>
     <a class="btn btn-secondary" href="/app/cashier/closings"><%- icon('banknote', 'icon-sm') %><%= t('cashier.close_drawer_link') %></a>
   </div>
 </div>
@@ -49,18 +50,10 @@
   <% } %>
 </section>
 
-<% if (justPaid) { %>
-<div class="cs-done" role="status">
-  <span class="cs-done-dot" aria-hidden="true"></span>
-  <div class="grow">
-    <div class="strong"><%= t('cashier.paid_title', { n: justPaid.invoice_number, name: justPaid.patient_name }) %></div>
-    <div class="small muted"><%= fmt.money(justPaid.amount) %> · <%= label('payment_methods', justPaid.payment_method) %></div>
-  </div>
-  <% if (justPaid.change_due !== null && Number(justPaid.change_due) > 0) { %>
-  <div class="cs-done-change"><span class="small muted"><%= t('cashier.change_due') %></span><strong class="num"><%= fmt.money(justPaid.change_due) %></strong></div>
-  <% } %>
-  <a class="btn btn-secondary btn-sm" href="/app/billing/<%= justPaid.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('cashier.print_receipt') %></a>
-</div>
+<% if (typeof done !== 'undefined' && done) { %>
+<dialog class="dialog cx-dialog cx-done-dialog" id="cx-done-dialog" data-open-on-load data-cx-done>
+  <div class="dialog-inner"><%- include('_done', { done: done }) %></div>
+</dialog>
 <% } %>
 
 <div class="cs-layout<%= bill ? ' has-bill' : '' %>">
@@ -115,133 +108,8 @@
       <p class="muted"><%= t('cashier.pick_text') %></p>
       <% if (queue.length) { %><a class="btn btn-secondary" href="<%= visitHref(queue[0].id) %>"><%= t('cashier.open_first', { name: queue[0].patient_name }) %></a><% } %>
     </div>
-    <% } else { var a = bill.a; var old = bill.old || {}; var paid = a.payment_status === 'paid';
-       var discType = old.discount_type === 'amount' ? 'amount' : 'percent';
-       var method = methods.indexOf(old.payment_method) >= 0 ? old.payment_method : 'cash';
-       var lineRow = function (l, i) {
-         var nm = l.consultation ? t('billing.consultation') : (l.name_en && locale === 'en' ? l.name_en : l.name);
-         return '<tr class="cs-line" data-line>'
-           + '<td class="cs-line-name"><input type="hidden" name="items[' + i + '][service_id]" value="' + escapeHtml(l.service_id || '') + '">'
-           + '<input class="input cs-in-name" name="items[' + i + '][name]" value="' + escapeHtml(nm || '') + '" required maxlength="190" aria-label="' + escapeHtml(t('cashier.item')) + '" dir="auto"></td>'
-           + '<td class="cs-line-qty"><div class="cs-qty"><button class="btn btn-ghost btn-icon btn-sm" type="button" data-qty="-1" aria-label="' + escapeHtml(t('cashier.qty_less')) + '">' + icon('minus', 'icon-sm') + '</button>'
-           + '<input class="input num" name="items[' + i + '][qty]" type="number" min="1" max="999" step="1" value="' + escapeHtml(l.qty || 1) + '" inputmode="numeric" required aria-label="' + escapeHtml(t('cashier.qty')) + '">'
-           + '<button class="btn btn-ghost btn-icon btn-sm" type="button" data-qty="1" aria-label="' + escapeHtml(t('cashier.qty_more')) + '">' + icon('plus', 'icon-sm') + '</button></div></td>'
-           + '<td class="cs-line-price"><input class="input num" name="items[' + i + '][unit_price]" type="number" min="0" step="any" value="' + escapeHtml(l.unit_price === undefined || l.unit_price === null ? '' : Number(l.unit_price)) + '" inputmode="decimal" required aria-label="' + escapeHtml(t('cashier.unit_price')) + '"></td>'
-           + '<td class="cs-line-total num" data-line-total>' + escapeHtml(money((Number(l.qty) || 0) * (Number(l.unit_price) || 0))) + '</td>'
-           + '<td class="cs-line-del"><button class="btn btn-ghost btn-icon btn-sm" type="button" data-remove-line aria-label="' + escapeHtml(t('cashier.remove_line')) + '" title="' + escapeHtml(t('cashier.remove_line')) + '">' + icon('trash-2', 'icon-sm') + '</button></td>'
-           + '</tr>';
-       };
-    %>
-    <form class="cs-bill" method="post" action="/app/cashier/<%= a.id %>/pay" data-cs-bill novalidate>
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <header class="cs-bill-head">
-        <div class="grow">
-          <div class="cs-bill-patient"><bdi><%= a.patient_name %></bdi></div>
-          <div class="cs-bill-sub">
-            <% if (a.doctor_id) { %><span class="row-sm"><%- dot(a.doctor_color) %><%= L(a.doctor_name, a.doctor_name_en) %></span><% } else { %><span><%= t('cashier.no_doctor') %></span><% } %>
-            <span><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></span>
-            <% if (a.patient_phone) { %><span dir="ltr"><%= a.patient_phone %></span><% } %>
-          </div>
-        </div>
-        <div class="row-sm">
-          <span class="badge badge-neutral badge-dot"><%= paid ? t('billing.paid') : t('cashier.stage.' + a.stage) %></span>
-          <% if (can('clinical.view') || can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="<%= can('clinical.view') ? '/app/visits/' : '/app/appointments/' %><%= a.id %>"><%= t('billing.open_visit') %></a><% } %>
-        </div>
-      </header>
-
-      <%- include('../../../partials/form-error', { formError: formError, errors: errors }) %>
-
-      <% if (paid) { %>
-      <div class="cs-paid-note"><%- icon('circle-check') %><div class="grow"><%= t('cashier.already_paid') %></div><% if (bill.invoiceId) { %><a class="btn btn-secondary btn-sm" href="/app/billing/<%= bill.invoiceId %>"><%= t('cashier.view_receipt') %></a><% } %></div>
-      <% } else { %>
-
-      <section class="cs-section" aria-labelledby="cs-lines-h">
-        <div class="cs-section-head"><h2 id="cs-lines-h"><%= t('cashier.bill_lines') %></h2></div>
-        <div class="table-wrap">
-          <table class="cs-lines">
-            <thead><tr><th><%= t('cashier.item') %></th><th class="cs-th-qty"><%= t('cashier.qty') %></th><th class="cs-th-price"><%= t('cashier.unit_price') %></th><th class="num"><%= t('common.total') %></th><th><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
-            <tbody data-lines><% bill.lines.forEach(function (l, i) { %><%- lineRow(l, i) %><% }) %></tbody>
-          </table>
-        </div>
-        <template id="cs-line-tpl"><%- lineRow({ name: '', service_id: '', qty: 1, unit_price: '' }, '__i__') %></template>
-        <div class="cs-add">
-          <div class="cs-add-head">
-            <span class="small muted"><%= t('cashier.add_service') %></span>
-            <% if (bill.services.length > 8) { %><input class="input cs-add-filter" type="search" placeholder="<%= t('cashier.filter_services') %>" aria-label="<%= t('cashier.filter_services') %>" data-service-filter><% } %>
-          </div>
-          <div class="cs-chips" data-service-chips>
-            <% bill.services.forEach(function (s) { %><button class="cs-chip" type="button" data-add-service='<%= json({ id: s.id, name: L(s.name, s.name_en), price: Number(s.price) }) %>' data-name="<%= (s.name + ' ' + (s.name_en || '')).toLowerCase() %>"><span dir="auto"><%= L(s.name, s.name_en) %></span><span class="cs-chip-price num"><%= money(s.price) %></span></button><% }) %>
-            <button class="cs-chip cs-chip-custom" type="button" data-add-custom><%- icon('plus', 'icon-sm') %><%= t('cashier.custom_line') %></button>
-          </div>
-        </div>
-      </section>
-
-      <div class="cs-pay">
-        <section class="cs-section cs-pay-options">
-          <div class="cs-field">
-            <div class="cs-field-head">
-              <span class="label" id="cs-disc-l"><%= t('billing.discount') %></span>
-              <div class="segmented cs-seg-sm" role="radiogroup" aria-labelledby="cs-disc-l">
-                <label><input type="radio" name="discount_type" value="percent"<%= discType === 'percent' ? ' checked' : '' %>><span>%</span></label>
-                <label><input type="radio" name="discount_type" value="amount"<%= discType === 'amount' ? ' checked' : '' %>><span><%= currency %></span></label>
-              </div>
-            </div>
-            <input class="input num<%= errors.discount_value ? ' is-invalid' : '' %>" name="discount_value" type="number" min="0" step="any" inputmode="decimal" value="<%= old.discount_value || '' %>" placeholder="0" aria-labelledby="cs-disc-l">
-            <% if (errors.discount_value) { %><span class="field-error"><%= errors.discount_value %></span><% } %>
-          </div>
-
-          <fieldset class="cs-field fieldset">
-            <legend class="label"><%= t('billing.method') %></legend>
-            <div class="cs-methods-pick">
-              <% methods.forEach(function (m) { %><label class="cs-method"><input type="radio" name="payment_method" value="<%= m %>"<%= method === m ? ' checked' : '' %>><span><%= label('payment_methods', m) %></span></label><% }) %>
-            </div>
-          </fieldset>
-
-          <div class="cs-field" data-when="insurance"<%= method === 'insurance' ? '' : ' hidden' %>>
-            <div class="cs-ins">
-              <div class="field">
-                <label class="label" for="cs-ins"><%= t('billing.insurance') %></label>
-                <select class="select" id="cs-ins" name="insurance_provider_id" data-insurance>
-                  <option value=""><%= t('cashier.no_provider') %></option>
-                  <% bill.insurance.forEach(function (p) { %><option value="<%= p.id %>" data-coverage="<%= Number(p.coverage_percent) %>"<%= String(old.insurance_provider_id) === String(p.id) ? ' selected' : '' %>><%= p.name %> (<%= fmt.number(p.coverage_percent) %>%)</option><% }) %>
-                </select>
-              </div>
-              <div class="field">
-                <label class="label" for="cs-cov"><%= t('cashier.coverage') %></label>
-                <div class="input-affix"><input class="input num" id="cs-cov" type="number" min="0" max="100" step="any" value="<%= old.coverage || '' %>" name="coverage" data-coverage-input inputmode="decimal"><span class="affix">%</span></div>
-              </div>
-            </div>
-            <p class="help"><%= t('cashier.coverage_help') %></p>
-          </div>
-
-          <div class="cs-field" data-when="cash"<%= method === 'cash' ? '' : ' hidden' %>>
-            <label class="label" for="cs-recv"><%= t('cashier.amount_received') %></label>
-            <div class="input-affix"><input class="input num cs-recv<%= errors.amount_received ? ' is-invalid' : '' %>" id="cs-recv" name="amount_received" type="number" min="0" step="any" inputmode="decimal" value="<%= old.amount_received || '' %>" placeholder="<%= t('cashier.received_ph') %>" data-received><span class="affix"><%= currency %></span></div>
-            <% if (errors.amount_received) { %><span class="field-error"><%= errors.amount_received %></span><% } %>
-            <div class="cs-notes" data-quick-notes aria-label="<%= t('cashier.quick_amounts') %>"><button class="btn btn-secondary btn-sm" type="button" data-quick="exact"><%= t('cashier.exact') %></button></div>
-          </div>
-        </section>
-
-        <section class="cs-section cs-summary" aria-live="polite">
-          <dl class="cs-sum">
-            <div><dt><%= t('cashier.subtotal') %></dt><dd class="num" data-out="subtotal">—</dd></div>
-            <div><dt><%= t('billing.discount') %> <bdi class="muted" dir="ltr" data-out="discount_pct"></bdi></dt><dd class="num" dir="ltr" data-out="discount">—</dd></div>
-            <div class="cs-sum-total"><dt><%= t('cashier.total_to_pay') %></dt><dd><span class="num" data-out="total">—</span> <span class="cs-cur"><%= currency %></span></dd></div>
-            <div data-when="insurance" hidden><dt><%= t('cashier.patient_share') %></dt><dd class="num" data-out="patient_share">—</dd></div>
-            <div data-when="insurance" hidden><dt><%= t('cashier.insurer_share') %></dt><dd class="num" data-out="insurer_share">—</dd></div>
-            <div data-when="cash"<%= method === 'cash' ? '' : ' hidden' %>><dt><%= t('cashier.received') %></dt><dd class="num" data-out="received">—</dd></div>
-            <div class="cs-sum-change" data-when="cash"<%= method === 'cash' ? '' : ' hidden' %>><dt><%= t('cashier.change_due') %></dt><dd><span class="num" data-out="change">—</span> <span class="cs-cur"><%= currency %></span></dd></div>
-          </dl>
-          <p class="cs-short" data-out="short" hidden><%= t('errors_cashier.CASH_SHORT') %></p>
-          <div class="cs-actions">
-            <button class="btn btn-primary btn-lg btn-block" type="submit" name="intent" value="print" data-pay><%- icon('printer', 'icon-sm') %><%= t('cashier.pay_print') %><span class="cs-key" aria-hidden="true">F8</span></button>
-            <button class="btn btn-secondary btn-block" type="submit" name="intent" value="pay" data-pay><%= t('cashier.pay_only') %><span class="cs-key" aria-hidden="true">F9</span></button>
-          </div>
-        </section>
-      </div>
-      <% } %>
-    </form>
-    <script type="application/json" id="cs-data"><%- json({ decimals: decimals, locale: locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', notes: [5, 10, 20, 50], expected: Number(a.amount_due) || 0 }) %></script>
+    <% } else { %>
+    <div class="cx-inline-panel"><%- include('_panel', panel) %></div>
     <% } %>
   </main>
 </div>

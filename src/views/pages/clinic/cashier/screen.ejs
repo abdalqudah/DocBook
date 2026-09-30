@@ -1,0 +1,39 @@
+<%
+  /* Full-screen cash screen (layout: cashscreen). Locals: scr, panel (payment panel locals or null), done (paid panel or undefined). */
+  var clinicName = locale === 'en' && business.name_en ? business.name_en : business.name;
+%>
+<div class="cx-screen" data-cx-screen data-board-url="/app/cashier/screen/board" data-ready-key="<%= scr.readyKey %>">
+  <header class="cx-top">
+    <div class="cx-top-id">
+      <div class="cx-top-clinic truncate"><%= clinicName %></div>
+      <div class="cx-top-sub">
+        <span><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long' }) %></span>
+        <span class="num" dir="ltr" data-cx-clock data-tz="<%= business.timezone || 'UTC' %>"></span>
+        <span class="cx-top-user"><%- icon('user', 'icon-sm') %><%= currentUser.name %></span>
+        <span class="cx-live" data-cx-live title="<%= t('cashx.live_off') %>"><i aria-hidden="true"></i><span data-cx-live-text><%= t('cashx.live_off') %></span></span>
+      </div>
+    </div>
+    <div class="cx-top-totals" data-cx-totals><%- include('_screen-totals', { scr: scr }) %></div>
+    <div class="cx-top-actions">
+      <button class="btn btn-ghost btn-icon" type="button" data-cx-sound aria-pressed="true" title="<%= t('cashx.sound') %>" aria-label="<%= t('cashx.sound') %>"><span data-cx-sound-on><%- icon('volume-2') %></span><span data-cx-sound-off hidden><%- icon('volume-x') %></span></button>
+      <button class="btn btn-secondary" type="button" data-cx-fullscreen hidden><%- icon('maximize', 'icon-sm') %><span data-cx-fs-label data-on="<%= t('cashx.exit_full_screen') %>" data-off="<%= t('cashx.full_screen') %>"><%= t('cashx.full_screen') %></span></button>
+      <a class="btn btn-ghost" href="/app/cashier" data-cx-exit><%- icon('x', 'icon-sm') %><span><%= t('cashx.close_screen') %></span></a>
+    </div>
+  </header>
+
+  <div class="cx-notice" data-cx-notice role="status" aria-live="polite" hidden></div>
+
+  <main class="cx-board" data-cx-board aria-live="off"><%- include('_screen-board', { scr: scr }) %></main>
+</div>
+
+<dialog class="dialog cx-dialog" id="cx-pay-dialog" aria-label="<%= t('cashx.panel_title') %>" data-cx-dialog<% if (panel) { %> data-open-on-load<% } %>>
+  <div class="dialog-inner" data-cx-dialog-body><% if (panel) { %><%- include('_panel', panel) %><% } %></div>
+</dialog>
+
+<% if (typeof done !== 'undefined' && done) { %>
+<dialog class="dialog cx-dialog cx-done-dialog" id="cx-done-dialog" data-open-on-load data-cx-done>
+  <div class="dialog-inner"><%- include('_done', { done: done }) %></div>
+</dialog>
+<% } %>
+
+<script type="application/json" id="cx-texts"><%- json({ newReady: t('cashx.new_ready'), live_on: t('cashx.live_on'), live_off: t('cashx.live_off'), loading: t('cashx.loading'), failed: t('cashx.panel_failed') }) %></script>

@@ -179,7 +179,7 @@
     }
   },
   "frontdesk": {
-    "title": "Front desk",
+    "title": "Reception & waiting list",
     "auto_refresh": "Updates every minute",
     "day_view": "Day view",
     "walk_in": "Walk-in",

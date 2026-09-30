@@ -359,7 +359,8 @@
     "card": "Card / POS",
     "bank_transfer": "Bank transfer",
     "insurance": "Insurance",
-    "digital_wallet": "Digital wallet"
+    "digital_wallet": "Digital wallet",
+    "mixed": "Mixed (cash + card)"
   },
   "notifications": {
     "title": "Notifications",
