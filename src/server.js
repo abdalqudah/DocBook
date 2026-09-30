@@ -89,6 +89,7 @@ async function start(server) {
     // Appointment messages (WhatsApp / SMS / e-mail): confirmations, reminders and review requests, every minute.
     const messagingTick = () => require('./modules/messaging/messaging.service').runDue().catch((e) => console.error('[messaging]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(messagingTick, 60_000).unref();
+    setInterval(() => require('./modules/subscriptions/subscriptions.service').runDue().catch((e) => console.error('[subscriptions]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- trials/periods ending, reminders (no-op while subscriptions are off)
   }
   server.removeAllListeners('request');
   server.on('request', createApp());

@@ -12,7 +12,14 @@ const { wrap } = require('../../routes/helpers');
 const { translateMessage } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
 const appointments = require('../clinic/appointments.service');
-const { loadClinic, clinicStyles, listDoctors, listServices } = require('./portal.web');
+const { loadClinic: loadPortalClinic, clinicStyles, listDoctors, listServices } = require('./portal.web');
+const subscriptions = require('../subscriptions/subscriptions.service');
+
+/** The clinic, with online booking closed while its DocBook subscription has expired (read-only clinic). */
+async function loadClinic(req) {
+  const clinic = await loadPortalClinic(req);
+  return clinic && clinic.booking_enabled && !(await subscriptions.acceptsBookings(clinic)) ? { ...clinic, booking_enabled: false } : clinic;
+}
 
 const router = express.Router();
 const HORIZON_DAYS = 60;

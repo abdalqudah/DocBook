@@ -1,0 +1,66 @@
+<%
+  var p = plan || {};
+  var o = old || null;
+  var errs = errors || {};
+  var val = function (k, d) { if (o) return o[k] !== undefined ? o[k] : ''; return p[k] !== undefined && p[k] !== null ? p[k] : (d === undefined ? '' : d); };
+  var on = function (k, d) { if (o) return o[k] === '1'; return p[k] !== undefined ? Boolean(p[k]) : d; };
+  var feat = function (f) { if (o) return o['f_' + f] === '1'; return Boolean(p.features && p.features[f]); };
+  var action = plan ? '/admin/plans/' + plan.id : '/admin/plans/new';
+%>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/plans"><%= t('subscriptions_admin.plans_title') %></a></div><h1><%= plan ? t('subscriptions_admin.edit_plan') : t('subscriptions_admin.new_plan') %></h1></div>
+</div>
+<%- include('../../partials/form-error') %>
+<form method="post" action="<%= action %>" class="stack-lg sub-admin-form" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_plan') %></h2></div></div>
+    <div class="panel-body stack">
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('subscriptions_admin.name_ar'), value: val('name'), required: true, attrs: 'maxlength="120" dir="auto"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'name_en', label: t('subscriptions_admin.name_en'), value: val('name_en'), attrs: 'maxlength="120" dir="ltr"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'description', label: t('subscriptions_admin.desc_ar'), type: 'textarea', value: val('description'), errors: errs }) %>
+        <%- include('../../partials/field', { name: 'description_en', label: t('subscriptions_admin.desc_en'), type: 'textarea', value: val('description_en'), errors: errs }) %>
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_price') %></h2></div></div>
+    <div class="panel-body">
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { name: 'price_monthly', label: t('subscriptions_admin.price_monthly'), type: 'number', value: val('price_monthly', 0), attrs: 'min="0" step="0.001" inputmode="decimal"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'price_yearly', label: t('subscriptions_admin.price_yearly'), type: 'number', value: val('price_yearly', 0), attrs: 'min="0" step="0.001" inputmode="decimal"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'currency', label: t('subscriptions_admin.currency'), value: val('currency', 'JOD'), attrs: 'maxlength="3" dir="ltr" style="text-transform:uppercase"', errors: errs }) %>
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_limits') %></h2><div class="panel-sub"><%= t('subscriptions_admin.limits_help') %></div></div></div>
+    <div class="panel-body">
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { name: 'max_doctors', label: t('subscriptions_admin.max_doctors'), type: 'number', value: val('max_doctors'), placeholder: '∞', attrs: 'min="0" step="1" inputmode="numeric"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'max_staff', label: t('subscriptions_admin.max_staff'), type: 'number', value: val('max_staff'), placeholder: '∞', attrs: 'min="0" step="1" inputmode="numeric"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'max_appointments_month', label: t('subscriptions_admin.max_appointments'), type: 'number', value: val('max_appointments_month'), placeholder: '∞', attrs: 'min="0" step="1" inputmode="numeric"', errors: errs }) %>
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_features') %></h2><div class="panel-sub"><%= t('subscriptions_admin.features_help') %></div></div></div>
+    <div class="panel-body">
+      <div class="sub-feature-grid">
+        <% features.forEach(function (f) { %>
+        <label class="check"><input type="checkbox" name="f_<%= f %>" value="1"<%= feat(f) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions.features.' + f) %></span> <span class="tiny muted mono" dir="ltr"><%= f %></span></span></label>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_visibility') %></h2></div></div>
+    <div class="panel-body stack">
+      <label class="check"><input type="checkbox" name="is_active" value="1"<%= on('is_active', true) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions_admin.is_active') %></span> <span class="tiny muted"><%= t('subscriptions_admin.is_active_help') %></span></span></label>
+      <label class="check"><input type="checkbox" name="is_public" value="1"<%= on('is_public', true) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions_admin.is_public') %></span> <span class="tiny muted"><%= t('subscriptions_admin.is_public_help') %></span></span></label>
+      <div class="form-grid cols-3"><%- include('../../partials/field', { name: 'sort_order', label: t('subscriptions_admin.sort_order'), type: 'number', value: val('sort_order', 0), attrs: 'step="1"', errors: errs }) %></div>
+    </div>
+  </section>
+  <div class="row-sm"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button><a class="btn btn-ghost" href="/admin/plans"><%= t('common.cancel') %></a></div>
+</form>

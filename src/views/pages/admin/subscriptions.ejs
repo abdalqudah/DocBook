@@ -1,0 +1,41 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var badge = function (s) { return s === 'expired' ? 'badge-danger' : s === 'past_due' ? 'badge-warning' : s === 'active' ? 'badge-success' : 'badge-neutral'; };
+  var endOf = function (r) { return r.status === 'trialing' ? r.trial_ends_at : r.status === 'past_due' ? r.grace_ends_at : r.status === 'comped' ? null : (r.current_period_end || r.trial_ends_at); };
+%>
+<div class="page-head"><div><h1><%= t('subscriptions_admin.subs_title') %></h1><p><%= t('subscriptions_admin.subs_lead') %></p></div></div>
+<%- include('plans-tabs') %>
+<nav class="pill-filter mb-4" aria-label="<%= t('common.status') %>">
+  <a href="/admin/subscriptions<%= q ? '?q=' + encodeURIComponent(q) : '' %>" class="<%= !status ? 'active' : '' %>"><%= t('common.all') %></a>
+  <% if (counts.reported) { %><a href="/admin/subscriptions?status=reported" class="<%= status === 'reported' ? 'active' : '' %>"><%= t('subscriptions_admin.filter_reported') %> · <%= fmt.number(counts.reported) %></a><% } %>
+  <% statuses.forEach(function (s) { if (!counts[s]) return; %><a href="/admin/subscriptions?status=<%= s %><%= q ? '&q=' + encodeURIComponent(q) : '' %>" class="<%= status === s ? 'active' : '' %>"><%= t('subscriptions.status.' + s) %> · <%= fmt.number(counts[s]) %></a><% }) %>
+</nav>
+<section class="panel flush">
+  <form class="table-toolbar" method="get" action="/admin/subscriptions" data-autosubmit>
+    <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
+    <div class="input-group"><%- icon('search') %><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('admin.search_clinics') %>" aria-label="<%= t('admin.search_clinics') %>"></div>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button></noscript>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'hospital', emptyTitle: t('admin.no_clinics') }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('admin.col_clinic') %></th><th><%= t('subscriptions.plan') %></th><th><%= t('common.status') %></th><th><%= t('subscriptions_admin.col_ends') %></th><th><%= t('subscriptions_admin.col_last_payment') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { var end = endOf(r); %>
+        <tr data-href="/admin/subscriptions/<%= r.id %>">
+          <td class="primary-cell"><a class="strong" href="/admin/subscriptions/<%= r.id %>"><%= r.name %></a><div class="tiny muted"><%= r.name_en || ('/' + (r.slug || '')) %><% if (r.clinic_status !== 'active') { %> · <%= t('admin.status_' + r.clinic_status) %><% } %></div></td>
+          <td data-label="<%= t('subscriptions.plan') %>"><%= r.plan_name ? L(r.plan_name, r.plan_name_en) : (r.status ? (r.status === 'comped' ? t('subscriptions.comped_plan') : t('subscriptions.trial_plan')) : '—') %><% if (r.plan_name) { %> <span class="tiny muted">· <%= t('subscriptions.cycle.' + r.billing_cycle) %></span><% } %></td>
+          <td data-label="<%= t('common.status') %>"><% if (r.status) { %><span class="badge badge-dot <%= badge(r.status) %>"><%= t('subscriptions.status.' + r.status) %></span><% } else { %><span class="tiny muted"><%= t('subscriptions_admin.no_sub') %></span><% } %><% if (r.reported) { %> <span class="badge badge-warning"><%= t('subscriptions_admin.payment_reported') %></span><% } %></td>
+          <td data-label="<%= t('subscriptions_admin.col_ends') %>" class="nowrap"><%= end ? fmt.date(end) : '—' %></td>
+          <td data-label="<%= t('subscriptions_admin.col_last_payment') %>" class="nowrap"><%= r.last_paid_at ? fmt.date(r.last_paid_at) : '—' %></td>
+          <td class="actions"><a class="btn btn-ghost btn-sm" href="/admin/subscriptions/<%= r.id %>"><%= t('subscriptions_admin.manage') %></a></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { meta: meta }) %>
+  <% } %>
+</section>

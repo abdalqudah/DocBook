@@ -1,1 +1,15 @@
-<%# Subscription/trial banner inside the app layout (worker: subscriptions). Uses res.locals.subscriptionBanner. %>
+<%# Subscription/trial banner inside the app layout (worker: subscriptions). Uses res.locals.subscriptionBanner (set by
+    src/modules/subscriptions/enforce.js only while subscriptions are enabled). Renders nothing otherwise. %>
+<% if (typeof subscriptionBanner !== 'undefined' && subscriptionBanner) { var _sb = subscriptionBanner; %>
+<%# Inline token styles: this partial is on every /app page, where subscriptions.css is not loaded. %>
+<div class="banner sub-banner" role="status" style="flex-wrap:nowrap;align-items:flex-start;<%= _sb.tone === 'danger' ? 'background:var(--danger-soft)' : _sb.tone === 'warning' ? 'background:var(--warning-soft)' : '' %>">
+  <span style="flex:none;display:inline-flex;margin-top:2px;color:<%= _sb.tone === 'danger' ? 'var(--danger)' : _sb.tone === 'warning' ? 'var(--warning)' : 'var(--text-muted)' %>"><%- icon(_sb.kind === 'expired' ? 'lock' : _sb.kind === 'trial' ? 'hourglass' : 'credit-card', 'icon-sm') %></span>
+  <span class="grow" style="min-width:0">
+    <% if (_sb.kind === 'expired') { %><strong><%= t('subscriptions.banner_expired_title') %></strong> <span class="muted"><%= t(_sb.manager ? 'subscriptions.banner_expired' : 'subscriptions.banner_expired_staff') %></span>
+    <% } else if (_sb.kind === 'past_due') { %><strong><%= t('subscriptions.banner_past_due_title') %></strong> <span class="muted"><%= t('subscriptions.banner_past_due', { n: _sb.days }) %></span>
+    <% } else if (_sb.kind === 'cancelled') { %><strong><%= t('subscriptions.banner_cancelled_title') %></strong> <span class="muted"><%= t('subscriptions.banner_cancelled', { date: fmt.date(_sb.date) }) %></span>
+    <% } else { %><strong><%= _sb.days === 1 ? t('subscriptions.banner_trial_last') : t('subscriptions.banner_trial', { n: _sb.days }) %></strong> <span class="muted"><%= t('subscriptions.banner_trial_hint') %></span><% } %>
+  </span>
+  <% if (_sb.manager) { %><a style="flex:none" class="btn btn-sm <%= _sb.kind === 'trial' ? 'btn-secondary' : 'btn-primary' %>" href="/app/settings/subscription"><%= t(_sb.kind === 'trial' ? 'subscriptions.choose_plan' : 'subscriptions.renew_now') %></a><% } %>
+</div>
+<% } %>

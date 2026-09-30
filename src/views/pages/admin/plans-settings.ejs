@@ -1,0 +1,43 @@
+<%
+  var o = old || null;
+  var errs = errors || {};
+  var val = function (k) { if (o) return o[k] !== undefined ? o[k] : ''; return cfg[k] !== undefined && cfg[k] !== null ? cfg[k] : ''; };
+  var on = function (k) { return o ? o[k] === '1' : Boolean(cfg[k]); };
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+%>
+<div class="page-head"><div><h1><%= t('subscriptions_admin.settings_title') %></h1><p><%= t('subscriptions_admin.settings_lead') %></p></div></div>
+<%- include('plans-tabs') %>
+<%- include('../../partials/form-error') %>
+<form method="post" action="/admin/plans/settings" class="stack-lg sub-admin-form" novalidate data-sub-switch-form data-confirm="<%= t(cfg.enabled ? 'subscriptions_admin.disable_confirm' : 'subscriptions_admin.enable_confirm') %>" data-confirm-title="<%= t(cfg.enabled ? 'subscriptions_admin.disable_title' : 'subscriptions_admin.enable_title') %>" data-confirm-yes="<%= t('common.save') %>"<% if (!cfg.enabled) { %> data-confirm-tone="primary"<% } %>>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_switch') %></h2><div class="panel-sub"><%= t('subscriptions_admin.switch_help') %></div></div><span class="badge badge-dot <%= cfg.enabled ? 'badge-success' : 'badge-neutral' %>"><%= t(cfg.enabled ? 'subscriptions_admin.on' : 'subscriptions_admin.off') %></span></div>
+    <div class="panel-body stack">
+      <label class="check"><input type="checkbox" name="enabled" value="1"<%= on('enabled') ? ' checked' : '' %> data-sub-enabled><span><span class="strong small"><%= t('subscriptions_admin.enabled') %></span></span></label>
+      <div class="form-grid cols-3">
+        <%- include('../../partials/field', { name: 'trialDays', label: t('subscriptions_admin.trial_days'), type: 'number', value: val('trialDays'), suffix: t('subscriptions_admin.days'), required: true, attrs: 'min="1" max="365" step="1" inputmode="numeric"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'graceDays', label: t('subscriptions_admin.grace_days'), type: 'number', value: val('graceDays'), suffix: t('subscriptions_admin.days'), required: true, help: t('subscriptions_admin.grace_help'), attrs: 'min="0" max="90" step="1" inputmode="numeric"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'trialPlanId', label: t('subscriptions_admin.trial_plan'), type: 'select', value: val('trialPlanId'), placeholder: t('subscriptions_admin.trial_plan_all'), options: plans.map(function (p) { return { value: p.id, label: L(p.name, p.name_en) }; }), help: t('subscriptions_admin.trial_plan_help'), errors: errs }) %>
+      </div>
+      <label class="check"><input type="checkbox" name="trialNoCard" value="1"<%= on('trialNoCard') ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions_admin.trial_no_card') %></span> <span class="tiny muted"><%= t('subscriptions_admin.trial_no_card_help') %></span></span></label>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_payment') %></h2><div class="panel-sub"><%= t('subscriptions_admin.payment_help') %></div></div></div>
+    <div class="panel-body stack">
+      <%- include('../../partials/field', { name: 'billingName', label: t('subscriptions_admin.billing_name'), value: val('billingName'), help: t('subscriptions_admin.billing_name_help'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'bankName', label: t('subscriptions.bank_name'), value: val('bankName'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'accountName', label: t('subscriptions.account_name'), value: val('accountName'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'iban', label: 'IBAN', value: val('iban'), attrs: 'maxlength="60" dir="ltr" autocomplete="off"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'swift', label: 'SWIFT / BIC', value: val('swift'), attrs: 'maxlength="20" dir="ltr" autocomplete="off"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'cliqAlias', label: t('subscriptions.cliq_alias'), value: val('cliqAlias'), attrs: 'maxlength="60" dir="ltr" autocomplete="off"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'cliqName', label: t('subscriptions_admin.cliq_name'), value: val('cliqName'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
+        <%- include('../../partials/field', { name: 'instructions', label: t('subscriptions_admin.instructions_ar'), type: 'textarea', value: val('instructions'), errors: errs }) %>
+        <%- include('../../partials/field', { name: 'instructions_en', label: t('subscriptions_admin.instructions_en'), type: 'textarea', value: val('instructions_en'), errors: errs }) %>
+      </div>
+      <p class="tiny muted"><%- icon('info', 'icon-sm') %> <%= t('subscriptions_admin.card_note') %></p>
+    </div>
+  </section>
+  <div><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>

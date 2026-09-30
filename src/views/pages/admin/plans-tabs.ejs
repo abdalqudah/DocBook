@@ -1,0 +1,9 @@
+<%# Sub-navigation shared by the plans / settings / clinic subscriptions admin pages. %>
+<nav class="pill-filter mb-4" aria-label="<%= t('subscriptions_admin.nav') %>">
+  <a href="/admin/plans" class="<%= tab === 'plans' ? 'active' : '' %>"<% if (tab === 'plans') { %> aria-current="page"<% } %>><%= t('subscriptions_admin.tab_plans') %></a>
+  <a href="/admin/subscriptions" class="<%= tab === 'subscriptions' ? 'active' : '' %>"<% if (tab === 'subscriptions') { %> aria-current="page"<% } %>><%= t('subscriptions_admin.tab_subscriptions') %></a>
+  <a href="/admin/plans/settings" class="<%= tab === 'settings' ? 'active' : '' %>"<% if (tab === 'settings') { %> aria-current="page"<% } %>><%= t('subscriptions_admin.tab_settings') %></a>
+</nav>
+<% if (typeof cfg !== 'undefined' && cfg && !cfg.enabled) { %>
+<div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('subscriptions_admin.off_title') %></div><div><%= t('subscriptions_admin.off_text') %></div></div><% if (tab !== 'settings') { %><a class="btn btn-secondary btn-sm" href="/admin/plans/settings"><%= t('subscriptions_admin.open_settings') %></a><% } %></div>
+<% } %>

@@ -1,0 +1,64 @@
+/* Subscriptions: clinic Settings → Subscription, the app banner, read-only page, platform admin plans. Theme tokens only. */
+
+/* Banner above <main> (calm: neutral surface; tone only on the icon, soft background only when attention is needed) */
+.sub-banner { background: var(--surface); }
+.sub-banner > .icon { color: var(--text-muted); flex: none; }
+.sub-banner .grow { min-width: 0; flex: 1 1 240px; }
+.sub-banner-warning { background: var(--warning-soft); } .sub-banner-warning > .icon { color: var(--warning); }
+.sub-banner-danger { background: var(--danger-soft); } .sub-banner-danger > .icon { color: var(--danger); }
+
+/* Read-only / limit page */
+.sub-blocked { max-width: 620px; margin: var(--space-6, 32px) auto; }
+.sub-blocked-title { font-size: 20px; margin: 0; }
+.sub-icon-box { width: 44px; height: 44px; border-radius: var(--radius); background: var(--surface-sunken); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; }
+
+/* Current plan */
+.sub-current { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.sub-plan-name { font-size: 20px; font-weight: var(--fw-bold); letter-spacing: -.01em; }
+[dir="rtl"] .sub-plan-name { letter-spacing: 0; }
+.sub-days { text-align: center; padding: 10px 16px; border-radius: var(--radius); background: var(--surface-muted); min-width: 110px; }
+.sub-days-value { font-size: 28px; font-weight: var(--fw-bold); color: var(--primary); line-height: 1.1; }
+.sub-features { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; font-size: 13px; }
+.sub-features li { display: flex; align-items: center; gap: 8px; }
+.sub-features li .icon { color: var(--text-muted); flex: none; }
+.sub-features li.off { color: var(--text-subtle); }
+
+/* Usage */
+.sub-usage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.sub-usage-item { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sub-usage-item .icon { vertical-align: -2px; }
+@media (max-width: 720px) { .sub-usage { grid-template-columns: 1fr; gap: 16px; } }
+
+/* Payment details */
+.sub-pay-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.sub-pay-box { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); }
+.sub-dl-tight { grid-template-columns: minmax(90px, 130px) 1fr; gap: 6px 12px; }
+.sub-dl-tight dd { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.sub-dl-tight dd .mono { overflow-wrap: anywhere; min-width: 0; }
+
+/* Plan choice */
+.sub-plan-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.sub-plan-grid .box { gap: 8px; }
+.sub-price { display: block; }
+.sub-price strong { font-size: 18px; }
+.sub-choose:has(input[name="billing_cycle"][value="monthly"]:checked) .sub-price-yearly,
+.sub-choose:has(input[name="billing_cycle"][value="yearly"]:checked) .sub-price-monthly { display: none; }
+.sub-limits { display: flex; flex-direction: column; gap: 2px; }
+.sub-plan-features { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+.sub-plan-features > span { display: flex; align-items: center; gap: 6px; }
+.sub-choose .choice input:checked + .box { background: var(--surface); }
+
+/* Invoice */
+.sub-invoice { max-width: 860px; }
+.print-page .sub-invoice { border: 0; max-width: none; }
+.print-page .sub-invoice .panel-body { padding: 0; }
+
+/* Admin */
+.sub-lim { display: inline-flex; align-items: center; gap: 4px; margin-inline-end: 10px; white-space: nowrap; }
+.sub-feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px 20px; }
+.sub-admin-form .check { align-items: flex-start; }
+.sub-admin-form .check input { margin-top: 2px; flex: none; }
+.sub-actions { display: flex; flex-direction: column; gap: 8px; }
+.sub-actions .btn, .sub-actions form { width: 100%; }
+.sub-actions .btn { justify-content: center; }
+.sub-choose > .segmented { align-self: flex-start; }

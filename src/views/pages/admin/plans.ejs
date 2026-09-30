@@ -1,0 +1,40 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var lim = function (v) { return v === null || v === undefined ? '∞' : fmt.number(v); };
+%>
+<div class="page-head">
+  <div><h1><%= t('subscriptions_admin.plans_title') %></h1><p><%= t('subscriptions_admin.plans_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="/admin/plans/new"><%- icon('plus', 'icon-sm') %><%= t('subscriptions_admin.new_plan') %></a></div>
+</div>
+<%- include('plans-tabs') %>
+<section class="panel flush">
+  <% if (!plans.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'wallet', emptyTitle: t('subscriptions_admin.no_plans'), emptyText: t('subscriptions_admin.no_plans_text'), emptyAction: '<a class="btn btn-secondary" href="/admin/plans/new">' + t('subscriptions_admin.new_plan') + '</a>' }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('subscriptions_admin.col_plan') %></th><th class="num"><%= t('subscriptions_admin.col_monthly') %></th><th class="num"><%= t('subscriptions_admin.col_yearly') %></th><th><%= t('subscriptions_admin.col_limits') %></th><th><%= t('subscriptions_admin.col_features') %></th><th class="num"><%= t('subscriptions_admin.col_clinics') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+      <tbody>
+        <% plans.forEach(function (p) { var on = features.filter(function (f) { return p.features[f]; }); %>
+        <tr>
+          <td class="primary-cell"><a class="strong" href="/admin/plans/<%= p.id %>"><%= L(p.name, p.name_en) %></a><div class="tiny muted"><%= locale === 'en' ? p.name : (p.name_en || '') %><% if (Number(cfg.trialPlanId) === p.id) { %> · <%= t('subscriptions_admin.trial_plan_badge') %><% } %></div></td>
+          <td class="num nowrap" data-label="<%= t('subscriptions_admin.col_monthly') %>"><%= fmt.money(p.price_monthly, p.currency) %></td>
+          <td class="num nowrap" data-label="<%= t('subscriptions_admin.col_yearly') %>"><%= fmt.money(p.price_yearly, p.currency) %></td>
+          <td data-label="<%= t('subscriptions_admin.col_limits') %>" class="small"><span class="sub-lim"><%- icon('stethoscope', 'icon-sm muted') %><%= lim(p.max_doctors) %></span> <span class="sub-lim"><%- icon('users', 'icon-sm muted') %><%= lim(p.max_staff) %></span> <span class="sub-lim"><%- icon('calendar', 'icon-sm muted') %><%= lim(p.max_appointments_month) %></span></td>
+          <td data-label="<%= t('subscriptions_admin.col_features') %>" class="small muted"><%= on.length ? on.map(function (f) { return t('subscriptions.features.' + f); }).join(locale === 'ar' ? '، ' : ', ') : '—' %></td>
+          <td class="num" data-label="<%= t('subscriptions_admin.col_clinics') %>"><%= fmt.number(used[p.id] || 0) %></td>
+          <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= p.is_active ? 'badge-success' : 'badge-neutral' %>"><%= t(p.is_active ? 'common.active' : 'common.inactive') %></span><% if (!p.is_public) { %> <span class="badge badge-neutral"><%- icon('eye-off', 'icon-sm') %><%= t('subscriptions_admin.hidden') %></span><% } %></td>
+          <td class="actions"><div class="row-sm">
+            <a class="btn btn-ghost btn-sm btn-icon" href="/admin/plans/<%= p.id %>" aria-label="<%= t('common.edit') %>"><%- icon('pencil', 'icon-sm') %></a>
+            <form method="post" action="/admin/plans/<%= p.id %>/delete" data-confirm="<%= t(used[p.id] ? 'subscriptions_admin.retire_confirm' : 'subscriptions_admin.delete_confirm', { name: L(p.name, p.name_en) }) %>" data-confirm-yes="<%= t(used[p.id] ? 'subscriptions_admin.retire' : 'common.delete') %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-danger-ghost btn-sm btn-icon" type="submit" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button>
+            </form>
+          </div></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</section>

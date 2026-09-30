@@ -1,0 +1,51 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var printing = typeof query !== 'undefined' && query && query.print === '1';
+%>
+<% if (!printing) { %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/app/settings"><%= t('settings.title') %></a> / <a href="/app/settings/subscription"><%= t('settings.nav_subscription') %></a></div><h1><%= t('subscriptions.invoice') %> <bdi><%= inv.number %></bdi></h1></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/app/settings/subscription/invoices/<%= inv.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a></div>
+</div>
+<% } %>
+<section class="panel sub-invoice">
+  <div class="panel-body stack-lg">
+    <div class="row between wrap">
+      <div>
+        <div class="tiny muted"><%= t('subscriptions.invoice') %></div>
+        <div class="sub-plan-name"><bdi class="mono"><%= inv.number %></bdi></div>
+        <div class="small muted"><%= t('subscriptions.issued_on', { date: fmt.date(inv.created_at) }) %></div>
+      </div>
+      <span class="badge badge-dot <%= inv.status === 'paid' ? 'badge-success' : inv.status === 'open' ? 'badge-warning' : 'badge-neutral' %>"><%= t('subscriptions.inv_status.' + inv.status) %></span>
+    </div>
+    <div class="grid grid-2">
+      <div class="stack-sm">
+        <div class="tiny muted"><%= t('subscriptions.billed_by') %></div>
+        <div class="strong"><%= cfg.billingName || brandName %></div>
+      </div>
+      <div class="stack-sm">
+        <div class="tiny muted"><%= t('subscriptions.billed_to') %></div>
+        <div class="strong"><%= L(business.name, business.name_en) %></div>
+        <% if (business.address) { %><div class="small muted"><%= business.address %></div><% } %>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th><%= t('subscriptions.description') %></th><th><%= t('subscriptions.period') %></th><th class="text-end"><%= t('common.amount') %></th></tr></thead>
+        <tbody>
+          <tr>
+            <td><%= t('subscriptions.invoice_line', { plan: L(inv.plan_name, inv.plan_name_en) || brandName, cycle: t('subscriptions.cycle.' + inv.billing_cycle) }) %></td>
+            <td class="small"><%= inv.period_start ? fmt.date(inv.period_start) + ' – ' + fmt.date(inv.period_end) : '—' %></td>
+            <td class="text-end num"><%= fmt.money(inv.amount, inv.currency) %></td>
+          </tr>
+        </tbody>
+        <tfoot><tr><th colspan="2"><%= t('common.total') %></th><th class="text-end num"><%= fmt.money(inv.amount, inv.currency) %></th></tr></tfoot>
+      </table>
+    </div>
+    <dl class="dl">
+      <% if (inv.paid_at) { %><dt><%= t('subscriptions.paid_on') %></dt><dd><%= fmt.date(inv.paid_at) %></dd><% } %>
+      <% if (inv.method) { %><dt><%= t('subscriptions.method') %></dt><dd><%= t('subscriptions.methods.' + inv.method) %></dd><% } %>
+      <% if (inv.reference) { %><dt><%= t('subscriptions.reference') %></dt><dd><bdi class="mono"><%= inv.reference %></bdi></dd><% } %>
+    </dl>
+  </div>
+</section>

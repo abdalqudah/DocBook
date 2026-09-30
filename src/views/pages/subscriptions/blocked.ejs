@@ -1,0 +1,19 @@
+<%# Shown instead of saving while the clinic is read-only (expired subscription) or a plan limit is reached. %>
+<div class="sub-blocked">
+  <section class="panel">
+    <div class="panel-body stack">
+      <span class="sub-icon-box"><%- icon(code === 'PLAN_LIMIT' ? 'users' : 'lock') %></span>
+      <div class="stack-sm">
+        <h1 class="sub-blocked-title"><%= t(code === 'PLAN_LIMIT' ? 'subscriptions.limit_title' : 'subscriptions.blocked_title') %></h1>
+        <p><%= message %></p>
+        <% if (code !== 'PLAN_LIMIT') { %><p class="small muted"><%= t('subscriptions.blocked_data_safe') %></p><% } %>
+        <% if (!manager) { %><p class="small muted"><%= t('subscriptions.blocked_ask_owner') %></p><% } %>
+      </div>
+      <div class="row-sm wrap">
+        <% if (manager) { %><a class="btn btn-primary" href="/app/settings/subscription"><%- icon('credit-card', 'icon-sm') %><%= t(code === 'PLAN_LIMIT' ? 'subscriptions.upgrade' : 'subscriptions.renew_now') %></a><% } %>
+        <a class="btn btn-secondary" href="<%= typeof backUrl !== 'undefined' && backUrl ? backUrl : '/app' %>"><%= t('subscriptions.back_to_app') %></a>
+        <% if (code !== 'PLAN_LIMIT' && can('data.export')) { %><a class="btn btn-ghost" href="/app/settings/data"><%- icon('download', 'icon-sm') %><%= t('subscriptions.export_data') %></a><% } %>
+      </div>
+    </div>
+  </section>
+</div>

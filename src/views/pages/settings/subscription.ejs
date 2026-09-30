@@ -1,0 +1,201 @@
+<%
+  var o = (typeof old !== 'undefined' && old) || {};
+  var errs = (typeof errors !== 'undefined' && errors) || {};
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var badge = function (s) { return s === 'expired' ? 'badge-danger' : s === 'past_due' ? 'badge-warning' : s === 'active' ? 'badge-success' : 'badge-neutral'; };
+  var money = function (v, c) { return fmt.money(v, c); };
+  var limitText = function (v) { return v === null || v === undefined ? t('subscriptions.unlimited') : fmt.number(v); };
+%>
+<%- include('_head', { heading: t('settings.nav_subscription'), lead: t('subscriptions.lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('../../partials/form-error') %>
+
+    <% if (!st) { %>
+    <section class="panel">
+      <div class="panel-body">
+        <%- include('../../partials/empty', { emptyIcon: 'receipt', emptyTitle: t('subscriptions.off_title'), emptyText: t('subscriptions.off_text') }) %>
+      </div>
+    </section>
+    <% } else { var s = st.sub; var plan = st.plan; %>
+
+    <% if (st.readOnly) { %>
+    <div class="alert alert-danger" role="alert"><%- icon('lock', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('subscriptions.readonly_title') %></div><div><%= t('subscriptions.readonly_text') %></div></div></div>
+    <% } %>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2><%= t('subscriptions.current_title') %></h2><div class="panel-sub"><%= t('subscriptions.current_sub') %></div></div>
+        <span class="badge badge-dot <%= badge(s.status) %>"><%= t('subscriptions.status.' + s.status) %></span>
+      </div>
+      <div class="panel-body stack">
+        <div class="sub-current">
+          <div class="stack-sm">
+            <div class="tiny muted"><%= t('subscriptions.plan') %></div>
+            <div class="sub-plan-name"><%= plan ? L(plan.name, plan.name_en) : (s.status === 'comped' ? t('subscriptions.comped_plan') : t('subscriptions.trial_plan')) %></div>
+            <% if (plan) { %><div class="small muted"><%= money(s.billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly, plan.currency) %> <%= t('subscriptions.per_' + s.billing_cycle) %></div><% } %>
+          </div>
+          <% if (s.status === 'trialing' && st.trialDaysLeft !== null) { %>
+          <div class="sub-days">
+            <div class="sub-days-value num"><%= fmt.number(st.trialDaysLeft) %></div>
+            <div class="tiny muted"><%= t('subscriptions.trial_days_left') %></div>
+          </div>
+          <% } %>
+        </div>
+        <dl class="dl">
+          <% if (s.status === 'trialing') { %><dt><%= t('subscriptions.trial_ends') %></dt><dd><%= fmt.date(s.trial_ends_at) %><% if (st.settings.trialNoCard) { %> <span class="tiny muted">· <%= t('subscriptions.trial_no_card') %></span><% } %></dd><% } %>
+          <% if (s.current_period_end) { %><dt><%= t('subscriptions.current_period') %></dt><dd><%= fmt.date(s.current_period_start) %> – <%= fmt.date(s.current_period_end) %></dd><% } %>
+          <% if (s.status === 'past_due' && s.grace_ends_at) { %><dt><%= t('subscriptions.grace_ends') %></dt><dd><%= fmt.date(s.grace_ends_at) %></dd><% } %>
+          <% if (s.status === 'cancelled' && st.accessEnd) { %><dt><%= t('subscriptions.access_until') %></dt><dd><%= fmt.date(st.accessEnd) %></dd><% } %>
+          <dt><%= t('subscriptions.billing_cycle') %></dt><dd><%= t('subscriptions.cycle.' + s.billing_cycle) %></dd>
+        </dl>
+        <% if (plan) { %>
+        <ul class="sub-features">
+          <% features.forEach(function (f) { var on = plan.features[f]; %>
+          <li class="<%= on ? '' : 'off' %>"><%- icon(on ? 'check' : 'minus', 'icon-sm') %><span><%= t('subscriptions.features.' + f) %></span></li>
+          <% }) %>
+        </ul>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('subscriptions.usage_title') %></h2><div class="panel-sub"><%= t('subscriptions.usage_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="sub-usage">
+          <% [['doctors', 'stethoscope'], ['staff', 'users'], ['appointments', 'calendar']].forEach(function (u) { var lim = st.limits[u[0]]; var used = usage[u[0]]; var pct = lim ? Math.min(100, Math.round(used / Math.max(1, lim) * 100)) : 0; %>
+          <div class="sub-usage-item">
+            <div class="row-sm between"><span class="small strong"><%- icon(u[1], 'icon-sm muted') %> <%= t('subscriptions.usage.' + u[0]) %></span><span class="small num"><%= fmt.number(used) %> / <%= limitText(lim) %></span></div>
+            <% if (lim !== null && lim !== undefined) { %><div class="meter thin<%= used > lim ? ' full' : pct >= 85 ? ' warn' : '' %>"><span style="width:<%= pct %>%"></span></div><% } else { %><div class="tiny muted"><%= t('subscriptions.unlimited') %></div><% } %>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <% if (pending) { var p = pending; %>
+    <section class="panel" id="pay">
+      <div class="panel-head">
+        <div><h2><%= t('subscriptions.pay_title') %></h2><div class="panel-sub"><%= t('subscriptions.pay_sub') %></div></div>
+        <span class="badge badge-dot <%= p.status === 'reported' ? 'badge-neutral' : 'badge-warning' %>"><%= t('subscriptions.inv_status.' + p.status) %></span>
+      </div>
+      <div class="panel-body stack">
+        <dl class="dl">
+          <dt><%= t('subscriptions.invoice') %></dt><dd><a class="link" href="/app/settings/subscription/invoices/<%= p.id %>"><bdi><%= p.number %></bdi></a></dd>
+          <dt><%= t('subscriptions.plan') %></dt><dd><%= L(p.plan_name, p.plan_name_en) %> · <%= t('subscriptions.cycle.' + p.billing_cycle) %></dd>
+          <dt><%= t('subscriptions.period') %></dt><dd><%= fmt.date(p.period_start) %> – <%= fmt.date(p.period_end) %></dd>
+          <dt><%= t('subscriptions.amount_due') %></dt><dd class="strong"><%= money(p.amount, p.currency) %></dd>
+        </dl>
+        <% var c = st.settings; var hasBank = c.iban || c.bankName; var hasCliq = c.cliqAlias; %>
+        <% if (hasBank || hasCliq) { %>
+        <div class="sub-pay-methods">
+          <% if (hasBank) { %>
+          <div class="sub-pay-box">
+            <div class="row-sm small strong"><%- icon('landmark', 'icon-sm muted') %><%= t('subscriptions.methods.bank_transfer') %></div>
+            <dl class="dl sub-dl-tight">
+              <% if (c.bankName) { %><dt><%= t('subscriptions.bank_name') %></dt><dd><%= c.bankName %></dd><% } %>
+              <% if (c.accountName) { %><dt><%= t('subscriptions.account_name') %></dt><dd><%= c.accountName %></dd><% } %>
+              <% if (c.iban) { %><dt>IBAN</dt><dd><span class="mono" dir="ltr"><%= c.iban %></span> <button class="btn btn-ghost btn-sm btn-icon" type="button" data-copy="<%= c.iban %>" aria-label="<%= t('subscriptions.copy') %>"><%- icon('copy', 'icon-sm') %></button></dd><% } %>
+              <% if (c.swift) { %><dt>SWIFT</dt><dd class="mono" dir="ltr"><%= c.swift %></dd><% } %>
+            </dl>
+          </div>
+          <% } %>
+          <% if (hasCliq) { %>
+          <div class="sub-pay-box">
+            <div class="row-sm small strong"><%- icon('smartphone', 'icon-sm muted') %><%= t('subscriptions.methods.cliq') %></div>
+            <dl class="dl sub-dl-tight">
+              <dt><%= t('subscriptions.cliq_alias') %></dt><dd><span class="mono" dir="ltr"><%= c.cliqAlias %></span> <button class="btn btn-ghost btn-sm btn-icon" type="button" data-copy="<%= c.cliqAlias %>" aria-label="<%= t('subscriptions.copy') %>"><%- icon('copy', 'icon-sm') %></button></dd>
+              <% if (c.cliqName) { %><dt><%= t('subscriptions.account_name') %></dt><dd><%= c.cliqName %></dd><% } %>
+            </dl>
+          </div>
+          <% } %>
+        </div>
+        <% } %>
+        <% var instr = L(c.instructions, c.instructions_en); if (instr) { %><p class="small muted" dir="auto" style="white-space:pre-line"><%= instr %></p><% } %>
+        <p class="tiny muted"><%= t('subscriptions.reference_hint', { number: p.number }) %></p>
+
+        <% if (p.status === 'reported') { %>
+        <div class="alert alert-info"><%- icon('clock', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('subscriptions.reported_title') %></div><div><%= t('subscriptions.reported_text', { date: fmt.date(p.reported_at), method: t('subscriptions.methods.' + p.method), reference: p.reference }) %></div></div></div>
+        <% } %>
+        <form method="post" action="/app/settings/subscription/invoices/<%= p.id %>/notice" class="stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="small strong"><%= t(p.status === 'reported' ? 'subscriptions.notice_update' : 'subscriptions.notice_title') %></div>
+          <div class="form-grid">
+            <%- include('../../partials/field', { name: 'method', label: t('subscriptions.method'), type: 'select', value: p.method || 'bank_transfer', options: methods.map(function (m) { return { value: m, label: t('subscriptions.methods.' + m) }; }), required: true, errors: errs, old: o }) %>
+            <%- include('../../partials/field', { name: 'reference', label: t('subscriptions.reference'), value: p.reference || '', required: true, help: t('subscriptions.reference_help'), attrs: 'maxlength="120" dir="auto"', errors: errs, old: o }) %>
+          </div>
+          <%- include('../../partials/field', { name: 'notice_note', label: t('subscriptions.notice_note'), type: 'textarea', value: p.notice_note || '', errors: errs, old: o }) %>
+          <div><button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('subscriptions.notice_submit') %></button></div>
+        </form>
+      </div>
+    </section>
+    <% } %>
+
+    <section class="panel" id="plans">
+      <div class="panel-head"><div><h2><%= t(plan || s.status === 'active' ? 'subscriptions.change_plan' : 'subscriptions.choose_plan') %></h2><div class="panel-sub"><%= t('subscriptions.choose_sub') %></div></div></div>
+      <div class="panel-body">
+        <% if (!plans.length) { %>
+          <%- include('../../partials/empty', { compact: true, emptyIcon: 'receipt', emptyTitle: t('subscriptions.no_plans'), emptyText: t('subscriptions.no_plans_text') }) %>
+        <% } else { %>
+        <form method="post" action="/app/settings/subscription/choose" class="stack sub-choose" data-sub-choose<% if (pending) { %> data-confirm="<%= t('subscriptions.replace_confirm') %>" data-confirm-yes="<%= t('subscriptions.choose_submit') %>" data-confirm-tone="primary"<% } %>>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="segmented" role="radiogroup" aria-label="<%= t('subscriptions.billing_cycle') %>">
+            <% ['monthly', 'yearly'].forEach(function (cy) { %><label><input type="radio" name="billing_cycle" value="<%= cy %>"<%= (o.billing_cycle || cycle) === cy ? ' checked' : '' %>><span><%= t('subscriptions.cycle.' + cy) %></span></label><% }) %>
+          </div>
+          <div class="choice-grid sub-plan-grid">
+            <% plans.forEach(function (pl, i) { var cur = plan && plan.id === pl.id; var checked = String(o.plan_id || '') === String(pl.id) || (!o.plan_id && (cur || (!plan && i === 0))); %>
+            <label class="choice">
+              <input type="radio" name="plan_id" value="<%= pl.id %>"<%= checked ? ' checked' : '' %>>
+              <span class="box">
+                <span class="row-sm between"><span class="name"><%= L(pl.name, pl.name_en) %></span><% if (cur) { %><span class="badge badge-neutral"><%= t('subscriptions.current_badge') %></span><% } %></span>
+                <span class="sub-price sub-price-monthly"><strong class="num"><%= money(pl.price_monthly, pl.currency) %></strong> <span class="tiny muted"><%= t('subscriptions.per_monthly') %></span></span>
+                <span class="sub-price sub-price-yearly"><strong class="num"><%= money(pl.price_yearly, pl.currency) %></strong> <span class="tiny muted"><%= t('subscriptions.per_yearly') %></span></span>
+                <% var desc = L(pl.description, pl.description_en); if (desc) { %><span class="meta" dir="auto"><%= desc %></span><% } %>
+                <span class="sub-limits tiny muted">
+                  <span><%= t('subscriptions.limit_doctors', { n: limitText(pl.max_doctors) }) %></span>
+                  <span><%= t('subscriptions.limit_staff', { n: limitText(pl.max_staff) }) %></span>
+                  <span><%= t('subscriptions.limit_appointments', { n: limitText(pl.max_appointments_month) }) %></span>
+                </span>
+                <span class="sub-plan-features">
+                  <% features.filter(function (f) { return pl.features[f]; }).forEach(function (f) { %><span class="tiny"><%- icon('check', 'icon-sm muted') %><%= t('subscriptions.features.' + f) %></span><% }) %>
+                </span>
+              </span>
+            </label>
+            <% }) %>
+          </div>
+          <% if (errs.plan_id) { %><div class="field-error"><%= errs.plan_id %></div><% } %>
+          <div class="row-sm wrap"><button class="btn <%= pending ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%= t('subscriptions.choose_submit') %></button><span class="tiny muted"><%= t('subscriptions.choose_hint') %></span></div>
+        </form>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('subscriptions.invoices_title') %></h2></div></div>
+      <% if (!invoices.length) { %>
+        <%- include('../../partials/empty', { compact: true, emptyIcon: 'receipt-text', emptyTitle: t('subscriptions.no_invoices') }) %>
+      <% } else { %>
+      <div class="table-wrap">
+        <table class="table responsive">
+          <thead><tr><th><%= t('subscriptions.invoice') %></th><th><%= t('subscriptions.plan') %></th><th><%= t('subscriptions.period') %></th><th><%= t('common.amount') %></th><th><%= t('common.status') %></th><th></th></tr></thead>
+          <tbody>
+            <% invoices.forEach(function (i) { %>
+            <tr>
+              <td class="primary-cell" data-label="<%= t('subscriptions.invoice') %>"><bdi class="mono small"><%= i.number %></bdi><div class="tiny muted"><%= fmt.date(i.created_at) %></div></td>
+              <td data-label="<%= t('subscriptions.plan') %>"><%= L(i.plan_name, i.plan_name_en) || '—' %> <span class="tiny muted">· <%= t('subscriptions.cycle.' + i.billing_cycle) %></span></td>
+              <td data-label="<%= t('subscriptions.period') %>" class="small"><%= i.period_start ? fmt.date(i.period_start) + ' – ' + fmt.date(i.period_end) : '—' %></td>
+              <td data-label="<%= t('common.amount') %>" class="num"><%= money(i.amount, i.currency) %></td>
+              <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= i.status === 'paid' ? 'badge-success' : i.status === 'open' ? 'badge-warning' : 'badge-neutral' %>"><%= t('subscriptions.inv_status.' + i.status) %></span></td>
+              <td class="text-end"><a class="btn btn-ghost btn-sm" href="/app/settings/subscription/invoices/<%= i.id %>"><%- icon('file-text', 'icon-sm') %><%= t('subscriptions.view') %></a></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+    </section>
+    <p class="tiny muted"><%- icon('info', 'icon-sm') %> <%= t('subscriptions.data_note') %></p>
+    <% } %>
+  </div>
+</div>
