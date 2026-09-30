@@ -311,7 +311,17 @@
         "updated": "Changed a staff member's access",
         "removed": "Removed a staff member",
         "reset_link_created": "Generated a password-reset link",
-        "invitation_revoked": "Revoked an invitation"
+        "invitation_revoked": "Revoked an invitation",
+        "adjustment_added": "Added a staff bonus or deduction",
+        "adjustment_removed": "Removed a staff bonus or deduction",
+        "employee_created": "Added an employee to payroll",
+        "employee_deleted": "Deleted an employee from payroll",
+        "employee_updated": "Edited an employee's payroll details",
+        "line_removed": "Removed a payroll line",
+        "page_access": "Changed a member's page access",
+        "payroll_prepared": "Prepared the month's salaries",
+        "salary_paid": "Recorded a salary payment",
+        "salary_reopened": "Reopened a paid salary"
       },
       "clinic": {
         "created": "Created the clinic",
@@ -319,7 +329,14 @@
         "appearance_updated": "Changed the clinic colour or logo",
         "link_changed": "Changed the clinic page address",
         "setup_completed": "Finished the clinic setup",
-        "deleted": "Deleted the clinic"
+        "deleted": "Deleted the clinic",
+        "demo_added": "Added sample data",
+        "demo_removed": "Removed the sample data",
+        "invoice_number_raised": "Raised the next invoice number",
+        "invoice_template_updated": "Changed the invoice template",
+        "modules_updated": "Changed which sections are turned on",
+        "telehealth_updated": "Changed the online consultation settings",
+        "widget_origins_changed": "Changed the sites allowed to show the booking button"
       },
       "role": {
         "created": "Created a role",
@@ -349,6 +366,243 @@
         "completed": "Copied data to the external database",
         "failed": "Copy to the external database failed",
         "removed": "Disconnected the external database"
+      },
+      "ai": {
+        "request": "Used the AI assistant on a visit",
+        "request_blocked": "An AI assistant request was blocked",
+        "settings_updated": "Changed the AI assistant settings"
+      },
+      "aifin": {
+        "action_cancelled": "Cancelled an action proposed by the finance assistant",
+        "action_confirmed": "Confirmed an action proposed by the finance assistant",
+        "action_proposed": "The finance assistant proposed an action",
+        "chat_cleared": "Cleared the finance assistant chat",
+        "request": "Used the finance assistant",
+        "request_blocked": "A finance assistant request was blocked",
+        "settings_updated": "Changed the finance assistant settings"
+      },
+      "appointment": {
+        "blocked": "Blocked time in a doctor's schedule",
+        "created": "Created an appointment",
+        "deleted": "Deleted an appointment",
+        "doctor_assigned": "Assigned a doctor to an appointment",
+        "moved": "Moved an appointment",
+        "status": "Changed an appointment's status",
+        "updated": "Edited an appointment"
+      },
+      "appointments": {
+        "imported": "Imported appointments from a calendar"
+      },
+      "attendance": {
+        "corrected": "Corrected an attendance record",
+        "deleted": "Deleted an attendance record",
+        "settings_updated": "Changed the attendance settings"
+      },
+      "budget": {
+        "created": "Added a budget",
+        "deleted": "Deleted a budget",
+        "updated": "Edited a budget"
+      },
+      "calendar_feed": {
+        "disabled": "Turned off a calendar subscription link"
+      },
+      "cash": {
+        "closed": "Closed the cash drawer"
+      },
+      "certificate": {
+        "issued": "Issued a medical document",
+        "revoked": "Revoked a medical document"
+      },
+      "commission": {
+        "rule_saved": "Saved a doctor's commission rule"
+      },
+      "consultation": {
+        "diagnoses": "Updated the diagnosis codes",
+        "timer_paused": "Paused the consultation timer",
+        "timer_resumed": "Resumed the consultation timer",
+        "timer_started": "Started the consultation timer",
+        "timer_stopped": "Stopped the consultation timer"
+      },
+      "dental": {
+        "entry_added": "Added a dental chart entry",
+        "entry_removed": "Removed a dental chart entry",
+        "plan_added": "Added a treatment plan item",
+        "plan_deleted": "Deleted a treatment plan item",
+        "plan_status": "Changed a treatment plan item's status"
+      },
+      "doctor": {
+        "day_off_added": "Added a doctor's day off",
+        "day_off_removed": "Removed a doctor's day off",
+        "online_updated": "Changed a doctor's online consultation settings",
+        "photo_updated": "Changed a doctor's photo"
+      },
+      "engage": {
+        "patient_cancelled": "A patient cancelled from the reminder link",
+        "patient_confirmed": "A patient confirmed from the reminder link",
+        "patient_rescheduled": "A patient rescheduled from the reminder link"
+      },
+      "expense_category": {
+        "created": "Added an expense category"
+      },
+      "growth": {
+        "measurement_added": "Added a growth measurement",
+        "measurement_deleted": "Deleted a growth measurement"
+      },
+      "icd_custom_code": {
+        "created": "Added a custom diagnosis code",
+        "deleted": "Deleted a custom diagnosis code",
+        "updated": "Edited a custom diagnosis code"
+      },
+      "integrations": {
+        "sheets_connected": "Connected Google Sheets",
+        "sheets_disconnected": "Disconnected Google Sheets",
+        "sheets_options": "Changed the Google Sheets export options"
+      },
+      "invoice": {
+        "created": "Issued an invoice"
+      },
+      "media": {
+        "clinic_page_updated": "Changed the clinic page images",
+        "deleted": "Deleted a media file",
+        "updated": "Edited a media file",
+        "uploaded": "Uploaded a media file"
+      },
+      "messaging": {
+        "click_to_chat": "Opened a WhatsApp chat with a patient",
+        "settings_updated": "Changed the messaging settings",
+        "test_sent": "Sent a test message"
+      },
+      "notifications": {
+        "email_rules": "Changed the notification e-mail rules"
+      },
+      "partner": {
+        "created": "Added a partner",
+        "deleted": "Deleted a partner",
+        "distribution_cancelled": "Cancelled a profit distribution",
+        "profit_distributed": "Distributed profit to partners",
+        "transaction_deleted": "Deleted a partner transaction",
+        "updated": "Edited a partner"
+      },
+      "patient": {
+        "deleted": "Deleted a patient",
+        "emailed": "E-mailed a patient"
+      },
+      "patient_docs": {
+        "downloaded": "A patient downloaded a document",
+        "emailed": "E-mailed documents to a patient",
+        "revoked": "Stopped sharing a document with a patient",
+        "shared": "Shared a document with a patient"
+      },
+      "payment": {
+        "hold_expired": "An online booking payment hold expired",
+        "needs_attention": "An online payment needs attention",
+        "paid": "An online payment was received",
+        "refund_failed": "A refund failed",
+        "refunded": "Refunded an online payment"
+      },
+      "payments": {
+        "gateway_tested": "Tested the payment gateway",
+        "gateway_updated": "Changed the payment gateway settings"
+      },
+      "payroll": {
+        "adjustment_created": "Added a doctor bonus, deduction or advance",
+        "paid": "Recorded a doctor's pay",
+        "payment_undone": "Undid a doctor's pay"
+      },
+      "pregnancy": {
+        "closed": "Closed a pregnancy",
+        "reopened": "Reopened a pregnancy",
+        "started": "Started a pregnancy follow-up",
+        "updated": "Edited a pregnancy",
+        "visit_added": "Added an antenatal visit",
+        "visit_deleted": "Deleted an antenatal visit"
+      },
+      "prescription": {
+        "created": "Wrote a prescription"
+      },
+      "presence": {
+        "visibility": "Changed their presence visibility"
+      },
+      "purchase_order": {
+        "cancelled": "Cancelled a purchase order",
+        "created": "Created a purchase order",
+        "deleted": "Deleted a purchase order",
+        "received": "Received a purchase order",
+        "resent": "Resent a purchase order",
+        "send_failed": "A purchase order could not be sent",
+        "updated": "Edited a purchase order"
+      },
+      "record": {
+        "emergency_access": "Opened a medical record with emergency access"
+      },
+      "rep_visits": {
+        "settings_updated": "Changed the rep visit settings"
+      },
+      "rep_window": {
+        "created": "Added a rep visit window",
+        "deleted": "Deleted a rep visit window",
+        "updated": "Edited a rep visit window"
+      },
+      "review": {
+        "replied": "Replied to a review",
+        "reported": "Reported a review"
+      },
+      "service": {
+        "updated": "Edited a service"
+      },
+      "service_category": {
+        "created": "Added a service category",
+        "deleted": "Deleted a service category",
+        "updated": "Edited a service category"
+      },
+      "settings": {
+        "record_privacy": "Changed medical record privacy"
+      },
+      "signature": {
+        "removed": "Removed a doctor's signature"
+      },
+      "specialty": {
+        "settings_updated": "Changed the specialty records settings"
+      },
+      "stamp": {
+        "placement_updated": "Changed where the stamp appears",
+        "removed": "Removed the clinic stamp"
+      },
+      "subscription": {
+        "payment_reported": "Reported a subscription payment",
+        "plan_chosen": "Chose a subscription plan"
+      },
+      "supply_item": {
+        "linked_vendor_product": "Linked a supply item to a vendor product"
+      },
+      "telehealth": {
+        "file_opened": "Opened a file sent by a patient",
+        "link_sent": "Sent the consultation link",
+        "paid_in_advance": "Recorded an advance consultation payment"
+      },
+      "ticket": {
+        "assigned": "Assigned a support ticket",
+        "created": "Opened a support ticket",
+        "replied": "Replied to a support ticket",
+        "sent_to_platform": "Sent a ticket to DocBook support",
+        "status": "Changed a support ticket's status"
+      },
+      "platform": {
+        "ai_tested": "AI assistant connection tested",
+        "ai_updated": "AI assistant settings changed",
+        "plan_created": "Plan added",
+        "plan_deleted": "Plan deleted",
+        "plan_retired": "Plan retired",
+        "plan_updated": "Plan edited",
+        "review_hidden": "Review hidden",
+        "review_report_dismissed": "Review report dismissed",
+        "review_restored": "Review restored",
+        "subscriptions_settings": "Subscription settings changed",
+        "update_activated": "Update activated",
+        "update_discarded": "Staged update discarded",
+        "update_rejected": "Invalid update file rejected",
+        "update_rolled_back": "Update rolled back",
+        "update_staged": "Update uploaded"
       }
     },
     "act_entity": {

@@ -311,7 +311,17 @@
         "updated": "عدّل صلاحيات موظف",
         "removed": "أزال موظفًا",
         "reset_link_created": "أنشأ رابط إعادة تعيين كلمة المرور",
-        "invitation_revoked": "ألغى دعوة"
+        "invitation_revoked": "ألغى دعوة",
+        "adjustment_added": "أضاف مكافأة أو خصمًا لموظف",
+        "adjustment_removed": "حذف مكافأة أو خصمًا لموظف",
+        "employee_created": "أضاف موظفًا للرواتب",
+        "employee_deleted": "حذف موظفًا من الرواتب",
+        "employee_updated": "عدّل بيانات موظف في الرواتب",
+        "line_removed": "أزال سطر راتب",
+        "page_access": "غيّر صلاحيات صفحات موظف",
+        "payroll_prepared": "جهّز رواتب الشهر",
+        "salary_paid": "سجّل دفع راتب موظف",
+        "salary_reopened": "أعاد فتح راتب مدفوع"
       },
       "clinic": {
         "created": "أنشأ العيادة",
@@ -319,7 +329,14 @@
         "appearance_updated": "غيّر لون العيادة أو شعارها",
         "link_changed": "غيّر عنوان صفحة العيادة",
         "setup_completed": "أنهى إعداد العيادة",
-        "deleted": "حذف العيادة"
+        "deleted": "حذف العيادة",
+        "demo_added": "أضاف بيانات تجريبية",
+        "demo_removed": "حذف البيانات التجريبية",
+        "invoice_number_raised": "رفع رقم الفاتورة التالي",
+        "invoice_template_updated": "عدّل قالب الفاتورة",
+        "modules_updated": "غيّر أقسام النظام المفعّلة",
+        "telehealth_updated": "عدّل إعدادات الاستشارات عن بُعد",
+        "widget_origins_changed": "غيّر المواقع المسموح لها بزر الحجز"
       },
       "role": {
         "created": "أنشأ دورًا",
@@ -349,6 +366,243 @@
         "completed": "نسخ البيانات إلى قاعدة البيانات الخارجية",
         "failed": "فشل النسخ إلى قاعدة البيانات الخارجية",
         "removed": "فصل قاعدة البيانات الخارجية"
+      },
+      "ai": {
+        "request": "استخدم المساعد الذكي في زيارة",
+        "request_blocked": "رُفض طلب للمساعد الذكي",
+        "settings_updated": "عدّل إعدادات المساعد الذكي"
+      },
+      "aifin": {
+        "action_cancelled": "ألغى إجراءً اقترحه المساعد المالي",
+        "action_confirmed": "أكّد إجراءً اقترحه المساعد المالي",
+        "action_proposed": "اقترح المساعد المالي إجراءً",
+        "chat_cleared": "مسح محادثة المساعد المالي",
+        "request": "استخدم المساعد المالي",
+        "request_blocked": "رُفض طلب للمساعد المالي",
+        "settings_updated": "عدّل إعدادات المساعد المالي"
+      },
+      "appointment": {
+        "blocked": "حجز وقتًا في جدول طبيب",
+        "created": "أضاف موعدًا",
+        "deleted": "حذف موعدًا",
+        "doctor_assigned": "حدّد طبيب موعد",
+        "moved": "نقل موعدًا",
+        "status": "غيّر حالة موعد",
+        "updated": "عدّل موعدًا"
+      },
+      "appointments": {
+        "imported": "استورد مواعيد من تقويم"
+      },
+      "attendance": {
+        "corrected": "صحّح سجل حضور",
+        "deleted": "حذف سجل حضور",
+        "settings_updated": "عدّل إعدادات الحضور"
+      },
+      "budget": {
+        "created": "أضاف ميزانية",
+        "deleted": "حذف ميزانية",
+        "updated": "عدّل ميزانية"
+      },
+      "calendar_feed": {
+        "disabled": "أوقف رابط اشتراك التقويم"
+      },
+      "cash": {
+        "closed": "أغلق الصندوق"
+      },
+      "certificate": {
+        "issued": "أصدر وثيقة طبية",
+        "revoked": "ألغى وثيقة طبية"
+      },
+      "commission": {
+        "rule_saved": "حفظ قاعدة عمولة طبيب"
+      },
+      "consultation": {
+        "diagnoses": "حدّث أكواد التشخيص",
+        "timer_paused": "أوقف مؤقت الاستشارة مؤقتًا",
+        "timer_resumed": "استأنف مؤقت الاستشارة",
+        "timer_started": "بدأ مؤقت الاستشارة",
+        "timer_stopped": "أنهى مؤقت الاستشارة"
+      },
+      "dental": {
+        "entry_added": "أضاف ملاحظة لمخطط الأسنان",
+        "entry_removed": "أزال ملاحظة من مخطط الأسنان",
+        "plan_added": "أضاف بندًا لخطة العلاج",
+        "plan_deleted": "حذف بندًا من خطة العلاج",
+        "plan_status": "غيّر حالة بند في خطة العلاج"
+      },
+      "doctor": {
+        "day_off_added": "أضاف إجازة لطبيب",
+        "day_off_removed": "ألغى إجازة طبيب",
+        "online_updated": "عدّل إعدادات الاستشارة عن بُعد لطبيب",
+        "photo_updated": "غيّر صورة طبيب"
+      },
+      "engage": {
+        "patient_cancelled": "ألغى مريض موعده من رابط التذكير",
+        "patient_confirmed": "أكّد مريض موعده من رابط التذكير",
+        "patient_rescheduled": "غيّر مريض موعده من رابط التذكير"
+      },
+      "expense_category": {
+        "created": "أضاف فئة مصروفات"
+      },
+      "growth": {
+        "measurement_added": "أضاف قياس نمو",
+        "measurement_deleted": "حذف قياس نمو"
+      },
+      "icd_custom_code": {
+        "created": "أضاف كود تشخيص خاصًا",
+        "deleted": "حذف كود تشخيص خاصًا",
+        "updated": "عدّل كود تشخيص خاصًا"
+      },
+      "integrations": {
+        "sheets_connected": "ربط Google Sheets",
+        "sheets_disconnected": "ألغى ربط Google Sheets",
+        "sheets_options": "عدّل خيارات التصدير إلى Google Sheets"
+      },
+      "invoice": {
+        "created": "أصدر فاتورة"
+      },
+      "media": {
+        "clinic_page_updated": "غيّر صور صفحة العيادة",
+        "deleted": "حذف ملفًا من مكتبة الوسائط",
+        "updated": "عدّل ملفًا في مكتبة الوسائط",
+        "uploaded": "رفع ملفًا إلى مكتبة الوسائط"
+      },
+      "messaging": {
+        "click_to_chat": "فتح محادثة واتساب مع مريض",
+        "settings_updated": "عدّل إعدادات الرسائل والتذكيرات",
+        "test_sent": "أرسل رسالة تجريبية"
+      },
+      "notifications": {
+        "email_rules": "عدّل تنبيهات البريد للإشعارات"
+      },
+      "partner": {
+        "created": "أضاف شريكًا",
+        "deleted": "حذف شريكًا",
+        "distribution_cancelled": "ألغى توزيع أرباح",
+        "profit_distributed": "وزّع الأرباح على الشركاء",
+        "transaction_deleted": "حذف حركة شريك",
+        "updated": "عدّل بيانات شريك"
+      },
+      "patient": {
+        "deleted": "حذف مريضًا",
+        "emailed": "راسل مريضًا بالبريد"
+      },
+      "patient_docs": {
+        "downloaded": "نزّل المريض وثيقة",
+        "emailed": "أرسل وثائق للمريض بالبريد",
+        "revoked": "ألغى مشاركة وثيقة مع المريض",
+        "shared": "شارك وثيقة مع المريض"
+      },
+      "payment": {
+        "hold_expired": "انتهت مهلة دفع حجز إلكتروني",
+        "needs_attention": "دفعة إلكترونية تحتاج مراجعة",
+        "paid": "استُلمت دفعة إلكترونية",
+        "refund_failed": "فشل استرداد دفعة",
+        "refunded": "استرد دفعة إلكترونية"
+      },
+      "payments": {
+        "gateway_tested": "اختبر بوابة الدفع",
+        "gateway_updated": "عدّل إعدادات بوابة الدفع"
+      },
+      "payroll": {
+        "adjustment_created": "أضاف مكافأة أو خصمًا أو سلفة لطبيب",
+        "paid": "سجّل دفع راتب طبيب",
+        "payment_undone": "ألغى تسجيل دفع راتب طبيب"
+      },
+      "pregnancy": {
+        "closed": "أغلق ملف حمل",
+        "reopened": "أعاد فتح ملف حمل",
+        "started": "بدأ متابعة حمل",
+        "updated": "عدّل ملف حمل",
+        "visit_added": "أضاف زيارة متابعة حمل",
+        "visit_deleted": "حذف زيارة متابعة حمل"
+      },
+      "prescription": {
+        "created": "كتب وصفة طبية"
+      },
+      "presence": {
+        "visibility": "غيّر ظهور حالة الاتصال"
+      },
+      "purchase_order": {
+        "cancelled": "ألغى طلب شراء",
+        "created": "أنشأ طلب شراء",
+        "deleted": "حذف طلب شراء",
+        "received": "استلم طلب شراء",
+        "resent": "أعاد إرسال طلب شراء",
+        "send_failed": "فشل إرسال طلب شراء",
+        "updated": "عدّل طلب شراء"
+      },
+      "record": {
+        "emergency_access": "فتح ملفًا طبيًا بدخول طارئ"
+      },
+      "rep_visits": {
+        "settings_updated": "عدّل إعدادات زيارات المناديب"
+      },
+      "rep_window": {
+        "created": "أضاف وقتًا لزيارات المناديب",
+        "deleted": "حذف وقتًا لزيارات المناديب",
+        "updated": "عدّل وقتًا لزيارات المناديب"
+      },
+      "review": {
+        "replied": "ردّ على تقييم",
+        "reported": "أبلغ عن تقييم"
+      },
+      "service": {
+        "updated": "عدّل خدمة"
+      },
+      "service_category": {
+        "created": "أضاف تصنيف خدمات",
+        "deleted": "حذف تصنيف خدمات",
+        "updated": "عدّل تصنيف خدمات"
+      },
+      "settings": {
+        "record_privacy": "غيّر خصوصية الملف الطبي"
+      },
+      "signature": {
+        "removed": "حذف توقيع طبيب"
+      },
+      "specialty": {
+        "settings_updated": "عدّل إعدادات السجلات التخصصية"
+      },
+      "stamp": {
+        "placement_updated": "غيّر أماكن ظهور الختم",
+        "removed": "حذف ختم العيادة"
+      },
+      "subscription": {
+        "payment_reported": "أبلغ عن دفعة اشتراك",
+        "plan_chosen": "اختار خطة اشتراك"
+      },
+      "supply_item": {
+        "linked_vendor_product": "ربط صنفًا بمنتج مورد"
+      },
+      "telehealth": {
+        "file_opened": "فتح ملفًا أرسله مريض",
+        "link_sent": "أرسل رابط الاستشارة",
+        "paid_in_advance": "سجّل دفع استشارة مسبقًا"
+      },
+      "ticket": {
+        "assigned": "أسند تذكرة دعم",
+        "created": "فتح تذكرة دعم",
+        "replied": "ردّ على تذكرة دعم",
+        "sent_to_platform": "أرسل تذكرة إلى دعم DocBook",
+        "status": "غيّر حالة تذكرة دعم"
+      },
+      "platform": {
+        "ai_tested": "اختبار اتصال المساعد الذكي",
+        "ai_updated": "تعديل إعدادات المساعد الذكي",
+        "plan_created": "إضافة خطة اشتراك",
+        "plan_deleted": "حذف خطة اشتراك",
+        "plan_retired": "إيقاف خطة اشتراك",
+        "plan_updated": "تعديل خطة اشتراك",
+        "review_hidden": "إخفاء تقييم",
+        "review_report_dismissed": "رفض بلاغ عن تقييم",
+        "review_restored": "إعادة إظهار تقييم",
+        "subscriptions_settings": "تعديل إعدادات الاشتراكات",
+        "update_activated": "تفعيل تحديث للنظام",
+        "update_discarded": "تجاهل تحديث مرفوع",
+        "update_rejected": "رفض ملف تحديث غير صالح",
+        "update_rolled_back": "التراجع عن تحديث",
+        "update_staged": "رفع ملف تحديث"
       }
     },
     "act_entity": {

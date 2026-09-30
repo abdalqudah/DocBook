@@ -298,7 +298,22 @@
         "google_updated": "تم تحديث إعدادات الدخول بحساب Google",
         "domain_approved": "تمت الموافقة على دومين عيادة",
         "domain_suspended": "تم إيقاف دومين عيادة",
-        "domain_resumed": "تمت إعادة تفعيل دومين عيادة"
+        "domain_resumed": "تمت إعادة تفعيل دومين عيادة",
+        "ai_tested": "اختبار اتصال المساعد الذكي",
+        "ai_updated": "تعديل إعدادات المساعد الذكي",
+        "plan_created": "إضافة خطة اشتراك",
+        "plan_deleted": "حذف خطة اشتراك",
+        "plan_retired": "إيقاف خطة اشتراك",
+        "plan_updated": "تعديل خطة اشتراك",
+        "review_hidden": "إخفاء تقييم",
+        "review_report_dismissed": "رفض بلاغ عن تقييم",
+        "review_restored": "إعادة إظهار تقييم",
+        "subscriptions_settings": "تعديل إعدادات الاشتراكات",
+        "update_activated": "تفعيل تحديث للنظام",
+        "update_discarded": "تجاهل تحديث مرفوع",
+        "update_rejected": "رفض ملف تحديث غير صالح",
+        "update_rolled_back": "التراجع عن تحديث",
+        "update_staged": "رفع ملف تحديث"
       }
     },
     "site": {

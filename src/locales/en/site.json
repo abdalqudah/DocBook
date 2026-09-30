@@ -298,7 +298,22 @@
         "google_updated": "Google sign-in settings updated",
         "domain_approved": "Clinic domain approved",
         "domain_suspended": "Clinic domain suspended",
-        "domain_resumed": "Clinic domain resumed"
+        "domain_resumed": "Clinic domain resumed",
+        "ai_tested": "AI assistant connection tested",
+        "ai_updated": "AI assistant settings changed",
+        "plan_created": "Plan added",
+        "plan_deleted": "Plan deleted",
+        "plan_retired": "Plan retired",
+        "plan_updated": "Plan edited",
+        "review_hidden": "Review hidden",
+        "review_report_dismissed": "Review report dismissed",
+        "review_restored": "Review restored",
+        "subscriptions_settings": "Subscription settings changed",
+        "update_activated": "Update activated",
+        "update_discarded": "Staged update discarded",
+        "update_rejected": "Invalid update file rejected",
+        "update_rolled_back": "Update rolled back",
+        "update_staged": "Update uploaded"
       }
     },
     "site": {
