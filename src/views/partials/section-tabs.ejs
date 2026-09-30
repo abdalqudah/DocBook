@@ -5,7 +5,6 @@
 %>
 <% if (_st) { %>
 <nav class="section-tabs" aria-label="<%= t('navx.section_pages', { section: t(_st.group.label) }) %>">
-  <span class="section-tabs-label"><%- icon(_st.group.icon, 'icon-sm') %><%= t(_st.group.label) %></span>
   <div class="section-tabs-list">
     <% _st.group.items.forEach(function (i) { var on = i === _st.item, n = i.badge && _nb ? Number(_nb[i.badge]) || 0 : 0; %>
       <a href="<%= i.href %>" class="<%= on ? 'active' : '' %>"<% if (on) { %> aria-current="page"<% } %>><%= t('nav.' + i.key) %><% if (n) { %><span class="section-tabs-count"><%= n > 99 ? '99+' : n %></span><% } %></a>
