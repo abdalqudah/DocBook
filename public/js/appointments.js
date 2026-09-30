@@ -632,18 +632,57 @@
     window.addEventListener('resize', function () { if (pop) closePop(); });
   }
 
-  /* ---------- Front desk: refresh the board every minute (never while a dialog or menu is open) ---------- */
+  /* ---------- Front desk: fallback refresh every minute when live updates (live.js) are unavailable ---------- */
   var auto = $('[data-auto-refresh]');
   if (auto) {
     var every = Math.max(20, Number(auto.getAttribute('data-auto-refresh')) || 60) * 1000;
     var lastInput = 0;
     document.addEventListener('input', function () { lastInput = Date.now(); }, true);
     setInterval(function () {
+      if (window.DocBookLive && window.DocBookLive.connected) return; // live updates (live.js) are on: this is only the fallback
       if (document.visibilityState !== 'visible') return;
       if ($('dialog[open]') || $('details.dropdown[open]') || $('.cmdk.open')) return;
       if (Date.now() - lastInput < 15000) return;
       var url = location.pathname + location.search.replace(/([?&])paid=\d+&?/, '$1').replace(/[?&]$/, '');
       location.replace(url);
     }, every);
+  }
+  /* ---------- Calendar import: source / doctor-mode panes, select all, selected count ---------- */
+  var imp = $('[data-cal-import]');
+  if (imp) {
+    var syncPanes = function () {
+      var src = ($('[data-cal-source]:checked', imp) || {}).value || 'file';
+      $$('[data-cal-pane]', imp).forEach(function (p) { p.hidden = p.getAttribute('data-cal-pane') !== src; });
+      var mode = ($('[data-cal-mode]:checked', imp) || {}).value || 'one';
+      $$('[data-cal-mode-pane]', imp).forEach(function (p) { p.hidden = p.getAttribute('data-cal-mode-pane') !== mode; });
+      var file = $('input[type=file]', imp); var url = $('input[name=url]', imp);
+      if (file) file.required = src === 'file';
+      if (url) url.required = src === 'url';
+    };
+    $$('[data-cal-source], [data-cal-mode]', imp).forEach(function (r) { r.addEventListener('change', syncPanes); });
+    syncPanes();
+    imp.addEventListener('submit', function () { var b = $('button[type=submit]', imp); if (b) { b.disabled = true; b.classList.add('is-loading'); } });
+  }
+  var conf = $('[data-cal-confirm]');
+  if (conf) {
+    var boxes = $$('[data-cal-row]:not([disabled])', conf);
+    var all = $('[data-cal-all]', conf);
+    var btn = $('[data-cal-submit]', conf);
+    var outside = $('[data-cal-outside]', conf);
+    var count = function () {
+      var n = boxes.filter(function (b) { return b.checked; }).length;
+      if (btn) { var sp = $('span', btn); if (sp) sp.textContent = String(btn.getAttribute('data-label') || '').replace('{n}', n.toLocaleString(numLocale)); btn.disabled = n === 0; }
+      if (all) { all.checked = n > 0 && n === boxes.length; all.indeterminate = n > 0 && n < boxes.length; }
+    };
+    boxes.forEach(function (b) {
+      b.addEventListener('change', function () {
+        // Choosing a row outside working hours turns the override on (it can be turned off again).
+        if (b.checked && b.getAttribute('data-state') === 'outside_hours' && outside && !outside.checked) outside.checked = true;
+        count();
+      });
+    });
+    if (all) all.addEventListener('change', function () { boxes.forEach(function (b) { b.checked = all.checked; }); if (all.checked && outside && boxes.some(function (b) { return b.getAttribute('data-state') === 'outside_hours'; })) outside.checked = true; count(); });
+    conf.addEventListener('submit', function () { if (btn) btn.disabled = true; });
+    count();
   }
 }());

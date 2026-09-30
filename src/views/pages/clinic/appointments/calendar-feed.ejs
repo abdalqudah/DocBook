@@ -1,0 +1,72 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/appointments"><%= t('appointments.title') %></a></div>
+    <h1><%= t('live.feed_title') %></h1>
+    <p><%= t('live.feed_lead') %></p>
+  </div>
+  <% if (can('appointments.manage')) { %>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/appointments/import-calendar"><%- icon('file-up', 'icon-sm') %><%= t('calimport.title') %></a>
+  </div>
+  <% } %>
+</div>
+
+<div class="alert mb-4" role="note">
+  <%- icon('shield-alert', 'muted') %>
+  <div class="grow">
+    <div class="alert-title"><%= t('live.feed_privacy_title') %></div>
+    <div class="small muted"><%= t('live.feed_privacy') %></div>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <div class="panel flush">
+    <div class="panel-head"><h2><%= t('live.feed_doctors') %></h2></div>
+    <% if (!rows.length) { %>
+      <%- include('../../../partials/empty', { emptyIcon: 'calendar', emptyTitle: t('live.feed_none_title'), emptyText: t('live.feed_none_text'), emptyAction: '' }) %>
+    <% } else { %>
+    <ul class="lv-feeds">
+      <% rows.forEach(function (r) { var d = r.doctor; var base = '/app/appointments/calendar-feed/' + d.id + '/'; %>
+      <li>
+        <div class="row between wrap">
+          <div class="row-sm">
+            <span class="doc-dot"<% if (d.color) { %> style="background:<%= d.color %>"<% } %>></span>
+            <span class="strong"><%= L(d.full_name, d.full_name_en) %></span>
+            <span class="st"><i class="lv-dot <%= r.on ? 'lv-ok' : 'lv-off' %>"></i><%= r.on ? t('live.feed_on') : t('live.feed_off') %></span>
+          </div>
+          <div class="row-sm wrap">
+            <% if (!r.on) { %>
+              <form method="post" action="<%= base %>enable"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('toggle-right', 'icon-sm') %><%= t('live.feed_enable') %></button></form>
+            <% } else { %>
+              <form method="post" action="<%= base %>rotate" data-confirm="<%= t('live.feed_rotate_confirm') %>" data-confirm-title="<%= t('live.feed_rotate') %>" data-confirm-yes="<%= t('live.feed_rotate') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('live.feed_rotate') %></button></form>
+              <form method="post" action="<%= base %>disable" data-confirm="<%= t('live.feed_disable_confirm') %>" data-confirm-title="<%= t('live.feed_disable') %>" data-confirm-yes="<%= t('live.feed_disable') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('toggle-left', 'icon-sm') %><%= t('live.feed_disable') %></button></form>
+            <% } %>
+          </div>
+        </div>
+        <% if (r.on && r.url) { %>
+        <div class="lv-url mt-2">
+          <code class="code-box" dir="ltr"><%= r.url %></code>
+          <div class="row-sm wrap mt-2">
+            <button class="btn btn-secondary btn-sm" type="button" data-copy="<%= r.url %>"><%- icon('copy', 'icon-sm') %><%= t('live.feed_copy') %></button>
+            <a class="btn btn-ghost btn-sm" href="<%= r.webcal %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('live.feed_open') %></a>
+            <span class="tiny muted"><%= r.lastUsed ? t('live.feed_last_used', { when: fmt.date(r.lastUsed, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) : t('live.feed_never_used') %></span>
+          </div>
+        </div>
+        <% } %>
+      </li>
+      <% }) %>
+    </ul>
+    <% } %>
+  </div>
+
+  <aside class="panel">
+    <div class="panel-head"><h2><%= t('live.feed_howto') %></h2></div>
+    <div class="panel-body stack small">
+      <div><div class="strong"><%= t('calimport.howto_google') %></div><p class="muted"><%= t('live.feed_howto_google') %></p></div>
+      <div><div class="strong"><%= t('calimport.howto_apple') %></div><p class="muted"><%= t('live.feed_howto_apple') %></p></div>
+      <div><div class="strong"><%= t('calimport.howto_outlook') %></div><p class="muted"><%= t('live.feed_howto_outlook') %></p></div>
+      <p class="tiny muted"><%= t('live.feed_refresh_note') %></p>
+    </div>
+  </aside>
+</div>

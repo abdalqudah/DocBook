@@ -51,7 +51,7 @@
           <dt><%= t('common.service') %></dt><dd><%= a.service_name ? L(a.service_name, a.service_name_en) : t('appointments.general_visit') %></dd>
           <dt><%= t('appointments.duration') %></dt><dd><%= a.length %> <%= t('common.minutes') %></dd>
           <dt><%= t('common.type') %></dt><dd><%= t('appointments.types.' + a.appointment_type) %></dd>
-          <dt><%= t('appointments.source') %></dt><dd><%= t('appointments.sources.' + a.source) %></dd>
+          <dt><%= t('appointments.source') %></dt><dd><%= a.source === 'import' ? t('calimport.source_label') : t('appointments.sources.' + a.source) %></dd>
           <% if (a.checked_in) { %><dt><%= t('appointments.checked_in') %></dt><dd><%= a.with_doctor ? t('appointments.with_doctor') : t('appointments.arrived') %><% if (a.arrived_at) { %> · <span dir="ltr"><%= new Date(a.arrived_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: business.timezone || 'UTC' }) %></span><% } %></dd><% } %>
           <% if (parent) { %><dt><%= t('appointments.follow_up_of') %></dt><dd><a class="link" href="/app/appointments/<%= parent.id %>"><%= fmt.date(parent.appointment_date) %> · <span dir="ltr"><%= parent.appointment_time %></span></a></dd><% } %>
           <dt><%= t('common.notes') %></dt><dd style="white-space:pre-line"><%= a.notes || '—' %></dd>

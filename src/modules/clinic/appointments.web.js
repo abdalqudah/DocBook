@@ -207,7 +207,7 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
     header: [t('common.date'), t('common.time'), t('appointments.duration'), t('common.patient'), t('common.phone'), t('common.doctor'), t('common.service'),
       t('common.status'), t('common.type'), t('appointments.source'), t('appointments.amount_due'), t('appointments.payment'), t('appointments.checked_in'), t('common.notes')],
     rows: rows.map((a) => [a.appointment_date, a.appointment_time, lenOf(a), a.patient_name, a.patient_phone || '', L(a.doctor_name, a.doctor_name_en) || '', L(a.service_name, a.service_name_en) || '',
-      t(`appointments.statuses.${a.status}`), t(`appointments.types.${a.appointment_type}`), t(`appointments.sources.${a.source}`), Number(a.amount_due || 0),
+      t(`appointments.statuses.${a.status}`), t(`appointments.types.${a.appointment_type}`), (a.source === 'import' ? t('calimport.source_label') : t(`appointments.sources.${a.source}`)), Number(a.amount_due || 0),
       t(`appointments.payment_statuses.${a.payment_status}`), a.checked_in ? t('common.yes') : t('common.no'), a.notes || '']),
   });
 }));

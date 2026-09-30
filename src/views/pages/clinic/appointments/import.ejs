@@ -1,0 +1,240 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var docName = function (d) { return d ? L(d.full_name, d.full_name_en) : ''; };
+  var stateText = function (s) { return t('calimport.state.' + s); };
+  var stateDot = function (s) {
+    var tone = s === 'ok' ? 'ok' : (s === 'outside_hours' || s === 'no_doctor') ? 'warn' : (s === 'conflict' || s === 'conflict_file') ? 'bad' : 'off';
+    return '<span class="st"><i class="lv-dot lv-' + tone + '"></i>' + escapeHtml(stateText(s)) + '</span>';
+  };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/appointments"><%= t('appointments.title') %></a></div>
+    <h1><%= step === 'preview' ? t('calimport.preview_title') : step === 'result' ? t('calimport.result_title') : t('calimport.title') %></h1>
+    <p><%= step === 'preview' ? t('calimport.preview_lead', { n: fmt.number(plan.total), from: fmt.date(from), to: fmt.date(to) }) : step === 'result' ? t('calimport.result_lead') : t('calimport.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (step !== 'source') { %><a class="btn btn-secondary" href="/app/appointments/import-calendar"><%- icon('file-up', 'icon-sm') %><%= t('calimport.start_over') %></a><% } %>
+    <a class="btn btn-ghost" href="/app/appointments/calendar-feed"><%- icon('link', 'icon-sm') %><%= t('live.feed_link') %></a>
+  </div>
+</div>
+
+<ol class="lv-steps" aria-label="<%= t('calimport.steps_label') %>">
+  <% ['source', 'preview', 'result'].forEach(function (s, i) { var cur = s === step; var done = ['source', 'preview', 'result'].indexOf(step) > i; %>
+  <li class="<%= cur ? 'current' : done ? 'done' : '' %>"<% if (cur) { %> aria-current="step"<% } %>><span class="lv-step-n"><%= done ? '' : fmt.number(i + 1) %><% if (done) { %><%- icon('check', 'icon-sm') %><% } %></span><%= t('calimport.step_' + s) %></li>
+  <% }) %>
+</ol>
+
+<% if (step === 'source') { %>
+<%- include('../../../partials/form-error') %>
+<div class="grid grid-main">
+  <form class="panel" method="post" action="/app/appointments/import" enctype="multipart/form-data" data-cal-import>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-body stack-lg">
+      <fieldset class="fieldset">
+        <legend class="fieldset-title"><%= t('calimport.source') %></legend>
+        <div class="choice-grid lv-choices">
+          <label class="choice"><input type="radio" name="source" value="file"<%= v.source === 'file' ? ' checked' : '' %> data-cal-source><span class="box"><span class="row-sm name"><%- icon('file-up', 'icon-sm muted') %><%= t('calimport.source_file') %></span><span class="meta"><%= t('calimport.source_file_meta') %></span></span></label>
+          <label class="choice"><input type="radio" name="source" value="url"<%= v.source === 'url' ? ' checked' : '' %> data-cal-source><span class="box"><span class="row-sm name"><%- icon('link', 'icon-sm muted') %><%= t('calimport.source_url') %></span><span class="meta"><%= t('calimport.source_url_meta') %></span></span></label>
+        </div>
+        <div class="field mt-1" data-cal-pane="file">
+          <label class="label" for="f-ics"><%= t('calimport.file') %></label>
+          <input class="input" id="f-ics" type="file" name="ics" accept=".ics,.ical,.ifb,.icalendar,text/calendar">
+          <span class="help"><%= t('calimport.file_help') %></span>
+        </div>
+        <div class="field mt-1" data-cal-pane="url">
+          <label class="label" for="f-url"><%= t('calimport.url') %></label>
+          <input class="input" id="f-url" type="url" name="url" dir="ltr" value="<%= v.url %>" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off" spellcheck="false">
+          <span class="help"><%= t('calimport.url_help') %></span>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-title"><%= t('calimport.range') %></legend>
+        <div class="form-grid">
+          <%- include('../../../partials/field', { name: 'from', label: t('common.from'), type: 'date', value: v.from, required: true }) %>
+          <%- include('../../../partials/field', { name: 'to', label: t('common.to'), type: 'date', value: v.to, required: true }) %>
+        </div>
+        <p class="help"><%= t('calimport.range_help') %></p>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-title"><%= t('common.doctor') %></legend>
+        <% if (!doctors.length) { %>
+          <p class="muted small"><%= t('appointments.no_doctors_text') %></p>
+        <% } else { %>
+        <div class="stack-sm">
+          <label class="check"><input type="radio" name="doctor_mode" value="one"<%= v.doctor_mode === 'one' ? ' checked' : '' %> data-cal-mode><%= t('calimport.mode_one') %></label>
+          <div class="lv-indent" data-cal-mode-pane="one">
+            <select class="select" name="doctor_id" aria-label="<%= t('common.doctor') %>">
+              <% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(v.doctor_id) === String(d.id) ? ' selected' : '' %>><%= docName(d) %></option><% }) %>
+            </select>
+          </div>
+          <% if (doctors.length > 1) { %>
+          <label class="check"><input type="radio" name="doctor_mode" value="keyword"<%= v.doctor_mode === 'keyword' ? ' checked' : '' %> data-cal-mode><%= t('calimport.mode_keyword') %></label>
+          <div class="lv-indent stack-sm" data-cal-mode-pane="keyword">
+            <p class="help"><%= t('calimport.keyword_help') %></p>
+            <% doctors.forEach(function (d) { %>
+            <div class="lv-kw">
+              <label class="row-sm small strong" for="kw-<%= d.id %>"><span class="doc-dot"<% if (d.color) { %> style="background:<%= d.color %>"<% } %>></span><%= docName(d) %></label>
+              <input class="input" id="kw-<%= d.id %>" name="kw_<%= d.id %>" value="<%= kw[d.id] %>">
+            </div>
+            <% }) %>
+            <div class="lv-kw">
+              <label class="small strong" for="kw-fallback"><%= t('calimport.fallback') %></label>
+              <select class="select" id="kw-fallback" name="fallback_doctor_id">
+                <option value=""><%= t('calimport.fallback_none') %></option>
+                <% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= String(v.fallback_doctor_id) === String(d.id) ? ' selected' : '' %>><%= docName(d) %></option><% }) %>
+              </select>
+            </div>
+          </div>
+          <% } %>
+        </div>
+        <% } %>
+      </fieldset>
+    </div>
+    <div class="panel-foot row between wrap">
+      <span class="tiny muted"><%= t('calimport.nothing_saved_yet') %></span>
+      <button class="btn btn-primary" type="submit"<%= doctors.length ? '' : ' disabled' %>><%- icon('search', 'icon-sm') %><%= t('calimport.read') %></button>
+    </div>
+  </form>
+
+  <aside class="panel">
+    <div class="panel-head"><h2><%= t('calimport.howto_title') %></h2></div>
+    <div class="panel-body stack">
+      <div>
+        <h3 class="small strong"><%= t('calimport.howto_google') %></h3>
+        <ol class="lv-howto small muted"><li><%= t('calimport.howto_google_1') %></li><li><%= t('calimport.howto_google_2') %></li><li><%= t('calimport.howto_google_3') %></li></ol>
+      </div>
+      <div>
+        <h3 class="small strong"><%= t('calimport.howto_outlook') %></h3>
+        <p class="small muted"><%= t('calimport.howto_outlook_1') %></p>
+      </div>
+      <div>
+        <h3 class="small strong"><%= t('calimport.howto_apple') %></h3>
+        <p class="small muted"><%= t('calimport.howto_apple_1') %></p>
+      </div>
+      <div class="divider"></div>
+      <ul class="lv-rules small">
+        <li><%- icon('check', 'icon-sm muted') %><span><%= t('calimport.rule_no_double') %></span></li>
+        <li><%- icon('check', 'icon-sm muted') %><span><%= t('calimport.rule_once') %></span></li>
+        <li><%- icon('check', 'icon-sm muted') %><span><%= t('calimport.rule_patients') %></span></li>
+        <li><%- icon('check', 'icon-sm muted') %><span><%= t('calimport.rule_recurring') %></span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<% } else if (step === 'preview') { var c = plan.counts; var docById = {}; doctors.forEach(function (d) { docById[d.id] = d; }); var nSel = plan.rows.filter(function (r) { return r.selected; }).length; %>
+<div class="stats lv-stats">
+  <div class="stat"><div class="stat-label"><%= t('calimport.stat_ready') %></div><div class="stat-value"><%= fmt.number(c.ok || 0) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('calimport.stat_outside') %></div><div class="stat-value"><%= fmt.number((c.outside_hours || 0) + (c.no_doctor || 0)) %></div><div class="stat-meta"><%= t('calimport.stat_outside_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('calimport.stat_conflicts') %></div><div class="stat-value"><%= fmt.number((c.conflict || 0) + (c.conflict_file || 0)) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('calimport.stat_skipped') %></div><div class="stat-value"><%= fmt.number((c.duplicate || 0) + (c.past || 0) + (c.all_day || 0) + (c.cancelled || 0) + (c.recurring_unsupported || 0)) %></div><div class="stat-meta"><%= t('calimport.stat_skipped_meta') %></div></div>
+</div>
+
+<% if (plan.truncated) { %>
+<div class="alert alert-warning mt-4" role="status"><%- icon('triangle-alert') %><div class="grow"><%= t('calimport.truncated', { n: fmt.number(plan.rows.length), total: fmt.number(plan.total) }) %></div></div>
+<% } %>
+
+<% if (!plan.rows.length) { %>
+  <div class="panel mt-4"><%- include('../../../partials/empty', { emptyIcon: 'calendar-x', emptyTitle: t('calimport.empty_title'), emptyText: t('calimport.empty_text'), emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/appointments/import-calendar">' + t('calimport.start_over') + '</a>' }) %></div>
+<% } else { %>
+<form class="panel flush mt-4" method="post" action="/app/appointments/import-calendar/confirm" data-cal-confirm>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <input type="hidden" name="rows_json" value="<%= rowsJson %>">
+  <input type="hidden" name="source_kind" value="<%= sourceKind %>">
+  <div class="panel-head">
+    <div>
+      <h2><%= calName || t('calimport.events') %></h2>
+      <p class="panel-sub"><%= t('calimport.preview_hint') %></p>
+    </div>
+    <label class="check small"><input type="checkbox" data-cal-all><%= t('calimport.select_all') %></label>
+  </div>
+  <div class="table-wrap">
+    <table class="table responsive lv-table">
+      <thead><tr>
+        <th class="lv-pick"><span class="sr-only"><%= t('calimport.import_col') %></span></th>
+        <th><%= t('calimport.when') %></th>
+        <th><%= t('calimport.event') %></th>
+        <th><%= t('common.patient') %></th>
+        <th><%= t('common.doctor') %></th>
+        <th><%= t('common.status') %></th>
+      </tr></thead>
+      <tbody>
+      <% plan.rows.forEach(function (r) { %>
+        <tr class="<%= r.selectable ? '' : 'lv-off' %>">
+          <td class="lv-pick" data-label="<%= t('calimport.import_col') %>">
+            <input type="checkbox" name="sel" value="<%= r.i %>" aria-label="<%= t('calimport.import_row', { name: r.name || r.title }) %>"<%= r.selected ? ' checked' : '' %><%= r.selectable ? '' : ' disabled' %> data-cal-row data-state="<%= r.state %>">
+          </td>
+          <td class="primary-cell" data-label="<%= t('calimport.when') %>">
+            <div class="strong nowrap"><%= fmt.date(r.date, { weekday: 'short', day: 'numeric', month: 'short' }) %></div>
+            <div class="small muted nowrap"><% if (r.time) { %><bdi dir="ltr"><%= r.time %></bdi><% } else { %><%= t('calimport.all_day') %><% } %><% if (r.minutes) { %> · <%= t('calimport.minutes', { n: fmt.number(r.minutes) }) %><% } %></div>
+          </td>
+          <td data-label="<%= t('calimport.event') %>">
+            <div class="lv-title"><%= r.title || '—' %><% if (r.recurring) { %> <span class="tiny muted">· <%= t('calimport.recurring') %></span><% } %></div>
+            <% if (r.desc) { %><div class="tiny muted lv-notes"><%= r.desc %></div><% } %>
+          </td>
+          <td data-label="<%= t('common.patient') %>">
+            <% if (r.patientId) { %>
+              <div class="row-sm"><%- icon('user-check', 'icon-sm muted') %><a href="/app/patients/<%= r.patientId %>" target="_blank" rel="noopener"><%= r.patientName %></a></div>
+              <div class="tiny muted"><%= t('calimport.match_' + r.match) %></div>
+            <% } else { %>
+              <div><%= r.name || '—' %></div>
+              <div class="tiny muted"><% if (r.phone) { %><bdi dir="ltr"><%= r.phone %></bdi> · <%= t('calimport.new_patient') %><% } else { %><%= t('calimport.name_only') %><% } %></div>
+            <% } %>
+          </td>
+          <td data-label="<%= t('common.doctor') %>">
+            <% if (r.selectable) { %>
+            <select class="select lv-doc" name="doc_<%= r.i %>" aria-label="<%= t('common.doctor') %>">
+              <option value=""><%= t('calimport.choose_doctor') %></option>
+              <% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= r.doctorId === d.id ? ' selected' : '' %>><%= docName(d) %></option><% }) %>
+            </select>
+            <% } else { %><span class="small muted"><%= r.doctorId && docById[r.doctorId] ? docName(docById[r.doctorId]) : '—' %></span><% } %>
+          </td>
+          <td data-label="<%= t('common.status') %>"><%- stateDot(r.state) %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel-foot lv-foot">
+    <label class="check small"><input type="checkbox" name="allow_outside" value="1" data-cal-outside><span><%= t('calimport.allow_outside') %></span></label>
+    <div class="row-sm wrap">
+      <a class="btn btn-secondary" href="/app/appointments/import-calendar"><%= t('common.cancel') %></a>
+      <button class="btn btn-primary" type="submit" data-cal-submit data-label="<%= t('calimport.import_n') %>"><%- icon('calendar-check', 'icon-sm') %><span><%= t('calimport.import_n', { n: fmt.number(nSel) }) %></span></button>
+    </div>
+  </div>
+</form>
+<% } %>
+
+<% } else { var skipped = result.skipped; %>
+<div class="stats lv-two">
+  <div class="stat"><div class="stat-label"><%= t('calimport.imported') %></div><div class="stat-value"><%= fmt.number(result.imported) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('calimport.skipped') %></div><div class="stat-value"><%= fmt.number(skipped.length) %></div></div>
+</div>
+<% if (skipped.length) { var docById2 = {}; doctors.forEach(function (d) { docById2[d.id] = d; }); %>
+<div class="panel flush mt-4">
+  <div class="panel-head"><h2><%= t('calimport.skipped_title') %></h2></div>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('calimport.when') %></th><th><%= t('common.patient') %></th><th><%= t('common.doctor') %></th><th><%= t('calimport.reason') %></th></tr></thead>
+      <tbody>
+      <% skipped.forEach(function (s) { var r = s.row; %>
+        <tr>
+          <td class="primary-cell" data-label="<%= t('calimport.when') %>"><%= fmt.date(r.date) %> <span class="muted" dir="ltr"><%= r.time %></span></td>
+          <td data-label="<%= t('common.patient') %>"><%= r.name || '—' %></td>
+          <td data-label="<%= t('common.doctor') %>"><%= r.doctorId && docById2[r.doctorId] ? docName(docById2[r.doctorId]) : '—' %></td>
+          <td data-label="<%= t('calimport.reason') %>"><%- stateDot(['conflict', 'outside_hours', 'past', 'duplicate', 'no_doctor', 'invalid'].indexOf(s.reason) >= 0 ? s.reason : 'conflict') %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
+<div class="row-sm wrap mt-4">
+  <% if (firstDate) { %><a class="btn btn-primary" href="/app/appointments?date=<%= firstDate %>"><%- icon('calendar-days', 'icon-sm') %><%= t('calimport.open_calendar') %></a><% } %>
+  <a class="btn btn-secondary" href="/app/appointments/import-calendar"><%- icon('file-up', 'icon-sm') %><%= t('calimport.import_more') %></a>
+</div>
+<% } %>

@@ -15,8 +15,11 @@
   var ROW = 15;
   var y = function (mins) { return (mins - (isCal ? range.start : 0)) / ROW; };
   var stDot = function (s) { return '<span class="st"><i class="st-dot st-' + s + '"></i>' + escapeHtml(t('appointments.statuses.' + s)) + '</span>'; };
+  var liveFrom = view === 'list' ? from : (view === 'week' ? days[0] : date);
+  var liveTo = view === 'list' ? to : (view === 'week' ? days[6] : date);
+  var liveDoctor = view === 'week' ? (weekDoctor ? weekDoctor.id : '') : (f.doctor || '');
 %>
-<div class="page-head">
+<div class="page-head" data-live="appointments" data-live-from="<%= liveFrom %>" data-live-to="<%= liveTo %>" data-live-doctor="<%= liveDoctor %>">
   <div>
     <div class="breadcrumbs"><%= t('nav.group_clinic') %></div>
     <h1><%= own ? t('appointments.my_title') : t('appointments.title') %></h1>
@@ -30,6 +33,13 @@
     </nav>
     <% if (view === 'list') { %><%- include('../../../partials/export-menu', { href: '/app/appointments/export' }) %><% } %>
     <% if (canManage && doctors.length) { %><button class="btn btn-secondary" type="button" data-open-dialog="block-dialog" data-reset-form data-block-open><%- icon('lock', 'icon-sm') %><%= t('appointments.block_time') %></button><% } %>
+    <details class="dropdown lv-more">
+      <summary class="btn btn-secondary btn-icon" aria-label="<%= t('live.more_actions') %>" title="<%= t('live.more_actions') %>"><%- icon('ellipsis', 'icon-sm') %></summary>
+      <div class="menu">
+        <% if (canManage) { %><a href="/app/appointments/import-calendar"><%- icon('file-up', 'icon-sm') %><%= t('calimport.menu') %></a><% } %>
+        <a href="/app/appointments/calendar-feed"><%- icon('link', 'icon-sm') %><%= t('live.feed_link') %></a>
+      </div>
+    </details>
     <% if (canManage) { %><a class="btn btn-primary" href="/app/appointments/new?date=<%= bookDate %><%= bookDoctor ? '&doctor=' + bookDoctor : '' %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('appointments.new') %></a><% } %>
   </div>
 </div>
