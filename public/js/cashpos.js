@@ -135,19 +135,39 @@
       + '<span class="pos-card-top"><span class="pos-card-when" title="' + esc(v.online ? T.online : T.in_person) + '">' + when + '</span>' + (added ? '<span class="pos-tag">' + esc(T.added) + '</span>' : '') + '</span>'
       + '<span class="pos-card-name"><bdi>' + esc(v.patient) + '</bdi></span>'
       + '<span class="pos-card-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span>'
-      + '<span class="pos-card-state"><i class="pos-sdot is-' + esc(v.state) + '" aria-hidden="true"></i>' + esc((T.state || {})[v.state] || '') + '</span>'
       + '<span class="pos-card-amount">' + amount + (v.due > 0 ? '<span class="pos-card-src">' + esc(v.fromDoctor ? T.set_by_doctor : T.expected_fee) + '</span>' : '') + '</span>'
       + '</button>';
   }
 
+  // Sections, like the reception board: ready to pay first, then with the doctor, waiting, not arrived yet.
+  var ORDER = ['ready', 'with_doctor', 'arrived', 'expected'];
+  var flowBox = $('[data-pos-flow]', root);
+  function sectionOf(v) { return ORDER.indexOf(v.state) >= 0 ? v.state : 'expected'; }
+  function renderFlow() {
+    if (!flowBox) return;
+    var n = {}; ORDER.forEach(function (k) { n[k] = 0; });
+    visits.forEach(function (v) { n[sectionOf(v)] += 1; });
+    flowBox.innerHTML = ORDER.map(function (k, i) {
+      return '<a class="pos-step is-' + k + '" href="#pos-sec-' + k + '"><span class="pos-step-n num">' + n[k] + '</span><span class="pos-step-l">' + esc((T.state || {})[k] || k) + '</span></a>'
+        + (i < ORDER.length - 1 ? '<span class="pos-step-sep" aria-hidden="true">›</span>' : '');
+    }).join('');
+  }
   function renderGrid() {
     var list = filtered();
+    renderFlow();
     if (!visits.length) {
       grid.innerHTML = '<div class="pos-empty"><strong>' + esc(T.empty_title) + '</strong><span>' + esc(T.empty_text) + '</span></div>';
     } else if (!list.length) {
       grid.innerHTML = '<div class="pos-empty"><span>' + esc(T.no_match) + '</span></div>';
     } else {
-      grid.innerHTML = list.map(cardHtml).join('');
+      grid.innerHTML = ORDER.map(function (k) {
+        var items = list.filter(function (v) { return sectionOf(v) === k; });
+        if (!items.length && k !== 'ready') return '';
+        return '<section class="pos-sec is-' + k + '" id="pos-sec-' + k + '">'
+          + '<header class="pos-sec-head"><i class="pos-sdot is-' + k + '" aria-hidden="true"></i><h3>' + esc((T.state || {})[k] || k) + '</h3><span class="pos-sec-n num">' + items.length + '</span></header>'
+          + (items.length ? '<div class="pos-sec-grid">' + items.map(cardHtml).join('') + '</div>' : '<p class="pos-sec-empty">' + esc(T.ready_none) + '</p>')
+          + '</section>';
+      }).join('');
     }
     if (countBox) countBox.textContent = visits.length ? tr(T.count, { n: visits.length }) : '';
   }
