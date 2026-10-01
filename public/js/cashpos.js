@@ -140,23 +140,52 @@
       + '</button>';
   }
 
+  // Side column: who is waiting and who is with the doctor (compact; a tap still adds the visit for early payment).
+  // The main grid keeps the rest: ready to pay and not arrived yet.
+  var SIDE = ['arrived', 'with_doctor'];
+  var side = $('[data-pos-side]', root);
+  function renderSide(list) {
+    if (!side) return;
+    SIDE.forEach(function (k) {
+      var items = list.filter(function (v) { return v.state === k; });
+      var box = $('[data-pos-side-list="' + k + '"]', side); var n = $('[data-pos-side-n="' + k + '"]', side);
+      if (n) n.textContent = String(items.length);
+      if (!box) return;
+      box.innerHTML = items.length ? items.map(function (v) {
+        var added = inBill(v.id);
+        var dot = v.doctorColor && COLOR.test(v.doctorColor) ? ' style="background:' + esc(v.doctorColor) + '"' : '';
+        return '<button type="button" class="pos-side-row' + (added ? ' is-in' : '') + '" data-pos-card="' + v.id + '"' + (added ? ' disabled aria-disabled="true"' : '') + ' title="' + esc(T.side_add) + '">'
+          + '<span class="pos-side-time num" dir="ltr">' + esc(v.time) + '</span>'
+          + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span></span>'
+          + (added ? '<span class="pos-tag">' + esc(T.added) + '</span>' : '')
+          + '</button>';
+      }).join('') : '<p class="pos-side-empty">' + esc((T.side_none || {})[k] || '') + '</p>';
+    });
+  }
   function renderGrid() {
-    var list = filtered();
+    var all = filtered();
+    renderSide(all);
+    var sideShown = side && side.offsetParent !== null; // hidden on narrow screens: then everyone stays in the grid
+    var list = sideShown ? all.filter(function (v) { return SIDE.indexOf(v.state) < 0; }) : all;
     if (!visits.length) {
       grid.innerHTML = '<div class="pos-empty"><strong>' + esc(T.empty_title) + '</strong><span>' + esc(T.empty_text) + '</span></div>';
     } else if (!list.length) {
-      grid.innerHTML = '<div class="pos-empty"><span>' + esc(T.no_match) + '</span></div>';
+      grid.innerHTML = '<div class="pos-empty"><span>' + esc(all.length ? T.empty_text : T.no_match) + '</span></div>';
     } else {
       grid.innerHTML = list.map(cardHtml).join('');
     }
     if (countBox) countBox.textContent = visits.length ? tr(T.count, { n: visits.length }) : '';
   }
 
-  grid.addEventListener('click', function (e) {
+  var onPick = function (e) {
     var b = e.target.closest && e.target.closest('[data-pos-card]');
     if (!b || b.disabled) return;
     add(Number(b.getAttribute('data-pos-card')), true);
-  });
+  };
+  grid.addEventListener('click', onPick);
+  if (side) side.addEventListener('click', onPick);
+  var wasShown = null;
+  window.addEventListener('resize', function () { var now = Boolean(side && side.offsetParent !== null); if (now !== wasShown) { wasShown = now; renderGrid(); } });
 
   /* ---------------------------------------------------------------- the payment (bill) */
   function add(id, focus) {

@@ -83,6 +83,10 @@
     "failed": "The payment could not be completed. Check the connection and try again.",
     "paid_elsewhere": "{name} was paid from another screen and was taken off this payment.",
     "line_error": "{name}: {error}",
-    "batch_title": "Receipts"
+    "batch_title": "Receipts",
+    "side_label": "Waiting and with the doctor",
+    "side_none_arrived": "Nobody is waiting.",
+    "side_none_doctor": "Nobody is with the doctor now.",
+    "side_add": "Tap to add for early payment"
   }
 }
