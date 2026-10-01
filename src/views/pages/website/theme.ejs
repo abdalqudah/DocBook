@@ -46,6 +46,10 @@
       <div class="field"><label class="label" for="ws-font"><%= t('website.brand.font') %></label><select class="select" id="ws-font" name="font"><% FONTS.forEach(function (f) { %><option value="<%= f %>"<%= br.font === f ? ' selected' : '' %>><%= t('website.font.' + f) %></option><% }) %></select><span class="help"><%= t('website.brand.font_help') %></span></div>
       <div class="field"><label class="label" for="ws-radius"><%= t('website.brand.radius') %></label><select class="select" id="ws-radius" name="radius"><% RADII.forEach(function (r) { %><option value="<%= r %>"<%= br.radius === r ? ' selected' : '' %>><%= t('website.radius.' + r) %></option><% }) %></select></div>
     </div>
+    <fieldset class="ws-color"><legend class="label"><%= t('website.brand.motion') %></legend>
+      <div class="segmented" role="radiogroup"><% MOTION.forEach(function (m) { %><label><input type="radio" name="motion" value="<%= m %>"<%= (br.motion || 'none') === m ? ' checked' : '' %>><span><%= t('website.motion.' + m) %></span></label><% }) %></div>
+      <span class="help"><%= t('website.brand.motion_help') %></span>
+    </fieldset>
     <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('website.save_brand') %></button></div>
   </form>
 </section>

@@ -135,13 +135,13 @@ router.get('/theme', can('website.edit'), wrap(async (req, res) => {
   const l = await builderLocals(req);
   const brandCfg = require('../../config/brand'); // eslint-disable-line global-require
   const colorDefaults = { primary: /^#[0-9a-fA-F]{6}$/.test(req.business.color || '') ? req.business.color : brandCfg.colors.light.primary, secondary: brandCfg.colors.light.accent };
-  return page(req, res, 'theme', { title: req.t('website.theme_title'), ...l, THEMES, FONTS: sections.FONTS, RADII: sections.RADII, colorDefaults });
+  return page(req, res, 'theme', { title: req.t('website.theme_title'), ...l, THEMES, FONTS: sections.FONTS, RADII: sections.RADII, MOTION: sections.MOTION, colorDefaults });
 }));
 router.post('/theme', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.theme(String(req.body.theme || '')), { note: 'website.theme_changed', details: { theme: req.body.theme } }), 'website.saved', '/app/website/theme'));
 router.post('/brand', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.brand({
   primary: req.body.use_primary === '1' ? String(req.body.primary || '') : null,
   secondary: req.body.use_secondary === '1' ? String(req.body.secondary || '') : null,
-  font: req.body.font, radius: req.body.radius, logoMediaId: req.body.logo_media_id, faviconMediaId: req.body.favicon_media_id,
+  font: req.body.font, radius: req.body.radius, motion: req.body.motion, logoMediaId: req.body.logo_media_id, faviconMediaId: req.body.favicon_media_id,
 }), { note: 'website.brand_changed' }), 'website.saved', '/app/website/theme'));
 
 // ---------------------------------------------------------------- settings: address, publish state, versions

@@ -79,10 +79,14 @@
         <% [['group_blocks', blocks], ['group_clinic', clinicTypes]].forEach(function (g) { %>
         <h3 class="wsb-group"><%= t('website.b.' + g[0]) %></h3>
         <div class="wsb-add-grid">
-          <% g[1].forEach(function (k) { var taken = TYPES[k].single && used[k]; %>
+          <% g[1].forEach(function (k) { var taken = TYPES[k].single && used[k]; var there = taken ? list.find(function (x) { return x.type === k; }) : null; %>
+          <% if (there) { %>
+          <a class="wsb-add-tile is-there" href="/app/website/builder?s=<%= there.id %>"><span class="wsb-add-icon"><%- icon(TYPES[k].icon) %></span><span class="wsb-add-text"><strong><%= secName(k) %></strong><span class="small muted"><%= t('website.b.on_page_open') %></span></span><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm muted') %></a>
+          <% } else { %>
           <form method="post" action="/app/website/builder/sections"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="type" value="<%= k %>"><% if (sel) { %><input type="hidden" name="after" value="<%= sel.id %>"><% } %>
-            <button class="wsb-add-tile" type="submit"<%= taken ? ' disabled' : '' %>><span class="wsb-add-icon"><%- icon(TYPES[k].icon) %></span><span class="wsb-add-text"><strong><%= secName(k) %></strong><span class="small muted"><%= taken ? t('website.b.on_page') : t('website.sec_desc.' + k) %></span></span></button>
+            <button class="wsb-add-tile" type="submit"><span class="wsb-add-icon"><%- icon(TYPES[k].icon) %></span><span class="wsb-add-text"><strong><%= secName(k) %></strong><span class="small muted"><%= t('website.sec_desc.' + k) %></span></span><%- icon('plus', 'icon-sm muted') %></button>
           </form>
+          <% } %>
           <% }) %>
         </div>
         <% }) %>
@@ -126,6 +130,7 @@
           <% }) %>
 
           <% def.settings.filter(function (f) { return f.group !== 'image'; }).forEach(function (f) { var v = sel.settings[f.key]; var fid = 's-' + f.key; %>
+            <% if (f.only) { %><div class="stack-sm" data-ws-only="<%= f.only %>"<%= sel.variant === f.only ? '' : ' hidden' %>><% } %>
             <% if (f.kind === 'bool') { %><input type="hidden" name="settings[<%= f.key %>]" value="0"><label class="check"><input type="checkbox" name="settings[<%= f.key %>]" value="1"<%= v ? ' checked' : '' %>><span><%= fieldLabel(f.key) %></span></label>
             <% } else if (f.kind === 'select' && f.options.length <= 4) { %><fieldset class="wsb-field"><legend class="label"><%= fieldLabel(f.key) %></legend><div class="wsb-choices"><% f.options.forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="settings[<%= f.key %>]" value="<%= o %>"<%= v === o ? ' checked' : '' %>><span><%= optLabel(o) %></span></label><% }) %></div></fieldset>
             <% } else if (f.kind === 'select' && f.key === 'shape') { %><fieldset class="wsb-field"><legend class="label"><%= fieldLabel(f.key) %></legend><div class="wsb-shapes"><% f.options.forEach(function (o) { %><label class="wsb-shape-tile" title="<%= optLabel(o) %>"><input type="radio" name="settings[<%= f.key %>]" value="<%= o %>"<%= v === o ? ' checked' : '' %>><span class="wsb-shape-pic"><% if (['line', 'dots', 'space'].indexOf(o) === -1) { %><%- include('../portal/sections/_shape', { shape: o, edge: 'tile' }) %><% } else { %><%- icon(o === 'line' ? 'minus' : o === 'dots' ? 'ellipsis' : 'move-vertical', 'icon-sm') %><% } %></span><span class="small"><%= optLabel(o) %></span></label><% }) %></div></fieldset>
@@ -147,6 +152,7 @@
                 <% doctors.forEach(function (d) { %><label class="check"><input type="checkbox" name="settings[<%= f.key %>]" value="<%= d.id %>"<%= (v || []).indexOf(d.id) !== -1 ? ' checked' : '' %>><span><%= L2(d.full_name, d.full_name_en) %></span></label><% }) %>
                 <span class="help"><%= t('website.doctors_pick_help') %></span></fieldset>
             <% } %>
+            <% if (f.only) { %></div><% } %>
           <% }) %>
 
           <% if (def.list) {
@@ -171,7 +177,7 @@
               </div>
             </details>
           <% }; %>
-          <fieldset class="ws-list wsb-field" data-ws-list data-max="<%= def.list.max %>" data-next="<%= count %>"><legend class="label"><%= fieldLabel(def.list.key) %></legend>
+          <fieldset class="ws-list wsb-field" data-ws-list data-max="<%= def.list.max %>" data-next="<%= count %>"<% if (def.list.only) { %> data-ws-only="<%= def.list.only %>"<%= sel.variant === def.list.only ? '' : ' hidden' %><% } %>><legend class="label"><%= fieldLabel(def.list.key) %></legend>
             <div class="stack-sm" data-ws-items><% for (var i = 0; i < count; i += 1) { itemHtml(i, i + 1); } %></div>
             <template data-ws-item-template><% itemHtml('__i__', '#'); %></template>
             <button class="btn btn-secondary btn-sm" type="button" data-ws-item-add<%= count >= def.list.max ? ' disabled' : '' %>><%- icon('plus', 'icon-sm') %><%= t('website.b.add_item') %></button>
@@ -213,6 +219,10 @@
           </fieldset>
           <% }) %>
           <p class="help"><%= t('website.style.shapes_help') %></p>
+          <fieldset class="wsb-field"><legend class="label"><%= t('website.style.anim') %></legend>
+            <div class="wsb-choices"><% ['auto', 'none', 'fade', 'up', 'zoom', 'side'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="settings[style][anim]" value="<%= o %>"<%= sty.anim === o ? ' checked' : '' %>><span><%= t('website.style_opt.anim.' + o) %></span></label><% }) %></div>
+            <span class="help"><%= t('website.style.anim_help') %></span>
+          </fieldset>
         </div>
 
         <div class="wsb-form-foot"><button class="btn btn-primary btn-sm" type="submit" data-ws-save-btn><%= t('website.save_section') %></button></div>

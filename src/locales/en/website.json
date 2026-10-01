@@ -145,7 +145,8 @@
       "row": "Row",
       "numbered": "Numbered",
       "timeline": "Timeline",
-      "shape": "Shape"
+      "shape": "Shape",
+      "slider": "Slider (moving slides)"
     },
     "field": {
       "headline": "Headline",
@@ -184,8 +185,12 @@
       "label": "Label",
       "shape": "Shape",
       "color": "Colour",
-      "height": "Height",
-      "flip": "Flip the shape"
+      "height": "Hero height",
+      "flip": "Flip the shape",
+      "media": "Card display",
+      "interval": "Time per slide",
+      "transition": "Transition",
+      "slides": "Slides"
     },
     "opt": {
       "2": "Two columns",
@@ -227,7 +232,19 @@
       "dark": "Dark",
       "s": "Small",
       "m": "Medium",
-      "l": "Large"
+      "l": "Large",
+      "images": "A picture on each card",
+      "icons": "An icon",
+      "mixed": "Picture if set, else icon",
+      "tall": "Tall",
+      "screen": "Full screen",
+      "s4": "4 seconds",
+      "s5": "5 seconds",
+      "s7": "7 seconds",
+      "s10": "10 seconds",
+      "fade": "Fade",
+      "slide": "Slide",
+      "zoom": "Zoom"
     },
     "doctors_pick_help": "Used with \"Selected doctors\".",
     "item_n": "Item {n}",
@@ -300,7 +317,9 @@
       "custom_color": "Custom colour",
       "font": "Font",
       "font_help": "Fonts already on visitors' devices; nothing loaded from other servers.",
-      "radius": "Corners"
+      "radius": "Corners",
+      "motion": "Site motion",
+      "motion_help": "Sections appear as visitors scroll and cards lift slightly. Never shown to visitors who ask for reduced motion."
     },
     "font": {
       "system": "System",
@@ -536,7 +555,9 @@
       "width": "Width",
       "shape_top": "Top edge",
       "shape_bottom": "Bottom edge",
-      "shapes_help": "Shapes show on a section with a coloured or picture background."
+      "shapes_help": "Shapes show on a section with a coloured or picture background.",
+      "anim": "Entrance motion",
+      "anim_help": "Works when site motion is on in Theme & brand; never shown to visitors who ask their device for reduced motion."
     },
     "style_opt": {
       "align": {
@@ -570,6 +591,14 @@
         "normal": "Normal",
         "narrow": "Narrow",
         "wide": "Wide"
+      },
+      "anim": {
+        "auto": "Automatic",
+        "none": "None",
+        "fade": "Fade",
+        "up": "Rise",
+        "zoom": "Zoom",
+        "side": "From the side"
       }
     },
     "b": {
@@ -595,7 +624,29 @@
       "image_group": "Picture",
       "pick_hint": "Click any section in the preview or in the list to edit it.",
       "look": "Look",
-      "more": "More"
+      "more": "More",
+      "on_page_open": "On the page — click to open it",
+      "empty_hint": {
+        "hero": "",
+        "about": "Write about the clinic or choose a picture.",
+        "doctors": "Add doctors under Clinic → Doctors.",
+        "services": "Add services under Clinic → Services & prices.",
+        "booking_cta": "Turn on online booking to show this section.",
+        "gallery": "Choose pictures for this section.",
+        "reviews": "Shows once there are verified patient reviews.",
+        "faq": "Add a question and its answer.",
+        "insurance": "Add insurers under Clinic → Clinical setup.",
+        "contact": "Add the address or phone in the clinic's settings.",
+        "hours": "Set the working hours in the clinic's settings.",
+        "features": "Add at least one strength.",
+        "announcement": "Write the notice (and check its dates).",
+        "cards": "Add at least one card.",
+        "image_text": "Write a title or text, or choose a picture.",
+        "text": "Write a title or text.",
+        "stats": "Add a number and its label.",
+        "steps": "Add at least one step.",
+        "divider": ""
+      }
     },
     "item_field": {
       "title": "Title",
@@ -604,7 +655,17 @@
       "label": "Label",
       "value": "Number",
       "q": "Question",
-      "a": "Answer"
+      "a": "Answer",
+      "headline": "Headline",
+      "subtext": "Text"
+    },
+    "slider_prev": "Previous slide",
+    "slider_next": "Next slide",
+    "slide_n": "Slide {n}",
+    "motion": {
+      "none": "No motion",
+      "subtle": "Subtle",
+      "lively": "Lively"
     }
   },
   "errors_website": {

@@ -26,7 +26,9 @@ const STYLE = [
   { key: 'width', kind: 'select', options: ['normal', 'narrow', 'wide'], def: 'normal' },
   { key: 'shape_top', kind: 'select', options: SHAPES, def: 'none' },
   { key: 'shape_bottom', kind: 'select', options: SHAPES, def: 'none' },
+  { key: 'anim', kind: 'select', options: ['auto', 'none', 'fade', 'up', 'zoom', 'side'], def: 'auto' },
 ];
+const MOTION = ['none', 'subtle', 'lively'];
 // Image options of a section that shows one picture.
 const IMAGE_OPTS = [
   { key: 'image_shape', kind: 'select', options: ['rounded', 'square', 'circle', 'arch', 'blob'], def: 'rounded', group: 'image' },
@@ -36,9 +38,13 @@ const IMAGE_OPTS = [
 
 // kinds — text (one line), textarea, bool, select, number, media (one image), media_list, doctors (ids), date, icon
 const TYPES = {
-  hero: { icon: 'panel-top', variants: ['split', 'full', 'centered', 'image_back'], single: true,
+  hero: { icon: 'panel-top', variants: ['split', 'full', 'centered', 'image_back', 'slider'], single: true,
     text: [{ key: 'headline', max: 120 }, { key: 'subtext', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }],
-    settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS, { key: 'show_call', kind: 'bool', def: true }, { key: 'show_whatsapp', kind: 'bool', def: true }, { key: 'show_directions', kind: 'bool', def: true }] },
+    settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS, { key: 'height', kind: 'select', options: ['auto', 'tall', 'screen'], def: 'auto' },
+      { key: 'interval', kind: 'select', options: ['s5', 's4', 's7', 's10'], def: 's5', only: 'slider' }, { key: 'transition', kind: 'select', options: ['fade', 'slide', 'zoom'], def: 'fade', only: 'slider' },
+      { key: 'show_call', kind: 'bool', def: true }, { key: 'show_whatsapp', kind: 'bool', def: true }, { key: 'show_directions', kind: 'bool', def: true }],
+    // Slides of the "slider" layout: a picture each, with its own headline and line (else the hero's own words).
+    list: { key: 'slides', max: 6, only: 'slider', fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'headline', max: 120 }, { key: 'subtext', kind: 'textarea', max: 300 }] } },
   about: { icon: 'align-left', variants: ['text', 'image_side'], single: true,
     text: [{ key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 3000 }],
     settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS] },
@@ -70,7 +76,7 @@ const TYPES = {
   // Free building blocks: the clinic's own words and pictures, laid out in different ways.
   cards: { icon: 'layout-grid', variants: ['grid', 'list', 'overlay', 'minimal'], group: 'blocks',
     text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
-    settings: [{ key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3' }, { key: 'card_style', kind: 'select', options: ['shadow', 'outline', 'filled', 'plain'], def: 'shadow' },
+    settings: [{ key: 'media', kind: 'select', options: ['mixed', 'images', 'icons', 'none'], def: 'mixed' }, { key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3' }, { key: 'card_style', kind: 'select', options: ['shadow', 'outline', 'filled', 'plain'], def: 'shadow' },
       { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait'], def: 'landscape', group: 'image' }],
     list: { key: 'items', max: 12, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false },
       { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }] } },
@@ -140,7 +146,7 @@ function defaultDoc(template = 'general', { logoMediaId = null, cover = null, ga
   const gal = sections.find((s) => s.type === 'gallery'); if (gal && gallery.length) gal.settings.images = gallery.slice(0, 12);
   return {
     template: t, theme: TEMPLATE_LAYOUT[t].theme,
-    brand: { primary: null, secondary: null, font: 'system', radius: 'rounded', logoMediaId, faviconMediaId: null },
+    brand: { primary: null, secondary: null, font: 'system', radius: 'rounded', motion: 'subtle', logoMediaId, faviconMediaId: null },
     pages: [{ key: 'home', sections }],
     seo: { title: { ar: '', en: '' }, description: { ar: '', en: '' } },
   };
@@ -226,6 +232,7 @@ function sanitize(doc, refs = {}) {
       secondary: HEX.test(b.secondary || '') ? b.secondary.toLowerCase() : null,
       font: FONTS.includes(b.font) ? b.font : 'system',
       radius: RADII.includes(b.radius) ? b.radius : 'rounded',
+      motion: MOTION.includes(b.motion) ? b.motion : 'none', // sites published before motion existed stay still
       logoMediaId: mediaOk(b.logoMediaId), faviconMediaId: mediaOk(b.faviconMediaId),
     },
     pages: [{ key: 'home', sections }],
@@ -257,4 +264,4 @@ function mediaIn(doc) {
   return [...out];
 }
 
-module.exports = { TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };
+module.exports = { TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MOTION, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };

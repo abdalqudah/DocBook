@@ -472,7 +472,7 @@ test('free blocks and section looks: cards, text with image, numbers, steps, tex
   assert.equal(c.content.en.items[0].title, '<b>One</b>', 'stored as plain text (escaped on output)');
   assert.deepEqual(c.settings.items[0], { icon: 'heart', image: A.mediaId, action: 'book' });
   assert.deepEqual(c.settings.items[1], { icon: sections.ICONS[0], image: null, action: 'none' }, 'unknown icon, foreign picture and free address dropped');
-  assert.deepEqual(c.settings.style, { align: 'center', bg: 'image', bg_image: null, overlay: 'dark', spacing: 'roomy', width: 'wide', shape_top: 'none', shape_bottom: 'wave' });
+  assert.deepEqual(c.settings.style, { align: 'center', bg: 'image', bg_image: null, overlay: 'dark', spacing: 'roomy', width: 'wide', shape_top: 'none', shape_bottom: 'wave', anim: 'auto' });
   assert.ok(sections.mediaIn(out).includes(A.mediaId), 'pictures inside cards are published with the site');
   for (const type of ['image_text', 'stats', 'steps', 'text', 'divider']) assert.ok(out.pages[0].sections.find((s) => s.type === type).settings.style, `${type} has a look`);
 });
@@ -505,4 +505,35 @@ test('builder: full screen, saves as you type (JSON), the preview shows the new 
   assert.match(r.text, new RegExp(`href="/${A.slug}/book"[^>]*>[\\s\\S]*?Book now`));
   r = await o.post(`/app/website/builder/sections/${id}`, { _csrf: csrf, variant: 'grid' }, { accept: 'application/json' });
   assert.equal(r.status, 200, 'a partial save keeps the section valid');
+});
+
+test('hero slider and motion: slides with their own words, motion classes, empty sections shown only in the preview', async () => {
+  const doc = sections.defaultDoc('general');
+  assert.equal(doc.brand.motion, 'subtle', 'new sites start with subtle motion');
+  assert.equal(sections.sanitize({ ...doc, brand: { ...doc.brand, motion: undefined } }).brand.motion, 'none', 'older sites stay still');
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  const { doc: d } = await site.draft(A.ctx, A.business);
+  const hero = d.pages[0].sections.find((s) => s.type === 'hero');
+  const html = await o.get(`/app/website/builder?s=${hero.id}`);
+  const csrf = (html.text.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+  assert.match(html.text, /data-ws-only="slider" hidden/, 'slider options wait for the slider layout');
+  let r = await o.post(`/app/website/builder/sections/${hero.id}`, {
+    _csrf: csrf, variant: 'slider', 'settings[slides][0][image]': String(A.mediaId), 'content[en][slides][0][headline]': 'First slide', 'settings[interval]': 's7', 'settings[transition]': 'zoom', 'settings[height]': 'tall', 'settings[style][anim]': 'zoom',
+  }, { accept: 'application/json' });
+  assert.equal(r.status, 200);
+  r = await o.submit('/app/website/theme', '/app/website/brand', { motion: 'lively', font: 'system', radius: 'rounded' });
+  r = await o.submit('/app/website/builder', '/app/website/builder/sections', { type: 'steps' });
+  const faqId = new URL(r.location, 'http://x').searchParams.get('s');
+  r = await o.get('/app/website/preview?lang=en');
+  assert.match(r.text, /data-ws-slider data-interval="7"/);
+  assert.match(r.text, /ws-tr-zoom ws-h-tall/);
+  assert.match(r.text, /<h1>First slide<\/h1>/);
+  assert.match(r.text, /ws-motion-lively/);
+  assert.match(r.text, /ws-anim ws-anim-zoom/);
+  assert.match(r.text, new RegExp(`ws-placeholder-block" data-ws-sec="${faqId}"`), 'an empty new section can be found and clicked in the preview');
+  await o.submit('/app/website/builder', '/app/website/publish', {});
+  r = await app.agent().get(`/${A.slug}`);
+  assert.ok(!r.text.includes('ws-placeholder'), 'never on the live site');
+  assert.match(r.text, /website-site\.js/);
 });

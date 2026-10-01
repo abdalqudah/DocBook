@@ -51,6 +51,7 @@
 .wsb-add-grid form { display: contents; }
 .wsb-add-tile { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: inherit; font: inherit; text-align: start; cursor: pointer; }
 .wsb-add-tile:hover:not([disabled]) { border-color: var(--primary); background: var(--primary-soft); }
+.wsb-add-tile { text-decoration: none; } .wsb-add-tile .wsb-add-text { flex: 1; } .wsb-add-tile.is-there { background: var(--surface-muted); }
 .wsb-add-tile[disabled] { opacity: .5; cursor: default; }
 .wsb-add-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .wsb-add-icon { flex: none; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--primary-soft); color: var(--primary); }

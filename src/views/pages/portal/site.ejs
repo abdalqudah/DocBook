@@ -18,17 +18,25 @@
 <% if (preview) { %>
 <div class="ws-preview-bar" role="status"><%- icon('eye', 'icon-sm') %><span class="grow"><%= t('website.preview_bar') %></span><a class="btn btn-secondary btn-sm" href="/app/website/builder" target="_top"><%= t('website.back_to_builder') %></a></div>
 <% } %>
-<div class="ws-page ws-theme-<%= doc.theme %>" id="main">
+<% var motion = (doc.brand && doc.brand.motion) || 'none'; %>
+<div class="ws-page ws-theme-<%= doc.theme %> ws-motion-<%= motion %>" id="main"<%- motion !== 'none' ? ' data-ws-motion' : '' %>>
   <% sections.forEach(function (s) {
        var html = include('sections/_' + s.type, { s: s, c: s.c, act: actionHref, altOf: altOf, imgCls: imgCls });
-       if (!String(html).trim()) return;
+       if (!String(html).trim()) {
+         // Nothing to show yet: invisible on the site; in the builder's preview a placeholder to click and fill.
+         if (preview) { %><div class="ws-block ws-placeholder-block" data-ws-sec="<%= s.id %>" data-ws-label="<%= t('website.sec.' + s.type) %>"><div class="container ws-placeholder"><strong><%= t('website.sec.' + s.type) %></strong><span><%= t('website.b.empty_hint.' + s.type) %></span></div></div><% }
+         return;
+       }
        var st = s.settings.style || {};
        var bgIm = st.bg === 'image' ? img(st.bg_image) : null;
        var bg = st.bg === 'image' && !bgIm ? 'auto' : (st.bg || 'auto');
        var cls = ['ws-block', 'ws-t-' + s.type, 'ws-a-' + (st.align || 'auto'), 'ws-bg-' + bg, 'ws-sp-' + (st.spacing || 'normal'), 'ws-w-' + (st.width || 'normal')];
        if (bgIm) cls.push('ws-ov-' + (st.overlay || 'dark'));
        if (st.shape_top && st.shape_top !== 'none') cls.push('has-shape-top');
-       if (st.shape_bottom && st.shape_bottom !== 'none') cls.push('has-shape-bottom'); %>
+       if (st.shape_bottom && st.shape_bottom !== 'none') cls.push('has-shape-bottom');
+       // Motion: the site's level (brand) and the section's own entrance (auto = rise, the hero fades in).
+       var anim = st.anim && st.anim !== 'auto' ? st.anim : (s.type === 'hero' ? 'fade' : 'up');
+       if (motion !== 'none' && anim !== 'none' && s.type !== 'divider') cls.push('ws-anim', 'ws-anim-' + anim); %>
   <div class="<%= cls.join(' ') %>"<% if (preview) { %> data-ws-sec="<%= s.id %>" data-ws-label="<%= t('website.sec.' + s.type) %>"<% } %>>
     <% if (bgIm) { %><img class="ws-bg-img" src="<%= bgIm.url %>" alt="" loading="lazy"><span class="ws-ov" aria-hidden="true"></span><% } %>
     <% if (st.shape_top && st.shape_top !== 'none') { %><%- include('sections/_shape', { shape: st.shape_top, edge: 'top' }) %><% } %>
@@ -38,4 +46,5 @@
   <% }) %>
   <% if (!sections.length) { %><div class="container ws-empty"><%= t('website.nothing_shown') %></div><% } %>
 </div>
+<script src="/js/website-site.js?v=<%= assetV %>" defer></script>
 <% if (preview) { %><script src="/js/website-preview.js?v=<%= assetV %>" defer></script><% } %>

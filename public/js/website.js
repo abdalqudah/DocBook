@@ -111,6 +111,10 @@
     form.addEventListener('change', function () { later(150); });
     form.addEventListener('submit', function (e) { e.preventDefault(); save(); });
     window.addEventListener('beforeunload', function (e) { if (timer || busy) { e.preventDefault(); e.returnValue = ''; } });
+    // Options of one layout only (e.g. the slider's slides) follow the chosen layout.
+    $$('input[name="variant"]', form).forEach(function (r) {
+      r.addEventListener('change', function () { if (r.checked) $$('[data-ws-only]', form).forEach(function (el) { el.hidden = el.getAttribute('data-ws-only') !== r.value; }); });
+    });
     // A picture background shows its picture options.
     var bgBox = form.querySelector('[data-ws-bg-image]');
     $$('[data-ws-bg]', form).forEach(function (r) { r.addEventListener('change', function () { if (bgBox) bgBox.hidden = !(r.checked && r.value === 'image'); }); });
