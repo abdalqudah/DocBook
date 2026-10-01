@@ -103,3 +103,19 @@
 @page po-receipt { size: 80mm 297mm; margin: 3mm; }
 .po-cat-filter { margin-bottom: 0; }
 .panel-body.po-pad { padding: 14px var(--card-pad, 20px); }
+
+/* invoice template preview: the letterhead's three zones */
+.po-mini-lh { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: start; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.po-mini-zone { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.po-mini-zone.is-start { align-items: flex-start; text-align: start; }
+.po-mini-zone.is-center { align-items: center; text-align: center; }
+.po-mini-zone.is-end { align-items: flex-end; text-align: end; }
+.po-mini-who, .po-mini-doc { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.po-mini-zone.is-end .po-mini-who, .po-mini-zone.is-end .po-mini-doc { align-items: flex-end; }
+.po-mini-zone.is-center .po-mini-who, .po-mini-zone.is-center .po-mini-doc { align-items: center; }
+.po-mini-lh .po-mini-logo { width: auto; min-width: var(--pm-logo, 28px); height: var(--pm-logo, 28px); }
+.po-mini-lh .po-mini-logo img { height: 100%; width: auto; max-width: calc(var(--pm-logo, 28px) * 3); object-fit: contain; }
+.po-mini-logo-s { --pm-logo: 20px; } .po-mini-logo-m { --pm-logo: 28px; } .po-mini-logo-l { --pm-logo: 38px; } .po-mini-logo-xl { --pm-logo: 48px; }
+.po-mini-receipt80 .po-mini-lh { grid-template-columns: 1fr; }
+.po-mini-receipt80 .po-mini-zone { align-items: center; text-align: center; }
+.po-mini-receipt80 .po-mini-zone:has([data-po-lh-item="doc"]) { order: 3; }

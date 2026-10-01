@@ -28,6 +28,17 @@ async function serve() {
         if (r.status !== 302) throw new Error(`login failed for ${email}: ${r.status}`);
         return r;
       },
+      /** POST multipart form data (files: { field: { buffer, name } }) with the CSRF token of `fromPath`. */
+      async upload(fromPath, path, fields = {}, files = {}) {
+        const p = await send('GET', fromPath);
+        const fd = new FormData();
+        fd.append('_csrf', csrf(p.text));
+        Object.entries(fields).forEach(([k, v]) => [].concat(v).forEach((x) => fd.append(k, x)));
+        Object.entries(files).forEach(([k, f]) => fd.append(k, new Blob([f.buffer]), f.name));
+        const r = await fetch(`http://127.0.0.1:${port}${path}`, { method: 'POST', body: fd, redirect: 'manual', headers: { cookie: Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ') } });
+        (r.headers.getSetCookie ? r.headers.getSetCookie() : []).forEach((h) => { const [kv] = h.split(';'); const i = kv.indexOf('='); jar[kv.slice(0, i)] = kv.slice(i + 1); });
+        return { status: r.status, location: r.headers.get('location'), type: r.headers.get('content-type') || '', text: await r.text() };
+      },
       /** POST a form with the CSRF token of `fromPath`. */
       async submit(fromPath, path, form) { const p = await send('GET', fromPath); return send('POST', path, { _csrf: csrf(p.text), ...form }); },
     };

@@ -103,4 +103,21 @@ router.post('/clinic-types', wrap(async (req, res) => {
   res.redirect('/admin/clinic-types');
 }));
 
+// ---------------------------------------------------------------- platform branding (logo, logo on dark, browser icon)
+const branding = require('./branding');
+const brandUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024, files: 3, fields: 10 } })
+  .fields(branding.KEYS.map((name) => ({ name, maxCount: 1 })));
+router.get('/branding', wrap(async (req, res) => {
+  const st = await branding.load();
+  res.page('pages/admin/branding', { layout: 'admin', title: req.t('branding_admin.title'), st, keys: branding.KEYS, pageStyles: ['/css/admin.css'] });
+}));
+router.post('/branding', (req, res, next) => brandUpload(req, res, (err) => { if (err) req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'too_big' : 'invalid'; next(); }), verifyCsrfAfterUpload, wrap(async (req, res) => {
+  if (req.uploadError) { flash(req, 'error', req.t(`branding_admin.${req.uploadError}`)); return res.redirect('/admin/branding'); }
+  const files = Object.fromEntries(Object.entries(req.files || {}).map(([k, v]) => [k, v[0] && v[0].buffer]).filter(([, b]) => b && b.length));
+  const r = await branding.save(req.ctx, { files, remove: [].concat(req.body.remove || []), showName: [].concat(req.body.show_name || []).pop() === '1' });
+  if (r.invalid) flash(req, 'error', req.t('branding_admin.invalid_one', { what: req.t(`branding_admin.k.${r.invalid}`) }));
+  else flash(req, 'success', req.t('branding_admin.saved'));
+  return res.redirect('/admin/branding');
+}));
+
 module.exports = router;

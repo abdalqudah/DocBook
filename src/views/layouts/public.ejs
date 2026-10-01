@@ -19,7 +19,7 @@
 <meta property="og:title" content="<%= seoTitle %>">
 <% if (typeof noindex !== 'undefined' && noindex) { %><meta name="robots" content="noindex, nofollow"><% } %>
 <% } %><meta name="color-scheme" content="light dark">
-<% if (typeof faviconHref !== 'undefined' && faviconHref) { %><link rel="icon" href="<%= faviconHref %>"><% } else { %><link rel="icon" type="image/svg+xml" href="<%= brand.favicon || '/favicon.svg' %>"><% } %>
+<% if (typeof faviconHref !== 'undefined' && faviconHref) { %><link rel="icon" href="<%= faviconHref %>"><% } else { %><link rel="icon" href="<%= brand.favicon || '/favicon.svg' %>"><% } %>
 <link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">

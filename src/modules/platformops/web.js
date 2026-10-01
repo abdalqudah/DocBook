@@ -36,7 +36,7 @@ async function renderInvoice(req, res, extra = {}) {
   const last = await knex('invoices').where({ business_id: req.ctx.businessId }).orderBy('id', 'desc').first('id');
   return settings.render(req, res, 'invoice', 'invoice_template', {
     tpl, nextNumber: Number(b.invoice_next_number), lastIssued: top ? Number(top) : null, taxNumber: b.tax_number || '', sampleId: last ? last.id : null,
-    papers: ops.PAPERS, fields: ops.FIELDS, billingOn: !(await ops.state(req.business)).off.has('billing'), ...ASSETS, ...extra,
+    papers: ops.PAPERS, fields: ops.FIELDS, places: ops.PLACES, logoSizes: ops.LOGO_SIZES, billingOn: !(await ops.state(req.business)).off.has('billing'), ...ASSETS, ...extra,
   });
 }
 router.get('/settings/invoice', can('settings.manage'), wrap((req, res) => renderInvoice(req, res)));

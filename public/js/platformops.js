@@ -13,6 +13,16 @@
       $$('[data-po-toggle]', inv).forEach(function (cb) {
         $$('[data-po-field="' + cb.getAttribute('data-po-toggle') + '"]', inv).forEach(function (el) { el.hidden = !cb.checked; });
       });
+      // Letterhead: move the logo, the name block and the invoice number to the chosen zones (the number takes the
+      // end side, or the start side when the name is at the end).
+      var lh = $('[data-po-lh]', inv);
+      if (lh) {
+        var val = function (n, d) { var r = $('input[name="' + n + '"]:checked', inv); return r ? r.value : d; };
+        var np = val('name_pos', 'start');
+        var place = { logo: val('logo_pos', 'start'), who: np, doc: np === 'end' ? 'start' : 'end' };
+        ['logo', 'who', 'doc'].forEach(function (k) { var el = $('[data-po-lh-item="' + k + '"]', lh); var z = $('[data-po-zone="' + place[k] + '"]', lh); if (el && z) z.appendChild(el); });
+        lh.className = 'po-mini-lh po-mini-logo-' + val('logo_size', 'm');
+      }
       var paper = $('[data-po-paper]:checked', inv);
       if (mini && paper) mini.className = 'po-mini po-mini-' + paper.value;
       var prefix = $('[data-po-prefix]', inv); var pout = $('[data-po-prefix-out]', inv);

@@ -2,7 +2,8 @@
   /*
    * The clinic's letterhead on every printed financial paper (invoice A4 / A5, 80 mm receipt). One partial for all
    * of them — the pos worker's cash screen may include it too. Driven by the clinic's own identity (businesses row)
-   * and the invoice template (Settings → Invoice template: show_logo / show_contact / show_tax, number prefix).
+   * and the invoice template (Settings → Invoice template: show_logo / show_name / show_contact / show_tax, where the
+   * logo and the name sit, logo size, number prefix).
    * Locals: lh = { paper: 'a4'|'a5'|'receipt80', title, number (already prefixed), date, time, status }.
    * Uses `business`, `invoiceTpl` (optional), `locale`, `t`, `fmt` from the page. Renders nothing without a clinic.
    */
@@ -24,24 +25,46 @@
   if (_b.email) _contact.push({ k: t('invoicex.email'), v: _b.email, ltr: true });
   var _logo = _on('show_logo') && _b.logo_mime;
 %>
-<header class="ivd-lh<%= _narrow ? ' is-narrow' : '' %>">
-  <div class="ivd-lh-id">
-    <% if (_logo) { %><img class="ivd-lh-logo" src="/app/logo/<%= _b.id %>?v=<%= _b.logo_version %>" alt="<%= _primary %>"><% } %>
-    <div class="ivd-lh-who">
-      <div class="ivd-lh-name" dir="auto"><%= _primary %></div>
-      <% if (_secondary) { %><div class="ivd-lh-name2" dir="auto"><%= _secondary %></div><% } %>
-      <% if (_on('show_contact')) { %>
-        <% if (_place) { %><div class="ivd-lh-meta" dir="auto"><%= _place %></div><% } %>
-        <% if (_contact.length) { %><div class="ivd-lh-meta ivd-lh-contacts"><% _contact.forEach(function (c, i) { %><% if (i) { %><span class="ivd-sep" aria-hidden="true">·</span><% } %><span><%= c.k %> <bdi dir="ltr"><%= c.v %></bdi></span><% }) %></div><% } %>
+<%
+  // Layout (Settings → Invoice template): logo and name each at start / center / end; the invoice title, number and
+  // date take the end side — or the start side when the name is at the end.
+  var _P = ['start', 'center', 'end'];
+  var _lp = _P.indexOf(_tpl.logo_pos) >= 0 ? _tpl.logo_pos : 'start';
+  var _np = _P.indexOf(_tpl.name_pos) >= 0 ? _tpl.name_pos : 'start';
+  var _dp = _np === 'end' ? 'start' : 'end';
+  var _size = ['s', 'm', 'l', 'xl'].indexOf(_tpl.logo_size) >= 0 ? _tpl.logo_size : 'm';
+  var _showName = _on('show_name');
+  var _hasWho = _showName || (_on('show_contact') && (_place || _contact.length)) || (_on('show_tax') && _b.tax_number);
+  var _zone = { start: [], center: [], end: [] };
+  if (_narrow) { if (_logo) _zone.center.push('logo'); if (_hasWho) _zone.center.push('who'); _zone.center.push('doc'); }
+  else { if (_logo) _zone[_lp].push('logo'); if (_hasWho) _zone[_np].push('who'); _zone[_dp].push('doc'); }
+%>
+<header class="ivd-lh ivd-lh-grid<%= _narrow ? ' is-narrow' : '' %> ivd-logo-<%= _size %>">
+  <% _P.forEach(function (z) { var items = _zone[z]; if (!items.length) { %><div class="ivd-lh-zone is-<%= z %> is-empty"></div><% return; } %>
+  <div class="ivd-lh-zone is-<%= z %><%= items.indexOf('logo') >= 0 && items.indexOf('who') >= 0 ? ' has-pair' : '' %>">
+    <% items.forEach(function (it) { %>
+      <% if (it === 'logo') { %><img class="ivd-lh-logo" src="/app/logo/<%= _b.id %>?v=<%= _b.logo_version %>" alt="<%= _primary %>"><% } %>
+      <% if (it === 'who') { %>
+      <div class="ivd-lh-who">
+        <% if (_showName) { %><div class="ivd-lh-name"><bdi><%= _primary %></bdi></div>
+        <% if (_secondary) { %><div class="ivd-lh-name2"><bdi><%= _secondary %></bdi></div><% } %><% } %>
+        <% if (_on('show_contact')) { %>
+          <% if (_place) { %><div class="ivd-lh-meta"><bdi><%= _place %></bdi></div><% } %>
+          <% if (_contact.length) { %><div class="ivd-lh-meta ivd-lh-contacts"><% _contact.forEach(function (c, i) { %><% if (i) { %><span class="ivd-sep" aria-hidden="true">·</span><% } %><span><%= c.k %> <bdi dir="ltr"><%= c.v %></bdi></span><% }) %></div><% } %>
+        <% } %>
+        <% if (_on('show_tax') && _b.tax_number) { %><div class="ivd-lh-meta"><%= t('invoicex.tax_no') %>: <bdi dir="ltr"><%= _b.tax_number %></bdi></div><% } %>
+      </div>
       <% } %>
-      <% if (_on('show_tax') && _b.tax_number) { %><div class="ivd-lh-meta"><%= t('invoicex.tax_no') %>: <bdi dir="ltr"><%= _b.tax_number %></bdi></div><% } %>
-    </div>
+      <% if (it === 'doc') { %>
+      <div class="ivd-lh-doc">
+        <div class="ivd-lh-title"><%= _lh.title || t('invoicex.invoice') %></div>
+        <% if (_lh.number) { %><div class="ivd-lh-no"><bdi dir="ltr">#<%= _lh.number %></bdi></div><% } %>
+        <% if (_lh.date) { %><div class="ivd-lh-meta"><%= fmt.date(_lh.date) %><% if (_lh.time) { %> · <bdi dir="ltr"><%= _lh.time %></bdi><% } %></div><% } %>
+        <% if (_lh.status) { %><div class="ivd-lh-status"><span class="ivd-dot" aria-hidden="true"></span><%= _lh.status %></div><% } %>
+      </div>
+      <% } %>
+    <% }) %>
   </div>
-  <div class="ivd-lh-doc">
-    <div class="ivd-lh-title"><%= _lh.title || t('invoicex.invoice') %></div>
-    <% if (_lh.number) { %><div class="ivd-lh-no"><bdi dir="ltr">#<%= _lh.number %></bdi></div><% } %>
-    <% if (_lh.date) { %><div class="ivd-lh-meta"><%= fmt.date(_lh.date) %><% if (_lh.time) { %> · <bdi dir="ltr"><%= _lh.time %></bdi><% } %></div><% } %>
-    <% if (_lh.status) { %><div class="ivd-lh-status"><span class="ivd-dot" aria-hidden="true"></span><%= _lh.status %></div><% } %>
-  </div>
+  <% }) %>
 </header>
 <% } %>

@@ -143,3 +143,13 @@
 .team-tabs { margin-bottom: 16px; }
 .set-moved-list { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .set-moved-list a { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Admin → Branding */
+.brand-pv { display: flex; align-items: center; padding: 14px; border: 1px dashed var(--border-strong); border-radius: var(--radius); }
+.brand-pv .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand-row { align-items: flex-start; }
+.brand-thumb { width: 64px; height: 44px; }
+.brand-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.brand-list { list-style: none; margin: 0; padding: 0; }
+.brand-list .brand-row { display: flex; gap: 14px; padding: 14px 18px; border-top: 1px solid var(--border); }
+.brand-list .brand-row:first-child { border-top: 0; }

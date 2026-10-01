@@ -1,0 +1,32 @@
+<%# Platform admin → Branding: the product logo (and for dark mode), the browser icon, the name next to the logo. %>
+<div class="page-head"><div><h1><%= t('branding_admin.title') %></h1><p><%= t('branding_admin.lead') %></p></div></div>
+<form method="post" action="/admin/branding" enctype="multipart/form-data" class="stack-lg" style="max-width:820px">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('branding_admin.preview') %></h2><div class="panel-sub"><%= t('branding_admin.preview_sub') %></div></div></div>
+    <div class="panel-body"><div class="brand-pv"><a class="brand" href="/" tabindex="-1"><%- include('../../partials/logo') %></a></div></div>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('branding_admin.images') %></h2><div class="panel-sub"><%= t('branding_admin.images_sub') %></div></div></div>
+    <ul class="brand-list">
+      <% keys.forEach(function (k) { var a = st.assets[k]; %>
+      <li class="brand-row">
+        <span class="set-fav brand-thumb"><% if (a) { %><img src="/brand/<%= k %>?v=<%= a.version %>" alt=""><% } else { %><%- icon(k === 'favicon' ? 'globe' : 'image', 'icon-sm') %><% } %></span>
+        <div class="grow stack-sm">
+          <label class="strong" for="b-<%= k %>"><%= t('branding_admin.k.' + k) %></label>
+          <span class="small muted"><%= t('branding_admin.h.' + k) %></span>
+          <input class="input" type="file" id="b-<%= k %>" name="<%= k %>" accept="<%= k === 'favicon' ? 'image/png,image/x-icon,image/vnd.microsoft.icon,image/webp,image/jpeg' : 'image/png,image/jpeg,image/webp' %>">
+          <% if (a) { %><label class="check small"><input type="checkbox" name="remove" value="<%= k %>"><span><%= t('branding_admin.remove') %></span></label><% } %>
+        </div>
+      </li>
+      <% }) %>
+    </ul>
+  </section>
+  <section class="panel">
+    <div class="panel-body">
+      <input type="hidden" name="show_name" value="0">
+      <label class="check"><input type="checkbox" name="show_name" value="1"<%= st.showName ? ' checked' : '' %>><span><strong><%= t('branding_admin.show_name', { name: brandName }) %></strong> — <span class="muted"><%= t('branding_admin.show_name_help') %></span></span></label>
+    </div>
+  </section>
+  <div class="form-actions"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button></div>
+</form>

@@ -1,0 +1,28 @@
+{
+  "branding_admin": {
+    "nav": "Platform branding",
+    "title": "Platform branding",
+    "lead": "The platform logo and browser icon, shown on sign-in pages, the home page, the clinic app and the admin. Clinics that chose their own icon keep it on their pages.",
+    "preview": "Preview",
+    "preview_sub": "How the logo shows in the sidebar and on sign-in pages.",
+    "images": "Images",
+    "images_sub": "PNG, JPG or WebP up to 1 MB. Icon: a square PNG or ICO.",
+    "k": {
+      "logo": "Logo",
+      "logo_dark": "Logo for dark mode",
+      "favicon": "Browser icon (favicon)"
+    },
+    "h": {
+      "logo": "Replaces the built-in mark. A wide logo with a transparent background works best.",
+      "logo_dark": "Optional: a light version shown in dark mode.",
+      "favicon": "Shown in the browser tab. 512×512 is best."
+    },
+    "remove": "Delete this image and go back to the default",
+    "show_name": "Show the name “{name}” next to the logo",
+    "show_name_help": "Turn off when the name is part of the logo.",
+    "saved": "Platform branding saved.",
+    "invalid": "Choose a PNG, JPG or WebP image (or ICO for the icon).",
+    "too_big": "The image is larger than 1 MB.",
+    "invalid_one": "The file for “{what}” is not an accepted image. Nothing was saved."
+  }
+}

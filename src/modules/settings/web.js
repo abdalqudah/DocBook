@@ -10,6 +10,7 @@ const { E, AppError } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
 const { can, canAny } = require('../../middleware/context');
 const { verifyCsrfAfterUpload } = require('../../middleware/web');
+const images = require('../../core/images');
 const businesses = require('../businesses/business.service');
 const { PORTAL_ROLES } = require('../rbac/permissions');
 const clinical = require('../clinic/clinical.service');
@@ -169,6 +170,30 @@ router.post('/appearance/logo/delete', can('settings.manage'), wrap(async (req, 
   await businesses.setAppearance(req.ctx, { removeLogo: true });
   flash(req, 'success', req.t('settings.logo_removed'));
   res.redirect('/app/settings/appearance');
+}));
+
+// Browser icon: the platform's, the clinic logo, or an uploaded icon (PNG / ICO / WebP / JPEG, up to 256 KB).
+const iconUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 256 * 1024, files: 1, fields: 5 } });
+router.post('/appearance/favicon', can('settings.manage'), (req, res, next) => iconUpload.single('favicon')(req, res, (err) => {
+  if (err) req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'favicon_too_big' : 'favicon_invalid';
+  next();
+}), verifyCsrfAfterUpload, wrap(async (req, res) => {
+  const f = req.file;
+  const mode = businesses.FAVICON_MODES.includes(req.body.favicon_mode) ? req.body.favicon_mode : 'platform';
+  let mime = null;
+  if (req.uploadError) { flash(req, 'error', req.t(`settings.${req.uploadError}`)); return res.redirect('/app/settings/appearance#favicon'); }
+  if (f) {
+    mime = images.sniff(f.buffer, images.ICON_TYPES);
+    if (!mime) { flash(req, 'error', req.t('settings.favicon_invalid')); return res.redirect('/app/settings/appearance#favicon'); }
+  }
+  try {
+    await businesses.setFavicon(req.ctx, { mode: f ? 'custom' : mode, file: f ? f.buffer : null, mime, remove: req.body.remove === '1' });
+  } catch (e) {
+    if (e.code !== 'VALIDATION_FAILED') throw e;
+    flash(req, 'error', req.t('settings.favicon_missing')); return res.redirect('/app/settings/appearance#favicon');
+  }
+  flash(req, 'success', req.t('settings.favicon_saved'));
+  return res.redirect('/app/settings/appearance#favicon');
 }));
 
 // ---------------------------------------------------------------- personal account & preferences

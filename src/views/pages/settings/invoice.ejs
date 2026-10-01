@@ -3,7 +3,7 @@
   var errs = (typeof errors !== 'undefined' && errors) || {};
   var v = function (k) { return o ? o[k] : tpl[k]; };
   var on = function (k) { return o ? o[k] === '1' : !!tpl[k]; };
-  var fieldIcons = { show_logo: 'image', show_contact: 'phone', show_tax: 'landmark', show_doctor: 'stethoscope', show_service: 'clipboard-list', show_insurance: 'shield-plus', show_discount: 'percent', show_method: 'wallet', show_stamp: 'stamp' };
+  var fieldIcons = { show_name: 'type', show_logo: 'image', show_contact: 'phone', show_tax: 'landmark', show_doctor: 'stethoscope', show_service: 'clipboard-list', show_insurance: 'shield-plus', show_discount: 'percent', show_method: 'wallet', show_stamp: 'stamp' };
   var paper = v('paper') || 'a4';
 %>
 <%- include('_head', { heading: t('settings.nav_invoice_template'), lead: t('invoice_tpl.lead') }) %>
@@ -21,6 +21,21 @@
             <div class="segmented" role="radiogroup" aria-label="<%= t('invoice_tpl.paper_title') %>">
               <% papers.forEach(function (p) { %><label><input type="radio" name="paper" value="<%= p %>"<%= paper === p ? ' checked' : '' %> data-po-paper><span><%= t('invoice_tpl.paper.' + p) %></span></label><% }) %>
             </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><div><h2><%= t('invoice_tpl.lh_title') %></h2><div class="panel-sub"><%= t('invoice_tpl.lh_sub') %></div></div></div>
+          <div class="panel-body stack">
+            <% [['logo_pos', places, 'invoice_tpl.pos.'], ['name_pos', places, 'invoice_tpl.pos.'], ['logo_size', logoSizes, 'invoice_tpl.size.']].forEach(function (g) { var cur = v(g[0]) || (g[0] === 'logo_size' ? 'm' : 'start'); %>
+            <div class="field">
+              <span class="label"><%= t('invoice_tpl.' + g[0]) %></span>
+              <div class="segmented" role="radiogroup" aria-label="<%= t('invoice_tpl.' + g[0]) %>">
+                <% g[1].forEach(function (x) { %><label><input type="radio" name="<%= g[0] %>" value="<%= x %>"<%= cur === x ? ' checked' : '' %> data-po-lh-opt><span><%= t(g[2] + x) %></span></label><% }) %>
+              </div>
+            </div>
+            <% }) %>
+            <p class="help"><%= t('invoice_tpl.lh_help') %></p>
           </div>
         </section>
 
@@ -63,14 +78,18 @@
       <aside class="po-inv-side" aria-label="<%= t('invoice_tpl.preview') %>">
         <div class="small muted po-inv-side-label"><%= t('invoice_tpl.preview') %></div>
         <div class="po-mini po-mini-<%= paper %>" data-po-mini>
-          <div class="po-mini-head">
-            <span class="po-mini-logo" data-po-field="show_logo"<%= on('show_logo') ? '' : ' hidden' %>><%- icon('image', 'icon-sm') %></span>
-            <div class="grow"><div class="strong small"><%= locale === 'en' && business.name_en ? business.name_en : business.name %></div>
-              <div class="tiny muted" data-po-field="show_contact"<%= on('show_contact') ? '' : ' hidden' %>><%= [business.address, business.phone].filter(Boolean).join(' · ') || t('invoice_tpl.sample_contact') %></div>
-              <div class="tiny muted" data-po-field="show_tax"<%= on('show_tax') ? '' : ' hidden' %>><%= t('invoice_tpl.tax_number') %>: <span dir="ltr"><%= taxNumber || '—' %></span></div>
-            </div>
+          <% var _lp = v('logo_pos') || 'start'; var _np = v('name_pos') || 'start'; var _dp = _np === 'end' ? 'start' : 'end'; var _zones = { start: [], center: [], end: [] }; _zones[_lp].push('logo'); _zones[_np].push('who'); _zones[_dp].push('doc'); %>
+          <div class="po-mini-lh po-mini-logo-<%= v('logo_size') || 'm' %>" data-po-lh>
+            <% ['start', 'center', 'end'].forEach(function (z) { %><div class="po-mini-zone is-<%= z %>" data-po-zone="<%= z %>">
+              <% _zones[z].forEach(function (it) { %>
+              <% if (it === 'logo') { %><span class="po-mini-logo" data-po-lh-item="logo" data-po-field="show_logo"<%= on('show_logo') ? '' : ' hidden' %>><% if (business.logo_mime) { %><img src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt=""><% } else { %><%- icon('image', 'icon-sm') %><% } %></span><% } %>
+              <% if (it === 'who') { %><div class="po-mini-who" data-po-lh-item="who"><div class="strong small" data-po-field="show_name"<%= on('show_name') ? '' : ' hidden' %>><bdi><%= locale === 'en' && business.name_en ? business.name_en : business.name %></bdi></div>
+                <div class="tiny muted" data-po-field="show_contact"<%= on('show_contact') ? '' : ' hidden' %>><%= [business.address, business.phone].filter(Boolean).join(' · ') || t('invoice_tpl.sample_contact') %></div>
+                <div class="tiny muted" data-po-field="show_tax"<%= on('show_tax') ? '' : ' hidden' %>><%= t('invoice_tpl.tax_number') %>: <span dir="ltr"><%= taxNumber || '—' %></span></div></div><% } %>
+              <% if (it === 'doc') { %><div class="po-mini-doc" data-po-lh-item="doc"><div class="strong small"><%= t('invoicex.invoice') %></div><div class="po-mini-no mono">#<span data-po-prefix-out><%= v('prefix') %></span><%= nextNumber %></div></div><% } %>
+              <% }) %>
+            </div><% }) %>
           </div>
-          <div class="po-mini-no mono"><span data-po-prefix-out><%= v('prefix') %></span><%= nextNumber %></div>
           <div class="po-mini-lines tiny">
             <div data-po-field="show_doctor"<%= on('show_doctor') ? '' : ' hidden' %>><span class="muted"><%= t('common.doctor') %></span><span>—</span></div>
             <div data-po-field="show_service"<%= on('show_service') ? '' : ' hidden' %>><span class="muted"><%= t('common.service') %></span><span>—</span></div>

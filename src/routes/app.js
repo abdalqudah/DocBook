@@ -7,6 +7,8 @@ const businesses = require('../modules/businesses/business.service');
 const verify = require('../modules/auth/verify.service');
 const { clinicNow } = require('../modules/clinic/scheduling');
 
+const images = require('../core/images');
+
 const router = express.Router();
 
 // Clinic theme override and logo (members only — this router is behind auth + membership).
@@ -23,6 +25,13 @@ router.get('/logo/:id', wrap(async (req, res) => {
   return res.send(row.logo);
 }));
 
+router.get('/favicon', wrap(async (req, res) => {
+  const f = await businesses.faviconFile(req.ctx.businessId, { uploaded: req.query.show === '1' });
+  if (!f) return res.redirect(302, '/favicon.svg');
+  res.set(images.headers(f.mime, 'private, max-age=604800'));
+  return res.send(f.data);
+}));
+
 // Navigation, badges and banners for every page.
 router.use(wrap(async (req, res, next) => {
   const perms = req.ctx.permissions;
@@ -32,8 +41,9 @@ router.use(wrap(async (req, res, next) => {
   res.locals.navActions = nav.actionsFor(perms);
   res.locals.verifyBanner = verify.required() && !verify.isVerified(req.user);
   res.locals.ctx = req.ctx;
+  res.locals.faviconHref = businesses.faviconPath(req.business, '/app'); // the clinic's browser icon (null = the platform's)
   const badges = { waiting: 0, pendingAdjustments: 0, lowStock: 0, toPay: 0, newOffers: 0, repRequests: 0 };
-  if (req.method === 'GET' && !req.path.startsWith('/theme') && !req.path.startsWith('/logo')) {
+  if (req.method === 'GET' && !req.path.startsWith('/theme') && !req.path.startsWith('/logo') && req.path !== '/favicon') {
     const b = req.ctx.businessId;
     if (perms.has('frontdesk.use')) {
       const [{ n }] = await knex('appointments').where({ business_id: b, appointment_date: req.ctx.today, checked_in: true, with_doctor: false, payment_status: 'unpaid' }).whereNot('status', 'cancelled').count({ n: '*' });

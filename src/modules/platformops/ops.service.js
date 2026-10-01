@@ -139,8 +139,12 @@ async function saveModules(ctx, business, input) {
 
 // ---------------------------------------------------------------- invoice template
 const PAPERS = ['a4', 'a5', 'receipt80'];
-const FIELDS = ['show_logo', 'show_contact', 'show_tax', 'show_doctor', 'show_service', 'show_insurance', 'show_discount', 'show_method', 'show_stamp'];
-const INVOICE_DEFAULTS = { paper: 'a4', prefix: '', footer: '', footer_en: '', ...Object.fromEntries(FIELDS.map((f) => [f, true])) };
+const FIELDS = ['show_logo', 'show_name', 'show_contact', 'show_tax', 'show_doctor', 'show_service', 'show_insurance', 'show_discount', 'show_method', 'show_stamp'];
+// Letterhead layout: where the logo and the clinic name (with its address) sit — start / center / end of the page
+// width — and the logo size. The invoice title, number and date take the free side.
+const PLACES = ['start', 'center', 'end'];
+const LOGO_SIZES = ['s', 'm', 'l', 'xl'];
+const INVOICE_DEFAULTS = { paper: 'a4', prefix: '', footer: '', footer_en: '', logo_pos: 'start', name_pos: 'start', logo_size: 'm', ...Object.fromEntries(FIELDS.map((f) => [f, true])) };
 
 async function invoiceTemplate(businessId) {
   const { invoice } = await row(businessId);
@@ -155,6 +159,9 @@ const invoiceSchema = z.object({
   footer_en: z.preprocess((v) => String(v ?? '').trim(), z.string().max(300, 'Too long.')),
   tax_number: optionalString(60),
   next_number: z.preprocess((v) => (v === '' || v === undefined || v === null ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a number.').min(1, 'Too small.').max(4_000_000_000, 'Too large.').optional()),
+  logo_pos: z.preprocess((v) => v || 'start', z.enum(PLACES, { errorMap: () => ({ message: 'Choose a valid value.' }) })),
+  name_pos: z.preprocess((v) => v || 'start', z.enum(PLACES, { errorMap: () => ({ message: 'Choose a valid value.' }) })),
+  logo_size: z.preprocess((v) => v || 'm', z.enum(LOGO_SIZES, { errorMap: () => ({ message: 'Choose a valid value.' }) })),
   ...Object.fromEntries(FIELDS.map((f) => [f, bool])),
 });
 
@@ -267,6 +274,6 @@ function groupByCategory(rows, categories, catOf = (r) => r.category_id) {
 module.exports = {
   entitled,
   MODULES, KEYS, CORE, state, moduleForPath, hiddenNav, saveModules, forget,
-  PAPERS, FIELDS, INVOICE_DEFAULTS, invoiceTemplate, saveInvoiceTemplate, raiseInvoiceNumber,
+  PAPERS, FIELDS, PLACES, LOGO_SIZES, INVOICE_DEFAULTS, invoiceTemplate, saveInvoiceTemplate, raiseInvoiceNumber,
   listCategories, saveCategory, removeCategory, checkCategory, setServiceCategory, groupByCategory,
 };

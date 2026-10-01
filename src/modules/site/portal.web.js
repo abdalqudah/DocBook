@@ -30,6 +30,7 @@ async function loadClinic(req) {
   const en = req.locale === 'en';
   const digits = (v) => String(v || '').replace(/[^0-9]/g, '');
   // The specialty as words in the visitor's language (the setting stores a key such as "dentistry").
+  if (req.res && req.res.locals) req.res.locals.faviconHref = businesses.faviconPath(b, `/${b.slug}`); // the clinic's browser icon on its pages
   const specialtyLabel = b.specialty ? ((k) => { const v = req.t(k); return v === k ? b.specialty : v; })(`specialties.${b.specialty}`) : '';
   return {
     ...b,
@@ -117,7 +118,7 @@ async function renderSite(req, res, clinic, doc, { preview = false, page = null 
   const fav = doc.brand && doc.brand.faviconMediaId ? data.img(doc.brand.faviconMediaId) : null;
   return res.page('pages/portal/site', {
     layout: 'public', title, pageTitle: title, metaDescription: description.slice(0, 160), seoHead, noindex: preview, clinic, ...data,
-    bodyClass: `ws-body ws-theme-${doc.theme}`, faviconHref: fav ? fav.url : null,
+    bodyClass: `ws-body ws-theme-${doc.theme}`, faviconHref: fav ? fav.url : res.locals.faviconHref, // the website's own icon, else the clinic's
     pageStyles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', preview ? '/app/website/preview/theme.css' : `/${clinic.slug}/theme.css`, '/css/telehealth.css'],
   });
 }
@@ -222,6 +223,16 @@ router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
 }));
 
 // Public logo (the /app/logo route is for members only).
+// The clinic's browser icon (its logo or an uploaded icon); the platform's icon otherwise.
+router.get('/:slug/favicon', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const f = await businesses.faviconFile(clinic.id);
+  if (!f) return res.redirect(302, '/favicon.svg');
+  res.set(require('../../core/images').headers(f.mime, 'public, max-age=604800')); // eslint-disable-line global-require
+  return res.send(f.data);
+}));
+
 router.get('/:slug/logo', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();

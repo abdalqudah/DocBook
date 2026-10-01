@@ -80,7 +80,8 @@
       "show_insurance": "Insurance line",
       "show_discount": "Discount line",
       "show_method": "Payment method",
-      "show_stamp": "Clinic stamp"
+      "show_stamp": "Clinic stamp",
+      "show_name": "Clinic name"
     },
     "stamp_help": "Printed only when the stamp is uploaded and enabled for invoices in",
     "qr_note": "A verification QR code will be added here once invoices can be verified online.",
@@ -102,7 +103,24 @@
     "preview_last": "Open the last invoice",
     "sample_contact": "Address · phone",
     "services_line": "Medical services",
-    "saved": "The invoice template was saved."
+    "saved": "The invoice template was saved.",
+    "lh_title": "Invoice header",
+    "lh_sub": "Where the logo and the clinic name go, and the logo size.",
+    "logo_pos": "Logo position",
+    "name_pos": "Name and address position",
+    "logo_size": "Logo size",
+    "pos": {
+      "start": "Left of page",
+      "center": "Centre",
+      "end": "Right of page"
+    },
+    "size": {
+      "s": "Small",
+      "m": "Medium",
+      "l": "Large",
+      "xl": "Extra large"
+    },
+    "lh_help": "The invoice number and date take the other side. When the logo and the name share a place, the name sits under the logo. On the 80 mm receipt everything is centred."
   },
   "svc_cat": {
     "title": "Categories",

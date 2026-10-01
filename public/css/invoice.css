@@ -36,32 +36,44 @@
 .ivd-lh.is-narrow .ivd-lh-contacts { justify-content: center; }
 .ivx-no { white-space: nowrap; }
 
-/* letterhead: logo + identity on the start side, the document title / number / date on the end side */
-.ivd-lh { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-strong); }
-.ivd-lh-id { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
-.ivd-lh-logo { height: 56px; width: auto; max-width: 150px; object-fit: contain; flex-shrink: 0; }
+/* letterhead: three zones (start / centre / end). The logo and the clinic name each go to the zone chosen in the
+   invoice template; the title / number / date take the free side. Items sharing a zone are stacked. */
+.ivd-lh { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-strong); }
+.ivd-lh-zone { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ivd-lh-zone.is-start { align-items: flex-start; text-align: start; }
+.ivd-lh-zone.is-center { align-items: center; text-align: center; }
+.ivd-lh-zone.is-end { align-items: flex-end; text-align: end; }
+.ivd-lh-zone.is-empty { min-width: 0; }
+.ivd-lh-logo { height: var(--ivd-logo, 56px); width: auto; max-width: calc(var(--ivd-logo, 56px) * 3.2); object-fit: contain; flex-shrink: 0; }
+.ivd-logo-s { --ivd-logo: 40px; } .ivd-logo-m { --ivd-logo: 56px; } .ivd-logo-l { --ivd-logo: 76px; } .ivd-logo-xl { --ivd-logo: 100px; }
 .ivd-lh-who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ivd-lh-zone.is-center .ivd-lh-who { align-items: center; }
+.ivd-lh-zone.is-end .ivd-lh-who { align-items: flex-end; }
+.ivd-lh-zone.is-center .ivd-lh-contacts { justify-content: center; }
+.ivd-lh-zone.is-end .ivd-lh-contacts { justify-content: flex-end; }
 .ivd-lh-name { font-size: 18px; font-weight: var(--fw-heavy, 700); line-height: 1.25; }
 .ivd-lh-name2 { font-size: 13px; color: var(--text-muted); font-weight: var(--fw-bold, 600); }
 .ivd-lh-meta { color: var(--text-muted); font-size: 12px; }
-.ivd-lh-doc { text-align: end; flex-shrink: 0; display: flex; flex-direction: column; gap: 1px; }
+.ivd-lh-doc { display: flex; flex-direction: column; gap: 1px; }
+.ivd-lh-zone.is-end .ivd-lh-doc { align-items: flex-end; }
+.ivd-lh-zone.is-center .ivd-lh-doc { align-items: center; }
 .ivd-lh-title { font-size: 20px; font-weight: var(--fw-heavy, 700); letter-spacing: .01em; }
 .ivd-lh-no { font-family: var(--font-mono); font-size: 14px; font-weight: var(--fw-bold, 600); }
-.ivd-lh-status { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.ivd-lh-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
 .ivd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.is-a5 .ivd-lh-logo { height: 44px; }
+.is-a5 .ivd-lh-logo { height: calc(var(--ivd-logo, 56px) * .8); }
 .is-a5 .ivd-lh-name { font-size: 16px; }
 .is-a5 .ivd-lh-title { font-size: 17px; }
 
-/* 80 mm: everything stacked and centred, small logo */
-.ivd-lh.is-narrow { flex-direction: column; align-items: stretch; gap: 6px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-strong); }
-.ivd-lh.is-narrow .ivd-lh-id { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
-.ivd-lh.is-narrow .ivd-lh-logo { height: 30px; max-width: 50%; }
-.ivd-lh.is-narrow .ivd-lh-who { align-items: center; }
+/* 80 mm: everything stacked and centred, smaller logo */
+.ivd-lh.is-narrow { grid-template-columns: 1fr; gap: 6px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-strong); }
+.ivd-lh.is-narrow .ivd-lh-zone.is-empty { display: none; }
+.ivd-lh.is-narrow .ivd-lh-zone { gap: 4px; }
+.ivd-lh.is-narrow .ivd-lh-logo { height: calc(var(--ivd-logo, 56px) * .55); max-width: 60%; }
 .ivd-lh.is-narrow .ivd-lh-name { font-size: 14px; }
 .ivd-lh.is-narrow .ivd-lh-name2 { font-size: 11px; }
 .ivd-lh.is-narrow .ivd-lh-meta { font-size: 10.5px; }
-.ivd-lh.is-narrow .ivd-lh-doc { text-align: center; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border-strong); }
+.ivd-lh.is-narrow .ivd-lh-doc { align-items: center; padding-top: 6px; border-top: 1px dashed var(--border-strong); width: 100%; }
 .ivd-lh.is-narrow .ivd-lh-title { font-size: 13px; }
 .ivd-lh.is-narrow .ivd-lh-no { font-size: 13px; }
 
@@ -112,9 +124,8 @@
 
 @media (max-width: 640px) {
   .ivd:not(.is-receipt80) { --ivd-pad: 18px; }
-  .ivd-lh:not(.is-narrow) { flex-direction: column; }
-  .ivd-lh:not(.is-narrow) .ivd-lh-doc { text-align: start; }
-  .ivd-lh-status { justify-content: flex-start; }
+  .ivd-lh:not(.is-narrow) { grid-template-columns: 1fr; gap: 12px; }
+  .ivd-lh:not(.is-narrow) .ivd-lh-zone.is-empty { display: none; }
   .ivd-parties { grid-template-columns: 1fr; }
 }
 

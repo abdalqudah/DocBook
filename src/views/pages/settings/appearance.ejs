@@ -74,6 +74,30 @@
         </div>
       </div>
     </section>
+
+    <section class="panel" id="favicon">
+      <div class="panel-head"><div><h2><%= t('settings.favicon_title') %></h2><div class="panel-sub"><%= t('settings.favicon_sub') %></div></div></div>
+      <div class="panel-body">
+        <% var fm = b.favicon_mode || 'platform'; %>
+        <form method="post" action="/app/settings/appearance/favicon" enctype="multipart/form-data" class="stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="set-fav-choices">
+            <label class="choice"><input type="radio" name="favicon_mode" value="platform"<%= fm === 'platform' ? ' checked' : '' %>><span class="box row-sm"><span class="set-fav"><img src="<%= brand.favicon || '/favicon.svg' %>" alt=""></span><span><span class="name"><%= t('settings.favicon_platform') %></span><span class="meta"><%= t('settings.favicon_platform_text', { name: brandName }) %></span></span></span></label>
+            <label class="choice"><input type="radio" name="favicon_mode" value="logo"<%= fm === 'logo' ? ' checked' : '' %><%= b.logo_mime ? '' : ' disabled' %>><span class="box row-sm"><span class="set-fav"><% if (b.logo_mime) { %><img src="/app/logo/<%= b.id %>?v=<%= b.logo_version %>" alt=""><% } else { %><%- icon('image', 'icon-sm') %><% } %></span><span><span class="name"><%= t('settings.favicon_logo') %></span><span class="meta"><%= b.logo_mime ? t('settings.favicon_logo_text') : t('settings.favicon_logo_none') %></span></span></span></label>
+            <label class="choice"><input type="radio" name="favicon_mode" value="custom"<%= fm === 'custom' ? ' checked' : '' %><%= b.favicon_mime ? '' : ' disabled' %>><span class="box row-sm"><span class="set-fav"><% if (b.favicon_mime) { %><img src="/app/favicon?v=c<%= b.favicon_version %>&amp;show=1" alt=""><% } else { %><%- icon('upload', 'icon-sm') %><% } %></span><span><span class="name"><%= t('settings.favicon_custom') %></span><span class="meta"><%= b.favicon_mime ? t('settings.favicon_custom_text') : t('settings.favicon_custom_none') %></span></span></span></label>
+          </div>
+          <div class="field">
+            <label class="label" for="f-favicon"><%= t('settings.favicon_upload') %></label>
+            <input class="input" type="file" id="f-favicon" name="favicon" accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/webp,image/jpeg">
+            <span class="help"><%= t('settings.favicon_help') %></span>
+          </div>
+          <div class="form-actions">
+            <% if (b.favicon_mime) { %><button class="btn btn-ghost" type="submit" name="remove" value="1"><%- icon('trash-2', 'icon-sm') %><%= t('settings.favicon_remove') %></button><% } %>
+            <button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button>
+          </div>
+        </form>
+      </div>
+    </section>
     <% } %>
   </div>
 </div>

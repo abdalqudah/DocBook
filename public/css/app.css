@@ -790,3 +790,10 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .week-table .row-sm { flex-wrap: nowrap; }
 .week-table .row-sm .input[type="time"] { flex: 1 1 0; min-width: 0; width: auto; max-width: 9.5em; padding-inline: 8px; }
 @media (max-width: 720px) { .table.responsive.week-table td[data-label] { flex-direction: column; align-items: stretch; text-align: start; gap: 6px; } }
+
+/* Settings → Appearance: browser icon choices */
+.set-fav-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.set-fav { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--surface-sunken); display: inline-flex; align-items: center; justify-content: center; flex: none; overflow: hidden; color: var(--text-muted); }
+.set-fav img { width: 24px; height: 24px; object-fit: contain; }
+.set-fav-choices .box { align-items: center; text-align: start; }
+.set-fav-choices .name, .set-fav-choices .meta { display: block; }

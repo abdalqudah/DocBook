@@ -89,6 +89,9 @@ function createApp() {
   app.use(loadUser);
   app.use(require('./modules/platformops/clinic-types').middleware); // clinic types managed by the platform admin
   app.use(web.locals);
+  const branding = require('./modules/platformops/branding');
+  app.use(branding.middleware); // the platform admin's logo / icon over the built-in brand
+  app.get('/brand/:key', (req, res, next) => Promise.resolve(branding.serve(req, res, next)).catch(next));
   // CSRF check; the booking-widget embed mode (frameable /<slug>/book?embed=1) uses a signed token instead of the session.
   app.use(require('./modules/discover/embed').wrapCsrf(web.csrf));
 

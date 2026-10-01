@@ -15,7 +15,7 @@ const { AppError, E } = require('../../core/errors');
 const rbac = require('../rbac/rbac.service');
 
 const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email',
-  'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'booking_enabled', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode', 'invoice_next_number',
+  'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'booking_enabled', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode', 'invoice_next_number', 'favicon_mode', 'favicon_mime', 'favicon_version',
   'onboarding_step', 'onboarding_completed_at', 'status', 'created_at',
   'online_enabled', 'online_payment_required', 'online_payment_instructions', 'online_payment_instructions_en', 'online_cancellation_policy', 'online_cancellation_policy_en'];
 
@@ -130,6 +130,40 @@ async function setAppearance(ctx, { color, logo, logoMime, removeLogo }) {
 }
 
 const logo = (id) => knex('businesses').where({ id }).first('logo', 'logo_mime', 'logo_version');
+
+// ---------------------------------------------------------------- browser icon (favicon)
+const FAVICON_MODES = ['platform', 'logo', 'custom'];
+/**
+ * The clinic's browser icon address under `base` ('/app' for the app, '/<slug>' for its public pages), or null for
+ * the platform's icon. 'logo' uses the clinic logo; 'custom' an uploaded icon.
+ */
+function faviconPath(b, base) {
+  if (!b) return null;
+  if (b.favicon_mode === 'custom' && b.favicon_mime) return `${base}/favicon?v=c${b.favicon_version}`;
+  if (b.favicon_mode === 'logo' && b.logo_mime) return `${base}/favicon?v=l${b.logo_version}`;
+  return null;
+}
+/** The icon bytes to serve (uploaded icon or logo), or null when the clinic uses the platform's icon. */
+async function faviconFile(id, { uploaded = false } = {}) {
+  const r = await knex('businesses').where({ id }).first('favicon_mode', 'favicon', 'favicon_mime', 'logo', 'logo_mime');
+  if (!r) return null;
+  if (uploaded) return r.favicon ? { data: r.favicon, mime: r.favicon_mime } : null; // the settings preview of the uploaded icon
+  if (r.favicon_mode === 'custom' && r.favicon) return { data: r.favicon, mime: r.favicon_mime };
+  if (r.favicon_mode === 'logo' && r.logo) return { data: r.logo, mime: r.logo_mime };
+  return null;
+}
+/** Chooses the browser icon: mode, plus a new uploaded icon (buffer + checked mime) for 'custom'. Audited. */
+async function setFavicon(ctx, { mode, file, mime, remove }) {
+  if (!FAVICON_MODES.includes(mode)) throw E.validation({ favicon_mode: 'Choose a valid value.' });
+  const before = await knex('businesses').where({ id: ctx.businessId }).first('favicon_mode', 'favicon_mime');
+  const patch = { favicon_mode: mode, updated_at: new Date() };
+  if (file) { patch.favicon = file; patch.favicon_mime = mime; patch.favicon_version = knex.raw('favicon_version + 1'); }
+  if (remove) { patch.favicon = null; patch.favicon_mime = null; patch.favicon_version = knex.raw('favicon_version + 1'); if (mode === 'custom') patch.favicon_mode = 'platform'; }
+  if (patch.favicon_mode === 'custom' && !file && !before.favicon_mime) throw E.validation({ favicon: 'Choose an icon file.' });
+  await knex('businesses').where({ id: ctx.businessId }).update(patch);
+  await audit.record(ctx, 'clinic.favicon_updated', { entityType: 'clinic', entityId: ctx.businessId, oldValues: { mode: before.favicon_mode }, newValues: { mode: patch.favicon_mode, icon: file ? 'uploaded' : remove ? 'removed' : undefined } });
+  forget(ctx.businessId);
+}
 
 async function setOnboarding(businessId, step, done = false) {
   await knex('businesses').where({ id: businessId }).update({ onboarding_step: step, ...(done ? { onboarding_completed_at: new Date() } : {}) });
@@ -333,7 +367,7 @@ async function destroy(ctx, confirmName) {
 }
 
 module.exports = {
-  create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, setOnboarding, claimInvoiceNumber,
+  create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, setOnboarding, claimInvoiceNumber, FAVICON_MODES, faviconPath, faviconFile, setFavicon,
   setSlug, bySlug, validateSlug, normalizeSlug, suggestSlug, latinize, RESERVED,
   listMembers, changeMember, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
 };
