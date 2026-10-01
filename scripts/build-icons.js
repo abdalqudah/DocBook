@@ -17,7 +17,9 @@ panel-bottom toggle-left toggle-right house star quote list mouse-pointer-click 
 calculator hand-coins vault grip calendar-range move megaphone cookie bot facebook instagram linkedin youtube twitter music ghost
 message-circle images align-left align-center align-right package-search handshake clipboard-check truck tag
 video video-off mic mic-off phone-off switch-camera paperclip
-pen-line baby smile ruler file-up radio brain shield-alert wand-sparkles credit-card hourglass maximize minimize volume-2 volume-x file-check`.split(/\s+/).filter((n, i, a) => n && a.indexOf(n) === i);
+pen-line baby smile ruler file-up radio brain shield-alert wand-sparkles credit-card hourglass maximize minimize volume-2 volume-x file-check
+layout-grid list-ordered type waves chart-no-axes-column square circle panel-left panel-right panel-left-close panel-right-close tablet sliders-horizontal shapes
+columns-2 rows-2 move-vertical paint-bucket stretch-horizontal align-vertical-space-around heart leaf flower-2 sun-medium hand-heart`.split(/\s+/).filter((n, i, a) => n && a.indexOf(n) === i);
 
 const dir = process.argv[2];
 if (!dir) { console.error('Pass the lucide-static icons directory.'); process.exit(1); }

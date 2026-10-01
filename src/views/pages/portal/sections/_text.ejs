@@ -1,0 +1,11 @@
+<% if (c.title || c.text) { %>
+<section class="ws-section ws-text ws-text-<%= s.variant %>" id="s-<%= s.id %>">
+  <div class="container">
+    <div class="ws-text-box">
+      <% if (s.variant === 'quote') { %><span class="ws-quote-mark"><%- icon('quote') %></span><% } %>
+      <% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %>
+      <% if (c.text) { %><div class="lp-prose ws-text-body"><% String(c.text).split(/\n\s*\n/).forEach(function (p) { if (p.trim()) { %><p><%= p.trim() %></p><% } }) %></div><% } %>
+    </div>
+  </div>
+</section>
+<% } %>

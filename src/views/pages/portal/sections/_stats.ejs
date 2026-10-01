@@ -1,0 +1,8 @@
+<% var extra = s.settings.items || []; var items = (c.items || []).map(function (x, i) { return { label: x && x.label, value: (extra[i] || {}).value }; }).filter(function (x) { return x.value || x.label; }); if (items.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title) { %><div class="ws-head"><h2 class="ws-title"><%= c.title %></h2></div><% } %>
+    <ul class="ws-stats ws-stats-<%= s.variant %>"><% items.forEach(function (x) { %><li><strong dir="auto"><%= x.value %></strong><span><%= x.label %></span></li><% }) %></ul>
+  </div>
+</section>
+<% } %>

@@ -5,7 +5,7 @@
       <h2 class="ws-title"><%= c.title || t('portal.about') %></h2>
       <div class="lp-prose"><% String(text || '').split(/\n\s*\n/).forEach(function (p) { if (p.trim()) { %><p><%= p.trim() %></p><% } }) %></div>
     </div>
-    <% if (im) { %><figure class="ws-about-media"><img src="<%= im.url %>" alt="<%= (locale === 'en' ? im.alt_en || im.alt_ar : im.alt_ar || im.alt_en) || '' %>" loading="lazy"></figure><% } %>
+    <% if (im) { %><figure class="ws-about-media <%= imgCls(s.settings) %>"><img src="<%= im.url %>" alt="<%= altOf(im) %>" loading="lazy"></figure><% } %>
   </div>
 </section>
 <% } %>

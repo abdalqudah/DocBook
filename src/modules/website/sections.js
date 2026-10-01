@@ -10,16 +10,38 @@
 const crypto = require('crypto');
 const { THEMES, TEMPLATES } = require('./catalog');
 
-const ICONS = ['stethoscope', 'heart-pulse', 'shield-check', 'clock', 'star', 'smile', 'baby', 'award', 'hospital', 'syringe', 'pill', 'thermometer', 'activity', 'badge-check', 'calendar-check', 'map-pin', 'phone', 'users', 'sparkles', 'hand-coins'];
+const ICONS = ['stethoscope', 'heart-pulse', 'shield-check', 'clock', 'star', 'smile', 'baby', 'award', 'hospital', 'syringe', 'pill', 'thermometer', 'activity', 'badge-check', 'calendar-check', 'map-pin', 'phone', 'users', 'sparkles', 'hand-coins',
+  'heart', 'hand-heart', 'leaf', 'flower-2', 'sun-medium', 'brain', 'baby', 'ruler', 'droplet', 'zap', 'wand-sparkles'].filter((x, i, a) => a.indexOf(x) === i);
+
+// What a button inside a section does (never a free address: links stay on the clinic's own actions).
+const ACTIONS = ['none', 'book', 'call', 'whatsapp', 'directions'];
+// Look of every section (settings.style): alignment, background, spacing, width and a decorative shape at its edges.
+const SHAPES = ['none', 'wave', 'curve', 'slant', 'zigzag', 'peaks', 'drops'];
+const STYLE = [
+  { key: 'align', kind: 'select', options: ['auto', 'start', 'center', 'end'], def: 'auto' },
+  { key: 'bg', kind: 'select', options: ['auto', 'none', 'soft', 'accent', 'brand', 'dark', 'image'], def: 'auto' },
+  { key: 'bg_image', kind: 'media' },
+  { key: 'overlay', kind: 'select', options: ['dark', 'light', 'brand', 'none'], def: 'dark' },
+  { key: 'spacing', kind: 'select', options: ['normal', 'compact', 'roomy', 'none'], def: 'normal' },
+  { key: 'width', kind: 'select', options: ['normal', 'narrow', 'wide'], def: 'normal' },
+  { key: 'shape_top', kind: 'select', options: SHAPES, def: 'none' },
+  { key: 'shape_bottom', kind: 'select', options: SHAPES, def: 'none' },
+];
+// Image options of a section that shows one picture.
+const IMAGE_OPTS = [
+  { key: 'image_shape', kind: 'select', options: ['rounded', 'square', 'circle', 'arch', 'blob'], def: 'rounded', group: 'image' },
+  { key: 'image_fit', kind: 'select', options: ['cover', 'contain'], def: 'cover', group: 'image' },
+  { key: 'image_ratio', kind: 'select', options: ['auto', 'landscape', 'square', 'portrait'], def: 'auto', group: 'image' },
+];
 
 // kinds — text (one line), textarea, bool, select, number, media (one image), media_list, doctors (ids), date, icon
 const TYPES = {
-  hero: { icon: 'panel-top', variants: ['split', 'full', 'centered'], single: true,
+  hero: { icon: 'panel-top', variants: ['split', 'full', 'centered', 'image_back'], single: true,
     text: [{ key: 'headline', max: 120 }, { key: 'subtext', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }],
-    settings: [{ key: 'image', kind: 'media' }, { key: 'show_call', kind: 'bool', def: true }, { key: 'show_whatsapp', kind: 'bool', def: true }, { key: 'show_directions', kind: 'bool', def: true }] },
+    settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS, { key: 'show_call', kind: 'bool', def: true }, { key: 'show_whatsapp', kind: 'bool', def: true }, { key: 'show_directions', kind: 'bool', def: true }] },
   about: { icon: 'align-left', variants: ['text', 'image_side'], single: true,
     text: [{ key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 3000 }],
-    settings: [{ key: 'image', kind: 'media' }] },
+    settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS] },
   doctors: { icon: 'stethoscope', variants: ['grid', 'list'], single: true,
     text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
     settings: [{ key: 'mode', kind: 'select', options: ['all', 'selected'], def: 'all' }, { key: 'doctor_ids', kind: 'doctors' }, { key: 'show_fee', kind: 'bool', def: true }] },
@@ -45,6 +67,27 @@ const TYPES = {
     list: { key: 'items', max: 6, fields: [{ key: 'icon', kind: 'icon', i18n: false }, { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 300 }] } },
   announcement: { icon: 'megaphone', variants: ['info', 'highlight'],
     text: [{ key: 'text', kind: 'textarea', max: 300 }], settings: [{ key: 'from', kind: 'date' }, { key: 'to', kind: 'date' }] },
+  // Free building blocks: the clinic's own words and pictures, laid out in different ways.
+  cards: { icon: 'layout-grid', variants: ['grid', 'list', 'overlay', 'minimal'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
+    settings: [{ key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3' }, { key: 'card_style', kind: 'select', options: ['shadow', 'outline', 'filled', 'plain'], def: 'shadow' },
+      { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait'], def: 'landscape', group: 'image' }],
+    list: { key: 'items', max: 12, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false },
+      { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }] } },
+  image_text: { icon: 'image', variants: ['image_start', 'image_end', 'image_top', 'image_back'], group: 'blocks',
+    text: [{ key: 'title', max: 120 }, { key: 'text', kind: 'textarea', max: 2000 }, { key: 'button', max: 40 }],
+    settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS, { key: 'action', kind: 'select', options: ACTIONS, def: 'book' }] },
+  text: { icon: 'type', variants: ['plain', 'boxed', 'quote', 'columns'], group: 'blocks',
+    text: [{ key: 'title', max: 120 }, { key: 'text', kind: 'textarea', max: 5000 }], settings: [] },
+  stats: { icon: 'chart-no-axes-column', variants: ['row', 'cards'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }], settings: [],
+    list: { key: 'items', max: 6, fields: [{ key: 'value', max: 16, i18n: false }, { key: 'label', max: 80 }] } },
+  steps: { icon: 'list-ordered', variants: ['numbered', 'timeline'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }], settings: [],
+    list: { key: 'items', max: 8, fields: [{ key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 400 }] } },
+  divider: { icon: 'waves', variants: ['shape'], group: 'blocks', text: [],
+    settings: [{ key: 'shape', kind: 'select', options: ['wave', 'curve', 'slant', 'zigzag', 'peaks', 'drops', 'line', 'dots', 'space'], def: 'wave' },
+      { key: 'color', kind: 'select', options: ['soft', 'accent', 'brand', 'dark'], def: 'soft' }, { key: 'height', kind: 'select', options: ['s', 'm', 'l'], def: 'm' }, { key: 'flip', kind: 'bool', def: false }] },
 };
 const TYPE_KEYS = Object.keys(TYPES);
 const MAX_SECTIONS = 24;
@@ -84,6 +127,7 @@ function blankSection(type) {
   }
   const content = { ar: {}, en: {} };
   if (def.list) { content.ar[def.list.key] = []; content.en[def.list.key] = []; if (!def.list.fields.every((f) => f.i18n !== false)) settings[def.list.key] = []; }
+  settings.style = cleanStyle({});
   return { id: newId(), type, variant: def.variants[0], visible: true, content, settings };
 }
 
@@ -109,7 +153,8 @@ function cleanText(def, raw) {
     out[lang] = {};
     for (const f of def.text) out[lang][f.key] = f.kind === 'textarea' ? clean(src[f.key], f.max) : cleanLine(src[f.key], f.max);
     if (def.list) {
-      const items = Array.isArray(src[def.list.key]) ? src[def.list.key] : [];
+      const rawItems = src[def.list.key];
+      const items = Array.isArray(rawItems) ? rawItems : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
       out[lang][def.list.key] = items.slice(0, def.list.max).map((it) => Object.fromEntries(def.list.fields.filter((f) => f.i18n !== false)
         .map((f) => [f.key, f.kind === 'textarea' ? clean(it && it[f.key], f.max) : cleanLine(it && it[f.key], f.max)])));
     }
@@ -117,28 +162,41 @@ function cleanText(def, raw) {
   return out;
 }
 
-function cleanSettings(def, raw = {}, refs = {}) {
-  const out = {};
+/** One setting value of kind bool/select/number/media/media_list/doctors/date/icon/text. */
+function cleanValue(f, v, refs = {}) {
   const okMedia = (id) => !refs.media || refs.media.has(id);
   const okDoctor = (id) => !refs.doctors || refs.doctors.has(id);
-  for (const f of def.settings) {
-    let v = raw[f.key];
-    // A checkbox posts with a hidden "0" before it: the last value wins.
-    if (Array.isArray(v) && ['bool', 'select', 'number', 'date', 'media'].includes(f.kind)) v = v[v.length - 1];
-    if (f.kind === 'bool') out[f.key] = v === undefined ? f.def : v === true || v === '1' || v === 'on' || v === 'true';
-    else if (f.kind === 'select') out[f.key] = f.options.includes(v) ? v : f.def;
-    else if (f.kind === 'number') { const n = Math.round(Number(v)); out[f.key] = Number.isFinite(n) ? Math.min(f.max, Math.max(f.min, n)) : f.def; }
-    else if (f.kind === 'media') { const id = ids(v)[0] || null; out[f.key] = id && okMedia(id) ? id : null; }
-    else if (f.kind === 'media_list') out[f.key] = ids(v).filter(okMedia).slice(0, f.max || 12);
-    else if (f.kind === 'doctors') out[f.key] = ids(v).filter(okDoctor).slice(0, 50);
-    else if (f.kind === 'date') out[f.key] = /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null;
+  // A checkbox posts with a hidden "0" before it: the last value wins.
+  if (Array.isArray(v) && ['bool', 'select', 'number', 'date', 'media', 'icon', 'text'].includes(f.kind || 'text')) v = v[v.length - 1];
+  switch (f.kind) {
+    case 'bool': return v === undefined ? f.def : v === true || v === '1' || v === 'on' || v === 'true';
+    case 'select': return f.options.includes(v) ? v : (f.def !== undefined ? f.def : f.options[0]);
+    case 'number': { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(f.max, Math.max(f.min, n)) : f.def; }
+    case 'media': { const id = ids(v)[0] || null; return id && okMedia(id) ? id : null; }
+    case 'media_list': return ids(v).filter(okMedia).slice(0, f.max || 12);
+    case 'doctors': return ids(v).filter(okDoctor).slice(0, 50);
+    case 'date': return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null;
+    case 'icon': return (f.none && v === 'none') ? 'none' : (ICONS.includes(v) ? v : ICONS[0]);
+    default: return cleanLine(v, f.max || 80);
   }
-  // List fields that are not translated (e.g. a feature's icon) live in settings[listKey][i].
+}
+
+/** The look of a section (alignment, background, spacing, width, shapes). */
+function cleanStyle(raw, refs = {}) {
+  const src = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  return Object.fromEntries(STYLE.map((f) => [f.key, cleanValue(f, src[f.key], refs)]));
+}
+
+function cleanSettings(def, raw = {}, refs = {}) {
+  const out = {};
+  for (const f of def.settings) out[f.key] = cleanValue(f, raw[f.key], refs);
+  // List fields that are not translated (an icon, a picture, a button action, a number) live in settings[listKey][i].
   if (def.list && def.list.fields.some((f) => f.i18n === false)) {
-    const items = Array.isArray(raw[def.list.key]) ? raw[def.list.key] : [];
+    const items = Array.isArray(raw[def.list.key]) ? raw[def.list.key] : (raw[def.list.key] && typeof raw[def.list.key] === 'object' ? Object.values(raw[def.list.key]) : []);
     out[def.list.key] = items.slice(0, def.list.max).map((it) => Object.fromEntries(def.list.fields.filter((f) => f.i18n === false)
-      .map((f) => [f.key, f.kind === 'icon' ? (ICONS.includes(it && it[f.key]) ? it[f.key] : ICONS[0]) : cleanLine(it && it[f.key], f.max || 80)])));
+      .map((f) => [f.key, cleanValue(f, it && it[f.key], refs)])));
   }
+  out.style = cleanStyle(raw.style, refs);
   return out;
 }
 
@@ -193,8 +251,10 @@ function mediaIn(doc) {
       if (f.kind === 'media' && s.settings[f.key]) out.add(s.settings[f.key]);
       if (f.kind === 'media_list') (s.settings[f.key] || []).forEach((id) => out.add(id));
     }
+    if (s.settings.style && s.settings.style.bg_image) out.add(s.settings.style.bg_image);
+    if (def.list) for (const f of def.list.fields.filter((x) => x.i18n === false && x.kind === 'media')) (s.settings[def.list.key] || []).forEach((it) => { if (it && it[f.key]) out.add(it[f.key]); });
   }
   return [...out];
 }
 
-module.exports = { TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId };
+module.exports = { TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };

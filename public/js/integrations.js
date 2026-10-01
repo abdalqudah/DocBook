@@ -109,7 +109,11 @@
       if (clear) clear.hidden = false;
     }
     dlg.close();
+    changed(form);
   }
+
+  // Lets a form that saves itself (the website builder) know a picture changed.
+  function changed(form) { if (form && form.dispatchEvent && window.Event) form.dispatchEvent(new Event('change', { bubbles: true })); }
 
   function listItem(name, m) {
     var li = el('li', { 'class': 'pm-item' });
@@ -139,10 +143,11 @@
       var prev = form && form.querySelector('[data-media-preview="' + name + '"]');
       if (prev) prev.textContent = '';
       clear.hidden = true;
+      changed(form);
       return;
     }
     var rm = e.target.closest && e.target.closest('[data-media-remove]');
-    if (rm) { var li = rm.closest('li'); if (li) li.parentNode.removeChild(li); }
+    if (rm) { var li = rm.closest('li'); var f = rm.closest('form'); if (li) li.parentNode.removeChild(li); changed(f); }
   });
 
   qInput.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(load, 250); });

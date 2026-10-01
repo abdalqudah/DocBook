@@ -1,11 +1,41 @@
 <%# Clinic website (builder): the sections of the published version — or of the draft in the member-only preview.
-    Clinic facts come from the clinic's own records at every visit. Only the clinic's plain text is shown (escaped). %>
+    Clinic facts come from the clinic's own records at every visit. Only the clinic's plain text is shown (escaped).
+    Each section sits in a block that carries its look (settings.style): alignment, background, spacing, width and the
+    shapes at its edges. A section with nothing to show (e.g. a gallery without pictures) leaves no empty block. %>
+<%
+  // A button inside a section only ever runs one of the clinic's own actions.
+  var actionHref = function (a) {
+    if (a === 'book') return clinic.booking_enabled ? { href: '/' + clinic.slug + '/book', icon: 'calendar-plus', label: t('portal.book') } : null;
+    if (a === 'call') return clinic.telHref ? { href: clinic.telHref, icon: 'phone', label: t('portal.call') } : null;
+    if (a === 'whatsapp') return clinic.waHref ? { href: clinic.waHref, icon: 'message-square', label: t('portal.whatsapp'), ext: true } : null;
+    if (a === 'directions') return clinic.mapHref ? { href: clinic.mapHref, icon: 'map-pin', label: t('portal.directions'), ext: true } : null;
+    return null;
+  };
+  var altOf = function (im) { return (locale === 'en' ? im.alt_en || im.alt_ar : im.alt_ar || im.alt_en) || ''; };
+  // Picture options shared by hero / about / text-with-image.
+  var imgCls = function (st) { return 'ws-img ws-img-' + (st.image_shape || 'rounded') + ' ws-fit-' + (st.image_fit || 'cover') + ' ws-ratio-' + (st.image_ratio || 'auto'); };
+%>
 <% if (preview) { %>
-<div class="ws-preview-bar" role="status"><%- icon('eye', 'icon-sm') %><span class="grow"><%= t('website.preview_bar') %></span><a class="btn btn-secondary btn-sm" href="/app/website/builder"><%= t('website.back_to_builder') %></a></div>
+<div class="ws-preview-bar" role="status"><%- icon('eye', 'icon-sm') %><span class="grow"><%= t('website.preview_bar') %></span><a class="btn btn-secondary btn-sm" href="/app/website/builder" target="_top"><%= t('website.back_to_builder') %></a></div>
 <% } %>
 <div class="ws-page ws-theme-<%= doc.theme %>" id="main">
-  <% sections.forEach(function (s) { %>
-    <%- include('sections/_' + s.type, { s: s, c: s.c }) %>
+  <% sections.forEach(function (s) {
+       var html = include('sections/_' + s.type, { s: s, c: s.c, act: actionHref, altOf: altOf, imgCls: imgCls });
+       if (!String(html).trim()) return;
+       var st = s.settings.style || {};
+       var bgIm = st.bg === 'image' ? img(st.bg_image) : null;
+       var bg = st.bg === 'image' && !bgIm ? 'auto' : (st.bg || 'auto');
+       var cls = ['ws-block', 'ws-t-' + s.type, 'ws-a-' + (st.align || 'auto'), 'ws-bg-' + bg, 'ws-sp-' + (st.spacing || 'normal'), 'ws-w-' + (st.width || 'normal')];
+       if (bgIm) cls.push('ws-ov-' + (st.overlay || 'dark'));
+       if (st.shape_top && st.shape_top !== 'none') cls.push('has-shape-top');
+       if (st.shape_bottom && st.shape_bottom !== 'none') cls.push('has-shape-bottom'); %>
+  <div class="<%= cls.join(' ') %>"<% if (preview) { %> data-ws-sec="<%= s.id %>" data-ws-label="<%= t('website.sec.' + s.type) %>"<% } %>>
+    <% if (bgIm) { %><img class="ws-bg-img" src="<%= bgIm.url %>" alt="" loading="lazy"><span class="ws-ov" aria-hidden="true"></span><% } %>
+    <% if (st.shape_top && st.shape_top !== 'none') { %><%- include('sections/_shape', { shape: st.shape_top, edge: 'top' }) %><% } %>
+    <%- html %>
+    <% if (st.shape_bottom && st.shape_bottom !== 'none') { %><%- include('sections/_shape', { shape: st.shape_bottom, edge: 'bottom' }) %><% } %>
+  </div>
   <% }) %>
   <% if (!sections.length) { %><div class="container ws-empty"><%= t('website.nothing_shown') %></div><% } %>
 </div>
+<% if (preview) { %><script src="/js/website-preview.js?v=<%= assetV %>" defer></script><% } %>

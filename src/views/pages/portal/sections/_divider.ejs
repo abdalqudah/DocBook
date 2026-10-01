@@ -1,0 +1,4 @@
+<% var sh = s.settings.shape || 'wave'; %>
+<div class="ws-divider ws-divider-<%= sh %> ws-dc-<%= s.settings.color || 'soft' %> ws-dh-<%= s.settings.height || 'm' %><%= s.settings.flip ? ' is-flipped' : '' %>" id="s-<%= s.id %>" role="presentation">
+  <% if (sh === 'line') { %><hr><% } else if (sh === 'dots') { %><span></span><span></span><span></span><% } else if (sh !== 'space') { %><%- include('_shape', { shape: sh, edge: 'divider' }) %><% } %>
+</div>

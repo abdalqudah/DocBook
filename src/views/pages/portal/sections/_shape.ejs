@@ -1,0 +1,14 @@
+<%# A decorative edge of a section, drawn in the section's own background colour (shapes: sections.SHAPES; also the
+    "divider" section). The path fills the top of a 1200×100 box; the top edge is the same path turned over. %>
+<%
+  var P = {
+    wave: 'M0 0H1200V48C1000 100 800 0 600 48S200 100 0 48Z',
+    curve: 'M0 0H1200V12Q600 150 0 12Z',
+    slant: 'M0 0H1200L0 100Z',
+    zigzag: 'M0 0H1200V40L1125 90L1050 40L975 90L900 40L825 90L750 40L675 90L600 40L525 90L450 40L375 90L300 40L225 90L150 40L75 90L0 40Z',
+    peaks: 'M0 0H1200V20L1000 90L800 30L600 95L400 30L200 90L0 20Z',
+    drops: 'M0 0H1200V30A50 50 0 0 1 1100 30A50 50 0 0 1 1000 30A50 50 0 0 1 900 30A50 50 0 0 1 800 30A50 50 0 0 1 700 30A50 50 0 0 1 600 30A50 50 0 0 1 500 30A50 50 0 0 1 400 30A50 50 0 0 1 300 30A50 50 0 0 1 200 30A50 50 0 0 1 100 30A50 50 0 0 1 0 30Z',
+  };
+  var d = P[shape];
+%>
+<% if (d) { %><svg class="ws-shape ws-shape-<%= edge %>" viewBox="0 0 1200 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="<%= d %>"/></svg><% } %>

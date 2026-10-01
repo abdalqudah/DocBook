@@ -1,5 +1,6 @@
-<% var im = img(s.settings.image); var head = c.headline || clinic.displayName; var sub = c.subtext || (clinic.aboutText ? clinic.aboutText.split(/\n/)[0].slice(0, 220) : [clinic.specialty, clinic.city].filter(Boolean).join(' · ')); %>
+<% var im = img(s.settings.image); var head = c.headline || clinic.displayName; var sub = c.subtext || (clinic.aboutText ? clinic.aboutText.split(/\n/)[0].slice(0, 220) : [clinic.specialty, clinic.city].filter(Boolean).join(' · ')); var back = s.variant === 'image_back' && im; %>
 <section class="ws-hero ws-hero-<%= s.variant %><%= im ? ' has-image' : '' %>" id="s-<%= s.id %>">
+  <% if (back) { %><img class="ws-hero-back" src="<%= im.url %>" alt="<%= altOf(im) %>"><% } %>
   <div class="container ws-hero-inner">
     <div class="ws-hero-text">
       <h1><%= head %></h1>
@@ -12,6 +13,6 @@
       </div>
       <% if (!clinic.booking_enabled) { %><p class="small muted mt-2"><%= t('portal.booking_off') %></p><% } %>
     </div>
-    <% if (im) { %><figure class="ws-hero-media"><img src="<%= im.url %>" alt="<%= (locale === 'en' ? im.alt_en || im.alt_ar : im.alt_ar || im.alt_en) || '' %>"<% if (im.width && im.height) { %> width="<%= im.width %>" height="<%= im.height %>"<% } %>></figure><% } %>
+    <% if (im && !back) { %><figure class="ws-hero-media <%= imgCls(s.settings) %>"><img src="<%= im.url %>" alt="<%= altOf(im) %>"<% if (im.width && im.height) { %> width="<%= im.width %>" height="<%= im.height %>"<% } %>></figure><% } %>
   </div>
 </section>

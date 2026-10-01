@@ -459,3 +459,50 @@ test('Today: the optional "put your clinic online" card after the setup checklis
   r = await o.get('/app');
   assert.ok(!/today-online/.test(r.text), 'A is live');
 });
+
+test('free blocks and section looks: cards, text with image, numbers, steps, text, divider; plain text and clinic actions only', () => {
+  const doc = sections.defaultDoc('general');
+  const cards = sections.blankSection('cards');
+  cards.content.en.items = { 0: { title: '<b>One</b>', text: 'x' }, 1: { title: 'Two' } };
+  cards.settings.items = { 0: { icon: 'heart', image: String(A.mediaId), action: 'book' }, 1: { icon: 'javascript:alert(1)', image: '999999', action: 'https://evil.test' } };
+  cards.settings.style = { align: 'center', bg: 'image', bg_image: String(B.mediaId), shape_bottom: 'wave', shape_top: '<svg>', spacing: 'roomy', width: 'wide', evil: 'x' };
+  doc.pages[0].sections.push(cards, sections.blankSection('image_text'), sections.blankSection('stats'), sections.blankSection('steps'), sections.blankSection('text'), sections.blankSection('divider'));
+  const out = sections.sanitize(doc, { media: new Set([A.mediaId]), doctors: new Set() });
+  const c = out.pages[0].sections.find((s) => s.type === 'cards');
+  assert.equal(c.content.en.items[0].title, '<b>One</b>', 'stored as plain text (escaped on output)');
+  assert.deepEqual(c.settings.items[0], { icon: 'heart', image: A.mediaId, action: 'book' });
+  assert.deepEqual(c.settings.items[1], { icon: sections.ICONS[0], image: null, action: 'none' }, 'unknown icon, foreign picture and free address dropped');
+  assert.deepEqual(c.settings.style, { align: 'center', bg: 'image', bg_image: null, overlay: 'dark', spacing: 'roomy', width: 'wide', shape_top: 'none', shape_bottom: 'wave' });
+  assert.ok(sections.mediaIn(out).includes(A.mediaId), 'pictures inside cards are published with the site');
+  for (const type of ['image_text', 'stats', 'steps', 'text', 'divider']) assert.ok(out.pages[0].sections.find((s) => s.type === type).settings.style, `${type} has a look`);
+});
+
+test('builder: full screen, saves as you type (JSON), the preview shows the new blocks with their look', async () => {
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  let r = await o.submit('/app/website/builder', '/app/website/builder/sections', { type: 'cards' });
+  const id = new URL(r.location, 'http://x').searchParams.get('s');
+  assert.match(id, /^[a-f0-9]{10}$/);
+  r = await o.get(`/app/website/builder?s=${id}`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /class="wsb-body"/, 'own layout');
+  assert.ok(!/class="sidebar/.test(r.text), 'no app menu around the editor');
+  assert.match(r.text, /data-ws-tab-body="design"/);
+  const csrf = (r.text.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+  r = await o.post(`/app/website/builder/sections/${id}`, {
+    _csrf: csrf, variant: 'overlay', 'content[en][title]': 'Why us', 'content[en][items][0][title]': '<script>x</script>Care', 'content[en][items][0][button]': 'Book now',
+    'settings[items][0][icon]': 'heart', 'settings[items][0][action]': 'book', 'settings[columns]': '2', 'settings[style][bg]': 'brand', 'settings[style][align]': 'center', 'settings[style][shape_bottom]': 'wave',
+  }, { accept: 'application/json' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(JSON.parse(r.text), { ok: true });
+  r = await o.get('/app/website/preview');
+  assert.match(r.text, new RegExp(`data-ws-sec="${id}"`));
+  assert.match(r.text, /ws-block ws-t-cards ws-a-center ws-bg-brand/);
+  assert.match(r.text, /ws-cards-overlay ws-cols-2/);
+  assert.match(r.text, /class="ws-shape ws-shape-bottom"/);
+  assert.match(r.text, /&lt;script&gt;x&lt;\/script&gt;Care/);
+  assert.ok(!/<script>x<\/script>/.test(r.text));
+  assert.match(r.text, new RegExp(`href="/${A.slug}/book"[^>]*>[\\s\\S]*?Book now`));
+  r = await o.post(`/app/website/builder/sections/${id}`, { _csrf: csrf, variant: 'grid' }, { accept: 'application/json' });
+  assert.equal(r.status, 200, 'a partial save keeps the section valid');
+});

@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
+<head><%- include('../partials/head') %></head>
+<body class="wsb-body">
+<%- include('../partials/toasts') %>
+<%- body %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
+</body>
+</html>

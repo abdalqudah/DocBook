@@ -1,0 +1,8 @@
+<% var items = (c.items || []).filter(function (x) { return x && (x.title || x.text); }); if (items.length) { %>
+<section class="ws-section" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <ol class="ws-steps ws-steps-<%= s.variant %>"><% items.forEach(function (x, i) { %><li><span class="ws-step-n"><%= fmt.number(i + 1) %></span><div><% if (x.title) { %><h3><%= x.title %></h3><% } %><% if (x.text) { %><p><%= x.text %></p><% } %></div></li><% }) %></ol>
+  </div>
+</section>
+<% } %>

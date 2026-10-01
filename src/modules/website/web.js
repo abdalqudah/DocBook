@@ -64,13 +64,14 @@ async function builderLocals(req) {
     entitled(req, 'website.templates'),
   ]);
   const media = await render.mediaUrls({ ...req.business, id: req.ctx.businessId }, doc, { preview: true });
-  return { row, doc, st, list, selected, doctors, media, TYPES: sections.TYPES, TYPE_KEYS: sections.TYPE_KEYS, ICONS: sections.ICONS, allowedTemplates, TEMPLATES };
+  return { row, doc, st, list, selected, doctors, media, TYPES: sections.TYPES, TYPE_KEYS: sections.TYPE_KEYS, ICONS: sections.ICONS, SHAPES: sections.SHAPES, allowedTemplates, TEMPLATES };
 }
 const lockedPage = (req, res, feature) => page(req, res, 'locked', { title: req.t('navx.sec_website'), feature, manager: req.ctx.permissions.has('settings.manage') });
 
 router.get('/builder', can('website.edit'), wrap(async (req, res) => {
   if (!(await entitled(req, 'website.builder'))) return lockedPage(req, res, 'builder');
-  return page(req, res, 'builder', { title: req.t('website.builder_title'), ...(await builderLocals(req)) });
+  // Full-screen editor (own layout, no app menu) so the preview gets the room.
+  return page(req, res, 'builder', { layout: 'builder', title: req.t('website.builder_title'), ...(await builderLocals(req)), pageStyles: ['/css/website-builder.css'] });
 }));
 const toBuilder = (req, r) => `/app/website/builder${req.params && req.params.id ? `?s=${req.params.id}` : (r && typeof r === 'string' ? `?s=${r}` : '')}`;
 const builderGate = wrap(async (req, res, next) => (await entitled(req, 'website.builder') ? next() : lockedPage(req, res, 'builder')));
@@ -81,9 +82,21 @@ router.post('/builder/sections', can('website.edit'), builderGate, act(async (re
   const added = req.body.after ? list[list.findIndex((s) => s.id === req.body.after) + 1] : list[list.length - 1];
   return added ? added.id : null;
 }, 'website.section_added_ok', toBuilder));
-router.post('/builder/sections/:id([a-f0-9]{10})', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.update(req.params.id, {
+const wantsJson = (req) => req.xhr || /application\/json/.test(req.get('accept') || '');
+const updateSection = (req) => site.edit(req.ctx, req.business, site.ops.update(req.params.id, {
   variant: req.body.variant, content: req.body.content || {}, settings: req.body.settings || {},
-}), { note: null }), 'website.saved', toBuilder));
+}), { note: null });
+// The builder saves as you type (JSON); without JavaScript the form posts and comes back.
+router.post('/builder/sections/:id([a-f0-9]{10})', can('website.edit'), builderGate, wrap(async (req, res, next) => {
+  if (!wantsJson(req)) return next();
+  try {
+    await updateSection(req);
+    return res.json({ ok: true });
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500 || e.status === 403) throw e;
+    return res.status(e.status).json({ ok: false, error: errText(req, e) });
+  }
+}), act(updateSection, 'website.saved', toBuilder));
 router.post('/builder/sections/:id([a-f0-9]{10})/move', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.move(req.params.id, req.body.dir === 'up' ? 'up' : 'down'), { note: null }), null, toBuilder));
 router.post('/builder/sections/:id([a-f0-9]{10})/toggle', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.toggle(req.params.id), { note: null }), 'website.saved', toBuilder));
 router.post('/builder/sections/:id([a-f0-9]{10})/delete', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.remove(req.params.id), { note: 'website.section_removed' }), 'website.section_removed_ok', '/app/website/builder'));
