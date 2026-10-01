@@ -239,7 +239,9 @@
     "paid": "Payment recorded and invoice issued.",
     "paid_title": "Invoice #{number} issued for {name}",
     "print_invoice": "Print invoice",
-    "take_vitals": "Take vital signs"
+    "take_vitals": "Take vital signs",
+    "finished_today": "Visits finished today:",
+    "to_cash": "Cash screen"
   },
   "visits": {
     "title": "Visit",

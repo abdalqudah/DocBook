@@ -1,5 +1,6 @@
 // Reception board (/app/front-desk): one clear flow per patient of today —
-//   Expected → Arrived (check in) → With the doctor (send in) → To pay (the doctor finished) → Paid
+//   Expected → Arrived (check in) → With the doctor (send in); a finished visit moves on to the cash screen (payment
+//   is not shown on this board: it lives on the cash screen, invoices and accounts)
 // with one big action per patient, a doctor filter, live updates (public/js/live.js reloads the board when the
 // clinic's agenda changes), a walk-in shortcut, the payment panel (the same one as the cash screen, opened in a
 // dialog by public/js/cashx.js) and a "Print" menu per visit (receipt, invoice, prescription, certificates).
@@ -36,14 +37,13 @@ async function renderBoard(req, res, extra = {}) {
   visits.forEach((a) => group[a.state].push(a));
   group.arrived.sort((x, y) => new Date(x.arrived_at || 0) - new Date(y.arrived_at || 0));
   group.ready.sort((x, y) => new Date(x.doctor_finished_at || x.updated_at || 0) - new Date(y.doctor_finished_at || y.updated_at || 0));
-  const collected = group.paid.reduce((s, a) => s + Number((a.invoice && a.invoice.amount) || a.amount_due || 0), 0);
   let done = null;
   if (Number(req.query.paid) && ctx.permissions.has('billing.view')) {
     done = await require('./cashier.web').doneLocals(req, res, Number(req.query.paid), 'front-desk'); // eslint-disable-line global-require
   }
   const onlineLinks = await require('../telehealth/web').linksFor(req, group.expected.concat(group.arrived)); // eslint-disable-line global-require
   res.page('pages/clinic/frontdesk/index', {
-    title: req.t('frontdesk.title'), group, doctors, doctor, ownDoctor: Boolean(ctx.ownDoctorId), onlineLinks, collected, ...(done || {}),
+    title: req.t('frontdesk.title'), group, doctors, doctor, ownDoctor: Boolean(ctx.ownDoctorId), onlineLinks, ...(done || {}),
     nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), decimals: decimalsOf(ctx.currency),
     walkInDoctors: doctors.filter((d) => d.works && (!ctx.ownDoctorId || d.id === ctx.ownDoctorId)),
     pageScripts: ['/js/appointments.js', '/js/telehealth.js', '/js/cashx.js'], pageStyles: ['/css/appointments.css', '/css/cashx.css'], ...extra,
