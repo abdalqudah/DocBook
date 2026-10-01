@@ -279,13 +279,27 @@ router.get('/seo', can('website.seo'), wrap(async (req, res) => {
   if (!(await entitled(req, 'website.builder'))) return lockedPage(req, res, 'builder');
   const l = await builderLocals(req);
   const media = await render.mediaUrls({ ...req.business, id: req.ctx.businessId }, l.doc, { preview: true });
-  return page(req, res, 'seo', { title: req.t('website.seo_title'), ...l, media, advanced: await entitled(req, 'website.advanced_seo'), base: baseUrl(req) });
+  // What still helps search engines and AI assistants understand the clinic (all from real data).
+  const b = req.business; const sd = l.doc.seo || {}; const both = (v) => Boolean(v && (v.ar || v.en));
+  const allSections = l.doc.pages.flatMap((p) => p.sections);
+  const checks = [
+    { key: 'title', ok: both(sd.title) }, { key: 'description', ok: both(sd.description) || Boolean(b.about || b.about_en) },
+    { key: 'address', ok: Boolean(b.address && b.city) }, { key: 'phone', ok: Boolean(b.phone) }, { key: 'hours', ok: Boolean(b.working_hours_text || b.default_working_hours) },
+    { key: 'geo', ok: Boolean(sd.geo) }, { key: 'ai', ok: both(sd.ai && sd.ai.summary) },
+    { key: 'faq', ok: allSections.some((x) => x.type === 'faq' && x.visible && ((x.content.ar.items || []).length || (x.content.en.items || []).length)) },
+    { key: 'english', ok: Boolean(b.name_en) },
+  ];
+  return page(req, res, 'seo', { title: req.t('website.seo_title'), ...l, media, checks, advanced: await entitled(req, 'website.advanced_seo'), base: baseUrl(req) });
 }));
 router.post('/seo', can('website.seo'), builderGate, act(async (req) => {
   const advanced = await entitled(req, 'website.advanced_seo');
   const b = req.body || {};
   return site.edit(req.ctx, req.business, (doc) => {
-    const seo = { title: { ar: b.title_ar, en: b.title_en }, description: { ar: b.description_ar, en: b.description_en }, image: doc.seo.image || null, hide: doc.seo.hide || false };
+    const seo = {
+      ...doc.seo, title: { ar: b.title_ar, en: b.title_en }, description: { ar: b.description_ar, en: b.description_en }, image: doc.seo.image || null, hide: doc.seo.hide || false,
+      keywords: { ar: b.keywords_ar, en: b.keywords_en }, geo: { lat: b.geo_lat, lng: b.geo_lng }, area: { ar: b.area_ar, en: b.area_en }, price: b.price,
+      ai: { summary: { ar: b.ai_summary_ar, en: b.ai_summary_en }, bots: b.ai_bots === 'block' ? 'block' : 'allow' },
+    };
     if (advanced) { seo.image = b.image_media_id || null; seo.hide = b.hide === '1'; }
     return site.ops.seo(seo)(doc);
   }, { note: 'website.seo_changed' });

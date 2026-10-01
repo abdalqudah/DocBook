@@ -275,4 +275,22 @@ function publicState(businessId) {
   }, 30_000);
 }
 
-module.exports = { state, draft, saveDraft, edit, ops, pageOf, pageWith, pageSlug, publish, unpublish, republish, versions, restore, discard, publicState, refsOf, forget, KEEP, MEDIA_CONTEXT };
+/** Addresses of the clinics whose live website asks AI crawlers not to read it (for the platform robots.txt). */
+function aiBlockedSlugs() {
+  return cache.remember('site:aiblocked', async () => {
+    const rows = await knex('clinic_sites as s').join('businesses as b', 'b.id', 's.business_id').join('clinic_site_versions as v', 'v.id', 's.live_version_id')
+      .where({ 's.status': 'live', 'b.status': 'active' }).whereNotNull('b.slug').select('b.slug', 'v.doc');
+    return rows.filter((r) => { const d = parseDoc(r.doc); return d && d.seo && d.seo.ai && d.seo.ai.bots === 'block'; }).map((r) => r.slug);
+  }, 600_000);
+}
+
+/** The other pages of live websites (for the platform sitemap): [{ slug, page, hide }]. */
+function livePages() {
+  return cache.remember('site:livepages', async () => {
+    const rows = await knex('clinic_sites as s').join('businesses as b', 'b.id', 's.business_id').join('clinic_site_versions as v', 'v.id', 's.live_version_id')
+      .where({ 's.status': 'live', 'b.status': 'active' }).whereNotNull('b.slug').select('b.slug', 'v.doc', 's.published_at');
+    return rows.flatMap((r) => { const d = parseDoc(r.doc); if (!d || (d.seo && d.seo.hide)) return []; return (d.pages || []).filter((p) => p.key !== 'home' && p.slug).map((p) => ({ slug: r.slug, page: p.slug, at: r.published_at })); });
+  }, 600_000);
+}
+
+module.exports = { aiBlockedSlugs, livePages, state, draft, saveDraft, edit, ops, pageOf, pageWith, pageSlug, publish, unpublish, republish, versions, restore, discard, publicState, refsOf, forget, KEEP, MEDIA_CONTEXT };

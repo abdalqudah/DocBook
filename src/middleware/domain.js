@@ -42,7 +42,7 @@ async function customDomain(req, res, next) {
   if (p.startsWith(`/m/${slug}/`)) return next(); // the page's public images (same origin — the page's CSP allows only 'self')
   if (p === `/${slug}`) return res.redirect(302, `/${q}`);
   if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/doctors/`) || p.startsWith(`/${slug}/p/`) || p === `/${slug}/logo` || p === `/${slug}/theme.css`) return next();
-  if (p === '/robots.txt') return res.type('text/plain').send('User-agent: *\nAllow: /\n');
+  if (p === '/robots.txt' || p === '/sitemap.xml' || p === '/llms.txt') { req.url = `/${slug}${p}${q}`; return next(); } // the clinic's own crawl files
   // Anything else belongs to the main address.
   return toMain(req.originalUrl);
 }

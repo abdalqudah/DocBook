@@ -601,3 +601,53 @@ test('pages, menu and footer: add a page, its address, menu links, footer; live 
     cache.forgetPrefix('');
   }
 });
+
+test('SEO, GEO and AIO: structured data, map position, FAQ, llms.txt per clinic, AI crawler opt-out, own-domain crawl files', async () => {
+  const o = app.agent();
+  await o.login(mail('owner-b'));
+  let r = await o.submit('/app/website/seo', '/app/website/seo', {
+    title_en: 'Clinic B', description_en: 'Care in Amman', keywords_en: 'dentist Amman', geo_lat: '31.95', geo_lng: '35.91', area_en: 'Amman, Zarqa', area_ar: '', price: '$$',
+    ai_summary_en: 'A family clinic <b>in</b> Amman.', ai_bots: 'allow',
+  });
+  assert.equal(r.status, 302);
+  const { doc } = await site.draft(B.ctx, B.business);
+  assert.deepEqual(doc.seo.geo, { lat: 31.95, lng: 35.91 });
+  await site.edit(B.ctx, B.business, (d) => {
+    const faq = sections.blankSection('faq'); faq.content.en.items = [{ q: 'Do you see children?', a: 'Yes.' }];
+    d.pages[0].sections.push(faq); return d;
+  }, { note: null });
+  await site.publish(B.ctx, B.business);
+  site.forget(B.ctx.businessId);
+  const v = app.agent();
+  r = await v.get(`/${B.slug}?lang=en`);
+  assert.match(r.text, /<meta name="geo.position" content="31.95;35.91">/);
+  assert.match(r.text, /<meta name="keywords" content="dentist Amman">/);
+  assert.match(r.text, /"@type":\["MedicalClinic","Dentist"\]/);
+  assert.match(r.text, /"areaServed":\[\{"@type":"Place","name":"Amman"\}/);
+  assert.match(r.text, /"@type":"FAQPage"/);
+  assert.match(r.text, /llms\.txt/);
+  r = await v.get(`/${B.slug}/llms.txt`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /^# Clinic b/m);
+  assert.match(r.text, /> A family clinic in Amman\./, 'plain text only');
+  assert.match(r.text, /Map position: 31.95, 35.91/);
+  assert.match(r.text, /### Do you see children\?/);
+  // opting out of AI assistants
+  await o.submit('/app/website/seo', '/app/website/seo', { title_en: 'Clinic B', ai_bots: 'block' });
+  await site.publish(B.ctx, B.business);
+  site.forget(B.ctx.businessId); cache.forgetPrefix('site:');
+  assert.equal((await v.get(`/${B.slug}/llms.txt`)).status, 404);
+  assert.match((await v.get(`/${B.slug}`)).text, /content="noai, noimageai"/);
+  r = await v.get('/robots.txt');
+  assert.match(r.text, new RegExp(`User-agent: GPTBot[\\s\\S]*?Disallow: /${B.slug}\\n`));
+  // own domain: the clinic's robots.txt and sitemap.xml
+  const host = `seo${tag}.com`;
+  await domains.save(B.ctx, host);
+  await knex('clinic_domains').where({ business_id: B.ctx.businessId, host }).update({ status: 'verified' });
+  domains.forget();
+  r = await app.agent().get('/robots.txt', { host });
+  assert.match(r.text, /User-agent: ClaudeBot\nDisallow: \//);
+  assert.match(r.text, new RegExp(`Sitemap: http://${host}/sitemap.xml`));
+  r = await app.agent().get('/sitemap.xml', { host });
+  assert.match(r.text, new RegExp(`<loc>http://${host}/book</loc>`));
+});

@@ -93,7 +93,20 @@ async function renderSite(req, res, clinic, doc, { preview = false, page = null 
   const title = sub ? `${L(sub.seo && sub.seo.title) || L(sub.title)} · ${clinic.displayName}` : (L(doc.seo && doc.seo.title) || clinic.displayName);
   const description = (sub && L(sub.seo && sub.seo.description)) || L(doc.seo && doc.seo.description) || clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ');
   const share = doc.seo && doc.seo.image ? data.img(doc.seo.image) : null;
-  const seoHead = preview ? null : await seo.head(req, res, { kind: 'clinic', clinic, doctors: data.doctors, title, description, shareImage: share ? share.url : null, hide: Boolean(doc.seo && doc.seo.hide) });
+  let seoHead = null;
+  if (!preview) {
+    // Facts for search engines and AI assistants: services and prices, FAQ of this page, social profiles.
+    const shownPage = data.page || doc.pages[0];
+    const other = req.locale === 'en' ? 'ar' : 'en';
+    const faq = shownPage.sections.filter((x) => x.type === 'faq' && x.visible)
+      .flatMap((x) => ((x.content[req.locale] && x.content[req.locale].items && x.content[req.locale].items.length) ? x.content[req.locale].items : ((x.content[other] && x.content[other].items) || [])));
+    const services = data.services.length ? data.services : await listServices(req, clinic);
+    const sameAs = Object.values((doc.footer && doc.footer.social) || {}).filter(Boolean);
+    seoHead = await seo.head(req, res, {
+      kind: 'clinic', clinic, doctors: data.doctors.length ? data.doctors : await listDoctors(req, clinic), title, description, shareImage: share ? share.url : null, hide: Boolean(doc.seo && doc.seo.hide),
+      ws: { seo: doc.seo, faq, services, sameAs, path: sub ? `/${clinic.slug}/p/${sub.slug}` : null, pageName: sub ? L(sub.title) : null },
+    });
+  }
   const fav = doc.brand && doc.brand.faviconMediaId ? data.img(doc.brand.faviconMediaId) : null;
   return res.page('pages/portal/site', {
     layout: 'public', title, pageTitle: title, metaDescription: description.slice(0, 160), seoHead, noindex: preview, clinic, ...data,
@@ -131,6 +144,41 @@ router.get('/:slug', wrap(async (req, res, next) => {
     return res.page('pages/portal/offline', { layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, noindex: true, clinic, pageStyles: [...clinicStyles(clinic), '/css/website.css'] });
   }
   return renderClassic(req, res, clinic);
+}));
+
+// ---------------------------------------------------------------- the clinic for search engines and AI assistants
+// /<slug>/llms.txt (also /llms.txt on the clinic's own domain), and on its own domain robots.txt and sitemap.xml.
+async function crawlContext(req, res) {
+  const clinic = await loadClinic(req);
+  if (!clinic) return null;
+  const st = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  const doc = st.status === 'live' ? st.doc : null;
+  const s = await seo.get();
+  const base = seo.baseUrl(req, s);
+  const custom = res.locals.customDomain && res.locals.customDomain.slug === clinic.slug;
+  const siteBase = custom ? `${req.protocol}://${res.locals.customDomain.host}` : `${base}/${clinic.slug}`;
+  return { clinic, doc, s, base, siteBase, custom };
+}
+router.get('/:slug/llms.txt', wrap(async (req, res, next) => {
+  const c = await crawlContext(req, res);
+  if (!c) return next();
+  if (c.doc && c.doc.seo && c.doc.seo.ai && c.doc.seo.ai.bots === 'block') return next(); // the clinic opted out of AI assistants
+  const [doctors, services, reviews] = await Promise.all([listDoctors(req, c.clinic), listServices(req, c.clinic), require('../reviews/reviews.service').publicSummary(c.clinic.id)]); // eslint-disable-line global-require
+  const text = seo.clinicLlms({ clinic: c.clinic, doc: c.doc, doctors, services, reviews, base: c.base, siteBase: c.siteBase });
+  return res.set('Cache-Control', 'public, max-age=1800').type('text/plain; charset=utf-8').send(text);
+}));
+router.get('/:slug/robots.txt', wrap(async (req, res, next) => {
+  const c = await crawlContext(req, res);
+  if (!c || !c.custom) return next();
+  const sd = (c.doc && c.doc.seo) || {};
+  return res.set('Cache-Control', 'public, max-age=3600').type('text/plain; charset=utf-8')
+    .send(seo.clinicRobots({ siteBase: c.siteBase, slugPrefix: '', blockAi: sd.ai && sd.ai.bots === 'block', hide: Boolean(sd.hide) }));
+}));
+router.get('/:slug/sitemap.xml', wrap(async (req, res, next) => {
+  const c = await crawlContext(req, res);
+  if (!c || !c.custom) return next();
+  const doctors = await listDoctors(req, c.clinic);
+  return res.set('Cache-Control', 'public, max-age=3600').type('application/xml; charset=utf-8').send(seo.clinicSitemap({ siteBase: c.siteBase, doc: c.doc, doctors, at: c.clinic.updated_at }));
 }));
 
 // Another page of the published website: /<slug>/p/<page>.

@@ -20,7 +20,36 @@
         <div class="ws-lang-row"><label class="ws-lang-tag" for="seo-d-ar">ع</label><textarea class="textarea" id="seo-d-ar" name="description_ar" rows="3" maxlength="160" dir="rtl"><%= descOf('ar') %></textarea></div>
         <div class="ws-lang-row"><label class="ws-lang-tag" for="seo-d-en">EN</label><textarea class="textarea" id="seo-d-en" name="description_en" rows="3" maxlength="160" dir="ltr"><%= descOf('en') %></textarea></div>
         <span class="help"><%= t('website.seo_description_help') %></span></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.seo_keywords') %></legend>
+        <div class="ws-lang-row"><span class="ws-lang-tag">ع</span><input class="input" name="keywords_ar" value="<%= (seo.keywords && seo.keywords.ar) || '' %>" maxlength="200" dir="rtl" placeholder="<%= t('website.seo_keywords_ph') %>"></div>
+        <div class="ws-lang-row"><span class="ws-lang-tag">EN</span><input class="input" name="keywords_en" value="<%= (seo.keywords && seo.keywords.en) || '' %>" maxlength="200" dir="ltr" placeholder="dentist Amman, teeth whitening"></div>
+        <span class="help"><%= t('website.seo_keywords_help') %></span></fieldset>
+
+      <h2 class="ws-seo-h"><%- icon('map-pin', 'icon-sm') %><%= t('website.geo_title') %></h2>
+      <p class="small muted"><%= t('website.geo_lead') %></p>
+      <div class="grid grid-2">
+        <div class="field"><label class="label" for="geo-lat"><%= t('website.geo_lat') %></label><input class="input" id="geo-lat" name="geo_lat" value="<%= seo.geo ? seo.geo.lat : '' %>" inputmode="decimal" dir="ltr" placeholder="31.9539"></div>
+        <div class="field"><label class="label" for="geo-lng"><%= t('website.geo_lng') %></label><input class="input" id="geo-lng" name="geo_lng" value="<%= seo.geo ? seo.geo.lng : '' %>" inputmode="decimal" dir="ltr" placeholder="35.9106"></div>
+      </div>
+      <span class="help"><%= t('website.geo_help') %></span>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.geo_area') %></legend>
+        <div class="ws-lang-row"><span class="ws-lang-tag">ع</span><input class="input" name="area_ar" value="<%= (seo.area && seo.area.ar) || '' %>" maxlength="120" dir="rtl" placeholder="<%= t('website.geo_area_ph') %>"></div>
+        <div class="ws-lang-row"><span class="ws-lang-tag">EN</span><input class="input" name="area_en" value="<%= (seo.area && seo.area.en) || '' %>" maxlength="120" dir="ltr" placeholder="Amman, Zarqa, Salt"></div></fieldset>
+      <div class="field"><label class="label" for="geo-price"><%= t('website.geo_price') %></label>
+        <select class="select" id="geo-price" name="price"><% ['', '$', '$$', '$$$'].forEach(function (p) { %><option value="<%= p %>"<%= (seo.price || '') === p ? ' selected' : '' %>><%= p ? p + ' — ' + t('website.price_' + p.length) : t('website.price_none') %></option><% }) %></select></div>
+
+      <h2 class="ws-seo-h"><%- icon('sparkles', 'icon-sm') %><%= t('website.aio_title') %></h2>
+      <p class="small muted"><%= t('website.aio_lead') %></p>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.aio_summary') %></legend>
+        <div class="ws-lang-row"><span class="ws-lang-tag">ع</span><textarea class="textarea" name="ai_summary_ar" rows="5" maxlength="1500" dir="rtl" placeholder="<%= t('website.aio_summary_ph') %>"><%= (seo.ai && seo.ai.summary && seo.ai.summary.ar) || '' %></textarea></div>
+        <div class="ws-lang-row"><span class="ws-lang-tag">EN</span><textarea class="textarea" name="ai_summary_en" rows="5" maxlength="1500" dir="ltr"><%= (seo.ai && seo.ai.summary && seo.ai.summary.en) || '' %></textarea></div>
+        <span class="help"><%= t('website.aio_summary_help') %></span></fieldset>
+      <fieldset class="ws-color"><legend class="label"><%= t('website.aio_bots') %></legend>
+        <div class="segmented" role="radiogroup"><% ['allow', 'block'].forEach(function (b) { %><label><input type="radio" name="ai_bots" value="<%= b %>"<%= ((seo.ai && seo.ai.bots) || 'allow') === b ? ' checked' : '' %>><span><%= t('website.aio_bots_' + b) %></span></label><% }) %></div>
+        <span class="help"><%= t('website.aio_bots_help') %></span></fieldset>
+
       <% if (advanced) { %>
+      <h2 class="ws-seo-h"><%- icon('settings', 'icon-sm') %><%= t('website.seo_advanced') %></h2>
       <div class="stack-sm"><span class="label"><%= t('website.seo_image') %></span>
         <div class="pm-cover ws-pick-preview" data-media-preview="image_media_id"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div>
         <input type="hidden" name="image_media_id" value="<%= seo.image || '' %>">
@@ -40,7 +69,12 @@
         <div class="ws-serp-title"><%= shownTitle %></div>
         <div class="ws-serp-desc"><%= shownDesc.slice(0, 160) %></div>
       </div></section>
-    <section class="panel"><div class="panel-body small muted"><%= t('website.seo_auto') %></div></section>
+    <section class="panel"><div class="panel-head"><h2><%= t('website.seo_checks') %></h2></div>
+      <ul class="action-list ws-seo-checks">
+        <% checks.forEach(function (c) { %><li><div><span class="action-icon<%= c.ok ? '' : ' is-danger' %>"><%- icon(c.ok ? 'circle-check' : 'circle-alert', 'icon-sm') %></span><div class="grow"><div class="strong small"><%= t('website.chk.' + c.key) %></div><% if (!c.ok) { %><div class="small muted"><%= t('website.chk_fix.' + c.key) %></div><% } %></div></div></li><% }) %>
+      </ul></section>
+    <section class="panel"><div class="panel-body small muted stack-sm"><span><%= t('website.seo_auto') %></span>
+      <% if (business.slug) { %><a class="link" href="/<%= business.slug %>/llms.txt" target="_blank" rel="noopener" dir="ltr">/<%= business.slug %>/llms.txt</a><% } %></div></section>
   </aside>
 </div>
 <%- include('../integrations/_media-picker') %>

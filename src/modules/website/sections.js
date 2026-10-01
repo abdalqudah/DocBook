@@ -159,6 +159,13 @@ function cleanFooter(raw) {
   return out;
 }
 
+/** Map position: latitude and longitude with 6 decimals, or null. */
+function cleanGeo(raw) {
+  const lat = Number(raw && raw.lat); const lng = Number(raw && raw.lng);
+  if (!raw || raw.lat === '' || raw.lng === '' || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || (lat === 0 && lng === 0)) return null;
+  return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
+}
+
 const FONTS = ['system', 'humanist', 'serif', 'rounded'];
 const RADII = ['soft', 'rounded', 'square'];
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -304,6 +311,13 @@ function sanitize(doc, refs = {}) {
       description: { ar: cleanLine(seo.description && seo.description.ar, 160), en: cleanLine(seo.description && seo.description.en, 160) },
       image: mediaOk(seo.image), // share image (advanced search settings)
       hide: seo.hide === true || seo.hide === '1', // ask search engines not to list the site (advanced)
+      keywords: pair(seo.keywords, 200),
+      // Local search (GEO): where the clinic is, which areas it serves, its price level.
+      geo: cleanGeo(seo.geo),
+      area: pair(seo.area, 120),
+      price: ['', '$', '$$', '$$$'].includes(seo.price) ? seo.price : '',
+      // AI assistants (AIO): a factual summary in the clinic's words, and whether AI crawlers may read the site.
+      ai: { summary: pair(seo.ai && seo.ai.summary, 1500, true), bots: seo.ai && seo.ai.bots === 'block' ? 'block' : 'allow' },
     },
   };
 }

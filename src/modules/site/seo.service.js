@@ -229,14 +229,16 @@ async function listedClinics(limit = 5000) {
 }
 
 // ---------------------------------------------------------------- robots.txt / sitemap.xml
-function robots(s, base) {
+function robots(s, base, aiBlocked = []) {
   const rules = [...PRIVATE_PATHS, ...s.disallow];
   if (!s.index_home) rules.push('/$');
   const lines = ['User-agent: *', ...rules.map((p) => `Disallow: ${p}`), 'Allow: /', ''];
+  // Clinics that asked AI assistants not to read their site.
+  const clinicRules = aiBlocked.filter((x) => /^[a-z0-9-]+$/.test(x)).map((x) => `/${x}`);
   for (const [k, agent] of Object.entries(AI_BOTS)) {
     lines.push(`User-agent: ${agent}`);
     if (s.bots[k] === false) lines.push('Disallow: /');
-    else lines.push(...rules.map((p) => `Disallow: ${p}`), 'Allow: /');
+    else lines.push(...rules.map((p) => `Disallow: ${p}`), ...clinicRules.map((p) => `Disallow: ${p}`), 'Allow: /');
     lines.push('');
   }
   lines.push(`Sitemap: ${base}/sitemap.xml`, '');
@@ -249,6 +251,11 @@ async function sitemap(s, base) {
   if (s.index_home) urls.push({ loc: '/' });
   if (s.index_clinics) for (const c of await listedClinics()) urls.push({ loc: `/${c.slug}`, lastmod: c.updated_at });
   if (s.index_clinics) urls.push(...await require('../discover/directory.service').sitemapUrls()); // eslint-disable-line global-require -- clinic directory pages
+  if (s.index_clinics) {
+    // The other pages of published clinic websites (of clinics listed above).
+    const listed = new Set(urls.map((u) => u.loc));
+    for (const p of await require('../website/site.service').livePages()) if (listed.has(`/${p.slug}`)) urls.push({ loc: `/${p.slug}/p/${p.page}`, lastmod: p.at }); // eslint-disable-line global-require
+  }
   const alt = (loc) => ['ar', 'en'].map((lc) => `<xhtml:link rel="alternate" hreflang="${lc}" href="${x(`${base}${loc}?lang=${lc}`)}"/>`).join('')
     + `<xhtml:link rel="alternate" hreflang="x-default" href="${x(base + loc)}"/>`;
   const body = urls.map((u) => `<url><loc>${x(base + u.loc)}</loc>${u.lastmod ? `<lastmod>${new Date(u.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${alt(u.loc)}</url>`).join('\n');
@@ -292,8 +299,17 @@ function homeLd({ s, mkt, site, base, locale, description, logoUrl }) {
   return out;
 }
 
+// The clinic's specialty → a more precise schema.org type and medical specialty (MedicalClinic otherwise).
+const SPECIALTY_LD = {
+  dentistry: { type: 'Dentist', specialty: 'Dentistry' }, dermatology: { specialty: 'Dermatology' }, paediatrics: { specialty: 'Pediatric' },
+  obgyn: { specialty: 'Obstetric' }, physiotherapy: { specialty: 'PhysicalTherapy' }, cardiology: { specialty: 'Cardiovascular' },
+  ophthalmology: { specialty: 'Optometric' }, ent: { specialty: 'Otolaryngologic' }, psychiatry: { specialty: 'Psychiatric' },
+  orthopaedics: { specialty: 'Musculoskeletal' }, nutrition: { specialty: 'DietNutrition' }, general: { specialty: 'PrimaryCare' },
+};
+const pairOf = (v, locale) => (v && (v[locale] || v[locale === 'en' ? 'ar' : 'en'])) || '';
+
 /** schema.org MedicalClinic for /<slug>, with only the details the clinic really entered. */
-function clinicLd({ clinic, doctors, base, locale }) {
+function clinicLd({ clinic, doctors, base, locale, ws = null }) {
   const url = `${base}/${clinic.slug}`;
   const other = locale === 'en' ? clinic.name : clinic.name_en;
   const address = {
@@ -321,7 +337,102 @@ function clinicLd({ clinic, doctors, base, locale }) {
   }
   if (clinic.reviews && clinic.reviews.count) Object.assign(ld, require('../reviews/reviews.service').jsonLd(clinic.reviews, locale)); // eslint-disable-line global-require -- verified reviews
   if (clinic.booking_enabled) ld.potentialAction ={ '@type': 'ReserveAction', target: { '@type': 'EntryPoint', urlTemplate: `${url}/book`, inLanguage: ['ar', 'en'] }, name: locale === 'ar' ? 'احجز موعدًا' : 'Book an appointment' };
-  return [ld];
+  const out = [ld];
+  if (!ws) return out;
+  // Website (builder) details: precise type, map position, areas, price level, services and prices, profiles, FAQ.
+  const sp = SPECIALTY_LD[clinic.specialtyKey];
+  if (sp && sp.type) ld['@type'] = ['MedicalClinic', sp.type];
+  if (sp && sp.specialty) ld.medicalSpecialty = sp.specialty;
+  const sd = ws.seo || {};
+  if (sd.geo) ld.geo = { '@type': 'GeoCoordinates', latitude: sd.geo.lat, longitude: sd.geo.lng };
+  const area = pairOf(sd.area, locale);
+  if (area) ld.areaServed = area.split(/[،,]/).map((a) => a.trim()).filter(Boolean).slice(0, 12).map((name) => ({ '@type': 'Place', name }));
+  if (sd.price) ld.priceRange = sd.price;
+  if (pairOf(sd.keywords, locale)) ld.keywords = [ld.keywords, pairOf(sd.keywords, locale)].filter(Boolean).join(', ').slice(0, 300);
+  ld.isAcceptingNewPatients = Boolean(clinic.booking_enabled);
+  ld.availableLanguage = ['ar', 'en'];
+  if (ws.sameAs && ws.sameAs.length) ld.sameAs = ws.sameAs;
+  const services = (ws.services || []).filter((x) => x && x.name).slice(0, 60);
+  if (services.length) {
+    ld.availableService = services.map((x) => ({ '@type': 'MedicalProcedure', name: x.name, ...(x.description ? { description: strip(x.description).slice(0, 300) } : {}) }));
+    const priced = services.filter((x) => x.price !== null && x.price !== undefined);
+    if (priced.length) ld.makesOffer = priced.map((x) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: x.name }, price: Number(x.price).toFixed(2), priceCurrency: clinic.currency || 'JOD' }));
+  }
+  const faq = (ws.faq || []).filter((x) => x && x.q && x.a).slice(0, 30);
+  if (faq.length) {
+    out.push({ '@context': 'https://schema.org', '@type': 'FAQPage', inLanguage: locale, mainEntity: faq.map((x) => ({ '@type': 'Question', name: strip(x.q).slice(0, 300), acceptedAnswer: { '@type': 'Answer', text: strip(x.a).slice(0, 1500) } })) });
+  }
+  if (ws.path && ws.pageName) {
+    out.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: clinic.displayName || clinic.name, item: url },
+      { '@type': 'ListItem', position: 2, name: ws.pageName, item: `${base}${ws.path}` },
+    ] });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- one clinic: llms.txt, robots.txt and sitemap.xml
+/**
+ * A factual summary of one clinic for AI assistants (llmstxt.org format), from its records and its website: the
+ * clinic's own summary, contact, map position, doctors, services and prices, hours, FAQ and verified rating.
+ * `base` is the address the clinic is reached at (its own domain, or the platform's /<slug>).
+ */
+function clinicLlms({ clinic, doc, doctors, services, reviews, base, siteBase }) {
+  const sd = (doc && doc.seo) || {};
+  const both = (v) => [v && v.ar, v && v.en].filter(Boolean);
+  const lines = [`# ${clinic.name}${clinic.name_en && clinic.name_en !== clinic.name ? ` (${clinic.name_en})` : ''}`, ''];
+  const summary = both(sd.ai && sd.ai.summary);
+  const about = summary.length ? summary : [clinic.about, clinic.about_en].filter(Boolean);
+  if (about.length) { about.forEach((a) => lines.push(`> ${strip(a).slice(0, 1500)}`)); lines.push(''); }
+  const facts = [];
+  if (clinic.specialty) facts.push(`Specialty: ${clinic.specialty}`);
+  if (clinic.address || clinic.city) facts.push(`Address: ${[clinic.address, clinic.city].filter(Boolean).join(', ')}`);
+  if (sd.geo) facts.push(`Map position: ${sd.geo.lat}, ${sd.geo.lng}`);
+  if (both(sd.area).length) facts.push(`Areas served: ${both(sd.area).join(' / ')}`);
+  if (clinic.phone) facts.push(`Phone: ${clinic.phone}`);
+  if (clinic.whatsapp) facts.push(`WhatsApp: ${clinic.whatsapp}`);
+  if (clinic.email) facts.push(`E-mail: ${clinic.email}`);
+  if (sd.price) facts.push(`Price level: ${sd.price}`);
+  facts.push(`Languages: Arabic, English`);
+  facts.push(`Website: ${siteBase}`);
+  if (clinic.booking_enabled) facts.push(`Book online: ${siteBase}/book`);
+  if (reviews && reviews.count) facts.push(`Verified patient rating: ${reviews.avg}/5 from ${reviews.count} reviews`);
+  lines.push(...facts.map((f) => `- ${f}`), '');
+  if (doctors.length) {
+    lines.push('## Doctors', '');
+    doctors.forEach((d) => lines.push(`- ${d.name}${d.specialty ? ` — ${d.specialty}` : ''}${d.fee !== null && d.fee !== undefined ? ` — consultation ${d.fee} ${clinic.currency}` : ''}${clinic.booking_enabled ? ` — book: ${siteBase}/book?doctor=${d.id}` : ''}`));
+    lines.push('');
+  }
+  if (services.length) {
+    lines.push('## Services and prices', '');
+    services.slice(0, 80).forEach((x) => lines.push(`- ${x.name}${x.price !== null && x.price !== undefined ? ` — ${x.price} ${clinic.currency}` : ''}${x.duration ? ` — ${x.duration} min` : ''}`));
+    lines.push('');
+  }
+  if (clinic.working_hours_text) lines.push('## Working hours', '', strip(clinic.working_hours_text), '');
+  const faq = ((doc && doc.pages) || []).flatMap((p) => p.sections).filter((x) => x.type === 'faq' && x.visible)
+    .flatMap((x) => ['ar', 'en'].flatMap((l) => (x.content[l] && x.content[l].items) || [])).filter((x) => x.q && x.a);
+  if (faq.length) { lines.push('## Frequently asked questions', ''); faq.slice(0, 40).forEach((x) => lines.push(`### ${strip(x.q)}`, '', strip(x.a), '')); }
+  const pages = ((doc && doc.pages) || []).filter((p) => p.key !== 'home');
+  if (pages.length) { lines.push('## Pages', ''); pages.forEach((p) => lines.push(`- [${(p.title && (p.title.en || p.title.ar)) || p.slug}](${siteBase}/p/${p.slug})`)); lines.push(''); }
+  lines.push(`Facts come from the clinic's own records on ${base}. Prices and availability can change; the booking page shows the current free times.`, '');
+  return lines.join('\n');
+}
+
+function clinicRobots({ siteBase, slugPrefix, blockAi, hide }) {
+  const lines = ['User-agent: *', `Disallow: ${slugPrefix}/book/`, `Disallow: ${slugPrefix}/login`];
+  if (hide) lines.push('Disallow: /');
+  lines.push('Allow: /', '');
+  if (blockAi) for (const agent of Object.values(AI_BOTS)) lines.push(`User-agent: ${agent}`, 'Disallow: /', '');
+  lines.push(`Sitemap: ${siteBase}/sitemap.xml`, '');
+  return lines.join('\n');
+}
+
+function clinicSitemap({ siteBase, doc, doctors, at }) {
+  const x = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const locs = ['', '/book', ...((doc && doc.pages) || []).filter((p) => p.key !== 'home').map((p) => `/p/${p.slug}`), ...(doc ? doctors.map((d) => `/doctors/${d.id}`) : [])];
+  const alt = (loc) => ['ar', 'en'].map((lc) => `<xhtml:link rel="alternate" hreflang="${lc}" href="${x(`${siteBase}${loc}?lang=${lc}`)}"/>`).join('');
+  const body = locs.map((l) => `<url><loc>${x(siteBase + l)}</loc>${at ? `<lastmod>${new Date(at).toISOString().slice(0, 10)}</lastmod>` : ''}${alt(l)}</url>`).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${body}\n</urlset>\n`;
 }
 
 // ---------------------------------------------------------------- llms.txt (GEO)
@@ -374,14 +485,14 @@ async function llmsDefault({ s, site, base }) {
  * Tags for a public page. kind: 'home' | 'cookies' (marketing pages, may load pixels after consent) |
  * 'clinic' (clinic page: structured data, never pixels) | 'private' (noindex, nothing else).
  */
-async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, description: pageDesc, shareImage = null, hide = false }) {
+async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, description: pageDesc, shareImage = null, hide = false, ws = null }) {
   const [s, mkt, media] = await Promise.all([get(), marketing(), require('./media.service').map()]); // eslint-disable-line global-require
   const locale = req.locale;
   const base = baseUrl(req, s);
   const name = siteName(s, locale);
   if (kind === 'private') return { title: pageTitle ? `${pageTitle} · ${name}` : name, html: '<meta name="robots" content="noindex, nofollow">' };
   const siteContent = site || await content.get();
-  const path = kind === 'clinic' ? `/${clinic.slug}` : kind === 'cookies' ? '/preferences/cookies' : '/';
+  const path = kind === 'clinic' ? ((ws && ws.path) || `/${clinic.slug}`) : kind === 'cookies' ? '/preferences/cookies' : '/';
   let title; let description; let noindex = false;
   if (kind === 'home') {
     title = L(s.title, locale) || L(siteContent.seo && siteContent.seo.title, locale) || name;
@@ -401,6 +512,16 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   const m = (n, c, attr = 'name') => { if (c) tags.push(`<meta ${attr}="${esc(n)}" content="${esc(c)}">`); };
   m('description', description);
   if (noindex) m('robots', 'noindex, follow');
+  if (kind === 'clinic' && ws) {
+    const sd = ws.seo || {};
+    if (sd.ai && sd.ai.bots === 'block') m('robots', 'noai, noimageai'); // AI crawlers: the clinic asked them not to use its pages
+    m('keywords', pairOf(sd.keywords, locale));
+    // Local search: position, place and region.
+    if (sd.geo) { m('geo.position', `${sd.geo.lat};${sd.geo.lng}`); m('ICBM', `${sd.geo.lat}, ${sd.geo.lng}`); }
+    if (clinic.city) m('geo.placename', clinic.city);
+    if (clinic.country && /^[A-Z]{2}$/i.test(clinic.country)) m('geo.region', String(clinic.country).toUpperCase());
+    tags.push(`<link rel="alternate" type="text/plain" title="llms.txt" href="${esc(`${base}/${clinic.slug}/llms.txt`)}">`);
+  }
   const url = `${base}${path}`;
   tags.push(`<link rel="canonical" href="${esc(`${url}?lang=${locale}`)}">`);
   for (const lc of ['ar', 'en']) tags.push(`<link rel="alternate" hreflang="${lc}" href="${esc(`${url}?lang=${lc}`)}">`);
@@ -424,7 +545,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   if (s.x_handle) m('twitter:site', `@${s.x_handle}`);
   if (kind === 'home') { m('google-site-verification', s.verify.google); m('msvalidate.01', s.verify.bing); }
   const ld = kind === 'home' ? homeLd({ s, mkt, site: siteContent, base, locale, description, logoUrl: `${base}${brand.favicon || '/favicon.svg'}` })
-    : kind === 'clinic' ? clinicLd({ clinic, doctors, base, locale }) : [];
+    : kind === 'clinic' ? clinicLd({ clinic, doctors, base, locale, ws }) : [];
   for (const d of ld) tags.push(`<script type="application/ld+json">${ldJson(d)}</script>`);
 
   // Pixels: marketing pages only, only with the visitor's consent.
@@ -462,5 +583,5 @@ async function checks({ s, mkt, site, media }) {
 
 module.exports = {
   AI_BOTS, SOCIAL, PIXELS, PRIVATE_PATHS, CONSENT_COOKIE, get, save, marketing, saveMarketing, hasPixels, consentOf, applyPixelCsp,
-  baseUrl, listedClinics, robots, sitemap, homeLd, clinicLd, llmsDefault, head, checks, ldJson, cleanBase, validSocial, L,
+  baseUrl, listedClinics, robots, sitemap, homeLd, clinicLd, clinicLlms, clinicRobots, clinicSitemap, llmsDefault, head, checks, ldJson, cleanBase, validSocial, L,
 };

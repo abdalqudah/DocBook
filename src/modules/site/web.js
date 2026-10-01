@@ -76,7 +76,8 @@ router.post('/preferences/cookies', (req, res) => {
 // ---------------------------------------------------------------- search engines and AI assistants
 router.get('/robots.txt', wrap(async (req, res) => {
   const s = await seo.get();
-  res.set('Cache-Control', 'public, max-age=3600').type('text/plain; charset=utf-8').send(seo.robots(s, seo.baseUrl(req, s)));
+  const blocked = await require('../website/site.service').aiBlockedSlugs(); // eslint-disable-line global-require
+  res.set('Cache-Control', 'public, max-age=3600').type('text/plain; charset=utf-8').send(seo.robots(s, seo.baseUrl(req, s), blocked));
 }));
 
 router.get('/sitemap.xml', wrap(async (req, res) => {
