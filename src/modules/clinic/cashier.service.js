@@ -175,13 +175,16 @@ async function today(ctx, { doctor } = {}) {
   if (doctor) q.where('a.doctor_id', doctor === 'none' ? null : Number(doctor));
   const rows = await q;
   const ids = rows.map((a) => a.id);
-  const [invs, rxs, certs] = ids.length ? await Promise.all([
+  const [invs, rxs, certs, intake] = ids.length ? await Promise.all([
     knex('invoices').where('business_id', ctx.businessId).whereIn('appointment_id', ids).orderBy('id').select('id', 'appointment_id', 'invoice_number', 'amount', 'payment_method'),
     knex('prescriptions').where('business_id', ctx.businessId).whereIn('appointment_id', ids).orderBy('id').select('id', 'appointment_id'),
     ctx.permissions && (ctx.permissions.has('certificates.view') || ctx.permissions.has('certificates.issue'))
       ? knex('certificates').where('business_id', ctx.businessId).whereIn('appointment_id', ids).whereNull('revoked_at').orderBy('id').select('id', 'appointment_id', 'doc_type', 'serial').catch(() => [])
       : [],
-  ]) : [[], [], []];
+    // What was noted while the patient waited (vital signs, chief complaint) — for the reception board.
+    knex('consultations').where('business_id', ctx.businessId).whereIn('appointment_id', ids).select('appointment_id', 'vital_signs', 'chief_complaint'),
+  ]) : [[], [], [], []];
+  const intakeBy = new Map(intake.map((c) => { let v = {}; try { v = typeof c.vital_signs === 'string' ? JSON.parse(c.vital_signs) || {} : (c.vital_signs || {}); } catch { v = {}; } return [c.appointment_id, { vitals: v, complaint: c.chief_complaint || '' }]; }));
   const by = (list) => { const m = new Map(); list.forEach((x) => { if (!m.has(x.appointment_id)) m.set(x.appointment_id, []); m.get(x.appointment_id).push(x); }); return m; };
   const invBy = by(invs); const rxBy = by(rxs); const certBy = by(certs);
   const now = Date.now();
@@ -194,6 +197,7 @@ async function today(ctx, { doctor } = {}) {
       waited: state === 'arrived' ? minutesSince(a.arrived_at, now) : null,
       inRoom: state === 'with_doctor' ? minutesSince(a.called_at, now) : null,
       invoice: (invBy.get(a.id) || []).slice(-1)[0] || null, rxs: rxBy.get(a.id) || [], certs: certBy.get(a.id) || [],
+      intake: intakeBy.get(a.id) || { vitals: {}, complaint: '' },
     };
   });
 }

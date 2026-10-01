@@ -30,10 +30,18 @@ async function upsert(ctx, apptId, patch, action) {
   await audit.record(ctx, action, { entityType: 'appointment', entityId: a.id, newValues: Object.fromEntries(Object.keys(patch).map((k) => [k, k === 'vital_signs' ? patch[k] : '[updated]'])) });
 }
 
+/**
+ * Vital signs (and, when the form carries it, the chief complaint) — recorded by the nurse or reception while the
+ * patient waits, or on the visit screen. Anyone with vitals.edit may write both; the doctor's SOAP note is separate.
+ */
 async function saveVitals(ctx, apptId, input) {
   const v = validate(vitalsSchema, input);
   const clean = Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined));
-  await upsert(ctx, apptId, { vital_signs: JSON.stringify(clean), vitals_by: ctx.userId }, 'consultation.vitals');
+  const patch = { vital_signs: JSON.stringify(clean), vitals_by: ctx.userId };
+  if (input && Object.prototype.hasOwnProperty.call(input, 'chief_complaint')) {
+    patch.chief_complaint = validate(z.object({ chief_complaint: optionalString(1000) }), { chief_complaint: input.chief_complaint }).chief_complaint || null;
+  }
+  await upsert(ctx, apptId, patch, 'consultation.vitals');
 }
 
 async function saveNote(ctx, apptId, input) {

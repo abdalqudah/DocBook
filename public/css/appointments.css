@@ -253,3 +253,5 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .flush-empty { padding: 16px var(--card-pad); }
 @media (max-width: 1024px) { .booking-actions { bottom: calc(58px + env(safe-area-inset-bottom)); } }
 @media (max-width: 720px) { .booking-actions .btn { flex: 1 1 auto; justify-content: center; } }
+.vitals-grid .full { grid-column: 1 / -1; }
+.df-complaint { padding-bottom: 0; } .df-complaint p { margin: 2px 0 0; }

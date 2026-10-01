@@ -20,6 +20,15 @@
     { key: 'with_doctor', items: group.with_doctor },
   ];
   var finished = group.ready.length + group.paid.length; // visits the doctor has finished today (no payment state here)
+  var canVitals = can('vitals.edit');
+  // Vital signs offered on the board (same fields as the visit screen).
+  var VITALS = [
+    { k: 'bloodPressure', unit: t('visits.units.mmhg'), ph: '120/80' }, { k: 'pulseBpm', unit: t('visits.units.bpm') }, { k: 'temperatureC', unit: '°C' },
+    { k: 'spo2', unit: '%' }, { k: 'weightKg', unit: t('visits.units.kg') }, { k: 'heightCm', unit: t('visits.units.cm') },
+    { k: 'respiratoryRate', unit: t('visits.units.per_min') }, { k: 'bloodSugar', unit: t('visits.units.mgdl') },
+  ];
+  var vitalsLine = function (v) { return ['bloodPressure', 'pulseBpm', 'temperatureC', 'spo2'].filter(function (k) { return v[k] !== undefined && v[k] !== null && v[k] !== ''; }).map(function (k) { return t('visits.v.' + k) + ' ' + v[k]; }).join(' · '); };
+  var iconBtn = function (href, iconName, label, extra) { return '<a class="btn btn-ghost btn-icon fx-ico" href="' + href + '" title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '"' + (extra || '') + '>' + icon(iconName, 'icon-sm') + '<span class="fx-ico-l">' + escapeHtml(label) + '</span></a>'; };
   var total = cols.reduce(function (s, c) { return s + c.items.length; }, 0);
 %>
 <div class="page-head fx-head" data-auto-refresh="60">
@@ -75,12 +84,10 @@
           meta = a.waited !== null && a.waited !== undefined && a.arrived_at ? t('cashx.waiting_for', { n: a.waited }) : '';
           if (a.waited >= 30) flag = '<span class="fx-flag is-late">' + escapeHtml(t('cashx.waiting_long')) + '</span>';
           action = a.doctor_id ? main(a.id, 'call-in', t('cashx.do.send_in'), 'door-open', 1) : '<a class="btn btn-secondary fx-main" href="/app/appointments/' + a.id + '/edit?return=%2Fapp%2Ffront-desk">' + icon('stethoscope', 'icon-sm') + '<span>' + escapeHtml(t('cashx.do.pick_doctor')) + '</span></a>';
-          // The nurse takes vital signs while the patient waits (the visit screen's vitals panel).
-          if (canVisit && can('vitals.edit')) more.push('<a href="/app/visits/' + a.id + '#vitals">' + icon('heart-pulse', 'icon-sm') + escapeHtml(t('frontdesk.take_vitals')) + '</a>');
           more.push(item(a.id, 'check-in', t('cashx.do.undo_check_in'), 'refresh-cw', 0));
         } else if (c.key === 'with_doctor') {
           meta = a.called_at ? t('cashx.in_room_for', { n: a.inRoom || 0 }) : '';
-          action = '<span class="fx-wait">' + icon('stethoscope', 'icon-sm') + escapeHtml(t('cashx.with_doctor_now')) + '</span>';
+          action = '';
           more.push(item(a.id, 'call-in', t('frontdesk.back_to_waiting'), 'refresh-cw', 0));
         }
         if (canVisit) more.push('<a href="/app/visits/' + a.id + '">' + icon('file-text', 'icon-sm') + escapeHtml(t('cashx.open_visit')) + '</a>');
@@ -95,9 +102,24 @@
         <div class="fx-name"><% if (canVisit) { %><a href="/app/visits/<%= a.id %>"><bdi><%= a.patient_name %></bdi></a><% } else { %><bdi><%= a.patient_name %></bdi><% } %></div>
         <div class="fx-meta"><% if (a.doctor_id) { %><span class="doc-dot" aria-hidden="true"<% if (a.doctor_color) { %> style="background:<%= a.doctor_color %>"<% } %>></span><%= L(a.doctor_name, a.doctor_name_en) %><% } else { %><%= t('appointments.unassigned') %><% } %><% if (a.service_name) { %> · <%= L(a.service_name, a.service_name_en) %><% } %></div>
         <% if (meta) { %><div class="fx-sub"><%= meta %></div><% } %>
+        <% if ((c.key === 'arrived' || c.key === 'with_doctor') && a.intake && (a.intake.complaint || vitalsLine(a.intake.vitals))) { %>
+        <div class="fx-intake">
+          <% if (a.intake.complaint) { %><div class="fx-complaint"><%- icon('message-square', 'icon-sm') %><bdi><%= a.intake.complaint %></bdi></div><% } %>
+          <% if (vitalsLine(a.intake.vitals)) { %><div class="fx-vitals" dir="auto"><%- icon('activity', 'icon-sm') %><span><%= vitalsLine(a.intake.vitals) %></span></div><% } %>
+        </div>
+        <% } %>
         <div class="fx-actions">
           <%- action %>
-          <% if ((a.rxs && a.rxs.length) || (a.certs && a.certs.length)) { %><%- include('../cashier/_papers', { v: a, menuUp: false }) %><% } %>
+          <% if (c.key === 'arrived' && canVitals) { var _has = a.intake && (a.intake.complaint || Object.keys(a.intake.vitals || {}).length); %>
+          <button class="btn btn-ghost btn-icon fx-ico" type="button" data-open-dialog="fx-intake" data-action="/app/front-desk/<%= a.id %>/intake" data-dialog-title="<%= t('frontdesk.intake_title') %> — <%= a.patient_name %>" data-fill="<%= JSON.stringify(Object.assign({ chief_complaint: (a.intake && a.intake.complaint) || '' }, (a.intake && a.intake.vitals) || {})) %>" title="<%= t('frontdesk.intake_btn') %>" aria-label="<%= t('frontdesk.intake_btn') %> — <%= a.patient_name %>"><%- icon('heart-pulse', 'icon-sm') %><span class="fx-ico-l"><%= _has ? t('frontdesk.intake_edit') : t('frontdesk.intake_btn') %></span></button>
+          <% } %>
+          <% if (c.key === 'with_doctor') { %>
+          <div class="fx-icons">
+            <% if (canVisit) { %><%- iconBtn('/app/visits/' + a.id + '#prescriptions', 'pill', t('frontdesk.ico_rx')) %><% } %>
+            <%- include('../cashier/_papers', { v: a, menuUp: false }) %>
+            <% if (canPay) { %><%- iconBtn('/app/cashier/screen?add=' + a.id, 'banknote', t('frontdesk.ico_pay')) %><% } %>
+          </div>
+          <% } %>
           <% if (more.length) { %>
           <details class="dropdown fx-more">
             <summary class="btn btn-ghost btn-icon btn-sm" aria-label="<%= t('cashx.more_actions') %> — <%= a.patient_name %>" title="<%= t('cashx.more_actions') %>"><%- icon('ellipsis', 'icon-sm') %></summary>
@@ -140,6 +162,30 @@
       <p class="small mt-2"><a class="link" href="/app/appointments/new?date=today&return=%2Fapp%2Ffront-desk"><%= t('cashx.walkin_more') %></a></p>
     </div>
     <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"<%= walkInDoctors.length ? '' : ' disabled' %>><%- icon('user-check', 'icon-sm') %><%= t('cashx.walkin_submit') %></button></div>
+  </form>
+</dialog>
+<% } %>
+
+<% if (canVitals) { %>
+<dialog class="dialog" id="fx-intake" aria-labelledby="fx-intake-h">
+  <form method="post" action="/app/front-desk" novalidate>
+    <div class="dialog-head"><div><h2 id="fx-intake-h" data-dialog-title-target><%= t('frontdesk.intake_title') %></h2><p class="small muted"><%= t('frontdesk.intake_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- filterInput %>
+      <div class="field">
+        <label class="label" for="fi-complaint"><%= t('visits.chief_complaint') %></label>
+        <textarea class="textarea" id="fi-complaint" name="chief_complaint" rows="2" maxlength="1000" dir="auto" placeholder="<%= t('visits.chief_complaint_ph') %>"></textarea>
+      </div>
+      <div class="fx-vitals-grid mt-4">
+        <% VITALS.forEach(function (f) { %>
+        <div class="field">
+          <label class="label" for="fi-<%= f.k %>"><%= t('visits.v.' + f.k) %></label>
+          <div class="input-affix"><input class="input" id="fi-<%= f.k %>" name="<%= f.k %>" inputmode="<%= f.k === 'bloodPressure' ? 'text' : 'decimal' %>" dir="ltr" autocomplete="off"<% if (f.ph) { %> placeholder="<%= f.ph %>"<% } %>><span class="affix"><%= f.unit %></span></div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button></div>
   </form>
 </dialog>
 <% } %>

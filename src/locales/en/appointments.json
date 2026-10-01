@@ -241,7 +241,14 @@
     "print_invoice": "Print invoice",
     "take_vitals": "Take vital signs",
     "finished_today": "Visits finished today:",
-    "to_cash": "Cash screen"
+    "to_cash": "Cash screen",
+    "intake_btn": "Vitals & complaint",
+    "intake_edit": "Edit vitals",
+    "intake_title": "Vital signs and complaint",
+    "intake_help": "The doctor sees them at the top of the visit. Fill in only what you know.",
+    "intake_saved": "Vital signs and complaint saved.",
+    "ico_rx": "Prescription",
+    "ico_pay": "Payment"
   },
   "visits": {
     "title": "Visit",
@@ -355,6 +362,8 @@
     "print_rx": "Print",
     "licence": "Licence no.",
     "signature": "Doctor's signature",
-    "stamp": "Clinic stamp"
+    "stamp": "Clinic stamp",
+    "chief_complaint": "Chief complaint",
+    "chief_complaint_ph": "e.g. tooth pain for two days"
   }
 }

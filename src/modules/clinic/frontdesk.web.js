@@ -14,9 +14,12 @@ const express = require('express');
 const { wrap, form, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const { AppError } = require('../../core/errors');
+const { translateMessage } = require('../../core/i18n');
 const { z, validate, optionalString } = require('../../core/validate');
 const appts = require('./appointments.service');
 const cashier = require('./cashier.service');
+const clinical = require('./clinical.service');
+const privacy = require('../clinicalplus/privacy.service');
 const scheduling = require('./scheduling');
 const { decimalsOf } = require('../../core/money');
 
@@ -66,7 +69,8 @@ const toggle = (fn, okKey) => wrap(async (req, res) => {
     flash(req, 'success', req.t(okKey));
   } catch (e) {
     if (!(e instanceof AppError) || e.status >= 500 || e.status === 403) throw e;
-    flash(req, 'error', errText(req, e));
+    const first = e.code === 'VALIDATION_FAILED' && e.details ? Object.values(e.details).find((v) => typeof v === 'string') : null;
+    flash(req, 'error', first ? translateMessage(req.locale, first) : errText(req, e));
   }
   res.redirect(backTo(req));
 });
@@ -76,6 +80,15 @@ router.post('/:id(\\d+)/check-in', toggle((req) => appts.checkIn(req.ctx, Number
 router.post('/:id(\\d+)/call-in', toggle((req) => appts.callIn(req.ctx, Number(req.params.id), on(req)), 'frontdesk.saved'));
 router.post('/:id(\\d+)/no-show', toggle((req) => appts.setStatus(req.ctx, Number(req.params.id), 'no_show'), 'frontdesk.marked_no_show'));
 router.post('/:id(\\d+)/restore', toggle((req) => appts.setStatus(req.ctx, Number(req.params.id), 'confirmed'), 'frontdesk.restored'));
+
+// While the patient waits: vital signs and the chief complaint, from the board (same rules as the visit screen:
+// vitals.edit and the record's privacy rule).
+router.post('/:id(\\d+)/intake', can('vitals.edit'), toggle(async (req) => {
+  const a = await appts.get(req.ctx, Number(req.params.id));
+  const acc = await privacy.access(req.ctx, { appointment: a });
+  if (!acc.clinical && !acc.vitals) throw new AppError('RECORD_RESTRICTED', 'This clinical record is restricted.', 403);
+  await clinical.saveVitals(req.ctx, a.id, req.body);
+}, 'frontdesk.intake_saved'));
 
 // ---------------------------------------------------------------- walk-in: new patient now
 const walkInSchema = z.object({

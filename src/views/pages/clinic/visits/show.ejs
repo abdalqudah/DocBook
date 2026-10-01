@@ -108,6 +108,7 @@
     <% if (clinicalView || canVitals) { %>
     <section class="panel df-vitals" id="vitals">
       <div class="panel-head"><h2><%- icon('activity', 'icon-sm') %> <%= t('visits.vitals') %></h2><% if (hasVitals) { %><span class="small muted"><%= c.updated_at ? t('visits.last_saved', { when: fmt.date(c.updated_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) : t('visits.recorded') %></span><% } %></div>
+      <% if (c.chief_complaint) { %><div class="panel-body df-complaint"><span class="tiny muted"><%= t('visits.chief_complaint') %></span><p class="strong pre-line" dir="auto"><%= c.chief_complaint %></p></div><% } %>
       <% if (hasVitals) { %>
       <div class="panel-body df-vitals-read">
         <% VITALS.forEach(function (f) { if (vitals[f.k] === undefined) return; %><span><span class="tiny muted"><%= t('visits.v.' + f.k) %></span><strong dir="ltr"><%= vitals[f.k] %> <small class="muted"><%= f.unit %></small></strong></span><% }) %>
@@ -118,7 +119,7 @@
       <% } %>
       <% if (canVitals) { %>
       <details class="df-disclose"<% if (failed === 'vitals' || (!hasVitals && !canNote)) { %> open<% } %>>
-        <summary><%- icon(hasVitals ? 'pencil' : 'plus', 'icon-sm') %><%= hasVitals ? t('dflow.edit_vitals') : t('dflow.record_vitals') %></summary>
+        <summary><%- icon(hasVitals || c.chief_complaint ? 'pencil' : 'plus', 'icon-sm') %><%= hasVitals || c.chief_complaint ? t('dflow.edit_vitals') : t('dflow.record_vitals') %></summary>
         <form method="post" action="/app/visits/<%= a.id %>/vitals" novalidate data-vitals data-bmi-labels="<%= json({ under: t('visits.bmi.under'), normal: t('visits.bmi.normal'), over: t('visits.bmi.over'), obese: t('visits.bmi.obese') }) %>">
           <div class="panel-body">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -131,6 +132,10 @@
                 <% if (e) { %><span class="field-error"><%= e %></span><% } %>
               </div>
               <% }) %>
+              <div class="field full">
+                <label class="label" for="v-chief_complaint"><%= t('visits.chief_complaint') %></label>
+                <textarea class="textarea" id="v-chief_complaint" name="chief_complaint" rows="2" maxlength="1000" dir="auto" placeholder="<%= t('visits.chief_complaint_ph') %>"><%= val(vOld, 'chief_complaint', c.chief_complaint) %></textarea>
+              </div>
               <div class="field bmi-box">
                 <span class="label"><%= t('visits.v.bmi') %></span>
                 <div class="bmi-value"><strong data-bmi-out><%= bmi !== null ? fmt.number(bmi, 1) : '—' %></strong><span class="tiny muted" data-bmi-label></span></div>

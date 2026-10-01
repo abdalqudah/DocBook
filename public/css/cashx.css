@@ -24,8 +24,8 @@
 .fx-done { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .fx-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
-.fx-col { min-width: 0; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-lg); scroll-margin-top: 80px; overflow: hidden; }
-.fx-col-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.fx-col { min-width: 0; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-lg); scroll-margin-top: 80px; }
+.fx-col-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 .fx-col-head h2 { font-size: 15px; font-weight: var(--fw-bold); flex: 1; }
 .fx-count { font-size: 13px; font-weight: var(--fw-bold); color: var(--text); background: var(--surface-sunken); border-radius: var(--pill, 999px); padding: 1px 9px; min-width: 26px; text-align: center; }
 .fx-col-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; min-height: 64px; }
@@ -207,3 +207,19 @@ dialog.cx-done-dialog { width: min(760px, calc(100vw - 24px)); }
 }
 /* Phones: an empty column shrinks to its header so the patients who are actually here stay on screen. */
 @media (max-width: 720px) { .fx-col:has(> .fx-col-body > .fx-empty:only-child) .fx-col-body { display: none; } }
+
+/* reception board: what was noted while waiting, and the icon actions of a patient with the doctor */
+.fx-intake { display: grid; gap: 3px; margin-top: 6px; padding: 8px 10px; background: var(--surface-muted); border-radius: var(--radius-sm); font-size: 12.5px; }
+.fx-intake > div { display: flex; gap: 6px; align-items: flex-start; min-width: 0; }
+.fx-intake .icon { flex: none; margin-top: 2px; color: var(--text-subtle); }
+.fx-complaint { font-weight: var(--fw-semibold); overflow-wrap: anywhere; }
+.fx-vitals { color: var(--text-muted); }
+.fx-icons { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; }
+.fx-ico, .fx-icons .cx-papers > summary { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: auto; min-width: 58px; height: auto; min-height: 50px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.fx-ico:hover, .fx-icons .cx-papers > summary:hover { border-color: var(--border-strong); background: var(--surface-muted); }
+.fx-ico .icon, .fx-icons .cx-papers > summary .icon { width: 18px; height: 18px; }
+.fx-ico-l, .fx-icons .cx-papers > summary > span { font-size: 11.5px; font-weight: var(--fw-semibold); line-height: 1.2; }
+.fx-actions > .fx-ico { flex: none; }
+.fx-vitals-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 640px) { .fx-vitals-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+#fx-intake { width: min(720px, calc(100vw - 32px)); }
