@@ -26,6 +26,14 @@
         <%- include('../../partials/empty', { emptyIcon: 'stethoscope', emptyTitle: t('portal.no_doctors'), compact: true }) %>
       <% } else { %>
       <div class="doc-choices">
+        <% if (doctors.length > 1) { %>
+        <label class="doc-choice doc-choice-any">
+          <input type="radio" name="doctor_id" value="any"<%= sel.doctor === 'any' ? ' checked' : '' %> required data-name="<%= t('booking.any_doctor') %>">
+          <span class="doc-av sm"><%- icon('hospital', 'icon-sm') %></span>
+          <span class="grow"><strong><%= t('booking.any_doctor') %></strong><span class="muted small"><%= t('booking.any_doctor_text') %></span></span>
+          <span class="doc-choice-check"><%- icon('check', 'icon-sm') %></span>
+        </label>
+        <% } %>
         <% doctors.forEach(function (d, i) { %>
         <label class="doc-choice">
           <input type="radio" name="doctor_id" value="<%= d.id %>"<%= sel.doctor === d.id ? ' checked' : '' %> required data-name="<%= d.name %>">

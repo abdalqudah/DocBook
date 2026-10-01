@@ -133,19 +133,26 @@ async function withSlot(req, fn) {
   });
 }
 
-/** Default week: Sat–Thu 09:00–17:00 with a 13:00–14:00 break, Friday off (editable per doctor). */
+/** Default week: Sat–Thu 09:00–17:00, Friday off, no break (a break is added only when the clinic or doctor chooses one). */
 function defaultWorkingHours() {
-  const day = { enabled: true, shifts: [{ start: '09:00', end: '17:00' }], breaks: [{ start: '13:00', end: '14:00' }] };
+  const day = { enabled: true, shifts: [{ start: '09:00', end: '17:00' }], breaks: [] };
   return Object.fromEntries(DAY_KEYS.map((k) => [k, k === 'fri' ? { enabled: false, shifts: [], breaks: [] } : structuredClone(day)]));
 }
 
-/** Parses the working-hours editor form (wh[<day>][enabled|s1|e1|s2|e2|bs|be]) into DocBook's shape. */
+/**
+ * Parses the working-hours editor form (wh[<day>][enabled|s1|e1|extra|s2|e2|break|bs|be]) into DocBook's shape. The second
+ * period and the break count only when their own box is ticked (extra / break), so an empty or leftover time never
+ * blocks a booking. Older forms without those boxes keep their meaning.
+ */
 function parseWorkingHoursForm(body) {
   const src = body.wh || {};
+  const on = (d, k) => (d[k] === undefined ? undefined : [].concat(d[k]).pop() === '1');
   return Object.fromEntries(DAY_KEYS.map((k) => {
     const d = src[k] || {};
-    const shifts = [[d.s1, d.e1], [d.s2, d.e2]].filter(([s, e]) => isTime(s) && isTime(e) && timeToMinutes(e) > timeToMinutes(s)).map(([start, end]) => ({ start, end }));
-    const breaks = isTime(d.bs) && isTime(d.be) && timeToMinutes(d.be) > timeToMinutes(d.bs) ? [{ start: d.bs, end: d.be }] : [];
+    const extra = on(d, 'extra'); const brk = on(d, 'break');
+    const pairs = extra === false ? [[d.s1, d.e1]] : [[d.s1, d.e1], [d.s2, d.e2]];
+    const shifts = pairs.filter(([s, e]) => isTime(s) && isTime(e) && timeToMinutes(e) > timeToMinutes(s)).map(([start, end]) => ({ start, end }));
+    const breaks = brk !== false && isTime(d.bs) && isTime(d.be) && timeToMinutes(d.be) > timeToMinutes(d.bs) ? [{ start: d.bs, end: d.be }] : [];
     return [k, { enabled: d.enabled === '1' && shifts.length > 0, shifts, breaks }];
   }));
 }

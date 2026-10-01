@@ -1,0 +1,43 @@
+<%# Platform admin → Clinic types: which types clinics can choose (sign-up, onboarding, settings, clinic directory). %>
+<div class="page-head"><div><h1><%= t('clinic_types.title') %></h1><p><%= t('clinic_types.lead') %></p></div></div>
+<form method="post" action="/admin/clinic-types" class="stack-lg">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('clinic_types.builtin') %></h2><p class="panel-sub"><%= t('clinic_types.builtin_sub') %></p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th><%= t('clinic_types.shown') %></th><th><%= t('clinic_types.name') %></th><th><%= t('clinic_types.clinics') %></th></tr></thead>
+      <tbody><% builtin.forEach(function (k) { %>
+        <tr>
+          <td><label class="check"><input type="checkbox" name="shown" value="<%= k %>"<%= st.hidden.indexOf(k) === -1 ? ' checked' : '' %>><span class="sr-only"><%= t('clinic_types.shown') %></span></label></td>
+          <td class="strong"><%= t('specialties.' + k) %></td>
+          <td class="num"><%= fmt.number(used[k] || 0) %></td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('clinic_types.custom') %></h2><p class="panel-sub"><%= t('clinic_types.custom_sub') %></p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th><%= t('clinic_types.name_ar') %></th><th><%= t('clinic_types.name_en') %></th><th><%= t('clinic_types.template') %></th><th><%= t('clinic_types.clinics') %></th><th><%= t('clinic_types.remove') %></th></tr></thead>
+      <tbody>
+        <% st.custom.forEach(function (c, i) { %>
+        <tr>
+          <td><input type="hidden" name="custom[<%= i %>][key]" value="<%= c.key %>"><input class="input" name="custom[<%= i %>][ar]" value="<%= c.ar %>" maxlength="60" dir="rtl" required aria-label="<%= t('clinic_types.name_ar') %>"></td>
+          <td><input class="input" name="custom[<%= i %>][en]" value="<%= c.en %>" maxlength="60" dir="ltr" aria-label="<%= t('clinic_types.name_en') %>"></td>
+          <td><select class="select" name="custom[<%= i %>][template]" aria-label="<%= t('clinic_types.template') %>"><% templates.forEach(function (tp) { %><option value="<%= tp %>"<%= c.template === tp ? ' selected' : '' %>><%= t('website.template.' + tp) %></option><% }) %></select></td>
+          <td class="num"><%= fmt.number(used[c.key] || 0) %></td>
+          <td><label class="check"><input type="checkbox" name="custom[<%= i %>][remove]" value="1"<%= used[c.key] ? ' disabled title="' + t('clinic_types.in_use') + '"' : '' %>><span class="sr-only"><%= t('clinic_types.remove') %></span></label></td>
+        </tr>
+        <% }) %>
+        <tr class="is-new">
+          <td><input class="input" name="new[ar]" maxlength="60" dir="rtl" placeholder="<%= t('clinic_types.new_ar_ph') %>" aria-label="<%= t('clinic_types.name_ar') %>"></td>
+          <td><input class="input" name="new[en]" maxlength="60" dir="ltr" placeholder="Hair transplant" aria-label="<%= t('clinic_types.name_en') %>"></td>
+          <td><select class="select" name="new[template]" aria-label="<%= t('clinic_types.template') %>"><% templates.forEach(function (tp) { %><option value="<%= tp %>"><%= t('website.template.' + tp) %></option><% }) %></select></td>
+          <td colspan="2" class="small muted"><%= t('clinic_types.new_hint') %></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </section>
+  <p class="help"><%= t('clinic_types.hidden_help') %></p>
+  <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>

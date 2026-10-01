@@ -41,6 +41,10 @@ const TYPES = {
   hero: { icon: 'panel-top', variants: ['split', 'full', 'centered', 'image_back', 'slider'], single: true,
     text: [{ key: 'headline', max: 120 }, { key: 'subtext', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }],
     settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS, { key: 'height', kind: 'select', options: ['auto', 'tall', 'screen'], def: 'auto' },
+      { key: 'content_x', kind: 'select', options: ['start', 'center', 'end'], def: 'start', group: 'buttons' },
+      { key: 'content_y', kind: 'select', options: ['middle', 'top', 'bottom'], def: 'middle', group: 'buttons' },
+      { key: 'btn_size', kind: 'select', options: ['l', 'm', 's'], def: 'l', group: 'buttons' },
+      { key: 'btn_layout', kind: 'select', options: ['row', 'stack'], def: 'row', group: 'buttons' },
       { key: 'interval', kind: 'select', options: ['s5', 's4', 's7', 's10'], def: 's5', only: 'slider' }, { key: 'transition', kind: 'select', options: ['fade', 'slide', 'zoom'], def: 'fade', only: 'slider' },
       { key: 'show_call', kind: 'bool', def: true }, { key: 'show_whatsapp', kind: 'bool', def: true }, { key: 'show_directions', kind: 'bool', def: true }],
     // Slides of the "slider" layout: a picture each, with its own headline and line (else the hero's own words).
@@ -123,6 +127,8 @@ const HEADER = [
   { key: 'style', kind: 'select', options: ['solid', 'transparent', 'centered', 'minimal'], def: 'solid' },
   { key: 'sticky', kind: 'bool', def: true }, { key: 'show_book', kind: 'bool', def: true }, { key: 'show_lang', kind: 'bool', def: true },
   { key: 'show_theme', kind: 'bool', def: true }, { key: 'show_phone', kind: 'bool', def: false }, { key: 'show_name', kind: 'bool', def: true },
+  { key: 'logo_size', kind: 'select', options: ['m', 's', 'l', 'xl'], def: 'm' },
+  { key: 'logo_shape', kind: 'select', options: ['badge', 'free'], def: 'badge' }, // badge = square tile; free = the logo as it is (wide logos)
 ];
 // Social profiles: https addresses on the network's own site only.
 const SOCIAL = { facebook: /^(www\.|m\.)?facebook\.com$/, instagram: /^(www\.)?instagram\.com$/, twitter: /^(www\.)?(x|twitter)\.com$/, youtube: /^(www\.|m\.)?youtube\.com$|^youtu\.be$/, linkedin: /^([a-z]{2,3}\.)?linkedin\.com$/ };

@@ -2,7 +2,7 @@
 <% var h = wsSite.header || {}; var c = clinic; var menuId = 'ws-menu'; %>
 <header class="site-nav ws-nav ws-nav-<%= h.style || 'solid' %><%= h.sticky === false ? ' is-static' : '' %>"<% if (wsSite.preview) { %> data-ws-sec="__header" data-ws-label="<%= t('website.b.header') %>"<% } %>>
   <div class="container inner">
-    <a class="portal-brand" href="<%= wsSite.homeHref %>">
+    <a class="portal-brand ws-logo-<%= h.logo_size || 'm' %> ws-logo-<%= h.logo_shape || 'badge' %>" href="<%= wsSite.homeHref %>">
       <span class="portal-mark"><% if (wsSite.logo) { %><img src="<%= wsSite.logo.url %>" alt=""><% } else if (c.logo_mime) { %><img src="/<%= c.slug %>/logo?v=<%= c.logo_version %>" alt=""><% } else { %><%- icon('hospital', 'icon-sm') %><% } %></span>
       <% if (h.show_name !== false) { %><span class="portal-brand-name"><%= c.displayName %></span><% } else { %><span class="sr-only"><%= c.displayName %></span><% } %>
     </a>

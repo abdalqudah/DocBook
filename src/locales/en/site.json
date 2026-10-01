@@ -602,7 +602,10 @@
     "too_many": "This phone number already has {n} appointment requests waiting at this clinic. Please call the clinic.",
     "invalid_phone": "Enter a valid mobile number.",
     "date_range": "Choose a date within the next {n} days.",
-    "rate_limited": "Too many booking requests from this device. Please try again later or call the clinic."
+    "rate_limited": "Too many booking requests from this device. Please try again later or call the clinic.",
+    "any_doctor": "Any available doctor",
+    "any_doctor_text": "Pick the time that suits you; the clinic chooses the doctor and confirms with you.",
+    "doctor_by_clinic": "Chosen by the clinic when it confirms"
   },
   "errors_site": {
     "NOT_MEMBER": "This account is not a staff member of this clinic.",

@@ -41,11 +41,33 @@ const publicCtx = (req, clinic) => ({
   ip: req.ip, userAgent: req.get('user-agent'), locale: req.locale,
 });
 
+/**
+ * "Any doctor" (booking with the clinic): the times at which at least one doctor who can see this service is free,
+ * with how many doctors are free at each. Reception chooses the doctor when it confirms.
+ */
+async function anyDoctorTimes(clinic, { serviceId, date }) {
+  const svc = serviceId ? await knex('services').where({ id: serviceId, business_id: clinic.id, is_active: true }).first('doctor_id') : null;
+  const ids = svc && svc.doctor_id ? [svc.doctor_id] : await knex('doctors').where({ business_id: clinic.id, is_active: true }).pluck('id');
+  const free = new Map();
+  for (const doctorId of ids) {
+    try {
+      const slots = await scheduling.availableSlots({ businessId: clinic.id, timezone: clinic.timezone, doctorId, serviceId: serviceId || undefined, date }); // eslint-disable-line no-await-in-loop
+      slots.forEach((t) => free.set(t, (free.get(t) || 0) + 1));
+    } catch (err) { if (!(err instanceof AppError)) throw err; }
+  }
+  // Bookings already waiting for a doctor at the same time take one of those places each.
+  const waiting = await knex('appointments').where({ business_id: clinic.id, appointment_date: date }).whereNull('doctor_id').whereNot('status', 'cancelled')
+    .whereNot('appointment_type', 'blocked').groupBy('appointment_time').select('appointment_time as t').count({ n: '*' });
+  waiting.forEach((w) => { const t = String(w.t).slice(0, 5); if (free.has(t)) free.set(t, free.get(t) - Number(w.n)); });
+  return [...free.entries()].filter(([, n]) => n > 0).map(([t]) => t).sort();
+}
+
 /** Free times for doctor/date/service in this clinic — or [] with a translated reason. */
 async function freeTimes(req, clinic, { doctorId, serviceId, date }) {
   const { min, max } = range(clinic);
   if (!doctorId || !scheduling.isDate(date)) return { slots: [], error: null };
   if (date < min || date > max) return { slots: [], error: req.t('booking.date_range', { n: HORIZON_DAYS }) };
+  if (doctorId === 'any') return { slots: await anyDoctorTimes(clinic, { serviceId, date }), error: null };
   try {
     const slots = await scheduling.availableSlots({ businessId: clinic.id, timezone: clinic.timezone, doctorId, serviceId: serviceId || undefined, date });
     return { slots, error: null };
@@ -68,12 +90,12 @@ async function renderBook(req, res, clinic, extra = {}) {
   }
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
   const sel = {
-    doctor: doctors.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (doctors.length === 1 ? doctors[0].id : null),
+    doctor: (src.doctor_id || src.doctor) === 'any' && doctors.length > 1 ? 'any' : doctors.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (doctors.length === 1 ? doctors[0].id : null),
     service: idOf(src.service_id || src.service),
     date: scheduling.isDate(src.appointment_date || src.date) ? (src.appointment_date || src.date) : null,
     time: scheduling.isTime(src.appointment_time) ? src.appointment_time : null,
   };
-  if (sel.service && !services.some((s) => s.id === sel.service && (!s.doctorId || s.doctorId === sel.doctor))) sel.service = null;
+  if (sel.service && !services.some((s) => s.id === sel.service && (!s.doctorId || sel.doctor === 'any' || s.doctorId === sel.doctor))) sel.service = null;
   const { min, max } = range(clinic);
   if (!sel.date) sel.date = min;
   const { slots, error: slotsError } = await freeTimes(req, clinic, { doctorId: sel.doctor, serviceId: sel.service, date: sel.date });
@@ -99,12 +121,13 @@ router.get('/:slug/book/slots', slotsLimiter, wrap(async (req, res, next) => {
   if (!clinic) return next();
   res.set('Cache-Control', 'no-store');
   if (!clinic.booking_enabled) return res.status(404).json({ data: [], error: req.t('booking.unavailable_title') });
-  const { slots, error } = await freeTimes(req, clinic, { doctorId: idOf(req.query.doctor), serviceId: idOf(req.query.service), date: String(req.query.date || '') });
+  const { slots, error } = await freeTimes(req, clinic, { doctorId: req.query.doctor === 'any' ? 'any' : idOf(req.query.doctor), serviceId: idOf(req.query.service), date: String(req.query.date || '') });
   return res.json(error ? { data: slots, error } : { data: slots });
 }));
 
 const bookingSchema = z.object({
-  doctor_id: z.coerce.number({ invalid_type_error: 'Choose a valid value.' }).int().positive('Choose a valid value.'),
+  // A doctor, or "any": the clinic chooses the doctor when it confirms.
+  doctor_id: z.union([z.literal('any'), z.coerce.number({ invalid_type_error: 'Choose a valid value.' }).int().positive('Choose a valid value.')]),
   service_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
   appointment_date: isoDate(),
   appointment_time: z.string({ required_error: 'Enter a valid time.' }).trim().refine(scheduling.isTime, 'Enter a valid time.'),
@@ -136,8 +159,18 @@ router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 's
   if (!PHONE_RE.test(phone)) return fail(422, req.t('errors.VALIDATION_FAILED'), { patient_phone: req.t('booking.invalid_phone') });
   const { min, max } = range(clinic);
   if (d.appointment_date < min || d.appointment_date > max) return fail(422, req.t('errors.VALIDATION_FAILED'), { appointment_date: req.t('booking.date_range', { n: HORIZON_DAYS }) });
-  const doctor = await knex('doctors').where({ id: d.doctor_id, business_id: clinic.id, is_active: true }).first('id');
-  if (!doctor) return fail(422, req.t('errors.VALIDATION_FAILED'), { doctor_id: translateMessage(req.locale, 'Choose a valid value.') });
+  const anyDoctor = d.doctor_id === 'any';
+  if (anyDoctor) {
+    // Booking with the clinic: the time must suit at least one doctor who is still free then.
+    if (!(await anyDoctorTimes(clinic, { serviceId: d.service_id, date: d.appointment_date })).includes(d.appointment_time)) {
+      const old = { ...req.body }; delete old.appointment_time;
+      res.status(409);
+      return renderBook(req, res, clinic, { formError: { code: 'SLOT_TAKEN', message: req.t('errors.SLOT_TAKEN') }, errors: { appointment_time: req.t('errors.SLOT_TAKEN') }, old });
+    }
+  } else {
+    const doctor = await knex('doctors').where({ id: d.doctor_id, business_id: clinic.id, is_active: true }).first('id');
+    if (!doctor) return fail(422, req.t('errors.VALIDATION_FAILED'), { doctor_id: translateMessage(req.locale, 'Choose a valid value.') });
+  }
 
   const [{ n }] = await knex('appointments').where({ business_id: clinic.id, patient_phone: phone, source: 'website', status: 'pending' })
     .where('appointment_date', '>=', min).count({ n: '*' });
@@ -146,7 +179,7 @@ router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 's
   let id;
   try {
     id = await appointments.book({ ...publicCtx(req, clinic), channel: require('../discover/channels').current(req, clinic) }, { // eslint-disable-line global-require
-      doctor_id: d.doctor_id, service_id: d.service_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time,
+      doctor_id: anyDoctor ? null : d.doctor_id, service_id: d.service_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time,
       patient_name: d.patient_name, patient_phone: phone, patient_email: d.patient_email, notes: d.notes, appointment_type: 'in_person',
     }, { source: 'website' });
   } catch (err) {

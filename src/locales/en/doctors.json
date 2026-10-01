@@ -59,7 +59,16 @@
     "contact": "Contact",
     "own_services": "Own services",
     "delete": "Delete doctor",
-    "delete_confirm": "Deleting a doctor removes their schedule. Past invoices keep the doctor's name. Type the doctor's name to confirm."
+    "delete_confirm": "Deleting a doctor removes their schedule. Past invoices keep the doctor's name. Type the doctor's name to confirm.",
+    "hours_clinic": "Follows the clinic's hours",
+    "hours_custom": "Doctor's own hours",
+    "hours_clinic_is": "Clinic hours:",
+    "hours_clinic_help": "The doctor's hours change by themselves when the clinic's hours change.",
+    "hours_clinic_edit": "Edit the clinic's hours",
+    "hours_clinic_none": "The clinic's hours are not set yet, so the default week is used (Sat–Thu 9:00–17:00).",
+    "hours_clinic_set": "Set the clinic's hours",
+    "add_shift": "Another time",
+    "add_break": "Break"
   },
   "commission": {
     "basis": {

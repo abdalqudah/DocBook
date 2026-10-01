@@ -83,6 +83,7 @@ test('ics: the doctor feed is valid iCalendar that the parser reads back', () =>
 
 test('checkSlot: past, overlap, outside hours', () => {
   const wh = scheduling.defaultWorkingHours();
+  for (const d of Object.values(wh)) if (d.enabled) d.breaks = [{ start: '13:00', end: '14:00' }];
   const o = { workingHours: wh, busy: [[600, 630]], today: '2026-10-01', nowMinutes: 600 };
   assert.equal(importer.checkSlot({ date: '2026-09-30', time: '10:00', minutes: 30 }, o), 'past');
   assert.equal(importer.checkSlot({ date: '2026-10-01', time: '09:00', minutes: 30 }, o), 'past');

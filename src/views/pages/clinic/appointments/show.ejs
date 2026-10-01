@@ -71,10 +71,11 @@
     <% if (typeof online !== 'undefined' && online) { %><%- include('../../telehealth/_staff-panel') %><% } %>
     <% if (canManage) { %>
     <% if (!(a.status === 'completed' && a.payment_status === 'paid')) { %>
+    <% if (canManage && a.status === 'pending' && doctors.length) { %><%- include('_confirm', { a: a, doctorsList: doctors, hidden: '<input type="hidden" name="_csrf" value="' + csrfToken + '">', L: function (ar, en) { return locale === 'en' && en ? en : ar; } }) %><% } %>
     <div class="panel">
       <div class="panel-head"><h2><%= t('appointments.actions') %></h2></div>
       <div class="panel-body stack-sm">
-        <% if (a.status === 'pending' && a.appointment_type !== 'online') { %><%- statusForm('confirmed', t('appointments.do_confirm'), 'circle-check', 'btn-primary') %><% } %>
+        <% if (a.status === 'pending' && a.appointment_type !== 'online' && a.doctor_id) { %><%- statusForm('confirmed', t('appointments.do_confirm'), 'circle-check', 'btn-primary') %><% } %>
         <% if (!closed && a.status !== 'completed') { %><%- statusForm('completed', t('appointments.do_complete'), 'check', 'btn-secondary') %><% } %>
         <% if (!closed && a.status !== 'completed') { %><%- statusForm('no_show', t('appointments.do_no_show'), 'user-x', 'btn-secondary', t('appointments.no_show_confirm')) %><% } %>
         <% if (closed) { %><%- statusForm('confirmed', t('appointments.do_restore'), 'refresh-cw', 'btn-secondary') %><% } %>

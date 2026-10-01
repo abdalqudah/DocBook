@@ -104,7 +104,7 @@ async function directory(req, res, preset = {}) {
 }
 
 router.get('/clinics', wrap((req, res) => directory(req, res)));
-router.get('/clinics/:specialty', wrap((req, res, next) => (dir.SPECIALTIES.includes(req.params.specialty) ? directory(req, res, { specialty: req.params.specialty }) : next())));
+router.get('/clinics/:specialty', wrap((req, res, next) => (require('../platformops/clinic-types').valid(req.params.specialty) ? directory(req, res, { specialty: req.params.specialty }) : next())));
 
 // ---------------------------------------------------------------- widget booking confirmation (embed mode)
 router.get('/:slug/book/done', wrap(async (req, res, next) => {

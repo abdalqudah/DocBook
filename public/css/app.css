@@ -777,3 +777,12 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .peek-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); }
 @media (max-width: 600px) { .peek-facts > div { grid-template-columns: 1fr; gap: 2px; } }
 .staff-return { display: flex; justify-content: center; margin-top: 8px; }
+/* Doctor form: hours follow the clinic or are the doctor's own; the second period and the break only when ticked */
+.dr-hours:has(input[name="hours_mode"][value="clinic"]:checked) .dr-hours-custom { display: none; }
+.dr-hours:has(input[name="hours_mode"][value="custom"]:checked) .dr-hours-clinic { display: none; }
+.dr-opt { display: flex; flex-direction: column; gap: 6px; }
+.dr-opt:not(:has(input[type="checkbox"]:checked)) .dr-opt-fields { display: none; }
+.peek-confirm { margin: 0 20px 14px; padding: 14px; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); background: var(--primary-soft); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 10px; }
+.peek-confirm-head { display: flex; align-items: center; gap: 8px; color: var(--primary); }
+.peek-confirm .help { margin: 0; }
+.grid-main .peek-confirm { margin: 0 0 16px; }

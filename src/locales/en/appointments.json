@@ -76,7 +76,7 @@
     "custom_duration": "Custom duration",
     "duration_default": "Doctor's slot length",
     "duration_help": "Only used without a service.",
-    "choose_doctor": "Choose a doctor",
+    "choose_doctor": "Choose the doctor…",
     "slots": {
       "pick_doctor": "Choose a doctor to see free times.",
       "pick_date": "Choose a date to see free times.",
@@ -179,7 +179,12 @@
     },
     "cancel_appt": "Cancel appointment",
     "full_details": "Full details",
-    "peek_error": "Could not open the appointment. Open its full page instead."
+    "peek_error": "Could not open the appointment. Open its full page instead.",
+    "confirm_title": "Confirm the booking",
+    "confirm_any_doctor": "The patient booked with the clinic without choosing a doctor. Choose the doctor before confirming.",
+    "confirm_and_notify": "Confirm and tell the patient",
+    "confirm_notify_help": "You can change the day or time before confirming. The patient receives a message with the confirmed appointment.",
+    "confirmed_sent": "Appointment confirmed; the patient will receive the confirmation."
   },
   "frontdesk": {
     "title": "Reception & waiting list",

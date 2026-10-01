@@ -284,5 +284,26 @@
     "PLAN_LIMIT_APPOINTMENTS": "Your plan allows {limit} appointments per month and this month has {used}. Upgrade the plan to add more.",
     "INVOICE_CLOSED": "This invoice is already paid or void.",
     "PLAN_LIMIT_PATIENTS": "Your plan allows {limit} patient records and the clinic has {used}. Existing records stay available; choose another package to add more."
+  },
+  "clinic_types": {
+    "nav": "Clinic types",
+    "title": "Clinic types",
+    "lead": "The types clinics choose from when they sign up and in their settings; they also show in the clinic directory.",
+    "builtin": "Built-in types",
+    "builtin_sub": "Untick to hide a type from new clinics. Clinics that chose it keep it.",
+    "shown": "Shown",
+    "name": "Type",
+    "clinics": "Clinics",
+    "custom": "Added types",
+    "custom_sub": "Add new types with an Arabic and an English name, and the website template clinics of that type start with.",
+    "name_ar": "Arabic name",
+    "name_en": "English name",
+    "template": "Website template",
+    "remove": "Remove",
+    "in_use": "A type clinics use cannot be removed — hide it instead.",
+    "new_ar_ph": "مثال: زراعة الشعر",
+    "new_hint": "Type a name to add a new type when you save.",
+    "hidden_help": "Changes show at once in sign-up and in clinic settings.",
+    "saved": "Clinic types saved."
   }
 }

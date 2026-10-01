@@ -23,6 +23,7 @@
     <% if (a.source === 'website') { %><div><dt><%= t('appointments.source') %></dt><dd><%= t('appointments.sources.website') %></dd></div><% } %>
     <% if (a.notes) { %><div class="peek-notes"><dt><%= t('common.notes') %></dt><dd dir="auto"><%= a.notes %></dd></div><% } %>
   </dl>
+  <% if (manage && a.status === 'pending' && doctorsList.length) { %><%- include('_confirm', { a: a, doctorsList: doctorsList, hidden: hidden, L: L }) %><% } %>
   <div class="peek-actions">
     <% if (desk && !a.checked_in) { %><form method="post" action="/app/front-desk/<%= a.id %>/check-in"><%- hidden %><input type="hidden" name="on" value="1"><button class="btn btn-primary" type="submit"><%- icon('user-check', 'icon-sm') %><%= t('cashx.do.check_in') %></button></form><% } %>
     <% if (desk && a.checked_in && !a.with_doctor && a.doctor_id) { %><form method="post" action="/app/front-desk/<%= a.id %>/call-in"><%- hidden %><input type="hidden" name="on" value="1"><button class="btn btn-primary" type="submit"><%- icon('door-open', 'icon-sm') %><%= t('cashx.do.send_in') %></button></form><% } %>

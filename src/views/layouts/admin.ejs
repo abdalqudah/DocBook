@@ -4,6 +4,7 @@
   _nav.push(['/admin/domains', 'globe', 'identity.nav_domains'], ['/admin/google', 'key-round', 'identity.nav_google']); // identity area
   _nav.push(['/admin/vendors', 'briefcase-business', 'vendors.admin.nav']); // reps & warehouses
   _nav.push(['/admin/reviews', 'star', 'reviews.admin.nav']); // patient reviews moderation
+  _nav.push(['/admin/clinic-types', 'stethoscope', 'clinic_types.nav', false, 'clinics']); // clinic types offered at sign-up and in settings
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav'], ['/admin/ai', 'sparkles', 'ai_admin.nav'], ['/admin/updates', 'cloud-upload', 'platformops.admin_nav']);
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };

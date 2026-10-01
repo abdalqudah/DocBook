@@ -28,7 +28,8 @@ async function stepData(req, step) {
   const b = req.ctx.businessId;
   switch (step) {
     case 'clinic': return {
-      specialtyOptions: options.specialtyOptions(req.t), currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale),
+      specialtyOptions: require('../platformops/clinic-types').options(req.t, req.business && req.business.specialty), // eslint-disable-line global-require
+       currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale),
       logoUrl: req.business.logo_mime ? `/app/logo/${b}?v=${req.business.logo_version || 0}` : null,
     };
     case 'hours': {

@@ -190,7 +190,11 @@
       "media": "Card display",
       "interval": "Time per slide",
       "transition": "Transition",
-      "slides": "Slides"
+      "slides": "Slides",
+      "content_x": "Words and buttons (across)",
+      "content_y": "Words and buttons (up/down)",
+      "btn_size": "Button size",
+      "btn_layout": "Button arrangement"
     },
     "opt": {
       "2": "Two columns",
@@ -244,7 +248,15 @@
       "s10": "10 seconds",
       "fade": "Fade",
       "slide": "Slide",
-      "zoom": "Zoom"
+      "zoom": "Zoom",
+      "start": "Start",
+      "center": "Centre",
+      "end": "End",
+      "middle": "Middle",
+      "top": "Top",
+      "bottom": "Bottom",
+      "row": "Side by side",
+      "stack": "Stacked"
     },
     "doctors_pick_help": "Used with \"Selected doctors\".",
     "item_n": "Item {n}",
@@ -704,7 +716,20 @@
       "social": "Social profiles",
       "social_help": "https links to the clinic's own pages on these sites only.",
       "copyright": "Copyright text",
-      "footer_links": "Links"
+      "footer_links": "Links",
+      "logo_size": "Logo size",
+      "ls": {
+        "s": "Small",
+        "m": "Medium",
+        "l": "Large",
+        "xl": "Extra large"
+      },
+      "logo_shape": "Logo shape",
+      "lsh": {
+        "badge": "In a tile",
+        "free": "As it is (wide logos)"
+      },
+      "buttons_group": "Words and buttons"
     },
     "item_field": {
       "title": "Title",

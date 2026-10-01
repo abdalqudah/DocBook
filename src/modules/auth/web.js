@@ -23,13 +23,14 @@ const limiter = rateLimit({ windowMs: 15 * 60_000, limit: config.isTest ? 1000 :
 // Clinic fields shared by sign-up and "add a clinic".
 const clinicSchema = {
   clinic_name: z.string().trim().min(2, 'Enter the clinic name.').max(160),
-  specialty: z.preprocess((v) => (v === '' ? undefined : v), z.enum(options.SPECIALTIES, { errorMap: () => ({ message: 'Choose a valid value.' }) }).optional()),
+  specialty: z.preprocess((v) => (v === '' ? undefined : v), z.string().refine((v) => require('../platformops/clinic-types').visible().includes(v), 'Choose a valid value.').optional()),
   city: optionalString(100),
   currency: z.enum(CURRENCIES, { errorMap: () => ({ message: 'Choose a currency.' }) }),
   timezone: z.enum(options.ZONE_IDS, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
 };
 const clinicFields = (d) => ({ name: d.clinic_name, currency: d.currency, specialty: d.specialty || null, city: d.city || null, timezone: d.timezone, country: options.countryForZone(d.timezone) });
-const clinicChoices = (req) => ({ specialtyOptions: options.specialtyOptions(req.t), currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale) });
+const clinicChoices = (req) => ({ specialtyOptions: require('../platformops/clinic-types').options(req.t), // eslint-disable-line global-require
+  currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale) });
 
 // ---------- Login
 const renderLogin = (req, res, extra = {}) => res.page('pages/auth/login', { layout: 'auth', title: req.t('auth.login_title'), ...extra });

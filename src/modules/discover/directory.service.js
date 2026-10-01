@@ -11,6 +11,7 @@ const cache = require('../../core/cache');
 const { translator } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
 
+const types = require('../platformops/clinic-types');
 const SPECIALTIES = ['general', 'dentistry', 'dermatology', 'paediatrics', 'obgyn', 'orthopaedics', 'ophthalmology', 'ent', 'cardiology',
   'physiotherapy', 'psychiatry', 'nutrition', 'cosmetic', 'multi', 'other'];
 const HORIZON_DAYS = 14;
@@ -34,9 +35,9 @@ const labels = { ar: translator('ar'), en: translator('en') };
 function specialtyKey(raw) {
   if (!raw) return null;
   const v = String(raw).trim();
-  if (SPECIALTIES.includes(v)) return v;
+  if (types.valid(v)) return v;
   const n = norm(v);
-  return SPECIALTIES.find((k) => norm(labels.ar(`specialties.${k}`)) === n || norm(labels.en(`specialties.${k}`)) === n) || null;
+  return types.keys().find((k) => norm(labels.ar(`specialties.${k}`)) === n || norm(labels.en(`specialties.${k}`)) === n) || null;
 }
 
 // ---------------------------------------------------------------- listed clinics
@@ -152,7 +153,7 @@ function filtersFrom(query = {}, preset = {}) {
   const page = Math.max(1, Math.min(200, parseInt(query.page, 10) || 1));
   return {
     q: String(query.q || '').trim().slice(0, 80),
-    specialty: SPECIALTIES.includes(s) ? s : '',
+    specialty: types.valid(s) ? s : '',
     city: norm(query.city).slice(0, 80),
     insurance: norm(query.insurance).slice(0, 120),
     online: query.online === '1',
@@ -183,7 +184,7 @@ function facets(all) {
   return {
     cities: count(all.map((c) => [c.cityKey, String(c.city || '').trim().replace(/\s+/g, ' ')])),
     insurers: count(all.flatMap((c) => c.insurers.map((n) => [norm(n), n]))),
-    specialties: SPECIALTIES.filter((k) => all.some((c) => c.specialtyKey === k)),
+    specialties: types.keys().filter((k) => all.some((c) => c.specialtyKey === k)),
     online: all.some((c) => c.online),
   };
 }

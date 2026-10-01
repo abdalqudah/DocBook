@@ -1,0 +1,14 @@
+<%# Reception confirms a booking waiting for confirmation: the doctor (required when the patient chose "any doctor"), the day and time. %>
+  <form class="peek-confirm" method="post" action="/app/appointments/<%= a.id %>/confirm">
+    <%- hidden %>
+    <div class="peek-confirm-head"><%- icon('calendar-check', 'icon-sm') %><span class="strong"><%= t('appointments.confirm_title') %></span></div>
+    <% if (!a.doctor_id) { %><p class="small muted"><%= t('appointments.confirm_any_doctor') %></p><% } %>
+    <div class="field"><label class="label" for="pc-doc"><%= t('common.doctor') %></label>
+      <select class="select" id="pc-doc" name="doctor_id" required><% if (!a.doctor_id) { %><option value=""><%= t('appointments.choose_doctor') %></option><% } %><% doctorsList.forEach(function (d) { %><option value="<%= d.id %>"<%= a.doctor_id === d.id ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select></div>
+    <div class="row-sm">
+      <div class="field grow"><label class="label" for="pc-date"><%= t('common.date') %></label><input class="input" type="date" id="pc-date" name="appointment_date" value="<%= a.appointment_date %>" required></div>
+      <div class="field grow"><label class="label" for="pc-time"><%= t('common.time') %></label><input class="input" type="time" id="pc-time" name="appointment_time" value="<%= a.appointment_time %>" required></div>
+    </div>
+    <button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('appointments.confirm_and_notify') %></button>
+    <p class="help"><%= t('appointments.confirm_notify_help') %></p>
+  </form>

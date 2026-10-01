@@ -340,3 +340,31 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-block:is(.ws-bg-auto, .ws-bg-none, .ws-bg-soft, .ws-bg-accent) :is(h1, h2, h3, .ws-title) { color: var(--site-heading, inherit); }
 .ws-block .ws-hero-slider :is(h1, .ws-slide-title), .ws-block .ws-hero-image_back.has-image h1, .ws-block .ws-cards-overlay h3 { color: inherit; }
 .ws-page .lp-prose a, .ws-page .ws-text a, .ws-page .link, .ws-footer a:hover { color: var(--site-link, var(--primary)); }
+
+/* Header logo: size, and a free shape for wide logos (as uploaded, no tile) */
+.ws-nav .ws-logo-s .portal-mark { width: 28px; height: 28px; }
+.ws-nav .ws-logo-m .portal-mark { width: 36px; height: 36px; }
+.ws-nav .ws-logo-l .portal-mark { width: 48px; height: 48px; border-radius: 12px; }
+.ws-nav .ws-logo-xl .portal-mark { width: 60px; height: 60px; border-radius: 14px; }
+.ws-nav .ws-logo-free .portal-mark:has(img) { width: auto; max-width: 240px; background: transparent; border-radius: 0; }
+.ws-nav .ws-logo-free .portal-mark img { width: auto; height: 100%; background: transparent; }
+.ws-nav .ws-logo-l .portal-brand-name, .ws-nav .ws-logo-xl .portal-brand-name { font-size: 18px; }
+.ws-nav:has(.ws-logo-xl) .inner { height: 84px; }
+.ws-nav:has(.ws-logo-l) .inner { height: 74px; }
+
+/* Hero: where the words and buttons sit, button size and arrangement */
+.ws-btn-l .ws-hbtn { height: 50px; padding: 0 24px; font-size: 15px; }
+.ws-btn-m .ws-hbtn { height: 42px; padding: 0 18px; font-size: 14px; }
+.ws-btn-s .ws-hbtn { height: 34px; padding: 0 12px; font-size: 13px; }
+.ws-btns-stack .ws-hero-actions { flex-direction: column; align-items: stretch; max-width: 320px; }
+.ws-cx-start .ws-hero-text { text-align: start; } .ws-cx-start .ws-hero-actions { justify-content: flex-start; }
+.ws-cx-center .ws-hero-text { text-align: center; margin-inline: auto; } .ws-cx-center .ws-hero-actions { justify-content: center; } .ws-cx-center .ws-lead { margin-inline: auto; }
+.ws-cx-center.ws-btns-stack .ws-hero-actions { margin-inline: auto; }
+.ws-cx-end .ws-hero-text { text-align: end; margin-inline-start: auto; } .ws-cx-end .ws-hero-actions { justify-content: flex-end; } .ws-cx-end .ws-lead { margin-inline-start: auto; }
+.ws-cx-end.ws-btns-stack .ws-hero-actions { margin-inline-start: auto; }
+.ws-hero-slider .ws-hero-text, .ws-hero-image_back .ws-hero-text { max-width: 720px; }
+.ws-hero-slider.ws-cx-center .ws-hero-text, .ws-hero-image_back.ws-cx-center .ws-hero-text { margin-inline: auto; }
+.ws-hero-slider.ws-cx-end .ws-hero-text, .ws-hero-image_back.ws-cx-end .ws-hero-text { margin-inline-start: auto; }
+.ws-cy-top .ws-slide, .ws-hero.ws-cy-top { align-items: flex-start; }
+.ws-cy-bottom .ws-slide, .ws-hero.ws-cy-bottom { align-items: flex-end; }
+.ws-hero-slider.ws-cy-bottom .ws-slide .ws-hero-inner { padding-bottom: 72px; }

@@ -35,7 +35,7 @@ const ACTIVE = ['pending', 'confirmed'];
 const DEFAULTS = {
   confirmations_enabled: true, reminders_enabled: true, reminder_offsets: [1440, 120], reviews_enabled: true, review_delay_minutes: 120,
   use_whatsapp: true, use_sms: false, use_email: true, message_locale: 'ar', default_dial: null,
-  wa_phone_number_id: null, wa_token_enc: null, wa_tpl_confirmation: null, wa_tpl_reminder: null, wa_tpl_review: null,
+  wa_phone_number_id: null, wa_token_enc: null, wa_tpl_confirmation: null, wa_tpl_received: null, wa_tpl_reminder: null, wa_tpl_review: null,
   wa_lang_ar: 'ar', wa_lang_en: 'en', wa_quick_confirm: false, wa_hook_key: null, wa_app_secret_enc: null, wa_verify_token: null, wa_verified_at: null, wa_last_error: null,
   sms_url: null, sms_method: 'POST', sms_content_type: 'application/json', sms_body_template: null, sms_auth_header: null, sms_auth_enc: null, sms_inbound_key: null,
   cancel_cutoff_hours: 3, allow_reschedule: true,
@@ -118,7 +118,7 @@ const settingsSchema = z.object({
   default_dial: z.preprocess(emptyToUndefined, z.string().trim().regex(/^\+?\d{1,4}$/, 'Choose a valid value.').optional()),
   wa_phone_number_id: z.preprocess(emptyToUndefined, z.string().trim().regex(/^\d{5,30}$/, 'Enter a valid value.').optional()),
   wa_token: opt(1000), wa_app_secret: opt(200), wa_verify_token: opt(64),
-  wa_tpl_confirmation: tplName(), wa_tpl_reminder: tplName(), wa_tpl_review: tplName(), wa_lang_ar: langCode(), wa_lang_en: langCode(),
+  wa_tpl_confirmation: tplName(), wa_tpl_received: tplName(), wa_tpl_reminder: tplName(), wa_tpl_review: tplName(), wa_lang_ar: langCode(), wa_lang_en: langCode(),
   sms_url: z.preprocess(emptyToUndefined, z.string().trim().max(500).url('Enter a valid URL.').refine((v) => /^https?:\/\//i.test(v), 'Enter a valid URL.').optional()),
   sms_method: z.enum(['POST', 'GET']).default('POST'),
   sms_content_type: z.enum(['application/json', 'application/x-www-form-urlencoded']).default('application/json'),
@@ -135,7 +135,7 @@ async function saveSettings(ctx, input) {
     use_whatsapp: d.use_whatsapp, use_sms: d.use_sms, use_email: d.use_email, wa_quick_confirm: d.wa_quick_confirm, allow_reschedule: d.allow_reschedule,
     reminder_offsets: JSON.stringify(offsets), review_delay_minutes: d.review_delay_minutes ?? DEFAULTS.review_delay_minutes, cancel_cutoff_hours: d.cancel_cutoff_hours ?? DEFAULTS.cancel_cutoff_hours,
     message_locale: d.message_locale, default_dial: d.default_dial ? d.default_dial.replace(/\D/g, '') : null,
-    wa_phone_number_id: d.wa_phone_number_id || null, wa_tpl_confirmation: d.wa_tpl_confirmation || null, wa_tpl_reminder: d.wa_tpl_reminder || null, wa_tpl_review: d.wa_tpl_review || null,
+    wa_phone_number_id: d.wa_phone_number_id || null, wa_tpl_confirmation: d.wa_tpl_confirmation || null, wa_tpl_received: d.wa_tpl_received || null, wa_tpl_reminder: d.wa_tpl_reminder || null, wa_tpl_review: d.wa_tpl_review || null,
     wa_lang_ar: d.wa_lang_ar || 'ar', wa_lang_en: d.wa_lang_en || 'en', wa_verify_token: d.wa_verify_token || before.wa_verify_token || randomToken(18),
     sms_url: d.sms_url || null, sms_method: d.sms_method, sms_content_type: d.sms_content_type, sms_body_template: d.sms_body_template || null, sms_auth_header: d.sms_auth_header || null,
     wa_hook_key: before.wa_hook_key || randomToken(32), sms_inbound_key: before.sms_inbound_key || randomToken(32),
@@ -292,7 +292,8 @@ async function logSummary(businessId, days = 30) {
 }
 
 // ---------------------------------------------------------------- composing
-const KIND = (stage) => (stage === 'confirmation' ? 'confirmation' : stage === 'review' ? 'review' : 'reminder');
+// received = an online booking waiting for the clinic; confirmed = the clinic confirmed it (with the doctor and time it set).
+const KIND = (stage) => (['confirmation', 'received', 'confirmed', 'review'].includes(stage) ? stage : 'reminder');
 
 function messageVars(a, clinic, locale) {
   const en = locale === 'en';
@@ -345,7 +346,7 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
   const ready = readiness(cfg);
   const results = [];
   let phoneDone = false;
-  const tpl = { confirmation: cfg.wa_tpl_confirmation, reminder: cfg.wa_tpl_reminder, review: cfg.wa_tpl_review }[kind];
+  const tpl = { confirmation: cfg.wa_tpl_confirmation, confirmed: cfg.wa_tpl_confirmation, received: cfg.wa_tpl_received, reminder: cfg.wa_tpl_reminder, review: cfg.wa_tpl_review }[kind];
   if (to && ready.whatsapp && tpl) {
     const payload = ch.waTemplatePayload({
       to, template: tpl, language: locale === 'en' ? cfg.wa_lang_en : cfg.wa_lang_ar,
@@ -407,13 +408,19 @@ async function runClinic(cfg, now, base) {
   const today = scheduling.clinicNow(tz, new Date(now)).date;
   let sent = 0;
   const done = (s) => { if (s === 'sent') sent += 1; };
-  // 1. Booking confirmations (appointments made in the last 6 hours that have not started).
+  // 1. Booking messages (appointments made — or, for online bookings, confirmed by the clinic — in the last 6 hours):
+  //    an online booking waiting for the clinic gets "we received your request"; once reception confirms it (choosing
+  //    the doctor and time) "your appointment is confirmed" — again if the confirmed time changes; others as before.
   if (cfg.confirmations_enabled) {
+    const since = new Date(now - 6 * 3_600_000);
     const rows = await apptQuery().where('a.business_id', clinic.id).whereIn('a.status', ACTIVE).whereNot('a.appointment_type', 'blocked')
-      .where('a.created_at', '>=', new Date(now - 6 * 3_600_000)).where('a.appointment_date', '>=', today).limit(200).select(APPT_SELECT);
+      .andWhere((w) => w.where('a.created_at', '>=', since).orWhere((x) => x.where({ 'a.status': 'confirmed', 'a.source': 'website' }).where('a.updated_at', '>=', since)))
+      .where('a.appointment_date', '>=', today).limit(200).select(APPT_SELECT);
     for (const a of rows) {
       if (startOf(a, tz) <= now) continue; // eslint-disable-line no-continue
-      done(await sendStage(clinic, cfg, a, 'confirmation', { base, now })); // eslint-disable-line no-await-in-loop
+      const online = a.source === 'website';
+      const stage = online && a.status === 'pending' ? 'received' : online ? 'confirmed' : 'confirmation';
+      done(await sendStage(clinic, cfg, a, stage, { base, now })); // eslint-disable-line no-await-in-loop
     }
   }
   // 2. Reminders, in the clinic's time zone.

@@ -8,17 +8,19 @@
   var variant = s.variant === 'slider' && !slides.length ? 'centered' : s.variant;
   var back = variant === 'image_back' && im;
   var heightCls = ' ws-h-' + (s.settings.height || 'auto');
+  // Where the words and buttons sit, and the buttons' size / arrangement.
+  var place = ' ws-cx-' + (s.settings.content_x || 'start') + ' ws-cy-' + (s.settings.content_y || 'middle') + ' ws-btn-' + (s.settings.btn_size || 'l') + ' ws-btns-' + (s.settings.btn_layout || 'row');
 %>
 <% var actions = function () { %>
       <div class="ws-hero-actions">
-        <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus') %><%= c.button || t('portal.book') %></a><% } %>
-        <% if (s.settings.show_call && clinic.telHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.telHref %>"><%- icon('phone') %><%= t('portal.call') %></a><% } %>
-        <% if (s.settings.show_whatsapp && clinic.waHref) { %><a class="btn btn-secondary btn-lg" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square') %><%= t('portal.whatsapp') %></a><% } %>
-        <% if (s.settings.show_directions && clinic.mapHref) { %><a class="btn btn-ghost btn-lg" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%- icon('map-pin') %><%= t('portal.directions') %></a><% } %>
+        <% if (clinic.booking_enabled) { %><a class="btn btn-primary ws-hbtn" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus') %><%= c.button || t('portal.book') %></a><% } %>
+        <% if (s.settings.show_call && clinic.telHref) { %><a class="btn btn-secondary ws-hbtn" href="<%= clinic.telHref %>"><%- icon('phone') %><%= t('portal.call') %></a><% } %>
+        <% if (s.settings.show_whatsapp && clinic.waHref) { %><a class="btn btn-secondary ws-hbtn" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square') %><%= t('portal.whatsapp') %></a><% } %>
+        <% if (s.settings.show_directions && clinic.mapHref) { %><a class="btn btn-ghost ws-hbtn" href="<%= clinic.mapHref %>" target="_blank" rel="noopener"><%- icon('map-pin') %><%= t('portal.directions') %></a><% } %>
       </div>
 <% }; %>
 <% if (variant === 'slider') { %>
-<section class="ws-hero ws-hero-slider has-image ws-tr-<%= s.settings.transition || 'fade' %><%= heightCls %>" id="s-<%= s.id %>" data-ws-slider data-interval="<%= String(s.settings.interval || 's5').slice(1) %>" aria-roledescription="carousel" aria-label="<%= head %>">
+<section class="ws-hero ws-hero-slider has-image ws-tr-<%= s.settings.transition || 'fade' %><%= heightCls %><%= place %>" id="s-<%= s.id %>" data-ws-slider data-interval="<%= String(s.settings.interval || 's5').slice(1) %>" aria-roledescription="carousel" aria-label="<%= head %>">
   <div class="ws-slides">
     <% slides.forEach(function (x, i) { %>
     <div class="ws-slide<%= i === 0 ? ' is-on' : '' %>" role="group" aria-roledescription="slide" aria-label="<%= i + 1 %> / <%= slides.length %>"<%- i === 0 ? '' : ' aria-hidden="true"' %>>
@@ -38,7 +40,7 @@
   <% } %>
 </section>
 <% } else { %>
-<section class="ws-hero ws-hero-<%= variant %><%= im ? ' has-image' : '' %><%= heightCls %>" id="s-<%= s.id %>">
+<section class="ws-hero ws-hero-<%= variant %><%= im ? ' has-image' : '' %><%= heightCls %><%= place %>" id="s-<%= s.id %>">
   <% if (back) { %><img class="ws-hero-back" src="<%= im.url %>" alt="<%= altOf(im) %>"><% } %>
   <div class="container ws-hero-inner">
     <div class="ws-hero-text">

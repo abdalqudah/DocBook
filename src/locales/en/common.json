@@ -249,7 +249,8 @@
     "SLUG_INVALID": "Use 3–40 lowercase English letters, numbers and dashes.",
     "SLUG_RESERVED": "This address is reserved.",
     "BOOKING_DISABLED": "Online booking is not available for this clinic.",
-    "RESET_LINK_EMAILED": "This person also uses other clinics, so the reset link was e-mailed to them instead."
+    "RESET_LINK_EMAILED": "This person also uses other clinics, so the reset link was e-mailed to them instead.",
+    "NOT_PENDING": "This booking is no longer waiting for confirmation."
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",

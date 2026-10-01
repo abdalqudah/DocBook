@@ -8,7 +8,13 @@
     "online": "Online consultation",
     "minutes": "{n} min",
     "optional": "optional",
-    "status": { "pending": "Awaiting your confirmation", "confirmed": "Confirmed", "completed": "Completed", "cancelled": "Cancelled", "no_show": "Missed" },
+    "status": {
+      "pending": "Awaiting your confirmation",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "Missed"
+    },
     "confirm": "Confirm my appointment",
     "is_confirmed": "Your appointment is confirmed. We look forward to seeing you.",
     "reschedule": "Change the time",
@@ -51,7 +57,9 @@
       "reminder": "Reminder from {clinic}: your appointment with {doctor} is on {date} at {time}. Confirm, change or cancel: {link}",
       "review": "Thank you for visiting {clinic}. How was your visit with {doctor}? Rate it in one minute: {link}",
       "stop_hint": "Reply STOP to stop these messages.",
-      "test": "Test message from {clinic}: messages to patients are set up correctly."
+      "test": "Test message from {clinic}: messages to patients are set up correctly.",
+      "received": "{clinic}: we received your appointment request for {date} at {time} and will contact you soon to confirm it.",
+      "confirmed": "{clinic}: your appointment with {doctor} on {date} at {time} is confirmed. Change or cancel: {link}"
     },
     "mail": {
       "confirmation_subject": "Appointment booked — {clinic}",
@@ -62,17 +70,53 @@
       "reminder_cta": "Confirm or change",
       "review_subject": "How was your visit? — {clinic}",
       "review_body": "Thank you for visiting {clinic}. How was your visit with {doctor}? Your rating helps other patients and takes one minute.",
-      "review_cta": "Rate my visit"
+      "review_cta": "Rate my visit",
+      "received_subject": "We received your appointment request — {clinic}",
+      "received_body": "We received your appointment request for {date} at {time}. The clinic will confirm it and choose the right doctor; you will receive a message with the confirmed appointment.",
+      "received_cta": "View my request",
+      "confirmed_subject": "Your appointment is confirmed — {clinic}",
+      "confirmed_body": "Your appointment with {doctor} on {date} at {time} is confirmed. You can change or cancel it from the button below.",
+      "confirmed_cta": "Manage my appointment"
     },
     "notify": {
       "confirmed": "Patient confirmed: {name} · {date} {time}",
       "cancelled": "Patient cancelled: {name} · {date} {time}",
       "rescheduled": "Patient changed the time: {name}"
     },
-    "kinds": { "confirmation": "Booking confirmation", "reminder": "Appointment reminder", "review": "Review request" },
-    "stages": { "confirmation": "Booking confirmation", "reminder": "Reminder", "review": "Review request", "test": "Test message", "manual": "Sent by staff (WhatsApp)", "opt_out": "Patient opted out", "opt_in": "Patient opted in again", "reply": "Patient confirmed by button" },
-    "channels": { "whatsapp": "WhatsApp", "sms": "SMS", "email": "E-mail", "link": "Link" },
-    "log_status": { "sent": "Sent", "delivered": "Delivered", "read": "Read", "failed": "Failed", "opted_out": "Opted out — not sent", "received": "Received", "skipped": "Skipped" },
+    "kinds": {
+      "confirmation": "Booking confirmation",
+      "reminder": "Appointment reminder",
+      "review": "Review request",
+      "received": "Booking request received (online booking)",
+      "confirmed": "Appointment confirmed by the clinic"
+    },
+    "stages": {
+      "confirmation": "Booking confirmation",
+      "reminder": "Reminder",
+      "review": "Review request",
+      "test": "Test message",
+      "manual": "Sent by staff (WhatsApp)",
+      "opt_out": "Patient opted out",
+      "opt_in": "Patient opted in again",
+      "reply": "Patient confirmed by button",
+      "received": "Booking request received",
+      "confirmed": "Confirmed by the clinic"
+    },
+    "channels": {
+      "whatsapp": "WhatsApp",
+      "sms": "SMS",
+      "email": "E-mail",
+      "link": "Link"
+    },
+    "log_status": {
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "read": "Read",
+      "failed": "Failed",
+      "opted_out": "Opted out — not sent",
+      "received": "Received",
+      "skipped": "Skipped"
+    },
     "wa_send": "Send via WhatsApp",
     "wa_short": "WhatsApp",
     "wa_note": "Opens WhatsApp on this device with the message ready. You send it yourself.",
@@ -203,10 +247,18 @@
     "unanswered": "Without a reply",
     "unanswered_meta": "A short reply builds trust",
     "subratings": "Details",
-    "sub": { "doctor": "Doctor", "wait": "Waiting time", "clinic": "Clinic" },
+    "sub": {
+      "doctor": "Doctor",
+      "wait": "Waiting time",
+      "clinic": "Clinic"
+    },
     "rating": "Rating",
     "all_ratings": "All ratings",
-    "filter": { "unanswered": "Without a reply", "reported": "Reported", "hidden": "Hidden by the platform" },
+    "filter": {
+      "unanswered": "Without a reply",
+      "reported": "Reported",
+      "hidden": "Hidden by the platform"
+    },
     "stars_n": "{n} of 5 stars",
     "aria_rating": "Rated {avg} of 5 from {n} reviews",
     "empty_title": "No reviews yet",
@@ -251,7 +303,11 @@
     "comment_ph": "What went well, and what could be better?",
     "comment_help": "Please do not include medical details or phone numbers.",
     "show_as": "Show my review as",
-    "mode": { "full": "My full name", "initials": "My initials", "anonymous": "Anonymous" },
+    "mode": {
+      "full": "My full name",
+      "initials": "My initials",
+      "anonymous": "Anonymous"
+    },
     "privacy": "Your phone number, e-mail and visit details are never shown. Your review appears on the clinic's page.",
     "submit": "Send review",
     "thanks_title": "Thank you for your review",

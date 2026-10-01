@@ -45,7 +45,7 @@ const httpsUrl = () => z.preprocess(emptyToUndefined, z.string().trim().max(500)
 const profileSchema = z.object({
   name: z.string().trim().min(2, 'Enter the clinic name.').max(160),
   name_en: optionalString(160),
-  specialty: z.preprocess(emptyToUndefined, z.enum(options.SPECIALTIES, { errorMap: () => ({ message: 'Choose a valid value.' }) }).optional()),
+  specialty: z.preprocess(emptyToUndefined, z.string().refine((v) => require('../platformops/clinic-types').valid(v), 'Choose a valid value.').optional()),
   about: optionalString(5000), about_en: optionalString(5000),
   phone: phone(), whatsapp: phone(),
   email: z.preprocess(emptyToUndefined, z.string().trim().toLowerCase().email('Enter a valid email address.').max(190).optional()),
@@ -61,7 +61,8 @@ const renderClinic = async (req, res, extra = {}) => {
   const [{ n }] = await knex('invoices').where({ business_id: req.ctx.businessId }).count({ n: '*' });
   render(req, res, 'clinic', 'clinic', {
     b: req.business, hasInvoices: Number(n) > 0,
-    specialtyOptions: options.specialtyOptions(req.t), currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale), countryOptions: options.countryOptions(req.locale), ...extra,
+    specialtyOptions: require('../platformops/clinic-types').options(req.t, req.business && req.business.specialty), // eslint-disable-line global-require
+    currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale), countryOptions: options.countryOptions(req.locale), ...extra,
   });
 };
 router.get('/clinic', can('settings.manage'), wrap((req, res) => renderClinic(req, res)));

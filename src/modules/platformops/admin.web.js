@@ -79,4 +79,28 @@ router.post('/updates/restore', form(async (req, res) => {
   } catch (e) { return failed(req, res, e, 'restore'); }
 }, render));
 
+// ---------------------------------------------------------------- clinic types offered to clinics
+const clinicTypes = require('./clinic-types');
+const { TEMPLATES } = require('../website/catalog');
+const { flash } = require('../../routes/helpers');
+const { translateMessage } = require('../../core/i18n');
+
+router.get('/clinic-types', wrap(async (req, res) => {
+  const st = await clinicTypes.load(true);
+  const used = Object.fromEntries((await knex('businesses').whereNotNull('specialty').groupBy('specialty').select('specialty').count({ n: '*' })).map((r) => [r.specialty, Number(r.n)]));
+  res.page('pages/admin/clinic-types', { layout: 'admin', title: req.t('clinic_types.title'), st, builtin: clinicTypes.BUILTIN, used, templates: TEMPLATES, pageStyles: ['/css/admin.css'] });
+}));
+router.post('/clinic-types', wrap(async (req, res) => {
+  try {
+    const shown = [].concat(req.body.shown || []);
+    await clinicTypes.save(req.ctx, { hidden: clinicTypes.BUILTIN.filter((k) => !shown.includes(k)), custom: [...[].concat(Object.values(req.body.custom || {})), ...(req.body.new && (req.body.new.ar || req.body.new.en) ? [req.body.new] : [])] }, { templates: TEMPLATES });
+    flash(req, 'success', req.t('clinic_types.saved'));
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    const first = e.details && Object.values(e.details).find((v) => typeof v === 'string');
+    flash(req, 'error', first ? translateMessage(req.locale, first) : e.message);
+  }
+  res.redirect('/admin/clinic-types');
+}));
+
 module.exports = router;

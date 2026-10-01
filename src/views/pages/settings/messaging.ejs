@@ -98,6 +98,7 @@
           <h3 class="eg-h3"><%= t('messaging.templates') %></h3>
           <div class="form-grid cols-3">
             <%- include('../../partials/field', { name: 'wa_tpl_confirmation', label: t('messaging.kinds.confirmation'), value: v('wa_tpl_confirmation'), placeholder: 'appointment_booked', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'wa_tpl_received', label: t('messaging.kinds.received'), value: v('wa_tpl_received'), placeholder: 'booking_received', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
             <%- include('../../partials/field', { name: 'wa_tpl_reminder', label: t('messaging.kinds.reminder'), value: v('wa_tpl_reminder'), placeholder: 'appointment_reminder', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
             <%- include('../../partials/field', { name: 'wa_tpl_review', label: t('messaging.kinds.review'), value: v('wa_tpl_review'), placeholder: 'visit_review', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
             <%- include('../../partials/field', { name: 'wa_lang_ar', label: t('messaging.lang_ar'), value: v('wa_lang_ar', 'ar'), attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>

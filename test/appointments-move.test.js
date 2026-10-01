@@ -42,6 +42,8 @@ test.before(async () => {
   ctx = await clinic('owner@move-a.test', 'Clinic A');
   otherCtx = await clinic('owner@move-b.test', 'Clinic B');
   doctorId = await doctors.saveDoctor(ctx, null, { full_name: 'Dr. Sami', slot_duration_minutes: '30', consultation_fee: '20', base_salary: '0', is_active: '1', show_consultation_fee: '1' });
+  // A week with a 13:00–14:00 break the doctor chose (breaks are not part of the default week).
+  await knex('doctors').where({ id: doctorId }).update({ hours_mode: 'custom', working_hours: JSON.stringify(Object.fromEntries(['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'].map((k) => [k, k === 'fri' ? { enabled: false, shifts: [], breaks: [] } : { enabled: true, shifts: [{ start: '09:00', end: '17:00' }], breaks: [{ start: '13:00', end: '14:00' }] }]))) });
   doctor2Id = await doctors.saveDoctor(ctx, null, { full_name: 'Dr. Layla', slot_duration_minutes: '20', consultation_fee: '35', base_salary: '0', is_active: '1', show_consultation_fee: '1' });
   serviceId = await doctors.saveService(ctx, null, { name: 'Check-up', price: '100', duration_minutes: '30', is_active: '1', show_price: '1' });
   date = nextSunday();

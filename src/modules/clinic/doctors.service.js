@@ -23,10 +23,21 @@ const doctorSchema = z.object({
   color: z.preprocess(emptyToUndefined, z.string().regex(/^#[0-9a-fA-F]{6}$/).optional()),
 });
 
+async function clinicWeekOf(businessId) {
+  const b = await require('../../db/knex')('businesses').where({ id: businessId }).first('default_working_hours'); // eslint-disable-line global-require
+  const w = b ? parseWh(b.default_working_hours || 'null') : null;
+  return w && Object.keys(w).length ? w : null;
+}
+
 async function saveDoctor(ctx, id, input) {
   const d = validate(doctorSchema, input);
   const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
-  if (input.wh) row.working_hours = JSON.stringify(scheduling.parseWorkingHoursForm(input));
+  // Hours: the clinic's usual week (kept in step when the clinic changes it) or the doctor's own.
+  const clinicWeek = await clinicWeekOf(ctx.businessId);
+  const mode = input.hours_mode === 'clinic' || input.hours_mode === 'custom' ? input.hours_mode : (id ? null : (clinicWeek ? 'clinic' : 'custom'));
+  if (mode) row.hours_mode = mode;
+  if (mode === 'clinic') row.working_hours = JSON.stringify(clinicWeek || scheduling.defaultWorkingHours());
+  else if (input.wh) row.working_hours = JSON.stringify(scheduling.parseWorkingHoursForm(input));
   // Online consultations section of the doctor form (validated before anything is saved).
   const tele = input.online_form ? require('../telehealth/telehealth.service') : null; // eslint-disable-line global-require
   const online = tele ? tele.parseDoctorOnline(input) : null;

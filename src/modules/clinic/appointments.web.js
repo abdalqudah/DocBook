@@ -329,8 +329,12 @@ router.get('/:id(\\d+)/peek', wrap(async (req, res) => {
     a.service_id ? knex('services').where({ business_id: ctx.businessId, id: a.service_id }).first('name', 'name_en') : null,
     knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number', 'amount'),
   ]);
+  // A booking waiting for confirmation: reception picks the doctor (when the patient chose "any doctor") and confirms.
+  const doctorsList = a.status === 'pending' && ctx.permissions.has('appointments.manage')
+    ? await knex('doctors').where({ business_id: ctx.businessId, is_active: true }).modify((q) => { if (ctx.ownDoctorId) q.where('id', ctx.ownDoctorId); }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en')
+    : [];
   res.set('Cache-Control', 'no-store');
-  return res.render('pages/clinic/appointments/_peek', { ...res.locals, a, doctor, service, invoice, back: safeReturn(req.query.return) || '/app/appointments', isToday: a.appointment_date === ctx.today });
+  return res.render('pages/clinic/appointments/_peek', { ...res.locals, a, doctor, service, invoice, doctorsList, back: safeReturn(req.query.return) || '/app/appointments', isToday: a.appointment_date === ctx.today });
 }));
 
 router.post('/:id(\\d+)/status', can('appointments.manage'), wrap(async (req, res) => {
@@ -338,6 +342,20 @@ router.post('/:id(\\d+)/status', can('appointments.manage'), wrap(async (req, re
   await appts.setStatus(req.ctx, Number(req.params.id), status);
   flash(req, 'success', req.t('appointments.status_changed', { status: req.t(`appointments.statuses.${status}`) }));
   res.redirect(safeReturn(req.body.return_to) || `/app/appointments/${req.params.id}`);
+}));
+
+router.post('/:id(\\d+)/confirm', can('appointments.manage'), wrap(async (req, res) => {
+  const back = safeReturn(req.body.return_to) || `/app/appointments/${req.params.id}`;
+  try {
+    const doctorId = Number(req.body.doctor_id) || null;
+    if (doctorId && req.ctx.ownDoctorId && doctorId !== req.ctx.ownDoctorId) throw E.forbidden('appointments.view_all');
+    await appts.confirm(req.ctx, Number(req.params.id), { doctor_id: doctorId, appointment_date: req.body.appointment_date || undefined, appointment_time: req.body.appointment_time || undefined });
+    flash(req, 'success', req.t('appointments.confirmed_sent'));
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500 || e.status === 403) throw e;
+    flash(req, 'error', errText(req, e));
+  }
+  res.redirect(back);
 }));
 
 router.post('/:id(\\d+)/assign', can('appointments.manage'), wrap(async (req, res) => {

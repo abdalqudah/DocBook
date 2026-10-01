@@ -249,7 +249,8 @@
     "SLUG_INVALID": "استخدم من 3 إلى 40 حرفًا إنجليزيًا صغيرًا أو رقمًا أو شرطة.",
     "SLUG_RESERVED": "هذا العنوان محجوز.",
     "BOOKING_DISABLED": "الحجز الإلكتروني غير متاح لهذه العيادة.",
-    "RESET_LINK_EMAILED": "هذا الشخص يستخدم عيادات أخرى أيضًا، لذلك أُرسل رابط إعادة التعيين إلى بريده."
+    "RESET_LINK_EMAILED": "هذا الشخص يستخدم عيادات أخرى أيضًا، لذلك أُرسل رابط إعادة التعيين إلى بريده.",
+    "NOT_PENDING": "هذا الحجز لم يعد بانتظار التأكيد."
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",
@@ -286,7 +287,10 @@
     "Use English letters, numbers or dashes.": "استخدم أحرفاً إنجليزية أو أرقاماً أو شرطات.",
     "Another page already uses this address.": "صفحة أخرى تستخدم هذا الرابط.",
     "The home page cannot be renamed.": "لا يمكن تغيير الصفحة الرئيسية.",
-    "The home page cannot be removed.": "لا يمكن حذف الصفحة الرئيسية."
+    "The home page cannot be removed.": "لا يمكن حذف الصفحة الرئيسية.",
+    "Choose the doctor.": "اختر الطبيب.",
+    "Keep at least one clinic type.": "أبقِ نوعاً واحداً على الأقل.",
+    "Too many types.": "عدد الأنواع كبير جداً."
   },
   "roles": {
     "owner": "مالك العيادة",

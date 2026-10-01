@@ -51,15 +51,29 @@
         <label class="check"><input type="checkbox" name="show_consultation_fee" value="1"<%= v('show_consultation_fee', true) && v('show_consultation_fee', true) !== '0' ? ' checked' : '' %>><span><%= t('doctors.show_fee') %></span></label>
       </div>
     </div></div>
-  <div class="panel flush"><div class="panel-head"><div><h2><%= t('doctors.schedule') %></h2><div class="panel-sub"><%= t('doctors.schedule_help') %></div></div></div>
-    <div class="table-wrap"><table class="table responsive">
+  <% var mode = (typeof old !== 'undefined' && old && old.hours_mode) || (doctor ? doctor.hours_mode : (clinicWeek ? 'clinic' : 'custom')) || 'custom';
+     var weekText = function (w) { return days.filter(function (k) { return w[k] && w[k].enabled; }).map(function (k) { return t('days.' + k) + ' ' + (w[k].shifts || []).map(function (s) { return s.start + '–' + s.end; }).join(' / '); }).join('، '); }; %>
+  <div class="panel flush dr-hours" data-dr-hours><div class="panel-head"><div><h2><%= t('doctors.schedule') %></h2><div class="panel-sub"><%= t('doctors.schedule_help') %></div></div></div>
+    <div class="panel-body stack">
+      <div class="segmented" role="radiogroup" aria-label="<%= t('doctors.schedule') %>">
+        <label><input type="radio" name="hours_mode" value="clinic"<%= mode === 'clinic' ? ' checked' : '' %>><span><%- icon('building-2', 'icon-sm') %><%= t('doctors.hours_clinic') %></span></label>
+        <label><input type="radio" name="hours_mode" value="custom"<%= mode === 'custom' ? ' checked' : '' %>><span><%- icon('clock', 'icon-sm') %><%= t('doctors.hours_custom') %></span></label>
+      </div>
+      <div class="dr-hours-clinic">
+        <% if (clinicWeek) { %><p class="small"><%= t('doctors.hours_clinic_is') %> <span class="strong"><%= weekText(clinicWeek) %></span></p><p class="help"><%= t('doctors.hours_clinic_help') %> <a class="link" href="/app/onboarding/hours"><%= t('doctors.hours_clinic_edit') %></a></p>
+        <% } else { %><div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('doctors.hours_clinic_none') %> <a class="link" href="/app/onboarding/hours"><%= t('doctors.hours_clinic_set') %></a></div></div><% } %>
+      </div>
+    </div>
+    <div class="table-wrap dr-hours-custom"><table class="table responsive">
       <thead><tr><th><%= t('doctors.day') %></th><th><%= t('doctors.shift1') %></th><th><%= t('doctors.shift2') %></th><th><%= t('doctors.break') %></th></tr></thead>
       <tbody><% days.forEach(function (k) { var day = wh[k] || {}; var sh = day.shifts || (day.start ? [{ start: day.start, end: day.end }] : []); var br = (day.breaks || [])[0] || {}; var on = day.enabled !== false && sh.length > 0; %>
         <tr>
           <td class="primary-cell"><label class="check"><input type="checkbox" name="wh[<%= k %>][enabled]" value="1"<%= on ? ' checked' : '' %>><span class="strong"><%= t('days.' + k) %></span></label></td>
           <td data-label="<%= t('doctors.shift1') %>"><div class="row-sm"><input class="input" type="time" name="wh[<%= k %>][s1]" value="<%= (sh[0] || {}).start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][e1]" value="<%= (sh[0] || {}).end || '' %>" aria-label="<%= t('common.to') %>"></div></td>
-          <td data-label="<%= t('doctors.shift2') %>"><div class="row-sm"><input class="input" type="time" name="wh[<%= k %>][s2]" value="<%= (sh[1] || {}).start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][e2]" value="<%= (sh[1] || {}).end || '' %>" aria-label="<%= t('common.to') %>"></div></td>
-          <td data-label="<%= t('doctors.break') %>"><div class="row-sm"><input class="input" type="time" name="wh[<%= k %>][bs]" value="<%= br.start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][be]" value="<%= br.end || '' %>" aria-label="<%= t('common.to') %>"></div></td>
+          <td data-label="<%= t('doctors.shift2') %>"><div class="dr-opt"><input type="hidden" name="wh[<%= k %>][extra]" value="0"><label class="check small"><input type="checkbox" name="wh[<%= k %>][extra]" value="1"<%= sh[1] ? ' checked' : '' %>><span><%= t('doctors.add_shift') %></span></label>
+            <div class="row-sm dr-opt-fields"><input class="input" type="time" name="wh[<%= k %>][s2]" value="<%= (sh[1] || {}).start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][e2]" value="<%= (sh[1] || {}).end || '' %>" aria-label="<%= t('common.to') %>"></div></div></td>
+          <td data-label="<%= t('doctors.break') %>"><div class="dr-opt"><input type="hidden" name="wh[<%= k %>][break]" value="0"><label class="check small"><input type="checkbox" name="wh[<%= k %>][break]" value="1"<%= br.start ? ' checked' : '' %>><span><%= t('doctors.add_break') %></span></label>
+            <div class="row-sm dr-opt-fields"><input class="input" type="time" name="wh[<%= k %>][bs]" value="<%= br.start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][be]" value="<%= br.end || '' %>" aria-label="<%= t('common.to') %>"></div></div></td>
         </tr>
       <% }) %></tbody>
     </table></div>

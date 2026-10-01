@@ -103,7 +103,7 @@ function parseLogo(dataUrl) {
 const clinicSchema = z.object({
   name: z.string({ required_error: 'Enter the clinic name.' }).trim().min(2, 'Enter the clinic name.').max(160),
   name_en: optionalString(160),
-  specialty: z.preprocess(emptyToUndefined, z.enum(options.SPECIALTIES, { errorMap: () => ({ message: 'Choose a valid value.' }) }).optional()),
+  specialty: z.preprocess(emptyToUndefined, z.string().refine((v) => require('../platformops/clinic-types').valid(v), 'Choose a valid value.').optional()),
   phone: phone(), whatsapp: phone(), city: optionalString(100), address: optionalString(255),
   timezone: z.preprocess(emptyToUndefined, z.enum(options.ZONE_IDS, { errorMap: () => ({ message: 'Choose a valid value.' }) }).optional()),
   currency: z.preprocess(emptyToUndefined, z.enum(options.CURRENCIES, { errorMap: () => ({ message: 'Choose a currency.' }) }).optional()),
@@ -156,10 +156,10 @@ async function saveHours(ctx, input) {
   const json = JSON.stringify(week);
   await knex('businesses').where({ id: ctx.businessId }).update({ default_working_hours: json, updated_at: new Date() });
   businesses.forget(ctx.businessId);
-  let applied = 0;
-  if (applyDoctors) {
-    applied = await knex('doctors').where({ business_id: ctx.businessId }).update({ working_hours: json, updated_at: new Date() });
-  }
+  // Doctors who follow the clinic's week always get it; "apply to every doctor" brings the others back to it too.
+  const q = knex('doctors').where({ business_id: ctx.businessId });
+  if (!applyDoctors) q.where({ hours_mode: 'clinic' });
+  const applied = await q.update({ working_hours: json, hours_mode: 'clinic', updated_at: new Date() });
   await audit.record(ctx, 'clinic.hours_updated', { entityType: 'clinic', entityId: ctx.businessId, oldValues: { hours: parseJson(before.default_working_hours) }, newValues: { hours: week, doctors_updated: applied } });
   return { week, applied };
 }
@@ -208,7 +208,7 @@ async function addDoctor(ctx, input) {
     full_name: d.full_name, specialization: d.specialization, consultation_fee: String(d.consultation_fee), slot_duration_minutes: String(d.slot_duration_minutes),
     base_salary: '0', is_active: '1', show_consultation_fee: '1', sort_order: '',
   });
-  if (week) await knex('doctors').where({ id, business_id: ctx.businessId }).update({ working_hours: JSON.stringify(week) });
+  if (week) await knex('doctors').where({ id, business_id: ctx.businessId }).update({ working_hours: JSON.stringify(week), hours_mode: 'clinic' });
   if (membership) {
     await knex('memberships').where({ id: membership.id }).update({ doctor_id: id, updated_at: new Date() });
     await audit.record(ctx, 'staff.updated', { entityType: 'staff', entityId: ctx.userId, newValues: { doctor_id: id } });

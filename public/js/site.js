@@ -51,7 +51,7 @@
     var doc = doctorId();
     Array.prototype.forEach.call(serviceSelect.options, function (o) {
       var owner = o.getAttribute('data-doctor');
-      var hide = Boolean(owner && doc && owner !== doc);
+      var hide = Boolean(owner && doc && doc !== 'any' && owner !== doc);
       o.hidden = hide; o.disabled = hide;
       if (hide && o.selected) serviceSelect.value = '';
     });

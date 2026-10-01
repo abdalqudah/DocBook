@@ -242,6 +242,25 @@ async function move(ctx, apptId, input) {
   return a.id;
 }
 
+/**
+ * Reception confirms a pending booking — typically an online one — after choosing the doctor (a booking made with
+ * "any doctor" has none) and, when needed, another day or time. The new doctor/time is checked like any move; the
+ * patient's confirmation message follows from the status (messaging job).
+ */
+async function confirm(ctx, apptId, input = {}) {
+  const a = await get(ctx, apptId);
+  if (a.status !== 'pending') throw E.conflict('NOT_PENDING', 'Only a booking waiting for confirmation can be confirmed here.');
+  const doctorId = Number(input.doctor_id) || a.doctor_id;
+  if (!doctorId) throw E.validation({ doctor_id: 'Choose the doctor.' });
+  const date = input.appointment_date || a.appointment_date;
+  const time = input.appointment_time || a.appointment_time;
+  if (doctorId !== a.doctor_id || date !== a.appointment_date || time !== a.appointment_time) {
+    await move(ctx, a.id, { doctor_id: doctorId, appointment_date: date, appointment_time: time });
+  }
+  await setStatus(ctx, a.id, 'confirmed');
+  return a.id;
+}
+
 async function followUp(ctx, parentId, input) {
   const parent = await get(ctx, parentId);
   return book(ctx, { ...input, doctor_id: parent.doctor_id, service_id: input.service_id || parent.service_id, patient_id: parent.patient_id, patient_name: parent.patient_name,
@@ -307,6 +326,7 @@ async function voidInvoice(ctx, invId) {
 }
 
 module.exports = {
+  confirm,
   STATUSES, PAYMENT_METHODS, patients, savePatient, resolveOrCreatePatient, timeline,
   list, get, book, update, setStatus, checkIn, callIn, assignDoctor, block, move, followUp, remove, checkout, invoices, voidInvoice, expectedFee,
 };
