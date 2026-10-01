@@ -25,7 +25,7 @@
     </div>
     <div class="panel flush"><div class="panel-head"><h2><%= t('doctors.upcoming') %></h2></div>
       <% if (!upcoming.length) { %><p class="small muted" style="padding:16px 20px;margin:0"><%= t('doctors.no_upcoming') %></p><% } else { %>
-      <ul class="action-list"><% upcoming.forEach(function (a) { %><li><a href="/app/visits/<%= a.id %>"><span class="action-icon brand"><%- icon('calendar-days') %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></div></div><span class="badge"><%= label('appointments.statuses', a.status) %></span></a></li><% }) %></ul><% } %>
+      <ul class="action-list"><% upcoming.forEach(function (a) { %><li><a href="<%= (can('clinical.view') ? '/app/visits/' : '/app/appointments/') + a.id %>"><span class="action-icon brand"><%- icon('calendar-days') %></span><div class="grow"><div class="strong"><%= a.patient_name %></div><div class="small muted"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></div></div><span class="badge"><%= label('appointments.statuses', a.status) %></span></a></li><% }) %></ul><% } %>
     </div>
   </div>
   <div class="stack">

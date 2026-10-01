@@ -117,7 +117,22 @@ async function renderNew(req, res, extra = {}) {
     old: extra.old ? { ...d, include_national_id: '', show_diagnosis: '', companion_leave: '', ...extra.old } : d,
   });
 }
-pages.get('/new', can('certificates.issue'), wrap((req, res) => renderNew(req, res)));
+// Without a visit (the "+ New" menu) the doctor first picks a recent visit that took place.
+async function renderPick(req, res) {
+  const since = new Date(`${req.ctx.today}T00:00:00Z`); since.setUTCDate(since.getUTCDate() - 30);
+  const q = knex('appointments as a').leftJoin('patients as p', 'p.id', 'a.patient_id').leftJoin('doctors as d', 'd.id', 'a.doctor_id')
+    .where('a.business_id', req.ctx.businessId).whereNot('a.appointment_type', 'blocked').whereNotIn('a.status', ['cancelled', 'no_show'])
+    .whereNotNull('a.patient_id').whereBetween('a.appointment_date', [since.toISOString().slice(0, 10), req.ctx.today])
+    .orderBy([{ column: 'a.appointment_date', order: 'desc' }, { column: 'a.appointment_time', order: 'desc' }]).limit(50)
+    .select('a.id', 'a.appointment_date', 'a.appointment_time', 'p.full_name as patient_name', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en');
+  if (req.ctx.ownDoctorId) q.where('a.doctor_id', req.ctx.ownDoctorId);
+  const term = String(req.query.q || '').trim().slice(0, 80);
+  if (term) q.where('p.full_name', 'like', `%${term.replace(/[%_\\]/g, '\\$&')}%`);
+  const type = svc.TYPES.includes(req.query.type) ? req.query.type : 'sick_leave';
+  res.page('pages/certificates/pick', { title: req.t('certificates.pick_title'), visits: await q, type, term, ...ASSETS });
+}
+
+pages.get('/new', can('certificates.issue'), wrap((req, res) => (req.query.visit ? renderNew(req, res) : renderPick(req, res))));
 pages.post('/new', can('certificates.issue'), form(async (req, res) => {
   const id = await svc.issue(req.ctx, Number(req.body.visit), req.body, { business: req.business });
   flash(req, 'success', req.t('certificates.issued'));

@@ -25,7 +25,7 @@ const SECTIONS = [
   ] },
   { group: 'features', items: [
     { key: 'modules', href: '/app/settings/modules', icon: 'toggle-right', perms: ['settings.manage'] },
-    { key: 'ai', href: '/app/settings/ai', icon: 'sparkles', perms: ['settings.manage'] },
+    { key: 'ai', href: '/app/settings/ai', icon: 'sparkles', perms: ['settings.manage'], module: 'ai_assistant' },
   ] },
   { group: 'integrations', items: [
     { key: 'sheets', href: '/app/settings/google-sheets', icon: 'file-spreadsheet', perms: ['data.manage', 'data.export'] },
@@ -56,10 +56,12 @@ const SECTIONS = [
   ] },
 ];
 
-function sectionsFor(permissions) {
+function sectionsFor(permissions, modules) {
   // permissions.pagesOff: Settings sections closed for this member (per-member page access, src/modules/access).
+  // modules: the clinic's optional areas that are on (ctx.modules); a section of an area that is off is not listed.
   const off = permissions.pagesOff;
-  const ok = (item) => (!item.perms.length || item.perms.some((p) => permissions.has(p))) && !(off && off.has(`settings_${item.key}`));
+  const ok = (item) => (!item.perms.length || item.perms.some((p) => permissions.has(p))) && !(off && off.has(`settings_${item.key}`))
+    && !(item.module && modules && !modules.has(item.module));
   return SECTIONS.map((g) => ({ group: g.group, items: g.items.filter((i) => !i.moved && ok(i)) })).filter((g) => g.items.length);
 }
 
@@ -71,7 +73,7 @@ function render(req, res, view, section, data = {}) {
     workspace: WORKSPACE_OF[section] || null,
     title: data.title || req.t(`settings.nav_${section}`),
     section,
-    settingsNav: sectionsFor(req.ctx.permissions),
+    settingsNav: sectionsFor(req.ctx.permissions, req.ctx.modules),
     pageStyles: ['/css/admin.css'],
     pageScripts: ['/js/admin.js'],
     ...data,

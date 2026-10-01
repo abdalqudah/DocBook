@@ -1,4 +1,4 @@
-<%# System update — same screen and flow as RemoteWay's system update: version card, install form (zip + password),
+<%# System update: version card, install form (zip + password),
     backups with restore, update history. %>
 <% var when = function (iso) { return iso ? fmt.date(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }; %>
 <div class="page-head"><div><h1><%= t('updater.title') %></h1><p><%= t('updater.lead') %></p></div></div>

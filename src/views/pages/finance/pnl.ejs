@@ -22,7 +22,7 @@
     <p><%= t('pnl.lead') %></p>
   </div>
   <div class="page-actions">
-    <a class="btn btn-secondary" href="/app/finance/assistant"><%- icon('sparkles', 'icon-sm') %><%= t('aifin.title') %></a>
+    <% if (moduleOn('ai_assistant')) { %><a class="btn btn-secondary" href="/app/finance/assistant"><%- icon('sparkles', 'icon-sm') %><%= t('aifin.title') %></a><% } %>
     <%- include('../../partials/export-menu', { href: '/app/finance/export', query: { kind: p.kind, key: p.key } }) %>
     <a class="btn btn-secondary" href="/app/finance?<%= baseQs %>&format=pdf&download=1"><%- icon('download', 'icon-sm') %><%= t('pnl.pdf') %></a>
     <a class="btn btn-primary" href="/app/finance?<%= baseQs %>&print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('pnl.print_statement') %></a>

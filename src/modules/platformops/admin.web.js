@@ -1,4 +1,4 @@
-// Platform admin: system update from a DocBook dist zip, the same screen and flow as RemoteWay's system update.
+// Platform admin: system update from a DocBook dist zip: version card, one-step install form, backups.
 // Mounted inside the super-admin router (src/modules/admin/web.js), so only platform admins reach it; audited.
 //   GET  /admin/updates           current version, install form, backups, update history
 //   POST /admin/updates/install   multipart form: the zip + your password → back up, copy, restart

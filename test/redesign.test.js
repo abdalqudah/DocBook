@@ -281,3 +281,47 @@ test('settings: grouped by kind of configuration; a pointer to the moved pages',
   for (const g of ['Clinic profile', 'Documents &amp; printing', 'Messages &amp; notifications', 'Features', 'Subscription', 'Data &amp; privacy']) assert.ok(r.text.includes(g), g);
   assert.match(r.text, /set-moved/);
 });
+
+test('"+ New": every create action opens a page; a document without a visit starts by choosing one (own visits for a doctor)', async () => {
+  const today = require('../src/modules/clinic/scheduling').clinicNow('Asia/Amman').date;
+  const other = await setup.addDoctor(ctx, { full_name: 'Dr Other', consultation_fee: '20', slot_duration_minutes: '30' });
+  const [p1] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'Pick Mine' });
+  const [p2] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'Pick Theirs' });
+  const [mine] = await knex('appointments').insert({ business_id: ctx.businessId, doctor_id: doctorId, patient_id: p1, patient_name: 'Pick Mine', appointment_date: today, appointment_time: '00:01', status: 'completed' });
+  await knex('appointments').insert({ business_id: ctx.businessId, doctor_id: other, patient_id: p2, patient_name: 'Pick Theirs', appointment_date: today, appointment_time: '00:02', status: 'completed' });
+  await knex('appointments').insert({ business_id: ctx.businessId, doctor_id: doctorId, patient_id: p1, patient_name: 'Pick Mine', appointment_date: today, appointment_time: '00:03', status: 'cancelled' });
+  const o = app.agent();
+  await o.login(mail('owner'));
+  for (const x of nav.actionsFor(ctx.permissions).filter((y) => y.create)) {
+    const r = await o.get(x.href.split('#')[0]);
+    assert.equal(r.status, 200, `${x.key} → ${x.href}`);
+  }
+  let r = await o.get('/app/certificates/new?type=attendance');
+  assert.match(r.text, /Pick Mine/);
+  assert.match(r.text, /Pick Theirs/);
+  assert.match(r.text, new RegExp(`/app/certificates/new\\?visit=${mine}&type=attendance`));
+  const d = app.agent();
+  await d.login(mail('doctor'));
+  r = await d.get('/app/certificates/new');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Pick Mine/);
+  assert.ok(!/Pick Theirs/.test(r.text), "another doctor's visits are not offered");
+  assert.equal((r.text.match(/certificates\/new\?visit=/g) || []).length, 1, 'cancelled visits are not offered');
+  r = await d.get('/app/certificates/new?q=Theirs');
+  assert.ok(!/Pick Theirs/.test(r.text));
+});
+
+test('an area outside the package or turned off has no links: the AI assistant in settings and on the P&L page', async () => {
+  const ops = require('../src/modules/platformops/ops.service'); // eslint-disable-line global-require
+  const o = app.agent();
+  await o.login(mail('owner'));
+  assert.match((await o.get('/app/settings')).text, /href="\/app\/settings\/ai"/);
+  assert.match((await o.get('/app/finance')).text, /href="\/app\/finance\/assistant"/);
+  await ops.saveModules({ ...ctx, ip: '127.0.0.1' }, await knex('businesses').where({ id: ctx.businessId }).first(), Object.fromEntries(ops.KEYS.filter((k) => k !== 'ai_assistant').map((k) => [k, '1'])));
+  try {
+    assert.ok(!/href="\/app\/settings\/ai"/.test((await o.get('/app/settings')).text));
+    assert.ok(!/href="\/app\/finance\/assistant"/.test((await o.get('/app/finance')).text));
+  } finally {
+    await ops.saveModules({ ...ctx, ip: '127.0.0.1' }, await knex('businesses').where({ id: ctx.businessId }).first(), Object.fromEntries(ops.KEYS.map((k) => [k, '1'])));
+  }
+});

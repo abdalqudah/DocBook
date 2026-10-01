@@ -36,7 +36,7 @@ router.get('/', wrap(async (req, res) => {
     req.ctx.permissions.has('users.manage') ? knex('memberships').where({ business_id: b.id }).count({ n: '*' }).then((r) => Number(r[0].n)) : null,
     knex('doctors').where({ business_id: b.id, is_active: true }).count({ n: '*' }).then((r) => Number(r[0].n)),
   ]);
-  render(req, res, 'index', 'overview', { title: req.t('settings.title'), groups: sectionsFor(req.ctx.permissions), stats: { members, doctors }, publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null });
+  render(req, res, 'index', 'overview', { title: req.t('settings.title'), groups: sectionsFor(req.ctx.permissions, req.ctx.modules), stats: { members, doctors }, publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null });
 }));
 
 // ---------------------------------------------------------------- clinic profile

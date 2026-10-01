@@ -225,9 +225,9 @@ function restartAfter(res, delayMs = 400) {
   res.on('finish', () => setTimeout(() => process.exit(0), delayMs));
 }
 
-// ---------------------------------------------------------------- one-step install (same flow as RemoteWay's system update)
+// ---------------------------------------------------------------- one-step install
 // Upload the package in a normal form → validate → back up the running files → write the new files → restart.
-// Lenient like RemoteWay: a zip whose files sit inside one top folder (e.g. "docbook/") is accepted, and files that are
+// Lenient: a zip whose files sit inside one top folder (e.g. "docbook/") is accepted, and files that are
 // not part of the build (__MACOSX, .DS_Store, notes…) are skipped instead of rejecting the package. Unsafe paths,
 // links, node_modules and .env files are still refused.
 const SKIP_TOPS = new Set(['__MACOSX', 'node_modules', 'tmp', '.updates', '.git']);

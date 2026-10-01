@@ -1,0 +1,39 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : (ar || en || ''); }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/certificates"><%= t('certificates.title') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('certificates.issue_new') %></div>
+    <h1><%= t('certificates.pick_title') %></h1>
+    <p><%= t('certificates.pick_lead') %></p>
+  </div>
+</div>
+
+<nav class="segmented mb-4 cert-types" aria-label="<%= t('certificates.type') %>">
+  <% ['sick_leave', 'medical_report', 'attendance'].forEach(function (ty) { %><a class="<%= ty === type ? 'active' : '' %>" href="/app/certificates/new?type=<%= ty %><%= term ? '&q=' + encodeURIComponent(term) : '' %>"<%- ty === type ? ' aria-current="page"' : '' %>><%= t('certificates.types.' + ty) %></a><% }) %>
+</nav>
+
+<div class="panel flush">
+  <form class="table-toolbar" method="get" role="search">
+    <input type="hidden" name="type" value="<%= type %>">
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" name="q" value="<%= term %>" placeholder="<%= t('certificates.pick_search') %>" aria-label="<%= t('common.search') %>"></div>
+    <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button>
+  </form>
+  <% if (!visits.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'calendar-x', emptyTitle: t('certificates.pick_empty'), emptyText: t('certificates.pick_empty_text'), emptyAction: '' }) %>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th><%= t('common.patient') %></th><th><%= t('common.date') %></th><th><%= t('common.doctor') %></th><th></th></tr></thead>
+      <tbody>
+      <% visits.forEach(function (v) { %>
+        <tr>
+          <td class="strong"><%= v.patient_name %></td>
+          <td><%= fmt.date(v.appointment_date) %> <span class="muted"><%= String(v.appointment_time || '').slice(0, 5) %></span></td>
+          <td><%= v.doctor_name ? L(v.doctor_name, v.doctor_name_en) : '—' %></td>
+          <td class="text-end"><a class="btn btn-primary btn-sm" href="/app/certificates/new?visit=<%= v.id %>&type=<%= type %>"><%= t('certificates.pick_go') %></a></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
