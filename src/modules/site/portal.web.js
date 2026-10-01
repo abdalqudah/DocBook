@@ -47,32 +47,38 @@ async function loadClinic(req) {
 /** Page styles for a clinic page: the site stylesheet plus the clinic's own brand colour (when it set one). */
 const clinicStyles = (clinic) => ['/css/site.css', ...(clinic.color && theme.HEX.test(clinic.color) ? [`/${clinic.slug}/theme.css`] : [])];
 
-const doctorView = (req) => (d) => {
+/** Clinic-wide price display: 'site' (website pages, search data) or 'booking' (the booking pages). On unless turned off. */
+const pricesShown = (clinic, where = 'site') => {
+  const v = clinic && clinic[where === 'booking' ? 'prices_on_booking' : 'prices_on_site'];
+  return v === undefined || v === null || Boolean(Number(v));
+};
+
+const doctorView = (req, prices = true) => (d) => {
   const en = req.locale === 'en';
   const bio = (en ? d.bio_en || d.bio : d.bio || d.bio_en) || '';
   return {
     id: d.id, name: (en && d.full_name_en) || d.full_name, specialty: (en ? d.specialization_en || d.specialization : d.specialization || d.specialization_en) || '',
-    fee: d.show_consultation_fee ? Number(d.consultation_fee) || 0 : null, color: d.color && theme.HEX.test(d.color) ? d.color : null,
+    fee: prices && d.show_consultation_fee ? Number(d.consultation_fee) || 0 : null, color: d.color && theme.HEX.test(d.color) ? d.color : null,
     bio: bio.length > 180 ? `${bio.slice(0, 177).trim()}…` : bio, slot: d.slot_duration_minutes, online: Boolean(d.online_enabled),
   };
 };
-const listDoctors = async (req, clinic) => {
+const listDoctors = async (req, clinic, where = 'site') => {
   const [rows, photos] = await Promise.all([
     knex('doctors').where({ business_id: clinic.id, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
       .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled'),
     require('../integrations/media.service').publicDoctorPhotos(clinic), // eslint-disable-line global-require
   ]);
-  return rows.map(doctorView(req)).map((d) => ({ ...d, photo: photos[d.id] || null })); // photo: public media-library URL (or null)
+  return rows.map(doctorView(req, pricesShown(clinic, where))).map((d) => ({ ...d, photo: photos[d.id] || null })); // photo: public media-library URL (or null)
 };
 // Services with their (active) category, if any — the pages group them by category (platformops).
-const listServices = async (req, clinic) => (await knex('services as s').leftJoin('service_categories as c', function j() { this.on('c.id', 's.category_id').andOn('c.business_id', 's.business_id').andOnVal('c.is_active', true); })
+const listServices = async (req, clinic, where = 'site') => (await knex('services as s').leftJoin('service_categories as c', function j() { this.on('c.id', 's.category_id').andOn('c.business_id', 's.business_id').andOnVal('c.is_active', true); })
   .where({ 's.business_id': clinic.id, 's.is_active': true })
   .orderBy([{ column: 's.sort_order' }, { column: 's.name' }])
   .select('s.id', 's.doctor_id', 's.name', 's.name_en', 's.description', 's.description_en', 's.price', 's.show_price', 's.duration_minutes', 'c.id as category_id', 'c.name as category_name', 'c.name_en as category_name_en', 'c.sort_order as category_sort'))
   .map((s) => ({
     id: s.id, doctorId: s.doctor_id, name: (req.locale === 'en' && s.name_en) || s.name,
     description: (req.locale === 'en' ? s.description_en || s.description : s.description || s.description_en) || '',
-    price: s.show_price ? Number(s.price) || 0 : null, duration: s.duration_minutes,
+    price: s.show_price && pricesShown(clinic, where) ? Number(s.price) || 0 : null, duration: s.duration_minutes,
     category: s.category_id ? { id: s.category_id, name: (req.locale === 'en' && s.category_name_en) || s.category_name, sort: s.category_sort } : null,
   }));
 
@@ -311,4 +317,5 @@ module.exports.loadClinic = loadClinic;
 module.exports.clinicStyles = clinicStyles;
 module.exports.listDoctors = listDoctors;
 module.exports.listServices = listServices;
+module.exports.pricesShown = pricesShown;
 module.exports.renderSite = renderSite;

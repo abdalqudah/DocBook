@@ -257,6 +257,11 @@ router.post('/booking', can('website.edit'), act(async (req) => {
   await businesses.updateProfile(req.ctx, { booking_enabled: on });
   flash(req, 'success', req.t(on ? 'settings.booking_on_done' : 'settings.booking_off_done'));
 }, null, '/app/website/booking'));
+// Clinic-wide prices: on the website pages and in booking (each doctor's / service's own choice still applies).
+router.post('/booking/prices', can('website.edit'), act(async (req) => {
+  const on = (k) => [].concat(req.body[k] || []).pop() === '1';
+  await businesses.updateProfile(req.ctx, { prices_on_site: on('prices_on_site'), prices_on_booking: on('prices_on_booking') });
+}, 'website.prices_saved', '/app/website/booking'));
 
 // ---------------------------------------------------------------- domain (wizard around the verified-domain engine)
 router.get('/domain', can('website.domain'), wrap(async (req, res) => {

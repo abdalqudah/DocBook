@@ -1,6 +1,8 @@
 <%
   var err = function (k) { return errors && errors[k] ? '<span class="field-error">' + escapeHtml(errors[k]) + '</span>' : ''; };
   var oldv = function (k, def) { return old && old[k] !== undefined ? old[k] : (def === undefined ? '' : def); };
+  // A paid online consultation always shows its fee; otherwise the clinic's "prices in booking" choice decides.
+  var showFee = settings.paymentRequired || clinic.prices_on_booking === undefined || Boolean(Number(clinic.prices_on_booking));
   var selDoctor = doctors.find(function (d) { return d.id === sel.doctor; });
   var selSlot = slots.find(function (s) { return s.time === sel.time; });
   var dayNote = function (s) { return s.shift < 0 ? t('telehealth.prev_day') : s.shift > 0 ? t('telehealth.next_day') : ''; };
@@ -31,10 +33,10 @@
       <div class="doc-choices">
         <% doctors.forEach(function (d) { %>
         <label class="doc-choice">
-          <input type="radio" name="doctor_id" value="<%= d.id %>"<%= sel.doctor === d.id ? ' checked' : '' %> required data-name="<%= d.name %>" data-fee="<%= fmt.money(d.fee, clinic.currency) %>" data-length="<%= d.duration %>">
+          <input type="radio" name="doctor_id" value="<%= d.id %>"<%= sel.doctor === d.id ? ' checked' : '' %> required data-name="<%= d.name %>" data-fee="<%= showFee ? fmt.money(d.fee, clinic.currency) : '' %>" data-length="<%= d.duration %>">
           <span class="doc-av sm"><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span>
           <span class="grow"><strong><%= d.name %></strong><span class="muted small"><%= d.specialty ? d.specialty + ' · ' : '' %><%= t('telehealth.video_call', { n: d.duration }) %></span></span>
-          <span class="doc-choice-fee num"><%= fmt.money(d.fee, clinic.currency) %></span>
+          <% if (showFee) { %><span class="doc-choice-fee num"><%= fmt.money(d.fee, clinic.currency) %></span><% } %>
           <span class="doc-choice-check"><%- icon('check', 'icon-sm') %></span>
         </label>
         <% }) %>
@@ -138,7 +140,7 @@
         <div><dt><%- icon('calendar-days', 'icon-sm') %><%= t('telehealth.clinic_date') %></dt><dd data-sum="date"><%= sel.date ? fmt.date(sel.date, { weekday: 'long', day: 'numeric', month: 'long' }) : '—' %></dd></div>
         <div><dt><%- icon('clock', 'icon-sm') %><%= t('telehealth.your_time') %></dt><dd data-sum="local" class="num" dir="ltr"><%= selSlot ? selSlot.local : '—' %></dd></div>
         <div><dt><%- icon('building-2', 'icon-sm') %><%= t('telehealth.clinic_time') %></dt><dd data-sum="time" class="num" dir="ltr"><%= sel.time || '—' %></dd></div>
-        <div><dt><%- icon('banknote', 'icon-sm') %><%= t('telehealth.fee') %></dt><dd data-sum="fee" class="num"><%= selDoctor ? fmt.money(selDoctor.fee, clinic.currency) : '—' %></dd></div>
+        <% if (showFee) { %><div><dt><%- icon('banknote', 'icon-sm') %><%= t('telehealth.fee') %></dt><dd data-sum="fee" class="num"><%= selDoctor ? fmt.money(selDoctor.fee, clinic.currency) : '—' %></dd></div><% } %>
       </dl>
       <p class="tiny muted mt-2" data-sum="zone"><%= zoneLabel %></p>
       <% if (settings.paymentRequired) { %>

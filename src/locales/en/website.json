@@ -835,7 +835,17 @@
       "upload": "Upload the font",
       "remove_confirm": "Remove the font “{name}”? Text using it goes back to the default font.",
       "license": "Only upload fonts you are licensed to use on a website."
-    }
+    },
+    "prices_title": "Prices",
+    "prices_sub": "Show or hide prices for the whole clinic.",
+    "prices_site": "Show prices on the website",
+    "prices_site_text": "Doctors' fees and service prices on the website pages and in search results.",
+    "prices_booking": "Show prices on the booking page",
+    "prices_booking_text": "The fee and the service price while choosing a doctor and service.",
+    "prices_note": "When on, each doctor's and service's own choice (show or hide its price) still applies. A prepaid online consultation always shows its fee.",
+    "prices_services_link": "Service prices",
+    "prices_doctors_link": "Doctors' fees",
+    "prices_saved": "Price settings saved."
   },
   "errors_website": {
     "SECTION_ONCE": "This section is already on the page.",

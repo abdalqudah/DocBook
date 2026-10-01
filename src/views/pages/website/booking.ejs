@@ -20,4 +20,17 @@
     </form>
   </div>
 </section>
+<% var priceOn = function (k) { return b[k] === undefined || b[k] === null || Boolean(Number(b[k])); }; %>
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('website.prices_title') %></h2><div class="panel-sub"><%= t('website.prices_sub') %></div></div></div>
+  <form method="post" action="/app/website/booking/prices" class="panel-body stack">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="prices_on_site" value="0">
+    <label class="check"><input type="checkbox" name="prices_on_site" value="1"<%= priceOn('prices_on_site') ? ' checked' : '' %>><span><strong><%= t('website.prices_site') %></strong> — <span class="muted"><%= t('website.prices_site_text') %></span></span></label>
+    <input type="hidden" name="prices_on_booking" value="0">
+    <label class="check"><input type="checkbox" name="prices_on_booking" value="1"<%= priceOn('prices_on_booking') ? ' checked' : '' %>><span><strong><%= t('website.prices_booking') %></strong> — <span class="muted"><%= t('website.prices_booking_text') %></span></span></label>
+    <p class="help"><%= t('website.prices_note') %> <a class="link" href="/app/services"><%= t('website.prices_services_link') %></a> · <a class="link" href="/app/doctors"><%= t('website.prices_doctors_link') %></a></p>
+    <div><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</section>
 <div class="mt-6"><%- include('../telehealth/_settings') %></div>

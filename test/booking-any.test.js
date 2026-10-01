@@ -160,3 +160,29 @@ test('clinic week: a different time for each day, kept as entered and shown day 
   assert.match(page.text, /name="hours_layout" value="days" checked/);
   assert.match(page.text, /name="wh\[thu\]\[e1\]" value="13:00"/);
 });
+
+test('clinic prices: hidden on the website and in booking for the whole clinic, each on its own', async () => {
+  await knex('doctors').where({ id: docA }).update({ consultation_fee: 27, show_consultation_fee: true });
+  const svc = await doctors.saveService(ctx, null, { name: 'Scaling', price: '43', duration_minutes: '30', is_active: '1', show_price: '1', sort_order: '' });
+  const o = app.agent();
+  await o.login(mail('owner'));
+  const book = () => app.agent().get(`/${slug}/book?lang=en`);
+  const site = () => app.agent().get(`/${slug}?lang=en`);
+  assert.match((await book()).text, /27 JOD/);
+  assert.match((await site()).text, /43 JOD/);
+  const page = await o.get('/app/website/booking?lang=en');
+  assert.match(page.text, /name="prices_on_booking" value="1" checked/);
+  const save = async (site1, book1) => { const f = await o.get('/app/website/booking?lang=en'); const pairs = [['_csrf', o.csrf(f.text)], ['prices_on_site', '0'], ['prices_on_booking', '0']];
+    if (site1) pairs.push(['prices_on_site', '1']); if (book1) pairs.push(['prices_on_booking', '1']); return o.post('/app/website/booking/prices', pairs); };
+  let r = await save(false, true);
+  assert.equal(r.status, 302);
+  assert.ok(!/43 JOD|27 JOD/.test((await site()).text), 'hidden on the website');
+  assert.match((await book()).text, /27 JOD/, 'still shown in booking');
+  r = await save(true, false);
+  assert.ok(!/27 JOD|43 JOD/.test((await book()).text), 'hidden in booking');
+  assert.match((await site()).text, /43 JOD/);
+  const a = await knex('audit_logs').where({ business_id: ctx.businessId, action: 'clinic.updated' }).orderBy('id', 'desc').first('new_values');
+  assert.match(JSON.stringify(J(a.new_values)), /prices_on_booking/);
+  await save(true, true);
+  await knex('services').where({ id: svc }).del();
+});
