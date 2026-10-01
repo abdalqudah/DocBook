@@ -33,15 +33,12 @@
 
   <div class="pos-cols">
     <section class="pos-pad" aria-label="<%= t('cashpos.visits_label') %>">
-      <div class="pos-bar">
-      <nav class="pos-flow" data-pos-flow aria-label="<%= t('cashpos.visits_label') %>"></nav>
       <label class="pos-search">
         <%- icon('search', 'icon-sm') %>
         <span class="sr-only"><%= t('cashpos.search_label') %></span>
         <input type="search" data-pos-search placeholder="<%= t('cashpos.search_ph') %>" autocomplete="off" enterkeyhint="done">
         <span class="pos-count small muted" data-pos-count></span>
       </label>
-      </div>
       <div class="pos-grid-wrap"><div class="pos-grid" data-pos-grid aria-live="off"></div></div>
       <button class="pos-mobile-bar" type="button" data-pos-sheet-open hidden>
         <span class="pos-mb-l"><%- icon('receipt-text', 'icon-sm') %><span data-pos-mb-label></span></span>
@@ -127,7 +124,7 @@
   texts: {
     state: { ready: t('cashpos.state.ready'), with_doctor: t('cashpos.state.with_doctor'), arrived: t('cashpos.state.arrived'), expected: t('cashpos.state.expected') },
     online: t('cashpos.online'), in_person: t('cashpos.in_person'), no_amount: t('cashpos.no_amount'), set_by_doctor: t('cashpos.set_by_doctor'), expected_fee: t('cashpos.expected_fee'),
-    added: t('cashpos.added'), empty_title: t('cashpos.empty_title'), empty_text: t('cashpos.empty_text'), no_match: t('cashpos.no_match'), count: t('cashpos.count'), ready_none: t('cashpos.ready_none'),
+    added: t('cashpos.added'), empty_title: t('cashpos.empty_title'), empty_text: t('cashpos.empty_text'), no_match: t('cashpos.no_match'), count: t('cashpos.count'),
     bill_empty: t('cashpos.bill_empty'), remove: t('cashpos.remove'), amount: t('cashpos.amount'), discount_pct: t('cashpos.discount_pct'), insurer: t('cashpos.insurer'),
     no_insurance: t('cashpos.no_insurance'), coverage_pct: t('cashpos.coverage_pct'), after_discount: t('cashpos.after_discount'), insurer_pays: t('cashpos.insurer_pays'),
     patient_pays: t('cashpos.patient_pays'), reason_ph: t('cashpos.reason_ph'), reason_needed: t('cashpos.reason_needed'), rx: t('cashpos.rx'), no_doctor: t('cashpos.no_doctor'),

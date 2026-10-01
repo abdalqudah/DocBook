@@ -83,7 +83,6 @@
     "failed": "The payment could not be completed. Check the connection and try again.",
     "paid_elsewhere": "{name} was paid from another screen and was taken off this payment.",
     "line_error": "{name}: {error}",
-    "batch_title": "Receipts",
-    "ready_none": "Nobody is ready to pay right now."
+    "batch_title": "Receipts"
   }
 }

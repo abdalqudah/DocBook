@@ -45,7 +45,7 @@
 .pos-count { white-space: nowrap; }
 
 .pos-grid-wrap { flex: 1; min-height: 0; overflow-y: auto; margin: -4px; padding: 4px; }
-.pos-grid { display: flex; flex-direction: column; gap: 16px; }
+.pos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; align-content: start; }
 .pos-card { display: flex; flex-direction: column; gap: 3px; min-height: 132px; padding: 12px; text-align: start; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; min-width: 0; transition: border-color .12s ease; }
 .pos-card:hover { border-color: var(--border-strong); }
 .pos-card:focus-visible { outline: none; box-shadow: var(--focus-ring); }
@@ -167,7 +167,7 @@ dialog.dialog.pos-done { width: min(420px, calc(100vw - 24px)); }
 /* ---------------------------------------------------------------- tablet */
 @media (max-width: 1180px) {
   .pos-bill { width: 22rem; }
-  .pos-sec-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+  .pos-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
   .pos-today > div:not(.pos-today-main) { display: none; }
 }
 
@@ -179,7 +179,8 @@ dialog.dialog.pos-done { width: min(420px, calc(100vw - 24px)); }
   .pos-today { display: none; }
   .pos-pad { padding: 12px 16px; gap: 10px; }
   .pos-alert, .pos-notice { margin-inline: 16px; }
-  .pos-card { min-height: 104px; padding: 10px; }
+  .pos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pos-card { min-height: 120px; padding: 10px; }
   .pos-card-src { display: none; }
   .pos-count { display: none; }
   .pos-mobile-bar { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px; border: 0; border-radius: var(--radius); background: var(--primary); color: var(--primary-ink); font: inherit; font-size: 15px; font-weight: var(--fw-semibold); cursor: pointer; }
@@ -196,26 +197,3 @@ dialog.dialog.pos-done { width: min(420px, calc(100vw - 24px)); }
   .pos-paybox { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { .pos-bill { transition: none; } }
-
-/* counters + search in one panel, apart from the visits */
-.pos-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
-.pos-bar .pos-search { flex: 1 1 320px; height: 44px; }
-.pos-flow { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
-.pos-step { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text-muted); text-decoration: none; }
-.pos-step:hover { background: var(--surface-sunken); color: var(--text); }
-.pos-step-n { font-size: 18px; font-weight: var(--fw-bold); color: var(--text); }
-.pos-step-l { font-size: 13px; }
-.pos-step.is-ready .pos-step-n { color: var(--primary); }
-.pos-step-sep { color: var(--text-subtle); }
-/* sections: framed, with a header bar and a count, cards inside */
-.pos-sec { background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-lg); scroll-margin-top: 8px; }
-.pos-sec-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-.pos-sec-head h3 { flex: 1; font-size: 15px; font-weight: var(--fw-bold); margin: 0; }
-.pos-sec-n { font-size: 13px; font-weight: var(--fw-bold); background: var(--surface-sunken); border-radius: var(--pill, 999px); padding: 1px 9px; min-width: 26px; text-align: center; }
-.pos-sec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; padding: 10px; }
-.pos-sec-empty { padding: 14px; margin: 0; font-size: 13px; color: var(--text-subtle); text-align: center; }
-.pos-sec.is-ready { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
-.pos-sec.is-ready .pos-sec-head { background: color-mix(in srgb, var(--primary) 7%, var(--surface)); }
-.pos-sec .pos-card { border-color: var(--border-strong); min-height: 112px; }
-.pos-sec:not(.is-ready) .pos-card { background: var(--surface); }
-@media (max-width: 720px) { .pos-sec-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px; } .pos-flow { width: 100%; } }
