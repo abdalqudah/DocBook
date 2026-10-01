@@ -1,4 +1,4 @@
-<%# Door screen: full-screen, rotating QR, live clock, instruction, last check-ins. Used by /kiosk/<token> and /app/attendance/kiosk. %>
+<%# Door screen: full-screen, rotating QR in the middle, live clock (no side instructions or check-in list). Used by /kiosk/<token> and /app/attendance/kiosk. %>
 <main class="kiosk" data-kiosk-src="<%= src %>" data-expires="<%= qr.expiresIn %>" data-step="<%= qr.stepSeconds %>" data-tz="<%= clinic.timezone || 'UTC' %>" data-locale="<%= locale %>"
   data-label-in="<%= t('attendance.feed_in') %>" data-label-out="<%= t('attendance.feed_out') %>">
   <header class="kiosk-head">
@@ -15,7 +15,6 @@
   <div class="kiosk-body-grid">
     <section class="kiosk-main">
       <h1><%= t('attendance.scan_to_clock') %></h1>
-      <p class="kiosk-sub"><%= t('attendance.scan_sub') %></p>
       <div class="kiosk-qr" data-kiosk-qr><%- qr.svg %></div>
       <div class="kiosk-timer" aria-live="off"><span><%= t('attendance.changes_in') %></span> <strong data-kiosk-left dir="ltr"><%= qr.expiresIn %></strong><span><%= t('attendance.seconds') %></span></div>
       <div class="kiosk-bar" aria-hidden="true"><span data-kiosk-bar></span></div>
@@ -25,22 +24,6 @@
       <% if (reach.via === 'local') { %><div class="alert alert-warning kiosk-reach"><%- icon('triangle-alert') %><div><%= t('attendance.reach_local') %></div></div><% } %>
     </section>
 
-    <aside class="kiosk-side">
-      <ol class="kiosk-steps">
-        <li><span class="kiosk-step-n">1</span><span><%= t('attendance.kiosk_step_1') %></span></li>
-        <li><span class="kiosk-step-n">2</span><span><%= t('attendance.kiosk_step_2') %></span></li>
-        <li><span class="kiosk-step-n">3</span><span><%= t('attendance.kiosk_step_3') %></span></li>
-      </ol>
-      <div class="kiosk-feed-wrap">
-        <h2><%= t('attendance.feed_title') %></h2>
-        <ul class="kiosk-feed" data-kiosk-feed>
-          <% feed.forEach(function (e) { %>
-            <li><span class="avatar"><%= e.initials %></span><bdi class="kiosk-feed-name"><%= e.name %></bdi><span class="kiosk-feed-act"><%= e.action === 'in' ? t('attendance.feed_in') : t('attendance.feed_out') %></span><bdi class="kiosk-feed-time" dir="ltr"><%= e.time %></bdi></li>
-          <% }) %>
-        </ul>
-        <p class="kiosk-feed-empty" data-kiosk-feed-empty<%= feed.length ? ' hidden' : '' %>><%= t('attendance.feed_empty') %></p>
-      </div>
-    </aside>
   </div>
 
   <footer class="kiosk-foot">

@@ -39,12 +39,12 @@
 .kiosk-time { text-align: end; }
 .kiosk-clock { font-size: clamp(30px, 4.4vw, 64px); font-weight: 700; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
 .kiosk-date { color: var(--text-muted); font-size: clamp(13px, 1.2vw, 17px); margin-top: 6px; }
-.kiosk-body-grid { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 30%); gap: clamp(20px, 3vw, 56px); align-items: center; }
+.kiosk-body-grid { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; justify-items: center; }
 .kiosk-main { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; min-width: 0; }
 .kiosk-main h1 { font-size: clamp(24px, 3vw, 44px); margin: 0; letter-spacing: -.01em; }
 .kiosk-sub { margin: 0; color: var(--text-muted); font-size: clamp(15px, 1.5vw, 20px); }
 /* The code always sits on a light square with dark modules so every phone camera reads it (also in dark mode). */
-.kiosk-qr { width: min(58vh, 44vw, 620px); aspect-ratio: 1; padding: clamp(14px, 2vw, 28px); margin-top: 12px; border-radius: var(--radius-lg); background: var(--surface); color: var(--text); border: 1px solid var(--border); box-sizing: border-box; transition: opacity .2s; }
+.kiosk-qr { width: min(64vh, 80vw, 720px); aspect-ratio: 1; padding: clamp(14px, 2vw, 28px); margin-top: 12px; border-radius: var(--radius-lg); background: var(--surface); color: var(--text); border: 1px solid var(--border); box-sizing: border-box; transition: opacity .2s; }
 .kiosk-qr svg { display: block; width: 100%; height: 100%; }
 .kiosk-qr.is-changing { opacity: .55; }
 .kiosk-qr.is-gone { opacity: .08; }
@@ -52,7 +52,7 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .kiosk-qr { background: var(--text); color: var(--surface); border-color: transparent; } }
 .kiosk-timer { display: flex; align-items: baseline; gap: 4px; color: var(--text-muted); font-size: 15px; margin-top: 6px; }
 .kiosk-timer strong { color: var(--text); font-variant-numeric: tabular-nums; min-width: 1.4em; display: inline-block; }
-.kiosk-bar { width: min(58vh, 44vw, 620px); height: 3px; border-radius: 3px; background: var(--surface-sunken); overflow: hidden; }
+.kiosk-bar { width: min(64vh, 80vw, 720px); height: 3px; border-radius: 3px; background: var(--surface-sunken); overflow: hidden; }
 .kiosk-bar span { display: block; height: 100%; width: 100%; background: var(--primary); transition: width 1s linear; }
 [dir="rtl"] .kiosk-bar span { margin-inline-start: auto; }
 .kiosk-offline { display: flex; align-items: center; gap: 6px; color: var(--warning); font-size: 15px; margin: 4px 0 0; }

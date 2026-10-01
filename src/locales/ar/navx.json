@@ -4,6 +4,8 @@
     "sec_stock": "المخزون والموردون",
     "sec_reports": "التقارير",
     "section_pages": "صفحات {section}",
+    "sys_online": "متصل بقاعدة البيانات",
+    "sys_offline": "غير متصل — تحقّق من الاتصال",
     "pending": "{count} بانتظار المتابعة",
     "admin_nav": "إدارة المنصة",
     "admin_grp_clinics": "العيادات",

@@ -4,6 +4,8 @@
     "sec_stock": "Stock & suppliers",
     "sec_reports": "Reports",
     "section_pages": "{section} pages",
+    "sys_online": "Connected to the database",
+    "sys_offline": "Not connected — check the connection",
     "pending": "{count} pending",
     "admin_nav": "Platform administration",
     "admin_grp_clinics": "Clinics",

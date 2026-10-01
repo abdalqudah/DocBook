@@ -6,7 +6,26 @@ const fmt = require('../core/format');
 const config = require('../config');
 const brand = require('../config/brand');
 
-const ASSET_V = require('../../package.json').version;
+// Cache key of /css, /js and icons.svg (cached 7 days in production): the version plus a fingerprint of the files, so
+// an update that changes them is fetched at once even when the version number stays the same.
+const ASSET_V = (() => {
+  const fs = require('fs'); // eslint-disable-line global-require
+  const path = require('path'); // eslint-disable-line global-require
+  const crypto = require('crypto'); // eslint-disable-line global-require
+  const root = path.join(__dirname, '..', '..', 'public');
+  const h = crypto.createHash('sha1');
+  const walk = (dir) => {
+    let names = [];
+    try { names = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    names.sort((a, b) => (a.name < b.name ? -1 : 1)).forEach((e) => {
+      const f = path.join(dir, e.name);
+      if (e.isDirectory()) walk(f); else if (/\.(css|js|svg)$/.test(e.name)) { h.update(e.name); h.update(fs.readFileSync(f)); }
+    });
+  };
+  ['css', 'js'].forEach((d) => walk(path.join(root, d)));
+  try { h.update(fs.readFileSync(path.join(root, 'icons.svg'))); } catch { /* no icons */ }
+  return `${require('../../package.json').version}-${h.digest('hex').slice(0, 8)}`; // eslint-disable-line global-require
+})();
 // The site's real public address. APP_URL wins when it is a real address; when it is missing or still
 // "localhost" (a common set-up slip), links use the address the browser actually opened. The host comes from
 // X-Forwarded-Host only when Express trusts the proxy (TRUST_PROXY), and must look like a host name.
@@ -84,6 +103,7 @@ function locals(req, res, next) {
     today: fmt.today(),
     thisMonth: fmt.currentMonth(),
     assetV: ASSET_V,
+    appVersion: ASSET_V.split('-')[0],
     escapeHtml: esc,
     icon: (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="/icons.svg?v=${ASSET_V}#i-${name}"></use></svg>`,
     initials: (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase(),
