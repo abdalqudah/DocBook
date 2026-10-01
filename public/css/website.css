@@ -333,3 +333,10 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 @media (max-width: 480px) { .ws-footer-grid { grid-template-columns: minmax(0, 1fr); } }
 .ws-in-builder [data-ws-sec="__header"], .ws-in-builder [data-ws-sec="__footer"] { position: relative; }
 .ws-in-builder .ws-nav-transparent { position: absolute; }
+
+/* Typography of the site (Theme & brand): text font and size, heading font and weight, light-mode colours */
+.ws-page { font-size: var(--site-fs, 16px); color: var(--site-text, inherit); }
+.ws-body :is(h1, h2, h3, .ws-title, .ws-slide-title), .ws-body .ws-nav .portal-brand-name { font-family: var(--site-font-head, var(--site-font)); font-weight: var(--site-hw, 700); }
+.ws-block:is(.ws-bg-auto, .ws-bg-none, .ws-bg-soft, .ws-bg-accent) :is(h1, h2, h3, .ws-title) { color: var(--site-heading, inherit); }
+.ws-block .ws-hero-slider :is(h1, .ws-slide-title), .ws-block .ws-hero-image_back.has-image h1, .ws-block .ws-cards-overlay h3 { color: inherit; }
+.ws-page .lp-prose a, .ws-page .ws-text a, .ws-page .link, .ws-footer a:hover { color: var(--site-link, var(--primary)); }

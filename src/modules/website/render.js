@@ -100,14 +100,47 @@ const FONT_STACK = {
 };
 const RADIUS = { soft: '10px', rounded: '18px', square: '4px' };
 
-function css(doc, clinic) {
+const SIZE = { s: '15px', m: '16px', l: '17.5px' };
+/**
+ * The site's CSS variables. `fonts` = the clinic's uploaded fonts (fonts.service list); `fontUrl(f)` = the address a
+ * font file is served at (preview or public). Uploaded fonts get an internal family name (never the clinic's text).
+ */
+function css(doc, clinic, { fonts = [], fontUrl = null } = {}) {
   const b = (doc && doc.brand) || {};
   const primary = b.primary || (clinic && theme.HEX.test(clinic.color || '') ? clinic.color : null);
   let out = primary ? theme.businessCss(primary) : '';
-  const vars = [`--site-font: ${FONT_STACK[b.font] || FONT_STACK.system};`, `--site-radius: ${RADIUS[b.radius] || RADIUS.rounded};`];
+  const used = new Set([b.bodyFont, b.headingFont].filter((v) => /^f\d+$/.test(String(v || ''))).map((v) => Number(String(v).slice(1))));
+  const byId = new Map(fonts.map((f) => [f.id, f]));
+  // Every weight/style uploaded under the same family name joins the chosen font, so bold text uses the bold file.
+  const families = new Map();
+  for (const id of used) {
+    const f = byId.get(id); if (!f) continue;
+    fonts.filter((x) => x.family === f.family).forEach((x) => families.set(x.id, { face: `ws-font-${id}`, f: x }));
+  }
+  if (fontUrl) for (const { face, f } of families.values()) {
+    out += `@font-face { font-family: "${face}"; src: url("${fontUrl(f)}") format("${f.format === 'ttf' ? 'truetype' : f.format === 'otf' ? 'opentype' : f.format}"); font-weight: ${Number(f.weight) || 400}; font-style: ${f.style === 'italic' ? 'italic' : 'normal'}; font-display: swap; }\n`;
+  }
+  const stack = (v) => {
+    if (FONT_STACK[v]) return FONT_STACK[v];
+    const id = /^f(\d+)$/.exec(String(v || '')); if (!id || !byId.has(Number(id[1]))) return FONT_STACK.system;
+    return `"ws-font-${id[1]}", ${FONT_STACK.system}`;
+  };
+  const body = stack(b.bodyFont || b.font); const headF = stack(b.headingFont || b.bodyFont || b.font);
+  const vars = [`--site-font: ${body};`, `--site-font-head: ${headF};`, `--site-radius: ${RADIUS[b.radius] || RADIUS.rounded};`, `--site-fs: ${SIZE[b.size] || SIZE.m};`, `--site-hw: ${Number(b.headingWeight) || 700};`];
   if (b.secondary) vars.push(`--accent: ${b.secondary};`, `--accent-soft: color-mix(in srgb, ${b.secondary} 16%, transparent);`);
   out += `:root { ${vars.join(' ')} }\n`;
+  // Text colours are for the light look only: in dark mode the theme's own colours keep the text readable.
+  const colours = [b.text && `--site-text: ${b.text};`, b.heading && `--site-heading: ${b.heading};`, b.link && `--site-link: ${b.link};`].filter(Boolean);
+  if (colours.length) out += `:root[data-theme="light"] { ${colours.join(' ')} }\n@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { ${colours.join(' ')} } }\n`;
   return out;
 }
 
-module.exports = { locals, css, mediaUrls, hoursRows, WEEK, FONT_STACK };
+/** WCAG contrast ratio of a colour on white (for the warning on the Theme page). */
+function contrastOnWhite(hex) {
+  if (!theme.HEX.test(hex || '')) return null;
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  const l = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  return Math.round((1.05 / (l + 0.05)) * 10) / 10;
+}
+
+module.exports = { locals, css, contrastOnWhite, mediaUrls, hoursRows, WEEK, FONT_STACK };

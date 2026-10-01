@@ -26,11 +26,12 @@ async function version(businessId, id) {
 
 /** The clinic's references a document may point at (its own media and doctors only). */
 async function refsOf(businessId) {
-  const [media, doctors] = await Promise.all([
+  const [media, doctors, fonts] = await Promise.all([
     knex('clinic_media').where({ business_id: businessId }).whereIn('mime', ['image/png', 'image/jpeg', 'image/webp']).pluck('id'),
     knex('doctors').where({ business_id: businessId }).pluck('id'),
+    knex('clinic_fonts').where({ business_id: businessId }).pluck('id'),
   ]);
-  return { media: new Set(media), doctors: new Set(doctors) };
+  return { media: new Set(media), doctors: new Set(doctors), fonts: new Set(fonts) };
 }
 
 /**

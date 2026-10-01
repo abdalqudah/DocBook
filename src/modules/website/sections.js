@@ -167,6 +167,12 @@ function cleanGeo(raw) {
 }
 
 const FONTS = ['system', 'humanist', 'serif', 'rounded'];
+/** A font choice: a built-in stack, or "f<id>" — one of the clinic's uploaded fonts (refs.fonts). */
+const fontOk = (v, refs = {}) => {
+  if (FONTS.includes(v)) return v;
+  const m = /^f(\d{1,10})$/.exec(String(v || ''));
+  return m && (!refs.fonts || refs.fonts.has(Number(m[1]))) ? `f${m[1]}` : null;
+};
 const RADII = ['soft', 'rounded', 'square'];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -300,6 +306,15 @@ function sanitize(doc, refs = {}) {
       secondary: HEX.test(b.secondary || '') ? b.secondary.toLowerCase() : null,
       font: FONTS.includes(b.font) ? b.font : 'system',
       radius: RADII.includes(b.radius) ? b.radius : 'rounded',
+      // Typography: a font for the text and one for the headings (built-in stacks or the clinic's uploaded fonts
+      // "f<id>"), text size, heading weight, and colours for text, headings and links (light mode).
+      bodyFont: fontOk(b.bodyFont, refs) || (FONTS.includes(b.font) ? b.font : 'system'),
+      headingFont: fontOk(b.headingFont, refs) || fontOk(b.bodyFont, refs) || (FONTS.includes(b.font) ? b.font : 'system'),
+      size: ['m', 's', 'l'].includes(b.size) ? b.size : 'm',
+      headingWeight: ['700', '600', '800', '500'].includes(String(b.headingWeight)) ? String(b.headingWeight) : '700',
+      text: HEX.test(b.text || '') ? b.text.toLowerCase() : null,
+      heading: HEX.test(b.heading || '') ? b.heading.toLowerCase() : null,
+      link: HEX.test(b.link || '') ? b.link.toLowerCase() : null,
       motion: MOTION.includes(b.motion) ? b.motion : 'none', // sites published before motion existed stay still
       logoMediaId: mediaOk(b.logoMediaId), faviconMediaId: mediaOk(b.faviconMediaId),
     },

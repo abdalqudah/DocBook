@@ -775,6 +775,41 @@
       "ai": "Write it under AI assistants.",
       "faq": "Add a Frequent questions section in the builder — it shows as Q&A in search results.",
       "english": "Settings → Profile."
+    },
+    "font_added_ok": "Font uploaded.",
+    "font_removed_ok": "Font removed.",
+    "typo": {
+      "title": "Fonts and colours",
+      "uploaded": "The clinic's fonts",
+      "body_font": "Text font",
+      "heading_font": "Heading font",
+      "size": "Text size",
+      "size_s": "Small",
+      "size_m": "Medium",
+      "size_l": "Large",
+      "heading_weight": "Heading weight",
+      "w500": "Medium",
+      "w600": "Semi-bold",
+      "w700": "Bold",
+      "w800": "Extra bold",
+      "color_text": "Text colour",
+      "color_heading": "Heading colour",
+      "color_link": "Link colour",
+      "low_contrast": "Contrast on white is {ratio}:1 — below 4.5:1, it may be hard to read.",
+      "colors_help": "Colours are for the light look. In dark mode the site's own colours keep text readable, and coloured sections keep theirs.",
+      "fonts_title": "The clinic's fonts",
+      "fonts_sub": "Upload your brand fonts (woff2, woff, ttf or otf) and choose them for text or headings above.",
+      "file": "Font file",
+      "file_help": "Up to 2 MB. woff2 is best.",
+      "family": "Font name",
+      "family_help": "Upload the weights of one font (regular, bold) under the same name so the site uses each in its place.",
+      "weight": "Weight",
+      "style": "Style",
+      "normal": "Normal",
+      "italic": "Italic",
+      "upload": "Upload the font",
+      "remove_confirm": "Remove the font “{name}”? Text using it goes back to the default font.",
+      "license": "Only upload fonts you are licensed to use on a website."
     }
   },
   "errors_website": {
@@ -792,6 +827,10 @@
     "MAIL_OAUTH_CANCELLED": "The connection was cancelled.",
     "MAIL_OAUTH_FAILED": "The provider refused the connection.",
     "PAGE_LIMIT": "The site has the most pages it can hold.",
-    "PAGE_PLAN_LIMIT": "The clinic's package does not include more pages."
+    "PAGE_PLAN_LIMIT": "The clinic's package does not include more pages.",
+    "FONT_EMPTY": "Choose a font file.",
+    "FONT_TOO_BIG": "The font file is larger than 2 MB.",
+    "FONT_TYPE": "This file is not a font (woff2, woff, ttf or otf).",
+    "FONT_LIMIT": "The clinic has the most fonts it can keep. Remove one first."
   }
 }

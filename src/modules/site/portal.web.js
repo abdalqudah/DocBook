@@ -230,8 +230,22 @@ router.get('/:slug/theme.css', wrap(async (req, res, next) => {
   if (!clinic) return next();
   res.set({ 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
   const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
-  if (state.status === 'live' && state.doc) return res.send(require('../website/render').css(state.doc, clinic)); // eslint-disable-line global-require
+  if (state.status === 'live' && state.doc) {
+    const fonts = await require('../website/fonts.service').list(clinic.id); // eslint-disable-line global-require
+    return res.send(require('../website/render').css(state.doc, clinic, { fonts, fontUrl: (f) => `/${clinic.slug}/fonts/${f.id}.${f.format}?v=${f.sha.slice(0, 10)}` })); // eslint-disable-line global-require
+  }
   return res.send(theme.businessCss(clinic.color));
+}));
+
+// A font the clinic uploaded for its website (same origin; the file was checked to be a font when uploaded).
+router.get('/:slug/fonts/:id(\\d{1,10}).:ext(woff2|woff|ttf|otf)', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const fontsSvc = require('../website/fonts.service'); // eslint-disable-line global-require
+  const f = await fontsSvc.file(clinic.id, Number(req.params.id));
+  if (!f || f.format !== req.params.ext) return next();
+  res.set({ 'Content-Type': fontsSvc.MIME[f.format], 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'same-site', 'Content-Security-Policy': "default-src 'none'" });
+  return res.send(f.data);
 }));
 
 // ---------------------------------------------------------------- staff sign-in

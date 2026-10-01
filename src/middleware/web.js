@@ -135,6 +135,7 @@ const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/logo\/?$/, /^\/app\/set
   /^\/[a-z0-9-]+\/book\/online\/?$/, // online-consultation booking (optional medical files)
   /^\/app\/settings\/signatures\/(stamp|doctors\/\d+\/upload)\/?$/, // doctor signature / clinic stamp images
   /^\/app\/settings\/media\/upload\/?$/, // clinic media library uploads
+  /^\/app\/website\/fonts\/?$/, // website fonts (Theme & brand)
   /^\/admin\/updates\/install\/?$/]; // platform admin: system update package (zip)
 
 const tokenValid = (req, sent) => Boolean(req.session?.csrf && sent && safeEqual(sent, req.session.csrf));

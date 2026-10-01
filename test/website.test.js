@@ -651,3 +651,38 @@ test('SEO, GEO and AIO: structured data, map position, FAQ, llms.txt per clinic,
   r = await app.agent().get('/sitemap.xml', { host });
   assert.match(r.text, new RegExp(`<loc>http://${host}/book</loc>`));
 });
+
+test('typography: fonts checked by content, served from the clinic, chosen for text/headings; colours only for the light look', async () => {
+  const fontsSvc = require('../src/modules/website/fonts.service'); // eslint-disable-line global-require
+  const render = require('../src/modules/website/render'); // eslint-disable-line global-require
+  const ttf = Buffer.concat([Buffer.from([0x00, 0x01, 0x00, 0x00]), Buffer.alloc(60, 1)]);
+  assert.equal(fontsSvc.formatOf(ttf), 'ttf');
+  assert.equal(fontsSvc.formatOf(Buffer.from('wOF2xxxxxxxxxxxx')), 'woff2');
+  assert.equal(fontsSvc.formatOf(Buffer.from('<svg onload=alert(1)></svg>')), null);
+  await assert.rejects(fontsSvc.upload(A.ctx, { buffer: Buffer.from('<html>not a font</html>'), originalname: 'x.ttf' }), { code: 'FONT_TYPE' });
+  const f = await fontsSvc.upload(A.ctx, { buffer: ttf, originalname: 'Brand-Bold.ttf' }, { family: 'Brand</style><script>', weight: '700' });
+  assert.equal(f.family, 'Brandstylescript', 'the family name is plain text');
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  let r = await o.submit('/app/website/theme', '/app/website/brand', { body_font: 'serif', heading_font: `f${f.id}`, size: 'l', heading_weight: '800', use_heading: '1', heading: '#7a1f3d', use_text: '1', text: '#dddddd', use_link: '0', font: 'system', radius: 'rounded' });
+  assert.equal(r.status, 302);
+  r = await o.get('/app/website/theme');
+  assert.match(r.text, /warn-text/, 'a pale text colour gets a contrast warning');
+  r = await o.get('/app/website/preview/theme.css');
+  assert.match(r.text, new RegExp(`@font-face \\{ font-family: "ws-font-${f.id}"; src: url\\("/app/website/fonts/${f.id}\\?v=`));
+  assert.match(r.text, /--site-font-head: "ws-font-\d+"/);
+  assert.match(r.text, /--site-fs: 17.5px/);
+  assert.match(r.text, /:root\[data-theme="light"\] \{ --site-text: #dddddd; --site-heading: #7a1f3d; \}/);
+  assert.ok(!/:root \{[^}]*--site-text/.test(r.text), 'never forced on the dark look');
+  await o.submit('/app/website/builder', '/app/website/publish', {});
+  site.forget(A.ctx.businessId);
+  r = await app.agent().get(`/${A.slug}/fonts/${f.id}.ttf`);
+  assert.equal(r.status, 200);
+  assert.equal(r.type, 'font/ttf');
+  assert.equal((await app.agent().get(`/${B.slug}/fonts/${f.id}.ttf`)).status, 404, "another clinic's address does not serve it");
+  // removing the font sends the draft back to the built-in stack
+  await o.submit('/app/website/theme', `/app/website/fonts/${f.id}/delete`, {});
+  const { doc } = await site.draft(A.ctx, A.business);
+  assert.equal(doc.brand.headingFont, 'serif');
+  assert.ok(render.contrastOnWhite('#000000') > 20);
+});

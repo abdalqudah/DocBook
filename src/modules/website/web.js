@@ -15,6 +15,9 @@ const ops = require('../platformops/ops.service');
 const site = require('./site.service');
 const sections = require('./sections');
 const render = require('./render');
+const fontsSvc = require('./fonts.service');
+const multer = require('multer');
+const { verifyCsrfAfterUpload } = require('../../middleware/web');
 const { THEMES, TEMPLATES } = require('./catalog');
 
 const router = express.Router();
@@ -183,7 +186,7 @@ router.get('/preview', can('website.view'), wrap(async (req, res) => {
 router.get('/preview/theme.css', can('website.view'), wrap(async (req, res) => {
   const { doc } = await site.draft(req.ctx, req.business);
   res.set({ 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'no-store' });
-  return res.send(render.css(doc, req.business));
+  return res.send(render.css(doc, req.business, { fonts: await fontsSvc.list(req.ctx.businessId), fontUrl: (f) => `/app/website/fonts/${f.id}?v=${f.sha.slice(0, 10)}` }));
 }));
 
 // ---------------------------------------------------------------- theme & brand
@@ -191,15 +194,39 @@ router.get('/theme', can('website.edit'), wrap(async (req, res) => {
   if (!(await entitled(req, 'website.builder'))) return lockedPage(req, res, 'builder');
   const l = await builderLocals(req);
   const brandCfg = require('../../config/brand'); // eslint-disable-line global-require
-  const colorDefaults = { primary: /^#[0-9a-fA-F]{6}$/.test(req.business.color || '') ? req.business.color : brandCfg.colors.light.primary, secondary: brandCfg.colors.light.accent };
-  return page(req, res, 'theme', { title: req.t('website.theme_title'), ...l, THEMES, FONTS: sections.FONTS, RADII: sections.RADII, MOTION: sections.MOTION, colorDefaults });
+  const colorDefaults = { primary: /^#[0-9a-fA-F]{6}$/.test(req.business.color || '') ? req.business.color : brandCfg.colors.light.primary, secondary: brandCfg.colors.light.accent, text: brandCfg.colors.light.text };
+  const fonts = await fontsSvc.list(req.ctx.businessId);
+  const br = l.doc.brand || {};
+  const contrast = Object.fromEntries(['text', 'heading', 'link'].map((k) => [k, br[k] ? render.contrastOnWhite(br[k]) : null]));
+  return page(req, res, 'theme', { title: req.t('website.theme_title'), ...l, THEMES, FONTS: sections.FONTS, RADII: sections.RADII, MOTION: sections.MOTION, colorDefaults, fonts, contrast, WEIGHTS: fontsSvc.WEIGHTS, MAX_FONTS: fontsSvc.MAX_FONTS });
 }));
 router.post('/theme', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.theme(String(req.body.theme || '')), { note: 'website.theme_changed', details: { theme: req.body.theme } }), 'website.saved', '/app/website/theme'));
 router.post('/brand', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.brand({
   primary: req.body.use_primary === '1' ? String(req.body.primary || '') : null,
   secondary: req.body.use_secondary === '1' ? String(req.body.secondary || '') : null,
   font: req.body.font, radius: req.body.radius, motion: req.body.motion, logoMediaId: req.body.logo_media_id, faviconMediaId: req.body.favicon_media_id,
+  bodyFont: req.body.body_font, headingFont: req.body.heading_font, size: req.body.size, headingWeight: req.body.heading_weight,
+  text: req.body.use_text === '1' ? String(req.body.text || '') : null, heading: req.body.use_heading === '1' ? String(req.body.heading || '') : null, link: req.body.use_link === '1' ? String(req.body.link || '') : null,
 }), { note: 'website.brand_changed' }), 'website.saved', '/app/website/theme'));
+
+// ---- fonts (Theme & brand → Fonts)
+const fontUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: fontsSvc.MAX_BYTES + 1, files: 1, fields: 8, parts: 12 } });
+router.post('/fonts', can('website.edit'), builderGate, (req, res, next) => fontUpload.single('file')(req, res, (e) => { if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'FONT_TOO_BIG' : 'FONT_TYPE'; next(); }),
+  verifyCsrfAfterUpload, act(async (req) => {
+    if (req.uploadError) throw new AppError(req.uploadError, 'Upload refused.', 422);
+    return fontsSvc.upload(req.ctx, req.file, { family: req.body.family, weight: req.body.weight, style: req.body.style });
+  }, 'website.font_added_ok', '/app/website/theme#fonts'));
+router.post('/fonts/:id(\\d+)/delete', can('website.edit'), act(async (req) => {
+  await fontsSvc.remove(req.ctx, Number(req.params.id));
+  // A removed font that the draft used falls back to the built-in stack.
+  await site.edit(req.ctx, req.business, (d) => { ['bodyFont', 'headingFont'].forEach((k) => { if (d.brand[k] === `f${req.params.id}`) d.brand[k] = null; }); return d; }, { note: null });
+}, 'website.font_removed_ok', '/app/website/theme#fonts'));
+router.get('/fonts/:id(\\d+)', can('website.view'), wrap(async (req, res, next) => {
+  const f = await fontsSvc.file(req.ctx.businessId, Number(req.params.id));
+  if (!f) return next();
+  res.set({ 'Content-Type': fontsSvc.MIME[f.format], 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'" });
+  return res.send(f.data);
+}));
 
 // ---------------------------------------------------------------- settings: address, publish state, versions
 router.get('/settings', can('website.edit'), wrap(async (req, res) => {

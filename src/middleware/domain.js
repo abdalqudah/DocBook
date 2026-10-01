@@ -39,9 +39,10 @@ async function customDomain(req, res, next) {
   if (p === '/logo') { req.url = `/${slug}/logo${q}`; return next(); }
   if (p.startsWith('/doctors/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: a doctor's page
   if (p.startsWith('/p/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: another page
+  if (p.startsWith('/fonts/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: the clinic's fonts
   if (p.startsWith(`/m/${slug}/`)) return next(); // the page's public images (same origin — the page's CSP allows only 'self')
   if (p === `/${slug}`) return res.redirect(302, `/${q}`);
-  if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/doctors/`) || p.startsWith(`/${slug}/p/`) || p === `/${slug}/logo` || p === `/${slug}/theme.css`) return next();
+  if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/doctors/`) || p.startsWith(`/${slug}/p/`) || p.startsWith(`/${slug}/fonts/`) || p === `/${slug}/logo` || p === `/${slug}/theme.css`) return next();
   if (p === '/robots.txt' || p === '/sitemap.xml' || p === '/llms.txt') { req.url = `/${slug}${p}${q}`; return next(); } // the clinic's own crawl files
   // Anything else belongs to the main address.
   return toMain(req.originalUrl);

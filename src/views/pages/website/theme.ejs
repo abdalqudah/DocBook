@@ -42,8 +42,26 @@
         <span class="help"><%= t('website.brand.' + c[0] + '_help') %></span></fieldset>
       <% }) %>
     </div>
+    <h3 class="ws-seo-h"><%- icon('type', 'icon-sm') %><%= t('website.typo.title') %></h3>
+    <% var fontOpts = function (cur) { %><% FONTS.forEach(function (f) { %><option value="<%= f %>"<%= cur === f ? ' selected' : '' %>><%= t('website.font.' + f) %></option><% }) %><% if (fonts.length) { %><optgroup label="<%= t('website.typo.uploaded') %>"><% var seenFam = {}; fonts.forEach(function (f) { if (seenFam[f.family]) return; seenFam[f.family] = 1; %><option value="f<%= f.id %>"<%= cur === 'f' + f.id ? ' selected' : '' %>><%= f.family %></option><% }) %></optgroup><% } %><% }; %>
+    <input type="hidden" name="font" value="<%= br.font || 'system' %>">
     <div class="grid grid-2">
-      <div class="field"><label class="label" for="ws-font"><%= t('website.brand.font') %></label><select class="select" id="ws-font" name="font"><% FONTS.forEach(function (f) { %><option value="<%= f %>"<%= br.font === f ? ' selected' : '' %>><%= t('website.font.' + f) %></option><% }) %></select><span class="help"><%= t('website.brand.font_help') %></span></div>
+      <div class="field"><label class="label" for="ws-bfont"><%= t('website.typo.body_font') %></label><select class="select" id="ws-bfont" name="body_font"><% fontOpts(br.bodyFont || br.font) %></select><span class="help"><%= t('website.brand.font_help') %></span></div>
+      <div class="field"><label class="label" for="ws-hfont"><%= t('website.typo.heading_font') %></label><select class="select" id="ws-hfont" name="heading_font"><% fontOpts(br.headingFont || br.bodyFont || br.font) %></select></div>
+      <div class="field"><label class="label" for="ws-size"><%= t('website.typo.size') %></label><select class="select" id="ws-size" name="size"><% ['s', 'm', 'l'].forEach(function (z) { %><option value="<%= z %>"<%= (br.size || 'm') === z ? ' selected' : '' %>><%= t('website.typo.size_' + z) %></option><% }) %></select></div>
+      <div class="field"><label class="label" for="ws-hw"><%= t('website.typo.heading_weight') %></label><select class="select" id="ws-hw" name="heading_weight"><% ['500', '600', '700', '800'].forEach(function (w) { %><option value="<%= w %>"<%= String(br.headingWeight || '700') === w ? ' selected' : '' %>><%= t('website.typo.w' + w) %></option><% }) %></select></div>
+    </div>
+    <div class="grid grid-3">
+      <% ['text', 'heading', 'link'].forEach(function (k) { %>
+      <fieldset class="ws-color"><legend class="label"><%= t('website.typo.color_' + k) %></legend>
+        <label class="check"><input type="checkbox" name="use_<%= k %>" value="1"<%= br[k] ? ' checked' : '' %>><span><%= t('website.brand.custom_color') %></span></label>
+        <input class="input ws-color-input" type="color" name="<%= k %>" value="<%= br[k] || (k === 'link' ? colorDefaults.primary : colorDefaults.text) %>" aria-label="<%= t('website.typo.color_' + k) %>">
+        <% if (contrast[k] !== null && contrast[k] < 4.5) { %><span class="help warn-text"><%- icon('triangle-alert', 'icon-sm') %> <%= t('website.typo.low_contrast', { ratio: contrast[k] }) %></span><% } %>
+      </fieldset>
+      <% }) %>
+    </div>
+    <p class="help"><%= t('website.typo.colors_help') %></p>
+    <div class="grid grid-2">
       <div class="field"><label class="label" for="ws-radius"><%= t('website.brand.radius') %></label><select class="select" id="ws-radius" name="radius"><% RADII.forEach(function (r) { %><option value="<%= r %>"<%= br.radius === r ? ' selected' : '' %>><%= t('website.radius.' + r) %></option><% }) %></select></div>
     </div>
     <fieldset class="ws-color"><legend class="label"><%= t('website.brand.motion') %></legend>
@@ -52,6 +70,31 @@
     </fieldset>
     <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('website.save_brand') %></button></div>
   </form>
+</section>
+
+<section class="panel mt-6" id="fonts">
+  <div class="panel-head"><div><h2><%= t('website.typo.fonts_title') %></h2><p class="panel-sub"><%= t('website.typo.fonts_sub') %></p></div></div>
+  <div class="panel-body stack">
+    <% if (fonts.length) { %>
+    <ul class="action-list ws-font-list">
+      <% fonts.forEach(function (f) { %><li><div><span class="action-icon"><%- icon('type', 'icon-sm') %></span><div class="grow"><div class="strong"><%= f.family %></div><div class="small muted"><%= t('website.typo.w' + (f.weight >= 800 ? '800' : f.weight >= 700 ? '700' : f.weight >= 600 ? '600' : '500')) %> · <%= f.style === 'italic' ? t('website.typo.italic') : t('website.typo.normal') %> · <span dir="ltr"><%= f.format.toUpperCase() %> · <%= Math.round(f.size / 1024) %> KB</span></div></div>
+        <form method="post" action="/app/website/fonts/<%= f.id %>/delete" data-confirm="<%= t('website.typo.remove_confirm', { name: f.family }) %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('media_lib.remove') %></button></form></div></li><% }) %>
+    </ul>
+    <% } %>
+    <% if (fonts.length < MAX_FONTS) { %>
+    <form class="stack" method="post" action="/app/website/fonts" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="grid grid-2">
+        <div class="field"><label class="label" for="font-file"><%= t('website.typo.file') %></label><input class="input" type="file" id="font-file" name="file" accept=".woff2,.woff,.ttf,.otf" required><span class="help"><%= t('website.typo.file_help') %></span></div>
+        <div class="field"><label class="label" for="font-family"><%= t('website.typo.family') %></label><input class="input" id="font-family" name="family" maxlength="60" placeholder="Tajawal"><span class="help"><%= t('website.typo.family_help') %></span></div>
+        <div class="field"><label class="label" for="font-weight"><%= t('website.typo.weight') %></label><select class="select" id="font-weight" name="weight"><% WEIGHTS.forEach(function (w) { %><option value="<%= w %>"<%= w === 400 ? ' selected' : '' %>><%= w %></option><% }) %></select></div>
+        <div class="field"><label class="label" for="font-style"><%= t('website.typo.style') %></label><select class="select" id="font-style" name="style"><option value="normal"><%= t('website.typo.normal') %></option><option value="italic"><%= t('website.typo.italic') %></option></select></div>
+      </div>
+      <div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('website.typo.license') %></div></div>
+      <div class="form-actions"><button class="btn btn-secondary" type="submit"><%- icon('upload', 'icon-sm') %><%= t('website.typo.upload') %></button></div>
+    </form>
+    <% } %>
+  </div>
 </section>
 
 <section class="panel mt-6">
