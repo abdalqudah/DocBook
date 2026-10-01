@@ -36,6 +36,7 @@ const act = (fn, okKey, back) => wrap(async (req, res) => {
   }
 });
 const entitled = (req, key) => ops.entitled(req.business, key);
+const wantsJson = (req) => req.xhr || /application\/json/.test(req.get('accept') || '');
 
 // ---------------------------------------------------------------- overview
 router.get('/', can('website.view'), wrap(async (req, res) => {
@@ -57,14 +58,18 @@ router.get('/', can('website.view'), wrap(async (req, res) => {
 async function builderLocals(req) {
   const { row, doc } = await site.draft(req.ctx, req.business);
   const st = await site.state(req.ctx.businessId);
-  const list = doc.pages[0].sections;
+  // The page being edited: the one holding the chosen section, else ?page=, else home.
+  const holder = req.query.s ? site.pageWith(doc, String(req.query.s)) : null;
+  const page = holder || doc.pages.find((p) => p.key === req.query.page) || doc.pages[0];
+  const list = page.sections;
   const selected = list.find((s) => s.id === req.query.s) || null;
+  const panel = !selected && ['header', 'footer', 'pages', 'page'].includes(req.query.panel) ? req.query.panel : null;
   const [doctors, allowedTemplates] = await Promise.all([
     knex('doctors').where({ business_id: req.ctx.businessId, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en'),
     entitled(req, 'website.templates'),
   ]);
   const media = await render.mediaUrls({ ...req.business, id: req.ctx.businessId }, doc, { preview: true });
-  return { row, doc, st, list, selected, doctors, media, TYPES: sections.TYPES, TYPE_KEYS: sections.TYPE_KEYS, ICONS: sections.ICONS, SHAPES: sections.SHAPES, allowedTemplates, TEMPLATES };
+  return { row, doc, st, page, pages: doc.pages, panel, list, selected, doctors, media, HEADER: sections.HEADER, FOOTER: sections.FOOTER, SOCIAL: Object.keys(sections.SOCIAL), NAV_KINDS: sections.NAV_KINDS, MAX_PAGES: sections.MAX_PAGES, TYPES: sections.TYPES, TYPE_KEYS: sections.TYPE_KEYS, ICONS: sections.ICONS, SHAPES: sections.SHAPES, allowedTemplates, TEMPLATES };
 }
 const lockedPage = (req, res, feature) => page(req, res, 'locked', { title: req.t('navx.sec_website'), feature, manager: req.ctx.permissions.has('settings.manage') });
 
@@ -77,12 +82,12 @@ const toBuilder = (req, r) => `/app/website/builder${req.params && req.params.id
 const builderGate = wrap(async (req, res, next) => (await entitled(req, 'website.builder') ? next() : lockedPage(req, res, 'builder')));
 
 router.post('/builder/sections', can('website.edit'), builderGate, act(async (req) => {
-  const doc = await site.edit(req.ctx, req.business, site.ops.add(String(req.body.type || ''), String(req.body.after || '') || null), { note: 'website.section_added', details: { type: req.body.type } });
-  const list = doc.pages[0].sections;
+  const pageKey = String(req.body.page || 'home');
+  const doc = await site.edit(req.ctx, req.business, site.ops.add(String(req.body.type || ''), String(req.body.after || '') || null, pageKey), { note: 'website.section_added', details: { type: req.body.type } });
+  const list = site.pageOf(doc, pageKey).sections;
   const added = req.body.after ? list[list.findIndex((s) => s.id === req.body.after) + 1] : list[list.length - 1];
   return added ? added.id : null;
 }, 'website.section_added_ok', toBuilder));
-const wantsJson = (req) => req.xhr || /application\/json/.test(req.get('accept') || '');
 const updateSection = (req) => site.edit(req.ctx, req.business, site.ops.update(req.params.id, {
   variant: req.body.variant, content: req.body.content || {}, settings: req.body.settings || {},
 }), { note: null });
@@ -101,9 +106,60 @@ router.post('/builder/sections/:id([a-f0-9]{10})/move', can('website.edit'), bui
 router.post('/builder/sections/:id([a-f0-9]{10})/toggle', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.toggle(req.params.id), { note: null }), 'website.saved', toBuilder));
 router.post('/builder/sections/:id([a-f0-9]{10})/delete', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.remove(req.params.id), { note: 'website.section_removed' }), 'website.section_removed_ok', '/app/website/builder'));
 router.post('/builder/order', can('website.edit'), builderGate, wrap(async (req, res) => {
-  await site.edit(req.ctx, req.business, site.ops.order(req.body.ids), { note: null });
+  await site.edit(req.ctx, req.business, site.ops.order(req.body.ids, String(req.body.page || 'home')), { note: null });
   return res.json({ ok: true });
 }));
+
+// ---- pages, menu, footer (the builder's "Site" tab)
+const toPage = (key) => `/app/website/builder?page=${encodeURIComponent(key)}&panel=page`;
+const pageKeyOk = (req) => /^[a-f0-9]{10}$/.test(req.params.key) || req.params.key === 'home';
+const pair = (v) => ({ ar: String((v && v.ar) || ''), en: String((v && v.en) || '') });
+router.post('/builder/pages', can('website.edit'), builderGate, act(async (req) => {
+  // Extra pages follow the package (website.max_pages; no limit while subscriptions are off).
+  const max = await entitled(req, 'website.max_pages');
+  const { doc: cur } = await site.draft(req.ctx, req.business);
+  if (max !== null && max !== undefined && cur.pages.length - 1 >= Number(max)) throw new AppError('PAGE_PLAN_LIMIT', 'The clinic\'s package does not include more pages.', 402);
+  const doc = await site.edit(req.ctx, req.business, site.ops.addPage(pair(req.body.title)), { note: 'website.page_added' });
+  return doc.pages[doc.pages.length - 1].key;
+}, 'website.page_added_ok', (req, key) => (key ? toPage(key) : '/app/website/builder?panel=pages')));
+const pageUpdate = (req) => site.edit(req.ctx, req.business, site.ops.updatePage(req.params.key, {
+  title: req.body.title ? pair(req.body.title) : undefined, slug: req.body.slug !== undefined ? req.body.slug : undefined,
+  menu: req.body.menu !== undefined ? [].concat(req.body.menu).pop() : undefined,
+  seo: req.body.seo ? { title: pair(req.body.seo.title), description: pair(req.body.seo.description) } : undefined,
+}), { note: null });
+router.post('/builder/pages/:key', can('website.edit'), builderGate, wrap(async (req, res, next) => {
+  if (!pageKeyOk(req)) return next();
+  if (!wantsJson(req)) return next();
+  try { await pageUpdate(req); return res.json({ ok: true }); } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500 || e.status === 403) throw e;
+    const first = e.details && typeof e.details === 'object' ? Object.values(e.details).find((v) => typeof v === 'string') : null;
+    return res.status(e.status).json({ ok: false, error: first ? translateMessage(req.locale, first) : errText(req, e) });
+  }
+}), act(pageUpdate, 'website.saved', (req) => toPage(req.params.key)));
+router.post('/builder/pages/:key/delete', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.removePage(req.params.key), { note: 'website.page_removed' }), 'website.page_removed_ok', '/app/website/builder?panel=pages'));
+router.post('/builder/pages/:key/move', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.movePage(req.params.key, req.body.dir === 'up' ? 'up' : 'down'), { note: null }), null, '/app/website/builder?panel=pages'));
+// A menu link is chosen from one list ("page:<key>", "section:<id>", "book"…): split it into kind + target.
+const navInput = (h) => {
+  const out = { ...(h || {}) };
+  const items = Array.isArray(out.items) ? out.items : (out.items && typeof out.items === 'object' ? Object.values(out.items) : []);
+  out.items = items.map((it) => {
+    const pick = String([].concat((it && it.pick) || '').pop() || '');
+    if (!pick) return it;
+    const [kind, target] = pick.split(':');
+    return { ...it, kind, target: target || null };
+  });
+  return out;
+};
+const siteFormSave = (opName, field) => {
+  const run = (req) => site.edit(req.ctx, req.business, site.ops[opName](opName === 'header' ? navInput(req.body[field]) : (req.body[field] || {})), { note: null });
+  return [wrap(async (req, res, next) => {
+    if (!wantsJson(req)) return next();
+    await run(req);
+    return res.json({ ok: true });
+  }), act(run, 'website.saved', `/app/website/builder?panel=${opName}`)];
+};
+router.post('/builder/header', can('website.edit'), builderGate, ...siteFormSave('header', 'header'));
+router.post('/builder/footer', can('website.edit'), builderGate, ...siteFormSave('footer', 'footer'));
 router.post('/builder/template', can('website.edit'), builderGate, act(async (req) => site.edit(req.ctx, req.business, site.ops.template(String(req.body.template || ''), req.body.add_missing === '1', await entitled(req, 'website.templates')), { note: 'website.template_applied', details: { template: req.body.template } }), 'website.saved', '/app/website/theme'));
 router.post('/builder/discard', can('website.edit'), builderGate, act((req) => site.discard(req.ctx, req.business), 'website.discarded', '/app/website/builder'));
 router.post('/publish', can('website.publish'), builderGate, act((req) => site.publish(req.ctx, req.business), 'website.published_ok', '/app/website'));
@@ -121,7 +177,8 @@ router.get('/preview', can('website.view'), wrap(async (req, res) => {
   if (!clinic) { flash(req, 'warning', req.t('website.need_address')); return res.redirect('/app/website/settings'); }
   sameOriginFrame(res);
   res.set('Cache-Control', 'no-store');
-  return portal.renderSite(req, res, clinic, doc, { preview: true });
+  const page = doc.pages.find((p) => p.key === req.query.page) || doc.pages[0];
+  return portal.renderSite(req, res, clinic, doc, { preview: true, page });
 }));
 router.get('/preview/theme.css', can('website.view'), wrap(async (req, res) => {
   const { doc } = await site.draft(req.ctx, req.business);

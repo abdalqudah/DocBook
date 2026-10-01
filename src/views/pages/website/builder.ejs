@@ -20,8 +20,10 @@
   var clinicTypes = TYPE_KEYS.filter(function (k) { return TYPES[k].group !== 'blocks'; });
   var sty = sel ? (sel.settings.style || {}) : {};
   var hint = function (k) { var key = 'website.hint.' + sel.type + '_' + k; var s = t(key); return s === key ? '' : s; };
+  var pageTitle = function (p) { return p.key === 'home' ? t('website.page_home') : (L2(p.title.ar, p.title.en) || p.title.ar || p.title.en || p.slug); };
+  var pq = page.key === 'home' ? '' : 'page=' + page.key;
 %>
-<div class="wsb<%= sel ? ' has-selection' : '' %>" data-ws-builder data-pane="<%= sel ? 'settings' : 'preview' %>" data-t-saving="<%= t('website.b.saving') %>" data-t-saved="<%= t('website.b.saved') %>" data-t-failed="<%= t('website.b.save_failed') %>">
+<div class="wsb<%= sel ? ' has-selection' : '' %>" data-ws-builder data-page="<%= page.key %>" data-pane="<%= sel || panel ? 'settings' : 'preview' %>" data-t-saving="<%= t('website.b.saving') %>" data-t-saved="<%= t('website.b.saved') %>" data-t-failed="<%= t('website.b.save_failed') %>">
   <header class="wsb-top">
     <div class="wsb-top-start">
       <a class="btn btn-ghost btn-sm" href="/app/website"><%- icon('arrow-right', 'icon-sm' + (dir === 'rtl' ? '' : ' flip-rtl')) %><span class="hide-sm"><%= t('website.b.back') %></span></a>
@@ -49,15 +51,22 @@
   <nav class="wsb-panes segmented" aria-label="<%= t('website.builder_title') %>">
     <button type="button" data-ws-pane="sections"><%- icon('layers', 'icon-sm') %><%= t('website.b.pane_sections') %></button>
     <button type="button" data-ws-pane="preview"><%- icon('eye', 'icon-sm') %><%= t('website.b.pane_preview') %></button>
-    <button type="button" data-ws-pane="settings"<%= sel ? '' : ' disabled' %>><%- icon('sliders-horizontal', 'icon-sm') %><%= t('website.b.pane_settings') %></button>
+    <button type="button" data-ws-pane="settings"<%= sel || panel ? '' : ' disabled' %>><%- icon('sliders-horizontal', 'icon-sm') %><%= t('website.b.pane_settings') %></button>
   </nav>
 
   <div class="wsb-main">
     <!-- start pane: sections + add -->
     <aside class="wsb-side wsb-start" data-pane-id="sections" aria-label="<%= t('website.sections') %>">
+      <form class="wsb-page-pick" method="get" action="/app/website/builder" data-ws-page-pick>
+        <label class="sr-only" for="wsb-page"><%= t('website.b.page') %></label>
+        <%- icon('file-text', 'icon-sm muted') %>
+        <select class="select" id="wsb-page" name="page"><% pages.forEach(function (p) { %><option value="<%= p.key %>"<%= p.key === page.key ? ' selected' : '' %>><%= pageTitle(p) %></option><% }) %></select>
+        <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.open') %></button></noscript>
+      </form>
       <div class="wsb-tabs" role="tablist">
         <button type="button" role="tab" class="active" aria-selected="true" data-ws-tab="list"><%= t('website.b.tab_sections') %> <span class="badge"><%= fmt.number(list.length) %></span></button>
         <button type="button" role="tab" aria-selected="false" data-ws-tab="add"><%- icon('plus', 'icon-sm') %><%= t('website.b.tab_add') %></button>
+        <button type="button" role="tab" aria-selected="false" data-ws-tab="site"><%- icon('layers', 'icon-sm') %><%= t('website.b.tab_site') %></button>
       </div>
       <div class="wsb-tab-body" data-ws-tab-body="list">
         <ol class="ws-sec-list" data-ws-order>
@@ -83,7 +92,7 @@
           <% if (there) { %>
           <a class="wsb-add-tile is-there" href="/app/website/builder?s=<%= there.id %>"><span class="wsb-add-icon"><%- icon(TYPES[k].icon) %></span><span class="wsb-add-text"><strong><%= secName(k) %></strong><span class="small muted"><%= t('website.b.on_page_open') %></span></span><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm muted') %></a>
           <% } else { %>
-          <form method="post" action="/app/website/builder/sections"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="type" value="<%= k %>"><% if (sel) { %><input type="hidden" name="after" value="<%= sel.id %>"><% } %>
+          <form method="post" action="/app/website/builder/sections"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="type" value="<%= k %>"><input type="hidden" name="page" value="<%= page.key %>"><% if (sel) { %><input type="hidden" name="after" value="<%= sel.id %>"><% } %>
             <button class="wsb-add-tile" type="submit"><span class="wsb-add-icon"><%- icon(TYPES[k].icon) %></span><span class="wsb-add-text"><strong><%= secName(k) %></strong><span class="small muted"><%= t('website.sec_desc.' + k) %></span></span><%- icon('plus', 'icon-sm muted') %></button>
           </form>
           <% } %>
@@ -91,16 +100,44 @@
         </div>
         <% }) %>
       </div>
+      <div class="wsb-tab-body" data-ws-tab-body="site" hidden>
+        <h3 class="wsb-group"><%= t('website.b.pages') %></h3>
+        <ul class="wsb-pages">
+          <% pages.forEach(function (p, i) { %>
+          <li class="<%= p.key === page.key ? 'is-current' : '' %>">
+            <a class="wsb-page-name" href="/app/website/builder?page=<%= p.key %><%= p.key === 'home' ? '' : '&panel=page' %>"><%- icon(p.key === 'home' ? 'house' : 'file-text', 'icon-sm') %><span class="truncate"><%= pageTitle(p) %></span><% if (p.key !== 'home') { %><span class="small muted" dir="ltr">/p/<%= p.slug %></span><% } %></a>
+            <% if (p.key !== 'home') { %><span class="ws-sec-tools">
+              <form method="post" action="/app/website/builder/pages/<%= p.key %>/move"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="dir" value="up"><button class="btn btn-ghost btn-icon btn-sm" type="submit"<%= i <= 1 ? ' disabled' : '' %> aria-label="<%= t('website.move_up') %>"><%- icon('arrow-up', 'icon-sm') %></button></form>
+              <form method="post" action="/app/website/builder/pages/<%= p.key %>/move"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="dir" value="down"><button class="btn btn-ghost btn-icon btn-sm" type="submit"<%= i === pages.length - 1 ? ' disabled' : '' %> aria-label="<%= t('website.move_down') %>"><%- icon('arrow-down', 'icon-sm') %></button></form>
+            </span><% } %>
+          </li>
+          <% }) %>
+        </ul>
+        <% if (pages.length < MAX_PAGES) { %>
+        <form class="wsb-add-page stack-sm" method="post" action="/app/website/builder/pages">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <span class="label"><%= t('website.b.new_page') %></span>
+          <div class="ws-lang-row"><span class="ws-lang-tag">ع</span><input class="input" name="title[ar]" maxlength="60" dir="rtl" placeholder="<%= t('website.b.page_title_ph') %>"></div>
+          <div class="ws-lang-row"><span class="ws-lang-tag">EN</span><input class="input" name="title[en]" maxlength="60" dir="ltr" placeholder="About us"></div>
+          <button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('website.b.add_page') %></button>
+        </form>
+        <% } %>
+        <h3 class="wsb-group"><%= t('website.b.chrome') %></h3>
+        <a class="wsb-add-tile" href="/app/website/builder?panel=header<%= pq ? '&' + pq : '' %>"><span class="wsb-add-icon"><%- icon('panel-top') %></span><span class="wsb-add-text"><strong><%= t('website.b.header') %></strong><span class="small muted"><%= t('website.b.header_desc') %></span></span></a>
+        <a class="wsb-add-tile" href="/app/website/builder?panel=footer<%= pq ? '&' + pq : '' %>"><span class="wsb-add-icon"><%- icon('panel-bottom') %></span><span class="wsb-add-text"><strong><%= t('website.b.footer') %></strong><span class="small muted"><%= t('website.b.footer_desc') %></span></span></a>
+      </div>
     </aside>
 
     <!-- middle: preview -->
     <section class="wsb-stage" data-pane-id="preview" aria-label="<%= t('website.preview') %>">
-      <div class="wsb-frame-wrap" data-ws-frame-wrap data-device="desktop"><iframe class="wsb-frame" data-ws-frame src="/app/website/preview?lang=<%= locale %><%= sel ? '#s-' + sel.id : '' %>" title="<%= t('website.preview') %>"></iframe></div>
+      <div class="wsb-frame-wrap" data-ws-frame-wrap data-device="desktop"><iframe class="wsb-frame" data-ws-frame src="/app/website/preview?lang=<%= locale %><%= pq ? '&' + pq : '' %><%= sel ? '#s-' + sel.id : '' %>" title="<%= t('website.preview') %>"></iframe></div>
     </section>
 
     <!-- end pane: the selected section -->
     <aside class="wsb-side wsb-end" data-pane-id="settings" aria-label="<%= t('website.section_settings') %>">
-    <% if (!sel) { %>
+    <% if (!sel && panel) { %>
+      <%- include('_site-panels', { pageTitle: pageTitle }) %>
+    <% } else if (!sel) { %>
       <div class="wsb-empty"><%- icon('mouse-pointer-click') %><p><%= t('website.b.pick_hint') %></p></div>
     <% } else { %>
       <div class="wsb-sel-head"><span class="wsb-add-icon"><%- icon(def.icon) %></span><div class="grow"><strong><%= secName(sel.type) %></strong><div class="small muted"><%= t('website.sec_desc.' + sel.type) %></div></div></div>

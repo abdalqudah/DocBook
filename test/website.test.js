@@ -537,3 +537,67 @@ test('hero slider and motion: slides with their own words, motion classes, empty
   assert.ok(!r.text.includes('ws-placeholder'), 'never on the live site');
   assert.match(r.text, /website-site\.js/);
 });
+
+test('pages, menu and footer: add a page, its address, menu links, footer; live at /<slug>/p/<page>; plan and safety limits', async () => {
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  let r = await o.submit('/app/website/builder', '/app/website/builder/pages', { 'title[ar]': 'من نحن', 'title[en]': 'About us' });
+  assert.equal(r.status, 302);
+  const key = new URL(r.location, 'http://x').searchParams.get('page');
+  assert.match(key, /^[a-f0-9]{10}$/);
+  let { doc } = await site.draft(A.ctx, A.business);
+  const pg = doc.pages.find((p) => p.key === key);
+  assert.equal(pg.slug, 'about-us');
+  assert.equal(pg.sections[0].type, 'text', 'a new page starts with a text section');
+  const html = (await o.get(`/app/website/builder?page=${key}&panel=page`)).text;
+  const csrf = (html.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+  r = await o.post(`/app/website/builder/pages/${key}`, { _csrf: csrf, slug: 'book' }, { accept: 'application/json' });
+  assert.equal(r.status, 422, 'a reserved address is refused');
+  r = await o.post(`/app/website/builder/pages/${key}`, { _csrf: csrf, slug: 'our-story', 'title[en]': 'Our story', 'title[ar]': 'قصتنا', menu: '1' }, { accept: 'application/json' });
+  assert.equal(r.status, 200);
+  await o.post(`/app/website/builder/sections/${pg.sections[0].id}`, { _csrf: csrf, variant: 'plain', 'content[en][title]': 'Since 2010' }, { accept: 'application/json' });
+  r = await o.post('/app/website/builder/header', {
+    _csrf: csrf, 'header[style]': 'centered', 'header[sticky]': '0', 'header[items][0][pick]': `page:${key}`, 'header[items][1][pick]': 'book', 'header[items][1][label][en]': 'Book now', 'header[items][2][pick]': 'page:ffffffffff',
+  }, { accept: 'application/json' });
+  assert.equal(r.status, 200);
+  r = await o.post('/app/website/builder/footer', {
+    _csrf: csrf, 'footer[style]': 'centered', 'footer[about][en]': 'Family dental care.', 'footer[social][instagram]': 'https://instagram.com/clinic.a', 'footer[social][facebook]': 'javascript:alert(1)', 'footer[show_powered]': '0',
+  }, { accept: 'application/json' });
+  assert.equal(r.status, 200);
+  ({ doc } = await site.draft(A.ctx, A.business));
+  assert.deepEqual(doc.header.items.map((i) => i.kind), ['page', 'book'], 'a link to an unknown page is dropped');
+  assert.equal(doc.footer.social.facebook, '', 'only https links on the network itself');
+  await o.submit('/app/website/builder', '/app/website/publish', {});
+  const v = app.agent();
+  r = await v.get(`/${A.slug}/p/our-story?lang=en`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Since 2010/);
+  assert.match(r.text, /<title>Our story · /);
+  assert.match(r.text, /ws-nav ws-nav-centered is-static/);
+  assert.match(r.text, new RegExp(`href="/${A.slug}/p/our-story" aria-current="page">Our story`));
+  assert.match(r.text, /Book now/);
+  assert.match(r.text, /Family dental care\./);
+  assert.match(r.text, /href="https:\/\/instagram\.com\/clinic\.a"/);
+  assert.match(r.text, /portal\.powered|DocBook|href="\/"/, 'the platform line stays unless the package allows hiding it');
+  assert.equal((await v.get(`/${A.slug}/p/nope`)).status, 404);
+  // removing the page takes its menu link away
+  await o.submit('/app/website/builder?panel=pages', `/app/website/builder/pages/${key}/delete`, {});
+  ({ doc } = await site.draft(A.ctx, A.business));
+  assert.deepEqual(doc.header.items.map((i) => i.kind), ['book']);
+  // package without extra pages
+  const before = await knex('platform_settings').where({ key: 'subscriptions' }).first();
+  const [planId] = await knex('subscription_plans').insert({ name: `No pages ${tag}`, price_monthly: 1, price_yearly: 10, currency: 'JOD', features: JSON.stringify({ ...entitlements.fromForm({}), 'website.builder': true, 'website.max_pages': 0 }), is_active: true, is_public: false });
+  try {
+    await knex('platform_settings').insert({ key: 'subscriptions', value: JSON.stringify({ ...(before ? JSON.parse(before.value) : {}), enabled: true }) }).onConflict('key').merge();
+    await knex('clinic_subscriptions').insert({ business_id: A.ctx.businessId, plan_id: planId, status: 'active', billing_cycle: 'monthly', current_period_start: '2026-01-01', current_period_end: '2099-01-01' }).onConflict('business_id').merge();
+    cache.forgetPrefix('');
+    r = await o.submit('/app/website/builder', '/app/website/builder/pages', { 'title[en]': 'Extra' });
+    ({ doc } = await site.draft(A.ctx, A.business));
+    assert.equal(doc.pages.length, 1, 'the package allows no extra page');
+  } finally {
+    if (before) await knex('platform_settings').where({ key: 'subscriptions' }).update({ value: before.value });
+    else await knex('platform_settings').where({ key: 'subscriptions' }).del();
+    await knex('clinic_subscriptions').where({ business_id: A.ctx.businessId }).del();
+    cache.forgetPrefix('');
+  }
+});

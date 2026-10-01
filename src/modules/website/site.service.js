@@ -83,32 +83,88 @@ async function edit(ctx, business, fn, audited) {
 }
 
 const home = (doc) => doc.pages.find((p) => p.key === 'home');
-const findSection = (doc, id) => { const s = home(doc).sections.find((x) => x.id === id); if (!s) throw E.notFound('Section'); return s; };
+/** A page of the site by key (home when no key); 404 for an unknown one. */
+const pageOf = (doc, key) => { const p = doc.pages.find((x) => x.key === (key || 'home')); if (!p) throw E.notFound('Page'); return p; };
+/** The page that holds a section. */
+const pageWith = (doc, id) => doc.pages.find((p) => p.sections.some((x) => x.id === id));
+const findSection = (doc, id) => { const p = pageWith(doc, id); const s = p && p.sections.find((x) => x.id === id); if (!s) throw E.notFound('Section'); return s; };
+/** A page address from its title (Arabic is written in Latin letters), unique among the site's pages. */
+function pageSlug(doc, title, own) {
+  const { latinize } = require('../businesses/business.service'); // eslint-disable-line global-require
+  let base = latinize(title).toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s-]/g, '').trim().replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 34);
+  if (!base || base.length < 2 || sections.RESERVED_PAGES.has(base)) base = 'page';
+  const taken = new Set(doc.pages.filter((p) => p.key !== own).map((p) => p.slug));
+  let slug = base; let i = 2;
+  while (taken.has(slug)) { slug = `${base}-${i}`; i += 1; }
+  return slug;
+}
 
 const ops = {
-  add: (type, afterId) => (doc) => {
+  add: (type, afterId, pageKey) => (doc) => {
     if (!sections.TYPES[type]) throw E.validation({ type: 'Choose a valid value.' });
-    const list = home(doc).sections;
+    const list = pageOf(doc, pageKey).sections;
     if (sections.TYPES[type].single && list.some((s) => s.type === type)) throw new AppError('SECTION_ONCE', 'This section is already on the page.', 409);
     if (list.length >= sections.MAX_SECTIONS) throw new AppError('SECTION_LIMIT', 'The page has the most sections it can hold.', 409);
     const at = afterId ? list.findIndex((s) => s.id === afterId) + 1 : list.length;
     list.splice(at <= 0 ? list.length : at, 0, sections.blankSection(type));
     return doc;
   },
-  remove: (id) => (doc) => { const list = home(doc).sections; findSection(doc, id); home(doc).sections = list.filter((s) => s.id !== id); return doc; },
+  remove: (id) => (doc) => { findSection(doc, id); const p = pageWith(doc, id); p.sections = p.sections.filter((s) => s.id !== id); return doc; },
   move: (id, dir) => (doc) => {
-    const list = home(doc).sections; const i = list.findIndex((s) => s.id === id);
+    const p = pageWith(doc, id); if (!p) throw E.notFound('Section');
+    const list = p.sections; const i = list.findIndex((s) => s.id === id);
     if (i === -1) throw E.notFound('Section');
     const j = dir === 'up' ? i - 1 : i + 1;
     if (j >= 0 && j < list.length) [list[i], list[j]] = [list[j], list[i]];
     return doc;
   },
-  order: (idsInOrder) => (doc) => {
-    const list = home(doc).sections; const byId = new Map(list.map((s) => [s.id, s]));
+  order: (idsInOrder, pageKey) => (doc) => {
+    const page = pageOf(doc, pageKey);
+    const list = page.sections; const byId = new Map(list.map((s) => [s.id, s]));
     const wanted = [].concat(idsInOrder || []).flatMap((x) => String(x).split(',')).map((x) => x.trim()).filter((id) => byId.has(id));
-    home(doc).sections = [...new Set(wanted)].map((id) => byId.get(id)).concat(list.filter((s) => !wanted.includes(s.id)));
+    page.sections = [...new Set(wanted)].map((id) => byId.get(id)).concat(list.filter((s) => !wanted.includes(s.id)));
     return doc;
   },
+  // ---- pages
+  addPage: (title) => (doc) => {
+    if (doc.pages.length >= sections.MAX_PAGES) throw new AppError('PAGE_LIMIT', 'The site has the most pages it can hold.', 409);
+    const t = { ar: String((title && title.ar) || '').slice(0, 60), en: String((title && title.en) || '').slice(0, 60) };
+    if (!t.ar.trim() && !t.en.trim()) throw E.validation({ title: 'Enter the page title.' });
+    const key = sections.newId();
+    doc.pages.push({ key, slug: pageSlug(doc, t.en || t.ar, key), title: t, menu: true, sections: [sections.blankSection('text')] });
+    doc.newPageKey = key;
+    return doc;
+  },
+  updatePage: (key, input) => (doc) => {
+    if (key === 'home') throw E.validation({ page: 'The home page cannot be renamed.' });
+    const p = pageOf(doc, key);
+    if (input.title) p.title = { ar: String(input.title.ar || '').slice(0, 60), en: String(input.title.en || '').slice(0, 60) };
+    if (input.slug !== undefined) {
+      const want = String(input.slug || '').trim().toLowerCase();
+      if (!sections.PAGE_SLUG.test(want) || sections.RESERVED_PAGES.has(want)) throw E.validation({ slug: 'Use English letters, numbers or dashes.' });
+      if (doc.pages.some((x) => x.key !== key && x.slug === want)) throw E.validation({ slug: 'Another page already uses this address.' });
+      p.slug = want;
+    }
+    if (input.menu !== undefined) p.menu = input.menu === true || input.menu === '1';
+    if (input.seo) p.seo = input.seo;
+    return doc;
+  },
+  removePage: (key) => (doc) => {
+    if (key === 'home') throw E.validation({ page: 'The home page cannot be removed.' });
+    pageOf(doc, key);
+    doc.pages = doc.pages.filter((p) => p.key !== key);
+    if (doc.header && Array.isArray(doc.header.items)) doc.header.items = doc.header.items.filter((it) => !(it.kind === 'page' && it.target === key));
+    return doc;
+  },
+  movePage: (key, dir) => (doc) => {
+    const i = doc.pages.findIndex((p) => p.key === key);
+    if (i <= 0) throw E.notFound('Page');
+    const j = dir === 'up' ? i - 1 : i + 1;
+    if (j >= 1 && j < doc.pages.length) [doc.pages[i], doc.pages[j]] = [doc.pages[j], doc.pages[i]];
+    return doc;
+  },
+  header: (input) => (doc) => { doc.header = input; return doc; },
+  footer: (input) => (doc) => { doc.footer = input; return doc; },
   toggle: (id) => (doc) => { const s = findSection(doc, id); s.visible = !s.visible; return doc; },
   update: (id, input) => (doc) => {
     const s = findSection(doc, id);
@@ -219,4 +275,4 @@ function publicState(businessId) {
   }, 30_000);
 }
 
-module.exports = { state, draft, saveDraft, edit, ops, publish, unpublish, republish, versions, restore, discard, publicState, refsOf, forget, KEEP, MEDIA_CONTEXT };
+module.exports = { state, draft, saveDraft, edit, ops, pageOf, pageWith, pageSlug, publish, unpublish, republish, versions, restore, discard, publicState, refsOf, forget, KEEP, MEDIA_CONTEXT };

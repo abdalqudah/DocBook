@@ -38,9 +38,10 @@ async function customDomain(req, res, next) {
   if (p === '/book' || p.startsWith('/book/')) { req.url = `/${slug}${p}${q}`; return next(); }
   if (p === '/logo') { req.url = `/${slug}/logo${q}`; return next(); }
   if (p.startsWith('/doctors/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: a doctor's page
+  if (p.startsWith('/p/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: another page
   if (p.startsWith(`/m/${slug}/`)) return next(); // the page's public images (same origin — the page's CSP allows only 'self')
   if (p === `/${slug}`) return res.redirect(302, `/${q}`);
-  if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/doctors/`) || p === `/${slug}/logo` || p === `/${slug}/theme.css`) return next();
+  if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/doctors/`) || p.startsWith(`/${slug}/p/`) || p === `/${slug}/logo` || p === `/${slug}/theme.css`) return next();
   if (p === '/robots.txt') return res.type('text/plain').send('User-agent: *\nAllow: /\n');
   // Anything else belongs to the main address.
   return toMain(req.originalUrl);

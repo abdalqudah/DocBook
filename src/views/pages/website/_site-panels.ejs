@@ -1,0 +1,93 @@
+<%# Builder end pane without a section: the current page's settings, the menu (header) or the footer. Same saving as
+    a section (data-ws-section-form → saved as you type). %>
+<% var hdr = doc.header || {}; var ftr = doc.footer || {};
+   var boolRow = function (name, on, label) { %><input type="hidden" name="<%= name %>" value="0"><label class="check"><input type="checkbox" name="<%= name %>" value="1"<%= on ? ' checked' : '' %>><span><%= label %></span></label><% };
+   var pairRow = function (name, v, max, multi, ph) { ['ar', 'en'].forEach(function (lang) { %><div class="ws-lang-row"><span class="ws-lang-tag"><%= lang === 'ar' ? 'ع' : 'EN' %></span><% if (multi) { %><textarea class="textarea" rows="3" name="<%= name %>[<%= lang %>]" maxlength="<%= max %>" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>" placeholder="<%= ph || '' %>"><%= (v && v[lang]) || '' %></textarea><% } else { %><input class="input" name="<%= name %>[<%= lang %>]" value="<%= (v && v[lang]) || '' %>" maxlength="<%= max %>" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>" placeholder="<%= ph || '' %>"><% } %></div><% }); };
+   var homeSections = pages[0].sections;
+   var secTitle = function (x) { return (x.content[locale] && x.content[locale].title) || t('website.sec.' + x.type); }; %>
+
+<% if (panel === 'page' || panel === 'pages') { %>
+  <div class="wsb-sel-head"><span class="wsb-add-icon"><%- icon(page.key === 'home' ? 'house' : 'file-text') %></span><div class="grow"><strong><%= pageTitle(page) %></strong><div class="small muted"><%= t('website.b.page_settings') %></div></div></div>
+  <% if (page.key === 'home') { %>
+    <div class="wsb-tab-body"><p class="small muted"><%= t('website.b.home_settings_hint') %></p><a class="btn btn-secondary btn-sm" href="/app/website/seo"><%- icon('search', 'icon-sm') %><%= t('website.seo_page_title') %></a></div>
+  <% } else { %>
+  <form class="wsb-form" method="post" action="/app/website/builder/pages/<%= page.key %>" data-ws-section-form novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="wsb-tab-body stack">
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.page_title') %></legend><% pairRow('title', page.title, 60) %></fieldset>
+      <div class="field"><label class="label" for="pg-slug"><%= t('website.b.page_address') %></label>
+        <div class="input-group" dir="ltr"><span class="small muted">/<%= business.slug %>/p/</span><input class="input" id="pg-slug" name="slug" value="<%= page.slug %>" maxlength="40" pattern="[a-z0-9-]+" dir="ltr"></div>
+        <span class="help"><%= t('website.b.page_address_help') %></span></div>
+      <% boolRow('menu', page.menu, t('website.b.page_in_menu')) %>
+      <h3 class="wsb-group"><%= t('website.seo_page_title') %></h3>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.seo_page_title') %></legend><% pairRow('seo[title]', page.seo && page.seo.title, 70) %></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.seo_description') %></legend><% pairRow('seo[description]', page.seo && page.seo.description, 160, true) %></fieldset>
+    </div>
+    <div class="wsb-form-foot"><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button></div>
+  </form>
+  <div class="wsb-sel-foot"><form method="post" action="/app/website/builder/pages/<%= page.key %>/delete" data-confirm="<%= t('website.b.page_remove_confirm', { name: pageTitle(page) }) %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('website.b.page_remove') %></button></form></div>
+  <% } %>
+
+<% } else if (panel === 'header') { %>
+  <div class="wsb-sel-head"><span class="wsb-add-icon"><%- icon('panel-top') %></span><div class="grow"><strong><%= t('website.b.header') %></strong><div class="small muted"><%= t('website.b.header_desc') %></div></div></div>
+  <form class="wsb-form" method="post" action="/app/website/builder/header" data-ws-section-form novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="wsb-tab-body stack">
+      <fieldset class="wsb-field"><legend class="label"><%= t('website.b.header_style') %></legend>
+        <div class="wsb-choices"><% ['solid', 'transparent', 'centered', 'minimal'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="header[style]" value="<%= o %>"<%= (hdr.style || 'solid') === o ? ' checked' : '' %>><span><%= t('website.b.hs.' + o) %></span></label><% }) %></div></fieldset>
+      <% boolRow('header[sticky]', hdr.sticky !== false, t('website.b.h_sticky')) %>
+      <% boolRow('header[show_name]', hdr.show_name !== false, t('website.b.h_name')) %>
+      <% boolRow('header[show_book]', hdr.show_book !== false, t('website.b.h_book')) %>
+      <% boolRow('header[show_phone]', hdr.show_phone === true, t('website.b.h_phone')) %>
+      <% boolRow('header[show_lang]', hdr.show_lang !== false, t('website.b.h_lang')) %>
+      <% boolRow('header[show_theme]', hdr.show_theme !== false, t('website.b.h_theme')) %>
+      <% var items = hdr.items || [];
+         var navItem = function (i, it) { it = it || { kind: 'page', label: {} }; %>
+        <details class="wsb-item" data-ws-item open>
+          <summary><span class="strong small"><%= t('website.b.menu_link') %></span><button class="btn btn-ghost btn-icon btn-sm" type="button" data-ws-item-remove aria-label="<%= t('website.b.remove_item') %>"><%- icon('trash-2', 'icon-sm') %></button></summary>
+          <div class="stack-sm">
+            <div class="field"><label class="label"><%= t('website.b.link_to') %></label>
+              <select class="select" name="header[items][<%= i %>][pick]" data-ws-nav-pick>
+                <option value="home"<%= it.kind === 'home' ? ' selected' : '' %>><%= t('website.page_home') %></option>
+                <% pages.slice(1).forEach(function (p) { %><option value="page:<%= p.key %>"<%= it.kind === 'page' && it.target === p.key ? ' selected' : '' %>><%= t('website.b.k_page') %>: <%= pageTitle(p) %></option><% }) %>
+                <% homeSections.forEach(function (x) { %><option value="section:<%= x.id %>"<%= it.kind === 'section' && it.target === x.id ? ' selected' : '' %>><%= t('website.b.k_section') %>: <%= secTitle(x) %></option><% }) %>
+                <% ['book', 'call', 'whatsapp'].forEach(function (k) { %><option value="<%= k %>"<%= it.kind === k ? ' selected' : '' %>><%= t('website.opt.' + k) %></option><% }) %>
+              </select>
+              <input type="hidden" name="header[items][<%= i %>][kind]" value="<%= it.kind %>" data-ws-nav-kind><input type="hidden" name="header[items][<%= i %>][target]" value="<%= it.target || '' %>" data-ws-nav-target></div>
+            <span class="label"><%= t('website.b.link_label') %></span>
+            <% pairRow('header[items][' + i + '][label]', it.label, 40, false, t('website.b.link_label_ph')) %>
+          </div>
+        </details>
+      <% }; %>
+      <fieldset class="ws-list wsb-field" data-ws-list data-max="10" data-next="<%= items.length %>"><legend class="label"><%= t('website.b.menu_links') %></legend>
+        <p class="help"><%= t('website.b.menu_auto_help') %></p>
+        <div class="stack-sm" data-ws-items><% items.forEach(function (it, i) { navItem(i, it); }); %></div>
+        <template data-ws-item-template><% navItem('__i__', null); %></template>
+        <button class="btn btn-secondary btn-sm" type="button" data-ws-item-add><%- icon('plus', 'icon-sm') %><%= t('website.b.add_link') %></button>
+      </fieldset>
+    </div>
+    <div class="wsb-form-foot"><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button></div>
+  </form>
+
+<% } else if (panel === 'footer') { %>
+  <div class="wsb-sel-head"><span class="wsb-add-icon"><%- icon('panel-bottom') %></span><div class="grow"><strong><%= t('website.b.footer') %></strong><div class="small muted"><%= t('website.b.footer_desc') %></div></div></div>
+  <form class="wsb-form" method="post" action="/app/website/builder/footer" data-ws-section-form novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="wsb-tab-body stack">
+      <fieldset class="wsb-field"><legend class="label"><%= t('website.b.footer_style') %></legend>
+        <div class="wsb-choices"><% ['columns', 'simple', 'centered'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="footer[style]" value="<%= o %>"<%= (ftr.style || 'columns') === o ? ' checked' : '' %>><span><%= t('website.b.fs.' + o) %></span></label><% }) %></div></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.footer_about') %></legend><% pairRow('footer[about]', ftr.about, 400, true) %></fieldset>
+      <% boolRow('footer[show_contact]', ftr.show_contact !== false, t('website.b.f_contact')) %>
+      <% boolRow('footer[show_hours]', ftr.show_hours !== false, t('website.b.f_hours')) %>
+      <% boolRow('footer[show_menu]', ftr.show_menu !== false, t('website.b.f_menu')) %>
+      <% boolRow('footer[show_social]', ftr.show_social !== false, t('website.b.f_social')) %>
+      <% boolRow('footer[show_powered]', ftr.show_powered !== false, t('website.b.f_powered')) %>
+      <p class="help"><%= t('website.b.f_powered_help') %></p>
+      <fieldset class="wsb-field"><legend class="label"><%= t('website.b.social') %></legend>
+        <% SOCIAL.forEach(function (k) { %><div class="ws-lang-row"><span class="ws-lang-tag"><%- icon(k, 'icon-sm') %></span><input class="input" type="url" name="footer[social][<%= k %>]" value="<%= (ftr.social && ftr.social[k]) || '' %>" dir="ltr" placeholder="https://<%= k === 'twitter' ? 'x' : k %>.com/…" aria-label="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>"></div><% }) %>
+        <span class="help"><%= t('website.b.social_help') %></span></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.copyright') %></legend><% pairRow('footer[copyright]', ftr.copyright, 120, false, business.name) %></fieldset>
+    </div>
+    <div class="wsb-form-foot"><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button></div>
+  </form>
+<% } %>

@@ -29,7 +29,7 @@
     if (e.origin !== window.location.origin || !e.data) return;
     if (e.data.type === 'ws-mark') {
       mark(e.data.id);
-      var el = document.querySelector('[data-ws-sec="' + String(e.data.id).replace(/[^a-f0-9]/g, '') + '"]');
+      var el = document.querySelector('[data-ws-sec="' + String(e.data.id).replace(/[^a-z0-9_]/g, '') + '"]');
       if (el && e.data.scroll) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
   });

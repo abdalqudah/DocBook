@@ -139,6 +139,7 @@
       "website_analytics": "Website statistics",
       "website_advanced_seo": "Advanced search engine settings",
       "website_max_pages": "Extra pages",
+      "website_white_label": "Hide the platform line in the site footer",
       "media_storage_mb": "Media storage (MB)",
       "limits_max_patients": "Maximum patient records"
     }

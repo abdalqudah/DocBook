@@ -1,0 +1,27 @@
+<%# Header of a builder site (doc.header): style, sticky, the clinic's logo/name, the menu and its buttons. %>
+<% var h = wsSite.header || {}; var c = clinic; var menuId = 'ws-menu'; %>
+<header class="site-nav ws-nav ws-nav-<%= h.style || 'solid' %><%= h.sticky === false ? ' is-static' : '' %>"<% if (wsSite.preview) { %> data-ws-sec="__header" data-ws-label="<%= t('website.b.header') %>"<% } %>>
+  <div class="container inner">
+    <a class="portal-brand" href="<%= wsSite.homeHref %>">
+      <span class="portal-mark"><% if (wsSite.logo) { %><img src="<%= wsSite.logo.url %>" alt=""><% } else if (c.logo_mime) { %><img src="/<%= c.slug %>/logo?v=<%= c.logo_version %>" alt=""><% } else { %><%- icon('hospital', 'icon-sm') %><% } %></span>
+      <% if (h.show_name !== false) { %><span class="portal-brand-name"><%= c.displayName %></span><% } else { %><span class="sr-only"><%= c.displayName %></span><% } %>
+    </a>
+    <% if (wsSite.items.length) { %>
+    <nav class="ws-nav-links" aria-label="<%= t('site.nav_label') %>">
+      <% wsSite.items.forEach(function (n) { %><a href="<%= n.href %>"<%- n.current ? ' aria-current="page"' : '' %><%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a><% }) %>
+    </nav>
+    <% } %>
+    <div class="right">
+      <% if (h.show_phone && c.telHref) { %><a class="btn btn-ghost btn-sm hide-sm" href="<%= c.telHref %>" dir="ltr"><%- icon('phone', 'icon-sm') %><%= c.phone %></a><% } %>
+      <% if (h.show_lang !== false) { %><a class="btn btn-ghost btn-sm lang-btn" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span class="hide-xs"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a><% } %>
+      <% if (h.show_theme !== false) { %><button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button><% } %>
+      <% if (h.show_book !== false && c.booking_enabled && !(typeof hideBookCta !== 'undefined' && hideBookCta)) { %><a class="btn btn-primary btn-sm" href="/<%= c.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><span><%= t('portal.book') %></span></a><% } %>
+      <% if (wsSite.items.length) { %>
+      <details class="site-menu ws-nav-menu">
+        <summary class="btn btn-ghost btn-icon" aria-label="<%= t('site.menu') %>"><%- icon('menu') %></summary>
+        <div class="site-menu-panel"><% wsSite.items.forEach(function (n) { %><a href="<%= n.href %>" data-menu-close<%- n.current ? ' aria-current="page"' : '' %><%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a><% }) %></div>
+      </details>
+      <% } %>
+    </div>
+  </div>
+</header>

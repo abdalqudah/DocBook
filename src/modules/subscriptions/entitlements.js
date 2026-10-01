@@ -25,6 +25,7 @@ const REGISTRY = [
   { key: 'website.analytics', type: 'bool', group: 'website', fallback: false, forExisting: false },
   { key: 'website.advanced_seo', type: 'bool', group: 'website', fallback: false, forExisting: false },
   { key: 'website.max_pages', type: 'int', group: 'website', fallback: 0, forExisting: null },
+  { key: 'website.white_label', type: 'bool', group: 'website', fallback: false, forExisting: false }, // hide "clinic page by …" in the footer
   // Limits.
   { key: 'media.storage_mb', type: 'int', group: 'limits', fallback: null, forExisting: null },
   { key: 'limits.max_patients', type: 'int', group: 'limits', fallback: null, forExisting: null },

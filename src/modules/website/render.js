@@ -31,8 +31,8 @@ function hoursRows(clinic) {
  * Everything a site page needs. `portal` = { listDoctors, listServices } from site/portal.web.js (shared with the
  * classic page and the booking pages).
  */
-async function locals(req, clinic, doc, { preview = false, portal }) {
-  const page = doc.pages.find((p) => p.key === 'home') || { sections: [] };
+async function locals(req, clinic, doc, { preview = false, portal, page: chosen = null }) {
+  const page = chosen || doc.pages.find((p) => p.key === 'home') || { sections: [] };
   const shown = page.sections.filter((s) => s.visible && !(s.type === 'announcement' && !announcementOn(s, req)));
   const types = new Set(shown.map((s) => s.type));
   const [doctors, services, media, insurers, reviews] = await Promise.all([
@@ -50,9 +50,39 @@ async function locals(req, clinic, doc, { preview = false, portal }) {
   };
   const img = (id) => (id && media[id]) || null;
   return {
-    doc, sections: shown.map((s) => ({ ...s, c: words(s) })), doctors, services, insurers, hours: hoursRows(clinic), media, img,
+    doc, page, sections: shown.map((s) => ({ ...s, c: words(s) })), doctors, services, insurers, hours: hoursRows(clinic), media, img,
+    wsSite: siteChrome(req, clinic, doc, page, { preview, img }),
     doctorNames: Object.fromEntries(doctors.map((d) => [d.id, d.name])), reviewsSummary: reviews, preview,
   };
+}
+
+/**
+ * Menu and footer of a builder site: links resolved to addresses (home, a page, a section of the home page, booking,
+ * call, WhatsApp). In the builder's preview the links stay inside the preview.
+ */
+function siteChrome(req, clinic, doc, page, { preview, img }) {
+  const L = (v) => (v && (v[req.locale] || v[req.locale === 'en' ? 'ar' : 'en'])) || '';
+  const base = `/${clinic.slug}`;
+  const pageHref = (p) => (preview ? `/app/website/preview?page=${p.key}` : (p.key === 'home' ? base : `${base}/p/${p.slug}`));
+  const pages = doc.pages.map((p) => ({ key: p.key, title: p.key === 'home' ? req.t('website.page_home') : L(p.title), href: pageHref(p), menu: p.key === 'home' || p.menu }));
+  const sectionTitle = (id) => { const s = doc.pages[0].sections.find((x) => x.id === id); return s ? (L({ ar: s.content.ar && s.content.ar.title, en: s.content.en && s.content.en.title }) || req.t(`website.sec.${s.type}`)) : ''; };
+  const header = doc.header || {};
+  let items = (header.items || []).map((it) => {
+    const label = L(it.label);
+    switch (it.kind) {
+      case 'home': return { label: label || req.t('website.page_home'), href: pageHref(doc.pages[0]), current: page.key === 'home' };
+      case 'page': { const p = doc.pages.find((x) => x.key === it.target); return p ? { label: label || L(p.title), href: pageHref(p), current: page.key === p.key } : null; }
+      case 'section': return { label: label || sectionTitle(it.target), href: `${pageHref(doc.pages[0])}#s-${it.target}` };
+      case 'book': return clinic.booking_enabled ? { label: label || req.t('portal.book'), href: `${base}/book` } : null;
+      case 'call': return clinic.telHref ? { label: label || req.t('portal.call'), href: clinic.telHref } : null;
+      case 'whatsapp': return clinic.waHref ? { label: label || req.t('portal.whatsapp'), href: clinic.waHref, ext: true } : null;
+      default: return null;
+    }
+  }).filter((x) => x && x.label);
+  // No menu chosen: the pages marked "in the menu" (only when there is more than the home page).
+  if (!(header.items || []).length) items = pages.length > 1 ? pages.filter((p) => p.menu).map((p) => ({ label: p.title, href: p.href, current: p.key === page.key })) : [];
+  const logo = doc.brand && doc.brand.logoMediaId ? img(doc.brand.logoMediaId) : null;
+  return { header, footer: doc.footer || {}, items, pages, logo, homeHref: pageHref(doc.pages[0]), preview, L };
 }
 
 function announcementOn(s, req) {

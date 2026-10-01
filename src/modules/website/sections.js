@@ -114,6 +114,51 @@ const TEMPLATE_LAYOUT = {
 // The clinic's specialty (settings) → the template offered first.
 const SPECIALTY_TEMPLATE = { general: 'general', dentistry: 'dental', dermatology: 'dermatology', paediatrics: 'pediatrics', obgyn: 'gynecology', physiotherapy: 'physio', cosmetic: 'aesthetic', multi: 'multi_specialty' };
 
+// ---------------------------------------------------------------- pages, menu (header), footer
+const MAX_PAGES = 9; // home + 8
+const PAGE_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
+const RESERVED_PAGES = new Set(['home', 'book', 'doctors', 'p', 'm', 'logo', 'login', 'enter', 'fonts', 'theme-css']);
+const NAV_KINDS = ['home', 'page', 'section', 'book', 'call', 'whatsapp'];
+const HEADER = [
+  { key: 'style', kind: 'select', options: ['solid', 'transparent', 'centered', 'minimal'], def: 'solid' },
+  { key: 'sticky', kind: 'bool', def: true }, { key: 'show_book', kind: 'bool', def: true }, { key: 'show_lang', kind: 'bool', def: true },
+  { key: 'show_theme', kind: 'bool', def: true }, { key: 'show_phone', kind: 'bool', def: false }, { key: 'show_name', kind: 'bool', def: true },
+];
+// Social profiles: https addresses on the network's own site only.
+const SOCIAL = { facebook: /^(www\.|m\.)?facebook\.com$/, instagram: /^(www\.)?instagram\.com$/, twitter: /^(www\.)?(x|twitter)\.com$/, youtube: /^(www\.|m\.)?youtube\.com$|^youtu\.be$/, linkedin: /^([a-z]{2,3}\.)?linkedin\.com$/ };
+const FOOTER = [
+  { key: 'style', kind: 'select', options: ['columns', 'simple', 'centered'], def: 'columns' },
+  { key: 'show_contact', kind: 'bool', def: true }, { key: 'show_hours', kind: 'bool', def: true }, { key: 'show_menu', kind: 'bool', def: true },
+  { key: 'show_social', kind: 'bool', def: true }, { key: 'show_powered', kind: 'bool', def: true },
+];
+const cleanSocial = (raw) => Object.fromEntries(Object.keys(SOCIAL).map((k) => {
+  const v = cleanLine(raw && raw[k], 300);
+  try { const u = new URL(v); return [k, u.protocol === 'https:' && SOCIAL[k].test(u.hostname.toLowerCase()) && !u.username ? u.toString() : '']; } catch { return [k, '']; }
+}));
+const pair = (raw, max, multi) => ({ ar: (multi ? clean : cleanLine)(raw && raw.ar, max), en: (multi ? clean : cleanLine)(raw && raw.en, max) });
+
+function cleanHeader(raw, pageKeys, sectionIds) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  const out = Object.fromEntries(HEADER.map((f) => [f.key, cleanValue(f, src[f.key])]));
+  const items = Array.isArray(src.items) ? src.items : (src.items && typeof src.items === 'object' ? Object.values(src.items) : []);
+  out.items = items.slice(0, 10).map((it) => {
+    const kind = NAV_KINDS.includes(it && it.kind) ? it.kind : null;
+    if (!kind) return null;
+    const target = kind === 'page' ? (pageKeys.has(it.target) ? it.target : null) : kind === 'section' ? (sectionIds.has(it.target) ? it.target : null) : null;
+    if ((kind === 'page' || kind === 'section') && !target) return null;
+    return { kind, target, label: pair(it.label, 40) };
+  }).filter(Boolean);
+  return out;
+}
+function cleanFooter(raw) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  const out = Object.fromEntries(FOOTER.map((f) => [f.key, cleanValue(f, src[f.key])]));
+  out.about = pair(src.about, 400, true);
+  out.copyright = pair(src.copyright, 120);
+  out.social = cleanSocial(src.social);
+  return out;
+}
+
 const FONTS = ['system', 'humanist', 'serif', 'rounded'];
 const RADII = ['soft', 'rounded', 'square'];
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -213,15 +258,31 @@ function cleanSettings(def, raw = {}, refs = {}) {
 function sanitize(doc, refs = {}) {
   const d = doc && typeof doc === 'object' ? doc : {};
   const b = d.brand || {};
-  const page = (Array.isArray(d.pages) && d.pages.find((p) => p && p.key === 'home')) || { sections: [] };
+  const allPages = Array.isArray(d.pages) ? d.pages.filter((p) => p && typeof p === 'object') : [];
+  const page = allPages.find((p) => p.key === 'home') || { sections: [] };
   const seen = new Set();
-  const sections = (Array.isArray(page.sections) ? page.sections : []).filter((s) => s && TYPES[s.type]).slice(0, MAX_SECTIONS).map((s) => {
+  const cleanList = (list) => (Array.isArray(list) ? list : []).filter((s) => s && TYPES[s.type]).slice(0, MAX_SECTIONS).map((s) => {
     const def = TYPES[s.type];
     let id = /^[a-f0-9]{10}$/.test(String(s.id || '')) ? s.id : newId();
     if (seen.has(id)) id = newId();
     seen.add(id);
     return { id, type: s.type, variant: def.variants.includes(s.variant) ? s.variant : def.variants[0], visible: s.visible !== false, content: cleanText(def, s.content), settings: cleanSettings(def, s.settings || {}, refs) };
   });
+  const sections = cleanList(page.sections);
+  // Other pages: their own address (unique, never a reserved word), title, place in the menu and sections.
+  const slugs = new Set();
+  const extra = allPages.filter((p) => p.key !== 'home').slice(0, MAX_PAGES - 1).map((p, i) => {
+    const key = /^[a-f0-9]{10}$/.test(String(p.key || '')) ? p.key : newId();
+    let slug = String(p.slug || '').trim().toLowerCase().replace(/[\s_]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+    if (!PAGE_SLUG.test(slug) || RESERVED_PAGES.has(slug) || slugs.has(slug)) slug = `page-${i + 2}`;
+    while (slugs.has(slug)) slug = `${slug}-x`;
+    slugs.add(slug);
+    const ps = p.seo || {};
+    return { key, slug, title: pair(p.title, 60), menu: p.menu !== false && p.menu !== '0', sections: cleanList(p.sections),
+      seo: { title: pair(ps.title, 70), description: pair(ps.description, 160) } };
+  });
+  const pageKeys = new Set(extra.map((p) => p.key));
+  const sectionIds = new Set(sections.map((s) => s.id));
   const mediaOk = (v) => { const id = ids(v)[0] || null; return id && (!refs.media || refs.media.has(id)) ? id : null; };
   const seo = d.seo || {};
   return {
@@ -235,7 +296,9 @@ function sanitize(doc, refs = {}) {
       motion: MOTION.includes(b.motion) ? b.motion : 'none', // sites published before motion existed stay still
       logoMediaId: mediaOk(b.logoMediaId), faviconMediaId: mediaOk(b.faviconMediaId),
     },
-    pages: [{ key: 'home', sections }],
+    pages: [{ key: 'home', sections }, ...extra],
+    header: cleanHeader(d.header, pageKeys, sectionIds),
+    footer: cleanFooter(d.footer),
     seo: {
       title: { ar: cleanLine(seo.title && seo.title.ar, 70), en: cleanLine(seo.title && seo.title.en, 70) },
       description: { ar: cleanLine(seo.description && seo.description.ar, 160), en: cleanLine(seo.description && seo.description.en, 160) },
@@ -264,4 +327,4 @@ function mediaIn(doc) {
   return [...out];
 }
 
-module.exports = { TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MOTION, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };
+module.exports = { TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MOTION, HEADER, FOOTER, SOCIAL, NAV_KINDS, MAX_PAGES, PAGE_SLUG, RESERVED_PAGES, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };

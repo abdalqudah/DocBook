@@ -30,7 +30,8 @@
 </head>
 <body class="site<%= portalClinic ? ' site-portal' : '' %><%= embed ? ' site-embed' : '' %><%= typeof bodyClass !== 'undefined' && bodyClass ? ' ' + bodyClass : '' %>">
 <a class="sr-only" href="#main"><%= t('site.skip') %></a>
-<% if (embed) { %><div class="embed-bar"><span class="strong truncate"><%= portalClinic.displayName %></span><a href="/" target="_blank" rel="noopener"><%= t('portal.powered', { brand: brandName }) %></a></div><% } else { %>
+<% var _ws = typeof wsSite !== 'undefined' && wsSite && portalClinic ? wsSite : null; %>
+<% if (embed) { %><div class="embed-bar"><span class="strong truncate"><%= portalClinic.displayName %></span><a href="/" target="_blank" rel="noopener"><%= t('portal.powered', { brand: brandName }) %></a></div><% } else if (_ws) { %><%- include('../pages/portal/_ws-header') %><% } else { %>
 <header class="site-nav">
   <div class="container inner">
     <% if (portalClinic) { %>
@@ -73,6 +74,7 @@
 <% } %>
 <main id="main"><%- include('../partials/toasts') %><%- body %></main>
 <% if (embed) { %>
+<% } else if (_ws) { %><%- include('../pages/portal/_ws-footer') %>
 <% } else if (portalClinic) { %>
 <footer class="footer portal-footer">
   <div class="container inner">

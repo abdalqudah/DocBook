@@ -281,7 +281,12 @@
     "This time is no longer available.": "هذا الوقت لم يعد متاحًا.",
     "This service is not offered by this doctor.": "هذه الخدمة لا يقدمها هذا الطبيب.",
     "Another patient already uses this phone number.": "رقم الهاتف مستخدم لمريض آخر.",
-    "Enter a valid duration.": "أدخل مدة صحيحة."
+    "Enter a valid duration.": "أدخل مدة صحيحة.",
+    "Enter the page title.": "اكتب عنوان الصفحة.",
+    "Use English letters, numbers or dashes.": "استخدم أحرفاً إنجليزية أو أرقاماً أو شرطات.",
+    "Another page already uses this address.": "صفحة أخرى تستخدم هذا الرابط.",
+    "The home page cannot be renamed.": "لا يمكن تغيير الصفحة الرئيسية.",
+    "The home page cannot be removed.": "لا يمكن حذف الصفحة الرئيسية."
   },
   "roles": {
     "owner": "مالك العيادة",

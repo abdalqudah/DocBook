@@ -603,7 +603,7 @@
     },
     "b": {
       "tab_sections": "Sections",
-      "tab_add": "Add a section",
+      "tab_add": "Add",
       "tab_content": "Content",
       "tab_design": "Design",
       "group_blocks": "Free blocks",
@@ -646,7 +646,65 @@
         "stats": "Add a number and its label.",
         "steps": "Add at least one step.",
         "divider": ""
-      }
+      },
+      "tab_site": "Site",
+      "page": "Page",
+      "pages": "Pages",
+      "new_page": "New page",
+      "page_title_ph": "e.g. من نحن",
+      "add_page": "Add a page",
+      "chrome": "Menu & footer",
+      "header": "Top menu",
+      "header_desc": "Logo, links and buttons at the top of every page.",
+      "footer": "Footer",
+      "footer_desc": "At the bottom of every page: about, contact, links, social profiles.",
+      "page_settings": "Page settings",
+      "home_settings_hint": "The home page's search title and description are under Search engines.",
+      "page_title": "Page title",
+      "page_address": "Page address",
+      "page_address_help": "Lower-case English letters, numbers and dashes.",
+      "page_in_menu": "Shown in the top menu",
+      "page_remove": "Remove the page",
+      "page_remove_confirm": "Remove the page “{name}” and all its sections from the draft?",
+      "header_style": "Menu style",
+      "hs": {
+        "solid": "Standard",
+        "transparent": "Transparent over the hero",
+        "centered": "Logo in the centre",
+        "minimal": "Minimal"
+      },
+      "h_sticky": "Stays at the top while scrolling",
+      "h_name": "Show the clinic name beside the logo",
+      "h_book": "“Book an appointment” button",
+      "h_phone": "Phone number",
+      "h_lang": "Language button",
+      "h_theme": "Dark mode button",
+      "menu_link": "Link",
+      "menu_links": "Menu links",
+      "menu_auto_help": "Without links, the pages marked “in the menu” show automatically.",
+      "link_to": "Opens",
+      "link_label": "Label (optional)",
+      "link_label_ph": "The page or section name is used",
+      "add_link": "Add a link",
+      "k_page": "Page",
+      "k_section": "Section",
+      "footer_style": "Footer style",
+      "fs": {
+        "columns": "Columns",
+        "simple": "One line",
+        "centered": "Centred"
+      },
+      "footer_about": "Short about text",
+      "f_contact": "Address, phone and e-mail",
+      "f_hours": "Working hours",
+      "f_menu": "Menu links",
+      "f_social": "Social profiles",
+      "f_powered": "“Clinic page by …” line",
+      "f_powered_help": "Hiding this line depends on the clinic's package.",
+      "social": "Social profiles",
+      "social_help": "https links to the clinic's own pages on these sites only.",
+      "copyright": "Copyright text",
+      "footer_links": "Links"
     },
     "item_field": {
       "title": "Title",
@@ -666,7 +724,10 @@
       "none": "No motion",
       "subtle": "Subtle",
       "lively": "Lively"
-    }
+    },
+    "page_home": "Home",
+    "page_added_ok": "Page added.",
+    "page_removed_ok": "Page removed."
   },
   "errors_website": {
     "SECTION_ONCE": "This section is already on the page.",
@@ -681,6 +742,8 @@
     "MAIL_PROVIDER_OFF": "This provider is not available on this platform.",
     "MAIL_OAUTH_STATE": "The connection link expired. Please start again.",
     "MAIL_OAUTH_CANCELLED": "The connection was cancelled.",
-    "MAIL_OAUTH_FAILED": "The provider refused the connection."
+    "MAIL_OAUTH_FAILED": "The provider refused the connection.",
+    "PAGE_LIMIT": "The site has the most pages it can hold.",
+    "PAGE_PLAN_LIMIT": "The clinic's package does not include more pages."
   }
 }

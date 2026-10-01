@@ -1,0 +1,35 @@
+<%# Footer of a builder site (doc.footer): about text, contact, hours, menu, social profiles, copyright. %>
+<% var f = wsSite.footer || {}; var c = clinic; var L = wsSite.L;
+   var social = Object.keys(f.social || {}).filter(function (k) { return f.social[k]; });
+   var about = L(f.about) || ''; var copy = L(f.copyright) || c.displayName; %>
+<footer class="footer portal-footer ws-footer ws-footer-<%= f.style || 'columns' %>"<% if (wsSite.preview) { %> data-ws-sec="__footer" data-ws-label="<%= t('website.b.footer') %>"<% } %>>
+  <div class="container">
+    <% if (f.style !== 'simple') { %>
+    <div class="ws-footer-grid">
+      <div class="ws-footer-brand">
+        <strong><%= c.displayName %></strong>
+        <% if (about) { %><p><%= about %></p><% } %>
+        <% if (f.show_social !== false && social.length) { %><div class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon" href="<%= f.social[k] %>" target="_blank" rel="noopener me" aria-label="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>" title="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>"><%- icon(k) %></a><% }) %></div><% } %>
+      </div>
+      <% if (f.show_menu !== false && wsSite.items.length) { %>
+      <nav class="ws-footer-col" aria-label="<%= t('site.nav_label') %>"><h3><%= t('website.b.footer_links') %></h3><ul><% wsSite.items.forEach(function (n) { %><li><a href="<%= n.href %>"<%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a></li><% }) %></ul></nav>
+      <% } %>
+      <% if (f.show_contact !== false && (c.address || c.phone || c.email)) { %>
+      <div class="ws-footer-col"><h3><%= t('portal.info') %></h3><ul class="site-contact">
+        <% if (c.address) { %><li><%- icon('map-pin', 'icon-sm') %><span><%= c.address %></span></li><% } %>
+        <% if (c.phone) { %><li><%- icon('phone', 'icon-sm') %><a href="<%= c.telHref %>" dir="ltr"><%= c.phone %></a></li><% } %>
+        <% if (c.email) { %><li><%- icon('mail', 'icon-sm') %><a href="mailto:<%= c.email %>" dir="ltr"><%= c.email %></a></li><% } %>
+      </ul></div>
+      <% } %>
+      <% if (f.show_hours !== false && c.working_hours_text) { %>
+      <div class="ws-footer-col"><h3><%= t('portal.hours') %></h3><p class="pre-line" dir="auto"><%= c.working_hours_text %></p></div>
+      <% } %>
+    </div>
+    <% } %>
+    <div class="ws-footer-bottom">
+      <span>© <%= new Date().getFullYear() %> <%= copy %></span>
+      <% if (f.style === 'simple' && f.show_social !== false && social.length) { %><span class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= f.social[k] %>" target="_blank" rel="noopener me" aria-label="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>"><%- icon(k, 'icon-sm') %></a><% }) %></span><% } %>
+      <% if (f.show_powered !== false || !wsSite.whiteLabel) { %><a class="row-sm" href="/"><%= t('portal.powered', { brand: brandName }) %></a><% } %>
+    </div>
+  </div>
+</footer>

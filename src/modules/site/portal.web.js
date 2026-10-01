@@ -82,14 +82,16 @@ const membershipOf = (userId, businessId) => knex('memberships as m').join('role
 
 // ---------------------------------------------------------------- clinic page
 /** Renders a website document (the published version, or the draft in the member-only preview). */
-async function renderSite(req, res, clinic, doc, { preview = false } = {}) {
+async function renderSite(req, res, clinic, doc, { preview = false, page = null } = {}) {
   const site = require('../website/render'); // eslint-disable-line global-require
-  const data = await site.locals(req, clinic, doc, { preview, portal: { listDoctors, listServices } });
+  const data = await site.locals(req, clinic, doc, { preview, portal: { listDoctors, listServices }, page });
+  data.wsSite.whiteLabel = await require('../platformops/ops.service').entitled(clinic, 'website.white_label'); // eslint-disable-line global-require
   res.locals.currency = clinic.currency;
   clinic.reviews = data.reviewsSummary;
   const L = (v) => (v && (v[req.locale] || v[req.locale === 'en' ? 'ar' : 'en'])) || '';
-  const title = L(doc.seo && doc.seo.title) || clinic.displayName;
-  const description = L(doc.seo && doc.seo.description) || clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ');
+  const sub = data.page && data.page.key !== 'home' ? data.page : null;
+  const title = sub ? `${L(sub.seo && sub.seo.title) || L(sub.title)} · ${clinic.displayName}` : (L(doc.seo && doc.seo.title) || clinic.displayName);
+  const description = (sub && L(sub.seo && sub.seo.description)) || L(doc.seo && doc.seo.description) || clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ');
   const share = doc.seo && doc.seo.image ? data.img(doc.seo.image) : null;
   const seoHead = preview ? null : await seo.head(req, res, { kind: 'clinic', clinic, doctors: data.doctors, title, description, shareImage: share ? share.url : null, hide: Boolean(doc.seo && doc.seo.hide) });
   const fav = doc.brand && doc.brand.faviconMediaId ? data.img(doc.brand.faviconMediaId) : null;
@@ -129,6 +131,17 @@ router.get('/:slug', wrap(async (req, res, next) => {
     return res.page('pages/portal/offline', { layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, noindex: true, clinic, pageStyles: [...clinicStyles(clinic), '/css/website.css'] });
   }
   return renderClassic(req, res, clinic);
+}));
+
+// Another page of the published website: /<slug>/p/<page>.
+router.get('/:slug/p/:page([a-z0-9-]{1,40})', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  if (state.status !== 'live' || !state.doc) return next();
+  const page = state.doc.pages.find((p) => p.key !== 'home' && p.slug === req.params.page);
+  if (!page) return next();
+  return renderSite(req, res, clinic, state.doc, { page });
 }));
 
 // A doctor's own page (website): photo, specialty, full bio, their services, rating, and booking with them.
