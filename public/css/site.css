@@ -560,3 +560,4 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .bi-row .grow { min-width: 0; }
 .growth-rules { margin: 6px 0 0; padding-inline-start: 18px; display: grid; gap: 3px; color: var(--text-muted); }
 [data-design-field][hidden], .media-upload[hidden], [data-media-upload][hidden] { display: none; }
+.doc-choice[hidden] { display: none; }

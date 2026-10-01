@@ -60,12 +60,13 @@ const doctorView = (req, prices = true) => (d) => {
     id: d.id, name: (en && d.full_name_en) || d.full_name, specialty: (en ? d.specialization_en || d.specialization : d.specialization || d.specialization_en) || '',
     fee: prices && d.show_consultation_fee ? Number(d.consultation_fee) || 0 : null, color: d.color && theme.HEX.test(d.color) ? d.color : null,
     bio: bio.length > 180 ? `${bio.slice(0, 177).trim()}…` : bio, slot: d.slot_duration_minutes, online: Boolean(d.online_enabled),
+    branchId: d.branch_id || null, // null = main branch
   };
 };
 const listDoctors = async (req, clinic, where = 'site') => {
   const [rows, photos] = await Promise.all([
     knex('doctors').where({ business_id: clinic.id, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
-      .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled'),
+      .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled', 'branch_id'),
     require('../integrations/media.service').publicDoctorPhotos(clinic), // eslint-disable-line global-require
   ]);
   return rows.map(doctorView(req, pricesShown(clinic, where))).map((d) => ({ ...d, photo: photos[d.id] || null })); // photo: public media-library URL (or null)

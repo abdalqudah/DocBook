@@ -17,6 +17,7 @@
   </header>
   <dl class="peek-facts">
     <div><dt><%= t('common.doctor') %></dt><dd><% if (doctor) { %><span class="doc-dot" aria-hidden="true"<% if (doctor.color) { %> style="background:<%= doctor.color %>"<% } %>></span><%= L(doctor.full_name, doctor.full_name_en) %><% } else { %><%= t('appointments.unassigned') %><% } %></dd></div>
+    <% if (multiBranch || a.branch_id) { %><div><dt><%= t('branches.branch') %></dt><dd><%= a.branch_id ? L(a.branch_name, a.branch_name_en) : t('branches.main') %></dd></div><% } %>
     <div><dt><%= t('common.service') %></dt><dd><%= service ? L(service.name, service.name_en) : '—' %></dd></div>
     <div><dt><%= t('common.status') %></dt><dd><span class="st"><i class="st-dot st-<%= a.status %>"></i><%= t('appointments.statuses.' + a.status) %></span><% if (a.checked_in && open) { %> · <%= a.with_doctor ? t('cashx.col.with_doctor') : t('cashx.col.arrived') %><% } %></dd></div>
     <div><dt><%= t('appointments.payment') %></dt><dd><% if (invoice) { %><a class="link" href="/app/billing/<%= invoice.id %>"><%= t('billing.invoice_no', { n: invoice.invoice_number }) %></a> · <%= fmt.money(invoice.amount) %><% } else { %><%= t('appointments.payment_statuses.' + (a.payment_status || 'unpaid')) %><% } %></dd></div>

@@ -23,12 +23,13 @@ const { translator } = require('../../core/i18n');
 const { clinicNow } = require('../clinic/scheduling');
 
 const entitlements = require('./entitlements');
+const branchPricing = require('./branch-pricing');
 // The six clinic features (their keys predate the entitlement registry, which lists them first).
 const FEATURES = ['online_consultations', 'online_payments', 'reminders', 'ai_assistant', 'specialty_modules', 'data_sync'];
 const STATUSES = ['trialing', 'active', 'past_due', 'expired', 'cancelled', 'comped'];
 const CYCLES = ['monthly', 'yearly'];
 const METHODS = ['bank_transfer', 'cliq', 'cash'];
-const LIMITS = { doctors: 'max_doctors', staff: 'max_staff', appointments: 'max_appointments_month', patients: 'limits.max_patients' }; // patients: an entitlement in plan.features
+const LIMITS = { doctors: 'max_doctors', staff: 'max_staff', appointments: 'max_appointments_month', patients: 'limits.max_patients', branches: 'clinic.max_branches' }; // patients: an entitlement in plan.features
 const REMIND_DAYS = [7, 3, 1];
 const KEY = 'subscriptions';
 const DEFAULTS = {
@@ -124,7 +125,8 @@ const planSchema = z.object({
 async function savePlan(ctx, id, input) {
   const d = validate(planSchema, input);
   const features = entitlements.fromForm(input); // every key of the registry, typed (src/modules/subscriptions/entitlements.js)
-  const row = { ...d, name_en: d.name_en || null, description: d.description || null, description_en: d.description_en || null, features: JSON.stringify(features), updated_at: new Date() };
+  const row = { ...d, name_en: d.name_en || null, description: d.description || null, description_en: d.description_en || null, features: JSON.stringify(features),
+    branch_prices: JSON.stringify(branchPricing.fromForm(input)), updated_at: new Date() };
   if (id) {
     const before = await knex('subscription_plans').where({ id }).first();
     if (!before) throw E.notFound('Plan');
@@ -248,23 +250,32 @@ async function ensure(business, today = todayOf(business), st = null) {
   return sub;
 }
 
+/** Branches the clinic may run: the plan's limit; once paying, the number of branches it pays for (within that limit). */
+function branchLimit(sub, plan) {
+  const max = entitlements.valueIn(plan.features, 'clinic.max_branches');
+  if (!sub || sub.status === 'trialing' || sub.status === 'comped') return max;
+  const paid = Math.max(1, Number(sub.branches) || 1);
+  return max === null ? paid : Math.min(max, paid);
+}
+
 function limitsOf(sub, plan) {
-  if (!plan || (sub && sub.status === 'comped' && !sub.plan_id)) return { doctors: null, staff: null, appointments: null, patients: null };
-  return { doctors: plan.max_doctors, staff: plan.max_staff, appointments: plan.max_appointments_month, patients: entitlements.valueIn(plan.features, 'limits.max_patients') };
+  if (!plan || (sub && sub.status === 'comped' && !sub.plan_id)) return { doctors: null, staff: null, appointments: null, patients: null, branches: null };
+  return { doctors: plan.max_doctors, staff: plan.max_staff, appointments: plan.max_appointments_month, patients: entitlements.valueIn(plan.features, 'limits.max_patients'), branches: branchLimit(sub, plan) };
 }
 
 async function usage(businessId, today) {
   const month = String(today).slice(0, 7);
   const count = async (q) => Number((await q.count({ n: '*' }))[0].n);
-  const [doctors, members, invites, appointments, patients] = await Promise.all([
+  const [doctors, members, invites, appointments, patients, branches] = await Promise.all([
     count(knex('doctors').where({ business_id: businessId, is_active: true })),
     count(knex('memberships').where({ business_id: businessId, status: 'active' })),
     count(knex('invitations').where({ business_id: businessId }).whereNull('accepted_at').whereNull('revoked_at').where('expires_at', '>', new Date())),
     count(knex('appointments').where({ business_id: businessId }).whereNot('appointment_type', 'blocked').whereNot('status', 'cancelled')
       .whereBetween('appointment_date', [`${month}-01`, `${month}-31`])),
     count(knex('patients').where({ business_id: businessId })),
+    count(knex('clinic_branches').where({ business_id: businessId, is_active: true })),
   ]);
-  return { doctors, staff: members + invites, appointments, patients };
+  return { doctors, staff: members + invites, appointments, patients, branches: branches + 1 }; // + the main branch
 }
 
 /** Everything the pages need about a clinic's subscription (null when subscriptions are off). */
@@ -316,6 +327,18 @@ async function checkLimit(req, kind) {
   return { ok: used < limit, limit, used };
 }
 
+/**
+ * How many branches (the main one included) the clinic may run: null = no limit (subscriptions off, no plan, comped
+ * without a plan); otherwise the plan's limit, or the number of branches the clinic pays for once it is paying.
+ */
+async function branchAllowance(business) {
+  const cfg = await settings();
+  if (!cfg.enabled || !business) return null;
+  const today = todayOf(business);
+  const sub = await ensure(business, today, cfg);
+  return limitsOf(sub, await getPlan(sub.plan_id)).branches;
+}
+
 /** Public online booking: false for a read-only clinic (expired subscription). Always true while subscriptions are off. */
 async function acceptsBookings(clinic) {
   const cfg = await settings();
@@ -352,7 +375,15 @@ function nextPeriodStart(sub, today) {
 const chooseSchema = z.object({
   plan_id: z.coerce.number({ invalid_type_error: 'Choose a valid value.' }).int().positive('Choose a valid value.'),
   billing_cycle: z.enum(CYCLES, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
+  branches: z.preprocess((v) => (v === '' || v === undefined ? 1 : Number(v)), z.number({ invalid_type_error: 'Choose a valid value.' }).int().min(1, 'Choose a valid value.').max(branchPricing.MAX_CHOICE, 'Choose a valid value.')),
 });
+
+/** A branch count the plan allows (1 … clinic.max_branches), or a validation error. */
+function checkBranches(plan, branches) {
+  const max = entitlements.valueIn(plan.features, 'clinic.max_branches');
+  if (max !== null && branches > Math.max(1, max)) throw E.validation({ branches: 'This plan does not include that many branches.' });
+  return branches;
+}
 
 /** The clinic picks a plan and cycle: an open invoice for the next period (earlier open invoices are voided). */
 async function choosePlan(ctx, business, input) {
@@ -361,16 +392,19 @@ async function choosePlan(ctx, business, input) {
   if (!plan || !plan.is_active || !plan.is_public) throw E.validation({ plan_id: 'Choose a valid value.' });
   const today = ctx.today || todayOf(business);
   const sub = await ensure(business, today);
-  const amount = d.billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+  const branches = checkBranches(plan, d.branches);
+  const used = (await usage(business.id, today)).branches;
+  if (branches < used) throw E.validation({ branches: 'The clinic already has more active branches. Turn some off first.' });
+  const amount = branchPricing.priceFor(plan, branches, d.billing_cycle);
   const start = nextPeriodStart(sub, today);
   return knex.transaction(async (trx) => {
     const voided = await trx('platform_invoices').where({ business_id: business.id, status: 'open' }).update({ status: 'void', updated_at: new Date() });
     const [id] = await trx('platform_invoices').insert({
       business_id: business.id, plan_id: plan.id, plan_name: plan.name, plan_name_en: plan.name_en, billing_cycle: d.billing_cycle,
-      period_start: start, period_end: periodEnd(start, d.billing_cycle), amount, currency: plan.currency, status: 'open', created_by: ctx.userId || null,
+      period_start: start, period_end: periodEnd(start, d.billing_cycle), amount, currency: plan.currency, status: 'open', created_by: ctx.userId || null, branches,
     });
     const number = await numberInvoice(id, trx);
-    await audit.record(ctx, 'subscription.plan_chosen', { entityType: 'platform_invoice', entityId: id, newValues: { number, plan_id: plan.id, billing_cycle: d.billing_cycle, amount, voided_open_invoices: voided } }, trx);
+    await audit.record(ctx, 'subscription.plan_chosen', { entityType: 'platform_invoice', entityId: id, newValues: { number, plan_id: plan.id, billing_cycle: d.billing_cycle, branches, amount, voided_open_invoices: voided } }, trx);
     return id;
   });
 }
@@ -415,17 +449,21 @@ async function changePlan(ctx, businessId, input) {
   const d = validate(z.object({
     plan_id: z.preprocess((v) => (v === '' || v === undefined ? null : Number(v)), z.number().int().positive().nullable()),
     billing_cycle: z.enum(CYCLES, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
+    branches: chooseSchema.shape.branches,
   }), input);
-  if (d.plan_id && !(await getPlan(d.plan_id))) throw E.validation({ plan_id: 'Choose a valid value.' });
+  const plan = d.plan_id ? await getPlan(d.plan_id) : null;
+  if (d.plan_id && !plan) throw E.validation({ plan_id: 'Choose a valid value.' });
+  if (plan) checkBranches(plan, d.branches);
   const { b, sub } = await adminSub(businessId);
-  await knex('clinic_subscriptions').where({ id: sub.id }).update({ plan_id: d.plan_id, billing_cycle: d.billing_cycle, updated_at: new Date() });
-  await adminAudit(ctx, 'platform.subscription_plan_changed', b, sub, { plan_id: sub.plan_id, billing_cycle: sub.billing_cycle }, { plan_id: d.plan_id, billing_cycle: d.billing_cycle });
+  await knex('clinic_subscriptions').where({ id: sub.id }).update({ plan_id: d.plan_id, billing_cycle: d.billing_cycle, branches: d.branches, updated_at: new Date() });
+  await adminAudit(ctx, 'platform.subscription_plan_changed', b, sub, { plan_id: sub.plan_id, billing_cycle: sub.billing_cycle, branches: sub.branches }, { plan_id: d.plan_id, billing_cycle: d.billing_cycle, branches: d.branches });
 }
 
 const paymentSchema = z.object({
   invoice_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
   plan_id: z.preprocess((v) => (v === '' || v === undefined ? null : Number(v)), z.number().int().positive().nullable()),
   billing_cycle: z.enum(CYCLES, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
+  branches: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(branchPricing.MAX_CHOICE).optional()),
   amount: price,
   method: z.enum(METHODS, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
   reference: optionalString(120),
@@ -448,6 +486,8 @@ async function recordPayment(ctx, businessId, input) {
   const start = d.period_start || (inv && inv.period_start && inv.period_start >= today ? inv.period_start : nextPeriodStart(sub, today));
   const end = d.period_end || periodEnd(start, cycle);
   if (end < start) throw E.validation({ period_end: 'Enter a valid date.' });
+  const branches = inv ? Number(inv.branches) || 1 : d.branches || Number(sub.branches) || 1;
+  if (plan && !inv) checkBranches(plan, branches);
   const amount = d.amount || (inv ? inv.amount : 0);
   await knex.transaction(async (trx) => {
     const paid = { status: 'paid', method: d.method, reference: d.reference || (inv && inv.reference) || null, amount, period_start: start, period_end: end, paid_at: new Date(), confirmed_by: ctx.userId, updated_at: new Date() };
@@ -456,17 +496,17 @@ async function recordPayment(ctx, businessId, input) {
     } else {
       const [id] = await trx('platform_invoices').insert({
         business_id: b.id, plan_id: plan ? plan.id : null, plan_name: plan ? plan.name : null, plan_name_en: plan ? plan.name_en : null, billing_cycle: cycle,
-        currency: plan ? plan.currency : b.currency || 'JOD', created_by: ctx.userId, ...paid,
+        currency: plan ? plan.currency : b.currency || 'JOD', created_by: ctx.userId, branches, ...paid,
       });
       await numberInvoice(id, trx);
       inv = { id };
     }
     await trx('clinic_subscriptions').where({ id: sub.id }).update({
-      status: 'active', plan_id: plan ? plan.id : sub.plan_id, billing_cycle: cycle, current_period_start: start, current_period_end: end, grace_ends_at: null, cancelled_at: null, updated_at: new Date(),
+      status: 'active', plan_id: plan ? plan.id : sub.plan_id, billing_cycle: cycle, branches, current_period_start: start, current_period_end: end, grace_ends_at: null, cancelled_at: null, updated_at: new Date(),
     });
   });
   await adminAudit(ctx, 'platform.subscription_payment', b, sub, { status: sub.status, current_period_end: sub.current_period_end },
-    { status: 'active', invoice_id: inv.id, amount, method: d.method, reference: d.reference || null, period_start: start, period_end: end });
+    { status: 'active', invoice_id: inv.id, amount, branches, method: d.method, reference: d.reference || null, period_start: start, period_end: end });
   return { invoiceId: inv.id, start, end };
 }
 
@@ -574,7 +614,7 @@ module.exports = {
   settings, saveSettings, forgetSettings,
   listPlans, getPlan, savePlan, deletePlan,
   evaluate, accessEnd, isReadOnly, allowedWhileReadOnly, limitFor, addDays, addMonths, periodEnd, diffDays, nextPeriodStart,
-  ensure, state, usage, limitsOf, hasFeature, checkLimit, acceptsBookings, todayOf, setNow,
+  ensure, state, usage, limitsOf, hasFeature, checkLimit, acceptsBookings, branchAllowance, todayOf, setNow,
   listInvoices, getInvoice, choosePlan, reportPayment,
   extendTrial, changePlan, recordPayment, comp, cancel, voidInvoice, adminList, runDue,
 };

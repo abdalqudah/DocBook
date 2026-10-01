@@ -11,6 +11,7 @@
       <dl class="dl">
         <dt><%= t('common.date') %></dt><dd><%= fmt.date(appt.appointment_date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></dd>
         <dt><%= t('common.time') %></dt><dd class="num" dir="ltr" style="text-align:start"><%= String(appt.appointment_time).slice(0, 5) %></dd>
+        <% if (appt.branch) { %><dt><%= t('branches.branch') %></dt><dd><strong><%= appt.branch.name %></strong><% if (appt.branch.place) { %><div class="small muted"><%= appt.branch.place %></div><% } %><% if (appt.branch.phone) { %><div class="small"><bdi dir="ltr"><%= appt.branch.phone %></bdi></div><% } %></dd><% } %>
         <dt><%= t('common.doctor') %></dt><dd><%= appt.doctor || t('booking.doctor_by_clinic') %></dd>
         <% if (appt.service) { %><dt><%= t('common.service') %></dt><dd><%= appt.service %></dd><% } %>
         <dt><%= t('common.status') %></dt><dd><span class="badge badge-warning badge-dot"><%= t('booking.status_pending') %></span></dd>

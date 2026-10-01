@@ -368,3 +368,4 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-cy-top .ws-slide, .ws-hero.ws-cy-top { align-items: flex-start; }
 .ws-cy-bottom .ws-slide, .ws-hero.ws-cy-bottom { align-items: flex-end; }
 .ws-hero-slider.ws-cy-bottom .ws-slide .ws-hero-inner { padding-bottom: 72px; }
+.ws-branches-title { font-size: 1rem; margin: 18px 0 8px; }

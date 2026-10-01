@@ -34,7 +34,7 @@
           <div class="stack-sm">
             <div class="tiny muted"><%= t('subscriptions.plan') %></div>
             <div class="sub-plan-name"><%= plan ? L(plan.name, plan.name_en) : (s.status === 'comped' ? t('subscriptions.comped_plan') : t('subscriptions.trial_plan')) %></div>
-            <% if (plan) { %><div class="small muted"><%= money(s.billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly, plan.currency) %> <%= t('subscriptions.per_' + s.billing_cycle) %></div><% } %>
+            <% if (plan) { %><div class="small muted"><%= money(priceFor(plan, s.branches || 1, s.billing_cycle), plan.currency) %> <%= t('subscriptions.per_' + s.billing_cycle) %><% if ((s.branches || 1) > 1) { %> · <%= t('subscriptions.branches_n', { n: s.branches }) %><% } %></div><% } %>
           </div>
           <% if (s.status === 'trialing' && st.trialDaysLeft !== null) { %>
           <div class="sub-days">
@@ -64,7 +64,7 @@
       <div class="panel-head"><div><h2><%= t('subscriptions.usage_title') %></h2><div class="panel-sub"><%= t('subscriptions.usage_sub') %></div></div></div>
       <div class="panel-body">
         <div class="sub-usage">
-          <% [['doctors', 'stethoscope'], ['staff', 'users'], ['appointments', 'calendar'], ['patients', 'user-round']].forEach(function (u) { var lim = st.limits[u[0]]; var used = usage[u[0]]; var pct = lim ? Math.min(100, Math.round(used / Math.max(1, lim) * 100)) : 0; %>
+          <% [['doctors', 'stethoscope'], ['staff', 'users'], ['appointments', 'calendar'], ['patients', 'user-round'], ['branches', 'building-2']].forEach(function (u) { var lim = st.limits[u[0]]; var used = usage[u[0]]; var pct = lim ? Math.min(100, Math.round(used / Math.max(1, lim) * 100)) : 0; %>
           <div class="sub-usage-item">
             <div class="row-sm between"><span class="small strong"><%- icon(u[1], 'icon-sm muted') %> <%= t('subscriptions.usage.' + u[0]) %></span><span class="small num"><%= fmt.number(used) %> / <%= limitText(lim) %></span></div>
             <% if (lim !== null && lim !== undefined) { %><div class="meter thin<%= used > lim ? ' full' : pct >= 85 ? ' warn' : '' %>"><span style="width:<%= pct %>%"></span></div><% } else { %><div class="tiny muted"><%= t('subscriptions.unlimited') %></div><% } %>
@@ -83,7 +83,7 @@
       <div class="panel-body stack">
         <dl class="dl">
           <dt><%= t('subscriptions.invoice') %></dt><dd><a class="link" href="/app/settings/subscription/invoices/<%= p.id %>"><bdi><%= p.number %></bdi></a></dd>
-          <dt><%= t('subscriptions.plan') %></dt><dd><%= L(p.plan_name, p.plan_name_en) %> · <%= t('subscriptions.cycle.' + p.billing_cycle) %></dd>
+          <dt><%= t('subscriptions.plan') %></dt><dd><%= L(p.plan_name, p.plan_name_en) %> · <%= t('subscriptions.cycle.' + p.billing_cycle) %><% if ((p.branches || 1) > 1) { %> · <%= t('subscriptions.branches_n', { n: p.branches }) %><% } %></dd>
           <dt><%= t('subscriptions.period') %></dt><dd><%= fmt.date(p.period_start) %> – <%= fmt.date(p.period_end) %></dd>
           <dt><%= t('subscriptions.amount_due') %></dt><dd class="strong"><%= money(p.amount, p.currency) %></dd>
         </dl>
@@ -143,19 +143,30 @@
           <div class="segmented" role="radiogroup" aria-label="<%= t('subscriptions.billing_cycle') %>">
             <% ['monthly', 'yearly'].forEach(function (cy) { %><label><input type="radio" name="billing_cycle" value="<%= cy %>"<%= (o.billing_cycle || cycle) === cy ? ' checked' : '' %>><span><%= t('subscriptions.cycle.' + cy) %></span></label><% }) %>
           </div>
+          <div class="field sub-branches">
+            <label for="sub-branches"><%= t('subscriptions.branches') %></label>
+            <input class="input" type="number" id="sub-branches" name="branches" min="1" max="50" step="1" inputmode="numeric" dir="ltr" value="<%= o.branches || branchesNow %>" data-sub-branches>
+            <span class="help"><%= t('subscriptions.branches_help') %></span>
+            <% if (errs.branches) { %><span class="field-error"><%= errs.branches %></span><% } %>
+          </div>
           <div class="choice-grid sub-plan-grid">
-            <% plans.forEach(function (pl, i) { var cur = plan && plan.id === pl.id; var checked = String(o.plan_id || '') === String(pl.id) || (!o.plan_id && (cur || (!plan && i === 0))); %>
+            <% var fits = function (pl) { return pl.maxBranches === null || branchesNow <= Math.max(1, pl.maxBranches); }; var firstFit = plans.filter(fits)[0] || plans[0];
+               plans.forEach(function (pl, i) { var cur = plan && plan.id === pl.id; var checked = String(o.plan_id || '') === String(pl.id) || (!o.plan_id && (cur || (!plan && pl === firstFit))); %>
             <label class="choice">
               <input type="radio" name="plan_id" value="<%= pl.id %>"<%= checked ? ' checked' : '' %>>
               <span class="box">
                 <span class="row-sm between"><span class="name"><%= L(pl.name, pl.name_en) %></span><% if (cur) { %><span class="badge badge-neutral"><%= t('subscriptions.current_badge') %></span><% } %></span>
-                <span class="sub-price sub-price-monthly"><strong class="num"><%= money(pl.price_monthly, pl.currency) %></strong> <span class="tiny muted"><%= t('subscriptions.per_monthly') %></span></span>
-                <span class="sub-price sub-price-yearly"><strong class="num"><%= money(pl.price_yearly, pl.currency) %></strong> <span class="tiny muted"><%= t('subscriptions.per_yearly') %></span></span>
+                <% var nb = Math.min(Number(o.branches || branchesNow) || 1, pl.maxBranches === null ? 50 : Math.max(1, pl.maxBranches)); var prices = {}; Object.keys(pl.bpTable).forEach(function (n) { prices[n] = { m: money(pl.bpTable[n].m, pl.currency), y: money(pl.bpTable[n].y, pl.currency) }; }); %>
+                <span class="sub-price sub-price-monthly"><strong class="num" data-bp-price="m"><%= money(priceFor(pl, nb, 'monthly'), pl.currency) %></strong> <span class="tiny muted"><%= t('subscriptions.per_monthly') %></span></span>
+                <span class="sub-price sub-price-yearly"><strong class="num" data-bp-price="y"><%= money(priceFor(pl, nb, 'yearly'), pl.currency) %></strong> <span class="tiny muted"><%= t('subscriptions.per_yearly') %></span></span>
+                <% var wantB = Number(o.branches || branchesNow) || 1; var tooFew = pl.maxBranches !== null && wantB > Math.max(1, pl.maxBranches); %>
+                <span class="tiny <%= tooFew ? 'warn-text' : 'muted' %>" data-bp-for data-text="<%= t('subscriptions.price_for', { n: '{n}' }) %>" data-too-few="<%= t('subscriptions.too_few_branches', { n: '{n}' }) %>" data-max="<%= pl.maxBranches === null ? '' : pl.maxBranches %>" data-prices="<%= JSON.stringify(prices) %>"><%= tooFew ? t('subscriptions.too_few_branches', { n: pl.maxBranches }) : t('subscriptions.price_for', { n: nb }) %></span>
                 <% var desc = L(pl.description, pl.description_en); if (desc) { %><span class="meta" dir="auto"><%= desc %></span><% } %>
                 <span class="sub-limits tiny muted">
                   <span><%= t('subscriptions.limit_doctors', { n: limitText(pl.max_doctors) }) %></span>
                   <span><%= t('subscriptions.limit_staff', { n: limitText(pl.max_staff) }) %></span>
                   <span><%= t('subscriptions.limit_appointments', { n: limitText(pl.max_appointments_month) }) %></span>
+                  <span><%= t('subscriptions.limit_branches', { n: limitText(pl.maxBranches) }) %></span>
                 </span>
                 <span class="sub-plan-features">
                   <% features.filter(function (f) { return pl.features[f]; }).forEach(function (f) { %><span class="tiny"><%- icon('check', 'icon-sm muted') %><%= t('subscriptions.features.' + f) %></span><% }) %>
@@ -183,7 +194,7 @@
             <% invoices.forEach(function (i) { %>
             <tr>
               <td class="primary-cell" data-label="<%= t('subscriptions.invoice') %>"><bdi class="mono small"><%= i.number %></bdi><div class="tiny muted"><%= fmt.date(i.created_at) %></div></td>
-              <td data-label="<%= t('subscriptions.plan') %>"><%= L(i.plan_name, i.plan_name_en) || '—' %> <span class="tiny muted">· <%= t('subscriptions.cycle.' + i.billing_cycle) %></span></td>
+              <td data-label="<%= t('subscriptions.plan') %>"><%= L(i.plan_name, i.plan_name_en) || '—' %> <span class="tiny muted">· <%= t('subscriptions.cycle.' + i.billing_cycle) %><% if ((i.branches || 1) > 1) { %> · <%= t('subscriptions.branches_n', { n: i.branches }) %><% } %></span></td>
               <td data-label="<%= t('subscriptions.period') %>" class="small"><%= i.period_start ? fmt.date(i.period_start) + ' – ' + fmt.date(i.period_end) : '—' %></td>
               <td data-label="<%= t('common.amount') %>" class="num"><%= money(i.amount, i.currency) %></td>
               <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= i.status === 'paid' ? 'badge-success' : i.status === 'open' ? 'badge-warning' : 'badge-neutral' %>"><%= t('subscriptions.inv_status.' + i.status) %></span></td>

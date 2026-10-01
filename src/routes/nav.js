@@ -49,6 +49,7 @@ const NAV = [
     { key: 'doctors', href: '/app/doctors', icon: 'stethoscope', perms: ['doctors.manage', 'appointments.view_all'] },
     { key: 'services', href: '/app/services', icon: 'clipboard-list', perms: ['services.manage'] },
     { key: 'team', href: '/app/clinic/team', icon: 'user-cog', perms: ['users.manage'], also: ['/app/settings/team', '/app/settings/roles', '/app/clinic/roles'] },
+    { key: 'branches', href: '/app/clinic/branches', icon: 'map-pin', perms: ['settings.manage'] },
     { key: 'attendance', href: '/app/attendance', icon: 'clock', perms: [], tabPerms: ['attendance.view'] }, // everyone clocks in (user menu); the tab is for managers
     { key: 'clinical_setup', href: '/app/clinic/setup', icon: 'pill', perms: ['settings.manage', 'prescriptions.create', 'clinical.edit'],
       lights: ['/app/settings/medications', '/app/settings/diagnosis-codes', '/app/settings/insurance', '/app/settings/signatures', '/app/specialty/settings'] },

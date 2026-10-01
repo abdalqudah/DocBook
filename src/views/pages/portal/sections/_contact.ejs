@@ -1,4 +1,5 @@
-<% if (clinic.address || clinic.phone || clinic.email || clinic.working_hours_text) { %>
+<% var _br = typeof branches !== 'undefined' ? branches : []; %>
+<% if (clinic.address || clinic.phone || clinic.email || clinic.working_hours_text || _br.length) { %>
 <section class="ws-section" id="s-<%= s.id %>">
   <div class="container ws-contact ws-contact-<%= s.variant %>">
     <div class="portal-card">
@@ -9,6 +10,13 @@
         <% if (clinic.phone) { %><li><span class="info-icon"><%- icon('phone', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.phone') %></span><a href="<%= clinic.telHref %>" dir="ltr"><%= clinic.phone %></a></span></li><% } %>
         <% if (clinic.email) { %><li><span class="info-icon"><%- icon('mail', 'icon-sm') %></span><span><span class="info-label"><%= t('portal.email') %></span><a href="mailto:<%= clinic.email %>" dir="ltr"><%= clinic.email %></a></span></li><% } %>
       </ul>
+      <% if (_br.length) { %>
+      <h3 class="ws-branches-title"><%= t('branches.our_branches') %></h3>
+      <ul class="info-list ws-branches">
+        <% _br.forEach(function (b) { %><li><span class="info-icon"><%- icon('building-2', 'icon-sm') %></span><span><span class="info-label"><%= b.name %></span><% if (b.place) { %><span><%= b.place %></span><% } %>
+          <span class="row-sm wrap"><% if (b.phone) { %><a href="<%= b.telHref %>" dir="ltr"><%= b.phone %></a><% } %><% if (b.waHref) { %><a class="link small" href="<%= b.waHref %>" target="_blank" rel="noopener">WhatsApp</a><% } %><% if (s.settings.show_map && b.mapHref) { %><a class="link small" href="<%= b.mapHref %>" target="_blank" rel="noopener"><%= t('portal.directions') %></a><% } %></span></span></li><% }) %>
+      </ul>
+      <% } %>
     </div>
   </div>
 </section>

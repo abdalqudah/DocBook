@@ -35,6 +35,21 @@
 
   function sum(key, text) { var el = $('[data-sum="' + key + '"]'); if (el) el.textContent = text || '—'; }
   function doctorId() { var r = $('input[name="doctor_id"]:checked', form); return r ? r.value : ''; }
+  function branchId() { var r = $('input[name="branch"]:checked', form); return r ? r.value : ''; }
+  // Clinics with branches: show the chosen branch's doctors ("any doctor" when it has more than one).
+  function filterDoctors() {
+    var b = branchId();
+    if (!b) return;
+    var shown = 0;
+    Array.prototype.forEach.call(form.querySelectorAll('.doc-choice[data-branch]'), function (l) {
+      var hide = l.getAttribute('data-branch') !== b;
+      l.hidden = hide;
+      var inp = l.querySelector('input'); if (hide && inp && inp.checked) inp.checked = false;
+      if (!hide) shown += 1;
+    });
+    var any = form.querySelector('.doc-choice-any');
+    if (any) { any.hidden = shown < 2; var ai = any.querySelector('input'); if (any.hidden && ai && ai.checked) ai.checked = false; }
+  }
   function setMessage(text) {
     if (!timesMsg) return;
     timesMsg.hidden = !text;
@@ -70,7 +85,7 @@
     times.setAttribute('aria-busy', 'true');
     times.innerHTML = '';
     setMessage(msgs.loading);
-    var q = '?doctor=' + encodeURIComponent(doc) + '&date=' + encodeURIComponent(date) + (serviceSelect && serviceSelect.value ? '&service=' + encodeURIComponent(serviceSelect.value) : '');
+    var q = '?doctor=' + encodeURIComponent(doc) + '&date=' + encodeURIComponent(date) + (serviceSelect && serviceSelect.value ? '&service=' + encodeURIComponent(serviceSelect.value) : '') + (branchId() ? '&branch=' + encodeURIComponent(branchId()) : '');
     fetch(url + q, { credentials: 'same-origin', headers: { accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (res) {
@@ -90,7 +105,8 @@
 
   form.addEventListener('change', function (e) {
     var el = e.target;
-    if (el.name === 'doctor_id') { sum('doctor', el.getAttribute('data-name')); filterServices(); loadSlots(); }
+    if (el.name === 'branch') { filterDoctors(); sum('doctor', ''); filterServices(); loadSlots(); }
+    else if (el.name === 'doctor_id') { sum('doctor', el.getAttribute('data-name')); filterServices(); loadSlots(); }
     else if (el.name === 'service_id') { filterServices(); loadSlots(); }
     else if (el.name === 'appointment_date') { sum('date', formatDate(el.value)); loadSlots(); }
     else if (el.name === 'appointment_time') sum('time', el.value);

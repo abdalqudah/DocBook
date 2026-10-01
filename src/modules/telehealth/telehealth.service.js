@@ -434,7 +434,7 @@ async function bookOnline(ctx, clinic, d, files = []) {
   const ids = await scheduling.withSlot(slotRequest(clinic, doctor, windows, d.appointment_date, d.appointment_time), async (trx) => {
     const patientId = await appts.resolveOrCreatePatient(ctx, { name: d.patient_name, phone: d.patient_phone, email: d.patient_email }, trx);
     const [apptId] = await trx('appointments').insert({
-      business_id: clinic.id, doctor_id: doctor.id, service_id: null, patient_id: patientId,
+      business_id: clinic.id, branch_id: doctor.branch_id || null, doctor_id: doctor.id, service_id: null, patient_id: patientId,
       patient_name: d.patient_name, patient_phone: d.patient_phone, patient_email: d.patient_email,
       appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: o.duration,
       status: 'pending', appointment_type: 'online', source: 'website', amount_due: o.fee, notes: null, created_by: null,

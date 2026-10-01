@@ -37,7 +37,8 @@
       "doctors": "Active doctors",
       "staff": "Staff logins",
       "appointments": "Appointments this month",
-      "patients": "Patient records"
+      "patients": "Patient records",
+      "branches": "Branches"
     },
     "unlimited": "Unlimited",
     "pay_title": "Payment",
@@ -141,8 +142,15 @@
       "website_max_pages": "Extra pages",
       "website_white_label": "Hide the platform line in the site footer",
       "media_storage_mb": "Media storage (MB)",
-      "limits_max_patients": "Maximum patient records"
-    }
+      "limits_max_patients": "Maximum patient records",
+      "clinic_max_branches": "Branches allowed (1 = main branch only, empty = no limit)"
+    },
+    "branches": "Number of branches",
+    "branches_n": "{n} branches",
+    "branches_help": "The price depends on the number of branches. The main branch is the clinic itself.",
+    "limit_branches": "Up to {n} branches",
+    "price_for": "Price for branches: {n}",
+    "too_few_branches": "This package includes up to {n} branch(es) only"
   },
   "subscriptions_admin": {
     "nav": "Plans",
@@ -275,7 +283,16 @@
       "limits": "Limits"
     },
     "unlimited": "No limit",
-    "all_options": "All"
+    "all_options": "All",
+    "bp_title": "Price by number of branches",
+    "bp_help": "One branch costs the plan's price above. Enter the full plan price for 2, 3, 4 and 5 branches, or leave it empty to add the \"each extra branch\" price.",
+    "bp_branches": "Branches",
+    "bp_n": "{n} branches",
+    "bp_base": "Plan price",
+    "bp_auto": "Automatic",
+    "bp_extra": "Each extra branch",
+    "bp_limit_help": "The most branches this plan allows is set under features (Branches allowed).",
+    "bp_one": "1 branch"
   },
   "errors_subscriptions": {
     "SUBSCRIPTION_EXPIRED": "The clinic's subscription has ended, so it is read-only. Renew the subscription to save changes.",

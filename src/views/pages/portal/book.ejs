@@ -20,6 +20,25 @@
     <div class="hp-field" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
     <%- include('../../partials/form-error') %>
 
+    <% var bc = typeof branchChoices !== 'undefined' ? branchChoices : []; var docHidden = function (d) { return bc.length && sel.branch && (sel.branch === 'main' ? Boolean(d.branchId) : d.branchId !== sel.branch); };
+       var hereCount = doctors.filter(function (d) { return !docHidden(d); }).length; %>
+    <% if (bc.length) { %>
+    <section class="book-step">
+      <h2><span class="step-n"><%- icon('map-pin', 'icon-sm') %></span><%= t('branches.choose') %></h2>
+      <div class="doc-choices">
+        <% bc.forEach(function (b) { %>
+        <label class="doc-choice">
+          <input type="radio" name="branch" value="<%= b.value %>"<%= String(sel.branch) === String(b.value) ? ' checked' : '' %> required data-name="<%= b.name %>">
+          <span class="doc-av sm"><%- icon('building-2', 'icon-sm') %></span>
+          <span class="grow"><strong><%= b.name %></strong><% if (b.place || b.main) { %><span class="muted small"><%= b.main ? t('branches.main') + (b.place ? ' · ' + b.place : '') : b.place %></span><% } %></span>
+          <span class="doc-choice-check"><%- icon('check', 'icon-sm') %></span>
+        </label>
+        <% }) %>
+      </div>
+      <%- err('branch') %>
+    </section>
+    <% } %>
+
     <section class="book-step">
       <h2><span class="step-n num">1</span><%= t('booking.choose_doctor') %></h2>
       <% if (!doctors.length) { %>
@@ -27,7 +46,7 @@
       <% } else { %>
       <div class="doc-choices">
         <% if (doctors.length > 1) { %>
-        <label class="doc-choice doc-choice-any">
+        <label class="doc-choice doc-choice-any"<%= hereCount > 1 ? '' : ' hidden' %>>
           <input type="radio" name="doctor_id" value="any"<%= sel.doctor === 'any' ? ' checked' : '' %> required data-name="<%= t('booking.any_doctor') %>">
           <span class="doc-av sm"><%- icon('hospital', 'icon-sm') %></span>
           <span class="grow"><strong><%= t('booking.any_doctor') %></strong><span class="muted small"><%= t('booking.any_doctor_text') %></span></span>
@@ -35,7 +54,7 @@
         </label>
         <% } %>
         <% doctors.forEach(function (d, i) { %>
-        <label class="doc-choice">
+        <label class="doc-choice" data-branch="<%= d.branchId || 'main' %>"<%= docHidden(d) ? ' hidden' : '' %>>
           <input type="radio" name="doctor_id" value="<%= d.id %>"<%= sel.doctor === d.id ? ' checked' : '' %> required data-name="<%= d.name %>">
           <span class="doc-av sm<%= d.photo ? ' has-photo' : '' %>"><% if (d.photo) { %><img src="<%= d.photo %>" alt="<%= d.name %>" loading="lazy"><% } else { %><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %><% } %></span>
           <span class="grow"><strong><%= d.name %></strong><% if (d.specialty) { %><span class="muted small"><%= d.specialty %></span><% } %></span>

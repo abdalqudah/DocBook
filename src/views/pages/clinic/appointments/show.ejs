@@ -48,6 +48,7 @@
           <% if (a.patient_email) { %><dt><%= t('common.email') %></dt><dd><%= a.patient_email %></dd><% } %>
           <dt><%= t('common.doctor') %></dt>
           <dd><% if (a.doctor_id) { %><span class="row-sm"><span class="doc-dot" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= L(a.doctor_name, a.doctor_name_en) %></span><% } else { %><span class="badge badge-warning"><%= t('appointments.unassigned') %></span><% } %></dd>
+          <% if (multiBranch || a.branch_id) { %><dt><%= t('branches.branch') %></dt><dd><%= a.branch_id ? L(a.branch_name, a.branch_name_en) : t('branches.main') %></dd><% } %>
           <dt><%= t('common.service') %></dt><dd><%= a.service_name ? L(a.service_name, a.service_name_en) : t('appointments.general_visit') %></dd>
           <dt><%= t('appointments.duration') %></dt><dd><%= a.length %> <%= t('common.minutes') %></dd>
           <dt><%= t('common.type') %></dt><dd><%= t('appointments.types.' + a.appointment_type) %></dd>

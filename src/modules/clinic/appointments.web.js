@@ -9,6 +9,7 @@ const exporter = require('../../core/exporter');
 const { translateMessage } = require('../../core/i18n');
 const scheduling = require('./scheduling');
 const appts = require('./appointments.service');
+const branchesSvc = require('./branches.service');
 const doctorsSvc = require('./doctors.service');
 const payParts = require('./payment-parts');
 
@@ -47,7 +48,11 @@ const filtersOf = (req) => ({
   status: appts.STATUSES.includes(req.query.status) ? req.query.status : null,
   q: String(req.query.q || '').trim().slice(0, 100) || null,
   type: ['online', 'in_person'].includes(req.query.type) ? req.query.type : null, // Online consultations filter
+  branch: req.query.branch === 'main' ? 'main' : (Number(req.query.branch) || null), // clinics with branches
 });
+// Branch choices for the filters (null when the clinic runs only its main branch).
+const branchFilter = async (req) => ((await branchesSvc.multi(req.ctx.businessId)) ? branchesSvc.options(req.business, req.t, req.locale, { includeInactive: true }) : null);
+const inBranch = (f) => (d) => !f.branch || (f.branch === 'main' ? !d.branch_id : d.branch_id === f.branch);
 
 // ---------------------------------------------------------------- calendar (day / week) & list
 const T = scheduling.timeToMinutes;
@@ -135,15 +140,17 @@ async function renderIndex(req, res, extra = {}) {
   const { ctx } = req;
   const f = filtersOf(req);
   const view = ['list', 'week'].includes(req.query.view) ? req.query.view : 'day';
-  const doctors = await bookableDoctors(ctx);
+  const branchOpts = await branchFilter(req);
+  if (!branchOpts) f.branch = null;
+  const doctors = (await bookableDoctors(ctx)).filter(inBranch(f));
   const lenOf = await lengths(ctx);
-  const base = { title: req.t('appointments.title'), view, f, doctors, statuses: appts.STATUSES, ...ASSETS };
+  const base = { title: req.t('appointments.title'), view, f, doctors, statuses: appts.STATUSES, branchOpts, ...ASSETS };
 
   if (view === 'list') {
     const from = pickDate(req.query.from, ctx.today);
     let to = pickDate(req.query.to, addDays(from, 6));
     if (to < from) to = from;
-    const rows = (await appts.list(ctx, { from, to, doctor: f.doctor, status: f.status, q: f.q, type: f.type })).map(withEnd(lenOf));
+    const rows = (await appts.list(ctx, { from, to, doctor: f.doctor, status: f.status, q: f.q, type: f.type, branch: f.branch })).map(withEnd(lenOf));
     const totals = { count: rows.length, due: rows.filter((r) => r.status !== 'cancelled').reduce((s, r) => s + Number(r.amount_due || 0), 0) };
     return res.page('pages/clinic/appointments/index', { ...base, from, to, rows, totals, capped: rows.length >= 1000, ...extra });
   }
@@ -162,7 +169,7 @@ async function renderIndex(req, res, extra = {}) {
     const offSet = new Set(off.map((d) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10))));
     if (weekDoctor) columns = days.map((d) => buildColumn({ key: d, doctor: weekDoctor, date: d, off: offSet.has(d), items: all.filter((a) => a.appointment_date === d), lenOf, showCancelled }));
   } else {
-    all = await appts.list(ctx, { from: date, to: date, doctor: f.doctor, includeBlocked: true, type: f.type });
+    all = await appts.list(ctx, { from: date, to: date, doctor: f.doctor, includeBlocked: true, type: f.type, branch: f.branch });
     const off = await knex('doctor_days_off').where({ business_id: ctx.businessId, off_date: date }).pluck('doctor_id');
     const shown = f.doctor ? doctors.filter((d) => d.id === f.doctor) : doctors;
     columns = shown.map((d) => buildColumn({ key: `d${d.id}`, doctor: d, date, off: off.includes(d.id), items: all.filter((a) => a.doctor_id === d.id), lenOf, showCancelled }));
@@ -200,7 +207,7 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
   const from = pickDate(req.query.from || req.query.date, ctx.today);
   const to = pickDate(req.query.to || req.query.date, from);
   const lenOf = await lengths(ctx);
-  const rows = await appts.list(ctx, { from, to: to < from ? from : to, doctor: f.doctor, status: f.status, q: f.q, type: f.type });
+  const rows = await appts.list(ctx, { from, to: to < from ? from : to, doctor: f.doctor, status: f.status, q: f.q, type: f.type, branch: f.branch });
   const L = (ar, en) => (req.locale === 'en' && en ? en : ar);
   const t = (k) => req.t(k);
   exporter.send(req, res, {
@@ -309,8 +316,9 @@ async function renderShow(req, res, extra = {}) {
   ]);
   if (invoice) await payParts.attach(ctx.businessId, [invoice]); // how it was paid (parts), never "mixed"
   const online = await require('../telehealth/web').panelData(req, a); // eslint-disable-line global-require
+  const multiBranch = await branchesSvc.multi(ctx.businessId);
   return res.page('pages/clinic/appointments/show', {
-    title: `${a.patient_name} · ${a.appointment_date}`, a: { ...a, length: lenOf(a), end_time: withEnd(lenOf)(a).end_time }, invoice, children, parent, doctors, patient, consult, online,
+    multiBranch, title: `${a.patient_name} · ${a.appointment_date}`, a: { ...a, length: lenOf(a), end_time: withEnd(lenOf)(a).end_time }, invoice, children, parent, doctors, patient, consult, online,
     followDate: a.appointment_date >= ctx.today ? addDays(a.appointment_date, 7) : addDays(ctx.today, 7), ...ASSETS,
     ...(online ? { pageScripts: [...ASSETS.pageScripts, '/js/telehealth.js'], pageStyles: [...ASSETS.pageStyles, '/css/telehealth.css'] } : {}), ...extra,
   });
@@ -330,11 +338,14 @@ router.get('/:id(\\d+)/peek', wrap(async (req, res) => {
     knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number', 'amount'),
   ]);
   // A booking waiting for confirmation: reception picks the doctor (when the patient chose "any doctor") and confirms.
-  const doctorsList = a.status === 'pending' && ctx.permissions.has('appointments.manage')
-    ? await knex('doctors').where({ business_id: ctx.businessId, is_active: true }).modify((q) => { if (ctx.ownDoctorId) q.where('id', ctx.ownDoctorId); }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en')
+  let doctorsList = a.status === 'pending' && ctx.permissions.has('appointments.manage')
+    ? await knex('doctors').where({ business_id: ctx.businessId, is_active: true }).modify((q) => { if (ctx.ownDoctorId) q.where('id', ctx.ownDoctorId); }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en', 'branch_id')
     : [];
+  // A booking without a doctor was made for a branch: offer that branch's doctors (all of them if it has none).
+  if (!a.doctor_id && doctorsList.length) { const here = doctorsList.filter((d) => (d.branch_id || null) === (a.branch_id || null)); if (here.length) doctorsList = here; }
+  const multiBranch = await branchesSvc.multi(ctx.businessId);
   res.set('Cache-Control', 'no-store');
-  return res.render('pages/clinic/appointments/_peek', { ...res.locals, a, doctor, service, invoice, doctorsList, back: safeReturn(req.query.return) || '/app/appointments', isToday: a.appointment_date === ctx.today });
+  return res.render('pages/clinic/appointments/_peek', { ...res.locals, a, doctor, service, invoice, doctorsList, multiBranch, back: safeReturn(req.query.return) || '/app/appointments', isToday: a.appointment_date === ctx.today });
 }));
 
 router.post('/:id(\\d+)/status', can('appointments.manage'), wrap(async (req, res) => {

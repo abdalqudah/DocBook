@@ -105,8 +105,9 @@ test('booking with the clinic: any free doctor, "received" message, reception co
   assert.equal(after.appointment_time.slice(0, 5), '10:30');
   await msg.runClinic(cfg, Date.now(), 'http://x');
   assert.deepEqual((await knex('message_dispatches').where({ appointment_id: a.id }).orderBy('id').pluck('stage')), ['received', 'confirmed']);
-  assert.equal(sent.at(-1).template.name, 'appointment_booked');
-  assert.equal(sent.at(-1).template.components[0].parameters[1].text, 'Dr B');
+  const confirmedMsg = sent.filter((m) => m.template.name === 'appointment_booked').at(-1); // the second booking's "received" may come after it
+  assert.ok(confirmedMsg, 'the confirmation was sent');
+  assert.equal(confirmedMsg.template.components[0].parameters[1].text, 'Dr B');
 });
 
 test('clinic types: the admin hides a built-in type and adds one; sign-up and settings offer them; a used type stays', async () => {

@@ -23,7 +23,7 @@
       <div class="panel-body stack">
         <% if (readOnly) { %><div class="alert alert-danger small"><%- icon('lock', 'icon-sm') %><div class="grow"><%= t('subscriptions_admin.readonly_now') %></div></div><% } %>
         <dl class="dl">
-          <dt><%= t('subscriptions.plan') %></dt><dd><%= plan ? L(plan.name, plan.name_en) : (sub.status === 'comped' ? t('subscriptions.comped_plan') : t('subscriptions.trial_plan')) %> · <%= t('subscriptions.cycle.' + sub.billing_cycle) %></dd>
+          <dt><%= t('subscriptions.plan') %></dt><dd><%= plan ? L(plan.name, plan.name_en) : (sub.status === 'comped' ? t('subscriptions.comped_plan') : t('subscriptions.trial_plan')) %> · <%= t('subscriptions.cycle.' + sub.billing_cycle) %> · <%= t('subscriptions.branches_n', { n: sub.branches || 1 }) %></dd>
           <% if (sub.trial_ends_at) { %><dt><%= t('subscriptions.trial_ends') %></dt><dd><%= fmt.date(sub.trial_ends_at) %></dd><% } %>
           <% if (sub.current_period_end) { %><dt><%= t('subscriptions.current_period') %></dt><dd><%= fmt.date(sub.current_period_start) %> – <%= fmt.date(sub.current_period_end) %></dd><% } %>
           <% if (sub.grace_ends_at) { %><dt><%= t('subscriptions.grace_ends') %></dt><dd><%= fmt.date(sub.grace_ends_at) %></dd><% } %>
@@ -56,7 +56,7 @@
           <tbody>
             <% invoices.forEach(function (i) { %>
             <tr>
-              <td class="primary-cell"><bdi class="mono small"><%= i.number %></bdi><div class="tiny muted"><%= L(i.plan_name, i.plan_name_en) || '—' %> · <%= t('subscriptions.cycle.' + i.billing_cycle) %></div></td>
+              <td class="primary-cell"><bdi class="mono small"><%= i.number %></bdi><div class="tiny muted"><%= L(i.plan_name, i.plan_name_en) || '—' %> · <%= t('subscriptions.cycle.' + i.billing_cycle) %><% if ((i.branches || 1) > 1) { %> · <%= t('subscriptions.branches_n', { n: i.branches }) %><% } %></div></td>
               <td data-label="<%= t('subscriptions.period') %>" class="small"><%= i.period_start ? fmt.date(i.period_start) + ' – ' + fmt.date(i.period_end) : '—' %></td>
               <td data-label="<%= t('common.amount') %>" class="num"><%= fmt.money(i.amount, i.currency) %></td>
               <td data-label="<%= t('common.status') %>">
@@ -102,14 +102,15 @@
     <div class="dialog-body stack">
       <div class="field"><label class="label" for="f-invoice_id"><%= t('subscriptions.invoice') %></label>
         <select class="select" id="f-invoice_id" name="invoice_id" data-sub-invoice-pick>
-          <option value="" data-plan="<%= sub.plan_id || '' %>" data-cycle="<%= sub.billing_cycle %>"><%= t('subscriptions_admin.new_invoice') %></option>
-          <% openInv.forEach(function (i) { %><option value="<%= i.id %>" data-amount="<%= i.amount %>" data-cycle="<%= i.billing_cycle %>" data-plan="<%= i.plan_id || '' %>"><%= i.number %> · <%= fmt.money(i.amount, i.currency) %> · <%= t('subscriptions.inv_status.' + i.status) %></option><% }) %>
+          <option value="" data-plan="<%= sub.plan_id || '' %>" data-cycle="<%= sub.billing_cycle %>" data-branches="<%= sub.branches || 1 %>"><%= t('subscriptions_admin.new_invoice') %></option>
+          <% openInv.forEach(function (i) { %><option value="<%= i.id %>" data-amount="<%= i.amount %>" data-cycle="<%= i.billing_cycle %>" data-plan="<%= i.plan_id || '' %>" data-branches="<%= i.branches || 1 %>"><%= i.number %> · <%= fmt.money(i.amount, i.currency) %> · <%= t('subscriptions.inv_status.' + i.status) %></option><% }) %>
         </select>
       </div>
       <div class="form-grid">
         <%- include('../../partials/field', { name: 'plan_id', label: t('subscriptions.plan'), type: 'select', value: sub.plan_id || '', options: planOpts }) %>
         <%- include('../../partials/field', { name: 'billing_cycle', label: t('subscriptions.billing_cycle'), type: 'select', value: sub.billing_cycle, options: cycleOpts }) %>
-        <%- include('../../partials/field', { name: 'amount', label: t('common.amount'), type: 'number', value: plan ? (sub.billing_cycle === 'yearly' ? plan.price_yearly : plan.price_monthly) : '', required: true, attrs: 'min="0" step="0.001" inputmode="decimal"' }) %>
+        <%- include('../../partials/field', { name: 'branches', label: t('subscriptions.branches'), type: 'number', value: sub.branches || 1, attrs: 'min="1" max="50" step="1" inputmode="numeric"' }) %>
+        <%- include('../../partials/field', { name: 'amount', label: t('common.amount'), type: 'number', value: plan ? priceFor(plan, sub.branches || 1, sub.billing_cycle) : '', required: true, attrs: 'min="0" step="0.001" inputmode="decimal"' }) %>
         <%- include('../../partials/field', { name: 'method', label: t('subscriptions.method'), type: 'select', value: 'bank_transfer', options: methods.map(function (m) { return { value: m, label: t('subscriptions.methods.' + m) }; }) }) %>
         <%- include('../../partials/field', { name: 'reference', label: t('subscriptions.reference'), attrs: 'maxlength="120" dir="auto"' }) %>
         <div></div>
@@ -140,6 +141,7 @@
       <div class="form-grid">
         <%- include('../../partials/field', { name: 'plan_id', id: 'p-plan_id', label: t('subscriptions.plan'), type: 'select', value: sub.plan_id || '', options: planOpts }) %>
         <%- include('../../partials/field', { name: 'billing_cycle', id: 'p-billing_cycle', label: t('subscriptions.billing_cycle'), type: 'select', value: sub.billing_cycle, options: cycleOpts }) %>
+        <%- include('../../partials/field', { name: 'branches', id: 'p-branches', label: t('subscriptions.branches'), type: 'number', value: sub.branches || 1, attrs: 'min="1" max="50" step="1" inputmode="numeric"' }) %>
       </div>
       <p class="tiny muted"><%= t('subscriptions_admin.plan_help') %></p>
     </div>

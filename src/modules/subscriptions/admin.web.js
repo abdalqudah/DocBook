@@ -12,6 +12,7 @@ const { wrap, flash } = require('../../routes/helpers');
 const { translateMessage } = require('../../core/i18n');
 const subs = require('./subscriptions.service');
 const entitlements = require('./entitlements');
+const branchPricing = require('./branch-pricing');
 
 const router = express.Router();
 const STYLES = ['/css/site.css', '/css/subscriptions.css'];
@@ -47,7 +48,7 @@ router.get('/plans', wrap(async (req, res) => {
 async function planForm(req, res, extra = {}) {
   const plan = req.params.id ? await subs.getPlan(req.params.id) : null;
   if (req.params.id && !plan) throw E.notFound('Plan');
-  page(res, 'plans-form', { title: plan ? plan.name : req.t('subscriptions_admin.new_plan'), plan, features: subs.FEATURES, entitlements: entitlements.REGISTRY, entGroups: entitlements.GROUPS, tab: 'plans', errors: {}, formError: null, old: null, ...extra });
+  page(res, 'plans-form', { title: plan ? plan.name : req.t('subscriptions_admin.new_plan'), plan, features: subs.FEATURES, branchPrices: branchPricing.parse(plan && plan.branch_prices), bpRows: branchPricing.ROWS, entitlements: entitlements.REGISTRY, entGroups: entitlements.GROUPS, tab: 'plans', errors: {}, formError: null, old: null, ...extra });
 }
 const planSave = (req, res) => subs.savePlan(req.ctx, req.params.id || null, req.body).then(() => {
   flash(req, 'success', req.t('subscriptions_admin.plan_saved'));
@@ -115,7 +116,7 @@ router.get('/subscriptions/:id(\\d+)', wrap(async (req, res) => {
   const subView = sub ? { ...sub, trial_ends_at: sub.trial_ends_at && String(sub.trial_ends_at).slice(0, 10) } : null;
   page(res, 'subscriptions-show', {
     title: b.name, b, sub: subView, plan, plans, invoices, usage, owners, cfg, today, limits: subs.limitsOf(sub, plan), methods: subs.METHODS,
-    readOnly: sub ? subs.isReadOnly(sub, today) : false, nextStart: sub ? subs.nextPeriodStart(sub, today) : today, tab: 'subscriptions',
+    readOnly: sub ? subs.isReadOnly(sub, today) : false, nextStart: sub ? subs.nextPeriodStart(sub, today) : today, tab: 'subscriptions', priceFor: branchPricing.priceFor,
   });
 }));
 

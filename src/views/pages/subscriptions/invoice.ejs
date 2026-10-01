@@ -34,7 +34,7 @@
         <thead><tr><th><%= t('subscriptions.description') %></th><th><%= t('subscriptions.period') %></th><th class="text-end"><%= t('common.amount') %></th></tr></thead>
         <tbody>
           <tr>
-            <td><%= t('subscriptions.invoice_line', { plan: L(inv.plan_name, inv.plan_name_en) || brandName, cycle: t('subscriptions.cycle.' + inv.billing_cycle) }) %></td>
+            <td><%= t('subscriptions.invoice_line', { plan: L(inv.plan_name, inv.plan_name_en) || brandName, cycle: t('subscriptions.cycle.' + inv.billing_cycle) }) %><% if ((inv.branches || 1) > 1) { %> · <%= t('subscriptions.branches_n', { n: inv.branches }) %><% } %></td>
             <td class="small"><%= inv.period_start ? fmt.date(inv.period_start) + ' – ' + fmt.date(inv.period_end) : '—' %></td>
             <td class="text-end num"><%= fmt.money(inv.amount, inv.currency) %></td>
           </tr>

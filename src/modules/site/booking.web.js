@@ -13,6 +13,7 @@ const { translateMessage } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
 const appointments = require('../clinic/appointments.service');
 const { loadClinic: loadPortalClinic, clinicStyles, listDoctors, listServices } = require('./portal.web');
+const branches = require('../clinic/branches.service');
 const subscriptions = require('../subscriptions/subscriptions.service');
 
 /** The clinic, with online booking closed while its DocBook subscription has expired (read-only clinic). */
@@ -45,9 +46,12 @@ const publicCtx = (req, clinic) => ({
  * "Any doctor" (booking with the clinic): the times at which at least one doctor who can see this service is free,
  * with how many doctors are free at each. Reception chooses the doctor when it confirms.
  */
-async function anyDoctorTimes(clinic, { serviceId, date }) {
+async function anyDoctorTimes(clinic, { serviceId, date, branch = null }) {
   const svc = serviceId ? await knex('services').where({ id: serviceId, business_id: clinic.id, is_active: true }).first('doctor_id') : null;
-  const ids = svc && svc.doctor_id ? [svc.doctor_id] : await knex('doctors').where({ business_id: clinic.id, is_active: true }).pluck('id');
+  // With branches: only the doctors of the branch the patient chose ('main' = the main branch).
+  const inBranch = (q) => { if (branch === 'main') q.whereNull('branch_id'); else if (branch) q.where('branch_id', branch); };
+  const ids = svc && svc.doctor_id ? await knex('doctors').where({ id: svc.doctor_id, business_id: clinic.id, is_active: true }).modify(inBranch).pluck('id')
+    : await knex('doctors').where({ business_id: clinic.id, is_active: true }).modify(inBranch).pluck('id');
   const free = new Map();
   for (const doctorId of ids) {
     try {
@@ -57,17 +61,18 @@ async function anyDoctorTimes(clinic, { serviceId, date }) {
   }
   // Bookings already waiting for a doctor at the same time take one of those places each.
   const waiting = await knex('appointments').where({ business_id: clinic.id, appointment_date: date }).whereNull('doctor_id').whereNot('status', 'cancelled')
+    .modify(inBranch)
     .whereNot('appointment_type', 'blocked').groupBy('appointment_time').select('appointment_time as t').count({ n: '*' });
   waiting.forEach((w) => { const t = String(w.t).slice(0, 5); if (free.has(t)) free.set(t, free.get(t) - Number(w.n)); });
   return [...free.entries()].filter(([, n]) => n > 0).map(([t]) => t).sort();
 }
 
 /** Free times for doctor/date/service in this clinic — or [] with a translated reason. */
-async function freeTimes(req, clinic, { doctorId, serviceId, date }) {
+async function freeTimes(req, clinic, { doctorId, serviceId, date, branch = null }) {
   const { min, max } = range(clinic);
   if (!doctorId || !scheduling.isDate(date)) return { slots: [], error: null };
   if (date < min || date > max) return { slots: [], error: req.t('booking.date_range', { n: HORIZON_DAYS }) };
-  if (doctorId === 'any') return { slots: await anyDoctorTimes(clinic, { serviceId, date }), error: null };
+  if (doctorId === 'any') return { slots: await anyDoctorTimes(clinic, { serviceId, date, branch }), error: null };
   try {
     const slots = await scheduling.availableSlots({ businessId: clinic.id, timezone: clinic.timezone, doctorId, serviceId: serviceId || undefined, date });
     return { slots, error: null };
@@ -89,8 +94,13 @@ async function renderBook(req, res, clinic, extra = {}) {
     return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, pageStyles: clinicStyles(clinic) });
   }
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
+  // Branches: the patient picks the branch first; only branches with a doctor are offered.
+  const branchChoices = await branchChoicesOf(req, clinic, doctors);
+  const branchSel = branchChoices.length === 1 ? branchChoices[0].value : (branchChoices.some((b) => b.value === branchOf(src.branch)) ? branchOf(src.branch) : null);
+  const here = branchChoices.length > 1 && branchSel ? doctors.filter(atBranch(branchSel)) : doctors;
   const sel = {
-    doctor: (src.doctor_id || src.doctor) === 'any' && doctors.length > 1 ? 'any' : doctors.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (doctors.length === 1 ? doctors[0].id : null),
+    branch: branchSel,
+    doctor: (src.doctor_id || src.doctor) === 'any' && here.length > 1 ? 'any' : here.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (here.length === 1 ? here[0].id : null),
     service: idOf(src.service_id || src.service),
     date: scheduling.isDate(src.appointment_date || src.date) ? (src.appointment_date || src.date) : null,
     time: scheduling.isTime(src.appointment_time) ? src.appointment_time : null,
@@ -98,14 +108,28 @@ async function renderBook(req, res, clinic, extra = {}) {
   if (sel.service && !services.some((s) => s.id === sel.service && (!s.doctorId || sel.doctor === 'any' || s.doctorId === sel.doctor))) sel.service = null;
   const { min, max } = range(clinic);
   if (!sel.date) sel.date = min;
-  const { slots, error: slotsError } = await freeTimes(req, clinic, { doctorId: sel.doctor, serviceId: sel.service, date: sel.date });
+  const { slots, error: slotsError } = await freeTimes(req, clinic, { doctorId: sel.doctor, serviceId: sel.service, date: sel.date, branch: sel.branch });
   if (sel.time && !slots.includes(sel.time)) sel.time = null;
   res.locals.currency = clinic.currency;
   return res.page('pages/portal/book', {
+    branchChoices: branchChoices.length > 1 ? branchChoices : [],
     layout: 'public', title: req.t('booking.title'), pageTitle: `${req.t('booking.title')} · ${clinic.displayName}`, clinic, doctors, services, sel, slots, slotsError,
     minDate: min, maxDate: max, hideBookCta: true, pageStyles: [...clinicStyles(clinic), '/css/telehealth.css'], pageScripts: ['/js/site.js'], onlineAvailable: onlineDoctors.length > 0,
     errors: {}, formError: null, old: {}, ...extra,
   });
+}
+
+// ---------------------------------------------------------------- branches
+/** 'main', a branch id, or null from a form/query value. */
+const branchOf = (v) => (v === 'main' ? 'main' : idOf(v));
+const atBranch = (b) => (d) => (b === 'main' ? !d.branchId : d.branchId === b);
+/** The branches a patient can book at: the main branch and active branches, each only when a doctor works there. */
+async function branchChoicesOf(req, clinic, doctors) {
+  const rows = await branches.list(clinic.id, { activeOnly: true });
+  if (!rows.length) return [];
+  const all = [{ value: 'main', name: clinic.displayName, place: [clinic.city, clinic.address].filter(Boolean).join(' · '), main: true },
+    ...rows.map((r) => ({ value: r.id, name: branches.nameOf(r, req.locale), place: [r.city, r.address].filter(Boolean).join(' · '), main: false }))];
+  return all.filter((b) => doctors.some(atBranch(b.value)));
 }
 
 // ---------------------------------------------------------------- pages
@@ -121,7 +145,7 @@ router.get('/:slug/book/slots', slotsLimiter, wrap(async (req, res, next) => {
   if (!clinic) return next();
   res.set('Cache-Control', 'no-store');
   if (!clinic.booking_enabled) return res.status(404).json({ data: [], error: req.t('booking.unavailable_title') });
-  const { slots, error } = await freeTimes(req, clinic, { doctorId: req.query.doctor === 'any' ? 'any' : idOf(req.query.doctor), serviceId: idOf(req.query.service), date: String(req.query.date || '') });
+  const { slots, error } = await freeTimes(req, clinic, { doctorId: req.query.doctor === 'any' ? 'any' : idOf(req.query.doctor), serviceId: idOf(req.query.service), date: String(req.query.date || ''), branch: branchOf(req.query.branch) });
   return res.json(error ? { data: slots, error } : { data: slots });
 }));
 
@@ -135,6 +159,7 @@ const bookingSchema = z.object({
   patient_phone: z.string({ required_error: 'Required.' }).trim().min(1, 'Required.').max(40),
   patient_email: z.preprocess(emptyToUndefined, z.string().trim().email('Enter a valid email address.').max(190).optional()),
   notes: optionalString(1000),
+  branch: z.preprocess(emptyToUndefined, z.string().max(12).optional()), // 'main' or a branch id (clinics with branches)
 });
 
 router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 'slots' ? next() : bookLimiter(req, res, next)), wrap(async (req, res, next) => {
@@ -160,9 +185,19 @@ router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 's
   const { min, max } = range(clinic);
   if (d.appointment_date < min || d.appointment_date > max) return fail(422, req.t('errors.VALIDATION_FAILED'), { appointment_date: req.t('booking.date_range', { n: HORIZON_DAYS }) });
   const anyDoctor = d.doctor_id === 'any';
+  // Branch: with "any doctor" the patient's branch choice is kept on the booking (checked against this clinic);
+  // with a doctor the booking goes to the doctor's branch.
+  let branch = null;
+  if (anyDoctor && await branches.multi(clinic.id)) {
+    branch = branchOf(d.branch);
+    if (!branch) return fail(422, req.t('errors.VALIDATION_FAILED'), { branch: req.t('branches.choose') });
+    if (branch !== 'main') {
+      try { await branches.check(clinic.id, branch); } catch (e) { return fail(422, req.t('errors.VALIDATION_FAILED'), { branch: translateMessage(req.locale, 'Choose a valid branch.') }); }
+    }
+  }
   if (anyDoctor) {
     // Booking with the clinic: the time must suit at least one doctor who is still free then.
-    if (!(await anyDoctorTimes(clinic, { serviceId: d.service_id, date: d.appointment_date })).includes(d.appointment_time)) {
+    if (!(await anyDoctorTimes(clinic, { serviceId: d.service_id, date: d.appointment_date, branch })).includes(d.appointment_time)) {
       const old = { ...req.body }; delete old.appointment_time;
       res.status(409);
       return renderBook(req, res, clinic, { formError: { code: 'SLOT_TAKEN', message: req.t('errors.SLOT_TAKEN') }, errors: { appointment_time: req.t('errors.SLOT_TAKEN') }, old });
@@ -179,7 +214,7 @@ router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 's
   let id;
   try {
     id = await appointments.book({ ...publicCtx(req, clinic), channel: require('../discover/channels').current(req, clinic) }, { // eslint-disable-line global-require
-      doctor_id: anyDoctor ? null : d.doctor_id, service_id: d.service_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time,
+      doctor_id: anyDoctor ? null : d.doctor_id, branch_id: anyDoctor && branch !== 'main' ? branch : undefined, service_id: d.service_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time,
       patient_name: d.patient_name, patient_phone: phone, patient_email: d.patient_email, notes: d.notes, appointment_type: 'in_person',
     }, { source: 'website' });
   } catch (err) {
@@ -201,8 +236,9 @@ async function lastBooking(req, clinic) {
   const b = req.session && req.session.booked;
   if (!b || b.businessId !== clinic.id || Date.now() - b.at > 24 * 3_600_000) return null;
   return knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+    .leftJoin('clinic_branches as br', function j() { this.on('br.id', 'a.branch_id').andOn('br.business_id', 'a.business_id'); })
     .where({ 'a.id': b.id, 'a.business_id': clinic.id })
-    .first('a.id', 'a.appointment_date', 'a.appointment_time', 'a.duration_minutes', 'a.status', 'a.patient_name', 'a.patient_phone',
+    .first('a.id', 'a.branch_id', 'br.name as branch_name', 'br.name_en as branch_name_en', 'br.address as branch_address', 'br.city as branch_city', 'br.phone as branch_phone', 'a.appointment_date', 'a.appointment_time', 'a.duration_minutes', 'a.status', 'a.patient_name', 'a.patient_phone',
       'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.slot_duration_minutes', 's.name as service_name', 's.name_en as service_name_en', 's.duration_minutes as service_minutes');
 }
 const localise = (req, a) => ({
@@ -210,6 +246,7 @@ const localise = (req, a) => ({
   doctor: (req.locale === 'en' && a.doctor_name_en) || a.doctor_name,
   service: (req.locale === 'en' && a.service_name_en) || a.service_name,
   minutes: a.duration_minutes || a.service_minutes || a.slot_duration_minutes || 30,
+  branch: a.branch_id ? { name: (req.locale === 'en' && a.branch_name_en) || a.branch_name, place: [a.branch_city, a.branch_address].filter(Boolean).join(' · '), phone: a.branch_phone } : null,
 });
 
 router.get('/:slug/book/done', wrap(async (req, res, next) => {

@@ -37,6 +37,26 @@
         <%- include('../../partials/field', { name: 'price_yearly', label: t('subscriptions_admin.price_yearly'), type: 'number', value: val('price_yearly', 0), attrs: 'min="0" step="0.001" inputmode="decimal"', errors: errs }) %>
         <%- include('../../partials/field', { name: 'currency', label: t('subscriptions_admin.currency'), value: val('currency', 'JOD'), attrs: 'maxlength="3" dir="ltr" style="text-transform:uppercase"', errors: errs }) %>
       </div>
+      <% var bpv = function (k, n) { if (o) return o[n === 'extra' ? 'bp_extra_' + k : 'bp_' + k + '_' + n] || ''; var t2 = n === 'extra' ? branchPrices.extra : branchPrices.tiers[n]; return t2 && t2[k] !== null && t2[k] !== undefined ? t2[k] : ''; }; %>
+      <div class="bp-table mt-4">
+        <h3 class="ent-group"><%= t('subscriptions_admin.bp_title') %></h3>
+        <p class="help"><%= t('subscriptions_admin.bp_help') %></p>
+        <div class="table-wrap"><table class="table responsive">
+          <thead><tr><th><%= t('subscriptions_admin.bp_branches') %></th><th><%= t('subscriptions_admin.price_monthly') %></th><th><%= t('subscriptions_admin.price_yearly') %></th></tr></thead>
+          <tbody>
+            <tr><td class="primary-cell strong"><%= t('subscriptions_admin.bp_one') %></td><td data-label="<%= t('subscriptions_admin.price_monthly') %>" class="muted small"><%= t('subscriptions_admin.bp_base') %></td><td data-label="<%= t('subscriptions_admin.price_yearly') %>" class="muted small"><%= t('subscriptions_admin.bp_base') %></td></tr>
+            <% bpRows.forEach(function (n) { %>
+            <tr><td class="primary-cell strong"><%= t('subscriptions_admin.bp_n', { n: n }) %></td>
+              <td data-label="<%= t('subscriptions_admin.price_monthly') %>"><input class="input" type="number" min="0" step="0.001" inputmode="decimal" dir="ltr" name="bp_m_<%= n %>" value="<%= bpv('m', n) %>" placeholder="<%= t('subscriptions_admin.bp_auto') %>" aria-label="<%= t('subscriptions_admin.bp_n', { n: n }) %> · <%= t('subscriptions_admin.price_monthly') %>"></td>
+              <td data-label="<%= t('subscriptions_admin.price_yearly') %>"><input class="input" type="number" min="0" step="0.001" inputmode="decimal" dir="ltr" name="bp_y_<%= n %>" value="<%= bpv('y', n) %>" placeholder="<%= t('subscriptions_admin.bp_auto') %>" aria-label="<%= t('subscriptions_admin.bp_n', { n: n }) %> · <%= t('subscriptions_admin.price_yearly') %>"></td></tr>
+            <% }) %>
+            <tr><td class="primary-cell strong"><%= t('subscriptions_admin.bp_extra') %></td>
+              <td data-label="<%= t('subscriptions_admin.price_monthly') %>"><input class="input" type="number" min="0" step="0.001" inputmode="decimal" dir="ltr" name="bp_extra_m" value="<%= bpv('m', 'extra') %>" aria-label="<%= t('subscriptions_admin.bp_extra') %> · <%= t('subscriptions_admin.price_monthly') %>"></td>
+              <td data-label="<%= t('subscriptions_admin.price_yearly') %>"><input class="input" type="number" min="0" step="0.001" inputmode="decimal" dir="ltr" name="bp_extra_y" value="<%= bpv('y', 'extra') %>" aria-label="<%= t('subscriptions_admin.bp_extra') %> · <%= t('subscriptions_admin.price_yearly') %>"></td></tr>
+          </tbody>
+        </table></div>
+        <p class="help"><%= t('subscriptions_admin.bp_limit_help') %></p>
+      </div>
     </div>
   </section>
   <section class="panel">

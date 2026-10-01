@@ -1,0 +1,7 @@
+<%# Branch filter (clinics with branches only): '' = all, 'main' = the main branch, or a branch id. %>
+<% if (typeof branchOpts !== 'undefined' && branchOpts) { %>
+<select class="select" name="branch" aria-label="<%= t('branches.filter') %>">
+  <option value=""><%= t('branches.all') %></option>
+  <% branchOpts.forEach(function (o) { var v = o.value === '' ? 'main' : o.value; %><option value="<%= v %>"<%= String(f.branch || '') === v ? ' selected' : '' %>><%= o.label %></option><% }) %>
+</select>
+<% } %>

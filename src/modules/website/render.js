@@ -35,13 +35,21 @@ async function locals(req, clinic, doc, { preview = false, portal, page: chosen 
   const page = chosen || doc.pages.find((p) => p.key === 'home') || { sections: [] };
   const shown = page.sections.filter((s) => s.visible && !(s.type === 'announcement' && !announcementOn(s, req)));
   const types = new Set(shown.map((s) => s.type));
-  const [doctors, services, media, insurers, reviews] = await Promise.all([
+  const [doctors, services, media, insurers, reviews, branchRows] = await Promise.all([
     types.has('doctors') || types.has('services') ? portal.listDoctors(req, clinic) : [],
     types.has('services') ? portal.listServices(req, clinic) : [],
     mediaUrls(clinic, doc, { preview }),
     types.has('insurance') ? knex('insurance_providers').where({ business_id: clinic.id, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'name' }]).pluck('name') : [],
     types.has('reviews') || types.has('doctors') ? require('../reviews/reviews.service').publicSummary(clinic.id) : null, // eslint-disable-line global-require
+    types.has('contact') ? require('../clinic/branches.service').list(clinic.id, { activeOnly: true }) : [], // eslint-disable-line global-require
   ]);
+  // Other branches for the contact section (address, phone, WhatsApp, map — only https map links).
+  const digits = (v) => String(v || '').replace(/[^0-9]/g, '');
+  const branches = branchRows.map((b) => ({
+    name: (req.locale === 'en' && b.name_en) || b.name, place: [b.city, b.address].filter(Boolean).join(' · '), phone: b.phone,
+    telHref: b.phone ? `tel:${String(b.phone).replace(/[^0-9+]/g, '')}` : null, waHref: digits(b.whatsapp) ? `https://wa.me/${digits(b.whatsapp)}` : null,
+    mapHref: b.map_url && /^https:\/\/[^\s<>"']+$/i.test(b.map_url) ? b.map_url : null,
+  }));
   const other = req.locale === 'en' ? 'ar' : 'en';
   // The clinic's own words in the visitor's language, falling back to the other language.
   const words = (s) => {
@@ -50,7 +58,7 @@ async function locals(req, clinic, doc, { preview = false, portal, page: chosen 
   };
   const img = (id) => (id && media[id]) || null;
   return {
-    doc, page, sections: shown.map((s) => ({ ...s, c: words(s) })), doctors, services, insurers, hours: hoursRows(clinic), media, img,
+    doc, page, sections: shown.map((s) => ({ ...s, c: words(s) })), doctors, services, insurers, branches, hours: hoursRows(clinic), media, img,
     wsSite: siteChrome(req, clinic, doc, page, { preview, img }),
     doctorNames: Object.fromEntries(doctors.map((d) => [d.id, d.name])), reviewsSummary: reviews, preview,
   };

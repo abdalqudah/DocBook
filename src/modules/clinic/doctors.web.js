@@ -4,6 +4,7 @@ const { wrap, form, flash } = require('../../routes/helpers');
 const { can, canAny } = require('../../middleware/context');
 const scheduling = require('./scheduling');
 const svc = require('./doctors.service');
+const branchesSvc = require('./branches.service');
 const payroll = require('./payroll.service');
 const tele = require('../telehealth/telehealth.service');
 const signatures = require('../signatures/signatures.service');
@@ -28,7 +29,9 @@ const renderForm = async (req, res, extra = {}) => {
     title: doctor ? req.t('doctors.edit') : req.t('doctors.add'), doctor, wh: doctor ? svc.parseWh(doctor.working_hours) : scheduling.defaultWorkingHours(), days: scheduling.DAY_KEYS,
     onlineWindows, jitsiReady: Boolean(tele.jitsiBase()), clinicOnline: Boolean(req.business.online_enabled),
     clinicWeek: (() => { const w = svc.parseWh(req.business.default_working_hours || 'null'); return Object.keys(w).length ? w : null; })(),
-    photo: doctor ? (await media.doctorPhotos(req.ctx.businessId, [doctor.id]))[doctor.id] || null : null, ...extra,
+    photo: doctor ? (await media.doctorPhotos(req.ctx.businessId, [doctor.id]))[doctor.id] || null : null,
+    // Branch choice: only for a clinic with other branches (the main branch is '').
+    branchOptions: (await branchesSvc.multi(req.ctx.businessId)) ? await branchesSvc.options(req.business, req.t, req.locale) : null, ...extra,
   });
 };
 router.get('/new', can('doctors.manage'), wrap((req, res) => renderForm(req, res)));

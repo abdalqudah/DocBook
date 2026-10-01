@@ -172,7 +172,8 @@
     "website_settings": "العنوان والنشر",
     "website_email": "البريد",
     "website_seo": "محركات البحث",
-    "website_analytics": "الإحصاءات"
+    "website_analytics": "الإحصاءات",
+    "branches": "الفروع"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",
@@ -250,7 +251,11 @@
     "SLUG_RESERVED": "هذا العنوان محجوز.",
     "BOOKING_DISABLED": "الحجز الإلكتروني غير متاح لهذه العيادة.",
     "RESET_LINK_EMAILED": "هذا الشخص يستخدم عيادات أخرى أيضًا، لذلك أُرسل رابط إعادة التعيين إلى بريده.",
-    "NOT_PENDING": "هذا الحجز لم يعد بانتظار التأكيد."
+    "NOT_PENDING": "هذا الحجز لم يعد بانتظار التأكيد.",
+    "PLAN_LIMIT_BRANCHES": "باقتك لا تشمل فرعاً إضافياً. اختر عدد فروع أكبر من صفحة الاشتراك.",
+    "BRANCH_HAS_DOCTORS": "انقل أطباء هذا الفرع إلى فرع آخر أولاً.",
+    "BRANCH_HAS_APPOINTMENTS": "لدى هذا الفرع مواعيد قادمة. انقلها أو ألغِها أولاً.",
+    "BRANCH_IN_USE": "لهذا الفرع أطباء أو مواعيد. أوقفه بدلاً من حذفه."
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",
@@ -290,7 +295,11 @@
     "The home page cannot be removed.": "لا يمكن حذف الصفحة الرئيسية.",
     "Choose the doctor.": "اختر الطبيب.",
     "Keep at least one clinic type.": "أبقِ نوعاً واحداً على الأقل.",
-    "Too many types.": "عدد الأنواع كبير جداً."
+    "Too many types.": "عدد الأنواع كبير جداً.",
+    "This plan does not include that many branches.": "هذه الباقة لا تشمل هذا العدد من الفروع.",
+    "The clinic already has more active branches. Turn some off first.": "لدى العيادة فروع مفعّلة أكثر من هذا العدد. أوقف بعضها أولاً.",
+    "Choose a valid branch.": "اختر فرعاً صحيحاً.",
+    "This doctor works in another branch.": "هذا الطبيب يعمل في فرع آخر."
   },
   "roles": {
     "owner": "مالك العيادة",

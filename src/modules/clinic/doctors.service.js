@@ -38,6 +38,13 @@ async function saveDoctor(ctx, id, input) {
   if (mode) row.hours_mode = mode;
   if (mode === 'clinic') row.working_hours = JSON.stringify(clinicWeek || scheduling.defaultWorkingHours());
   else if (input.wh) row.working_hours = JSON.stringify(scheduling.parseWorkingHoursForm(input));
+  // Branch (only sent when the clinic runs branches): '' = main branch; an id must be an active branch of this clinic.
+  let branchMoved = false;
+  if (input.branch_form) {
+    const branches = require('./branches.service'); // eslint-disable-line global-require
+    row.branch_id = await branches.check(ctx.businessId, input.branch_id);
+    if (id) { const cur = await knex('doctors').where({ id, business_id: ctx.businessId }).first('branch_id'); branchMoved = Boolean(cur) && (cur.branch_id || null) !== row.branch_id; }
+  }
   // Online consultations section of the doctor form (validated before anything is saved).
   const tele = input.online_form ? require('../telehealth/telehealth.service') : null; // eslint-disable-line global-require
   const online = tele ? tele.parseDoctorOnline(input) : null;
@@ -48,6 +55,13 @@ async function saveDoctor(ctx, id, input) {
     id = await doctors.create(ctx, row); // eslint-disable-line no-param-reassign
   }
   if (online) await tele.applyDoctorOnline(ctx, id, online);
+  // A doctor moving to another branch takes their upcoming appointments along (the visit is where the doctor is).
+  if (branchMoved) {
+    const today = ctx.today || scheduling.clinicNow(ctx.timezone || 'Asia/Amman').date;
+    const moved = await knex('appointments').where({ business_id: ctx.businessId, doctor_id: id }).where('appointment_date', '>=', today)
+      .whereNotIn('status', ['cancelled', 'completed', 'no_show']).update({ branch_id: row.branch_id, updated_at: new Date() });
+    await audit.record(ctx, 'doctor.branch_changed', { entityType: 'doctor', entityId: id, newValues: { branch_id: row.branch_id, upcoming_appointments_moved: moved } });
+  }
   // Photo from the media library (the form sends photo_form so a cleared photo is saved as "none").
   if (input.photo_form) await require('../integrations/media.service').setDoctorPhoto(ctx, id, input.photo_media_id); // eslint-disable-line global-require
   return id;

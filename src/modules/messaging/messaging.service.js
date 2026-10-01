@@ -415,7 +415,7 @@ async function runClinic(cfg, now, base) {
     const since = new Date(now - 6 * 3_600_000);
     const rows = await apptQuery().where('a.business_id', clinic.id).whereIn('a.status', ACTIVE).whereNot('a.appointment_type', 'blocked')
       .andWhere((w) => w.where('a.created_at', '>=', since).orWhere((x) => x.where({ 'a.status': 'confirmed', 'a.source': 'website' }).where('a.updated_at', '>=', since)))
-      .where('a.appointment_date', '>=', today).limit(200).select(APPT_SELECT);
+      .where('a.appointment_date', '>=', today).orderBy('a.id').limit(200).select(APPT_SELECT);
     for (const a of rows) {
       if (startOf(a, tz) <= now) continue; // eslint-disable-line no-continue
       const online = a.source === 'website';
@@ -427,7 +427,7 @@ async function runClinic(cfg, now, base) {
   if (cfg.reminders_enabled && cfg.reminder_offsets.length) {
     const horizon = addDays(today, Math.ceil(Math.max(...cfg.reminder_offsets) / 1440) + 1);
     const rows = await apptQuery().where('a.business_id', clinic.id).whereIn('a.status', ACTIVE).whereNot('a.appointment_type', 'blocked')
-      .whereBetween('a.appointment_date', [today, horizon]).limit(1000).select(APPT_SELECT);
+      .whereBetween('a.appointment_date', [today, horizon]).orderBy('a.id').limit(1000).select(APPT_SELECT);
     for (const a of rows) {
       const pick = dueReminder({ startMs: startOf(a, tz), createdMs: new Date(a.created_at).getTime(), offsets: cfg.reminder_offsets, now });
       if (!pick.send) continue; // eslint-disable-line no-continue

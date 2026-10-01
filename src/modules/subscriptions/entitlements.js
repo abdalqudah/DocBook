@@ -17,6 +17,9 @@ const REGISTRY = [
   { key: 'ai_assistant', type: 'bool', group: 'clinic', fallback: false },
   { key: 'specialty_modules', type: 'bool', group: 'clinic', fallback: false },
   { key: 'data_sync', type: 'bool', group: 'clinic', fallback: false },
+  // Branches: how many the plan allows (1 = the main branch only; empty = no limit). The price for 2, 3 … branches is
+  // set next to the plan's price (branch-pricing.js); the clinic chooses how many it pays for.
+  { key: 'clinic.max_branches', type: 'int', group: 'clinic', fallback: 1, forExisting: 1 },
   // Website. The standard clinic page, online booking and basic search tags are never gated.
   { key: 'website.builder', type: 'bool', group: 'website', fallback: false, forExisting: true },
   { key: 'website.templates', type: 'list', group: 'website', options: TEMPLATES, fallback: ['general'], forExisting: '*' },

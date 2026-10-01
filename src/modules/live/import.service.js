@@ -211,7 +211,7 @@ async function commit(ctx, rows, { allowOutsideHours = false, sourceKind = 'file
   const { date: today, minutes: nowMinutes } = scheduling.clinicNow(ctx.timezone);
   const result = { imported: 0, ids: [], skipped: [] };
   await knex.transaction(async (outer) => {
-    const doctors = await outer('doctors').where({ business_id: ctx.businessId, is_active: true }).select('id', 'working_hours', 'slot_duration_minutes');
+    const doctors = await outer('doctors').where({ business_id: ctx.businessId, is_active: true }).select('id', 'branch_id', 'working_hours', 'slot_duration_minutes');
     const docById = new Map(doctors.map((d) => [d.id, { ...d, wh: parseWh(d.working_hours) }]));
     for (const r of rows) {
       const skip = (reason) => { result.skipped.push({ row: r, reason }); };
@@ -241,7 +241,7 @@ async function commit(ctx, rows, { allowOutsideHours = false, sourceKind = 'file
             if (Number(r.patientId)) { const p = await trx('patients').where({ id: Number(r.patientId), business_id: ctx.businessId }).first('id'); patientId = p ? p.id : null; }
             if (!patientId && phone) patientId = await appts.resolveOrCreatePatient(ctx, { name, phone }, trx);
             const [newId] = await trx('appointments').insert({
-              business_id: ctx.businessId, doctor_id: doctor.id, service_id: null, patient_id: patientId, patient_name: name, patient_phone: phone,
+              business_id: ctx.businessId, branch_id: doctor.branch_id || null, doctor_id: doctor.id, service_id: null, patient_id: patientId, patient_name: name, patient_phone: phone,
               appointment_date: r.date, appointment_time: r.time, duration_minutes: minutes, status: 'confirmed', appointment_type: 'in_person',
               source: 'import', booking_channel: 'staff', amount_due: await appts.expectedFee(trx, ctx.businessId, doctor.id, null),
               notes: String(r.notes || '').slice(0, 3000) || null, created_by: ctx.userId || null, external_source: sourceKind === 'url' ? 'ical_url' : 'ical_file', external_uid: uid,

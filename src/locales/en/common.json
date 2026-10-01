@@ -172,7 +172,8 @@
     "website_settings": "Address & publishing",
     "website_email": "E-mail",
     "website_seo": "Search engines",
-    "website_analytics": "Statistics"
+    "website_analytics": "Statistics",
+    "branches": "Branches"
   },
   "search": {
     "open": "Search and quick actions",
@@ -250,7 +251,11 @@
     "SLUG_RESERVED": "This address is reserved.",
     "BOOKING_DISABLED": "Online booking is not available for this clinic.",
     "RESET_LINK_EMAILED": "This person also uses other clinics, so the reset link was e-mailed to them instead.",
-    "NOT_PENDING": "This booking is no longer waiting for confirmation."
+    "NOT_PENDING": "This booking is no longer waiting for confirmation.",
+    "PLAN_LIMIT_BRANCHES": "Your package does not include another branch. Choose more branches on the subscription page.",
+    "BRANCH_HAS_DOCTORS": "Move this branch's doctors to another branch first.",
+    "BRANCH_HAS_APPOINTMENTS": "This branch has upcoming appointments. Move or cancel them first.",
+    "BRANCH_IN_USE": "This branch has doctors or appointments. Turn it off instead."
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",
@@ -282,7 +287,11 @@
     "This time is no longer available.": "هذا الوقت لم يعد متاحًا.",
     "This service is not offered by this doctor.": "هذه الخدمة لا يقدمها هذا الطبيب.",
     "Another patient already uses this phone number.": "رقم الهاتف مستخدم لمريض آخر.",
-    "Enter a valid duration.": "أدخل مدة صحيحة."
+    "Enter a valid duration.": "أدخل مدة صحيحة.",
+    "This plan does not include that many branches.": "This plan does not include that many branches.",
+    "The clinic already has more active branches. Turn some off first.": "The clinic already has more active branches. Turn some off first.",
+    "Choose a valid branch.": "Choose a valid branch.",
+    "This doctor works in another branch.": "This doctor works in another branch."
   },
   "roles": {
     "owner": "Clinic owner",

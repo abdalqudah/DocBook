@@ -5,6 +5,7 @@ const { repo } = require('../../core/crud');
 const { z, validate, money, isoDate, optionalString, emptyToUndefined } = require('../../core/validate');
 const { AppError, E } = require('../../core/errors');
 const scheduling = require('./scheduling');
+const branches = require('./branches.service');
 const rules = require('./money-rules');
 const businesses = require('../businesses/business.service');
 const notifications = require('../notifications/notification.service');
@@ -65,16 +66,18 @@ async function timeline(ctx, patientId) {
 }
 
 // ---------------------------------------------------------------- appointments
-const APPT_SELECT = ['a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en', 's.price as service_price', 'd.consultation_fee'];
+const APPT_SELECT = ['a.*', 'br.name as branch_name', 'br.name_en as branch_name_en', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en', 's.price as service_price', 'd.consultation_fee'];
 
 function baseQuery(ctx) {
-  const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id').where('a.business_id', ctx.businessId);
+  const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+    .leftJoin('clinic_branches as br', function j() { this.on('br.id', 'a.branch_id').andOn('br.business_id', 'a.business_id'); }).where('a.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); // a doctor sees only their own schedule
   return q;
 }
 
-async function list(ctx, { from, to, doctor, status, q: search, includeBlocked = false, patient, type } = {}) {
+async function list(ctx, { from, to, doctor, status, q: search, includeBlocked = false, patient, type, branch } = {}) {
   const q = baseQuery(ctx).select(APPT_SELECT).orderBy([{ column: 'a.appointment_date' }, { column: 'a.appointment_time' }]);
+  if (branch === 'main') q.whereNull('a.branch_id'); else if (branch) q.where('a.branch_id', branch);
   if (from) q.where('a.appointment_date', '>=', from);
   if (to) q.where('a.appointment_date', '<=', to);
   if (doctor && doctor !== 'all') q.where('a.doctor_id', doctor);
@@ -101,6 +104,8 @@ const bookingSchema = z.object({
   status: z.preprocess(emptyToUndefined, z.enum(['pending', 'confirmed']).optional()),
   notes: optionalString(3000),
   parent_appointment_id: id(),
+  // Only used without a doctor (online "any doctor" booking): with a doctor the visit is at the doctor's branch.
+  branch_id: z.preprocess((v) => (v === '' || v === undefined || v === null || v === 'main' ? undefined : v), z.coerce.number().int().positive().optional()),
 });
 
 /** Expected fee: service price, else the doctor's consultation fee. */
@@ -116,8 +121,9 @@ async function insertAppointment(ctx, d, { source, trx }) {
     const p = await trx('patients').where({ id: patientId, business_id: ctx.businessId }).first('id');
     if (!p) throw E.validation({ patient_id: 'Choose a valid value.' });
   } else patientId = await resolveOrCreatePatient(ctx, { name: d.patient_name, phone: d.patient_phone, email: d.patient_email }, trx);
+  const branchId = d.doctor_id ? await branches.ofDoctor(ctx.businessId, d.doctor_id, trx) : await branches.check(ctx.businessId, d.branch_id, trx);
   const [apptId] = await trx('appointments').insert({
-    business_id: ctx.businessId, doctor_id: d.doctor_id || null, service_id: d.service_id || null, patient_id: patientId,
+    business_id: ctx.businessId, branch_id: branchId, doctor_id: d.doctor_id || null, service_id: d.service_id || null, patient_id: patientId,
     patient_name: d.patient_name, patient_phone: d.patient_phone, patient_email: d.patient_email || null,
     appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: d.service_id ? null : (d.duration_minutes || null),
     status: d.status || (source === 'website' ? 'pending' : 'confirmed'), appointment_type: d.appointment_type || 'in_person', source,
@@ -196,7 +202,7 @@ async function callIn(ctx, apptId, on = true) {
 async function assignDoctor(ctx, apptId, doctorId) {
   const a = await get(ctx, apptId);
   return scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: Number(doctorId), serviceId: a.service_id, durationOverride: a.duration_minutes, date: a.appointment_date, time: a.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
-    await trx('appointments').where({ id: a.id }).update({ doctor_id: Number(doctorId), updated_at: new Date() });
+    await trx('appointments').where({ id: a.id }).update({ doctor_id: Number(doctorId), branch_id: await branches.ofDoctor(ctx.businessId, Number(doctorId), trx), updated_at: new Date() });
     await audit.record(ctx, 'appointment.doctor_assigned', { entityType: 'appointment', entityId: a.id, oldValues: { doctor_id: a.doctor_id }, newValues: { doctor_id: Number(doctorId) } }, trx);
   });
 }
@@ -206,7 +212,7 @@ async function block(ctx, input) {
   const d = validate(z.object({ doctor_id: z.coerce.number().int().positive(), appointment_date: isoDate(), appointment_time: time(),
     duration_minutes: z.preprocess(emptyToUndefined, z.coerce.number().int().min(scheduling.MIN_BLOCK_MINUTES).max(scheduling.MAX_BLOCK_MINUTES).optional()), label: optionalString(190) }), input);
   return scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: d.doctor_id, durationOverride: d.duration_minutes, date: d.appointment_date, time: d.appointment_time }, async (trx) => {
-    const [bid] = await trx('appointments').insert({ business_id: ctx.businessId, doctor_id: d.doctor_id, patient_name: d.label || '—', appointment_date: d.appointment_date, appointment_time: d.appointment_time,
+    const [bid] = await trx('appointments').insert({ business_id: ctx.businessId, branch_id: await branches.ofDoctor(ctx.businessId, d.doctor_id, trx), doctor_id: d.doctor_id, patient_name: d.label || '—', appointment_date: d.appointment_date, appointment_time: d.appointment_time,
       duration_minutes: d.duration_minutes || null, status: 'confirmed', appointment_type: 'blocked', source: 'staff', notes: d.label || null, created_by: ctx.userId });
     await audit.record(ctx, 'appointment.blocked', { entityType: 'appointment', entityId: bid, newValues: d }, trx);
     return bid;
@@ -235,6 +241,7 @@ async function move(ctx, apptId, input) {
     date: d.appointment_date, time: d.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
     const patch = { doctor_id: d.doctor_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: a.service_id ? a.duration_minutes : duration, updated_at: new Date() };
     if (a.appointment_type === 'in_person' && a.doctor_id !== d.doctor_id) patch.amount_due = await expectedFee(trx, ctx.businessId, d.doctor_id, a.service_id);
+    if (a.doctor_id !== d.doctor_id) patch.branch_id = await branches.ofDoctor(ctx.businessId, d.doctor_id, trx); // the visit goes where the doctor works
     await trx('appointments').where({ id: a.id, business_id: ctx.businessId }).update(patch);
     await audit.record(ctx, 'appointment.moved', { entityType: 'appointment', entityId: a.id,
       oldValues: { doctor_id: a.doctor_id, date: a.appointment_date, time: a.appointment_time }, newValues: { doctor_id: d.doctor_id, date: d.appointment_date, time: d.appointment_time } }, trx);
