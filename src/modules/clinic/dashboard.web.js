@@ -133,7 +133,8 @@ async function attention(ctx, { online, unpaid } = {}) {
   const b = ctx.businessId;
   const now = scheduling.clinicNow(ctx.timezone);
   const lateBefore = scheduling.minutesToTime(Math.max(0, now.minutes - LATE_AFTER_MIN));
-  const [late, low, reps, adj] = await Promise.all([
+  const [doc, late, low, reps, adj] = await Promise.all([
+    p.has('doctors.manage') ? knex('doctors').where({ business_id: b, is_active: true }).first('id') : true,
     p.has('frontdesk.use') || p.has('appointments.manage') ? apptBase(ctx).where('a.appointment_date', ctx.today).whereIn('a.status', ['pending', 'confirmed'])
       .where({ 'a.checked_in': false, 'a.with_doctor': false }).where('a.appointment_time', '<', lateBefore).count({ n: '*' }).first() : null,
     p.has('supplies.view') ? knex('supply_items').where({ business_id: b }).whereRaw('current_stock <= reorder_level').count({ n: '*' }).first() : null,
@@ -141,6 +142,8 @@ async function attention(ctx, { online, unpaid } = {}) {
     p.has('payroll.approve') ? knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).count({ n: '*' }).first() : null,
   ]);
   return [
+    // No doctor yet: nothing can be booked (the online booking page shows the clinic's phone instead).
+    doc ? null : { key: 'no_doctors', n: 1, noCount: true, href: '/app/doctors/new', icon: 'stethoscope', tone: 'danger' },
     unpaid && unpaid.today && p.has('billing.manage') ? { key: 'to_pay', n: unpaid.today, href: '/app/cashier/screen', icon: 'banknote', tone: 'danger' } : null,
     late ? { key: 'late', n: num(late.n), href: p.has('frontdesk.use') ? '/app/front-desk' : '/app/appointments', icon: 'hourglass', tone: 'danger' } : null,
     online && p.has('appointments.view') ? { key: 'online', n: online.count, href: '/app/appointments?status=pending', icon: 'globe' } : null,

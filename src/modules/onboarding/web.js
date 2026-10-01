@@ -159,6 +159,16 @@ router.post('/booking', form(async (req, res) => {
   return moveOn(req, res, 'booking');
 }, (req, res, extra) => renderStep(req, res, 'booking', extra)));
 
+// ---------------------------------------------------------------- 3. doctors: "Continue" needs one doctor
+// Patients book with a doctor, so "Continue" without one explains why and stays; "Skip for now" still moves on.
+router.post('/doctors', wrap(async (req, res, next) => {
+  if (req.body._action === 'skip') return next();
+  const one = await knex('doctors').where({ business_id: req.ctx.businessId, is_active: true }).first('id');
+  if (one) return next();
+  res.status(422);
+  return renderStep(req, res, 'doctors', { needDoctor: true });
+}));
+
 // ---------------------------------------------------------------- steps with nothing to save ("Continue" / "Skip")
 router.post('/:step(doctors|services|team)', wrap((req, res) => moveOn(req, res, req.params.step)));
 

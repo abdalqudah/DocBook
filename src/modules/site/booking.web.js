@@ -61,6 +61,11 @@ async function renderBook(req, res, clinic, extra = {}) {
     return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, pageStyles: clinicStyles(clinic) });
   }
   const [doctors, services, onlineDoctors] = await Promise.all([listDoctors(req, clinic), listServices(req, clinic), require('../telehealth/telehealth.service').onlineDoctors(clinic, req.locale)]); // eslint-disable-line global-require
+  // No doctor to book with (none added yet, or none taking online bookings): the same "call the clinic" page, not a
+  // form that cannot be sent.
+  if (!doctors.length) {
+    return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, pageStyles: clinicStyles(clinic) });
+  }
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
   const sel = {
     doctor: doctors.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (doctors.length === 1 ? doctors[0].id : null),

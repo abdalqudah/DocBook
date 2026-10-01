@@ -11,7 +11,7 @@
 <section class="panel flush today-attention<%= att.length ? '' : ' is-calm' %>" aria-labelledby="today-attn-h">
   <div class="panel-head"><h2 id="today-attn-h"><%- icon(att.length ? 'bell' : 'circle-check', 'icon-sm') %><%= att.length ? t('ownerx.home.attention_now') : t('ownerx.home.attention_none') %></h2></div>
   <% if (att.length) { %>
-  <ul class="action-list"><% att.forEach(function (x) { %><li><a href="<%= x.href %>"><span class="action-icon<%= x.tone === 'danger' ? ' is-danger' : '' %>"><%- icon(x.icon, 'icon-sm') %></span><span class="grow"><%= t('ownerx.home.att_' + x.key, { n: fmt.number(x.n) }) %></span><span class="badge <%= x.tone === 'danger' ? 'badge-danger' : 'badge-neutral' %>"><%= fmt.number(x.n) %></span><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm muted') %></a></li><% }) %></ul>
+  <ul class="action-list"><% att.forEach(function (x) { %><li><a href="<%= x.href %>"><span class="action-icon<%= x.tone === 'danger' ? ' is-danger' : '' %>"><%- icon(x.icon, 'icon-sm') %></span><span class="grow"><%= t('ownerx.home.att_' + x.key, { n: fmt.number(x.n) }) %></span><% if (!x.noCount) { %><span class="badge <%= x.tone === 'danger' ? 'badge-danger' : 'badge-neutral' %>"><%= fmt.number(x.n) %></span><% } %><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm muted') %></a></li><% }) %></ul>
   <% } %>
 </section>
 

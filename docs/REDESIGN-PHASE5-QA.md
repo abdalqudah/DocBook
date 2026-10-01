@@ -30,8 +30,12 @@ Run on 2026-10-01 against the branch after batches 3.1–3.13 and 4.1–4.15.
 Tests added in `test/redesign.test.js`: every "+ New" action opens a page; the visit picker (own visits, no
 cancelled ones); AI links hidden when the area is off.
 
-## Observed, not changed
+## Follow-up fixes (the two observations)
 
-- Onboarding can be finished with no doctor; the booking page then has nobody to book. Behaviour predates the
-  redesign (the "ready" page shows "Doctors: 0").
-- A clinic slug for an Arabic-only name is generated as `clinic-xxxx`; it can be changed in Website → Address & publishing.
+- **A clinic without a doctor.** Onboarding "Continue" on the doctors step now explains that a doctor is needed and
+  stays (422); "Skip for now" still moves on. The "ready" page shows a warning with "Add a doctor", Today lists
+  "No doctor yet" for members with `doctors.manage`, and the public booking page shows the "call the clinic" page
+  (phone / WhatsApp) instead of a form that cannot be sent.
+- **Address of an Arabic-only clinic name.** `suggestSlug` transliterates Arabic to Latin letters and drops words such
+  as "clinic"/"centre" when more remains ("عيادة النور" → `alnoor`); Arabic-Indic digits become 0–9. Existing
+  addresses are not changed.

@@ -2,6 +2,7 @@
    var hoursText = hours ? hours.days.map(function (d) { return t('days.' + d); }).join('، ') + ' · ' + hours.s1 + '–' + hours.e1 + (hours.split ? ' / ' + hours.s2 + '–' + hours.e2 : '') : null; %>
 <%- include('_top') %>
 <div class="stack-lg">
+  <% if (typeof needDoctor !== 'undefined' && needDoctor) { %><div class="alert alert-warning" role="alert"><%- icon('triangle-alert') %><div class="grow"><strong><%= t('ownerx.wiz.need_doctor_title') %></strong><div><%= t('ownerx.wiz.need_doctor_text') %></div></div></div><% } %>
   <% if (doctors.length) { %>
   <section class="panel flush">
     <div class="panel-head"><h2><%= t('ownerx.wiz.doctors_added', { n: doctors.length }) %></h2><a class="btn btn-ghost btn-sm" href="/app/doctors"><%= t('ownerx.wiz.edit_details') %></a></div>

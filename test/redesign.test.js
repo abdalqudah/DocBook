@@ -325,3 +325,42 @@ test('an area outside the package or turned off has no links: the AI assistant i
     await ops.saveModules({ ...ctx, ip: '127.0.0.1' }, await knex('businesses').where({ id: ctx.businessId }).first(), Object.fromEntries(ops.KEYS.map((k) => [k, '1'])));
   }
 });
+
+test('clinic address from an Arabic-only name is readable, not random', async () => {
+  assert.equal(businesses.latinize('عيادة النور'), 'alnoor');
+  assert.equal(businesses.latinize('عيادة ٣٦٥'), '365');
+  assert.equal(businesses.latinize('Smile Dental'), 'Smile Dental');
+  const slug = await businesses.suggestSlug('عيادة النور');
+  assert.match(slug, /^alnoor(-\d+)?$/);
+  assert.match(await businesses.suggestSlug('عيادة'), /^aiada(-\d+)?$/, 'only the filler word: kept rather than a random address');
+});
+
+test('a clinic without a doctor: onboarding asks for one, Today says so, online booking shows the phone', async () => {
+  const id = await knex.transaction((trx) => auth.createUser(trx, { name: 'No Doc', email: mail('nodoc'), password: 'Passw0rd!x' }));
+  await knex('users').where({ id }).update({ email_verified_at: new Date() });
+  await knex.transaction((trx) => businesses.create(id, { name: 'عيادة بلا طبيب', currency: 'JOD', timezone: 'Asia/Amman' }, trx));
+  const { last_business_id: bid } = await knex('users').where({ id }).first('last_business_id');
+  const { slug } = await knex('businesses').where({ id: bid }).first('slug');
+  assert.ok(!/^clinic-[0-9a-f]{4}$/.test(slug), `readable address (${slug})`);
+  await knex('businesses').where({ id: bid }).update({ booking_enabled: true, phone: '0790000123', onboarding_step: 'doctors' });
+  const a = app.agent();
+  await a.login(mail('nodoc'));
+  let r = await a.submit('/app/onboarding/doctors', '/app/onboarding/doctors', { _action: 'save' });
+  assert.equal(r.status, 422, '"Continue" without a doctor stays');
+  assert.match(r.text, /Add at least one doctor/);
+  r = await a.submit('/app/onboarding/doctors', '/app/onboarding/doctors', { _action: 'skip' });
+  assert.equal(r.status, 302, '"Skip for now" still moves on');
+  await knex('businesses').where({ id: bid }).update({ onboarding_completed_at: new Date() });
+  businesses.forget(bid);
+  r = await a.get('/app');
+  assert.match(r.text, /No doctor yet/);
+  assert.match(r.text, /href="\/app\/doctors\/new"/);
+  r = await app.agent().get(`/${slug}/book`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /0790000123/);
+  assert.ok(!/data-booking/.test(r.text), 'no booking form without a doctor');
+  await setup.addDoctor({ ...ctx, businessId: bid, userId: id }, { full_name: 'Dr Now', consultation_fee: '10', slot_duration_minutes: '20' });
+  cache.forgetPrefix('');
+  assert.ok(!/No doctor yet/.test((await a.get('/app')).text));
+  assert.match((await app.agent().get(`/${slug}/book`)).text, /data-booking/);
+});

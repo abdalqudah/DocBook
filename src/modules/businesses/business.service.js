@@ -33,8 +33,25 @@ function validateSlug(slug) {
   return null;
 }
 
+// Arabic → Latin letters for a readable address ("عيادة النور" → "alnoor"): no vowel marks are written in Arabic, so
+// this is an approximation the clinic can change later; words like "clinic"/"centre" are dropped when more remains.
+const AR = { ا: 'a', أ: 'a', إ: 'i', آ: 'a', ء: '', ؤ: 'o', ئ: 'e', ب: 'b', ت: 't', ث: 'th', ج: 'j', ح: 'h', خ: 'kh', د: 'd', ذ: 'th',
+  ر: 'r', ز: 'z', س: 's', ش: 'sh', ص: 's', ض: 'd', ط: 't', ظ: 'z', ع: 'a', غ: 'gh', ف: 'f', ق: 'q', ك: 'k', ل: 'l', م: 'm', ن: 'n',
+  ه: 'h', ة: 'a', ى: 'a', پ: 'p', چ: 'ch', ڤ: 'v', گ: 'g' };
+const AR_FILLER = new Set(['عيادة', 'عيادات', 'مركز', 'مجمع', 'مستوصف', 'مستشفى', 'د', 'دكتور', 'الدكتور', 'الدكتورة', 'دكتورة', 'لطب', 'طب', 'للطب']);
+function latinize(text) {
+  const words = String(text || '').replace(/[\u064B-\u0652\u0640]/g, '').replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x0660))
+    .split(/[\s.\-_]+/).filter(Boolean);
+  const kept = words.filter((w) => !AR_FILLER.has(w));
+  return (kept.length ? kept : words).map((w) => [...w].map((ch, i) => {
+    if (ch === 'و') return i === 0 ? 'w' : 'oo';
+    if (ch === 'ي') return i === 0 ? 'y' : 'i';
+    return AR[ch] !== undefined ? AR[ch] : ch;
+  }).join('').replace(/oo(?=[aeiou])/g, 'w').replace(/oo$/, 'o')).join(' ');
+}
+
 async function suggestSlug(name, trx = knex) {
-  let base = normalizeSlug(String(name || '').normalize('NFKD').replace(/[^\x20-\x7E]/g, '').replace(/[^a-zA-Z0-9 -]/g, '')).replace(/-+/g, '-').replace(/^-|-$/g, '');
+  let base = normalizeSlug(latinize(name).normalize('NFKD').replace(/[^\x20-\x7E]/g, '').replace(/[^a-zA-Z0-9 -]/g, '')).replace(/-+/g, '-').replace(/^-|-$/g, '');
   if (!base || base.length < 3 || RESERVED.has(base)) base = `clinic-${crypto.randomBytes(2).toString('hex')}`;
   base = base.slice(0, 34);
   let slug = base; let i = 2;
@@ -317,6 +334,6 @@ async function destroy(ctx, confirmName) {
 
 module.exports = {
   create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, setOnboarding, claimInvoiceNumber,
-  setSlug, bySlug, validateSlug, normalizeSlug, suggestSlug, RESERVED,
+  setSlug, bySlug, validateSlug, normalizeSlug, suggestSlug, latinize, RESERVED,
   listMembers, changeMember, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
 };

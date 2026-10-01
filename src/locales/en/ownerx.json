@@ -74,6 +74,9 @@
       "fee_x": "Fee {fee}",
       "add_another_doctor": "Add another doctor",
       "add_doctor": "Add a doctor",
+      "need_doctor_title": "Add at least one doctor",
+      "need_doctor_text": "Patients book with a doctor, so appointments and online booking need one. Add a doctor above — or choose \"Skip for now\" to do it later.",
+      "need_doctor_done": "Without a doctor no appointment can be booked and the online booking page shows the clinic's phone instead.",
       "add_doctor_sub": "You can add as many as you need, one after the other.",
       "i_am_doctor": "I am the doctor",
       "i_am_doctor_text": "fill in my name and link this profile to my own login, so I also see my own day.",
@@ -204,6 +207,7 @@
       "close_drawer": "Close the drawer",
       "drawer_cash": "Cash expected in the drawer: {amount} ({n} cash receipts).",
       "attention_now": "Needs your attention now",
+      "att_no_doctors": "No doctor yet — add one so appointments can be booked",
       "att_to_pay": "Visits finished today, not paid yet",
       "att_late": "Patients late for their appointment",
       "att_unpaid_old": "Earlier visits still unpaid"
