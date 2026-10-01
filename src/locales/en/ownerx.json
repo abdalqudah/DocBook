@@ -153,7 +153,11 @@
       "sum_team": "Staff logins: {n}",
       "sum_booking_on": "Online booking is on",
       "sum_booking_off": "Online booking is off",
-      "go_home": "Go to the home page"
+      "go_home": "Go to the home page",
+      "layout_same": "Same hours every day",
+      "layout_days": "Different hours per day",
+      "layout_days_help": "Tick the open days and set each day's hours. A day can have a second shift or a break.",
+      "copy_first": "Copy the first open day's hours to the other days"
     },
     "home": {
       "quick": "Quick actions",
@@ -260,7 +264,8 @@
       "Choose a valid role.": "Choose a valid role.",
       "This person already has a login at this clinic.": "This person already has a login at this clinic.",
       "An invitation was already sent to this e-mail.": "An invitation was already sent to this e-mail.",
-      "Use 3–40 English letters, numbers or dashes.": "Use 3–40 English letters, numbers or dashes."
+      "Use 3–40 English letters, numbers or dashes.": "Use 3–40 English letters, numbers or dashes.",
+      "Enter the opening and closing time of every open day (closing after opening).": "Enter the opening and closing time of every open day (closing after opening)."
     }
   }
 }

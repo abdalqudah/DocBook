@@ -139,3 +139,24 @@ test('clinic types: the admin hides a built-in type and adds one; sign-up and se
     await types.load(true);
   }
 });
+
+test('clinic week: a different time for each day, kept as entered and shown day by day', async () => {
+  const wh = { sat: { enabled: '1', s1: '09:00', e1: '17:00', extra: '0', break: '0' }, thu: { enabled: '1', s1: '09:00', e1: '13:00', extra: '0', break: '0' },
+    sun: { enabled: '1', s1: '10:00', e1: '14:00', extra: ['0', '1'], s2: '16:00', e2: '20:00', break: '0' } };
+  let e = await setup.saveHours(ctx, { hours_layout: 'days', wh: { sat: { enabled: '1', s1: '17:00', e1: '09:00' } } }).catch((x) => x);
+  assert.ok(e.details && e.details.days, 'closing before opening is refused');
+  e = await setup.saveHours(ctx, { hours_layout: 'days', wh: { sat: { s1: '09:00', e1: '17:00' } } }).catch((x) => x);
+  assert.ok(e.details && e.details.days, 'at least one open day');
+  const r = await setup.saveHours(ctx, { hours_layout: 'days', wh });
+  assert.deepEqual(r.week.thu.shifts, [{ start: '09:00', end: '13:00' }]);
+  assert.deepEqual(r.week.sun.shifts, [{ start: '10:00', end: '14:00' }, { start: '16:00', end: '20:00' }]);
+  assert.equal(r.week.mon.enabled, false);
+  assert.equal(J((await knex('doctors').where({ id: docA }).first('working_hours')).working_hours).thu.shifts[0].end, '13:00', 'doctors following the clinic get each day');
+  assert.equal(setup.hoursForm(r.week).perDay, true);
+  const o = app.agent();
+  await o.login(mail('owner'));
+  const page = await o.get('/app/onboarding/hours?lang=en');
+  assert.equal(page.status, 200);
+  assert.match(page.text, /name="hours_layout" value="days" checked/);
+  assert.match(page.text, /name="wh\[thu\]\[e1\]" value="13:00"/);
+});

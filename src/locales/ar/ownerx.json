@@ -153,7 +153,11 @@
       "sum_team": "حسابات الموظفين: {n}",
       "sum_booking_on": "الحجز الإلكتروني مفعّل",
       "sum_booking_off": "الحجز الإلكتروني متوقف",
-      "go_home": "الذهاب إلى الصفحة الرئيسية"
+      "go_home": "الذهاب إلى الصفحة الرئيسية",
+      "layout_same": "نفس الدوام كل الأيام",
+      "layout_days": "دوام مختلف لكل يوم",
+      "layout_days_help": "فعّل الأيام المفتوحة وحدّد ساعات كل يوم. يمكن إضافة فترة ثانية أو استراحة ليوم معيّن.",
+      "copy_first": "انسخ أوقات أول يوم مفتوح لباقي الأيام"
     },
     "home": {
       "quick": "إجراءات سريعة",
@@ -260,7 +264,8 @@
       "Choose a valid role.": "اختر الوظيفة.",
       "This person already has a login at this clinic.": "لهذا الشخص حساب في العيادة مسبقاً.",
       "An invitation was already sent to this e-mail.": "تم إرسال دعوة إلى هذا البريد مسبقاً.",
-      "Use 3–40 English letters, numbers or dashes.": "استخدم من 3 إلى 40 حرفاً إنجليزياً أو أرقاماً أو شرطات."
+      "Use 3–40 English letters, numbers or dashes.": "استخدم من 3 إلى 40 حرفاً إنجليزياً أو أرقاماً أو شرطات.",
+      "Enter the opening and closing time of every open day (closing after opening).": "أدخل وقت البدء والإغلاق لكل يوم مفتوح (الإغلاق بعد البدء)."
     }
   }
 }

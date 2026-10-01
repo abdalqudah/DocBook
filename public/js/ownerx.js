@@ -65,6 +65,20 @@
     toggle();
   }
 
+  /* ---------- Step 2: different hours per day — copy the first open day to the other open days ---------- */
+  var copyDay = $('[data-ox-copy-day]');
+  if (copyDay) {
+    copyDay.addEventListener('click', function () {
+      var rows = $$('.week-table tbody tr').filter(function (tr) { var cb = $('input[name$="[enabled]"]', tr); return cb && cb.checked; });
+      if (rows.length < 2) return;
+      var field = function (tr, k) { return $$('input[name$="[' + k + ']"]', tr).pop(); };
+      rows.slice(1).forEach(function (tr) {
+        ['s1', 'e1', 's2', 'e2', 'bs', 'be'].forEach(function (k) { field(tr, k).value = field(rows[0], k).value; });
+        ['extra', 'break'].forEach(function (k) { field(tr, k).checked = field(rows[0], k).checked; });
+      });
+    });
+  }
+
   /* ---------- Step 4: suggested services — typing a price ticks the row ---------- */
   var pick = $('[data-ox-pick]');
   if (pick) {

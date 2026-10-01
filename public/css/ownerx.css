@@ -114,3 +114,5 @@ details[open] > summary .ox-chev { transform: rotate(180deg); }
 .ox-pad { padding: 14px var(--card-pad, 18px); }
 @media (max-width: 640px) { .ox-check-list li.done { display: none; } }
 @media (max-width: 480px) { .onb-top { padding: 0 12px; } .onb-top .brand-word { display: none; } }
+.ox-hours:has(input[name="hours_layout"][value="same"]:checked) .ox-hours-days { display: none; }
+.ox-hours:has(input[name="hours_layout"][value="days"]:checked) .ox-hours-same { display: none; }

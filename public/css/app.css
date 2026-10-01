@@ -786,3 +786,7 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .peek-confirm-head { display: flex; align-items: center; gap: 8px; color: var(--primary); }
 .peek-confirm .help { margin: 0; }
 .grid-main .peek-confirm { margin: 0 0 16px; }
+.week-extras { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.week-table .row-sm { flex-wrap: nowrap; }
+.week-table .row-sm .input[type="time"] { flex: 1 1 0; min-width: 0; width: auto; max-width: 9.5em; padding-inline: 8px; }
+@media (max-width: 720px) { .table.responsive.week-table td[data-label] { flex-direction: column; align-items: stretch; text-align: start; gap: 6px; } }

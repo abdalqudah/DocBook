@@ -64,19 +64,7 @@
         <% } else { %><div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('doctors.hours_clinic_none') %> <a class="link" href="/app/onboarding/hours"><%= t('doctors.hours_clinic_set') %></a></div></div><% } %>
       </div>
     </div>
-    <div class="table-wrap dr-hours-custom"><table class="table responsive">
-      <thead><tr><th><%= t('doctors.day') %></th><th><%= t('doctors.shift1') %></th><th><%= t('doctors.shift2') %></th><th><%= t('doctors.break') %></th></tr></thead>
-      <tbody><% days.forEach(function (k) { var day = wh[k] || {}; var sh = day.shifts || (day.start ? [{ start: day.start, end: day.end }] : []); var br = (day.breaks || [])[0] || {}; var on = day.enabled !== false && sh.length > 0; %>
-        <tr>
-          <td class="primary-cell"><label class="check"><input type="checkbox" name="wh[<%= k %>][enabled]" value="1"<%= on ? ' checked' : '' %>><span class="strong"><%= t('days.' + k) %></span></label></td>
-          <td data-label="<%= t('doctors.shift1') %>"><div class="row-sm"><input class="input" type="time" name="wh[<%= k %>][s1]" value="<%= (sh[0] || {}).start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][e1]" value="<%= (sh[0] || {}).end || '' %>" aria-label="<%= t('common.to') %>"></div></td>
-          <td data-label="<%= t('doctors.shift2') %>"><div class="dr-opt"><input type="hidden" name="wh[<%= k %>][extra]" value="0"><label class="check small"><input type="checkbox" name="wh[<%= k %>][extra]" value="1"<%= sh[1] ? ' checked' : '' %>><span><%= t('doctors.add_shift') %></span></label>
-            <div class="row-sm dr-opt-fields"><input class="input" type="time" name="wh[<%= k %>][s2]" value="<%= (sh[1] || {}).start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][e2]" value="<%= (sh[1] || {}).end || '' %>" aria-label="<%= t('common.to') %>"></div></div></td>
-          <td data-label="<%= t('doctors.break') %>"><div class="dr-opt"><input type="hidden" name="wh[<%= k %>][break]" value="0"><label class="check small"><input type="checkbox" name="wh[<%= k %>][break]" value="1"<%= br.start ? ' checked' : '' %>><span><%= t('doctors.add_break') %></span></label>
-            <div class="row-sm dr-opt-fields"><input class="input" type="time" name="wh[<%= k %>][bs]" value="<%= br.start || '' %>" aria-label="<%= t('common.from') %>"><span class="muted">–</span><input class="input" type="time" name="wh[<%= k %>][be]" value="<%= br.end || '' %>" aria-label="<%= t('common.to') %>"></div></div></td>
-        </tr>
-      <% }) %></tbody>
-    </table></div>
+    <div class="table-wrap dr-hours-custom"><%- include('../../../partials/week-table', { wh: wh, days: days }) %></div>
   </div>
   <%- include('../../telehealth/_doctor-form') %>
   <div class="form-actions"><a class="btn btn-ghost" href="<%= doctor ? '/app/doctors/' + doctor.id : '/app/doctors' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>

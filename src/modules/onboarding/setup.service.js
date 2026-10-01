@@ -135,6 +135,7 @@ const hoursSchema = z.object({
 
 /** Validates the week form and returns it in doctors.working_hours shape ({ sun: { enabled, shifts, breaks } … }). */
 function parseHours(input) {
+  if (input && input.hours_layout === 'days') return parseWeekTable(input);
   const d = validate(hoursSchema, input || {});
   if (toMin(d.e1) <= toMin(d.s1)) throw E.validation({ e1: 'The closing time must be after the opening time.' });
   const shifts = [{ start: d.s1, end: d.e1 }];
@@ -147,6 +148,23 @@ function parseHours(input) {
   }
   const week = Object.fromEntries(scheduling.DAY_KEYS.map((k) => [k, d.days.includes(k) ? { enabled: true, shifts: shifts.map((s) => ({ ...s })), breaks: [] } : { enabled: false, shifts: [], breaks: [] }]));
   return { week, applyDoctors: d.apply_doctors };
+}
+
+/** "A different time for each day": the per-day table (wh[day][…]); each open day needs a valid first shift. */
+function parseWeekTable(input) {
+  const src = input.wh || {};
+  const week = scheduling.parseWorkingHoursForm(input);
+  for (const k of scheduling.DAY_KEYS) {
+    const d = src[k] || {};
+    if (d.enabled !== '1') continue; // eslint-disable-line no-continue
+    const first = week[k].shifts[0];
+    if (!first || first.start !== d.s1) throw E.validation({ days: 'Enter the opening and closing time of every open day (closing after opening).' });
+    const [a, b] = week[k].shifts;
+    if (b && toMin(b.start) < toMin(a.end)) throw E.validation({ days: 'The second shift must start after the first one ends.' });
+  }
+  if (!scheduling.DAY_KEYS.some((k) => week[k].enabled)) throw E.validation({ days: 'Choose at least one working day.' });
+  const applyDoctors = [].concat(input.apply_doctors || []).pop() === '1';
+  return { week, applyDoctors };
 }
 
 /** Saves the clinic's usual week; with applyDoctors, every doctor of the clinic gets it too. Returns how many doctors changed. */
@@ -172,12 +190,15 @@ async function clinicHours(businessId) {
 
 /** Form values for the week editor from a stored week (or a Sat–Thu 09:00–17:00 starting point). */
 function hoursForm(week) {
-  if (!week) return { days: WEEK.filter((k) => k !== 'fri'), s1: '09:00', e1: '17:00', split: false, s2: '17:00', e2: '21:00', saved: false };
+  if (!week) return { days: WEEK.filter((k) => k !== 'fri'), s1: '09:00', e1: '17:00', split: false, s2: '17:00', e2: '21:00', saved: false, perDay: false, wh: scheduling.defaultWorkingHours() };
   const open = WEEK.filter((k) => week[k] && week[k].enabled);
   const first = open.length ? week[open[0]].shifts : [];
   return {
     days: open, s1: (first[0] || {}).start || '09:00', e1: (first[0] || {}).end || '17:00', split: first.length > 1,
     s2: (first[1] || {}).start || '17:00', e2: (first[1] || {}).end || '21:00', saved: true,
+    // Open days that differ from each other (or have a break) can only be shown day by day.
+    perDay: open.some((k) => JSON.stringify(week[k].shifts) !== JSON.stringify(first) || (week[k].breaks || []).length > 0),
+    wh: week,
   };
 }
 

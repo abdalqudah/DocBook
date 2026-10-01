@@ -68,7 +68,8 @@
     "hours_clinic_none": "The clinic's hours are not set yet, so the default week is used (Sat–Thu 9:00–17:00).",
     "hours_clinic_set": "Set the clinic's hours",
     "add_shift": "Another time",
-    "add_break": "Break"
+    "add_break": "Break",
+    "day_extras": "Extras for the day (optional)"
   },
   "commission": {
     "basis": {
