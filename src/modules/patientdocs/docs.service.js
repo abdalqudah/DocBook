@@ -32,9 +32,20 @@ function ageOn(dob, onDate) {
 }
 
 async function clinicInfo(businessId) {
-  const c = await knex('businesses').where({ id: businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'logo', 'logo_mime', 'timezone', 'currency');
+  const c = await knex('businesses').where({ id: businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'logo', 'logo_mime', 'timezone', 'currency', 'color');
   if (!c) throw E.notFound('Clinic');
-  return { ...c, logo: isPdfImage(c.logo) ? c.logo : null };
+  return { ...c, logo: isPdfImage(c.logo) ? c.logo : null, accent: await accentOf(c) };
+}
+
+/** The clinic's own colour for its papers: its website's main colour when the site is live, else the clinic colour. */
+async function accentOf(c) {
+  const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+  try {
+    const st = await require('../website/site.service').publicState(c.id); // eslint-disable-line global-require
+    const p = st && st.status === 'live' && st.doc && st.doc.brand && st.doc.brand.primary;
+    if (p && HEX.test(p)) return p;
+  } catch { /* the clinic colour below */ }
+  return c.color && HEX.test(c.color) ? c.color : null;
 }
 
 /** Everything about the visit the documents print (patient, doctor, whether it was online). */
@@ -184,4 +195,4 @@ async function forPatient(businessId, apptId) {
   return { rows: rows.filter((r) => r.kind !== 'certificate' || certs.some((c) => c.id === r.ref_id && !c.revoked_at)), certs };
 }
 
-module.exports = { KINDS, SECTIONS, ageOn, clinicInfo, visitInfo, choices, sharedList, render, share, revoke, labelOf, forPatient, certificatesService };
+module.exports = { accentOf, KINDS, SECTIONS, ageOn, clinicInfo, visitInfo, choices, sharedList, render, share, revoke, labelOf, forPatient, certificatesService };

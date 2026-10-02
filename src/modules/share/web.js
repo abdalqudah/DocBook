@@ -111,6 +111,7 @@ async function serveDoc(req, res, got, doc, sigBase) {
   req.query.print = '1';
   localise(req, res, doc.locale, clinic);
   res.locals.sigSrc = (what) => `${sigBase}/sig/${what}.png`;
+  res.locals.shareBase = sigBase; // the page's "save as PDF" and "share" buttons use `${shareBase}/pdf`
   if (doc.kind === 'invoice') {
     const invoiceDoc = require('../clinic/invoice-doc'); // eslint-disable-line global-require
     res.locals.invoiceTpl = await require('../platformops/ops.service').invoiceTemplate(clinic.id); // eslint-disable-line global-require
@@ -144,7 +145,7 @@ pub.get('/:token', wrap(async (req, res) => {
   localise(req, res, got.link.locale, got.clinic);
   const t = res.locals.t;
   const items = (got.link.options.items || []).map((it, i) => ({ ...it, href: `/d/${req.params.token}/i/${i}`, name: t(`share.doc.${it.kind}`, it.label || {}) }));
-  return res.page('pages/share/visit', { layout: 'public', title: t('share.visit_title'), noindex: true, clinic: got.clinic, items, expires: new Date(got.link.expires_at).toISOString().slice(0, 10) });
+  return res.page('pages/share/visit', { layout: 'public', title: t('share.visit_title'), noindex: true, clinic: { ...got.clinic, displayName: (got.link.locale === 'en' && got.clinic.name_en) || got.clinic.name }, items, expires: new Date(got.link.expires_at).toISOString().slice(0, 10) });
 }));
 
 pub.get('/:token/i/:n(\\d+)', wrap(async (req, res) => {
@@ -153,6 +154,48 @@ pub.get('/:token/i/:n(\\d+)', wrap(async (req, res) => {
   if (!doc) return gone(req, res);
   return serveDoc(req, res, got, doc, `/d/${req.params.token}/i/${req.params.n}`);
 }));
+
+/** The document as PDF bytes: the visit papers through patientdocs, the invoice / order / referral built here. */
+async function pdfOf(got, doc) {
+  const { clinic, ctx } = got;
+  const docsSvc = require('../patientdocs/docs.service'); // eslint-disable-line global-require
+  const documents = require('../patientdocs/documents'); // eslint-disable-line global-require
+  if (['prescription', 'report', 'certificate'].includes(doc.kind)) {
+    if (doc.kind === 'certificate' && !(await knex('certificates').where({ id: doc.ref_id, business_id: doc.business_id }).whereNull('revoked_at').first('id'))) return null;
+    return docsSvc.render(ctx, doc.appointment_id, { kind: doc.kind, ref_id: doc.kind === 'report' ? doc.appointment_id : doc.ref_id, options: doc.options }, doc.locale);
+  }
+  const info = await docsSvc.clinicInfo(clinic.id);
+  const sig = require('../signatures/signatures.service'); // eslint-disable-line global-require
+  if (doc.kind === 'invoice') {
+    const invoiceDoc = require('../clinic/invoice-doc'); // eslint-disable-line global-require
+    const tpl = await require('../platformops/ops.service').invoiceTemplate(clinic.id) || {}; // eslint-disable-line global-require
+    const d = await invoiceDoc.load(ctx, doc.ref_id, { paper: 'a4' });
+    const marks = d.stampOn === false ? {} : await sig.forDocument(clinic.id, 'invoices', null).catch(() => ({}));
+    const number = `${tpl.prefix || ''}${d.inv.invoice_number}`;
+    return { filename: `invoice-${String(number).replace(/[^A-Za-z0-9-]/g, '')}.pdf`, pdf: await documents.invoice({ ...d, clinic: info, number, tpl, marks }, doc.locale) };
+  }
+  if (doc.kind === 'order' || doc.kind === 'referral') {
+    const orders = require('../orders/orders.service'); // eslint-disable-line global-require
+    const lib = require('../clinic/records.lib'); // eslint-disable-line global-require
+    const o = doc.kind === 'order' ? await orders.getOrder(ctx, doc.ref_id) : await orders.getReferral(ctx, doc.ref_id);
+    const marks = await sig.forDocument(clinic.id, 'reports', o.doctor_id).catch(() => ({}));
+    return { filename: `${doc.kind}-${o.id}.pdf`, pdf: await documents.orderSheet({ clinic: info, doc: o, kind: doc.kind, age: lib.ageOf(o.date_of_birth, new Date().toISOString().slice(0, 10)), marks }, doc.locale) };
+  }
+  return null;
+}
+
+async function sendPdf(req, res, got, doc) {
+  if (!got || !doc) return gone(req, res);
+  const out = await pdfOf(got, doc);
+  if (!out) return gone(req, res);
+  res.set({
+    'Content-Type': 'application/pdf', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer',
+    'Content-Disposition': `${req.query.dl === '1' ? 'attachment' : 'inline'}; filename="${out.filename}"`,
+  });
+  return res.end(out.pdf);
+}
+pub.get('/:token/pdf', wrap(async (req, res) => { const got = await load(req); return sendPdf(req, res, got, got && got.link.kind !== 'visit' && got.link.kind !== 'file' ? got.link : null); }));
+pub.get('/:token/i/:n(\\d+)/pdf', wrap(async (req, res) => { const got = await load(req); const doc = got && itemOf(got.link, req.params.n); return sendPdf(req, res, got, doc && doc.kind !== 'file' ? doc : null); }));
 
 async function sendSig(req, res, got, doc) {
   const { sendImage } = require('../signatures/web'); // eslint-disable-line global-require

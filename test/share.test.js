@@ -58,6 +58,26 @@ test('WhatsApp buttons open a chat with the patient and a secure link; the link 
   assert.match(r.text, /Share Patient/);
   assert.match(r.text, /Visit/);
   assert.doesNotMatch(r.text, /Acute pharyngitis/, 'nothing else of the record');
+  // print / save as PDF / share buttons (screen only), the clinic's public colours, and the PDF itself
+  assert.match(r.text, new RegExp(`/d/${url[1]}/pdf\\?dl=1`));
+  assert.match(r.text, /data-share-pdf=/);
+  assert.match(r.text, /share-actions no-print/);
+  assert.doesNotMatch(r.text, /\/app\/theme\//);
+  r = await visitor.get(`/d/${url[1]}/pdf?dl=1`);
+  assert.equal(r.status, 200);
+  assert.match(r.type, /application\/pdf/);
+  assert.match(r.text.slice(0, 5), /%PDF-/);
+  // a test request and a referral as PDF too (signed sheets on the clinic's letterhead)
+  const [oid] = await knex('medical_orders').insert({ business_id: businessId, appointment_id: visit, patient_id: patientId, doctor_id: null, patient_name: 'Share Patient', kind: 'lab', items: JSON.stringify([{ name: 'CBC', code: 'CBC' }]), status: 'ordered' });
+  const [fid] = await knex('referrals').insert({ business_id: businessId, appointment_id: visit, patient_id: patientId, patient_name: 'Share Patient', specialty: 'Cardiology', reason: 'Chest pain' });
+  const staffCtx = { businessId, userId: null, ownDoctorId: null, permissions: new Set(['clinical.view']) };
+  for (const [kind, id] of [['order', oid], ['referral', fid]]) {
+    const made = await share.create(staffCtx, kind, id, { locale: 'ar' });
+    r = await visitor.get(`${made.url}/pdf`);
+    assert.equal(r.status, 200, kind);
+    assert.match(r.type, /application\/pdf/, kind);
+  }
+  await knex('medical_orders').where({ id: oid }).del(); await knex('referrals').where({ id: fid }).del();
   // prescription and visit report as PDF
   for (const [kind, id] of [['prescription', rxId], ['report', visit]]) {
     r = await o.get(`/app/share/wa?kind=${kind}&id=${id}`);
@@ -103,6 +123,10 @@ test('Today shows each visit\'s papers; one WhatsApp link lists all of them; the
   assert.match(r.text, /Share Patient/);
   r = await visitor.get(`/d/${tok}/i/1`);
   assert.match(r.type, /application\/pdf/);
+  r = await visitor.get(`/d/${tok}/i/0/pdf`);
+  assert.match(r.type, /application\/pdf/, 'the visit\'s invoice as PDF');
+  r = await visitor.get(`/d/${tok}/i/3/pdf`);
+  assert.equal(r.status, 404, 'a file is not turned into a PDF');
   r = await visitor.get(`/d/${tok}/i/9`);
   assert.equal(r.status, 404);
   // e-mail: refused without an address, sent straight away with one

@@ -89,10 +89,12 @@ function visualRuns(line, baseDir, bold = false) {
 
 class Writer {
   /**
-   * @param {object} o { locale: 'ar'|'en', title, author, subject }
+   * @param {object} o { locale: 'ar'|'en', title, author, subject, accent } — accent: the clinic's colour (#hex) for
+   *   the letterhead rule and headings; dark text when the clinic has none (never the platform's colour).
    */
-  constructor({ locale = 'ar', title = '', author = '', subject = '' } = {}) {
+  constructor({ locale = 'ar', title = '', author = '', subject = '', accent = null } = {}) {
     this.rtl = locale === 'ar';
+    this.accent = accent && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(accent) ? accent : C.text;
     this.dir = this.rtl ? 'rtl' : 'ltr';
     this.doc = new PDFDocument({
       size: 'A4', margins: { top: 48, bottom: 56, left: 50, right: 50 }, bufferPages: true, autoFirstPage: true,

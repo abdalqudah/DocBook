@@ -197,6 +197,21 @@
     });
   });
   $$('[data-print]').forEach(function (b) { b.addEventListener('click', function () { window.print(); }); });
+  /* A shared document's "Share" button: the PDF itself through the phone's share sheet (WhatsApp, e-mail…); shown only
+     where the browser can share files. */
+  $$('[data-share-pdf]').forEach(function (b) {
+    if (!navigator.share || !navigator.canShare || typeof File === 'undefined') return;
+    try { if (!navigator.canShare({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] })) return; } catch (e) { return; }
+    b.hidden = false;
+    b.addEventListener('click', function () {
+      b.disabled = true;
+      fetch(b.getAttribute('data-share-pdf'), { credentials: 'same-origin' }).then(function (r) {
+        if (!r.ok) throw new Error('pdf');
+        var name = ((r.headers.get('content-disposition') || '').match(/filename="([^"]+)"/) || [])[1] || 'document.pdf';
+        return r.blob().then(function (blob) { return navigator.share({ files: [new File([blob], name, { type: 'application/pdf' })], title: b.getAttribute('data-share-title') || name }); });
+      }).catch(function () { /* cancelled or not possible: the save button stays */ }).then(function () { b.disabled = false; });
+    });
+  });
   if (/[?&]autoprint=1/.test(location.search)) setTimeout(function () { window.print(); }, 400);
 
   /* ---------- Password strength ---------- */

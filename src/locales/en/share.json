@@ -44,6 +44,9 @@
       "prescription": "Prescription",
       "orders": "Requested tests",
       "invoice": "Invoice"
-    }
+    },
+    "print": "Print",
+    "save_pdf": "Save PDF",
+    "share_pdf": "Share PDF"
   }
 }

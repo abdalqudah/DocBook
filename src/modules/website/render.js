@@ -157,4 +157,4 @@ function contrastOnWhite(hex) {
   return Math.round((1.05 / (l + 0.05)) * 10) / 10;
 }
 
-module.exports = { locals, css, contrastOnWhite, mediaUrls, hoursRows, WEEK, FONT_STACK };
+module.exports = { locals, css, contrastOnWhite, mediaUrls, hoursRows, siteChrome, WEEK, FONT_STACK };

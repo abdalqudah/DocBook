@@ -7,5 +7,5 @@
 <link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
 <% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function (h) { %><link rel="stylesheet" href="<%= h %>?v=<%= assetV %>"><% }) %>
-<% if (typeof business !== 'undefined' && business && business.color) { %><link rel="stylesheet" href="/app/theme/<%= business.id %>.css?c=<%= encodeURIComponent(business.color) %>"><% } %>
+<% if (typeof publicShare !== 'undefined' && publicShare && typeof business !== 'undefined' && business && business.slug) { /* a document shared with a patient: the clinic's public colours */ %><link rel="stylesheet" href="/<%= business.slug %>/theme.css"><% } else if (typeof business !== 'undefined' && business && business.color) { %><link rel="stylesheet" href="/app/theme/<%= business.id %>.css?c=<%= encodeURIComponent(business.color) %>"><% } %>
 <meta name="csrf-token" content="<%= csrfToken %>">

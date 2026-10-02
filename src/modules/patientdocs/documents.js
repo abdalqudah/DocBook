@@ -31,7 +31,7 @@ function letterhead(w, clinic, locale) {
   ].filter(Boolean);
   lines.forEach((l) => w.text(l, { size: 9, color: C.textMuted, x: textX, width: textW }));
   w.y = Math.max(w.y, top + 58);
-  w.rule({ gap: 10, color: C.borderStrong });
+  w.rule({ gap: 10, color: w.accent, width: 1.4 });
 }
 
 /** Document title at the start side, reference/date at the end side (same line). */
@@ -121,7 +121,7 @@ async function prescription(d, locale = 'ar') {
   const t = translator(locale);
   const en = locale === 'en';
   const clinicName = pick(en, d.clinic.name, d.clinic.name_en);
-  const w = new Writer({ locale, title: `${t('patient_docs.kinds.prescription')} #${d.rx.id}`, author: clinicName, subject: d.patient_name });
+  const w = new Writer({ accent: d.clinic && d.clinic.accent, locale, title: `${t('patient_docs.kinds.prescription')} #${d.rx.id}`, author: clinicName, subject: d.patient_name });
   letterhead(w, d.clinic, locale);
   titleRow(w, t('patient_docs.kinds.prescription'), [t('patient_docs.pdf.rx_no', { n: d.rx.id }), dateText(d.rx.created_at, locale)]);
   w.fields(doctorFields(d, locale, t), { cols: 3, size: 10 });
@@ -132,7 +132,7 @@ async function prescription(d, locale = 'ar') {
     codeLines(w, d.codes, locale);
   }
   w.rule({ gap: 8 });
-  w.text('Rx', { size: 18, bold: true, color: C.primary, gap: 2, align: 'start' });
+  w.text('Rx', { size: 18, bold: true, color: w.accent, gap: 2, align: 'start' });
   const numW = 24;
   (d.rx.items || []).forEach((it, i) => {
     w.ensure(60);
@@ -167,7 +167,7 @@ async function report(d, locale = 'ar') {
   const t = translator(locale);
   const en = locale === 'en';
   const clinicName = pick(en, d.clinic.name, d.clinic.name_en);
-  const w = new Writer({ locale, title: t('patient_docs.kinds.report'), author: clinicName, subject: d.patient_name });
+  const w = new Writer({ accent: d.clinic && d.clinic.accent, locale, title: t('patient_docs.kinds.report'), author: clinicName, subject: d.patient_name });
   letterhead(w, d.clinic, locale);
   titleRow(w, t('patient_docs.kinds.report'), [t('patient_docs.pdf.visit_no', { n: d.appointment_id }), dateText(d.visit_date, locale)]);
   w.fields(doctorFields(d, locale, t), { cols: 3, size: 10 });
@@ -213,7 +213,7 @@ async function certificate(d, locale) {
   const en = loc === 'en';
   const clinicName = pick(en, cert.clinic_name || d.clinic.name, cert.clinic_name_en || d.clinic.name_en);
   const title = t(`patient_docs.cert_types.${cert.doc_type}`);
-  const w = new Writer({ locale: loc, title: `${title} ${cert.serial}`, author: clinicName, subject: cert.patient_name });
+  const w = new Writer({ accent: d.clinic && d.clinic.accent, locale: loc, title: `${title} ${cert.serial}`, author: clinicName, subject: cert.patient_name });
   letterhead(w, d.clinic, loc);
   titleRow(w, title, [ltr(cert.serial), dateText(cert.issued_at, loc)]);
   w.fields([
@@ -267,4 +267,106 @@ async function certificate(d, locale) {
   return w.end();
 }
 
-module.exports = { prescription, report, certificate, marksFor, REPORT_SECTIONS, VITAL_KEYS };
+// ---------------------------------------------------------------- invoice, test request, referral (shared with the patient)
+const money = (v, cur, locale) => { const n = Number(v) || 0; try { return ltr(`${new Intl.NumberFormat(locale === 'en' ? 'en' : 'ar-u-nu-latn', { minimumFractionDigits: cur === 'JOD' || cur === 'KWD' || cur === 'BHD' || cur === 'OMR' ? 3 : 2, maximumFractionDigits: 3 }).format(n)} ${cur || ''}`.trim()); } catch { return ltr(String(n)); } };
+
+/** Two-column row: label at the start side, value at the end side. */
+function kv(w, label, value, { bold = false, size = 10.5 } = {}) {
+  w.ensure(24);
+  const y = w.y;
+  w.text(label, { size, bold, y, fixed: true, width: w.width * 0.6, x: w.rtl ? w.right - w.width * 0.6 : w.left });
+  w.text(value, { size, bold, y, fixed: true, align: 'end' });
+  w.y = y + size * 1.9;
+}
+
+/**
+ * Invoice (A4) for the patient.
+ * @param d { clinic, inv, lines[], subtotal, insuranceAmount, patientAmount, parts[], issued, number, tpl, marks }
+ */
+async function invoice(d, locale = 'ar') {
+  const t = translator(locale);
+  const en = locale === 'en';
+  const clinicName = pick(en, d.clinic.name, d.clinic.name_en);
+  const cur = d.clinic.currency;
+  const tpl = d.tpl || {};
+  const on = (f) => tpl[f] !== false;
+  const i = d.inv;
+  const w = new Writer({ accent: d.clinic.accent, locale, title: `${t('invoicex.invoice')} ${d.number}`, author: clinicName, subject: i.patient_name });
+  letterhead(w, d.clinic, locale);
+  titleRow(w, t('invoicex.invoice'), [ltr(`#${d.number}`), [dateText(d.issued && d.issued.date, locale), d.issued && d.issued.time ? ltr(d.issued.time) : ''].filter(Boolean).join(' · ')]);
+  const fields = [{ label: t('invoicex.patient'), value: i.patient_name || '—' }];
+  if (i.patient_phone) fields.push({ label: t('common.phone'), value: ltr(i.patient_phone) });
+  if (i.doctor_name && on('show_doctor')) fields.push({ label: t('patient_docs.pdf.doctor'), value: i.doctor_name });
+  if (i.appointment_date) fields.push({ label: t('patient_docs.pdf.visit_date'), value: dateText(i.appointment_date, locale) });
+  w.fields(fields, { cols: Math.min(4, fields.length), size: 10 });
+  w.rule({ gap: 6 });
+  // lines: item … qty × price … total
+  const lines = on('show_service') && (d.lines || []).length ? d.lines : [{ name: on('show_service') ? (i.service_name || t('billing.consultation')) : t('invoice_tpl.services_line'), qty: 1, unitPrice: d.subtotal, total: d.subtotal }];
+  lines.forEach((l) => {
+    const q = Number(l.qty) || 1;
+    const tot = l.total !== undefined && l.total !== null ? Number(l.total) : q * (Number(l.unitPrice) || 0);
+    kv(w, q > 1 ? `${l.name || i.service_name || t('billing.consultation')}  (${ltr(`${q} × ${money(l.unitPrice, '', locale).trim()}`)})` : (l.name || i.service_name || t('billing.consultation')), money(tot, cur, locale));
+  });
+  w.rule({ gap: 6 });
+  if (Number(i.discount_amount) > 0 && on('show_discount')) {
+    kv(w, t('invoicex.subtotal'), money(d.subtotal, cur, locale));
+    kv(w, t('invoicex.discount'), ltr(`− ${money(i.discount_amount, cur, locale)}`));
+  }
+  kv(w, t('invoicex.total'), money(i.amount, cur, locale), { bold: true, size: 13 });
+  if (Number(d.insuranceAmount) > 0 && on('show_insurance')) {
+    kv(w, t('invoicex.insurance_pays'), money(d.insuranceAmount, cur, locale));
+    kv(w, t('invoicex.patient_pays'), money(d.patientAmount, cur, locale), { bold: true });
+  }
+  if (on('show_method') && (d.parts || []).length) {
+    section(w, t('invoicex.payments'));
+    d.parts.filter((p) => p && p.method).forEach((p) => kv(w, p.method === 'insurance' && i.insurance_provider_name ? t('invoicex.insurance_of', { name: i.insurance_provider_name }) : t(`invoicex.m.${['cash', 'card', 'bank_transfer', 'digital_wallet', 'insurance'].includes(p.method) ? p.method : 'other'}`), money(p.amount, cur, locale), { size: 10 }));
+  }
+  const foot = (en ? tpl.footer_en || tpl.footer : tpl.footer || tpl.footer_en) || t('invoicex.thanks');
+  w.space(10);
+  w.text(foot, { size: 9.5, color: C.textMuted });
+  const marks = d.marks || {};
+  if (marks.stamp && on('show_stamp')) { w.ensure(100); w.space(8); const box = 88; w.fitImage(marks.stamp, w.rtl ? w.left : w.right - box, w.y, box, box, { align: 'center', valign: 'center' }); w.space(box); }
+  footer(w, clinicName, ltr(`#${d.number}`), t);
+  return w.end();
+}
+
+/** Test request (lab / imaging) or referral letter, signed by the doctor. d: { clinic, doc, age, kind: 'order'|'referral', marks } */
+async function orderSheet(d, locale = 'ar') {
+  const t = translator(locale);
+  const en = locale === 'en';
+  const o = d.doc;
+  const clinicName = pick(en, d.clinic.name, d.clinic.name_en);
+  const title = d.kind === 'order' ? t(`orders.sheet_${o.kind}`) : t('orders.referral_title');
+  const w = new Writer({ accent: d.clinic.accent, locale, title, author: clinicName, subject: o.patient_full_name || o.patient_name });
+  letterhead(w, d.clinic, locale);
+  titleRow(w, title, [ltr(`#${o.id}`), dateText(o.created_at, locale)]);
+  w.fields(doctorFields(o, locale, t), { cols: 3, size: 10 });
+  w.fields([
+    { label: t('patient_docs.pdf.patient'), value: o.patient_full_name || o.patient_name || '—' },
+    { label: t('patient_docs.pdf.age'), value: d.age !== null && d.age !== undefined ? t('patient_docs.pdf.age_years', { n: d.age }) : '—' },
+    { label: t('patient_docs.pdf.gender'), value: o.gender ? t(`patient_docs.pdf.genders.${o.gender}`) : '—' },
+    { label: t('common.phone'), value: o.patient_phone ? ltr(o.patient_phone) : '—' },
+  ], { cols: 4, size: 10 });
+  w.rule({ gap: 6 });
+  if (d.kind === 'order') {
+    if (o.urgency === 'urgent') w.text(t('orders.urgency.urgent'), { size: 11, bold: true, color: C.danger || w.accent, gap: 4 });
+    (o.items || []).forEach((it, n) => {
+      const name = pick(en, it.name, it.name_en) || '—';
+      w.text(`${n + 1}.  ${name}${it.code ? `  (${ltr(it.code)})` : ''}`, { size: 12, gap: 4 });
+    });
+    if (o.notes) { section(w, t('orders.notes')); w.text(o.notes, { size: 10, gap: 4 }); }
+  } else {
+    section(w, t('orders.to'));
+    w.text([t('orders.referral_to', { specialty: o.specialty }), o.to_doctor, o.to_facility].filter(Boolean).join(' — '), { size: 11.5, bold: true, gap: 6 });
+    w.text(t('orders.referral_greeting'), { size: 10.5, gap: 6 });
+    section(w, t('orders.reason')); w.text(o.reason || '—', { size: 10.5, gap: 4 });
+    if (o.summary) { section(w, t('orders.summary')); w.text(o.summary, { size: 10.5, gap: 4 }); }
+    w.space(4);
+    w.text(t('orders.referral_thanks'), { size: 10.5 });
+  }
+  signature(w, pick(en, o.doctor_name, o.doctor_name_en), t, d.marks || {});
+  footer(w, clinicName, ltr(`#${o.id}`), t);
+  return w.end();
+}
+
+module.exports = { prescription, report, certificate, invoice, orderSheet, marksFor, REPORT_SECTIONS, VITAL_KEYS };

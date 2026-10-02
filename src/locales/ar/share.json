@@ -44,6 +44,9 @@
       "prescription": "الوصفة",
       "orders": "الفحوصات المطلوبة",
       "invoice": "الفاتورة"
-    }
+    },
+    "print": "طباعة",
+    "save_pdf": "حفظ PDF",
+    "share_pdf": "مشاركة PDF"
   }
 }

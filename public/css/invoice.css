@@ -104,7 +104,9 @@
 .ivd-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto; }
 .ivd-note { margin: 0; color: var(--text-muted); font-size: 12px; white-space: pre-line; }
 .ivd-stamp { max-height: 96px; max-width: 130px; object-fit: contain; flex-shrink: 0; }
-.is-receipt80 .ivd-foot { flex-direction: column; align-items: center; text-align: center; border-top-style: dashed; padding-top: 6px; gap: 6px; }
+/* a wrapping row, not a column: Chrome adds a blank second page when an image sits in a column flex box on the 80 mm paper */
+.is-receipt80 .ivd-foot { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; text-align: center; border-top-style: dashed; padding-top: 6px; gap: 6px; }
+.is-receipt80 .ivd-note { flex-basis: 100%; }
 .is-receipt80 .ivd-note { font-size: 10.5px; }
 .is-receipt80 .ivd-stamp { max-height: 56px; }
 
@@ -141,6 +143,12 @@
   .ivd-lines tr, .ivd-kv, .ivd-foot { break-inside: avoid; }
   .pos-batch-one + .pos-batch-one .ivd:not(.is-receipt80) { break-before: page; }
   .pos-batch-one + .pos-batch-one .ivd.is-receipt80 { margin-top: 6mm; }
+  /* The page (paper size) belongs to the whole document, not only to the paper: otherwise the browser starts a
+     second, blank page for what sits around it (the page padding, scripts). */
+  html:has(.ivd.is-a4), body:has(.ivd.is-a4) { page: ivd-a4; }
+  html:has(.ivd.is-a5), body:has(.ivd.is-a5) { page: ivd-a5; }
+  html:has(.ivd.is-receipt80), body:has(.ivd.is-receipt80) { page: ivd-r80; }
+  body:has(.ivd) { padding: 0 !important; margin: 0 !important; min-height: 0 !important; }
 }
 @page ivd-a4 { size: A4; margin: 14mm; }
 @page ivd-a5 { size: A5; margin: 9mm; }

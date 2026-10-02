@@ -53,6 +53,24 @@ async function loadClinic(req) {
 /** Page styles for a clinic page: the site stylesheet plus the clinic's own brand colour (when it set one). */
 const clinicStyles = (clinic) => ['/css/site.css', ...(clinic.color && theme.HEX.test(clinic.color) ? [`/${clinic.slug}/theme.css`] : [])];
 
+/**
+ * The clinic's website on its other public pages (booking, a doctor's page, reviews, messages…): the same header and
+ * logo, footer, colours and fonts as its home page. Without a live website: the classic look. Returns
+ * { bodyClass, styles } for res.page; sets the header/footer locals.
+ */
+async function siteChromeFor(req, res, clinic) {
+  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  if (state.status !== 'live' || !state.doc) return { bodyClass: '', styles: clinicStyles(clinic) };
+  const site = require('../website/render'); // eslint-disable-line global-require
+  const media = await site.mediaUrls(clinic, state.doc, { preview: false });
+  const img = (id) => (id && media[id]) || null;
+  res.locals.wsSite = site.siteChrome(req, clinic, state.doc, { key: '' }, { preview: false, img });
+  res.locals.wsSite.whiteLabel = await require('../platformops/ops.service').entitled(clinic, 'website.white_label'); // eslint-disable-line global-require
+  res.locals.siteLight = Boolean(state.doc.header && state.doc.header.dark_mode === false);
+  res.locals.wsConnections = await require('../website/marketing.service').get(clinic.id); // eslint-disable-line global-require
+  return { bodyClass: `ws-body ws-theme-${state.doc.theme}`, styles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', `/${clinic.slug}/theme.css`] };
+}
+
 /** Clinic-wide price display: 'site' (website pages, search data) or 'booking' (the booking pages). On unless turned off. */
 const pricesShown = (clinic, where = 'site') => {
   const v = clinic && clinic[where === 'booking' ? 'prices_on_booking' : 'prices_on_site'];
@@ -221,11 +239,10 @@ router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
   res.locals.currency = clinic.currency;
   const title = `${d.name} · ${clinic.displayName}`;
   const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors: [d], title, description: [d.specialty, d.bioFull].filter(Boolean).join(' · ').slice(0, 160) });
-  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  const look = await siteChromeFor(req, res, clinic);
   return res.page('pages/portal/doctor', {
     layout: 'public', title, pageTitle: title, seoHead, clinic, d, services: services.filter((x) => !x.doctorId || x.doctorId === d.id),
-    bodyClass: state.doc ? `ws-body ws-theme-${state.doc.theme}` : '',
-    pageStyles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', `/${clinic.slug}/theme.css`],
+    bodyClass: look.bodyClass, pageStyles: look.styles,
   });
 }));
 
@@ -334,6 +351,7 @@ router.post('/:slug/enter', wrap(async (req, res, next) => {
 module.exports = router;
 module.exports.loadClinic = loadClinic;
 module.exports.clinicStyles = clinicStyles;
+module.exports.siteChromeFor = siteChromeFor;
 module.exports.listDoctors = listDoctors;
 module.exports.listServices = listServices;
 module.exports.pricesShown = pricesShown;

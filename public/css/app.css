@@ -935,3 +935,12 @@ dialog.drawer::backdrop { background: var(--overlay); }
   .sb-mini .sys-status > span { display: none; }
   .sb-mini .sys-status { padding: 0; }
 }
+/* Shared documents and printed papers on a phone: the letterhead wraps instead of squeezing the clinic name. */
+@media screen and (max-width: 640px) {
+  .print-sheet { padding: 16px; }
+  .print-letterhead { flex-wrap: wrap; }
+  .print-letterhead img { max-width: 100%; height: auto; max-height: 56px; }
+  .print-letterhead > .grow { flex-basis: 60%; }
+  .share-actions { justify-content: stretch; flex-wrap: wrap; }
+  .share-actions > * { flex: 1 1 auto; justify-content: center; }
+}

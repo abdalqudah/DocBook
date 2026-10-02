@@ -78,10 +78,24 @@ function createApp() {
       const print = data.printable && req.query.print === '1';
       const layout = print ? 'print' : data.layout || 'app';
       for (const k of ['dir', 'locale', 't', 'theme', 'csrfToken', 'currentUser']) if (k in data && k in res.locals) delete data[k];
-      res.render(view, data, (err, body) => {
+      const draw = () => res.render(view, data, (err, body) => {
         if (err) return next(err);
         return res.render(`layouts/${layout}`, { ...data, body }, (err2, html) => (err2 ? next(err2) : res.send(html)));
       });
+      // A clinic's public page (booking, a doctor, reviews, a shared document…): its website's header, logo, footer
+      // and colours, like its home page.
+      const c = data.clinic;
+      if (layout === 'public' && c && c.id && c.slug && !data.wsSite && !res.locals.wsSite && !data.embedMode && !res.locals.embedMode) {
+        return require('./modules/site/portal.web').siteChromeFor(req, res, c).then((look) => { // eslint-disable-line global-require
+          if (look.bodyClass) {
+            const own = (data.pageStyles || []).filter((h) => h !== '/css/site.css' && !h.endsWith('/theme.css'));
+            data.pageStyles = [...look.styles, ...own];
+            data.bodyClass = [data.bodyClass, look.bodyClass].filter(Boolean).join(' ');
+          }
+          draw();
+        }).catch(next);
+      }
+      return draw();
     };
     next();
   });
