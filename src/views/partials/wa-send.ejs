@@ -1,0 +1,3 @@
+<%/* "Send on WhatsApp": a secure link to this document in a ready message (kind, id; optional extra query, small, label). */%>
+<% var _sm = typeof small !== 'undefined' && small; var _lbl = typeof label === 'undefined' || label; %>
+<a class="btn <%= _sm ? 'btn-ghost btn-sm' : 'btn-secondary' %><%= _lbl ? '' : ' btn-icon' %> wa-send" href="/app/share/wa?kind=<%= kind %>&id=<%= id %><%= typeof extra !== 'undefined' && extra ? '&' + extra : '' %>" target="_blank" rel="noopener" title="<%= t('share.send_wa') %>" aria-label="<%= t('share.send_wa') %>"><%- icon('message-circle', 'icon-sm') %><% if (_lbl) { %><span class="<%= _sm ? 'hide-sm' : '' %>"><%= t('share.send_wa_short') %></span><% } %></a>

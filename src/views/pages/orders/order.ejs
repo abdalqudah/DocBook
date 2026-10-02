@@ -8,6 +8,7 @@
   </div>
   <div class="page-actions">
     <% if (o.patient_id) { %><a class="btn btn-secondary" href="/app/patients/<%= o.patient_id %>?tab=orders"><%- icon('user-round', 'icon-sm') %><%= t('orders.patient_file') %></a><% } %>
+    <%- include('../../partials/wa-send', { kind: 'order', id: o.id }) %>
     <a class="btn btn-primary" href="/app/orders/<%= o.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
   </div>
 </div>

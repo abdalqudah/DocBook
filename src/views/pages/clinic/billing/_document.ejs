@@ -87,6 +87,6 @@
 
   <footer class="ivd-foot">
     <p class="ivd-note" dir="auto"><%= foot || t('invoicex.thanks') %></p>
-    <% if (showStamp) { %><img class="ivd-stamp" src="/app/signatures/invoices/<%= i.id %>/stamp.png" alt="<%= t('invoicex.stamp') %>"><% } %>
+    <% if (showStamp) { %><img class="ivd-stamp" src="<%= typeof sigSrc === 'function' ? sigSrc('stamp') : '/app/signatures/invoices/' + i.id + '/stamp.png' %>" alt="<%= t('invoicex.stamp') %>"><% } %>
   </footer>
 </article>

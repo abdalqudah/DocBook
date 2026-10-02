@@ -1,0 +1,29 @@
+{
+  "share": {
+    "title": "Send the document to the patient",
+    "send_wa": "Send to the patient on WhatsApp",
+    "send_wa_short": "WhatsApp",
+    "message": "Hello {name}, {clinic} sent you {doc}:\n{link}\nThis link is for you and works until {date}.",
+    "doc": {
+      "invoice": "invoice no. {n}",
+      "prescription": "your prescription",
+      "report": "your visit report and diagnosis",
+      "certificate": "your medical document (sick leave / report)",
+      "order": "your test request",
+      "referral": "your referral letter to {specialty}",
+      "file": "the file: {title}"
+    },
+    "no_phone": "The patient has no valid mobile number. Copy the link or the message and send it any way you like.",
+    "link_label": "Link to {doc}",
+    "message_label": "Message",
+    "copy": "Copy",
+    "copy_message": "Copy message",
+    "privacy": "The link opens this document only, expires after 30 days, and every opening is recorded.",
+    "gone_title": "This link is not available",
+    "gone_text": "This link has expired or was withdrawn. Ask the clinic to send a new one.",
+    "err": {
+      "RECORD_RESTRICTED": "This patient’s medical record is restricted.",
+      "SHARE_REVOKED_DOC": "This document was revoked and cannot be sent."
+    }
+  }
+}

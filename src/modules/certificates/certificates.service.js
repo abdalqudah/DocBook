@@ -290,6 +290,8 @@ async function revoke(ctx, id, input) {
       .update({ revoked_at: new Date(), revoked_by: ctx.userId || null, revoke_reason: reason });
     if (!n) throw new AppError('ALREADY_REVOKED', 'This document is already revoked.', 409);
     await audit.record(ctx, 'certificate.revoked', { entityType: 'certificate', entityId: doc.id, oldValues: { serial: doc.serial }, newValues: { serial: doc.serial, reason } }, trx);
+    // Links already sent to the patient stop working.
+    await trx('share_links').where({ business_id: ctx.businessId, kind: 'certificate', ref_id: doc.id }).whereNull('revoked_at').update({ revoked_at: new Date() });
     return doc;
   });
 }

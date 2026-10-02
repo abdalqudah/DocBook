@@ -30,6 +30,7 @@ router.use('/', require('../modules/discover/public.web')); // clinic directory 
 router.use('/c', require('../modules/payments/patient.web')); // "Pay online" + "Your documents" on /c/<token> (before telehealth)
 router.use('/c', require('../modules/telehealth/public.web'));
 router.use('/pay', require('../modules/payments/public.web')); // card payment pages (/pay/<id>, HyperPay return)
+router.use('/d', require('../modules/share/web').pub); // documents sent to patients by secure link (/d/<token>)
 router.use('/', require('../modules/messaging/public.web')); // patient links from messages: /r/<token> (confirm/cancel/reschedule), /review/<token>
 router.use('/', require('../modules/telehealth/booking.web'));
 router.use('/', require('../modules/site/booking.web'));

@@ -3,14 +3,14 @@
 <head><%- include('../partials/head') %></head>
 <body class="print-page">
 <main class="print-sheet">
-  <div class="print-actions no-print"><a class="btn btn-ghost btn-sm" href="<%= fullPath.replace(/([?&])print=1&?/, '$1').replace(/[?&]$/, '') %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a><button class="btn btn-primary btn-sm" type="button" data-print><%- icon('printer', 'icon-sm') %><%= t('reports.print_pdf') %></button></div>
+  <div class="print-actions no-print"><% if (typeof publicShare === 'undefined' || !publicShare) { %><a class="btn btn-ghost btn-sm" href="<%= fullPath.replace(/([?&])print=1&?/, '$1').replace(/[?&]$/, '') %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a><% } %><button class="btn btn-primary btn-sm" type="button" data-print><%- icon('printer', 'icon-sm') %><%= t('reports.print_pdf') %></button></div>
   <header class="print-letterhead">
-    <% if (business.logo_mime) { %><img src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= business.name %>"><% } else { %><svg class="brand-mark" viewBox="0 0 64 64" style="width:44px;height:44px" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--primary)"/><path d="M20 16h14c9.4 0 16 6.8 16 16s-6.6 16-16 16H20z" fill="none" stroke="var(--primary-ink)" stroke-width="5"/></svg><% } %>
+    <% if (business.logo_mime) { %><img src="<%= typeof logoSrc !== 'undefined' && logoSrc ? logoSrc : '/app/logo/' + business.id + '?v=' + business.logo_version %>" alt="<%= business.name %>"><% } else { %><svg class="brand-mark" viewBox="0 0 64 64" style="width:44px;height:44px" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--primary)"/><path d="M20 16h14c9.4 0 16 6.8 16 16s-6.6 16-16 16H20z" fill="none" stroke="var(--primary-ink)" stroke-width="5"/></svg><% } %>
     <div class="grow"><strong style="font-size:16px"><%= business.name %></strong><div class="muted small"><%= [business.legal_name, business.tax_number ? t('settings.tax_number') + ': ' + business.tax_number : null, business.address].filter(Boolean).join(' · ') %></div></div>
     <div class="text-end small muted"><%= fmt.date(new Date(), { dateStyle: 'long' }) %></div>
   </header>
   <%- body %>
-  <footer class="print-footer muted tiny"><span><%= t('reports.generated_by', { name: brandName, user: currentUser ? currentUser.name : '' }) %></span><% if (!/^\/app\/certificates/.test(path)) { %><span><%= business.currency %></span><% } %></footer>
+  <footer class="print-footer muted tiny"><span><%= typeof publicShare !== 'undefined' && publicShare ? business.name : t('reports.generated_by', { name: brandName, user: currentUser ? currentUser.name : '' }) %></span><% if (!/^\/app\/certificates/.test(path)) { %><span><%= business.currency %></span><% } %></footer>
 </main>
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
 <% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>

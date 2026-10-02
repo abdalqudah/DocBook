@@ -1,0 +1,12 @@
+<%# No usable mobile number: the secure link and the message, to copy into any chat. %>
+<div class="page-head"><div><h1><%= t('share.title') %></h1><p><%= noPhone ? t('share.no_phone') : '' %></p></div></div>
+<section class="panel" style="max-width: 720px">
+  <div class="panel-body stack">
+    <div class="field"><label class="label" for="share-url"><%= t('share.link_label', { doc: docName }) %></label>
+      <div class="row-sm"><input class="input" id="share-url" value="<%= url %>" readonly dir="ltr"><button class="btn btn-secondary" type="button" data-copy="share-url"><%- icon('copy', 'icon-sm') %><%= t('share.copy') %></button></div></div>
+    <div class="field"><label class="label" for="share-text"><%= t('share.message_label') %></label>
+      <textarea class="textarea" id="share-text" rows="5" readonly dir="auto"><%= text %></textarea>
+      <div><button class="btn btn-ghost btn-sm" type="button" data-copy="share-text"><%- icon('copy', 'icon-sm') %><%= t('share.copy_message') %></button></div></div>
+    <p class="help"><%= t('share.privacy') %></p>
+  </div>
+</section>

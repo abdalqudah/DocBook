@@ -542,6 +542,13 @@ async function clickToChat(ctx, apptId, kind, base) {
   return { href: ch.waMeLink(to, text), optedOut: await isOptedOut({ ...a, business_id: ctx.businessId }, dialFor(cfg, clinic)) };
 }
 
+/** A patient's phone as an international WhatsApp number (the clinic's dialling code for local numbers), or null. */
+async function waNumberFor(businessId, phone) {
+  const cfg = await getConfig(businessId);
+  const clinic = await businesses.get(businessId);
+  return ch.msisdn(phone, dialFor(cfg, clinic));
+}
+
 // ---------------------------------------------------------------- patient actions (/r/<token> and WhatsApp buttons)
 const patientCtx = (clinic, meta = {}) => ({
   businessId: clinic.id, userId: null, userName: null, timezone: clinic.timezone, locale: meta.locale || 'ar', ip: meta.ip, userAgent: meta.userAgent,
@@ -684,7 +691,7 @@ function ics(a, clinic, locale, link) {
 }
 
 module.exports = {
-  notifyCancelled,
+  notifyCancelled, waNumberFor,
   TOKEN_RE, REVIEW_LINK_DAYS, DEFAULTS, STOP_WORDS,
   zonedToUtc, dateText, lengthOf, startOf, getConfig, saveSettings, readiness, waCreds, smsCfg, dialFor,
   linkFor, byToken, actionUrl, reviewUrl, actionState, isOptedOut, setOptOut, patientsForPhone, log, recentLog, logSummary,

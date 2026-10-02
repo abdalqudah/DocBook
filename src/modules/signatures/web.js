@@ -164,3 +164,4 @@ router.get('/signatures/invoices/:id(\\d+)/stamp.png', can('billing.view'), wrap
 }));
 
 module.exports = router;
+module.exports.sendImage = sendImage;

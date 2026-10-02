@@ -15,6 +15,7 @@
   <div class="page-actions">
     <% if (doc.appointment_id && canAny('clinical.view', 'vitals.edit', 'frontdesk.use')) { %><a class="btn btn-ghost" href="/app/visits/<%= doc.appointment_id %>#documents"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('certificates.open_visit') %></a><% } %>
     <% if (canIssue && !doc.revoked_at) { %><button class="btn btn-secondary" type="button" data-open-dialog="revoke-dialog"><%- icon('circle-x', 'icon-sm') %><%= t('certificates.revoke') %></button><% } %>
+    <% if (!doc.revoked_at) { %><%- include('../../partials/wa-send', { kind: 'certificate', id: doc.id }) %><% } %>
     <a class="btn <%= doc.revoked_at ? 'btn-secondary' : 'btn-primary' %>" href="/app/certificates/<%= doc.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('certificates.print') %></a>
   </div>
 </div>

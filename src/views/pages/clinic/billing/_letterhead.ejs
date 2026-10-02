@@ -43,7 +43,7 @@
   <% _P.forEach(function (z) { var items = _zone[z]; if (!items.length) { %><div class="ivd-lh-zone is-<%= z %> is-empty"></div><% return; } %>
   <div class="ivd-lh-zone is-<%= z %><%= items.indexOf('logo') >= 0 && items.indexOf('who') >= 0 ? ' has-pair' : '' %>">
     <% items.forEach(function (it) { %>
-      <% if (it === 'logo') { %><img class="ivd-lh-logo" src="/app/logo/<%= _b.id %>?v=<%= _b.logo_version %>" alt="<%= _primary %>"><% } %>
+      <% if (it === 'logo') { %><img class="ivd-lh-logo" src="<%= typeof logoSrc !== 'undefined' && logoSrc ? logoSrc : '/app/logo/' + _b.id + '?v=' + _b.logo_version %>" alt="<%= _primary %>"><% } %>
       <% if (it === 'who') { %>
       <div class="ivd-lh-who">
         <% if (_showName) { %><div class="ivd-lh-name"><bdi><%= _primary %></bdi></div>

@@ -14,6 +14,7 @@
     <p><span dir="auto"><%= inv.patient_name %></span> · <%= fmt.date(issued.date) %></p>
   </div>
   <div class="page-actions">
+    <%- include('../../../partials/wa-send', { kind: 'invoice', id: inv.id }) %>
     <a class="btn btn-secondary" href="<%= paperHref(paper, '&print=1') %>"><%- icon('file-text', 'icon-sm') %><%= t('billing.print_view') %></a>
     <a class="btn btn-primary" href="<%= paperHref(paper, '&print=1&autoprint=1') %>"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
   </div>
