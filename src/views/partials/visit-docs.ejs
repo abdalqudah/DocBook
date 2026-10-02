@@ -7,6 +7,9 @@
         <% }) %>
         <span class="doc-sep" aria-hidden="true"></span>
         <span class="doc-share">
+        <% if (a.status === 'completed' || a.payment_status === 'paid') { %>
+          <a class="doc-ic is-thanks" href="/app/share/thanks?id=<%= a.id %>" target="_blank" rel="noopener" title="<%= t('share.thanks_btn') %>" aria-label="<%= t('share.thanks_btn') %>"><%- icon('star', 'icon-sm') %></a>
+        <% } %>
         <% if (D.send && D.send.length) { var mailOk = mailOn && a.email; %>
           <details class="dropdown send-dd">
             <summary class="doc-ic is-wa" title="<%= t('share.send_visit') %>" aria-label="<%= t('share.send_visit') %>"><%- icon('message-circle', 'icon-sm') %></summary>

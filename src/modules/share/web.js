@@ -52,6 +52,33 @@ staff.get('/pick', wrap(async (req, res) => {
   return res.page('pages/share/pick', { title: req.t('share.pick_title'), apptId: doc.appointment_id, patient: doc.name, items, phone: doc.phone, email, mailOn: await mailer.configuredFor(ctx.businessId) });
 }));
 
+// End of the visit: "thank you for visiting <clinic> — please rate your visit: <link>" on WhatsApp. The link is the
+// clinic's Google review link (Website → Connections) when it set one, else its own review page for this visit.
+staff.get('/thanks', wrap(async (req, res) => {
+  const ctx = req.ctx;
+  if (!['appointments.manage', 'billing.view', 'clinical.view'].some((p) => ctx.permissions.has(p))) throw require('../../core/errors').E.forbidden('appointments.manage'); // eslint-disable-line global-require
+  const doc = await svc.target(ctx, 'visit', req.query.id);
+  const a = await knex('appointments').where({ id: doc.appointment_id, business_id: ctx.businessId }).first('id', 'business_id', 'status', 'payment_status');
+  if (!(a.status === 'completed' || a.payment_status === 'paid')) return failed(req, res, new AppError('THANKS_NOT_DONE', 'The visit is not finished yet.', 409));
+  const msgLocale = ['ar', 'en'].includes(req.query.lang_msg) ? req.query.lang_msg : req.locale;
+  const t = translator(msgLocale);
+  const clinic = req.business;
+  const marketing = await require('../website/marketing.service').get(ctx.businessId); // eslint-disable-line global-require
+  let link = marketing && marketing.google && marketing.google.review;
+  let via = 'google';
+  if (!link) {
+    const messaging = require('../messaging/messaging.service'); // eslint-disable-line global-require
+    const { token } = await messaging.linkFor(a, 'review');
+    link = messaging.reviewUrl(publicBase(req), token);
+    via = 'site';
+  }
+  const text = t('share.thanks_message', { name: doc.name || '', clinic: (msgLocale === 'en' && clinic.name_en) || clinic.name, link });
+  await audit.record(ctx, 'share.thanks_sent', { entityType: 'appointment', entityId: a.id, newValues: { via } });
+  const to = doc.phone ? await require('../messaging/messaging.service').waNumberFor(ctx.businessId, doc.phone) : null; // eslint-disable-line global-require
+  if (!to) return res.page('pages/share/link', { title: req.t('share.thanks_title'), url: link, text, docName: req.t('share.thanks_link'), noPhone: true });
+  return res.redirect(`https://wa.me/${to}?text=${encodeURIComponent(text)}`);
+}));
+
 const sendWa = wrap(async (req, res) => {
   let c;
   try { c = await compose(req, { ...req.query, ...(req.method === 'POST' ? req.body : {}) }); } catch (e) { return failed(req, res, e); }

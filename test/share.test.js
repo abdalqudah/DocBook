@@ -207,6 +207,25 @@ test('reception prints the prescription and the test request from Today; only th
   await knex('medical_orders').whereIn('id', [oid, lid]).del(); await knex('referrals').where({ id: refId }).del();
 });
 
+test('after the visit: a thank-you on WhatsApp asking for a review (Google link when set, else the clinic\'s review page)', async () => {
+  const o = app.agent(); await o.login(mail('a'));
+  let r = await o.get('/app');
+  assert.match(r.text, new RegExp(`/app/share/thanks\\?id=${visit}"`), 'the thank-you button on a finished visit');
+  r = await o.get(`/app/share/thanks?id=${visit}&lang_msg=ar`);
+  let text = waLink(r);
+  assert.match(text, /شكراً لزيارتكم/);
+  assert.match(text, /\/review\/[A-Za-z0-9_-]+/, 'the clinic\'s own review page');
+  const visitor = app.agent();
+  assert.equal((await visitor.get(text.match(/\/review\/[A-Za-z0-9_-]+/)[0])).status, 200);
+  await knex('businesses').where({ id: businessId }).update({ marketing: JSON.stringify({ social: {}, google: { business: '', review: 'https://g.page/r/share-test/review' }, verify: {}, pixels: {} }) });
+  require('../src/core/cache').forgetPrefix('');
+  r = await o.get(`/app/share/thanks?id=${visit}&lang_msg=en`);
+  text = waLink(r);
+  assert.match(text, /thank you for visiting/);
+  assert.match(text, /https:\/\/g\.page\/r\/share-test\/review/, 'the Google review link when the clinic set one');
+  assert.ok(await knex('audit_logs').where({ business_id: businessId, action: 'share.thanks_sent' }).first('id'));
+});
+
 test('another clinic cannot share these documents; a patient without a mobile gets a copy-the-link page', async () => {
   const other = app.agent(); await other.login(mail('b'));
   let r = await other.get(`/app/share/wa?kind=invoice&id=${invId}`);

@@ -154,3 +154,4 @@ tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
 .send-menu .send-acts .btn-primary { background: var(--primary); color: var(--primary-ink); }
 .send-menu .send-acts .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
 .send-menu .send-acts .btn[disabled] { opacity: .5; cursor: not-allowed; }
+.doc-ic.is-thanks { opacity: 1; color: var(--warning); background: var(--warning-soft); cursor: pointer; }
