@@ -226,6 +226,34 @@ test('after the visit: a thank-you on WhatsApp asking for a review (Google link 
   assert.ok(await knex('audit_logs').where({ business_id: businessId, action: 'share.thanks_sent' }).first('id'));
 });
 
+test('the top bar opens the cash screen; it shows the logo and the clock (no clinic name) and takes an expense; one letterhead setting for every paper', async () => {
+  const o = app.agent(); await o.login(mail('a'));
+  let r = await o.get('/app?lang=en');
+  assert.match(r.text, /href="\/app\/cashier\/screen" title="[^"]+"/, 'cash screen icon in the top bar');
+  r = await o.get('/app/cashier/screen?lang=en');
+  assert.equal(r.status, 200);
+  assert.doesNotMatch(r.text, /class="pos-clinic/, 'no clinic name in the header');
+  assert.match(r.text, /data-pos-clock/);
+  assert.match(r.text, /id="pos-expense-dialog"/);
+  r = await o.submit('/app/cashier/screen', '/app/expenses', { title: 'Printer paper', amount: '3.5', date: new Date().toISOString().slice(0, 10), category: 'miscellaneous', payment_method: 'cash', _return: '/app/cashier/screen' });
+  assert.equal(r.status, 302);
+  assert.equal(r.location, '/app/cashier/screen', 'back to the cash screen');
+  assert.ok(await knex('expenses').where({ business_id: businessId, title: 'Printer paper' }).first('id'));
+  r = await o.submit('/app/cashier/screen', '/app/expenses', { title: 'Elsewhere', amount: '1', date: new Date().toISOString().slice(0, 10), category: 'miscellaneous', payment_method: 'cash', _return: 'https://evil.example/' });
+  assert.equal(r.location, '/app/expenses', 'never off the app');
+  // the clinic name switched off in the invoice template: off on the printed test request too
+  const ops = require('../src/modules/platformops/ops.service');
+  await ops.saveInvoiceTemplate({ businessId, userId: null }, { paper: 'a4', prefix: '', footer: '', footer_en: '', logo_size: 's', show_logo: '1', show_name: '', show_contact: '1' });
+  assert.equal((await ops.invoiceTemplate(businessId)).show_name, false);
+  const [oid] = await knex('medical_orders').insert({ business_id: businessId, appointment_id: visit, patient_id: patientId, patient_name: 'Share Patient', kind: 'lab', items: JSON.stringify([{ name: 'CBC' }]), status: 'ordered' });
+  r = await o.get(`/app/orders/${oid}?print=1`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /class="print-letterhead plh-/);
+  assert.match(r.text, /print-letterhead plh-s/, 'the small logo size');
+  assert.doesNotMatch(r.text, /class="plh-name"/, 'name hidden as set');
+  await knex('medical_orders').where({ id: oid }).del();
+});
+
 test('another clinic cannot share these documents; a patient without a mobile gets a copy-the-link page', async () => {
   const other = app.agent(); await other.login(mail('b'));
   let r = await other.get(`/app/share/wa?kind=invoice&id=${invId}`);

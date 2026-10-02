@@ -60,7 +60,7 @@
     "off_ask": "Ask the clinic manager if you need it."
   },
   "invoice_tpl": {
-    "lead": "How printed invoices and receipts look: paper size, what is printed and the invoice numbers.",
+    "lead": "How printed invoices and receipts look: paper size, what is printed and the invoice numbers. This letterhead (logo and its size, clinic name, address and phone) applies to every paper: invoices, prescriptions, reports, certificates, test requests and referrals, printed or sent to the patient.",
     "billing_off": "Cashier and billing are turned off for this clinic. The template is kept for when you turn them on.",
     "paper_title": "Paper size",
     "paper_sub": "Choose what your printer uses. The 80 mm receipt uses a narrow layout for receipt printers.",

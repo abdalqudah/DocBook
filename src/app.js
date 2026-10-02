@@ -84,6 +84,13 @@ function createApp() {
       });
       // A clinic's public page (booking, a doctor, reviews, a shared document…): its website's header, logo, footer
       // and colours, like its home page.
+      // Printed papers share one letterhead, set in the invoice template (logo, name, contact, logo size).
+      const biz = res.locals.business;
+      if (layout === 'print' && biz && biz.id && !data.invoiceTpl && !res.locals.invoiceTpl) {
+        return require('./modules/platformops/ops.service').invoiceTemplate(biz.id).then((tpl) => { // eslint-disable-line global-require
+          res.locals.invoiceTpl = tpl; draw();
+        }).catch(next);
+      }
       const c = data.clinic;
       if (layout === 'public' && c && c.id && c.slug && !data.wsSite && !res.locals.wsSite && !data.embedMode && !res.locals.embedMode) {
         return require('./modules/site/portal.web').siteChromeFor(req, res, c).then((look) => { // eslint-disable-line global-require

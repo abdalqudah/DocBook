@@ -11,7 +11,6 @@
     <div class="pos-id">
       <% if (business.logo_mime) { %><img class="pos-logo" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= clinicName %>"><% } else { %><span class="pos-mark" aria-hidden="true"><%= initials(clinicName) %></span><% } %>
       <div class="pos-id-text">
-        <div class="pos-clinic truncate"><%= clinicName %></div>
         <div class="pos-sub">
           <span><%= t('cashpos.title') %></span>
           <span class="num" dir="ltr" data-pos-clock data-tz="<%= business.timezone || 'UTC' %>"></span>
@@ -20,6 +19,7 @@
       </div>
     </div>
     <div class="pos-head-actions">
+      <% if (typeof expense !== 'undefined' && expense) { %><button class="btn btn-secondary btn-sm" type="button" data-open-dialog="pos-expense-dialog"><%- icon('receipt-text', 'icon-sm') %><span class="hide-sm"><%= t('expenses.add') %></span></button><% } %>
       <button class="btn btn-ghost btn-icon" type="button" data-pos-sound aria-pressed="true" title="<%= t('cashpos.sound') %>" aria-label="<%= t('cashpos.sound') %>"><span data-pos-sound-on><%- icon('volume-2') %></span><span data-pos-sound-off hidden><%- icon('volume-x') %></span></button>
       <button class="btn btn-ghost btn-icon" type="button" data-pos-fs hidden title="<%= t('cashpos.full_screen') %>" aria-label="<%= t('cashpos.full_screen') %>" data-on="<%= t('cashpos.exit_full_screen') %>" data-off="<%= t('cashpos.full_screen') %>"><span data-pos-fs-enter><%- icon('maximize') %></span><span data-pos-fs-exit hidden><%- icon('minimize') %></span></button>
       <a class="btn btn-ghost btn-icon" href="/app/cashier" data-pos-exit title="<%= t('cashpos.close') %>" aria-label="<%= t('cashpos.close') %>"><%- icon('x') %></a>
@@ -144,3 +144,22 @@
     exit_full_screen: t('cashpos.exit_full_screen'), today: t('common.today'), line_error: t('cashpos.line_error')
   }
 }) %></script>
+<% if (typeof expense !== 'undefined' && expense) { %>
+<dialog class="dialog" id="pos-expense-dialog" aria-labelledby="pos-expense-title">
+  <form method="post" action="/app/expenses" novalidate>
+    <div class="dialog-head"><h2 id="pos-expense-title"><%= t('expenses.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="/app/cashier/screen">
+      <div class="form-grid">
+        <%- include('../../../partials/field', { name: 'title', label: t('expenses.title_field'), required: true, cls: 'full', placeholder: t('expenses.title_placeholder') }) %>
+        <%- include('../../../partials/field', { name: 'amount', label: t('common.amount'), required: true, type: 'text', suffix: currency, attrs: 'inputmode="decimal"' }) %>
+        <%- include('../../../partials/field', { name: 'date', label: t('common.date'), required: true, type: 'date', value: today }) %>
+        <%- include('../../../partials/field', { name: 'category', label: t('common.category'), type: 'select', required: true, options: expense.cats, value: 'miscellaneous' }) %>
+        <%- include('../../../partials/field', { name: 'payment_method', label: t('expenses.payment_method'), type: 'select', required: true, options: expense.methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }), value: 'cash' }) %>
+        <%- include('../../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>

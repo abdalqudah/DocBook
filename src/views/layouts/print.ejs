@@ -13,9 +13,22 @@
   <% } else { %>
   <div class="print-actions no-print"><% if (!_pub) { %><a class="btn btn-ghost btn-sm" href="<%= fullPath.replace(/([?&])print=1&?/, '$1').replace(/[?&]$/, '') %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a><% } %><button class="btn btn-primary btn-sm" type="button" data-print><%- icon('printer', 'icon-sm') %><%= t('reports.print_pdf') %></button></div>
   <% } %>
-  <header class="print-letterhead">
-    <% if (business.logo_mime) { %><img src="<%= typeof logoSrc !== 'undefined' && logoSrc ? logoSrc : '/app/logo/' + business.id + '?v=' + business.logo_version %>" alt="<%= business.name %>"><% } else { %><svg class="brand-mark" viewBox="0 0 64 64" style="width:44px;height:44px" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--primary)"/><path d="M20 16h14c9.4 0 16 6.8 16 16s-6.6 16-16 16H20z" fill="none" stroke="var(--primary-ink)" stroke-width="5"/></svg><% } %>
-    <div class="grow"><strong style="font-size:16px"><%= business.name %></strong><div class="muted small"><%= [business.legal_name, business.tax_number ? t('settings.tax_number') + ': ' + business.tax_number : null, business.address].filter(Boolean).join(' · ') %></div></div>
+  <%
+    // One letterhead for every paper, set in Settings → Invoice template: logo on/off and size, clinic name on/off,
+    // address and phones on/off (the invoice paper draws its own from the same settings).
+    var _tpl = (typeof invoiceTpl !== 'undefined' && invoiceTpl) || {};
+    var _on = function (f) { return _tpl[f] !== false; };
+    var _size = ['s', 'm', 'l', 'xl'].indexOf(_tpl.logo_size) >= 0 ? _tpl.logo_size : 'm';
+    var _bname = locale === 'en' && business.name_en ? business.name_en : business.name;
+    var _contact = _on('show_contact') ? [[business.address, business.city].filter(Boolean).join(locale === 'en' ? ', ' : '، '), business.phone ? '\u2066' + business.phone + '\u2069' : ''].filter(Boolean).join(' · ') : '';
+  %>
+  <header class="print-letterhead plh-<%= _size %>">
+    <% if (_on('show_logo') && business.logo_mime) { %><img class="plh-logo" src="<%= typeof logoSrc !== 'undefined' && logoSrc ? logoSrc : '/app/logo/' + business.id + '?v=' + business.logo_version %>" alt="<%= _bname %>"><% } %>
+    <div class="grow">
+      <% if (_on('show_name')) { %><div class="plh-name"><%= _bname %></div><% } %>
+      <% if (_contact) { %><div class="muted small"><%= _contact %></div><% } %>
+      <% if (_on('show_tax') && business.tax_number) { %><div class="muted small"><%= t('settings.tax_number') %>: <bdi dir="ltr"><%= business.tax_number %></bdi></div><% } %>
+    </div>
     <div class="text-end small muted"><%= fmt.date(new Date(), { dateStyle: 'long' }) %></div>
   </header>
   <%- body %>

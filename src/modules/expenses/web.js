@@ -8,6 +8,8 @@ const svc = require('./expense.service');
 
 const router = express.Router();
 router.use(can('expenses.view'));
+// Where to go after saving: an /app page only (e.g. back to the cash screen), else the expenses list.
+const backTo = (v) => (typeof v === 'string' && /^\/app(\/[\w\-/?=&.%]*)?$/.test(v) && !v.startsWith('//') ? v : '/app/expenses');
 
 function catLabel(res, custom) {
   const map = Object.fromEntries(custom.map((c) => [c.key, c.name]));
@@ -46,17 +48,17 @@ const rerender = (req, res, extra) => render(req, res, { ...extra, openDialog: '
 router.post('/', can('expenses.manage'), form(async (req, res) => {
   await svc.save(req.ctx, null, req.body);
   flash(req, 'success', req.t('expenses.saved'));
-  res.redirect(req.body._return || '/app/expenses');
+  res.redirect(backTo(req.body._return));
 }, rerender));
 router.post('/:id(\\d+)', can('expenses.manage'), form(async (req, res) => {
   await svc.save(req.ctx, Number(req.params.id), req.body);
   flash(req, 'success', req.t('common.updated'));
-  res.redirect(req.body._return || '/app/expenses');
+  res.redirect(backTo(req.body._return));
 }, rerender));
 router.post('/:id(\\d+)/delete', can('expenses.manage'), wrap(async (req, res) => {
   await svc.expenses.remove(req.ctx, Number(req.params.id));
   flash(req, 'success', req.t('common.deleted'));
-  res.redirect(req.body._return || '/app/expenses');
+  res.redirect(backTo(req.body._return));
 }));
 router.post('/categories', can('expenses.manage'), form(async (req, res) => {
   await svc.addCategory(req.ctx, req.body.name);

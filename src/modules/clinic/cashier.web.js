@@ -180,10 +180,17 @@ const addIdsOf = (v) => String(v || '').split(',').map(Number).filter((x) => Num
 router.get('/screen', can('billing.manage'), wrap(async (req, res) => {
   const { ctx } = req;
   const add = addIdsOf(req.query.add);
-  const [data, insurers] = await Promise.all([posData(req, add), svc.activeInsurance(ctx)]);
+  const canExpense = ctx.permissions.has('expenses.manage');
+  const expensesSvc = canExpense ? require('../expenses/expense.service') : null; // eslint-disable-line global-require
+  const [data, insurers, expCats] = await Promise.all([posData(req, add), svc.activeInsurance(ctx), canExpense ? expensesSvc.categories(ctx.businessId) : null]);
+  // "Add an expense" from the cash screen (paid from the drawer): the same form as Finance → Expenses.
+  const expense = canExpense ? {
+    cats: expCats.system.map((k) => ({ value: k, label: res.locals.label('categories', k) })).concat(expCats.custom.map((c) => ({ value: c.key, label: c.name }))),
+    methods: expensesSvc.PAYMENT_METHODS,
+  } : null;
   res.set('Cache-Control', 'no-store');
   return res.page('pages/clinic/cashier/screen', {
-    title: req.t('cashpos.title'), layout: 'cashscreen', bodyClass: 'pos-body',
+    title: req.t('cashpos.title'), layout: 'cashscreen', bodyClass: 'pos-body', expense,
     pos: { ...data, add, insurers: insurers.map((i) => ({ id: i.id, name: i.name, coverage: Number(i.coverage_percent) || 0 })), decimals: decimalsOf(ctx.currency) },
     pageScripts: ['/js/cashpos.js'], pageStyles: ['/css/cashpos.css'],
   });

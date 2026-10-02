@@ -32,9 +32,13 @@ function ageOn(dob, onDate) {
 }
 
 async function clinicInfo(businessId) {
-  const c = await knex('businesses').where({ id: businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'logo', 'logo_mime', 'timezone', 'currency', 'color');
+  const c = await knex('businesses').where({ id: businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'logo', 'logo_mime', 'timezone', 'currency', 'color', 'tax_number');
   if (!c) throw E.notFound('Clinic');
-  return { ...c, logo: isPdfImage(c.logo) ? c.logo : null, accent: await accentOf(c) };
+  // The same letterhead settings as every other paper (Settings → Invoice template).
+  const tpl = await require('../platformops/ops.service').invoiceTemplate(businessId).catch(() => ({})); // eslint-disable-line global-require
+  const on = (f) => !tpl || tpl[f] !== false;
+  const lh = { logo: on('show_logo'), name: on('show_name'), contact: on('show_contact'), size: ['s', 'm', 'l', 'xl'].includes(tpl && tpl.logo_size) ? tpl.logo_size : 'm' };
+  return { ...c, logo: lh.logo && isPdfImage(c.logo) ? c.logo : null, accent: await accentOf(c), lh };
 }
 
 /** The clinic's own colour for its papers: its website's main colour when the site is live, else the clinic colour. */

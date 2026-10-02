@@ -14,24 +14,30 @@ function dateText(v, locale) {
   try { return formatDate(v, locale, { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return String(v).slice(0, 10); }
 }
 
-/** Letterhead: logo at the start side, clinic name and contacts; returns the writer for chaining. */
+/**
+ * Letterhead: logo at the start side, clinic name and contacts — as set in Settings → Invoice template (logo on/off
+ * and size, name on/off, contact on/off), the same on every paper; returns the writer for chaining.
+ */
+const LOGO_PT = { s: 28, m: 38, l: 50, xl: 64 };
 function letterhead(w, clinic, locale) {
   const en = locale === 'en';
+  const lh = clinic.lh || { name: true, contact: true, size: 'm' };
+  const logoH = LOGO_PT[lh.size] || LOGO_PT.m;
   const top = w.y;
   let textX = w.left;
   let textW = w.width;
   if (clinic.logo) {
-    const box = w.image(clinic.logo, { side: 'start', height: 54, maxWidth: 120, y: top });
-    if (box) { textW = w.width - box.w - 16; if (!w.rtl) textX = w.left + box.w + 16; }
+    const box = w.image(clinic.logo, { side: 'start', height: logoH, maxWidth: logoH * 3.2, y: top });
+    if (box) { textW = w.width - box.w - 14; if (!w.rtl) textX = w.left + box.w + 14; }
   }
-  w.text(pick(en, clinic.name, clinic.name_en), { size: 16, bold: true, x: textX, width: textW, y: top });
-  const lines = [
+  if (lh.name !== false) w.text(pick(en, clinic.name, clinic.name_en), { size: 14, bold: true, x: textX, width: textW, y: top });
+  const lines = lh.contact === false ? [] : [
     [pick(en, clinic.address, clinic.address_en), clinic.city].filter(Boolean).join(' · '),
     [clinic.phone ? ltr(clinic.phone) : '', clinic.email ? ltr(clinic.email) : ''].filter(Boolean).join('   '),
   ].filter(Boolean);
-  lines.forEach((l) => w.text(l, { size: 9, color: C.textMuted, x: textX, width: textW }));
-  w.y = Math.max(w.y, top + 58);
-  w.rule({ gap: 10, color: w.accent, width: 1.4 });
+  lines.forEach((l) => w.text(l, { size: 8.5, color: C.textMuted, x: textX, width: textW }));
+  w.y = Math.max(w.y, top + (clinic.logo ? logoH + 4 : 0));
+  w.rule({ gap: 8, color: w.accent, width: 1.2 });
 }
 
 /** Document title at the start side, reference/date at the end side (same line). */

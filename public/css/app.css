@@ -733,7 +733,9 @@ body.print-page { background: var(--surface); }
 .print-sheet { max-width: 960px; margin: 0 auto; padding: 32px; }
 .print-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; }
 .print-letterhead { display: flex; align-items: center; gap: 14px; padding-bottom: 16px; margin-bottom: 20px; border-bottom: 2px solid var(--primary); }
-.print-letterhead img { height: 44px; width: auto; }
+.print-letterhead img, .print-letterhead .plh-logo { height: var(--plh-logo, 44px); width: auto; max-width: calc(var(--plh-logo, 44px) * 3.2); object-fit: contain; }
+.plh-s { --plh-logo: 32px; } .plh-m { --plh-logo: 44px; } .plh-l { --plh-logo: 60px; } .plh-xl { --plh-logo: 80px; }
+.plh-name { font-size: 16px; font-weight: var(--fw-bold); }
 .print-footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
 @media print {
   .no-print, .sidebar, .topbar, .bottom-nav, .toasts, .print-actions { display: none !important; }
