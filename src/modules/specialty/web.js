@@ -288,7 +288,9 @@ async function renderSettings(req, res, extra = {}) {
   let items = s.schedule;
   if (old && old.items) items = (Array.isArray(old.items) ? old.items : Object.values(old.items)).map((i) => ({ key: '', label: '', from: '', to: '', ...i }));
   res.page('pages/specialty/settings', {
-    title: req.t('specialty_mod.settings_title'), s, items, defaults: preg.DEFAULT_SCHEDULE, moduleIcon: MODULE_ICON, modules: svc.MODULES, ...ASSETS, ...extra,
+    title: req.t('specialty_mod.settings_title'), s, items, defaults: preg.DEFAULT_SCHEDULE, moduleIcon: MODULE_ICON, modules: svc.shownModules(req.business, s),
+    dxTable: require('../clinicalplus/icd.service').specialtyTable(req.business.specialty || 'general'), // eslint-disable-line global-require
+    ...ASSETS, ...extra,
   });
 }
 router.get('/specialty/settings', can('settings.manage'), wrap((req, res) => renderSettings(req, res)));

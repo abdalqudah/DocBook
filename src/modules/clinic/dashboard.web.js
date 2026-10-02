@@ -110,9 +110,10 @@ async function withDocs(ctx, rows) {
     return got.reduce((m, r) => { (m[r.appointment_id] = m[r.appointment_id] || []).push(r); return m; }, {});
   };
   const pids = [...new Set(rows.map((a) => a.patient_id).filter(Boolean))];
-  const [rx, ord, ref, inv, mails] = await Promise.all([
+  const [rx, ord, ref, inv, mails, reps, certs, files] = await Promise.all([
     by(papers, 'prescriptions', ['id']), by(papers, 'medical_orders', ['id', 'kind', 'status']), by(papers, 'referrals', ['id', 'specialty']), by(billing, 'invoices', ['id', 'invoice_number']),
-    pids.length ? knex('patients').where('business_id', ctx.businessId).whereIn('id', pids).whereNotNull('email').select('id', 'email') : []]);
+    pids.length ? knex('patients').where('business_id', ctx.businessId).whereIn('id', pids).whereNotNull('email').select('id', 'email') : [],
+    by(clin, 'consultations', ['id']), by(clin && ['certificates.view', 'certificates.issue'].some((k) => p.has(k)), 'certificates', ['id', 'doc_type', 'revoked_at']), by(clin, 'patient_files', ['id', 'title', 'name'])]);
   const mailOf = Object.fromEntries(mails.map((r) => [r.id, r.email]));
   const paper = (a, kind, id) => `/app/cashier/papers/${a.id}/${kind}/${id}.pdf`;
   rows.forEach((a) => {
@@ -131,7 +132,17 @@ async function withDocs(ctx, rows) {
       if (!is.length) items.push({ key: 'invoice', ic: 'receipt' });
       is.forEach((i) => items.push({ key: 'invoice', ic: 'receipt', on: true, href: `/app/billing/${i.id}` }));
     }
-    a.docs = { items, print: !clin, clinical: papers, billing, any: items.some((x) => x.on) };
+    // What can go to the patient (the send menu): ticked by default; the server checks each one again when sending.
+    const send = [
+      ...(inv[a.id] || []).map((i) => ({ kind: 'invoice', id: i.id, key: 'share.list.invoice', ic: 'receipt' })),
+      ...(rx[a.id] || []).map((r) => ({ kind: 'prescription', id: r.id, key: 'share.doc.prescription', ic: 'pill' })),
+      ...((reps[a.id] || []).length ? [{ kind: 'report', id: a.id, key: 'share.doc.report', ic: 'stethoscope' }] : []),
+      ...(ord[a.id] || []).filter((o) => o.status !== 'cancelled').map((o) => ({ kind: 'order', id: o.id, key: o.kind === 'imaging' ? 'share.list.imaging' : 'share.list.lab', ic: o.kind === 'imaging' ? 'scan-line' : 'activity' })),
+      ...(ref[a.id] || []).map((r) => ({ kind: 'referral', id: r.id, key: 'share.doc.referral', vars: { specialty: r.specialty }, ic: 'send' })),
+      ...(certs[a.id] || []).filter((c) => !c.revoked_at).map((c) => ({ kind: 'certificate', id: c.id, key: 'share.doc.certificate', ic: 'badge-check' })),
+      ...(files[a.id] || []).map((f) => ({ kind: 'file', id: f.id, key: 'share.doc.file', vars: { title: f.title || f.name }, ic: 'paperclip' })),
+    ];
+    a.docs = { items, send, print: !clin, clinical: papers, billing, any: items.some((x) => x.on) };
     a.email = mailOf[a.patient_id] || a.patient_email || null;
   });
   return rows;

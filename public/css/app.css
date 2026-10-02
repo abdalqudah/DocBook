@@ -949,3 +949,7 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .share-pick-list li { border-top: 1px solid var(--border); }
 .share-pick-list label { display: flex; align-items: center; gap: 12px; padding: 12px var(--card-pad, 20px); cursor: pointer; }
 .share-pick .share-visit-ic { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); flex: none; }
+/* The clinic's ready diagnosis table (settings/_dx-table.ejs) */
+.dx-table .panel-head { flex-wrap: wrap; gap: 10px; }
+.dx-table .dx-filter { max-width: 260px; }
+.dx-scroll { max-height: 480px; overflow-y: auto; }

@@ -1,0 +1,12 @@
+<%/* The clinic's ready diagnosis table (clinicalplus/specialty-codes): the ICD-10 codes of its specialty, offered
+   first when the doctor searches a diagnosis. Args: dxTable [{ code, title_ar, title_en }]. */%>
+<% if (dxTable && dxTable.length) { %>
+<section class="panel flush mt-4 dx-table" id="dx-table">
+  <div class="panel-head"><div><h2><%= t('icd.spec_title', { specialty: business.specialty ? t('specialties.' + business.specialty) : t('specialties.general') }) %></h2><p class="panel-sub"><%= t('icd.spec_sub', { n: fmt.number(dxTable.length) }) %></p></div>
+    <input class="input dx-filter" type="search" placeholder="<%= t('icd.spec_filter') %>" aria-label="<%= t('icd.spec_filter') %>" data-dx-filter></div>
+  <div class="table-wrap dx-scroll"><table class="table">
+    <thead><tr><th><%= t('icd.code') %></th><th><%= t('icd.title_ar') %></th><th><%= t('icd.title_en') %></th></tr></thead>
+    <tbody><% dxTable.forEach(function (r) { %><tr data-dx-row><td class="mono" dir="ltr"><%= r.code %></td><td dir="rtl"><%= r.title_ar %></td><td dir="ltr"><%= r.title_en %></td></tr><% }) %></tbody>
+  </table></div>
+</section>
+<% } %>

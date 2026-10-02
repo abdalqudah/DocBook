@@ -7,9 +7,21 @@
         <% }) %>
         <span class="doc-sep" aria-hidden="true"></span>
         <span class="doc-share">
-        <% if (D.any || a.status === 'completed') { %>
-          <a class="doc-ic is-wa" href="/app/share/pick?id=<%= a.id %>" title="<%= t('share.send_visit') %>" aria-label="<%= t('share.send_visit') %>"><%- icon('message-circle', 'icon-sm') %></a>
-          <a class="doc-ic<%= mailOn && a.email ? ' is-on' : '' %>" href="/app/share/pick?id=<%= a.id %>" title="<%= !mailOn ? t('share.err.SHARE_NO_MAIL') : !a.email ? t('share.no_email') : t('share.send_email') %>" aria-label="<%= t('share.send_email') %>"><%- icon('mail', 'icon-sm') %></a>
+        <% if (D.send && D.send.length) { var mailOk = mailOn && a.email; %>
+          <details class="dropdown send-dd">
+            <summary class="doc-ic is-wa" title="<%= t('share.send_visit') %>" aria-label="<%= t('share.send_visit') %>"><%- icon('message-circle', 'icon-sm') %></summary>
+            <form class="menu send-menu" method="post" action="/app/share/wa" target="_blank">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="kind" value="visit"><input type="hidden" name="id" value="<%= a.id %>">
+              <div class="menu-label"><%= t('share.pick_lead') %></div>
+              <% D.send.forEach(function (x) { %><label class="send-opt"><input type="checkbox" name="pick" value="<%= x.kind %>:<%= x.id %>" checked><%- icon(x.ic, 'icon-sm') %><span dir="auto"><%= t(x.key, x.vars || {}) %></span></label><% }) %>
+              <div class="sep"></div>
+              <div class="send-acts">
+                <button class="btn btn-primary btn-sm" type="submit"><%- icon('message-circle', 'icon-sm') %><%= t('share.send_wa_short') %></button>
+                <button class="btn btn-secondary btn-sm" type="submit" formaction="/app/share/email" formtarget="_self"<%= mailOk ? '' : ' disabled' %> title="<%= !mailOn ? t('share.err.SHARE_NO_MAIL') : !a.email ? t('share.no_email') : a.email %>"><%- icon('mail', 'icon-sm') %><%= t('share.send_email_short') %></button>
+              </div>
+              <% if (!mailOk) { %><p class="tiny muted send-note"><%= !mailOn ? t('share.err.SHARE_NO_MAIL') : t('share.no_email') %></p><% } %>
+            </form>
+          </details>
         <% } %>
         </span>
       </div>

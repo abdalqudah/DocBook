@@ -47,6 +47,7 @@
     </section>
   </div>
 </div>
+<%- include('_dx-table', { dxTable: dxTable }) %>
 <dialog class="dialog" id="icd-dialog" data-new-dialog aria-labelledby="icd-title"<% if (dlg) { %> data-open-on-load<% } %>>
   <form method="post" action="<%= dlg && formAction ? formAction : '/app/settings/diagnosis-codes' %>" novalidate>
     <div class="dialog-head"><h2 id="icd-title" data-dialog-title-target><%= t('icd.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>

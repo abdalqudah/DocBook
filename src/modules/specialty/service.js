@@ -20,6 +20,15 @@ function defaultModules(specialty) {
   return ALL_BY_DEFAULT.has(specialty) ? MODULES : [];
 }
 
+/**
+ * The records offered in this clinic's settings: those of its specialty, plus any it switched on already. General,
+ * multi-specialty and other clinics see all of them; a dental clinic sees the dental chart only.
+ */
+function shownModules(business, s) {
+  if (ALL_BY_DEFAULT.has(business.specialty)) return MODULES;
+  return MODULES.filter((m) => s.defaults.includes(m) || s[m]);
+}
+
 const parseJson = (v, d) => { try { return typeof v === 'string' ? JSON.parse(v) : (v || d); } catch { return d; } };
 const nOrNull = (v) => (v === null || v === undefined ? null : Number(v));
 
@@ -65,8 +74,9 @@ async function saveSettings(ctx, business, input) {
     const same = JSON.stringify(items) === JSON.stringify(preg.DEFAULT_SCHEDULE.map((i) => ({ key: i.key, label: '', from: i.from, to: i.to, rhNeg: Boolean(i.rhNeg) })));
     schedule = items.length && !same ? JSON.stringify(items) : null;
   }
-  patch.pregnancy_schedule = schedule;
   const before = await knex('specialty_settings').where({ business_id: ctx.businessId }).first();
+  // The antenatal schedule is only on the page when pregnancy follow-up is offered: otherwise keep what is stored.
+  patch.pregnancy_schedule = input.items === undefined && input.reset_schedule !== '1' ? (before ? before.pregnancy_schedule : null) : schedule;
   if (before) await knex('specialty_settings').where({ id: before.id }).update({ ...patch, updated_by: ctx.userId, updated_at: new Date() });
   else await knex('specialty_settings').insert({ business_id: ctx.businessId, ...patch, updated_by: ctx.userId });
   cache.forgetPrefix(`spec:${ctx.businessId}`);
@@ -419,7 +429,7 @@ async function summary(ctx, business, patient) {
   return out.modules.length ? out : null;
 }
 
-module.exports = {
+module.exports = { shownModules,
   MODULES, defaultModules, settings, saveSettings, patientFor, visitFor, relevance, ageDays,
   dentalData, addDentalEntry, voidDentalEntry, addPlanItem, setPlanStatus, deletePlanItem,
   growthData, addMeasurement, deleteMeasurement,

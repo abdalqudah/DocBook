@@ -60,7 +60,10 @@
     "top_diagnoses": "Top diagnoses",
     "top_diagnoses_sub": "{range}",
     "report_empty": "No coded diagnoses in this period",
-    "report_empty_text": "Doctors add ICD-10 codes to the consultation note on the visit page."
+    "report_empty_text": "Doctors add ICD-10 codes to the consultation note on the visit page.",
+    "spec_title": "Ready diagnosis table — {specialty}",
+    "spec_sub": "{n} ICD-10 diagnoses for your clinic's specialty, ready to use: they come first when a doctor searches a diagnosis. The table follows the clinic's specialty.",
+    "spec_filter": "Search the table…"
   },
   "ctimer": {
     "label": "Consultation time",
@@ -138,8 +141,16 @@
     "col_what": "Opened",
     "col_access": "Access",
     "col_visit": "Visit",
-    "what": { "patient": "Patient file", "visit": "Visit", "break_glass": "Emergency access" },
-    "level": { "full": "Full record", "limited": "Basic details", "emergency": "Emergency" },
+    "what": {
+      "patient": "Patient file",
+      "visit": "Visit",
+      "break_glass": "Emergency access"
+    },
+    "level": {
+      "full": "Full record",
+      "limited": "Basic details",
+      "emergency": "Emergency"
+    },
     "restricted_title": "Clinical notes are restricted",
     "restricted_text": "In this clinic only the treating doctor, the owner and managers can open this patient's clinical notes.",
     "restricted_vitals": "You can still record the vital signs of this visit.",

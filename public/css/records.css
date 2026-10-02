@@ -48,7 +48,7 @@
 @media (max-width: 900px) { .rec-setup-list { grid-template-columns: 1fr; } }
 .rec-setup .check-dot { color: var(--text-subtle); }
 
-.rec-sched { list-style: none; margin: 0; padding: 0; max-height: 560px; overflow-y: auto; }
+.rec-sched { list-style: none; margin: 0; padding: 0; } /* no inner scroll: the send menu must not be clipped */
 .rec-sched li { display: flex; align-items: center; border-bottom: 1px solid var(--border); }
 .rec-sched li:last-child { border-bottom: 0; }
 .rec-sched li > a { display: flex; align-items: center; gap: 12px; padding: 10px var(--card-pad); flex: 1 1 auto; min-width: 0; }
@@ -141,3 +141,16 @@ html[dir="rtl"] [dir="auto"] { text-align: right; }
 tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
 [dir="rtl"] tr.is-upcoming td:first-child { box-shadow: inset -3px 0 0 var(--primary); }
 .doc-share { display: inline-flex; align-items: center; gap: 4px; min-width: 64px; }
+/* The send menu on a visit row: tick the papers, then WhatsApp or e-mail */
+.send-dd > summary.doc-ic { list-style: none; }
+.send-dd > summary::-webkit-details-marker { display: none; }
+.send-menu { min-width: 260px; inset-inline-end: auto; inset-inline-start: 0; }
+.send-menu .send-opt { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text); cursor: pointer; }
+.send-menu .send-opt:hover { background: var(--surface-sunken); }
+.send-menu .send-opt .icon { color: var(--text-subtle); }
+.send-menu .send-acts { display: flex; gap: 6px; padding: 4px 6px; }
+.send-menu .send-acts .btn { width: auto; flex: 1; justify-content: center; }
+.send-menu .send-note { padding: 2px 10px 6px; margin: 0; }
+.send-menu .send-acts .btn-primary { background: var(--primary); color: var(--primary-ink); }
+.send-menu .send-acts .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
+.send-menu .send-acts .btn[disabled] { opacity: .5; cursor: not-allowed; }

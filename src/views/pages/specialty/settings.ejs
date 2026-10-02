@@ -22,6 +22,7 @@
     </div>
   </section>
 
+  <% if (modules.indexOf('pregnancy') >= 0) { %>
   <section class="panel" id="schedule">
     <div class="panel-head"><h2><%= t('pregnancy.schedule') %></h2><% if (s.customSchedule) { %><span class="badge badge-neutral"><%= t('specialty_mod.customised') %></span><% } %></div>
     <div class="panel-body stack">
@@ -54,5 +55,7 @@
       <% if (s.customSchedule) { %><label class="check"><input type="checkbox" name="reset_schedule" value="1"><span><%= t('specialty_mod.reset_schedule') %></span></label><% } %>
     </div>
   </section>
+  <% } %>
   <div class="row"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
 </form>
+<%- include('../settings/_dx-table', { dxTable: dxTable }) %>

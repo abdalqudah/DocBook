@@ -108,7 +108,9 @@ test('Today shows each visit\'s papers; one WhatsApp link lists all of them; the
   assert.equal(r.status, 200);
   assert.match(r.text, new RegExp(`/app/visits/${visit}/prescriptions/${rxId}`), 'prescription icon');
   assert.match(r.text, new RegExp(`/app/billing/${invId}"`), 'invoice icon');
-  assert.match(r.text, new RegExp(`/app/share/pick\\?id=${visit}"`), 'send button opens the chooser');
+  assert.match(r.text, /class="dropdown send-dd"/, 'the send button opens a menu');
+  assert.match(r.text, new RegExp(`name="pick" value="prescription:${rxId}" checked`), 'its papers, ticked');
+  assert.match(r.text, new RegExp(`name="pick" value="report:${visit}" checked`));
   // the chooser: every paper ticked; only the ticked ones are sent
   r = await o.get(`/app/share/pick?id=${visit}&lang=en`);
   assert.equal(r.status, 200);

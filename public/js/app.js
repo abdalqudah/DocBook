@@ -197,6 +197,11 @@
     });
   });
   $$('[data-print]').forEach(function (b) { b.addEventListener('click', function () { window.print(); }); });
+  /* The ready diagnosis table: filter its rows by code or name as you type. */
+  $$('[data-dx-filter]').forEach(function (inp) {
+    var rows = $$('[data-dx-row]', inp.closest('section'));
+    inp.addEventListener('input', function () { var q = inp.value.trim().toLowerCase(); rows.forEach(function (r) { r.hidden = q && r.textContent.toLowerCase().indexOf(q) === -1; }); });
+  });
   /* A shared document's "Share" button: the PDF itself through the phone's share sheet (WhatsApp, e-mail…); shown only
      where the browser can share files. */
   $$('[data-share-pdf]').forEach(function (b) {

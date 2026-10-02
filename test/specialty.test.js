@@ -305,3 +305,22 @@ test('HTTP: clinical.view to see, clinical.edit to record; module switched off â
   const stranger = await signIn(`spec-other${tag}@t.test`);
   assert.equal((await stranger.get(`/app/patients/${kid}/dental`)).status, 404);
 });
+
+test('a dental clinic sees only its own records and its ready diagnosis table; its codes come first in search', async () => {
+  const dentist = await signIn(`spec-other${tag}@t.test`);
+  const r = await dentist.get('/app/specialty/settings?lang=en');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /name="dental"/);
+  assert.match(r.text, /name="pregnancy"/, 'switched on earlier in this file: still offered');
+  assert.doesNotMatch(r.text, /name="growth"/, 'growth charts are not a dental record');
+  assert.match(r.text, /Ready diagnosis table/);
+  assert.match(r.text, />K02\.1</);
+  assert.doesNotMatch(r.text, />O80</, 'no obstetric codes in a dental table');
+  const codes = await dentist.get('/app/settings/diagnosis-codes?lang=en');
+  assert.match(codes.text, /data-dx-filter/);
+  const icd = require('../src/modules/clinicalplus/icd.service');
+  assert.ok(icd.specialtyTable('dentistry').every((e) => /^(K0|K1[0-4]|S02\.5|M26|B37\.0|R68\.2)/.test(e.code)));
+  assert.ok(icd.specialtyTable('obgyn').some((e) => e.code.startsWith('O')));
+  const found = await icd.search(other.businessId, 'abscess');
+  assert.match(found[0].code, /^K/, 'a dental abscess first for a dental clinic');
+});

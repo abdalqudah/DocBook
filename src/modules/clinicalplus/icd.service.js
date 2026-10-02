@@ -5,6 +5,7 @@ const audit = require('../../core/audit');
 const { z, validate, optionalString } = require('../../core/validate');
 const { AppError, E } = require('../../core/errors');
 const DATA = require('./icd10.json');
+const SPEC = require('./specialty-codes');
 
 // ---------------------------------------------------------------- text normalisation (Arabic + English)
 const AR_DIACRITICS = /[ً-ْٰـ]/g; // tashkeel, superscript alef, tatweel
@@ -51,7 +52,7 @@ async function usage(businessId) {
  * Pure ranking used by search(): an exact code first, then the clinic's most-used codes, then match quality
  * (code prefix, title starting with the query, every word matched), then code order.
  */
-function rank(entries, q, uses = new Map(), limit = 20) {
+function rank(entries, q, uses = new Map(), limit = 20, mine = null) {
   const qn = norm(q);
   if (qn.replace(/\s/g, '').length < 2) return [];
   const qk = keyOf(q);
@@ -72,6 +73,7 @@ function rank(entries, q, uses = new Map(), limit = 20) {
       score += tokens.filter((tk) => e.words.includes(tk)).length * 10; // whole-word hits
       score -= Math.min(40, Math.floor((e.en.length + e.ar.length) / 20)); // shorter, more general titles first
     }
+    if (mine && score < 500 && mine(e.code)) score += 160; // the clinic's specialty table comes first among word matches
     out.push({ e, score, uses: uses.get(e.code) || 0 });
   }
   out.sort((a, b) => (b.score >= 1000) - (a.score >= 1000) || b.uses - a.uses || b.score - a.score || a.e.code.localeCompare(b.e.code));
@@ -80,9 +82,13 @@ function rank(entries, q, uses = new Map(), limit = 20) {
 
 async function search(businessId, q, { limit = 20 } = {}) {
   if (norm(q).replace(/\s/g, '').length < 2) return [];
-  const [custom, uses] = await Promise.all([activeCustom(businessId), usage(businessId)]);
-  return rank([...custom.map(customEntry), ...INDEX], q, uses, limit);
+  const [custom, uses, biz] = await Promise.all([activeCustom(businessId), usage(businessId), knex('businesses').where({ id: businessId }).first('specialty')]);
+  const spec = biz && biz.specialty;
+  return rank([...custom.map(customEntry), ...INDEX], q, uses, limit, spec ? (code) => SPEC.belongs(spec, code) : null);
 }
+
+/** The ready diagnosis table of a specialty: its ICD-10 codes from the bundled list, in code order. */
+const specialtyTable = (specialty) => SPEC.tableOf(specialty, INDEX).map((e) => ({ code: e.code, title_ar: e.ar, title_en: e.en }));
 
 /** A code from the bundled list or the clinic's active custom codes, or null. */
 async function lookup(businessId, input) {
@@ -195,6 +201,7 @@ async function removeCustom(ctx, id) {
 }
 
 module.exports = {
+  specialtyTable,
   norm, normalizeCode, rank, search, lookup, usage, titleOf, parseCodes, resolveCodes, saveDiagnoses, listFor, diagnosesFor, diagnosesByAppointment,
   saveCustom, removeCustom, INDEX, BY_CODE, SOURCE: { source: DATA.source, licence: DATA.licence, count: DATA.count },
 };

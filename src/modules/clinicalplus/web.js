@@ -183,7 +183,7 @@ async function renderCodes(req, res, extra = {}) {
       .count({ n: '*' }).orderBy('n', 'desc').limit(10),
   ]);
   settingsCommon.render(req, res, 'diagnosis-codes', 'diagnosis_codes', {
-    rows, totalAll: Number(n), top, source: icd.SOURCE, titleOf: (r) => icd.titleOf(r, req.locale), ...SETTINGS_ASSETS, ...extra,
+    rows, totalAll: Number(n), top, source: icd.SOURCE, titleOf: (r) => icd.titleOf(r, req.locale), dxTable: icd.specialtyTable((req.business && req.business.specialty) || 'general'), ...SETTINGS_ASSETS, ...extra,
   });
 }
 const translateCodeError = (req, extra) => {
