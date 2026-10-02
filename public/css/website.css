@@ -389,3 +389,6 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-nav:has(.ws-logo-img) .inner { height: auto; min-height: calc(var(--ws-logo-h, var(--ws-logo-auto, 44px)) + 24px); }
 .ws-nav .ws-logo-px:not(.ws-logo-img) .portal-mark { width: var(--ws-logo-h); height: var(--ws-logo-h); }
 @media (max-width: 640px) { .ws-nav .ws-logo-img .portal-mark { height: min(var(--ws-logo-h, var(--ws-logo-auto, 44px)), 56px); max-width: 52vw; } }
+.ws-footer-simple .ws-footer-bottom { align-items: center; }
+.ws-footer-simple-brand { margin-inline-end: auto; }
+.ws-footer-simple-brand .ws-fbrand-below { align-items: flex-start; gap: 4px; }
