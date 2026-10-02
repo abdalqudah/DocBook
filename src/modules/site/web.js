@@ -46,6 +46,30 @@ router.get('/', wrap(async (req, res) => {
   res.page('pages/site/home', { layout: 'public', bodyClass: 'lp-modern', content, pricing: pricingData, pageTitle: head.title, seoHead: head });
 }));
 
+// The plans on a page of their own: the pricing section's texts (as the admin edited them on the home page), the cards,
+// a full comparison table, the pricing questions and the call to action. Without public plans it says so.
+/** Questions about paying, asked on /pricing only (from the translation files). */
+function pricingFaq() {
+  const { translator } = require('../../core/i18n'); // eslint-disable-line global-require
+  const ar = translator('ar'); const en = translator('en');
+  return ['pay', 'trial', 'cancel'].map((k) => ({ q: { ar: ar(`site.pricing.faq.${k}_q`), en: en(`site.pricing.faq.${k}_q`) }, a: { ar: ar(`site.pricing.faq.${k}_a`), en: en(`site.pricing.faq.${k}_a`) } }));
+}
+
+router.get('/pricing', wrap(async (req, res) => {
+  const content = await site.get();
+  const sec = content.sections.find((s) => s.type === 'pricing') || site.defaults().sections.find((s) => s.type === 'pricing');
+  const faq = site.defaults().sections.find((s) => s.type === 'faq');
+  const cta = content.sections.find((s) => s.type === 'cta' && !s.hidden) || site.defaults().sections.find((s) => s.type === 'cta');
+  const L = site.pick(req.locale);
+  const head = await seo.head(req, res, { kind: 'pricing', site: content, title: L(sec.data.title) || req.t('site.d.nav.pricing'), description: L(sec.data.lead) });
+  res.page('pages/site/pricing', {
+    layout: 'public', bodyClass: 'lp-modern lp-pricing-page', pageTitle: head.title, seoHead: head, content,
+    sec: { ...sec, id: 'pricing-page', anchor: 'plans', hidden: false, design: {} },
+    faq: { ...faq, id: 'pricing-faq', anchor: 'questions', hidden: false, design: {}, data: { ...faq.data, lead: { ar: '', en: '' }, items: [...faq.data.items.slice(-2), ...pricingFaq()] } },
+    cta, pricing: await pricing.forSite(), compare: pricing.COMPARE,
+  });
+}));
+
 // ---------------------------------------------------------------- media files
 router.get('/assets/media/:id/:file', wrap(async (req, res, next) => {
   const [sha] = String(req.params.file).split('.');

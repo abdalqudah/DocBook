@@ -700,3 +700,30 @@ a.lp-contact-card:hover { border-color: var(--primary); }
   .lp-modern *, .lp-modern *::before, .lp-modern *::after { animation: none !important; transition: none !important; }
   .lp-modern [data-reveal] { opacity: 1 !important; transform: none !important; }
 }
+
+/* ---------- /pricing page ---------- */
+.lp-page-hero { padding: 72px 0 24px; text-align: center; }
+.lp-page-hero h1 { font-size: clamp(32px, 4.4vw, 54px); margin-top: 18px; }
+.lp-page-hero .lead { max-width: 640px; margin: 14px auto 0; font-size: 17px; line-height: 1.75; }
+.lp-pricing-page .lp-pricing { padding-top: 40px; }
+.lp-pricing-page .lp-cycle { margin-top: 0; }
+.lp-compare-link { text-align: center; margin-top: 26px; }
+.lp-compare-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); }
+.lp-compare-table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 14px; }
+.lp-compare-table th, .lp-compare-table td { padding: 14px 18px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
+.lp-compare-table th[scope="row"] { text-align: start; font-weight: var(--fw-medium); color: var(--text); }
+.lp-compare-table thead th { position: sticky; top: 0; background: var(--surface); font-size: 16px; font-weight: var(--fw-heavy); padding-block: 20px; }
+.lp-compare-table thead th .lp-tag { display: table; margin: 6px auto 0; }
+.lp-compare-table .is-featured { background: color-mix(in srgb, var(--primary) 6%, var(--surface)); }
+.lp-compare-table td small { display: block; font-size: 12px; margin-top: 3px; }
+.lp-compare-group th { text-align: start; background: var(--surface-muted); font-size: 12px; font-weight: var(--fw-bold); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; padding-block: 10px; }
+[dir="rtl"] .lp-compare-group th { letter-spacing: 0; }
+.lp-compare-table tbody tr:last-child td { border-bottom: 0; }
+.lp-yn { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; }
+.lp-yn.on { background: var(--primary-soft); color: var(--primary); }
+.lp-yn.off { color: var(--text-subtle); }
+.lp-every { text-align: start !important; }
+.lp-every span { display: inline-flex; align-items: center; gap: 6px; margin: 4px 14px 4px 0; color: var(--text-muted); }
+[dir="rtl"] .lp-every span { margin: 4px 0 4px 14px; }
+.lp-every .icon { color: var(--primary); }
+@media (max-width: 600px) { .lp-compare-table th, .lp-compare-table td { padding: 11px 10px; } .lp-page-hero { padding: 48px 0 8px; } }

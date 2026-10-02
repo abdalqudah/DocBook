@@ -40,6 +40,7 @@
       </article>
       <% }) %>
     </div>
+    <% if (typeof onPricingPage === 'undefined' || !onPricingPage) { %><p class="lp-compare-link" data-reveal><a class="btn btn-ghost" href="/pricing#compare"><%= t('site.pricing.compare_link') %><%- icon('arrow-right', 'flip-rtl') %></a></p><% } %>
     <% if (P.trialDays || L(d.note)) { %><p class="lp-pricing-note" data-reveal><% if (P.trialDays) { %><%- icon('sparkles', 'icon-sm') %><%= t('site.pricing.trial', { n: P.trialDays }) %> <% } %><%= L(d.note) %></p><% } %>
     <% } %>
   <%- include('slot-close', { s: s }) %></div>

@@ -1,0 +1,43 @@
+<%# /pricing — the plans on a page of their own (texts from the home page's pricing section, plans from Admin → Plans). %>
+<% var d = sec.data || {}; var plans = pricing.plans;
+   var lim = function (v, one, n, unl) { return v === null || v === undefined ? t('site.pricing.' + unl) : (v === 1 && one ? t('site.pricing.' + one) : t('site.pricing.' + n, { n: v })); }; %>
+<section class="site-hero lp-hero lp-page-hero">
+  <div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container center">
+    <% if (L(d.kicker)) { %><span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= L(d.kicker) %></span><% } %>
+    <h1><%= L(d.title) %></h1>
+    <% if (L(d.lead)) { %><p class="lead"><%= L(d.lead) %></p><% } %>
+  </div>
+</section>
+<%- include('../../partials/site/pricing', { s: { ...sec, data: { ...d, kicker: '', title: '', lead: '' } }, onPricingPage: true }) %>
+<% if (!plans.length) { %><section class="section"><div class="container center"><p class="muted"><%= t('site.pricing.empty') %></p></div></section><% } %>
+<% if (plans.length > 1) { %>
+<section class="section lp-compare" id="compare">
+  <div class="container">
+    <div class="section-head center" data-reveal><span class="kicker"><%= t('site.pricing.compare_kicker') %></span><h2><%= t('site.pricing.compare_title') %></h2></div>
+    <div class="lp-compare-wrap" data-reveal>
+      <table class="lp-compare-table">
+        <thead><tr><th scope="col"><span class="sr-only"><%= t('site.pricing.feature') %></span></th><% plans.forEach(function (p) { %><th scope="col" class="<%= p.featured ? 'is-featured' : '' %>"><%= L(p.name) %><% if (p.featured) { %><span class="lp-tag"><%= t('site.pricing.popular') %></span><% } %></th><% }) %></tr></thead>
+        <tbody>
+          <tr class="lp-compare-group"><th colspan="<%= plans.length + 1 %>"><%= t('site.pricing.g_price') %></th></tr>
+          <tr><th scope="row"><%= t('site.pricing.monthly') %></th><% plans.forEach(function (p) { %><td class="<%= p.featured ? 'is-featured' : '' %>"><%- p.free ? t('site.pricing.free') : '<bdi dir="ltr">' + p.monthly + ' ' + p.currency + '</bdi>' %></td><% }) %></tr>
+          <tr><th scope="row"><%= t('site.pricing.yearly') %></th><% plans.forEach(function (p) { %><td class="<%= p.featured ? 'is-featured' : '' %>"><%- p.free ? t('site.pricing.free') : '<bdi dir="ltr">' + p.yearly + ' ' + p.currency + '</bdi>' %><% if (p.save) { %> <small class="lp-save"><%- t('site.pricing.save', { n: '<bdi dir="ltr">' + p.save + '%</bdi>' }) %></small><% } %></td><% }) %></tr>
+          <tr class="lp-compare-group"><th colspan="<%= plans.length + 1 %>"><%= t('site.pricing.g_limits') %></th></tr>
+          <tr><th scope="row"><%= t('site.pricing.r_doctors') %></th><% plans.forEach(function (p) { %><td class="<%= p.featured ? 'is-featured' : '' %>"><%= p.limits.doctors === null ? t('site.pricing.unlimited') : p.limits.doctors %></td><% }) %></tr>
+          <tr><th scope="row"><%= t('site.pricing.r_staff') %></th><% plans.forEach(function (p) { %><td class="<%= p.featured ? 'is-featured' : '' %>"><%= p.limits.staff === null ? t('site.pricing.unlimited') : p.limits.staff %></td><% }) %></tr>
+          <tr><th scope="row"><%= t('site.pricing.r_branches') %></th><% plans.forEach(function (p) { %><td class="<%= p.featured ? 'is-featured' : '' %>"><%= p.limits.branches === null ? t('site.pricing.unlimited') : p.limits.branches %><% if (p.limits.secondBranch) { %><small class="muted"><%- t('site.pricing.second_branch', { price: '<bdi dir="ltr">' + p.limits.secondBranch + ' ' + p.currency + '</bdi>' }) %></small><% } %></td><% }) %></tr>
+          <tr><th scope="row"><%= t('site.pricing.r_pages') %></th><% plans.forEach(function (p) { %><td class="<%= p.featured ? 'is-featured' : '' %>"><%= !p.all.website_builder ? '—' : p.pages === null ? t('site.pricing.unlimited') : p.pages %></td><% }) %></tr>
+          <tr class="lp-compare-group"><th colspan="<%= plans.length + 1 %>"><%= t('site.pricing.g_features') %></th></tr>
+          <% compare.forEach(function (k) { %>
+          <tr><th scope="row"><%= t('site.pricing.f.' + k) %></th><% plans.forEach(function (p) { var on = p.all[k]; %><td class="<%= p.featured ? 'is-featured' : '' %>"><span class="lp-yn <%= on ? 'on' : 'off' %>"><%- icon(on ? 'check' : 'minus', 'icon-sm') %><span class="sr-only"><%= on ? t('site.pricing.included') : t('site.pricing.not_included') %></span></span></td><% }) %></tr>
+          <% }) %>
+          <tr class="lp-compare-group"><th colspan="<%= plans.length + 1 %>"><%= t('site.pricing.g_every') %></th></tr>
+          <tr><td colspan="<%= plans.length + 1 %>" class="lp-every"><% ['booking', 'calendar', 'frontdesk', 'records', 'billing', 'languages', 'support'].forEach(function (k) { %><span><%- icon('circle-check', 'icon-sm') %><%= t('site.pricing.every.' + k) %></span><% }) %></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<% } %>
+<%- include('../../partials/site/faq', { s: faq }) %>
+<% if (cta) { %><%- include('../../partials/site/cta', { s: cta }) %><% } %>

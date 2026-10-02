@@ -87,7 +87,7 @@ test('the pricing section hides itself when no plan is public', async () => {
 test('defaults include the new sections; the admin can add and edit them', async () => {
   const d = site.defaults();
   for (const type of ['stats', 'showcase', 'pricing']) assert.ok(d.sections.some((s) => s.type === type), type);
-  assert.ok(d.header.items.some((i) => i.href === '/#pricing'));
+  assert.ok(d.header.items.some((i) => i.href === '/pricing'));
   const home = await app.agent().get('/?lang=ar');
   assert.match(home.text, /class="lp-bento"/);
   assert.match(home.text, /data-count>24\/7</);
@@ -108,4 +108,18 @@ test('defaults include the new sections; the admin can add and edit them', async
   const preview = await admin.get('/admin/site/preview');
   assert.equal(preview.status, 200);
   assert.match(preview.text, /lp-tile is-wide/);
+});
+
+test('/pricing is a page of its own: cards, comparison table and pricing questions', async () => {
+  const r = await app.agent().get('/pricing?lang=ar');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /<h1>/);
+  assert.match(r.text, /lp-plan/);
+  assert.match(r.text, /lp-compare-table/);
+  assert.match(r.text, /كيف أدفع الاشتراك؟/);
+  assert.doesNotMatch(r.text, /compare_link|site\.pricing\./, 'no missing translations');
+  const home = await app.agent().get('/');
+  assert.match(home.text, /href="\/pricing#compare"/);
+  const map = await app.agent().get('/sitemap.xml');
+  if (/<loc>[^<]*\/<\/loc>/.test(map.text)) assert.match(map.text, /\/pricing<\/loc>/);
 });

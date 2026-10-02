@@ -313,7 +313,42 @@
         "specialty_modules": "Specialty records",
         "website_custom_domain": "Custom website domain",
         "data_sync": "Copy to your own database",
-        "website_white_label": "Website without the platform name"
+        "website_white_label": "Website without the platform name",
+        "website_clinic_email": "Clinic sending e-mail",
+        "website_analytics": "Website visit statistics",
+        "website_advanced_seo": "Advanced search engine settings"
+      },
+      "compare_link": "Compare every plan in detail",
+      "compare_kicker": "Compare",
+      "compare_title": "Plans side by side",
+      "feature": "Feature",
+      "g_price": "Price",
+      "g_limits": "Limits",
+      "g_features": "Features",
+      "g_every": "In every plan",
+      "r_doctors": "Doctors",
+      "r_staff": "Staff sign-ins",
+      "r_branches": "Branches",
+      "r_pages": "Extra website pages",
+      "unlimited": "Unlimited",
+      "included": "Included",
+      "not_included": "Not included",
+      "every": {
+        "booking": "Online booking page",
+        "calendar": "Calendar and hours for each doctor",
+        "frontdesk": "Front desk and waiting room",
+        "records": "Patient records and prescriptions",
+        "billing": "Invoices and cash desk",
+        "languages": "Arabic and English",
+        "support": "Technical support"
+      },
+      "faq": {
+        "pay_q": "How do I pay?",
+        "pay_a": "From your clinic's subscription settings: choose the plan and cycle, pay with an available method and send the payment notice; the period starts once the payment is confirmed.",
+        "trial_q": "Is there a free trial?",
+        "trial_a": "When the platform runs trials, every new clinic starts with one, and its length shows on this page.",
+        "cancel_q": "What happens to my data if I stop?",
+        "cancel_a": "Your clinic stays readable: open records and export lists and reports — nothing is deleted. Everything comes back as soon as you renew."
       }
     }
   },

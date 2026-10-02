@@ -30,6 +30,8 @@ function card(p) {
     featured: Boolean(p.is_featured),
     limits: { doctors: p.max_doctors, staff: p.max_staff, branches, secondBranch: second && second > 0 ? num(second) : null },
     features: LISTED.map((key) => ({ key: key.replace(/\./g, '_'), on: entitlements.valueIn(f, key) === true })),
+    all: Object.fromEntries([...LISTED, 'website.clinic_email', 'website.analytics', 'website.advanced_seo'].map((key) => [key.replace(/\./g, '_'), entitlements.valueIn(f, key) === true])),
+    pages: entitlements.valueIn(f, 'website.max_pages'),
   };
 }
 
@@ -39,4 +41,7 @@ async function forSite() {
   return { plans: plans.map(card), trialDays: st.enabled ? Number(st.trialDays) || 0 : 0 };
 }
 
-module.exports = { LISTED, card, forSite };
+// Rows of the comparison table on /pricing (after doctors, staff and branches): every yes/no entitlement worth comparing.
+const COMPARE = [...LISTED, 'website.clinic_email', 'website.analytics', 'website.advanced_seo'].map((k) => k.replace(/\./g, '_'));
+
+module.exports = { LISTED, COMPARE, card, forSite };

@@ -118,7 +118,7 @@ function defaults() {
   return {
     version: 1,
     header: {
-      items: [['new', '/#new'], ['features', '/#features'], ['pricing', '/#pricing'], ['how', '/#how'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
+      items: [['new', '/#new'], ['features', '/#features'], ['pricing', '/pricing'], ['how', '/#how'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
       login_label: T('nav.login'), signup_label: T('nav.signup'), signup_href: '/signup', show_login: 'yes',
     },
     sections: [
@@ -179,7 +179,7 @@ function defaults() {
       tagline: T('footer.tagline'), col1_title: T('footer.col1'), col2_title: T('footer.col2'), col3_title: { ar: '', en: '' },
       email: brand.supportEmail || '', phone: '', address: { ar: '', en: '' }, copyright: brand.name,
       items: [
-        ...[['new', '/#new'], ['features', '/#features'], ['pricing', '/#pricing'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '1' })),
+        ...[['new', '/#new'], ['features', '/#features'], ['pricing', '/pricing'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '1' })),
         ...[['login', '/login'], ['signup', '/signup'], ['forgot', '/forgot']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '2' })),
       ],
       social: [],
