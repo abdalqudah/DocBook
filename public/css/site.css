@@ -727,3 +727,15 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 [dir="rtl"] .lp-every span { margin: 4px 0 4px 14px; }
 .lp-every .icon { color: var(--primary); }
 @media (max-width: 600px) { .lp-compare-table th, .lp-compare-table td { padding: 11px 10px; } .lp-page-hero { padding: 48px 0 8px; } }
+
+/* Shared visit documents (/d/<token> of a visit) */
+.share-visit { max-width: 560px; padding: 48px 16px 64px; }
+.share-visit-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.share-visit-head h1 { font-size: 24px; margin: 2px 0 0; }
+.share-visit-logo { width: 52px; height: 52px; object-fit: contain; border-radius: var(--radius-sm); }
+.share-visit-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.share-visit-list li + li { border-top: 1px solid var(--border); }
+.share-visit-list a { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--text); text-decoration: none; font-weight: var(--fw-semibold); }
+.share-visit-list a:hover { background: var(--surface-muted); }
+.share-visit-ic { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); flex: none; }
+.share-visit-note { margin-top: 14px; }

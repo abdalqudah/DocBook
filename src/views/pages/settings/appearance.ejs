@@ -1,6 +1,6 @@
 <% var color = (old && old.color) || b.color || ''; %>
 <%- include('_head', { heading: t('settings.nav_appearance'), lead: can('settings.manage') ? t('settings.appearance_lead') : t('settings.appearance_lead_personal') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <section class="panel">

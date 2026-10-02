@@ -1,6 +1,6 @@
 <% var fmtVal = function (v) { if (v === null || v === undefined || v === '') return '—'; if (typeof v === 'object') v = JSON.stringify(v); v = String(v); return v.length > 80 ? v.slice(0, 80) + '…' : v; }; %>
 <%- include('_head', { heading: t('settings.nav_data'), lead: t('settings.data_lead') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <% if (typeof openDialog === 'undefined') { %><%- include('../../partials/form-error') %><% } %>

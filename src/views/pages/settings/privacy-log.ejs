@@ -5,7 +5,7 @@
     <h1><%= t('privacy.log_title') %></h1><p><%= t('privacy.log_lead') %></p></div>
   <div class="page-actions"><%- include(P + 'export-menu', { href: '/app/settings/privacy/log' }) %></div>
 </div>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <section class="panel flush">
     <form method="get" class="table-toolbar cp-log-filters" role="search">

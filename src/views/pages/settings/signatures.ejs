@@ -4,7 +4,7 @@
   var SP = function (d) { return locale === 'en' && d.specialization_en ? d.specialization_en : d.specialization; };
 %>
 <%- include('_head', { heading: t('signatures.title'), lead: own ? t('signatures.lead_doctor') : t('signatures.lead') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <p class="sig-note small muted"><%- icon('lock', 'icon-sm') %><span><%= t('signatures.privacy_note') %></span></p>

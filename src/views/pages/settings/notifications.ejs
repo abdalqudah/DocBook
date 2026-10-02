@@ -6,7 +6,7 @@
   var roleName = function (r) { return r.is_system ? t('roles.' + r.key) : r.name; };
 %>
 <%- include('_head', { heading: t('settings.nav_notifications'), lead: manage ? t('notify_settings.lead') : t('notify_settings.lead_personal') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <% if (manage) { %>

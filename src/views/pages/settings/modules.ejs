@@ -9,7 +9,7 @@
   var byKey = {}; st.list.forEach(function (m) { byKey[m.key] = m; });
 %>
 <%- include('_head', { heading: t('settings.nav_modules'), lead: t('modules_cfg.lead') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <%- include('../../partials/form-error') %>

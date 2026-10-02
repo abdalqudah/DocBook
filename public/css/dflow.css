@@ -153,3 +153,6 @@
 }
 @media print { .df-bar, .df-side { display: none !important; } }
 .df-line.is-base strong { margin-inline-end: 46px; }
+.df-day-act { display: inline-flex; align-items: center; gap: 6px; }
+.df-day-act .rec-sched-docs { padding: 0; }
+@media (max-width: 560px) { .df-day-act .rec-sched-docs { width: auto; padding: 0; } }

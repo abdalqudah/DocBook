@@ -22,6 +22,7 @@
           <span class="badge badge-<%= st.tone %> badge-dot"><%= t('dashboard.' + st.key) %></span>
         </span>
       </a>
+      <%- include(P + 'visit-docs', { a: a, mailOn: mailOn }) %>
     </li>
     <% }) %>
   </ul>

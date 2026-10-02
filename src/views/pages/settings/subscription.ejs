@@ -7,7 +7,7 @@
   var limitText = function (v) { return v === null || v === undefined ? t('subscriptions.unlimited') : fmt.number(v); };
 %>
 <%- include('_head', { heading: t('settings.nav_subscription'), lead: t('subscriptions.lead') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <%- include('../../partials/form-error') %>

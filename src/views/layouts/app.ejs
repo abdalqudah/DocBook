@@ -25,5 +25,6 @@
 <script src="/js/teamops.js?v=<%= assetV %>" defer></script>
 <script src="/js/nav.js?v=<%= assetV %>" defer></script>
 <% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
+<% if (typeof csrfToken !== 'undefined' && csrfToken) { %><form id="share-mail-form" method="post" action="/app/share/email" hidden><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form><% } %>
 </body>
 </html>

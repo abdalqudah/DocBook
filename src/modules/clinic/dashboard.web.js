@@ -89,8 +89,34 @@ async function todayCounts(ctx) {
   };
 }
 
-const todaySchedule = (ctx) => apptBase(ctx).leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id').where('a.appointment_date', ctx.today)
-  .orderBy('a.appointment_time').limit(60).select('a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en');
+const todaySchedule = async (ctx) => withDocs(ctx, await apptBase(ctx).leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  .where('a.appointment_date', ctx.today).orderBy('a.appointment_time').limit(60)
+  .select('a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en'));
+
+/**
+ * Each visit's papers for the row icons on Today: a.docs = { rx, orders, invoice } (first id of each, or null) and
+ * a.docs.any — only what this member may open (prescriptions and orders need clinical.view, invoices billing.view).
+ */
+async function withDocs(ctx, rows) {
+  const ids = rows.map((a) => a.id);
+  const p = ctx.permissions;
+  const first = async (on, table) => {
+    if (!on || !ids.length) return {};
+    const got = await knex(table).where('business_id', ctx.businessId).whereIn('appointment_id', ids).groupBy('appointment_id').select('appointment_id').min({ id: 'id' }).count({ n: '*' });
+    return Object.fromEntries(got.map((r) => [r.appointment_id, { id: r.id, n: Number(r.n) }]));
+  };
+  const clin = p.has('clinical.view');
+  const pids = [...new Set(rows.map((a) => a.patient_id).filter(Boolean))];
+  const [rx, ord, inv, mails] = await Promise.all([first(clin, 'prescriptions'), first(clin, 'medical_orders'), first(p.has('billing.view'), 'invoices'),
+    pids.length ? knex('patients').where('business_id', ctx.businessId).whereIn('id', pids).whereNotNull('email').select('id', 'email') : []]);
+  const mailOf = Object.fromEntries(mails.map((r) => [r.id, r.email]));
+  rows.forEach((a) => {
+    a.docs = { rx: rx[a.id] || null, orders: ord[a.id] || null, invoice: inv[a.id] || null, clinical: clin, billing: p.has('billing.view') };
+    a.docs.any = Boolean(a.docs.rx || a.docs.orders || a.docs.invoice);
+    a.email = mailOf[a.patient_id] || a.patient_email || null;
+  });
+  return rows;
+}
 
 async function onlineRequests(ctx) {
   const base = () => apptBase(ctx).where({ 'a.source': 'website', 'a.status': 'pending' }).where('a.appointment_date', '>=', ctx.today);
@@ -206,6 +232,7 @@ router.get('/', wrap(async (req, res) => {
     kind === 'owner' && perms.has('settings.manage') ? require('../onboarding/setup.service').checklist(ctx.businessId) : null, // eslint-disable-line global-require
   ]);
   const data = { kind, counts, schedule, online, unpaid, cash, month, checklist: checklist && !checklist.dismissed && !checklist.complete ? checklist : null };
+  data.mailOn = schedule.length ? await require('../../core/mailer').configuredFor(ctx.businessId) : false; // eslint-disable-line global-require
   data.attention = await attention(ctx, { online, unpaid });
   // Going online is optional and comes after the clinic works: shown once the setup checklist is done or hidden.
   if (perms.has('website.view') && !data.checklist && kind === 'owner') {
@@ -317,8 +344,10 @@ router.get('/my-day', wrap(async (req, res) => {
   const recent = ctx.permissions.has('patients.view') ? await knex('appointments').where({ business_id: ctx.businessId, doctor_id: doctor.id, status: 'completed' }).whereNotNull('patient_id')
     .where('appointment_date', '<=', today).groupBy('patient_id').select('patient_id').max({ last: 'appointment_date' }).max({ name: 'patient_name' }).orderBy('last', 'desc').limit(5) : [];
 
+  await withDocs(ctx, items.filter((a) => a.state !== 'blocked'));
+  const mailOn = await require('../../core/mailer').configuredFor(ctx.businessId); // eslint-disable-line global-require
   return res.page('pages/clinic/dashboard/my-day', {
-    title: req.t('my_day.title'), doctor, date, isToday, prev: lib.addDays(date, -1), next: lib.addDays(date, 1), items, counts, withMe, nextPatient: next,
+    title: req.t('my_day.title'), mailOn, doctor, date, isToday, prev: lib.addDays(date, -1), next: lib.addDays(date, 1), items, counts, withMe, nextPatient: next,
     waitingQueue, daysOff, offToday, day, revenue, week, recent, statusTone: lib.STATUS_TONE, autoRefresh: isToday,
     pageScripts: [...PAGE.pageScripts, '/js/dflow.js'], pageStyles: [...PAGE.pageStyles, '/css/dflow.css'],
   });

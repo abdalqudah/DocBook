@@ -14,7 +14,7 @@
   var chState = function (okFlag, configured) { return okFlag ? ['badge-success', t('messaging.ch_active')] : configured ? ['badge-neutral', t('messaging.ch_off')] : ['badge-neutral', t('messaging.ch_not_set')]; };
 %>
 <%- include('_head', { heading: t('settings.nav_messaging'), lead: t('messaging.settings_lead') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <%- include('../../partials/form-error') %>

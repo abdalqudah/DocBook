@@ -6,7 +6,7 @@
   var statusKey = gw.provider === 'none' ? 'status_off' : gw.ready ? 'status_ready' : 'status_incomplete';
 %>
 <%- include('../settings/_head', { heading: t('settings.nav_payments'), lead: t('payments.settings.lead'), actions: can('billing.view') ? '<a class="btn btn-secondary" href="/app/payments">' + icon('receipt', 'icon-sm') + escapeHtml(t('payments.settings.view_payments')) + '</a>' : '' }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('../settings/_nav') %>
   <div class="stack-lg">
     <form class="stack-lg" method="post" action="/app/settings/payments" novalidate data-pay-settings>

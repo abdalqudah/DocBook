@@ -9,6 +9,7 @@ const auth = require('../src/modules/auth/auth.service');
 const businesses = require('../src/modules/businesses/business.service');
 const scheduling = require('../src/modules/clinic/scheduling');
 const share = require('../src/modules/share/share.service');
+const mailer = require('../src/core/mailer');
 const { serve } = require('./_http');
 
 const tag = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -35,7 +36,7 @@ test.before(async () => {
   await knex('consultations').insert({ business_id: businessId, appointment_id: visit, doctor_id: doc, patient_id: patientId, patient_name: 'Share Patient', diagnosis: 'Acute pharyngitis' });
   [rxId] = await knex('prescriptions').insert({ business_id: businessId, appointment_id: visit, doctor_id: doc, patient_id: patientId, patient_name: 'Share Patient', patient_phone: '0791234567', items: JSON.stringify([{ medicationName: 'Paracetamol', dosage: '500 mg' }]) });
   [invId] = await knex('invoices').insert({ business_id: businessId, invoice_number: 77, appointment_id: visit, patient_id: patientId, doctor_id: doc, doctor_name: 'Dr Share', service_name: 'Visit', patient_name: 'Share Patient', patient_phone: '0791234567', amount: 25, payment_method: 'cash', discount_amount: 0, discount_percent: 0 });
-  [fileId] = await knex('patient_files').insert({ business_id: businessId, patient_id: patientId, category: 'imaging', title: 'Chest X-ray', name: 'xray.png', mime: 'image/png', size: 8, sha256: 'x'.repeat(64), data: Buffer.from('89504e470d0a1a0a', 'hex') });
+  [fileId] = await knex('patient_files').insert({ business_id: businessId, patient_id: patientId, appointment_id: visit, category: 'imaging', title: 'Chest X-ray', name: 'xray.png', mime: 'image/png', size: 8, sha256: 'x'.repeat(64), data: Buffer.from('89504e470d0a1a0a', 'hex') });
   app = await serve();
 });
 test.after(async () => { if (app) await app.close(); await knex.destroy(); });
@@ -79,6 +80,52 @@ test('WhatsApp buttons open a chat with the patient and a secure link; the link 
   await knex('share_links').where({ id: row.id }).update({ expires_at: new Date(Date.now() - 1000) });
   r = await visitor.get(`/d/${ft}`);
   assert.equal(r.status, 404);
+});
+
+test('Today shows each visit\'s papers; one WhatsApp link lists all of them; the same link goes out by e-mail', async () => {
+  const o = app.agent(); await o.login(mail('a'));
+  let r = await o.get('/app');
+  assert.equal(r.status, 200);
+  assert.match(r.text, new RegExp(`/app/visits/${visit}/prescriptions/${rxId}`), 'prescription icon');
+  assert.match(r.text, new RegExp(`/app/billing/${invId}"`), 'invoice icon');
+  assert.match(r.text, new RegExp(`kind=visit&id=${visit}"`), 'send-all button');
+  r = await o.get(`/app/share/wa?kind=visit&id=${visit}&lang_msg=en`);
+  const tok = waLink(r).match(/\/d\/([A-Za-z0-9_-]+)/)[1];
+  const visitor = app.agent();
+  r = await visitor.get(`/d/${tok}?lang=en`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Your visit documents/);
+  const items = JSON.parse((await knex('share_links').where({ kind: 'visit', ref_id: visit }).first('options')).options).items;
+  assert.deepEqual(items.map((i) => i.kind), ['invoice', 'prescription', 'report', 'file']);
+  assert.match(r.text, new RegExp(`/d/${tok}/i/3`));
+  r = await visitor.get(`/d/${tok}/i/0`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Share Patient/);
+  r = await visitor.get(`/d/${tok}/i/1`);
+  assert.match(r.type, /application\/pdf/);
+  r = await visitor.get(`/d/${tok}/i/9`);
+  assert.equal(r.status, 404);
+  // e-mail: refused without an address, sent straight away with one
+  const real = { configuredFor: mailer.configuredFor, send: mailer.send }; const sent = [];
+  mailer.configuredFor = async () => true; mailer.send = async (m) => { sent.push(m); return true; };
+  try {
+    r = await o.submit('/app', '/app/share/email', { kind: 'visit', id: visit });
+    assert.equal(r.status, 302);
+    assert.equal(sent.length, 0);
+    await knex('patients').where({ id: patientId }).update({ email: 'patient@share.test' });
+    r = await o.submit('/app', '/app/share/email', { kind: 'visit', id: visit });
+    assert.equal(r.status, 302);
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].to, 'patient@share.test');
+    assert.equal(sent[0].kind, 'patient_letters');
+    assert.match(sent[0].html, /\/d\/[A-Za-z0-9_-]{20,}/);
+    // the e-mail button beside each document (kind and id in the address, the page-wide form's token in the body)
+    r = await o.get(`/app/billing/${invId}`);
+    assert.match(r.text, /id="share-mail-form"/);
+    r = await o.submit(`/app/billing/${invId}`, `/app/share/email?kind=invoice&id=${invId}`, {});
+    assert.equal(r.status, 302);
+    assert.equal(sent.length, 2);
+  } finally { Object.assign(mailer, real); }
 });
 
 test('another clinic cannot share these documents; a patient without a mobile gets a copy-the-link page', async () => {

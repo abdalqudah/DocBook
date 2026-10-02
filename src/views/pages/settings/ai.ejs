@@ -10,7 +10,7 @@
   var stDot = function (s) { return s === 'ok' ? 'badge-neutral' : s === 'error' ? 'badge-danger' : s === 'pending' ? 'badge-neutral' : 'badge-warning'; };
 %>
 <%- include('_head', { heading: t('settings.nav_ai'), lead: t('ai.settings_lead') }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <%- include('../../partials/form-error') %>

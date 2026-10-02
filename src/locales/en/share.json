@@ -11,7 +11,8 @@
       "certificate": "your medical document (sick leave / report)",
       "order": "your test request",
       "referral": "your referral letter to {specialty}",
-      "file": "the file: {title}"
+      "file": "the file: {title}",
+      "visit": "your visit documents of {date}"
     },
     "no_phone": "The patient has no valid mobile number. Copy the link or the message and send it any way you like.",
     "link_label": "Link to {doc}",
@@ -23,7 +24,26 @@
     "gone_text": "This link has expired or was withdrawn. Ask the clinic to send a new one.",
     "err": {
       "RECORD_RESTRICTED": "This patient’s medical record is restricted.",
-      "SHARE_REVOKED_DOC": "This document was revoked and cannot be sent."
+      "SHARE_REVOKED_DOC": "This document was revoked and cannot be sent.",
+      "SHARE_EMPTY": "This visit has no documents yet.",
+      "SHARE_NO_EMAIL": "The patient has no e-mail address. Add it in the patient file.",
+      "SHARE_NO_MAIL": "E-mail sending is not set up. Connect the clinic e-mail in settings.",
+      "SHARE_MAIL_FAILED": "The e-mail could not be sent. Try again."
+    },
+    "visit_title": "Your visit documents",
+    "visit_note": "Each link opens one document. This page is private to you and works until {date}.",
+    "mail_subject": "{doc} from {clinic}",
+    "mail_body": "Hello {name}, {clinic} sent you {doc}. Use the button to open it. The link is private to you and works until {date}.",
+    "mail_cta": "Open the documents",
+    "emailed": "Sent to {email}.",
+    "send_email": "Send to the patient by e-mail",
+    "send_visit": "Send all visit documents on WhatsApp",
+    "no_email": "No e-mail for the patient",
+    "docs_none": "None yet",
+    "icon": {
+      "prescription": "Prescription",
+      "orders": "Requested tests",
+      "invoice": "Invoice"
     }
   }
 }

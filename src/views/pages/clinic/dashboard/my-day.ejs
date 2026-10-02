@@ -87,6 +87,7 @@
             <% if (a.state === 'to_pay' || a.state === 'paid') { %><span class="tiny muted mono" dir="ltr"><%= fmt.money(a.amount_due) %></span><% } %>
           </span>
           <span class="df-day-act">
+            <%- include('../../../partials/visit-docs', { a: a, mailOn: mailOn }) %>
             <% if (a.state === 'with_me') { %><a class="btn btn-secondary btn-sm" href="<%= visitHref(a.id) %>"><%= t('dflow.continue') %></a>
             <% } else if (startable(a) && (a.state === 'waiting' || a.state === 'sent_in')) { %><form method="post" action="/app/visits/<%= a.id %>/start"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('dflow.start') %></button></form>
             <% } else { %><a class="btn btn-ghost btn-sm btn-icon" href="<%= visitHref(a.id) %>" aria-label="<%= t('my_day.open_visit') %>" title="<%= t('my_day.open_visit') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %>

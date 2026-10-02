@@ -1,6 +1,6 @@
 <% var dlg = typeof openDialog !== 'undefined' && openDialog === 'insurance-dialog'; %>
 <%- include('_head', { heading: t('settings.nav_insurance'), lead: t('settings.insurance_lead'), actions: '<button class="btn btn-primary" type="button" data-open-dialog="insurance-dialog" data-reset-form data-action="/app/settings/insurance" data-dialog-title="' + escapeHtml(t('settings.insurance_add')) + '">' + icon('plus', 'icon-sm') + escapeHtml(t('settings.insurance_add')) + '</button>' }) %>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <section class="panel flush">
     <% if (!rows.length) { %>

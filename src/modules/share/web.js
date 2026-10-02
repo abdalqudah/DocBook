@@ -2,14 +2,17 @@
 //   Staff  (mounted at /app/share): GET /wa?kind=&id=[&sections=…][&lang_msg=]  → opens WhatsApp (wa.me) with a ready
 //          message and the document's secure link, for the member to send from their own WhatsApp (like appointments).
 //          Without a usable mobile number it shows the link and the message to copy instead.
+//          POST /email {kind, id} → e-mails the patient the same link now.
 //   Patient (mounted at /d): GET /d/<token> → the document itself (PDF, image, or the printable page), nothing else of
-//          the record; /d/<token>/sig/<signature|stamp>.png for the marks on the printable pages.
+//          the record; /d/<token>/sig/<signature|stamp>.png for the marks on the printable pages. A visit link lists
+//          that visit's documents, each at /d/<token>/i/<n>.
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const config = require('../../config');
 const knex = require('../../db/knex');
 const { wrap, flash } = require('../../routes/helpers');
 const { AppError } = require('../../core/errors');
+const audit = require('../../core/audit');
 const { translator } = require('../../core/i18n');
 const { publicBase } = require('../../middleware/web');
 const businesses = require('../businesses/business.service');
@@ -19,25 +22,47 @@ const svc = require('./share.service');
 const staff = express.Router();
 const backOf = (req) => { const r = req.get('referer') || ''; try { const u = new URL(r); return u.pathname.startsWith('/app') ? u.pathname + u.search : '/app'; } catch { return '/app'; } };
 
-staff.get('/wa', wrap(async (req, res) => {
-  const kind = String(req.query.kind || '');
-  const msgLocale = ['ar', 'en'].includes(req.query.lang_msg) ? req.query.lang_msg : req.locale;
-  let made;
-  try {
-    made = await svc.create(req.ctx, kind, req.query.id, { opts: { sections: req.query.sections }, locale: msgLocale, base: publicBase(req) });
-  } catch (e) {
-    if (!(e instanceof AppError) || e.status >= 500 || e.status === 404) throw e;
-    const k = `share.err.${e.code}`; flash(req, 'error', req.t(k) !== k ? req.t(k) : e.message);
-    return res.redirect(backOf(req));
-  }
+const failed = (req, res, e) => {
+  if (!(e instanceof AppError) || e.status >= 500 || e.status === 404) throw e;
+  const k = `share.err.${e.code}`; flash(req, 'error', req.t(k) !== k ? req.t(k) : e.message);
+  return res.redirect(backOf(req));
+};
+/** The link and the words around it, in the message language. */
+async function compose(req, src, extra = {}) {
+  const kind = String(src.kind || '');
+  const msgLocale = ['ar', 'en'].includes(src.lang_msg) ? src.lang_msg : req.locale;
+  const made = await svc.create(req.ctx, kind, src.id, { opts: { sections: src.sections }, locale: msgLocale, base: publicBase(req), ...extra });
   const t = translator(msgLocale);
   const clinic = req.business;
   const clinicName = (msgLocale === 'en' && clinic.name_en) || clinic.name;
   const docName = t(`share.doc.${kind}`, made.doc.label || {});
-  const text = t('share.message', { name: made.doc.name || '', clinic: clinicName, doc: docName, link: made.url, date: made.expires.toISOString().slice(0, 10) });
-  const to = made.doc.phone ? await require('../messaging/messaging.service').waNumberFor(req.ctx.businessId, made.doc.phone) : null; // eslint-disable-line global-require
-  if (!to) return res.page('pages/share/link', { title: req.t('share.title'), url: made.url, text, docName, noPhone: true });
-  return res.redirect(`https://wa.me/${to}?text=${encodeURIComponent(text)}`);
+  const vars = { name: made.doc.name || '', clinic: clinicName, doc: docName, link: made.url, date: made.expires.toISOString().slice(0, 10) };
+  return { made, t, vars, msgLocale, docName, text: t('share.message', vars) };
+}
+
+staff.get('/wa', wrap(async (req, res) => {
+  let c;
+  try { c = await compose(req, req.query); } catch (e) { return failed(req, res, e); }
+  const to = c.made.doc.phone ? await require('../messaging/messaging.service').waNumberFor(req.ctx.businessId, c.made.doc.phone) : null; // eslint-disable-line global-require
+  if (!to) return res.page('pages/share/link', { title: req.t('share.title'), url: c.made.url, text: c.text, docName: c.docName, noPhone: true });
+  return res.redirect(`https://wa.me/${to}?text=${encodeURIComponent(c.text)}`);
+}));
+
+// E-mails the patient the same secure link straight away (from the clinic's own address when it connected one).
+staff.post('/email', wrap(async (req, res) => {
+  const mailer = require('../../core/mailer'); // eslint-disable-line global-require
+  if (!(await mailer.configuredFor(req.ctx.businessId))) return failed(req, res, new AppError('SHARE_NO_MAIL', 'E-mail is not set up.', 409));
+  let c;
+  try { c = await compose(req, { ...req.query, ...req.body }, { needEmail: true }); } catch (e) { return failed(req, res, e); }
+  const clinic = req.business;
+  const subject = c.t('share.mail_subject', c.vars);
+  const html = mailer.layout({ locale: c.msgLocale, title: subject, body: c.t('share.mail_body', c.vars), cta: c.t('share.mail_cta'), href: c.made.url });
+  let ok = false;
+  try { ok = await mailer.send({ to: c.made.doc.email, subject, html, replyTo: clinic.email || undefined, businessId: clinic.id, kind: 'patient_letters', fromName: (c.msgLocale === 'en' && clinic.name_en) || clinic.name }); } catch { ok = false; }
+  await audit.record(req.ctx, ok ? 'share.emailed' : 'share.email_failed', { entityType: String(req.body.kind || req.query.kind), entityId: Number(req.body.id || req.query.id) || null, newValues: { link_id: c.made.id } });
+  if (!ok) { await knex('share_links').where({ id: c.made.id }).update({ revoked_at: new Date() }); return failed(req, res, new AppError('SHARE_MAIL_FAILED', 'Sending failed.', 409)); }
+  flash(req, 'success', req.t('share.emailed', { email: c.made.doc.email }));
+  return res.redirect(backOf(req));
 }));
 
 // ---------------------------------------------------------------- patient
@@ -54,21 +79,26 @@ async function load(req) {
   return { link, clinic, ctx: { ...ctxFor(link, clinic), baseUrl: publicBase(req) } };
 }
 
-pub.get('/:token', wrap(async (req, res) => {
-  const got = await load(req);
-  if (!got) return gone(req, res);
-  const { link, clinic, ctx } = got;
+/** The visit link's n-th document, as a link of its own (null when out of range). */
+const itemOf = (link, n) => {
+  const it = link.kind === 'visit' && (link.options.items || [])[Number(n)];
+  return it ? { ...link, kind: it.kind, ref_id: it.id, options: it.options || {} } : null;
+};
+
+/** Sends one shared document: PDF, the stored file, or the printable page on the clinic's letterhead. */
+async function serveDoc(req, res, got, doc, sigBase) {
+  const { clinic, ctx } = got;
   res.set({ 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' });
-  await svc.opened(link);
-  if (['prescription', 'report', 'certificate'].includes(link.kind)) {
-    if (!link.appointment_id) return gone(req, res);
+  if (['prescription', 'report', 'certificate'].includes(doc.kind)) {
+    if (!doc.appointment_id) return gone(req, res);
+    if (doc.kind === 'certificate' && !(await knex('certificates').where({ id: doc.ref_id, business_id: doc.business_id }).whereNull('revoked_at').first('id'))) return gone(req, res);
     const docs = require('../patientdocs/docs.service'); // eslint-disable-line global-require
-    const { filename, pdf } = await docs.render(ctx, link.appointment_id, { kind: link.kind, ref_id: link.kind === 'report' ? link.appointment_id : link.ref_id, options: link.options }, link.locale);
+    const { filename, pdf } = await docs.render(ctx, doc.appointment_id, { kind: doc.kind, ref_id: doc.kind === 'report' ? doc.appointment_id : doc.ref_id, options: doc.options }, doc.locale);
     res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'X-Content-Type-Options': 'nosniff' });
     return res.end(pdf);
   }
-  if (link.kind === 'file') {
-    const f = await knex('patient_files').where({ id: link.ref_id, business_id: link.business_id }).first();
+  if (doc.kind === 'file') {
+    const f = await knex('patient_files').where({ id: doc.ref_id, business_id: doc.business_id }).first();
     if (!f) return gone(req, res);
     res.set({
       'Content-Type': f.mime, 'Content-Length': String(f.data.length), 'X-Content-Type-Options': 'nosniff',
@@ -79,39 +109,64 @@ pub.get('/:token', wrap(async (req, res) => {
   }
   // Printable pages on the clinic's letterhead (invoice, order, referral), in the link's language.
   req.query.print = '1';
-  req.locale = link.locale;
-  res.locals.locale = link.locale; res.locals.dir = link.locale === 'ar' ? 'rtl' : 'ltr'; res.locals.t = translator(link.locale);
-  res.locals.business = clinic; res.locals.currency = clinic.currency; res.locals.currentUser = null;
-  res.locals.logoSrc = clinic.logo_mime ? `/${clinic.slug}/logo?v=${clinic.logo_version || 0}` : null;
-  res.locals.sigSrc = (what) => `/d/${req.params.token}/sig/${what}.png`;
-  res.locals.can = () => false; res.locals.canAny = () => false;
-  res.locals.publicShare = true;
-  if (link.kind === 'invoice') {
+  localise(req, res, doc.locale, clinic);
+  res.locals.sigSrc = (what) => `${sigBase}/sig/${what}.png`;
+  if (doc.kind === 'invoice') {
     const invoiceDoc = require('../clinic/invoice-doc'); // eslint-disable-line global-require
     res.locals.invoiceTpl = await require('../platformops/ops.service').invoiceTemplate(clinic.id); // eslint-disable-line global-require
     const paper = invoiceDoc.paperOf({}, res.locals.invoiceTpl);
-    const doc = await invoiceDoc.load(ctx, link.ref_id, { paper });
-    const number = `${(res.locals.invoiceTpl && res.locals.invoiceTpl.prefix) || ''}${doc.inv.invoice_number}`;
-    return res.page('pages/clinic/billing/show', { title: number, doc, inv: doc.inv, patient: doc.patient, issued: doc.issued, paper, number, printable: true, pageStyles: ['/css/invoice.css'] });
+    const d = await invoiceDoc.load(ctx, doc.ref_id, { paper });
+    const number = `${(res.locals.invoiceTpl && res.locals.invoiceTpl.prefix) || ''}${d.inv.invoice_number}`;
+    return res.page('pages/clinic/billing/show', { title: number, doc: d, inv: d.inv, patient: d.patient, issued: d.issued, paper, number, printable: true, pageStyles: ['/css/invoice.css'] });
   }
   const orders = require('../orders/orders.service'); // eslint-disable-line global-require
   const lib = require('../clinic/records.lib'); // eslint-disable-line global-require
-  const d = link.kind === 'order' ? await orders.getOrder(ctx, link.ref_id) : await orders.getReferral(ctx, link.ref_id);
-  return res.page(`pages/orders/${link.kind}`, { title: clinic.name, doc: d, age: lib.ageOf(d.date_of_birth, new Date().toISOString().slice(0, 10)), printable: true, pageStyles: ['/css/appointments.css'] });
+  const d = doc.kind === 'order' ? await orders.getOrder(ctx, doc.ref_id) : await orders.getReferral(ctx, doc.ref_id);
+  return res.page(`pages/orders/${doc.kind}`, { title: clinic.name, doc: d, age: lib.ageOf(d.date_of_birth, new Date().toISOString().slice(0, 10)), printable: true, pageStyles: ['/css/appointments.css'] });
+}
+
+function localise(req, res, locale, clinic) {
+  req.locale = locale;
+  res.locals.locale = locale; res.locals.dir = locale === 'ar' ? 'rtl' : 'ltr'; res.locals.t = translator(locale);
+  res.locals.business = clinic; res.locals.currency = clinic.currency; res.locals.currentUser = null;
+  res.locals.logoSrc = clinic.logo_mime ? `/${clinic.slug}/logo?v=${clinic.logo_version || 0}` : null;
+  res.locals.can = () => false; res.locals.canAny = () => false;
+  res.locals.publicShare = true;
+}
+
+pub.get('/:token', wrap(async (req, res) => {
+  const got = await load(req);
+  if (!got) return gone(req, res);
+  await svc.opened(got.link);
+  if (got.link.kind !== 'visit') return serveDoc(req, res, got, got.link, `/d/${req.params.token}`);
+  // A visit: the list of its documents, each opening on its own.
+  res.set({ 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' });
+  localise(req, res, got.link.locale, got.clinic);
+  const t = res.locals.t;
+  const items = (got.link.options.items || []).map((it, i) => ({ ...it, href: `/d/${req.params.token}/i/${i}`, name: t(`share.doc.${it.kind}`, it.label || {}) }));
+  return res.page('pages/share/visit', { layout: 'public', title: t('share.visit_title'), noindex: true, clinic: got.clinic, items, expires: new Date(got.link.expires_at).toISOString().slice(0, 10) });
 }));
 
-pub.get('/:token/sig/:what(signature|stamp).png', wrap(async (req, res) => {
-  const { sendImage } = require('../signatures/web'); // eslint-disable-line global-require
+pub.get('/:token/i/:n(\\d+)', wrap(async (req, res) => {
   const got = await load(req);
-  if (!got || !['invoice', 'order', 'referral'].includes(got.link.kind)) return sendImage(res, null);
+  const doc = got && itemOf(got.link, req.params.n);
+  if (!doc) return gone(req, res);
+  return serveDoc(req, res, got, doc, `/d/${req.params.token}/i/${req.params.n}`);
+}));
+
+async function sendSig(req, res, got, doc) {
+  const { sendImage } = require('../signatures/web'); // eslint-disable-line global-require
+  if (!doc || !['invoice', 'order', 'referral'].includes(doc.kind)) return sendImage(res, null);
   const sig = require('../signatures/signatures.service'); // eslint-disable-line global-require
   let doctorId = null;
-  if (got.link.kind !== 'invoice') {
-    const row = await knex(got.link.kind === 'order' ? 'medical_orders' : 'referrals').where({ id: got.link.ref_id, business_id: got.link.business_id }).first('doctor_id');
+  if (doc.kind !== 'invoice') {
+    const row = await knex(doc.kind === 'order' ? 'medical_orders' : 'referrals').where({ id: doc.ref_id, business_id: doc.business_id }).first('doctor_id');
     doctorId = row && row.doctor_id;
   }
-  const m = await sig.forDocument(got.link.business_id, got.link.kind === 'invoice' ? 'invoices' : 'reports', doctorId);
+  const m = await sig.forDocument(doc.business_id, doc.kind === 'invoice' ? 'invoices' : 'reports', doctorId);
   return sendImage(res, { image: m[req.params.what] });
-}));
+}
+pub.get('/:token/sig/:what(signature|stamp).png', wrap(async (req, res) => { const got = await load(req); return sendSig(req, res, got, got && got.link); }));
+pub.get('/:token/i/:n(\\d+)/sig/:what(signature|stamp).png', wrap(async (req, res) => { const got = await load(req); return sendSig(req, res, got, got && itemOf(got.link, req.params.n)); }));
 
 module.exports = { staff, pub };

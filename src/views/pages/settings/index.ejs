@@ -1,7 +1,7 @@
 <div class="page-head">
   <div><h1><%= t('settings.title') %></h1><p><%= t('settings.lead') %></p></div>
 </div>
-<div class="settings-layout">
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
   <%- include('_nav') %>
   <div class="stack-lg">
     <section class="panel set-hero">
