@@ -1,0 +1,16 @@
+{
+  "chat": {
+    "title": "Messages",
+    "lead": "Talk with the clinic team: a room for everyone and private one-to-one conversations.",
+    "conversations": "Conversations",
+    "new": "New conversation",
+    "room": "Clinic room",
+    "room_sub": "The whole clinic team",
+    "you": "You",
+    "empty": "No messages yet. Start the conversation.",
+    "empty_short": "No messages yet",
+    "placeholder": "Write a message…",
+    "send": "Send",
+    "send_failed": "The message could not be sent. Try again."
+  }
+}

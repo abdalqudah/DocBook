@@ -62,6 +62,7 @@
       "reviews": "Reviews"
     },
     "setup_orders_catalog": "Lab tests & imaging",
-    "setup_orders_catalog_text": "The lab tests and imaging studies doctors pick from."
+    "setup_orders_catalog_text": "The lab tests and imaging studies doctors pick from.",
+    "sec_reps": "Medical reps"
   }
 }

@@ -46,7 +46,7 @@ async function renderBook(req, res, extra = {}) {
   if (!doctorId && !clinic.hasClinicWide && clinic.doctors[0]) doctorId = String(clinic.doctors[0].id);
   const date = isDate(src.visit_date || src.date) ? (src.visit_date || src.date) : '';
   let slots = null; let slotError = null;
-  if (date) {
+  if (date && clinic.mode === 'slots') {
     try { slots = await svc.freeSlots({ businessId: clinic.id, doctorId: Number(doctorId) || null, date, timezone: clinic.timezone }); } catch (e) {
       if (!(e instanceof AppError)) throw e;
       slotError = errText(req, e); slots = [];

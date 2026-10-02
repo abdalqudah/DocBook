@@ -1,0 +1,20 @@
+{
+  "prints": {
+    "day_sheet": "Appointment sheet",
+    "patient_list": "Patient list",
+    "patient_summary": "Patient file summary",
+    "print_file": "Print file",
+    "count": "{n} records",
+    "capped": "first {n} only",
+    "no_appointments": "No appointments in this period.",
+    "arrived": "Arrived",
+    "last_vitals": "Latest vital signs",
+    "visits_diagnoses": "Visits & diagnoses",
+    "prescriptions": "Prescriptions",
+    "medications": "Medications",
+    "tests_referrals": "Tests & referrals",
+    "details": "Details",
+    "upcoming": "Upcoming appointments",
+    "none": "None."
+  }
+}

@@ -1,0 +1,39 @@
+<%# Staff chat: conversations on one side, the open conversation on the other. %>
+<% var me = currentUser.id; var title = function (c) { return c.kind === 'room' ? t('chat.room') : c.title; };
+   var when = function (d) { return fmt.date(d, { day: 'numeric', month: 'short' }) + ' ' + new Date(d).toTimeString().slice(0, 5); }; %>
+<div class="page-head"><div><h1><%= t('chat.title') %></h1><p><%= t('chat.lead') %></p></div></div>
+<div class="chat-wrap">
+  <aside class="panel flush chat-side">
+    <div class="panel-head"><h2 class="small"><%= t('chat.conversations') %></h2>
+      <% if (members.length) { %><details class="dropdown"><summary class="btn btn-secondary btn-sm"><%- icon('plus', 'icon-sm') %><%= t('chat.new') %></summary>
+        <div class="menu chat-people"><% members.forEach(function (m) { %><a href="/app/chat?u=<%= m.id %>"><span class="avatar"><%= initials(m.name) %></span><span class="grow"><span class="strong small"><%= m.name %></span><span class="tiny muted d-block"><%= m.job_title || m.role_name || '' %></span></span></a><% }) %></div></details><% } %>
+    </div>
+    <ul class="chat-list">
+      <% chats.forEach(function (c) { %>
+      <li><a href="/app/chat?c=<%= c.id %>" class="<%= active && c.id === active.id ? 'is-on' : '' %>"<%- active && c.id === active.id ? ' aria-current="page"' : '' %>>
+        <span class="avatar<%= c.kind === 'room' ? ' chat-room-av' : '' %>"><%- c.kind === 'room' ? icon('users', 'icon-sm') : initials(c.title) %></span>
+        <span class="grow" style="min-width:0"><span class="strong small d-block"><%= title(c) %></span><span class="tiny muted chat-preview"><%= c.last ? (c.last.user_id === me ? t('chat.you') + ': ' : (c.kind === 'room' ? (c.last.user_name || '') + ': ' : '')) + c.last.body : t('chat.empty_short') %></span></span>
+        <% if (c.unread) { %><span class="badge badge-brand"><%= c.unread > 99 ? '99+' : c.unread %></span><% } %>
+      </a></li>
+      <% }) %>
+    </ul>
+  </aside>
+  <% if (active) { %>
+  <section class="panel flush chat-main" data-chat="<%= active.id %>" data-me="<%= me %>" data-after="<%= msgs.length ? msgs[msgs.length - 1].id : 0 %>">
+    <div class="panel-head"><h2><%= title(active) %></h2><% if (active.kind === 'room') { %><span class="small muted"><%= t('chat.room_sub') %></span><% } %></div>
+    <div class="chat-msgs" data-chat-msgs aria-live="polite">
+      <% if (!msgs.length) { %><p class="chat-empty muted small" data-chat-empty><%= t('chat.empty') %></p><% } %>
+      <% msgs.forEach(function (m) { %>
+      <div class="chat-msg<%= m.user_id === me ? ' is-me' : '' %>"><% if (m.user_id !== me) { %><div class="chat-who tiny"><%= m.user_name || '—' %></div><% } %><div class="chat-bubble" dir="auto"><%= m.body %></div><div class="chat-at tiny muted"><%= when(m.created_at) %></div></div>
+      <% }) %>
+      <span id="end"></span>
+    </div>
+    <form class="chat-form" method="post" action="/app/chat/<%= active.id %>" data-chat-form>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <textarea class="textarea" name="body" rows="1" maxlength="2000" required dir="auto" placeholder="<%= t('chat.placeholder') %>" aria-label="<%= t('chat.placeholder') %>"></textarea>
+      <button class="btn btn-primary" type="submit" aria-label="<%= t('chat.send') %>"><%- icon('send', 'icon-sm flip-rtl') %><span class="hide-xs"><%= t('chat.send') %></span></button>
+    </form>
+  </section>
+  <% } %>
+</div>
+<script type="application/json" id="chat-i18n"><%- json({ you: t('chat.you'), failed: t('chat.send_failed'), locale: locale }) %></script>

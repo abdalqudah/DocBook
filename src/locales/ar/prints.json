@@ -1,0 +1,20 @@
+{
+  "prints": {
+    "day_sheet": "كشف المواعيد",
+    "patient_list": "قائمة المرضى",
+    "patient_summary": "ملخص ملف المريض",
+    "print_file": "طباعة الملف",
+    "count": "{n} سجل",
+    "capped": "أول {n} فقط",
+    "no_appointments": "لا توجد مواعيد في هذه الفترة.",
+    "arrived": "وصل",
+    "last_vitals": "آخر علامات حيوية",
+    "visits_diagnoses": "الزيارات والتشخيصات",
+    "prescriptions": "الوصفات",
+    "medications": "الأدوية",
+    "tests_referrals": "الفحوصات والتحويلات",
+    "details": "التفاصيل",
+    "upcoming": "المواعيد القادمة",
+    "none": "لا يوجد."
+  }
+}

@@ -191,8 +191,18 @@
       "address": "Address",
       "map": "Map",
       "change_clinic": "Change clinic",
-      "clinic_note": "Note from the clinic"
-    }
+      "clinic_note": "Note from the clinic",
+      "mode_slots": "Set rep times",
+      "mode_request": "Request a time",
+      "request_title": "This clinic takes visit requests",
+      "request_text": "See the doctors' working hours and suggest a day and time within them. The clinic's answer reaches you by e-mail and in My visits.",
+      "no_doctors": "No doctors are available at this clinic right now.",
+      "hours_title": "Doctors' working hours",
+      "suggest_title": "Suggest a visit time"
+    },
+    "requests_on": "Take visit requests from reps",
+    "requests_on_help": "Reps see your doctors and their working hours and suggest a time; you confirm or decline. With rep times set, they book those directly.",
+    "suggested_time": "Suggested time"
   },
   "errors_market": {
     "VENDOR_NOT_ACTIVE": "Your account is waiting for approval. You can book visits once it is approved.",
@@ -203,6 +213,7 @@
     "SLOT_BUSY": "The system is busy — please try again.",
     "DATE_IN_PAST": "This date has passed.",
     "INVALID_DATE": "Enter a valid date.",
-    "NOT_FOUND": "Not found."
+    "NOT_FOUND": "Not found.",
+    "REP_ALREADY_REQUESTED": "You already have a request with this doctor on that day."
   }
 }

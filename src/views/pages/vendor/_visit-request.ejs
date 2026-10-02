@@ -1,0 +1,41 @@
+<%/* A clinic without rep windows: the rep sees the doctors' working hours and suggests a date and time (the clinic decides). */%>
+<% var _e = typeof errors !== 'undefined' && errors ? errors : {}; var _o = typeof old !== 'undefined' && old ? old : {};
+   var days = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+   var docSel = clinic.doctors.find(function (d) { return String(d.id) === String(_o.doctor_id || doctorId); }) || clinic.doctors[0];
+   var picked = [].concat(_o.products || []).map(String); %>
+<div class="alert alert-info mb-4" role="note"><%- icon('info') %><div class="grow"><div class="alert-title"><%= t('rep_visits.vendor_side.request_title') %></div><div class="small"><%= t('rep_visits.vendor_side.request_text') %></div></div></div>
+<% if (!clinic.doctors.length) { %>
+<div class="panel"><div class="panel-body small muted"><%= t('rep_visits.vendor_side.no_doctors') %></div></div>
+<% } else { %>
+<div class="stack">
+  <div class="panel flush">
+    <div class="panel-head"><h2><%= t('rep_visits.vendor_side.hours_title') %></h2></div>
+    <div class="table-wrap"><table class="table mk-hours">
+      <thead><tr><th><%= t('rep_visits.vendor_side.with') %></th><% days.forEach(function (k) { %><th><%= t('days.' + k) %></th><% }) %></tr></thead>
+      <tbody><% clinic.doctors.forEach(function (d) { %><tr<%= docSel && d.id === docSel.id ? ' class="is-on"' : '' %>>
+        <td class="strong"><%= L(d.full_name, d.full_name_en) %><% if (L(d.specialization, d.specialization_en)) { %><div class="tiny muted"><%= L(d.specialization, d.specialization_en) %></div><% } %></td>
+        <% days.forEach(function (k) { var sh = d.hours[k]; %><td class="tiny nowrap" dir="ltr"><%- sh ? sh.map(function (x) { return x.start + '–' + x.end; }).join('<br>') : '<span class="muted">—</span>' %></td><% }) %>
+      </tr><% }) %></tbody>
+    </table></div>
+  </div>
+  <form class="panel" method="post" action="/vendor/visits" novalidate>
+    <div class="panel-head"><h2><%= t('rep_visits.vendor_side.suggest_title') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="business_id" value="<%= clinic.id %>">
+      <%- include('../../partials/form-error') %>
+      <div class="field"><label class="label" for="rq-doc"><%= t('rep_visits.vendor_side.with') %></label><select class="select" id="rq-doc" name="doctor_id"><% clinic.doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= docSel && d.id === docSel.id ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% if (_e.doctor_id) { %><span class="field-error"><%= _e.doctor_id %></span><% } %></div>
+      <div class="form-grid">
+        <div class="field"><label class="label" for="rq-date"><%= t('rep_visits.vendor_side.date') %></label><input class="input" id="rq-date" type="date" name="visit_date" min="<%= today %>" max="<%= maxDate %>" value="<%= _o.visit_date || '' %>" required><% if (_e.visit_date) { %><span class="field-error"><%= _e.visit_date %></span><% } %></div>
+        <div class="field"><label class="label" for="rq-time"><%= t('rep_visits.vendor_side.time') %></label><input class="input" id="rq-time" type="time" name="visit_time" step="900" value="<%= _o.visit_time || '' %>" required dir="ltr"><% if (_e.visit_time) { %><span class="field-error"><%= _e.visit_time %></span><% } %></div>
+      </div>
+      <%- include('../../partials/field', { name: 'purpose', label: t('rep_visits.vendor_side.purpose'), type: 'textarea', required: true, placeholder: t('rep_visits.vendor_side.purpose_placeholder'), value: _o.purpose || '', errors: _e }) %>
+      <% if (products.length) { %>
+      <fieldset><legend class="label"><%= t('rep_visits.vendor_side.products') %></legend><div class="mk-product-checks">
+        <% products.forEach(function (p) { %><label class="check"><input type="checkbox" name="products" value="<%= p.id %>"<%= picked.indexOf(String(p.id)) >= 0 ? ' checked' : '' %>><span><%= L(p.name, p.name_en) %></span></label><% }) %>
+      </div></fieldset>
+      <% } %>
+    </div>
+    <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('rep_visits.vendor_side.send_request') %></button></div>
+  </form>
+</div>
+<% } %>

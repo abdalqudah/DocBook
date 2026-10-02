@@ -152,7 +152,7 @@ async function renderIndex(req, res, extra = {}) {
     if (to < from) to = from;
     const rows = (await appts.list(ctx, { from, to, doctor: f.doctor, status: f.status, q: f.q, type: f.type, branch: f.branch })).map(withEnd(lenOf));
     const totals = { count: rows.length, due: rows.filter((r) => r.status !== 'cancelled').reduce((s, r) => s + Number(r.amount_due || 0), 0) };
-    return res.page('pages/clinic/appointments/index', { ...base, from, to, rows, totals, capped: rows.length >= 1000, ...extra });
+    return res.page('pages/clinic/appointments/index', { ...base, from, to, rows, totals, capped: rows.length >= 1000, printHref: printHref(req, from, to), ...extra });
   }
 
   const date = pickDate(req.query.date, ctx.today);
@@ -195,9 +195,31 @@ async function renderIndex(req, res, extra = {}) {
   const step = view === 'week' ? 7 : 1;
   return res.page('pages/clinic/appointments/index', {
     ...base, date, prev: addDays(date, -step), next: addDays(date, step), columns, days, weekDoctor, range, stats, showCancelled,
-    now, isPast: date < ctx.today, ...extra,
+    now, isPast: date < ctx.today, printHref: printHref(req, days.length ? days[0] : date, days.length ? days[days.length - 1] : date), ...extra,
   });
 }
+
+/** The printable list of the appointments on screen (same filters). */
+function printHref(req, from, to) {
+  const p = new URLSearchParams({ from, to, print: '1' });
+  for (const k of ['doctor', 'status', 'q', 'type', 'branch']) if (req.query[k]) p.set(k, String(req.query[k]));
+  return `/app/appointments/print?${p}`;
+}
+
+// The day sheet: the appointments of a day (or up to 31 days) on the clinic letterhead, filtered like the list.
+router.get('/print', wrap(async (req, res) => {
+  const { ctx } = req;
+  const f = filtersOf(req);
+  const from = pickDate(req.query.from || req.query.date, ctx.today);
+  let to = pickDate(req.query.to || req.query.date, from);
+  if (to < from) to = from;
+  if (addDays(from, 31) < to) to = addDays(from, 31);
+  const lenOf = await lengths(ctx);
+  const rows = (await appts.list(ctx, { from, to, doctor: f.doctor, status: f.status, q: f.q, type: f.type, branch: f.branch }))
+    .filter((a) => a.appointment_type !== 'blocked' && (f.status || a.status !== 'cancelled')).map(withEnd(lenOf));
+  const doctor = f.doctor ? await knex('doctors').where({ id: f.doctor, business_id: ctx.businessId }).first('full_name', 'full_name_en') : null;
+  res.page('pages/clinic/appointments/print', { title: req.t('prints.day_sheet'), rows, from, to, doctor, printable: true, pageStyles: ['/css/appointments.css'] });
+}));
 
 router.get('/', wrap((req, res) => renderIndex(req, res)));
 

@@ -39,7 +39,7 @@
       <tbody>
         <% visits.forEach(function (r) { var act = mayAct(r); %>
         <tr>
-          <td class="primary-cell nowrap"><div class="strong"><%= fmt.date(r.visit_date, { weekday: 'short', month: 'short', day: 'numeric' }) %></div><div class="small muted" dir="ltr"><%= r.visit_time %>–<%= endOf(r.visit_time, r.duration_minutes) %></div></td>
+          <td class="primary-cell nowrap"><div class="strong"><%= fmt.date(r.visit_date, { weekday: 'short', month: 'short', day: 'numeric' }) %></div><div class="small muted" dir="ltr"><%= r.visit_time %>–<%= endOf(r.visit_time, r.duration_minutes) %></div><% if (r.flexible) { %><span class="badge badge-neutral tiny"><%= t('rep_visits.suggested_time') %></span><% } %></td>
           <td data-label="<%= t('rep_visits.vendor') %>"><div>
             <div class="strong"><%= L(r.vendor_name, r.vendor_name_en) %></div>
             <div class="tiny muted"><%= t('market.type_' + r.vendor_type) %><%= r.rep_name ? ' · ' + r.rep_name : '' %></div>
@@ -117,6 +117,7 @@
     <div class="panel-body stack">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <label class="check mk-check"><input type="checkbox" name="rep_visits_enabled" value="1"<%= enabled ? ' checked' : '' %>><span><span class="strong"><%= t('rep_visits.enabled') %></span><span class="help"><%= t('rep_visits.enabled_help') %></span></span></label>
+      <label class="check mk-check"><input type="checkbox" name="rep_requests" value="1"<%= settings.rep_requests_off ? '' : ' checked' %>><span><span class="strong"><%= t('rep_visits.requests_on') %></span><span class="help"><%= t('rep_visits.requests_on_help') %></span></span></label>
       <label class="check mk-check"><input type="checkbox" name="rep_visits_auto_confirm" value="1"<%= settings.rep_visits_auto_confirm ? ' checked' : '' %>><span><span class="strong"><%= t('rep_visits.auto_confirm') %></span><span class="help"><%= t('rep_visits.auto_confirm_help') %></span></span></label>
     </div>
     <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>

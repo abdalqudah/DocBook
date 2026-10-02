@@ -33,6 +33,7 @@
       <a class="<%= view === 'list' ? 'active' : '' %>" href="/app/appointments<%= qs({ view: 'list', from: isCal ? date : from }) %>"<% if (view === 'list') { %> aria-current="page"<% } %>><%= t('appointments.view_list') %></a>
     </nav>
     <% if (view === 'list') { %><%- include('../../../partials/export-menu', { href: '/app/appointments/export' }) %><% } %>
+    <% if (typeof printHref !== 'undefined' && printHref) { %><a class="btn btn-secondary" href="<%= printHref %>" target="_blank" rel="noopener"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a><% } %>
     <% if (canManage && doctors.length) { %><button class="btn btn-secondary" type="button" data-open-dialog="block-dialog" data-reset-form data-block-open><%- icon('lock', 'icon-sm') %><%= t('appointments.block_time') %></button><% } %>
     <details class="dropdown lv-more">
       <summary class="btn btn-secondary btn-icon" aria-label="<%= t('live.more_actions') %>" title="<%= t('live.more_actions') %>"><%- icon('ellipsis', 'icon-sm') %></summary>

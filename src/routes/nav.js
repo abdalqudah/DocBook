@@ -33,6 +33,11 @@ const NAV = [
     { key: 'patients', href: '/app/patients', icon: 'users', perms: ['patients.view'] },
     { key: 'certificates', href: '/app/certificates', icon: 'badge-check', perms: ['certificates.view'] },
   ] },
+  // Medical reps: their visits first, the offers next to them (moved from Stock).
+  { group: 'reps', icon: 'briefcase-business', items: [
+    { key: 'rep_visits', href: '/app/rep-visits', icon: 'briefcase-business', perms: ['vendors.view'], badge: 'repRequests' },
+    { key: 'marketplace', href: '/app/marketplace', icon: 'package-search', perms: ['vendors.view'], badge: 'newOffers' },
+  ] },
   { group: 'finance', icon: 'wallet', items: [
     { key: 'profit_loss', href: '/app/finance', icon: 'trending-up', perms: ['finance.view'], exact: true, cluster: 'overview' },
     { key: 'cashier', href: '/app/cashier', icon: 'banknote', perms: ['billing.manage'], badge: 'toPay', cluster: 'collect' },
@@ -57,8 +62,6 @@ const NAV = [
   { group: 'stock', icon: 'package', items: [
     { key: 'supplies', href: '/app/supplies', icon: 'package', perms: ['supplies.view'], badge: 'lowStock' },
     { key: 'purchase_orders', href: '/app/supplies/orders', icon: 'clipboard-list', perms: ['supplies.view'], follows: 'supplies' },
-    { key: 'marketplace', href: '/app/marketplace', icon: 'package-search', perms: ['vendors.view'], badge: 'newOffers' },
-    { key: 'rep_visits', href: '/app/rep-visits', icon: 'briefcase-business', perms: ['vendors.view'], badge: 'repRequests' },
   ] },
   { group: 'website', icon: 'globe', items: [
     { key: 'website', href: '/app/website', icon: 'globe', perms: ['website.view'], exact: true },

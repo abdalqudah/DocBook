@@ -23,7 +23,7 @@
     <li>
       <span class="avatar"><%= initials(L(c.name, c.name_en)) %></span>
       <div class="grow">
-        <div class="strong"><%= L(c.name, c.name_en) %></div>
+        <div class="strong"><%= L(c.name, c.name_en) %> <span class="badge <%= c.mode === 'slots' ? 'badge-success' : 'badge-neutral' %>"><%= t('rep_visits.vendor_side.mode_' + c.mode) %></span></div>
         <div class="tiny muted"><%= [c.city, specialtyLabel(c.specialty)].filter(Boolean).join(' · ') %></div>
         <% if (c.doctors.length) { %><div class="small muted mt-1"><%= t('rep_visits.vendor_side.doctors') %>: <%= c.doctors.map(function (d) { return L(d.full_name, d.full_name_en); }).join('، ') %></div><% } %>
       </div>

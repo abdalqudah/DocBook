@@ -48,7 +48,9 @@
         "signup": "Start free",
         "forgot": "Forgot password",
         "new": "What's new",
-        "pricing": "Pricing"
+        "pricing": "Pricing",
+        "reps": "For reps",
+        "reps_signup": "Register as a rep"
       },
       "hero": {
         "eyebrow": "Clinic management in Arabic and English",
@@ -292,6 +294,16 @@
         "lead": "Start small and move up whenever you need to. Paying yearly saves you more.",
         "btn": "Get started",
         "note": "Prices in Jordanian dinars. Change your plan or number of branches at any time from subscription settings."
+      },
+      "reps": {
+        "kicker": "For reps & companies",
+        "title": "A medical rep? Book your doctor visits in one place",
+        "lead": "Register for free as a rep, warehouse or company, see the clinics, their doctors and working hours, book or suggest a visit time, and get the clinic’s answer directly.",
+        "btn": "Register as a rep",
+        "p1": "Every clinic open to reps and its doctors in one list",
+        "p2": "Free visit times, or the doctor’s working hours to suggest a time",
+        "p3": "The clinic’s answer by e-mail and in your account",
+        "p4": "Show your products and offers to clinics by specialty"
       }
     },
     "pricing": {

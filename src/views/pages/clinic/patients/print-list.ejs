@@ -1,0 +1,17 @@
+<%# The patient list (current search / filter) on the clinic letterhead. %>
+<% var printing = query.print === '1'; %>
+<% if (!printing) { %><div class="page-head"><div><h1><%= t('prints.patient_list') %></h1></div><div class="page-actions"><a class="btn btn-primary" href="<%= fullPath %><%= fullPath.indexOf('?') === -1 ? '?' : '&' %>print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a></div></div><% } %>
+<div class="prt-title"><h1><%= t('prints.patient_list') %></h1><p class="muted"><%= t('prints.count', { n: fmt.number(rows.length) }) %><%= query.q ? ' · «' + query.q + '»' : '' %><%= capped ? ' · ' + t('prints.capped', { n: fmt.number(rows.length) }) : '' %></p></div>
+<table class="prt-table">
+  <thead><tr><th>#</th><th><%= t('patients.full_name') %></th><th><%= t('common.phone') %></th><th><%= t('visits.age') %></th><th><%= t('patients.gender') %></th><th><%= t('patients.insurance') %></th><th class="num"><%= t('patients.visits') %></th><th><%= t('patients.last_visit') %></th></tr></thead>
+  <tbody><% rows.forEach(function (r, i) { var age = ageOf(r.date_of_birth); %><tr>
+    <td class="num"><%= i + 1 %></td>
+    <td class="strong"><%= r.full_name %></td>
+    <td dir="ltr" class="nowrap"><%= r.phone || '' %></td>
+    <td><%= age !== null ? age : '' %></td>
+    <td><%= r.gender ? t('patients.genders.' + r.gender) : '' %></td>
+    <td><%= r.insurance_name || '' %></td>
+    <td class="num"><%= fmt.number(Number(r.visits) || 0) %></td>
+    <td class="nowrap"><%= r.last_visit ? fmt.date(r.last_visit) : '' %></td>
+  </tr><% }) %></tbody>
+</table>

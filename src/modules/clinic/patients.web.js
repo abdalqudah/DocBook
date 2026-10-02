@@ -58,6 +58,12 @@ async function render(req, res, extra = {}) {
 
 router.get('/', wrap((req, res) => render(req, res)));
 
+// The patient list (same search and filter as the screen) on the clinic letterhead.
+router.get('/print', wrap(async (req, res) => {
+  const rows = await listQuery(req.ctx, req.query).limit(2000);
+  res.page('pages/clinic/patients/print-list', { title: req.t('prints.patient_list'), rows, capped: rows.length >= 2000, ageOf: (d) => lib.ageOf(d, req.ctx.today), printable: true });
+}));
+
 router.get('/export', can('data.export'), wrap(async (req, res) => {
   const rows = await listQuery(req.ctx, req.query).limit(20000);
   const t = req.t;
@@ -172,6 +178,36 @@ async function renderShow(req, res, extra = {}) {
   });
 }
 router.get('/:id(\\d+)', wrap((req, res) => renderShow(req, res)));
+
+// Patient file summary on the clinic letterhead: details, allergies and chronic conditions, then — for members who
+// may read the clinical record — visits with diagnoses, prescriptions, tests and referrals.
+router.get('/:id(\\d+)/summary', wrap(async (req, res) => {
+  const p = await loadPatient(req);
+  const access = await privacy.access(req.ctx, { patientId: p.id });
+  const clinicalOk = req.ctx.permissions.has('clinical.view') && access.clinical;
+  await privacy.log(req.ctx, { patientId: p.id, what: 'summary', access: privacy.levelOf(access) });
+  const tl = await appts.timeline(req.ctx, p.id);
+  const mine = (r) => !req.ctx.ownDoctorId || r.doctor_id === req.ctx.ownDoctorId;
+  const visits = tl.appointments.filter(mine).filter((a) => a.status === 'completed').slice(0, 60);
+  let clinicalData = null;
+  if (clinicalOk) {
+    const codes = await icd.diagnosesByAppointment(req.ctx.businessId, visits.map((a) => a.id));
+    const consult = new Map(tl.consultations.filter(mine).map((c) => [c.appointment_id, c]));
+    const orders = require('../orders/orders.service'); // eslint-disable-line global-require
+    const [ol, rl] = await Promise.all([orders.ordersForPatient(req.ctx, p.id), orders.referralsForPatient(req.ctx, p.id)]);
+    const vitals = tl.consultations.filter(mine).map((c) => ({ at: c.created_at, v: clinical.parseJson(c.vital_signs, {}) })).find((x) => x.v && Object.values(x.v).some(Boolean)) || null;
+    clinicalData = {
+      visits: visits.map((a) => ({ ...a, consultation: consult.get(a.id) || null, codes: codes.get(a.id) || [] })),
+      prescriptions: tl.prescriptions.filter(mine).slice(0, 30).map((rx) => ({ ...rx, items: clinical.parseJson(rx.items, []) })),
+      orders: ol.slice(0, 30), referrals: rl.slice(0, 30), vitals,
+    };
+  }
+  res.page('pages/clinic/patients/summary', {
+    title: p.full_name, patient: p, age: lib.ageOf(p.date_of_birth, req.ctx.today), visits, clinicalData, icdTitle: (r) => icd.titleOf(r, req.locale),
+    upcoming: tl.appointments.filter(mine).filter((a) => a.appointment_date >= req.ctx.today && ['pending', 'confirmed'].includes(a.status)).slice(0, 10),
+    printable: true,
+  });
+}));
 
 async function renderEdit(req, res, extra = {}) {
   const p = await loadPatient(req);

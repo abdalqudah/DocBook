@@ -13,6 +13,7 @@
   <div class="page-actions"><a class="btn btn-ghost" href="/vendor/visits/new"><%= t('rep_visits.vendor_side.change_clinic') %></a></div>
 </div>
 
+<% if (clinic.mode === 'request') { %><%- include('_visit-request') %><% } else { %>
 <div class="mk-book">
   <div class="panel">
     <div class="panel-head"><h2><%= t('rep_visits.vendor_side.step_when') %></h2><% if (clinic.rep_visits_auto_confirm) { %><span class="small muted"><%= t('rep_visits.vendor_side.auto_confirm_note') %></span><% } %></div>
@@ -62,3 +63,4 @@
     <% if (date && !slotError && slots.length) { %><div class="panel-foot"><button class="btn btn-primary" type="submit"><%= clinic.rep_visits_auto_confirm ? t('rep_visits.vendor_side.book_now') : t('rep_visits.vendor_side.send_request') %></button></div><% } %>
   </form>
 </div>
+<% } %>

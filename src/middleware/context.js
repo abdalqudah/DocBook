@@ -81,6 +81,7 @@ async function resolveBusiness(req, res, next) {
     if (!isJson(req)) {
       res.locals.workspaces = await businesses.listForUser(req.user.id);
       res.locals.unreadNotifications = await notifications.unreadCount(req.ctx);
+      res.locals.unreadChat = await require('../modules/chat/chat.service').unreadTotal(req.ctx).catch(() => 0); // eslint-disable-line global-require
     }
     // Any successful write refreshes this workspace's cached figures.
     if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) cache.forgetPrefix(`fin:${businessId}`); });

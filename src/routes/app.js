@@ -94,6 +94,7 @@ router.use(require('./moved')); // pages that moved to another workspace: old GE
 router.use('/api', require('../modules/clinic/api.web'));
 router.use('/search', require('../modules/clinic/search.web'));
 router.use('/notifications', require('../modules/notifications/web'));
+router.use('/chat', require('../modules/chat/web')); // staff chat inside the clinic
 router.use('/', require('../modules/clinic/dashboard.web'));
 router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));

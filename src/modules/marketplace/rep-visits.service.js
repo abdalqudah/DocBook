@@ -53,13 +53,13 @@ function computeRepSlots({ windows = [], date, booked = [], dayOff = false, toda
 
 // ---------------------------------------------------------------- clinic settings & windows
 async function settings(businessId) {
-  return knex('businesses').where({ id: businessId }).first('id', 'rep_visits_enabled', 'rep_visits_auto_confirm');
+  return knex('businesses').where({ id: businessId }).first('id', 'rep_visits_enabled', 'rep_visits_auto_confirm', 'rep_requests_off');
 }
 
 async function saveSettings(ctx, input) {
   const on = (v) => v === '1' || v === 'on' || v === true;
   const before = await settings(ctx.businessId);
-  const row = { rep_visits_enabled: on(input.rep_visits_enabled), rep_visits_auto_confirm: on(input.rep_visits_auto_confirm) };
+  const row = { rep_visits_enabled: on(input.rep_visits_enabled), rep_visits_auto_confirm: on(input.rep_visits_auto_confirm), rep_requests_off: !on(input.rep_requests) };
   await knex('businesses').where({ id: ctx.businessId }).update(row);
   const { oldValues, newValues, changed } = audit.diff(before, row);
   if (changed) await audit.record(ctx, 'rep_visits.settings_updated', { entityType: 'business', entityId: ctx.businessId, oldValues, newValues });
@@ -107,11 +107,27 @@ async function removeWindow(ctx, id) {
 }
 
 // ---------------------------------------------------------------- availability (database)
-/** Clinics a rep can book: rep visits enabled, clinic active, at least one active window. */
+// Two ways a rep reaches a clinic:
+//   'slots'   — the clinic turned rep visits on and reserved weekly windows: exact free times, as before;
+//   'request' — any other clinic that is open to reps (rep visits on, or listed in the public directory, and rep
+//               requests not turned off): the rep sees the doctors' working hours and suggests a date and time;
+//               the clinic confirms or declines. Never more than what the clinic's public page already shows.
+const hasWindow = function e() { this.select(knex.raw('1')).from('rep_visit_slots as w').whereRaw('w.business_id = b.id').andWhere('w.is_active', true); };
+function openToReps(query) {
+  return query.where('b.status', 'active').andWhere((w) => w
+    .where((x) => x.where('b.rep_visits_enabled', true).whereExists(hasWindow))
+    .orWhere((x) => x.where('b.rep_requests_off', false).whereNotNull('b.onboarding_completed_at').andWhere((y) => y.where('b.rep_visits_enabled', true).orWhere('b.directory_listed', true))));
+}
+
+/** Active doctors with their working hours (request mode: every active doctor of the clinic). */
+const allDoctors = (businessIds) => knex('doctors').whereIn('business_id', businessIds).andWhere('is_active', true)
+  .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'working_hours').orderBy('sort_order').orderBy('id');
+
+/** Clinics a rep can reach (see openToReps), each with its mode and doctors. */
 async function bookableClinics({ q, specialty } = {}) {
-  const query = knex('businesses as b').where({ 'b.rep_visits_enabled': true, 'b.status': 'active' })
-    .whereExists(function e() { this.select(knex.raw('1')).from('rep_visit_slots as w').whereRaw('w.business_id = b.id').andWhere('w.is_active', true); })
-    .select('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty').orderBy('b.name').limit(60);
+  const query = openToReps(knex('businesses as b'))
+    .select('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty', 'b.rep_visits_enabled', knex.raw('EXISTS (SELECT 1 FROM rep_visit_slots w WHERE w.business_id = b.id AND w.is_active = 1) AS has_windows'))
+    .orderBy('b.name').limit(100);
   if (q && String(q).trim()) {
     const s = `%${String(q).trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     query.andWhere((w) => w.where('b.name', 'like', s).orWhere('b.name_en', 'like', s).orWhere('b.city', 'like', s));
@@ -119,8 +135,11 @@ async function bookableClinics({ q, specialty } = {}) {
   if (specialty) query.andWhere('b.specialty', specialty);
   const rows = await query;
   if (!rows.length) return rows;
-  const docs = await bookableDoctors(rows.map((r) => r.id));
-  rows.forEach((r) => { r.doctors = docs.filter((d) => d.business_id === r.id); });
+  rows.forEach((r) => { r.mode = r.rep_visits_enabled && Number(r.has_windows) ? 'slots' : 'request'; });
+  const slotIds = rows.filter((r) => r.mode === 'slots').map((r) => r.id);
+  const reqIds = rows.filter((r) => r.mode === 'request').map((r) => r.id);
+  const [docs, all] = await Promise.all([slotIds.length ? bookableDoctors(slotIds) : [], reqIds.length ? allDoctors(reqIds) : []]);
+  rows.forEach((r) => { r.doctors = (r.mode === 'slots' ? docs : all).filter((d) => d.business_id === r.id); });
   return rows;
 }
 
@@ -136,12 +155,31 @@ async function bookableDoctors(businessIds) {
 
 /** A bookable clinic (only what a rep may see) or null. */
 async function clinicForRep(businessId) {
-  const b = await knex('businesses').where({ id: Number(businessId) || 0, rep_visits_enabled: true, status: 'active' })
-    .first('id', 'name', 'name_en', 'city', 'specialty', 'address', 'map_url', 'timezone', 'rep_visits_auto_confirm', 'email');
+  const b = await openToReps(knex('businesses as b').where('b.id', Number(businessId) || 0))
+    .first('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty', 'b.address', 'b.map_url', 'b.timezone', 'b.rep_visits_auto_confirm', 'b.email', 'b.rep_visits_enabled', 'b.default_working_hours');
   if (!b) return null;
-  b.doctors = await bookableDoctors([b.id]);
-  b.hasClinicWide = Boolean(await knex('rep_visit_slots').where({ business_id: b.id, is_active: true }).whereNull('doctor_id').first('id'));
+  const windows = b.rep_visits_enabled ? await knex('rep_visit_slots').where({ business_id: b.id, is_active: true }).select('doctor_id') : [];
+  b.mode = windows.length ? 'slots' : 'request';
+  if (b.mode === 'slots') {
+    b.doctors = await bookableDoctors([b.id]);
+    b.hasClinicWide = windows.some((w) => !w.doctor_id);
+  } else {
+    b.doctors = (await allDoctors([b.id])).map((d) => ({ ...d, hours: hoursOf(d.working_hours) }));
+    b.hasClinicWide = false;
+  }
   return b;
+}
+
+/** A working-hours JSON as { sun: [{ start, end }] … } (enabled days only, breaks left out). */
+function hoursOf(raw) {
+  let wh = raw;
+  if (typeof raw === 'string') { try { wh = JSON.parse(raw); } catch { wh = null; } }
+  const out = {};
+  for (const k of DAY_KEYS) {
+    const day = scheduling.normalizeDayConfig(wh && wh[k]);
+    if (day.enabled) out[k] = day.shifts.map((x) => ({ start: x.start, end: x.end }));
+  }
+  return out;
 }
 
 async function freeSlots({ businessId, doctorId = null, date, timezone }, trx = knex) {
@@ -168,6 +206,8 @@ function addDays(date, n) {
  */
 async function book(vctx, vendor, input) {
   if (!vendor || vendor.status !== 'active') throw err('VENDOR_NOT_ACTIVE', 'Your account is waiting for approval. You can book visits once it is approved.', 403);
+  const target = await clinicForRep(Number(input && input.business_id) || 0);
+  if (target && target.mode === 'request') return requestVisit(vctx, vendor, input, target);
   const d = validate(z.object({
     business_id: z.coerce.number({ invalid_type_error: 'Choose a valid value.' }).int().positive('Choose a valid value.'),
     doctor_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
@@ -208,8 +248,51 @@ async function book(vctx, vendor, input) {
     }
   });
 
-  // Tell the clinic (staff who manage reps, and the doctor concerned). Text is bilingual: notifications are stored once.
-  const doc = d.doctor_id ? clinic.doctors.find((x) => x.id === d.doctor_id) : null;
+  await tellClinic(clinic, vendor, { id, status, doctorId: d.doctor_id, date: d.visit_date, time: d.visit_time, purpose: d.purpose });
+  return { id, status };
+}
+
+/**
+ * A visit REQUEST at a suggested date and time (clinics without rep windows): the time must fall inside the doctor's
+ * working hours that day, not on a day off and not in the past; one live request per rep, doctor and day. The clinic
+ * always decides (never confirmed automatically).
+ */
+async function requestVisit(vctx, vendor, input, clinic) {
+  const d = validate(z.object({
+    doctor_id: z.coerce.number({ invalid_type_error: 'Choose a valid value.' }).int().positive('Choose a valid value.'),
+    visit_date: z.string().refine(isDate, 'Enter a valid date.'),
+    visit_time: z.string({ required_error: 'Choose a valid value.' }).refine(isTime, 'Choose a valid value.'),
+    purpose: z.string({ required_error: 'Required.' }).trim().min(3, 'Required.').max(300, 'Too large.'),
+    products: optionalString(2000),
+  }), { ...input, products: [].concat(input.products || []).join(',') });
+  const doc = clinic.doctors.find((x) => x.id === d.doctor_id);
+  if (!doc) throw E.validation({ doctor_id: 'Choose a valid value.' });
+  const { date: today, minutes: nowMinutes } = clinicNow(clinic.timezone);
+  if (d.visit_date < today || (d.visit_date === today && timeToMinutes(d.visit_time) <= nowMinutes)) throw E.validation({ visit_date: 'Choose a date and time in the future.' });
+  if (d.visit_date > addDays(today, MAX_DAYS_AHEAD)) throw err('REP_DATE_TOO_FAR', 'Choose a date within the next 90 days.');
+  const shifts = doc.hours[dayKeyOf(d.visit_date)] || [];
+  const t = timeToMinutes(d.visit_time);
+  if (!shifts.some((x) => t >= timeToMinutes(x.start) && t + 15 <= timeToMinutes(x.end))) throw E.validation({ visit_time: 'Choose a time within the doctor\'s working hours.' });
+  if (await knex('doctor_days_off').where({ business_id: clinic.id, doctor_id: doc.id, off_date: d.visit_date }).first('id')) throw E.validation({ visit_date: 'The doctor is off that day.' });
+  const dup = await knex('rep_visits').where({ business_id: clinic.id, vendor_id: vendor.id, doctor_id: doc.id, visit_date: d.visit_date }).whereIn('status', ['requested', 'confirmed']).first('id');
+  if (dup) throw err('REP_ALREADY_REQUESTED', 'You already have a request with this doctor on that day.', 409);
+  const ids = (d.products || '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 20);
+  const prods = ids.length ? await knex('vendor_products').where({ vendor_id: vendor.id, is_active: true }).whereIn('id', ids).pluck('name') : [];
+  const purpose = (prods.length ? `${d.purpose}\n— ${prods.join('، ')}` : d.purpose).slice(0, 500);
+  const [id] = await knex('rep_visits').insert({
+    business_id: clinic.id, doctor_id: doc.id, vendor_id: vendor.id, user_id: vctx.userId, visit_date: d.visit_date, visit_time: d.visit_time,
+    duration_minutes: 15, purpose, status: 'requested', flexible: true,
+  });
+  await audit.record({ businessId: clinic.id, userId: vctx.userId, ip: vctx.ip, userAgent: vctx.userAgent }, 'rep_visit.requested',
+    { entityType: 'rep_visit', entityId: id, newValues: { vendor_id: vendor.id, doctor_id: doc.id, visit_date: d.visit_date, visit_time: d.visit_time, status: 'requested', flexible: true } });
+  await tellClinic(clinic, vendor, { id, status: 'requested', doctorId: doc.id, date: d.visit_date, time: d.visit_time, purpose: d.purpose });
+  return { id, status: 'requested' };
+}
+
+/** Tell the clinic (staff who manage reps, and the doctor concerned). Text is bilingual: notifications are stored once. */
+async function tellClinic(clinic, vendor, { id, status, doctorId, date, time, purpose }) {
+  const d = { visit_date: date, visit_time: time, purpose };
+  const doc = doctorId ? clinic.doctors.find((x) => x.id === doctorId) : null;
   const title = status === 'confirmed' ? `زيارة مندوب مؤكدة · Rep visit confirmed — ${vendor.name}` : `طلب زيارة مندوب · Rep visit request — ${vendor.name}`;
   const body = `${d.visit_date} ${d.visit_time}${doc ? ` · ${doc.full_name}` : ''}`;
   await notifications.notify(clinic.id, { permission: 'vendors.manage', type: 'rep_visit.requested', title, body, link: '/app/rep-visits', dedupeKey: `repv:${id}` });

@@ -53,10 +53,10 @@ test.after(async () => { if (app) await app.close(); await knex.destroy(); });
 
 test('sidebar: one line per workspace, in the redesign order, per role', async () => {
   const expected = {
-    owner: ['today', 'appointments', 'front_desk', 'patients', 'finance', 'clinic', 'stock', 'website', 'reports', 'settings', 'support'],
-    doctor: ['today', 'appointments', 'patients', 'clinic', 'stock', 'website', 'support'],
-    receptionist: ['today', 'appointments', 'front_desk', 'patients', 'finance', 'clinic', 'stock', 'support'],
-    accountant: ['today', 'appointments', 'finance', 'clinic', 'stock', 'reports', 'settings', 'support'], // data export lives in settings
+    owner: ['today', 'appointments', 'front_desk', 'patients', 'reps', 'finance', 'clinic', 'stock', 'website', 'reports', 'settings', 'support'],
+    doctor: ['today', 'appointments', 'patients', 'reps', 'clinic', 'website', 'support'],
+    receptionist: ['today', 'appointments', 'front_desk', 'patients', 'reps', 'finance', 'clinic', 'support'],
+    accountant: ['today', 'appointments', 'reps', 'finance', 'clinic', 'stock', 'reports', 'settings', 'support'], // data export lives in settings
   };
   for (const [role, lines] of Object.entries(expected)) {
     const a = app.agent();

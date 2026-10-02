@@ -1,0 +1,51 @@
+<%# Patient file summary on the clinic letterhead (clinical parts only for members who may read the record). %>
+<% var p = patient; var LL = function (ar, en) { return locale === 'en' && en ? en : ar; }; var printing = query.print === '1'; var cd = clinicalData; %>
+<% if (!printing) { %><div class="page-head"><div><div class="breadcrumbs"><a href="/app/patients/<%= p.id %>"><%= p.full_name %></a></div><h1><%= t('prints.patient_summary') %></h1></div><div class="page-actions"><a class="btn btn-primary" href="/app/patients/<%= p.id %>/summary?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a></div></div><% } %>
+<div class="prt-title"><h1><%= t('prints.patient_summary') %></h1></div>
+<div class="prt-grid">
+  <div><span><%= t('patients.full_name') %></span><strong><%= p.full_name %></strong></div>
+  <div><span><%= t('visits.age') %></span><%= age !== null ? t('visits.age_years', { n: age }) : '—' %><%= p.date_of_birth ? ' · ' + fmt.date(p.date_of_birth) : '' %></div>
+  <div><span><%= t('patients.gender') %></span><%= p.gender ? t('patients.genders.' + p.gender) : '—' %></div>
+  <div><span><%= t('common.phone') %></span><bdi dir="ltr"><%= p.phone || '—' %></bdi></div>
+  <div><span><%= t('patients.national_id') %></span><bdi dir="ltr"><%= p.national_id || '—' %></bdi></div>
+  <div><span><%= t('patients.insurance') %></span><%= p.insurance_name || t('patients.no_insurance') %><%= p.insurance_number ? ' · ' + p.insurance_number : '' %></div>
+  <div><span><%= t('patients.visits') %></span><%= fmt.number(visits.length) %></div>
+  <div><span><%= t('patients.last_visit') %></span><%= visits[0] ? fmt.date(visits[0].appointment_date) : '—' %></div>
+</div>
+<% if (p.allergies) { %><div class="prt-alert"><strong><%= t('patients.allergies') %>:</strong> <%= p.allergies %></div><% } %>
+<% if (p.chronic_conditions) { %><div class="prt-alert" style="border-color: var(--warning)"><strong><%= t('patients.chronic') %>:</strong> <%= p.chronic_conditions %></div><% } %>
+
+<% if (cd && cd.vitals) { var vv = cd.vitals.v; var keys = ['bloodPressure', 'pulseBpm', 'temperatureC', 'spo2', 'weightKg', 'heightCm', 'bloodSugar'].filter(function (k) { return vv[k]; }); if (keys.length) { %>
+<section class="prt-sec"><h2><%= t('prints.last_vitals') %> · <span class="muted small"><%= fmt.date(cd.vitals.at) %></span></h2>
+  <div class="prt-grid"><% keys.forEach(function (k) { %><div><span><%= t('visits.v.' + k) %></span><bdi dir="ltr"><%= vv[k] %></bdi></div><% }) %></div>
+</section><% } } %>
+
+<% if (cd) { %>
+<section class="prt-sec"><h2><%= t('prints.visits_diagnoses') %></h2>
+  <% if (!cd.visits.length) { %><p class="muted small"><%= t('prints.none') %></p><% } else { %>
+  <table class="prt-table"><thead><tr><th><%= t('common.date') %></th><th><%= t('common.doctor') %></th><th><%= t('visits.diagnosis') %></th></tr></thead><tbody>
+  <% cd.visits.forEach(function (a) { var c = a.consultation; %><tr>
+    <td class="nowrap"><%= fmt.date(a.appointment_date) %></td><td><%= a.doctor_name || '—' %></td>
+    <td><%= c && c.diagnosis ? c.diagnosis : '' %><% a.codes.forEach(function (x) { %><div class="small"><bdi dir="ltr"><%= x.code %></bdi> — <%= icdTitle(x) %></div><% }) %><% if (!(c && c.diagnosis) && !a.codes.length) { %><span class="muted">—</span><% } %></td>
+  </tr><% }) %></tbody></table><% } %>
+</section>
+<section class="prt-sec"><h2><%= t('prints.prescriptions') %></h2>
+  <% if (!cd.prescriptions.length) { %><p class="muted small"><%= t('prints.none') %></p><% } else { %>
+  <table class="prt-table"><thead><tr><th><%= t('common.date') %></th><th><%= t('common.doctor') %></th><th><%= t('prints.medications') %></th></tr></thead><tbody>
+  <% cd.prescriptions.forEach(function (rx) { %><tr><td class="nowrap"><%= fmt.date(rx.created_at) %></td><td><%= rx.doctor_name || '—' %></td><td><%= rx.items.map(function (i) { return [i.medicationName, i.dosage, i.frequency, i.duration].filter(Boolean).join(' '); }).join(' · ') %></td></tr><% }) %>
+  </tbody></table><% } %>
+</section>
+<% if (cd.orders.length || cd.referrals.length) { %>
+<section class="prt-sec"><h2><%= t('prints.tests_referrals') %></h2>
+  <table class="prt-table"><thead><tr><th><%= t('common.date') %></th><th><%= t('common.type') %></th><th><%= t('prints.details') %></th><th><%= t('common.status') %></th></tr></thead><tbody>
+  <% cd.orders.forEach(function (o) { %><tr><td class="nowrap"><%= fmt.date(o.created_at) %></td><td><%= t('orders.kind.' + o.kind) %></td><td><%= o.items.map(function (i) { return LL(i.name, i.name_en); }).join('، ') %><% if (o.result_note) { %><div class="small"><strong><%= t('orders.result') %>:</strong> <%= o.result_note %></div><% } %></td><td><%= t('orders.status.' + o.status) %></td></tr><% }) %>
+  <% cd.referrals.forEach(function (r) { %><tr><td class="nowrap"><%= fmt.date(r.created_at) %></td><td><%= t('orders.tab_referrals') %></td><td><%= t('orders.referral_to', { specialty: r.specialty }) %><%= r.to_doctor ? ' — ' + r.to_doctor : '' %></td><td>—</td></tr><% }) %>
+  </tbody></table>
+</section>
+<% } %>
+<% } %>
+<% if (upcoming.length) { %>
+<section class="prt-sec"><h2><%= t('prints.upcoming') %></h2>
+  <table class="prt-table"><tbody><% upcoming.forEach(function (a) { %><tr><td class="nowrap"><%= fmt.date(a.appointment_date) %> <bdi dir="ltr"><%= a.appointment_time %></bdi></td><td><%= a.doctor_name || '—' %></td><td><%= a.service_name || '' %></td></tr><% }) %></tbody></table>
+</section>
+<% } %>

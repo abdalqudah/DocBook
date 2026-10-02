@@ -118,7 +118,7 @@ function defaults() {
   return {
     version: 1,
     header: {
-      items: [['new', '/#new'], ['features', '/#features'], ['pricing', '/pricing'], ['how', '/#how'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
+      items: [['new', '/#new'], ['features', '/#features'], ['pricing', '/pricing'], ['how', '/#how'], ['faq', '/#faq'], ['reps', '/vendors']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
       login_label: T('nav.login'), signup_label: T('nav.signup'), signup_href: '/signup', show_login: 'yes',
     },
     sections: [
@@ -164,6 +164,10 @@ function defaults() {
         items: [['stethoscope', 'doctor'], ['heart-pulse', 'nurse'], ['clipboard-list', 'reception'], ['wallet', 'accountant'], ['building-2', 'manager']]
           .map(([icon, k]) => ({ icon, title: T(`roles.items.${k}.title`), text: T(`roles.items.${k}.text`) })),
       } },
+      { id: 'reps', type: 'split', anchor: 'reps', hidden: false, data: {
+        kicker: T('reps.kicker'), title: T('reps.title'), lead: T('reps.lead'), btn_label: T('reps.btn'), btn_href: '/vendors/signup', visual: 'none', side: 'end',
+        items: [1, 2, 3, 4].map((i) => ({ text: T(`reps.p${i}`) })),
+      } },
       { id: 'pricing', type: 'pricing', anchor: 'pricing', hidden: false, data: {
         kicker: T('pricing.kicker'), title: T('pricing.title'), lead: T('pricing.lead'), btn_label: T('pricing.btn'), btn_href: '/signup', note: T('pricing.note'),
       } },
@@ -180,7 +184,7 @@ function defaults() {
       email: brand.supportEmail || '', phone: '', address: { ar: '', en: '' }, copyright: brand.name,
       items: [
         ...[['new', '/#new'], ['features', '/#features'], ['pricing', '/pricing'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '1' })),
-        ...[['login', '/login'], ['signup', '/signup'], ['forgot', '/forgot']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '2' })),
+        ...[['login', '/login'], ['signup', '/signup'], ['reps_signup', '/vendors/signup'], ['forgot', '/forgot']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '2' })),
       ],
       social: [],
     },

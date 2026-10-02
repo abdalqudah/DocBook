@@ -1,0 +1,22 @@
+<%# Day sheet: appointments for a day (or a short range) on the clinic letterhead. %>
+<% var LL = function (ar, en) { return locale === 'en' && en ? en : ar; }; var printing = query.print === '1';
+   var byDate = {}; rows.forEach(function (a) { (byDate[a.appointment_date] = byDate[a.appointment_date] || []).push(a); }); %>
+<% if (!printing) { %><div class="page-head"><div><h1><%= t('prints.day_sheet') %></h1></div><div class="page-actions"><a class="btn btn-primary" href="<%= fullPath %><%= fullPath.indexOf('?') === -1 ? '?' : '&' %>print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a></div></div><% } %>
+<div class="prt-title"><h1><%= t('prints.day_sheet') %></h1><p class="muted"><%= from === to ? fmt.date(from, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : fmt.date(from) + ' – ' + fmt.date(to) %><%= doctor ? ' · ' + LL(doctor.full_name, doctor.full_name_en) : '' %> · <%= t('prints.count', { n: fmt.number(rows.length) }) %></p></div>
+<% if (!rows.length) { %><p class="muted"><%= t('prints.no_appointments') %></p><% } %>
+<% Object.keys(byDate).forEach(function (d) { %>
+<% if (from !== to) { %><h2 class="prt-h2"><%= fmt.date(d, { weekday: 'long', day: 'numeric', month: 'long' }) %></h2><% } %>
+<table class="prt-table">
+  <thead><tr><th>#</th><th><%= t('common.time') %></th><th><%= t('common.patient') %></th><th><%= t('common.phone') %></th><% if (!doctor) { %><th><%= t('common.doctor') %></th><% } %><th><%= t('common.service') %></th><th><%= t('common.status') %></th><th class="prt-check"><%= t('prints.arrived') %></th></tr></thead>
+  <tbody><% byDate[d].forEach(function (a, i) { %><tr>
+    <td class="num"><%= i + 1 %></td>
+    <td class="nowrap" dir="ltr"><%= a.appointment_time %>–<%= a.end_time %></td>
+    <td class="strong"><%= a.patient_name %></td>
+    <td dir="ltr" class="nowrap"><%= a.patient_phone || '' %></td>
+    <% if (!doctor) { %><td><%= LL(a.doctor_name, a.doctor_name_en) || '—' %></td><% } %>
+    <td><%= LL(a.service_name, a.service_name_en) || '—' %></td>
+    <td><%= t('appointments.statuses.' + a.status) %></td>
+    <td class="prt-check"><%= a.checked_in ? '✓' : '' %></td>
+  </tr><% }) %></tbody>
+</table>
+<% }) %>
