@@ -726,3 +726,35 @@ test('images and columns sections (2/3/4 per row); dark logo; dark mode off keep
   r = await app.agent().get(`/${A.slug}?lang=en`);
   assert.match(r.text, /<html[^>]*data-theme="light"/);
 });
+
+test('main services and sub-services: what the website and booking page show is the clinic\'s choice', async () => {
+  const o = app.agent(); await o.login(mail('owner-a'));
+  let r = await o.submit('/app/services', '/app/services/categories', { name: 'تقويم الأسنان', is_active: '1', site_field: '1', show_on_site: '1' });
+  assert.equal(r.status, 302);
+  const cat = await knex('service_categories').where({ business_id: A.ctx.businessId, name: 'تقويم الأسنان' }).first();
+  r = await o.submit('/app/services', '/app/services', { name: 'Shown Sub', price: '', duration_minutes: '30', category_id: cat.id, is_active: '1', site_field: '1', show_on_site: '1' });
+  assert.equal(r.status, 302, 'no price needed');
+  await o.submit('/app/services', '/app/services', { name: 'Hidden Sub', price: '15', duration_minutes: '30', category_id: cat.id, is_active: '1', show_price: '1', site_field: '1' });
+  const hidden = await knex('services').where({ business_id: A.ctx.businessId, name: 'Hidden Sub' }).first();
+  assert.equal(Boolean(hidden.show_on_site), false);
+  const pub = app.agent();
+  r = await pub.get(`/${A.slug}/book?lang=en`);
+  assert.match(r.text, /Shown Sub/);
+  assert.doesNotMatch(r.text, /Hidden Sub/, 'a sub-service hidden from the site');
+  r = await o.get('/app/services?lang=en');
+  assert.match(r.text, /Hidden from the website/);
+  // hiding the main service hides its sub-services
+  await o.submit('/app/services', `/app/services/categories/${cat.id}`, { name: 'تقويم الأسنان', is_active: '1', site_field: '1' });
+  r = await pub.get(`/${A.slug}/book?lang=en`);
+  assert.doesNotMatch(r.text, /Shown Sub/);
+  // still available inside the clinic (the doctor's bill)
+  assert.ok(await knex('services').where({ business_id: A.ctx.businessId, name: 'Shown Sub', is_active: true }).first());
+});
+
+test('a mail server name that does not exist: the nearby name that does is used', async () => {
+  const mailSvc = require('../src/modules/clinicmail/clinicmail.service');
+  const resolver = { resolve4: async (h) => { if (h === 'doc.thinkn.test') return ['93.184.216.34']; const e = new Error('nf'); e.code = 'ENOTFOUND'; throw e; } };
+  assert.deepEqual(await mailSvc.workingHost('mail.doc.thinkn.test', 'info@doc.thinkn.test', resolver), { host: 'doc.thinkn.test', changedFrom: 'mail.doc.thinkn.test' });
+  assert.deepEqual(await mailSvc.workingHost('doc.thinkn.test', 'info@doc.thinkn.test', resolver), { host: 'doc.thinkn.test', changedFrom: null });
+  assert.deepEqual(await mailSvc.workingHost('nowhere.invalid', 'x@nowhere.invalid', resolver), { host: 'nowhere.invalid', changedFrom: null });
+});

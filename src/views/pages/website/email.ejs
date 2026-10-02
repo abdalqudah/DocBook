@@ -13,7 +13,10 @@
   <div class="panel-body stack-sm">
     <% if (acc) { %>
       <div class="row-sm wrap"><span class="strong" dir="ltr"><%= acc.from_address %></span><span class="badge"><%= t('website.provider.' + acc.provider) %></span><% if (acc.oauth_account) { %><span class="small muted" dir="ltr"><%= acc.oauth_account %></span><% } %></div>
-      <% if (acc.last_error && st !== 'verified') { %><div class="alert alert-error small"><%- icon('circle-alert') %><div class="grow" dir="auto"><%= acc.last_error %></div></div><% } %>
+      <% if (acc.last_error && st !== 'verified') {
+           // The mail server's own words, explained: what went wrong and what to change.
+           var _e = String(acc.last_error); var _k = /could not be found|ENOTFOUND|EAI_AGAIN/i.test(_e) ? 'host' : /\b535\b|EAUTH|auth|credentials|password/i.test(_e) ? 'auth' : /ECONNREFUSED|ETIMEDOUT|ESOCKET|timed? ?out|ECONNRESET/i.test(_e) ? 'conn' : /certificate|self.signed|CERT_|TLS|SSL/i.test(_e) ? 'tls' : null; %>
+      <div class="alert alert-error small"><%- icon('circle-alert') %><div class="grow"><% if (_k) { %><div class="strong"><%= t('website.mail_err.' + _k, { host: acc.smtp_host || '' }) %></div><% } %><div dir="ltr" class="tiny muted"><%= _e %></div></div></div><% } %>
       <% if (acc.last_test_at) { %><div class="small muted"><%= t('website.email_last_test', { date: fmt.date(acc.last_test_at, { dateStyle: 'medium', timeStyle: 'short' }) }) %></div><% } %>
       <% if (entOk) { %>
       <div class="row wrap" style="gap:8px">

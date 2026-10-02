@@ -259,6 +259,8 @@
     <% } %>
 
     <% if (useForm) { %></form><% } %>
+    <%/* tests, imaging and referrals: in the main column, under the prescription (no empty space beside the tools) */%>
+    <% if (typeof ordersPanel !== 'undefined' && ordersPanel) { %><%- include('../../orders/_visit-panel') %><% } %>
   </div>
 
   <%/* ---------------- side column: tools ---------------- */%>
@@ -297,7 +299,6 @@
     <% if (typeof certPanel !== 'undefined' && certPanel && _mOn('certificates')) { %><%- include('../../certificates/_visit-panel') %><% } %>
     <% if (_mOn('specialty_records')) { %><%- include('../../specialty/_visit-panel') %><% } %>
     <% if (_mOn('ai_assistant')) { %><%- include('../../ai/_visit-panel') %><% } %>
-    <% if (typeof ordersPanel !== 'undefined' && ordersPanel) { %><%- include('../../orders/_visit-panel') %><% } %>
     <% } %>
     <% if (invoice && can('billing.view')) { %>
     <a class="panel card-link" href="/app/billing/<%= invoice.id %>?print=1"><div class="panel-body row"><span class="action-icon"><%- icon('receipt') %></span><div class="grow"><div class="strong small"><%= t('appointments.invoice') %> #<%= invoice.invoice_number %></div><div class="tiny muted"><%= t('appointments.print_invoice') %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></div></a>

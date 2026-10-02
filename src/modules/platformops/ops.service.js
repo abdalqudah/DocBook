@@ -219,6 +219,7 @@ const listCategories = (businessId, { activeOnly = false } = {}) => {
 async function saveCategory(ctx, id, input) {
   const d = validate(categorySchema, input);
   const data = { ...d, name_en: d.name_en || null };
+  if (input && input.site_field === '1') data.show_on_site = ['1', 'on', true].includes(input.show_on_site);
   if (id) {
     const before = await knex('service_categories').where({ id, business_id: ctx.businessId }).first();
     if (!before) throw E.notFound('Category');

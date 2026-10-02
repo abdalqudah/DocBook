@@ -97,7 +97,9 @@ const listDoctors = async (req, clinic, where = 'site') => {
 };
 // Services with their (active) category, if any — the pages group them by category (platformops).
 const listServices = async (req, clinic, where = 'site') => (await knex('services as s').leftJoin('service_categories as c', function j() { this.on('c.id', 's.category_id').andOn('c.business_id', 's.business_id').andOnVal('c.is_active', true); })
-  .where({ 's.business_id': clinic.id, 's.is_active': true })
+  .where({ 's.business_id': clinic.id, 's.is_active': true, 's.show_on_site': true })
+  // A main service (category) the clinic hid from the site hides its sub-services too.
+  .whereNotExists(function hidden() { this.select(knex.raw('1')).from('service_categories as hc').whereRaw('hc.id = s.category_id').andWhere('hc.show_on_site', false); })
   .orderBy([{ column: 's.sort_order' }, { column: 's.name' }])
   .select('s.id', 's.doctor_id', 's.name', 's.name_en', 's.description', 's.description_en', 's.price', 's.show_price', 's.duration_minutes', 'c.id as category_id', 'c.name as category_name', 'c.name_en as category_name_en', 'c.sort_order as category_sort'))
   .map((s) => ({

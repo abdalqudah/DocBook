@@ -391,7 +391,12 @@ router.get('/email', can('website.email'), wrap(async (req, res) => {
   });
 }));
 const mailGate = wrap(async (req, res, next) => (await entitled(req, 'website.clinic_email') ? next() : lockedPage(req, res, 'email')));
-router.post('/email/smtp', can('website.email'), mailGate, act((req) => mailSvc().saveSmtp(req.ctx, req.body), 'website.email_saved', '/app/website/email'));
+router.post('/email/smtp', can('website.email'), mailGate, act(async (req) => {
+  const r = await mailSvc().saveSmtp(req.ctx, req.body);
+  // The typed server name did not exist and a nearby one does: say which one is used.
+  if (r && r.hostNote) flash(req, 'info', req.t('website.mail_host_fixed', r.hostNote));
+  return r;
+}, 'website.email_saved', '/app/website/email'));
 router.post('/email/sender', can('website.email'), mailGate, act((req) => mailSvc().saveSender(req.ctx, req.body), 'website.saved', '/app/website/email'));
 router.post('/email/test', can('website.email'), mailGate, act(async (req) => {
   const r = await mailSvc().testConnection(req.ctx);

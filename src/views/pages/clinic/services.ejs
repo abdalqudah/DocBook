@@ -26,9 +26,9 @@
         <td class="primary-cell"><div class="strong"><%= L(s.name, s.name_en) %></div><div class="small muted truncate" style="max-width:360px"><%= L(s.description, s.description_en) || '' %></div></td>
         <td data-label="<%= t('services.doctor') %>"><%= s.doctor_name || t('services.any_doctor') %></td>
         <td class="num" data-label="<%= t('services.duration') %>"><%= s.duration_minutes %> <%= t('common.minutes') %></td>
-        <td class="num strong" data-label="<%= t('services.price') %>"><%= fmt.money(s.price) %><% if (!s.show_price) { %><div class="tiny muted"><%= t('services.price_hidden') %></div><% } %></td>
+        <td class="num strong" data-label="<%= t('services.price') %>"><%= fmt.money(s.price) %><% if (!s.show_price) { %><div class="tiny muted"><%= t('services.price_hidden') %></div><% } %><% if (s.show_on_site === 0 || s.show_on_site === false) { %><div class="tiny muted"><%= t('services.off_site') %></div><% } %></td>
         <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= s.is_active ? 'badge-success' : 'badge-neutral' %>"><%= s.is_active ? t('common.active') : t('common.inactive') %></span></td>
-        <td class="actions"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="service-dialog" data-action="/app/services/<%= s.id %>" data-dialog-title="<%= t('services.edit') %>" data-fill="<%= json({ name: s.name, name_en: s.name_en, description: s.description, description_en: s.description_en, price: s.price, duration_minutes: s.duration_minutes, doctor_id: s.doctor_id, category_id: s.category_id, sort_order: s.sort_order, is_active: !!s.is_active, show_price: !!s.show_price }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/services/' + s.id + '/delete' }) %></td>
+        <td class="actions"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="service-dialog" data-action="/app/services/<%= s.id %>" data-dialog-title="<%= t('services.edit') %>" data-fill="<%= json({ name: s.name, name_en: s.name_en, show_on_site: s.show_on_site !== 0 && s.show_on_site !== false, description: s.description, description_en: s.description_en, price: s.price, duration_minutes: s.duration_minutes, doctor_id: s.doctor_id, category_id: s.category_id, sort_order: s.sort_order, is_active: !!s.is_active, show_price: !!s.show_price }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/services/' + s.id + '/delete' }) %></td>
       </tr><% }) %></tbody>
     </table></div>
   </section>
@@ -44,7 +44,7 @@
   <ul class="action-list">
     <% categories.forEach(function (c) { %><li><div>
       <span class="grow" style="min-width:0"><span class="strong truncate"><%= catName(c) %></span><span class="tiny muted po-block"><%= t('svc_cat.n_services', { n: counts[c.id] || 0 }) %><% if (!c.is_active) { %> · <%= t('common.inactive') %><% } %></span></span>
-      <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="category-dialog" data-action="/app/services/categories/<%= c.id %>" data-dialog-title="<%= t('svc_cat.edit') %>" data-fill="<%= json({ name: c.name, name_en: c.name_en, sort_order: c.sort_order, is_active: !!c.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button>
+      <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="category-dialog" data-action="/app/services/categories/<%= c.id %>" data-dialog-title="<%= t('svc_cat.edit') %>" data-fill="<%= json({ name: c.name, name_en: c.name_en, sort_order: c.sort_order, is_active: !!c.is_active, show_on_site: c.show_on_site !== 0 && c.show_on_site !== false }) %>"><%- icon('pencil', 'icon-sm') %></button>
       <%- include('../../partials/delete-form', { action: '/app/services/categories/' + c.id + '/delete', confirmText: t('svc_cat.delete_confirm') }) %>
     </div></li><% }) %>
   </ul>
@@ -60,14 +60,16 @@
         <%- include('../../partials/field', { name: 'name_en', label: t('services.name_en'), attrs: 'dir="ltr"' }) %>
         <%- include('../../partials/field', { name: 'description', label: t('services.desc_ar'), type: 'textarea' }) %>
         <%- include('../../partials/field', { name: 'description_en', label: t('services.desc_en'), type: 'textarea' }) %>
-        <%- include('../../partials/field', { name: 'price', label: t('services.price'), required: true, suffix: currency, attrs: 'inputmode="decimal"' }) %>
+        <%- include('../../partials/field', { name: 'price', label: t('services.price'), suffix: currency, help: t('services.price_help'), attrs: 'inputmode="decimal"' }) %>
         <%- include('../../partials/field', { name: 'duration_minutes', label: t('services.duration'), value: 30, suffix: t('common.minutes'), attrs: 'inputmode="numeric" data-default="30"' }) %>
         <%- include('../../partials/field', { name: 'doctor_id', label: t('services.doctor'), type: 'select', placeholder: t('services.any_doctor'), options: doctors.map(function (d) { return { value: d.id, label: d.full_name }; }) }) %>
         <%- include('../../partials/field', { name: 'category_id', label: t('svc_cat.category'), type: 'select', placeholder: t('svc_cat.none'), options: categories.map(function (c) { return { value: c.id, label: catName(c) + (c.is_active ? '' : ' · ' + t('common.inactive')) }; }), help: categories.length ? undefined : t('svc_cat.none_yet') }) %>
         <%- include('../../partials/field', { name: 'sort_order', label: t('doctors.sort_order'), value: 0, attrs: 'inputmode="numeric" data-default="0"' }) %>
         <label class="check"><input type="checkbox" name="is_active" value="1" checked><span><%= t('common.active') %></span></label>
+        <input type="hidden" name="site_field" value="1">
+        <label class="check"><input type="checkbox" name="show_on_site" value="1" checked><span><%= t('services.show_on_site') %></span></label>
         <label class="check"><input type="checkbox" name="show_price" value="1" checked><span><%= t('services.show_price') %></span></label>
-      </div></div>
+      </div><p class="help mt-2"><%- icon('info', 'icon-sm') %> <%= t('services.billing_note') %></p></div>
     <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
   </form>
 </dialog>
@@ -80,6 +82,8 @@
         <%- include('../../partials/field', { name: 'name_en', id: 'cat-name-en', label: t('svc_cat.name_en'), attrs: 'dir="ltr" maxlength="120"' }) %>
         <%- include('../../partials/field', { name: 'sort_order', id: 'cat-sort', label: t('doctors.sort_order'), value: 0, attrs: 'inputmode="numeric" data-default="0"' }) %>
         <label class="check"><input type="checkbox" name="is_active" value="1" checked><span><%= t('svc_cat.active_help') %></span></label>
+        <input type="hidden" name="site_field" value="1">
+        <label class="check"><input type="checkbox" name="show_on_site" value="1" checked><span><%= t('svc_cat.show_on_site') %></span></label>
       </div></div>
     <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
   </form>

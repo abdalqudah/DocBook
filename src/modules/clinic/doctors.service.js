@@ -102,6 +102,8 @@ async function saveService(ctx, id, input) {
   const d = validate(serviceSchema, input);
   if (d.doctor_id) await doctors.get(ctx, d.doctor_id);
   const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
+  // "Show on the website" is only on the Services form (site_field=1); other forms leave it as it is.
+  if (input && input.site_field === '1') row.show_on_site = ['1', 'on', true].includes(input.show_on_site);
   if (id) { await services.update(ctx, id, row); return id; }
   return services.create(ctx, row);
 }

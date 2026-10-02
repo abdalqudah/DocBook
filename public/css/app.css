@@ -964,3 +964,8 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .dl dd, .panel-body, .card, td, th { overflow-wrap: break-word; }
 /* Codes, slugs, e-mails and role names in tables stay whole (the table scrolls sideways instead). */
 .table td .mono, .table td.mono, .table td a.mono, .person-sub, .set-matrix-role, dd.mono, .table td code { white-space: nowrap; }
+/* Tests & referrals in the visit's main column: the four actions side by side; an opened form takes the full width */
+.df-main .ord-forms { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.df-main .ord-forms > details, .df-main .ord-forms > .ord-form { flex: 1 1 200px; min-width: 0; margin: 0; }
+.df-main .ord-forms > details[open] { flex-basis: 100%; }
+#orders .ord-forms.panel-body { padding: 12px var(--card-pad, 16px) 16px; }

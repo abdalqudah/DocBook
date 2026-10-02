@@ -880,6 +880,13 @@
       "switch": "Dark mode for the website",
       "switch_help": "Applies to the live site straight away. When off, the site and its booking pages are always light and the switch is hidden.",
       "saved": "Dark mode saved and applied to the live site straight away."
+    },
+    "mail_host_fixed": "The server name \"{from}\" does not exist, so \"{to}\" is used instead. Press \"Test connection\" to check.",
+    "mail_err": {
+      "host": "The mail server \"{host}\" does not exist. Copy it exactly as your hosting panel shows under \"Outgoing Server\" (e.g. doc.example.com, without mail.).",
+      "auth": "The server refused the user name or password. Use the full e-mail address as the user name and that mailbox's password.",
+      "conn": "The server could not be reached on this port. Try 465 (SSL) or 587 (STARTTLS).",
+      "tls": "The security certificate does not match the server name. Use the name shown in the certificate (often the hosting server's name)."
     }
   },
   "errors_website": {

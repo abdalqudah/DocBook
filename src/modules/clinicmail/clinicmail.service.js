@@ -10,6 +10,7 @@ const net = require('net');
 const nodemailer = require('nodemailer');
 const { Resolver } = require('dns').promises;
 const knex = require('../../db/knex');
+const config = require('../../config');
 const audit = require('../../core/audit');
 const secrets = require('../../core/secrets');
 const { z, validate, optionalString } = require('../../core/validate');
@@ -59,8 +60,29 @@ const smtpSchema = z.object({
   smtp_user: z.string({ required_error: 'Required.' }).trim().min(1, 'Required.').max(190),
 });
 
-async function saveSmtp(ctx, input) {
+/**
+ * A mail server name that does not exist is often one letter-group off: "mail.doc.example.com" where the host's
+ * panel says "doc.example.com" (or the other way round). When the typed name does not resolve, the nearby names
+ * (without / with "mail." or "smtp.", and the sending address's domain) are tried, and the first that resolves is
+ * used. Returns { host, changedFrom } — the typed host when nothing better is found (the test then says why).
+ */
+async function workingHost(host, fromAddress, resolver = new Resolver({ timeout: 2500, tries: 1 })) {
+  const ok = async (h) => { try { return (await resolver.resolve4(h)).some((a) => !isPrivate(a)); } catch { return false; } };
+  if (await ok(host)) return { host, changedFrom: null };
+  const bare = host.replace(/^(mail|smtp|smtpout|email)\./, '');
+  const domain = String(fromAddress || '').split('@')[1] || '';
+  const tries = [...new Set([bare, `mail.${bare}`, `smtp.${bare}`, domain, domain && `mail.${domain}`].filter((h) => h && h !== host && HOST_RE.test(h)))];
+  for (const h of tries) if (await ok(h)) return { host: h, changedFrom: host }; // eslint-disable-line no-await-in-loop
+  return { host, changedFrom: null };
+}
+
+async function saveSmtp(ctx, input, deps = {}) {
   const d = validate(smtpSchema, input);
+  let hostNote = null;
+  if (!config.isTest || deps.resolver) {
+    const w = await workingHost(d.smtp_host, d.from_address, deps.resolver);
+    if (w.changedFrom) { hostNote = { from: w.changedFrom, to: w.host }; d.smtp_host = w.host; }
+  }
   const cur = await row(ctx.businessId);
   const password = String(input.smtp_password || '');
   if (password.length > 500) throw E.validation({ smtp_password: 'Too long.' });
@@ -76,8 +98,9 @@ async function saveSmtp(ctx, input) {
   if (cur) await knex('clinic_mail_accounts').where({ business_id: ctx.businessId }).update(values);
   else await knex('clinic_mail_accounts').insert({ business_id: ctx.businessId, ...values });
   forget(ctx.businessId);
-  await audit.record(ctx, 'email.connected', { entityType: 'clinic_mail', entityId: ctx.businessId, newValues: { provider: 'smtp', from: d.from_address, host: d.smtp_host, port: d.smtp_port, password_changed: !keep } });
-  return status(ctx.businessId);
+  await audit.record(ctx, 'email.connected', { entityType: 'clinic_mail', entityId: ctx.businessId, newValues: { provider: 'smtp', from: d.from_address, host: d.smtp_host, port: d.smtp_port, password_changed: !keep, host_corrected_from: hostNote ? hostNote.from : undefined } });
+  const st = await status(ctx.businessId);
+  return hostNote ? Object.assign(st, { hostNote }) : st;
 }
 
 const usesFrom = (input, cur) => (input.uses_field === '1' ? [].concat(input.uses || []).map(String).filter((k) => KINDS.includes(k)) : cur ? parseUses(cur.uses) : KINDS.slice());
@@ -227,7 +250,7 @@ async function canSend(businessId) {
 }
 
 module.exports = {
-  KINDS, PORTS, providers, status, deliverability, recentLog, saveSmtp, saveSender, disconnect, testConnection, testSend, trySend, canSend, forget, isPrivate, resolvePublic,
+  KINDS, PORTS, workingHost, providers, status, deliverability, recentLog, saveSmtp, saveSender, disconnect, testConnection, testSend, trySend, canSend, forget, isPrivate, resolvePublic,
   _setBuild: (fn) => { buildOverride = fn; transports.clear(); },
   _saveOAuth: async (ctx, provider, { account, refreshToken }) => {
     const cur = await row(ctx.businessId);
