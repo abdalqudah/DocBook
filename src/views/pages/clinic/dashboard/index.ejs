@@ -8,12 +8,15 @@
 </div>
 
 <% var att = (typeof attention !== 'undefined' && attention) ? attention.slice(0, 5) : []; %>
-<section class="panel flush today-attention<%= att.length ? '' : ' is-calm' %>" aria-labelledby="today-attn-h">
+<%/* Shown only when something needs attention (an empty "all calm" box is noise once the clinic is set up). */%>
+<% if (att.length) { %>
+<section class="panel flush today-attention" aria-labelledby="today-attn-h">
   <div class="panel-head"><h2 id="today-attn-h"><%- icon(att.length ? 'bell' : 'circle-check', 'icon-sm') %><%= att.length ? t('ownerx.home.attention_now') : t('ownerx.home.attention_none') %></h2></div>
   <% if (att.length) { %>
   <ul class="action-list"><% att.forEach(function (x) { %><li><a href="<%= x.href %>"><span class="action-icon<%= x.tone === 'danger' ? ' is-danger' : '' %>"><%- icon(x.icon, 'icon-sm') %></span><span class="grow"><%= t('ownerx.home.att_' + x.key, { n: fmt.number(x.n) }) %></span><% if (!x.noCount) { %><span class="badge <%= x.tone === 'danger' ? 'badge-danger' : 'badge-neutral' %>"><%= fmt.number(x.n) %></span><% } %><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm muted') %></a></li><% }) %></ul>
   <% } %>
 </section>
+<% } %>
 
 <% if (checklist) { %><%- include('_checklist') %><% } %>
 <% if (typeof goOnline !== 'undefined' && goOnline) { %>

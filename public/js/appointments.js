@@ -338,7 +338,8 @@
       if (!scroller) return;
       var r = scroller.getBoundingClientRect();
       var head = $('.cal-head', cal); var hh = head ? head.getBoundingClientRect().height : 0;
-      if (y < r.top + hh + 24) scroller.scrollTop -= 14; else if (y > r.bottom - 24) scroller.scrollTop += 14;
+      // The calendar is full height: dragging near the window's top / bottom edge scrolls the page.
+      if (y < Math.max(r.top + hh, 0) + 40) window.scrollBy(0, -14); else if (y > window.innerHeight - 40) window.scrollBy(0, 14);
       if (x < r.left + 24) scroller.scrollBy({ left: -14 }); else if (x > r.right - 24) scroller.scrollBy({ left: 14 });
     }
 
@@ -389,7 +390,8 @@
       if (D.columns.some(function (c) { return c.date === D.today; })) target = nowMin() - 60;
       if (target !== null && target > D.rangeStart) {
         var b = bodies[0];
-        scroller.scrollTop = Math.max(0, ((target - D.rangeStart) / span) * b.getBoundingClientRect().height);
+        // The calendar is full height and the page scrolls normally: nothing to move on load.
+        void b;
       }
       // Week view on a narrow screen: bring today's column into view.
       var tb = $('.cal-body[data-date="' + D.today + '"]', cal);

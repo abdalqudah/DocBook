@@ -1,0 +1,38 @@
+<%# Month view: the month on a 7-day grid (Saturday first); each day lists its appointments, a day opens the day view. %>
+<% var WD = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri']; var MAXN = 4; %>
+<div class="cal-bar">
+  <div class="cal-nav">
+    <a class="btn btn-secondary btn-icon btn-sm" href="/app/appointments<%= qs({ view: 'month', date: prev }) %>" aria-label="<%= t('appointments.prev_month') %>" title="<%= t('appointments.prev_month') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+    <a class="btn btn-secondary btn-sm" href="/app/appointments<%= qs({ view: 'month', date: clinicToday }) %>"<% if (month === clinicToday.slice(0, 7)) { %> aria-current="date"<% } %>><%= t('appointments.this_month') %></a>
+    <a class="btn btn-secondary btn-icon btn-sm" href="/app/appointments<%= qs({ view: 'month', date: next }) %>" aria-label="<%= t('appointments.next_month') %>" title="<%= t('appointments.next_month') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
+    <h2 class="cal-title"><%= fmt.month(month) %></h2>
+  </div>
+  <form class="cal-filters" method="get" data-autosubmit role="search">
+    <input type="hidden" name="view" value="month">
+    <% if (showCancelled) { %><input type="hidden" name="cancelled" value="1"><% } %>
+    <input class="input" type="month" name="date" value="<%= month %>" aria-label="<%= t('appointments.month') %>" data-month-input>
+    <% if (!own && doctors.length > 1) { %>
+    <select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value=""><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= f.doctor === d.id ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select>
+    <% } %>
+    <%- include('_branch-filter') %>
+    <%- include('../../telehealth/_type-filter', { f: f }) %>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button></noscript>
+  </form>
+</div>
+<div class="cal-meta">
+  <span class="small"><strong><%= t('appointments.cal.summary', { n: fmt.number(stats.total) }) %></strong><% if (stats.pending) { %><span class="muted"> · <%= t('appointments.cal.summary_pending', { n: fmt.number(stats.pending) }) %></span><% } %></span>
+  <a class="cal-toggle small" href="/app/appointments<%= qs({ view: 'month', date: date, cancelled: showCancelled ? undefined : 1 }) %>" role="switch" aria-checked="<%= showCancelled ? 'true' : 'false' %>"><span class="cal-toggle-box" aria-hidden="true"><%- showCancelled ? icon('check', 'icon-sm') : '' %></span><%= t('appointments.cal.show_cancelled') %></a>
+</div>
+<div class="mcal" role="grid" aria-label="<%= fmt.month(month) %>">
+  <% WD.forEach(function (k) { %><div class="mcal-wd" role="columnheader"><%= t('days.' + k) %></div><% }) %>
+  <% weeks.forEach(function (w) { w.forEach(function (d) { var list = byDate[d] || []; var inMonth = d.slice(0, 7) === month; %>
+  <div class="mcal-day<%= inMonth ? '' : ' is-out' %><%= d === clinicToday ? ' is-today' : '' %><%= d < clinicToday ? ' is-past' : '' %>" role="gridcell">
+    <a class="mcal-num" href="/app/appointments<%= qs({ view: undefined, date: d }) %>" title="<%= fmt.date(d, { weekday: 'long', day: 'numeric', month: 'long' }) %>"><%= Number(d.slice(8)) %><% if (list.length) { %><span class="mcal-count"><%= fmt.number(list.length) %></span><% } %></a>
+    <% list.slice(0, MAXN).forEach(function (a) { %>
+    <a class="mcal-appt st-<%= a.status %>" href="/app/appointments/<%= a.id %>"><span class="doc-dot" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><bdi dir="ltr" class="mcal-time"><%= a.appointment_time %></bdi><span class="truncate"><%= a.patient_name %></span></a>
+    <% }) %>
+    <% if (list.length > MAXN) { %><a class="mcal-more tiny" href="/app/appointments<%= qs({ view: undefined, date: d }) %>"><%= t('appointments.more_n', { n: fmt.number(list.length - MAXN) }) %></a><% } %>
+    <% if (canManage && inMonth && d >= clinicToday) { %><a class="mcal-add" href="/app/appointments/new?date=<%= d %><%= f.doctor ? '&doctor=' + f.doctor : '' %>" aria-label="<%= t('appointments.new') %>" title="<%= t('appointments.new') %>"><%- icon('plus', 'icon-sm') %></a><% } %>
+  </div>
+  <% }) }) %>
+</div>

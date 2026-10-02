@@ -221,3 +221,17 @@ test('chat: every active team member is listed to start a conversation (no hidde
     assert.ok(listed || (dm && withChat.has(String(dm.id))), `member ${id} can be reached`);
   }
 });
+
+test('appointments: day / week / month / list; the month shows each day with its appointments; the calendar has no inner scroll', async () => {
+  const owner = app.agent(); await owner.login(mail('owner'));
+  let r = await owner.get(`/app/appointments?view=month&date=${today.slice(0, 7)}&lang=en`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /class="mcal"/);
+  assert.match(r.text, /Print Patient/);
+  assert.match(r.text, /view=month/);
+  r = await owner.get('/app/appointments?lang=en');
+  assert.match(r.text, />Month</);
+  assert.doesNotMatch(r.text, /The clinic's day per doctor/, 'the header is compact');
+  const css = require('fs').readFileSync(require('path').join(__dirname, '../public/css/appointments.css'), 'utf8'); // eslint-disable-line global-require
+  assert.match(css, /\.cal-scroll \{ overflow-x: auto; overflow-y: hidden; \}/);
+});

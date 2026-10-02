@@ -184,7 +184,13 @@
     "confirm_any_doctor": "The patient booked with the clinic without choosing a doctor. Choose the doctor before confirming.",
     "confirm_and_notify": "Confirm and tell the patient",
     "confirm_notify_help": "You can change the day or time before confirming. The patient receives a message with the confirmed appointment.",
-    "confirmed_sent": "Appointment confirmed; the patient will receive the confirmation."
+    "confirmed_sent": "Appointment confirmed; the patient will receive the confirmation.",
+    "view_month": "Month",
+    "prev_month": "Previous month",
+    "next_month": "Next month",
+    "this_month": "This month",
+    "month": "Month",
+    "more_n": "+{n} more"
   },
   "frontdesk": {
     "title": "Reception & waiting list",

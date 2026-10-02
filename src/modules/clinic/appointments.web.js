@@ -139,7 +139,7 @@ const weekStart = (date) => addDays(date, -((new Date(`${date}T00:00:00Z`).getUT
 async function renderIndex(req, res, extra = {}) {
   const { ctx } = req;
   const f = filtersOf(req);
-  const view = ['list', 'week'].includes(req.query.view) ? req.query.view : 'day';
+  const view = ['list', 'week', 'month'].includes(req.query.view) ? req.query.view : 'day';
   const branchOpts = await branchFilter(req);
   if (!branchOpts) f.branch = null;
   const doctors = (await bookableDoctors(ctx)).filter(inBranch(f));
@@ -153,6 +153,31 @@ async function renderIndex(req, res, extra = {}) {
     const rows = (await appts.list(ctx, { from, to, doctor: f.doctor, status: f.status, q: f.q, type: f.type, branch: f.branch })).map(withEnd(lenOf));
     const totals = { count: rows.length, due: rows.filter((r) => r.status !== 'cancelled').reduce((s, r) => s + Number(r.amount_due || 0), 0) };
     return res.page('pages/clinic/appointments/index', { ...base, from, to, rows, totals, capped: rows.length >= 1000, printHref: printHref(req, from, to), ...extra });
+  }
+
+  // Month: the whole month on a 7-day grid (weeks start on Saturday), each day with its appointments.
+  if (view === 'month') {
+    const raw = /^\d{4}-\d{2}$/.test(String(req.query.date || '')) ? `${req.query.date}-01` : req.query.date; // <input type="month">
+    const date = pickDate(raw, ctx.today);
+    const first = `${date.slice(0, 7)}-01`;
+    const [y, m] = first.split('-').map(Number);
+    const last = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    const gridFrom = weekStart(first);
+    const gridTo = addDays(weekStart(last), 6);
+    const showCancelled = req.query.cancelled === '1';
+    const rows = (await appts.list(ctx, { from: gridFrom, to: gridTo, doctor: f.doctor, type: f.type, branch: f.branch }))
+      .filter((a) => a.appointment_type !== 'blocked' && (showCancelled || a.status !== 'cancelled')).map(withEnd(lenOf));
+    const byDate = {};
+    rows.forEach((a) => { (byDate[a.appointment_date] = byDate[a.appointment_date] || []).push(a); });
+    const weeks = [];
+    for (let d = gridFrom; d <= gridTo; d = addDays(d, 7)) weeks.push(Array.from({ length: 7 }, (_, i) => addDays(d, i)));
+    const prevMonth = new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 10);
+    const nextMonth = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
+    return res.page('pages/clinic/appointments/index', {
+      ...base, date, month: first.slice(0, 7), monthFrom: first, monthTo: last, weeks, byDate, prev: prevMonth, next: nextMonth, showCancelled,
+      stats: { total: rows.filter((a) => a.status !== 'cancelled').length, pending: rows.filter((a) => a.status === 'pending').length },
+      printHref: printHref(req, first, last), ...extra,
+    });
   }
 
   const date = pickDate(req.query.date, ctx.today);
