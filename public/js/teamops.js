@@ -84,21 +84,25 @@
   }
 
   // ---------------------------------------------------------------- bell
-  var bell = document.querySelector('.topbar a.bell, a.bell');
-  function setBell(n) {
-    if (!bell) return;
-    var badge = bell.querySelector('.bell-count');
+  // Two badges, two counts: the bell = unread notifications, the chat icon = unread staff messages.
+  var bell = document.querySelector('[data-notif-bell]');
+  var chatIcon = document.querySelector('[data-chat-badge]');
+  function setBadge(el, n) {
+    if (!el) return;
+    var badge = el.querySelector('.bell-count');
     if (n > 0) {
-      if (!badge) { badge = document.createElement('span'); badge.className = 'bell-count'; bell.appendChild(badge); }
+      if (!badge) { badge = document.createElement('span'); badge.className = 'bell-count'; el.appendChild(badge); }
       badge.textContent = n > 9 ? '9+' : String(n);
     } else if (badge) badge.parentNode.removeChild(badge);
   }
+  function setBell(n) { setBadge(bell, n); }
   var baseline = null;
   function poll() {
     if (!visible()) return;
     getJson('/app/teamops/unread', function (d) {
       if (typeof d.count !== 'number') return;
       setBell(d.count);
+      if (typeof d.chat === 'number') setBadge(chatIcon, d.chat);
       var latest = Number(d.latestId) || 0;
       var seen = Number(store(STORE_KEY)) || 0;
       if (baseline === null) {
@@ -121,6 +125,22 @@
     if (Date.now() - lastBeat > HEARTBEAT_MS) beat();
     poll();
   });
+
+  // ---------------------------------------------------------------- bell drop-down: the latest notifications
+  var dd = document.querySelector('[data-notif]');
+  if (dd) {
+    var body = dd.querySelector('[data-notif-body]');
+    var load = function () {
+      var back = location.pathname + location.search;
+      fetch('/app/notifications/panel?back=' + encodeURIComponent(back), { credentials: 'same-origin', headers: { accept: 'text/html' } })
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .then(function (html) { if (html) body.innerHTML = html; })
+        .catch(function () {});
+    };
+    dd.addEventListener('toggle', function () { if (dd.open) load(); });
+    document.addEventListener('click', function (e) { if (dd.open && !dd.contains(e.target)) dd.open = false; });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && dd.open) dd.open = false; });
+  }
 
   // ---------------------------------------------------------------- Settings → Team: presence dots
   if (/^\/app\/settings\/team\/?$/.test(location.pathname)) {

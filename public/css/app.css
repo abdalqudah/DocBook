@@ -880,3 +880,22 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .chat-attach { cursor: pointer; flex: none; }
 .chat-picked { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 12px 0; background: var(--surface); }
 .chat-chip { font-size: 12px; padding: 3px 10px; border-radius: var(--pill); background: var(--primary-soft); }
+
+/* ---------- Notifications drop-down (top bar) ---------- */
+.notif-dd > summary { list-style: none; }
+.notif-dd > summary::-webkit-details-marker { display: none; }
+.notif-menu { width: min(380px, calc(100vw - 24px)); padding: 0 !important; overflow: hidden; inset-inline-end: 0; inset-inline-start: auto; }
+.notif-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.notif-body { max-height: min(420px, 60vh); overflow-y: auto; }
+.notif-markall { display: flex; justify-content: flex-end; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.notif-list { list-style: none; margin: 0; padding: 0; }
+.notif-list li + li { border-top: 1px solid var(--border); }
+.notif-item { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 10px 14px; background: none; border: 0; text-align: start; cursor: pointer; color: inherit; font: inherit; }
+.notif-item:hover { background: var(--surface-sunken); }
+.notif-list li.is-unread .notif-item { background: color-mix(in srgb, var(--primary) 5%, transparent); }
+.notif-text { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex: none; margin-top: 6px; }
+.notif-empty { display: flex; gap: 10px; padding: 18px 14px; align-items: flex-start; }
+.notif-all { display: block; text-align: center; padding: 10px; border-top: 1px solid var(--border); font-weight: var(--fw-semibold); font-size: 13px; }
+.notif-all:hover { background: var(--surface-sunken); }
+.chat-link { position: relative; }

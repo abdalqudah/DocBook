@@ -408,7 +408,8 @@
     "empty_title": "You're all caught up",
     "empty_text": "New online bookings, low-stock alerts and other important events appear here.",
     "mark_all_read": "Mark all as read",
-    "unread": "Unread"
+    "unread": "Unread",
+    "view_all": "See all notifications"
   },
   "workspaces": {
     "new_title": "Add a clinic",

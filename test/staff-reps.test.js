@@ -183,3 +183,29 @@ test('clinic working hours live in the Clinic workspace', async () => {
   assert.equal(wh.sun.shifts[0].start, '08:00');
   assert.equal(wh.mon.enabled, false);
 });
+
+test('top bar: the bell opens a drop-down of notifications; the chat icon has its own count', async () => {
+  const notifications = require('../src/modules/notifications/notification.service'); // eslint-disable-line global-require
+  await notifications.notify(businessId, { userId: ownerId, type: 'test.bell', title: `Bell check ${tag}`, body: 'Drop-down body', link: '/app/patients' });
+  const owner = app.agent(); await owner.login(mail('owner'));
+  let r = await owner.get('/app?lang=en');
+  assert.match(r.text, /<details class="dropdown notif-dd" data-notif>/);
+  assert.match(r.text, /data-notif-bell/);
+  r = await owner.get('/app/notifications/panel?back=/app/patients');
+  assert.equal(r.status, 200);
+  assert.match(r.text, new RegExp(`Bell check ${tag}`));
+  assert.doesNotMatch(r.text, /<html/, 'a fragment, not a page');
+  const n = await knex('notifications').where({ business_id: businessId, title: `Bell check ${tag}` }).first('id');
+  r = await owner.submit('/app', '/app/notifications/read', { id: String(n.id), go: '/app/patients' });
+  assert.equal(r.location, '/app/patients');
+  // the counts are separate: notifications vs chat messages
+  r = await owner.get('/app/teamops/unread');
+  const d = JSON.parse(r.text);
+  assert.equal(typeof d.count, 'number');
+  assert.equal(typeof d.chat, 'number');
+  assert.equal(d.chat, await require('../src/modules/chat/chat.service').unreadTotal({ businessId, userId: ownerId })); // eslint-disable-line global-require
+  r = await owner.submit('/app', '/app/notifications/read', { back: '/app/appointments' });
+  assert.equal(r.location, '/app/appointments');
+  r = await owner.submit('/app', '/app/notifications/read', { back: 'https://evil.example/' });
+  assert.equal(r.location, '/app/notifications', 'never leaves the app');
+});

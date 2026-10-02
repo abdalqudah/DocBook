@@ -1,0 +1,20 @@
+<%/* The bell's drop-down list (GET /app/notifications/panel): latest notifications; opening one marks it read. */%>
+<% if (!items.length) { %>
+<div class="notif-empty"><span class="action-icon info"><%- icon('bell', 'icon-sm') %></span><div><div class="strong small"><%= t('notifications.empty_title') %></div><div class="tiny muted"><%= t('notifications.empty_text') %></div></div></div>
+<% } else { %>
+<% if (items.some(function (n) { return !n.read_at; })) { %><form method="post" action="/app/notifications/read" class="notif-markall" data-notif-markall><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= back %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('notifications.mark_all_read') %></button></form><% } %>
+<ul class="notif-list">
+  <% items.forEach(function (n) { %>
+  <li class="<%= n.read_at ? '' : 'is-unread' %>">
+    <form method="post" action="/app/notifications/read">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="id" value="<%= n.id %>"><input type="hidden" name="go" value="<%= n.link || back %>">
+      <button type="submit" class="notif-item">
+        <span class="action-icon <%= n.severity === 'danger' ? 'danger' : n.severity === 'warning' ? 'warning' : 'info' %>"><%- icon(n.severity === 'info' ? 'info' : 'triangle-alert', 'icon-sm') %></span>
+        <span class="grow"><span class="d-block small <%= n.read_at ? '' : 'strong' %>"><%= n.title %></span><% if (n.body) { %><span class="d-block tiny muted notif-text"><%= n.body %></span><% } %><span class="d-block tiny muted"><%= fmt.date(n.created_at, { dateStyle: 'medium', timeStyle: 'short' }) %></span></span>
+        <% if (!n.read_at) { %><span class="notif-dot" aria-label="<%= t('notifications.unread') %>"></span><% } %>
+      </button>
+    </form>
+  </li>
+  <% }) %>
+</ul>
+<% } %>

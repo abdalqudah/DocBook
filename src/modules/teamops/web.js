@@ -51,11 +51,12 @@ router.post('/teamops/heartbeat', wrap(async (req, res) => {
 }));
 
 router.get('/teamops/unread', wrap(async (req, res) => {
-  const [count, latest, prefs] = await Promise.all([
+  const [count, latest, prefs, chat] = await Promise.all([
     notifications.unreadCount(req.ctx), notifications.list(req.ctx, { limit: 1, unreadOnly: true }), presence.prefs(req.ctx.userId),
+    require('../chat/chat.service').unreadTotal(req.ctx).catch(() => 0), // eslint-disable-line global-require
   ]);
   res.set('Cache-Control', 'no-store');
-  res.json({ count, latestId: latest.length ? Number(latest[0].id) : 0, sound: prefs.sound_enabled });
+  res.json({ count, chat, latestId: latest.length ? Number(latest[0].id) : 0, sound: prefs.sound_enabled });
 }));
 
 /** Presence of this clinic's members, keyed by membership id (the Team page) and user id. */
