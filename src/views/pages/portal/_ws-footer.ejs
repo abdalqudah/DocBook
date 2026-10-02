@@ -6,8 +6,15 @@
   <div class="container">
     <% if (f.style !== 'simple') { %>
     <div class="ws-footer-grid">
+      <% var _logoUrl = wsSite.logo ? wsSite.logo.url : (c.logo_mime ? '/' + c.slug + '/logo?v=' + c.logo_version : null);
+         var _showLogo = f.show_logo !== false && _logoUrl; var _showName = f.show_name !== false; var _fh = Number(f.logo_height) || 48; if (_fh < 20) _fh = 20; %>
       <div class="ws-footer-brand">
-        <strong><%= c.displayName %></strong>
+        <% if (_showLogo || _showName) { %>
+        <div class="ws-fbrand ws-fbrand-<%= f.name_pos === 'beside' ? 'beside' : 'below' %>">
+          <% if (_showLogo) { %><span class="ws-flogo ws-flogo-<%= f.logo_shape === 'badge' ? 'badge' : 'free' %>" style="--ws-flogo-h: <%= _fh %>px"><img src="<%= _logoUrl %>" alt="<%= _showName ? '' : c.displayName %>"></span><% } %>
+          <% if (_showName) { %><strong><%= c.displayName %></strong><% } %>
+        </div>
+        <% } %>
         <% if (about) { %><p><%= about %></p><% } %>
         <% if (f.show_social !== false && social.length) { %><div class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon" href="<%= f.social[k] %>" target="_blank" rel="noopener me" aria-label="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>" title="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>"><%- icon(k) %></a><% }) %></div><% } %>
       </div>

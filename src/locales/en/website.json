@@ -732,7 +732,14 @@
       "buttons_group": "Words and buttons",
       "logo_height": "Logo height",
       "logo_height_auto": "by size",
-      "logo_height_help": "Drag to set the height in pixels (0 = follow the size choice). The logo always keeps its own shape and proportions."
+      "logo_height_help": "Drag to set the height in pixels (0 = follow the size choice). The logo always keeps its own shape and proportions.",
+      "f_logo": "Show the logo",
+      "f_name_pos": "Name position",
+      "fnp": {
+        "below": "Under the logo",
+        "beside": "Beside the logo"
+      },
+      "f_name": "Show the clinic name"
     },
     "item_field": {
       "title": "Title",

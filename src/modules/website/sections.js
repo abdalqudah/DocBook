@@ -138,6 +138,11 @@ const FOOTER = [
   { key: 'style', kind: 'select', options: ['columns', 'simple', 'centered'], def: 'columns' },
   { key: 'show_contact', kind: 'bool', def: true }, { key: 'show_hours', kind: 'bool', def: true }, { key: 'show_menu', kind: 'bool', def: true },
   { key: 'show_social', kind: 'bool', def: true }, { key: 'show_powered', kind: 'bool', def: true },
+  // Brand block: the logo (as in the header: on a tile or free, exact height; 0 = 48 px) and the clinic name — shown
+  // or hidden, beside the logo or under it.
+  { key: 'show_logo', kind: 'bool', def: true }, { key: 'logo_shape', kind: 'select', options: ['free', 'badge'], def: 'free' },
+  { key: 'logo_height', kind: 'number', min: 0, max: 140, def: 0 },
+  { key: 'show_name', kind: 'bool', def: true }, { key: 'name_pos', kind: 'select', options: ['below', 'beside'], def: 'below' },
 ];
 const cleanSocial = (raw) => Object.fromEntries(Object.keys(SOCIAL).map((k) => {
   const v = cleanLine(raw && raw[k], 300);

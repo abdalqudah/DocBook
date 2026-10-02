@@ -85,6 +85,16 @@
     <div class="wsb-tab-body stack">
       <fieldset class="wsb-field"><legend class="label"><%= t('website.b.footer_style') %></legend>
         <div class="wsb-choices"><% ['columns', 'simple', 'centered'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="footer[style]" value="<%= o %>"<%= (ftr.style || 'columns') === o ? ' checked' : '' %>><span><%= t('website.b.fs.' + o) %></span></label><% }) %></div></fieldset>
+      <% boolRow('footer[show_logo]', ftr.show_logo !== false, t('website.b.f_logo')) %>
+      <div class="wsb-field">
+        <label class="label" for="wsb-flogo-h"><%= t('website.b.logo_height') %> <output class="muted small num" data-ws-range-out="wsb-flogo-h"><%= Number(ftr.logo_height) ? ftr.logo_height + 'px' : t('website.b.logo_height_auto') %></output></label>
+        <input type="range" id="wsb-flogo-h" name="footer[logo_height]" min="0" max="140" step="2" value="<%= Number(ftr.logo_height) || 0 %>" data-ws-range data-auto="<%= t('website.b.logo_height_auto') %>">
+      </div>
+      <fieldset class="wsb-field"><legend class="label"><%= t('website.b.logo_shape') %></legend>
+        <div class="wsb-choices"><% ['free', 'badge'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="footer[logo_shape]" value="<%= o %>"<%= (ftr.logo_shape || 'free') === o ? ' checked' : '' %>><span><%= t('website.b.lsh.' + o) %></span></label><% }) %></div></fieldset>
+      <% boolRow('footer[show_name]', ftr.show_name !== false, t('website.b.f_name')) %>
+      <fieldset class="wsb-field"><legend class="label"><%= t('website.b.f_name_pos') %></legend>
+        <div class="wsb-choices"><% ['below', 'beside'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="footer[name_pos]" value="<%= o %>"<%= (ftr.name_pos || 'below') === o ? ' checked' : '' %>><span><%= t('website.b.fnp.' + o) %></span></label><% }) %></div></fieldset>
       <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.footer_about') %></legend><% pairRow('footer[about]', ftr.about, 400, true) %></fieldset>
       <% boolRow('footer[show_contact]', ftr.show_contact !== false, t('website.b.f_contact')) %>
       <% boolRow('footer[show_hours]', ftr.show_hours !== false, t('website.b.f_hours')) %>
