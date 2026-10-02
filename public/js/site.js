@@ -18,6 +18,58 @@
     document.addEventListener('click', function (e) { if (!menu.contains(e.target)) menu.removeAttribute('open'); });
   });
 
+  /* ---------- Platform home page: reveal on scroll, counting numbers, pricing cycle, pointer light ---------- */
+  if (document.body.classList.contains('lp-modern')) {
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Cards of the other sections reveal too, staggered by their place in the row.
+    $$('.section-head, .lp-feature, .lp-step, .lp-role, .lp-split .feature-row > *, .lp-faq-grid > *, .lp-quote, .cta-band, .lp-contact-card, .lp-prose').forEach(function (el) {
+      if (el.hasAttribute('data-reveal')) return;
+      el.setAttribute('data-reveal', '');
+      var i = Array.prototype.indexOf.call(el.parentNode.children, el);
+      if (!el.style.getPropertyValue('--d')) el.style.setProperty('--d', ((i % 4) * 70) + 'ms');
+    });
+    var countUp = function (el) {
+      var box = el.querySelector ? el.querySelector('[data-count]') : null;
+      if (!box) return;
+      var text = box.textContent.trim();
+      var m = /^(\d{1,6})(.*)$/.exec(text);
+      if (!m || Number(m[1]) < 2) return;
+      var to = Number(m[1]); var start = null;
+      var step = function (ts) {
+        if (start === null) start = ts;
+        var k = Math.min(1, (ts - start) / 1100);
+        box.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))) + m[2];
+        if (k < 1) window.requestAnimationFrame(step); else box.textContent = text;
+      };
+      window.requestAnimationFrame(step);
+    };
+    if (!reduce && 'IntersectionObserver' in window) {
+      document.documentElement.classList.add('js-motion');
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+          countUp(e.target);
+        });
+      }, { rootMargin: '0px 0px -6% 0px', threshold: 0.12 });
+      $$('[data-reveal]').forEach(function (el) { io.observe(el); });
+      $$('.lp-tile').forEach(function (t) {
+        t.addEventListener('pointermove', function (e) {
+          var r = t.getBoundingClientRect();
+          t.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+          t.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
+      });
+    }
+    $$('[data-pricing]').forEach(function (sec) {
+      var plans = $('[data-cycle-root]', sec);
+      $$('input[data-cycle]', sec).forEach(function (r) {
+        r.addEventListener('change', function () { if (r.checked && plans) plans.setAttribute('data-cycle-now', r.value); });
+      });
+    });
+  }
+
   /* ---------- Online booking ---------- */
   var form = $('form[data-booking]');
   if (!form) return;

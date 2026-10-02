@@ -1,0 +1,16 @@
+<%# Key numbers. A value that starts with digits counts up when it comes into view (site.js); the text is the real value. %>
+<% var d = s.data || {}; %>
+<section class="section lp-stats <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
+    <% if (L(d.title)) { %><h2 class="lp-stats-title"><%= L(d.title) %></h2><% } %>
+    <div class="lp-stats-row">
+      <% (d.items || []).forEach(function (it, i) { if (!it.value && !L(it.label)) return; %>
+      <div class="lp-stat" data-reveal style="--d: <%= i * 80 %>ms">
+        <% if (it.icon) { %><span class="lp-stat-icon"><%- icon(it.icon, 'icon-sm') %></span><% } %>
+        <strong class="lp-stat-value num" dir="ltr" data-count><%= it.value %></strong>
+        <span class="lp-stat-label"><%= L(it.label) %></span>
+      </div>
+      <% }) %>
+    </div>
+  <%- include('slot-close', { s: s }) %></div>
+</section>

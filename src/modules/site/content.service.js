@@ -64,6 +64,20 @@ const TYPES = {
     fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea']],
     lists: [{ key: 'items', fields: [['icon', 'icon'], ['label', 'text'], ['value', 'plain'], ['href', 'link']] }],
   },
+  // What's new: a bento grid of cards (a wide card spans two columns), each with an optional "new" tag.
+  showcase: {
+    fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea']],
+    lists: [{ key: 'items', fields: [['icon', 'icon'], ['title', 'text'], ['text', 'textarea'], ['tag', 'text'], ['size', 'select', ['normal', 'wide']]] }],
+  },
+  // Key numbers; a value that starts with a number counts up when it comes into view. Only state facts.
+  stats: {
+    fields: [['title', 'text']],
+    lists: [{ key: 'items', fields: [['icon', 'icon'], ['value', 'plain'], ['label', 'text']] }],
+  },
+  // The packages: the active public plans from Admin → Plans (src/modules/site/pricing.js); hidden while there are none.
+  pricing: {
+    fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea'], ['btn_label', 'text'], ['btn_href', 'link'], ['note', 'text']],
+  },
   cta: { fields: [['title', 'text'], ['text', 'text'], ['btn1_label', 'text'], ['btn1_href', 'link'], ['btn2_label', 'text'], ['btn2_href', 'link']] },
 };
 // Layout settings every section has: alignment, an optional background (a light surface or an image from the
@@ -104,7 +118,7 @@ function defaults() {
   return {
     version: 1,
     header: {
-      items: [['features', '/#features'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
+      items: [['new', '/#new'], ['features', '/#features'], ['pricing', '/#pricing'], ['how', '/#how'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
       login_label: T('nav.login'), signup_label: T('nav.signup'), signup_href: '/signup', show_login: 'yes',
     },
     sections: [
@@ -112,6 +126,17 @@ function defaults() {
         eyebrow: T('hero.eyebrow'), title: T('hero.title'), title_accent: T('hero.title_accent'), lead: T('hero.lead'),
         btn1_label: T('nav.signup'), btn1_href: '/signup', btn2_label: T('nav.login'), btn2_href: '/login', note: T('hero.note'), visual: 'booking',
         items: [['calendar-check', 'booking'], ['languages', 'languages'], ['smartphone', 'mobile'], ['shield-check', 'roles']].map(([icon, k]) => ({ icon, label: T(`hero.points.${k}`) })),
+      } },
+      { id: 'stats', type: 'stats', anchor: 'numbers', hidden: false, data: {
+        title: { ar: '', en: '' },
+        items: [['calendar-clock', '24/7', 'booking'], ['languages', '2', 'languages'], ['layers', '1', 'workspace'], ['download', '0', 'install']]
+          .map(([icon, value, k]) => ({ icon, value, label: T(`stats.${k}`) })),
+      } },
+      { id: 'showcase', type: 'showcase', anchor: 'new', hidden: false, data: {
+        kicker: T('showcase.kicker'), title: T('showcase.title'), lead: T('showcase.lead'),
+        items: [['website', 'layout-template', 'wide'], ['branches', 'building-2'], ['booking', 'calendar-check'], ['messages', 'message-circle'], ['intake', 'heart-pulse'],
+          ['cash', 'calculator', 'wide'], ['invoice', 'receipt-text'], ['telehealth', 'video'], ['ai', 'bot', 'wide'], ['prices', 'tag'], ['dark', 'moon', 'wide']]
+          .map(([k, icon, size]) => ({ icon, title: T(`showcase.items.${k}.title`), text: T(`showcase.items.${k}.text`), tag: T('showcase.tag'), size: size || 'normal' })),
       } },
       { id: 'features', type: 'features', anchor: 'features', hidden: false, data: {
         kicker: T('features.kicker'), title: T('features.title'), lead: T('features.lead'),
@@ -139,9 +164,12 @@ function defaults() {
         items: [['stethoscope', 'doctor'], ['heart-pulse', 'nurse'], ['clipboard-list', 'reception'], ['wallet', 'accountant'], ['building-2', 'manager']]
           .map(([icon, k]) => ({ icon, title: T(`roles.items.${k}.title`), text: T(`roles.items.${k}.text`) })),
       } },
+      { id: 'pricing', type: 'pricing', anchor: 'pricing', hidden: false, data: {
+        kicker: T('pricing.kicker'), title: T('pricing.title'), lead: T('pricing.lead'), btn_label: T('pricing.btn'), btn_href: '/signup', note: T('pricing.note'),
+      } },
       { id: 'faq', type: 'faq', anchor: 'faq', hidden: false, data: {
         kicker: T('faq.kicker'), title: T('faq.title'), lead: T('faq.lead'),
-        items: [1, 2, 3, 4, 5, 6].map((i) => ({ q: T(`faq.q${i}`), a: T(`faq.a${i}`) })),
+        items: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ q: T(`faq.q${i}`), a: T(`faq.a${i}`) })),
       } },
       { id: 'cta', type: 'cta', anchor: 'start', hidden: false, data: {
         title: T('cta.title'), text: T('cta.text'), btn1_label: T('nav.signup'), btn1_href: '/signup', btn2_label: T('nav.login'), btn2_href: '/login',
@@ -151,7 +179,7 @@ function defaults() {
       tagline: T('footer.tagline'), col1_title: T('footer.col1'), col2_title: T('footer.col2'), col3_title: { ar: '', en: '' },
       email: brand.supportEmail || '', phone: '', address: { ar: '', en: '' }, copyright: brand.name,
       items: [
-        ...[['features', '/#features'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '1' })),
+        ...[['new', '/#new'], ['features', '/#features'], ['pricing', '/#pricing'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '1' })),
         ...[['login', '/login'], ['signup', '/signup'], ['forgot', '/forgot']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '2' })),
       ],
       social: [],

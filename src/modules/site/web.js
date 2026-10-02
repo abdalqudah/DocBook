@@ -7,6 +7,7 @@ const { wrap } = require('../../routes/helpers');
 const site = require('./content.service');
 const media = require('./media.service');
 const seo = require('./seo.service');
+const pricing = require('./pricing');
 
 const router = express.Router();
 
@@ -36,10 +37,13 @@ async function chrome(req, res, next) {
   } catch (err) { next(err); }
 }
 
+/** The plans for the pricing section — only read when the page has one. */
+const landingPricing = (content) => (content.sections.some((s) => s.type === 'pricing') ? pricing.forSite() : null);
+
 router.get('/', wrap(async (req, res) => {
   const content = await site.get();
-  const head = await seo.head(req, res, { kind: 'home', site: content });
-  res.page('pages/site/home', { layout: 'public', content, pageTitle: head.title, seoHead: head });
+  const [head, pricingData] = await Promise.all([seo.head(req, res, { kind: 'home', site: content }), landingPricing(content)]);
+  res.page('pages/site/home', { layout: 'public', bodyClass: 'lp-modern', content, pricing: pricingData, pageTitle: head.title, seoHead: head });
 }));
 
 // ---------------------------------------------------------------- media files
@@ -94,3 +98,4 @@ router.get('/llms.txt', wrap(async (req, res) => {
 module.exports = router;
 module.exports.chrome = chrome;
 module.exports.secCls = secCls;
+module.exports.landingPricing = landingPricing;

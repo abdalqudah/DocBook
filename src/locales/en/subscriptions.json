@@ -201,6 +201,8 @@
     "is_active_help": "Inactive plans cannot be chosen or assigned to new invoices.",
     "is_public": "Shown to clinics",
     "is_public_help": "Hidden plans can still be assigned by the platform admin.",
+    "is_featured": "Most popular",
+    "is_featured_help": "Its card is highlighted in the pricing section of the home page.",
     "sort_order": "Order",
     "settings_title": "Subscription settings",
     "settings_lead": "The switch, trial, grace period and the payment details shown to clinics.",

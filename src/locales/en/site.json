@@ -46,7 +46,9 @@
         "faq": "FAQ",
         "login": "Sign in",
         "signup": "Start free",
-        "forgot": "Forgot password"
+        "forgot": "Forgot password",
+        "new": "What's new",
+        "pricing": "Pricing"
       },
       "hero": {
         "eyebrow": "Clinic management in Arabic and English",
@@ -195,7 +197,11 @@
         "q5": "Do I need to install anything?",
         "a5": "No. DocBook runs in the browser on computers, tablets and phones.",
         "q6": "Can I take my data out?",
-        "a6": "Yes. Lists and reports can be exported to Excel or CSV by the people whose role allows it."
+        "a6": "Yes. Lists and reports can be exported to Excel or CSV by the people whose role allows it.",
+        "q7": "Can I run more than one branch?",
+        "a7": "Yes. Depending on your plan, add your clinic's branches under Branches; each has its own doctors and appointments, and patients choose the branch when booking. The plan price follows the number of branches.",
+        "q8": "Can I change my plan later?",
+        "a8": "Yes. In subscription settings choose another plan or a monthly or yearly cycle; the new period starts when the paid one ends."
       },
       "cta": {
         "title": "Ready to open your clinic's DocBook?",
@@ -209,6 +215,105 @@
       "seo": {
         "title": "DocBook — clinic booking & management",
         "description": "Online booking, doctor schedules, front desk, patient records, invoices, commissions and supplies for clinics — in Arabic and English."
+      },
+      "stats": {
+        "booking": "Online booking for your patients",
+        "languages": "Languages: Arabic and English",
+        "workspace": "Workspace for every branch and the whole team",
+        "install": "Installations — it runs in the browser"
+      },
+      "showcase": {
+        "kicker": "What's new in DocBook",
+        "title": "New features, built with clinics",
+        "lead": "What clinics asked for over the last months: a complete clinic website, multiple branches, a smarter front desk, and clearer cash and invoices.",
+        "tag": "New",
+        "items": {
+          "website": {
+            "title": "A clinic website with a visual editor",
+            "text": "Pick a template and arrange sections: images, columns, reviews, FAQs and your doctors. Your logo in light and dark versions, your own domain, and booking built into the page."
+          },
+          "branches": {
+            "title": "Multiple branches",
+            "text": "Add your branches, each with its doctors, appointments and address — patients choose the branch when they book."
+          },
+          "booking": {
+            "title": "“Any available doctor” booking",
+            "text": "Patients book with the clinic without choosing a doctor; reception assigns the appointment later."
+          },
+          "messages": {
+            "title": "Received and confirmed messages",
+            "text": "An automatic WhatsApp message when a request arrives and another when it is confirmed, with texts you edit."
+          },
+          "intake": {
+            "title": "Vitals from the waiting room",
+            "text": "Reception or the nurse records blood pressure, temperature, weight and the reason for the visit before the patient goes in."
+          },
+          "cash": {
+            "title": "Cash screen",
+            "text": "A fast checkout screen for reception, with a side column of who is waiting and who is with the doctor, and receipts printed straight away."
+          },
+          "invoice": {
+            "title": "Invoice designer",
+            "text": "Choose whether the logo and name show, where each one goes and how big the logo is, with a live preview."
+          },
+          "telehealth": {
+            "title": "Video consultations",
+            "text": "Video calls with patients from inside the appointment — no extra apps."
+          },
+          "ai": {
+            "title": "AI assistant",
+            "text": "Summarises the visit, gives a second opinion and checks prescriptions; a finance assistant reviews the month — you always decide."
+          },
+          "prices": {
+            "title": "Show or hide prices",
+            "text": "Decide whether doctors' and services' prices appear on the clinic website and on the booking page."
+          },
+          "dark": {
+            "title": "Dark mode",
+            "text": "A calm night-time interface for the team, and a switch to turn it on or off on the clinic website."
+          }
+        }
+      },
+      "pricing": {
+        "kicker": "Plans and pricing",
+        "title": "A plan for every size of clinic",
+        "lead": "Start small and move up whenever you need to. Paying yearly saves you more.",
+        "btn": "Get started",
+        "note": "Prices in Jordanian dinars. Change your plan or number of branches at any time from subscription settings."
+      }
+    },
+    "pricing": {
+      "per_month": "/ month",
+      "per_year": "/ year",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "billing": "Billing cycle",
+      "save": "Save {n}",
+      "popular": "Most popular",
+      "free": "Free",
+      "yearly_note": "Billed yearly: {price}",
+      "monthly_eq": "About {price} a month",
+      "doctors_n": "Up to {n} doctors",
+      "doctors_1": "One doctor",
+      "doctors_unl": "Unlimited doctors",
+      "staff_n": "Up to {n} staff sign-ins",
+      "staff_unl": "Unlimited staff sign-ins",
+      "branches_1": "Main branch",
+      "branches_n": "Up to {n} branches",
+      "branches_unl": "Unlimited branches",
+      "second_branch": "+{price} a month for a second branch",
+      "trial": "Every new clinic gets a {n}-day free trial.",
+      "empty": "No plans are listed right now.",
+      "f": {
+        "website_builder": "Clinic website editor",
+        "reminders": "WhatsApp reminders and messages",
+        "online_payments": "Online payments",
+        "online_consultations": "Video consultations",
+        "ai_assistant": "AI assistant",
+        "specialty_modules": "Specialty records",
+        "website_custom_domain": "Custom website domain",
+        "data_sync": "Copy to your own database",
+        "website_white_label": "Website without the platform name"
       }
     }
   },
@@ -380,7 +485,10 @@
         "testimonials": "Testimonials",
         "text": "Text",
         "contact": "Contact",
-        "cta": "Call to action"
+        "cta": "Call to action",
+        "showcase": "What's new cards",
+        "stats": "Numbers",
+        "pricing": "Plans & pricing"
       },
       "type_help": {
         "hero": "The first thing visitors see: headline, two buttons, short points and the booking illustration.",
@@ -392,7 +500,10 @@
         "testimonials": "Quotes from real clinics. Only publish quotes you have permission to use.",
         "text": "A title and free text. Blank lines start new paragraphs.",
         "contact": "Ways to reach you: e-mail, phone, address.",
-        "cta": "A dark band with a headline and two buttons."
+        "cta": "A dark band with a headline and two buttons.",
+        "showcase": "A grid of cards in two sizes to present new features, with a “New” tag.",
+        "stats": "Big numbers with a short label; the number counts up when it appears. State facts only.",
+        "pricing": "Plan cards from Admin → Plans: prices, limits and features update by themselves. The section hides while no plan is shown."
       },
       "lists": {
         "items": "Items"
@@ -444,7 +555,9 @@
         "media_alt": "Image description",
         "media_pos": "Image position",
         "media_size": "Image size",
-        "image": "Image (instead of the icon)"
+        "image": "Image (instead of the icon)",
+        "tag": "Small tag",
+        "size": "Card size"
       },
       "opt": {
         "1": "Column 1",
@@ -458,7 +571,9 @@
         "start": "Before the text (start)",
         "yes": "Yes",
         "no": "No",
-        "image": "Image from the media library"
+        "image": "Image from the media library",
+        "normal": "Normal",
+        "wide": "Wide (two columns)"
       },
       "media": {
         "title": "Media library",
@@ -518,7 +633,8 @@
           "large": "Large",
           "full": "Full width"
         }
-      }
+      },
+      "pricing_hint": "The plans themselves are edited in Admin → Plans."
     },
     "nav_seo": "Search & AI",
     "nav_growth": "Social & tracking"

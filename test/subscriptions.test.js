@@ -244,7 +244,7 @@ test('lifecycle through the job with fixed dates, reminders once, read-only gate
 test('clinic reports a payment, admin confirms it: the period continues from the old end', async () => {
   const id = clinic.business.id;
   await knex('clinic_subscriptions').where({ business_id: id }).update({ status: 'active', current_period_start: '2040-01-01', current_period_end: '2040-01-31', grace_ends_at: null });
-  const plan = (await subs.listPlans())[0];
+  const plan = (await subs.listPlans()).find((p) => p.name === 'أساسية' && p.price_yearly === 200);
   subs.setNow(() => new Date('2040-01-20T09:00:00Z'));
   try {
     const invId = await subs.choosePlan({ ...ctx, today: '2040-01-20' }, clinic.business, { plan_id: String(plan.id), billing_cycle: 'yearly' });

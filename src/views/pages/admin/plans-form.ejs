@@ -97,6 +97,7 @@
     <div class="panel-body stack">
       <label class="check"><input type="checkbox" name="is_active" value="1"<%= on('is_active', true) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions_admin.is_active') %></span> <span class="tiny muted"><%= t('subscriptions_admin.is_active_help') %></span></span></label>
       <label class="check"><input type="checkbox" name="is_public" value="1"<%= on('is_public', true) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions_admin.is_public') %></span> <span class="tiny muted"><%= t('subscriptions_admin.is_public_help') %></span></span></label>
+      <label class="check"><input type="checkbox" name="is_featured" value="1"<%= on('is_featured', false) ? ' checked' : '' %>><span><span class="strong small"><%= t('subscriptions_admin.is_featured') %></span> <span class="tiny muted"><%= t('subscriptions_admin.is_featured_help') %></span></span></label>
       <div class="form-grid cols-3"><%- include('../../partials/field', { name: 'sort_order', label: t('subscriptions_admin.sort_order'), type: 'number', value: val('sort_order', 0), attrs: 'step="1"', errors: errs }) %></div>
     </div>
   </section>

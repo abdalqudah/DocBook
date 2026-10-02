@@ -1,0 +1,19 @@
+<%# What's new: a bento grid of cards; a wide card spans two columns. %>
+<% var d = s.data || {}; %>
+<section class="section lp-showcase <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
+    <%- include('head', { s: s, center: true }) %>
+    <div class="lp-bento">
+      <% (d.items || []).forEach(function (f, i) { %>
+      <article class="lp-tile<%= f.size === 'wide' ? ' is-wide' : '' %>" data-reveal style="--d: <%= (i % 3) * 80 %>ms">
+        <div class="lp-tile-top">
+          <% if (f.icon) { %><span class="lp-icon"><%- icon(f.icon) %></span><% } %>
+          <% if (L(f.tag)) { %><span class="lp-tag"><%= L(f.tag) %></span><% } %>
+        </div>
+        <h3><%= L(f.title) %></h3>
+        <% if (L(f.text)) { %><p><%= L(f.text) %></p><% } %>
+      </article>
+      <% }) %>
+    </div>
+  <%- include('slot-close', { s: s }) %></div>
+</section>

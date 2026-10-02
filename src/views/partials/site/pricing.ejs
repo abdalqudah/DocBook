@@ -1,0 +1,47 @@
+<%# Plans & pricing: the active public plans from Admin → Plans (src/modules/site/pricing.js). Monthly / yearly switch
+    without JavaScript falls back to showing the monthly price with the yearly price underneath. %>
+<% var d = s.data || {}; var P = typeof pricing !== 'undefined' && pricing ? pricing : null; var plans = P ? P.plans : [];
+   var anySave = plans.some(function (p) { return p.save > 0; }); var maxSave = plans.reduce(function (m, p) { return Math.max(m, p.save); }, 0);
+   var money = function (v, c) { return '<bdi dir="ltr">' + v + ' ' + c + '</bdi>'; }; var pct = function (n) { return '<bdi dir="ltr">' + n + '%</bdi>'; };
+   var preview = typeof previewNote !== 'undefined' && previewNote; %>
+<% if (plans.length || preview) { %>
+<section class="section lp-pricing <%= secCls(s) %>" id="<%= s.anchor %>" data-pricing><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
+    <%- include('head', { s: s, center: true }) %>
+    <% if (!plans.length) { %><p class="center muted"><%= t('site.pricing.empty') %> <%= t('admin.site.pricing_hint') %></p><% } else { %>
+    <div class="lp-cycle" role="radiogroup" aria-label="<%= t('site.pricing.billing') %>" data-reveal>
+      <label><input type="radio" name="lp-cycle" value="monthly" checked data-cycle><span><%= t('site.pricing.monthly') %></span></label>
+      <label><input type="radio" name="lp-cycle" value="yearly" data-cycle><span><%= t('site.pricing.yearly') %><% if (anySave) { %> <em class="lp-save"><%- t('site.pricing.save', { n: pct(maxSave) }) %></em><% } %></span></label>
+    </div>
+    <div class="lp-plans cols-<%= Math.min(plans.length, 4) %>" data-cycle-root data-cycle-now="monthly">
+      <% plans.forEach(function (p, i) { %>
+      <article class="lp-plan<%= p.featured ? ' is-featured' : '' %>" data-reveal style="--d: <%= i * 90 %>ms">
+        <% if (p.featured) { %><span class="lp-plan-badge"><%- icon('star', 'icon-sm') %><%= t('site.pricing.popular') %></span><% } %>
+        <h3><%= L(p.name) %></h3>
+        <% if (L(p.description)) { %><p class="lp-plan-desc"><%= L(p.description) %></p><% } %>
+        <div class="lp-price">
+          <% if (p.free) { %><span class="lp-amount"><%= t('site.pricing.free') %></span><% } else { %>
+          <div class="lp-price-m"><span class="lp-amount num"><%= p.monthly %></span><span class="lp-cur"><%= p.currency %> <%= t('site.pricing.per_month') %></span></div>
+          <div class="lp-price-y"><span class="lp-amount num"><%= p.yearly %></span><span class="lp-cur"><%= p.currency %> <%= t('site.pricing.per_year') %></span></div>
+          <p class="lp-price-sub lp-price-m tiny"><%- t('site.pricing.yearly_note', { price: money(p.yearly, p.currency) }) %><% if (p.save) { %> · <strong><%- t('site.pricing.save', { n: pct(p.save) }) %></strong><% } %></p>
+          <p class="lp-price-sub lp-price-y tiny"><%- t('site.pricing.monthly_eq', { price: money(p.yearlyPerMonth, p.currency) }) %></p>
+          <% } %>
+        </div>
+        <% if (currentUser) { %><a class="btn <%= p.featured ? 'btn-primary' : 'btn-secondary' %> btn-block" href="/app/settings/subscription"><%= t('site.open_app') %></a>
+        <% } else if (L(d.btn_label) && d.btn_href) { %><a class="btn <%= p.featured ? 'btn-primary' : 'btn-secondary' %> btn-block" href="<%= d.btn_href %>"><%= L(d.btn_label) %><%- icon('arrow-right', 'flip-rtl') %></a><% } %>
+        <ul class="lp-plan-list">
+          <li><%- icon('stethoscope', 'icon-sm') %><span><%= p.limits.doctors === null ? t('site.pricing.doctors_unl') : p.limits.doctors === 1 ? t('site.pricing.doctors_1') : t('site.pricing.doctors_n', { n: p.limits.doctors }) %></span></li>
+          <li><%- icon('users', 'icon-sm') %><span><%= p.limits.staff === null ? t('site.pricing.staff_unl') : t('site.pricing.staff_n', { n: p.limits.staff }) %></span></li>
+          <li><%- icon('building-2', 'icon-sm') %><span><%= p.limits.branches === null ? t('site.pricing.branches_unl') : p.limits.branches <= 1 ? t('site.pricing.branches_1') : t('site.pricing.branches_n', { n: p.limits.branches }) %><% if (p.limits.secondBranch) { %><small class="muted"><%- t('site.pricing.second_branch', { price: money(p.limits.secondBranch, p.currency) }) %></small><% } %></span></li>
+          <% p.features.forEach(function (f) { %>
+          <li class="<%= f.on ? 'on' : 'off' %>"><%- icon(f.on ? 'check' : 'minus', 'icon-sm') %><span><%= t('site.pricing.f.' + f.key) %></span></li>
+          <% }) %>
+        </ul>
+      </article>
+      <% }) %>
+    </div>
+    <% if (P.trialDays || L(d.note)) { %><p class="lp-pricing-note" data-reveal><% if (P.trialDays) { %><%- icon('sparkles', 'icon-sm') %><%= t('site.pricing.trial', { n: P.trialDays }) %> <% } %><%= L(d.note) %></p><% } %>
+    <% } %>
+  <%- include('slot-close', { s: s }) %></div>
+</section>
+<% } %>

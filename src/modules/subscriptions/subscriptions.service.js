@@ -119,6 +119,7 @@ const planSchema = z.object({
   max_doctors: limitField, max_staff: limitField, max_appointments_month: limitField,
   is_active: z.preprocess((v) => v === '1' || v === true || v === 'on', z.boolean()),
   is_public: z.preprocess((v) => v === '1' || v === true || v === 'on', z.boolean()),
+  is_featured: z.preprocess((v) => v === '1' || v === true || v === 'on', z.boolean()),
   sort_order: z.preprocess((v) => (v === '' || v === undefined ? 0 : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a number.').min(-1000).max(1000)),
 });
 

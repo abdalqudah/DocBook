@@ -208,7 +208,8 @@ router.get('/site/preview', wrap(async (req, res) => {
   const hidden = content.sections.filter((s) => s.hidden).length;
   content.sections.forEach((s) => { s.hidden = false; });
   res.locals.siteChrome = content;
-  res.page('pages/site/home', { layout: 'public', noindex: true, content, pageTitle: site.pick(req.locale)(content.seo && content.seo.title), previewNote: hidden ? req.t('site.hidden_preview') : req.t('admin.site.preview') });
+  const pricingData = await require('../site/web').landingPricing(content); // eslint-disable-line global-require
+  res.page('pages/site/home', { layout: 'public', bodyClass: 'lp-modern', noindex: true, content, pricing: pricingData, pageTitle: site.pick(req.locale)(content.seo && content.seo.title), previewNote: hidden ? req.t('site.hidden_preview') : req.t('admin.site.preview') });
 }));
 
 // Media library, Search & AI (SEO/AEO/GEO) and Social & tracking.
