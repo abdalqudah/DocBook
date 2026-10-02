@@ -5,7 +5,7 @@
   <% if (!items.length) { %>
     <%- include('../../partials/empty', { compact: true, emptyIcon: 'file-text', emptyTitle: t('share.err.SHARE_EMPTY') }) %>
   <% } else { %>
-  <form method="post" action="/app/share/wa" target="_blank" data-share-pick>
+  <form method="post" action="/app/share/wa" target="_blank" data-share-pick data-no-busy>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="kind" value="visit"><input type="hidden" name="id" value="<%= apptId %>">
     <div class="panel-head"><div><h2><%= t('share.pick_lead') %></h2><p class="panel-sub"><%= t('share.pick_help') %></p></div></div>
     <ul class="share-pick-list">

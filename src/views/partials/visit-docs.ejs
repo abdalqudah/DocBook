@@ -13,7 +13,7 @@
         <% if (D.send && D.send.length) { var mailOk = mailOn && a.email; %>
           <details class="dropdown send-dd">
             <summary class="doc-ic is-wa" title="<%= t('share.send_visit') %>" aria-label="<%= t('share.send_visit') %>"><%- icon('message-circle', 'icon-sm') %></summary>
-            <form class="menu send-menu" method="post" action="/app/share/wa" target="_blank">
+            <form class="menu send-menu" method="post" action="/app/share/wa" target="_blank" data-no-busy>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="kind" value="visit"><input type="hidden" name="id" value="<%= a.id %>">
               <div class="menu-label"><%= t('share.pick_lead') %></div>
               <% D.send.forEach(function (x) { %><label class="send-opt"><input type="checkbox" name="pick" value="<%= x.kind %>:<%= x.id %>" checked><%- icon(x.ic, 'icon-sm') %><span dir="auto"><%= t(x.key, x.vars || {}) %></span></label><% }) %>

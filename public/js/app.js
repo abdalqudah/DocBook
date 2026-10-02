@@ -197,6 +197,21 @@
     });
   });
   $$('[data-print]').forEach(function (b) { b.addEventListener('click', function () { window.print(); }); });
+  /* "Send these papers" menus: WhatsApp opens straight away (a GET to /app/share/wa, which redirects to wa.me) —
+     a posted form may not be redirected to another site. The e-mail button posts as usual. */
+  $$('form.send-menu, form[data-share-pick]').forEach(function (f) {
+    f.addEventListener('submit', function (e) {
+      var by = e.submitter;
+      if (by && by.getAttribute('formaction')) return; // e-mail
+      e.preventDefault();
+      var q = new URLSearchParams();
+      ['kind', 'id', 'lang_msg'].forEach(function (k) { var i = f.querySelector('[name="' + k + '"]'); if (i && i.value) q.append(k, i.value); });
+      $$('input[name="pick"]:checked', f).forEach(function (c) { q.append('pick', c.value); });
+      if (!q.getAll('pick').length) return;
+      window.open('/app/share/wa?' + q.toString(), '_blank', 'noopener');
+      var dd = f.closest('details'); if (dd) dd.open = false;
+    });
+  });
   /* A page that only hands over to another site (WhatsApp after choosing the papers to send). */
   var go = $('[data-go-url]');
   if (go && /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(go.getAttribute('data-go-url'))) location.replace(go.getAttribute('data-go-url'));
