@@ -57,7 +57,11 @@ const sendWa = wrap(async (req, res) => {
   try { c = await compose(req, { ...req.query, ...(req.method === 'POST' ? req.body : {}) }); } catch (e) { return failed(req, res, e); }
   const to = c.made.doc.phone ? await require('../messaging/messaging.service').waNumberFor(req.ctx.businessId, c.made.doc.phone) : null; // eslint-disable-line global-require
   if (!to) return res.page('pages/share/link', { title: req.t('share.title'), url: c.made.url, text: c.text, docName: c.docName, noPhone: true });
-  return res.redirect(`https://wa.me/${to}?text=${encodeURIComponent(c.text)}`);
+  const wa = `https://wa.me/${to}?text=${encodeURIComponent(c.text)}`;
+  // After a form post the browser may not follow a redirect to another site (CSP form-action 'self'):
+  // a page that moves on to WhatsApp by itself, with the link to tap if it does not.
+  if (req.method === 'POST') return res.page('pages/share/go', { layout: 'auth', title: req.t('share.title'), wa, noindex: true });
+  return res.redirect(wa);
 });
 staff.get('/wa', sendWa);
 staff.post('/wa', sendWa); // from the "choose the papers" form

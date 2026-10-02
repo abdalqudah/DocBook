@@ -197,6 +197,9 @@
     });
   });
   $$('[data-print]').forEach(function (b) { b.addEventListener('click', function () { window.print(); }); });
+  /* A page that only hands over to another site (WhatsApp after choosing the papers to send). */
+  var go = $('[data-go-url]');
+  if (go && /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(go.getAttribute('data-go-url'))) location.replace(go.getAttribute('data-go-url'));
   /* The ready diagnosis table: filter its rows by code or name as you type. */
   $$('[data-dx-filter]').forEach(function (inp) {
     var rows = $$('[data-dx-row]', inp.closest('section'));

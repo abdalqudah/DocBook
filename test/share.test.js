@@ -117,7 +117,12 @@ test('Today shows each visit\'s papers; one WhatsApp link lists all of them; the
   assert.match(r.text, new RegExp(`name="pick" value="prescription:${rxId}" checked`));
   assert.match(r.text, new RegExp(`name="pick" value="invoice:${invId}" checked`));
   r = await o.submit(`/app/share/pick?id=${visit}`, '/app/share/wa', { kind: 'visit', id: visit, pick: [`prescription:${rxId}`, `file:${fileId}`], lang_msg: 'en' });
-  const picked = waLink(r).match(/\/d\/([A-Za-z0-9_-]+)/)[1];
+  // a posted form may not redirect to another site (CSP form-action): a page hands over to WhatsApp instead
+  assert.equal(r.status, 200);
+  const go = r.text.match(/data-go-url="([^"]+)"/);
+  assert.ok(go, 'hand-over page');
+  assert.match(go[1], /^https:\/\/wa\.me\/962791234567\?text=/);
+  const picked = decodeURIComponent(go[1].replace(/&amp;/g, '&').split('text=')[1]).match(/\/d\/([A-Za-z0-9_-]+)/)[1];
   const one = app.agent();
   r = await one.get(`/d/${picked}?lang=en`);
   assert.match(r.text, /Good (morning|evening), Share Patient/, 'greets the patient by name');

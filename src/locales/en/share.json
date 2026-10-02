@@ -62,6 +62,9 @@
     "pick_title": "Send the visit documents",
     "pick_lead": "Choose what to send",
     "pick_help": "Only the ticked documents reach the patient, in one link.",
-    "send_email_short": "E-mail"
+    "send_email_short": "E-mail",
+    "go_title": "Opening WhatsApp…",
+    "go_text": "If WhatsApp does not open by itself, tap the button.",
+    "go_btn": "Open WhatsApp"
   }
 }

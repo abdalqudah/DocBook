@@ -1,0 +1,6 @@
+<%# After choosing the papers: on to WhatsApp (app.js follows [data-go-url]; the button is there if it does not). %>
+<div class="stack" style="text-align:center" data-go-url="<%= wa %>">
+  <h1 style="font-size:20px"><%= t('share.go_title') %></h1>
+  <p class="muted small"><%= t('share.go_text') %></p>
+  <a class="btn btn-primary btn-lg" href="<%= wa %>" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= t('share.go_btn') %></a>
+</div>
