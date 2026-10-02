@@ -24,7 +24,7 @@
 .fin-slip .statement td:last-child { padding-inline-end: 0; }
 .fin-slip .statement tr.sub td:first-child { padding-inline-start: 16px; font-size: 12px; }
 .fin-slip .statement tr.grand td { padding-inline: 12px; }
-.fin-slip-dl { grid-template-columns: minmax(100px, 160px) 1fr; }
+.fin-slip-dl { grid-template-columns: fit-content(42%) minmax(0, 1fr); }
 .fin-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
 .fin-sign > div { border-top: 1px solid var(--border-strong); padding-top: 6px; min-height: 48px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
 

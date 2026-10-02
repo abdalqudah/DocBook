@@ -32,9 +32,9 @@
 /* Payment details */
 .sub-pay-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .sub-pay-box { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); }
-.sub-dl-tight { grid-template-columns: minmax(90px, 130px) 1fr; gap: 6px 12px; }
+.sub-dl-tight { grid-template-columns: fit-content(42%) minmax(0, 1fr); gap: 6px 12px; }
 .sub-dl-tight dd { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.sub-dl-tight dd .mono { overflow-wrap: anywhere; min-width: 0; }
+.sub-dl-tight dd .mono { overflow-wrap: break-word; min-width: 0; }
 
 /* Plan choice */
 .sub-plan-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }

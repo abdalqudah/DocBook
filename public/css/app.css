@@ -163,7 +163,7 @@ input[type="date"].input, input[type="month"].input { min-width: 0; }
 .stat-icon { width: 30px; height: 30px; border-radius: 8px; background: transparent; color: var(--text-subtle); display: inline-flex; align-items: center; justify-content: center; margin-inline-start: auto; }
 .stat-icon .icon { width: 16px; height: 16px; }
 /* Calm: stat icons stay monochrome whatever their tone. */ .stat-icon.warning, .stat-icon.danger, .stat-icon.info, .stat-icon.accent, .stat-icon.success, .stat-icon.brand { background: transparent; color: var(--text-subtle); }
-.stat-value { font-size: 24px; font-weight: var(--fw-bold); letter-spacing: -.02em; margin-top: 8px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat-value { font-size: 24px; font-weight: var(--fw-bold); letter-spacing: -.02em; margin-top: 8px; font-variant-numeric: tabular-nums; overflow-wrap: break-word; }
 [dir="rtl"] .stat-value { letter-spacing: 0; }
 .stat-meta { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 4px; }
 .stat.hero { background: var(--surface); color: var(--text); border-color: var(--border); }
@@ -363,8 +363,8 @@ dialog.drawer .dialog-body { flex: 1; }
 .action-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; background: var(--surface-sunken); color: var(--text-muted); flex: none; }
 .action-icon.warning, .action-icon.danger { background: var(--surface-sunken); color: var(--text-muted); }
 .action-icon.info, .action-icon.success, .action-icon.brand { background: var(--surface-sunken); color: var(--text-muted); }
-.dl { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 12px 20px; font-size: 13px; margin: 0; }
-.dl dt { color: var(--text-subtle); } .dl dd { margin: 0; font-weight: var(--fw-medium); overflow-wrap: anywhere; }
+.dl { display: grid; grid-template-columns: fit-content(42%) minmax(0, 1fr); gap: 12px 20px; font-size: 13px; margin: 0; } /* the label takes what it needs, the value the rest */
+.dl dt { color: var(--text-subtle); } .dl dd { margin: 0; font-weight: var(--fw-medium); overflow-wrap: break-word; }
 @media (max-width: 560px) { .dl { grid-template-columns: 1fr; gap: 2px; } .dl dd { margin-bottom: 10px; } }
 .summary-strip { display: flex; flex-wrap: wrap; gap: 8px; }
 .summary-strip .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 12px; color: var(--text-muted); }
@@ -624,7 +624,7 @@ body.is-navigating .loading-bar { display: block; }
 .faq details[open] summary .icon { transform: rotate(180deg); }
 .faq details p { color: var(--text-muted); margin-top: 10px; line-height: 1.7; }
 .thread { display: flex; flex-direction: column; gap: 12px; }
-.msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: break-word; }
 .msg.me { align-self: flex-end; background: var(--primary-soft); border-color: transparent; }
 .msg .msg-meta { font-size: 11px; color: var(--text-subtle); margin-top: 4px; }
 .chat { display: flex; flex-direction: column; height: min(680px, calc(100vh - 220px)); min-height: 420px; }
@@ -770,7 +770,7 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .peek-kicker { font-size: 12px; color: var(--text-muted); font-weight: var(--fw-semibold); }
 .peek-name { font-size: 20px; margin: 4px 0 2px; }
 .peek-facts { margin: 0; padding: 12px 20px; display: grid; gap: 10px; }
-.peek-facts > div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: baseline; }
+.peek-facts > div { display: grid; grid-template-columns: fit-content(42%) minmax(0, 1fr); gap: 8px; align-items: baseline; }
 .peek-facts dt { font-size: 12px; color: var(--text-subtle); }
 .peek-facts dd { margin: 0; font-size: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .peek-notes dd { white-space: pre-wrap; }
@@ -865,7 +865,7 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .chat-msg { max-width: min(560px, 80%); align-self: flex-start; display: grid; gap: 2px; }
 .chat-msg.is-me { align-self: flex-end; }
 .chat-who { color: var(--text-muted); font-weight: var(--fw-semibold); padding-inline: 4px; }
-.chat-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; border-start-start-radius: 4px; padding: 9px 13px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.chat-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; border-start-start-radius: 4px; padding: 9px 13px; white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.6; }
 .chat-msg.is-me .chat-bubble { background: var(--primary); color: var(--primary-ink); border-color: transparent; border-start-start-radius: 16px; border-start-end-radius: 4px; }
 .chat-msg.is-me .chat-at { text-align: end; }
 .chat-at { padding-inline: 4px; }
@@ -957,3 +957,10 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .dx-scroll { max-height: 480px; overflow-y: auto; }
 /* A doctor calls the next patient in (teamops.js): stays until reception acts on it */
 .toast.call-toast { align-items: center; gap: 10px; border-inline-start: 4px solid var(--warning); }
+
+/* Text keeps its line: a number, phone, code or date never splits over two lines (it moves whole to the next line,
+   or the row grows), and words break only when a single word is wider than its box. */
+.dl dd [dir="ltr"], .dl dd bdi, .num, td.num, th.num, .badge, .btn, .tag, .chip, .stat-label, .kpi-label { white-space: nowrap; }
+.dl dd, .panel-body, .card, td, th { overflow-wrap: break-word; }
+/* Codes, slugs, e-mails and role names in tables stay whole (the table scrolls sideways instead). */
+.table td .mono, .table td.mono, .table td a.mono, .person-sub, .set-matrix-role, dd.mono, .table td code { white-space: nowrap; }

@@ -115,7 +115,7 @@
 .sp-checklist li.is-na { color: var(--text-subtle); }
 .sp-checklist li.is-na .check-dot { border-style: dashed; }
 .sp-edd-preview { margin: 0; color: var(--text); font-weight: 600; }
-.sp-dl { grid-template-columns: minmax(110px, 150px) 1fr; }
+.sp-dl { grid-template-columns: fit-content(42%) minmax(0, 1fr); }
 [data-dating-lmp][hidden], [data-dating-scan][hidden], .sp-edd-preview[hidden] { display: none; }
 .sp-anc td.primary-cell .strong, .sp-anc td.num { white-space: nowrap; }
 

@@ -168,7 +168,7 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .fd-late { color: var(--warning); }
 .fd-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fd-time { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
-.fd-name { font-weight: var(--fw-semibold); font-size: 14px; overflow-wrap: anywhere; }
+.fd-name { font-weight: var(--fw-semibold); font-size: 14px; overflow-wrap: break-word; }
 .fd-name a:hover { color: var(--primary); text-decoration: underline; }
 .fd-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .fd-badges { display: flex; flex-wrap: wrap; gap: 4px; }

@@ -44,7 +44,7 @@
 .po-pre { white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.7; }
 .po-share { display: flex; flex-wrap: wrap; gap: 8px; }
 .po-mark { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; display: grid; gap: 4px; justify-items: start; }
-.po-dl { grid-template-columns: minmax(90px, 120px) 1fr; }
+.po-dl { grid-template-columns: fit-content(42%) minmax(0, 1fr); }
 
 /* ---------- Printable purchase order ---------- */
 .po-print-title { font-size: 20px; margin: 0 0 4px; }

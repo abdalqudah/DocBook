@@ -87,7 +87,7 @@ details[open] > summary .ox-chev { transform: rotate(180deg); }
 .ox-month { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: var(--card-pad, 18px); }
 .ox-month > div { min-width: 0; }
 .ox-month dt { font-size: var(--fs-xs, 12px); color: var(--text-subtle); font-weight: var(--fw-semibold); }
-.ox-month dd { margin: 4px 0 0; font-size: 18px; font-weight: var(--fw-bold); overflow-wrap: anywhere; }
+.ox-month dd { margin: 4px 0 0; font-size: 18px; font-weight: var(--fw-bold); overflow-wrap: break-word; }
 .ox-month .ox-net dd { color: var(--text); }
 .ox-month dd.ox-neg { color: var(--danger); }
 .grid-2 .ox-month { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }

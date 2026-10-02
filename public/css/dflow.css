@@ -96,7 +96,7 @@
 .df-next > .panel-body { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; padding-block: 22px; }
 .df-next-main { min-width: 0; }
 .df-next-kicker { font-size: 12px; font-weight: var(--fw-semibold, 600); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
-.df-next-name { font-size: 26px; font-weight: var(--fw-bold, 700); line-height: 1.25; margin: 4px 0 6px; overflow-wrap: anywhere; }
+.df-next-name { font-size: 26px; font-weight: var(--fw-bold, 700); line-height: 1.25; margin: 4px 0 6px; overflow-wrap: break-word; }
 .df-next-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--text-muted); font-size: 14px; }
 .df-next-empty { font-size: 18px; margin-top: 6px; color: var(--text-muted); }
 .df-next-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

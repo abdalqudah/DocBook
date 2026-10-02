@@ -54,8 +54,8 @@
 .pos-card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--text-subtle); font-weight: var(--fw-semibold); }
 .pos-card-when { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
 .pos-tag { font-size: 11px; font-weight: var(--fw-semibold); color: var(--primary); }
-.pos-card-name { font-size: 15px; font-weight: var(--fw-semibold); overflow-wrap: anywhere; line-height: 1.35; }
-.pos-card-doc { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); min-width: 0; overflow-wrap: anywhere; }
+.pos-card-name { font-size: 15px; font-weight: var(--fw-semibold); overflow-wrap: break-word; line-height: 1.35; }
+.pos-card-doc { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); min-width: 0; overflow-wrap: break-word; }
 .pos-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--border-strong); display: inline-block; }
 .pos-card-state { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
 .pos-sdot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; background: var(--border-strong); }
@@ -85,8 +85,8 @@
 .pos-line { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--surface-muted); border-radius: var(--radius); }
 .pos-line-top { display: flex; align-items: flex-start; gap: 2px; }
 .pos-line-who { flex: 1; min-width: 0; }
-.pos-line-name { margin: 0; font-size: 14px; font-weight: var(--fw-semibold); overflow-wrap: anywhere; }
-.pos-line-sub { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
+.pos-line-name { margin: 0; font-size: 14px; font-weight: var(--fw-semibold); overflow-wrap: break-word; }
+.pos-line-sub { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); overflow-wrap: break-word; }
 .pos-line-top .btn { color: var(--text-muted); }
 .pos-line-rm:hover { color: var(--danger); }
 .pos-line-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

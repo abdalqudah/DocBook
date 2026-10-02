@@ -21,7 +21,7 @@
 .gs-tab input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--primary); flex: none; }
 .gs-tab-text { display: block; }
 .gs-patients { padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
-.gs-reason { margin-top: 4px; max-width: 360px; overflow-wrap: anywhere; }
+.gs-reason { margin-top: 4px; max-width: 360px; overflow-wrap: break-word; }
 .gs-run-tabs { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; min-width: 180px; }
 .gs-run-tabs li { display: flex; justify-content: space-between; gap: 12px; }
 @media (max-width: 720px) { .gs-methods { grid-template-columns: 1fr; } }

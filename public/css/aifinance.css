@@ -59,7 +59,7 @@
 .aifin-action { width: min(100%, 420px); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 .aifin-action-head { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px 8px; }
 .aifin-action-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text-muted); }
-.aifin-dl { grid-template-columns: minmax(80px, 120px) 1fr; gap: 6px 14px; padding: 4px 14px 12px; }
+.aifin-dl { grid-template-columns: fit-content(42%) minmax(0, 1fr); gap: 6px 14px; padding: 4px 14px 12px; }
 .aifin-ltr { text-align: start; unicode-bidi: plaintext; }
 .aifin-action-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 .aifin-action-foot form { margin: 0; }
@@ -73,7 +73,7 @@
 @media (max-width: 700px) {
   .aifin-breakdown-side { grid-template-columns: 1fr; }
   .aifin-minis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .aifin-dl { grid-template-columns: minmax(70px, 100px) 1fr; }
+  .aifin-dl { grid-template-columns: fit-content(42%) minmax(0, 1fr); }
   .aifin-dl dd { margin-bottom: 0; }
 }
 @media (min-width: 701px) { .aifin-breakdown td.primary-cell { white-space: nowrap; } }

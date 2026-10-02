@@ -36,9 +36,9 @@
 .fx-amount { margin-inline-start: auto; font-weight: var(--fw-bold); font-size: 15px; }
 .fx-flag { font-size: 12px; font-weight: var(--fw-semibold); color: var(--text-muted); }
 .fx-flag.is-late { color: var(--warning); }
-.fx-name { font-weight: var(--fw-semibold); font-size: 15px; overflow-wrap: anywhere; }
+.fx-name { font-weight: var(--fw-semibold); font-size: 15px; overflow-wrap: break-word; }
 .fx-name a:hover { color: var(--primary); text-decoration: underline; }
-.fx-meta { font-size: 13px; color: var(--text-muted); overflow-wrap: anywhere; }
+.fx-meta { font-size: 13px; color: var(--text-muted); overflow-wrap: break-word; }
 .fx-meta .doc-dot { margin-inline-end: 6px; vertical-align: 1px; }
 .fx-sub { font-size: 12px; color: var(--text-subtle); }
 .fx-actions { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
@@ -68,7 +68,7 @@ dialog.cx-done-dialog { width: min(760px, calc(100vw - 24px)); }
 .cx-panel, .cx-done { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .cx-p-head { display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 14px; border-bottom: 1px solid var(--border); }
 .cx-p-eyebrow { font-size: 12px; font-weight: var(--fw-semibold); color: var(--text-subtle); text-transform: uppercase; letter-spacing: .04em; }
-.cx-p-patient { font-size: 22px; font-weight: var(--fw-bold); margin-top: 2px; overflow-wrap: anywhere; }
+.cx-p-patient { font-size: 22px; font-weight: var(--fw-bold); margin-top: 2px; overflow-wrap: break-word; }
 .cx-p-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 .cx-p-body { padding: 18px 22px 22px; overflow-y: auto; min-height: 0; flex: 1; }
 .cx-p-foot { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
@@ -212,7 +212,7 @@ dialog.cx-done-dialog { width: min(760px, calc(100vw - 24px)); }
 .fx-intake { display: grid; gap: 3px; margin-top: 6px; padding: 8px 10px; background: var(--surface-muted); border-radius: var(--radius-sm); font-size: 12.5px; }
 .fx-intake > div { display: flex; gap: 6px; align-items: flex-start; min-width: 0; }
 .fx-intake .icon { flex: none; margin-top: 2px; color: var(--text-subtle); }
-.fx-complaint { font-weight: var(--fw-semibold); overflow-wrap: anywhere; }
+.fx-complaint { font-weight: var(--fw-semibold); overflow-wrap: break-word; }
 .fx-vitals { color: var(--text-muted); }
 .fx-icons { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; }
 .fx-ico, .fx-icons .cx-papers > summary { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: auto; min-width: 58px; height: auto; min-height: 50px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }

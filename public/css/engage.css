@@ -12,7 +12,7 @@
 .eg-time { font-size: 20px; font-weight: var(--fw-semibold, 600); }
 .eg-dl { display: grid; grid-template-columns: max-content 1fr; gap: 10px 18px; margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--border); font-size: 14px; }
 .eg-dl dt { color: var(--text-muted); }
-.eg-dl dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.eg-dl dd { margin: 0; min-width: 0; overflow-wrap: break-word; }
 .eg-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
 .eg-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .eg-row .btn { flex: 1 1 180px; justify-content: center; }
@@ -58,7 +58,7 @@
 .eg-mode { position: relative; }
 .eg-mode input { position: absolute; opacity: 0; inset: 0; margin: 0; }
 .eg-mode > span { display: flex; flex-direction: column; gap: 2px; height: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 13px; }
-.eg-mode > span .tiny { overflow-wrap: anywhere; }
+.eg-mode > span .tiny { overflow-wrap: break-word; }
 .eg-mode input:checked + span { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
 .eg-mode input:focus-visible + span { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .eg-hp { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; inset-inline-start: -9999px; }
@@ -92,9 +92,9 @@
 .rv-item-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .rv-who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .rv-verified { display: inline-flex; align-items: center; gap: 4px; }
-.rv-comment { margin: 8px 0 0; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
+.rv-comment { margin: 8px 0 0; line-height: 1.7; white-space: pre-line; overflow-wrap: break-word; }
 .rv-reply { margin-top: 10px; padding: 10px 12px; border-radius: var(--radius); background: var(--surface-muted); border-inline-start: 2px solid var(--border-strong); }
-.rv-reply p { margin: 4px 0 0; white-space: pre-line; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.rv-reply p { margin: 4px 0 0; white-space: pre-line; font-size: 13px; line-height: 1.7; overflow-wrap: break-word; }
 .rv-subs { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
 .rv-rows { list-style: none; margin: 0; padding: 0; }
 .rv-row { padding: 16px 20px; border-top: 1px solid var(--border); }
@@ -131,9 +131,9 @@
 .eg-url-label { flex: none; min-width: 96px; }
 .eg-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .eg-bubble { padding: 10px 12px; border-radius: var(--radius); background: var(--surface-muted); border: 1px solid var(--border); }
-.eg-bubble p { margin: 4px 0 0; white-space: pre-line; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.eg-bubble p { margin: 4px 0 0; white-space: pre-line; font-size: 13px; line-height: 1.7; overflow-wrap: break-word; }
 .eg-test .input { max-width: 260px; }
-.eg-err { max-width: 320px; margin-top: 4px; overflow-wrap: anywhere; }
+.eg-err { max-width: 320px; margin-top: 4px; overflow-wrap: break-word; }
 .wa-menu .menu { min-width: 240px; }
 .wa-menu-note { padding: 4px 10px 6px; max-width: 260px; white-space: normal; }
 @media (max-width: 760px) {

@@ -5,7 +5,7 @@
 .tk-table .tk-subject { display: inline-flex; align-items: baseline; gap: 8px; color: var(--text); font-weight: 600; min-width: 0; }
 .tk-table .tk-subject:hover .tk-title { text-decoration: underline; }
 .tk-no { color: var(--text-subtle); font-weight: 500; font-variant-numeric: tabular-nums; font-size: 12px; }
-.tk-title { overflow-wrap: anywhere; }
+.tk-title { overflow-wrap: break-word; }
 .tk-unread .tk-title { font-weight: 700; }
 .tk-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex: none; align-self: center; }
 .tk-person { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 220px; }
@@ -22,7 +22,7 @@
 .tk-thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
 .tk-msg { display: flex; flex-direction: column; gap: 6px; }
 .tk-msg-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
-.tk-msg-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; font-size: 14px; padding: 12px 14px; background: var(--surface-muted); border-radius: var(--radius); margin-inline-start: 34px; }
+.tk-msg-body { white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.75; font-size: 14px; padding: 12px 14px; background: var(--surface-muted); border-radius: var(--radius); margin-inline-start: 34px; }
 .tk-me .tk-msg-body { background: var(--surface-sunken); }
 .tk-event { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-inline-start: 34px; }
 .tk-event .icon { color: var(--text-subtle); }
@@ -61,7 +61,7 @@
 .dm-history > summary { cursor: pointer; color: var(--text-muted); }
 .dm-history-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .dm-history-list li { padding: 10px 12px; background: var(--surface-muted); border-radius: var(--radius-sm); font-size: 13px; }
-.dm-history-list .dm-h-body { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-muted); margin-top: 4px; max-height: 6.5em; overflow: hidden; }
+.dm-history-list .dm-h-body { white-space: pre-wrap; overflow-wrap: break-word; color: var(--text-muted); margin-top: 4px; max-height: 6.5em; overflow: hidden; }
 
 @media (max-width: 720px) {
   .tk-msg-body, .tk-event { margin-inline-start: 0; padding-inline-start: 14px; }

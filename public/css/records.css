@@ -1,7 +1,7 @@
 /* Records area: patients, billing, dashboard, my day, reports. Theme tokens only. */
 
 /* ---------- Patient header & text blocks ---------- */
-.rec-head h1 { overflow-wrap: anywhere; }
+.rec-head h1 { overflow-wrap: break-word; }
 .rec-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 6px; font-size: 13px; color: var(--text-muted); }
 .rec-meta > span:not(.badge) + span:not(.badge)::before { content: none; }
 .rec-meta a { display: inline-flex; align-items: center; gap: 4px; }
