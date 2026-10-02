@@ -30,7 +30,7 @@ router.get('/', wrap(async (req, res) => {
 
   if (perms.has('patients.view')) {
     const q = knex('patients').where('business_id', ctx.businessId)
-      .andWhere((w) => { w.where('full_name', 'like', term).orWhere('national_id', 'like', lib.likeTerm(raw)); if (phoneTerm) w.orWhere('phone', 'like', phoneTerm); })
+      .andWhere((w) => { w.where('full_name', 'like', term).orWhere('national_id', 'like', lib.likeTerm(raw)); lib.nameMatch(w, 'full_name', raw); if (phoneTerm) w.orWhere('phone', 'like', phoneTerm); })
       .orderBy('full_name').limit(6).select('id', 'full_name', 'phone', 'national_id');
     lib.scopePatientsToDoctor(q, ctx.ownDoctorId);
     const book = perms.has('appointments.manage');
@@ -42,7 +42,7 @@ router.get('/', wrap(async (req, res) => {
   if (perms.has('appointments.view')) {
     const q = knex('appointments as a').leftJoin('doctors as dr', 'dr.id', 'a.doctor_id').where('a.business_id', ctx.businessId).whereNot('a.appointment_type', 'blocked')
       .where('a.appointment_date', '>=', lib.addDays(ctx.today, -30))
-      .andWhere((w) => { w.where('a.patient_name', 'like', term); if (phoneTerm) w.orWhere('a.patient_phone', 'like', phoneTerm); })
+      .andWhere((w) => { w.where('a.patient_name', 'like', term); lib.nameMatch(w, 'a.patient_name', raw); if (phoneTerm) w.orWhere('a.patient_phone', 'like', phoneTerm); })
       .orderByRaw('a.appointment_date < ? , ABS(DATEDIFF(a.appointment_date, ?))', [ctx.today, ctx.today]).orderBy('a.appointment_time').limit(5)
       .select('a.id', 'a.patient_name', 'a.appointment_date', 'a.appointment_time', 'a.status', 'a.checked_in', 'dr.full_name', 'dr.full_name_en');
     if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);

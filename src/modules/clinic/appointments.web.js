@@ -272,8 +272,10 @@ router.get('/patient-lookup', can('appointments.manage'), wrap(async (req, res) 
   const q = String(req.query.q || '').trim().slice(0, 60);
   if (q.length < 2) return res.json({ data: [] });
   const like = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
+  const digits = q.replace(/[^0-9]/g, '');
   const rows = await knex('patients').where({ business_id: req.ctx.businessId })
-    .andWhere((w) => w.where('full_name', 'like', like).orWhere('phone', 'like', like))
+    .andWhere((w) => { require('./records.lib').nameMatch(w, 'full_name', q); // eslint-disable-line global-require
+      w.orWhere('phone', 'like', like); if (digits.length >= 3) w.orWhere('phone', 'like', `%${digits}%`); })
     .orderBy('full_name').limit(8).select('id', 'full_name', 'phone', 'email', 'date_of_birth');
   return res.json({ data: rows.map((p) => ({ id: p.id, name: p.full_name, phone: p.phone || '', email: p.email || '', dob: p.date_of_birth || '' })) });
 }));

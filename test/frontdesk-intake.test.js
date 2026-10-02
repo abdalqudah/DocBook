@@ -80,3 +80,19 @@ test('an online booking notification reads as a sentence, not the word "online"'
   assert.match(r.text, /الساعة 09:00/);
   assert.doesNotMatch(r.text, />online</);
 });
+
+test('patient search finds a name however the Arabic letters were typed, word by word', async () => {
+  await knex('patients').insert([
+    { business_id: businessId, full_name: 'أحمد يوسف الخالدي', phone: '0791110001' },
+    { business_id: businessId, full_name: 'هبة ناصر', phone: '0791110002' },
+  ]);
+  const o = app.agent(); await o.login(mail('a'));
+  const look = async (q) => JSON.parse((await o.get(`/app/appointments/patient-lookup?q=${encodeURIComponent(q)}`)).text).data.map((p) => p.name);
+  assert.ok((await look('احمد')).includes('أحمد يوسف الخالدي'), 'without the hamza');
+  assert.ok((await look('الخالدي احمد')).includes('أحمد يوسف الخالدي'), 'words in any order');
+  assert.ok((await look('هبه')).includes('هبة ناصر'), 'ه for ة');
+  assert.ok((await look('0791110002')).includes('هبة ناصر'), 'by phone still');
+  assert.deepEqual(await look('سامي'), []);
+  const r = await o.get(`/app/patients?q=${encodeURIComponent('احمد الخالدي')}`);
+  assert.match(r.text, /أحمد يوسف الخالدي/, 'the patients list too');
+});

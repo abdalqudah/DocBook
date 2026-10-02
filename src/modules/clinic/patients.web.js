@@ -28,7 +28,7 @@ function listQuery(ctx, query) {
     .where('patients.business_id', ctx.businessId);
   if (query.q && String(query.q).trim()) {
     const term = lib.likeTerm(query.q);
-    q.andWhere((w) => ['full_name', 'phone', 'email', 'national_id', 'insurance_number'].forEach((c) => w.orWhere(`patients.${c}`, 'like', term)));
+    q.andWhere((w) => { ['full_name', 'phone', 'email', 'national_id', 'insurance_number'].forEach((c) => w.orWhere(`patients.${c}`, 'like', term)); lib.nameMatch(w, 'patients.full_name', query.q); });
   }
   if (query.insurance === 'none') q.whereNull('patients.insurance_provider_id');
   else if (/^\d+$/.test(query.insurance || '')) q.where('patients.insurance_provider_id', Number(query.insurance));

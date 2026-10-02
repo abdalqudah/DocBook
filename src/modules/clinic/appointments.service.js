@@ -85,7 +85,7 @@ async function list(ctx, { from, to, doctor, status, q: search, includeBlocked =
   if (patient) q.where('a.patient_id', patient);
   if (type) q.where((w) => { w.where('a.appointment_type', type); if (includeBlocked) w.orWhere('a.appointment_type', 'blocked'); }); // Online / in-clinic filter
   if (!includeBlocked) q.whereNot('a.appointment_type', 'blocked');
-  if (search) { const s = `%${String(search).replace(/[%_]/g, (m) => `\\${m}`)}%`; q.andWhere((w) => w.where('a.patient_name', 'like', s).orWhere('a.patient_phone', 'like', s)); }
+  if (search) { const s = `%${String(search).replace(/[%_]/g, (m) => `\\${m}`)}%`; q.andWhere((w) => { w.where('a.patient_name', 'like', s).orWhere('a.patient_phone', 'like', s); require('./records.lib').nameMatch(w, 'a.patient_name', search); }); } // eslint-disable-line global-require
   return q.limit(1000);
 }
 

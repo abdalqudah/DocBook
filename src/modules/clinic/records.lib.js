@@ -98,6 +98,22 @@ async function paginate(base, { page, perPage = 25 } = {}) {
 
 const likeTerm = (s) => `%${String(s).trim().replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
 
+// Names typed with or without hamza / taa marbuta / alef maqsura find each other ("احمد" ↔ "أحمد", "هبه" ↔ "هبة"),
+// and every word may sit anywhere in the name ("محمد الخالدي" finds "محمد أحمد الخالدي").
+const AR_FOLD = [['أ', 'ا'], ['إ', 'ا'], ['آ', 'ا'], ['ٱ', 'ا'], ['ة', 'ه'], ['ى', 'ي'], ['ؤ', 'و'], ['ئ', 'ي']];
+const foldText = (s) => AR_FOLD.reduce((v, [a, b]) => v.split(a).join(b), String(s || '').replace(/[\u064B-\u0652\u0670\u0640]/g, ''));
+const foldSql = (col) => AR_FOLD.reduce((sql, [a, b]) => `REPLACE(${sql}, '${a}', '${b}')`, col);
+/**
+ * Adds "the name matches" to a knex where-group: each word of `q`, folded, inside the folded column. `col` is a
+ * column name written in the code (never user input).
+ */
+function nameMatch(w, col, q) {
+  const words = foldText(q).trim().split(/\s+/).filter(Boolean).slice(0, 6);
+  if (!words.length) return w;
+  const ident = col.split('.').map((p) => `\`${p.replace(/[^A-Za-z0-9_]/g, '')}\``).join('.');
+  return w.orWhere((x) => words.forEach((word) => x.whereRaw(`${foldSql(ident)} LIKE ?`, [likeTerm(word)])));
+}
+
 /** Resolves ?month= / ?from=&to= into a range (defaults to the current clinic month). */
 function resolveRange(query, today) {
   const thisMonth = today.slice(0, 7);
@@ -110,5 +126,5 @@ function resolveRange(query, today) {
 
 module.exports = {
   isIso, addDays, addMonths, daysBetween, monthBounds, tzOffset, startOfDay, dayRange, whereLocalDates, localDateSql, localTime,
-  STATUS_TONE, ageOf, waNumber, scopePatientsToDoctor, paginate, likeTerm, resolveRange, MONTH,
+  STATUS_TONE, ageOf, waNumber, scopePatientsToDoctor, paginate, likeTerm, nameMatch, foldText, resolveRange, MONTH,
 };

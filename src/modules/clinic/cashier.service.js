@@ -90,7 +90,7 @@ async function search(ctx, term) {
   if (s.length < 2) return [];
   const like = lib.likeTerm(s);
   return unpaidVisits(ctx).whereBetween('a.appointment_date', [lib.addDays(ctx.today, -SEARCH_DAYS), ctx.today])
-    .andWhere((w) => w.where('a.patient_name', 'like', like).orWhere('a.patient_phone', 'like', like))
+    .andWhere((w) => { w.where('a.patient_name', 'like', like).orWhere('a.patient_phone', 'like', like); lib.nameMatch(w, 'a.patient_name', s); })
     .orderBy([{ column: 'a.appointment_date', order: 'desc' }, { column: 'a.appointment_time', order: 'desc' }]).limit(20).select(VISIT_SELECT);
 }
 
