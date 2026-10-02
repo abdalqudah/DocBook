@@ -80,6 +80,7 @@ function locals(req, res, next) {
     locale,
     dir: locale === 'ar' ? 'rtl' : 'ltr',
     theme,
+    sidebarMini: req.cookies?.db_sb === 'mini', // the member folded the sidebar to icons (desktop)
     brand,
     brandName: brand.name,
     tagline: brand.tagline[locale] || brand.tagline.en,

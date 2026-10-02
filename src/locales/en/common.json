@@ -175,7 +175,8 @@
     "website_analytics": "Statistics",
     "branches": "Branches",
     "clinic_hours": "Working hours",
-    "website_marketing": "Connections"
+    "website_marketing": "Connections",
+    "toggle_sidebar": "Collapse / expand the sidebar"
   },
   "search": {
     "open": "Search and quick actions",

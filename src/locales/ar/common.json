@@ -175,7 +175,8 @@
     "website_analytics": "الإحصاءات",
     "branches": "الفروع",
     "clinic_hours": "دوام العيادة",
-    "website_marketing": "الربط والتسويق"
+    "website_marketing": "الربط والتسويق",
+    "toggle_sidebar": "طي القائمة الجانبية / فتحها"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",

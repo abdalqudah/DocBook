@@ -5,7 +5,7 @@
   var _fmtCount = function (n) { return n > 99 ? '99+' : n; };
   var _line = function (g) {
     var on = g.group === _activeGroup, n = navGroups.sectionCount(g, navBadges);
-    return '<a href="' + g.home.href + '" class="' + (on ? 'active' : '') + '"' + (on ? ' aria-current="page"' : '') + ' data-nav-ws="' + g.group + '">'
+    return '<a href="' + g.home.href + '" class="' + (on ? 'active' : '') + '"' + (on ? ' aria-current="page"' : '') + ' title="' + escapeFn(t(g.label)) + '" data-nav-ws="' + g.group + '">'
       + icon(g.icon) + '<span class="truncate">' + escapeFn(t(g.label)) + '</span>'
       + (n ? '<span class="nav-count" aria-label="' + escapeFn(t('navx.pending', { count: n })) + '">' + _fmtCount(n) + '</span>' : '') + '</a>';
   };

@@ -40,6 +40,16 @@
   });
 
   /* ---------- Navigation ---------- */
+  /* Desktop: fold the sidebar to icons (remembered for a year; the server reads the cookie, so no flash on load). */
+  $$('[data-sb-toggle]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var shell = document.querySelector('[data-shell]'); if (!shell) return;
+      var mini = shell.classList.toggle('sb-mini');
+      b.setAttribute('aria-pressed', mini ? 'true' : 'false');
+      document.cookie = 'db_sb=' + (mini ? 'mini' : 'full') + '; path=/; max-age=31536000; samesite=lax';
+    });
+    var sh = document.querySelector('[data-shell]'); b.setAttribute('aria-pressed', sh && sh.classList.contains('sb-mini') ? 'true' : 'false');
+  });
   $$('[data-nav-toggle]').forEach(function (b) { b.addEventListener('click', function (e) { e.preventDefault(); document.body.classList.toggle('nav-open'); }); });
   $$('[data-nav-close]').forEach(function (b) { b.addEventListener('click', function () { document.body.classList.remove('nav-open'); }); });
   $$('[data-back]').forEach(function (b) { b.addEventListener('click', function (e) { if (history.length > 1) { e.preventDefault(); history.back(); } }); });

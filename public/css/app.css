@@ -914,3 +914,24 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .chat-team { border-top: 1px solid var(--border); padding-top: 6px; }
 .chat-team-title { padding: 6px 16px 2px; text-transform: uppercase; letter-spacing: .04em; }
 [dir="rtl"] .chat-team-title { letter-spacing: 0; }
+
+/* ---------- Folded sidebar (desktop): icons only; the clinic's logo moves into the top bar ---------- */
+.topbar-brand { display: none; align-items: center; gap: 8px; min-width: 0; max-width: 220px; flex: none; }
+.topbar-brand img { display: block; height: 34px; width: auto; max-width: 200px; object-fit: contain; }
+.topbar-brand-name { font-weight: var(--fw-bold); font-size: 15px; color: var(--text); }
+.sb-toggle { flex: none; }
+.shell { transition: grid-template-columns .2s ease; }
+@media (min-width: 1025px) {
+  .shell.sb-mini { grid-template-columns: 72px minmax(0, 1fr); }
+  .sb-mini .topbar-brand { display: inline-flex; }
+  .sb-mini .sidebar-brand { display: none; }
+  .sb-mini .nav { padding: 10px 10px 16px; }
+  .sb-mini .nav a { justify-content: center; padding: 0; height: 42px; gap: 0; }
+  .sb-mini .nav a > span.truncate { display: none; }
+  .sb-mini .nav a .icon { width: 20px; height: 20px; }
+  .sb-mini .nav a .nav-count { position: absolute; top: 3px; inset-inline-end: 6px; min-width: 16px; height: 16px; font-size: 9px; padding: 0 4px; margin: 0; background: var(--primary); color: var(--primary-ink); }
+  .sb-mini .nav a.active::before { inset-inline-start: -10px; }
+  .sb-mini .sidebar-foot { padding: 12px 0; display: flex; justify-content: center; }
+  .sb-mini .sys-status > span { display: none; }
+  .sb-mini .sys-status { padding: 0; }
+}

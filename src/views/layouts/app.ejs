@@ -4,7 +4,7 @@
 <body>
 <div class="loading-bar" aria-hidden="true"></div>
 <a class="sr-only" href="#main"><%= t('common.skip_to_content') %></a>
-<div class="shell">
+<div class="shell<%= typeof sidebarMini !== 'undefined' && sidebarMini ? ' sb-mini' : '' %>" data-shell>
   <aside class="sidebar" id="sidebar"><%- include('../partials/sidebar') %></aside>
   <div class="sidebar-backdrop" data-nav-close></div>
   <div class="main">
