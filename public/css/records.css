@@ -56,7 +56,7 @@
 .rec-sched li.is-dim > a { opacity: .6; }
 .rec-sched li.is-now { background: var(--primary-soft); }
 /* A visit's papers next to its row: prescription, requested tests, invoice, then send on WhatsApp / by e-mail. */
-.rec-sched-docs { display: flex; align-items: center; gap: 4px; padding-inline-end: var(--card-pad); flex: none; }
+.rec-sched-docs { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px; padding-inline-end: var(--card-pad); flex: 0 1 auto; max-width: 55%; }
 .doc-ic { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 0; background: transparent; color: var(--text-subtle); opacity: .45; padding: 0; cursor: default; }
 .doc-ic.is-on { opacity: 1; color: var(--primary); background: var(--primary-soft); cursor: pointer; }
 .doc-ic.is-on:hover { filter: brightness(.95); }

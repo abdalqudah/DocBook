@@ -43,7 +43,10 @@
     "icon": {
       "prescription": "الوصفة",
       "orders": "الفحوصات المطلوبة",
-      "invoice": "الفاتورة"
+      "invoice": "الفاتورة",
+      "lab": "طلب تحاليل",
+      "imaging": "طلب أشعة",
+      "referral": "تحويل"
     },
     "print": "طباعة",
     "save_pdf": "حفظ PDF",

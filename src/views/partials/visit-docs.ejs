@@ -1,13 +1,9 @@
-<%/* A visit's papers next to its row (Today, My day): prescription, requested tests, invoice — then send them all on
+<%/* A visit's papers next to its row (Today, My day): every prescription, lab / imaging request and referral, the invoice — then send them all on
    WhatsApp or by e-mail. Args: a (row with a.docs from withDocs, a.email), mailOn. */%>
 <% if (a.docs && (a.docs.clinical || a.docs.billing) && a.status !== 'cancelled') { var D = a.docs; %>
       <div class="rec-sched-docs" role="group" aria-label="<%= a.patient_name %>">
-        <% [
-             D.clinical ? { key: 'prescription', ic: 'pill', d: D.rx, href: D.rxHref, print: D.print } : null,
-             D.clinical ? { key: 'orders', ic: 'activity', d: D.orders, href: D.ordersHref, print: D.print } : null,
-             D.billing ? { key: 'invoice', ic: 'receipt', d: D.invoice, href: D.invoice && '/app/billing/' + D.invoice.id } : null,
-           ].filter(Boolean).forEach(function (x) { var tip = t('share.icon.' + x.key) + (x.d ? (x.d.n > 1 ? ' (' + fmt.number(x.d.n) + ')' : '') : ' — ' + t('share.docs_none')); %>
-          <% if (x.print && x.d) tip = t('share.print') + ' — ' + tip; %><% if (x.d) { %><a class="doc-ic is-on" href="<%= x.href %>"<%- x.print ? ' target="_blank" rel="noopener"' : '' %> title="<%= tip %>" aria-label="<%= tip %>"><%- icon(x.ic, 'icon-sm') %></a><% } else { %><span class="doc-ic" title="<%= tip %>" aria-label="<%= tip %>" role="img"><%- icon(x.ic, 'icon-sm') %></span><% } %>
+        <% D.items.forEach(function (x) { var tip = t('share.icon.' + x.key) + (x.extra ? ': ' + x.extra : '') + (x.on ? '' : ' — ' + t('share.docs_none')); var pr = x.on && D.print && x.key !== 'invoice'; if (pr) tip = t('share.print') + ' — ' + tip; %>
+          <% if (x.on) { %><a class="doc-ic is-on" href="<%= x.href %>"<%- pr ? ' target="_blank" rel="noopener"' : '' %> title="<%= tip %>" aria-label="<%= tip %>"><%- icon(x.ic, 'icon-sm') %></a><% } else { %><span class="doc-ic" title="<%= tip %>" aria-label="<%= tip %>" role="img"><%- icon(x.ic, 'icon-sm') %></span><% } %>
         <% }) %>
         <span class="doc-sep" aria-hidden="true"></span>
         <span class="doc-share">

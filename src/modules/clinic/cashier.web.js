@@ -8,7 +8,7 @@
 //   GET  /app/cashier/receipt/:id              80 mm receipt of an invoice (with its cash / card parts)             (billing.view)
 //   GET  /app/cashier/receipt/batch?ids=1,2    the receipts of one cash-screen payment, one after the other         (billing.view)
 //   GET  /app/cashier/papers/:id/prescription/:rx.pdf   a visit's prescription for reception to print           (billing.view)
-//   GET  /app/cashier/papers/:id/order/:oid.pdf         a visit's test request for reception to print            (billing.view)
+//   GET  /app/cashier/papers/:id/(order|referral)/:oid.pdf  a visit's test request / referral for reception to print (billing.view)
 //   POST /app/cashier/papers/:id/send          send the visit's prescription(s) / certificates to the patient       (billing.manage)
 //   GET  /app/cashier/closings                 open drawer period + closing history                                 (billing.view)
 //   POST /app/cashier/closings                 close the drawer (period end stamped by the server)                  (billing.manage)
@@ -291,13 +291,13 @@ router.get('/papers/:id(\\d+)/prescription/:rx(\\d+).pdf', wrap(async (req, res)
   return res.end(out.pdf);
 }));
 
-// A visit's test request (lab / imaging) for reception to print — the sheet the patient takes to the lab.
-router.get('/papers/:id(\\d+)/order/:oid(\\d+).pdf', wrap(async (req, res) => {
+// A visit's test request (lab / imaging) or referral letter for reception to print — the sheet the patient takes along.
+router.get('/papers/:id(\\d+)/:kind(order|referral)/:oid(\\d+).pdf', wrap(async (req, res) => {
   const docs = require('../patientdocs/docs.service'); // eslint-disable-line global-require
   const apptId = Number(req.params.id);
-  const out = await docs.orderPdf(req.ctx, 'order', Number(req.params.oid), req.query.lang === 'en' || req.query.lang === 'ar' ? req.query.lang : (req.locale === 'en' ? 'en' : 'ar'));
+  const out = await docs.orderPdf(req.ctx, req.params.kind, Number(req.params.oid), req.query.lang === 'en' || req.query.lang === 'ar' ? req.query.lang : (req.locale === 'en' ? 'en' : 'ar'));
   if (out.doc.appointment_id !== apptId) throw E.notFound('Order');
-  await audit.record(req.ctx, 'patient_docs.downloaded', { entityType: 'appointment', entityId: apptId, newValues: { kind: 'order', ref: out.doc.id, by: 'reception' } });
+  await audit.record(req.ctx, 'patient_docs.downloaded', { entityType: 'appointment', entityId: apptId, newValues: { kind: req.params.kind, ref: out.doc.id, by: 'reception' } });
   res.set({
     'Content-Type': 'application/pdf', 'Content-Length': String(out.pdf.length), 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
     'Content-Disposition': `inline; filename="${out.filename}"`,

@@ -94,32 +94,44 @@ const todaySchedule = async (ctx) => withDocs(ctx, await apptBase(ctx).leftJoin(
   .select('a.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en'));
 
 /**
- * Each visit's papers for the row icons on Today: a.docs = { rx, orders, invoice } (first id of each, or null) and
- * a.docs.any — only what this member may open (prescriptions and orders need clinical.view, invoices billing.view).
+ * Each visit's papers for the row icons on Today / My day: a.docs.items = one icon per paper — every prescription,
+ * every lab and imaging request, every referral, then the invoice; a dim icon stands for a kind not issued yet.
+ * Clinical staff open the paper's page; reception (billing.view) prints it as PDF from the cash desk routes.
  */
 async function withDocs(ctx, rows) {
   const ids = rows.map((a) => a.id);
   const p = ctx.permissions;
-  const first = async (on, table) => {
-    if (!on || !ids.length) return {};
-    const got = await knex(table).where('business_id', ctx.businessId).whereIn('appointment_id', ids).groupBy('appointment_id').select('appointment_id').min({ id: 'id' }).count({ n: '*' });
-    return Object.fromEntries(got.map((r) => [r.appointment_id, { id: r.id, n: Number(r.n) }]));
-  };
   const clin = p.has('clinical.view');
-  const papers = clin || p.has('billing.view'); // reception prints the prescription and the test request (PDF)
+  const billing = p.has('billing.view');
+  const papers = clin || billing;
+  const by = async (on, table, cols) => {
+    if (!on || !ids.length) return {};
+    const got = await knex(table).where('business_id', ctx.businessId).whereIn('appointment_id', ids).orderBy('id').select('appointment_id', ...cols);
+    return got.reduce((m, r) => { (m[r.appointment_id] = m[r.appointment_id] || []).push(r); return m; }, {});
+  };
   const pids = [...new Set(rows.map((a) => a.patient_id).filter(Boolean))];
-  const [rx, ord, inv, mails] = await Promise.all([first(papers, 'prescriptions'), first(papers, 'medical_orders'), first(p.has('billing.view'), 'invoices'),
+  const [rx, ord, ref, inv, mails] = await Promise.all([
+    by(papers, 'prescriptions', ['id']), by(papers, 'medical_orders', ['id', 'kind', 'status']), by(papers, 'referrals', ['id', 'specialty']), by(billing, 'invoices', ['id', 'invoice_number']),
     pids.length ? knex('patients').where('business_id', ctx.businessId).whereIn('id', pids).whereNotNull('email').select('id', 'email') : []]);
   const mailOf = Object.fromEntries(mails.map((r) => [r.id, r.email]));
+  const paper = (a, kind, id) => `/app/cashier/papers/${a.id}/${kind}/${id}.pdf`;
   rows.forEach((a) => {
-    const r = rx[a.id] || null; const o = ord[a.id] || null;
-    a.docs = {
-      rx: r, orders: o, invoice: inv[a.id] || null, clinical: papers, billing: p.has('billing.view'), share: clin || p.has('billing.view'),
-      rxHref: r && (clin ? `/app/visits/${a.id}/prescriptions/${r.id}` : `/app/cashier/papers/${a.id}/prescription/${r.id}.pdf`),
-      ordersHref: o && (clin ? (o.n > 1 ? `/app/visits/${a.id}#orders` : `/app/orders/${o.id}`) : `/app/cashier/papers/${a.id}/order/${o.id}.pdf`),
-      print: !clin,
-    };
-    a.docs.any = Boolean(a.docs.rx || a.docs.orders || a.docs.invoice);
+    const items = [];
+    if (papers) {
+      const rxs = rx[a.id] || [];
+      if (!rxs.length) items.push({ key: 'prescription', ic: 'pill' });
+      rxs.forEach((r) => items.push({ key: 'prescription', ic: 'pill', on: true, href: clin ? `/app/visits/${a.id}/prescriptions/${r.id}` : paper(a, 'prescription', r.id) }));
+      const os = (ord[a.id] || []).filter((o) => o.status !== 'cancelled');
+      if (!os.length) items.push({ key: 'orders', ic: 'activity' });
+      os.forEach((o) => items.push({ key: o.kind === 'imaging' ? 'imaging' : 'lab', ic: o.kind === 'imaging' ? 'scan-line' : 'activity', on: true, href: clin ? `/app/orders/${o.id}` : paper(a, 'order', o.id) }));
+      (ref[a.id] || []).forEach((r) => items.push({ key: 'referral', ic: 'send', on: true, extra: r.specialty, href: clin ? `/app/referrals/${r.id}` : paper(a, 'referral', r.id) }));
+    }
+    if (billing) {
+      const is = inv[a.id] || [];
+      if (!is.length) items.push({ key: 'invoice', ic: 'receipt' });
+      is.forEach((i) => items.push({ key: 'invoice', ic: 'receipt', on: true, href: `/app/billing/${i.id}` }));
+    }
+    a.docs = { items, print: !clin, clinical: papers, billing, any: items.some((x) => x.on) };
     a.email = mailOf[a.patient_id] || a.patient_email || null;
   });
   return rows;

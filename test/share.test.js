@@ -159,11 +159,18 @@ test('reception prints the prescription and the test request from Today; only th
   await knex('memberships').insert({ business_id: businessId, user_id: rid, role_id: role.id, status: 'active' });
   await knex('users').where({ id: rid }).update({ last_business_id: businessId });
   const [oid] = await knex('medical_orders').insert({ business_id: businessId, appointment_id: visit, patient_id: patientId, patient_name: 'Share Patient', kind: 'imaging', items: JSON.stringify([{ name: 'Chest X-ray' }]), status: 'ordered' });
+  const [lid] = await knex('medical_orders').insert({ business_id: businessId, appointment_id: visit, patient_id: patientId, patient_name: 'Share Patient', kind: 'lab', items: JSON.stringify([{ name: 'CBC' }]), status: 'ordered' });
+  const [refId] = await knex('referrals').insert({ business_id: businessId, appointment_id: visit, patient_id: patientId, patient_name: 'Share Patient', specialty: 'Neurology', reason: 'Headache' });
   const rec = app.agent(); await rec.login(mail('rec'));
   let r = await rec.get('/app?lang=en');
   assert.equal(r.status, 200);
   assert.match(r.text, new RegExp(`/app/cashier/papers/${visit}/prescription/${rxId}\\.pdf`), 'print the prescription');
   assert.match(r.text, new RegExp(`/app/cashier/papers/${visit}/order/${oid}\\.pdf`), 'print the test request');
+  assert.match(r.text, new RegExp(`/app/cashier/papers/${visit}/order/${lid}\\.pdf`), 'every request has its icon (lab too)');
+  assert.match(r.text, new RegExp(`/app/cashier/papers/${visit}/referral/${refId}\\.pdf`), 'and the referral');
+  assert.match(r.text, /Referral: Neurology/);
+  r = await rec.get(`/app/cashier/papers/${visit}/referral/${refId}.pdf`);
+  assert.match(r.type, /application\/pdf/);
   r = await rec.get(`/app/cashier/papers/${visit}/order/${oid}.pdf`);
   assert.equal(r.status, 200);
   assert.match(r.type, /application\/pdf/);
@@ -177,7 +184,7 @@ test('reception prints the prescription and the test request from Today; only th
   const o = app.agent(); await o.login(mail('a'));
   r = await o.get(`/app/billing/${invId}`);
   assert.match(r.text, new RegExp(`/app/billing/${invId}/void`), 'the owner can void');
-  await knex('medical_orders').where({ id: oid }).del();
+  await knex('medical_orders').whereIn('id', [oid, lid]).del(); await knex('referrals').where({ id: refId }).del();
 });
 
 test('another clinic cannot share these documents; a patient without a mobile gets a copy-the-link page', async () => {

@@ -75,14 +75,14 @@ async function visitItems(ctx, apptId, { clinical = true } = {}) {
   const has = (k) => may(ctx, k);
   const w = { business_id: ctx.businessId, appointment_id: apptId };
   const clin = clinical && has('prescription');
-  // Reception hands over the prescription and the test request (as at the cash desk) — never the report or files.
+  // Reception hands over the prescription, test requests and referrals (as at the cash desk) — never the report or files.
   const papers = clin || (ctx.permissions && ctx.permissions.has('billing.view'));
   const [invs, rxs, consult, ords, refs, certs, files] = await Promise.all([
     has('invoice') ? knex('invoices').where(w).orderBy('id').select('id', 'invoice_number') : [],
     papers ? knex('prescriptions').where(w).orderBy('id').select('id') : [],
     clin ? knex('consultations').where(w).first('id') : null,
-    papers ? knex('medical_orders').where(w).orderBy('id').select('id', 'kind') : [],
-    clin ? knex('referrals').where(w).orderBy('id').select('id', 'specialty') : [],
+    papers ? knex('medical_orders').where(w).whereNot('status', 'cancelled').orderBy('id').select('id', 'kind') : [],
+    papers ? knex('referrals').where(w).orderBy('id').select('id', 'specialty') : [],
     clinical && has('certificate') ? knex('certificates').where(w).whereNull('revoked_at').orderBy('id').select('id', 'doc_type') : [],
     clin ? knex('patient_files').where(w).orderBy('id').select('id', 'title', 'name') : [],
   ]);

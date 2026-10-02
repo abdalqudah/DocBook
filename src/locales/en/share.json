@@ -43,7 +43,10 @@
     "icon": {
       "prescription": "Prescription",
       "orders": "Requested tests",
-      "invoice": "Invoice"
+      "invoice": "Invoice",
+      "lab": "Lab request",
+      "imaging": "Imaging request",
+      "referral": "Referral"
     },
     "print": "Print",
     "save_pdf": "Save PDF",
