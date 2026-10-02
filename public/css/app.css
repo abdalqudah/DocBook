@@ -969,3 +969,4 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .df-main .ord-forms > details, .df-main .ord-forms > .ord-form { flex: 1 1 200px; min-width: 0; margin: 0; }
 .df-main .ord-forms > details[open] { flex-basis: 100%; }
 #orders .ord-forms.panel-body { padding: 12px var(--card-pad, 16px) 16px; }
+td.actions > details.dropdown, td.actions > a { display: inline-flex; vertical-align: middle; }

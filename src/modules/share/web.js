@@ -20,6 +20,9 @@ const svc = require('./share.service');
 
 // ---------------------------------------------------------------- staff
 const staff = express.Router();
+// These GET links make a share link (and an audit row): only when clicked inside the app, never from another site.
+const sameSite = (req, res, next) => (req.get('sec-fetch-site') === 'cross-site' ? res.status(403).send('Forbidden') : next());
+staff.use(['/wa', '/thanks'], sameSite);
 const backOf = (req) => { const r = req.get('referer') || ''; try { const u = new URL(r); return u.pathname.startsWith('/app') ? u.pathname + u.search : '/app'; } catch { return '/app'; } };
 
 const failed = (req, res, e) => {

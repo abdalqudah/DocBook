@@ -92,7 +92,7 @@ function defaultLines(a) {
 
 /** Bill data for the page: lines, total, clinic services the doctor may add (shared ones + this doctor's). */
 async function billFor(ctx, apptId) {
-  const a = await knex('appointments as a').leftJoin('services as s', 's.id', 'a.service_id').leftJoin('doctors as d', 'd.id', 'a.doctor_id')
+  const a = await knex('appointments as a').leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); }).leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); })
     .where({ 'a.business_id': ctx.businessId, 'a.id': apptId })
     .first('a.id', 'a.service_id', 'a.amount_due', 'a.doctor_lines', 'a.doctor_id', 'a.doctor_finished_at', 's.name as service_name', 's.name_en as service_name_en', 's.price as service_price', 'd.consultation_fee');
   if (!a) throw E.notFound('Appointment');

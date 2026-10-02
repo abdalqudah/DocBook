@@ -39,3 +39,12 @@
   <%- include('../../partials/pagination', { meta: meta }) %>
   <% } %>
 </section>
+<section class="panel mt-6" id="restore-file">
+  <div class="panel-head"><div><h2><%- icon('archive-restore', 'icon-sm') %> <%= t('admin.backup.from_file') %></h2><p class="panel-sub"><%= t('admin.backup.from_file_sub') %></p></div></div>
+  <form class="panel-body row-sm wrap" method="post" action="/admin/clinics/restore" enctype="multipart/form-data" data-confirm="<%= t('admin.backup.confirm_file') %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input class="input" type="file" name="file" accept=".dbk" required aria-label="<%= t('admin.backup.file') %>">
+    <input class="input" type="password" name="password" required autocomplete="current-password" placeholder="<%= t('admin.backup.your_password') %>" aria-label="<%= t('admin.backup.your_password') %>" style="max-width:240px">
+    <button class="btn btn-danger" type="submit"><%= t('admin.backup.restore_now') %></button>
+  </form>
+</section>

@@ -10,8 +10,12 @@ const HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy'
 
 router.get('/:slug([a-z0-9-]{3,40})/:id(\\d{1,10})', wrap(async (req, res) => {
   const row = await media.publicFile(req.params.slug, req.params.id);
-  const mime = row ? media.sniff(row.data) : null;
-  if (!row || !mime || !media.IMAGE_MIMES.includes(mime)) return res.status(404).set({ ...HEADERS, 'Cache-Control': 'no-store' }).end();
+  // The address carries the image's fingerprint (?v=<sha>, as the site writes it): numbers alone cannot be walked
+  // through to find images the clinic did not put on its pages.
+  const v = String(req.query.v || '');
+  const shaOk = row && row.sha && v.length >= 8 && String(row.sha).startsWith(v);
+  const mime = row && shaOk ? media.sniff(row.data) : null;
+  if (!row || !shaOk || !mime || !media.IMAGE_MIMES.includes(mime)) return res.status(404).set({ ...HEADERS, 'Cache-Control': 'no-store' }).end();
   if (req.get('if-none-match') === `"${row.sha}"`) return res.status(304).set({ ...HEADERS, ETag: `"${row.sha}"` }).end();
   res.set({ ...HEADERS, 'Content-Type': mime, ETag: `"${row.sha}"`, 'Cache-Control': 'public, max-age=86400' });
   return res.send(row.data);

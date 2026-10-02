@@ -24,7 +24,7 @@ const PAGE_STYLES = ['/css/records.css'];
 const SHOW_STYLES = ['/css/records.css', '/css/clinicalplus.css'];
 
 function listQuery(ctx, query) {
-  const q = knex('patients').leftJoin('insurance_providers as ip', 'ip.id', 'patients.insurance_provider_id')
+  const q = knex('patients').leftJoin('insurance_providers as ip', function j() { this.on('ip.id', 'patients.insurance_provider_id').andOn('ip.business_id', 'patients.business_id'); })
     .where('patients.business_id', ctx.businessId);
   if (query.q && String(query.q).trim()) {
     const term = lib.likeTerm(query.q);
@@ -86,7 +86,7 @@ router.post('/', can('patients.create'), form(async (req, res) => {
 // ---------------------------------------------------------------- one patient
 async function loadPatient(req) {
   const id = Number(req.params.id);
-  const q = knex('patients').leftJoin('insurance_providers as ip', 'ip.id', 'patients.insurance_provider_id')
+  const q = knex('patients').leftJoin('insurance_providers as ip', function j() { this.on('ip.id', 'patients.insurance_provider_id').andOn('ip.business_id', 'patients.business_id'); })
     .where({ 'patients.business_id': req.ctx.businessId, 'patients.id': id }).first('patients.*', 'ip.name as insurance_name');
   lib.scopePatientsToDoctor(q, req.ctx.ownDoctorId);
   const p = await q;

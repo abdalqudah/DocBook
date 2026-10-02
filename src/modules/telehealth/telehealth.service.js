@@ -357,8 +357,13 @@ const rowQuery = () => knex('online_consultations as oc').join('appointments as 
 async function byToken(token) {
   if (!TOKEN_RE.test(String(token || ''))) return null;
   const row = await rowQuery().where('oc.token_hash', sha256(String(token))).first(ROW_SELECT);
-  return row || null;
+  if (!row) return null;
+  // The link (patient details, shared documents) stops working 30 days after the consultation date.
+  const day = String(row.appointment_date || '').slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day) && Date.parse(`${day}T23:59:59Z`) + LINK_DAYS_AFTER * 86_400_000 < Date.now()) return null;
+  return row;
 }
+const LINK_DAYS_AFTER = 30;
 
 const byId = (businessId, id) => rowQuery().where({ 'oc.id': id, 'oc.business_id': businessId }).first(ROW_SELECT);
 

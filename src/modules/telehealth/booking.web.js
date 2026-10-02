@@ -117,7 +117,9 @@ const parseUpload = (req, res, next) => upload.array('files', tele.MAX_FILES + 1
   next();
 });
 
-router.post('/:slug/book/online', parseUpload, verifyCsrfAfterUpload, bookLimiter, wrap(async (req, res, next) => {
+// Over the limit: refused before any uploaded file is read into memory.
+const limitFirst = (req, res, next) => bookLimiter(req, res, () => (req.bookingLimited ? res.status(429).send(req.t('booking.rate_limited')) : next()));
+router.post('/:slug/book/online', limitFirst, parseUpload, verifyCsrfAfterUpload, wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
   if (!clinic.booking_enabled || !clinic.online_enabled) return renderOnline(req, res, clinic);

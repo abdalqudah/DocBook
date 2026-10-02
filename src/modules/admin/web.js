@@ -87,7 +87,62 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
     count(knex('doctors').where({ business_id: b.id, is_active: true })),
     businesses.listMembers(b.id),
   ]);
-  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members });
+  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id) });
+}));
+
+// ---------------------------------------------------------------- one clinic's own backup (separate from the others)
+const backup = require('../platformops/clinic-backup');
+const multer = require('multer');
+const { verifyCsrfAfterUpload } = require('../../middleware/web');
+async function confirmPassword(req) {
+  const user = await knex('users').where({ id: req.user.id }).first('id', 'password_hash');
+  const ok = await require('../auth/auth.service').verifyPassword(user, String(req.body.password || '')).catch(() => false); // eslint-disable-line global-require
+  if (!ok) throw E.validation({ password: 'Current password is incorrect.' });
+}
+const backupFail = (req, res, back) => (e) => {
+  if (!(e instanceof AppError) || e.status >= 500) throw e;
+  flash(req, 'error', e.code === 'VALIDATION_FAILED' ? req.t('admin.backup.err_password') : req.t(`admin.backup.err.${e.code}`) !== `admin.backup.err.${e.code}` ? req.t(`admin.backup.err.${e.code}`) : e.message);
+  return res.redirect(back);
+};
+
+router.post('/clinics/:id(\\d+)/backups', wrap(async (req, res) => {
+  const b = await knex('businesses').where({ id: req.params.id }).first('id');
+  if (!b) throw E.notFound('Clinic');
+  const r = await backup.createBackup(b.id, { reason: 'manual', ctx: req.ctx });
+  flash(req, 'success', req.t('admin.backup.created', { rows: r.rows }));
+  res.redirect(`/admin/clinics/${b.id}#backups`);
+}));
+
+router.get('/clinics/:id(\\d+)/backups/:name', wrap(async (req, res) => {
+  const buf = backup.read(Number(req.params.id), req.params.name);
+  await audit.record(req.ctx, 'clinic.backup_downloaded', { entityType: 'clinic', entityId: Number(req.params.id), newValues: { file: req.params.name } });
+  res.set({ 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="clinic-${Number(req.params.id)}-${req.params.name}"`, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+  res.end(buf);
+}));
+
+router.post('/clinics/:id(\\d+)/backups/:name/restore', wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    await confirmPassword(req);
+    await backup.createBackup(id, { reason: 'manual', ctx: req.ctx }).catch(() => null); // the state just before, in case
+    const r = await backup.restore(backup.read(id, req.params.name), { businessId: id, ctx: req.ctx });
+    businesses.forget(id); cache.forgetPrefix('portal:');
+    flash(req, 'success', req.t('admin.backup.restored', { rows: r.rows }));
+    return res.redirect(`/admin/clinics/${id}#backups`);
+  } catch (e) { return backupFail(req, res, `/admin/clinics/${id}#backups`)(e); }
+}));
+
+// A backup file from the admin's computer: puts that clinic back (also a clinic that was deleted).
+const backupUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 512 * 1024 * 1024, files: 1, fields: 4 } });
+router.post('/clinics/restore', (req, res, next) => backupUpload.single('file')(req, res, (err) => { if (err) req.uploadError = err; next(); }), verifyCsrfAfterUpload, wrap(async (req, res) => {
+  try {
+    if (req.uploadError || !req.file) throw new AppError('BACKUP_INVALID', 'Choose a backup file.', 422);
+    await confirmPassword(req);
+    const r = await backup.restore(req.file.buffer, { ctx: req.ctx });
+    businesses.forget(r.businessId); cache.forgetPrefix('portal:');
+    flash(req, 'success', req.t('admin.backup.restored', { rows: r.rows }));
+    return res.redirect(`/admin/clinics/${r.businessId}#backups`);
+  } catch (e) { return backupFail(req, res, '/admin/clinics')(e); }
 }));
 
 router.post('/clinics/:id(\\d+)/status', wrap(async (req, res) => {

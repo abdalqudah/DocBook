@@ -253,22 +253,20 @@ const tempPassword = () => `${crypto.randomBytes(3).toString('hex')}-${crypto.ra
  * Adds a staff member.
  *  mode 'invite'   → an invitation link (e-mailed when SMTP is configured; always returned to share by hand)
  *  mode 'password' → the account is created now with a temporary password returned to the admin
- * An existing account (same e-mail) is simply added to the clinic with the chosen role.
+ * An existing account (same e-mail) always gets an invitation it must accept (never attached or reset by the clinic).
  */
 async function addStaff(ctx, { name, email, phone, roleId, doctorId, jobTitle, mode, locale }) {
   const role = await resolveRole(ctx, roleId);
   const doc = await resolveDoctor(ctx, role, doctorId);
   if (doc && doc.takenBy) throw E.validation({ doctor_id: 'Another account is already linked to this doctor.' });
-  const existing = await knex('users').where({ email }).first();
-  if (existing) {
-    const already = await knex('memberships').where({ business_id: ctx.businessId, user_id: existing.id }).first();
-    if (already) throw E.conflict('ALREADY_MEMBER', 'This person is already a staff member.');
-    await knex('memberships').insert({ business_id: ctx.businessId, user_id: existing.id, role_id: role.id, doctor_id: doc ? doc.id : null, job_title: jobTitle || null });
-    await audit.record(ctx, 'staff.added', { entityType: 'staff', entityId: existing.id, newValues: { email, role: role.key } });
-    rbac.invalidate(ctx.businessId);
-    return { added: true };
+  const existing = await knex('users').where({ email }).first('id');
+  if (existing && await knex('memberships').where({ business_id: ctx.businessId, user_id: existing.id }).first('id')) {
+    throw E.conflict('ALREADY_MEMBER', 'This person is already a staff member.');
   }
-  if (mode === 'password') {
+  // An account that already exists is never attached (nor given a password) by another clinic: it receives an
+  // invitation and joins only when its owner signs in and accepts. The answer is the same as for a new address,
+  // so the form does not tell which e-mails have accounts.
+  if (mode === 'password' && !existing) {
     const password = tempPassword();
     const { hashPassword } = require('../auth/auth.service'); // eslint-disable-line global-require
     const userId = await knex.transaction(async (trx) => {
@@ -302,11 +300,14 @@ async function adminResetLink(ctx, membershipId) {
   if (!m) throw E.notFound('Staff member');
   const [{ n }] = await knex('memberships').where({ user_id: m.user_id }).whereNot({ business_id: ctx.businessId }).count({ n: '*' });
   const user = await knex('users').where({ id: m.user_id }).first();
+  // A platform admin or a supplier's account is never reset by a clinic: the link only goes to its own e-mail.
+  const guarded = Boolean(user.is_platform_admin) || Boolean(await knex('vendor_users').where({ user_id: user.id }).first('user_id').catch(() => null));
   const token = randomToken(32);
   await knex('password_resets').insert({ user_id: user.id, token_hash: sha256(token), created_by: ctx.userId, expires_at: new Date(Date.now() + 24 * 3600_000) });
   const link = `${linkBase(ctx)}/reset/${token}`;
-  if (Number(n) > 0) {
-    // The account also belongs to another clinic: only the person may receive the link, by e-mail.
+  if (Number(n) > 0 || guarded) {
+    // The account also belongs to another clinic (or is an admin / supplier account): only the person may receive
+    // the link, by e-mail.
     if (!mailer.configured()) {
       await knex('password_resets').where({ user_id: user.id, token_hash: sha256(token) }).del();
       throw E.conflict('RESET_NEEDS_EMAIL', 'This person also works at another clinic. A reset link can only be e-mailed to them, and e-mail is not configured.');

@@ -488,8 +488,10 @@ test('access: pages, APIs and files follow permissions and clinic boundaries', a
   assert.equal((await ownerB.get(`/app/media/${id}`)).status, 404);
   assert.equal((await fetch(`${base}/m/${A.slug}/${id}`)).status, 404, 'private image is not public');
   await owner.post(`/app/settings/media/${id}`, { name: 'x', is_public: '1', public_field: '1' });
-  const pub = await fetch(`${base}/m/${A.slug}/${id}`);
+  const sha = (await knex('clinic_media').where({ id }).first('sha')).sha;
+  assert.equal((await fetch(`${base}/m/${A.slug}/${id}`)).status, 404, 'the number alone is not enough');
+  const pub = await fetch(`${base}/m/${A.slug}/${id}?v=${sha}`);
   assert.equal(pub.status, 200);
   assert.equal(pub.headers.get('content-security-policy'), "default-src 'none'");
-  assert.equal((await fetch(`${base}/m/${B.slug}/${id}`)).status, 404);
+  assert.equal((await fetch(`${base}/m/${B.slug}/${id}?v=${sha}`)).status, 404);
 });

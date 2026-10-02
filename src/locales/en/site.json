@@ -696,7 +696,36 @@
       "pricing_hint": "The plans themselves are edited in Admin → Plans."
     },
     "nav_seo": "Search & AI",
-    "nav_growth": "Social & tracking"
+    "nav_growth": "Social & tracking",
+    "backup": {
+      "title": "This clinic's backups",
+      "sub": "A separate, encrypted copy of this clinic's data only (patients, visits, invoices, files, staff). One is taken automatically every night; the last 7 are kept.",
+      "create": "Back up now",
+      "none": "No backups yet. The first automatic one is taken tonight.",
+      "when": "Taken",
+      "kind": "Kind",
+      "size": "Size",
+      "auto": "Automatic",
+      "manual": "Manual",
+      "download": "Download",
+      "restore": "Restore",
+      "restore_help": "This clinic's data goes back to how it was when the backup was taken; no other clinic is touched. The current state is backed up first.",
+      "your_password": "Your password to confirm",
+      "restore_now": "Restore now",
+      "confirm": "Restore \"{name}\" from this backup? Its current data will be replaced.",
+      "from_file": "Restore a clinic from a backup file",
+      "from_file_sub": "Upload a backup (.dbk) you downloaded — the clinic in it comes back, even if it was deleted. Only this server can read the file.",
+      "confirm_file": "Restore the clinic in this file? Its current data, if any, will be replaced.",
+      "file": "Backup file",
+      "created": "Backup taken ({rows} records).",
+      "restored": "Restored ({rows} records).",
+      "err_password": "The password is not correct.",
+      "err": {
+        "BACKUP_INVALID": "This is not a clinic backup file.",
+        "BACKUP_UNREADABLE": "This backup cannot be read on this server (different key, or a damaged file).",
+        "BACKUP_OTHER_CLINIC": "This backup belongs to another clinic."
+      }
+    }
   },
   "portal": {
     "book": "Book an appointment",

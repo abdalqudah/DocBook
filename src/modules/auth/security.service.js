@@ -20,7 +20,8 @@ async function requestReset(email, { ip, locale } = {}) {
   await knex('password_resets').insert({ user_id: user.id, token_hash: sha256(token), expires_at: new Date(Date.now() + RESET_MINUTES * 60_000) });
   const link = `${config.appUrl.replace(/\/+$/, '')}/reset/${token}`;
   const t = translator(user.locale || locale || 'en');
-  await mailer.send({
+  // Sent in the background: the answer comes back as fast as for an address without an account.
+  mailer.send({
     to: user.email,
     subject: `${brand.name} — ${t('auth.reset_mail_subject')}`,
     html: mailer.layout({ locale: user.locale, title: t('auth.reset_mail_subject'), body: t('auth.reset_mail_body', { minutes: RESET_MINUTES }), cta: t('auth.reset_mail_cta'), href: link }),

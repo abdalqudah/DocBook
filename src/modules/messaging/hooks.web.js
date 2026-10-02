@@ -22,7 +22,7 @@ const safe = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((err) => 
 
 router.get('/whatsapp/:key', safe(async (req, res) => {
   const cfg = await msg.configByHook('wa_hook_key', req.params.key);
-  if (!cfg || req.query['hub.mode'] !== 'subscribe' || !cfg.wa_verify_token || String(req.query['hub.verify_token'] || '') !== cfg.wa_verify_token) return res.sendStatus(403);
+  if (!cfg || req.query['hub.mode'] !== 'subscribe' || !cfg.wa_verify_token || !require('../../core/tokens').safeEqual(String(req.query['hub.verify_token'] || ''), String(cfg.wa_verify_token))) return res.sendStatus(403);
   await knex('clinic_messaging').where({ business_id: cfg.business_id }).update({ wa_verified_at: new Date() });
   return res.type('text/plain').send(String(req.query['hub.challenge'] || ''));
 }));

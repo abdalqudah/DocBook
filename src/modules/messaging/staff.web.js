@@ -12,7 +12,7 @@ const { errText } = require('./pages');
 
 const router = express.Router();
 
-router.get('/wa/:id(\\d+)', canAny('appointments.manage', 'frontdesk.use'), wrap(async (req, res) => {
+router.get('/wa/:id(\\d+)', (req, res, next) => (req.get('sec-fetch-site') === 'cross-site' ? res.status(403).send('Forbidden') : next()), canAny('appointments.manage', 'frontdesk.use'), wrap(async (req, res) => {
   try {
     const kind = ['confirmation', 'reminder', 'review'].includes(req.query.kind) ? req.query.kind : 'reminder';
     const { href } = await msg.clickToChat({ ...req.ctx, msgLocale: ['ar', 'en'].includes(req.query.lang_msg) ? req.query.lang_msg : null }, Number(req.params.id), kind, publicBase(req));

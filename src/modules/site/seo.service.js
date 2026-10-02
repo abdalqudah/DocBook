@@ -575,7 +575,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
     const scope = `c${clinic.id}`;
     const choice = consentOf(req, scope);
     let ids = null;
-    if (choice === 'yes') { ids = Object.fromEntries(Object.entries(clinicMkt.pixels).filter(([k, v]) => v && PIXELS[k])); applyPixelCsp(res, ids); }
+    if (choice === 'yes') { ids = Object.fromEntries(Object.entries(clinicMkt.pixels).filter(([k, v]) => v && PIXELS[k] && k !== 'gtm')); applyPixelCsp(res, ids); }
     return { title, html: tags.join('\n'), pixels: ids, askConsent: !choice, pixelsOn: true, consent: choice, consentScope: scope };
   }
   return { title, html: tags.join('\n'), pixels, askConsent: pixelsOn && !consent, pixelsOn, consent };

@@ -139,7 +139,8 @@ const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|favicon)\/?$/, /^
   /^\/app\/patients\/\d+\/files\/?$/, // scanned papers and results in the patient's file
   /^\/app\/chat\/\d+\/upload\/?$/, // images and documents in the staff chat
   /^\/app\/website\/fonts\/?$/, // website fonts (Theme & brand)
-  /^\/admin\/updates\/install\/?$/]; // platform admin: system update package (zip)
+  /^\/admin\/updates\/install\/?$/, // platform admin: system update package (zip)
+  /^\/admin\/clinics\/restore\/?$/]; // platform admin: a clinic's backup file
 
 const tokenValid = (req, sent) => Boolean(req.session?.csrf && sent && safeEqual(sent, req.session.csrf));
 

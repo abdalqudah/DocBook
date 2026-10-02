@@ -5,7 +5,8 @@ const config = require('../../config');
 const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
 
-const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 4);
+// Same cost as real hashes: an unknown e-mail takes as long to answer as a known one (no account enumeration).
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', config.bcryptRounds);
 const hashPassword = (plain) => bcrypt.hash(String(plain), config.bcryptRounds);
 
 // Accounts imported from DocBook keep their scrypt hash ("salt:hash") until the first sign-in, then move to bcrypt.
@@ -34,14 +35,31 @@ async function createUser(trx, { name, email, password, locale }) {
   return id;
 }
 
+const FAILS = new Map(); // e-mail → recent failure times (this process)
+function recentFailures(key) {
+  const since = Date.now() - 15 * 60_000;
+  const list = (FAILS.get(key) || []).filter((t) => t > since);
+  if (list.length) FAILS.set(key, list); else FAILS.delete(key);
+  return list.length;
+}
+function noteFailure(key) {
+  if (FAILS.size > 50_000) FAILS.clear();
+  FAILS.set(key, [...(FAILS.get(key) || []), Date.now()].slice(-20));
+}
+
 async function authenticate({ email, password }, ctx = {}) {
-  const user = await knex('users').where({ email: String(email).toLowerCase().trim() }).first();
+  const key = String(email).toLowerCase().trim();
+  const user = await knex('users').where({ email: key }).first();
+  // Failed attempts per e-mail address, existing or not, so the lock-out never tells which addresses have accounts.
+  let n = recentFailures(key);
   if (user) {
-    const [{ n }] = await knex('audit_logs').where({ user_id: user.id, action: 'auth.login_failed' }).where('created_at', '>=', new Date(Date.now() - 15 * 60_000)).count({ n: '*' });
-    if (Number(n) >= 10) throw new AppError('TOO_MANY_ATTEMPTS', 'Too many failed sign-in attempts. Wait 15 minutes or reset your password.', 429);
+    const [{ c }] = await knex('audit_logs').where({ user_id: user.id, action: 'auth.login_failed' }).where('created_at', '>=', new Date(Date.now() - 15 * 60_000)).count({ c: '*' });
+    n = Math.max(n, Number(c));
   }
+  if (n >= 10) throw new AppError('TOO_MANY_ATTEMPTS', 'Too many failed sign-in attempts. Wait 15 minutes or reset your password.', 429);
   const ok = await verifyPassword(user, password);
   if (!user || !ok) {
+    noteFailure(key);
     await audit.record({ ...ctx, userId: user?.id }, 'auth.login_failed', { entityType: 'user', entityId: user?.id, newValues: { email } });
     throw E.invalidCredentials();
   }
@@ -82,8 +100,14 @@ async function replaceTemporaryPassword(ctx, { password, confirm }) {
 async function ensureSuperAdmin() {
   const { email, password, name } = config.superAdmin || {};
   if (!email) return null;
-  const existing = await knex('users').where({ email }).first('id', 'is_platform_admin');
+  const existing = await knex('users').where({ email }).first('id', 'is_platform_admin', 'password_hash');
   if (existing) {
+    // An account someone else could have registered with this address is only promoted when it holds the
+    // configured admin password (proof that the server's owner controls it).
+    if (!existing.is_platform_admin && !(String(password || '').length >= 8 && await bcrypt.compare(String(password), existing.password_hash || DUMMY_HASH))) {
+      console.warn('[auth] SUPER_ADMIN_EMAIL belongs to an existing account whose password does not match SUPER_ADMIN_PASSWORD; it was NOT made platform admin.'); // eslint-disable-line no-console
+      return null;
+    }
     if (!existing.is_platform_admin) {
       await knex('users').where({ id: existing.id }).update({ is_platform_admin: true });
       await audit.record({ userId: existing.id }, 'platform.admin_granted', { entityType: 'user', entityId: existing.id, newValues: { email } });

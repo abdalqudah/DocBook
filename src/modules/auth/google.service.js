@@ -222,8 +222,13 @@ async function resolve(g, ctx = {}) {
   }
   const values = { last_login_at: new Date() };
   if (linkedNow) Object.assign(values, { google_sub: g.sub, google_email: g.email, google_linked_at: new Date() });
+  const claimedNow = linkedNow && !user.email_verified_at;
   if (!user.email_verified_at && user.email.toLowerCase() === g.email) values.email_verified_at = new Date(); // Google verified the address
+  // The address was never proven before: whoever set that account up (and its password) loses it — the owner of
+  // the Google address takes it over, signs in with Google and can set a new password from Forgot password.
+  if (claimedNow) values.password_hash = await require('./auth.service').hashPassword(require('crypto').randomBytes(24).toString('hex')); // eslint-disable-line global-require
   await knex('users').where({ id: user.id }).update(values);
+  if (claimedNow) await require('./security.service').endOtherSessions(user.id, null).catch(() => {}); // eslint-disable-line global-require
   if (linkedNow) await audit.record({ ...ctx, userId: user.id }, 'auth.google_linked', { entityType: 'user', entityId: user.id, newValues: { google_email: g.email, via: 'sign_in' } });
   await audit.record({ ...ctx, userId: user.id }, 'auth.login', { entityType: 'user', entityId: user.id, newValues: { method: 'google' } });
   return knex('users').where({ id: user.id }).first();

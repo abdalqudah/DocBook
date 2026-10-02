@@ -32,6 +32,7 @@ const patientSchema = z.object({
 
 async function savePatient(ctx, pid, input) {
   const d = validate(patientSchema, input);
+  await checkRefs(ctx, { insurance_provider_id: d.insurance_provider_id });
   if (d.phone) {
     const clash = await knex('patients').where({ business_id: ctx.businessId, phone: d.phone }).modify((q) => { if (pid) q.whereNot({ id: pid }); }).first('id');
     if (clash) throw new AppError('PATIENT_PHONE_TAKEN', 'Another patient already uses this phone number.', 409, { phone: 'Another patient already uses this phone number.' });
@@ -55,7 +56,7 @@ async function resolveOrCreatePatient(ctx, { name, phone, email: mail }, trx = k
 async function timeline(ctx, patientId) {
   const w = { business_id: ctx.businessId, patient_id: patientId };
   const [appointments, consultations, prescriptions, invoices] = await Promise.all([
-    knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id').where({ 'a.business_id': ctx.businessId, 'a.patient_id': patientId })
+    knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); }).where({ 'a.business_id': ctx.businessId, 'a.patient_id': patientId })
       .whereNot('a.appointment_type', 'blocked').orderBy([{ column: 'a.appointment_date', order: 'desc' }, { column: 'a.appointment_time', order: 'desc' }])
       .select('a.*', 'd.full_name as doctor_name', 's.name as service_name'),
     knex('consultations as c').leftJoin('doctors as d', 'd.id', 'c.doctor_id').where({ 'c.business_id': ctx.businessId, 'c.patient_id': patientId }).orderBy('c.created_at', 'desc').select('c.*', 'd.full_name as doctor_name'),
@@ -69,7 +70,7 @@ async function timeline(ctx, patientId) {
 const APPT_SELECT = ['a.*', 'br.name as branch_name', 'br.name_en as branch_name_en', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 's.name as service_name', 's.name_en as service_name_en', 's.price as service_price', 'd.consultation_fee'];
 
 function baseQuery(ctx) {
-  const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  const q = knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .leftJoin('clinic_branches as br', function j() { this.on('br.id', 'a.branch_id').andOn('br.business_id', 'a.business_id'); }).where('a.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); // a doctor sees only their own schedule
   return q;
@@ -115,7 +116,20 @@ async function expectedFee(trx, businessId, doctorId, serviceId) {
   return 0;
 }
 
+/** Ids typed in a booking must be this clinic's own (service, doctor, the visit followed up, insurance company). */
+async function checkRefs(ctx, d, trx = knex) {
+  const own = async (table, id, field) => {
+    if (!id) return;
+    if (!(await trx(table).where({ id, business_id: ctx.businessId }).first('id'))) throw E.validation({ [field]: 'Choose a valid value.' });
+  };
+  await own('services', d.service_id, 'service_id');
+  await own('doctors', d.doctor_id, 'doctor_id');
+  await own('appointments', d.parent_appointment_id, 'parent_appointment_id');
+  await own('insurance_providers', d.insurance_provider_id, 'insurance_provider_id');
+}
+
 async function insertAppointment(ctx, d, { source, trx }) {
+  await checkRefs(ctx, d, trx);
   let patientId = d.patient_id || null;
   if (patientId) {
     const p = await trx('patients').where({ id: patientId, business_id: ctx.businessId }).first('id');
@@ -140,6 +154,7 @@ async function insertAppointment(ctx, d, { source, trx }) {
 async function book(ctx, input, { source = 'staff' } = {}) {
   const d = validate(bookingSchema, input);
   if (ctx.ownDoctorId && d.doctor_id && d.doctor_id !== ctx.ownDoctorId) throw E.forbidden('appointments.view_all');
+  if (ctx.ownDoctorId && !d.doctor_id) d.doctor_id = ctx.ownDoctorId; // a doctor books on their own schedule
   const run = (trx) => insertAppointment(ctx, d, { source, trx });
   const apptId = d.doctor_id
     ? await scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: d.doctor_id, serviceId: d.service_id, durationOverride: d.duration_minutes, date: d.appointment_date, time: d.appointment_time }, run)
@@ -163,6 +178,7 @@ async function update(ctx, apptId, input) {
     appointment_type: d.appointment_type || before.appointment_type, notes: d.notes || null, updated_at: new Date(),
   };
   const run = async (trx) => {
+    await checkRefs(ctx, d, trx);
     // Online consultations keep the online fee set when booking.
     if (before.payment_status !== 'paid' && !(before.appointment_type === 'online' && patch.appointment_type === 'online')) patch.amount_due = await expectedFee(trx, ctx.businessId, patch.doctor_id, patch.service_id);
     await trx('appointments').where({ id: apptId, business_id: ctx.businessId }).update(patch);

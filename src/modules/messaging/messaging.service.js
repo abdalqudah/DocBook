@@ -119,7 +119,8 @@ const settingsSchema = z.object({
   wa_phone_number_id: z.preprocess(emptyToUndefined, z.string().trim().regex(/^\d{5,30}$/, 'Enter a valid value.').optional()),
   wa_token: opt(1000), wa_app_secret: opt(200), wa_verify_token: opt(64),
   wa_tpl_confirmation: tplName(), wa_tpl_received: tplName(), wa_tpl_cancelled: tplName(), wa_tpl_reminder: tplName(), wa_tpl_review: tplName(), wa_lang_ar: langCode(), wa_lang_en: langCode(),
-  sms_url: z.preprocess(emptyToUndefined, z.string().trim().max(500).url('Enter a valid URL.').refine((v) => /^https?:\/\//i.test(v), 'Enter a valid URL.').optional()),
+  // https only, never a private / internal address (core/http validateUrl; DNS is checked again when sending).
+  sms_url: z.preprocess(emptyToUndefined, z.string().trim().max(500).url('Enter a valid URL.').refine((v) => !require('../../core/http').validateUrl(v).error, 'Use an https:// address of your SMS provider.').optional()), // eslint-disable-line global-require
   sms_method: z.enum(['POST', 'GET']).default('POST'),
   sms_content_type: z.enum(['application/json', 'application/x-www-form-urlencoded']).default('application/json'),
   sms_body_template: opt(2000), sms_auth_header: z.preprocess(emptyToUndefined, z.string().trim().max(60).regex(/^[A-Za-z0-9-]+$/, 'Enter a valid value.').optional()), sms_auth: opt(1000),

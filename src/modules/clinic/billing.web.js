@@ -50,7 +50,7 @@ async function filterOptions(ctx) {
 }
 
 function unpaidQuery(ctx) {
-  const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  const q = knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where('a.business_id', ctx.businessId).where('a.payment_status', 'unpaid').whereNot('a.appointment_type', 'blocked')
     .whereNotIn('a.status', ['cancelled', 'no_show']).where('a.appointment_date', '<=', ctx.today)
     .andWhere((w) => w.where('a.status', 'completed').orWhere('a.checked_in', true));

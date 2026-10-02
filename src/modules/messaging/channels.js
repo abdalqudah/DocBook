@@ -8,7 +8,8 @@
 // `transport.fetch` can be replaced in tests (no real network call).
 const mailer = require('../../core/mailer');
 
-const transport = { fetch: (...args) => globalThis.fetch(...args) };
+const defaultFetch = (...args) => globalThis.fetch(...args);
+const transport = { fetch: defaultFetch };
 const GRAPH_VERSION = () => process.env.WHATSAPP_GRAPH_VERSION || 'v21.0';
 const TIMEOUT_MS = 15_000;
 
@@ -122,9 +123,22 @@ async function sendSms(cfg, to, text) {
   if (!cfg || !cfg.url) return { ok: false, error: 'not_configured' };
   try {
     const { url, init } = smsRequest(cfg, to, text);
-    const res = await call(url, init);
-    const raw = await res.text().catch(() => '');
-    if (!res.ok) return { ok: false, error: short(`HTTP ${res.status} ${raw}`) };
+    // The gateway address is typed by the clinic: it goes through core/http (https only, no private / internal
+    // addresses — checked again after DNS — and no redirects), never straight to fetch.
+    const httpCore = require('../../core/http'); // eslint-disable-line global-require
+    const check = httpCore.validateUrl(url);
+    if (check.error) return { ok: false, error: 'blocked_url' };
+    let status; let raw;
+    if (transport.fetch !== defaultFetch) { // tests replace the transport (no network)
+      const res = await call(url, { ...init, redirect: 'error' });
+      status = res.status; raw = await res.text().catch(() => '');
+    } else {
+      try {
+        const r = await httpCore.request(url, { method: init.method, headers: init.headers, body: init.body === undefined ? null : init.body, timeoutMs: TIMEOUT_MS, redirects: 0 });
+        status = r.status; raw = r.body;
+      } catch (e) { return { ok: false, error: e instanceof httpCore.BlockedError ? 'blocked_url' : short(e.message) }; }
+    }
+    if (status < 200 || status >= 300) return { ok: false, error: short(`HTTP ${status} ${raw}`) };
     let id = null;
     try { const j = JSON.parse(raw); id = j.sid || j.id || j.message_id || j.MessageID || (j.data && (j.data.MessageID || j.data.message_id || j.data.id)) || null; } catch { id = null; }
     return { ok: true, id: id ? String(id).slice(0, 120) : null };

@@ -63,7 +63,7 @@ const VISIT_SELECT = ['a.id', 'a.patient_id', 'a.patient_name', 'a.patient_phone
   's.name as service_name', 's.name_en as service_name_en', 's.price as service_price', 'a.doctor_lines', 'a.doctor_finished_at'];
 
 function unpaidVisits(ctx) {
-  const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  const q = knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where('a.business_id', ctx.businessId).where('a.payment_status', 'unpaid').whereNot('a.appointment_type', 'blocked')
     .whereNotIn('a.status', ['cancelled', 'no_show']);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
@@ -168,7 +168,7 @@ async function doctorsWorking(ctx, date) {
  * the "Print" menus. Scoped to a doctor's own visits for a doctor login.
  */
 async function today(ctx, { doctor } = {}) {
-  const q = knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  const q = knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where({ 'a.business_id': ctx.businessId, 'a.appointment_date': ctx.today }).whereNot('a.appointment_type', 'blocked')
     .orderBy('a.appointment_time').select(VISIT_SELECT.concat(['a.source', 'a.patient_email', 'a.paid_at']));
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
@@ -223,7 +223,7 @@ async function screen(ctx) {
 
 // ---------------------------------------------------------------- the bill
 async function visit(ctx, apptId) {
-  const a = await knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  const a = await knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where({ 'a.business_id': ctx.businessId, 'a.id': Number(apptId) }).modify((q) => { if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); })
     .first(VISIT_SELECT.concat(['a.notes']));
   if (!a || a.appointment_type === 'blocked') throw E.notFound('Appointment');
@@ -417,7 +417,7 @@ async function pay(ctx, apptId, input) {
 /** Issues the invoice of one visit inside the caller's transaction (locks the visit: ALREADY_PAID on a second payment). */
 async function payIn(trx, ctx, apptId, input, { d, bill, insuranceOn, s }) {
   // Lock the visit: two cashiers pressing "Pay" at the same time must not issue two invoices.
-  const a = await trx('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  const a = await trx('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where({ 'a.business_id': ctx.businessId, 'a.id': Number(apptId) }).modify((q) => { if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); })
     .forUpdate().first('a.*', 'd.full_name as doctor_name', 's.name as service_name', 's.name_en as service_name_en');
   if (!a || a.appointment_type === 'blocked') throw E.notFound('Appointment');
@@ -575,7 +575,7 @@ async function payMany(ctx, input, { consultationLabel = 'Consultation', source 
   const tag = (err, id) => { if (err && typeof err === 'object') err.line = id; return err; };
 
   // Build and check every visit's bill before writing anything.
-  const rows = await knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
+  const rows = await knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where('a.business_id', ctx.businessId).whereIn('a.id', ids).modify((q) => { if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); })
     .select(VISIT_SELECT);
   const byId = new Map(rows.map((a) => [a.id, a]));

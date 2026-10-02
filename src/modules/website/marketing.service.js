@@ -2,7 +2,7 @@
 //   social   — profile links (the hosts are checked per network), shown in the website footer and as sameAs data;
 //   google   — Google Business Profile and its "write a review" link;
 //   verify   — Google Search Console / Bing Webmaster verification codes (meta tags on the clinic's pages);
-//   pixels   — GA4, Google Tag Manager, Meta, TikTok, Snap, LinkedIn and X ids, loaded on the clinic's website pages
+//   pixels   — GA4, Meta, TikTok, Snap, LinkedIn and X ids, loaded on the clinic's website pages (no Tag Manager)
 //              only after the visitor accepts that clinic's cookie notice (never on booking, sign-in or /app pages).
 // Kept on businesses.marketing (JSON). Every value is validated here; nothing free-form reaches a page.
 const knex = require('../../db/knex');
@@ -24,7 +24,9 @@ const SOCIAL = {
   telegram: { hosts: ['t.me', 'telegram.me'], icon: 'send' },
 };
 const GOOGLE_HOSTS = ['google.com', 'g.page', 'goo.gl', 'maps.app.goo.gl', 'business.google.com', 'g.co'];
-const PIXELS = Object.keys(seo.PIXELS);
+// Clinics get the fixed-code pixels only: a Google Tag Manager container can run any script the container's owner
+// writes, on this platform's origin (where staff sign in), so it is kept for the platform's own pages.
+const PIXELS = Object.keys(seo.PIXELS).filter((k) => k !== 'gtm');
 
 const parse = (v) => { if (!v) return {}; if (typeof v === 'object') return v; try { return JSON.parse(v) || {}; } catch { return {}; } };
 const hostOk = (url, hosts) => {
@@ -42,7 +44,8 @@ const get = (businessId) => cache.remember(`mkt:${businessId}`, async () => {
   const row = await knex('businesses').where({ id: businessId }).first('marketing');
   const v = parse(row && row.marketing);
   const e = empty();
-  return { social: v.social || e.social, google: { ...e.google, ...(v.google || {}) }, verify: { ...e.verify, ...(v.verify || {}) }, pixels: v.pixels || e.pixels };
+  const px = { ...(v.pixels || e.pixels) }; delete px.gtm; // a container saved before is not loaded any more
+  return { social: v.social || e.social, google: { ...e.google, ...(v.google || {}) }, verify: { ...e.verify, ...(v.verify || {}) }, pixels: px };
 }, 60_000);
 
 /** Validates the form (s_<net>, g_business, g_review, v_google, v_bing, p_<pixel>) → { value, errors }. */

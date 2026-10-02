@@ -53,3 +53,26 @@
     </div>
   </section>
 </div>
+<section class="panel flush mt-6" id="backups">
+  <div class="panel-head"><div><h2><%- icon('database', 'icon-sm') %> <%= t('admin.backup.title') %></h2><p class="panel-sub"><%= t('admin.backup.sub') %></p></div>
+    <form method="post" action="/admin/clinics/<%= b.id %>/backups"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('admin.backup.create') %></button></form></div>
+  <% if (!backups.length) { %><div class="panel-body"><p class="small muted"><%= t('admin.backup.none') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('admin.backup.when') %></th><th><%= t('admin.backup.kind') %></th><th class="num"><%= t('admin.backup.size') %></th><th class="actions"></th></tr></thead>
+    <tbody><% backups.forEach(function (k) { %><tr>
+      <td class="primary-cell"><%= fmt.date(k.at, { dateStyle: 'medium', timeStyle: 'short' }) %></td>
+      <td data-label="<%= t('admin.backup.kind') %>"><span class="badge <%= k.auto ? 'badge-neutral' : 'badge-brand' %>"><%= t(k.auto ? 'admin.backup.auto' : 'admin.backup.manual') %></span></td>
+      <td class="num" data-label="<%= t('admin.backup.size') %>"><%= fmt.number(Math.max(1, Math.round(k.size / 1024))) %> KB</td>
+      <td class="actions nowrap">
+        <a class="btn btn-ghost btn-sm" href="/admin/clinics/<%= b.id %>/backups/<%= k.name %>"><%- icon('download', 'icon-sm') %><%= t('admin.backup.download') %></a>
+        <details class="dropdown"><summary class="btn btn-ghost btn-sm"><%- icon('archive-restore', 'icon-sm') %><%= t('admin.backup.restore') %></summary>
+          <form class="menu stack-sm" method="post" action="/admin/clinics/<%= b.id %>/backups/<%= k.name %>/restore" style="min-width:300px;padding:12px" data-confirm="<%= t('admin.backup.confirm', { name: b.name }) %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <p class="small"><%= t('admin.backup.restore_help') %></p>
+            <input class="input" type="password" name="password" required autocomplete="current-password" placeholder="<%= t('admin.backup.your_password') %>" aria-label="<%= t('admin.backup.your_password') %>">
+            <button class="btn btn-danger btn-sm" type="submit"><%= t('admin.backup.restore_now') %></button>
+          </form></details>
+      </td></tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

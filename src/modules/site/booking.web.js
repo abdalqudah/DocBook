@@ -162,7 +162,9 @@ const bookingSchema = z.object({
   branch: z.preprocess(emptyToUndefined, z.string().max(12).optional()), // 'main' or a branch id (clinics with branches)
 });
 
-router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 'slots' ? next() : bookLimiter(req, res, next)), wrap(async (req, res, next) => {
+// "Show times" posts (no-JavaScript form) recompute free times: limited like the slots API.
+const slotsPageLimiter = rateLimit({ windowMs: 10 * 60_000, limit: config.isTest ? 5000 : 300, standardHeaders: true, legacyHeaders: false, handler: (req, res) => res.status(429).send(req.t('booking.rate_limited')) });
+router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 'slots' ? slotsPageLimiter(req, res, next) : bookLimiter(req, res, next)), wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
   if (!clinic.booking_enabled || req.body.step === 'slots') return renderBook(req, res, clinic);

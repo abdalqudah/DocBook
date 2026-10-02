@@ -47,7 +47,8 @@ const initial = (name) => { const first = String(name || '').trim().split(/\s+/)
 async function render(token) {
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(String(token || ''))) return null;
   const feed = await knex('calendar_feeds as f').join('doctors as d', 'd.id', 'f.doctor_id').join('businesses as b', 'b.id', 'f.business_id')
-    .where('f.token_hash', sha256(token)).first('f.id', 'f.business_id', 'f.doctor_id', 'f.locale', 'f.last_used_at', 'd.full_name', 'd.full_name_en', 'd.slot_duration_minutes', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.timezone');
+    .where('f.token_hash', sha256(token)).where('b.status', 'active').where('d.is_active', true) // not for a suspended clinic or a doctor no longer active
+    .first('f.id', 'f.business_id', 'f.doctor_id', 'f.locale', 'f.last_used_at', 'd.full_name', 'd.full_name_en', 'd.slot_duration_minutes', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.timezone');
   if (!feed) return null;
   const today = scheduling.clinicNow(feed.timezone).date;
   const rows = await knex('appointments as a').leftJoin('services as s', 's.id', 'a.service_id')
