@@ -106,12 +106,19 @@ async function withDocs(ctx, rows) {
     return Object.fromEntries(got.map((r) => [r.appointment_id, { id: r.id, n: Number(r.n) }]));
   };
   const clin = p.has('clinical.view');
+  const papers = clin || p.has('billing.view'); // reception prints the prescription and the test request (PDF)
   const pids = [...new Set(rows.map((a) => a.patient_id).filter(Boolean))];
-  const [rx, ord, inv, mails] = await Promise.all([first(clin, 'prescriptions'), first(clin, 'medical_orders'), first(p.has('billing.view'), 'invoices'),
+  const [rx, ord, inv, mails] = await Promise.all([first(papers, 'prescriptions'), first(papers, 'medical_orders'), first(p.has('billing.view'), 'invoices'),
     pids.length ? knex('patients').where('business_id', ctx.businessId).whereIn('id', pids).whereNotNull('email').select('id', 'email') : []]);
   const mailOf = Object.fromEntries(mails.map((r) => [r.id, r.email]));
   rows.forEach((a) => {
-    a.docs = { rx: rx[a.id] || null, orders: ord[a.id] || null, invoice: inv[a.id] || null, clinical: clin, billing: p.has('billing.view') };
+    const r = rx[a.id] || null; const o = ord[a.id] || null;
+    a.docs = {
+      rx: r, orders: o, invoice: inv[a.id] || null, clinical: papers, billing: p.has('billing.view'), share: clin || p.has('billing.view'),
+      rxHref: r && (clin ? `/app/visits/${a.id}/prescriptions/${r.id}` : `/app/cashier/papers/${a.id}/prescription/${r.id}.pdf`),
+      ordersHref: o && (clin ? (o.n > 1 ? `/app/visits/${a.id}#orders` : `/app/orders/${o.id}`) : `/app/cashier/papers/${a.id}/order/${o.id}.pdf`),
+      print: !clin,
+    };
     a.docs.any = Boolean(a.docs.rx || a.docs.orders || a.docs.invoice);
     a.email = mailOf[a.patient_id] || a.patient_email || null;
   });

@@ -40,7 +40,8 @@ router.post('/:id(\\d+)/verify', can('billing.manage'), wrap(async (req, res) =>
   back(req, res, `/app/payments/${p.id}`);
 }));
 
-router.post('/:id(\\d+)/refund', can('billing.manage'), wrap(async (req, res) => {
+router.post('/:id(\\d+)/refund', can('billing.void'), // a refund voids the invoice: the clinic's admins only
+ wrap(async (req, res) => {
   try {
     const r = await pay.refund(req.ctx, Number(req.params.id));
     flash(req, 'success', req.t(r.voided ? 'payments.list.refund_done_void' : 'payments.list.refund_done'));

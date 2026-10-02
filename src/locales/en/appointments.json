@@ -254,7 +254,9 @@
     "intake_help": "The doctor sees them at the top of the visit. Fill in only what you know.",
     "intake_saved": "Vital signs and complaint saved.",
     "ico_rx": "Prescription",
-    "ico_pay": "Payment"
+    "ico_pay": "Payment",
+    "intake_fix": "One value is not right. Correct it and save — everything else you typed is kept.",
+    "intake_range": "The value must be between {min} and {max}."
   },
   "visits": {
     "title": "Visit",

@@ -4,7 +4,7 @@
 const GROUPS = [
   { key: 'overview', perms: ['dashboard.view', 'finance.view', 'finance.manage'] },
   { key: 'appointments', perms: ['appointments.view', 'appointments.manage', 'appointments.view_all'] },
-  { key: 'frontdesk', perms: ['frontdesk.use', 'billing.view', 'billing.manage'] },
+  { key: 'frontdesk', perms: ['frontdesk.use', 'billing.view', 'billing.manage', 'billing.void'] },
   { key: 'patients', perms: ['patients.view', 'patients.create', 'patients.edit', 'patients.delete'] },
   { key: 'clinical', perms: ['clinical.view', 'clinical.edit', 'vitals.edit', 'prescriptions.create', 'certificates.view', 'certificates.issue'] },
   { key: 'clinic', perms: ['doctors.manage', 'services.manage'] },
@@ -23,7 +23,7 @@ const ALL = GROUPS.flatMap((g) => g.perms);
 const without = (...remove) => ALL.filter((p) => !remove.includes(p));
 
 const IMPLIES = {
-  'appointments.manage': 'appointments.view', 'appointments.view_all': 'appointments.view', 'billing.manage': 'billing.view',
+  'appointments.manage': 'appointments.view', 'appointments.view_all': 'appointments.view', 'billing.manage': 'billing.view', 'billing.void': 'billing.manage',
   'patients.create': 'patients.view', 'patients.edit': 'patients.view', 'patients.delete': 'patients.view',
   'clinical.edit': 'clinical.view', 'vitals.edit': 'clinical.view', 'prescriptions.create': 'clinical.view',
   'attendance.manage': 'attendance.view', 'certificates.issue': 'certificates.view', 'vendors.manage': 'vendors.view', 'reviews.manage': 'reviews.view','payroll.manage': 'payroll.view', 'payroll.approve': 'payroll.view', 'supplies.manage': 'supplies.view', 'expenses.manage': 'expenses.view',

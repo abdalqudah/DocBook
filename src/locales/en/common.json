@@ -336,7 +336,8 @@
     "appointments.view_all": "See every doctor's schedule (not only their own)",
     "frontdesk.use": "Use the front desk (check-in, waiting room)",
     "billing.view": "View invoices",
-    "billing.manage": "Take payments and void invoices",
+    "billing.manage": "Take payments",
+    "billing.void": "Void invoices and refund payments (admins)",
     "patients.view": "View patients",
     "patients.create": "Add patients",
     "patients.edit": "Edit patients",
@@ -411,7 +412,14 @@
     "empty_text": "New online bookings, low-stock alerts and other important events appear here.",
     "mark_all_read": "Mark all as read",
     "unread": "Unread",
-    "view_all": "See all notifications"
+    "view_all": "See all notifications",
+    "booked": {
+      "online": "New online booking from the booking page",
+      "telehealth": "New online consultation booking",
+      "online_title": "New online booking — {name}",
+      "telehealth_title": "New online consultation — {name}",
+      "when": "{day} at {time} · waiting for confirmation"
+    }
   },
   "workspaces": {
     "new_title": "Add a clinic",

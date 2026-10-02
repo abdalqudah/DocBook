@@ -56,7 +56,7 @@ test.before(async () => {
 test.after(async () => { if (app) await app.close(); await knex.destroy(); });
 
 test('permissions: website group, transitive implications, owner/manager get it, reception does not', () => {
-  assert.equal(perms.ALL.length, 48);
+  assert.equal(perms.ALL.length, 49); // + billing.void (admins void invoices)
   assert.deepEqual(perms.normalise(['website.publish']), ['website.view', 'website.edit', 'website.publish']);
   const role = (k) => new Set(perms.normalise(perms.SYSTEM_ROLES.find((r) => r.key === k).permissions));
   assert.ok(role('clinic_manager').has('website.domain'));

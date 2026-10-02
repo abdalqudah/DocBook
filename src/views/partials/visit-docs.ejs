@@ -3,11 +3,11 @@
 <% if (a.docs && (a.docs.clinical || a.docs.billing) && a.status !== 'cancelled') { var D = a.docs; %>
       <div class="rec-sched-docs" role="group" aria-label="<%= a.patient_name %>">
         <% [
-             D.clinical ? { key: 'prescription', ic: 'pill', d: D.rx, href: D.rx && '/app/visits/' + a.id + '/prescriptions/' + D.rx.id } : null,
-             D.clinical ? { key: 'orders', ic: 'activity', d: D.orders, href: D.orders && (D.orders.n > 1 ? '/app/visits/' + a.id + '#orders' : '/app/orders/' + D.orders.id) } : null,
+             D.clinical ? { key: 'prescription', ic: 'pill', d: D.rx, href: D.rxHref, print: D.print } : null,
+             D.clinical ? { key: 'orders', ic: 'activity', d: D.orders, href: D.ordersHref, print: D.print } : null,
              D.billing ? { key: 'invoice', ic: 'receipt', d: D.invoice, href: D.invoice && '/app/billing/' + D.invoice.id } : null,
            ].filter(Boolean).forEach(function (x) { var tip = t('share.icon.' + x.key) + (x.d ? (x.d.n > 1 ? ' (' + fmt.number(x.d.n) + ')' : '') : ' — ' + t('share.docs_none')); %>
-          <% if (x.d) { %><a class="doc-ic is-on" href="<%= x.href %>" title="<%= tip %>" aria-label="<%= tip %>"><%- icon(x.ic, 'icon-sm') %></a><% } else { %><span class="doc-ic" title="<%= tip %>" aria-label="<%= tip %>" role="img"><%- icon(x.ic, 'icon-sm') %></span><% } %>
+          <% if (x.print && x.d) tip = t('share.print') + ' — ' + tip; %><% if (x.d) { %><a class="doc-ic is-on" href="<%= x.href %>"<%- x.print ? ' target="_blank" rel="noopener"' : '' %> title="<%= tip %>" aria-label="<%= tip %>"><%- icon(x.ic, 'icon-sm') %></a><% } else { %><span class="doc-ic" title="<%= tip %>" aria-label="<%= tip %>" role="img"><%- icon(x.ic, 'icon-sm') %></span><% } %>
         <% }) %>
         <span class="doc-sep" aria-hidden="true"></span>
         <span class="doc-share">

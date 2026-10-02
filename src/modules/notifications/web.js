@@ -1,16 +1,32 @@
 const express = require('express');
 const { wrap } = require('../../routes/helpers');
 const svc = require('./notification.service');
+const { formatDate } = require('../../core/format');
+
+/**
+ * Notifications stored with a machine word in the text (online bookings: body 'online' / 'telehealth', title
+ * "name · date time") read as a sentence in the member's language.
+ */
+function readable(req, rows) {
+  return rows.map((n) => {
+    if (n.type !== 'appointment.booked_online' || !['online', 'telehealth'].includes(n.body)) return n;
+    const m = String(n.title || '').match(/^(.*) · (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
+    if (!m) return { ...n, body: req.t(`notifications.booked.${n.body}`) };
+    let day = m[2];
+    try { day = formatDate(m[2], req.locale, { weekday: 'long', day: 'numeric', month: 'long' }); } catch { /* the stored date */ }
+    return { ...n, title: req.t(`notifications.booked.${n.body}_title`, { name: m[1] }), body: req.t('notifications.booked.when', { day, time: m[3] }) };
+  });
+}
 
 const router = express.Router();
 router.get('/', wrap(async (req, res) => {
-  res.page('pages/notifications/index', { title: req.t('notifications.title'), items: await svc.list(req.ctx, { limit: 100 }) });
+  res.page('pages/notifications/index', { title: req.t('notifications.title'), items: readable(req, await svc.list(req.ctx, { limit: 100 })) });
 }));
 // The bell's drop-down: the latest notifications (HTML fragment, loaded when it opens).
 router.get('/panel', wrap(async (req, res) => {
   const back = /^\/app(\/[\w\-/?=&.%]*)?$/.test(String(req.query.back || '')) ? String(req.query.back) : '/app';
   res.set('Cache-Control', 'no-store');
-  res.render('partials/notif-panel', { items: await svc.list(req.ctx, { limit: 12 }), back });
+  res.render('partials/notif-panel', { items: readable(req, await svc.list(req.ctx, { limit: 12 })), back });
 }));
 const safeBack = (v) => (typeof v === 'string' && /^\/app(\/[\w\-/?=&.%#]*)?$/.test(v) && !v.startsWith('//') ? v : null);
 router.post('/read', wrap(async (req, res) => {

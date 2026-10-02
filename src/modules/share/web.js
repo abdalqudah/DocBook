@@ -174,13 +174,7 @@ async function pdfOf(got, doc) {
     const number = `${tpl.prefix || ''}${d.inv.invoice_number}`;
     return { filename: `invoice-${String(number).replace(/[^A-Za-z0-9-]/g, '')}.pdf`, pdf: await documents.invoice({ ...d, clinic: info, number, tpl, marks }, doc.locale) };
   }
-  if (doc.kind === 'order' || doc.kind === 'referral') {
-    const orders = require('../orders/orders.service'); // eslint-disable-line global-require
-    const lib = require('../clinic/records.lib'); // eslint-disable-line global-require
-    const o = doc.kind === 'order' ? await orders.getOrder(ctx, doc.ref_id) : await orders.getReferral(ctx, doc.ref_id);
-    const marks = await sig.forDocument(clinic.id, 'reports', o.doctor_id).catch(() => ({}));
-    return { filename: `${doc.kind}-${o.id}.pdf`, pdf: await documents.orderSheet({ clinic: info, doc: o, kind: doc.kind, age: lib.ageOf(o.date_of_birth, new Date().toISOString().slice(0, 10)), marks }, doc.locale) };
-  }
+  if (doc.kind === 'order' || doc.kind === 'referral') return docsSvc.orderPdf(ctx, doc.kind, doc.ref_id, doc.locale);
   return null;
 }
 

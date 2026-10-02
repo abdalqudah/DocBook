@@ -8,6 +8,8 @@ const { E } = require('../../core/errors');
 const appts = require('./appointments.service');
 
 const num = (min, max) => z.preprocess(emptyToUndefined, z.coerce.number({ invalid_type_error: 'Enter a number.' }).min(min, 'Too small.').max(max, 'Too large.').optional());
+// Accepted ranges of the vital signs (shown with the error when a value is outside).
+const VITAL_RANGES = { weightKg: [0.5, 400], heightCm: [20, 260], temperatureC: [30, 45], pulseBpm: [20, 250], spo2: [40, 100], respiratoryRate: [4, 80], bloodSugar: [10, 1000] };
 const vitalsSchema = z.object({
   weightKg: num(0.5, 400), heightCm: num(20, 260), temperatureC: num(30, 45), pulseBpm: num(20, 250), spo2: num(40, 100),
   bloodPressure: z.preprocess(emptyToUndefined, z.string().trim().regex(/^\d{2,3}\/\d{2,3}$/, 'Use the form 120/80.').optional()),
@@ -109,4 +111,4 @@ const activeInsurance = (ctx) => knex('insurance_providers').where({ business_id
 /** Coded (ICD-10) diagnoses of one visit, primary first — see src/modules/clinicalplus/icd.service.js. */
 const diagnosesFor = (businessId, appointmentId) => require('../clinicalplus/icd.service').diagnosesFor(businessId, appointmentId); // eslint-disable-line global-require
 
-module.exports = { diagnosesFor, consultation, saveVitals, saveNote, prescribe, prescription, prescriptionsFor, medications, insurance, seedMedications, activeMedications, saveMedication, saveInsurance, activeInsurance, parseJson };
+module.exports = { VITAL_RANGES, diagnosesFor, consultation, saveVitals, saveNote, prescribe, prescription, prescriptionsFor, medications, insurance, seedMedications, activeMedications, saveMedication, saveInsurance, activeInsurance, parseJson };

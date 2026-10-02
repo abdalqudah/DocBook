@@ -48,6 +48,17 @@ async function accentOf(c) {
   return c.color && HEX.test(c.color) ? c.color : null;
 }
 
+/** A test request or referral letter as PDF (signed by its doctor, on the clinic's letterhead): { filename, pdf }. */
+async function orderPdf(ctx, kind, id, locale = 'ar') {
+  const orders = require('../orders/orders.service'); // eslint-disable-line global-require
+  const lib = require('../clinic/records.lib'); // eslint-disable-line global-require
+  const sig = require('../signatures/signatures.service'); // eslint-disable-line global-require
+  const o = kind === 'order' ? await orders.getOrder(ctx, id) : await orders.getReferral(ctx, id);
+  const [clinic, marks] = await Promise.all([clinicInfo(ctx.businessId), sig.forDocument(ctx.businessId, 'reports', o.doctor_id).catch(() => ({}))]);
+  const pdf = await documents.orderSheet({ clinic, doc: o, kind, age: lib.ageOf(o.date_of_birth, new Date().toISOString().slice(0, 10)), marks }, locale);
+  return { filename: `${kind}-${o.id}.pdf`, pdf, doc: o };
+}
+
 /** Everything about the visit the documents print (patient, doctor, whether it was online). */
 async function visitInfo(ctx, apptId) {
   const a = await appts.get(ctx, apptId); // clinic + a doctor's own schedule
@@ -195,4 +206,4 @@ async function forPatient(businessId, apptId) {
   return { rows: rows.filter((r) => r.kind !== 'certificate' || certs.some((c) => c.id === r.ref_id && !c.revoked_at)), certs };
 }
 
-module.exports = { accentOf, KINDS, SECTIONS, ageOn, clinicInfo, visitInfo, choices, sharedList, render, share, revoke, labelOf, forPatient, certificatesService };
+module.exports = { accentOf, orderPdf, KINDS, SECTIONS, ageOn, clinicInfo, visitInfo, choices, sharedList, render, share, revoke, labelOf, forPatient, certificatesService };

@@ -83,12 +83,25 @@ router.post('/:id(\\d+)/restore', toggle((req) => appts.setStatus(req.ctx, Numbe
 
 // While the patient waits: vital signs and the chief complaint, from the board (same rules as the visit screen:
 // vitals.edit and the record's privacy rule).
-router.post('/:id(\\d+)/intake', can('vitals.edit'), toggle(async (req) => {
+// A wrong value (a pulse of 900, a pressure without "/"…) reopens the form with everything typed kept and the
+// reason under the field, so only that value is corrected.
+router.post('/:id(\\d+)/intake', can('vitals.edit'), wrap(async (req, res) => {
   const a = await appts.get(req.ctx, Number(req.params.id));
   const acc = await privacy.access(req.ctx, { appointment: a });
   if (!acc.clinical && !acc.vitals) throw new AppError('RECORD_RESTRICTED', 'This clinical record is restricted.', 403);
-  await clinical.saveVitals(req.ctx, a.id, req.body);
-}, 'frontdesk.intake_saved'));
+  try {
+    await clinical.saveVitals(req.ctx, a.id, req.body);
+  } catch (e) {
+    if (!(e instanceof AppError) || e.code !== 'VALIDATION_FAILED') throw e;
+    const R = clinical.VITAL_RANGES || {};
+    const errors = Object.fromEntries(Object.entries(e.details || {}).filter(([, v]) => typeof v === 'string')
+      .map(([k, v]) => [k, R[k] && v !== 'Enter a number.' ? req.t('frontdesk.intake_range', { min: R[k][0], max: R[k][1] }) : translateMessage(req.locale, v)]));
+    res.status(422);
+    return renderBoard(req, res, { intakeRetry: { id: a.id, name: a.patient_name, values: req.body, errors } });
+  }
+  flash(req, 'success', req.t('frontdesk.intake_saved'));
+  return res.redirect(backTo(req));
+}));
 
 // ---------------------------------------------------------------- walk-in: new patient now
 const walkInSchema = z.object({

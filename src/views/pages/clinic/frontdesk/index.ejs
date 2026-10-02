@@ -110,7 +110,7 @@
         <% } %>
         <div class="fx-actions">
           <%- action %>
-          <% if (c.key === 'arrived' && canVitals) { var _has = a.intake && (a.intake.complaint || Object.keys(a.intake.vitals || {}).length); %>
+          <% if ((c.key === 'arrived' || c.key === 'with_doctor') && canVitals) { var _has = a.intake && (a.intake.complaint || Object.keys(a.intake.vitals || {}).length); %>
           <button class="btn btn-ghost btn-icon fx-ico" type="button" data-open-dialog="fx-intake" data-action="/app/front-desk/<%= a.id %>/intake" data-dialog-title="<%= t('frontdesk.intake_title') %> — <%= a.patient_name %>" data-fill="<%= JSON.stringify(Object.assign({ chief_complaint: (a.intake && a.intake.complaint) || '' }, (a.intake && a.intake.vitals) || {})) %>" title="<%= t('frontdesk.intake_btn') %>" aria-label="<%= t('frontdesk.intake_btn') %> — <%= a.patient_name %>"><%- icon('heart-pulse', 'icon-sm') %><span class="fx-ico-l"><%= _has ? t('frontdesk.intake_edit') : t('frontdesk.intake_btn') %></span></button>
           <% } %>
           <% if (c.key === 'with_doctor') { %>
@@ -167,20 +167,23 @@
 <% } %>
 
 <% if (canVitals) { %>
-<dialog class="dialog" id="fx-intake" aria-labelledby="fx-intake-h">
-  <form method="post" action="/app/front-desk" novalidate>
-    <div class="dialog-head"><div><h2 id="fx-intake-h" data-dialog-title-target><%= t('frontdesk.intake_title') %></h2><p class="small muted"><%= t('frontdesk.intake_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+<% var IR = typeof intakeRetry !== 'undefined' && intakeRetry ? intakeRetry : null; var irVal = function (k) { return IR && IR.values && IR.values[k] !== undefined ? String(IR.values[k]) : ''; }; %>
+<dialog class="dialog" id="fx-intake" aria-labelledby="fx-intake-h"<% if (IR) { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= IR ? '/app/front-desk/' + IR.id + '/intake' : '/app/front-desk' %>" novalidate>
+    <div class="dialog-head"><div><h2 id="fx-intake-h" data-dialog-title-target><%= t('frontdesk.intake_title') %><%= IR ? ' — ' + IR.name : '' %></h2><% if (IR) { %><p class="field-error"><%= t('frontdesk.intake_fix') %></p><% } %><p class="small muted"><%= t('frontdesk.intake_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
     <div class="dialog-body">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- filterInput %>
       <div class="field">
         <label class="label" for="fi-complaint"><%= t('visits.chief_complaint') %></label>
-        <textarea class="textarea" id="fi-complaint" name="chief_complaint" rows="2" maxlength="1000" dir="auto" placeholder="<%= t('visits.chief_complaint_ph') %>"></textarea>
+        <textarea class="textarea" id="fi-complaint" name="chief_complaint" rows="2" maxlength="1000" dir="auto" placeholder="<%= t('visits.chief_complaint_ph') %>"><%= irVal('chief_complaint') %></textarea>
       </div>
       <div class="fx-vitals-grid mt-4">
         <% VITALS.forEach(function (f) { %>
         <div class="field">
           <label class="label" for="fi-<%= f.k %>"><%= t('visits.v.' + f.k) %></label>
-          <div class="input-affix"><input class="input" id="fi-<%= f.k %>" name="<%= f.k %>" inputmode="<%= f.k === 'bloodPressure' ? 'text' : 'decimal' %>" dir="ltr" autocomplete="off"<% if (f.ph) { %> placeholder="<%= f.ph %>"<% } %>><span class="affix"><%= f.unit %></span></div>
+          <% var _fe = IR && IR.errors ? IR.errors[f.k] : null; %>
+          <div class="input-affix"><input class="input<%= _fe ? ' is-invalid' : '' %>" id="fi-<%= f.k %>" name="<%= f.k %>" value="<%= irVal(f.k) %>" inputmode="<%= f.k === 'bloodPressure' ? 'text' : 'decimal' %>" dir="ltr" autocomplete="off"<% if (f.ph) { %> placeholder="<%= f.ph %>"<% } %><% if (_fe) { %> aria-invalid="true" aria-describedby="fi-<%= f.k %>-err"<% } %>><span class="affix"><%= f.unit %></span></div>
+          <% if (_fe) { %><span class="field-error" id="fi-<%= f.k %>-err"><%= _fe %></span><% } %>
         </div>
         <% }) %>
       </div>
