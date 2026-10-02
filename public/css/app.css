@@ -848,7 +848,8 @@ dialog.drawer::backdrop { background: var(--overlay); }
 
 /* ---------- Staff chat ---------- */
 .chat-wrap { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: stretch; height: calc(100vh - 220px); min-height: 460px; }
-.chat-side { display: flex; flex-direction: column; overflow: hidden; }
+.chat-side { display: flex; flex-direction: column; overflow: visible; min-height: 0; }
+.chat-side .chat-list { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
 .chat-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
 .chat-list a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius); color: inherit; }
 .chat-list a:hover { background: var(--surface-sunken); }
@@ -899,3 +900,17 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .notif-all { display: block; text-align: center; padding: 10px; border-top: 1px solid var(--border); font-weight: var(--fw-semibold); font-size: 13px; }
 .notif-all:hover { background: var(--surface-sunken); }
 .chat-link { position: relative; }
+
+/* Workspace tabs: on wide screens they wrap onto a second row instead of running off the edge; on phones they
+   scroll sideways with a soft fade showing there is more. */
+@media (min-width: 721px) {
+  .section-tabs-list { flex-wrap: wrap; overflow: visible; column-gap: 18px; row-gap: 0; }
+}
+@media (max-width: 720px) {
+  .section-tabs-list { -webkit-mask-image: linear-gradient(to left, transparent 0, var(--text) 28px, var(--text) calc(100% - 28px), transparent 100%); mask-image: linear-gradient(to left, transparent 0, var(--text) 28px, var(--text) calc(100% - 28px), transparent 100%); padding-inline: 8px; }
+}
+.chat-side { overflow-y: auto; }
+.chat-side > .chat-list { flex: none; }
+.chat-team { border-top: 1px solid var(--border); padding-top: 6px; }
+.chat-team-title { padding: 6px 16px 2px; text-transform: uppercase; letter-spacing: .04em; }
+[dir="rtl"] .chat-team-title { letter-spacing: 0; }

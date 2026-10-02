@@ -209,3 +209,15 @@ test('top bar: the bell opens a drop-down of notifications; the chat icon has it
   r = await owner.submit('/app', '/app/notifications/read', { back: 'https://evil.example/' });
   assert.equal(r.location, '/app/notifications', 'never leaves the app');
 });
+
+test('chat: every active team member is listed to start a conversation (no hidden names)', async () => {
+  const owner = app.agent(); await owner.login(mail('owner'));
+  const ids = (await knex('memberships').where({ business_id: businessId, status: 'active' }).whereNot('user_id', ownerId).pluck('user_id'));
+  const r = await owner.get('/app/chat?lang=en');
+  const withChat = new Set([...r.text.matchAll(/href="\/app\/chat\?c=(\d+)"/g)].map((m) => m[1]));
+  for (const id of ids) {
+    const listed = r.text.includes(`href="/app/chat?u=${id}"`);
+    const dm = await knex('staff_chats').where({ business_id: businessId, kind: 'direct' }).whereIn('pair_key', [`${Math.min(id, ownerId)}:${Math.max(id, ownerId)}`]).first('id', 'last_message_id');
+    assert.ok(listed || (dm && withChat.has(String(dm.id))), `member ${id} can be reached`);
+  }
+});

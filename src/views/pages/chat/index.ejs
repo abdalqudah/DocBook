@@ -8,8 +8,7 @@
 <div class="chat-wrap">
   <aside class="panel flush chat-side">
     <div class="panel-head"><h2 class="small"><%= t('chat.conversations') %></h2>
-      <% if (members.length) { %><details class="dropdown"><summary class="btn btn-secondary btn-sm"><%- icon('plus', 'icon-sm') %><%= t('chat.new') %></summary>
-        <div class="menu chat-people"><% members.forEach(function (m) { %><a href="/app/chat?u=<%= m.id %>"><span class="avatar"><%= initials(m.name) %></span><span class="grow"><span class="strong small"><%= m.name %></span><span class="tiny muted d-block"><%= m.job_title || m.role_name || '' %></span></span></a><% }) %></div></details><% } %>
+
     </div>
     <ul class="chat-list">
       <% chats.forEach(function (c) { %>
@@ -20,6 +19,12 @@
       </a></li>
       <% }) %>
     </ul>
+    <% var withChat = chats.filter(function (c) { return c.otherId; }).map(function (c) { return c.otherId; }); var rest = members.filter(function (m) { return withChat.indexOf(m.id) === -1; }); %>
+    <% if (rest.length) { %>
+    <div class="chat-team"><div class="chat-team-title tiny strong muted"><%= t('chat.team') %></div>
+      <ul class="chat-list"><% rest.forEach(function (m) { %><li><a href="/app/chat?u=<%= m.id %>"><span class="avatar"><%= initials(m.name) %></span><span class="grow" style="min-width:0"><span class="strong small d-block"><%= m.name %></span><span class="tiny muted d-block"><%= m.job_title || (t('roles.' + m.role_key) !== 'roles.' + m.role_key ? t('roles.' + m.role_key) : m.role_name) || '' %></span></span><%- icon('message-circle', 'icon-sm muted') %></a></li><% }) %></ul>
+    </div>
+    <% } %>
   </aside>
   <% if (active) { %>
   <section class="panel flush chat-main" data-chat="<%= active.id %>" data-me="<%= me %>" data-after="<%= msgs.length ? msgs[msgs.length - 1].id : 0 %>">
