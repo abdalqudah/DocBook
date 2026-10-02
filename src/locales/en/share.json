@@ -50,6 +50,18 @@
     },
     "print": "Print",
     "save_pdf": "Save PDF",
-    "share_pdf": "Share PDF"
+    "share_pdf": "Share PDF",
+    "greet_morning": "Good morning, {name}",
+    "greet_evening": "Good evening, {name}",
+    "visit_lead": "Your visit documents. Tap a document to open it.",
+    "list": {
+      "invoice": "Invoice",
+      "lab": "Lab test request",
+      "imaging": "Imaging request"
+    },
+    "pick_title": "Send the visit documents",
+    "pick_lead": "Choose what to send",
+    "pick_help": "Only the ticked documents reach the patient, in one link.",
+    "send_email_short": "E-mail"
   }
 }

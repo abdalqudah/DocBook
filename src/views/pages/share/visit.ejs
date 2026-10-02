@@ -1,13 +1,12 @@
 <%# A visit link: the documents of that visit, each opening on its own (nothing else of the record). %>
-<% var ICON = { invoice: 'receipt', prescription: 'pill', report: 'stethoscope', order: 'activity', referral: 'send', certificate: 'badge-check', file: 'paperclip' }; %>
+<% var ICON = { invoice: 'receipt', prescription: 'pill', report: 'stethoscope', order: 'activity', imaging: 'scan-line', referral: 'send', certificate: 'badge-check', file: 'paperclip' }; %>
 <section class="section"><div class="container share-visit">
   <div class="share-visit-head">
-    <% if (typeof logoSrc !== 'undefined' && logoSrc) { %><img src="<%= logoSrc %>" alt="" class="share-visit-logo"><% } %>
-    <div><div class="muted small"><%= (locale === 'en' && clinic.name_en) || clinic.name %></div><h1><%= t('share.visit_title') %></h1></div>
+    <div><h1 dir="auto"><%= greeting %></h1><p class="muted"><%= t('share.visit_lead') %></p></div>
   </div>
   <ul class="share-visit-list">
     <% items.forEach(function (it) { %>
-    <li><a href="<%= it.href %>" target="_blank" rel="noopener"><span class="share-visit-ic"><%- icon(ICON[it.kind] || 'file-text', 'icon-sm') %></span><span class="grow" dir="auto"><%= it.name %></span><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %></a></li>
+    <li><a href="<%= it.href %>" target="_blank" rel="noopener"><span class="share-visit-ic"><%- icon(ICON[it.kind === 'order' && it.label && it.label.kind === 'imaging' ? 'imaging' : it.kind] || 'file-text', 'icon-sm') %></span><span class="grow" dir="auto"><%= it.name %></span><%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %></a></li>
     <% }) %>
   </ul>
   <p class="muted small share-visit-note"><%= t('share.visit_note', { date: typeof fmt !== 'undefined' ? fmt.date(expires, { day: 'numeric', month: 'long', year: 'numeric' }) : expires }) %></p>

@@ -8,10 +8,8 @@
         <span class="doc-sep" aria-hidden="true"></span>
         <span class="doc-share">
         <% if (D.any || a.status === 'completed') { %>
-          <a class="doc-ic is-wa" href="/app/share/wa?kind=visit&id=<%= a.id %>" target="_blank" rel="noopener" title="<%= t('share.send_visit') %>" aria-label="<%= t('share.send_visit') %>"><%- icon('message-circle', 'icon-sm') %></a>
-          <% var mailTip = !mailOn ? t('share.err.SHARE_NO_MAIL') : !a.email ? t('share.no_email') : t('share.send_email'); %>
-          <form method="post" action="/app/share/email" class="inline-form"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="kind" value="visit"><input type="hidden" name="id" value="<%= a.id %>">
-            <button class="doc-ic<%= mailOn && a.email ? ' is-on' : '' %>" type="submit" title="<%= mailTip %>" aria-label="<%= mailTip %>"<%= mailOn && a.email ? '' : ' disabled' %>><%- icon('mail', 'icon-sm') %></button></form>
+          <a class="doc-ic is-wa" href="/app/share/pick?id=<%= a.id %>" title="<%= t('share.send_visit') %>" aria-label="<%= t('share.send_visit') %>"><%- icon('message-circle', 'icon-sm') %></a>
+          <a class="doc-ic<%= mailOn && a.email ? ' is-on' : '' %>" href="/app/share/pick?id=<%= a.id %>" title="<%= !mailOn ? t('share.err.SHARE_NO_MAIL') : !a.email ? t('share.no_email') : t('share.send_email') %>" aria-label="<%= t('share.send_email') %>"><%- icon('mail', 'icon-sm') %></a>
         <% } %>
         </span>
       </div>

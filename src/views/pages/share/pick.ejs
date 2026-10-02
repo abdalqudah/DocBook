@@ -1,0 +1,23 @@
+<%# Before sending a visit's papers: tick which ones go (all ticked), then send on WhatsApp or by e-mail. %>
+<% var ICON = { invoice: 'receipt', prescription: 'pill', report: 'stethoscope', order: 'activity', referral: 'send', certificate: 'badge-check', file: 'paperclip' }; %>
+<div class="page-head"><div><h1><%= t('share.pick_title') %></h1><p dir="auto"><%= patient %></p></div></div>
+<section class="panel share-pick" style="max-width: 640px">
+  <% if (!items.length) { %>
+    <%- include('../../partials/empty', { compact: true, emptyIcon: 'file-text', emptyTitle: t('share.err.SHARE_EMPTY') }) %>
+  <% } else { %>
+  <form method="post" action="/app/share/wa" target="_blank" data-share-pick>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="kind" value="visit"><input type="hidden" name="id" value="<%= apptId %>">
+    <div class="panel-head"><div><h2><%= t('share.pick_lead') %></h2><p class="panel-sub"><%= t('share.pick_help') %></p></div></div>
+    <ul class="share-pick-list">
+      <% items.forEach(function (it) { var ic = it.kind === 'order' && it.label && it.label.kind === 'imaging' ? 'scan-line' : (ICON[it.kind] || 'file-text'); %>
+      <li><label class="check"><input type="checkbox" name="pick" value="<%= it.kind %>:<%= it.id %>" checked><span class="share-visit-ic"><%- icon(ic, 'icon-sm') %></span><span dir="auto"><%= it.name %></span></label></li>
+      <% }) %>
+    </ul>
+    <div class="panel-foot row-sm wrap">
+      <button class="btn btn-primary" type="submit"><%- icon('message-circle', 'icon-sm') %><%= t('share.send_wa_short') %></button>
+      <button class="btn btn-secondary" type="submit" formmethod="post" formaction="/app/share/email" formtarget="_self"<%= mailOn && email ? '' : ' disabled' %> title="<%= !mailOn ? t('share.err.SHARE_NO_MAIL') : !email ? t('share.no_email') : email %>"><%- icon('mail', 'icon-sm') %><%= t('share.send_email_short') %></button>
+      <% if (!email || !mailOn) { %><span class="small muted"><%= !mailOn ? t('share.err.SHARE_NO_MAIL') : t('share.no_email') %></span><% } %>
+    </div>
+  </form>
+  <% } %>
+</section>

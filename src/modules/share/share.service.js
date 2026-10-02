@@ -97,6 +97,13 @@ async function visitItems(ctx, apptId, { clinical = true } = {}) {
   ];
 }
 
+/** How a paper of a visit is named in a list (no invoice number; lab and imaging requests told apart). */
+function itemName(t, it) {
+  if (it.kind === 'invoice') return t('share.list.invoice');
+  if (it.kind === 'order') return t(it.label && it.label.kind === 'imaging' ? 'share.list.imaging' : 'share.list.lab');
+  return t(`share.doc.${it.kind}`, it.label || {});
+}
+
 /** The patient's e-mail for a shared document (the patient file first, then the appointment). */
 async function emailOf(ctx, doc) {
   if (doc.email) return doc.email;
@@ -117,7 +124,10 @@ async function create(ctx, kind, refId, { opts = {}, locale = 'ar', base = '', n
     if (kind !== 'invoice' && kind !== 'visit' && !clinical) throw new AppError('RECORD_RESTRICTED', 'Restricted.', 403);
   }
   if (kind === 'visit') {
-    const items = await visitItems(ctx, doc.appointment_id, { clinical });
+    let items = await visitItems(ctx, doc.appointment_id, { clinical });
+    // Only the papers the member ticked (pick = ["invoice:3", "prescription:5"…]); all of them when none is given.
+    const pick = [].concat(opts.pick || []).flatMap((v) => String(v).split(',')).map((v) => v.trim()).filter(Boolean);
+    if (pick.length) items = items.filter((it) => pick.includes(`${it.kind}:${it.id}`));
     if (!items.length) throw new AppError('SHARE_EMPTY', 'This visit has no documents yet.', 409);
     doc.options = { items };
   }
@@ -151,4 +161,4 @@ async function revokeFor(ctx, kind, refId) {
   return n;
 }
 
-module.exports = { KINDS, LINK_DAYS, PERMS, create, resolve, opened, revokeFor, target, visitItems, hash };
+module.exports = { KINDS, LINK_DAYS, PERMS, create, resolve, opened, revokeFor, target, visitItems, itemName, emailOf, hash };

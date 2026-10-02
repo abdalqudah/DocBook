@@ -944,3 +944,8 @@ dialog.drawer::backdrop { background: var(--overlay); }
   .share-actions { justify-content: stretch; flex-wrap: wrap; }
   .share-actions > * { flex: 1 1 auto; justify-content: center; }
 }
+/* Choosing the papers of a visit to send (pages/share/pick.ejs) */
+.share-pick-list { list-style: none; margin: 0; padding: 0; }
+.share-pick-list li { border-top: 1px solid var(--border); }
+.share-pick-list label { display: flex; align-items: center; gap: 12px; padding: 12px var(--card-pad, 20px); cursor: pointer; }
+.share-pick .share-visit-ic { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); flex: none; }

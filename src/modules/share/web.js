@@ -31,7 +31,7 @@ const failed = (req, res, e) => {
 async function compose(req, src, extra = {}) {
   const kind = String(src.kind || '');
   const msgLocale = ['ar', 'en'].includes(src.lang_msg) ? src.lang_msg : req.locale;
-  const made = await svc.create(req.ctx, kind, src.id, { opts: { sections: src.sections }, locale: msgLocale, base: publicBase(req), ...extra });
+  const made = await svc.create(req.ctx, kind, src.id, { opts: { sections: src.sections, pick: src.pick }, locale: msgLocale, base: publicBase(req), ...extra });
   const t = translator(msgLocale);
   const clinic = req.business;
   const clinicName = (msgLocale === 'en' && clinic.name_en) || clinic.name;
@@ -40,13 +40,27 @@ async function compose(req, src, extra = {}) {
   return { made, t, vars, msgLocale, docName, text: t('share.message', vars) };
 }
 
-staff.get('/wa', wrap(async (req, res) => {
+// Before sending a visit's papers: the member ticks which ones go (all ticked), then WhatsApp or e-mail.
+staff.get('/pick', wrap(async (req, res) => {
+  const ctx = req.ctx;
+  if (!svc.PERMS.visit.some((p) => ctx.permissions.has(p))) throw require('../../core/errors').E.forbidden('billing.view'); // eslint-disable-line global-require
+  const doc = await svc.target(ctx, 'visit', req.query.id);
+  const acc = doc.patient_id ? await require('../clinicalplus/privacy.service').access(ctx, { patientId: doc.patient_id }) : { clinical: true }; // eslint-disable-line global-require
+  const items = (await svc.visitItems(ctx, doc.appointment_id, { clinical: Boolean(acc.clinical) })).map((it) => ({ ...it, name: svc.itemName(req.t, it) }));
+  const mailer = require('../../core/mailer'); // eslint-disable-line global-require
+  const email = await svc.emailOf(ctx, doc);
+  return res.page('pages/share/pick', { title: req.t('share.pick_title'), apptId: doc.appointment_id, patient: doc.name, items, phone: doc.phone, email, mailOn: await mailer.configuredFor(ctx.businessId) });
+}));
+
+const sendWa = wrap(async (req, res) => {
   let c;
-  try { c = await compose(req, req.query); } catch (e) { return failed(req, res, e); }
+  try { c = await compose(req, { ...req.query, ...(req.method === 'POST' ? req.body : {}) }); } catch (e) { return failed(req, res, e); }
   const to = c.made.doc.phone ? await require('../messaging/messaging.service').waNumberFor(req.ctx.businessId, c.made.doc.phone) : null; // eslint-disable-line global-require
   if (!to) return res.page('pages/share/link', { title: req.t('share.title'), url: c.made.url, text: c.text, docName: c.docName, noPhone: true });
   return res.redirect(`https://wa.me/${to}?text=${encodeURIComponent(c.text)}`);
-}));
+});
+staff.get('/wa', sendWa);
+staff.post('/wa', sendWa); // from the "choose the papers" form
 
 // E-mails the patient the same secure link straight away (from the clinic's own address when it connected one).
 staff.post('/email', wrap(async (req, res) => {
@@ -144,8 +158,13 @@ pub.get('/:token', wrap(async (req, res) => {
   res.set({ 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' });
   localise(req, res, got.link.locale, got.clinic);
   const t = res.locals.t;
-  const items = (got.link.options.items || []).map((it, i) => ({ ...it, href: `/d/${req.params.token}/i/${i}`, name: t(`share.doc.${it.kind}`, it.label || {}) }));
-  return res.page('pages/share/visit', { layout: 'public', title: t('share.visit_title'), noindex: true, clinic: { ...got.clinic, displayName: (got.link.locale === 'en' && got.clinic.name_en) || got.clinic.name }, items, expires: new Date(got.link.expires_at).toISOString().slice(0, 10) });
+  const items = (got.link.options.items || []).map((it, i) => ({ ...it, href: `/d/${req.params.token}/i/${i}`, name: svc.itemName(t, it) }));
+  // A greeting by the time the page is opened (the clinic's clock), with the patient's name.
+  const appt = got.link.appointment_id ? await knex('appointments as a').leftJoin('patients as p', 'p.id', 'a.patient_id').where({ 'a.id': got.link.appointment_id, 'a.business_id': got.link.business_id }).first('a.patient_name', 'p.full_name') : null;
+  const name = appt ? String(appt.full_name || appt.patient_name || '').trim() : '';
+  const { minutes } = require('../clinic/scheduling').clinicNow(got.clinic.timezone || 'UTC'); // eslint-disable-line global-require
+  const greeting = t(minutes >= 4 * 60 && minutes < 12 * 60 ? 'share.greet_morning' : 'share.greet_evening', { name }).replace(/[،,]\s*$/, '');
+  return res.page('pages/share/visit', { layout: 'public', title: t('share.visit_title'), noindex: true, greeting, clinic: { ...got.clinic, displayName: (got.link.locale === 'en' && got.clinic.name_en) || got.clinic.name }, items, expires: new Date(got.link.expires_at).toISOString().slice(0, 10) });
 }));
 
 pub.get('/:token/i/:n(\\d+)', wrap(async (req, res) => {
