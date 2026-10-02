@@ -166,6 +166,16 @@
     $$('input[type=search]', form).forEach(function (i) { i.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { form.submit(); }, 450); }); });
   });
 
+  /* ---------- Filter a list of checkboxes (lab / imaging tests on the visit page) ---------- */
+  $$('[data-ord-filter]').forEach(function (inp) {
+    var list = inp.parentNode.querySelector('[data-ord-list]');
+    if (!list) return;
+    inp.addEventListener('input', function () {
+      var q = inp.value.trim().toLowerCase();
+      $$('label', list).forEach(function (l) { l.hidden = Boolean(q) && l.textContent.toLowerCase().indexOf(q) === -1 && !l.querySelector('input:checked'); });
+    });
+  });
+
   /* ---------- Copy / print ---------- */
   $$('[data-copy]').forEach(function (btn) {
     btn.addEventListener('click', function () {

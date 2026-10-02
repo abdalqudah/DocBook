@@ -1,0 +1,25 @@
+<% var printing = query.print === '1'; var r = doc; %>
+<% if (!printing) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><% if (r.appointment_id) { %><a href="/app/visits/<%= r.appointment_id %>#orders"><%= t('visits.title') %></a><%- icon('chevron-right', 'flip-rtl') %><% } %><%= t('orders.number') %> #<%= r.id %></div>
+    <h1><%= t('orders.referral_title') %></h1>
+  </div>
+  <div class="page-actions">
+    <% if (r.patient_id) { %><a class="btn btn-secondary" href="/app/patients/<%= r.patient_id %>?tab=orders"><%- icon('user-round', 'icon-sm') %><%= t('orders.patient_file') %></a><% } %>
+    <a class="btn btn-primary" href="/app/referrals/<%= r.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+<article class="rx-sheet ord-sheet<%= printing ? '' : ' panel' %>">
+  <%- include('_sheet-head', { doc: r }) %>
+  <div class="ord-title"><%= t('orders.referral_title') %></div>
+  <div class="ord-block"><span class="muted small"><%= t('orders.to') %></span>
+    <div><strong><%= t('orders.referral_to', { specialty: r.specialty }) %></strong><% if (r.to_doctor) { %> — <%= r.to_doctor %><% } %><% if (r.to_facility) { %> · <%= r.to_facility %><% } %></div>
+  </div>
+  <p class="ord-block"><%= t('orders.referral_greeting') %></p>
+  <div class="ord-block"><span class="muted small"><%= t('orders.reason') %></span><div style="white-space:pre-line"><%= r.reason %></div></div>
+  <% if (r.summary) { %><div class="ord-block"><span class="muted small"><%= t('orders.summary') %></span><div style="white-space:pre-line"><%= r.summary %></div></div><% } %>
+  <p class="ord-block"><%= t('orders.referral_thanks') %></p>
+  <%- include('_sign', { kind: 'referrals', doc: r }) %>
+</article>

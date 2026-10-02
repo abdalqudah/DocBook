@@ -75,7 +75,8 @@
       "prescriptions": "الوصفات",
       "documents": "المستندات",
       "billing": "الحساب المالي",
-      "timeline": "السجل الزمني"
+      "timeline": "السجل الزمني",
+      "orders": "الفحوصات والملفات"
     },
     "next_appointment": "الموعد القادم",
     "no_next": "لا يوجد موعد قادم",

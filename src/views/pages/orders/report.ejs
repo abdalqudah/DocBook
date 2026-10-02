@@ -1,0 +1,65 @@
+<%# Clinical report: tests ordered, referrals by specialty, files added, messages sent and insured visits for a period. %>
+<% var printing = query.print === '1'; var LL = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   var rq = range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month;
+   var rangeText = range.custom ? fmt.date(range.from) + ' – ' + fmt.date(range.to) : fmt.month(range.month);
+   var maxTest = data.tests.reduce(function (m, x) { return Math.max(m, x.n); }, 1);
+   var maxRef = data.referrals.reduce(function (m, x) { return Math.max(m, x.n); }, 1);
+   var msgKinds = Object.keys(messages); var channels = ['whatsapp', 'sms', 'email']; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/reports?<%= rq %>"><%= t('navx.sec_reports') %></a></div>
+    <h1><%= t('orders.report_title') %></h1>
+    <p><%= t('orders.report_lead') %> · <strong><%= rangeText %></strong></p>
+  </div>
+  <% if (!printing) { %>
+  <div class="page-actions">
+    <form class="row-sm" method="get" action="/app/reports/clinical">
+      <input class="input" type="date" name="from" value="<%= range.from %>" aria-label="<%= t('common.from') %>" required style="width:auto;height:36px">
+      <input class="input" type="date" name="to" value="<%= range.to %>" aria-label="<%= t('common.to') %>" required style="width:auto;height:36px">
+      <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.apply') %></button>
+    </form>
+    <a class="btn btn-secondary" href="/app/reports/clinical?<%= rq %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+  <% } %>
+</div>
+<div class="stats cols-4 mb-4">
+  <div class="stat"><div class="stat-label"><%= t('orders.kinds.lab') %></div><div class="stat-value"><%= fmt.number(data.byKind.lab || 0) %></div><div class="stat-meta"><%= t('orders.r_orders') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('orders.kinds.imaging') %></div><div class="stat-value"><%= fmt.number(data.byKind.imaging || 0) %></div><div class="stat-meta"><%= t('orders.r_orders') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('orders.r_pending') %></div><div class="stat-value"><%= fmt.number(data.byStatus.ordered || 0) %></div><div class="stat-meta"><%= t('orders.r_done', { n: fmt.number(data.byStatus.done || 0) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('orders.r_referrals') %></div><div class="stat-value"><%= fmt.number(data.referrals.reduce(function (s, r) { return s + r.n; }, 0)) %></div><div class="stat-meta"><%= t('orders.r_specialties', { n: fmt.number(data.referrals.length) }) %></div></div>
+</div>
+<div class="ord-report-grid">
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('orders.r_top_tests') %></h2></div>
+    <% if (!data.tests.length) { %><div class="flush-empty small muted"><%= t('orders.r_none') %></div><% } else { %>
+    <div class="table-wrap"><table class="table"><tbody><% data.tests.forEach(function (x) { %>
+      <tr><td><%- icon(x.kind === 'lab' ? 'activity' : 'scan-line', 'icon-sm muted') %> <bdi><%= LL(x.name, x.name_en) %></bdi></td><td style="width:40%"><div class="ord-bar" style="width:<%= Math.round(x.n / maxTest * 100) %>%"></div></td><td class="num"><%= fmt.number(x.n) %></td></tr>
+    <% }) %></tbody></table></div><% } %>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('orders.r_by_specialty') %></h2></div>
+    <% if (!data.referrals.length) { %><div class="flush-empty small muted"><%= t('orders.r_none') %></div><% } else { %>
+    <div class="table-wrap"><table class="table"><tbody><% data.referrals.forEach(function (x) { %>
+      <tr><td><bdi><%= x.specialty %></bdi></td><td style="width:40%"><div class="ord-bar" style="width:<%= Math.round(x.n / maxRef * 100) %>%"></div></td><td class="num"><%= fmt.number(x.n) %></td></tr>
+    <% }) %></tbody></table></div><% } %>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('orders.r_insured') %></h2></div>
+    <% if (!insured.length) { %><div class="flush-empty small muted"><%= t('orders.r_none') %></div><% } else { %>
+    <div class="table-wrap"><table class="table"><thead><tr><th><%= t('orders.r_company') %></th><th class="num"><%= t('orders.r_visits') %></th><th class="num"><%= t('orders.r_patients') %></th></tr></thead><tbody><% insured.forEach(function (x) { %>
+      <tr><td><%= x.name || '—' %></td><td class="num"><%= fmt.number(x.visits) %></td><td class="num"><%= fmt.number(x.patients) %></td></tr>
+    <% }) %></tbody></table></div><% } %>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('orders.r_messages') %></h2></div>
+    <% if (!msgKinds.length) { %><div class="flush-empty small muted"><%= t('orders.r_none') %></div><% } else { %>
+    <div class="table-wrap"><table class="table"><thead><tr><th><%= t('orders.r_message') %></th><% channels.forEach(function (c) { %><th class="num"><%= t('orders.ch.' + c) %></th><% }) %><th class="num"><%= t('common.total') %></th></tr></thead><tbody><% msgKinds.forEach(function (k) { %>
+      <tr><td><%= t('orders.msg.' + k) !== 'orders.msg.' + k ? t('orders.msg.' + k) : k %></td><% channels.forEach(function (c) { %><td class="num"><%= fmt.number(messages[k][c] || 0) %></td><% }) %><td class="num strong"><%= fmt.number(messages[k].total) %></td></tr>
+    <% }) %></tbody></table></div><% } %>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('orders.r_files') %></h2></div>
+    <% var fk = Object.keys(data.files); if (!fk.length) { %><div class="flush-empty small muted"><%= t('orders.r_none') %></div><% } else { %>
+    <div class="table-wrap"><table class="table"><tbody><% fk.forEach(function (k) { %><tr><td><%= t('orders.cat.' + k) %></td><td class="num"><%= fmt.number(data.files[k]) %></td></tr><% }) %></tbody></table></div><% } %>
+  </section>
+</div>

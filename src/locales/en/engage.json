@@ -59,7 +59,8 @@
       "stop_hint": "Reply STOP to stop these messages.",
       "test": "Test message from {clinic}: messages to patients are set up correctly.",
       "received": "{clinic}: we received your appointment request for {date} at {time} and will contact you soon to confirm it.",
-      "confirmed": "{clinic}: your appointment with {doctor} on {date} at {time} is confirmed. Change or cancel: {link}"
+      "confirmed": "{clinic}: your appointment with {doctor} on {date} at {time} is confirmed. Change or cancel: {link}",
+      "cancelled": "{clinic}: sorry, your appointment with {doctor} on {date} at {time} has been cancelled. Book a new one: {link}"
     },
     "mail": {
       "confirmation_subject": "Appointment booked — {clinic}",
@@ -76,7 +77,10 @@
       "received_cta": "View my request",
       "confirmed_subject": "Your appointment is confirmed — {clinic}",
       "confirmed_body": "Your appointment with {doctor} on {date} at {time} is confirmed. You can change or cancel it from the button below.",
-      "confirmed_cta": "Manage my appointment"
+      "confirmed_cta": "Manage my appointment",
+      "cancelled_subject": "Your appointment was cancelled — {clinic}",
+      "cancelled_body": "Sorry, your appointment with {doctor} on {date} at {time} has been cancelled. You can book a new one with the button below.",
+      "cancelled_cta": "Book a new appointment"
     },
     "notify": {
       "confirmed": "Patient confirmed: {name} · {date} {time}",
@@ -88,7 +92,8 @@
       "reminder": "Appointment reminder",
       "review": "Review request",
       "received": "Booking request received (online booking)",
-      "confirmed": "Appointment confirmed by the clinic"
+      "confirmed": "Appointment confirmed by the clinic",
+      "cancelled": "Clinic cancelled the appointment"
     },
     "stages": {
       "confirmation": "Booking confirmation",
@@ -100,7 +105,8 @@
       "opt_in": "Patient opted in again",
       "reply": "Patient confirmed by button",
       "received": "Booking request received",
-      "confirmed": "Confirmed by the clinic"
+      "confirmed": "Confirmed by the clinic",
+      "cancelled": "Appointment cancelled"
     },
     "channels": {
       "whatsapp": "WhatsApp",
@@ -234,7 +240,9 @@
     "log_when": "When",
     "log_message": "Message",
     "log_channel": "Channel",
-    "log_to": "To"
+    "log_to": "To",
+    "opt_cancellations": "Cancellation notice",
+    "opt_cancellations_help": "When the clinic cancels an upcoming appointment the patient is told, with a link to book again."
   },
   "reviews": {
     "title": "Patient reviews",

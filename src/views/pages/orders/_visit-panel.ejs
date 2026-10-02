@@ -1,0 +1,62 @@
+<%/* "Tests & referrals" panel on the visit page (data: res.locals.ordersPanel from modules/orders/web.js). */%>
+<% var op = ordersPanel; var LL = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   var itemsText = function (o) { return o.items.map(function (i) { return LL(i.name, i.name_en); }).join('، '); };
+   var tone = { ordered: 'badge-warning', done: 'badge-success', cancelled: 'badge-neutral' }; %>
+<div class="panel flush" id="orders">
+  <div class="panel-head"><h2><%- icon('activity', 'icon-sm') %> <%= t('orders.panel_title') %></h2><% if (op.orders.length + op.referrals.length) { %><span class="badge"><%= fmt.number(op.orders.length + op.referrals.length) %></span><% } %></div>
+  <% if (!op.orders.length && !op.referrals.length) { %><div class="flush-empty small muted"><%= op.canWrite ? t('orders.panel_hint') : t('orders.panel_empty') %></div><% } %>
+  <% if (op.orders.length || op.referrals.length) { %>
+  <ul class="action-list">
+    <% op.orders.forEach(function (o) { %>
+    <li><a href="/app/orders/<%= o.id %>"><span class="action-icon"><%- icon(o.kind === 'lab' ? 'activity' : 'scan-line') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= t('orders.kind.' + o.kind) %> <span class="badge badge-dot <%= tone[o.status] %>"><%= t('orders.status.' + o.status) %></span><% if (o.urgency === 'urgent') { %> <span class="badge badge-danger"><%= t('orders.urgency.urgent') %></span><% } %></div><div class="tiny muted ord-items"><%= itemsText(o) %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+    <% }) %>
+    <% op.referrals.forEach(function (r) { %>
+    <li><a href="/app/referrals/<%= r.id %>"><span class="action-icon"><%- icon('send') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= t('orders.referral_to', { specialty: r.specialty }) %><% if (r.urgency === 'urgent') { %> <span class="badge badge-danger"><%= t('orders.urgency.urgent') %></span><% } %></div><div class="tiny muted ord-items"><%= [r.to_doctor, r.to_facility].filter(Boolean).join(' · ') || r.reason %></div></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+    <% }) %>
+  </ul>
+  <% } %>
+  <% if (op.canWrite) { %>
+  <div class="panel-body ord-forms">
+    <% ['lab', 'imaging'].forEach(function (kind) { var list = op.catalog.filter(function (c) { return c.kind === kind; }); %>
+    <details class="ord-form"<%= op.open === 'order' && kind === 'lab' ? ' open' : '' %>>
+      <summary class="btn btn-secondary btn-sm btn-block"><%- icon(kind === 'lab' ? 'activity' : 'scan-line', 'icon-sm') %><%= t('orders.new_' + kind) %></summary>
+      <form method="post" action="/app/visits/<%= op.visitId %>/orders" class="stack mt-3" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="kind" value="<%= kind %>">
+        <% if (list.length) { %>
+        <input class="input input-sm" type="search" placeholder="<%= t('orders.filter') %>" aria-label="<%= t('orders.filter') %>" data-ord-filter>
+        <div class="ord-checks" data-ord-list>
+          <% list.forEach(function (c) { %><label class="ord-check"><input type="checkbox" name="tests" value="<%= c.id %>"><span><%= LL(c.name, c.name_en) %><% if (c.code) { %> <small class="muted mono" dir="ltr"><%= c.code %></small><% } %></span></label><% }) %>
+        </div>
+        <% } %>
+        <div class="field"><label class="label small"><%= t('orders.other') %></label><textarea class="textarea" name="other" rows="2" dir="auto" placeholder="<%= t('orders.other_ph') %>"></textarea></div>
+        <div class="form-grid">
+          <div class="field"><label class="label small"><%= t('orders.urgency_label') %></label><select class="select" name="urgency"><option value="routine"><%= t('orders.urgency.routine') %></option><option value="urgent"><%= t('orders.urgency.urgent') %></option></select></div>
+          <div class="field"><label class="label small"><%= t('orders.notes') %></label><input class="input" name="notes" dir="auto" maxlength="2000"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('orders.save_order') %></button>
+      </form>
+    </details>
+    <% }) %>
+    <details class="ord-form"<%= op.open === 'referral' ? ' open' : '' %>>
+      <summary class="btn btn-secondary btn-sm btn-block"><%- icon('send', 'icon-sm') %><%= t('orders.new_referral') %></summary>
+      <form method="post" action="/app/visits/<%= op.visitId %>/referrals" class="stack mt-3" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="field"><label class="label small"><%= t('orders.specialty') %> <span class="req">*</span></label><input class="input" name="specialty" list="ord-specialties" required maxlength="120" dir="auto">
+          <datalist id="ord-specialties"><% t('orders.specialties').split('|').forEach(function (s) { %><option value="<%= s %>"><% }) %></datalist></div>
+        <div class="form-grid">
+          <div class="field"><label class="label small"><%= t('orders.to_doctor') %></label><input class="input" name="to_doctor" maxlength="160" dir="auto"></div>
+          <div class="field"><label class="label small"><%= t('orders.to_facility') %></label><input class="input" name="to_facility" maxlength="160" dir="auto"></div>
+        </div>
+        <div class="field"><label class="label small"><%= t('orders.reason') %> <span class="req">*</span></label><textarea class="textarea" name="reason" rows="2" required dir="auto"></textarea></div>
+        <div class="field"><label class="label small"><%= t('orders.summary') %></label><textarea class="textarea" name="summary" rows="3" dir="auto" placeholder="<%= t('orders.summary_ph') %>"></textarea></div>
+        <div class="field"><label class="label small"><%= t('orders.urgency_label') %></label><select class="select" name="urgency"><option value="routine"><%= t('orders.urgency.routine') %></option><option value="urgent"><%= t('orders.urgency.urgent') %></option></select></div>
+        <button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('orders.save_referral') %></button>
+      </form>
+    </details>
+    <details class="ord-form">
+      <summary class="btn btn-secondary btn-sm btn-block"><%- icon('file-up', 'icon-sm') %><%= t('orders.add_files') %></summary>
+      <%- include('_upload', { pid: op.patientId, back: '/app/visits/' + op.visitId + '#orders', apptId: op.visitId, orders: op.orders.filter(function (o) { return o.status !== 'cancelled'; }) }) %>
+    </details>
+  </div>
+  <% } %>
+</div>

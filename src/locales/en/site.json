@@ -271,6 +271,18 @@
           "dark": {
             "title": "Dark mode",
             "text": "A calm night-time interface for the team, and a switch to turn it on or off on the clinic website."
+          },
+          "orders": {
+            "title": "Lab & imaging orders",
+            "text": "An editable ready list of tests and imaging the doctor picks with a click; the request prints on the clinic letterhead with signature and stamp."
+          },
+          "referrals": {
+            "title": "Referrals to specialists",
+            "text": "A referral letter with the specialty, the reason and a case summary, printed on the clinic letterhead and kept in the patient file."
+          },
+          "files": {
+            "title": "Scan papers into the patient file",
+            "text": "Upload scanned paper forms, lab results and imaging reports (PDF or images) so they stay with the patient’s file."
           }
         }
       },

@@ -804,3 +804,27 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .clinic-logo-link { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; padding: 2px 6px; }
 .clinic-logo { display: block; max-width: 100%; max-height: 100%; height: 100%; width: auto; object-fit: contain; object-position: center; margin-inline: auto; }
 .pm-cover.ws-pick-dark { background: color-mix(in srgb, black 88%, white); }
+
+/* ---------- Lab / imaging orders, referrals, patient files ---------- */
+.ord-forms { display: grid; gap: 10px; }
+.ord-form > summary { list-style: none; justify-content: center; }
+.ord-form > summary::-webkit-details-marker { display: none; }
+.ord-form[open] > summary { background: var(--surface-sunken); }
+.ord-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; max-height: 260px; overflow: auto; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius); }
+.ord-check { display: flex; gap: 8px; align-items: flex-start; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; }
+.ord-check:hover { background: var(--surface-sunken); }
+.ord-check:has(input:checked) { background: var(--primary-soft); }
+.ord-check input { margin-top: 3px; }
+.ord-items { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ord-sheet .ord-list { margin: 14px 0; padding-inline-start: 22px; display: grid; gap: 8px; font-size: 15px; }
+.ord-sheet .ord-list li::marker { color: var(--text-subtle); }
+.ord-sheet .ord-block { margin-top: 14px; }
+.ord-sheet .ord-block > span { display: block; margin-bottom: 4px; }
+.ord-sheet .ord-title { font-size: 20px; font-weight: var(--fw-heavy); margin: 6px 0 4px; }
+.ord-urgent { display: inline-flex; padding: 2px 10px; border-radius: var(--pill); border: 1.5px solid var(--danger); color: var(--danger); font-weight: var(--fw-bold); font-size: 12px; }
+.ord-file-thumb { width: 40px; height: 40px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-sunken); color: var(--text-muted); flex: none; }
+.ord-report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.ord-bar { height: 8px; border-radius: 4px; background: var(--primary); min-width: 4px; }
+.ord-upload { padding: 16px 20px 20px; border-top: 1px solid var(--border); }
+.ord-upload form, .ord-forms form { max-width: 720px; }
+.ord-upload form > .btn, .ord-forms form > .btn, aside .panel-body form > .btn { justify-self: start; }

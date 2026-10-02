@@ -29,7 +29,7 @@
 </div>
 
 <% var tabHref = function (k) { return '/app/patients/' + p.id + (k === 'overview' ? '' : '?tab=' + k); };
-   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', prescriptions: 'pill', documents: 'file-text', billing: 'receipt', timeline: 'history' }; %>
+   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', prescriptions: 'pill', orders: 'activity', documents: 'file-text', billing: 'receipt', timeline: 'history' }; %>
 <nav class="tabs mb-4 pt-tabs" aria-label="<%= t('patients.workspace') %>">
   <% tabs.forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%- icon(tabIcon[k], 'icon-sm') %><%= t('patients.tab.' + k) %></a><% }) %>
 </nav>
@@ -160,6 +160,8 @@
   <% } %>
 </div>
 <% } %>
+
+<% if (tab === 'orders' && orderTab) { %><%- include('../../orders/_patient-tab', { ot: orderTab }) %><% } %>
 
 <% if (tab === 'documents') { %>
 <div class="grid grid-2">

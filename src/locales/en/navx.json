@@ -60,6 +60,8 @@
       "front_desk": "Front desk",
       "certificates": "Certificates",
       "reviews": "Reviews"
-    }
+    },
+    "setup_orders_catalog": "Lab tests & imaging",
+    "setup_orders_catalog_text": "The lab tests and imaging studies doctors pick from."
   }
 }

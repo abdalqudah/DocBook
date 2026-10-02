@@ -148,6 +148,14 @@ router.get('/signatures/certificates/:id(\\d+)/:what(signature|stamp).png', can(
   return sendImage(res, { image: m[req.params.what] });
 }));
 
+// Lab / imaging orders and referral letters: the doctor's signature and the stamp as set for medical reports.
+router.get('/signatures/:kind(orders|referrals)/:id(\\d+)/:what(signature|stamp).png', can('clinical.view'), wrap(async (req, res) => {
+  const orders = require('../orders/orders.service'); // eslint-disable-line global-require
+  const doc = req.params.kind === 'orders' ? await orders.getOrder(req.ctx, Number(req.params.id)) : await orders.getReferral(req.ctx, Number(req.params.id));
+  const m = await svc.forDocument(req.ctx.businessId, 'reports', doc.doctor_id);
+  return sendImage(res, { image: m[req.params.what] });
+}));
+
 router.get('/signatures/invoices/:id(\\d+)/stamp.png', can('billing.view'), wrap(async (req, res) => {
   const inv = await knex('invoices').where({ id: Number(req.params.id), business_id: req.ctx.businessId }).first('id');
   if (!inv) throw E.notFound('Invoice');

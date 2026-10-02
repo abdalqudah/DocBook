@@ -1,0 +1,41 @@
+<%# Clinic → Lab tests & imaging: the list the doctor picks from when writing an order. %>
+<% var dlg = typeof openDialog !== 'undefined' && openDialog; var list = rows.filter(function (r) { return r.kind === kind; });
+   var addBtn = '<button class="btn btn-primary" type="button" data-open-dialog="cat-dialog" data-reset-form data-action="/app/clinic/orders-catalog" data-fill="' + escapeHtml(JSON.stringify({ kind: kind, is_active: true })) + '" data-dialog-title="' + escapeHtml(t('orders.item_add')) + '">' + icon('plus', 'icon-sm') + escapeHtml(t('orders.item_add')) + '</button>'; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/app/clinic/setup"><%= t('navx.sec_clinic') %></a></div><h1><%= t('orders.catalog_title') %></h1><p><%= t('orders.catalog_lead') %></p></div>
+  <div class="page-actions"><%- addBtn %></div>
+</div>
+<nav class="tabs mb-4"><% kinds.forEach(function (k) { %><a href="/app/clinic/orders-catalog?kind=<%= k %>" class="<%= kind === k ? 'active' : '' %>"><%- icon(k === 'lab' ? 'activity' : 'scan-line', 'icon-sm') %><%= t('orders.kinds.' + k) %> <span class="badge"><%= rows.filter(function (r) { return r.kind === k; }).length %></span></a><% }) %></nav>
+<section class="panel flush">
+  <% if (!rows.length) { %>
+  <%- include('../../partials/empty', { emptyIcon: 'activity', emptyTitle: t('orders.catalog_empty'), emptyText: t('orders.catalog_empty_text'), emptyAction: '<form method="post" action="/app/clinic/orders-catalog/starter"><input type="hidden" name="_csrf" value="' + csrfToken + '"><button class="btn btn-primary btn-sm" type="submit">' + escapeHtml(t('orders.starter')) + '</button></form>' }) %>
+  <% } else if (!list.length) { %><div class="panel-body small muted"><%= t('orders.kind_empty') %></div>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('orders.item_name') %></th><th><%= t('orders.item_name_en') %></th><th><%= t('orders.code') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+    <tbody><% list.forEach(function (r) { %><tr>
+      <td class="primary-cell"><span class="strong" dir="auto"><%= r.name %></span><% if (r.category) { %><div class="tiny muted"><%= r.category %></div><% } %></td>
+      <td data-label="<%= t('orders.item_name_en') %>" dir="ltr"><%= r.name_en || '—' %></td>
+      <td data-label="<%= t('orders.code') %>"><span class="mono small" dir="ltr"><%= r.code || '—' %></span></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= r.is_active ? 'badge-success' : 'badge-neutral' %>"><%= r.is_active ? t('common.active') : t('common.inactive') %></span></td>
+      <td class="actions nowrap"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="cat-dialog" data-action="/app/clinic/orders-catalog/<%= r.id %>" data-dialog-title="<%= t('orders.item_edit') %>" data-fill="<%= JSON.stringify({ kind: r.kind, name: r.name, name_en: r.name_en || '', code: r.code || '', category: r.category || '', is_active: !!r.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/clinic/orders-catalog/' + r.id + '/delete', confirmText: t('orders.item_delete_confirm', { name: r.name }) }) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>
+<dialog class="dialog" id="cat-dialog" data-new-dialog aria-labelledby="cat-title"<% if (dlg) { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= dlg && typeof formAction !== 'undefined' && formAction ? formAction : '/app/clinic/orders-catalog' %>" novalidate>
+    <div class="dialog-head"><h2 id="cat-title" data-dialog-title-target><%= t('orders.item_add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (dlg) { %><%- include('../../partials/form-error') %><% } %>
+      <div class="field"><label class="label" for="cat-kind"><%= t('orders.kind_label') %></label><select class="select" id="cat-kind" name="kind"><% kinds.forEach(function (k) { %><option value="<%= k %>"<%= (old.kind || kind) === k ? ' selected' : '' %>><%= t('orders.kinds.' + k) %></option><% }) %></select></div>
+      <%- include('../../partials/field', { name: 'name', label: t('orders.item_name'), required: true, attrs: 'dir="auto" maxlength="160"' }) %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name_en', label: t('orders.item_name_en'), attrs: 'dir="ltr" maxlength="160"' }) %>
+        <%- include('../../partials/field', { name: 'code', label: t('orders.code'), attrs: 'dir="ltr" maxlength="40"' }) %>
+      </div>
+      <%- include('../../partials/field', { name: 'category', label: t('common.category'), attrs: 'dir="auto" maxlength="80"' }) %>
+      <label class="check"><input type="checkbox" name="is_active" value="1"<%= !dlg || old.is_active ? ' checked' : '' %>><span><%= t('orders.item_active') %></span></label>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

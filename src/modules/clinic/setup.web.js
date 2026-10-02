@@ -8,6 +8,7 @@ const { canAny } = require('../../middleware/context');
 
 const CARDS = [
   { key: 'medications', href: '/app/settings/medications', icon: 'pill', perms: ['settings.manage', 'prescriptions.create'], count: (b) => knex('medications').where({ business_id: b }).count({ n: '*' }) },
+  { key: 'orders_catalog', href: '/app/clinic/orders-catalog', icon: 'activity', perms: ['settings.manage', 'clinical.edit'], count: (b) => knex('order_catalog').where({ business_id: b }).count({ n: '*' }) },
   { key: 'diagnosis_codes', href: '/app/settings/diagnosis-codes', icon: 'stethoscope', perms: ['settings.manage', 'clinical.edit'], count: (b) => knex('icd_custom_codes').where({ business_id: b }).count({ n: '*' }) },
   { key: 'insurance', href: '/app/settings/insurance', icon: 'shield-plus', perms: ['settings.manage'], count: (b) => knex('insurance_providers').where({ business_id: b }).count({ n: '*' }) },
   { key: 'signatures', href: '/app/settings/signatures', icon: 'pen-line', perms: ['settings.manage', 'prescriptions.create'] },

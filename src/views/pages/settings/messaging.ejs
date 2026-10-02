@@ -48,6 +48,7 @@
         <div class="panel-head"><div><h2><%= t('messaging.what_title') %></h2><div class="panel-sub"><%= t('messaging.what_sub') %></div></div></div>
         <div class="panel-body stack">
           <%- chk('confirmations_enabled', t('messaging.opt_confirmations'), t('messaging.opt_confirmations_help')) %>
+          <%- chk('cancellations_enabled', t('messaging.opt_cancellations'), t('messaging.opt_cancellations_help')) %>
           <div class="stack-sm">
             <%- chk('reminders_enabled', t('messaging.opt_reminders'), t('messaging.opt_reminders_help')) %>
             <div class="form-grid eg-indent">
@@ -99,6 +100,7 @@
           <div class="form-grid cols-3">
             <%- include('../../partials/field', { name: 'wa_tpl_confirmation', label: t('messaging.kinds.confirmation'), value: v('wa_tpl_confirmation'), placeholder: 'appointment_booked', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
             <%- include('../../partials/field', { name: 'wa_tpl_received', label: t('messaging.kinds.received'), value: v('wa_tpl_received'), placeholder: 'booking_received', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
+            <%- include('../../partials/field', { name: 'wa_tpl_cancelled', label: t('messaging.kinds.cancelled'), value: v('wa_tpl_cancelled'), placeholder: 'appointment_cancelled', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
             <%- include('../../partials/field', { name: 'wa_tpl_reminder', label: t('messaging.kinds.reminder'), value: v('wa_tpl_reminder'), placeholder: 'appointment_reminder', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
             <%- include('../../partials/field', { name: 'wa_tpl_review', label: t('messaging.kinds.review'), value: v('wa_tpl_review'), placeholder: 'visit_review', attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>
             <%- include('../../partials/field', { name: 'wa_lang_ar', label: t('messaging.lang_ar'), value: v('wa_lang_ar', 'ar'), attrs: 'dir="ltr" spellcheck="false"', errors: errs }) %>

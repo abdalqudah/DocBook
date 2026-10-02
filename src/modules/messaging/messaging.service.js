@@ -33,9 +33,9 @@ const STOP_WORDS = ['stop', 'unsubscribe', 'stop all', 'cancel messages', 'إي�
 const START_WORDS = ['start', 'subscribe', 'اشتراك', 'تفعيل'];
 const ACTIVE = ['pending', 'confirmed'];
 const DEFAULTS = {
-  confirmations_enabled: true, reminders_enabled: true, reminder_offsets: [1440, 120], reviews_enabled: true, review_delay_minutes: 120,
+  confirmations_enabled: true, cancellations_enabled: true, reminders_enabled: true, reminder_offsets: [1440, 120], reviews_enabled: true, review_delay_minutes: 120,
   use_whatsapp: true, use_sms: false, use_email: true, message_locale: 'ar', default_dial: null,
-  wa_phone_number_id: null, wa_token_enc: null, wa_tpl_confirmation: null, wa_tpl_received: null, wa_tpl_reminder: null, wa_tpl_review: null,
+  wa_phone_number_id: null, wa_token_enc: null, wa_tpl_confirmation: null, wa_tpl_received: null, wa_tpl_cancelled: null, wa_tpl_reminder: null, wa_tpl_review: null,
   wa_lang_ar: 'ar', wa_lang_en: 'en', wa_quick_confirm: false, wa_hook_key: null, wa_app_secret_enc: null, wa_verify_token: null, wa_verified_at: null, wa_last_error: null,
   sms_url: null, sms_method: 'POST', sms_content_type: 'application/json', sms_body_template: null, sms_auth_header: null, sms_auth_enc: null, sms_inbound_key: null,
   cancel_cutoff_hours: 3, allow_reschedule: true,
@@ -78,7 +78,7 @@ const parseOffsets = (v) => {
 async function getConfig(businessId) {
   const row = await knex('clinic_messaging').where({ business_id: businessId }).first();
   const cfg = { ...DEFAULTS, ...(row || {}), business_id: businessId, saved: Boolean(row) };
-  for (const k of ['confirmations_enabled', 'reminders_enabled', 'reviews_enabled', 'use_whatsapp', 'use_sms', 'use_email', 'wa_quick_confirm', 'allow_reschedule']) cfg[k] = Boolean(cfg[k]);
+  for (const k of ['confirmations_enabled', 'cancellations_enabled', 'reminders_enabled', 'reviews_enabled', 'use_whatsapp', 'use_sms', 'use_email', 'wa_quick_confirm', 'allow_reschedule']) cfg[k] = Boolean(cfg[k]);
   cfg.reminder_offsets = parseOffsets(cfg.reminder_offsets);
   return cfg;
 }
@@ -110,7 +110,7 @@ const tplName = () => z.preprocess(emptyToUndefined, z.string().trim().max(120).
 const langCode = () => z.preprocess(emptyToUndefined, z.string().trim().max(10).regex(/^[a-z]{2,3}(_[A-Z]{2})?$/, 'Choose a valid value.').optional());
 
 const settingsSchema = z.object({
-  confirmations_enabled: bool(), reminders_enabled: bool(), reviews_enabled: bool(), use_whatsapp: bool(), use_sms: bool(), use_email: bool(), wa_quick_confirm: bool(), allow_reschedule: bool(),
+  confirmations_enabled: bool(), cancellations_enabled: bool(), reminders_enabled: bool(), reviews_enabled: bool(), use_whatsapp: bool(), use_sms: bool(), use_email: bool(), wa_quick_confirm: bool(), allow_reschedule: bool(),
   reminder_1: z.preprocess((v) => (v === '' || v === undefined ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).min(0.25, 'Must be at least 0.25.').max(168, 'Must be at most 168.').optional()),
   reminder_2: z.preprocess((v) => (v === '' || v === undefined ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).min(0.25, 'Must be at least 0.25.').max(168, 'Must be at most 168.').optional()),
   review_delay_minutes: int(0, 7 * 1440), cancel_cutoff_hours: int(0, 72),
@@ -118,7 +118,7 @@ const settingsSchema = z.object({
   default_dial: z.preprocess(emptyToUndefined, z.string().trim().regex(/^\+?\d{1,4}$/, 'Choose a valid value.').optional()),
   wa_phone_number_id: z.preprocess(emptyToUndefined, z.string().trim().regex(/^\d{5,30}$/, 'Enter a valid value.').optional()),
   wa_token: opt(1000), wa_app_secret: opt(200), wa_verify_token: opt(64),
-  wa_tpl_confirmation: tplName(), wa_tpl_received: tplName(), wa_tpl_reminder: tplName(), wa_tpl_review: tplName(), wa_lang_ar: langCode(), wa_lang_en: langCode(),
+  wa_tpl_confirmation: tplName(), wa_tpl_received: tplName(), wa_tpl_cancelled: tplName(), wa_tpl_reminder: tplName(), wa_tpl_review: tplName(), wa_lang_ar: langCode(), wa_lang_en: langCode(),
   sms_url: z.preprocess(emptyToUndefined, z.string().trim().max(500).url('Enter a valid URL.').refine((v) => /^https?:\/\//i.test(v), 'Enter a valid URL.').optional()),
   sms_method: z.enum(['POST', 'GET']).default('POST'),
   sms_content_type: z.enum(['application/json', 'application/x-www-form-urlencoded']).default('application/json'),
@@ -131,11 +131,11 @@ async function saveSettings(ctx, input) {
   const before = await getConfig(ctx.businessId);
   const offsets = parseOffsets([d.reminder_1, d.reminder_2].filter((v) => v !== undefined).map((h) => Math.round(h * 60)));
   const row = {
-    confirmations_enabled: d.confirmations_enabled, reminders_enabled: d.reminders_enabled, reviews_enabled: d.reviews_enabled,
+    confirmations_enabled: d.confirmations_enabled, cancellations_enabled: d.cancellations_enabled, reminders_enabled: d.reminders_enabled, reviews_enabled: d.reviews_enabled,
     use_whatsapp: d.use_whatsapp, use_sms: d.use_sms, use_email: d.use_email, wa_quick_confirm: d.wa_quick_confirm, allow_reschedule: d.allow_reschedule,
     reminder_offsets: JSON.stringify(offsets), review_delay_minutes: d.review_delay_minutes ?? DEFAULTS.review_delay_minutes, cancel_cutoff_hours: d.cancel_cutoff_hours ?? DEFAULTS.cancel_cutoff_hours,
     message_locale: d.message_locale, default_dial: d.default_dial ? d.default_dial.replace(/\D/g, '') : null,
-    wa_phone_number_id: d.wa_phone_number_id || null, wa_tpl_confirmation: d.wa_tpl_confirmation || null, wa_tpl_received: d.wa_tpl_received || null, wa_tpl_reminder: d.wa_tpl_reminder || null, wa_tpl_review: d.wa_tpl_review || null,
+    wa_phone_number_id: d.wa_phone_number_id || null, wa_tpl_confirmation: d.wa_tpl_confirmation || null, wa_tpl_received: d.wa_tpl_received || null, wa_tpl_cancelled: d.wa_tpl_cancelled || null, wa_tpl_reminder: d.wa_tpl_reminder || null, wa_tpl_review: d.wa_tpl_review || null,
     wa_lang_ar: d.wa_lang_ar || 'ar', wa_lang_en: d.wa_lang_en || 'en', wa_verify_token: d.wa_verify_token || before.wa_verify_token || randomToken(18),
     sms_url: d.sms_url || null, sms_method: d.sms_method, sms_content_type: d.sms_content_type, sms_body_template: d.sms_body_template || null, sms_auth_header: d.sms_auth_header || null,
     wa_hook_key: before.wa_hook_key || randomToken(32), sms_inbound_key: before.sms_inbound_key || randomToken(32),
@@ -293,7 +293,7 @@ async function logSummary(businessId, days = 30) {
 
 // ---------------------------------------------------------------- composing
 // received = an online booking waiting for the clinic; confirmed = the clinic confirmed it (with the doctor and time it set).
-const KIND = (stage) => (['confirmation', 'received', 'confirmed', 'review'].includes(stage) ? stage : 'reminder');
+const KIND = (stage) => (['confirmation', 'received', 'confirmed', 'cancelled', 'review'].includes(stage) ? stage : 'reminder');
 
 function messageVars(a, clinic, locale) {
   const en = locale === 'en';
@@ -340,18 +340,19 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
   }
   const kind = KIND(stage);
   const locale = cfg.message_locale === 'en' ? 'en' : 'ar';
-  const { token } = await linkFor(a, kind === 'review' ? 'review' : 'action', now);
-  const link = kind === 'review' ? reviewUrl(base, token) : actionUrl(base, token);
+  // A cancelled appointment has nothing to confirm: its message links to the clinic's booking page to book again.
+  const { token } = kind === 'cancelled' ? { token: null } : await linkFor(a, kind === 'review' ? 'review' : 'action', now);
+  const link = kind === 'cancelled' ? `${base || ''}/${clinic.slug}` : kind === 'review' ? reviewUrl(base, token) : actionUrl(base, token);
   const vars = messageVars(a, clinic, locale);
   const ready = readiness(cfg);
   const results = [];
   let phoneDone = false;
-  const tpl = { confirmation: cfg.wa_tpl_confirmation, confirmed: cfg.wa_tpl_confirmation, received: cfg.wa_tpl_received, reminder: cfg.wa_tpl_reminder, review: cfg.wa_tpl_review }[kind];
+  const tpl = { confirmation: cfg.wa_tpl_confirmation, confirmed: cfg.wa_tpl_confirmation, received: cfg.wa_tpl_received, cancelled: cfg.wa_tpl_cancelled, reminder: cfg.wa_tpl_reminder, review: cfg.wa_tpl_review }[kind];
   if (to && ready.whatsapp && tpl) {
     const payload = ch.waTemplatePayload({
       to, template: tpl, language: locale === 'en' ? cfg.wa_lang_en : cfg.wa_lang_ar,
       body: kind === 'review' ? [vars.clinic, vars.doctor] : [vars.clinic, vars.doctor, vars.date, vars.time],
-      urlSuffix: token, quickPayload: kind === 'reminder' && cfg.wa_quick_confirm ? `confirm:${token}` : undefined,
+      urlSuffix: token || undefined, quickPayload: kind === 'reminder' && cfg.wa_quick_confirm ? `confirm:${token}` : undefined,
     });
     const r = await ch.sendWhatsApp(waCreds(cfg), payload);
     results.push(r.ok);
@@ -374,6 +375,27 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
   }
   if (!results.length) return finish('skipped');
   return finish(results.some(Boolean) ? 'sent' : 'failed');
+}
+
+/**
+ * The clinic cancelled an upcoming appointment: tell the patient (once per appointment time) through the same
+ * channels, with a link to book again. Not for cancellations made by the patient (no signed-in user) or past visits.
+ * Never throws — a message problem must not undo the cancellation.
+ */
+async function notifyCancelled(ctx, apptId) {
+  try {
+    if (!ctx || !ctx.userId) return null;
+    const cfg = await getConfig(ctx.businessId);
+    if (!cfg.cancellations_enabled || !readiness(cfg).any) return null;
+    const clinic = await businesses.get(ctx.businessId);
+    if (!clinic || clinic.status !== 'active') return null;
+    const a = await apptQuery().where({ 'a.id': apptId, 'a.business_id': ctx.businessId, 'a.status': 'cancelled' }).first(APPT_SELECT);
+    if (!a || a.appointment_type === 'blocked' || (!a.patient_phone && !a.patient_email)) return null;
+    if (startOf(a, clinic.timezone || 'UTC') <= Date.now()) return null;
+    return await sendStage(clinic, cfg, a, 'cancelled', { base: ctx.baseUrl });
+  } catch (err) {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------- selection (pure — unit tested)
@@ -662,6 +684,7 @@ function ics(a, clinic, locale, link) {
 }
 
 module.exports = {
+  notifyCancelled,
   TOKEN_RE, REVIEW_LINK_DAYS, DEFAULTS, STOP_WORDS,
   zonedToUtc, dateText, lengthOf, startOf, getConfig, saveSettings, readiness, waCreds, smsCfg, dialFor,
   linkFor, byToken, actionUrl, reviewUrl, actionState, isOptedOut, setOptOut, patientsForPhone, log, recentLog, logSummary,

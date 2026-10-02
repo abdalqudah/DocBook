@@ -15,6 +15,7 @@
   <div class="page-actions">
     <a class="btn btn-secondary" href="/app/reports/bookings?<%= rq %>"><%- icon('chart-pie', 'icon-sm') %><%= t('channels.open_report') %></a>
     <% if (can('clinical.view')) { %><a class="btn btn-secondary" href="/app/reports/diagnoses"><%- icon('stethoscope', 'icon-sm') %><%= t('icd.report_title') %></a><% } %>
+    <% if (can('clinical.view')) { %><a class="btn btn-secondary" href="/app/reports/clinical?<%= rq %>"><%- icon('activity', 'icon-sm') %><%= t('orders.report_title') %></a><% } %>
     <a class="btn btn-secondary" href="/app/reports/consultation-time"><%- icon('timer', 'icon-sm') %><%= t('ctimer.report_title') %></a>
     <a class="btn btn-secondary" href="/app/reports?<%= rq %>&print=1"><%- icon('printer', 'icon-sm') %><%= t('reports.printable') %></a>
   </div>

@@ -1,0 +1,20 @@
+<%/* Doctor block, number, date and the patient row — shared by the order and referral sheets (doc, age, number). */%>
+<% var _L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="rx-sheet-head">
+  <div>
+    <div class="rx-doctor"><%= _L(doc.doctor_name, doc.doctor_name_en) || t('appointments.unassigned') %></div>
+    <% if (doc.specialization || doc.specialization_en) { %><div class="muted"><%= _L(doc.specialization, doc.specialization_en) %></div><% } %>
+    <% if (doc.license_number) { %><div class="small muted"><%= t('visits.licence') %>: <span dir="ltr"><%= doc.license_number %></span></div><% } %>
+  </div>
+  <div class="rx-meta small">
+    <div><span class="muted"><%= t('orders.number') %></span> <strong>#<%= doc.id %></strong></div>
+    <div><span class="muted"><%= t('common.date') %></span> <strong><%= fmt.date(doc.created_at) %></strong></div>
+    <% if (doc.urgency === 'urgent') { %><div class="mt-2"><span class="ord-urgent"><%= t('orders.urgency.urgent') %></span></div><% } %>
+  </div>
+</div>
+<div class="rx-patient">
+  <div><span class="muted small"><%= t('common.patient') %></span><strong><%= doc.patient_full_name || doc.patient_name %></strong></div>
+  <div><span class="muted small"><%= t('visits.age') %></span><strong><%= age !== null && age !== undefined ? t('visits.age_years', { n: age }) : '—' %></strong></div>
+  <div><span class="muted small"><%= t('visits.gender_label') %></span><strong><%= doc.gender ? t('visits.gender.' + doc.gender) : '—' %></strong></div>
+  <div><span class="muted small"><%= t('common.phone') %></span><strong dir="ltr"><%= doc.patient_phone || '—' %></strong></div>
+</div>

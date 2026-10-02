@@ -1,0 +1,15 @@
+<%/* Upload scanned papers / results into the patient's file (pid; back = where to return; apptId / orders optional). */%>
+<% var _LL = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<form method="post" action="/app/patients/<%= pid %>/files" enctype="multipart/form-data" class="stack mt-3">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>">
+  <% if (typeof apptId !== 'undefined' && apptId) { %><input type="hidden" name="appointment_id" value="<%= apptId %>"><% } %>
+  <div class="field"><label class="label small"><%= t('orders.files_label') %> <span class="req">*</span></label><input class="input" type="file" name="files" accept="application/pdf,image/jpeg,image/png" multiple required><span class="help"><%= t('orders.files_help', { mb: 10, n: 10 }) %></span></div>
+  <div class="form-grid">
+    <div class="field"><label class="label small"><%= t('orders.category') %></label><select class="select" name="category"><% ['scan', 'lab_result', 'imaging', 'report', 'other'].forEach(function (c) { %><option value="<%= c %>"><%= t('orders.cat.' + c) %></option><% }) %></select></div>
+    <div class="field"><label class="label small"><%= t('orders.file_title') %></label><input class="input" name="title" maxlength="160" dir="auto"></div>
+  </div>
+  <% if (typeof orders !== 'undefined' && orders && orders.length) { %>
+  <div class="field"><label class="label small"><%= t('orders.for_order') %></label><select class="select" name="order_id"><option value=""><%= t('orders.no_order') %></option><% orders.forEach(function (o) { %><option value="<%= o.id %>">#<%= o.id %> · <%= t('orders.kind.' + o.kind) %> · <%= o.items.map(function (i) { return _LL(i.name, i.name_en); }).join('، ').slice(0, 60) %></option><% }) %></select></div>
+  <% } %>
+  <button class="btn btn-primary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('orders.upload') %></button>
+</form>

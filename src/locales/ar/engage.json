@@ -59,7 +59,8 @@
       "stop_hint": "للتوقف عن استلام هذه الرسائل أرسل: إيقاف",
       "test": "رسالة تجريبية من {clinic}: إعداد رسائل المرضى يعمل بشكل صحيح.",
       "received": "{clinic}: استلمنا طلب موعدك يوم {date} الساعة {time}، وسنتواصل معك لتأكيده قريباً.",
-      "confirmed": "{clinic}: تم تأكيد موعدك مع {doctor} يوم {date} الساعة {time}. للتغيير أو الإلغاء: {link}"
+      "confirmed": "{clinic}: تم تأكيد موعدك مع {doctor} يوم {date} الساعة {time}. للتغيير أو الإلغاء: {link}",
+      "cancelled": "{clinic}: نعتذر، تم إلغاء موعدك مع {doctor} يوم {date} الساعة {time}. لحجز موعد جديد: {link}"
     },
     "mail": {
       "confirmation_subject": "تم حجز موعدك — {clinic}",
@@ -76,7 +77,10 @@
       "received_cta": "عرض طلبي",
       "confirmed_subject": "تم تأكيد موعدك — {clinic}",
       "confirmed_body": "تم تأكيد موعدك مع {doctor} يوم {date} الساعة {time}. يمكنك تغيير الموعد أو إلغاؤه من الزر أدناه.",
-      "confirmed_cta": "إدارة موعدي"
+      "confirmed_cta": "إدارة موعدي",
+      "cancelled_subject": "تم إلغاء موعدك — {clinic}",
+      "cancelled_body": "نعتذر، تم إلغاء موعدك مع {doctor} يوم {date} الساعة {time}. يمكنك حجز موعد جديد من الزر أدناه.",
+      "cancelled_cta": "احجز موعداً جديداً"
     },
     "notify": {
       "confirmed": "أكّد المريض موعده: {name} · {date} {time}",
@@ -88,7 +92,8 @@
       "reminder": "تذكير بالموعد",
       "review": "طلب تقييم",
       "received": "استلام طلب الحجز (حجز إلكتروني)",
-      "confirmed": "تأكيد العيادة للموعد"
+      "confirmed": "تأكيد العيادة للموعد",
+      "cancelled": "إلغاء العيادة للموعد"
     },
     "stages": {
       "confirmation": "تأكيد الحجز",
@@ -100,7 +105,8 @@
       "opt_in": "أعاد المريض تفعيل الرسائل",
       "reply": "أكّد المريض عبر الزر",
       "received": "استلام طلب الحجز",
-      "confirmed": "تأكيد العيادة للموعد"
+      "confirmed": "تأكيد العيادة للموعد",
+      "cancelled": "إلغاء الموعد"
     },
     "channels": {
       "whatsapp": "واتساب",
@@ -234,7 +240,9 @@
     "log_when": "الوقت",
     "log_message": "الرسالة",
     "log_channel": "القناة",
-    "log_to": "إلى"
+    "log_to": "إلى",
+    "opt_cancellations": "إشعار الإلغاء",
+    "opt_cancellations_help": "عندما تلغي العيادة موعداً قادماً يصل المريض إشعار مع رابط لحجز موعد جديد."
   },
   "reviews": {
     "title": "تقييمات المرضى",

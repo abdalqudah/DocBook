@@ -143,7 +143,7 @@ async function renderShow(req, res, extra = {}) {
   // Patient workspace tabs (redesign 3.9): one address, ?tab=…; a tab shows only to members who may see its records.
   const perms = req.ctx.permissions;
   const tabs = ['overview', clinicalOk || (perms.has('clinical.view') && !access.clinical) ? 'clinical' : null, 'appointments', clinicalOk ? 'prescriptions' : null,
-    perms.has('certificates.view') || clinicalOk ? 'documents' : null, perms.has('billing.view') ? 'billing' : null, 'timeline'].filter(Boolean);
+    clinicalOk ? 'orders' : null, perms.has('certificates.view') || clinicalOk ? 'documents' : null, perms.has('billing.view') ? 'billing' : null, 'timeline'].filter(Boolean);
   const tab = tabs.includes(req.query.tab) ? req.query.tab : 'overview';
   const byDateDesc = (a, b) => `${b.appointment_date} ${b.appointment_time}`.localeCompare(`${a.appointment_date} ${a.appointment_time}`);
   const prescriptions = clinicalOk ? timeline.flatMap((e) => (e.kind === 'visit' ? e.prescriptions.map((rx) => ({ ...rx, appt: e.appt })) : e.kind === 'prescription' ? [e.row] : [])) : [];
@@ -154,9 +154,16 @@ async function renderShow(req, res, extra = {}) {
     if (req.ctx.ownDoctorId) q.where('doctor_id', req.ctx.ownDoctorId);
     certificates = await q;
   }
+  // Tests, referrals and the patient's files (modules/orders) — loaded only on their tab.
+  let orderTab = null;
+  if (tab === 'orders') {
+    const orders = require('../orders/orders.service'); // eslint-disable-line global-require
+    const [ol, rl, fl] = await Promise.all([orders.ordersForPatient(req.ctx, p.id), orders.referralsForPatient(req.ctx, p.id), orders.filesForPatient(req.ctx, p.id)]);
+    orderTab = { orders: ol, referrals: rl, files: fl };
+  }
   const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
   res.page('pages/clinic/patients/show', {
-    tab, tabs, prescriptions, certificates, unpaid, allAppointments: apptsMine.slice().sort(byDateDesc),
+    tab, tabs, prescriptions, certificates, orderTab, unpaid, allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
     timeline, invoices: tl.invoices.filter(mine),
@@ -184,11 +191,12 @@ router.post('/:id(\\d+)/edit', can('patients.edit'), form(async (req, res) => {
 router.post('/:id(\\d+)/delete', can('patients.delete'), form(async (req, res) => {
   const p = await loadPatient(req);
   const w = { business_id: req.ctx.businessId, patient_id: p.id };
-  const [[inv], [rx], [notes]] = await Promise.all([
+  const [[inv], [rx], [notes], [ords], [refs], [files]] = await Promise.all([
     knex('invoices').where(w).count({ n: '*' }), knex('prescriptions').where(w).count({ n: '*' }), knex('consultations').where(w).count({ n: '*' }),
+    knex('medical_orders').where(w).count({ n: '*' }), knex('referrals').where(w).count({ n: '*' }), knex('patient_files').where(w).count({ n: '*' }),
   ]);
   if (Number(inv.n) > 0) throw new AppError('PATIENT_HAS_INVOICES', 'This patient has invoices.', 409);
-  if (Number(rx.n) + Number(notes.n) > 0) throw new AppError('PATIENT_HAS_RECORDS', 'This patient has clinical records.', 409);
+  if (Number(rx.n) + Number(notes.n) + Number(ords.n) + Number(refs.n) + Number(files.n) > 0) throw new AppError('PATIENT_HAS_RECORDS', 'This patient has clinical records.', 409);
   await knex.transaction(async (trx) => {
     await trx('patients').where({ id: p.id, business_id: req.ctx.businessId }).del(); // appointments keep their name snapshot (FK: SET NULL)
     const { business_id: _b, created_at: _c, updated_at: _u, insurance_name: _i, ...snapshot } = p;

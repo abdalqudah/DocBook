@@ -135,7 +135,7 @@ function defaults() {
       { id: 'showcase', type: 'showcase', anchor: 'new', hidden: false, data: {
         kicker: T('showcase.kicker'), title: T('showcase.title'), lead: T('showcase.lead'),
         items: [['website', 'layout-template', 'wide'], ['branches', 'building-2'], ['booking', 'calendar-check'], ['messages', 'message-circle'], ['intake', 'heart-pulse'],
-          ['cash', 'calculator', 'wide'], ['invoice', 'receipt-text'], ['telehealth', 'video'], ['ai', 'bot', 'wide'], ['prices', 'tag'], ['dark', 'moon', 'wide']]
+          ['cash', 'calculator', 'wide'], ['invoice', 'receipt-text'], ['orders', 'activity'], ['referrals', 'send'], ['files', 'paperclip'], ['telehealth', 'video'], ['ai', 'bot', 'wide'], ['prices', 'tag'], ['dark', 'moon', 'wide']]
           .map(([k, icon, size]) => ({ icon, title: T(`showcase.items.${k}.title`), text: T(`showcase.items.${k}.text`), tag: T('showcase.tag'), size: size || 'normal' })),
       } },
       { id: 'features', type: 'features', anchor: 'features', hidden: false, data: {

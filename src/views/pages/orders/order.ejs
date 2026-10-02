@@ -1,0 +1,53 @@
+<% var printing = query.print === '1'; var o = doc; var LL = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   var tone = { ordered: 'badge-warning', done: 'badge-success', cancelled: 'badge-neutral' }; %>
+<% if (!printing) { %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><% if (o.appointment_id) { %><a href="/app/visits/<%= o.appointment_id %>#orders"><%= t('visits.title') %></a><%- icon('chevron-right', 'flip-rtl') %><% } %><%= t('orders.number') %> #<%= o.id %></div>
+    <h1><%= t('orders.sheet_' + o.kind) %> <span class="badge badge-dot <%= tone[o.status] %>"><%= t('orders.status.' + o.status) %></span></h1>
+  </div>
+  <div class="page-actions">
+    <% if (o.patient_id) { %><a class="btn btn-secondary" href="/app/patients/<%= o.patient_id %>?tab=orders"><%- icon('user-round', 'icon-sm') %><%= t('orders.patient_file') %></a><% } %>
+    <a class="btn btn-primary" href="/app/orders/<%= o.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+  </div>
+</div>
+<% } %>
+<div class="<%= printing ? '' : 'grid grid-main' %>">
+<article class="rx-sheet ord-sheet<%= printing ? '' : ' panel' %>">
+  <%- include('_sheet-head', { doc: o }) %>
+  <div class="ord-title"><%= t('orders.sheet_' + o.kind) %></div>
+  <ol class="ord-list">
+    <% o.items.forEach(function (it) { %><li><bdi><%= LL(it.name, it.name_en) %></bdi><% if (it.code) { %> <small class="muted mono" dir="ltr">(<%= it.code %>)</small><% } %></li><% }) %>
+  </ol>
+  <% if (o.notes) { %><div class="ord-block"><span class="muted small"><%= t('orders.notes') %></span><div style="white-space:pre-line"><%= o.notes %></div></div><% } %>
+  <%- include('_sign', { kind: 'orders', doc: o }) %>
+</article>
+<% if (!printing) { %>
+<aside class="stack">
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('orders.result') %></h2></div>
+    <div class="panel-body stack">
+      <% if (o.result_note) { %><div style="white-space:pre-line"><%= o.result_note %></div><% } %>
+      <% if (o.done_at) { %><p class="tiny muted"><%= t('orders.done_at', { date: fmt.date(o.done_at) }) %></p><% } %>
+      <% if (can('clinical.edit') || can('prescriptions.create') || can('patients.edit')) { %>
+      <form method="post" action="/app/orders/<%= o.id %>/status" class="stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="/app/orders/<%= o.id %>">
+        <div class="field"><label class="label small" for="ord-result"><%= t('orders.result_note') %></label><textarea class="textarea" id="ord-result" name="result_note" rows="4" dir="auto"><%= o.result_note || '' %></textarea></div>
+        <div class="row-sm wrap">
+          <button class="btn btn-primary btn-sm" type="submit" name="status" value="done"><%- icon('check', 'icon-sm') %><%= t('orders.mark_done') %></button>
+          <% if (o.status !== 'ordered') { %><button class="btn btn-secondary btn-sm" type="submit" name="status" value="ordered"><%= t('orders.reopen') %></button><% } %>
+        </div>
+      </form>
+      <% if (o.status !== 'cancelled') { %><form method="post" action="/app/orders/<%= o.id %>/status" data-confirm="<%= t('orders.cancel_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="cancelled"><input type="hidden" name="_return" value="/app/orders/<%= o.id %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('x', 'icon-sm') %><%= t('orders.cancel') %></button></form><% } %>
+      <% } %>
+    </div>
+  </section>
+  <% if (o.patient_id && (can('clinical.edit') || can('prescriptions.create') || can('patients.edit'))) { %>
+  <section class="panel">
+    <div class="panel-head"><h2><%= t('orders.attach_result') %></h2></div>
+    <div class="panel-body"><%- include('_upload', { pid: o.patient_id, back: '/app/orders/' + o.id, orders: [o] }) %></div>
+  </section>
+  <% } %>
+</aside>
+<% } %>
+</div>

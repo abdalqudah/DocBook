@@ -75,7 +75,8 @@
       "prescriptions": "Prescriptions",
       "documents": "Documents",
       "billing": "Billing",
-      "timeline": "Timeline"
+      "timeline": "Timeline",
+      "orders": "Tests & files"
     },
     "next_appointment": "Next appointment",
     "no_next": "No upcoming appointment",

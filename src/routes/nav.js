@@ -52,7 +52,7 @@ const NAV = [
     { key: 'branches', href: '/app/clinic/branches', icon: 'map-pin', perms: ['settings.manage'] },
     { key: 'attendance', href: '/app/attendance', icon: 'clock', perms: [], tabPerms: ['attendance.view'] }, // everyone clocks in (user menu); the tab is for managers
     { key: 'clinical_setup', href: '/app/clinic/setup', icon: 'pill', perms: ['settings.manage', 'prescriptions.create', 'clinical.edit'],
-      lights: ['/app/settings/medications', '/app/settings/diagnosis-codes', '/app/settings/insurance', '/app/settings/signatures', '/app/specialty/settings'] },
+      lights: ['/app/settings/medications', '/app/settings/diagnosis-codes', '/app/settings/insurance', '/app/settings/signatures', '/app/specialty/settings', '/app/clinic/orders-catalog'] },
   ] },
   { group: 'stock', icon: 'package', items: [
     { key: 'supplies', href: '/app/supplies', icon: 'package', perms: ['supplies.view'], badge: 'lowStock' },

@@ -182,6 +182,8 @@ async function setStatus(ctx, apptId, status) {
   await audit.record(ctx, 'appointment.status', { entityType: 'appointment', entityId: a.id, oldValues: { status: a.status }, newValues: { status } });
   // Online consultations: confirmation e-mails the link, cancellation notifies the patient (only when e-mail is set up).
   if (a.appointment_type === 'online') await require('../telehealth/telehealth.service').statusChanged(ctx, a, status); // eslint-disable-line global-require
+  // The clinic cancelled an upcoming appointment: the patient gets a message (WhatsApp / SMS / e-mail as set up).
+  if (status === 'cancelled' && a.status !== 'cancelled' && ctx.userId) await require('../messaging/messaging.service').notifyCancelled(ctx, a.id); // eslint-disable-line global-require
 }
 
 async function checkIn(ctx, apptId, on = true) {
