@@ -1,0 +1,7 @@
+{
+  "clinic_hours": {
+    "title": "Working hours",
+    "lead": "The clinic's usual days and hours. Doctors who follow the clinic's week change with it; any doctor can have their own hours on the Doctors page.",
+    "doctor_hours": "Each doctor’s hours"
+  }
+}

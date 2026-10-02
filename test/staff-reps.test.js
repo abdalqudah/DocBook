@@ -139,3 +139,47 @@ test('sidebar: reps sit under patients with the offers next to them; the home pa
   assert.match(home.text, /href="\/vendors\/signup"/);
   assert.match(home.text, /href="\/vendors"/);
 });
+
+test('chat: a new conversation shows the person at the top before its first message; images and files are sent', async () => {
+  const owner = app.agent(); await owner.login(mail('owner'));
+  const accId = await user('acc', 'Accountant Amal');
+  const role = await knex('roles').where({ business_id: businessId }).whereNot('key', 'owner').first('id');
+  await knex('memberships').insert({ business_id: businessId, user_id: accId, role_id: role.id, status: 'active' });
+  let r = await owner.get(`/app/chat?u=${accId}`);
+  assert.equal(r.status, 302);
+  const cid = Number(r.location.match(/c=(\d+)/)[1]);
+  r = await owner.get(`${r.location}&lang=en`);
+  assert.match(r.text, new RegExp(`<h2>Accountant Amal</h2>`), 'the chosen person is the open conversation');
+  const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8cfc0f01f0005fe02fe0d0a2db40000000049454e44ae426082', 'hex');
+  r = await owner.upload(`/app/chat?c=${cid}`, `/app/chat/${cid}/upload`, { body: 'Scan of the invoice' }, { files: { buffer: PNG, name: 'scan.png' } });
+  assert.equal(r.status, 302, r.text.slice(0, 200));
+  r = await owner.upload(`/app/chat?c=${cid}`, `/app/chat/${cid}/upload`, {}, { files: { buffer: Buffer.from('%PDF-1.4\n%%EOF\n'), name: 'report.pdf' } });
+  assert.equal(r.status, 302);
+  const files = await knex('staff_chat_files').where({ chat_id: cid }).orderBy('id').select('id', 'mime', 'name');
+  assert.deepEqual(files.map((f) => f.mime), ['image/png', 'application/pdf']);
+  r = await owner.upload(`/app/chat?c=${cid}`, `/app/chat/${cid}/upload`, {}, { files: { buffer: Buffer.from('MZ fake executable bytes'), name: 'virus.pdf' } });
+  assert.equal((await knex('staff_chat_files').where({ chat_id: cid }).count({ n: '*' }))[0].n, 2, 'a disguised file is refused');
+  const acc = app.agent(); await acc.login(mail('acc'));
+  r = await acc.get(`/app/chat/files/${files[0].id}`);
+  assert.equal(r.status, 200);
+  assert.match(r.type, /image\/png/);
+  r = await acc.get(`/app/chat/${cid}/messages?after=0`);
+  assert.equal(JSON.parse(r.text).data[0].files[0].name, 'scan.png');
+  const nurse = app.agent(); await nurse.login(mail('nurse'));
+  r = await nurse.get(`/app/chat/files/${files[0].id}`);
+  assert.equal(r.status, 404, 'not part of that conversation');
+});
+
+test('clinic working hours live in the Clinic workspace', async () => {
+  const owner = app.agent(); await owner.login(mail('owner'));
+  let r = await owner.get('/app/clinic/hours?lang=en');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Working hours/);
+  assert.match(r.text, /href="\/app\/clinic\/hours"/, 'a tab in the Clinic workspace');
+  r = await owner.submit('/app/clinic/hours', '/app/clinic/hours', { hours_layout: 'same', days: 'sun', s1: '08:00', e1: '14:00' });
+  assert.equal(r.status, 302);
+  const b = await knex('businesses').where({ id: businessId }).first('default_working_hours');
+  const wh = typeof b.default_working_hours === 'string' ? JSON.parse(b.default_working_hours) : b.default_working_hours;
+  assert.equal(wh.sun.shifts[0].start, '08:00');
+  assert.equal(wh.mon.enabled, false);
+});

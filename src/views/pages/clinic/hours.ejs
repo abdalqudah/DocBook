@@ -1,0 +1,10 @@
+<%# Clinic → Working hours: the clinic's usual week (the doctors who follow it change with it). %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('navx.sec_clinic') %></div><h1><%= t('clinic_hours.title') %></h1><p><%= t('clinic_hours.lead') %></p></div>
+</div>
+<form method="post" action="/app/clinic/hours" novalidate data-ox-hours class="stack" style="max-width: 980px">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <%- include('../onboarding/_hours-panel') %>
+  <div class="row-sm"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button><a class="btn btn-ghost" href="/app/doctors"><%= t('clinic_hours.doctor_hours') %></a></div>
+</form>

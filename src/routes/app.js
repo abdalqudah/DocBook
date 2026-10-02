@@ -142,6 +142,7 @@ router.use('/settings/payments', require('../modules/payments/settings.web'));
 router.use('/clinic/team', require('../modules/settings/team.web')); // Clinic → Team (members, page access)
 router.use('/clinic/branches', require('../modules/clinic/branches.web')); // Clinic → Branches (within the package)
 router.use('/clinic/roles', require('../modules/settings/roles.web')); // Clinic → Team → Roles
+router.use('/clinic/hours', require('../modules/clinic/hours.web')); // Clinic → Working hours (the clinic's usual week)
 router.use('/clinic/setup', require('../modules/clinic/setup.web')); // Clinic → Clinical setup (hub of the clinical lists) // Settings → Online payments
 router.use('/settings', require('../modules/settings/web'));
 

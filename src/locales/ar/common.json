@@ -173,7 +173,8 @@
     "website_email": "البريد",
     "website_seo": "محركات البحث",
     "website_analytics": "الإحصاءات",
-    "branches": "الفروع"
+    "branches": "الفروع",
+    "clinic_hours": "دوام العيادة"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",

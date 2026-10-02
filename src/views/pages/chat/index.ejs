@@ -1,5 +1,8 @@
 <%# Staff chat: conversations on one side, the open conversation on the other. %>
 <% var me = currentUser.id; var title = function (c) { return c.kind === 'room' ? t('chat.room') : c.title; };
+   var fileList = function (files) { return (files || []).map(function (f) { return f.image
+       ? '<a class="chat-img" href="/app/chat/files/' + f.id + '" target="_blank" rel="noopener"><img src="/app/chat/files/' + f.id + '" alt="' + escapeHtml(f.name) + '" loading="lazy"></a>'
+       : '<a class="chat-file" href="/app/chat/files/' + f.id + '" target="_blank" rel="noopener">' + icon('file-text', 'icon-sm') + '<span>' + escapeHtml(f.name) + '</span><small dir="ltr">' + (f.size >= 1048576 ? (Math.round(f.size / 104857.6) / 10) + ' MB' : Math.max(1, Math.round(f.size / 1024)) + ' KB') + '</small></a>'; }).join(''); };
    var when = function (d) { return fmt.date(d, { day: 'numeric', month: 'short' }) + ' ' + new Date(d).toTimeString().slice(0, 5); }; %>
 <div class="page-head"><div><h1><%= t('chat.title') %></h1><p><%= t('chat.lead') %></p></div></div>
 <div class="chat-wrap">
@@ -12,7 +15,7 @@
       <% chats.forEach(function (c) { %>
       <li><a href="/app/chat?c=<%= c.id %>" class="<%= active && c.id === active.id ? 'is-on' : '' %>"<%- active && c.id === active.id ? ' aria-current="page"' : '' %>>
         <span class="avatar<%= c.kind === 'room' ? ' chat-room-av' : '' %>"><%- c.kind === 'room' ? icon('users', 'icon-sm') : initials(c.title) %></span>
-        <span class="grow" style="min-width:0"><span class="strong small d-block"><%= title(c) %></span><span class="tiny muted chat-preview"><%= c.last ? (c.last.user_id === me ? t('chat.you') + ': ' : (c.kind === 'room' ? (c.last.user_name || '') + ': ' : '')) + c.last.body : t('chat.empty_short') %></span></span>
+        <span class="grow" style="min-width:0"><span class="strong small d-block"><%= title(c) %></span><span class="tiny muted chat-preview"><%= c.last ? (c.last.user_id === me ? t('chat.you') + ': ' : (c.kind === 'room' ? (c.last.user_name || '') + ': ' : '')) + (c.last.body || (c.last.hasFile ? '📎 ' + t('chat.attachment') : '')) : t('chat.empty_short') %></span></span>
         <% if (c.unread) { %><span class="badge badge-brand"><%= c.unread > 99 ? '99+' : c.unread %></span><% } %>
       </a></li>
       <% }) %>
@@ -24,16 +27,18 @@
     <div class="chat-msgs" data-chat-msgs aria-live="polite">
       <% if (!msgs.length) { %><p class="chat-empty muted small" data-chat-empty><%= t('chat.empty') %></p><% } %>
       <% msgs.forEach(function (m) { %>
-      <div class="chat-msg<%= m.user_id === me ? ' is-me' : '' %>"><% if (m.user_id !== me) { %><div class="chat-who tiny"><%= m.user_name || '—' %></div><% } %><div class="chat-bubble" dir="auto"><%= m.body %></div><div class="chat-at tiny muted"><%= when(m.created_at) %></div></div>
+      <div class="chat-msg<%= m.user_id === me ? ' is-me' : '' %>"><% if (m.user_id !== me) { %><div class="chat-who tiny"><%= m.user_name || '—' %></div><% } %><% if (m.files && m.files.length) { %><div class="chat-files"><%- fileList(m.files) %></div><% } %><% if (m.body) { %><div class="chat-bubble" dir="auto"><%= m.body %></div><% } %><div class="chat-at tiny muted"><%= when(m.created_at) %></div></div>
       <% }) %>
       <span id="end"></span>
     </div>
-    <form class="chat-form" method="post" action="/app/chat/<%= active.id %>" data-chat-form>
+    <div class="chat-picked" data-chat-picked hidden></div>
+    <form class="chat-form" method="post" action="/app/chat/<%= active.id %>/upload" enctype="multipart/form-data" data-chat-form>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <textarea class="textarea" name="body" rows="1" maxlength="2000" required dir="auto" placeholder="<%= t('chat.placeholder') %>" aria-label="<%= t('chat.placeholder') %>"></textarea>
+      <label class="btn btn-ghost btn-icon chat-attach" title="<%= t('chat.attach') %>" aria-label="<%= t('chat.attach') %>"><%- icon('paperclip', 'icon-sm') %><input type="file" name="files" multiple accept="image/*,application/pdf,.docx,.xlsx,.pptx" data-chat-file hidden></label>
+      <textarea class="textarea" name="body" rows="1" maxlength="2000" dir="auto" placeholder="<%= t('chat.placeholder') %>" aria-label="<%= t('chat.placeholder') %>"></textarea>
       <button class="btn btn-primary" type="submit" aria-label="<%= t('chat.send') %>"><%- icon('send', 'icon-sm flip-rtl') %><span class="hide-xs"><%= t('chat.send') %></span></button>
     </form>
   </section>
   <% } %>
 </div>
-<script type="application/json" id="chat-i18n"><%- json({ you: t('chat.you'), failed: t('chat.send_failed'), locale: locale }) %></script>
+<script type="application/json" id="chat-i18n"><%- json({ you: t('chat.you'), failed: t('chat.send_failed'), clear: t('chat.clear'), locale: locale }) %></script>

@@ -11,6 +11,14 @@
     "empty_short": "No messages yet",
     "placeholder": "Write a message…",
     "send": "Send",
-    "send_failed": "The message could not be sent. Try again."
+    "send_failed": "The message could not be sent. Try again.",
+    "attach": "Attach an image or file",
+    "attachment": "Attachment",
+    "clear": "Remove",
+    "err": {
+      "CHAT_FILE_TYPE": "Unsupported file type. Send an image, a PDF or a Word / Excel / PowerPoint file.",
+      "CHAT_FILE_BIG": "The file is larger than 10 MB.",
+      "CHAT_TOO_MANY": "Up to 5 files per message."
+    }
   }
 }

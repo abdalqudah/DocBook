@@ -1,0 +1,48 @@
+<%/* The clinic's usual week (wizard step 2 and Clinic → Working hours). Needs: hours, week, doctorCount, old, errors. */%>
+<% var o = old || {}; var hasOld = Object.keys(o).length > 0; var days = hasOld ? [].concat(o.days || []) : hours.days; var split = hasOld ? (o.split === '1') : hours.split;
+   var v = function (k) { return hasOld && o[k] !== undefined ? o[k] : hours[k]; };
+   var layout = hasOld ? (o.hours_layout === 'days' ? 'days' : 'same') : (hours.perDay ? 'days' : 'same');
+   var whOld = hasOld && o.wh ? Object.fromEntries(week.map(function (k) { var d = o.wh[k] || {}; var last = function (x) { return [].concat(x === undefined ? [] : x).pop(); };
+     return [k, { enabled: d.enabled === '1', shifts: [{ start: d.s1 || '', end: d.e1 || '' }].concat(last(d.extra) === '1' ? [{ start: d.s2 || '', end: d.e2 || '' }] : []), breaks: last(d.break) === '1' ? [{ start: d.bs || '', end: d.be || '' }] : [] }]; })) : null; %>
+  <section class="panel ox-hours">
+    <div class="panel-body stack">
+      <div class="segmented" role="radiogroup" aria-label="<%= t('ownerx.wiz.work_days') %>">
+        <label><input type="radio" name="hours_layout" value="same"<%= layout === 'same' ? ' checked' : '' %>><span><%- icon('calendar', 'icon-sm') %><%= t('ownerx.wiz.layout_same') %></span></label>
+        <label><input type="radio" name="hours_layout" value="days"<%= layout === 'days' ? ' checked' : '' %>><span><%- icon('clock', 'icon-sm') %><%= t('ownerx.wiz.layout_days') %></span></label>
+      </div>
+      <div class="ox-hours-same stack">
+      <div class="field">
+        <span class="label"><%= t('ownerx.wiz.work_days') %></span>
+        <div class="onb-days">
+          <% week.forEach(function (d) { %><label class="onb-day"><input type="checkbox" name="days" value="<%= d %>"<%= days.indexOf(d) >= 0 ? ' checked' : '' %>><span><%= t('days.' + d) %></span></label><% }) %>
+        </div>
+        <% if (errors.days && layout === 'same') { %><span class="field-error"><%= errors.days %></span><% } %>
+      </div>
+      <div class="ox-shift">
+        <div class="small strong muted"><%= t('ownerx.wiz.shift1') %></div>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 's1', label: t('ownerx.wiz.opens'), type: 'time', value: v('s1') }) %>
+          <%- include('../../partials/field', { name: 'e1', label: t('ownerx.wiz.closes'), type: 'time', value: v('e1') }) %>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" name="split" value="1"<%= split ? ' checked' : '' %> data-ox-split><span><strong><%= t('ownerx.wiz.split') %></strong> — <span class="muted"><%= t('ownerx.wiz.split_text') %></span></span></label>
+      <div class="ox-shift" data-ox-split-box<%= split ? '' : ' data-off' %>>
+        <div class="small strong muted"><%= t('ownerx.wiz.shift2') %></div>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 's2', label: t('ownerx.wiz.opens'), type: 'time', value: v('s2') }) %>
+          <%- include('../../partials/field', { name: 'e2', label: t('ownerx.wiz.closes'), type: 'time', value: v('e2') }) %>
+        </div>
+      </div>
+      </div>
+      <div class="ox-hours-days stack">
+        <p class="help"><%= t('ownerx.wiz.layout_days_help') %></p>
+        <% if (errors.days && layout === 'days') { %><span class="field-error"><%= errors.days %></span><% } %>
+        <div class="table-wrap"><%- include('../../partials/week-table', { wh: whOld || hours.wh, days: week }) %></div>
+        <div><button type="button" class="btn btn-ghost btn-sm" data-ox-copy-day><%- icon('copy', 'icon-sm') %><%= t('ownerx.wiz.copy_first') %></button></div>
+      </div>
+      <% if (doctorCount) { %>
+      <label class="check set-me"><input type="checkbox" name="apply_doctors" value="1"<%= (hasOld ? o.apply_doctors === '1' : !hours.saved) ? ' checked' : '' %>><span><strong><%= t('ownerx.wiz.apply_doctors', { n: doctorCount }) %></strong> — <span class="muted"><%= t('ownerx.wiz.apply_doctors_text') %></span></span></label>
+      <% } %>
+      <p class="small muted row-sm" style="align-items:flex-start"><%- icon('info', 'icon-sm') %><span><%= t('ownerx.wiz.hours_note') %></span></p>
+    </div>
+  </section>

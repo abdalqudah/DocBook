@@ -173,7 +173,8 @@
     "website_email": "E-mail",
     "website_seo": "Search engines",
     "website_analytics": "Statistics",
-    "branches": "Branches"
+    "branches": "Branches",
+    "clinic_hours": "Working hours"
   },
   "search": {
     "open": "Search and quick actions",

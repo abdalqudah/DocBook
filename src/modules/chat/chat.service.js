@@ -6,6 +6,35 @@ const knex = require('../../db/knex');
 const { E, AppError } = require('../../core/errors');
 
 const MAX_LEN = 2000;
+const MAX_FILES = 5;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+// Accepted attachments, recognised from their first bytes (never from the name alone).
+const OFFICE = { docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+function kindOf(buf, name) {
+  if (!Buffer.isBuffer(buf) || buf.length < 8) return null;
+  const h = (n) => buf.subarray(0, n).toString('latin1');
+  if (h(5) === '%PDF-') return { ext: 'pdf', mime: 'application/pdf' };
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { ext: 'jpg', mime: 'image/jpeg', image: true };
+  if (buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { ext: 'png', mime: 'image/png', image: true };
+  if (h(6) === 'GIF87a' || h(6) === 'GIF89a') return { ext: 'gif', mime: 'image/gif', image: true };
+  if (h(4) === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return { ext: 'webp', mime: 'image/webp', image: true };
+  const ext = String(name || '').toLowerCase().split('.').pop();
+  if (h(4) === 'PK\u0003\u0004' && OFFICE[ext]) return { ext, mime: OFFICE[ext] };
+  return null;
+}
+
+/** Checks multer memory files → rows to store, or a 422 with a code. */
+function checkFiles(files) {
+  const list = (files || []).filter((f) => f && f.buffer && f.buffer.length);
+  if (list.length > MAX_FILES) throw new AppError('CHAT_TOO_MANY', 'Too many files.', 422, { files: 'CHAT_TOO_MANY' });
+  return list.map((f) => {
+    if (f.buffer.length > MAX_FILE_BYTES) throw new AppError('CHAT_FILE_BIG', 'File too large.', 422, { files: 'CHAT_FILE_BIG' });
+    const k = kindOf(f.buffer, f.originalname);
+    if (!k) throw new AppError('CHAT_FILE_TYPE', 'Unsupported file type.', 422, { files: 'CHAT_FILE_TYPE' });
+    const base = String(f.originalname || 'file').replace(/^.*[\\/]/, '').replace(/[\u0000-\u001f\u007f<>:"|?*]/g, '').replace(/\.[A-Za-z0-9]{1,5}$/, '').trim().slice(0, 100) || 'file';
+    return { name: `${base}.${k.ext}`, mime: k.mime, size: f.buffer.length, data: f.buffer };
+  });
+}
 const PAGE = 80;
 
 /** Active members of the clinic (for "new conversation"), without the signed-in member. */
@@ -56,11 +85,13 @@ async function access(ctx, chatId) {
 const otherOf = (c, userId) => { const [a, b] = String(c.pair_key).split(':').map(Number); return a === userId ? b : a; };
 
 /** Conversations of the signed-in member, newest first, with the last message and the unread count. */
-async function list(ctx) {
+async function list(ctx, { include = null } = {}) {
   const r = await room(ctx);
   const like = `%:${ctx.userId}`;
+  // Conversations with messages, plus the one just opened (a new conversation shows before its first message).
   const directs = await knex('staff_chats').where({ business_id: ctx.businessId, kind: 'direct' })
-    .andWhere((w) => w.where('pair_key', 'like', `${ctx.userId}:%`).orWhere('pair_key', 'like', like)).whereNotNull('last_message_id');
+    .andWhere((w) => w.where('pair_key', 'like', `${ctx.userId}:%`).orWhere('pair_key', 'like', like))
+    .andWhere((w) => w.whereNotNull('last_message_id').orWhere('id', Number(include) || 0));
   const chats = [r, ...directs];
   // A member who never opened the room starts at the messages written after they joined.
   if (!(await knex('staff_chat_members').where({ chat_id: r.id, user_id: ctx.userId }).first('chat_id'))) {
@@ -76,6 +107,8 @@ async function list(ctx) {
     Promise.all(chats.map((c) => knex('staff_chat_messages').where('chat_id', c.id).where('id', '>', readOf.get(c.id) || 0).whereNot('user_id', ctx.userId).count({ n: '*' }).then(([x]) => Number(x.n)))),
     knex('users').whereIn('id', directs.map((c) => otherOf(c, ctx.userId))).select('id', 'name'),
   ]);
+  const withFiles = new Set(lastIds.length ? await knex('staff_chat_files').whereIn('message_id', lastIds).distinct('message_id').pluck('message_id') : []);
+  lasts.forEach((m) => { m.hasFile = withFiles.has(m.id); });
   const lastBy = new Map(lasts.map((m) => [m.id, m]));
   const nameOf = new Map(others.map((u) => [u.id, u.name]));
   return chats.map((c, i) => ({
@@ -90,17 +123,32 @@ async function messages(ctx, chatId, { after = 0 } = {}) {
   const c = await access(ctx, chatId);
   const q = knex('staff_chat_messages as m').leftJoin('users as u', 'u.id', 'm.user_id').where({ 'm.chat_id': c.id, 'm.business_id': ctx.businessId })
     .select('m.id', 'm.body', 'm.user_id', 'm.created_at', 'u.name as user_name');
-  if (Number(after) > 0) return q.where('m.id', '>', Number(after)).orderBy('m.id').limit(200);
-  return (await q.orderBy('m.id', 'desc').limit(PAGE)).reverse();
+  const rows = Number(after) > 0 ? await q.where('m.id', '>', Number(after)).orderBy('m.id').limit(200) : (await q.orderBy('m.id', 'desc').limit(PAGE)).reverse();
+  const files = rows.length ? await knex('staff_chat_files').whereIn('message_id', rows.map((m) => m.id)).orderBy('id').select('id', 'message_id', 'name', 'mime', 'size') : [];
+  rows.forEach((m) => { m.files = files.filter((f) => f.message_id === m.id).map((f) => ({ id: f.id, name: f.name, mime: f.mime, size: f.size, image: f.mime.startsWith('image/') })); });
+  return rows;
 }
 
-async function send(ctx, chatId, body) {
+/** An attachment the signed-in member may open (via its conversation), or 404. */
+async function fileOf(ctx, fileId) {
+  const f = await knex('staff_chat_files').where({ id: Number(fileId) || 0, business_id: ctx.businessId }).first();
+  if (!f) throw E.notFound('File');
+  await access(ctx, f.chat_id);
+  return f;
+}
+
+async function send(ctx, chatId, body, files = []) {
   const c = await access(ctx, chatId);
   const text = String(body || '').replace(/\r/g, '').trim();
-  if (!text) throw E.validation({ body: 'Required.' });
+  const rows = checkFiles(files);
+  if (!text && !rows.length) throw E.validation({ body: 'Required.' });
   if (text.length > MAX_LEN) throw new AppError('CHAT_TOO_LONG', 'The message is too long.', 422, { body: 'Too large.' });
   if (!(await isMember(ctx.businessId, ctx.userId))) throw E.forbidden('chat');
-  const [id] = await knex('staff_chat_messages').insert({ chat_id: c.id, business_id: ctx.businessId, user_id: ctx.userId, body: text });
+  const id = await knex.transaction(async (trx) => {
+    const [mid] = await trx('staff_chat_messages').insert({ chat_id: c.id, business_id: ctx.businessId, user_id: ctx.userId, body: text });
+    if (rows.length) await trx('staff_chat_files').insert(rows.map((f) => ({ ...f, message_id: mid, chat_id: c.id, business_id: ctx.businessId })));
+    return mid;
+  });
   await knex('staff_chats').where({ id: c.id }).update({ last_message_id: id, last_message_at: new Date(), updated_at: new Date() });
   await markRead(ctx, c.id, id);
   return id;
@@ -125,4 +173,4 @@ async function unreadTotal(ctx) {
   return Number(n);
 }
 
-module.exports = { MAX_LEN, members, room, direct, access, list, messages, send, markRead, unreadTotal, otherOf };
+module.exports = { MAX_LEN, MAX_FILES, MAX_FILE_BYTES, kindOf, checkFiles, fileOf, members, room, direct, access, list, messages, send, markRead, unreadTotal, otherOf };

@@ -870,3 +870,13 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .chat-form { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--border); background: var(--surface); }
 .chat-form textarea { flex: 1; resize: none; min-height: 42px; max-height: 160px; }
 @media (max-width: 860px) { .chat-wrap { grid-template-columns: 1fr; height: auto; } .chat-side { max-height: 260px; } .chat-main { height: 70vh; } }
+.chat-files { display: flex; flex-wrap: wrap; gap: 6px; }
+.chat-msg.is-me .chat-files { justify-content: flex-end; }
+.chat-img img { display: block; max-width: 240px; max-height: 220px; border-radius: 12px; border: 1px solid var(--border); object-fit: cover; background: var(--surface); }
+.chat-file { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); max-width: 280px; }
+.chat-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.chat-file small { color: var(--text-muted); flex: none; }
+.chat-file:hover { border-color: var(--primary); }
+.chat-attach { cursor: pointer; flex: none; }
+.chat-picked { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 12px 0; background: var(--surface); }
+.chat-chip { font-size: 12px; padding: 3px 10px; border-radius: var(--pill); background: var(--primary-soft); }

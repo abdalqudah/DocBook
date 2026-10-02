@@ -136,6 +136,7 @@ const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|favicon)\/?$/, /^
   /^\/app\/settings\/signatures\/(stamp|doctors\/\d+\/upload)\/?$/, // doctor signature / clinic stamp images
   /^\/app\/settings\/media\/upload\/?$/, // clinic media library uploads
   /^\/app\/patients\/\d+\/files\/?$/, // scanned papers and results in the patient's file
+  /^\/app\/chat\/\d+\/upload\/?$/, // images and documents in the staff chat
   /^\/app\/website\/fonts\/?$/, // website fonts (Theme & brand)
   /^\/admin\/updates\/install\/?$/]; // platform admin: system update package (zip)
 
