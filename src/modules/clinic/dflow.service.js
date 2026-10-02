@@ -255,6 +255,14 @@ async function start(ctx, apptId, { timer = true } = {}) {
       checked_in: true, arrived_at: a.arrived_at || now, with_doctor: true, called_at: a.called_at || now, status: 'confirmed', updated_at: now,
     });
     await audit.record(ctx, 'appointment.called_in', { entityType: 'appointment', entityId: a.id, newValues: { by: 'doctor' } });
+    // The doctor called the patient in themselves: reception is told (bell + a "ding-dong" on their screen) to send
+    // the patient in. Title = patient, body = doctor (shown as a sentence by notifications/web readable()).
+    try {
+      const d = a.doctor_id ? await knex('doctors').where({ id: a.doctor_id, business_id: ctx.businessId }).first('full_name') : null;
+      await require('../notifications/notification.service').notify(ctx.businessId, { // eslint-disable-line global-require
+        permission: 'frontdesk.use', type: 'patient.called_in', severity: 'warning', title: a.patient_name, body: d ? d.full_name : '', link: '/app/front-desk', dedupeKey: `call:${a.id}`,
+      });
+    } catch (err) { /* a notice must never stop the visit */ }
   }
   if (timer) await require('../clinicalplus/timer.service').start(ctx, a); // eslint-disable-line global-require
   return { started: true, a };

@@ -427,6 +427,11 @@
       "online_title": "حجز إلكتروني جديد — {name}",
       "telehealth_title": "استشارة عن بُعد جديدة — {name}",
       "when": "موعد {day} الساعة {time} · بانتظار التأكيد"
+    },
+    "called_in": {
+      "title": "المريض {name} — أدخله للطبيب",
+      "body": "{doctor} طلب إدخال المريض الآن.",
+      "body_none": "الطبيب طلب إدخال المريض الآن."
     }
   },
   "workspaces": {

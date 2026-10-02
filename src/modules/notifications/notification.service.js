@@ -21,10 +21,11 @@ function visible(ctx) {
     .andWhere((q) => q.where('n.user_id', ctx.userId).orWhere((q2) => q2.whereNull('n.user_id').andWhere((q3) => q3.whereNull('n.permission').orWhereIn('n.permission', perms.length ? perms : ['-']))));
 }
 
-async function list(ctx, { limit = 50, unreadOnly = false } = {}) {
+async function list(ctx, { limit = 50, unreadOnly = false, type = null } = {}) {
   const q = visible(ctx).leftJoin('notification_reads as r', function j() { this.on('r.notification_id', 'n.id').andOn('r.user_id', knex.raw('?', [ctx.userId])); })
     .select('n.*', 'r.read_at').orderBy('n.id', 'desc').limit(limit);
   if (unreadOnly) q.whereNull('r.read_at');
+  if (type) q.where('n.type', type);
   return q;
 }
 

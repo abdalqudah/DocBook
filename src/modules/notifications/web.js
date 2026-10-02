@@ -9,6 +9,7 @@ const { formatDate } = require('../../core/format');
  */
 function readable(req, rows) {
   return rows.map((n) => {
+    if (n.type === 'patient.called_in') return { ...n, title: req.t('notifications.called_in.title', { name: n.title }), body: n.body ? req.t('notifications.called_in.body', { doctor: n.body }) : req.t('notifications.called_in.body_none') };
     if (n.type !== 'appointment.booked_online' || !['online', 'telehealth'].includes(n.body)) return n;
     const m = String(n.title || '').match(/^(.*) · (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
     if (!m) return { ...n, body: req.t(`notifications.booked.${n.body}`) };
@@ -36,3 +37,4 @@ router.post('/read', wrap(async (req, res) => {
   return res.redirect(safeBack(req.body.back) || '/app/notifications');
 }));
 module.exports = router;
+module.exports.readable = readable;

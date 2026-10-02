@@ -55,8 +55,12 @@ router.get('/teamops/unread', wrap(async (req, res) => {
     notifications.unreadCount(req.ctx), notifications.list(req.ctx, { limit: 1, unreadOnly: true }), presence.prefs(req.ctx.userId),
     require('../chat/chat.service').unreadTotal(req.ctx).catch(() => 0), // eslint-disable-line global-require
   ]);
+  // The newest unread "the doctor called a patient in" (reception rings and shows it, whatever the sound setting).
+  const callRow = req.ctx.permissions.has('frontdesk.use') ? await notifications.list(req.ctx, { limit: 1, unreadOnly: true, type: 'patient.called_in' }) : [];
+  const call = callRow.length ? require('../notifications/web').readable(req, callRow)[0] : null; // eslint-disable-line global-require
   res.set('Cache-Control', 'no-store');
-  res.json({ count, chat, latestId: latest.length ? Number(latest[0].id) : 0, sound: prefs.sound_enabled });
+  res.json({ count, chat, latestId: latest.length ? Number(latest[0].id) : 0, sound: prefs.sound_enabled,
+    call: call ? { id: Number(call.id), title: call.title, body: call.body, link: call.link } : null });
 }));
 
 /** Presence of this clinic's members, keyed by membership id (the Team page) and user id. */

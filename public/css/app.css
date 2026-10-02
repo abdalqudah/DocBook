@@ -953,3 +953,5 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .dx-table .panel-head { flex-wrap: wrap; gap: 10px; }
 .dx-table .dx-filter { max-width: 260px; }
 .dx-scroll { max-height: 480px; overflow-y: auto; }
+/* A doctor calls the next patient in (teamops.js): stays until reception acts on it */
+.toast.call-toast { align-items: center; gap: 10px; border-inline-start: 4px solid var(--warning); }

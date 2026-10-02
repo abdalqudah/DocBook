@@ -419,6 +419,11 @@
       "online_title": "New online booking — {name}",
       "telehealth_title": "New online consultation — {name}",
       "when": "{day} at {time} · waiting for confirmation"
+    },
+    "called_in": {
+      "title": "Send {name} in to the doctor",
+      "body": "{doctor} is calling the patient in now.",
+      "body_none": "The doctor is calling the patient in now."
     }
   },
   "workspaces": {

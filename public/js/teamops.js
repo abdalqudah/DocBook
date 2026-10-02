@@ -13,7 +13,8 @@
   var meta = document.querySelector('meta[name="csrf-token"]');
   var csrf = meta ? meta.getAttribute('content') : '';
   var HEARTBEAT_MS = 60000;
-  var POLL_MS = 45000;
+  var POLL_MS = 15000; // reception hears a doctor's call within seconds
+  var CALL_KEY = 'docbook.teamops.lastCall';
   var STORE_KEY = 'docbook.teamops.lastNotif';
 
   function visible() { return !document.hidden; }
@@ -83,6 +84,37 @@
     } catch (e) { /* never break the page */ }
   }
 
+  // A doorbell "ding-dong" (two falling tones, louder and longer than the chime): the doctor calls a patient in.
+  function dingDong() {
+    if (!audio) arm();
+    if (!audio || audio.state !== 'running') return;
+    try {
+      var now = audio.currentTime;
+      [[659, 0], [523, 0.45], [659, 1.3], [523, 1.75]].forEach(function (p) {
+        var osc = audio.createOscillator(); var gain = audio.createGain(); var t0 = now + p[1];
+        osc.type = 'triangle'; osc.frequency.value = p[0];
+        gain.gain.setValueAtTime(0, t0); gain.gain.linearRampToValueAtTime(0.28, t0 + 0.02); gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.9);
+        osc.connect(gain); gain.connect(audio.destination); osc.start(t0); osc.stop(t0 + 0.95);
+      });
+    } catch (e) { /* never break the page */ }
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  // The call stays on screen until someone acts on it.
+  function showCall(c) {
+    var box = document.querySelector('.toasts');
+    if (!box) { box = document.createElement('div'); box.className = 'toasts'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'assertive'); document.body.appendChild(box); }
+    var el = document.createElement('div');
+    el.className = 'toast warning call-toast';
+    el.innerHTML = '<div class="grow"><div class="strong">' + esc(c.title) + '</div><div class="small">' + esc(c.body) + '</div></div>'
+      + '<a class="btn btn-primary btn-sm" href="' + esc(c.link || '/app/front-desk') + '">' + (document.documentElement.lang === 'ar' ? 'الاستقبال' : 'Front desk') + '</a>'
+      + '<button class="btn btn-ghost btn-sm" type="button" data-call-ok>' + (document.documentElement.lang === 'ar' ? 'تم' : 'Done') + '</button>';
+    el.querySelector('[data-call-ok]').addEventListener('click', function () {
+      el.remove();
+      fetch('/app/notifications/read', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', 'x-csrf-token': csrf }, body: 'id=' + encodeURIComponent(c.id) + '&_csrf=' + encodeURIComponent(csrf) });
+    });
+    box.appendChild(el);
+  }
+
   // ---------------------------------------------------------------- bell
   // Two badges, two counts: the bell = unread notifications, the chat icon = unread staff messages.
   var bell = document.querySelector('[data-notif-bell]');
@@ -105,16 +137,19 @@
       if (typeof d.chat === 'number') setBadge(chatIcon, d.chat);
       var latest = Number(d.latestId) || 0;
       var seen = Number(store(STORE_KEY)) || 0;
+      if (baseline === null && d.call && Number(d.call.id) > (Number(store(CALL_KEY)) || 0)) { store(CALL_KEY, String(d.call.id)); showCall(d.call); dingDong(); }
       if (baseline === null) {
         // First look on this page: remember what exists, don't chime for it.
         baseline = latest;
         if (latest > seen) store(STORE_KEY, String(latest));
         return;
       }
+      var callNew = d.call && Number(d.call.id) > (Number(store(CALL_KEY)) || 0);
+      if (callNew) { store(CALL_KEY, String(d.call.id)); showCall(d.call); dingDong(); }
       if (latest > Math.max(baseline, seen)) {
         store(STORE_KEY, String(latest));
         baseline = latest;
-        if (d.sound) chime();
+        if (d.sound && !callNew) chime();
       }
     });
   }

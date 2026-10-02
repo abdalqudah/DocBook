@@ -96,3 +96,22 @@ test('patient search finds a name however the Arabic letters were typed, word by
   const r = await o.get(`/app/patients?q=${encodeURIComponent('احمد الخالدي')}`);
   assert.match(r.text, /أحمد يوسف الخالدي/, 'the patients list too');
 });
+
+test('the doctor calls the next patient in: reception gets a notice (with its ding-dong) to send the patient in', async () => {
+  const today = scheduling.clinicNow('Asia/Amman').date;
+  const doc = (await knex('doctors').where({ business_id: businessId }).first('id')).id;
+  const [next] = await knex('appointments').insert({ business_id: businessId, doctor_id: doc, patient_name: 'Next Patient', patient_phone: '0790000009', appointment_date: today, appointment_time: '11:00', status: 'confirmed', appointment_type: 'in_person', source: 'staff', checked_in: true, arrived_at: new Date() });
+  const owner = await knex('users').where({ email: mail('a') }).first('id');
+  await require('../src/modules/clinic/dflow.service').start({ businessId, userId: owner.id, ownDoctorId: null, today }, next, { timer: false });
+  const n = await knex('notifications').where({ business_id: businessId, type: 'patient.called_in' }).first();
+  assert.ok(n, 'a notice for the front desk');
+  assert.equal(n.permission, 'frontdesk.use');
+  const o = app.agent(); await o.login(mail('a'));
+  const u = JSON.parse((await o.get('/app/teamops/unread?lang=ar')).text);
+  assert.ok(u.call, 'the bell poll carries the call');
+  assert.match(u.call.title, /Next Patient — أدخله للطبيب/);
+  assert.match(u.call.body, /Dr Board/);
+  // a second start of the same visit does not ring again
+  await require('../src/modules/clinic/dflow.service').start({ businessId, userId: owner.id, ownDoctorId: null, today }, next, { timer: false });
+  assert.equal(Number((await knex('notifications').where({ business_id: businessId, type: 'patient.called_in' }).count({ n: '*' }))[0].n), 1);
+});
