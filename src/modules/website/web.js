@@ -320,6 +320,27 @@ router.post('/domain/alias/verify', can('website.domain'), domainGate, act(async
 router.post('/domain/alias/delete', can('website.domain'), act((req) => domains.removeAlias(req.ctx), 'website.alias_removed', '/app/website/domain'));
 
 // ---------------------------------------------------------------- search engines (the draft's SEO; live on publish)
+// Website → Connections: the clinic's own social profiles, Google (Business Profile, review link, Search Console /
+// Bing verification) and measurement pixels — applied to its public pages at once (website/marketing.service.js).
+const marketing = require('./marketing.service');
+async function renderConnections(req, res, extra = {}) {
+  const m = await marketing.get(req.ctx.businessId);
+  return page(req, res, 'connections', { title: req.t('clinic_mkt.title'), m, social: Object.keys(marketing.SOCIAL), socialIcons: marketing.SOCIAL, pixels: marketing.PIXELS, pixelNames: Object.fromEntries(marketing.PIXELS.map((k) => [k, require('../site/seo.service').PIXELS[k].name])), errors: {}, old: null, publicUrl: `/${req.business.slug}`, ...extra }); // eslint-disable-line global-require
+}
+router.get('/marketing', can('website.edit'), wrap((req, res) => renderConnections(req, res)));
+router.post('/marketing', can('website.edit'), wrap(async (req, res) => {
+  try {
+    await marketing.save(req.ctx, req.body);
+  } catch (e) {
+    if (!(e instanceof AppError) || e.code !== 'VALIDATION_FAILED') throw e;
+    const errors = Object.fromEntries(Object.entries(e.details || {}).map(([k, v]) => [k, req.t(v)]));
+    res.status(422);
+    return renderConnections(req, res, { errors, old: req.body, formError: { message: req.t('errors.VALIDATION_FAILED') } });
+  }
+  flash(req, 'success', req.t('clinic_mkt.saved'));
+  return res.redirect('/app/website/marketing');
+}));
+
 router.get('/seo', can('website.seo'), wrap(async (req, res) => {
   if (!(await entitled(req, 'website.builder'))) return lockedPage(req, res, 'builder');
   const l = await builderLocals(req);

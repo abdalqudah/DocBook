@@ -1,0 +1,42 @@
+<%# Website → Connections: this clinic's social profiles, Google and measurement pixels (its own — not the platform's). %>
+<% var o = old || null; var val = function (name, cur) { return o ? (o[name] || '') : (cur || ''); };
+   var fld = function (name, label, cur, ph, attrs) { return '<div class="field"><label class="label" for="mk-' + name + '">' + escapeHtml(label) + '</label><input class="input' + (errors[name] ? ' is-invalid' : '') + '" id="mk-' + name + '" name="' + name + '" value="' + escapeHtml(val(name, cur)) + '" dir="ltr" placeholder="' + escapeHtml(ph || '') + '" ' + (attrs || '') + '>' + (errors[name] ? '<span class="field-error">' + escapeHtml(errors[name]) + '</span>' : '') + '</div>'; };
+   var PH = { facebook: 'https://facebook.com/…', instagram: 'https://instagram.com/…', x: 'https://x.com/…', tiktok: 'https://tiktok.com/@…', snapchat: 'https://snapchat.com/add/…', youtube: 'https://youtube.com/@…', linkedin: 'https://linkedin.com/company/…', whatsapp: 'https://wa.me/9627…', telegram: 'https://t.me/…' };
+   var PXPH = { ga4: 'G-XXXXXXXXXX', gtm: 'GTM-XXXXXXX', meta: '123456789012345', tiktok: 'CXXXXXXXXXXXXXXXXXXX', snap: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', linkedin: '1234567', x: 'o1abc' };
+   var onCount = Object.keys(m.pixels).filter(function (k) { return m.pixels[k]; }).length; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= t('navx.sec_website') %></div><h1><%= t('clinic_mkt.title') %></h1><p><%= t('clinic_mkt.lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="<%= publicUrl %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('clinic_mkt.view_site') %></a></div>
+</div>
+<form method="post" action="/app/website/marketing" novalidate class="stack" style="max-width: 980px">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('users', 'icon-sm') %> <%= t('clinic_mkt.social_title') %></h2><p class="panel-sub"><%= t('clinic_mkt.social_sub') %></p></div></div>
+    <div class="panel-body"><div class="form-grid">
+      <% social.forEach(function (k) { %><%- fld('s_' + k, t('growth.social_' + k), m.social[k], PH[k], 'type="url" inputmode="url"') %><% }) %>
+    </div></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('search', 'icon-sm') %> <%= t('clinic_mkt.google_title') %></h2><p class="panel-sub"><%= t('clinic_mkt.google_sub') %></p></div></div>
+    <div class="panel-body stack">
+      <div class="form-grid">
+        <%- fld('g_business', t('clinic_mkt.google_profile'), m.google.business, 'https://maps.app.goo.gl/…', 'type="url"') %>
+        <%- fld('g_review', t('clinic_mkt.google_review'), m.google.review, 'https://g.page/r/…/review', 'type="url"') %>
+        <%- fld('v_google', t('clinic_mkt.verify_google'), m.verify.google, 'google-site-verification code') %>
+        <%- fld('v_bing', t('clinic_mkt.verify_bing'), m.verify.bing, 'msvalidate.01 code') %>
+      </div>
+      <p class="help"><%= t('clinic_mkt.verify_help') %></p>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('activity', 'icon-sm') %> <%= t('clinic_mkt.pixels_title') %></h2><p class="panel-sub"><%= t('clinic_mkt.pixels_sub') %></p></div><% if (onCount) { %><span class="badge badge-success badge-dot"><%= t('clinic_mkt.pixels_on', { n: onCount }) %></span><% } %></div>
+    <div class="panel-body stack">
+      <div class="form-grid">
+        <% pixels.forEach(function (k) { %><%- fld('p_' + k, pixelNames[k], m.pixels[k], PXPH[k], 'spellcheck="false" autocomplete="off"') %><% }) %>
+      </div>
+      <div class="alert alert-info"><%- icon('shield-check') %><div class="small"><%= t('clinic_mkt.pixels_privacy') %></div></div>
+    </div>
+  </section>
+  <div><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button></div>
+</form>

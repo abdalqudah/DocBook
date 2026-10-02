@@ -128,8 +128,8 @@
 <div class="consent-note" role="region" aria-label="<%= t('growth.consent_label') %>" data-consent-note>
   <p><%= t('growth.consent_text') %> <a href="/preferences/cookies"><%= t('growth.consent_more') %></a></p>
   <div class="consent-actions">
-    <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= path %>"><input type="hidden" name="choice" value="reject"><button class="btn btn-secondary btn-sm" type="submit"><%= t('growth.consent_reject') %></button></form>
-    <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= path %>"><input type="hidden" name="choice" value="accept"><button class="btn btn-primary btn-sm" type="submit"><%= t('growth.consent_accept') %></button></form>
+    <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= path %>"><input type="hidden" name="scope" value="<%= head.consentScope || '' %>"><input type="hidden" name="choice" value="reject"><button class="btn btn-secondary btn-sm" type="submit"><%= t('growth.consent_reject') %></button></form>
+    <form method="post" action="/preferences/cookies"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= path %>"><input type="hidden" name="scope" value="<%= head.consentScope || '' %>"><input type="hidden" name="choice" value="accept"><button class="btn btn-primary btn-sm" type="submit"><%= t('growth.consent_accept') %></button></form>
   </div>
 </div>
 <% } %>

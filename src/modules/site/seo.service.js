@@ -187,7 +187,9 @@ async function saveMarketing(ctx, body) {
 }
 
 const hasPixels = (m) => Object.values((m && m.pixels) || {}).some(Boolean);
-const consentOf = (req) => (['yes', 'no'].includes(req.cookies && req.cookies[CONSENT_COOKIE]) ? req.cookies[CONSENT_COOKIE] : '');
+/** The visitor's cookie choice: for the platform's pages, or for one clinic's website (scope 'c<id>'). */
+const consentCookie = (scope) => (scope && /^c\d{1,10}$/.test(scope) ? `${CONSENT_COOKIE}_${scope}` : CONSENT_COOKIE);
+const consentOf = (req, scope = null) => { const v = req.cookies && req.cookies[consentCookie(scope)]; return ['yes', 'no'].includes(v) ? v : ''; };
 
 /**
  * Adds the enabled vendors' hosts to THIS response's Content-Security-Policy (script/connect/img).
@@ -492,6 +494,12 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   const name = siteName(s, locale);
   if (kind === 'private') return { title: pageTitle ? `${pageTitle} · ${name}` : name, html: '<meta name="robots" content="noindex, nofollow">' };
   const siteContent = site || await content.get();
+  // A clinic's own connections (Website → Connections): verification codes, profiles (sameAs) and pixels.
+  const clinicMkt = kind === 'clinic' && clinic && clinic.id ? await require('../website/marketing.service').get(clinic.id) : null; // eslint-disable-line global-require
+  if (clinicMkt) {
+    const extra = require('../website/marketing.service').profileLinks(clinicMkt); // eslint-disable-line global-require
+    ws = { ...(ws || {}), sameAs: [...new Set([...((ws && ws.sameAs) || []), ...extra])] }; // eslint-disable-line no-param-reassign
+  }
   const path = kind === 'clinic' ? ((ws && ws.path) || `/${clinic.slug}`) : kind === 'cookies' ? '/preferences/cookies' : kind === 'pricing' ? '/pricing' : '/';
   let title; let description; let noindex = false;
   if (kind === 'home') {
@@ -548,6 +556,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   m('twitter:card', (kind === 'clinic' && shareImage) || (og && !clinicImg) ? 'summary_large_image' : 'summary');
   if (s.x_handle) m('twitter:site', `@${s.x_handle}`);
   if (kind === 'home') { m('google-site-verification', s.verify.google); m('msvalidate.01', s.verify.bing); }
+  if (clinicMkt) { m('google-site-verification', clinicMkt.verify.google); m('msvalidate.01', clinicMkt.verify.bing); }
   const ld = kind === 'home' ? homeLd({ s, mkt, site: siteContent, base, locale, description, logoUrl: `${base}${brand.favicon || '/favicon.svg'}` })
     : kind === 'clinic' ? clinicLd({ clinic, doctors, base, locale, ws }) : [];
   for (const d of ld) tags.push(`<script type="application/ld+json">${ldJson(d)}</script>`);
@@ -560,6 +569,14 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   if (pixelsOn && consent === 'yes') {
     pixels = Object.fromEntries(Object.entries(mkt.pixels).filter(([k, v]) => v && PIXELS[k]));
     applyPixelCsp(res, pixels);
+  }
+  // A clinic's website: its own pixels, after the visitor accepts THAT clinic's cookie notice.
+  if (clinicMkt && Object.values(clinicMkt.pixels).some(Boolean)) {
+    const scope = `c${clinic.id}`;
+    const choice = consentOf(req, scope);
+    let ids = null;
+    if (choice === 'yes') { ids = Object.fromEntries(Object.entries(clinicMkt.pixels).filter(([k, v]) => v && PIXELS[k])); applyPixelCsp(res, ids); }
+    return { title, html: tags.join('\n'), pixels: ids, askConsent: !choice, pixelsOn: true, consent: choice, consentScope: scope };
   }
   return { title, html: tags.join('\n'), pixels, askConsent: pixelsOn && !consent, pixelsOn, consent };
 }
@@ -586,6 +603,6 @@ async function checks({ s, mkt, site, media }) {
 }
 
 module.exports = {
-  AI_BOTS, SOCIAL, PIXELS, PRIVATE_PATHS, CONSENT_COOKIE, get, save, marketing, saveMarketing, hasPixels, consentOf, applyPixelCsp,
+  AI_BOTS, SOCIAL, PIXELS, PRIVATE_PATHS, CONSENT_COOKIE, consentCookie, get, save, marketing, saveMarketing, hasPixels, consentOf, applyPixelCsp,
   baseUrl, listedClinics, robots, sitemap, homeLd, clinicLd, clinicLlms, clinicRobots, clinicSitemap, llmsDefault, head, checks, ldJson, cleanBase, validSocial, L,
 };

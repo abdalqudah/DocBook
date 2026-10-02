@@ -428,3 +428,4 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
   :root:not([data-theme="light"]) .ws-body .ws-footer-brand strong, :root:not([data-theme="light"]) .ws-body .ws-fbrand strong { color: var(--text); }
   :root:not([data-theme="light"]) .ws-body .ws-card p, :root:not([data-theme="light"]) .ws-body .ws-column p, :root:not([data-theme="light"]) .ws-body .ws-head p { color: color-mix(in srgb, var(--text) 78%, transparent); }
 }
+.ws-review-g { margin-top: 10px; align-self: flex-start; justify-self: start; width: auto; max-width: max-content; }

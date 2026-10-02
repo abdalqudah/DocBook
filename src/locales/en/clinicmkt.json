@@ -1,0 +1,26 @@
+{
+  "clinic_mkt": {
+    "title": "Connections",
+    "lead": "Connect your clinic's social accounts, its Google profile and its own measurement pixels. Each clinic connects its own; changes apply to your clinic's pages at once.",
+    "view_site": "View clinic website",
+    "saved": "Connections saved.",
+    "social_title": "Social media",
+    "social_sub": "Shown as icons in your website footer and declared to search engines as the clinic's profiles.",
+    "google_title": "Google & search engines",
+    "google_sub": "Your clinic's Google Maps profile, a write-a-review link and site-ownership verification codes.",
+    "google_profile": "Google Business Profile",
+    "google_review": "Google “write a review” link",
+    "verify_google": "Google Search Console verification code",
+    "verify_bing": "Bing Webmaster verification code",
+    "verify_help": "In Search Console choose “URL prefix” with your clinic website's address, then the “HTML tag” method and paste the code (or the whole tag).",
+    "pixels_title": "Measurement & ad pixels",
+    "pixels_sub": "Measure visits to your clinic website and your ad results. Enter the ID only, not the whole snippet.",
+    "pixels_on": "{n} on",
+    "pixels_privacy": "Pixels load only on your clinic website pages, and only after the visitor accepts measurement cookies on your notice. They never load on booking, sign-in or app pages, and no patient data is sent.",
+    "err_link": "Enter a valid https link for this network.",
+    "err_google": "Enter a Google link (google.com, g.page or maps.app.goo.gl).",
+    "err_code": "Invalid code — letters and numbers only.",
+    "err_pixel": "The ID does not match this pixel’s format.",
+    "review_us": "Review us on Google"
+  }
+}

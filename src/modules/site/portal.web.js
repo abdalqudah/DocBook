@@ -121,6 +121,7 @@ async function renderSite(req, res, clinic, doc, { preview = false, page = null 
       ws: { seo: doc.seo, faq, services, sameAs, path: sub ? `/${clinic.slug}/p/${sub.slug}` : null, pageName: sub ? L(sub.title) : null },
     });
   }
+  res.locals.wsConnections = await require('../website/marketing.service').get(clinic.id); // eslint-disable-line global-require -- Website → Connections
   const fav = doc.brand && doc.brand.faviconMediaId ? data.img(doc.brand.faviconMediaId) : null;
   return res.page('pages/portal/site', {
     layout: 'public', title, pageTitle: title, metaDescription: description.slice(0, 160), seoHead, noindex: preview, clinic, ...data,
@@ -138,7 +139,7 @@ async function renderClassic(req, res, clinic) {
   res.locals.currency = clinic.currency;
   clinic.reviews = await require('../reviews/reviews.service').publicSummary(clinic.id); // eslint-disable-line global-require -- verified reviews: page section + JSON-LD
   clinic.media = await require('../integrations/media.service').publicPage(clinic, req.locale); // eslint-disable-line global-require -- cover + gallery from the media library
-  // Search tags and schema.org MedicalClinic + Physician data (never any tracking pixel on clinic pages).
+  // Search tags and schema.org MedicalClinic + Physician data; the clinic's own pixels only after its visitors accept.
   const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors, title: clinic.displayName, description: clinic.aboutText || [clinic.specialty, clinic.city].filter(Boolean).join(' · ') });
   return res.page('pages/portal/home', {
     layout: 'public', title: clinic.displayName, pageTitle: clinic.displayName, metaDescription: clinic.aboutText.slice(0, 160), seoHead,

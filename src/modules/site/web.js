@@ -93,10 +93,12 @@ router.get('/preferences/cookies', wrap(async (req, res) => {
   res.page('pages/site/cookies', { layout: 'public', pageTitle: head.title, seoHead: head, tools, consent: head.consent, noConsentBanner: true });
 }));
 
-const BACK_OK = /^\/(?:preferences\/cookies)?(?:\?lang=(?:ar|en))?(?:#[a-z0-9-]*)?$/;
+// Back to a page of this site (the platform's pages or a clinic's website), never elsewhere.
+const BACK_OK = /^\/(?!\/)[\w\-/.]*(?:\?lang=(?:ar|en))?(?:#[a-z0-9-]*)?$/;
 router.post('/preferences/cookies', (req, res) => {
   const choice = req.body.choice === 'accept' ? 'yes' : req.body.choice === 'reject' ? 'no' : null;
-  if (choice) res.cookie(seo.CONSENT_COOKIE, choice, { maxAge: 180 * 86_400_000, sameSite: 'lax', httpOnly: true, secure: config.isProd });
+  const scope = /^c\d{1,10}$/.test(String(req.body.scope || '')) ? String(req.body.scope) : null;
+  if (choice) res.cookie(seo.consentCookie(scope), choice, { maxAge: 180 * 86_400_000, sameSite: 'lax', httpOnly: true, secure: config.isProd });
   const back = String(req.body.back || '');
   res.redirect(BACK_OK.test(back) ? back : '/');
 });

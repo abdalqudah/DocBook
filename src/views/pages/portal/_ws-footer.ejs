@@ -1,6 +1,12 @@
 <%# Footer of a builder site (doc.footer): about text, contact, hours, menu, social profiles, copyright. %>
 <% var f = wsSite.footer || {}; var c = clinic; var L = wsSite.L;
-   var social = Object.keys(f.social || {}).filter(function (k) { return f.social[k]; });
+   // Profiles: the footer's own links plus the clinic's Website → Connections (one icon per network).
+   var ICON = { facebook: 'facebook', instagram: 'instagram', x: 'twitter', tiktok: 'music', snapchat: 'ghost', youtube: 'youtube', linkedin: 'linkedin', whatsapp: 'message-circle', telegram: 'send', google: 'map-pin' };
+   var links = {}; Object.keys(f.social || {}).forEach(function (k) { if (f.social[k]) links[k === 'twitter' ? 'x' : k] = f.social[k]; });
+   var conn = typeof wsConnections !== 'undefined' && wsConnections ? wsConnections : null;
+   if (conn) { Object.keys(conn.social || {}).forEach(function (k) { if (conn.social[k]) links[k] = conn.social[k]; }); if (conn.google && conn.google.business) links.google = conn.google.business; }
+   var social = Object.keys(links).filter(function (k) { return ICON[k]; });
+   var label = function (k) { return k === 'google' ? t('clinic_mkt.google_profile') : t('growth.social_' + k); };
    var about = L(f.about) || ''; var copy = L(f.copyright) || c.displayName; %>
 <% var _logoUrl = wsSite.logo ? wsSite.logo.url : (c.logo_mime ? '/' + c.slug + '/logo?v=' + c.logo_version : null);
    var _dark = Boolean(wsSite.logoDark && wsSite.darkMode && wsSite.logo); // a light logo for dark mode
@@ -18,7 +24,8 @@
       <div class="ws-footer-brand">
         <%- _brand %>
         <% if (about) { %><p><%= about %></p><% } %>
-        <% if (f.show_social !== false && social.length) { %><div class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon" href="<%= f.social[k] %>" target="_blank" rel="noopener me" aria-label="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>" title="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>"><%- icon(k) %></a><% }) %></div><% } %>
+        <% if (f.show_social !== false && social.length) { %><div class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon" href="<%= links[k] %>" target="_blank" rel="noopener me" aria-label="<%= label(k) %>" title="<%= label(k) %>"><%- icon(ICON[k]) %></a><% }) %></div><% } %>
+        <% if (conn && conn.google && conn.google.review) { %><a class="btn btn-secondary btn-sm ws-review-g" href="<%= conn.google.review %>" target="_blank" rel="noopener"><%- icon('star', 'icon-sm') %><%= t('clinic_mkt.review_us') %></a><% } %>
       </div>
       <% if (f.show_menu !== false && wsSite.items.length) { %>
       <nav class="ws-footer-col" aria-label="<%= t('site.nav_label') %>"><h3><%= t('website.b.footer_links') %></h3><ul><% wsSite.items.forEach(function (n) { %><li><a href="<%= n.href %>"<%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a></li><% }) %></ul></nav>
@@ -38,7 +45,7 @@
     <div class="ws-footer-bottom">
       <% if (f.style === 'simple' && _brand) { %><div class="ws-footer-simple-brand"><%- _brand %></div><% } %>
       <span>© <%= new Date().getFullYear() %> <%= copy %></span>
-      <% if (f.style === 'simple' && f.show_social !== false && social.length) { %><span class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= f.social[k] %>" target="_blank" rel="noopener me" aria-label="<%= t('growth.social_' + (k === 'twitter' ? 'x' : k)) %>"><%- icon(k, 'icon-sm') %></a><% }) %></span><% } %>
+      <% if (f.style === 'simple' && f.show_social !== false && social.length) { %><span class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= links[k] %>" target="_blank" rel="noopener me" aria-label="<%= label(k) %>"><%- icon(ICON[k], 'icon-sm') %></a><% }) %></span><% } %>
       <% if (f.show_powered !== false || !wsSite.whiteLabel) { %><a class="row-sm" href="/"><%= t('portal.powered', { brand: brandName }) %></a><% } %>
     </div>
   </div>
