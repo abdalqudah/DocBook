@@ -154,7 +154,13 @@ const navInput = (h) => {
   return out;
 };
 const siteFormSave = (opName, field) => {
-  const run = (req) => site.edit(req.ctx, req.business, site.ops[opName](opName === 'header' ? navInput(req.body[field]) : (req.body[field] || {})), { note: null });
+  const run = async (req) => {
+    await site.edit(req.ctx, req.business, site.ops[opName](opName === 'header' ? navInput(req.body[field]) : (req.body[field] || {})), { note: null });
+    // The dark mode switch in the header panel is site-wide: it reaches the published site at once.
+    if (opName === 'header' && req.body[field] && req.body[field].dark_mode !== undefined) {
+      await site.setLiveDarkMode(req.ctx, [].concat(req.body[field].dark_mode).pop() === '1');
+    }
+  };
   return [wrap(async (req, res, next) => {
     if (!wantsJson(req)) return next();
     await run(req);
@@ -210,8 +216,11 @@ router.post('/brand', can('website.edit'), builderGate, act((req) => site.edit(r
 }), { note: 'website.brand_changed' }), 'website.saved', '/app/website/theme'));
 
 // Dark mode of the whole site (Theme & brand): on = visitors may switch, off = always light (the switch is hidden).
-router.post('/dark', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, (d) => { d.header = { ...(d.header || {}), dark_mode: req.body.dark_mode === '1' }; return d; },
-  { note: 'website.brand_changed', details: { dark_mode: req.body.dark_mode === '1' } }), 'website.saved', '/app/website/theme'));
+router.post('/dark', can('website.edit'), builderGate, act(async (req) => {
+  const on = req.body.dark_mode === '1';
+  await site.edit(req.ctx, req.business, (d) => { d.header = { ...(d.header || {}), dark_mode: on }; return d; }, { note: 'website.brand_changed', details: { dark_mode: on } });
+  await site.setLiveDarkMode(req.ctx, on); // applies to the published site straight away
+}, 'website.dark.saved', '/app/website/theme#dark'));
 
 // ---- fonts (Theme & brand → Fonts)
 const fontUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: fontsSvc.MAX_BYTES + 1, files: 1, fields: 8, parts: 12 } });

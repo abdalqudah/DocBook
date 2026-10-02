@@ -266,6 +266,24 @@ async function discard(ctx, business) {
   return doc;
 }
 
+/**
+ * Dark mode is a site-wide setting, not content: changing it also applies to the live site at once (no publishing
+ * needed). Updates the live version's header in place; audited.
+ */
+async function setLiveDarkMode(ctx, on) {
+  const r = await row(ctx.businessId);
+  if (!r || !r.live_version_id) return false;
+  const v = await version(ctx.businessId, r.live_version_id);
+  if (!v) return false;
+  const doc = sections.sanitize(v.doc);
+  if ((doc.header.dark_mode !== false) === Boolean(on)) return false;
+  doc.header.dark_mode = Boolean(on);
+  await knex('clinic_site_versions').where({ business_id: ctx.businessId, id: v.id }).update({ doc: JSON.stringify(doc) });
+  await audit.record(ctx, 'website.dark_mode_changed', { entityType: 'website', entityId: ctx.businessId, newValues: { dark_mode: Boolean(on), live: true } });
+  forget(ctx.businessId);
+  return true;
+}
+
 /** What the public page shows: { status, doc } (doc only when the builder version is live). Cached briefly. */
 function publicState(businessId) {
   return cache.remember(`site:${businessId}:public`, async () => {
@@ -294,4 +312,4 @@ function livePages() {
   }, 600_000);
 }
 
-module.exports = { aiBlockedSlugs, livePages, state, draft, saveDraft, edit, ops, pageOf, pageWith, pageSlug, publish, unpublish, republish, versions, restore, discard, publicState, refsOf, forget, KEEP, MEDIA_CONTEXT };
+module.exports = { aiBlockedSlugs, livePages, state, draft, saveDraft, edit, ops, pageOf, pageWith, pageSlug, publish, unpublish, republish, versions, restore, discard, publicState, refsOf, forget, setLiveDarkMode, KEEP, MEDIA_CONTEXT };

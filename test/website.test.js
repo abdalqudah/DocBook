@@ -717,9 +717,12 @@ test('images and columns sections (2/3/4 per row); dark logo; dark mode off keep
   const o = app.agent(); await o.login(mail('owner-a'));
   r = await o.submit('/app/website/theme', '/app/website/dark', { dark_mode: '1' });
   assert.equal(r.status, 302);
-  await site.publish(A.ctx, A.business); site.forget(A.ctx.businessId);
-  r = await app.agent().get(`/${A.slug}?lang=en`);
+  r = await app.agent().get(`/${A.slug}?lang=en`); // no publishing needed: the switch reaches the live site
   assert.ok(!/<html[^>]*data-theme="light"/.test(r.text));
   assert.match(r.text, /data-theme-toggle/);
   assert.match(r.text, /class="logo-dark"/);
+  // off again from the builder's header panel: live at once too
+  r = await o.submit('/app/website/builder?panel=header', '/app/website/builder/header', { 'header[dark_mode]': '0' });
+  r = await app.agent().get(`/${A.slug}?lang=en`);
+  assert.match(r.text, /<html[^>]*data-theme="light"/);
 });

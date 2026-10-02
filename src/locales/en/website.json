@@ -878,7 +878,8 @@
       "turn_off": "Turn dark mode off",
       "turn_on": "Turn dark mode on",
       "switch": "Dark mode for the website",
-      "switch_help": "When off, the site and its booking pages are always light and the switch is hidden."
+      "switch_help": "Applies to the live site straight away. When off, the site and its booking pages are always light and the switch is hidden.",
+      "saved": "Dark mode saved and applied to the live site straight away."
     }
   },
   "errors_website": {
