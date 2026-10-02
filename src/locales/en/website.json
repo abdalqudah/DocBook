@@ -726,10 +726,13 @@
       },
       "logo_shape": "Logo shape",
       "lsh": {
-        "badge": "In a tile",
+        "badge": "On a tile",
         "free": "As it is (wide logos)"
       },
-      "buttons_group": "Words and buttons"
+      "buttons_group": "Words and buttons",
+      "logo_height": "Logo height",
+      "logo_height_auto": "by size",
+      "logo_height_help": "Drag to set the height in pixels (0 = follow the size choice). The logo always keeps its own shape and proportions."
     },
     "item_field": {
       "title": "Title",

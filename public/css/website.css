@@ -369,3 +369,14 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-cy-bottom .ws-slide, .ws-hero.ws-cy-bottom { align-items: flex-end; }
 .ws-hero-slider.ws-cy-bottom .ws-slide .ws-hero-inner { padding-bottom: 72px; }
 .ws-branches-title { font-size: 1rem; margin: 18px 0 8px; }
+
+/* header logo: an image keeps its own proportions (never squeezed into a square); the height comes from the size
+   choice or the exact px value (--ws-logo-h). badge = on a rounded light tile with a little padding; free = as it is. */
+.ws-nav .ws-logo-s { --ws-logo-auto: 32px; } .ws-nav .ws-logo-m { --ws-logo-auto: 44px; } .ws-nav .ws-logo-l { --ws-logo-auto: 60px; } .ws-nav .ws-logo-xl { --ws-logo-auto: 80px; }
+.ws-nav .ws-logo-img .portal-mark { width: auto; height: var(--ws-logo-h, var(--ws-logo-auto, 44px)); max-width: min(320px, 55vw); aspect-ratio: auto; }
+.ws-nav .ws-logo-img .portal-mark img { width: auto; height: 100%; max-width: 100%; object-fit: contain; }
+.ws-nav .ws-logo-img.ws-logo-badge .portal-mark { padding: 6px 10px; background: white; border-radius: 12px; box-shadow: 0 0 0 1px color-mix(in srgb, black 8%, transparent); }
+.ws-nav .ws-logo-img.ws-logo-free .portal-mark { padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
+.ws-nav:has(.ws-logo-img) .inner { height: auto; min-height: calc(var(--ws-logo-h, var(--ws-logo-auto, 44px)) + 24px); }
+.ws-nav .ws-logo-px:not(.ws-logo-img) .portal-mark { width: var(--ws-logo-h); height: var(--ws-logo-h); }
+@media (max-width: 640px) { .ws-nav .ws-logo-img .portal-mark { height: min(var(--ws-logo-h, var(--ws-logo-auto, 44px)), 56px); max-width: 52vw; } }

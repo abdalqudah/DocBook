@@ -128,7 +128,9 @@ const HEADER = [
   { key: 'sticky', kind: 'bool', def: true }, { key: 'show_book', kind: 'bool', def: true }, { key: 'show_lang', kind: 'bool', def: true },
   { key: 'show_theme', kind: 'bool', def: true }, { key: 'show_phone', kind: 'bool', def: false }, { key: 'show_name', kind: 'bool', def: true },
   { key: 'logo_size', kind: 'select', options: ['m', 's', 'l', 'xl'], def: 'm' },
-  { key: 'logo_shape', kind: 'select', options: ['badge', 'free'], def: 'badge' }, // badge = square tile; free = the logo as it is (wide logos)
+  { key: 'logo_shape', kind: 'select', options: ['badge', 'free'], def: 'badge' }, // badge = on a rounded tile; free = the logo as it is
+  // Exact logo height in px (0 = follow logo_size). An image logo always keeps its own proportions.
+  { key: 'logo_height', kind: 'number', min: 0, max: 140, def: 0 },
 ];
 // Social profiles: https addresses on the network's own site only.
 const SOCIAL = { facebook: /^(www\.|m\.)?facebook\.com$/, instagram: /^(www\.)?instagram\.com$/, twitter: /^(www\.)?(x|twitter)\.com$/, youtube: /^(www\.|m\.)?youtube\.com$|^youtu\.be$/, linkedin: /^([a-z]{2,3}\.)?linkedin\.com$/ };

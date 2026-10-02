@@ -37,6 +37,11 @@
         <div class="wsb-choices"><% ['solid', 'transparent', 'centered', 'minimal'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="header[style]" value="<%= o %>"<%= (hdr.style || 'solid') === o ? ' checked' : '' %>><span><%= t('website.b.hs.' + o) %></span></label><% }) %></div></fieldset>
       <fieldset class="wsb-field"><legend class="label"><%= t('website.b.logo_size') %></legend>
         <div class="wsb-choices"><% ['s', 'm', 'l', 'xl'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="header[logo_size]" value="<%= o %>"<%= (hdr.logo_size || 'm') === o ? ' checked' : '' %>><span><%= t('website.b.ls.' + o) %></span></label><% }) %></div></fieldset>
+      <div class="wsb-field">
+        <label class="label" for="wsb-logo-h"><%= t('website.b.logo_height') %> <output class="muted small num" data-ws-range-out="wsb-logo-h"><%= Number(hdr.logo_height) ? hdr.logo_height + 'px' : t('website.b.logo_height_auto') %></output></label>
+        <input type="range" id="wsb-logo-h" name="header[logo_height]" min="0" max="140" step="2" value="<%= Number(hdr.logo_height) || 0 %>" data-ws-range data-auto="<%= t('website.b.logo_height_auto') %>">
+        <span class="help"><%= t('website.b.logo_height_help') %></span>
+      </div>
       <fieldset class="wsb-field"><legend class="label"><%= t('website.b.logo_shape') %></legend>
         <div class="wsb-choices"><% ['badge', 'free'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="header[logo_shape]" value="<%= o %>"<%= (hdr.logo_shape || 'badge') === o ? ' checked' : '' %>><span><%= t('website.b.lsh.' + o) %></span></label><% }) %></div></fieldset>
       <% boolRow('header[sticky]', hdr.sticky !== false, t('website.b.h_sticky')) %>

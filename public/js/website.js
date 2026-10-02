@@ -114,7 +114,10 @@
   function later(ms) { clearTimeout(timer); timer = setTimeout(save, ms); }
   function flush(next) { if (timer || busy) { save(next); } else next(); }
   if (form) {
-    form.addEventListener('input', function (e) { if (e.target.matches('input[type=text], input:not([type]), textarea, input[type=number], input[type=date]')) later(900); });
+    form.addEventListener('input', function (e) {
+      if (e.target.matches('[data-ws-range]')) { var out = form.querySelector('[data-ws-range-out="' + e.target.id + '"]'); if (out) out.textContent = Number(e.target.value) ? e.target.value + 'px' : (e.target.getAttribute('data-auto') || ''); }
+      if (e.target.matches('input[type=text], input:not([type]), textarea, input[type=number], input[type=date]')) later(900);
+    });
     form.addEventListener('change', function () { later(150); });
     form.addEventListener('submit', function (e) { e.preventDefault(); save(); });
     window.addEventListener('beforeunload', function (e) { if (timer || busy) { e.preventDefault(); e.returnValue = ''; } });
