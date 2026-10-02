@@ -383,7 +383,7 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
    choice or the exact px value (--ws-logo-h). badge = on a rounded light tile with a little padding; free = as it is. */
 .ws-nav .ws-logo-s { --ws-logo-auto: 32px; } .ws-nav .ws-logo-m { --ws-logo-auto: 44px; } .ws-nav .ws-logo-l { --ws-logo-auto: 60px; } .ws-nav .ws-logo-xl { --ws-logo-auto: 80px; }
 .ws-nav .ws-logo-img .portal-mark { width: auto; height: var(--ws-logo-h, var(--ws-logo-auto, 44px)); max-width: min(320px, 55vw); aspect-ratio: auto; }
-.ws-nav .ws-logo-img .portal-mark img { width: auto; height: 100%; max-width: 100%; object-fit: contain; }
+.ws-nav .ws-logo-img .portal-mark img { width: auto; height: 100%; max-width: 100%; object-fit: contain; background: transparent; }
 /* an image logo always stands on its own: no tile, no frame */
 .ws-nav .ws-logo-img .portal-mark { padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
 .ws-nav:has(.ws-logo-img) .inner { height: auto; min-height: calc(var(--ws-logo-h, var(--ws-logo-auto, 44px)) + 24px); }
@@ -392,3 +392,4 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-footer-simple .ws-footer-bottom { align-items: center; }
 .ws-footer-simple-brand { margin-inline-end: auto; }
 .ws-footer-simple-brand .ws-fbrand-below { align-items: flex-start; gap: 4px; }
+.ws-flogo img { background: transparent; }
