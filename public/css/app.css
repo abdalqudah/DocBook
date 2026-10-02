@@ -799,6 +799,7 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .set-fav-choices .name, .set-fav-choices .meta { display: block; }
 
 /* sidebar: the clinic logo alone, as large as the bar allows */
-.clinic-brand.has-logo { padding: 8px 14px; }
-.clinic-logo-link { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; }
+/* safe area: clear space on every side so the logo never touches the bar's edges */
+.clinic-brand.has-logo { padding: 12px 24px; }
+.clinic-logo-link { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; padding: 2px 6px; }
 .clinic-logo { display: block; max-width: 100%; max-height: 100%; height: 100%; width: auto; object-fit: contain; object-position: center; margin-inline: auto; }
