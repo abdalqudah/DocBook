@@ -95,6 +95,20 @@ const TYPES = {
   steps: { icon: 'list-ordered', variants: ['numbered', 'timeline'], group: 'blocks',
     text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }], settings: [],
     list: { key: 'items', max: 8, fields: [{ key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 400 }] } },
+  // A picture block: 2, 3 or 4 pictures per row, each with an optional caption.
+  images: { icon: 'images', variants: ['grid', 'framed', 'tight'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
+    settings: [{ key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3' },
+      { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait', 'auto'], def: 'landscape', group: 'image' },
+      { key: 'image_fit', kind: 'select', options: ['cover', 'contain'], def: 'cover', group: 'image' }],
+    list: { key: 'items', max: 12, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'caption', max: 120 }] } },
+  // Columns of content side by side (2, 3 or 4): an optional picture or icon, a title, text and a button each.
+  columns: { icon: 'columns-2', variants: ['plain', 'boxed', 'divided'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
+    settings: [{ key: 'columns', kind: 'select', options: ['2', '3', '4'], def: '2' },
+      { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait'], def: 'landscape', group: 'image' }],
+    list: { key: 'items', max: 4, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false },
+      { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 1500 }, { key: 'button', max: 40 }] } },
   divider: { icon: 'waves', variants: ['shape'], group: 'blocks', text: [],
     settings: [{ key: 'shape', kind: 'select', options: ['wave', 'curve', 'slant', 'zigzag', 'peaks', 'drops', 'line', 'dots', 'space'], def: 'wave' },
       { key: 'color', kind: 'select', options: ['soft', 'accent', 'brand', 'dark'], def: 'soft' }, { key: 'height', kind: 'select', options: ['s', 'm', 'l'], def: 'm' }, { key: 'flip', kind: 'bool', def: false }] },
@@ -131,6 +145,8 @@ const HEADER = [
   { key: 'logo_shape', kind: 'select', options: ['badge', 'free'], def: 'badge' }, // badge = on a rounded tile; free = the logo as it is
   // Exact logo height in px (0 = follow logo_size). An image logo always keeps its own proportions.
   { key: 'logo_height', kind: 'number', min: 0, max: 140, def: 0 },
+  // Dark mode for the whole site: on = visitors can switch (and the site follows their device); off = always light.
+  { key: 'dark_mode', kind: 'bool', def: true },
 ];
 // Social profiles: https addresses on the network's own site only.
 const SOCIAL = { facebook: /^(www\.|m\.)?facebook\.com$/, instagram: /^(www\.)?instagram\.com$/, twitter: /^(www\.)?(x|twitter)\.com$/, youtube: /^(www\.|m\.)?youtube\.com$|^youtu\.be$/, linkedin: /^([a-z]{2,3}\.)?linkedin\.com$/ };
@@ -330,6 +346,7 @@ function sanitize(doc, refs = {}) {
       link: HEX.test(b.link || '') ? b.link.toLowerCase() : null,
       motion: MOTION.includes(b.motion) ? b.motion : 'none', // sites published before motion existed stay still
       logoMediaId: mediaOk(b.logoMediaId), faviconMediaId: mediaOk(b.faviconMediaId),
+      logoDarkMediaId: mediaOk(b.logoDarkMediaId), // a light (e.g. white) logo shown in dark mode
     },
     pages: [{ key: 'home', sections }, ...extra],
     header: cleanHeader(d.header, pageKeys, sectionIds),
@@ -356,6 +373,7 @@ function mediaIn(doc) {
   const b = (doc && doc.brand) || {};
   if (b.logoMediaId) out.add(b.logoMediaId);
   if (b.faviconMediaId) out.add(b.faviconMediaId);
+  if (b.logoDarkMediaId) out.add(b.logoDarkMediaId);
   if (doc && doc.seo && doc.seo.image) out.add(doc.seo.image);
   for (const p of (doc && doc.pages) || []) for (const s of p.sections || []) {
     const def = TYPES[s.type]; if (!def) continue;

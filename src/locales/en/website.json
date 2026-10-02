@@ -146,7 +146,10 @@
       "numbered": "Numbered",
       "timeline": "Timeline",
       "shape": "Shape",
-      "slider": "Slider (moving slides)"
+      "slider": "Slider (moving slides)",
+      "framed": "Framed",
+      "tight": "Tight",
+      "divided": "Divided"
     },
     "field": {
       "headline": "Headline",
@@ -194,7 +197,8 @@
       "content_x": "Words and buttons (across)",
       "content_y": "Words and buttons (up/down)",
       "btn_size": "Button size",
-      "btn_layout": "Button arrangement"
+      "btn_layout": "Button arrangement",
+      "caption": "Caption"
     },
     "opt": {
       "2": "Two columns",
@@ -292,7 +296,9 @@
       "text": "Free text",
       "stats": "Numbers",
       "steps": "Steps",
-      "divider": "Divider & shapes"
+      "divider": "Divider & shapes",
+      "images": "Images",
+      "columns": "Columns"
     },
     "section_added_ok": "Section added to the draft.",
     "saved": "Saved to the draft.",
@@ -331,7 +337,9 @@
       "font_help": "Fonts already on visitors' devices; nothing loaded from other servers.",
       "radius": "Corners",
       "motion": "Site motion",
-      "motion_help": "Sections appear as visitors scroll and cards lift slightly. Never shown to visitors who ask for reduced motion."
+      "motion_help": "Sections appear as visitors scroll and cards lift slightly. Never shown to visitors who ask for reduced motion.",
+      "logo_dark": "Logo for dark mode",
+      "logo_dark_help": "A light (e.g. white) version of the logo shown when the site is dark. Optional."
     },
     "font": {
       "system": "System",
@@ -556,7 +564,9 @@
       "text": "A paragraph, box or quote.",
       "stats": "Highlighted numbers, e.g. years of experience.",
       "steps": "Numbered steps.",
-      "divider": "A wave, curve or line between sections."
+      "divider": "A wave, curve or line between sections.",
+      "images": "Pictures side by side: two, three or four per row, with a caption under each.",
+      "columns": "Content in two, three or four columns: a picture or icon, title, text and button."
     },
     "style": {
       "align": "Alignment",
@@ -657,7 +667,9 @@
         "text": "Write a title or text.",
         "stats": "Add a number and its label.",
         "steps": "Add at least one step.",
-        "divider": ""
+        "divider": "",
+        "images": "Add at least one picture.",
+        "columns": "Add at least one column."
       },
       "tab_site": "Site",
       "page": "Page",
@@ -855,7 +867,19 @@
     "prices_note": "When on, each doctor's and service's own choice (show or hide its price) still applies. A prepaid online consultation always shows its fee.",
     "prices_services_link": "Service prices",
     "prices_doctors_link": "Doctors' fees",
-    "prices_saved": "Price settings saved."
+    "prices_saved": "Price settings saved.",
+    "dark": {
+      "title": "Dark mode for the website",
+      "sub": "Can visitors use your website in dark mode?",
+      "on": "On",
+      "off": "Off",
+      "on_text": "The site follows the visitor's device, with a button to switch between light and dark.",
+      "off_text": "The site is always light and the switch is hidden.",
+      "turn_off": "Turn dark mode off",
+      "turn_on": "Turn dark mode on",
+      "switch": "Dark mode for the website",
+      "switch_help": "When off, the site and its booking pages are always light and the switch is hidden."
+    }
   },
   "errors_website": {
     "SECTION_ONCE": "This section is already on the page.",

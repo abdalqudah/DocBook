@@ -686,3 +686,40 @@ test('typography: fonts checked by content, served from the clinic, chosen for t
   assert.equal(doc.brand.headingFont, 'serif');
   assert.ok(render.contrastOnWhite('#000000') > 20);
 });
+
+test('images and columns sections (2/3/4 per row); dark logo; dark mode off keeps the site and booking light', async () => {
+  const doc = sections.sanitize((await site.draft(A.ctx, A.business)).doc);
+  const mk = (type, variant, en, settings) => ({ id: `${type.slice(0, 4)}${tag}`.slice(0, 12), type, variant, visible: true, content: { ar: en, en }, settings });
+  doc.pages[0].sections.push(
+    mk('images', 'framed', { title: 'Our rooms', items: [{ caption: 'Reception' }] }, { columns: '4', items: [{ image: A.mediaId }] }),
+    mk('columns', 'boxed', { title: 'Why us', items: [{ title: 'Experience', text: '15 years' }, { title: 'Care', text: 'Gentle' }] }, { columns: '2', items: [{ icon: 'award' }, { image: A.mediaId }] }),
+  );
+  doc.brand.logoMediaId = A.mediaId; doc.brand.logoDarkMediaId = A.mediaId;
+  doc.header.dark_mode = false;
+  const clean = sections.sanitize(doc, { media: new Set([A.mediaId]) });
+  assert.ok(clean.pages[0].sections.some((s) => s.type === 'images' && s.settings.columns === '4'));
+  assert.ok(clean.pages[0].sections.some((s) => s.type === 'columns' && s.settings.columns === '2'));
+  assert.equal(clean.brand.logoDarkMediaId, A.mediaId);
+  assert.equal(clean.header.dark_mode, false);
+  await site.saveDraft(A.ctx, A.business, clean);
+  await site.publish(A.ctx, A.business);
+  site.forget(A.ctx.businessId);
+  let r = await app.agent().get(`/${A.slug}?lang=en`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /<html[^>]*data-theme="light"/);
+  assert.ok(!/data-theme-toggle/.test(r.text), 'no dark switch when dark mode is off');
+  assert.match(r.text, /ws-images ws-images-framed ws-cols-4/);
+  assert.match(r.text, /<figcaption>Reception<\/figcaption>/);
+  assert.match(r.text, /ws-columns ws-columns-boxed ws-cols-2/);
+  r = await app.agent().get(`/${A.slug}/book?lang=en`);
+  assert.match(r.text, /<html[^>]*data-theme="light"/, 'booking pages follow the site');
+  // dark mode back on: the switch returns; the dark logo is offered for dark mode
+  const o = app.agent(); await o.login(mail('owner-a'));
+  r = await o.submit('/app/website/theme', '/app/website/dark', { dark_mode: '1' });
+  assert.equal(r.status, 302);
+  await site.publish(A.ctx, A.business); site.forget(A.ctx.businessId);
+  r = await app.agent().get(`/${A.slug}?lang=en`);
+  assert.ok(!/<html[^>]*data-theme="light"/.test(r.text));
+  assert.match(r.text, /data-theme-toggle/);
+  assert.match(r.text, /class="logo-dark"/);
+});

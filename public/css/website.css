@@ -393,3 +393,38 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-footer-simple-brand { margin-inline-end: auto; }
 .ws-footer-simple-brand .ws-fbrand-below { align-items: flex-start; gap: 4px; }
 .ws-flogo img { background: transparent; }
+.wsb-dark-row { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface-muted); }
+
+/* Images block: 2 / 3 / 4 per row, captions */
+.ws-images { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ws-images.ws-cols-2, .ws-columns.ws-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ws-images.ws-cols-4, .ws-columns.ws-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ws-images figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.ws-images img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); background: var(--surface-sunken); }
+.ws-images.ws-ratio-square img { aspect-ratio: 1; } .ws-images.ws-ratio-portrait img { aspect-ratio: 3 / 4; } .ws-images.ws-ratio-auto img { aspect-ratio: auto; }
+.ws-images.ws-fit-contain img { object-fit: contain; }
+.ws-images figcaption { font-size: 14px; color: var(--text-muted); text-align: center; }
+.ws-images-framed figure { padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.ws-images-tight { gap: 4px; } .ws-images-tight img { border-radius: 0; }
+/* Columns block */
+.ws-columns { display: grid; gap: 24px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.ws-columns.ws-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ws-column { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; min-width: 0; }
+.ws-column h3 { margin: 0; font-size: 18px; } .ws-column p { margin: 0; color: var(--text-muted); }
+.ws-column-media { margin: 0; width: 100%; } .ws-column-media img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: var(--radius); }
+.ws-columns.ws-ratio-square .ws-column-media img { aspect-ratio: 1; } .ws-columns.ws-ratio-portrait .ws-column-media img { aspect-ratio: 3 / 4; }
+.ws-columns-boxed .ws-column { padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.ws-columns-divided { gap: 0; } .ws-columns-divided .ws-column { padding-inline: 20px; } .ws-columns-divided .ws-column + .ws-column { border-inline-start: 1px solid var(--border); }
+@media (max-width: 860px) { .ws-images.ws-cols-4, .ws-images.ws-cols-3, .ws-columns.ws-cols-3, .ws-columns.ws-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ws-columns-divided .ws-column:nth-child(odd) { border-inline-start: 0; } }
+@media (max-width: 520px) { .ws-images:not(.ws-cols-4), .ws-columns { grid-template-columns: minmax(0, 1fr); } .ws-columns-divided .ws-column { border-inline-start: 0 !important; padding-inline: 0; } }
+
+/* ---------------------------------------------------------------- dark mode: clearer surfaces, borders and text */
+:root[data-theme="dark"] .ws-body :is(.ws-card, .ws-column, .ws-images-framed figure, .ws-stat, .ws-faq details, .doc-card, .ws-text-boxed, .portal-card, .svc-list, .ws-cta-card, .ws-doc-card) { border-color: color-mix(in srgb, white 14%, transparent); }
+:root[data-theme="dark"] .ws-body :is(.ws-card, .ws-column, .ws-images-framed figure) { background: color-mix(in srgb, white 5%, var(--surface)); }
+:root[data-theme="dark"] .ws-body .ws-footer-brand strong, :root[data-theme="dark"] .ws-body .ws-fbrand strong { color: var(--text); }
+:root[data-theme="dark"] .ws-body .ws-card p, :root[data-theme="dark"] .ws-body .ws-column p, :root[data-theme="dark"] .ws-body .ws-head p { color: color-mix(in srgb, var(--text) 78%, transparent); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ws-body :is(.ws-card, .ws-column, .ws-images-framed figure, .ws-stat, .ws-faq details, .doc-card, .ws-text-boxed, .portal-card, .svc-list, .ws-cta-card, .ws-doc-card) { border-color: color-mix(in srgb, white 14%, transparent); }
+  :root:not([data-theme="light"]) .ws-body :is(.ws-card, .ws-column, .ws-images-framed figure) { background: color-mix(in srgb, white 5%, var(--surface)); }
+  :root:not([data-theme="light"]) .ws-body .ws-footer-brand strong, :root:not([data-theme="light"]) .ws-body .ws-fbrand strong { color: var(--text); }
+  :root:not([data-theme="light"]) .ws-body .ws-card p, :root:not([data-theme="light"]) .ws-body .ws-column p, :root:not([data-theme="light"]) .ws-body .ws-head p { color: color-mix(in srgb, var(--text) 78%, transparent); }
+}

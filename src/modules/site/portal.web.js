@@ -31,6 +31,11 @@ async function loadClinic(req) {
   const digits = (v) => String(v || '').replace(/[^0-9]/g, '');
   // The specialty as words in the visitor's language (the setting stores a key such as "dentistry").
   if (req.res && req.res.locals) req.res.locals.faviconHref = businesses.faviconPath(b, `/${b.slug}`); // the clinic's browser icon on its pages
+  // Dark mode turned off on the clinic's published site: every public page of the clinic stays light.
+  if (req.res && req.res.locals) {
+    const pub = await require('../website/site.service').publicState(b.id); // eslint-disable-line global-require
+    req.res.locals.siteLight = Boolean(pub.doc && pub.doc.header && pub.doc.header.dark_mode === false);
+  }
   const specialtyLabel = b.specialty ? ((k) => { const v = req.t(k); return v === k ? b.specialty : v; })(`specialties.${b.specialty}`) : '';
   return {
     ...b,
@@ -93,6 +98,7 @@ const membershipOf = (userId, businessId) => knex('memberships as m').join('role
 async function renderSite(req, res, clinic, doc, { preview = false, page = null } = {}) {
   const site = require('../website/render'); // eslint-disable-line global-require
   const data = await site.locals(req, clinic, doc, { preview, portal: { listDoctors, listServices }, page });
+  res.locals.siteLight = Boolean(doc.header && doc.header.dark_mode === false); // the draft's own choice in the preview
   data.wsSite.whiteLabel = await require('../platformops/ops.service').entitled(clinic, 'website.white_label'); // eslint-disable-line global-require
   res.locals.currency = clinic.currency;
   clinic.reviews = data.reviewsSummary;

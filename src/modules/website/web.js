@@ -204,10 +204,14 @@ router.post('/theme', can('website.edit'), builderGate, act((req) => site.edit(r
 router.post('/brand', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, site.ops.brand({
   primary: req.body.use_primary === '1' ? String(req.body.primary || '') : null,
   secondary: req.body.use_secondary === '1' ? String(req.body.secondary || '') : null,
-  font: req.body.font, radius: req.body.radius, motion: req.body.motion, logoMediaId: req.body.logo_media_id, faviconMediaId: req.body.favicon_media_id,
+  font: req.body.font, radius: req.body.radius, motion: req.body.motion, logoMediaId: req.body.logo_media_id, faviconMediaId: req.body.favicon_media_id, logoDarkMediaId: req.body.logo_dark_media_id,
   bodyFont: req.body.body_font, headingFont: req.body.heading_font, size: req.body.size, headingWeight: req.body.heading_weight,
   text: req.body.use_text === '1' ? String(req.body.text || '') : null, heading: req.body.use_heading === '1' ? String(req.body.heading || '') : null, link: req.body.use_link === '1' ? String(req.body.link || '') : null,
 }), { note: 'website.brand_changed' }), 'website.saved', '/app/website/theme'));
+
+// Dark mode of the whole site (Theme & brand): on = visitors may switch, off = always light (the switch is hidden).
+router.post('/dark', can('website.edit'), builderGate, act((req) => site.edit(req.ctx, req.business, (d) => { d.header = { ...(d.header || {}), dark_mode: req.body.dark_mode === '1' }; return d; },
+  { note: 'website.brand_changed', details: { dark_mode: req.body.dark_mode === '1' } }), 'website.saved', '/app/website/theme'));
 
 // ---- fonts (Theme & brand → Fonts)
 const fontUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: fontsSvc.MAX_BYTES + 1, files: 1, fields: 8, parts: 12 } });

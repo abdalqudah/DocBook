@@ -18,7 +18,8 @@ const rgba = (hex, a) => `rgba(${hexToRgb(hex).join(', ')}, ${a})`;
 function inkFor(hex) {
   const [r, g, b] = hexToRgb(hex).map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
   const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return L > 0.4 ? '#0B1210' : '#FFFFFF';
+  // The text colour with the better contrast on this background (white vs. near-black).
+  return (L + 0.05) / (0.0062 + 0.05) > 1.05 / (L + 0.05) ? '#0B1210' : '#FFFFFF';
 }
 function shade(hex, pct) {
   const [r, g, b] = hexToRgb(hex).map((v) => Math.max(0, Math.min(255, Math.round(v + (pct < 0 ? v * pct : (255 - v) * pct)))));
@@ -44,15 +45,28 @@ function baseCss() {
 }
 
 /** Workspace override (Settings → Appearance): only the primary colour family changes. */
+const lum = (hex) => { const [r, g, b] = hexToRgb(hex).map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+/** The brand colour for dark mode: lightened until it reads clearly on the dark surface (contrast ≥ 4.5). */
+function forDark(color) {
+  const bg = lum(brand.colors.dark.surface);
+  let c = shade(color, 0.28);
+  for (let i = 0; i < 12 && (lum(c) + 0.05) / (bg + 0.05) < 4.5; i += 1) c = shade(c, 0.15);
+  return c;
+}
+
 function businessCss(color) {
   if (!color || !HEX.test(color)) return '';
   const lightHover = shade(color, -0.18);
-  const darkP = shade(color, 0.28);
+  const darkP = forDark(color);
   const l = `--primary: ${color}; --primary-hover: ${lightHover}; --primary-ink: ${inkFor(color)}; --primary-soft: ${rgba(color, 0.12)}; --primary-soft-2: ${rgba(color, 0.22)}; --focus-ring: 0 0 0 3px ${rgba(color, 0.4)};`;
   const d = `--primary: ${darkP}; --primary-hover: ${shade(darkP, 0.2)}; --primary-ink: ${inkFor(darkP)}; --primary-soft: ${rgba(darkP, 0.14)}; --primary-soft-2: ${rgba(darkP, 0.26)}; --focus-ring: 0 0 0 3px ${rgba(darkP, 0.4)};`;
+  // In dark mode the brand colour is lightened for text and links; a block filled with the brand colour (website
+  // sections on the "brand" background) keeps the clinic's real colour with its own readable text.
+  const fill = `.ws-bg-brand { --primary: ${color}; --primary-hover: ${lightHover}; --primary-ink: ${inkFor(color)}; }`;
   return `:root { ${l} }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${d} } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${d} } :root:not([data-theme="light"]) ${fill} }
 :root[data-theme="dark"] { ${d} }
+:root[data-theme="dark"] ${fill}
 `;
 }
 
@@ -65,4 +79,4 @@ function markSvg(color = brand.colors.light.primary, ink = brand.colors.light.pr
 const css = baseCss();
 const etag = crypto.createHash('sha1').update(css).digest('hex').slice(0, 12);
 
-module.exports = { css, etag, businessCss, markSvg, HEX, inkFor };
+module.exports = { css, etag, businessCss, markSvg, HEX, inkFor, forDark };

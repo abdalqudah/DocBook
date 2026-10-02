@@ -21,14 +21,25 @@
   </form>
 </section>
 
+<% var darkOn = !(doc.header && doc.header.dark_mode === false); %>
+<section class="panel mt-6" id="dark">
+  <div class="panel-head"><div><h2><%- icon('moon', 'icon-sm') %> <%= t('website.dark.title') %></h2><p class="panel-sub"><%= t('website.dark.sub') %></p></div>
+    <span class="badge badge-dot <%= darkOn ? 'badge-success' : 'badge-neutral' %>"><%= darkOn ? t('website.dark.on') : t('website.dark.off') %></span></div>
+  <form class="panel-body row between wrap" method="post" action="/app/website/dark" style="gap:12px">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="dark_mode" value="<%= darkOn ? '0' : '1' %>">
+    <span class="small muted grow" style="min-width:240px"><%= darkOn ? t('website.dark.on_text') : t('website.dark.off_text') %></span>
+    <button class="btn <%= darkOn ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%- icon(darkOn ? 'sun' : 'moon', 'icon-sm') %><%= darkOn ? t('website.dark.turn_off') : t('website.dark.turn_on') %></button>
+  </form>
+</section>
+
 <section class="panel mt-6">
   <div class="panel-head"><div><h2><%= t('website.brand_kit') %></h2><p class="panel-sub"><%= t('website.brand_kit_sub') %></p></div></div>
   <form class="panel-body stack" method="post" action="/app/website/brand">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <div class="grid grid-2">
-      <% [['logo_media_id', 'logoMediaId', 'logo'], ['favicon_media_id', 'faviconMediaId', 'favicon']].forEach(function (m) { var im = imgOf(br[m[1]]); %>
+    <div class="grid grid-3">
+      <% [['logo_media_id', 'logoMediaId', 'logo'], ['logo_dark_media_id', 'logoDarkMediaId', 'logo_dark'], ['favicon_media_id', 'faviconMediaId', 'favicon']].forEach(function (m) { var im = imgOf(br[m[1]]); %>
       <div class="stack-sm"><span class="label"><%= t('website.brand.' + m[2]) %></span>
-        <div class="pm-cover ws-pick-preview ws-pick-small" data-media-preview="<%= m[0] %>"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div>
+        <div class="pm-cover ws-pick-preview ws-pick-small<%= m[2] === 'logo_dark' ? ' ws-pick-dark' : '' %>" data-media-preview="<%= m[0] %>"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div>
         <input type="hidden" name="<%= m[0] %>" value="<%= br[m[1]] || '' %>">
         <div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="button" data-media-pick="<%= m[0] %>"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button><button class="btn btn-ghost btn-sm" type="button" data-media-clear="<%= m[0] %>"<%= im ? '' : ' hidden' %>><%= t('media_lib.remove') %></button></div>
         <span class="help"><%= t('website.brand.' + m[2] + '_help') %></span></div>

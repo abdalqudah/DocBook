@@ -47,7 +47,8 @@
       <% boolRow('header[show_book]', hdr.show_book !== false, t('website.b.h_book')) %>
       <% boolRow('header[show_phone]', hdr.show_phone === true, t('website.b.h_phone')) %>
       <% boolRow('header[show_lang]', hdr.show_lang !== false, t('website.b.h_lang')) %>
-      <% boolRow('header[show_theme]', hdr.show_theme !== false, t('website.b.h_theme')) %>
+      <div class="wsb-dark-row"><% boolRow('header[dark_mode]', hdr.dark_mode !== false, t('website.dark.switch')) %><span class="help"><%= t('website.dark.switch_help') %></span></div>
+      <% if (hdr.dark_mode !== false) { %><% boolRow('header[show_theme]', hdr.show_theme !== false, t('website.b.h_theme')) %><% } %>
       <% var items = hdr.items || [];
          var navItem = function (i, it) { it = it || { kind: 'page', label: {} }; %>
         <details class="wsb-item" data-ws-item open>

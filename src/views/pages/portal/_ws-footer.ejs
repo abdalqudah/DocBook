@@ -3,10 +3,13 @@
    var social = Object.keys(f.social || {}).filter(function (k) { return f.social[k]; });
    var about = L(f.about) || ''; var copy = L(f.copyright) || c.displayName; %>
 <% var _logoUrl = wsSite.logo ? wsSite.logo.url : (c.logo_mime ? '/' + c.slug + '/logo?v=' + c.logo_version : null);
+   var _dark = Boolean(wsSite.logoDark && wsSite.darkMode && wsSite.logo); // a light logo for dark mode
    var _showLogo = f.show_logo !== false && _logoUrl; var _showName = f.show_name !== false; var _fh = Number(f.logo_height) || 48; if (_fh < 20) _fh = 20;
    // The logo and the name (shared by every footer style; the simple one shows it at the start of its single row).
    var _brand = (_showLogo || _showName) ? '<div class="ws-fbrand ws-fbrand-' + (f.name_pos === 'beside' ? 'beside' : 'below') + '">'
-     + (_showLogo ? '<span class="ws-flogo ws-flogo-' + (f.logo_shape === 'badge' ? 'badge' : 'free') + '" style="--ws-flogo-h: ' + _fh + 'px"><img src="' + escapeHtml(_logoUrl) + '" alt="' + (_showName ? '' : escapeHtml(c.displayName)) + '"></span>' : '')
+     + (_showLogo ? '<span class="ws-flogo ws-flogo-' + (f.logo_shape === 'badge' ? 'badge' : 'free') + '" style="--ws-flogo-h: ' + _fh + 'px">'
+       + (_dark ? '<img class="logo-light" src="' + escapeHtml(_logoUrl) + '" alt="' + (_showName ? '' : escapeHtml(c.displayName)) + '"><img class="logo-dark" src="' + escapeHtml(wsSite.logoDark.url) + '" alt="">'
+         : '<img src="' + escapeHtml(_logoUrl) + '" alt="' + (_showName ? '' : escapeHtml(c.displayName)) + '">') + '</span>' : '')
      + (_showName ? '<strong>' + escapeHtml(c.displayName) + '</strong>' : '') + '</div>' : ''; %>
 <footer class="footer portal-footer ws-footer ws-footer-<%= f.style || 'columns' %>"<% if (wsSite.preview) { %> data-ws-sec="__footer" data-ws-label="<%= t('website.b.footer') %>"<% } %>>
   <div class="container">

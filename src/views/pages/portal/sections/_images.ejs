@@ -1,0 +1,16 @@
+<%# Pictures block: 2 / 3 / 4 per row, optional captions. %>
+<% var extra = s.settings.items || [];
+   var pics = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { image: img(e.image), caption: x && x.caption }; }).filter(function (x) { return x.image; });
+   if (!pics.length) pics = extra.map(function (e) { return { image: img(e && e.image), caption: '' }; }).filter(function (x) { return x.image; }); %>
+<% if (pics.length) { %>
+<section class="ws-section ws-images-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <ul class="ws-images ws-images-<%= s.variant %> ws-cols-<%= s.settings.columns || '3' %> ws-ratio-<%= s.settings.image_ratio || 'landscape' %> ws-fit-<%= s.settings.image_fit || 'cover' %>">
+      <% pics.forEach(function (p) { %>
+      <li><figure><img src="<%= p.image.url %>" alt="<%= p.caption || altOf(p.image) %>" loading="lazy"<% if (p.image.width && p.image.height) { %> width="<%= p.image.width %>" height="<%= p.image.height %>"<% } %>><% if (p.caption) { %><figcaption><%= p.caption %></figcaption><% } %></figure></li>
+      <% }) %>
+    </ul>
+  </div>
+</section>
+<% } %>

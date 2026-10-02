@@ -9,7 +9,8 @@
   var header = chrome ? chrome.header : null;
   var footer = chrome ? chrome.footer : null;
 %><!doctype html>
-<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
+<% var _light = typeof siteLight !== 'undefined' && siteLight; /* the clinic turned dark mode off for its site */ %>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (_light) { %> data-theme="light"<% } else if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -18,7 +19,7 @@
 <% } else { %><% if (seoDesc) { %><meta name="description" content="<%= seoDesc %>"><meta property="og:description" content="<%= seoDesc %>"><% } %>
 <meta property="og:title" content="<%= seoTitle %>">
 <% if (typeof noindex !== 'undefined' && noindex) { %><meta name="robots" content="noindex, nofollow"><% } %>
-<% } %><meta name="color-scheme" content="light dark">
+<% } %><meta name="color-scheme" content="<%= _light ? 'light' : 'light dark' %>">
 <% if (typeof faviconHref !== 'undefined' && faviconHref) { %><link rel="icon" href="<%= faviconHref %>"><% } else { %><link rel="icon" href="<%= brand.favicon || '/favicon.svg' %>"><% } %>
 <link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
@@ -49,7 +50,7 @@
     <% } %>
     <div class="right">
       <a class="btn btn-ghost btn-sm lang-btn" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span class="hide-xs"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a>
-      <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
+      <% if (!_light) { %><button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button><% } %>
       <% if (!portalClinic && path !== '/clinics' && path.indexOf('/clinics/') !== 0) { %><a class="btn btn-ghost btn-sm" href="/clinics" aria-label="<%= t('directory.find_clinic') %>"><%- icon('search', 'icon-sm') %><span class="hide-sm"><%= t('directory.find_clinic') %></span></a><% } %>
       <% if (portalClinic) { %>
         <% if (portalClinic.booking_enabled && !(typeof hideBookCta !== 'undefined' && hideBookCta)) { %><a class="btn btn-primary btn-sm" href="/<%= portalClinic.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><span><%= t('portal.book') %></span></a><% } %>

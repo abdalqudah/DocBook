@@ -90,7 +90,8 @@ function siteChrome(req, clinic, doc, page, { preview, img }) {
   // No menu chosen: the pages marked "in the menu" (only when there is more than the home page).
   if (!(header.items || []).length) items = pages.length > 1 ? pages.filter((p) => p.menu).map((p) => ({ label: p.title, href: p.href, current: p.key === page.key })) : [];
   const logo = doc.brand && doc.brand.logoMediaId ? img(doc.brand.logoMediaId) : null;
-  return { header, footer: doc.footer || {}, items, pages, logo, homeHref: pageHref(doc.pages[0]), preview, L };
+  const logoDark = doc.brand && doc.brand.logoDarkMediaId ? img(doc.brand.logoDarkMediaId) : null;
+  return { header, footer: doc.footer || {}, items, pages, logo, logoDark, darkMode: header.dark_mode !== false, homeHref: pageHref(doc.pages[0]), preview, L };
 }
 
 function announcementOn(s, req) {
@@ -137,6 +138,11 @@ function css(doc, clinic, { fonts = [], fontUrl = null } = {}) {
   const vars = [`--site-font: ${body};`, `--site-font-head: ${headF};`, `--site-radius: ${RADIUS[b.radius] || RADIUS.rounded};`, `--site-fs: ${SIZE[b.size] || SIZE.m};`, `--site-hw: ${Number(b.headingWeight) || 700};`];
   if (b.secondary) vars.push(`--accent: ${b.secondary};`, `--accent-soft: color-mix(in srgb, ${b.secondary} 16%, transparent);`);
   out += `:root { ${vars.join(' ')} }\n`;
+  if (b.secondary) { // a dark second colour is lightened in dark mode, like the main one
+    const ad = theme.forDark(b.secondary);
+    const d = `--accent: ${ad}; --accent-soft: color-mix(in srgb, ${ad} 18%, transparent);`;
+    out += `:root[data-theme="dark"] { ${d} }\n@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${d} } }\n`;
+  }
   // Text colours are for the light look only: in dark mode the theme's own colours keep the text readable.
   const colours = [b.text && `--site-text: ${b.text};`, b.heading && `--site-heading: ${b.heading};`, b.link && `--site-link: ${b.link};`].filter(Boolean);
   if (colours.length) out += `:root[data-theme="light"] { ${colours.join(' ')} }\n@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { ${colours.join(' ')} } }\n`;
