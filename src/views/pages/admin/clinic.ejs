@@ -53,7 +53,7 @@
     </div>
   </section>
 </div>
-<% var _groups = { patients_care: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant', 'patient_sharing', 'centres'], money: ['billing', 'doctor_payroll', 'staff_salaries', 'finance'], operations: ['queue_screens', 'staff_chat', 'supplies', 'marketplace', 'attendance', 'reports'] };
+<% var _groups = { patients_care: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant', 'patient_sharing', 'centres'], money: ['billing', 'doctor_payroll', 'staff_salaries', 'finance'], operations: ['queue_screens', 'staff_chat', 'staff_mail', 'supplies', 'marketplace', 'attendance', 'reports'] };
    var _mk = {}; modules.list.forEach(function (m) { _mk[m.key] = m; }); %>
 <div class="grid grid-main mt-6">
   <form class="panel" id="modules" method="post" action="/admin/clinics/<%= b.id %>/modules" data-confirm="<%= t('admin.modules_confirm', { name: b.name }) %>" data-confirm-yes="<%= t('common.save') %>" data-confirm-tone="primary">

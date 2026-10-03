@@ -34,6 +34,7 @@ const MODULES = [
   { key: 'queue_screens', icon: 'monitor', paths: [seg('queue-screens')] },
   { key: 'staff_chat', icon: 'message-circle', paths: [seg('chat')] },
   { key: 'patient_sharing', icon: 'send', paths: [seg('share')] },
+  { key: 'staff_mail', icon: 'mail', paths: [seg('mail')] },
   { key: 'centres', icon: 'pill-bottle', paths: [seg('centres'), seg('settings/partners')] },
   { key: 'reports', icon: 'chart-pie', nav: ['reports'], paths: [seg('reports')] },
 ];

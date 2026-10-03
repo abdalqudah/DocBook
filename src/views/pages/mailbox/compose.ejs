@@ -1,0 +1,26 @@
+<%# Write an e-mail from the member's own address: to / cc / subject / text, files from the computer and the clinic's
+    papers (passed as ?attach=kind:id from the document pages). %>
+<% var errs = typeof errors !== 'undefined' && errors ? errors : {}; var d = draft; var kindIcons = { prescription: 'pill', report: 'stethoscope', invoice: 'receipt', order: 'activity', referral: 'send', certificate: 'badge-check', file: 'paperclip' }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/app/mail"><%= t('mailbox.title') %></a></div><h1><%= t('mailbox.compose') %></h1><p class="small muted"><%= t('mailbox.from') %>: <bdi dir="ltr"><%= acc.email %></bdi></p></div>
+</div>
+<form class="panel" method="post" action="/app/mail/send" enctype="multipart/form-data" novalidate data-no-busy>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (d.in_reply_to) { %><input type="hidden" name="in_reply_to" value="<%= d.in_reply_to %>"><input type="hidden" name="references" value="<%= d.references || '' %>"><% } %>
+  <% if (typeof returnTo !== 'undefined' && returnTo) { %><input type="hidden" name="return_to" value="<%= returnTo %>"><% } %>
+  <div class="panel-body stack">
+    <% if (typeof sendError !== 'undefined' && sendError) { %><div class="alert alert-danger"><%- icon('triangle-alert', 'icon-sm') %><div class="grow" dir="auto"><%= sendError %></div></div><% } %>
+    <%- include('../../partials/field', { name: 'to', label: t('mailbox.to'), value: d.to, required: true, help: t('mailbox.to_help'), attrs: 'dir="ltr" autocomplete="email"' }) %>
+    <%- include('../../partials/field', { name: 'cc', label: t('mailbox.cc'), value: d.cc, attrs: 'dir="ltr"' }) %>
+    <%- include('../../partials/field', { name: 'subject', label: t('mailbox.subject'), value: d.subject, attrs: 'dir="auto" maxlength="250"' }) %>
+    <div class="field"><label class="label" for="mail-text"><%= t('mailbox.text') %></label><textarea class="textarea mail-text" id="mail-text" name="text" rows="12" dir="auto"><%= d.text %></textarea></div>
+    <% if (items.length) { %>
+    <div class="field"><span class="label"><%= t('mailbox.papers') %></span>
+      <div class="mail-papers"><% items.forEach(function (it) { %><label class="mail-paper check"><input type="checkbox" name="papers" value="<%= it.key %>" checked><span><%- icon(kindIcons[it.kind] || 'file-text', 'icon-sm') %> <%= it.label %><% if (it.patient) { %> <span class="muted small">— <%= it.patient %></span><% } %></span></label><% }) %></div>
+      <span class="help"><%= t('mailbox.papers_help') %></span>
+    </div>
+    <% } %>
+    <div class="field"><label class="label" for="mail-files"><%= t('mailbox.files') %></label><input class="input" id="mail-files" type="file" name="files" multiple><span class="help"><%= t('mailbox.files_help') %></span></div>
+  </div>
+  <div class="panel-foot row-sm"><button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('mailbox.send') %></button><a class="btn btn-ghost" href="/app/mail"><%= t('common.cancel') %></a></div>
+</form>

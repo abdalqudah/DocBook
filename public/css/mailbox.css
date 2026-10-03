@@ -1,0 +1,31 @@
+/* The member's own e-mail (/app/mail). */
+.mail-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start; }
+.mail-folders { padding: 6px; display: grid; gap: 2px; }
+.mail-folder { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius); color: var(--text-muted); font-weight: var(--fw-semibold); font-size: 14px; }
+.mail-folder:hover { background: var(--surface-sunken); color: var(--text); }
+.mail-folder.active { background: var(--primary-soft); color: var(--primary); }
+.mail-search { padding: 12px; border-bottom: 1px solid var(--border); }
+.mail-list { list-style: none; margin: 0; padding: 0; }
+.mail-list li + li { border-top: 1px solid var(--border); }
+.mail-list a { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 11px 14px; color: var(--text-muted); }
+.mail-list a:hover { background: var(--surface-sunken); }
+.mail-list .is-unread a { color: var(--text); font-weight: var(--fw-bold); }
+.mail-list .is-unread .mail-who::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); margin-inline-end: 6px; vertical-align: middle; }
+.mail-meta { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.mail-pager { padding: 10px 14px; border-top: 1px solid var(--border); }
+.mail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+.mail-body { display: block; width: 100%; height: 65vh; min-height: 360px; border: 0; background: var(--surface); }
+.mail-files { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border); }
+.mail-file { display: inline-flex; align-items: center; gap: 6px; max-width: 280px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--pill); font-size: 13px; color: var(--text); }
+.mail-file:hover { border-color: var(--primary); }
+.mail-papers { display: grid; gap: 6px; }
+.mail-paper { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
+.mail-text { min-height: 220px; }
+.mail-help { margin: 0; padding-inline-start: 18px; display: grid; gap: 6px; }
+@media (max-width: 860px) {
+  .mail-layout { grid-template-columns: minmax(0, 1fr); }
+  .mail-folders { display: flex; overflow-x: auto; }
+  .mail-folder { white-space: nowrap; }
+  .mail-list a { grid-template-columns: minmax(0, 1fr) auto; }
+  .mail-list .mail-subj { grid-column: 1 / -1; grid-row: 2; }
+}

@@ -1,0 +1,29 @@
+<%# One e-mail: who, when, the body in a sandboxed frame (no scripts; outside images only on request), its files. %>
+<% var pp = function (p) { return p ? (p.name ? p.name + ' <' + p.address + '>' : p.address) : '—'; };
+   var qs = 'f=' + encodeURIComponent(folder) + '&uid=' + m.uid;
+   var size = function (n) { return n > 1048576 ? (Math.round(n / 104857.6) / 10) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/app/mail?f=<%= encodeURIComponent(folder) %>"><%= t('mailbox.title') %></a></div><h1 dir="auto"><%= m.subject || t('mailbox.no_subject') %></h1></div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/app/mail/compose?reply=<%= encodeURIComponent(folder + '|' + m.uid) %>"><%- icon('arrow-right', 'icon-sm flip-rtl') %><%= t('mailbox.reply') %></a>
+    <a class="btn btn-secondary" href="/app/mail/compose?forward=<%= encodeURIComponent(folder + '|' + m.uid) %>"><%- icon('send', 'icon-sm') %><%= t('mailbox.forward') %></a>
+    <form method="post" action="/app/mail/m/trash" data-confirm="<%= t('mailbox.trash_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="f" value="<%= folder %>"><input type="hidden" name="uid" value="<%= m.uid %>"><button class="btn btn-ghost btn-icon" type="submit" aria-label="<%= t('mailbox.trash') %>" title="<%= t('mailbox.trash') %>"><%- icon('trash-2', 'icon-sm') %></button></form>
+  </div>
+</div>
+<section class="panel">
+  <div class="panel-body mail-head">
+    <dl class="dl">
+      <dt><%= t('mailbox.from') %></dt><dd dir="auto"><%= pp(m.from) %></dd>
+      <dt><%= t('mailbox.to') %></dt><dd dir="auto"><%= m.to.map(pp).join('، ') || '—' %></dd>
+      <% if (m.cc.length) { %><dt><%= t('mailbox.cc') %></dt><dd dir="auto"><%= m.cc.map(pp).join('، ') %></dd><% } %>
+      <dt><%= t('mailbox.date') %></dt><dd><%= m.date ? fmt.date(m.date, { dateStyle: 'medium', timeStyle: 'short' }) : '—' %></dd>
+    </dl>
+    <% if (m.html) { %><button class="btn btn-ghost btn-sm" type="button" data-mail-images="/app/mail/m/body?<%= qs %>&images=1"><%- icon('image', 'icon-sm') %><%= t('mailbox.show_images') %></button><% } %>
+  </div>
+  <iframe class="mail-body" src="/app/mail/m/body?<%= qs %>" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" title="<%= t('mailbox.body') %>" data-mail-frame></iframe>
+  <% var files = m.attachments.filter(function (a) { return !(a.inline && a.cid); }); if (files.length) { %>
+  <div class="panel-body mail-files">
+    <% files.forEach(function (a) { %><a class="mail-file" href="/app/mail/m/file?<%= qs %>&i=<%= a.i %>"><%- icon('paperclip', 'icon-sm') %><span class="truncate" dir="auto"><%= a.filename %></span><span class="tiny muted nowrap"><%= size(a.size || 0) %></span></a><% }) %>
+  </div>
+  <% } %>
+</section>

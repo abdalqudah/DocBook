@@ -1,0 +1,54 @@
+<%# Connect the member's own e-mail account (IMAP to read, SMTP to send). Servers are guessed from the address. %>
+<% var o = typeof old !== 'undefined' && old ? old : null; var errs = typeof errors !== 'undefined' && errors ? errors : {};
+   var base = acc || guessFor; var v = function (k) { return o && o[k] !== undefined ? o[k] : (base && base[k] !== undefined && base[k] !== null ? base[k] : ''); }; %>
+<div class="page-head">
+  <div>
+    <% if (acc) { %><div class="breadcrumbs"><a href="/app/mail"><%= t('mailbox.title') %></a></div><% } %>
+    <h1><%= t('mailbox.settings_title') %></h1>
+    <p><%= t('mailbox.settings_lead') %></p>
+  </div>
+</div>
+<div class="grid grid-main">
+  <form class="panel" method="post" action="/app/mail/settings" novalidate data-mail-connect>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%- icon('mail', 'icon-sm') %> <%= acc ? acc.email : t('mailbox.connect') %></h2><div class="panel-sub"><%= acc && acc.verified_at ? t('mailbox.connected_since', { when: fmt.date(acc.verified_at) }) : t('mailbox.connect_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <% if (typeof connectError !== 'undefined' && connectError) { %><div class="alert alert-danger"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('mailbox.connect_failed') %></div><div class="small" dir="auto"><%= connectError %></div></div></div><% } %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'email', type: 'email', label: t('common.email'), required: true, value: v('email') || (acc ? "" : me.email), attrs: 'dir="ltr" autocomplete="email" data-mail-email' }) %>
+        <%- include('../../partials/field', { name: 'password', type: 'password', label: t('mailbox.password'), required: !acc, value: '', help: acc ? t('mailbox.password_keep') : t('mailbox.password_help'), attrs: 'dir="ltr" autocomplete="off"' }) %>
+        <%- include('../../partials/field', { name: 'display_name', label: t('mailbox.display_name'), value: v('display_name') || (acc ? "" : me.name), cls: 'span-2' }) %>
+      </div>
+      <details class="mail-advanced"<%= o || (acc && acc.last_error) ? ' open' : '' %>>
+        <summary class="small strong"><%= t('mailbox.servers') %></summary>
+        <div class="form-grid mt-2">
+          <%- include('../../partials/field', { name: 'imap_host', label: t('mailbox.imap_host'), value: v('imap_host'), attrs: 'dir="ltr" data-mail-imap' }) %>
+          <%- include('../../partials/field', { name: 'imap_port', type: 'number', label: t('mailbox.port'), value: v('imap_port'), attrs: 'dir="ltr"' }) %>
+          <%- include('../../partials/field', { name: 'smtp_host', label: t('mailbox.smtp_host'), value: v('smtp_host'), attrs: 'dir="ltr" data-mail-smtp' }) %>
+          <%- include('../../partials/field', { name: 'smtp_port', type: 'number', label: t('mailbox.port'), value: v('smtp_port'), attrs: 'dir="ltr"' }) %>
+          <%- include('../../partials/field', { name: 'smtp_security', type: 'select', label: t('mailbox.security'), value: v('smtp_security') || 'ssl', options: [{ value: 'ssl', label: 'SSL/TLS' }, { value: 'starttls', label: 'STARTTLS' }] }) %>
+          <%- include('../../partials/field', { name: 'username', label: t('mailbox.username'), value: v('username'), help: t('mailbox.username_help'), attrs: 'dir="ltr"' }) %>
+        </div>
+      </details>
+      <div class="field"><label class="label" for="mail-sig"><%= t('mailbox.signature') %></label><textarea class="textarea" id="mail-sig" name="signature" rows="3" maxlength="1000" dir="auto"><%= v('signature') %></textarea></div>
+    </div>
+    <div class="panel-foot row-sm"><button class="btn btn-primary" type="submit"><%- icon('plug', 'icon-sm') %><%= acc ? t('mailbox.save_check') : t('mailbox.connect') %></button></div>
+  </form>
+  <div class="stack">
+    <section class="panel">
+      <div class="panel-head"><h2><%- icon('info', 'icon-sm') %> <%= t('mailbox.how_title') %></h2></div>
+      <div class="panel-body stack-sm small">
+        <p><%= t('mailbox.how_private') %></p>
+        <p><%= t('mailbox.how_clinic') %></p>
+        <p class="strong"><%= t('mailbox.app_pw_title') %></p>
+        <ul class="mail-help"><li><%= t('mailbox.app_pw_gmail') %></li><li><%= t('mailbox.app_pw_outlook') %></li><li><%= t('mailbox.app_pw_cpanel') %></li></ul>
+      </div>
+    </section>
+    <% if (acc) { %>
+    <form class="panel" method="post" action="/app/mail/disconnect" data-confirm="<%= t('mailbox.disconnect_confirm') %>" data-confirm-tone="danger">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="panel-body row between wrap"><span class="small muted"><%= t('mailbox.disconnect_sub') %></span><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('unplug', 'icon-sm') %><%= t('mailbox.disconnect') %></button></div>
+    </form>
+    <% } %>
+  </div>
+</div>

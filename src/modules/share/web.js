@@ -263,4 +263,4 @@ async function sendSig(req, res, got, doc) {
 pub.get('/:token/sig/:what(signature|stamp).png', wrap(async (req, res) => { const got = await load(req); return sendSig(req, res, got, got && got.link); }));
 pub.get('/:token/i/:n(\\d+)/sig/:what(signature|stamp).png', wrap(async (req, res) => { const got = await load(req); return sendSig(req, res, got, got && itemOf(got.link, req.params.n)); }));
 
-module.exports = { staff, pub };
+module.exports = { staff, pub, pdfOf };

@@ -1,0 +1,35 @@
+<%# The member's mailbox: folders, search, the folder's messages (newest first), paging. %>
+<% var icons = { inbox: 'mail', sent: 'send', drafts: 'pen-line', junk: 'shield-alert', trash: 'trash-2', archive: 'archive-restore' };
+   var fname = function (f) { return f.kind ? t('mailbox.folder.' + f.kind) : f.name; };
+   var who = function (m) { var p = box && /sent/i.test(folder) ? (m.to[0] || null) : m.from; return p ? (p.name || p.address) : '—'; };
+   var when = function (d) { if (!d) return ''; var x = new Date(d); var today = new Date(); return x.toDateString() === today.toDateString() ? fmt.date(x, { hour: '2-digit', minute: '2-digit' }) : fmt.date(x, { day: 'numeric', month: 'short' }); }; %>
+<div class="page-head">
+  <div><h1><%= t('mailbox.title') %></h1><p dir="ltr" style="text-align:start" class="small muted"><%= acc.email %></p></div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/app/mail/settings"><%- icon('settings', 'icon-sm') %><span class="hide-sm"><%= t('mailbox.settings_title') %></span></a>
+    <a class="btn btn-primary" href="/app/mail/compose"><%- icon('pen-line', 'icon-sm') %><%= t('mailbox.compose') %></a>
+  </div>
+</div>
+<% if (error) { %><div class="alert alert-danger mb-4"><%- icon('triangle-alert') %><div class="grow"><div><%= error %></div></div><a class="btn btn-secondary btn-sm" href="/app/mail/settings"><%= t('mailbox.settings_title') %></a></div><% } %>
+<div class="mail-layout">
+  <nav class="mail-folders panel" aria-label="<%= t('mailbox.folders') %>">
+    <% folders.forEach(function (f) { %><a class="mail-folder<%= f.path === folder ? ' active' : '' %>" href="/app/mail?f=<%= encodeURIComponent(f.path) %>"><%- icon(icons[f.kind] || 'layers', 'icon-sm') %><span class="grow" dir="auto"><%= fname(f) %></span><% if (f.unseen) { %><span class="badge badge-primary"><%= fmt.number(f.unseen) %></span><% } %></a><% }) %>
+  </nav>
+  <section class="panel flush mail-list-panel">
+    <form class="mail-search" method="get" action="/app/mail"><input type="hidden" name="f" value="<%= folder %>"><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('mailbox.search') %>" aria-label="<%= t('mailbox.search') %>" dir="auto"></form>
+    <% if (box && box.items.length) { %>
+    <ul class="mail-list">
+      <% box.items.forEach(function (m) { %>
+      <li class="<%= m.seen ? '' : 'is-unread' %>"><a href="/app/mail/m?f=<%= encodeURIComponent(folder) %>&uid=<%= m.uid %>">
+        <span class="mail-who truncate" dir="auto"><%= who(m) %></span>
+        <span class="mail-subj truncate" dir="auto"><%= m.subject || t('mailbox.no_subject') %></span>
+        <span class="mail-meta"><% if (m.hasFiles) { %><%- icon('paperclip', 'icon-sm') %><% } %><span class="nowrap"><%= when(m.date) %></span></span>
+      </a></li>
+      <% }) %>
+    </ul>
+    <% if (box.pages > 1) { %><div class="row between mail-pager"><% if (box.page > 1) { %><a class="btn btn-ghost btn-sm" href="/app/mail?f=<%= encodeURIComponent(folder) %>&page=<%= box.page - 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %><%= t('mailbox.newer') %></a><% } else { %><span></span><% } %><span class="small muted"><%= t('mailbox.page_of', { p: fmt.number(box.page), n: fmt.number(box.pages) }) %></span><% if (box.page < box.pages) { %><a class="btn btn-ghost btn-sm" href="/app/mail?f=<%= encodeURIComponent(folder) %>&page=<%= box.page + 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %>"><%= t('mailbox.older') %><%- icon('chevron-left', 'icon-sm flip-rtl') %></a><% } else { %><span></span><% } %></div><% } %>
+    <% } else if (!error) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'mail', emptyTitle: q ? t('mailbox.no_results') : t('mailbox.empty'), compact: true }) %>
+    <% } %>
+  </section>
+</div>
