@@ -115,3 +115,7 @@
 @media (max-width: 640px) { .bk-col { grid-template-columns: 1.5rem 1fr; } .bk-col > .input, .bk-col-tools { grid-column: 2; } .bk-col [hidden] { display: none; } }
 .fin-inline { display: inline-flex; margin: 0; }
 .fin-sent { color: var(--success); }
+
+/* Insurance statements: the period filter stays on one line. */
+.ic-filter { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.ic-filter .input { width: auto; min-width: 9.5rem; }

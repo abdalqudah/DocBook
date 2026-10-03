@@ -5,7 +5,7 @@
     <h1><%= t('inscl.title') %></h1>
     <p><%= t('inscl.lead') %></p>
   </div>
-  <form class="page-actions row wrap" method="get" action="/app/insurance-claims">
+  <form class="page-actions ic-filter" method="get" action="/app/insurance-claims">
     <% if (st) { %><input type="hidden" name="provider" value="<%= st.provider.id %>"><% } %>
     <label class="sr-only" for="ic-from"><%= t('common.from') %></label><input class="input" type="date" id="ic-from" name="from" value="<%= period.from %>" title="<%= t('common.from') %>">
     <label class="sr-only" for="ic-to"><%= t('common.to') %></label><input class="input" type="date" id="ic-to" name="to" value="<%= period.to %>" title="<%= t('common.to') %>">
