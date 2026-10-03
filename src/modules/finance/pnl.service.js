@@ -8,7 +8,7 @@
 //  • Operating expenses = the expenses recorded in the period, by category.
 //  • Doctor payroll = doctor salaries marked paid for the salary months in the period (net pay + advances
 //    recovered — the advance was paid out earlier); staff salaries the same, from the staff salary run.
-//  • Supplies received on purchase orders are NOT added: the supplier's bill is recorded as an expense (usually
+//  • Supplies received on purchase orders are NOT added: receiving records the supplier's bill as an expense (usually
 //    "medical supplies"), so adding the order value too would count the same purchase twice. It is a memo line.
 const knex = require('../../db/knex');
 const lib = require('../clinic/records.lib');

@@ -65,3 +65,8 @@
   .po-dl { grid-template-columns: 1fr; }
 }
 .po-form .panel-head > div:first-child { flex: 1 1 360px; min-width: 0; }
+/* The order's bill as an expense */
+.po-exp { border-top: 1px solid var(--border); padding-top: 14px; }
+.po-exp-sum { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; margin: 0; }
+.po-exp-sum dt { color: var(--text-muted); } .po-exp-sum dd { margin: 0; font-weight: var(--fw-semibold); }
+.po-exp-warn { color: var(--warning); display: flex; gap: 6px; align-items: center; margin: 0; }

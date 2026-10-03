@@ -245,3 +245,39 @@ test('"order low-stock items" prepares one draft per supplier and skips items al
   assert.equal((await po.get(c, r.drafts[0])).lines.length, 2);
   assert.equal(a1 > 0, true);
 });
+
+test('receiving records the supplier bill as an expense linked to the order; older orders can be expensed after', async () => {
+  stubMail();
+  const id = await po.saveDraft(ctx, null, { supplier_id: String(supplierId), ...lines([gloves, 10, { unit_cost: '2.5' }]) });
+  const { number } = await po.send(ctx, id);
+  const [gl] = (await po.get(ctx, id)).lines;
+  const r1 = await po.receive(ctx, id, { recv: { [`l${gl.id}`]: '4' }, payment_method: 'bank_transfer', invoice_number: 'S-77' });
+  assert.equal(r1.expense.amount, 10);
+  const e1 = await knex('expenses').where({ id: r1.expense.id }).first();
+  assert.equal(e1.category, 'medical_supplies');
+  assert.equal(e1.purchase_order_id, id);
+  assert.equal(e1.payment_method, 'bank_transfer');
+  assert.equal(e1.invoice_number, 'S-77');
+  assert.match(e1.title, new RegExp(`#${number}`));
+  const r2 = await po.receive(ctx, id, { recv: { [`l${gl.id}`]: '6' }, expense_amount: '16' }); // the bill differs from the order prices
+  assert.equal(r2.expense.amount, 16);
+  let st = await po.expenseState(ctx, id);
+  assert.deepEqual([st.received, st.expensed, st.open, st.rows.length], [25, 26, 0, 2]);
+  // Received without an expense (turned off) → recorded afterwards from the order page.
+  const id2 = await po.saveDraft(ctx, null, { supplier_id: String(supplierId), ...lines([gloves, 3, { unit_cost: '4' }]) });
+  await po.send(ctx, id2);
+  const [g2] = (await po.get(ctx, id2)).lines;
+  const r3 = await po.receive(ctx, id2, { recv: { [`l${g2.id}`]: '3' }, record_expense: '0' });
+  assert.equal(r3.expense, null);
+  st = await po.expenseState(ctx, id2);
+  assert.equal(st.open, 12);
+  await assert.rejects(po.recordExpense(ctx, id2, { amount: '' }), { code: 'VALIDATION_FAILED' });
+  await po.recordExpense(ctx, id2, { amount: String(st.open), payment_method: 'cash' });
+  assert.equal((await po.expenseState(ctx, id2)).open, 0);
+  // Without permission to add expenses, receiving does not create one.
+  const noExp = { ...ctx, permissions: new Set([...ctx.permissions].filter((p) => p !== 'expenses.manage')) };
+  const id3 = await po.saveDraft(ctx, null, { supplier_id: String(supplierId), ...lines([gloves, 1, { unit_cost: '9' }]) });
+  await po.send(ctx, id3);
+  const [g3] = (await po.get(ctx, id3)).lines;
+  assert.equal((await po.receive(noExp, id3, { recv: { [`l${g3.id}`]: '1' } })).expense, null);
+});

@@ -366,12 +366,68 @@ async function receive(ctx, id, input) {
       const item = line.supply_item_id ? await trx('supply_items').where({ id: line.supply_item_id, business_id: ctx.businessId }).first('id') : null; // eslint-disable-line no-await-in-loop
       if (item) await supplies.move(ctx, item.id, { type: 'in', quantity: q, note: `PO #${po.po_number}` }, trx); // eslint-disable-line no-await-in-loop
     }
+    // The supplier's bill for this delivery becomes an expense (unless turned off, or the user cannot add expenses).
+    let expense = null;
+    const wantExpense = !input || input.record_expense === undefined || ['1', 'on', true].includes(input.record_expense);
+    if (wantExpense && ctx.permissions && ctx.permissions.has('expenses.manage')) {
+      const value = round3(plan.reduce((a, p) => a + p.q * num(p.line.unit_cost), 0));
+      expense = await addExpense(ctx, po, { ...input, amount: input.expense_amount !== undefined && input.expense_amount !== '' ? input.expense_amount : value }, trx, { optional: true });
+    }
     const complete = lines.every((l) => num(l.received_quantity) + EPS >= num(l.quantity));
     const now = new Date();
     await trx('purchase_orders').where({ id }).update({ status: complete ? 'received' : po.status, received_at: complete ? now : null, updated_at: now });
     await audit.record(ctx, 'purchase_order.received', { entityType: 'purchase_order', entityId: id, oldValues: { status: po.status }, newValues: { status: complete ? 'received' : po.status, received: plan.map((p) => `${p.line.name} × ${p.q}`).join('; ').slice(0, 2000) } }, trx);
-    return { complete, lines: plan.length };
+    return { complete, lines: plan.length, expense };
   });
+}
+
+// ---------------------------------------------------------------- the order's bill as an expense
+const round3 = (n) => Math.round(n * 1000) / 1000;
+const EXPENSE_METHODS = ['cash', 'bank_transfer', 'card', 'digital_wallet'];
+const expenseSchema = z.object({
+  amount: z.preprocess((v) => (v === '' || v === undefined || v === null ? undefined : Number(String(v).replace(/,/g, ''))),
+    z.number({ required_error: 'Enter the bill amount.', invalid_type_error: 'Enter a number.' }).min(0, 'Must be zero or more.').max(1e9, 'Too large.')),
+  payment_method: z.preprocess((v) => (v ? v : 'cash'), z.enum(EXPENSE_METHODS, { errorMap: () => ({ message: 'Choose a valid value.' }) })),
+  invoice_number: optionalString(100),
+  date: z.preprocess(emptyToUndefined, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional()),
+});
+
+/**
+ * One expense ("medical supplies") for the order. `optional`: an amount of 0 is skipped quietly (a delivery with
+ * no prices) instead of being an error. Returns { id, amount } or null.
+ */
+async function addExpense(ctx, po, input, trx = knex, { optional = false } = {}) {
+  const d = validate(expenseSchema, { amount: input.amount, payment_method: input.payment_method, invoice_number: input.invoice_number, date: input.expense_date || input.date });
+  const amount = round3(d.amount);
+  if (!(amount > 0)) { if (optional) return null; throw E.validation({ amount: 'Enter the bill amount.' }); }
+  const t = translator(ctx.locale || 'ar');
+  const row = {
+    business_id: ctx.businessId, date: d.date || ctx.today || new Date().toISOString().slice(0, 10), category: 'medical_supplies',
+    title: t('purchasing.expense_title', { n: po.po_number, supplier: po.supplier_name }).slice(0, 255), amount, payment_method: d.payment_method,
+    invoice_number: d.invoice_number || null, recorded_by: ctx.userName || null, recorded_by_user_id: ctx.userId || null, purchase_order_id: po.id,
+  };
+  const [id] = await trx('expenses').insert(row);
+  await audit.record(ctx, 'expense.created', { entityType: 'expense', entityId: id, newValues: { ...row, source: `purchase_order:${po.id}` } }, trx);
+  return { id, amount };
+}
+
+/** What was received (at the order's prices), what is already an expense, and the expenses themselves. */
+async function expenseState(ctx, id) {
+  const [[{ v }], rows] = await Promise.all([
+    knex('purchase_receipts').where({ business_id: ctx.businessId, purchase_order_id: id }).select(knex.raw('COALESCE(SUM(quantity * COALESCE(unit_cost, 0)), 0) as v')),
+    knex('expenses').where({ business_id: ctx.businessId, purchase_order_id: id }).orderBy('date').select('id', 'date', 'amount', 'payment_method', 'invoice_number', 'title'),
+  ]);
+  const received = round3(num(v));
+  const expensed = round3(rows.reduce((a, r) => a + num(r.amount), 0));
+  return { received, expensed, open: Math.max(0, round3(received - expensed)), rows };
+}
+
+/** Records the order's bill (or the rest of it) as an expense — e.g. for an order received before this existed. */
+async function recordExpense(ctx, id, input) {
+  const po = await knex('purchase_orders').where({ id, business_id: ctx.businessId }).first();
+  if (!po) throw E.notFound('Purchase order');
+  if (!['received', 'sent', 'acknowledged', 'cancelled'].includes(po.status) || po.status === 'draft') throw conflict('PO_NOT_OPEN');
+  return knex.transaction((trx) => addExpense(ctx, po, input, trx));
 }
 
 // ---------------------------------------------------------------- texts (e-mail, copy, WhatsApp)
@@ -519,5 +575,5 @@ async function vendorNote(vendor, vctx, id, input = {}) {
 module.exports = {
   STATUSES, OPEN, suggestQty, getSupplier, activeVendorId, recipientOf, listSuppliers, listItems, onOrder, get, list, progress,
   saveDraft, draftLowStock, removeDraft, claimPoNumber, dispatchPlan, send, markSent, resend, cancel, receive,
-  orderText, buildEmail, dateIn, vendorList, vendorGet, acknowledge, vendorNote,
+  orderText, buildEmail, dateIn, expenseState, recordExpense, EXPENSE_METHODS, vendorList, vendorGet, acknowledge, vendorNote,
 };

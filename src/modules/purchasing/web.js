@@ -185,7 +185,7 @@ router.get('/:id(\\d+)', wrap(async (req, res) => {
   const phone = supplier && supplier.phone ? String(supplier.phone).replace(/[^0-9]/g, '') : '';
   res.page('pages/purchasing/show', {
     title: po.po_number ? req.t('purchasing.po_no', { n: po.po_number }) : req.t('purchasing.draft_po'),
-    po, plan, supplier, text, waUrl: `https://wa.me/${phone}?text=${encodeURIComponent(text)}`, when: whenFn(req), printable: true,
+    po, plan, supplier, text, expense: req.ctx.permissions.has('expenses.view') && po.status !== 'draft' ? await svc.expenseState(req.ctx, po.id) : null, expenseMethods: svc.EXPENSE_METHODS, waUrl: `https://wa.me/${phone}?text=${encodeURIComponent(text)}`, when: whenFn(req), printable: true,
     printMode: req.query.print === '1', openDialog: req.query.receive === '1' ? 'receive-dialog' : '', ...ASSETS,
   });
 }));
@@ -230,8 +230,15 @@ router.post('/:id(\\d+)/delete', can('supplies.manage'), act(async (req, res) =>
 
 router.post('/:id(\\d+)/receive', can('supplies.manage'), act(async (req, res) => {
   const r = await svc.receive(req.ctx, Number(req.params.id), req.body);
-  flash(req, 'success', req.t(r.complete ? 'purchasing.received_all' : 'purchasing.received_part'));
+  flash(req, 'success', req.t(r.complete ? 'purchasing.received_all' : 'purchasing.received_part') + (r.expense ? ` ${req.t('purchasing.expense_added', { amount: res.locals.fmt.money(r.expense.amount) })}` : ''));
   res.redirect(orderUrl(req));
 }, (req) => `${orderUrl(req)}?receive=1`));
+
+// The order's bill as an expense (an order received before, or a bill different from the order prices).
+router.post('/:id(\\d+)/expense', can('expenses.manage'), act(async (req, res) => {
+  const r = await svc.recordExpense(req.ctx, Number(req.params.id), req.body);
+  flash(req, 'success', req.t('purchasing.expense_added', { amount: res.locals.fmt.money(r.amount) }));
+  res.redirect(orderUrl(req));
+}, orderUrl));
 
 module.exports = router;

@@ -83,6 +83,31 @@
     <div class="panel"><div class="panel-head"><h2><%= t('purchasing.notes') %></h2></div><div class="panel-body"><p class="po-pre"><%= po.notes %></p></div></div>
     <% } %>
 
+    <% if (expense && (expense.received > 0 || expense.rows.length)) { %>
+    <div class="panel" id="po-expense">
+      <div class="panel-head"><h2><%- icon('receipt', 'icon-sm') %> <%= t('purchasing.exp_title') %></h2><% if (expense.rows.length) { %><a class="btn btn-ghost btn-sm" href="/app/expenses"><%= t('purchasing.exp_open') %></a><% } %></div>
+      <div class="panel-body stack">
+        <dl class="po-exp-sum small">
+          <dt><%= t('purchasing.exp_received_value') %></dt><dd class="num"><%= fmt.money(expense.received) %></dd>
+          <dt><%= t('purchasing.exp_recorded') %></dt><dd class="num"><%= fmt.money(expense.expensed) %></dd>
+        </dl>
+        <% expense.rows.forEach(function (e) { %><div class="row between small"><span><%- icon('check', 'icon-sm') %> <%= fmt.date(e.date) %><%= e.invoice_number ? ' · ' + e.invoice_number : '' %> · <%= label('payment_methods', e.payment_method) %></span><strong class="num"><%= fmt.money(e.amount) %></strong></div><% }) %>
+        <% if (!expense.rows.length) { %><p class="small po-exp-warn"><%- icon('triangle-alert', 'icon-sm') %> <%= t('purchasing.exp_missing') %></p><% } %>
+        <% if (can('expenses.manage') && (expense.open > 0 || !expense.rows.length)) { %>
+        <form method="post" action="/app/supplies/orders/<%= po.id %>/expense" class="stack-sm" data-confirm="<%= t('purchasing.exp_confirm') %>" data-confirm-yes="<%= t('purchasing.exp_add') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-grid">
+            <div class="field"><label class="label" for="pe-amount"><%= t('purchasing.exp_amount') %></label><input class="input" id="pe-amount" name="amount" inputmode="decimal" value="<%= expense.open > 0 ? expense.open : '' %>" required></div>
+            <div class="field"><label class="label" for="pe-method"><%= t('purchasing.exp_method') %></label><select class="select" id="pe-method" name="payment_method"><% expenseMethods.forEach(function (m) { %><option value="<%= m %>"><%= label('payment_methods', m) %></option><% }) %></select></div>
+            <div class="field"><label class="label" for="pe-inv"><%= t('purchasing.exp_invoice') %></label><input class="input" id="pe-inv" name="invoice_number" maxlength="100"></div>
+          </div>
+          <div><button class="btn btn-primary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('purchasing.exp_add') %></button></div>
+        </form>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
     <% if (po.vendor_note) { %>
     <div class="panel"><div class="panel-head"><h2><%= t('purchasing.vendor_note') %></h2><span class="small muted"><%= when(po.vendor_noted_at) %></span></div><div class="panel-body"><p class="po-pre"><%= po.vendor_note %></p></div></div>
     <% } %>
@@ -168,6 +193,16 @@
         </table>
       </div>
     </div>
+    <% if (can('expenses.manage')) { %>
+    <div class="dialog-body po-exp">
+      <label class="check"><input type="checkbox" name="record_expense" value="1" checked><span><strong><%= t('purchasing.exp_record') %></strong> <span class="small muted"><%= t('purchasing.exp_record_help') %></span></span></label>
+      <div class="form-grid mt-2">
+        <div class="field"><label class="label" for="exp-amount"><%= t('purchasing.exp_amount') %></label><input class="input" id="exp-amount" name="expense_amount" inputmode="decimal" placeholder="<%= t('purchasing.exp_amount_auto') %>"><span class="help"><%= t('purchasing.exp_amount_help') %></span></div>
+        <div class="field"><label class="label" for="exp-method"><%= t('purchasing.exp_method') %></label><select class="select" id="exp-method" name="payment_method"><% expenseMethods.forEach(function (m) { %><option value="<%= m %>"><%= label('payment_methods', m) %></option><% }) %></select></div>
+        <div class="field"><label class="label" for="exp-inv"><%= t('purchasing.exp_invoice') %></label><input class="input" id="exp-inv" name="invoice_number" maxlength="100"></div>
+      </div>
+    </div>
+    <% } %>
     <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('purchasing.record_receipt') %></button></div>
   </form>
 </dialog>
