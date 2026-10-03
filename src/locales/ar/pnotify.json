@@ -14,6 +14,7 @@
       "ads_running": "إعلانات تُعرض الآن"
     },
     "latest": "آخر الإشعارات",
+    "card_paid": { "title": "دفعة بالبطاقة من {who}", "body": "الفاتورة {number} · {amount} — فُعّلت الخدمة تلقائيًا." },
     "clinic_signup": { "title": "عيادة جديدة سجّلت: {name}" },
     "vendor_signup": { "title": "تسجيل مندوب/شركة جديد: {name}", "body": "راجع الحساب ووافق عليه ليظهر للعيادات." },
     "vendor_payment": { "title": "{vendor} أبلغ عن دفعة", "body": "الفاتورة {number} · {amount} — أكّد وصول المبلغ." },

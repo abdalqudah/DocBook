@@ -17,7 +17,7 @@ const pnotify = require('../platformnotify/notify.service');
 const KEY = 'vendor_billing';
 const DEFAULTS = { enabled: false, trialDays: 14, trialPlanId: null, adPricePerDay: 5, adCurrency: 'JOD', adMaxDays: 60 };
 const CYCLES = ['monthly', 'yearly'];
-const METHODS = ['bank_transfer', 'cliq', 'cash'];
+const METHODS = ['bank_transfer', 'cliq', 'wallet', 'card', 'cash'];
 const TZ = 'Asia/Amman';
 const todayOf = () => clinicNow(TZ).date;
 const addDays = (s, n) => { const d = new Date(`${s}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + Number(n)); return d.toISOString().slice(0, 10); };
@@ -164,6 +164,7 @@ async function confirmPayment(ctx, invoiceId, { method, reference } = {}) {
   if (!inv) throw E.notFound('Invoice');
   if (inv.status === 'paid' || inv.status === 'void') throw new AppError('INVOICE_CLOSED', 'This invoice is already closed.', 409);
   const today = todayOf();
+  if (inv.kind === 'plan') await ensure(inv.vendor_id); // a subscription row to start (billing may still be off)
   await knex.transaction(async (trx) => {
     await trx('vendor_invoices').where({ id: inv.id }).update({ status: 'paid', method: method || inv.method || 'bank_transfer', reference: reference || inv.reference || null, paid_at: new Date(), confirmed_by: ctx.userId || null, updated_at: new Date() });
     if (inv.kind === 'plan') {

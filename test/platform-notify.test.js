@@ -60,12 +60,16 @@ test('approval, payments and visit decisions notify the rep; admin sees reported
 });
 
 test('clinic contact details reach the rep only after the clinic adds it as a supplier', async () => {
-  let [row] = (await reps.vendorVisits(vendorId)).filter((r) => r.business_id === clinic.businessId);
+  // A confirmed visit shows the address; a request still waiting does not.
+  const [rq] = await knex('rep_visits').insert({ business_id: clinic.businessId, vendor_id: vendorId, user_id: clinic.userId, visit_date: today, visit_time: '12:00', duration_minutes: 15, purpose: 'Second', status: 'requested' });
+  const rows0 = await reps.vendorVisits(vendorId);
+  assert.equal(rows0.find((r) => r.status === 'confirmed').clinic_address, 'Street 9');
+  let row = rows0.find((r) => r.id === rq);
   assert.equal(row.clinic_address, null);
   assert.equal(row.clinic_map_url, null);
   assert.equal(row.isSupplier, false);
   await market.ensureSupplier(clinic, vendorId);
-  [row] = (await reps.vendorVisits(vendorId)).filter((r) => r.business_id === clinic.businessId);
+  row = (await reps.vendorVisits(vendorId)).find((r) => r.id === rq);
   assert.equal(row.clinic_address, 'Street 9');
   assert.ok(row.isSupplier);
   assert.ok((await kinds('vendor', vendorId)).includes('supplier_added'));

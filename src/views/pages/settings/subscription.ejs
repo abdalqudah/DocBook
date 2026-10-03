@@ -74,6 +74,7 @@
       </div>
     </section>
 
+    <% if (typeof payResult !== 'undefined' && payResult) { %><div class="alert <%= payResult === 'paid' ? 'alert-success' : payResult === 'pending' ? 'alert-info' : 'alert-warning' %>" role="status"><%- icon(payResult === 'paid' ? 'circle-check' : payResult === 'pending' ? 'clock' : 'triangle-alert', 'icon-sm') %><div class="grow"><%= t('ppay.result.' + payResult) %></div></div><% } %>
     <% if (pending) { var p = pending; %>
     <section class="panel" id="pay">
       <div class="panel-head">
@@ -87,8 +88,15 @@
           <dt><%= t('subscriptions.period') %></dt><dd><%= fmt.date(p.period_start) %> – <%= fmt.date(p.period_end) %></dd>
           <dt><%= t('subscriptions.amount_due') %></dt><dd class="strong"><%= money(p.amount, p.currency) %></dd>
         </dl>
-        <% var c = st.settings; var hasBank = c.iban || c.bankName; var hasCliq = c.cliqAlias; %>
-        <% if (hasBank || hasCliq) { %>
+        <% if (payMethods.card) { %>
+        <form method="post" action="/app/settings/subscription/invoices/<%= p.id %>/card" class="sub-card-pay">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-primary" type="submit"><%- icon('credit-card', 'icon-sm') %><%= t('ppay.pay_card', { amount: money(p.amount, p.currency) }) %></button>
+          <span class="tiny muted"><%= t('ppay.card_note') %><%= payMethods.cardTest ? ' · ' + t('ppay.test_mode') : '' %></span>
+        </form>
+        <% } %>
+        <% var c = st.settings; var hasBank = c.iban || c.bankName; var hasCliq = c.cliqAlias; var wal = payMethods.wallet; %>
+        <% if (hasBank || hasCliq || wal) { %>
         <div class="sub-pay-methods">
           <% if (hasBank) { %>
           <div class="sub-pay-box">
@@ -98,6 +106,15 @@
               <% if (c.accountName) { %><dt><%= t('subscriptions.account_name') %></dt><dd><%= c.accountName %></dd><% } %>
               <% if (c.iban) { %><dt>IBAN</dt><dd><span class="mono" dir="ltr"><%= c.iban %></span> <button class="btn btn-ghost btn-sm btn-icon" type="button" data-copy="<%= c.iban %>" aria-label="<%= t('subscriptions.copy') %>"><%- icon('copy', 'icon-sm') %></button></dd><% } %>
               <% if (c.swift) { %><dt>SWIFT</dt><dd class="mono" dir="ltr"><%= c.swift %></dd><% } %>
+            </dl>
+          </div>
+          <% } %>
+          <% if (wal) { %>
+          <div class="sub-pay-box">
+            <div class="row-sm small strong"><%- icon('wallet', 'icon-sm muted') %><%= t('subscriptions.methods.wallet') %><%= wal.name ? ' · ' + wal.name : '' %></div>
+            <dl class="dl sub-dl-tight">
+              <dt><%= t('ppay.wallet_number') %></dt><dd><span class="mono" dir="ltr"><%= wal.number %></span> <button class="btn btn-ghost btn-sm btn-icon" type="button" data-copy="<%= wal.number %>" aria-label="<%= t('subscriptions.copy') %>"><%- icon('copy', 'icon-sm') %></button></dd>
+              <% if (wal.holder) { %><dt><%= t('subscriptions.account_name') %></dt><dd><%= wal.holder %></dd><% } %>
             </dl>
           </div>
           <% } %>

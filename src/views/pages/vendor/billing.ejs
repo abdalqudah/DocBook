@@ -11,6 +11,7 @@
   <div><h1><%= t('vbill.nav_billing') %></h1><p><%= t('vbill.billing_lead') %></p></div>
 </div>
 <%- include('../../partials/form-error') %>
+<% if (typeof payResult !== 'undefined' && payResult) { %><div class="alert <%= payResult === 'paid' ? 'alert-success' : payResult === 'pending' ? 'alert-info' : 'alert-warning' %> mb-4" role="status"><%- icon(payResult === 'paid' ? 'circle-check' : payResult === 'pending' ? 'clock' : 'triangle-alert', 'icon-sm') %><div class="grow"><%= t('ppay.result.' + payResult) %></div></div><% } %>
 <% if (!st.enabled) { %>
   <div class="banner info mb-4" role="status"><%- icon('gift', 'icon-sm') %><span><%= t('vbill.free_now') %></span></div>
 <% } %>
@@ -57,7 +58,15 @@
         <div><div class="strong"><%= i.number %> · <%= i.description %></div><div class="small muted"><%= t('vbill.kind.' + i.kind) %><% if (i.billing_cycle && i.kind === 'plan') { %> · <%= t('vbill.cycle.' + i.billing_cycle) %><% } %></div></div>
         <div class="row-sm"><span class="vb-amount num"><%= fmt.money(i.amount, i.currency) %></span><span class="badge badge-dot <%= ibadge[i.status] %>"><%= t('vbill.istatus.' + i.status) %></span></div>
       </div>
+      <% if (pay.card) { %>
+      <form class="row-sm wrap mt-2" method="post" action="/vendor/billing/invoices/<%= i.id %>/card">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary" type="submit"><%- icon('credit-card', 'icon-sm') %><%= t('ppay.pay_card', { amount: fmt.money(i.amount, i.currency) }) %></button>
+        <span class="tiny muted"><%= t('ppay.card_note') %><%= pay.cardTest ? ' · ' + t('ppay.test_mode') : '' %></span>
+      </form>
+      <% } %>
       <% if (i.status === 'open') { %>
+<% if (pay.card) { %><div class="tiny muted mt-2"><%= t('ppay.or_transfer') %></div><% } %>
       <form class="row-sm wrap mt-2" method="post" action="/vendor/billing/invoices/<%= i.id %>/report">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <select class="select" name="method" aria-label="<%= t('vbill.method') %>"><% methods.forEach(function (m) { %><option value="<%= m %>"><%= t('vbill.methods.' + m) %></option><% }) %></select>
@@ -68,12 +77,23 @@
     </div>
     <% }) %>
     <div class="vb-payto">
-      <div class="strong mb-2"><%= t('vbill.pay_to') %></div>
-      <dl class="vb-dl small">
-        <% [['billingName','pay_name'],['bankName','pay_bank'],['accountName','pay_account'],['iban','pay_iban'],['swift','pay_swift'],['cliqAlias','pay_cliq'],['cliqName','pay_cliq_name']].forEach(function (f) { if (pay[f[0]]) { %><dt><%= t('vbill.' + f[1]) %></dt><dd dir="<%= ['iban','swift','cliqAlias'].indexOf(f[0]) !== -1 ? 'ltr' : 'auto' %>"><%= pay[f[0]] %></dd><% } }) %>
-      </dl>
+      <div class="strong mb-2"><%= t('vbill.pay_to') %><%= pay.billingName ? ' — ' + pay.billingName : '' %></div>
+      <div class="vb-paygrid">
+        <% if (pay.bank) { %><div class="vb-paybox"><div class="small strong"><%- icon('landmark', 'icon-sm') %> <%= t('vbill.methods.bank_transfer') %></div><dl class="vb-dl small">
+          <% if (pay.bank.bankName) { %><dt><%= t('vbill.pay_bank') %></dt><dd><%= pay.bank.bankName %></dd><% } %>
+          <% if (pay.bank.accountName) { %><dt><%= t('vbill.pay_account') %></dt><dd><%= pay.bank.accountName %></dd><% } %>
+          <% if (pay.bank.iban) { %><dt>IBAN</dt><dd dir="ltr"><%= pay.bank.iban %></dd><% } %>
+          <% if (pay.bank.swift) { %><dt>SWIFT</dt><dd dir="ltr"><%= pay.bank.swift %></dd><% } %>
+        </dl></div><% } %>
+        <% if (pay.cliq) { %><div class="vb-paybox"><div class="small strong"><%- icon('smartphone', 'icon-sm') %> <%= t('vbill.methods.cliq') %></div><dl class="vb-dl small">
+          <dt><%= t('vbill.pay_cliq') %></dt><dd dir="ltr"><%= pay.cliq.alias %></dd><% if (pay.cliq.name) { %><dt><%= t('vbill.pay_cliq_name') %></dt><dd><%= pay.cliq.name %></dd><% } %>
+        </dl></div><% } %>
+        <% if (pay.wallet) { %><div class="vb-paybox"><div class="small strong"><%- icon('wallet', 'icon-sm') %> <%= t('vbill.methods.wallet') %><%= pay.wallet.name ? ' · ' + pay.wallet.name : '' %></div><dl class="vb-dl small">
+          <dt><%= t('ppay.wallet_number') %></dt><dd dir="ltr"><%= pay.wallet.number %></dd><% if (pay.wallet.holder) { %><dt><%= t('vbill.pay_account') %></dt><dd><%= pay.wallet.holder %></dd><% } %>
+        </dl></div><% } %>
+      </div>
       <% var ins = L(pay.instructions, pay.instructions_en); if (ins) { %><p class="small muted mt-2"><%= ins %></p><% } %>
-      <% if (!pay.iban && !pay.cliqAlias && !ins) { %><p class="small muted"><%= t('vbill.pay_contact') %></p><% } %>
+      <% if (!pay.bank && !pay.cliq && !pay.wallet && !pay.card && !ins) { %><p class="small muted"><%= t('vbill.pay_contact') %></p><% } %>
     </div>
   </div>
 </section>

@@ -23,21 +23,7 @@
     </div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_payment') %></h2><div class="panel-sub"><%= t('subscriptions_admin.payment_help') %></div></div></div>
-    <div class="panel-body stack">
-      <%- include('../../partials/field', { name: 'billingName', label: t('subscriptions_admin.billing_name'), value: val('billingName'), help: t('subscriptions_admin.billing_name_help'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
-      <div class="form-grid">
-        <%- include('../../partials/field', { name: 'bankName', label: t('subscriptions.bank_name'), value: val('bankName'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
-        <%- include('../../partials/field', { name: 'accountName', label: t('subscriptions.account_name'), value: val('accountName'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
-        <%- include('../../partials/field', { name: 'iban', label: 'IBAN', value: val('iban'), attrs: 'maxlength="60" dir="ltr" autocomplete="off"', errors: errs }) %>
-        <%- include('../../partials/field', { name: 'swift', label: 'SWIFT / BIC', value: val('swift'), attrs: 'maxlength="20" dir="ltr" autocomplete="off"', errors: errs }) %>
-        <%- include('../../partials/field', { name: 'cliqAlias', label: t('subscriptions.cliq_alias'), value: val('cliqAlias'), attrs: 'maxlength="60" dir="ltr" autocomplete="off"', errors: errs }) %>
-        <%- include('../../partials/field', { name: 'cliqName', label: t('subscriptions_admin.cliq_name'), value: val('cliqName'), attrs: 'maxlength="160" dir="auto"', errors: errs }) %>
-        <%- include('../../partials/field', { name: 'instructions', label: t('subscriptions_admin.instructions_ar'), type: 'textarea', value: val('instructions'), errors: errs }) %>
-        <%- include('../../partials/field', { name: 'instructions_en', label: t('subscriptions_admin.instructions_en'), type: 'textarea', value: val('instructions_en'), errors: errs }) %>
-      </div>
-      <p class="tiny muted"><%- icon('info', 'icon-sm') %> <%= t('subscriptions_admin.card_note') %></p>
-    </div>
+    <div class="panel-head"><div><h2><%= t('subscriptions_admin.sec_payment') %></h2><div class="panel-sub"><%= t('ppay.admin.moved') %></div></div><a class="btn btn-secondary btn-sm" href="/admin/payments"><%- icon('credit-card', 'icon-sm') %><%= t('ppay.admin.nav') %></a></div>
   </section>
   <div><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
 </form>

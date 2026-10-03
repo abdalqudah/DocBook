@@ -1,7 +1,7 @@
 {
   "vbill": {
-    "contact_hidden": "The clinic's contact details (address, map, phone and e-mail) show only once the clinic adds you as a supplier.",
-    "contact_hidden_short": "Contact details show once the clinic adds you as a supplier",
+    "contact_hidden": "The clinic's address shows once it confirms your visit or adds you as a supplier.",
+    "contact_hidden_short": "The address shows once the visit is confirmed",
     "nav_billing": "Plan & invoices",
     "nav_ads": "Ads",
     "billing_lead": "Your plan, free trial, this month's usage and invoices.",
@@ -21,7 +21,7 @@
     "cycle": { "monthly": "Monthly", "yearly": "Yearly" },
     "istatus": { "open": "Unpaid", "reported": "Awaiting confirmation", "paid": "Paid", "void": "Void" },
     "method": "Payment method",
-    "methods": { "bank_transfer": "Bank transfer", "cliq": "CliQ", "cash": "Cash" },
+    "methods": { "wallet": "E-wallet", "card": "Card (online)", "bank_transfer": "Bank transfer", "cliq": "CliQ", "cash": "Cash" },
     "reference": "Transfer or reference number",
     "i_paid": "I paid",
     "waiting_confirm": "Payment reported — we will turn the service on once the money arrives.",

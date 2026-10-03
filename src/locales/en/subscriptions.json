@@ -55,6 +55,8 @@
     "methods": {
       "bank_transfer": "Bank transfer",
       "cliq": "CliQ",
+      "wallet": "E-wallet",
+      "card": "Card (online)",
       "cash": "Cash"
     },
     "bank_name": "Bank",

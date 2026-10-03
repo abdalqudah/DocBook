@@ -14,6 +14,7 @@
       "ads_running": "Ads running now"
     },
     "latest": "Latest notifications",
+    "card_paid": { "title": "Card payment from {who}", "body": "Invoice {number} · {amount} — the service was turned on automatically." },
     "clinic_signup": { "title": "New clinic signed up: {name}" },
     "vendor_signup": { "title": "New rep / company signed up: {name}", "body": "Review and approve the account so clinics can see it." },
     "vendor_payment": { "title": "{vendor} reported a payment", "body": "Invoice {number} · {amount} — confirm the money arrived." },

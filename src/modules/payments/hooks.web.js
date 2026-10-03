@@ -44,5 +44,29 @@ router.post('/return/paytabs/:pid', limiter, express.urlencoded({ extended: fals
   }
 });
 
+// Card payments to the platform (clinic subscriptions, rep plans and ads) — same checks, platform PayTabs profile.
+router.post('/platform/callback/:pid', limiter, raw, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const out = await require('../platformpay/platformpay.service').callback(req.params.pid, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), req.get('signature') || ''); // eslint-disable-line global-require
+    return res.status(out.ok ? 200 : out.status).json({ ok: out.ok, ...(out.result ? { result: out.result } : {}) });
+  } catch (e) {
+    console.error('[platform pay] callback:', e.message); // eslint-disable-line no-console
+    return res.status(503).json({ ok: false });
+  }
+});
+router.post('/platform/return/:pid', limiter, express.urlencoded({ extended: false, limit: '32kb' }), async (req, res) => {
+  res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+  const ppay = require('../platformpay/platformpay.service'); // eslint-disable-line global-require
+  try {
+    const out = await ppay.returned(req.params.pid, req.body || {});
+    if (!out.payment) return res.status(404).type('text/plain').send('Not found');
+    return res.redirect(303, ppay.backUrl(out.payment, out.result));
+  } catch (e) {
+    console.error('[platform pay] return:', e.message); // eslint-disable-line no-console
+    return res.status(500).type('text/plain').send('Something went wrong. Please open your billing page again.');
+  }
+});
+
 module.exports = router;
 module.exports.backToPatient = backToPatient;

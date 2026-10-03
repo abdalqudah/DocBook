@@ -29,7 +29,7 @@
           <td data-label="<%= t('rep_visits.vendor_side.clinic') %>"><div>
             <div class="strong"><%= L(r.clinic_name, r.clinic_name_en) %></div>
             <div class="tiny muted"><%= [r.clinic_city, r.clinic_address].filter(Boolean).join(' · ') %></div>
-            <% if (!r.isSupplier && r.status === 'confirmed') { %><div class="tiny muted"><%- icon('lock', 'icon-sm') %> <%= t('vbill.contact_hidden_short') %></div><% } %>
+            <% if (!r.showAddress && r.status === 'requested') { %><div class="tiny muted"><%- icon('lock', 'icon-sm') %> <%= t('vbill.contact_hidden_short') %></div><% } %>
             <% if (r.clinic_map_url && /^https?:\/\//.test(r.clinic_map_url)) { %><a class="tiny" href="<%= r.clinic_map_url %>" target="_blank" rel="noopener"><%= t('rep_visits.vendor_side.map') %></a><% } %>
           </div></td>
           <td data-label="<%= t('rep_visits.doctor') %>"><%= r.doctor_name ? L(r.doctor_name, r.doctor_name_en) : t('rep_visits.clinic_wide') %></td>

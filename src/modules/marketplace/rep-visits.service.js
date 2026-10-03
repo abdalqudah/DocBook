@@ -328,11 +328,16 @@ const vendorVisitsQuery = (vendorId) => knex('rep_visits as r').join('businesses
     'r.business_id', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.city as clinic_city', 'b.address as clinic_address', 'b.map_url as clinic_map_url', 'b.timezone',
     'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
   .orderBy('r.visit_date', 'desc').orderBy('r.visit_time', 'desc').limit(200);
-/** The vendor's visits; a clinic's address and map link only when that clinic added the vendor as a supplier. */
+/** The vendor's visits; a clinic's address and map link once the clinic confirmed the visit or added the vendor as a supplier. */
 async function vendorVisits(vendorId) {
   const rows = await vendorVisitsQuery(vendorId);
   const linked = await linkedClinics(vendorId, rows.map((r) => r.business_id));
-  rows.forEach((r) => { r.isSupplier = linked.has(Number(r.business_id)); if (!r.isSupplier) { r.clinic_address = null; r.clinic_map_url = null; } });
+  // The address and map: for suppliers, and for a visit the clinic confirmed (the rep has to find the clinic).
+  rows.forEach((r) => {
+    r.isSupplier = linked.has(Number(r.business_id));
+    r.showAddress = r.isSupplier || ['confirmed', 'done'].includes(r.status);
+    if (!r.showAddress) { r.clinic_address = null; r.clinic_map_url = null; }
+  });
   return rows;
 }
 

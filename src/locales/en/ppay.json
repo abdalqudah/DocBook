@@ -1,0 +1,60 @@
+{
+  "ppay": {
+    "pay_card": "Pay {amount} by card",
+    "card_note": "Secure payment through PayTabs — Visa, Mastercard and more, as enabled on the account.",
+    "test_mode": "test mode",
+    "or_transfer": "Or transfer the amount, then tell us:",
+    "wallet_number": "Wallet number",
+    "result": {
+      "paid": "Payment received and the service is active. Thank you!",
+      "pending": "Your payment is being processed — the status updates within minutes.",
+      "failed": "The payment did not go through. Try again or pay by transfer."
+    },
+    "status": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "err": {
+      "PAY_NOT_CONFIGURED": "Card payment is not available right now.",
+      "INVOICE_CLOSED": "This invoice is closed.",
+      "PAY_PROVIDER_ERROR": "Could not open the payment page. Try again shortly.",
+      "PAY_PROVIDER_UNREACHABLE": "Could not reach the payment gateway. Try again shortly.",
+      "generic": "Could not start the payment. Try again."
+    },
+    "admin": {
+      "nav": "Payment gateways",
+      "title": "Payment gateways & methods",
+      "lead": "How clinics pay their subscriptions and reps pay plans and ads to the platform: card through PayTabs, bank transfer (IBAN), CliQ or an e-wallet.",
+      "pt_lead": "Card payment straight from the subscription and billing pages. The service turns on automatically once PayTabs confirms.",
+      "on": "On",
+      "card_on": "Turn on card payment (PayTabs)",
+      "card_on_help": "Needs the profile ID and server key from the PayTabs dashboard.",
+      "region": "Account region",
+      "mode": "Mode",
+      "mode_test": "Test (test cards)",
+      "mode_live": "Live",
+      "key_help": "PayTabs: Developers → Key management → Server key. Stored encrypted.",
+      "urls_note": "No addresses to set in PayTabs — the platform sends them with each payment:",
+      "bank": "Bank transfer",
+      "bank_lead": "Shown on platform invoices and payment pages.",
+      "wallet_lead": "Such as Zain Cash, Orange Money or any other wallet.",
+      "wallet_on": "Show the wallet as a payment method",
+      "wallet_name": "Wallet name",
+      "wallet_name_ph": "Zain Cash",
+      "instructions": "Extra payment instructions",
+      "saved": "Payment methods saved.",
+      "test": "Test the PayTabs connection",
+      "test_ok": "The PayTabs connection works.",
+      "test_fail": "The PayTabs connection failed: {message}",
+      "recent": "Latest card payments",
+      "no_recent": "No payments yet.",
+      "col_kind": "Payer",
+      "col_ref": "PayTabs reference",
+      "kind_clinic": "Clinic (subscription)",
+      "kind_vendor": "Rep / company",
+      "moved": "Bank transfer, CliQ, wallet and card payment details are now on the “Payment gateways” page."
+    }
+  }
+}

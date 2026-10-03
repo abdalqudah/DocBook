@@ -26,6 +26,7 @@ router.use(requireAuth, async (req, res, next) => {
 });
 router.use('/', require('./identity.web')); // Google sign-in + clinic custom domains (identity area)
 router.use('/', require('./vendors.web')); // reps & warehouses: approval and moderation
+router.use('/payments', require('../platformpay/admin.web')); // payment methods: bank, CliQ, wallet, PayTabs
 router.use('/notifications', require('../platformnotify/web').admin()); // platform notifications
 router.use('/vendor-billing', require('../vendorbilling/admin.web')); // reps' subscription plans, trial, invoices, ads
 router.use('/', require('./reviews.web'));

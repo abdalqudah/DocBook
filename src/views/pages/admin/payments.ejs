@@ -1,0 +1,86 @@
+<%
+  var _o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var val = function (k) { return _o ? (_o[k] === undefined ? '' : _o[k]) : (v[k] === undefined || v[k] === null ? '' : v[k]); };
+  var on = function (k) { return _o ? ['1', 'on'].indexOf(_o[k]) !== -1 : !!v[k]; };
+  var sb = { paid: 'badge-success', pending: 'badge-neutral', failed: 'badge-danger', cancelled: 'badge-neutral' };
+%>
+<div class="page-head"><div><h1><%= t('ppay.admin.title') %></h1><p><%= t('ppay.admin.lead') %></p></div></div>
+<%- include('../../partials/form-error') %>
+<form method="post" action="/admin/payments" class="stack-lg" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('credit-card', 'icon-sm') %> PayTabs</h2><div class="panel-sub"><%= t('ppay.admin.pt_lead') %></div></div><% if (v.cardOn && v.serverKeySet) { %><span class="badge badge-dot badge-success"><%= t('ppay.admin.on') %></span><% } %></div>
+    <div class="panel-body stack">
+      <label class="check"><input type="checkbox" name="cardOn" value="1"<%= on('cardOn') ? ' checked' : '' %>><span><strong><%= t('ppay.admin.card_on') %></strong> <span class="small muted"><%= t('ppay.admin.card_on_help') %></span></span></label>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'ptRegion', label: t('ppay.admin.region'), type: 'select', value: val('ptRegion') || 'JOR', options: regions.map(function (r) { return { value: r, label: t('payments.regions.' + r) }; }) }) %>
+        <%- include('../../partials/field', { name: 'ptMode', label: t('ppay.admin.mode'), type: 'select', value: val('ptMode') || 'test', options: [{ value: 'test', label: t('ppay.admin.mode_test') }, { value: 'live', label: t('ppay.admin.mode_live') }] }) %>
+        <%- include('../../partials/field', { name: 'ptProfileId', label: t('payments.settings.profile_id'), value: val('ptProfileId'), attrs: 'inputmode="numeric" dir="ltr" autocomplete="off"' }) %>
+        <%- include('../../partials/field', { name: 'ptServerKey', label: t('payments.settings.server_key'), type: 'password', value: '', autocomplete: 'new-password', attrs: 'dir="ltr"', placeholder: v.serverKeySet ? t('payments.settings.secret_keep') : '', help: v.serverKeySet ? t('payments.settings.secret_set', { hint: v.serverKeyHint }) : t('ppay.admin.key_help') }) %>
+      </div>
+      <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('ppay.admin.urls_note') %> <code dir="ltr">/pay/platform/callback/…</code></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('landmark', 'icon-sm') %> <%= t('ppay.admin.bank') %></h2><div class="panel-sub"><%= t('ppay.admin.bank_lead') %></div></div></div>
+    <div class="panel-body stack">
+      <%- include('../../partials/field', { name: 'billingName', label: t('subscriptions_admin.billing_name'), value: val('billingName'), help: t('subscriptions_admin.billing_name_help'), attrs: 'maxlength="160" dir="auto"' }) %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'bankName', label: t('subscriptions.bank_name'), value: val('bankName'), attrs: 'maxlength="160" dir="auto"' }) %>
+        <%- include('../../partials/field', { name: 'accountName', label: t('subscriptions.account_name'), value: val('accountName'), attrs: 'maxlength="160" dir="auto"' }) %>
+        <%- include('../../partials/field', { name: 'iban', label: 'IBAN', value: val('iban'), attrs: 'maxlength="60" dir="ltr" autocomplete="off"' }) %>
+        <%- include('../../partials/field', { name: 'swift', label: 'SWIFT / BIC', value: val('swift'), attrs: 'maxlength="20" dir="ltr" autocomplete="off"' }) %>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('smartphone', 'icon-sm') %> <%= t('subscriptions.methods.cliq') %></h2></div></div>
+    <div class="panel-body form-grid">
+      <%- include('../../partials/field', { name: 'cliqAlias', label: t('subscriptions.cliq_alias'), value: val('cliqAlias'), attrs: 'maxlength="60" dir="ltr" autocomplete="off"' }) %>
+      <%- include('../../partials/field', { name: 'cliqName', label: t('subscriptions_admin.cliq_name'), value: val('cliqName'), attrs: 'maxlength="160" dir="auto"' }) %>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('wallet', 'icon-sm') %> <%= t('subscriptions.methods.wallet') %></h2><div class="panel-sub"><%= t('ppay.admin.wallet_lead') %></div></div></div>
+    <div class="panel-body stack">
+      <label class="check"><input type="checkbox" name="walletOn" value="1"<%= on('walletOn') ? ' checked' : '' %>><span><strong><%= t('ppay.admin.wallet_on') %></strong></span></label>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'walletName', label: t('ppay.admin.wallet_name'), value: val('walletName'), attrs: 'maxlength="80" dir="auto"', placeholder: t('ppay.admin.wallet_name_ph') }) %>
+        <%- include('../../partials/field', { name: 'walletNumber', label: t('ppay.wallet_number'), value: val('walletNumber'), attrs: 'maxlength="60" dir="ltr" inputmode="tel"' }) %>
+        <%- include('../../partials/field', { name: 'walletHolder', label: t('subscriptions.account_name'), value: val('walletHolder'), attrs: 'maxlength="160" dir="auto"' }) %>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('ppay.admin.instructions') %></h2></div></div>
+    <div class="panel-body form-grid">
+      <%- include('../../partials/field', { name: 'instructions', label: t('subscriptions_admin.instructions_ar'), type: 'textarea', value: val('instructions') }) %>
+      <%- include('../../partials/field', { name: 'instructions_en', label: t('subscriptions_admin.instructions_en'), type: 'textarea', value: val('instructions_en') }) %>
+    </div>
+  </section>
+  <div class="row-sm wrap"><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+</form>
+<% if (v.serverKeySet) { %>
+<form method="post" action="/admin/payments/test" class="mt-4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('plug', 'icon-sm') %><%= t('ppay.admin.test') %></button></form>
+<% } %>
+
+<section class="panel flush mt-6">
+  <div class="panel-head"><h2><%= t('ppay.admin.recent') %></h2></div>
+  <% if (!recent.length) { %><div class="panel-body small muted"><%= t('ppay.admin.no_recent') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('ppay.admin.col_kind') %></th><th class="num"><%= t('common.amount') %></th><th><%= t('common.status') %></th><th><%= t('ppay.admin.col_ref') %></th></tr></thead>
+    <tbody><% recent.forEach(function (p) { %><tr>
+      <td class="small nowrap"><%= fmt.date(p.created_at) %></td>
+      <td data-label="<%= t('ppay.admin.col_kind') %>"><%= t('ppay.admin.kind_' + p.kind) %></td>
+      <td class="num" data-label="<%= t('common.amount') %>"><%= fmt.money(p.amount, p.currency) %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= sb[p.status] %>"><%= t('ppay.status.' + p.status) %></span><% if (p.message && p.status !== 'paid') { %><div class="tiny muted"><%= p.message %></div><% } %></td>
+      <td class="small" dir="ltr" data-label="<%= t('ppay.admin.col_ref') %>"><%= p.provider_ref || '—' %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

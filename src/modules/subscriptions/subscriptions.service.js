@@ -28,7 +28,7 @@ const branchPricing = require('./branch-pricing');
 const FEATURES = ['online_consultations', 'online_payments', 'reminders', 'ai_assistant', 'specialty_modules', 'data_sync'];
 const STATUSES = ['trialing', 'active', 'past_due', 'expired', 'cancelled', 'comped'];
 const CYCLES = ['monthly', 'yearly'];
-const METHODS = ['bank_transfer', 'cliq', 'cash'];
+const METHODS = ['bank_transfer', 'cliq', 'wallet', 'card', 'cash']; // card: paid online through the platform's PayTabs
 const LIMITS = { doctors: 'max_doctors', staff: 'max_staff', appointments: 'max_appointments_month', patients: 'limits.max_patients', branches: 'clinic.max_branches' }; // patients: an entitlement in plan.features
 const REMIND_DAYS = [7, 3, 1];
 const KEY = 'subscriptions';
@@ -89,7 +89,11 @@ const settingsSchema = z.object({
 });
 
 async function saveSettings(ctx, input) {
-  const d = validate(settingsSchema, input);
+  // Bank / CliQ details are edited on Admin → Payment methods; a form without them keeps the saved ones.
+  const before = await settings();
+  const filled = { ...input };
+  ['billingName', 'bankName', 'accountName', 'iban', 'swift', 'cliqAlias', 'cliqName', 'instructions', 'instructions_en'].forEach((k) => { if (filled[k] === undefined) filled[k] = before[k]; });
+  const d = validate(settingsSchema, filled);
   if (d.trialPlanId && !(await knex('subscription_plans').where({ id: d.trialPlanId }).first('id'))) throw E.validation({ trialPlanId: 'Choose a valid value.' });
   const cur = await settings();
   const value = JSON.stringify({ ...cur, ...d });
