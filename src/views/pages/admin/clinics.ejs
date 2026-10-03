@@ -14,7 +14,7 @@
   <% } else { %>
   <div class="table-wrap">
     <table class="table responsive">
-      <thead><tr><th><%= t('admin.col_clinic') %></th><th><%= t('admin.col_address') %></th><th class="num"><%= t('admin.col_staff') %></th><th class="num"><%= t('admin.col_doctors') %></th><th class="num"><%= t('admin.col_appts') %></th><th><%= t('admin.col_status') %></th><th><%= t('admin.col_created') %></th><th><%= t('admin.col_backup') %></th><th class="actions"></th></tr></thead>
+      <thead><tr><th><%= t('admin.col_clinic') %></th><th><%= t('admin.col_address') %></th><th class="num"><%= t('admin.col_staff') %></th><th class="num"><%= t('admin.col_doctors') %></th><th class="num"><%= t('admin.col_appts') %></th><th><%= t('admin.col_status') %></th><th><%= t('admin.col_created') %></th><th><%= t('admin.col_storage') %></th><th><%= t('admin.col_backup') %></th><th class="actions"></th></tr></thead>
       <tbody>
         <% rows.forEach(function (b) { %>
         <tr data-href="/admin/clinics/<%= b.id %>">
@@ -25,6 +25,7 @@
           <td class="num" data-label="<%= t('admin.col_appts') %>"><%= fmt.number(Number(b.appts)) %></td>
           <td data-label="<%= t('admin.col_status') %>"><span class="badge <%= b.status === 'active' ? 'badge-success' : 'badge-danger' %> badge-dot"><%= t('admin.status_' + b.status) %></span></td>
           <td data-label="<%= t('admin.col_created') %>" class="nowrap"><%= fmt.date(b.created_at) %></td>
+          <td data-label="<%= t('admin.col_storage') %>" class="nowrap"><% var _sz = function (n) { if (n === null) return t('admin.storage_unl'); return n >= 1073741824 ? fmt.number(Math.round(n / 107374182.4) / 10) + ' ' + t('media_lib.gb') : n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.round(n / 1024)) + ' ' + t('media_lib.kb'); }; var _p = b.storage.quota ? Math.round(b.storage.bytes * 100 / b.storage.quota) : 0; %><a class="link" href="/admin/clinics/<%= b.id %>#storage"><bdi class="num small"><%= _sz(b.storage.bytes) %> / <%= _sz(b.storage.quota) %></bdi></a><% if (b.storage.quota) { %><span class="meter<%= _p >= 100 ? ' full' : _p >= 80 ? ' warn' : '' %>" style="margin-top:4px;min-width:90px" aria-hidden="true"><span style="width:<%= Math.min(100, _p) %>%"></span></span><% } %></td>
           <td data-label="<%= t('admin.col_backup') %>" class="nowrap"><% if (b.lastBackup) { %><span class="badge <%= Date.now() - new Date(b.lastBackup).getTime() < 36 * 3600000 ? 'badge-success' : 'badge-warning' %> badge-dot"><%= fmt.date(b.lastBackup, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></span><% } else { %><span class="badge badge-neutral"><%= t('admin.backup.never') %></span><% } %></td>
           <td class="actions">
             <form method="post" action="/admin/clinics/<%= b.id %>/status" data-confirm="<%= t(b.status === 'active' ? 'admin.suspend_confirm' : 'admin.activate_confirm', { name: b.name }) %>" data-confirm-yes="<%= t(b.status === 'active' ? 'admin.suspend' : 'admin.activate') %>"<% if (b.status !== 'active') { %> data-confirm-tone="primary"<% } %>>

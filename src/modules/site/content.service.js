@@ -111,20 +111,23 @@ const isI18n = (kind) => kind === 'text' || kind === 'textarea';
 
 // ---------------------------------------------------------------- default content (from the translation files)
 // What each content revision added (2: waiting screen, sending papers, team chat, backups… 3: pharmacies & centres,
-// the screen that calls patients aloud, the consultation timer, message texts, website carousels & icon libraries).
+// the screen that calls patients aloud, the consultation timer, message texts, website carousels & icon libraries;
+// 4: each member's own e-mail, one file storage per package, exporting and importing patient files).
 // A page the platform already edited gets a revision's items once (mergeNew) — items the admin removes afterwards are
 // not brought back. Only the latest revision's cards carry the "new" tag on a fresh page.
-const REV = 3;
+const REV = 4;
 const ADDED = {
   2: { showcase: [['queue', 'monitor', 'wide'], ['call', 'bell'], ['share', 'file-check', 'wide'], ['review', 'star'], ['backup', 'shield-check', 'wide'],
     ['chat', 'message-square'], ['specialty', 'stethoscope'], ['letterhead', 'stamp']],
   features: [['share', 'send'], ['queue', 'monitor'], ['security', 'shield-check']], faq: [9, 10, 11] },
   3: { showcase: [['centres', 'pill-bottle', 'wide'], ['voice', 'volume-2'], ['timer', 'timer'], ['texts', 'pen-line', 'wide'], ['carousel', 'layout-grid'], ['icons', 'dt-tooth']],
     features: [['centres', 'pill-bottle'], ['texts', 'pen-line'], ['site', 'layout-template']], faq: [12, 13, 14] },
+  4: { showcase: [['mailbox', 'mail', 'wide'], ['export', 'package'], ['import', 'upload'], ['storage', 'database', 'wide']],
+    features: [['mailbox', 'mail'], ['portable', 'package']], faq: [15, 16, 17] },
 };
-const NEW_SHOWCASE = [...ADDED[3].showcase, ...ADDED[2].showcase];
-const NEW_FEATURES = [...ADDED[2].features, ...ADDED[3].features];
-const NEW_FAQ = [...ADDED[2].faq, ...ADDED[3].faq];
+const NEW_SHOWCASE = [...ADDED[4].showcase, ...ADDED[3].showcase, ...ADDED[2].showcase];
+const NEW_FEATURES = [...ADDED[2].features, ...ADDED[3].features, ...ADDED[4].features];
+const NEW_FAQ = [...ADDED[2].faq, ...ADDED[3].faq, ...ADDED[4].faq];
 const LATEST = new Set(ADDED[REV].showcase.map(([k]) => k));
 
 function defaults() {

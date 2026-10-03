@@ -129,6 +129,14 @@
           "site": {
             "title": "A website in your clinic's look",
             "text": "Templates, sections, sliding rows and your specialty's icons, with booking on the page."
+          },
+          "mailbox": {
+            "title": "Staff e-mail",
+            "text": "Each member reads their e-mail and sends the patient's papers attached."
+          },
+          "portable": {
+            "title": "Export and import files",
+            "text": "One patient's file or every patient in one ZIP, imported back into place."
           }
         }
       },
@@ -239,7 +247,13 @@
         "q13": "Can I change the text of the messages patients get?",
         "a13": "Yes. In Settings → Message texts you write every message and e-mail in Arabic and English, and choose where the review link goes: Google or the clinic website.",
         "q14": "Does the database need a manual update after each version?",
-        "a14": "No. DocBook applies its database updates by itself on start and while running, and shows their state to the platform admin."
+        "a14": "No. DocBook applies its database updates by itself on start and while running, and shows their state to the platform admin.",
+        "q15": "Can a doctor use their own e-mail?",
+        "a15": "Yes. Each member connects their e-mail from the mail icon at the top, then reads, replies and sends papers from their own address. Nobody else sees it, and the password is stored encrypted.",
+        "q16": "Can I take my patients' files with me?",
+        "a16": "Yes. Export one patient or every patient as a ZIP with a PDF summary, all papers and images, and portable data — then import it into any clinic on DocBook.",
+        "q17": "How much file storage do I get?",
+        "a17": "It depends on the package and is shown on the pricing page. It covers website media, patient files and chat attachments, and can be raised for your clinic when needed."
       },
       "cta": {
         "title": "Ready to open your clinic's DocBook?",
@@ -263,7 +277,7 @@
       "showcase": {
         "kicker": "What's new in DocBook",
         "title": "New features, built with clinics",
-        "lead": "Our latest additions: pharmacies and imaging centres, a waiting screen that calls patients aloud, a consultation timer, messages in your own words, and a richer website with sliding rows and your specialty's icons.",
+        "lead": "What's new: each member's own e-mail inside DocBook, exporting one patient's file or every patient and importing it back into place, and file storage by package — alongside pharmacies & centres and the waiting screen that calls patients aloud.",
         "tag": "New",
         "items": {
           "website": {
@@ -377,6 +391,22 @@
           "icons": {
             "title": "Icons for your specialty",
             "text": "An icon library for each specialty — over 250 icons, including a dental set drawn for DocBook."
+          },
+          "mailbox": {
+            "title": "Each member's own e-mail, inside",
+            "text": "A doctor or staff member connects their e-mail (Gmail, Outlook or hosting mail), reads and replies in DocBook, and sends a prescription, report or X-ray from their own address in one click. Private to them, password encrypted; automatic messages still go from the clinic."
+          },
+          "export": {
+            "title": "Export a patient's whole file",
+            "text": "One ZIP with a PDF summary on the clinic letterhead, every prescription, report, request and invoice as PDF, and the X-rays and results as uploaded — for one patient or every patient at once."
+          },
+          "import": {
+            "title": "Import puts everything back",
+            "text": "Upload an export and every record returns to its place: visits, diagnoses, prescriptions, images. Nothing doubled, deleted records come back with their numbers — and clinics can move."
+          },
+          "storage": {
+            "title": "File storage by package",
+            "text": "One size for all the clinic's files: website media, patient files, chat attachments. Shown in each package, and the clinic sees what each kind uses."
           }
         }
       },
@@ -885,7 +915,19 @@
     "storage_unl": "Unlimited",
     "storage_saved": "Clinic storage saved.",
     "storage_invalid": "Enter a whole number of MB (1 or more), or leave it empty to follow the package.",
-    "storage_confirm": "Change the file storage of {name}?"
+    "storage_confirm": "Change the file storage of {name}?",
+    "col_storage": "Storage",
+    "stat_mailboxes": "Staff e-mail connected",
+    "stat_mailboxes_meta": "Personal mailboxes inside clinics",
+    "stat_moves": "Patient file exports & imports",
+    "stat_storage": "File storage used",
+    "stat_storage_ok": "No clinic near its size",
+    "stat_storage_near": "{n} clinics past 80% of their size",
+    "usage_mailboxes": "Staff e-mail",
+    "usage_mailboxes_val": "{n} members connected their e-mail",
+    "usage_moves": "File exports & imports",
+    "usage_moves_val": "{ex} exports · {im} imports in 30 days",
+    "usage_none": "None"
   },
   "portal": {
     "book": "Book an appointment",

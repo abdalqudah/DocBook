@@ -40,7 +40,7 @@ const pageMeta = (total, p) => { const pages = Math.max(1, Math.ceil(total / PER
 router.get('/', wrap(async (req, res) => {
   const count = async (q) => Number((await q.count({ n: '*' }))[0].n);
   const d30 = since(30);
-  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats, centreSends, centreClinics] = await Promise.all([
+  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats, centreSends, centreClinics, mailboxes, moves, used] = await Promise.all([
     count(knex('businesses')), count(knex('businesses').where({ status: 'active' })), count(knex('businesses').where({ status: 'suspended' })),
     count(knex('users')), count(knex('users').where('last_login_at', '>=', d30)),
     count(knex('appointments').where('created_at', '>=', d30).whereNot('appointment_type', 'blocked')),
@@ -53,7 +53,18 @@ router.get('/', wrap(async (req, res) => {
     count(knex('staff_chat_messages').where('created_at', '>=', d30)),
     count(knex('partner_sends').where('created_at', '>=', d30)),
     knex('clinic_partners').countDistinct({ n: 'business_id' }).then((r) => Number(r[0].n)),
+    count(knex('staff_mailboxes')),
+    count(knex('audit_logs').whereIn('action', ['patient.exported', 'patients.exported_all', 'patients.imported']).where('created_at', '>=', d30)),
+    require('../storage/storage.service').usageAll(), // eslint-disable-line global-require
   ]);
+  // File storage: everything the clinics keep, and how many are at 80 % of their size or more.
+  const storageSvc = require('../storage/storage.service'); // eslint-disable-line global-require
+  let storageBytes = 0; let nearFull = 0;
+  for (const [bid, bytes] of used) { // eslint-disable-line no-restricted-syntax
+    storageBytes += bytes;
+    const q = await storageSvc.quotaOf(bid); // eslint-disable-line no-await-in-loop
+    if (q.mb !== null && bytes >= q.mb * storageSvc.MB * 0.8) nearFull += 1;
+  }
   // Clinics whose own backup is younger than a day (the nightly job keeps one per clinic).
   const live = await knex('businesses').whereNot('status', 'deleted').pluck('id');
   const backedUp = live.filter((id) => { const last = backup.list(id)[0]; return last && Date.now() - new Date(last.at).getTime() < 36 * 3600_000; }).length;
@@ -61,7 +72,7 @@ router.get('/', wrap(async (req, res) => {
   const { isLocalUrl, isLocalHost } = require('../../middleware/web'); // eslint-disable-line global-require
   const appUrlWarning = (!process.env.APP_URL || isLocalUrl(process.env.APP_URL)) && !isLocalHost(req.hostname)
     ? { current: process.env.APP_URL || '', suggested: `https://${req.hostname}` } : null;
-  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
+  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length, mailboxes, moves, storageBytes, nearFull }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
 }));
 
 // ---------------------------------------------------------------- clinics
@@ -82,6 +93,10 @@ router.get('/clinics', wrap(async (req, res) => {
     knex('appointments').count('*').where('business_id', knex.ref('b.id')).where('created_at', '>=', d30).as('appts'),
   );
   rows.forEach((r) => { const last = backup.list(r.id)[0]; r.lastBackup = last ? last.at : null; });
+  // File storage of the clinics on this page: used of their size.
+  const storageSvc = require('../storage/storage.service'); // eslint-disable-line global-require
+  const used = rows.length ? await storageSvc.usageAll(rows.map((r) => r.id)) : new Map();
+  await Promise.all(rows.map(async (r) => { const q = await storageSvc.quotaOf(r.id); r.storage = { bytes: used.get(r.id) || 0, quota: q.mb === null ? null : q.mb * storageSvc.MB }; }));
   page(res, 'clinics', { title: req.t('admin.nav_clinics'), rows, meta, q, status });
 }));
 
@@ -98,7 +113,7 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
     businesses.listMembers(b.id),
   ]);
   const d30 = since(30);
-  const [full, sent, screens, chats, centres, centreSends, msgRow] = await Promise.all([
+  const [full, sent, screens, chats, centres, centreSends, msgRow, mailboxes, moves] = await Promise.all([
     businesses.get(b.id),
     count(knex('share_links').where({ business_id: b.id }).where('created_at', '>=', d30)),
     knex('queue_screens').where({ business_id: b.id }).select('name', 'is_active', 'last_seen_at'),
@@ -106,11 +121,14 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
     count(knex('clinic_partners').where({ business_id: b.id, is_active: true })),
     count(knex('partner_sends').where({ business_id: b.id }).where('created_at', '>=', d30)),
     knex('clinic_messages').where({ business_id: b.id }).first('texts'),
+    count(knex('staff_mailboxes').where({ business_id: b.id })),
+    knex('audit_logs').where({ business_id: b.id }).whereIn('action', ['patient.exported', 'patients.exported_all', 'patients.imported']).where('created_at', '>=', d30)
+      .groupBy('action').select('action').count({ n: '*' }).then((rows) => Object.fromEntries(rows.map((r) => [r.action, Number(r.n)]))),
   ]);
   let ownTexts = 0;
   try { ownTexts = Object.keys(JSON.parse((msgRow && msgRow.texts) || '{}')).length; } catch { ownTexts = 0; }
   const modules = await ops.state(full);
-  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts }, storage: await storageOf(full) });
+  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts, mailboxes, moves }, storage: await storageOf(full) });
 }));
 
 // ---------------------------------------------------------------- one clinic's file storage (media, patient files, chat …)
