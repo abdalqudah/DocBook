@@ -53,3 +53,39 @@
     <% } %>
   </section>
 </div>
+<% if (imports) { var I = 'patient_export.import.'; var irun = imports.find(function (x) { return x.state === 'running'; }); %>
+<section class="panel mt-6" id="import">
+  <div class="panel-head"><div><h2><%- icon('upload', 'icon-sm') %> <%= t(I + 'title') %></h2><p class="panel-sub"><%= t(I + 'lead') %></p></div></div>
+  <div class="panel-body stack">
+    <% if (irun) { var ipct = irun.total ? Math.round((irun.done || 0) * 100 / irun.total) : 0; %>
+    <div class="stack-sm" data-export-running data-status="/app/patients/import-status" role="status" aria-live="polite">
+      <strong data-export-text data-text-running="<%= t(I + 'running', { done: '{done}', total: '{total}' }) %>"><%= t(I + 'running', { done: fmt.number(irun.done || 0), total: fmt.number(irun.total || 0) }) %></strong>
+      <span class="meter" aria-hidden="true"><span data-export-bar style="width:<%= ipct %>%"></span></span>
+    </div>
+    <% } else { %>
+    <form class="row-sm" style="flex-wrap:wrap" method="post" action="/app/patients/import" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input class="input" type="file" name="file" accept=".zip,application/zip" required style="max-width:420px">
+      <button class="btn btn-secondary" type="submit"><%- icon('upload', 'icon-sm') %><%= t(I + 'check') %></button>
+    </form>
+    <p class="small muted"><%= t(I + 'hint', { mb: fmt.number(importMaxMb) }) %></p>
+    <% } %>
+  </div>
+  <% var past = imports.filter(function (x) { return x.state !== 'running' && x.state !== 'ready'; }); var waiting = imports.filter(function (x) { return x.state === 'ready'; }); %>
+  <% if (past.length || waiting.length) { %>
+  <ul class="px-list">
+    <% waiting.forEach(function (x) { %>
+    <li class="px-item"><div class="px-meta"><strong><%= fmt.date(x.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></strong><span class="small muted"><%= t(I + 'waiting', { n: fmt.number(x.patients) }) %></span></div>
+      <a class="btn btn-secondary btn-sm" href="/app/patients/import/<%= x.token %>"><%= t(I + 'review') %></a></li>
+    <% }) %>
+    <% past.forEach(function (x) { var r = x.report || {}; %>
+    <li class="px-item"><div class="px-meta">
+      <strong><%= fmt.date(x.finished_at || x.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %>
+        <span class="badge <%= x.state === 'done' ? 'badge-success' : x.state === 'stopped' ? 'badge-warning' : 'badge-danger' %>"><%= t(I + 'state.' + x.state) %></span></strong>
+      <% if (x.state !== 'failed') { %><span class="small muted"><%= t(I + 'report', { added: fmt.number(r.patients_new || 0), merged: fmt.number(r.patients_merged || 0), visits: fmt.number(r.appointment || 0), files: fmt.number((r.file || 0) + (r.paper_invoice || 0) + (r.paper_certificate || 0)) }) %><% if (r.future) { %> · <%= t(I + 'report_future', { n: fmt.number(r.future) }) %><% } %><% if (x.failed) { %> · <%= t(I + 'report_failed', { n: fmt.number(x.failed) }) %><% } %><% if (x.stop === 'STORAGE_FULL') { %> · <%= t(I + 'report_full') %><% } %></span><% } %>
+    </div></li>
+    <% }) %>
+  </ul>
+  <% } %>
+</section>
+<% } %>

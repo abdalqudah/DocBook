@@ -68,6 +68,8 @@ router.get('/print', wrap(async (req, res) => {
 const bulk = require('../patientexport/bulk.service');
 const bulkPage = (req, res) => res.page('pages/clinic/patients/export-all', {
   title: req.t('patient_export.bulk.title'), exports: bulk.list(req.ctx.businessId), pageScripts: ['/js/patient-export.js'], pageStyles: PAGE_STYLES,
+  imports: req.ctx.permissions.has('data.manage') ? require('../patientexport/import.service').list(req.ctx.businessId) : null, // eslint-disable-line global-require
+  importMaxMb: Math.round((Number(process.env.PATIENT_IMPORT_MAX_MB) || 4096)),
 });
 router.get('/export-all', can('data.export'), wrap(async (req, res) => bulkPage(req, res)));
 router.get('/export-all/status', can('data.export'), wrap(async (req, res) => {
@@ -95,6 +97,61 @@ router.post('/export-all/:name/delete', can('data.export'), wrap(async (req, res
   await bulk.removeOne(req.ctx, req.params.name);
   flash(req, 'success', req.t('patient_export.bulk.deleted'));
   return res.redirect('/app/patients/export-all');
+}));
+
+// ---------------------------------------------------------------- importing exported files (patientexport/import.service.js)
+const importer = require('../patientexport/import.service');
+const multer = require('multer');
+const fsx = require('fs');
+const { verifyCsrfAfterUpload } = require('../../middleware/web');
+const IMPORT_MAX = (Number(process.env.PATIENT_IMPORT_MAX_MB) || 4096) * 1024 * 1024;
+const importUpload = (req, res, next) => {
+  const dir = require('path').join(importer.dirOf(req.ctx.businessId), 'incoming'); // eslint-disable-line global-require
+  fsx.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  multer({ dest: dir, limits: { fileSize: IMPORT_MAX, files: 1, fields: 5 } }).single('file')(req, res, (err) => {
+    if (err) { req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'IMPORT_TOO_BIG' : 'IMPORT_BAD_FILE'; req.body = req.body || {}; }
+    next();
+  });
+};
+const dropUpload = (req) => { if (req.file) { try { fsx.unlinkSync(req.file.path); } catch { /* gone */ } } };
+const importErr = (req, e) => { const k = `patient_export.import.err.${e.code}`; return req.t(k) !== k ? req.t(k) : e.message; };
+router.post('/import', can('data.manage'), importUpload, (req, res, next) => verifyCsrfAfterUpload(req, res, (err) => { if (err) dropUpload(req); next(err); }), wrap(async (req, res) => {
+  try {
+    if (req.uploadError) throw new AppError(req.uploadError, 'Upload refused.', 422);
+    if (!req.file) throw new AppError('IMPORT_BAD_FILE', 'Choose a file.', 422);
+    const a = await importer.analyze(req.ctx, req.file.path);
+    return res.redirect(`/app/patients/import/${a.token}`);
+  } catch (e) {
+    dropUpload(req);
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    flash(req, 'error', importErr(req, e));
+    return res.redirect('/app/patients/export-all#import');
+  }
+}));
+router.get('/import-status', can('data.manage'), wrap(async (req, res) => {
+  const run = importer.list(req.ctx.businessId).find((x) => x.state === 'running');
+  res.set('Cache-Control', 'no-store');
+  return res.json(run ? { state: 'running', done: run.done || 0, total: run.total || 0 } : { state: 'idle' });
+}));
+router.get('/import/:token', can('data.manage'), wrap(async (req, res) => {
+  const imp = importer.get(req.ctx.businessId, req.params.token);
+  if (imp.state !== 'ready') return res.redirect('/app/patients/export-all#import');
+  const doctors = await knex('doctors').where({ business_id: req.ctx.businessId }).orderBy('full_name').select('id', 'full_name');
+  return res.page('pages/clinic/patients/import', { title: req.t('patient_export.import.title'), imp, doctors, pageStyles: PAGE_STYLES });
+}));
+router.post('/import/:token', can('data.manage'), wrap(async (req, res) => {
+  try {
+    await importer.start(req.ctx, req.params.token, req.body);
+    flash(req, 'success', req.t('patient_export.import.started'));
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    flash(req, 'error', importErr(req, e));
+  }
+  return res.redirect('/app/patients/export-all#import');
+}));
+router.post('/import/:token/cancel', can('data.manage'), wrap(async (req, res) => {
+  importer.cancel(req.ctx, req.params.token);
+  return res.redirect('/app/patients/export-all#import');
 }));
 
 router.get('/export', can('data.export'), wrap(async (req, res) => {

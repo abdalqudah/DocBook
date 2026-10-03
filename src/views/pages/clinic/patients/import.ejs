@@ -1,0 +1,54 @@
+<% var I = 'patient_export.import.'; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/patients/export-all#import"><%= t('patient_export.bulk.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t(I + 'title') %></h1>
+    <p><%= t(I + 'preview_lead') %></p>
+  </div>
+</div>
+<form class="stack-lg" method="post" action="/app/patients/import/<%= imp.token %>" data-confirm="<%= t(I + 'confirm', { n: fmt.number(imp.patients) }) %>" data-confirm-yes="<%= t(I + 'start') %>" data-confirm-tone="primary">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="stats">
+    <div class="stat"><div class="stat-label"><%= t(I + 'patients') %><span class="stat-icon"><%- icon('users') %></span></div><div class="stat-value"><%= fmt.number(imp.patients) %></div></div>
+    <div class="stat"><div class="stat-label"><%= t(I + 'new') %><span class="stat-icon info"><%- icon('user-plus') %></span></div><div class="stat-value"><%= fmt.number(imp.patients - imp.existing) %></div></div>
+    <div class="stat"><div class="stat-label"><%= t(I + 'existing') %><span class="stat-icon accent"><%- icon('user-check') %></span></div><div class="stat-value"><%= fmt.number(imp.existing) %></div></div>
+    <div class="stat"><div class="stat-label"><%= t(I + 'files') %><span class="stat-icon"><%- icon('image') %></span></div><div class="stat-value"><%= fmt.number(imp.files) %></div></div>
+  </div>
+  <section class="panel">
+    <div class="panel-body stack">
+      <p class="small"><%- icon(imp.same ? 'refresh-cw' : 'arrow-right', imp.same ? 'icon-sm' : 'icon-sm flip-rtl') %> <strong><%= t(imp.same ? I + 'same' : I + 'other') %></strong></p>
+      <ul class="small muted stack-sm" style="padding-inline-start:18px;margin:0">
+        <li><%= t(I + 'rule_existing') %></li>
+        <li><%= t(I + 'rule_twice') %></li>
+        <li><%= t(I + 'rule_money') %></li>
+        <li><%= t(I + 'rule_future') %></li>
+        <li><%= t(I + 'rule_storage') %></li>
+      </ul>
+      <% if (imp.sample && imp.sample.length) { %>
+      <div class="row-sm" style="flex-wrap:wrap;gap:6px"><% imp.sample.forEach(function (s) { %><span class="badge <%= s.existing ? 'badge-info' : 'badge-neutral' %>" dir="auto"><%= s.name %><%= s.existing ? ' · ' + t(I + 'tag_existing') : '' %></span><% }) %><% if (imp.patients > imp.sample.length) { %><span class="small muted">+<%= fmt.number(imp.patients - imp.sample.length) %></span><% } %></div>
+      <% } %>
+    </div>
+  </section>
+  <% if (imp.doctors.length) { %>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t(I + 'doctors_title') %></h2><p class="panel-sub"><%= t(I + 'doctors_sub') %></p></div></div>
+    <div class="panel-body stack">
+      <% imp.doctors.forEach(function (d, i) { %>
+      <div class="field">
+        <label for="doctor_<%= i %>" dir="auto"><%= d.name %><% if (d.name_en && d.name_en !== d.name) { %> <span class="muted small">· <%= d.name_en %></span><% } %></label>
+        <select class="select" id="doctor_<%= i %>" name="doctor_<%= i %>" style="max-width:360px">
+          <option value=""><%= t(I + 'no_doctor') %></option>
+          <% doctors.forEach(function (o) { %><option value="<%= o.id %>"<%= String(d.match) === String(o.id) ? ' selected' : '' %>><%= o.full_name %></option><% }) %>
+        </select>
+        <% if (!d.match) { %><p class="help"><%= t(I + 'doctor_unmatched') %></p><% } %>
+      </div>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+  <div class="row-sm">
+    <button class="btn btn-primary" type="submit"><%- icon('upload', 'icon-sm') %><%= t(I + 'start') %></button>
+    <button class="btn btn-ghost" type="submit" form="import-cancel"><%= t('common.cancel') %></button>
+  </div>
+</form>
+<form id="import-cancel" method="post" action="/app/patients/import/<%= imp.token %>/cancel"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form>

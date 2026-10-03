@@ -21,6 +21,16 @@ const day = (v) => (v ? (v instanceof Date ? v.toISOString() : String(v)).slice(
 const ascii = (s, fallback) => String(s || '').normalize('NFKD').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^[-.]+|[-.]+$/g, '').slice(0, 60) || fallback;
 const noBlobs = (r) => { const { data: _d, business_id: _b, ...rest } = r; return rest; };
 
+/** This installation's id (platform_settings.instance_id, made once): with the clinic id it tells an import whether
+ *  a file comes back to the clinic it left, or moves to another clinic. */
+async function instanceId() {
+  const row = await knex('platform_settings').where({ key: 'instance_id' }).first('value');
+  if (row && row.value) return String(row.value);
+  const id = require('crypto').randomBytes(12).toString('hex'); // eslint-disable-line global-require
+  await knex('platform_settings').insert({ key: 'instance_id', value: id }).onConflict('key').ignore();
+  return String((await knex('platform_settings').where({ key: 'instance_id' }).first('value')).value);
+}
+
 /** Everything of the patient this member may see. */
 async function gather(ctx, patientId) {
   const q = knex('patients').leftJoin('insurance_providers as ip', function j() { this.on('ip.id', 'patients.insurance_provider_id').andOn('ip.business_id', 'patients.business_id'); })
@@ -41,7 +51,7 @@ async function gather(ctx, patientId) {
     mine(knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
       .where({ 'a.business_id': ctx.businessId, 'a.patient_id': patient.id }).whereNot('a.appointment_type', 'blocked'), 'a.doctor_id')
       .orderBy([{ column: 'a.appointment_date' }, { column: 'a.appointment_time' }])
-      .select('a.id', 'a.appointment_date', 'a.appointment_time', 'a.status', 'a.appointment_type', 'a.source', 'a.notes', 'a.doctor_id', 'd.full_name as doctor_name', 's.name as service_name', 'a.created_at'),
+      .select('a.*', 'd.full_name as doctor_name', 's.name as service_name'),
     rows('consultations', clinicalOk),
     clinicalOk ? mine(knex('consultation_diagnoses').where(w)).orderBy('id').select() : [],
     rows('prescriptions', clinicalOk),
@@ -124,8 +134,13 @@ async function collect(ctx, patientId, locale, add) {
   // Machine-readable copy.
   const data = {
     format: 'docbook.patient-export', version: 1, exported_at: new Date().toISOString(), locale,
+    source: { instance: await instanceId(), business_id: ctx.businessId },
     clinic: { name: clinic.name, name_en: clinic.name_en || null },
-    patient: noBlobs(d.patient), appointments: d.appointments,
+    doctors: await (async () => {
+      const ids = [...new Set([d.appointments, d.consultations, d.prescriptions, d.orders, d.referrals, d.dental, d.plan, d.pregnancies].flat().map((r) => r.doctor_id).filter(Boolean))];
+      return ids.length ? knex('doctors').where({ business_id: ctx.businessId }).whereIn('id', ids).select('id', 'full_name', 'full_name_en') : [];
+    })(),
+    patient: noBlobs(d.patient), appointments: d.appointments.map(noBlobs),
     consultations: d.consultations.map((c) => ({ ...noBlobs(c), vital_signs: parse(c.vital_signs, {}) })), diagnoses: d.diagnoses.map(noBlobs),
     prescriptions: d.prescriptions.map((r) => ({ ...noBlobs(r), items: parse(r.items, []) })), orders: d.orders.map((o) => ({ ...noBlobs(o), items: parse(o.items, []) })), referrals: d.referrals.map(noBlobs),
     certificates: d.certificates.map(noBlobs), invoices: d.invoices.map((i) => ({ ...noBlobs(i), items: parse(i.items, null) })), payments: d.payments,
@@ -153,4 +168,4 @@ async function build(ctx, patientId, locale = 'ar') {
   return { filename: `patient-${r.patient.id}-${ascii(r.patient.full_name, 'file')}-${new Date().toISOString().slice(0, 10)}.zip`, buffer: zip.toBuffer(), counts: r.counts };
 }
 
-module.exports = { gather, collect, build, ascii };
+module.exports = { gather, collect, build, ascii, instanceId };

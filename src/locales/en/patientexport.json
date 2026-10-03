@@ -47,8 +47,8 @@
     "readme": "Patient file: {name}\r\nClinic: {clinic}\r\nExported on: {date}\r\n\r\n00-summary.pdf  Summary of the whole file\r\npapers/         Prescriptions, reports, requests, referrals, certificates and invoices (PDF)\r\nfiles/          Images and files as uploaded (X-rays, results, scanned papers)\r\ndata.json       All the data, in a form another system can import",
     "readme_partial": "Note: this export holds only what the staff member who made it may see.",
     "bulk": {
-      "menu": "Every patient's file (ZIP)",
-      "title": "Export every patient's file",
+      "menu": "Export / import every patient's file",
+      "title": "Export and import patient files",
       "lead": "One ZIP with a folder per patient: a PDF summary, every prescription, report, request, referral, certificate and invoice as PDF, the images and files as uploaded, and JSON data — with an Excel index of the patients and their folders.",
       "how": "The export is built in the background while you keep working; a large clinic can take a few minutes. The file stays 24 hours, then is removed.",
       "start": "Start the export",
@@ -78,6 +78,51 @@
       "readme": "Patient files — {n} patients — exported on {date}\r\n\r\nindex.xlsx / index.csv   every patient and their folder\r\npatients/                one folder per patient with:\r\n   00-summary.pdf        the file summary\r\n   papers/               prescriptions, reports, requests, referrals, certificates, invoices (PDF)\r\n   files/                images and files as uploaded\r\n   data.json             the data in a portable form",
       "err": {
         "EXPORT_RUNNING": "An export is already running. Wait until it finishes."
+      }
+    },
+    "import": {
+      "title": "Import patient files",
+      "lead": "Upload a DocBook export (one patient's file or every patient's file) and everything goes back where it belongs: the patient, visits, diagnoses, prescriptions, requests, referrals, vital signs, images and files.",
+      "check": "Check the file",
+      "hint": "A ZIP exported by DocBook, up to {mb} MB. Nothing is imported until you review it and confirm.",
+      "preview_lead": "Review what the file holds before importing.",
+      "patients": "Patients in the file",
+      "new": "Will be added",
+      "existing": "Already here",
+      "files": "Images and files",
+      "same": "This file comes from this clinic: what still exists stays as it is, what was deleted comes back to its place.",
+      "other": "This file comes from another clinic: everything is added as new records in this clinic.",
+      "rule_existing": "A patient who already exists (same file, national ID, or name and phone) gets only what is missing.",
+      "rule_twice": "Importing the same file again never doubles a visit or a file.",
+      "rule_money": "Invoices and certificates are not re-created (their numbers and verification codes); their PDFs are added to the patient's files.",
+      "rule_future": "Upcoming bookings are not imported, so they cannot clash with the schedule; book them again.",
+      "rule_storage": "Images and files count toward the clinic's storage; if it fills up the import stops and tells you.",
+      "tag_existing": "exists",
+      "doctors_title": "Doctors",
+      "doctors_sub": "For each doctor in the file pick the matching doctor here; visits and prescriptions are attributed to them.",
+      "no_doctor": "No doctor",
+      "doctor_unmatched": "No doctor with this name here — pick one or leave it without a doctor.",
+      "confirm": "Import the files of {n} patients into this clinic?",
+      "start": "Start the import",
+      "started": "The import has started. Its progress shows here.",
+      "running": "Importing… {done} of {total} patients",
+      "waiting": "File waiting for review · {n} patients",
+      "review": "Review",
+      "state": {
+        "done": "Done",
+        "stopped": "Stopped",
+        "failed": "Failed"
+      },
+      "report": "{added} new patients · {merged} files completed · {visits} visits · {files} files",
+      "report_future": "{n} upcoming bookings not imported",
+      "report_failed": "{n} could not be imported",
+      "report_full": "the clinic's storage is full",
+      "paper_invoice": "Invoice {date}",
+      "paper_certificate": "Medical certificate {date}",
+      "err": {
+        "IMPORT_BAD_FILE": "This is not a DocBook patient export, or it is damaged.",
+        "IMPORT_TOO_BIG": "The file is larger than allowed.",
+        "IMPORT_RUNNING": "An import is already running. Wait until it finishes."
       }
     }
   }
