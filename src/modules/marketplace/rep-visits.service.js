@@ -13,6 +13,7 @@ const { AppError, E } = require('../../core/errors');
 const { z, validate, optionalString, emptyToUndefined } = require('../../core/validate');
 const scheduling = require('../clinic/scheduling');
 const notifications = require('../notifications/notification.service');
+const billing = require('../vendorbilling/billing.service');
 
 const { DAY_KEYS, timeToMinutes, minutesToTime, overlaps, isTime, isDate, dayKeyOf, clinicNow } = scheduling;
 const LIVE = ['requested', 'confirmed', 'done'];
@@ -206,6 +207,7 @@ function addDays(date, n) {
  */
 async function book(vctx, vendor, input) {
   if (!vendor || vendor.status !== 'active') throw err('VENDOR_NOT_ACTIVE', 'Your account is waiting for approval. You can book visits once it is approved.', 403);
+  await billing.assertCan(vendor.id, 'request'); // subscription / monthly request limit (when reps billing is on)
   const target = await clinicForRep(Number(input && input.business_id) || 0);
   if (target && target.mode === 'request') return requestVisit(vctx, vendor, input, target);
   const d = validate(z.object({
@@ -375,6 +377,6 @@ async function decide(ctx, id, action, note) {
 }
 
 module.exports = {
-  LIVE, STATUSES, MAX_DAYS_AHEAD, computeRepSlots, settings, saveSettings, windows, saveWindow, removeWindow, bookableClinics, clinicForRep, freeSlots,
+  LIVE, STATUSES, MAX_DAYS_AHEAD, computeRepSlots, settings, saveSettings, windows, saveWindow, removeWindow, bookableClinics, clinicForRep, freeSlots, openToReps,
   book, vendorVisits, cancelByVendor, clinicVisits, counts, decide, addDays,
 };

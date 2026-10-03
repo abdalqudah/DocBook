@@ -7,6 +7,7 @@ const { can } = require('../../middleware/context');
 const { AppError } = require('../../core/errors');
 const { clinicNow } = require('../clinic/scheduling');
 const svc = require('./market.service');
+const billing = require('../vendorbilling/billing.service');
 
 const router = express.Router();
 router.use(can('vendors.view'));
@@ -23,7 +24,7 @@ const localize = (fn) => async (req, res, next) => {
   }
 };
 
-const assets = { pageScripts: ['/js/market.js'], pageStyles: ['/css/market.css'] };
+const assets = { pageScripts: ['/js/market.js'], pageStyles: ['/css/market.css', '/css/vbill.css'] };
 
 function common(req, res) {
   const own = svc.clinicSpecialty(req.business);
@@ -46,6 +47,7 @@ async function render(req, res, extra = {}) {
   if (tab === 'offers') {
     data.offers = await svc.offers(req.ctx, req.business, { specialty, vendor: req.query.vendor, show: req.query.show });
     data.showDismissed = req.query.show === 'dismissed';
+    data.sponsored = await billing.adsFor(req.business, { limit: 2 }).catch(() => []);
   } else if (tab === 'products') {
     const { rows, meta } = await svc.products(req.ctx, req.business, { specialty, q: req.query.q, vendor: req.query.vendor, page: req.query.page });
     data.products = rows; data.meta = meta;
@@ -59,6 +61,12 @@ async function render(req, res, extra = {}) {
 }
 
 router.get('/', wrap((req, res) => render(req, res)));
+// A sponsored ad was clicked: count it, then open the linked offer (or the vendor's page).
+router.get('/ad/:id(\\d+)', wrap(async (req, res) => {
+  const ad = await billing.adClick(req.params.id);
+  if (!ad) return res.redirect('/app/marketplace');
+  return res.redirect(ad.offer_id ? `/app/marketplace/offers/${ad.offer_id}` : `/app/marketplace/vendors/${ad.vendor_id}`);
+}));
 
 // Images (logo / product / offer) of active vendors, for the catalog.
 router.get('/img/:kind(vendor|product|offer)/:id(\\d+)', wrap(async (req, res) => {

@@ -14,7 +14,8 @@ const verify = require('../auth/verify.service');
 const options = require('../settings/options');
 const { CURRENCIES } = require('../../core/money');
 const vendors = require('./vendor.service');
-const { form, message } = require('./form');
+const billing = require('../vendorbilling/billing.service');
+const { form, message, codeText } = require('./form');
 const { E } = require('../../core/errors');
 
 const router = express.Router();
@@ -126,7 +127,8 @@ const renderOffer = async (req, res, extra = {}) => {
   page(res, 'offer-form', {
     title: req.t(o ? 'vendor_portal.offer_edit' : 'vendor_portal.offer_new'), o,
     specialtyOptions: specialtyOptions(req), products: await vendors.productChoices(req.vendorCtx),
-    defaultSpecialties: o ? o.specialties : (await vendors.getProfile(req.vendor.id)).specialties, ...extra,
+    defaultSpecialties: o ? o.specialties : (await vendors.getProfile(req.vendor.id)).specialties,
+    clinicChoices: await vendors.offerClinicChoices(), maxClinics: await billing.maxOfferClinics(req.vendor.id), pageScripts: ['/js/vbill.js'], pageStyles: ['/css/vendors.css', '/css/vbill.css'], ...extra,
   });
 };
 router.get('/offers/new', wrap((req, res) => renderOffer(req, res)));
@@ -150,8 +152,8 @@ for (const [name, next] of Object.entries(STATUS_ACTIONS)) {
       await vendors.setOfferStatus(req.vendorCtx, Number(req.params.id), next, { vendorStatus: req.vendor.status, today: today(req) });
       flash(req, 'success', req.t(`vendor_portal.offer_${name}_done`));
     } catch (err) {
-      if (!['VENDOR_NOT_APPROVED', 'OFFER_ENDED', 'OFFER_NO_SPECIALTY'].includes(err.code)) throw err;
-      flash(req, err.code === 'VENDOR_NOT_APPROVED' ? 'info' : 'error', req.t(`errors_vendors.${err.code}`));
+      if (!['VENDOR_NOT_APPROVED', 'OFFER_ENDED', 'OFFER_NO_SPECIALTY', 'OFFER_NO_CLINICS'].includes(err.code) && !/^VENDOR_(LIMIT|SUB)_/.test(err.code)) throw err;
+      flash(req, err.code === 'VENDOR_NOT_APPROVED' ? 'info' : 'error', codeText(req, err));
     }
     res.redirect('/vendor/offers');
   }));

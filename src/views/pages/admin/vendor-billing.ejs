@@ -1,0 +1,139 @@
+<%
+  var _o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var sv = function (k) { return _o && tab === 'settings' ? _o[k] : s[k]; };
+  var P = editPlan || {};
+  var pv = function (k, d) { return _o && tab === 'plans' ? _o[k] : (P[k] !== undefined && P[k] !== null ? P[k] : (d !== undefined ? d : '')); };
+  var lim = function (n) { return n === null || n === undefined ? t('vbill.unlimited') : fmt.number(n); };
+  var ib = { open: 'badge-warning', reported: 'badge-info', paid: 'badge-success', void: 'badge-neutral' };
+  var sb = { trialing: 'badge-info', active: 'badge-success', past_due: 'badge-warning', expired: 'badge-danger' };
+  var ab = { approved: 'badge-success', pending_payment: 'badge-warning', draft: 'badge-neutral', rejected: 'badge-danger', cancelled: 'badge-neutral' };
+%>
+<div class="page-head"><div><h1><%= t('vbill.admin.title') %></h1><p><%= t('vbill.admin.lead') %></p></div></div>
+<nav class="pill-filter mb-4" aria-label="<%= t('vbill.admin.title') %>">
+  <% tabs.forEach(function (k) { %><a href="/admin/vendor-billing?tab=<%= k %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%= t('vbill.admin.tab_' + k) %><% if (k === 'invoices' && reported) { %> · <%= reported %><% } %></a><% }) %>
+</nav>
+<% if (!s.enabled) { %>
+<div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('vbill.admin.off_title') %></div><div><%= t('vbill.admin.off_text') %></div></div><% if (tab !== 'settings') { %><a class="btn btn-secondary btn-sm" href="/admin/vendor-billing?tab=settings"><%= t('vbill.admin.tab_settings') %></a><% } %></div>
+<% } %>
+<%- include('../../partials/form-error') %>
+
+<% if (tab === 'settings') { %>
+<form class="panel" method="post" action="/admin/vendor-billing/settings" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack-lg">
+    <label class="check"><input type="checkbox" name="enabled" value="1"<%= (_o ? _o.enabled : s.enabled) ? ' checked' : '' %>><span><strong><%= t('vbill.admin.enabled') %></strong> <span class="small muted"><%= t('vbill.admin.enabled_help') %></span></span></label>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'trialDays', label: t('vbill.admin.trial_days'), type: 'number', value: sv('trialDays'), attrs: 'min="0" max="365"' }) %>
+      <%- include('../../partials/field', { name: 'trialPlanId', label: t('vbill.admin.trial_plan'), type: 'select', placeholder: t('vbill.admin.trial_plan_none'), options: plans.map(function (p) { return { value: p.id, label: p.name }; }), value: sv('trialPlanId') || '', help: t('vbill.admin.trial_plan_help') }) %>
+      <%- include('../../partials/field', { name: 'adPricePerDay', label: t('vbill.admin.ad_price'), type: 'number', value: sv('adPricePerDay'), attrs: 'min="0" step="0.001"' }) %>
+      <%- include('../../partials/field', { name: 'adCurrency', label: t('vbill.admin.currency'), type: 'select', options: currencies.map(function (c) { return { value: c, label: c }; }), value: sv('adCurrency') }) %>
+      <%- include('../../partials/field', { name: 'adMaxDays', label: t('vbill.admin.ad_max_days'), type: 'number', value: sv('adMaxDays'), attrs: 'min="1" max="365"' }) %>
+    </div>
+    <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('vbill.admin.pay_details_note') %> <a class="link" href="/admin/plans/settings"><%= t('subscriptions_admin.tab_settings') %></a></p>
+  </div>
+  <div class="panel-foot row end"><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+</form>
+<% } %>
+
+<% if (tab === 'plans') { %>
+<div class="vb-plans mb-4">
+  <% plans.forEach(function (p) { %>
+  <article class="panel<%= P.id === p.id ? ' vb-plan-card is-current' : '' %>"><div class="panel-body stack-sm">
+    <div class="row between"><strong><%= p.name %></strong><span class="badge <%= p.is_active ? 'badge-success' : 'badge-neutral' %>"><%= p.is_active ? t('vbill.admin.active') : t('vbill.admin.inactive') %></span></div>
+    <div class="vb-price"><%= fmt.money(p.price_monthly, p.currency) %></div>
+    <ul class="vb-feats small">
+      <li><%= t('vbill.f_requests', { n: lim(p.max_requests_month) }) %></li><li><%= t('vbill.f_offers', { n: lim(p.max_offers_month) }) %></li>
+      <li><%= t('vbill.f_clinics', { n: lim(p.max_offer_clinics) }) %></li><li><%= t('vbill.f_ad_days', { n: p.ad_days_month || 0 }) %></li>
+    </ul>
+    <a class="btn btn-secondary btn-sm" href="/admin/vendor-billing?tab=plans&plan=<%= p.id %>#plan-form"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a>
+  </div></article>
+  <% }) %>
+</div>
+<form class="panel" id="plan-form" method="post" action="/admin/vendor-billing/plans" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="id" value="<%= P.id || (_o && _o.id) || '' %>">
+  <div class="panel-head"><h2 class="panel-title"><%= P.id ? t('vbill.admin.plan_edit') : t('vbill.admin.plan_new') %></h2><% if (P.id) { %><a class="btn btn-ghost btn-sm" href="/admin/vendor-billing?tab=plans#plan-form"><%= t('vbill.admin.plan_new') %></a><% } %></div>
+  <div class="panel-body stack-lg">
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'name', label: t('vbill.admin.p_name'), required: true, value: pv('name') }) %>
+      <%- include('../../partials/field', { name: 'name_en', label: t('vbill.admin.p_name_en'), value: pv('name_en'), attrs: 'dir="ltr"' }) %>
+      <%- include('../../partials/field', { name: 'description', label: t('vbill.admin.p_desc'), value: pv('description') }) %>
+      <%- include('../../partials/field', { name: 'description_en', label: t('vbill.admin.p_desc_en'), value: pv('description_en'), attrs: 'dir="ltr"' }) %>
+      <%- include('../../partials/field', { name: 'price_monthly', label: t('vbill.admin.p_monthly'), type: 'number', required: true, value: pv('price_monthly', 0), attrs: 'min="0" step="0.001"' }) %>
+      <%- include('../../partials/field', { name: 'price_yearly', label: t('vbill.admin.p_yearly'), type: 'number', value: pv('price_yearly'), attrs: 'min="0" step="0.001"', help: t('vbill.admin.p_yearly_help') }) %>
+      <%- include('../../partials/field', { name: 'currency', label: t('vbill.admin.currency'), type: 'select', options: currencies.map(function (c) { return { value: c, label: c }; }), value: pv('currency', 'JOD') }) %>
+      <%- include('../../partials/field', { name: 'sort_order', label: t('vbill.admin.p_sort'), type: 'number', value: pv('sort_order', 0) }) %>
+      <%- include('../../partials/field', { name: 'max_requests_month', label: t('vbill.admin.p_requests'), type: 'number', value: pv('max_requests_month'), attrs: 'min="0"', help: t('vbill.admin.blank_unlimited') }) %>
+      <%- include('../../partials/field', { name: 'max_offers_month', label: t('vbill.admin.p_offers'), type: 'number', value: pv('max_offers_month'), attrs: 'min="0"', help: t('vbill.admin.blank_unlimited') }) %>
+      <%- include('../../partials/field', { name: 'max_offer_clinics', label: t('vbill.admin.p_clinics'), type: 'number', value: pv('max_offer_clinics'), attrs: 'min="0"', help: t('vbill.admin.blank_unlimited') }) %>
+      <%- include('../../partials/field', { name: 'ad_days_month', label: t('vbill.admin.p_ad_days'), type: 'number', value: pv('ad_days_month', 0), attrs: 'min="0"' }) %>
+    </div>
+    <div class="row wrap">
+      <label class="check"><input type="checkbox" name="is_active" value="1"<%= (_o ? _o.is_active : (P.id ? P.is_active : true)) ? ' checked' : '' %>><span><%= t('vbill.admin.active') %></span></label>
+      <label class="check"><input type="checkbox" name="is_public" value="1"<%= (_o ? _o.is_public : (P.id ? P.is_public : true)) ? ' checked' : '' %>><span><%= t('vbill.admin.public') %></span></label>
+    </div>
+  </div>
+  <div class="panel-foot row end"><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+</form>
+<% } %>
+
+<% if (tab === 'invoices') { %>
+<nav class="pill-filter mb-3"><% ['', 'reported', 'open', 'paid', 'void'].forEach(function (k) { %><a href="/admin/vendor-billing?tab=invoices<%= k ? '&status=' + k : '' %>" class="<%= istatus === k ? 'active' : '' %>"><%= k ? t('vbill.istatus.' + k) : t('vbill.admin.all') %></a><% }) %></nav>
+<section class="panel flush">
+  <% if (!invoices.length) { %><div class="panel-body small muted"><%= t('vbill.no_invoices') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('vbill.col_number') %></th><th><%= t('vbill.admin.col_vendor') %></th><th><%= t('vbill.col_item') %></th><th class="num"><%= t('common.amount') %></th><th><%= t('vbill.method') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+    <tbody><% invoices.forEach(function (i) { %><tr>
+      <td class="nowrap strong" dir="ltr"><%= i.number %><div class="tiny muted"><%= fmt.date(i.created_at) %></div></td>
+      <td data-label="<%= t('vbill.admin.col_vendor') %>"><a class="link" href="/admin/vendors/<%= i.vendor_id %>"><%= i.vendor_name %></a></td>
+      <td data-label="<%= t('vbill.col_item') %>"><%= i.description %> <span class="small muted">· <%= t('vbill.kind.' + i.kind) %><%= i.kind === 'plan' && i.billing_cycle ? ' · ' + t('vbill.cycle.' + i.billing_cycle) : '' %></span></td>
+      <td class="num" data-label="<%= t('common.amount') %>"><%= fmt.money(i.amount, i.currency) %></td>
+      <td data-label="<%= t('vbill.method') %>" class="small"><%= i.method ? t('vbill.methods.' + i.method) : '—' %><% if (i.reference) { %><div class="tiny muted" dir="ltr"><%= i.reference %></div><% } %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= ib[i.status] %>"><%= t('vbill.istatus.' + i.status) %></span></td>
+      <td class="actions nowrap"><% if (i.status === 'open' || i.status === 'reported') { %>
+        <form method="post" action="/admin/vendor-billing/invoices/<%= i.id %>/confirm" style="display:inline" data-confirm="<%= t('vbill.admin.confirm_q', { n: i.number }) %>" data-confirm-yes="<%= t('vbill.admin.confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('vbill.admin.confirm') %></button></form>
+        <form method="post" action="/admin/vendor-billing/invoices/<%= i.id %>/void" style="display:inline" data-confirm="<%= t('vbill.admin.void_q') %>" data-confirm-yes="<%= t('vbill.admin.void') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm text-danger" type="submit"><%= t('vbill.admin.void') %></button></form>
+      <% } %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>
+<% } %>
+
+<% if (tab === 'ads') { %>
+<section class="panel flush">
+  <% if (!ads.length) { %><div class="panel-body small muted"><%= t('vbill.no_ads') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('vbill.col_ad') %></th><th><%= t('vbill.admin.col_vendor') %></th><th><%= t('vendor_portal.col_period') %></th><th class="num"><%= t('vbill.col_price') %></th><th><%= t('common.status') %></th><th class="num"><%= t('vbill.col_impressions') %> / <%= t('vbill.col_clicks') %></th><th class="actions"></th></tr></thead>
+    <tbody><% ads.forEach(function (a) { %><tr>
+      <td class="primary-cell"><div class="person"><span class="vendor-thumb"><% if (a.image_mime) { %><img src="/vendors/ad-image/<%= a.id %>" alt="" loading="lazy"><% } else { %><%- icon('sparkles', 'icon-sm') %><% } %></span><div><div class="person-name"><%= a.title %></div><% if (a.admin_note) { %><div class="person-sub"><%= a.admin_note %></div><% } %></div></div></td>
+      <td data-label="<%= t('vbill.admin.col_vendor') %>"><%= a.vendor_name %></td>
+      <td data-label="<%= t('vendor_portal.col_period') %>" class="small nowrap"><%= fmt.date(a.starts_on) %> – <%= fmt.date(a.ends_on) %></td>
+      <td class="num" data-label="<%= t('vbill.col_price') %>"><%= Number(a.price) > 0 ? fmt.money(a.price, s.adCurrency) : t('vbill.free') %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= ab[a.status] %>"><%= t('vbill.ad_status.' + a.status) %></span></td>
+      <td class="num" data-label="<%= t('vbill.col_impressions') %>"><%= fmt.number(a.impressions) %> / <%= fmt.number(a.clicks) %></td>
+      <td class="actions nowrap">
+        <% if (a.status === 'approved') { %><form method="post" action="/admin/vendor-billing/ads/<%= a.id %>/reject" class="row-sm" data-confirm="<%= t('vbill.admin.reject_q') %>" data-confirm-yes="<%= t('vbill.admin.reject') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input class="input input-sm" name="note" placeholder="<%= t('vbill.admin.reason') %>" aria-label="<%= t('vbill.admin.reason') %>"><button class="btn btn-ghost btn-sm text-danger" type="submit"><%= t('vbill.admin.reject') %></button></form><% } %>
+        <% if (a.status === 'rejected') { %><form method="post" action="/admin/vendor-billing/ads/<%= a.id %>/approve"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('vbill.admin.approve') %></button></form><% } %>
+      </td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>
+<% } %>
+
+<% if (tab === 'vendors') { %>
+<section class="panel flush">
+  <% if (!vendors.length) { %><div class="panel-body small muted"><%= t('vbill.admin.no_vendors') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('vbill.admin.col_vendor') %></th><th><%= t('vbill.your_plan') %></th><th><%= t('common.status') %></th><th><%= t('vbill.admin.col_until') %></th><th class="actions"></th></tr></thead>
+    <tbody><% vendors.forEach(function (v) { %><tr>
+      <td class="primary-cell"><a class="link" href="/admin/vendors/<%= v.id %>"><%= v.name %></a><div class="tiny muted"><%= t('vendors.status.' + v.vendor_status) %></div></td>
+      <td data-label="<%= t('vbill.your_plan') %>"><%= v.plan_name || '—' %></td>
+      <td data-label="<%= t('common.status') %>"><% if (v.status) { %><span class="badge badge-dot <%= sb[v.status] %>"><%= t('vbill.status.' + v.status) %></span><% } else { %><span class="small muted"><%= t('vbill.admin.not_started') %></span><% } %></td>
+      <td data-label="<%= t('vbill.admin.col_until') %>" class="small nowrap"><%= v.status === 'trialing' ? fmt.date(v.trial_ends_at) : v.current_period_end ? fmt.date(v.current_period_end) : '—' %></td>
+      <td class="actions nowrap"><form method="post" action="/admin/vendor-billing/vendors/<%= v.id %>/trial" class="row-sm" data-confirm="<%= t('vbill.admin.extend_q') %>" data-confirm-yes="<%= t('vbill.admin.extend') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input class="input input-sm" type="number" name="days" value="14" min="1" max="365" style="width:5.5em" aria-label="<%= t('vbill.admin.days') %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('vbill.admin.extend') %></button></form></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>
+<% } %>

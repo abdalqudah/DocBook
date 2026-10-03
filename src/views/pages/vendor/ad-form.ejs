@@ -1,0 +1,51 @@
+<%
+  var _o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : {};
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/vendor/ads"><%= t('vbill.nav_ads') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t('vbill.ad_new') %></h1><p><%= t('vbill.ad_form_lead') %></p>
+  </div>
+</div>
+<% if (st.enabled && !st.ok) { %><div class="banner warning mb-4" role="status"><%- icon('triangle-alert', 'icon-sm') %><span><%= t('vbill.err.VENDOR_SUB_EXPIRED') %> <a class="link" href="/vendor/billing"><%= t('vbill.choose_plan') %></a></span></div><% } %>
+<form class="panel" method="post" action="/vendor/ads" enctype="multipart/form-data" novalidate data-ad-form data-per-day="<%= s.adPricePerDay %>" data-free-left="<%= freeLeft %>" data-currency="<%= s.adCurrency %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack-lg">
+    <%- include('../../partials/form-error') %>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'title', label: t('vbill.f_title'), required: true, value: _o.title || '', attrs: 'maxlength="120"' }) %>
+      <%- include('../../partials/field', { name: 'title_en', label: t('vbill.f_title_en'), value: _o.title_en || '', attrs: 'dir="ltr" maxlength="120"' }) %>
+      <%- include('../../partials/field', { name: 'body', label: t('vbill.f_body'), type: 'textarea', value: _o.body || '' }) %>
+      <%- include('../../partials/field', { name: 'body_en', label: t('vbill.f_body_en'), type: 'textarea', value: _o.body_en || '' }) %>
+      <% if (offers.length) { %>
+      <%- include('../../partials/field', { name: 'offer_id', label: t('vbill.f_offer'), type: 'select', placeholder: t('vbill.f_offer_none'), options: offers.map(function (o) { return { value: o.id, label: L(o.title, o.title_en) }; }), value: _o.offer_id || '', help: t('vbill.f_offer_help') }) %>
+      <% } %>
+      <div class="field">
+        <label class="label" for="f-image"><%= t('vbill.f_image') %></label>
+        <input class="input<%= errors.image ? ' is-invalid' : '' %>" id="f-image" type="file" name="image" accept="image/png,image/jpeg,image/webp">
+        <% if (errors.image) { %><span class="field-error"><%= errors.image %></span><% } else { %><span class="help"><%= t('vendor_portal.image_help') %></span><% } %>
+      </div>
+    </div>
+    <fieldset class="fieldset">
+      <legend class="label"><%- icon('target', 'icon-sm') %> <%= t('vbill.targeting') %></legend>
+      <div class="stack">
+        <%- include('_specialties', { selected: defaultSpecialties, legend: t('vbill.f_specialties'), help: t('vbill.f_specialties_help') }) %>
+        <%- include('../../partials/field', { name: 'cities', label: t('vbill.f_cities'), value: _o.cities || '', help: t('vbill.f_cities_help') }) %>
+      </div>
+    </fieldset>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'starts_on', label: t('vbill.f_starts'), type: 'date', required: true, value: _o.starts_on || today, attrs: 'min="' + today + '"' }) %>
+      <%- include('../../partials/field', { name: 'days', label: t('vbill.f_days'), type: 'number', required: true, value: _o.days || 7, attrs: 'min="1" max="' + s.adMaxDays + '" data-ad-days', help: t('vbill.f_days_help', { n: s.adMaxDays }) }) %>
+    </div>
+    <div class="vb-quote" data-ad-quote>
+      <div><span class="small muted"><%= t('vbill.price_per_day') %></span> <strong class="num"><%= fmt.money(s.adPricePerDay, s.adCurrency) %></strong><% if (freeLeft) { %> · <span class="small"><%- icon('gift', 'icon-sm') %> <%= t('vbill.free_days_left', { n: freeLeft }) %></span><% } %></div>
+      <div class="vb-total"><span class="small muted"><%= t('vbill.total') %></span> <strong class="num" data-ad-total>—</strong></div>
+      <p class="small muted"><%= t('vbill.ad_review_note') %></p>
+    </div>
+  </div>
+  <div class="panel-foot row end wrap">
+    <a class="btn btn-ghost" href="/vendor/ads"><%= t('common.cancel') %></a>
+    <button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('vbill.ad_submit') %></button>
+  </div>
+</form>

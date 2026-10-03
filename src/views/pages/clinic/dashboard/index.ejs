@@ -7,6 +7,7 @@
   </div>
 </div>
 
+<% if (typeof sponsored !== 'undefined' && sponsored) { %><div class="mb-4"><%- include('../../../partials/vbill/ad', { ad: sponsored }) %></div><% } %>
 <% var att = (typeof attention !== 'undefined' && attention) ? attention.slice(0, 5) : []; %>
 <%/* Shown only when something needs attention (an empty "all calm" box is noise once the clinic is set up). */%>
 <% if (att.length) { %>

@@ -1,0 +1,32 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var badge = { approved: 'badge-success', pending_payment: 'badge-warning', draft: 'badge-neutral', rejected: 'badge-danger', cancelled: 'badge-neutral' };
+  var running = function (a) { return a.status === 'approved' && a.starts_on <= st.today && a.ends_on >= st.today; };
+%>
+<div class="page-head">
+  <div><h1><%= t('vbill.nav_ads') %></h1><p><%= t('vbill.ads_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="/vendor/ads/new"><%- icon('plus', 'icon-sm') %><%= t('vbill.ad_new') %></a></div>
+</div>
+<section class="panel flush">
+  <% if (!ads.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'sparkles', emptyTitle: t('vbill.no_ads'), emptyText: t('vbill.no_ads_text'), emptyAction: '<a class="btn btn-primary btn-sm" href="/vendor/ads/new">' + escapeHtml(t('vbill.ad_new')) + '</a>' }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('vbill.col_ad') %></th><th><%= t('vendor_portal.col_period') %></th><th class="num"><%= t('vbill.col_price') %></th><th><%= t('common.status') %></th><th class="num"><%= t('vbill.col_impressions') %></th><th class="num"><%= t('vbill.col_clicks') %></th><th class="actions"></th></tr></thead>
+    <tbody><% ads.forEach(function (a) { %><tr>
+      <td class="primary-cell"><div class="person">
+        <span class="vendor-thumb"><% if (a.image_mime) { %><img src="/vendors/ad-image/<%= a.id %>" alt="" loading="lazy"><% } else { %><%- icon('sparkles', 'icon-sm') %><% } %></span>
+        <div style="min-width:0"><div class="person-name"><%= L(a.title, a.title_en) %></div><% if (a.admin_note) { %><div class="person-sub"><%= a.admin_note %></div><% } %></div>
+      </div></td>
+      <td data-label="<%= t('vendor_portal.col_period') %>" class="small nowrap"><%= fmt.date(a.starts_on) %> – <%= fmt.date(a.ends_on) %> · <%= t('vbill.n_days', { n: a.days }) %></td>
+      <td class="num" data-label="<%= t('vbill.col_price') %>"><%= Number(a.price) > 0 ? fmt.money(a.price) : t('vbill.free') %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= running(a) ? 'badge-success' : (badge[a.status] || 'badge-neutral') %>"><%= running(a) ? t('vbill.ad_status.running') : (a.status === 'approved' && a.ends_on < st.today ? t('vbill.ad_status.ended') : t('vbill.ad_status.' + a.status)) %></span></td>
+      <td class="num" data-label="<%= t('vbill.col_impressions') %>"><%= fmt.number(a.impressions) %></td>
+      <td class="num" data-label="<%= t('vbill.col_clicks') %>"><%= fmt.number(a.clicks) %><% if (a.impressions) { %> <span class="tiny muted">(<%= a.ctr %>%)</span><% } %></td>
+      <td class="actions nowrap"><% if (['pending_payment', 'approved', 'draft'].indexOf(a.status) !== -1 && a.ends_on >= st.today) { %>
+        <form method="post" action="/vendor/ads/<%= a.id %>/cancel" data-confirm="<%= t('vbill.ad_cancel_confirm') %>" data-confirm-yes="<%= t('vbill.ad_cancel') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm text-danger" type="submit"><%- icon('x', 'icon-sm') %><%= t('vbill.ad_cancel') %></button></form>
+      <% } %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

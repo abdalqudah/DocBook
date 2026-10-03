@@ -1,0 +1,34 @@
+/* Reps billing: subscription, usage meters, plans, ads, offer targeting. Theme tokens only. */
+.vb-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.vb-plan { font-size: 1.35rem; font-weight: 700; }
+.vb-h { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px; }
+.vb-meter { display: grid; gap: 6px; }
+.vb-bar { height: 8px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; }
+.vb-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .3s ease; }
+.vb-bar.is-full > span { background: var(--danger); }
+.vb-invoice { border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: 14px; background: var(--surface); }
+.vb-amount { font-size: 1.15rem; font-weight: 700; }
+.vb-payto { border-radius: var(--radius, 12px); padding: 14px; background: var(--surface-muted); }
+.vb-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.vb-dl dt { color: var(--text-muted); } .vb-dl dd { margin: 0; font-weight: 600; word-break: break-all; }
+.vb-plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.vb-plan-card.is-current { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.vb-price { font-size: 1.6rem; font-weight: 800; }
+.vb-feats { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vb-feats li { display: flex; gap: 8px; align-items: center; }
+.vb-quote { border: 1px dashed var(--border); border-radius: var(--radius, 12px); padding: 14px; display: grid; gap: 8px; background: var(--surface-muted); }
+.vb-total strong { font-size: 1.3rem; }
+.vb-seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.vb-seg .check { border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; background: var(--surface); }
+.vb-seg .check:has(input:checked) { border-color: var(--primary); background: var(--primary-soft, var(--surface-muted)); }
+.vb-clinics { max-height: 320px; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 16px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius, 12px); }
+.vb-clinics.is-invalid { border-color: var(--danger); }
+/* Sponsored card shown to doctors (Today and the Offers tab). */
+.vb-ad { display: flex; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius, 12px); background: var(--surface); text-decoration: none; color: inherit; position: relative; }
+.vb-ad:hover { border-color: var(--primary); }
+.vb-ad img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; flex: none; background: var(--surface-sunken); }
+.vb-ad .vb-ad-ico { width: 48px; height: 48px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-sunken); color: var(--primary); flex: none; }
+.vb-ad-tag { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+.vb-ad-title { display: block; font-weight: 700; }
+.vb-ad-body { font-size: .85rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 640px) { .vb-ad img { width: 56px; height: 56px; } }

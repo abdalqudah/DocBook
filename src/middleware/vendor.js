@@ -25,6 +25,10 @@ async function requireVendor(req, res, next) {
       const [{ n }] = await knex('purchase_orders').where({ vendor_id: vendor.id, status: 'sent' }).count({ n: '*' });
       res.locals.vendorBadges.orders = Number(n);
     }
+    // Reps billing (when the platform turned it on): trial / expiry banner.
+    const billing = require('../modules/vendorbilling/billing.service'); // eslint-disable-line global-require
+    const st = await billing.state(vendor.id);
+    res.locals.vbill = st.enabled ? { status: st.status, ok: st.ok, daysLeft: st.daysLeft } : null;
     return next();
   } catch (err) { return next(err); }
 }

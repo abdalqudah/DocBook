@@ -7,8 +7,10 @@
     { href: '/vendor', icon: 'layout-dashboard', key: 'nav_dashboard', exact: true, bottom: 1 },
     { href: '/vendor/products', icon: 'package', key: 'nav_products', bottom: 2 },
     { href: '/vendor/offers', icon: 'megaphone', key: 'nav_offers', bottom: 3 },
+    { href: '/vendor/ads', icon: 'sparkles', key: 'nav_ads', lk: 'vbill.nav_ads' },
     { href: '/vendor/visits', icon: 'calendar-clock', key: 'nav_visits', group: 'clinics', bottom: 4 },
     { href: '/vendor/orders', icon: 'clipboard-list', key: 'nav_orders', group: 'clinics', badge: 'orders' },
+    { href: '/vendor/billing', icon: 'credit-card', key: 'nav_billing', lk: 'vbill.nav_billing', group: 'account' },
     { href: '/vendor/profile', icon: 'building-2', key: 'nav_profile', group: 'account' },
     { href: '/vendor/account', icon: 'user-cog', key: 'nav_account', group: 'account' }
   ];
@@ -32,7 +34,7 @@
       <% _groups.forEach(function (g) { %>
       <div class="nav-group">
         <div class="nav-title"><%= t('vendor_portal.group_' + g[0]) %></div>
-        <% g[1].forEach(function (n) { %><a href="<%= n.href %>" class="<%= _on(n) ? 'active' : '' %>"<% if (_on(n)) { %> aria-current="page"<% } %>><%- icon(n.icon) %><span class="truncate"><%= t('vendor_portal.' + n.key) %></span><% var _c = n.badge && typeof vendorBadges !== 'undefined' ? vendorBadges[n.badge] : 0; if (_c) { %><span class="nav-count"><%= _c > 99 ? '99+' : _c %></span><% } %></a><% }) %>
+        <% g[1].forEach(function (n) { %><a href="<%= n.href %>" class="<%= _on(n) ? 'active' : '' %>"<% if (_on(n)) { %> aria-current="page"<% } %>><%- icon(n.icon) %><span class="truncate"><%= t(n.lk || 'vendor_portal.' + n.key) %></span><% var _c = n.badge && typeof vendorBadges !== 'undefined' ? vendorBadges[n.badge] : 0; if (_c) { %><span class="nav-count"><%= _c > 99 ? '99+' : _c %></span><% } %></a><% }) %>
       </div>
       <% }) %>
     </nav>
@@ -60,6 +62,7 @@
         </details>
       </div>
     </header>
+    <% var _vb = typeof vbill !== 'undefined' ? vbill : null; if (_vb && _p.indexOf('/vendor/billing') !== 0) { if (!_vb.ok) { %><div class="banner warning" role="status"><%- icon('triangle-alert', 'icon-sm') %><span><strong><%= t('vbill.banner_expired') %></strong> <a class="link" href="/vendor/billing"><%= t('vbill.choose_plan') %></a></span></div><% } else if (_vb.status === 'trialing') { %><div class="banner info" role="status"><%- icon('gift', 'icon-sm') %><span><%= t('vbill.banner_trial', { n: _vb.daysLeft }) %> <a class="link" href="/vendor/billing"><%= t('vbill.see_plans') %></a></span></div><% } } %>
     <% if (_v.status === 'pending') { %><div class="banner info" role="status"><%- icon('clock', 'icon-sm') %><span><strong><%= t('vendor_portal.pending_title') %></strong> <%= t('vendor_portal.pending_text') %></span></div><% } %>
     <main class="content" id="main">
       <%- body %>

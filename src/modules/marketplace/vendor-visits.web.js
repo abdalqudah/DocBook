@@ -17,7 +17,7 @@ const base = (req, extra) => ({
   L: (ar, en) => (req.locale === 'en' && en ? en : ar || en || ''), specialtyLabel: (k) => (k ? req.t(`specialties.${k}`) : ''),
   vendorActive: req.vendor.status === 'active', ...extra,
 });
-const errText = (req, e) => { const k = `errors_market.${e.code}`; const tr = req.t(k); return tr !== k ? tr : e.message; };
+const errText = (req, e) => { for (const k of [`errors_market.${e.code}`, `vbill.err.${e.code}`]) { const tr = req.t(k); if (tr !== k) return tr; } return e.message; };
 
 router.get('/', wrap(async (req, res) => {
   const visits = await svc.vendorVisits(req.vendor.id);
@@ -66,6 +66,7 @@ router.post('/', wrap(async (req, res) => {
     return res.redirect('/vendor/visits');
   } catch (e) {
     if (!(e instanceof AppError) || ![403, 404, 409, 422].includes(e.status)) throw e;
+    if (/^VENDOR_(LIMIT|SUB)_/.test(e.code)) { flash(req, 'error', errText(req, e)); return res.redirect('/vendor/billing'); }
     if (e.code === 'VENDOR_NOT_ACTIVE' || e.status === 404) { flash(req, 'error', errText(req, e)); return res.redirect('/vendor/visits'); }
     req.query.clinic = req.body.business_id;
     res.status(e.status);

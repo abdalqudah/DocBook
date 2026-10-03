@@ -292,10 +292,12 @@ router.get('/', wrap(async (req, res) => {
     Object.assign(data, { byMethod, drawer, expenses, methods: cashier.PAYMENT_METHODS });
   }
 
+  // A rep's paid ad (sponsored, matched to the clinic's specialty and city) for people who deal with reps.
+  if (perms.has('vendors.view') || ctx.doctorId) data.sponsored = (await require('../vendorbilling/billing.service').adsFor(req.business, { limit: 1 }).catch(() => []))[0] || null; // eslint-disable-line global-require
   return res.page('pages/clinic/dashboard/index', {
     title: req.t('navx.sec_today'), greeting: req.t(greetingKey(ctx.timezone), { name: String(ctx.userName || '').split(/\s+/).filter((w) => !/^(د\.?|dr\.?|دكتور|الدكتور|doctor)$/i.test(w))[0] || '' }),
     ...data, statusTone: lib.STATUS_TONE, nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), localTime: (d) => lib.localTime(d, ctx.timezone),
-    pageScripts: ['/js/records.js', '/js/ownerx.js'], pageStyles: ['/css/records.css', '/css/ownerx.css'],
+    pageScripts: ['/js/records.js', '/js/ownerx.js'], pageStyles: ['/css/records.css', '/css/ownerx.css', '/css/vbill.css'],
   });
 }));
 

@@ -16,6 +16,8 @@ router.use('/vendors', require('../modules/vendors/public.web'));
   vendor.use(requireVendor);
   vendor.use('/visits', require('../modules/marketplace/vendor-visits.web'));
   vendor.use('/orders', require('../modules/purchasing/vendor-orders.web'));
+  vendor.use('/billing', require('../modules/vendorbilling/vendor.web').billingRouter);
+  vendor.use('/ads', require('../modules/vendorbilling/vendor.web').adsRouter);
   vendor.use('/', require('../modules/vendors/web'));
   router.use('/vendor', vendor);
 }

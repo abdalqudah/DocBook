@@ -1,0 +1,124 @@
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var lim = function (n) { return n === null || n === undefined ? t('vbill.unlimited') : fmt.number(n); };
+  var pct = function (u, l) { return l === null || l === undefined || !l ? 0 : Math.min(100, Math.round((u / l) * 100)); };
+  var badge = { free: 'badge-success', trialing: 'badge-info', active: 'badge-success', past_due: 'badge-warning', expired: 'badge-danger' };
+  var ibadge = { open: 'badge-warning', reported: 'badge-info', paid: 'badge-success', void: 'badge-neutral' };
+  var meters = [['requests', st.usage.requests, st.limits.requests], ['offers', st.usage.offers, st.limits.offers], ['ad_days', st.usage.freeAdDays, st.limits.adDays]];
+  var open = invoices.filter(function (i) { return i.status === 'open' || i.status === 'reported'; });
+%>
+<div class="page-head">
+  <div><h1><%= t('vbill.nav_billing') %></h1><p><%= t('vbill.billing_lead') %></p></div>
+</div>
+<%- include('../../partials/form-error') %>
+<% if (!st.enabled) { %>
+  <div class="banner info mb-4" role="status"><%- icon('gift', 'icon-sm') %><span><%= t('vbill.free_now') %></span></div>
+<% } %>
+<div class="vb-top">
+  <section class="panel">
+    <div class="panel-body stack">
+      <div class="row between wrap">
+        <div>
+          <div class="small muted"><%= t('vbill.your_plan') %></div>
+          <div class="vb-plan"><%= st.plan ? L(st.plan.name, st.plan.name_en) : (st.enabled ? t('vbill.trial_plan') : t('vbill.status.free')) %></div>
+        </div>
+        <span class="badge badge-dot <%= badge[st.status] || 'badge-neutral' %>"><%= t('vbill.status.' + st.status) %></span>
+      </div>
+      <% if (st.status === 'trialing') { %>
+        <p class="small"><%- icon('gift', 'icon-sm') %> <%= t('vbill.trial_until', { date: fmt.date(st.sub.trial_ends_at), n: st.daysLeft }) %></p>
+      <% } else if (st.status === 'active') { %>
+        <p class="small"><%- icon('calendar', 'icon-sm') %> <%= t('vbill.period', { from: fmt.date(st.sub.current_period_start), to: fmt.date(st.sub.current_period_end) }) %></p>
+      <% } else if (st.status === 'expired') { %>
+        <p class="small text-danger"><%- icon('triangle-alert', 'icon-sm') %> <%= t('vbill.expired_text') %></p>
+      <% } %>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2 class="panel-title"><%= t('vbill.usage_title', { month: st.today.slice(0, 7) }) %></h2></div>
+    <div class="panel-body stack">
+      <% meters.forEach(function (m) { %>
+      <div class="vb-meter">
+        <div class="row between small"><span><%= t('vbill.meter.' + m[0]) %></span><span class="num strong"><%= fmt.number(m[1]) %> / <%= m[0] === 'ad_days' ? fmt.number(m[2] || 0) : lim(m[2]) %></span></div>
+        <div class="vb-bar<%= m[2] !== null && m[2] !== undefined && m[1] >= m[2] && m[0] !== 'ad_days' ? ' is-full' : '' %>"><span style="width:<%= m[2] === null || m[2] === undefined ? 4 : pct(m[1], m[2]) %>%"></span></div>
+      </div>
+      <% }) %>
+      <div class="small muted"><%- icon('users', 'icon-sm') %> <%= t('vbill.meter.clinics') %>: <strong><%= lim(st.limits.offerClinics) %></strong></div>
+    </div>
+  </section>
+</div>
+
+<% if (open.length) { %>
+<section class="panel mt-4" id="invoices">
+  <div class="panel-head"><h2 class="panel-title"><%= t('vbill.to_pay') %></h2></div>
+  <div class="panel-body stack-lg">
+    <% open.forEach(function (i) { %>
+    <div class="vb-invoice">
+      <div class="row between wrap">
+        <div><div class="strong"><%= i.number %> · <%= i.description %></div><div class="small muted"><%= t('vbill.kind.' + i.kind) %><% if (i.billing_cycle && i.kind === 'plan') { %> · <%= t('vbill.cycle.' + i.billing_cycle) %><% } %></div></div>
+        <div class="row-sm"><span class="vb-amount num"><%= fmt.money(i.amount, i.currency) %></span><span class="badge badge-dot <%= ibadge[i.status] %>"><%= t('vbill.istatus.' + i.status) %></span></div>
+      </div>
+      <% if (i.status === 'open') { %>
+      <form class="row-sm wrap mt-2" method="post" action="/vendor/billing/invoices/<%= i.id %>/report">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <select class="select" name="method" aria-label="<%= t('vbill.method') %>"><% methods.forEach(function (m) { %><option value="<%= m %>"><%= t('vbill.methods.' + m) %></option><% }) %></select>
+        <input class="input grow" name="reference" maxlength="120" placeholder="<%= t('vbill.reference') %>" aria-label="<%= t('vbill.reference') %>">
+        <button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('vbill.i_paid') %></button>
+      </form>
+      <% } else { %><p class="small muted mt-2"><%- icon('clock', 'icon-sm') %> <%= t('vbill.waiting_confirm') %></p><% } %>
+    </div>
+    <% }) %>
+    <div class="vb-payto">
+      <div class="strong mb-2"><%= t('vbill.pay_to') %></div>
+      <dl class="vb-dl small">
+        <% [['billingName','pay_name'],['bankName','pay_bank'],['accountName','pay_account'],['iban','pay_iban'],['swift','pay_swift'],['cliqAlias','pay_cliq'],['cliqName','pay_cliq_name']].forEach(function (f) { if (pay[f[0]]) { %><dt><%= t('vbill.' + f[1]) %></dt><dd dir="<%= ['iban','swift','cliqAlias'].indexOf(f[0]) !== -1 ? 'ltr' : 'auto' %>"><%= pay[f[0]] %></dd><% } }) %>
+      </dl>
+      <% var ins = L(pay.instructions, pay.instructions_en); if (ins) { %><p class="small muted mt-2"><%= ins %></p><% } %>
+      <% if (!pay.iban && !pay.cliqAlias && !ins) { %><p class="small muted"><%= t('vbill.pay_contact') %></p><% } %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="mt-4">
+  <h2 class="vb-h"><%= t('vbill.plans') %></h2>
+  <% if (!plans.length) { %><p class="muted small"><%= t('vbill.no_plans') %></p><% } %>
+  <div class="vb-plans">
+    <% plans.forEach(function (p) { var cur = st.plan && st.plan.id === p.id && st.status === 'active'; %>
+    <article class="panel vb-plan-card<%= cur ? ' is-current' : '' %>">
+      <div class="panel-body stack">
+        <div class="row between"><h3 class="strong"><%= L(p.name, p.name_en) %></h3><% if (cur) { %><span class="badge badge-success"><%= t('vbill.current') %></span><% } %></div>
+        <% var dsc = L(p.description, p.description_en); if (dsc) { %><p class="small muted"><%= dsc %></p><% } %>
+        <div class="vb-price"><span class="num"><%= fmt.money(p.price_monthly, p.currency) %></span><span class="small muted"> / <%= t('vbill.month') %></span></div>
+        <% if (p.price_yearly !== null) { %><div class="small muted"><%= t('vbill.or_yearly', { price: fmt.money(p.price_yearly, p.currency) }) %></div><% } %>
+        <ul class="vb-feats small">
+          <li><%- icon('calendar', 'icon-sm') %><%= t('vbill.f_requests', { n: lim(p.max_requests_month) }) %></li>
+          <li><%- icon('megaphone', 'icon-sm') %><%= t('vbill.f_offers', { n: lim(p.max_offers_month) }) %></li>
+          <li><%- icon('users', 'icon-sm') %><%= t('vbill.f_clinics', { n: lim(p.max_offer_clinics) }) %></li>
+          <li><%- icon('sparkles', 'icon-sm') %><%= t('vbill.f_ad_days', { n: fmt.number(p.ad_days_month || 0) }) %></li>
+        </ul>
+        <form class="row-sm wrap" method="post" action="/vendor/billing/choose">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="plan_id" value="<%= p.id %>">
+          <select class="select grow" name="cycle" aria-label="<%= t('vbill.cycle_label') %>"><option value="monthly"><%= t('vbill.cycle.monthly') %></option><option value="yearly"><%= t('vbill.cycle.yearly') %></option></select>
+          <button class="btn <%= cur ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%= cur ? t('vbill.renew') : t('vbill.choose') %></button>
+        </form>
+      </div>
+    </article>
+    <% }) %>
+  </div>
+</section>
+
+<section class="panel flush mt-4"<% if (!open.length) { %> id="invoices"<% } %>>
+  <div class="panel-head"><h2 class="panel-title"><%= t('vbill.invoices') %></h2></div>
+  <% if (!invoices.length) { %><div class="panel-body small muted"><%= t('vbill.no_invoices') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('vbill.col_number') %></th><th><%= t('vbill.col_item') %></th><th><%= t('vbill.col_date') %></th><th class="num"><%= t('common.amount') %></th><th><%= t('common.status') %></th></tr></thead>
+    <tbody><% invoices.forEach(function (i) { %><tr>
+      <td class="nowrap strong" dir="ltr"><%= i.number %></td>
+      <td data-label="<%= t('vbill.col_item') %>"><%= i.description %> <span class="small muted">· <%= t('vbill.kind.' + i.kind) %></span></td>
+      <td data-label="<%= t('vbill.col_date') %>" class="small nowrap"><%= fmt.date(i.created_at) %></td>
+      <td class="num" data-label="<%= t('common.amount') %>"><%= fmt.money(i.amount, i.currency) %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= ibadge[i.status] %>"><%= t('vbill.istatus.' + i.status) %></span></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

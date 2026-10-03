@@ -88,6 +88,13 @@ router.post('/signup', limiter, form(async (req, res) => {
 }, renderSignup));
 
 // ---------------------------------------------------------------- media
+// Ad images (vendors' paid ads shown to doctors): not sensitive, short cache.
+router.get('/ad-image/:id(\\d+)', wrap(async (req, res, next) => {
+  const f = await require('../vendorbilling/billing.service').adImage(req.params.id); // eslint-disable-line global-require
+  if (!f || !f.image) return next();
+  res.set({ 'Content-Type': f.image_mime, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'public, max-age=600', 'Content-Disposition': 'inline', 'Content-Security-Policy': "default-src 'none'", 'Cross-Origin-Resource-Policy': 'same-site' });
+  return res.end(f.image);
+}));
 router.get('/media/:kind(logo|product|offer)/:id(\\d+)/:file', wrap(async (req, res, next) => {
   const [ver] = String(req.params.file).split('.');
   const f = await vendors.mediaFile(req.params.kind, Number(req.params.id), { userId: req.user && req.user.id, isPlatformAdmin: Boolean(req.user && req.user.is_platform_admin) });

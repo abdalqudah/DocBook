@@ -269,6 +269,9 @@
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",
+    "Choose today or a later date.": "اختر اليوم أو تاريخًا لاحقًا.",
+    "Choose at least one clinic.": "اختر عيادة واحدة على الأقل.",
+    "Choose at least one specialty.": "اختر تخصصًا واحدًا على الأقل.",
     "Enter a valid email address.": "أدخل بريدًا إلكترونيًا صحيحًا.",
     "Password must be at least 8 characters.": "كلمة المرور 8 أحرف على الأقل.",
     "Password is required.": "كلمة المرور مطلوبة.",

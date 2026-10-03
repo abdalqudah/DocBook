@@ -13,7 +13,7 @@ function message(locale, text) {
 }
 
 function codeText(req, err) {
-  for (const key of [`errors_vendors.${err.code}`, `errors.${err.code}`]) {
+  for (const key of [`errors_vendors.${err.code}`, `vbill.err.${err.code}`, `errors.${err.code}`]) {
     const s = req.t(key);
     if (s !== key) return s;
   }

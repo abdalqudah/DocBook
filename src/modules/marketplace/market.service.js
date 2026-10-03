@@ -44,6 +44,23 @@ const targets = (table, col, specialty) => function sub() {
   this.select(knex.raw('1')).from(`${table} as ts`).whereRaw(`ts.${col} = ${table === 'vendor_offer_specialties' ? 'o' : 'p'}.id`).andWhere('ts.specialty', specialty);
 };
 
+/**
+ * Who an offer reaches: target 'clinics' → only the clinics the vendor picked; target 'specialty' → clinics of the
+ * offer's specialties (broad clinics: all), limited to the offer's cities when it has any.
+ */
+function reach(q, business, spec) {
+  const bid = Number(business && business.id) || 0;
+  const city = String((business && business.city) || '').trim().toLowerCase();
+  return q.andWhere((w) => w
+    .where((x) => x.where('o.target', 'clinics').whereExists(function sub() { this.select(knex.raw('1')).from('vendor_offer_targets as vt').whereRaw('vt.offer_id = o.id').andWhere('vt.business_id', bid); }))
+    .orWhere((x) => {
+      x.where('o.target', 'specialty');
+      if (spec) x.whereExists(targets('vendor_offer_specialties', 'offer_id', spec));
+      x.andWhere((y) => y.whereNotExists(function sub() { this.select(knex.raw('1')).from('vendor_offer_cities as vc').whereRaw('vc.offer_id = o.id'); })
+        .orWhereExists(function sub() { this.select(knex.raw('1')).from('vendor_offer_cities as vc').whereRaw('vc.offer_id = o.id').andWhere('vc.city', city); }));
+    }));
+}
+
 async function offers(ctx, business, { specialty, vendor, show } = {}) {
   const spec = effectiveSpecialty(business, specialty);
   const q = liveOffers(ctx.today)
@@ -51,7 +68,7 @@ async function offers(ctx, business, { specialty, vendor, show } = {}) {
     .select('o.id', 'o.vendor_id', 'o.title', 'o.title_en', 'o.body', 'o.body_en', 'o.starts_on', 'o.ends_on', 'o.published_at', 'o.image_mime',
       'v.name as vendor_name', 'v.name_en as vendor_name_en', 'v.type as vendor_type', 'v.logo_mime as vendor_logo_mime', 'w.seen_at', 'w.dismissed_at')
     .orderByRaw('COALESCE(o.published_at, o.created_at) DESC').orderBy('o.id', 'desc').limit(200);
-  if (spec) q.whereExists(targets('vendor_offer_specialties', 'offer_id', spec));
+  reach(q, business, spec);
   if (vendor) q.andWhere('o.vendor_id', Number(vendor) || 0);
   if (show === 'dismissed') q.whereNotNull('w.dismissed_at'); else q.whereNull('w.dismissed_at');
   const rows = await q;
@@ -65,19 +82,18 @@ async function newOffersCount(ctx, business) {
   const q = liveOffers(ctx.today).whereNotExists(function sub() {
     this.select(knex.raw('1')).from('vendor_offer_views as w').whereRaw('w.offer_id = o.id').andWhere('w.business_id', ctx.businessId);
   });
-  if (spec) q.whereExists(targets('vendor_offer_specialties', 'offer_id', spec));
+  reach(q, business, spec);
   const [{ c }] = await q.count({ c: 'o.id' });
   return Number(c);
 }
 
 /** One live offer (with its vendor and linked products); opening it records the clinic's view once. */
 async function offer(ctx, business, id) {
-  const o = await liveOffers(ctx.today).where('o.id', Number(id) || 0)
+  const spec = clinicSpecialty(business);
+  const o = await reach(liveOffers(ctx.today).where('o.id', Number(id) || 0), business, spec)
     .first('o.*', 'v.name as vendor_name', 'v.name_en as vendor_name_en', 'v.type as vendor_type', 'v.logo_mime as vendor_logo_mime');
   if (!o) throw E.notFound('Offer');
-  const spec = clinicSpecialty(business);
   const specs = (await knex('vendor_offer_specialties').where({ offer_id: o.id }).pluck('specialty'));
-  if (spec && !specs.includes(spec)) throw E.notFound('Offer');
   delete o.image;
   o.specialties = specs;
   o.products = await productQuery(ctx).whereIn('p.id', knex('vendor_offer_products').where({ offer_id: o.id }).select('product_id')).orderBy('p.name');

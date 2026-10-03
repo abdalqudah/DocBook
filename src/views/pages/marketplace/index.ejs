@@ -13,6 +13,7 @@
   </div>
 </div>
 
+<% if (typeof sponsored !== 'undefined' && sponsored && sponsored.length) { %><div class="stack-sm mb-4"><% sponsored.forEach(function (ad) { %><%- include('../../partials/vbill/ad', { ad: ad }) %><% }) %></div><% } %>
 <div class="mk-scope">
   <% if (ownSpecialty) { %>
     <span class="badge badge-dot badge-brand"><%= t('market.for_specialty', { specialty: specialtyLabel(ownSpecialty) }) %></span>

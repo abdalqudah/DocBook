@@ -38,6 +38,8 @@ const { SPECIALTIES, COUNTRIES, ZONES } = require('../settings/options');
 const { CURRENCIES } = require('../../core/money');
 const { z, validate, optionalString, emptyToUndefined, isoDate, email, password } = require('../../core/validate');
 const { AppError, E } = require('../../core/errors');
+const billing = require('../vendorbilling/billing.service');
+const notifications = require('../notifications/notification.service');
 
 const TYPES = ['rep', 'warehouse', 'company'];
 const STATUSES = ['pending', 'active', 'suspended'];
@@ -291,7 +293,7 @@ async function deleteProduct(ctx, id) {
 const productChoices = (ctx) => knex('vendor_products').where({ vendor_id: ctx.vendorId }).orderBy('name').select('id', 'name', 'name_en', 'is_active');
 
 // ---------------------------------------------------------------- vendor portal: offers
-const OFFER_COLS = ['id', 'vendor_id', 'title', 'title_en', 'body', 'body_en', 'image_mime', 'starts_on', 'ends_on', 'status', 'published_at', 'created_at', 'updated_at'];
+const OFFER_COLS = ['id', 'vendor_id', 'target', 'title', 'title_en', 'body', 'body_en', 'image_mime', 'starts_on', 'ends_on', 'status', 'published_at', 'created_at', 'updated_at'];
 
 async function listOffers(ctx, { status = '' } = {}) {
   const rows = await knex('vendor_offers as o').where('o.vendor_id', ctx.vendorId).modify((qb) => { if (OFFER_STATUSES.includes(status)) qb.where('o.status', status); })
@@ -310,6 +312,9 @@ async function ownOffer(ctx, id) {
   o.specialties = (await specialtiesOf('vendor_offer_specialties', 'offer_id', [o.id]))[o.id] || [];
   o.product_ids = (await knex('vendor_offer_products').where({ offer_id: o.id }).pluck('product_id')).map(Number);
   o.image_url = offerImageUrl(o);
+  o.cities = await knex('vendor_offer_cities').where({ offer_id: o.id }).orderBy('city').pluck('city');
+  o.clinics = await knex('vendor_offer_targets as t').join('businesses as b', 'b.id', 't.business_id').where('t.offer_id', o.id).select('b.id', 'b.name', 'b.name_en', 'b.city').orderBy('b.name');
+  o.clinic_ids = o.clinics.map((c) => c.id);
   const [{ n }] = await knex('vendor_offer_views').where({ offer_id: o.id }).count({ n: '*' });
   o.views = Number(n);
   return o;
@@ -322,10 +327,38 @@ const offerSchema = z.object({
   body_en: optionalString(4000),
   starts_on: optionalDate(),
   ends_on: optionalDate(),
-  specialties: specialtiesField(),
+  specialties: z.preprocess((v) => (v === undefined || v === null || v === '' ? [] : [].concat(v)), z.array(z.enum(TARGET_SPECIALTIES, { errorMap: () => ({ message: 'Choose a valid value.' }) }))),
   product_ids: z.preprocess((v) => (v === undefined || v === null || v === '' ? [] : [].concat(v)), z.array(z.coerce.number().int().positive()).max(100)),
+  target: z.preprocess((v) => (v === 'clinics' ? 'clinics' : 'specialty'), z.enum(['specialty', 'clinics'])),
+  clinic_ids: z.preprocess((v) => (v === undefined || v === null || v === '' ? [] : [].concat(v)), z.array(z.coerce.number().int().positive()).max(1000)),
   remove_image: z.any().optional(),
 });
+
+/** Clinics a vendor can send an offer to (the same clinics open to reps), for the offer form's picker. */
+async function offerClinicChoices() {
+  const { openToReps } = require('../marketplace/rep-visits.service'); // eslint-disable-line global-require
+  return openToReps(knex('businesses as b')).select('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty').orderBy('b.city').orderBy('b.name').limit(1000);
+}
+async function checkTargets(ctx, target, specialties, clinicIds) {
+  if (target === 'specialty') {
+    if (!specialties.length) throw E.validation({ specialties: 'Choose at least one specialty.' });
+    return [];
+  }
+  const want = [...new Set(clinicIds)];
+  if (!want.length) throw E.validation({ clinic_ids: 'Choose at least one clinic.' });
+  const max = await billing.maxOfferClinics(ctx.vendorId);
+  if (max !== null && want.length > max) throw new AppError('VENDOR_LIMIT_CLINICS', `Your plan allows up to ${max} clinics per offer.`, 422, { clinic_ids: `Your plan allows up to ${max} clinics per offer.` });
+  const ok = new Set((await offerClinicChoices()).map((c) => c.id));
+  if (want.some((id) => !ok.has(id))) throw E.validation({ clinic_ids: 'Choose a valid value.' });
+  return want;
+}
+/** Tell the clinics an offer was sent to (target 'clinics') once, when it is published. */
+async function tellTargets(offerId, title, vendorName) {
+  const ids = await knex('vendor_offer_targets').where({ offer_id: offerId }).pluck('business_id');
+  for (const bid of ids) {
+    await notifications.notify(bid, { permission: 'vendors.view', type: 'vendor_offer.sent', title: `عرض جديد لعيادتك · New offer for your clinic — ${vendorName}`, body: title, link: `/app/marketplace/offers/${offerId}`, dedupeKey: `voffer:${offerId}:${bid}` }).catch(() => {});
+  }
+}
 
 /**
  * Create (id null) or update an offer; `publish` asks to publish it right away. Only approved (active) vendors
@@ -337,18 +370,21 @@ async function saveOffer(ctx, id, input, image = null, { publish = false, vendor
   const own = d.product_ids.length ? (await knex('vendor_products').where({ vendor_id: ctx.vendorId }).whereIn('id', d.product_ids).pluck('id')).map(Number) : [];
   if (own.length !== new Set(d.product_ids).size) throw E.validation({ product_ids: 'Choose a valid value.' });
   const before = id ? await ownOffer(ctx, id) : null;
+  const clinicIds = await checkTargets(ctx, d.target, d.specialties, d.clinic_ids);
+  const cities = d.target === 'specialty' ? billing.lowerList(input.cities).slice(0, 30) : [];
   let status = before ? before.status : 'draft';
   let publishBlocked = false;
   if (publish) {
     if (vendorStatus !== 'active') publishBlocked = true;
     else {
       if (d.ends_on && today && d.ends_on < today) throw E.validation({ ends_on: 'The end date has already passed.' });
+      if (!before || before.status !== 'published') await billing.assertCan(ctx.vendorId, 'offer');
       status = 'published';
     }
   }
   const values = {
     title: d.title, title_en: d.title_en || null, body: d.body || null, body_en: d.body_en || null,
-    starts_on: d.starts_on || null, ends_on: d.ends_on || null, status,
+    starts_on: d.starts_on || null, ends_on: d.ends_on || null, status, target: d.target,
   };
   if (status === 'published' && (!before || before.status !== 'published')) values.published_at = now();
   const imgValues = image ? { image: image.data, image_mime: image.mime } : (['1', 'on'].includes(d.remove_image) ? { image: null, image_mime: null } : {});
@@ -359,10 +395,15 @@ async function saveOffer(ctx, id, input, image = null, { publish = false, vendor
     await replaceSpecialties(trx, 'vendor_offer_specialties', 'offer_id', rowId, d.specialties);
     await trx('vendor_offer_products').where({ offer_id: rowId }).del();
     if (own.length) await trx('vendor_offer_products').insert(own.map((pid) => ({ offer_id: rowId, product_id: pid })));
+    await trx('vendor_offer_targets').where({ offer_id: rowId }).del();
+    if (clinicIds.length) await trx('vendor_offer_targets').insert(clinicIds.map((bid) => ({ offer_id: rowId, business_id: bid })));
+    await trx('vendor_offer_cities').where({ offer_id: rowId }).del();
+    if (cities.length) await trx('vendor_offer_cities').insert(cities.map((c) => ({ offer_id: rowId, city: c.slice(0, 100) })));
     return rowId;
   });
+  if (values.published_at && d.target === 'clinics') await tellTargets(oid, d.title, await vendorName(ctx.vendorId));
   const { oldValues, newValues } = audit.diff(before || {}, values);
-  await audit.record({ ...ctx, businessId: null }, id ? 'vendor.offer_updated' : 'vendor.offer_created', { entityType: 'vendor_offer', entityId: oid, oldValues: id ? oldValues : undefined, newValues: { ...newValues, specialties: d.specialties.join(',') } });
+  await audit.record({ ...ctx, businessId: null }, id ? 'vendor.offer_updated' : 'vendor.offer_created', { entityType: 'vendor_offer', entityId: oid, oldValues: id ? oldValues : undefined, newValues: { ...newValues, specialties: d.specialties.join(','), clinics: clinicIds.join(','), cities: cities.join(',') } });
   return { id: oid, status, publishBlocked };
 }
 
@@ -372,16 +413,25 @@ async function setOfferStatus(ctx, id, next, { vendorStatus = 'pending', today }
   if (!OFFER_STATUSES.includes(next)) throw E.validation({ status: 'Choose a valid value.' });
   if (next === 'published') {
     if (vendorStatus !== 'active') throw new AppError('VENDOR_NOT_APPROVED', 'Your account is awaiting approval. You can publish offers once it is approved.', 409);
-    if (!o.specialties.length) throw new AppError('OFFER_NO_SPECIALTY', 'Choose at least one specialty for this offer first.', 409);
+    if (o.target !== 'clinics' && !o.specialties.length) throw new AppError('OFFER_NO_SPECIALTY', 'Choose at least one specialty for this offer first.', 409);
+    if (o.target === 'clinics' && !o.clinic_ids.length) throw new AppError('OFFER_NO_CLINICS', 'Choose at least one clinic for this offer first.', 409);
     if (o.ends_on && today && o.ends_on < today) throw new AppError('OFFER_ENDED', 'This offer has already ended. Change its end date first.', 409);
   }
   if (next === o.status) return o;
+  if (next === 'published') {
+    await billing.assertCan(ctx.vendorId, 'offer');
+    const max = o.target === 'clinics' ? await billing.maxOfferClinics(ctx.vendorId) : null;
+    if (max !== null && o.clinic_ids.length > max) throw new AppError('VENDOR_LIMIT_CLINICS', `Your plan allows up to ${max} clinics per offer.`, 409);
+  }
   const values = { status: next, updated_at: now() };
   if (next === 'published') values.published_at = now();
   await knex('vendor_offers').where({ id: o.id }).update(values);
   await audit.record({ ...ctx, businessId: null }, `vendor.offer_${next}`, { entityType: 'vendor_offer', entityId: o.id, oldValues: { status: o.status }, newValues: { status: next, title: o.title } });
+  if (next === 'published' && o.target === 'clinics') await tellTargets(o.id, o.title, await vendorName(ctx.vendorId));
   return o;
 }
+
+const vendorName = async (vendorId) => ((await knex('vendors').where({ id: vendorId }).first('name')) || {}).name || '';
 
 async function duplicateOffer(ctx, id) {
   const o = await ownOffer(ctx, id);
@@ -389,8 +439,10 @@ async function duplicateOffer(ctx, id) {
   const newId = await knex.transaction(async (trx) => {
     const [nid] = await trx('vendor_offers').insert({
       vendor_id: ctx.vendorId, title: o.title.slice(0, 180), title_en: o.title_en, body: o.body, body_en: o.body_en,
-      image: full.image, image_mime: full.image_mime, starts_on: null, ends_on: null, status: 'draft',
+      image: full.image, image_mime: full.image_mime, starts_on: null, ends_on: null, status: 'draft', target: o.target || 'specialty',
     });
+    if (o.clinic_ids.length) await trx('vendor_offer_targets').insert(o.clinic_ids.map((bid) => ({ offer_id: nid, business_id: bid })));
+    if (o.cities.length) await trx('vendor_offer_cities').insert(o.cities.map((c) => ({ offer_id: nid, city: c })));
     await replaceSpecialties(trx, 'vendor_offer_specialties', 'offer_id', nid, o.specialties);
     if (o.product_ids.length) await trx('vendor_offer_products').insert(o.product_ids.map((pid) => ({ offer_id: nid, product_id: pid })));
     return nid;
@@ -650,7 +702,7 @@ module.exports = {
   // registration & portal
   signup, registerExisting, vendorOfUser, getProfile, updateProfile, setLogo,
   listProducts, ownProduct, saveProduct, setProductActive, deleteProduct, productChoices,
-  listOffers, ownOffer, saveOffer, setOfferStatus, duplicateOffer, deleteOffer, dashboard,
+  listOffers, ownOffer, saveOffer, setOfferStatus, offerClinicChoices, duplicateOffer, deleteOffer, dashboard,
   // clinic-side read helpers
   scopeForClinic, productsForSpecialty, product, vendorPublic, offersForSpecialty, countNewOffers, offer, recordOfferView, dismissOffer,
   // platform moderation

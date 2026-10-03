@@ -26,7 +26,7 @@
             <div style="min-width:0"><a class="person-name" href="/vendor/offers/<%= o.id %>"><%= L(o.title, o.title_en) %></a><div class="person-sub"><%= o.products ? t('vendor_portal.n_products', { n: fmt.number(o.products) }) : t('vendor_portal.no_linked_products') %></div></div>
           </div></td>
           <td data-label="<%= t('vendor_portal.col_period') %>" class="small nowrap"><%= o.starts_on ? fmt.date(o.starts_on) : t('vendor_portal.from_publish') %> – <%= o.ends_on ? fmt.date(o.ends_on) : t('vendor_portal.no_end') %></td>
-          <td data-label="<%= t('vendors.target_specialties') %>" class="small muted"><%= sp(o.specialties) || '—' %></td>
+          <td data-label="<%= t('vendors.target_specialties') %>" class="small muted"><%= o.target === 'clinics' ? t('vbill.target_clinics') : (sp(o.specialties) || '—') %></td>
           <td data-label="<%= t('common.status') %>">
             <% if (o.status === 'published' && ended) { %><span class="badge badge-dot badge-neutral"><%= t('vendor_portal.offer_status.ended') %></span>
             <% } else { %><span class="badge badge-dot <%= o.status === 'published' ? 'badge-success' : 'badge-neutral' %>"><%= t('vendor_portal.offer_status.' + o.status) %></span><% } %>

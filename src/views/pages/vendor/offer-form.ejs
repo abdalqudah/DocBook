@@ -4,6 +4,9 @@
   var selProducts = _o ? [].concat(_o.product_ids || []).map(Number) : (o ? o.product_ids : []);
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
   var isPublished = o && o.status === 'published';
+  var tgt = _o ? _o.target : (o ? o.target : 'specialty');
+  var selClinics = _o ? [].concat(_o.clinic_ids || []).map(Number) : (o ? o.clinic_ids : []);
+  var selCities = _o ? (_o.cities || '') : (o ? o.cities.join('، ') : '');
 %>
 <div class="page-head">
   <div>
@@ -23,7 +26,29 @@
       <%- include('../../partials/field', { name: 'body_en', label: t('vendor_portal.f_body_en'), type: 'textarea', value: val('body_en') }) %>
       <%- include('../../partials/field', { name: 'starts_on', label: t('vendor_portal.f_starts'), type: 'date', value: val('starts_on'), help: t('vendor_portal.f_starts_help') }) %>
       <%- include('../../partials/field', { name: 'ends_on', label: t('vendor_portal.f_ends'), type: 'date', value: val('ends_on'), help: t('vendor_portal.f_ends_help') }) %>
-      <%- include('_specialties', { selected: defaultSpecialties, help: t('vendor_portal.offer_specialties_help') }) %>
+      <fieldset class="fieldset field full vb-target" data-offer-target>
+        <legend class="label"><%- icon('target', 'icon-sm') %> <%= t('vbill.offer_target') %></legend>
+        <div class="vb-seg mb-3" role="radiogroup">
+          <label class="check"><input type="radio" name="target" value="specialty"<%= tgt !== 'clinics' ? ' checked' : '' %>><span><%= t('vbill.target_specialty') %></span></label>
+          <label class="check"><input type="radio" name="target" value="clinics"<%= tgt === 'clinics' ? ' checked' : '' %>><span><%= t('vbill.target_clinics') %></span></label>
+        </div>
+        <div class="stack" data-target-box="specialty"<%= tgt === 'clinics' ? ' hidden' : '' %>>
+          <%- include('_specialties', { selected: defaultSpecialties, help: t('vendor_portal.offer_specialties_help') }) %>
+          <%- include('../../partials/field', { name: 'cities', label: t('vbill.f_cities'), value: selCities, help: t('vbill.offer_cities_help') }) %>
+        </div>
+        <div class="stack" data-target-box="clinics"<%= tgt !== 'clinics' ? ' hidden' : '' %>>
+          <div class="row-sm wrap">
+            <input class="input grow" type="search" placeholder="<%= t('vbill.search_clinics') %>" aria-label="<%= t('vbill.search_clinics') %>" data-clinic-search>
+            <span class="badge badge-neutral" data-clinic-count data-max="<%= maxClinics === null ? '' : maxClinics %>">0<%= maxClinics === null ? '' : ' / ' + maxClinics %></span>
+          </div>
+          <% if (maxClinics !== null) { %><p class="help"><%= t('vbill.max_clinics_help', { n: maxClinics }) %></p><% } %>
+          <div class="vb-clinics<%= errors.clinic_ids ? ' is-invalid' : '' %>">
+            <% if (!clinicChoices.length) { %><p class="small muted"><%= t('vbill.no_clinics') %></p><% } %>
+            <% clinicChoices.forEach(function (c) { %><label class="check" data-clinic-row data-q="<%= [c.name, c.name_en, c.city].join(' ').toLowerCase() %>"><input type="checkbox" name="clinic_ids" value="<%= c.id %>"<%= selClinics.indexOf(c.id) !== -1 ? ' checked' : '' %>><span><%= L(c.name, c.name_en) %> <span class="tiny muted"><%= [c.city, c.specialty ? t('specialties.' + c.specialty) : ''].filter(Boolean).join(' · ') %></span></span></label><% }) %>
+          </div>
+          <% if (errors.clinic_ids) { %><span class="field-error"><%= errors.clinic_ids %></span><% } %>
+        </div>
+      </fieldset>
       <fieldset class="fieldset field full">
         <legend class="label"><%= t('vendor_portal.f_products') %></legend>
         <% if (!products.length) { %>
