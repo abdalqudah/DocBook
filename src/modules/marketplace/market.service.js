@@ -9,6 +9,7 @@ const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
 const { z, validate, money } = require('../../core/validate');
 const supplies = require('../clinic/supplies.service');
+const pnotify = require('../platformnotify/notify.service');
 
 const SPECIALTIES = ['general', 'dentistry', 'dermatology', 'paediatrics', 'obgyn', 'orthopaedics', 'ophthalmology', 'ent', 'cardiology',
   'physiotherapy', 'psychiatry', 'nutrition', 'cosmetic', 'multi', 'other'];
@@ -232,6 +233,14 @@ async function withLock(name, fn) {
 async function ensureSupplier(ctx, vendorId) {
   const v = await vendorPublic(vendorId);
   if (!v) throw E.notFound('Vendor');
+  const out = await linkSupplier(ctx, v);
+  if (out.created || out.linked) { // the vendor can now see this clinic's contact details
+    const b = await knex('businesses').where({ id: ctx.businessId }).first('name');
+    await pnotify.vendor(v.id, 'supplier_added', { clinic: b ? b.name : '' }, { severity: 'success', link: '/vendor/visits', dedupeKey: `sup:${ctx.businessId}` });
+  }
+  return out;
+}
+function linkSupplier(ctx, v) {
   return withLock(`mk_sup_${ctx.businessId}_${v.id}`, async () => {
     const linked = await knex('suppliers').where({ business_id: ctx.businessId, vendor_id: v.id }).first('id');
     if (linked) return { id: linked.id, created: false, vendor: v };

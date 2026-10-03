@@ -42,7 +42,9 @@ router.get('/', wrap(async (req, res) => {
   const d = await vendors.dashboard(req.vendorCtx, today(req));
   const profile = await vendors.getProfile(req.vendor.id);
   const verifyNeeded = verify.required() && !verify.isVerified(req.user);
-  page(res, 'dashboard', { title: req.t('vendor_portal.nav_dashboard'), ...d, profile, verifyNeeded });
+  const pnotify = require('../platformnotify/notify.service'); // eslint-disable-line global-require
+  const notes = await pnotify.list('vendor', req.vendor.id, { limit: 5 });
+  page(res, 'dashboard', { title: req.t('vendor_portal.nav_dashboard'), ...d, profile, verifyNeeded, notes, pnText: (n) => pnotify.text(req.t, n) });
 }));
 
 // ---------------------------------------------------------------- profile

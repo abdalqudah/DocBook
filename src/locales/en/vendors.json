@@ -43,12 +43,14 @@
     "types": {
       "rep": "Medical rep",
       "warehouse": "Drug warehouse",
-      "company": "Supply company"
+      "company": "Supply company",
+      "events": "Events & conferences"
     },
     "type_help": {
       "rep": "An individual rep or a rep office",
       "warehouse": "A pharmaceutical or medical warehouse",
-      "company": "A company supplying equipment or consumables"
+      "company": "A company supplying equipment or consumables",
+      "events": "An organiser of medical conferences, exhibitions or events"
     },
     "f_type": "Account type",
     "f_name": "Company or trade name",

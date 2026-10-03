@@ -8,7 +8,7 @@
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <%- include('../../partials/form-error') %>
       <div class="form-grid">
-        <%- include('../../partials/field', { name: 'type', label: t('vendors.f_type'), type: 'select', required: true, value: v.type, options: ['rep', 'warehouse', 'company'].map(function (k) { return { value: k, label: t('vendors.types.' + k) }; }) }) %>
+        <%- include('../../partials/field', { name: 'type', label: t('vendors.f_type'), type: 'select', required: true, value: v.type, options: ['rep', 'warehouse', 'company', 'events'].map(function (k) { return { value: k, label: t('vendors.types.' + k) }; }) }) %>
         <%- include('../../partials/field', { name: 'contact_name', label: t('vendors.f_contact'), required: true, value: v.contact_name }) %>
         <%- include('../../partials/field', { name: 'name', label: t('vendors.f_name'), required: true, value: v.name }) %>
         <%- include('../../partials/field', { name: 'name_en', label: t('vendors.f_name_en'), value: v.name_en, attrs: 'dir="ltr"' }) %>

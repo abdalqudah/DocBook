@@ -14,6 +14,7 @@ const { z, validate, optionalString, emptyToUndefined } = require('../../core/va
 const scheduling = require('../clinic/scheduling');
 const notifications = require('../notifications/notification.service');
 const billing = require('../vendorbilling/billing.service');
+const pnotify = require('../platformnotify/notify.service');
 
 const { DAY_KEYS, timeToMinutes, minutesToTime, overlaps, isTime, isDate, dayKeyOf, clinicNow } = scheduling;
 const LIVE = ['requested', 'confirmed', 'done'];
@@ -154,11 +155,23 @@ async function bookableDoctors(businessIds) {
   return docs.filter((d) => wide.has(d.business_id) || own.has(d.id));
 }
 
+/**
+ * Clinics (of `businessIds`) that added this vendor as a supplier. Only those share their contact details
+ * (address, map, phone, e-mail) with the vendor; every other clinic shows its name, city and doctors only.
+ */
+async function linkedClinics(vendorId, businessIds) {
+  const ids = [...new Set(businessIds.map(Number).filter(Boolean))];
+  if (!vendorId || !ids.length) return new Set();
+  return new Set((await knex('suppliers').where({ vendor_id: vendorId }).whereIn('business_id', ids).pluck('business_id')).map(Number));
+}
+
 /** A bookable clinic (only what a rep may see) or null. */
-async function clinicForRep(businessId) {
+async function clinicForRep(businessId, vendorId = null) {
   const b = await openToReps(knex('businesses as b').where('b.id', Number(businessId) || 0))
     .first('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty', 'b.address', 'b.map_url', 'b.timezone', 'b.rep_visits_auto_confirm', 'b.email', 'b.rep_visits_enabled', 'b.default_working_hours');
   if (!b) return null;
+  b.isSupplier = vendorId ? (await linkedClinics(vendorId, [b.id])).has(b.id) : false;
+  if (vendorId && !b.isSupplier) { b.address = null; b.map_url = null; } // contact details: suppliers only
   const windows = b.rep_visits_enabled ? await knex('rep_visit_slots').where({ business_id: b.id, is_active: true }).select('doctor_id') : [];
   b.mode = windows.length ? 'slots' : 'request';
   if (b.mode === 'slots') {
@@ -309,12 +322,19 @@ async function tellClinic(clinic, vendor, { id, status, doctorId, date, time, pu
   return { id, status };
 }
 
-const vendorVisits = (vendorId) => knex('rep_visits as r').join('businesses as b', 'b.id', 'r.business_id').leftJoin('doctors as d', 'd.id', 'r.doctor_id')
+const vendorVisitsQuery = (vendorId) => knex('rep_visits as r').join('businesses as b', 'b.id', 'r.business_id').leftJoin('doctors as d', 'd.id', 'r.doctor_id')
   .where('r.vendor_id', vendorId)
   .select('r.id', 'r.visit_date', 'r.visit_time', 'r.duration_minutes', 'r.purpose', 'r.status', 'r.clinic_note', 'r.created_at',
-    'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.city as clinic_city', 'b.address as clinic_address', 'b.map_url as clinic_map_url', 'b.timezone',
+    'r.business_id', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.city as clinic_city', 'b.address as clinic_address', 'b.map_url as clinic_map_url', 'b.timezone',
     'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
   .orderBy('r.visit_date', 'desc').orderBy('r.visit_time', 'desc').limit(200);
+/** The vendor's visits; a clinic's address and map link only when that clinic added the vendor as a supplier. */
+async function vendorVisits(vendorId) {
+  const rows = await vendorVisitsQuery(vendorId);
+  const linked = await linkedClinics(vendorId, rows.map((r) => r.business_id));
+  rows.forEach((r) => { r.isSupplier = linked.has(Number(r.business_id)); if (!r.isSupplier) { r.clinic_address = null; r.clinic_map_url = null; } });
+  return rows;
+}
 
 async function cancelByVendor(vctx, id) {
   const v = await knex('rep_visits').where({ id: Number(id) || 0, vendor_id: vctx.vendorId }).first();
@@ -368,8 +388,11 @@ async function decide(ctx, id, action, note) {
     const vendor = await knex('vendors').where({ id: v.vendor_id }).first('name', 'email');
     const clinic = await knex('businesses').where({ id: ctx.businessId }).first('name');
     const words = { confirmed: 'تم تأكيد زيارتك · Your visit is confirmed', declined: 'تعذّر قبول زيارتك · Your visit was declined', cancelled: 'أُلغيت زيارتك · Your visit was cancelled' };
+    // Sent from the clinic's own mailbox (its address visible) only to a vendor it added as a supplier.
+    const viaClinic = (await linkedClinics(v.vendor_id, [ctx.businessId])).has(Number(ctx.businessId));
+    await pnotify.vendor(v.vendor_id, `visit_${tr[1]}`, { clinic: clinic.name, date: v.visit_date, time: String(v.visit_time).slice(0, 5), note: cleanNote || '' }, { link: '/vendor/visits', severity: tr[1] === 'confirmed' ? 'success' : 'warning' });
     if (vendor && vendor.email) {
-      mailer.send({ businessId: ctx.businessId, kind: 'suppliers', to: vendor.email, subject: `${clinic.name} — ${v.visit_date} ${v.visit_time}`,
+      mailer.send({ ...(viaClinic ? { businessId: ctx.businessId, kind: 'suppliers' } : {}), to: vendor.email, subject: `${clinic.name} — ${v.visit_date} ${v.visit_time}`,
         html: mailer.layout({ locale: 'ar', title: words[tr[1]], body: `${clinic.name} · ${v.visit_date} ${v.visit_time}${cleanNote ? ` — ${cleanNote}` : ''}` }) }).catch(() => {});
     }
   }
@@ -377,6 +400,6 @@ async function decide(ctx, id, action, note) {
 }
 
 module.exports = {
-  LIVE, STATUSES, MAX_DAYS_AHEAD, computeRepSlots, settings, saveSettings, windows, saveWindow, removeWindow, bookableClinics, clinicForRep, freeSlots, openToReps,
+  LIVE, STATUSES, MAX_DAYS_AHEAD, computeRepSlots, settings, saveSettings, windows, saveWindow, removeWindow, bookableClinics, clinicForRep, freeSlots, openToReps, linkedClinics,
   book, vendorVisits, cancelByVendor, clinicVisits, counts, decide, addDays,
 };

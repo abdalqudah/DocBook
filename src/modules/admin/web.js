@@ -16,15 +16,17 @@ const ops = require('../platformops/ops.service');
 const router = express.Router();
 
 // ---------------------------------------------------------------- access
-router.use(requireAuth, (req, res, next) => {
+router.use(requireAuth, async (req, res, next) => {
   if (!req.user || !req.user.is_platform_admin) return next(new AppError('NOT_FOUND', 'Page not found.', 404));
   req.ctx = { businessId: null, userId: req.user.id, userName: req.user.name, ip: req.ip, userAgent: req.get('user-agent'), locale: req.locale, permissions: new Set() };
   res.locals.adminPath = req.baseUrl + req.path;
+  try { res.locals.pnUnread = await require('../platformnotify/notify.service').unread('admin', null); } catch { res.locals.pnUnread = 0; } // eslint-disable-line global-require
   res.locals.L = site.pick(req.locale);
   return next();
 });
 router.use('/', require('./identity.web')); // Google sign-in + clinic custom domains (identity area)
 router.use('/', require('./vendors.web')); // reps & warehouses: approval and moderation
+router.use('/notifications', require('../platformnotify/web').admin()); // platform notifications
 router.use('/vendor-billing', require('../vendorbilling/admin.web')); // reps' subscription plans, trial, invoices, ads
 router.use('/', require('./reviews.web'));
 router.use('/', require('./articles.web')); // doctors' articles asking for the main site: approve / reject
@@ -76,7 +78,25 @@ router.get('/', wrap(async (req, res) => {
   const { isLocalUrl, isLocalHost } = require('../../middleware/web'); // eslint-disable-line global-require
   const appUrlWarning = (!process.env.APP_URL || isLocalUrl(process.env.APP_URL)) && !isLocalHost(req.hostname)
     ? { current: process.env.APP_URL || '', suggested: `https://${req.hostname}` } : null;
-  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length, mailboxes, moves, storageBytes, nearFull, surgeries, surgeryClinics }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
+  // Needs attention (live counts) and the latest platform notifications.
+  const pnotify = require('../platformnotify/notify.service'); // eslint-disable-line global-require
+  const today = new Date().toISOString().slice(0, 10);
+  const [vendorsPending, vendorPayments, clinicPayments, articlesPending, adsRunning, notes] = await Promise.all([
+    count(knex('vendors').where({ status: 'pending' })), count(knex('vendor_invoices').where({ status: 'reported' })),
+    count(knex('platform_invoices').where({ status: 'reported' })),
+    count(knex('articles').where({ on_platform: true, status: 'published', platform_status: 'pending' })),
+    count(knex('vendor_ads').where({ status: 'approved' }).where('starts_on', '<=', today).where('ends_on', '>=', today)),
+    pnotify.list('admin', null, { limit: 8 }),
+  ]);
+  const attention = [
+    ['vendors_pending', vendorsPending, '/admin/vendors?status=pending', 'briefcase-business', 'warning'],
+    ['vendor_payments', vendorPayments, '/admin/vendor-billing?tab=invoices&status=reported', 'credit-card', 'warning'],
+    ['clinic_payments', clinicPayments, '/admin/subscriptions?status=reported', 'wallet', 'warning'],
+    ['articles_pending', articlesPending, '/admin/articles', 'notebook-pen', 'info'],
+    ['ads_running', adsRunning, '/admin/vendor-billing?tab=ads', 'sparkles', 'success'],
+  ];
+  res.locals.pnText = (n) => pnotify.text(req.t, n);
+  page(res, 'overview', { title: req.t('admin.nav_overview'), attention, notes, stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length, mailboxes, moves, storageBytes, nearFull, surgeries, surgeryClinics }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
 }));
 
 // ---------------------------------------------------------------- clinics

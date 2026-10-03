@@ -92,6 +92,7 @@ async function create(userId, { name, currency, specialty, country, city, timezo
   await trx('memberships').insert({ business_id: id, user_id: userId, role_id: owner.id });
   await trx('users').where({ id: userId }).update({ last_business_id: id });
   await audit.record({ businessId: id, userId }, 'clinic.created', { entityType: 'clinic', entityId: id, newValues: { name, currency } }, trx);
+  await require('../platformnotify/notify.service').admin('clinic_signup', { name }, { link: `/admin/clinics/${id}` }, trx); // eslint-disable-line global-require
   return id;
 }
 

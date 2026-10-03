@@ -26,6 +26,13 @@
   <a class="stat card-link" href="/vendor/orders"><div class="stat-label"><%= t('vendor_portal.stat_orders') %><span class="stat-icon"><%- icon('clipboard-list') %></span></div><div class="stat-value"><%= fmt.number(counts.orders) %></div><div class="stat-meta"><%= t('vendor_portal.stat_orders_meta') %></div></a>
 </div>
 
+<% if (typeof notes !== 'undefined' && notes.length) { %>
+<section class="panel flush mt-4">
+  <div class="panel-head"><h2><%- icon('bell', 'icon-sm') %> <%= t('pnotify.latest') %></h2><a class="btn btn-ghost btn-sm" href="/vendor/notifications"><%= t('pnotify.view_all') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a></div>
+  <%- include('../../partials/pnotify-list', { items: notes }) %>
+</section>
+<% } %>
+
 <div class="grid grid-main mt-6">
   <div class="stack-lg">
     <section class="panel flush">

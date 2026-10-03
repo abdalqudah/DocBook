@@ -28,6 +28,7 @@ async function requireVendor(req, res, next) {
     // Reps billing (when the platform turned it on): trial / expiry banner.
     const billing = require('../modules/vendorbilling/billing.service'); // eslint-disable-line global-require
     const st = await billing.state(vendor.id);
+    res.locals.pnUnread = await require('../modules/platformnotify/notify.service').unread('vendor', vendor.id); // eslint-disable-line global-require
     res.locals.vbill = st.enabled ? { status: st.status, ok: st.ok, daysLeft: st.daysLeft } : null;
     return next();
   } catch (err) { return next(err); }

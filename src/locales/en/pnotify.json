@@ -1,0 +1,41 @@
+{
+  "pnotify": {
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "mark_read": "Mark all as read",
+    "view_all": "See all notifications",
+    "attention": "Needs your attention",
+    "attention_none": "Nothing is waiting for you.",
+    "att": {
+      "vendors_pending": "Reps waiting for approval",
+      "vendor_payments": "Rep payments to confirm",
+      "clinic_payments": "Clinic payments to confirm",
+      "articles_pending": "Articles waiting for main-site review",
+      "ads_running": "Ads running now"
+    },
+    "latest": "Latest notifications",
+    "clinic_signup": { "title": "New clinic signed up: {name}" },
+    "vendor_signup": { "title": "New rep / company signed up: {name}", "body": "Review and approve the account so clinics can see it." },
+    "vendor_payment": { "title": "{vendor} reported a payment", "body": "Invoice {number} · {amount} — confirm the money arrived." },
+    "clinic_payment": { "title": "{clinic} reported a subscription payment", "body": "Invoice {number} · {amount}" },
+    "ad_created": { "title": "New ad from {vendor}", "body": "{title} · {days} days" },
+    "article_pending": { "title": "Article waiting for review from {clinic}", "body": "{title}" },
+    "account_approved": { "title": "Your account was approved", "body": "You can now publish offers and request doctor visits." },
+    "account_suspended": { "title": "Your account was suspended", "body": "Contact the platform team to learn why." },
+    "visit_confirmed": { "title": "{clinic} confirmed your visit", "body": "{date} {time} {note}" },
+    "visit_declined": { "title": "{clinic} declined your visit", "body": "{date} {time} {note}" },
+    "visit_cancelled": { "title": "{clinic} cancelled your visit", "body": "{date} {time} {note}" },
+    "supplier_added": { "title": "{clinic} added you as a supplier", "body": "You can now see the clinic's contact details." },
+    "order_new": { "title": "New purchase order from {clinic}", "body": "Order {number}" },
+    "invoice_paid": { "title": "Payment confirmed — your plan is active", "body": "Invoice {number} · {item}" },
+    "ad_paid": { "title": "Ad payment confirmed", "body": "{item} — it will show to doctors on its dates." },
+    "ad_approved": { "title": "Your ad was turned back on", "body": "{title}" },
+    "ad_rejected": { "title": "Your ad was stopped", "body": "{title} — {note}" },
+    "trial_ending": { "title": "Your free trial ends in {n} days", "body": "Choose a plan before {date} to keep sending requests and offers." },
+    "period_ending": { "title": "Your subscription ends in {n} days", "body": "Renew before {date} to avoid a pause." },
+    "sub_expired": { "title": "Your subscription has ended", "body": "You cannot send requests or offers until you choose a plan." },
+    "limit_requests": { "title": "You reached this month's visit requests", "body": "Upgrade your plan to send more." },
+    "limit_offers": { "title": "You reached this month's offers", "body": "Upgrade your plan to publish more." },
+    "trial_extended": { "title": "Your free trial was extended by {n} days" }
+  }
+}

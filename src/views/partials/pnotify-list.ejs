@@ -1,0 +1,16 @@
+<%# Platform notifications list (admin / rep portal). Locals: items (rows), pnText(row) → { title, body }. %>
+<% var _ic = { success: 'circle-check', warning: 'triangle-alert', info: 'bell' }; %>
+<% if (!items.length) { %><div class="panel-body small muted"><%= t('pnotify.empty') %></div><% } else { %>
+<ul class="pn-list">
+  <% items.forEach(function (n) { var x = pnText(n); %>
+  <li class="pn-item<%= n.read_at ? '' : ' is-new' %>">
+    <span class="action-icon <%= n.severity === 'warning' ? 'warning' : n.severity === 'success' ? 'success' : 'info' %>"><%- icon(_ic[n.severity] || 'bell', 'icon-sm') %></span>
+    <div class="grow" style="min-width:0">
+      <% if (n.link) { %><a class="pn-title" href="<%= n.link %>"><%= x.title %></a><% } else { %><span class="pn-title"><%= x.title %></span><% } %>
+      <% if (x.body && x.body.trim()) { %><div class="small muted"><%= x.body %></div><% } %>
+    </div>
+    <span class="tiny muted nowrap"><%= fmt.date(n.created_at) %></span>
+  </li>
+  <% }) %>
+</ul>
+<% } %>

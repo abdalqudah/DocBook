@@ -3,6 +3,21 @@
   <div class="page-actions"><a class="btn btn-secondary" href="/admin/site"><%- icon('layout-template', 'icon-sm') %><%= t('admin.nav_site') %></a></div>
 </div>
 <% if (typeof appUrlWarning !== 'undefined' && appUrlWarning) { %><div class="alert alert-warning mb-4" role="alert"><%- icon('triangle-alert') %><div class="grow small"><div class="alert-title"><%= t('attendance.app_url_title') %></div><div><%= t('attendance.app_url_text', { current: appUrlWarning.current || '—', suggested: appUrlWarning.suggested }) %></div></div></div><% } %>
+<% var _att = attention.filter(function (a) { return a[1] > 0 && a[0] !== 'ads_running'; }); %>
+<div class="grid grid-main mb-4">
+  <section class="panel flush">
+    <div class="panel-head"><h2><%- icon(_att.length ? 'bell' : 'circle-check', 'icon-sm') %> <%= t('pnotify.attention') %></h2></div>
+    <% if (!_att.length) { %><div class="panel-body small muted"><%= t('pnotify.attention_none') %></div><% } else { %>
+    <ul class="action-list">
+      <% _att.forEach(function (a) { %><li><a class="action-row" href="<%= a[2] %>"><span class="action-icon <%= a[4] %>"><%- icon(a[3], 'icon-sm') %></span><span class="grow"><%= t('pnotify.att.' + a[0]) %></span><span class="badge badge-warning"><%= fmt.number(a[1]) %></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a></li><% }) %>
+    </ul>
+    <% } %>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><h2><%= t('pnotify.latest') %></h2><a class="btn btn-ghost btn-sm" href="/admin/notifications"><%= t('pnotify.view_all') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a></div>
+    <%- include('../../partials/pnotify-list', { items: notes }) %>
+  </section>
+</div>
 <div class="stats">
   <div class="stat hero"><div class="stat-label"><%= t('admin.stat_clinics') %><span class="stat-icon"><%- icon('hospital') %></span></div><div class="stat-value"><%= fmt.number(stats.clinics) %></div><div class="stat-meta"><%= t('admin.stat_clinics_meta', { active: fmt.number(stats.active), suspended: fmt.number(stats.suspended) }) %></div></div>
   <div class="stat"><div class="stat-label"><%= t('admin.stat_users') %><span class="stat-icon info"><%- icon('users') %></span></div><div class="stat-value"><%= fmt.number(stats.users) %></div><div class="stat-meta"><%= t('admin.stat_users_meta', { n: fmt.number(stats.activeUsers) }) %></div></div>

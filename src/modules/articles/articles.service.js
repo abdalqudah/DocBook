@@ -182,6 +182,10 @@ async function save(ctx, id, input) {
     const used = await ownImages(ctx.businessId, [...imageIds(row.body), ...imageIds(row.body_en), coverOk].filter(Boolean));
     if (used.length) await knex('clinic_media').where({ business_id: ctx.businessId }).whereIn('id', used).update({ is_public: true });
   }
+  if (platformStatus === 'pending' && (!before || before.platform_status !== 'pending')) {
+    const b = await knex('businesses').where({ id: ctx.businessId }).first('name');
+    await require('../platformnotify/notify.service').admin('article_pending', { clinic: b ? b.name : '', title: d.title || d.title_en || '' }, { link: '/admin/articles' }); // eslint-disable-line global-require
+  }
   let aid = id;
   if (before) {
     await knex('articles').where({ id: before.id, business_id: ctx.businessId }).update(row);

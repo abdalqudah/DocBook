@@ -12,6 +12,7 @@ const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
 const { z, validate, optionalString } = require('../../core/validate');
 const { clinicNow } = require('../clinic/scheduling');
+const pnotify = require('../platformnotify/notify.service');
 
 const KEY = 'vendor_billing';
 const DEFAULTS = { enabled: false, trialDays: 14, trialPlanId: null, adPricePerDay: 5, adCurrency: 'JOD', adMaxDays: 60 };
@@ -97,11 +98,15 @@ async function state(vendorId) {
   let status = sub.status;
   if (status === 'trialing' && sub.trial_ends_at && String(sub.trial_ends_at) < today) status = 'expired';
   if (status === 'active' && sub.current_period_end && String(sub.current_period_end) < today) status = 'expired';
-  if (status !== sub.status) await knex('vendor_subscriptions').where({ id: sub.id }).update({ status, updated_at: new Date() });
+  if (status !== sub.status) {
+    await knex('vendor_subscriptions').where({ id: sub.id }).update({ status, updated_at: new Date() });
+    if (status === 'expired') await pnotify.vendor(vendorId, 'sub_expired', {}, { link: '/vendor/billing', severity: 'warning', dedupeKey: `exp:${sub.trial_ends_at || ''}:${sub.current_period_end || ''}` });
+  }
   const p = await plan(sub.plan_id || s.trialPlanId);
   const end = status === 'trialing' ? sub.trial_ends_at : sub.current_period_end;
   const daysLeft = end ? Math.max(0, Math.round((new Date(`${end}T00:00:00Z`) - new Date(`${today}T00:00:00Z`)) / 86_400_000) + 1) : null;
   const usage = await usageOf();
+  if (['trialing', 'active'].includes(status) && daysLeft !== null && daysLeft <= 3) await pnotify.vendor(vendorId, status === 'trialing' ? 'trial_ending' : 'period_ending', { n: daysLeft, date: String(end) }, { link: '/vendor/billing', severity: 'warning', dedupeKey: `end:${end}` });
   const limits = p ? { requests: p.max_requests_month, offers: p.max_offers_month, offerClinics: p.max_offer_clinics, adDays: p.ad_days_month || 0 } : { requests: null, offers: null, offerClinics: null, adDays: 0 };
   return { enabled: true, sub: { ...sub, status }, plan: p || null, status, ok: ['trialing', 'active'].includes(status), daysLeft, usage, limits, today };
 }
@@ -111,8 +116,9 @@ async function assertCan(vendorId, kind) {
   const st = await state(vendorId);
   if (!st.enabled) return st;
   if (!st.ok) throw new AppError('VENDOR_SUB_EXPIRED', 'Your subscription has ended. Choose a plan to continue.', 409);
-  if (kind === 'request' && st.limits.requests !== null && st.usage.requests >= st.limits.requests) throw new AppError('VENDOR_LIMIT_REQUESTS', 'You reached this month\'s visit requests on your plan.', 409);
-  if (kind === 'offer' && st.limits.offers !== null && st.usage.offers >= st.limits.offers) throw new AppError('VENDOR_LIMIT_OFFERS', 'You reached this month\'s offers on your plan.', 409);
+  const hit = (what) => pnotify.vendor(vendorId, `limit_${what}`, {}, { link: '/vendor/billing', severity: 'warning', dedupeKey: `limit:${what}:${st.today.slice(0, 7)}` });
+  if (kind === 'request' && st.limits.requests !== null && st.usage.requests >= st.limits.requests) { await hit('requests'); throw new AppError('VENDOR_LIMIT_REQUESTS', 'You reached this month\'s visit requests on your plan.', 409); }
+  if (kind === 'offer' && st.limits.offers !== null && st.usage.offers >= st.limits.offers) { await hit('offers'); throw new AppError('VENDOR_LIMIT_OFFERS', 'You reached this month\'s offers on your plan.', 409); }
   return st;
 }
 /** How many clinics one offer may be sent to (null = no limit). */
@@ -148,6 +154,8 @@ async function reportPayment(vctx, invoiceId, input) {
   if (inv.status !== 'open') throw new AppError('INVOICE_CLOSED', 'This invoice is already closed.', 409);
   await knex('vendor_invoices').where({ id: inv.id }).update({ status: 'reported', method: d.method, reference: d.reference || null, reported_at: new Date(), updated_at: new Date() });
   await audit.record({ ...vctx, businessId: null }, 'vendor.payment_reported', { entityType: 'vendor_invoice', entityId: inv.id, newValues: { method: d.method, reference: d.reference } });
+  const v = await knex('vendors').where({ id: vctx.vendorId }).first('name');
+  await pnotify.admin('vendor_payment', { vendor: v ? v.name : '', number: inv.number, amount: `${Number(inv.amount)} ${inv.currency}` }, { link: '/admin/vendor-billing?tab=invoices&status=reported', severity: 'warning' });
 }
 
 /** Platform admin: the money arrived. A plan period starts (after the current one); an ad runs. */
@@ -167,6 +175,7 @@ async function confirmPayment(ctx, invoiceId, { method, reference } = {}) {
       await trx('vendor_ads').where({ id: inv.ad_id, status: 'pending_payment' }).update({ status: 'approved', updated_at: new Date() });
     }
   });
+  await pnotify.vendor(inv.vendor_id, inv.kind === 'ad' ? 'ad_paid' : 'invoice_paid', { number: inv.number, item: inv.description || '' }, { link: inv.kind === 'ad' ? '/vendor/ads' : '/vendor/billing', severity: 'success' });
   await audit.record(ctx, 'platform.vendor_payment_confirmed', { entityType: 'vendor_invoice', entityId: inv.id, newValues: { vendor: inv.vendor_id, amount: Number(inv.amount), kind: inv.kind } });
 }
 async function voidInvoice(ctx, invoiceId) {
@@ -181,6 +190,7 @@ async function extendTrial(ctx, vendorId, days) {
   const n = Math.max(1, Math.min(365, Number(days) || 0));
   const base = sub.trial_ends_at && String(sub.trial_ends_at) >= todayOf() ? String(sub.trial_ends_at) : todayOf();
   await knex('vendor_subscriptions').where({ id: sub.id }).update({ status: 'trialing', trial_ends_at: addDays(base, n), updated_at: new Date() });
+  await pnotify.vendor(vendorId, 'trial_extended', { n }, { link: '/vendor/billing', severity: 'success' });
   await audit.record(ctx, 'platform.vendor_trial_extended', { entityType: 'vendor', entityId: vendorId, newValues: { days: n } });
 }
 
@@ -216,6 +226,8 @@ async function createAd(vctx, input, image = null) {
     const number = await nextNumber();
     await knex('vendor_invoices').insert({ number, vendor_id: vctx.vendorId, kind: 'ad', ad_id: id, description: `${d.title} · ${d.days}`, amount: price, currency: s.adCurrency });
   }
+  const vn = await knex('vendors').where({ id: vctx.vendorId }).first('name');
+  await pnotify.admin('ad_created', { vendor: vn ? vn.name : '', title: d.title, days: d.days }, { link: '/admin/vendor-billing?tab=ads' });
   await audit.record({ ...vctx, businessId: null }, 'vendor.ad_created', { entityType: 'vendor_ad', entityId: id, newValues: { title: d.title, days: d.days, price, specialties: specialties.join(','), cities: cities.join(',') } });
   return { id, price, status };
 }
@@ -233,6 +245,8 @@ async function moderateAd(ctx, id, action, note) {
   const status = action === 'reject' ? 'rejected' : 'approved';
   if (status === 'approved' && ad.status === 'pending_payment') throw new AppError('AD_UNPAID', 'This ad is not paid yet.', 409);
   await knex('vendor_ads').where({ id: ad.id }).update({ status, admin_note: String(note || '').trim().slice(0, 300) || null, updated_at: new Date() });
+  const full = await knex('vendor_ads').where({ id: ad.id }).first('vendor_id', 'title');
+  await pnotify.vendor(full.vendor_id, `ad_${status}`, { title: full.title, note: String(note || '').trim().slice(0, 300) }, { link: '/vendor/ads', severity: status === 'approved' ? 'success' : 'warning' });
   await audit.record(ctx, `platform.vendor_ad_${status}`, { entityType: 'vendor_ad', entityId: ad.id, newValues: { note } });
 }
 

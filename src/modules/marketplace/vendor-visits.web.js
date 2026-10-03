@@ -37,7 +37,7 @@ router.get('/new', wrap(async (req, res) => {
 
 async function renderBook(req, res, extra = {}) {
   if (req.vendor.status !== 'active') return res.redirect('/vendor/visits');
-  const clinic = await svc.clinicForRep(req.query.clinic || req.body.business_id);
+  const clinic = await svc.clinicForRep(req.query.clinic || req.body.business_id, req.vendor.id);
   if (!clinic) { flash(req, 'error', req.t('errors_market.NOT_FOUND')); return res.redirect('/vendor/visits/new'); }
   const src = { ...req.query, ...(extra.old || {}) };
   const today = clinicNow(clinic.timezone).date;

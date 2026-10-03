@@ -431,6 +431,8 @@ async function reportPayment(ctx, businessId, invoiceId, input) {
   if (!['open', 'reported'].includes(inv.status)) throw new AppError('INVOICE_CLOSED', 'This invoice is already closed.', 409);
   await knex('platform_invoices').where({ id: inv.id }).update({ status: 'reported', method: d.method, reference: d.reference, notice_note: d.notice_note || null, reported_at: new Date(), reported_by: ctx.userId, updated_at: new Date() });
   await audit.record(ctx, 'subscription.payment_reported', { entityType: 'platform_invoice', entityId: inv.id, oldValues: { status: inv.status }, newValues: { status: 'reported', method: d.method, reference: d.reference, amount: inv.amount } });
+  const clinic = await knex('businesses').where({ id: businessId }).first('name');
+  await require('../platformnotify/notify.service').admin('clinic_payment', { clinic: clinic ? clinic.name : '', number: inv.number || inv.id, amount: `${Number(inv.amount)} ${inv.currency || ''}`.trim() }, { link: '/admin/subscriptions', severity: 'warning' }); // eslint-disable-line global-require
 }
 
 // ---------------------------------------------------------------- platform admin actions (ctx.businessId = null)

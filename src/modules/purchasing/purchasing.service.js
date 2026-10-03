@@ -264,6 +264,10 @@ async function markOut(ctx, id, { to, vendorId, action }) {
     const now = new Date();
     await trx('purchase_orders').where({ id }).update({ po_number: number, status: 'sent', sent_at: now, sent_by: ctx.userId, sent_to_email: to || null, vendor_id: vendorId || null, ...contact, updated_at: now });
     await audit.record(ctx, action, { entityType: 'purchase_order', entityId: id, oldValues: { status: 'draft' }, newValues: { status: 'sent', po_number: number, to: to || null, vendor_id: vendorId || null } }, trx);
+    if (vendorId) {
+      const clinic = await trx('businesses').where({ id: ctx.businessId }).first('name');
+      await require('../platformnotify/notify.service').vendor(vendorId, 'order_new', { clinic: clinic ? clinic.name : '', number }, { link: `/vendor/orders/${id}`, dedupeKey: `po:${id}` }, trx); // eslint-disable-line global-require
+    }
     return number;
   });
 }

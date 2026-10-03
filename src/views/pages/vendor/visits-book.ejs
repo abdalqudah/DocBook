@@ -9,6 +9,7 @@
     <div class="breadcrumbs"><a href="/vendor/visits"><%= t('rep_visits.vendor_side.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/vendor/visits/new"><%= t('rep_visits.vendor_side.find_title') %></a></div>
     <h1><%= L(clinic.name, clinic.name_en) %></h1>
     <p><%= [clinic.city, specialtyLabel(clinic.specialty), clinic.address].filter(Boolean).join(' · ') %></p>
+    <% if (!clinic.isSupplier) { %><p class="small muted"><%- icon('lock', 'icon-sm') %> <%= t('vbill.contact_hidden') %></p><% } %>
   </div>
   <div class="page-actions"><a class="btn btn-ghost" href="/vendor/visits/new"><%= t('rep_visits.vendor_side.change_clinic') %></a></div>
 </div>

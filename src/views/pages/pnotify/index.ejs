@@ -1,0 +1,5 @@
+<div class="page-head">
+  <div><h1><%= t('pnotify.title') %></h1></div>
+  <% if (unreadCount) { %><div class="page-actions"><form method="post" action="<%= base %>/notifications/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('pnotify.mark_read') %></button></form></div><% } %>
+</div>
+<section class="panel flush"><%- include('../../partials/pnotify-list', { items: items }) %></section>

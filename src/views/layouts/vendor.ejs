@@ -49,6 +49,7 @@
       <span class="small muted vendor-portal-label"><%= t('vendor_portal.title') %></span>
       <div class="topbar-actions">
         <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" title="<%= t('common.language') %>" data-lang-switch="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
+<a class="btn btn-ghost btn-icon bell" href="/vendor/notifications" aria-label="<%= t('pnotify.title') %><%= typeof pnUnread !== 'undefined' && pnUnread ? ' (' + pnUnread + ')' : '' %>" title="<%= t('pnotify.title') %>"><%- icon('bell') %><% if (typeof pnUnread !== 'undefined' && pnUnread) { %><span class="bell-count"><%= pnUnread > 9 ? '9+' : pnUnread %></span><% } %></a>
         <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
         <details class="dropdown">
           <summary class="user-chip"><span class="avatar"><%= initials(currentUser.name) %></span><span class="user-name small strong"><%= currentUser.name %></span><%- icon('chevron-down', 'icon-sm muted') %></summary>

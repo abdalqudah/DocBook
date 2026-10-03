@@ -63,6 +63,7 @@
     "type_rep": "Medical rep",
     "type_warehouse": "Drug warehouse",
     "type_company": "Company",
+    "type_events": "Events & conferences",
     "add_supplier": "Add as supplier",
     "is_supplier": "In your suppliers",
     "add_to_supplies": "Add to my supplies",

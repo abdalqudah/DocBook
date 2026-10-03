@@ -1,0 +1,41 @@
+{
+  "pnotify": {
+    "title": "الإشعارات",
+    "empty": "لا توجد إشعارات بعد.",
+    "mark_read": "تعليم الكل كمقروء",
+    "view_all": "عرض كل الإشعارات",
+    "attention": "بحاجة لانتباهك",
+    "attention_none": "لا شيء بانتظارك الآن.",
+    "att": {
+      "vendors_pending": "مندوبون بانتظار الموافقة",
+      "vendor_payments": "دفعات مندوبين بانتظار التأكيد",
+      "clinic_payments": "دفعات عيادات بانتظار التأكيد",
+      "articles_pending": "مقالات بانتظار المراجعة للموقع الرئيسي",
+      "ads_running": "إعلانات تُعرض الآن"
+    },
+    "latest": "آخر الإشعارات",
+    "clinic_signup": { "title": "عيادة جديدة سجّلت: {name}" },
+    "vendor_signup": { "title": "تسجيل مندوب/شركة جديد: {name}", "body": "راجع الحساب ووافق عليه ليظهر للعيادات." },
+    "vendor_payment": { "title": "{vendor} أبلغ عن دفعة", "body": "الفاتورة {number} · {amount} — أكّد وصول المبلغ." },
+    "clinic_payment": { "title": "{clinic} أبلغت عن دفعة اشتراك", "body": "الفاتورة {number} · {amount}" },
+    "ad_created": { "title": "إعلان جديد من {vendor}", "body": "{title} · {days} يوم" },
+    "article_pending": { "title": "مقال بانتظار المراجعة من {clinic}", "body": "{title}" },
+    "account_approved": { "title": "تمت الموافقة على حسابك", "body": "يمكنك الآن نشر العروض وطلب زيارات الأطباء." },
+    "account_suspended": { "title": "تم إيقاف حسابك", "body": "تواصل مع إدارة المنصة لمعرفة السبب." },
+    "visit_confirmed": { "title": "تم تأكيد زيارتك لـ {clinic}", "body": "{date} {time} {note}" },
+    "visit_declined": { "title": "اعتذرت {clinic} عن الزيارة", "body": "{date} {time} {note}" },
+    "visit_cancelled": { "title": "ألغت {clinic} الزيارة", "body": "{date} {time} {note}" },
+    "supplier_added": { "title": "أضافتك {clinic} كمورد", "body": "أصبحت معلومات التواصل مع العيادة ظاهرة لك." },
+    "order_new": { "title": "طلب شراء جديد من {clinic}", "body": "رقم الطلب {number}" },
+    "invoice_paid": { "title": "تم تأكيد دفعتك وتفعيل باقتك", "body": "الفاتورة {number} · {item}" },
+    "ad_paid": { "title": "تم تأكيد دفع الإعلان", "body": "{item} — سيظهر للأطباء في موعده." },
+    "ad_approved": { "title": "أُعيد تفعيل إعلانك", "body": "{title}" },
+    "ad_rejected": { "title": "تم إيقاف إعلانك", "body": "{title} — {note}" },
+    "trial_ending": { "title": "تنتهي فترتك التجريبية خلال {n} يوم", "body": "اختر باقة قبل {date} لتستمر في إرسال الطلبات والعروض." },
+    "period_ending": { "title": "ينتهي اشتراكك خلال {n} يوم", "body": "جدّد قبل {date} لتجنّب التوقف." },
+    "sub_expired": { "title": "انتهى اشتراكك", "body": "لا يمكنك إرسال طلبات أو عروض حتى تختار باقة." },
+    "limit_requests": { "title": "وصلت لحد طلبات الزيارة هذا الشهر", "body": "رقِّ باقتك لإرسال المزيد." },
+    "limit_offers": { "title": "وصلت لحد العروض هذا الشهر", "body": "رقِّ باقتك لنشر المزيد." },
+    "trial_extended": { "title": "تم تمديد فترتك التجريبية {n} يوم" }
+  }
+}

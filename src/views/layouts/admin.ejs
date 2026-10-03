@@ -60,6 +60,7 @@
       <div class="topbar-actions">
         <a class="btn btn-ghost btn-sm hide-sm-admin" href="/" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('admin.view_site') %></a>
         <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages', 'icon-sm') %><span class="hide-sm-admin"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a>
+<a class="btn btn-ghost btn-icon bell" href="/admin/notifications" aria-label="<%= t('pnotify.title') %><%= typeof pnUnread !== 'undefined' && pnUnread ? ' (' + pnUnread + ')' : '' %>" title="<%= t('pnotify.title') %>"><%- icon('bell') %><% if (typeof pnUnread !== 'undefined' && pnUnread) { %><span class="bell-count"><%= pnUnread > 9 ? '9+' : pnUnread %></span><% } %></a>
         <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
         <details class="dropdown">
           <summary class="user-chip" aria-label="<%= currentUser.name %>"><span class="avatar"><%= initials(currentUser.name) %></span></summary>

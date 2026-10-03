@@ -40,8 +40,9 @@ const { z, validate, optionalString, emptyToUndefined, isoDate, email, password 
 const { AppError, E } = require('../../core/errors');
 const billing = require('../vendorbilling/billing.service');
 const notifications = require('../notifications/notification.service');
+const pnotify = require('../platformnotify/notify.service');
 
-const TYPES = ['rep', 'warehouse', 'company'];
+const TYPES = ['rep', 'warehouse', 'company', 'events']; // events: conferences, exhibitions and medical events organisers
 const STATUSES = ['pending', 'active', 'suspended'];
 const OFFER_STATUSES = ['draft', 'published', 'archived'];
 const TARGET_SPECIALTIES = SPECIALTIES.filter((s) => s !== 'multi');
@@ -144,6 +145,7 @@ async function signup(input, { locale = 'ar', ctx = {} } = {}) {
     await trx('vendor_users').insert({ vendor_id: vendorId, user_id: userId, role: 'owner' });
     await replaceSpecialties(trx, 'vendor_specialties', 'vendor_id', vendorId, d.specialties);
     await audit.record({ ...ctx, businessId: null, userId }, 'vendor.registered', { entityType: 'vendor', entityId: vendorId, newValues: { name: d.name, type: d.type, email: d.email } }, trx);
+    await pnotify.admin('vendor_signup', { name: d.name, type: d.type }, { link: `/admin/vendors/${vendorId}`, severity: 'warning' }, trx);
     return { userId, vendorId };
   });
   return out;
@@ -161,6 +163,7 @@ async function registerExisting(user, input, { ctx = {} } = {}) {
     await trx('vendor_users').insert({ vendor_id: vendorId, user_id: user.id, role: 'owner' });
     await replaceSpecialties(trx, 'vendor_specialties', 'vendor_id', vendorId, d.specialties);
     await audit.record({ ...ctx, businessId: null, userId: user.id }, 'vendor.registered', { entityType: 'vendor', entityId: vendorId, newValues: { name: d.name, type: d.type, email: user.email } }, trx);
+    await pnotify.admin('vendor_signup', { name: d.name, type: d.type }, { link: `/admin/vendors/${vendorId}`, severity: 'warning' }, trx);
     return vendorId;
   });
 }
@@ -672,6 +675,7 @@ async function setStatus(ctx, id, next) {
   await knex('vendors').where({ id: v.id }).update(values);
   const action = next === 'suspended' ? 'platform.vendor_suspended' : (v.status === 'pending' ? 'platform.vendor_approved' : 'platform.vendor_reactivated');
   await audit.record({ ...ctx, businessId: null }, action, { entityType: 'vendor', entityId: v.id, oldValues: { status: v.status }, newValues: { status: next, name: v.name } });
+  await pnotify.vendor(v.id, next === 'suspended' ? 'account_suspended' : 'account_approved', {}, { link: '/vendor', severity: next === 'suspended' ? 'warning' : 'success' });
   return { vendor: v, changed: true, firstApproval, action };
 }
 

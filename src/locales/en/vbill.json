@@ -1,5 +1,7 @@
 {
   "vbill": {
+    "contact_hidden": "The clinic's contact details (address, map, phone and e-mail) show only once the clinic adds you as a supplier.",
+    "contact_hidden_short": "Contact details show once the clinic adds you as a supplier",
     "nav_billing": "Plan & invoices",
     "nav_ads": "Ads",
     "billing_lead": "Your plan, free trial, this month's usage and invoices.",
