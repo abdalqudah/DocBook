@@ -250,7 +250,7 @@ function robots(s, base, aiBlocked = []) {
 async function sitemap(s, base) {
   const x = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const urls = [];
-  if (s.index_home) urls.push({ loc: '/' }, { loc: '/pricing' });
+  if (s.index_home) urls.push({ loc: '/' }, { loc: '/features' }, { loc: '/pricing' });
   if (s.index_clinics) for (const c of await listedClinics()) urls.push({ loc: `/${c.slug}`, lastmod: c.updated_at });
   if (s.index_clinics) urls.push(...await require('../discover/directory.service').sitemapUrls()); // eslint-disable-line global-require -- clinic directory pages
   if (s.index_clinics) {
@@ -500,13 +500,13 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
     const extra = require('../website/marketing.service').profileLinks(clinicMkt); // eslint-disable-line global-require
     ws = { ...(ws || {}), sameAs: [...new Set([...((ws && ws.sameAs) || []), ...extra])] }; // eslint-disable-line no-param-reassign
   }
-  const path = kind === 'clinic' ? ((ws && ws.path) || `/${clinic.slug}`) : kind === 'cookies' ? '/preferences/cookies' : kind === 'pricing' ? '/pricing' : '/';
+  const path = kind === 'clinic' ? ((ws && ws.path) || `/${clinic.slug}`) : kind === 'cookies' ? '/preferences/cookies' : kind === 'pricing' ? '/pricing' : kind === 'features' ? '/features' : '/';
   let title; let description; let noindex = false;
   if (kind === 'home') {
     title = L(s.title, locale) || L(siteContent.seo && siteContent.seo.title, locale) || name;
     description = L(s.description, locale) || L(siteContent.seo && siteContent.seo.description, locale);
     noindex = !s.index_home;
-  } else if (kind === 'pricing') {
+  } else if (kind === 'pricing' || kind === 'features') {
     title = `${pageTitle} · ${name}`;
     description = pageDesc || '';
     noindex = !s.index_home;
@@ -562,7 +562,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   for (const d of ld) tags.push(`<script type="application/ld+json">${ldJson(d)}</script>`);
 
   // Pixels: marketing pages only, only with the visitor's consent.
-  const marketingPage = kind === 'home' || kind === 'cookies' || kind === 'pricing';
+  const marketingPage = kind === 'home' || kind === 'cookies' || kind === 'pricing' || kind === 'features';
   const pixelsOn = marketingPage && hasPixels(mkt);
   const consent = consentOf(req);
   let pixels = null;

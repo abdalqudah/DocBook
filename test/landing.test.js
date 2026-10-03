@@ -123,3 +123,28 @@ test('/pricing is a page of its own: cards, comparison table and pricing questio
   const map = await app.agent().get('/sitemap.xml');
   if (/<loc>[^<]*\/<\/loc>/.test(map.text)) assert.match(map.text, /\/pricing<\/loc>/);
 });
+
+test('platform tour, task videos and the "All features" page; the home page shows the main features only', async () => {
+  const home = await admin.get('/?lang=ar');
+  assert.equal(home.status, 200);
+  assert.match(home.text, /data-tour/);
+  assert.match(home.text, /\/img\/landing\/ar\/today\.webp/);
+  assert.match(home.text, /\/img\/landing\/ar\/flow-visit\.webp/);
+  assert.match(home.text, /href="\/features"/);
+  const showcase = home.text.slice(home.text.indexOf('lp-showcase'), home.text.indexOf('</section>', home.text.indexOf('lp-showcase')));
+  const tiles = (showcase.match(/class="lp-tile( is-wide)?"/g) || []).length;
+  assert.ok(tiles > 0 && tiles <= 6, `home shows the main cards only (${tiles})`);
+  const page = await admin.get('/features?lang=en');
+  assert.equal(page.status, 200);
+  for (const cat of ['appointments', 'records', 'surgeries', 'money', 'team', 'partners', 'website', 'data']) assert.match(page.text, new RegExp(`id="${cat}"`));
+  assert.match(page.text, /\/img\/landing\/en\/surgeries\.webp/);
+  assert.ok((page.text.match(/class="lp-cat-card"/g) || []).length >= 40);
+  assert.doesNotMatch(page.text, />site\.d\./); // every text is translated
+  assert.equal((await admin.get('/img/landing/ar/flow-surgery.webp')).status, 200);
+  // An already edited page gets the tour and the videos once, and the header link points at the new page.
+  const v = site.normalise({ version: 1, rev: 5, header: { items: [{ label: { ar: 'المزايا', en: 'Features' }, href: '/#features' }] }, sections: [{ id: 'h', type: 'hero', data: {} }, { id: 'f', type: 'features', data: { items: [] } }], footer: {} });
+  assert.deepEqual(v.sections.map((s) => s.type), ['hero', 'tour', 'features', 'demos']);
+  assert.equal(v.header.items[0].href, '/features');
+  const ed = await admin.get('/admin/site');
+  assert.equal(ed.status, 200);
+});

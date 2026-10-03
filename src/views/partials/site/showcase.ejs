@@ -1,10 +1,10 @@
 <%# What's new: a bento grid of cards; a wide card spans two columns. %>
-<% var d = s.data || {}; %>
+<% var d = s.data || {}; var _all = typeof fullList !== 'undefined' && fullList; var _items = _all ? (d.items || []) : (d.items || []).slice(0, 6); %>
 <section class="section lp-showcase <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
   <div class="container"><%- include('slot-open', { s: s }) %>
     <%- include('head', { s: s, center: true }) %>
     <div class="lp-bento">
-      <% (d.items || []).forEach(function (f, i) { %>
+      <% _items.forEach(function (f, i) { %>
       <article class="lp-tile<%= f.size === 'wide' ? ' is-wide' : '' %>" data-reveal style="--d: <%= (i % 3) * 80 %>ms">
         <div class="lp-tile-top">
           <% if (f.icon) { %><span class="lp-icon"><%- icon(f.icon) %></span><% } %>
@@ -15,5 +15,6 @@
       </article>
       <% }) %>
     </div>
+    <% if (!_all && (d.items || []).length > _items.length) { %><p class="lp-more"><a class="btn btn-secondary" href="/features"><%= t('site.all_features') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a></p><% } %>
   <%- include('slot-close', { s: s }) %></div>
 </section>

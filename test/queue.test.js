@@ -157,12 +157,14 @@ test('platform admin: clinic areas switch the waiting screen and team chat off; 
   r = await ad.submit(`/admin/clinics/${businessId}`, `/admin/clinics/${businessId}/modules`, Object.fromEntries([...keep, 'queue_screens', 'staff_chat'].map((x) => [x, '1'])));
   assert.equal((await app.agent().get(`/queue/${token}/data`)).status, 200);
 
-  r = await app.agent().get('/?lang=en');
+  // Every feature card is on the "All features" page (the home page shows the main ones); questions stay home.
+  r = await app.agent().get('/features?lang=en');
   assert.match(r.text, /Waiting-room screen/);
   assert.match(r.text, /An encrypted backup per clinic/);
-  assert.match(r.text, /What do I need for the waiting-room screen\?/);
   assert.match(r.text, /Pharmacies, imaging centres and labs/);
   assert.match(r.text, /The waiting screen calls patients aloud/);
+  r = await app.agent().get('/?lang=en');
+  assert.match(r.text, /What do I need for the waiting-room screen\?/);
   assert.match(r.text, /Does the database need a manual update after each version\?/);
 });
 

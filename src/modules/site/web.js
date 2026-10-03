@@ -70,6 +70,22 @@ router.get('/pricing', wrap(async (req, res) => {
   });
 }));
 
+// ---------------------------------------------------------------- all features (/features)
+// Every feature, grouped by what a clinic does, each group beside a real screenshot; then the videos and the call
+// to start. The home page shows the main ones and links here.
+router.get('/features', wrap(async (req, res) => {
+  const content = await site.get();
+  const defs = site.defaults();
+  const demos = content.sections.find((s) => s.type === 'demos' && !s.hidden) || defs.sections.find((s) => s.type === 'demos');
+  const cta = content.sections.find((s) => s.type === 'cta' && !s.hidden) || defs.sections.find((s) => s.type === 'cta');
+  const head = await seo.head(req, res, { kind: 'features', site: content, title: req.t('site.features_page.title'), description: req.t('site.features_page.lead') });
+  res.page('pages/site/features', {
+    layout: 'public', bodyClass: 'lp-modern lp-features-page', pageTitle: head.title, seoHead: head, content,
+    groups: require('./catalog-features').groups(req.t), // eslint-disable-line global-require
+    demos: { ...demos, id: 'features-demos', anchor: 'see-it', hidden: false, design: {} }, cta,
+  });
+}));
+
 // ---------------------------------------------------------------- media files
 router.get('/assets/media/:id/:file', wrap(async (req, res, next) => {
   const [sha] = String(req.params.file).split('.');

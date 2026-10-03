@@ -440,6 +440,53 @@
         "p2": "Free visit times, or the doctor’s working hours to suggest a time",
         "p3": "The clinic’s answer by e-mail and in your account",
         "p4": "Show your products and offers to clinics by specialty"
+      },
+      "tour": {
+        "kicker": "A tour of the platform",
+        "title": "This is your clinic on DocBook",
+        "lead": "Real pictures of the platform: the clinic's day, appointments, the patient file, surgeries, the cash desk and the clinic website.",
+        "btn": "All features",
+        "items": {
+          "today": {
+            "title": "Today",
+            "text": "Today's visits, one line per patient: state, consultation timer, papers and sending — with what needs you now."
+          },
+          "calendar": {
+            "title": "Appointments",
+            "text": "Day, week and month for every doctor, drag and drop, and blocks or surgeries."
+          },
+          "patient": {
+            "title": "Patient file",
+            "text": "Everything in one place: visits, vital signs, prescriptions, tests, surgeries and files."
+          },
+          "surgeries": {
+            "title": "Surgeries",
+            "text": "Doctors' surgeries on their own calendar, with the hospital and the date sent in one click."
+          },
+          "cash": {
+            "title": "Cash desk",
+            "text": "A quick payment screen for today's visits: cash, card or insurance, invoice at once."
+          },
+          "builder": {
+            "title": "Clinic website",
+            "text": "An editor for your clinic site with ready sections, online booking and your own domain."
+          }
+        }
+      },
+      "demos": {
+        "kicker": "See it work",
+        "title": "Whole tasks in seconds",
+        "lead": "From booking to payment, and from booking a surgery to telling the hospital.",
+        "items": {
+          "flow-visit": {
+            "title": "From booking to payment",
+            "text": "Reception books from the calendar\nThe patient is checked in at the waiting room\nThe doctor writes the consultation, prescription and requests\nThe patient pays at the cash desk with an instant invoice"
+          },
+          "flow-surgery": {
+            "title": "A surgery, from booking to the hospital",
+            "text": "The doctor blocks their time as a \"surgery\" with the patient and hospital\nIt shows on the Surgeries page by day, week and month\nThe date goes to the hospital by e-mail or WhatsApp\nAnd it stays in the patient's file"
+          }
+        }
       }
     },
     "pricing": {
@@ -514,6 +561,49 @@
         "trial_a": "When the platform runs trials, every new clinic starts with one, and its length shows on this page.",
         "cancel_q": "What happens to my data if I stop?",
         "cancel_a": "Your clinic stays readable: open records and export lists and reports — nothing is deleted. Everything comes back as soon as you renew."
+      }
+    },
+    "all_features": "All features",
+    "all_features_n": "All features ({n}+)",
+    "demo_badge": "Video",
+    "features_page": {
+      "kicker": "All features",
+      "title": "Everything your clinic needs, in one platform",
+      "lead": "DocBook's features grouped by the clinic's work, with real pictures of the platform.",
+      "nav": "Feature groups",
+      "cats": {
+        "appointments": {
+          "title": "Appointments & front desk",
+          "lead": "Online booking, a calendar per doctor, the waiting room and a screen that calls patients."
+        },
+        "records": {
+          "title": "Patient file & medical record",
+          "lead": "A complete record of every visit, with papers on the clinic's letterhead sent to the patient."
+        },
+        "surgeries": {
+          "title": "Surgeries",
+          "lead": "The doctor's time for operations on its own calendar, and the hospital knows the date."
+        },
+        "money": {
+          "title": "Money & invoices",
+          "lead": "The cash desk, invoices, insurance, doctors' pay and expenses."
+        },
+        "team": {
+          "title": "Team & communication",
+          "lead": "Roles and permissions, the team chat, and each member's own e-mail inside."
+        },
+        "partners": {
+          "title": "Partners",
+          "lead": "Pharmacies, imaging centres and labs, messages in your own words, and reviews."
+        },
+        "website": {
+          "title": "Clinic website",
+          "lead": "A booking-ready site in your design, with your specialty's icons."
+        },
+        "data": {
+          "title": "Data & security",
+          "lead": "Backups, storage by package, and exporting and importing patient files."
+        }
       }
     }
   },
@@ -709,7 +799,9 @@
         "cta": "Call to action",
         "showcase": "What's new cards",
         "stats": "Numbers",
-        "pricing": "Plans & pricing"
+        "pricing": "Plans & pricing",
+        "tour": "Platform tour (screenshots)",
+        "demos": "Task videos"
       },
       "type_help": {
         "hero": "The first thing visitors see: headline, two buttons, short points and the booking illustration.",
@@ -724,7 +816,9 @@
         "cta": "A dark band with a headline and two buttons.",
         "showcase": "A grid of cards in two sizes to present new features, with a “New” tag.",
         "stats": "Big numbers with a short label; the number counts up when it appears. State facts only.",
-        "pricing": "Plan cards from Admin → Plans: prices, limits and features update by themselves. The section hides while no plan is shown."
+        "pricing": "Plan cards from Admin → Plans: prices, limits and features update by themselves. The section hides while no plan is shown.",
+        "tour": "Tabs, each with a real picture of the platform and a short text.",
+        "demos": "A short looping video of a whole task beside its steps (one line = one step)."
       },
       "lists": {
         "items": "Items"
@@ -778,14 +872,16 @@
         "media_size": "Image size",
         "image": "Image (instead of the icon)",
         "tag": "Small tag",
-        "size": "Card size"
+        "size": "Card size",
+        "screen": "Picture",
+        "flow": "Video"
       },
       "opt": {
         "1": "Column 1",
         "2": "Column 2",
         "3": "Column 3",
         "booking": "Booking card",
-        "frontdesk": "Waiting room",
+        "frontdesk": "Front desk",
         "records": "Patient file",
         "none": "None",
         "end": "Beside the text (end)",
@@ -794,7 +890,15 @@
         "no": "No",
         "image": "Image from the media library",
         "normal": "Normal",
-        "wide": "Wide (two columns)"
+        "wide": "Wide (two columns)",
+        "today": "Today",
+        "calendar": "Appointments",
+        "patient": "Patient file",
+        "surgeries": "Surgeries",
+        "cash": "Cash desk",
+        "builder": "Website editor",
+        "flow-visit": "From booking to payment",
+        "flow-surgery": "Surgery to hospital"
       },
       "media": {
         "title": "Media library",
@@ -855,7 +959,9 @@
           "full": "Full width"
         }
       },
-      "pricing_hint": "The plans themselves are edited in Admin → Plans."
+      "pricing_hint": "The plans themselves are edited in Admin → Plans.",
+      "features_page": "All features page",
+      "features_page_help": "Every feature grouped by the clinic's work with real pictures of the platform (a fixed page, updated with each version)."
     },
     "nav_seo": "Search & AI",
     "nav_growth": "Social & tracking",

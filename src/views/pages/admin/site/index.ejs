@@ -3,6 +3,7 @@
   <div><h1 class="row-sm"><%= t('admin.site.title') %> <span class="badge <%= customised ? 'badge-brand' : 'badge-neutral' %>"><%= t(customised ? 'admin.site.customised' : 'admin.site.default') %></span></h1><p><%= t('admin.site.sub') %></p></div>
   <div class="page-actions">
     <a class="btn btn-secondary" href="/admin/site/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('admin.site.preview') %></a>
+    <a class="btn btn-secondary" href="/features" target="_blank" rel="noopener" title="<%= t('admin.site.features_page_help') %>"><%- icon('layout-grid', 'icon-sm') %><%= t('admin.site.features_page') %></a>
     <a class="btn btn-primary" href="/" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('admin.site.view') %></a>
   </div>
 </div>

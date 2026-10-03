@@ -1,9 +1,9 @@
-<% var d = s.data || {}; %>
+<% var d = s.data || {}; var _all = typeof fullList !== 'undefined' && fullList; var _items = _all ? (d.items || []) : (d.items || []).slice(0, 8); %>
 <section class="section lp-features <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
   <div class="container"><%- include('slot-open', { s: s }) %>
     <%- include('head', { s: s, center: true }) %>
     <div class="lp-feature-grid">
-      <% (d.items || []).forEach(function (f) { %>
+      <% _items.forEach(function (f) { %>
       <article class="lp-feature">
         <% if (f.image && typeof siteMedia !== 'undefined' && siteMedia[String(f.image)]) { %><div class="card-media"><%- include('img', { mid: f.image, alt: '' }) %></div><% } else if (f.icon) { %><span class="lp-icon"><%- icon(f.icon) %></span><% } %>
         <h3><%= L(f.title) %></h3>
@@ -11,5 +11,6 @@
       </article>
       <% }) %>
     </div>
+    <p class="lp-more"><a class="btn btn-ghost" href="/features"><%= t('site.all_features_n', { n: (d.items || []).length }) %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a></p>
   <%- include('slot-close', { s: s }) %></div>
 </section>

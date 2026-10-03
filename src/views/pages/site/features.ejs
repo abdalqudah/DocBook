@@ -1,0 +1,45 @@
+<%# /features — every DocBook feature, grouped by what a clinic does, each group beside a real screenshot of the
+    platform; then the looping videos of whole tasks and the call to start. %>
+<% var F = 'site.features_page.'; var _lang = locale === 'en' ? 'en' : 'ar';
+   var _icons = { appointments: 'calendar-days', records: 'notebook-pen', surgeries: 'scissors', money: 'banknote', team: 'users', partners: 'pill-bottle', website: 'globe', data: 'shield-check' }; %>
+<section class="site-hero lp-hero lp-page-hero">
+  <div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container center">
+    <span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= t(F + 'kicker') %></span>
+    <h1><%= t(F + 'title') %></h1>
+    <p class="lead"><%= t(F + 'lead') %></p>
+    <nav class="lp-cat-nav" aria-label="<%= t(F + 'nav') %>">
+      <% groups.forEach(function (g) { %><a href="#<%= g.key %>"><%- icon(_icons[g.key], 'icon-sm') %><%= t(F + 'cats.' + g.key + '.title') %></a><% }) %>
+    </nav>
+  </div>
+</section>
+
+<% groups.forEach(function (g, gi) { %>
+<section class="section lp-cat<%= gi % 2 ? ' is-alt' : '' %>" id="<%= g.key %>">
+  <div class="container">
+    <div class="lp-cat-head" data-reveal>
+      <span class="lp-icon lp-cat-icon"><%- icon(_icons[g.key]) %></span>
+      <div><h2><%= t(F + 'cats.' + g.key + '.title') %></h2><p class="lead"><%= t(F + 'cats.' + g.key + '.lead') %></p></div>
+    </div>
+    <div class="lp-cat-body<%= g.screen ? '' : ' no-shot' %>">
+      <% if (g.screen) { %>
+      <figure class="lp-frame lp-cat-shot" data-reveal>
+        <div class="lp-frame-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+        <img src="/img/landing/<%= _lang %>/<%= g.screen %>.webp" width="1280" height="800" alt="<%= t(F + 'cats.' + g.key + '.title') %>" loading="lazy" decoding="async">
+      </figure>
+      <% } %>
+      <div class="lp-cat-cards">
+        <% g.items.forEach(function (f, i) { %>
+        <article class="lp-cat-card" data-reveal style="--d: <%= (i % 4) * 60 %>ms">
+          <span class="lp-icon"><%- icon(f.icon) %></span>
+          <div><h3><%= f.title %></h3><p><%= f.text %></p></div>
+        </article>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>
+<% }) %>
+
+<%- include('../../partials/site/demos', { s: demos }) %>
+<% if (cta) { %><%- include('../../partials/site/cta', { s: cta }) %><% } %>

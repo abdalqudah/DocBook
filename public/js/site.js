@@ -165,3 +165,35 @@
   });
   filterServices();
 })();
+
+// Platform tour (landing): tabs that switch the screenshot; it moves on by itself every few seconds until the
+// visitor picks a tab (and never when they prefer less motion).
+(function () {
+  document.querySelectorAll('[data-tour]').forEach(function (box) {
+    var tabs = Array.prototype.slice.call(box.querySelectorAll('[data-tour-tab]'));
+    var panels = Array.prototype.slice.call(box.querySelectorAll('[data-tour-panel]'));
+    if (tabs.length < 2) return;
+    var cur = 0; var timer = null;
+    function show(i, focus) {
+      cur = (i + tabs.length) % tabs.length;
+      tabs.forEach(function (t, k) { var on = k === cur; t.classList.toggle('is-on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; });
+      panels.forEach(function (p, k) { p.hidden = k !== cur; });
+      if (focus) tabs[cur].focus();
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    tabs.forEach(function (t, k) {
+      t.addEventListener('click', function () { stop(); show(k); });
+      t.addEventListener('keydown', function (e) {
+        var rtl = document.documentElement.dir === 'rtl';
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); stop(); show(cur + ((e.key === 'ArrowRight') !== rtl ? 1 : -1), true); }
+      });
+    });
+    var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!calm && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (en) { if (en.isIntersecting && !timer && !box.dataset.touched) timer = setInterval(function () { show(cur + 1); }, 6000); else if (!en.isIntersecting) stop(); });
+      }, { threshold: 0.3 }).observe(box);
+      box.addEventListener('pointerdown', function () { box.dataset.touched = '1'; stop(); });
+    }
+  });
+}());

@@ -14,6 +14,7 @@ const { translator } = require('../../core/i18n');
 const { E } = require('../../core/errors');
 
 const KEY = 'site_content';
+const { SCREENS, FLOWS } = require('./catalog-features');
 
 // Icons available in the sprite (public/icons.svg).
 const ICONS = (() => {
@@ -79,6 +80,16 @@ const TYPES = {
     fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea'], ['btn_label', 'text'], ['btn_href', 'link'], ['note', 'text']],
   },
   cta: { fields: [['title', 'text'], ['text', 'text'], ['btn1_label', 'text'], ['btn1_href', 'link'], ['btn2_label', 'text'], ['btn2_href', 'link']] },
+  // A tour of the platform: tabs, each showing a real screenshot (public/img/landing/<lang>/<screen>.webp).
+  tour: {
+    fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea'], ['btn_label', 'text'], ['btn_href', 'link']],
+    lists: [{ key: 'items', fields: [['screen', 'select', SCREENS], ['title', 'text'], ['text', 'textarea']] }],
+  },
+  // Short looping videos of a whole task (animated pictures), each beside its steps.
+  demos: {
+    fields: [['kicker', 'text'], ['title', 'text'], ['lead', 'textarea']],
+    lists: [{ key: 'items', fields: [['flow', 'select', FLOWS], ['title', 'text'], ['text', 'textarea']] }],
+  },
 };
 // Layout settings every section has: alignment, an optional background (a light surface or an image from the
 // media library under a soft scrim) and an optional image shown with the section. For the hero and the split
@@ -113,10 +124,11 @@ const isI18n = (kind) => kind === 'text' || kind === 'textarea';
 // What each content revision added (2: waiting screen, sending papers, team chat, backups… 3: pharmacies & centres,
 // the screen that calls patients aloud, the consultation timer, message texts, website carousels & icon libraries;
 // 4: each member's own e-mail, one file storage per package, exporting and importing patient files;
-// 5: surgeries — the doctor's time booked as an operation, its own calendar, the hospital told).
+// 5: surgeries — the doctor's time booked as an operation, its own calendar, the hospital told;
+// 6: a tour of the platform with screenshots, looping videos of whole tasks, and "All features" on its own page).
 // A page the platform already edited gets a revision's items once (mergeNew) — items the admin removes afterwards are
 // not brought back. Only the latest revision's cards carry the "new" tag on a fresh page.
-const REV = 5;
+const REV = 6;
 const ADDED = {
   2: { showcase: [['queue', 'monitor', 'wide'], ['call', 'bell'], ['share', 'file-check', 'wide'], ['review', 'star'], ['backup', 'shield-check', 'wide'],
     ['chat', 'message-square'], ['specialty', 'stethoscope'], ['letterhead', 'stamp']],
@@ -126,11 +138,27 @@ const ADDED = {
   4: { showcase: [['mailbox', 'mail', 'wide'], ['export', 'package'], ['import', 'upload'], ['storage', 'database', 'wide']],
     features: [['mailbox', 'mail'], ['portable', 'package']], faq: [15, 16, 17] },
   5: { showcase: [['surgeries', 'scissors', 'wide'], ['hospital', 'hospital']], features: [['surgeries', 'scissors']], faq: [18] },
+  6: { showcase: [], features: [], faq: [] }, // sections, not cards: the tour and the videos (addTour)
 };
 const NEW_SHOWCASE = [...ADDED[5].showcase, ...ADDED[4].showcase, ...ADDED[3].showcase, ...ADDED[2].showcase];
 const NEW_FEATURES = [...ADDED[2].features, ...ADDED[3].features, ...ADDED[4].features, ...ADDED[5].features];
 const NEW_FAQ = [...ADDED[2].faq, ...ADDED[3].faq, ...ADDED[4].faq, ...ADDED[5].faq];
-const LATEST = new Set(ADDED[REV].showcase.map(([k]) => k));
+const LATEST = new Set(ADDED[5].showcase.map(([k]) => k)); // the newest cards carry the "new" tag
+
+// The tour and the videos (revision 6); also added once to a page the platform already edited (normalise).
+const TOUR_SCREENS = ['today', 'calendar', 'patient', 'surgeries', 'cash', 'builder'];
+function tourDefault(T) {
+  return { id: 'tour', type: 'tour', anchor: 'tour', hidden: false, data: {
+    kicker: T('tour.kicker'), title: T('tour.title'), lead: T('tour.lead'), btn_label: T('tour.btn'), btn_href: '/features',
+    items: TOUR_SCREENS.map((k) => ({ screen: k, title: T(`tour.items.${k}.title`), text: T(`tour.items.${k}.text`) })),
+  } };
+}
+function demosDefault(T) {
+  return { id: 'demos', type: 'demos', anchor: 'see-it', hidden: false, data: {
+    kicker: T('demos.kicker'), title: T('demos.title'), lead: T('demos.lead'),
+    items: FLOWS.map((k) => ({ flow: k, title: T(`demos.items.${k}.title`), text: T(`demos.items.${k}.text`) })),
+  } };
+}
 
 function defaults() {
   const en = translator('en');
@@ -140,7 +168,7 @@ function defaults() {
   return {
     version: 1,
     header: {
-      items: [['new', '/#new'], ['features', '/#features'], ['pricing', '/pricing'], ['how', '/#how'], ['faq', '/#faq'], ['reps', '/vendors']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
+      items: [['features', '/features'], ['new', '/#new'], ['pricing', '/pricing'], ['how', '/#how'], ['faq', '/#faq'], ['reps', '/vendors']].map(([k, href]) => ({ label: T(`nav.${k}`), href })),
       login_label: T('nav.login'), signup_label: T('nav.signup'), signup_href: '/signup', show_login: 'yes',
     },
     sections: [
@@ -154,6 +182,7 @@ function defaults() {
         items: [['calendar-clock', '24/7', 'booking'], ['languages', '2', 'languages'], ['layers', '1', 'workspace'], ['download', '0', 'install']]
           .map(([icon, value, k]) => ({ icon, value, label: T(`stats.${k}`) })),
       } },
+      tourDefault(T),
       { id: 'showcase', type: 'showcase', anchor: 'new', hidden: false, data: {
         kicker: T('showcase.kicker'), title: T('showcase.title'), lead: T('showcase.lead'),
         items: [...NEW_SHOWCASE.map(([k, icon, size]) => [k, icon, size, LATEST.has(k)]),
@@ -165,6 +194,7 @@ function defaults() {
         items: list('features.items', ['booking', 'calendar', 'frontdesk', 'records', 'billing', 'payroll', 'supplies', 'staff', 'languages', ...NEW_FEATURES.map((f) => f[0])],
           (F, k) => ({ icon: { booking: 'calendar-plus', calendar: 'calendar-days', frontdesk: 'armchair', records: 'notebook-pen', billing: 'receipt', payroll: 'hand-coins', supplies: 'package', staff: 'user-cog', languages: 'languages', ...Object.fromEntries(NEW_FEATURES) }[k], title: F('title'), text: F('text') })),
       } },
+      demosDefault(T),
       { id: 'booking', type: 'split', anchor: 'online-booking', hidden: false, data: {
         kicker: T('booking.kicker'), title: T('booking.title'), lead: T('booking.lead'), btn_label: T('booking.btn'), btn_href: '/signup', visual: 'booking', side: 'end',
         items: [1, 2, 3, 4].map((i) => ({ text: T(`booking.p${i}`) })),
@@ -205,7 +235,7 @@ function defaults() {
       tagline: T('footer.tagline'), col1_title: T('footer.col1'), col2_title: T('footer.col2'), col3_title: { ar: '', en: '' },
       email: brand.supportEmail || '', phone: '', address: { ar: '', en: '' }, copyright: brand.name,
       items: [
-        ...[['new', '/#new'], ['features', '/#features'], ['pricing', '/pricing'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '1' })),
+        ...[['new', '/#new'], ['features', '/features'], ['pricing', '/pricing'], ['how', '/#how'], ['roles', '/#roles'], ['faq', '/#faq']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '1' })),
         ...[['login', '/login'], ['signup', '/signup'], ['reps_signup', '/vendors/signup'], ['forgot', '/forgot']].map(([k, href]) => ({ label: T(`nav.${k}`), href, column: '2' })),
       ],
       social: [],
@@ -237,12 +267,25 @@ function mergeNew(saved, d, from = 0) {
   }
   return v;
 }
+/** Revision 6 on an edited page: the tour after the numbers (or the hero), the videos after the features grid,
+ *  and the header's "Features" link pointing at the new page — each only when not already there. */
+function addTour(saved, d) {
+  const v = structuredClone(saved);
+  const at = (type) => v.sections.findIndex((x) => x && x.type === type);
+  if (at('tour') < 0) { const i = Math.max(at('stats'), at('hero')); v.sections.splice(i + 1, 0, d.sections.find((x) => x.type === 'tour')); }
+  if (at('demos') < 0) { const i = at('features'); v.sections.splice(i >= 0 ? i + 1 : v.sections.length, 0, d.sections.find((x) => x.type === 'demos')); }
+  if (v.header && Array.isArray(v.header.items)) v.header.items.forEach((it) => { if (it && it.href === '/#features') it.href = '/features'; });
+  if (v.footer && Array.isArray(v.footer.items)) v.footer.items.forEach((it) => { if (it && it.href === '/#features') it.href = '/features'; });
+  return v;
+}
 const translatorPair = (k) => ({ en: translator('en')(`site.d.${k}`), ar: translator('ar')(`site.d.${k}`) });
 
 function normalise(v) {
   const d = defaults();
   if (!v || !Array.isArray(v.sections)) return d;
-  if ((Number(v.rev) || 0) < REV) v = mergeNew(v, d, Number(v.rev) || 0);
+  const from = Number(v.rev) || 0;
+  if (from < REV) v = mergeNew(v, d, from);
+  if (from < 6) v = addTour(v, d);
   return {
     version: 1,
     rev: REV,
@@ -427,6 +470,6 @@ const pick = (locale) => (v) => {
 };
 
 module.exports = {
-  ICONS, TYPES, DESIGN, HEADER, FOOTER, SEO, BLOCKS, VISUALS, parseDesign, isI18n, defaults, get, isCustomised, reset, safeHref, pick,
+  ICONS, TYPES, DESIGN, HEADER, FOOTER, SEO, BLOCKS, VISUALS, parseDesign, isI18n, defaults, normalise, get, isCustomised, reset, safeHref, pick,
   updateSection, updateBlock, addSection, removeSection, moveSection, toggleSection, duplicateSection, parseSchema,
 };

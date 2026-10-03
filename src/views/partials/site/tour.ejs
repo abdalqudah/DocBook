@@ -1,0 +1,26 @@
+<%# A tour of the platform: tabs with real screenshots (public/img/landing/<lang>/<screen>.webp) in a browser frame. %>
+<% var d = s.data || {}; var _lang = locale === 'en' ? 'en' : 'ar'; var _items = (d.items || []).filter(function (it) { return it && it.screen; }); %>
+<% if (_items.length) { %>
+<section class="section lp-tour <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
+    <%- include('head', { s: s, center: true }) %>
+    <div class="lp-tour-ui" data-tour>
+      <div class="lp-tour-tabs" role="tablist" aria-label="<%= L(d.title) %>">
+        <% _items.forEach(function (it, i) { %>
+        <button class="lp-tour-tab<%= i === 0 ? ' is-on' : '' %>" type="button" role="tab" id="<%= s.id %>-tab-<%= i %>" aria-controls="<%= s.id %>-panel-<%= i %>" aria-selected="<%= i === 0 ? 'true' : 'false' %>" tabindex="<%= i === 0 ? '0' : '-1' %>" data-tour-tab="<%= i %>"><%= L(it.title) %></button>
+        <% }) %>
+      </div>
+      <% _items.forEach(function (it, i) { %>
+      <div class="lp-tour-panel" role="tabpanel" id="<%= s.id %>-panel-<%= i %>" aria-labelledby="<%= s.id %>-tab-<%= i %>"<%= i === 0 ? '' : ' hidden' %> data-tour-panel="<%= i %>">
+        <% if (L(it.text)) { %><p class="lp-tour-text"><%= L(it.text) %></p><% } %>
+        <figure class="lp-frame">
+          <div class="lp-frame-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+          <img src="/img/landing/<%= _lang %>/<%= it.screen %>.webp" width="1280" height="800" alt="<%= L(it.title) %>"<%= i === 0 ? '' : ' loading="lazy"' %> decoding="async">
+        </figure>
+      </div>
+      <% }) %>
+    </div>
+    <% if (L(d.btn_label) && d.btn_href) { %><p class="lp-tour-more"><a class="btn btn-secondary" href="<%= d.btn_href %>"><%= L(d.btn_label) %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a></p><% } %>
+  <%- include('slot-close', { s: s }) %></div>
+</section>
+<% } %>

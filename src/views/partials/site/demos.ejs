@@ -1,0 +1,24 @@
+<%# Short looping videos of whole tasks (animated pictures), each beside its steps; one line of the text = one step. %>
+<% var d = s.data || {}; var _lang = locale === 'en' ? 'en' : 'ar'; var _items = (d.items || []).filter(function (it) { return it && it.flow; }); %>
+<% if (_items.length) { %>
+<section class="section lp-demos <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
+  <div class="container"><%- include('slot-open', { s: s }) %>
+    <%- include('head', { s: s, center: true }) %>
+    <div class="lp-demo-list">
+      <% _items.forEach(function (it, i) { var steps = String(L(it.text) || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean); %>
+      <article class="lp-demo<%= i % 2 ? ' is-flip' : '' %>" data-reveal>
+        <div class="lp-demo-copy">
+          <span class="lp-demo-badge"><%- icon('video', 'icon-sm') %><%= t('site.demo_badge') %></span>
+          <h3><%= L(it.title) %></h3>
+          <% if (steps.length > 1) { %><ol class="lp-demo-steps"><% steps.forEach(function (x) { %><li><%= x %></li><% }) %></ol><% } else if (steps.length) { %><p><%= steps[0] %></p><% } %>
+        </div>
+        <figure class="lp-frame lp-demo-frame">
+          <div class="lp-frame-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+          <img src="/img/landing/<%= _lang %>/<%= it.flow %>.webp" width="1120" height="700" alt="<%= L(it.title) %>" loading="lazy" decoding="async">
+        </figure>
+      </article>
+      <% }) %>
+    </div>
+  <%- include('slot-close', { s: s }) %></div>
+</section>
+<% } %>
