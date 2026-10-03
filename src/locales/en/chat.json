@@ -18,6 +18,7 @@
     "err": {
       "CHAT_FILE_TYPE": "Unsupported file type. Send an image, a PDF or a Word / Excel / PowerPoint file.",
       "CHAT_FILE_BIG": "The file is larger than 10 MB.",
+      "STORAGE_FULL": "The clinic's file storage is full, so the attachment cannot be sent.",
       "CHAT_TOO_MANY": "Up to 5 files per message."
     },
     "team": "Team — start a conversation"

@@ -105,6 +105,8 @@
         <span class="small muted"><%= t('admin.storage_files', { n: fmt.number(storage.files) }) %></span>
       </div>
       <% if (storage.quota !== null) { %><span class="meter<%= _pct >= 100 ? ' full' : _pct >= 80 ? ' warn' : '' %>" aria-hidden="true"><span style="width:<%= _pct %>%"></span></span><% } %>
+<% var _by = Object.keys(storage.by || {}).filter(function (k) { return storage.by[k] > 0; }); if (_by.length) { %>
+      <div class="row-sm small muted" style="flex-wrap:wrap;gap:4px 14px"><% _by.forEach(function (k) { %><span><%= t('media_lib.by_' + k) %>: <bdi class="num"><%= _sz(storage.by[k]) %></bdi></span><% }) %></div><% } %>
       <span class="small muted"><%= storage.hasPlan ? t('admin.storage_plan', { size: _mbs(storage.planMb) }) : t('admin.storage_default', { size: _mbs(storage.planMb) }) %></span>
     </div>
     <div class="field">

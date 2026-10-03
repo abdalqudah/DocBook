@@ -870,7 +870,7 @@
     "db_pending": "{n} database updates waiting — applied by themselves within minutes.",
     "db_open": "Updates",
     "storage_title": "File storage",
-    "storage_sub": "Media library space (images and PDFs) for this clinic.",
+    "storage_sub": "All of the clinic's files: website media, patient files (X-rays, results), chat attachments and online consultation files.",
     "storage_used": "{used} of {total}",
     "storage_used_unl": "{used} · unlimited",
     "storage_files": "{n} files",

@@ -144,7 +144,9 @@
     "what": {
       "patient": "Patient file",
       "visit": "Visit",
-      "break_glass": "Emergency access"
+      "break_glass": "Emergency access",
+      "summary": "File summary",
+      "export": "Whole file exported"
     },
     "level": {
       "full": "Full record",

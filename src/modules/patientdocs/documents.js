@@ -375,4 +375,93 @@ async function orderSheet(d, locale = 'ar') {
   return w.end();
 }
 
-module.exports = { prescription, report, certificate, invoice, orderSheet, marksFor, REPORT_SECTIONS, VITAL_KEYS };
+/**
+ * The patient's whole file (the first page of a patient export): details, allergies and chronic conditions, the
+ * latest vital signs, then every visit with its diagnosis, the prescriptions, tests, referrals, certificates, the
+ * files (with where they are in the ZIP) and the invoices. Clinical parts only when d.clinicalOk, invoices only when
+ * d.billingOk.
+ */
+async function patientFile(d, locale = 'ar') {
+  const t = translator(locale);
+  const en = locale === 'en';
+  const x = (k, v) => t(`patient_export.${k}`, v);
+  const clinicName = pick(en, d.clinic.name, d.clinic.name_en);
+  const p = d.patient;
+  const w = new Writer({ accent: d.clinic.accent, locale, title: `${x('title')} — ${p.full_name}`, author: clinicName, subject: p.full_name });
+  letterhead(w, d.clinic, locale);
+  titleRow(w, x('title'), [x('exported_on', { date: dateText(d.today, locale) })]);
+  // A part without Arabic letters (a medicine name, a dose) is kept as one left-to-right piece, so an Arabic line
+  // that starts with it still reads right to left; arrows the fonts do not carry become a dash.
+  const part = (v) => (/[\u0600-\u06FF]/.test(String(v)) ? String(v) : ltr(String(v)));
+  const clean = (v) => String(v).replace(/[\u2190-\u21FF]/g, '-');
+  w.fields([
+    { label: x('name'), value: p.full_name },
+    { label: x('dob'), value: p.date_of_birth ? dateText(p.date_of_birth, locale) : '—' },
+    { label: x('age'), value: d.age !== null && d.age !== undefined ? t('patient_docs.pdf.age_years', { n: d.age }) : '—' },
+    { label: x('gender'), value: p.gender ? t(`patient_docs.pdf.genders.${p.gender}`) : '—' },
+  ], { cols: 4, size: 10 });
+  w.fields([
+    { label: x('phone'), value: p.phone ? ltr(p.phone) : '—' },
+    { label: x('email'), value: p.email ? ltr(p.email) : '—' },
+    { label: x('national_id'), value: p.national_id ? ltr(p.national_id) : '—' },
+    { label: x('insurance'), value: [p.insurance_name, p.insurance_number ? ltr(p.insurance_number) : ''].filter(Boolean).join(' · ') || '—' },
+  ], { cols: 4, size: 10 });
+  const para = (label, v) => { if (!v) return; section(w, label); w.text(clean(v), { size: 10.5, gap: 4 }); };
+  para(x('allergies'), p.allergies);
+  para(x('chronic'), p.chronic_conditions);
+  para(x('notes'), p.notes);
+  if (!d.clinicalOk) { w.space(8); w.text(x('restricted'), { size: 9.5, color: C.textMuted }); }
+
+  if (d.clinicalOk && d.vitals) {
+    section(w, x('vitals', { date: dateText(d.vitals.at, locale) }));
+    const items = VITAL_KEYS.filter((k) => d.vitals.v[k]).map((k) => ({ label: t(`patient_docs.pdf.vitals.${k}`), value: ltr(`${d.vitals.v[k]} ${VITAL_UNITS[k]}`) }));
+    for (let i = 0; i < items.length; i += 4) w.fields(items.slice(i, i + 4), { cols: 4, size: 10 });
+  }
+
+  const list = (title, rows, line) => {
+    w.rule({ gap: 8 });
+    section(w, title);
+    if (!rows.length) { w.text(x('none'), { size: 10, color: C.textMuted }); return; }
+    rows.forEach((r) => { w.ensure(36); line(r); w.space(4); });
+  };
+  list(x('visits', { n: d.visits.length }), d.visits, (a) => {
+    const st = t(`patient_export.status.${a.status}`);
+    w.text([dateText(a.appointment_date, locale), a.appointment_time ? ltr(String(a.appointment_time).slice(0, 5)) : '', a.doctor_name, a.service_name, st.startsWith('patient_export.') ? a.status : st].filter(Boolean).join(' · '), { size: 10.5, bold: true, gap: 2 });
+    const c = a.consultation;
+    if (d.clinicalOk && c) {
+      if (c.chief_complaint || c.subjective) w.text(`${x('complaint')}: ${c.chief_complaint || c.subjective}`, { size: 10, gap: 2 });
+      if (c.diagnosis) w.text(`${x('diagnosis')}: ${c.diagnosis}`, { size: 10, gap: 2 });
+      codeLines(w, a.codes, locale);
+      if (c.plan_text) w.text(`${x('plan')}: ${c.plan_text}`, { size: 10, gap: 2, color: C.textMuted });
+    }
+  });
+  if (d.clinicalOk) {
+    list(x('prescriptions', { n: d.prescriptions.length }), d.prescriptions, (rx) => {
+      w.text(`${dateText(rx.visit_date || rx.created_at, locale)}${rx.doctor_name ? ` · ${rx.doctor_name}` : ''}${rx.diagnosis ? ` · ${rx.diagnosis}` : ''}`, { size: 10.5, bold: true, gap: 2 });
+      (rx.items || []).forEach((it) => w.text(`• ${[it.medicationName, it.dosage, it.frequency, it.duration].filter(Boolean).map(part).join(' — ')}`, { size: 10, gap: 1 }));
+    });
+    list(x('orders', { n: d.orders.length }), d.orders, (o) => {
+      const tests = (() => { try { const v = typeof o.items === 'string' ? JSON.parse(o.items) : o.items; return Array.isArray(v) ? v.map((z) => (typeof z === 'string' ? z : z.name || z.code || '')).filter(Boolean).join('، ') : ''; } catch { return ''; } })();
+      const st = t(`orders.status.${o.status}`);
+      w.text([dateText(o.created_at, locale), x(o.kind === 'imaging' ? 'imaging' : 'lab'), st.startsWith('orders.') ? o.status : st].filter(Boolean).join(' · '), { size: 10.5, bold: true, gap: 2 });
+      if (tests) w.text(tests, { size: 10, gap: 1 });
+      if (o.result_note) w.text(String(o.result_note), { size: 10, gap: 1, color: C.textMuted });
+    });
+    list(x('referrals', { n: d.referrals.length }), d.referrals, (r) => {
+      w.text([dateText(r.created_at, locale), r.specialty, r.to_doctor || r.to_facility].filter(Boolean).join(' · '), { size: 10.5, bold: true, gap: 2 });
+      if (r.reason) w.text(String(r.reason), { size: 10, gap: 1 });
+    });
+    if (d.certificates.length) list(x('certificates', { n: d.certificates.length }), d.certificates, (c) => w.text([dateText(c.created_at, locale), t(`patient_docs.cert_types.${c.doc_type}`)].join(' · '), { size: 10.5, gap: 2 }));
+    list(x('files', { n: d.files.length }), d.files, (f) => {
+      w.text([dateText(f.date, locale), f.title].filter(Boolean).join(' · '), { size: 10.5, bold: true, gap: 1 });
+      w.text(x('in_zip', { path: ltr(f.path) }), { size: 9, color: C.textMuted, gap: 1 });
+    });
+  }
+  if (d.billingOk) {
+    list(x('invoices', { n: d.invoices.length }), d.invoices, (i) => kv(w, `${ltr(`#${i.invoice_number}`)} · ${dateText(i.created_at, locale)}${i.service_name ? ` · ${i.service_name}` : ''}`, money(i.amount, d.clinic.currency, locale), { size: 10 }));
+  }
+  footer(w, clinicName, p.full_name, t);
+  return w.end();
+}
+
+module.exports = { prescription, report, certificate, invoice, orderSheet, patientFile, marksFor, REPORT_SECTIONS, VITAL_KEYS };

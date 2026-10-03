@@ -225,6 +225,7 @@ function checkFiles(files) {
 async function addFiles(ctx, patientId, files, input = {}) {
   const p = await patientOf(ctx, patientId);
   const rows = checkFiles(files);
+  await require('../storage/storage.service').assertRoom(ctx.businessId, rows.reduce((n, r) => n + r.size, 0)); // eslint-disable-line global-require
   const category = FILE_CATEGORIES.includes(input.category) ? input.category : 'scan';
   const title = String(input.title || '').trim().slice(0, 160) || null;
   // A visit or an order of this patient only.

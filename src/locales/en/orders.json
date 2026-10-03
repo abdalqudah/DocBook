@@ -135,6 +135,7 @@
     "err": {
       "FILE_REQUIRED": "Choose a file.",
       "FILE_TOO_BIG": "The file is larger than 10 MB.",
+      "STORAGE_FULL": "The clinic's file storage is full. Delete files you no longer need or get more space.",
       "FILE_TOO_MANY": "Too many files.",
       "FILE_TYPE": "Unsupported file type. Use PDF, JPG or PNG.",
       "tests": "Choose or type at least one test.",

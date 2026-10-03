@@ -24,6 +24,7 @@
     <%- include('../../teamops/_email-patient', { part: 'button', mailPatientId: p.id, mailTo: p.email, mailReturn: '/app/patients/' + p.id }) %>
     <% if (wa) { %><a class="btn btn-secondary" href="https://wa.me/<%= wa %>" target="_blank" rel="noopener noreferrer"><%- icon('message-square', 'icon-sm') %><%= t('patients.whatsapp') %></a><% } %>
     <a class="btn btn-secondary" href="/app/patients/<%= p.id %>/summary?print=1" target="_blank" rel="noopener"><%- icon('printer', 'icon-sm') %><%= t('prints.print_file') %></a>
+    <% if (canAny('clinical.view', 'data.export')) { %><form method="post" action="/app/patients/<%= p.id %>/export" data-confirm="<%= t('patient_export.confirm', { name: p.full_name }) %>" data-confirm-yes="<%= t('patient_export.confirm_yes') %>" data-confirm-tone="primary" data-no-busy><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit" title="<%= t('patient_export.hint') %>"><%- icon('download', 'icon-sm') %><%= t('patient_export.button') %></button></form><% } %>
     <% if (can('patients.edit')) { %><a class="btn btn-secondary" href="/app/patients/<%= p.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %>
     <% if (can('appointments.manage')) { %><a class="btn btn-primary" href="/app/appointments/new?patient=<%= p.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('patients.book') %></a><% } %>
   </div>

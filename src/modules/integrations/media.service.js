@@ -14,9 +14,10 @@ const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const DEFAULT_MB = 200; // per clinic while no package applies (subscriptions off, trial without a plan…)
+const storage = require('../storage/storage.service'); // one size for all the clinic's files
+
+const { DEFAULT_MB, quotaOf } = storage;
 const QUOTA_BYTES = DEFAULT_MB * 1024 * 1024;
-const MB = 1024 * 1024;
 const MAX_FILES = 2000;
 const IMAGE_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const MIMES = [...IMAGE_MIMES, 'application/pdf'];
@@ -120,24 +121,10 @@ async function folders(businessId) {
   return rows.map((r) => ({ folder: r.folder, n: Number(r.n) }));
 }
 
-/**
- * The clinic's storage → { mb, source }: what the platform admin set for this clinic, else the package's
- * media.storage_mb (null = no limit), else the platform default while no package applies. mb null = no limit.
- */
-async function quotaOf(businessId) {
-  const b = await knex('businesses').where({ id: businessId }).first();
-  if (!b) return { mb: DEFAULT_MB, source: 'default' };
-  if (b.media_quota_mb !== null && b.media_quota_mb !== undefined) return { mb: Number(b.media_quota_mb), source: 'clinic' };
-  const ops = require('../platformops/ops.service'); // eslint-disable-line global-require
-  const features = await ops.planFeatures(b);
-  if (!features) return { mb: DEFAULT_MB, source: 'default' };
-  const entitlements = require('../subscriptions/entitlements'); // eslint-disable-line global-require
-  return { mb: entitlements.valueIn(features, 'media.storage_mb'), source: 'plan' };
-}
-
+/** The media library's own files, and the clinic's whole storage (media + patient files + chat …). */
 async function stats(businessId) {
-  const [[r], q] = await Promise.all([knex('clinic_media').where({ business_id: businessId }).count({ n: '*' }).sum({ bytes: 'size' }), quotaOf(businessId)]);
-  return { files: Number(r.n) || 0, bytes: Number(r.bytes) || 0, quota: q.mb === null ? null : q.mb * MB, quotaMb: q.mb, source: q.source };
+  const [[r], all] = await Promise.all([knex('clinic_media').where({ business_id: businessId }).count({ n: '*' }), storage.stats(businessId)]);
+  return { files: Number(r.n) || 0, bytes: all.bytes, by: all.by, quota: all.quota, quotaMb: all.quotaMb, source: all.source };
 }
 
 async function get(businessId, id) {

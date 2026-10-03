@@ -28,6 +28,7 @@
           <% if (stats.quota === null) { %><span><%= t('media_lib.usage_unl', { n: fmt.number(stats.files), used: kb(stats.bytes) }) %></span>
           <% } else { %><span><%= t('media_lib.usage', { n: fmt.number(stats.files), used: kb(stats.bytes), total: kb(stats.quota) }) %></span>
           <span class="meter ml-meter" aria-hidden="true"><span style="width:<%= pct %>%"></span></span>
+          <% var _by = Object.keys(stats.by || {}).filter(function (k) { return stats.by[k] > 0; }); if (_by.length > 1) { %><span class="ml-by"><% _by.forEach(function (k, i) { %><%= i ? ' · ' : '' %><%= t('media_lib.by_' + k) %> <bdi class="num"><%= kb(stats.by[k]) %></bdi><% }) %></span><% } %>
           <% if (pct >= 80 && stats.source === 'plan' && can('settings.manage')) { %><a href="/app/settings/subscription"><%= t('media_lib.quota_more') %></a><% } %><% } %>
         </div>
       </div>

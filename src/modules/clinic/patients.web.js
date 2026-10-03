@@ -8,7 +8,7 @@ const audit = require('../../core/audit');
 const exporter = require('../../core/exporter');
 const { AppError, E } = require('../../core/errors');
 const { wrap, form, flash } = require('../../routes/helpers');
-const { can } = require('../../middleware/context');
+const { can, canAny } = require('../../middleware/context');
 const appts = require('./appointments.service');
 const clinical = require('./clinical.service');
 const lib = require('./records.lib');
@@ -207,6 +207,16 @@ router.get('/:id(\\d+)/summary', wrap(async (req, res) => {
     upcoming: tl.appointments.filter(mine).filter((a) => a.appointment_date >= req.ctx.today && ['pending', 'confirmed'].includes(a.status)).slice(0, 10),
     printable: true,
   });
+}));
+
+// The whole file as one ZIP (summary PDF, every paper as PDF, the stored files, data.json) — patientexport/export.service.js.
+router.post('/:id(\\d+)/export', canAny('clinical.view', 'data.export'), wrap(async (req, res) => {
+  const out = await require('../patientexport/export.service').build(req.ctx, Number(req.params.id), req.locale); // eslint-disable-line global-require
+  res.set({
+    'Content-Type': 'application/zip', 'Content-Length': String(out.buffer.length), 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
+    'Content-Disposition': `attachment; filename="${out.filename}"`,
+  });
+  return res.end(out.buffer);
 }));
 
 async function renderEdit(req, res, extra = {}) {

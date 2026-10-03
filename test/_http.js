@@ -13,9 +13,9 @@ async function serve() {
       if (form) Object.assign(headers, { 'content-type': 'application/x-www-form-urlencoded', 'content-length': Buffer.byteLength(body) });
       const r = http.request({ host: '127.0.0.1', port, path, method, headers }, (res) => {
         for (const h of res.headers['set-cookie'] || []) { const [kv] = h.split(';'); const i = kv.indexOf('='); jar[kv.slice(0, i)] = kv.slice(i + 1); }
-        let text = ''; res.setEncoding('utf8');
-        res.on('data', (d) => { text += d; });
-        res.on('end', () => resolve({ status: res.statusCode, location: res.headers.location || null, type: res.headers['content-type'] || '', text }));
+        const chunks = [];
+        res.on('data', (d) => { chunks.push(d); });
+        res.on('end', () => { const body = Buffer.concat(chunks); resolve({ status: res.statusCode, location: res.headers.location || null, type: res.headers['content-type'] || '', text: body.toString('utf8'), body }); });
       });
       r.on('error', reject); r.end(body);
     });

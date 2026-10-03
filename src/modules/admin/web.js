@@ -113,13 +113,13 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
   page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts }, storage: await storageOf(full) });
 }));
 
-// ---------------------------------------------------------------- one clinic's media storage
-const clinicMedia = require('../integrations/media.service');
+// ---------------------------------------------------------------- one clinic's file storage (media, patient files, chat …)
+const clinicStorage = require('../storage/storage.service');
 const entitlements = require('../subscriptions/entitlements');
 /** Used space, the package's size (planMb: null = no limit) and this clinic's own size set here (null = follow the package). */
 async function storageOf(business) {
-  const [s, features, row] = await Promise.all([clinicMedia.stats(business.id), ops.planFeatures(business), knex('businesses').where({ id: business.id }).first('media_quota_mb')]);
-  const planMb = features ? entitlements.valueIn(features, 'media.storage_mb') : clinicMedia.DEFAULT_MB;
+  const [s, features, row] = await Promise.all([clinicStorage.stats(business.id), ops.planFeatures(business), knex('businesses').where({ id: business.id }).first('media_quota_mb')]);
+  const planMb = features ? entitlements.valueIn(features, 'media.storage_mb') : clinicStorage.DEFAULT_MB;
   return { ...s, planMb, hasPlan: Boolean(features), ownMb: row.media_quota_mb === null || row.media_quota_mb === undefined ? null : Number(row.media_quota_mb) };
 }
 

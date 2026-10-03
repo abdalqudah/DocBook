@@ -144,6 +144,7 @@ async function send(ctx, chatId, body, files = []) {
   if (!text && !rows.length) throw E.validation({ body: 'Required.' });
   if (text.length > MAX_LEN) throw new AppError('CHAT_TOO_LONG', 'The message is too long.', 422, { body: 'Too large.' });
   if (!(await isMember(ctx.businessId, ctx.userId))) throw E.forbidden('chat');
+  if (rows.length) await require('../storage/storage.service').assertRoom(ctx.businessId, rows.reduce((n, r) => n + r.size, 0)); // eslint-disable-line global-require
   const id = await knex.transaction(async (trx) => {
     const [mid] = await trx('staff_chat_messages').insert({ chat_id: c.id, business_id: ctx.businessId, user_id: ctx.userId, body: text });
     if (rows.length) await trx('staff_chat_files').insert(rows.map((f) => ({ ...f, message_id: mid, chat_id: c.id, business_id: ctx.businessId })));
