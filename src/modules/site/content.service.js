@@ -110,6 +110,14 @@ const BLOCKS = { header: HEADER, footer: FOOTER };
 const isI18n = (kind) => kind === 'text' || kind === 'textarea';
 
 // ---------------------------------------------------------------- default content (from the translation files)
+// Added in content revision 2 (waiting screen, sending papers, team chat, per-clinic backups…). A page the platform
+// already edited gets these once (mergeNew) — items the admin removes afterwards are not brought back.
+const REV = 2;
+const NEW_SHOWCASE = [['queue', 'monitor', 'wide'], ['call', 'bell'], ['share', 'file-check', 'wide'], ['review', 'star'], ['backup', 'shield-check', 'wide'],
+  ['chat', 'message-square'], ['specialty', 'stethoscope'], ['letterhead', 'stamp']];
+const NEW_FEATURES = [['share', 'send'], ['queue', 'monitor'], ['security', 'shield-check']];
+const NEW_FAQ = [9, 10, 11];
+
 function defaults() {
   const en = translator('en');
   const ar = translator('ar');
@@ -134,14 +142,15 @@ function defaults() {
       } },
       { id: 'showcase', type: 'showcase', anchor: 'new', hidden: false, data: {
         kicker: T('showcase.kicker'), title: T('showcase.title'), lead: T('showcase.lead'),
-        items: [['website', 'layout-template', 'wide'], ['branches', 'building-2'], ['booking', 'calendar-check'], ['messages', 'message-circle'], ['intake', 'heart-pulse'],
-          ['cash', 'calculator', 'wide'], ['invoice', 'receipt-text'], ['orders', 'activity'], ['referrals', 'send'], ['files', 'paperclip'], ['telehealth', 'video'], ['ai', 'bot', 'wide'], ['prices', 'tag'], ['dark', 'moon', 'wide']]
-          .map(([k, icon, size]) => ({ icon, title: T(`showcase.items.${k}.title`), text: T(`showcase.items.${k}.text`), tag: T('showcase.tag'), size: size || 'normal' })),
+        items: [...NEW_SHOWCASE.map(([k, icon, size]) => [k, icon, size, true]),
+          ['website', 'layout-template', 'wide'], ['branches', 'building-2'], ['booking', 'calendar-check'], ['cash', 'calculator', 'wide'], ['intake', 'heart-pulse'],
+          ['orders', 'activity'], ['referrals', 'send'], ['files', 'paperclip'], ['telehealth', 'video'], ['ai', 'bot', 'wide']]
+          .map(([k, icon, size, isNew]) => ({ icon, title: T(`showcase.items.${k}.title`), text: T(`showcase.items.${k}.text`), tag: isNew ? T('showcase.tag') : { ar: '', en: '' }, size: size || 'normal' })),
       } },
       { id: 'features', type: 'features', anchor: 'features', hidden: false, data: {
         kicker: T('features.kicker'), title: T('features.title'), lead: T('features.lead'),
-        items: list('features.items', ['booking', 'calendar', 'frontdesk', 'records', 'billing', 'payroll', 'supplies', 'staff', 'languages'],
-          (F, k) => ({ icon: { booking: 'calendar-plus', calendar: 'calendar-days', frontdesk: 'armchair', records: 'notebook-pen', billing: 'receipt', payroll: 'hand-coins', supplies: 'package', staff: 'user-cog', languages: 'languages' }[k], title: F('title'), text: F('text') })),
+        items: list('features.items', ['booking', 'calendar', 'frontdesk', 'records', 'billing', 'payroll', 'supplies', 'staff', 'languages', ...NEW_FEATURES.map((f) => f[0])],
+          (F, k) => ({ icon: { booking: 'calendar-plus', calendar: 'calendar-days', frontdesk: 'armchair', records: 'notebook-pen', billing: 'receipt', payroll: 'hand-coins', supplies: 'package', staff: 'user-cog', languages: 'languages', ...Object.fromEntries(NEW_FEATURES) }[k], title: F('title'), text: F('text') })),
       } },
       { id: 'booking', type: 'split', anchor: 'online-booking', hidden: false, data: {
         kicker: T('booking.kicker'), title: T('booking.title'), lead: T('booking.lead'), btn_label: T('booking.btn'), btn_href: '/signup', visual: 'booking', side: 'end',
@@ -173,7 +182,7 @@ function defaults() {
       } },
       { id: 'faq', type: 'faq', anchor: 'faq', hidden: false, data: {
         kicker: T('faq.kicker'), title: T('faq.title'), lead: T('faq.lead'),
-        items: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ q: T(`faq.q${i}`), a: T(`faq.a${i}`) })),
+        items: [1, 2, 3, 4, 5, 6, 7, 8, ...NEW_FAQ].map((i) => ({ q: T(`faq.q${i}`), a: T(`faq.a${i}`) })),
       } },
       { id: 'cta', type: 'cta', anchor: 'start', hidden: false, data: {
         title: T('cta.title'), text: T('cta.text'), btn1_label: T('nav.signup'), btn1_href: '/signup', btn2_label: T('nav.login'), btn2_href: '/login',
@@ -193,11 +202,35 @@ function defaults() {
 }
 
 // ---------------------------------------------------------------- reading
+/** Adds this revision's new cards / features / questions to a page the platform already edited (not saved until the next edit). */
+function mergeNew(saved, d) {
+  const v = structuredClone(saved);
+  const en = (x) => String((x && (x.en || x.ar)) || '').trim();
+  const fresh = {
+    showcase: { first: true, id: (it) => en(it.title), keys: new Set(NEW_SHOWCASE.map(([k]) => en(translatorPair(`showcase.items.${k}.title`)))) },
+    features: { first: false, id: (it) => en(it.title), keys: new Set(NEW_FEATURES.map(([k]) => en(translatorPair(`features.items.${k}.title`)))) },
+    faq: { first: false, id: (it) => en(it.q), keys: new Set(NEW_FAQ.map((i) => en(translatorPair(`faq.q${i}`)))) },
+  };
+  for (const ds of d.sections) {
+    const rule = fresh[ds.type];
+    if (!rule) continue; // eslint-disable-line no-continue
+    const target = v.sections.find((x) => x && x.type === ds.type && !x.hidden);
+    if (!target || !target.data || !Array.isArray(target.data.items)) continue; // eslint-disable-line no-continue
+    const have = new Set(target.data.items.map(rule.id));
+    const add = ds.data.items.filter((it) => rule.keys.has(rule.id(it)) && !have.has(rule.id(it)));
+    target.data.items = rule.first ? [...add, ...target.data.items] : [...target.data.items, ...add];
+  }
+  return v;
+}
+const translatorPair = (k) => ({ en: translator('en')(`site.d.${k}`), ar: translator('ar')(`site.d.${k}`) });
+
 function normalise(v) {
   const d = defaults();
   if (!v || !Array.isArray(v.sections)) return d;
+  if ((Number(v.rev) || 0) < REV) v = mergeNew(v, d);
   return {
     version: 1,
+    rev: REV,
     header: v.header || d.header,
     sections: v.sections.filter((s) => s && TYPES[s.type]),
     footer: { ...d.footer, ...(v.footer || {}), social: (v.footer && v.footer.social) || [] },

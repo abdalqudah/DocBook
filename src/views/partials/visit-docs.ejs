@@ -5,6 +5,7 @@
         <% D.items.forEach(function (x) { var tip = t('share.icon.' + x.key) + (x.extra ? ': ' + x.extra : '') + (x.on ? '' : ' — ' + t('share.docs_none')); var pr = x.on && D.print && x.key !== 'invoice'; if (pr) tip = t('share.print') + ' — ' + tip; %>
           <% if (x.on) { %><a class="doc-ic is-on" href="<%= x.href %>"<%- pr ? ' target="_blank" rel="noopener"' : '' %> title="<%= tip %>" aria-label="<%= tip %>"><%- icon(x.ic, 'icon-sm') %></a><% } else { %><span class="doc-ic" title="<%= tip %>" aria-label="<%= tip %>" role="img"><%- icon(x.ic, 'icon-sm') %></span><% } %>
         <% }) %>
+        <% if (typeof moduleOn === 'undefined' || moduleOn('patient_sharing')) { %>
         <span class="doc-sep" aria-hidden="true"></span>
         <span class="doc-share">
         <% if (a.status === 'completed' || a.payment_status === 'paid') { %>
@@ -27,5 +28,6 @@
           </details>
         <% } %>
         </span>
+        <% } %>
       </div>
 <% } %>

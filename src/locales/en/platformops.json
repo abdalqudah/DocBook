@@ -22,6 +22,9 @@
       "specialty_records": "Specialty records",
       "ai_assistant": "AI assistant",
       "attendance": "Staff attendance",
+      "queue_screens": "Waiting-room screen",
+      "staff_chat": "Team chat",
+      "patient_sharing": "Send papers to patients",
       "reports": "Reports"
     },
     "d": {
@@ -38,6 +41,9 @@
       "specialty_records": "Dental chart, child growth and pregnancy follow-up.",
       "ai_assistant": "Visit summaries, second opinion and prescription checks.",
       "attendance": "Clock-in and clock-out for the team.",
+      "queue_screens": "A TV in the waiting room showing who goes in now, the room number and who is next, with a chime.",
+      "staff_chat": "Messages, pictures and files between the team inside the clinic.",
+      "patient_sharing": "Send the prescription, requests and invoice by secure link on WhatsApp or e-mail, plus the thank-you and review request.",
       "reports": "Revenue, visits and performance reports."
     },
     "not_in_plan": "Not in your plan",

@@ -110,3 +110,39 @@ test('doctor room number is saved from the doctor form', async () => {
   assert.equal(r.status, 302, r.text.slice(0, 300));
   assert.equal((await knex('doctors').where({ id: doc }).first('room')).room, '2B');
 });
+
+test('platform admin: clinic areas switch the waiting screen and team chat off; overview and landing show the new features', async () => {
+  const adminMail = `q-admin-${tag}@t.test`;
+  const adminId = await knex.transaction((trx) => auth.createUser(trx, { name: 'Admin', email: adminMail, password: 'Passw0rd!x' }));
+  await knex('users').where({ id: adminId }).update({ is_platform_admin: true, email_verified_at: new Date() });
+  const ad = app.agent(); await ad.login(adminMail);
+  let r = await ad.get('/admin?lang=en');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Backups up to date/);
+  assert.match(r.text, /Waiting screens on now/);
+  r = await ad.get('/admin/clinics?lang=en');
+  assert.match(r.text, /Last backup/);
+  r = await ad.get(`/admin/clinics/${businessId}?lang=en`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Clinic areas/);
+  assert.match(r.text, /name="queue_screens"/);
+  // Everything ticked except the waiting screen and the team chat.
+  const keep = ['online_consultations', 'billing', 'doctor_payroll', 'staff_salaries', 'finance', 'supplies', 'marketplace', 'certificates', 'reviews', 'specialty_records', 'ai_assistant', 'attendance', 'reports', 'patient_sharing'];
+  r = await ad.submit(`/admin/clinics/${businessId}`, `/admin/clinics/${businessId}/modules`, Object.fromEntries(keep.map((k) => [k, '1'])));
+  assert.equal(r.status, 302);
+  const k = await knex('queue_screens').where({ business_id: businessId }).first();
+  const token = secrets.decrypt(k.token_enc);
+  assert.equal((await app.agent().get(`/queue/${token}/data`)).status, 404, 'screen off with the area');
+  const o = app.agent(); await o.login(mail('a'));
+  r = await o.get('/app/front-desk?lang=en');
+  assert.ok(!/href="\/app\/queue-screens"/.test(r.text) && !/href="\/app\/chat"/.test(r.text), 'no waiting-screen button or chat icon');
+  assert.notEqual((await o.get('/app/queue-screens')).status, 200);
+  // Back on.
+  r = await ad.submit(`/admin/clinics/${businessId}`, `/admin/clinics/${businessId}/modules`, Object.fromEntries([...keep, 'queue_screens', 'staff_chat'].map((x) => [x, '1'])));
+  assert.equal((await app.agent().get(`/queue/${token}/data`)).status, 200);
+
+  r = await app.agent().get('/?lang=en');
+  assert.match(r.text, /Waiting-room screen/);
+  assert.match(r.text, /An encrypted backup per clinic/);
+  assert.match(r.text, /What do I need for the waiting-room screen\?/);
+});

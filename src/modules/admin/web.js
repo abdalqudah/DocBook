@@ -11,6 +11,7 @@ const { requireAuth } = require('../../middleware/context');
 const businesses = require('../businesses/business.service');
 const site = require('../site/content.service');
 const media = require('../site/media.service');
+const ops = require('../platformops/ops.service');
 
 const router = express.Router();
 
@@ -39,20 +40,26 @@ const pageMeta = (total, p) => { const pages = Math.max(1, Math.ceil(total / PER
 router.get('/', wrap(async (req, res) => {
   const count = async (q) => Number((await q.count({ n: '*' }))[0].n);
   const d30 = since(30);
-  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity] = await Promise.all([
+  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats] = await Promise.all([
     count(knex('businesses')), count(knex('businesses').where({ status: 'active' })), count(knex('businesses').where({ status: 'suspended' })),
     count(knex('users')), count(knex('users').where('last_login_at', '>=', d30)),
     count(knex('appointments').where('created_at', '>=', d30).whereNot('appointment_type', 'blocked')),
     count(knex('appointments').where('created_at', '>=', d30).where({ source: 'website' })),
     knex('businesses').orderBy('created_at', 'desc').limit(6).select('id', 'name', 'name_en', 'slug', 'status', 'created_at', 'onboarding_completed_at'),
-    knex('audit_logs as l').leftJoin('users as u', 'u.id', 'l.user_id').whereNull('l.business_id').where('l.action', 'like', 'platform.%')
+    knex('audit_logs as l').leftJoin('users as u', 'u.id', 'l.user_id').whereNull('l.business_id').where((w) => w.where('l.action', 'like', 'platform.%').orWhere('l.action', 'like', 'clinic.backup%'))
       .orderBy('l.id', 'desc').limit(8).select('l.action', 'l.entity_type', 'l.entity_id', 'l.new_values', 'l.created_at', 'u.name as user_name'),
+    count(knex('share_links').where('created_at', '>=', d30)),
+    count(knex('queue_screens').where({ is_active: true }).where('last_seen_at', '>=', new Date(Date.now() - 60_000))),
+    count(knex('staff_chat_messages').where('created_at', '>=', d30)),
   ]);
+  // Clinics whose own backup is younger than a day (the nightly job keeps one per clinic).
+  const live = await knex('businesses').whereNot('status', 'deleted').pluck('id');
+  const backedUp = live.filter((id) => { const last = backup.list(id)[0]; return last && Date.now() - new Date(last.at).getTime() < 36 * 3600_000; }).length;
   // Links in e-mails, invitations, resets and the attendance QR need the real site address (APP_URL).
   const { isLocalUrl, isLocalHost } = require('../../middleware/web'); // eslint-disable-line global-require
   const appUrlWarning = (!process.env.APP_URL || isLocalUrl(process.env.APP_URL)) && !isLocalHost(req.hostname)
     ? { current: process.env.APP_URL || '', suggested: `https://${req.hostname}` } : null;
-  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online }, recentClinics, activity, appUrlWarning });
+  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, backedUp, backupTotal: live.length }, recentClinics, activity, appUrlWarning });
 }));
 
 // ---------------------------------------------------------------- clinics
@@ -72,6 +79,7 @@ router.get('/clinics', wrap(async (req, res) => {
     knex('doctors').count('*').where('business_id', knex.ref('b.id')).where('is_active', true).as('doctors'),
     knex('appointments').count('*').where('business_id', knex.ref('b.id')).where('created_at', '>=', d30).as('appts'),
   );
+  rows.forEach((r) => { const last = backup.list(r.id)[0]; r.lastBackup = last ? last.at : null; });
   page(res, 'clinics', { title: req.t('admin.nav_clinics'), rows, meta, q, status });
 }));
 
@@ -87,7 +95,24 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
     count(knex('doctors').where({ business_id: b.id, is_active: true })),
     businesses.listMembers(b.id),
   ]);
-  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id) });
+  const d30 = since(30);
+  const [full, sent, screens, chats] = await Promise.all([
+    businesses.get(b.id),
+    count(knex('share_links').where({ business_id: b.id }).where('created_at', '>=', d30)),
+    knex('queue_screens').where({ business_id: b.id }).select('name', 'is_active', 'last_seen_at'),
+    count(knex('staff_chat_messages').where({ business_id: b.id }).where('created_at', '>=', d30)),
+  ]);
+  const modules = await ops.state(full);
+  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats } });
+}));
+
+// The clinic's optional areas (the same switches as the clinic's Settings → Modules), recorded in the clinic's audit log.
+router.post('/clinics/:id(\\d+)/modules', wrap(async (req, res) => {
+  const full = await businesses.get(Number(req.params.id));
+  if (!full) throw E.notFound('Clinic');
+  await ops.saveModules({ ...req.ctx, businessId: full.id, userId: req.user.id }, full, req.body);
+  flash(req, 'success', req.t('admin.modules_saved'));
+  res.redirect(`/admin/clinics/${full.id}#modules`);
 }));
 
 // ---------------------------------------------------------------- one clinic's own backup (separate from the others)

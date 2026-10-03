@@ -56,7 +56,7 @@
         "eyebrow": "Clinic management in Arabic and English",
         "title": "Bookings, visits and billing —",
         "title_accent": "one calm workspace for your clinic.",
-        "lead": "DocBook gives your clinic an online booking page, a shared calendar built on each doctor's hours, a front desk that follows the waiting room, patient records with prescriptions, invoices, commissions and supplies — with a separate sign-in for every staff member.",
+        "lead": "DocBook gives your clinic an online booking page, a shared calendar built on each doctor's hours, a front desk with a waiting-room screen, patient records and prescriptions sent to the patient on WhatsApp in one tap, invoices, commissions and supplies — with a separate sign-in for every staff member and an encrypted backup for every clinic.",
         "note": "Setting up takes a few minutes: add your doctors, their hours and your services.",
         "points": {
           "booking": "Online booking page",
@@ -105,6 +105,18 @@
           "languages": {
             "title": "Arabic & English",
             "text": "The whole system works in Arabic (right to left) and English, in light or dark mode — printouts included."
+          },
+          "share": {
+            "title": "Papers to the patient",
+            "text": "Prescriptions, requests and invoices reach the patient on WhatsApp or e-mail through a secure link, greeted by name."
+          },
+          "queue": {
+            "title": "Waiting-room screen",
+            "text": "The waiting-room TV shows who goes in now, the room number and who is next, with a chime."
+          },
+          "security": {
+            "title": "Data protection",
+            "text": "Role permissions, a log of every change, invoices voided by managers only, and an encrypted backup per clinic."
           }
         }
       },
@@ -123,7 +135,7 @@
         "title": "A waiting room you can read at a glance",
         "lead": "Reception sees today's patients in order: who has arrived, who is waiting and for how long, who is with the doctor and who still needs to pay.",
         "p1": "Check-in records the arrival time",
-        "p2": "Call the next patient in to the doctor",
+        "p2": "Call the next patient in — shown on the waiting-room screen with the room number",
         "p3": "Checkout creates the invoice with the payment method",
         "p4": "Each doctor sees only their own day"
       },
@@ -203,7 +215,13 @@
         "q7": "Can I run more than one branch?",
         "a7": "Yes. Depending on your plan, add your clinic's branches under Branches; each has its own doctors and appointments, and patients choose the branch when booking. The plan price follows the number of branches.",
         "q8": "Can I change my plan later?",
-        "a8": "Yes. In subscription settings choose another plan or a monthly or yearly cycle; the new period starts when the paid one ends."
+        "a8": "Yes. In subscription settings choose another plan or a monthly or yearly cycle; the new period starts when the paid one ends.",
+        "q9": "Is my clinic's data separate and protected?",
+        "a9": "Yes. Each clinic sees only its own data, every change is logged, and each clinic has its own encrypted daily backup that can be restored on its own.",
+        "q10": "How do prescriptions and invoices reach the patient?",
+        "a10": "From Today, reception picks the papers and sends them on WhatsApp or e-mail. The patient gets a secure link showing them in the clinic's colours, ready to print or save as PDF.",
+        "q11": "What do I need for the waiting-room screen?",
+        "a11": "Any TV or screen with a web browser. Add the screen at the front desk and open its secret link on the TV — no sign-in."
       },
       "cta": {
         "title": "Ready to open your clinic's DocBook?",
@@ -227,7 +245,7 @@
       "showcase": {
         "kicker": "What's new in DocBook",
         "title": "New features, built with clinics",
-        "lead": "What clinics asked for over the last months: a complete clinic website, multiple branches, a smarter front desk, and clearer cash and invoices.",
+        "lead": "Our latest additions: a waiting-room screen, the visit's papers sent to the patient in one tap, a chime when a patient is called in, team chat, and an encrypted backup for every clinic.",
         "tag": "New",
         "items": {
           "website": {
@@ -252,7 +270,7 @@
           },
           "cash": {
             "title": "Cash screen",
-            "text": "A fast checkout screen for reception, with a side column of who is waiting and who is with the doctor, and receipts printed straight away."
+            "text": "An icon at the top opens the payment screen: logo and time, who is waiting and who is with the doctor, add an expense from the same screen, one-page receipts."
           },
           "invoice": {
             "title": "Invoice designer",
@@ -285,6 +303,38 @@
           "files": {
             "title": "Scan papers into the patient file",
             "text": "Upload scanned paper forms, lab results and imaging reports (PDF or images) so they stay with the patient’s file."
+          },
+          "queue": {
+            "title": "Waiting-room screen",
+            "text": "A TV shows the patient going in now with the room number, then the next patient and two waiting. It refreshes every 2 seconds and chimes on every change; names are shortened for privacy."
+          },
+          "share": {
+            "title": "The visit's papers in one tap",
+            "text": "Beside each patient: prescription, lab, imaging, referral and invoice icons. Reception picks what to send and the patient gets it on WhatsApp or e-mail through a secure link in the clinic's colours, with print and save-PDF."
+          },
+          "call": {
+            "title": "The doctor calls the next patient",
+            "text": "When the doctor calls the next patient in, reception hears a ding-dong and sees a notice that stays until the patient is sent in."
+          },
+          "review": {
+            "title": "Thank-you and review",
+            "text": "A ready WhatsApp message thanks the patient and asks for a Google review, or one on the clinic's website."
+          },
+          "chat": {
+            "title": "Team chat",
+            "text": "Messages, pictures and files between doctors, reception and nurses inside the system instead of phone groups."
+          },
+          "specialty": {
+            "title": "Diagnosis table for your specialty",
+            "text": "Each clinic sees only its own specialties, with a ready table of diagnosis codes that search puts first."
+          },
+          "backup": {
+            "title": "An encrypted backup per clinic",
+            "text": "A separate daily backup of each clinic's data, encrypted and readable only on the server; one clinic can be restored without touching any other."
+          },
+          "letterhead": {
+            "title": "One letterhead for every paper",
+            "text": "The same header on invoices, prescriptions, requests and referrals, with the logo size you choose and the name shown or hidden."
           }
         }
       },
@@ -477,7 +527,26 @@
         "update_discarded": "Staged update discarded",
         "update_rejected": "Invalid update file rejected",
         "update_rolled_back": "Update rolled back",
-        "update_staged": "Update uploaded"
+        "update_staged": "Update uploaded",
+        "admin_created": "Platform admin created",
+        "admin_granted": "Platform admin access granted",
+        "branding_updated": "Platform branding updated",
+        "clinic_types_changed": "Clinic types changed",
+        "invoice_voided": "Subscription invoice voided",
+        "subscription_cancelled": "Subscription cancelled",
+        "subscription_comped": "Clinic given a free subscription",
+        "subscription_payment": "Subscription payment recorded",
+        "subscription_plan_changed": "Clinic plan changed",
+        "subscription_trial_extended": "Trial extended",
+        "vendor_approved": "Rep / warehouse approved",
+        "vendor_suspended": "Rep / warehouse suspended",
+        "vendor_reactivated": "Rep / warehouse reactivated",
+        "vendor_product_hidden": "Rep product hidden",
+        "vendor_offer_hidden": "Rep offer hidden"
+      },
+      "clinic": {
+        "backup_created": "Clinic backup made",
+        "backup_restored": "Clinic restored from a backup"
       }
     },
     "site": {
@@ -724,8 +793,24 @@
         "BACKUP_INVALID": "This is not a clinic backup file.",
         "BACKUP_UNREADABLE": "This backup cannot be read on this server (different key, or a damaged file).",
         "BACKUP_OTHER_CLINIC": "This backup belongs to another clinic."
-      }
-    }
+      },
+      "never": "None yet"
+    },
+    "col_backup": "Last backup",
+    "stat_backups": "Backups up to date",
+    "stat_backups_meta": "Clinics with a backup in the last 36 hours",
+    "stat_sent": "Papers sent to patients",
+    "stat_screens": "Waiting screens on now",
+    "stat_screens_meta": "Refreshed within the last minute",
+    "stat_chats": "Team chat messages",
+    "modules_title": "Clinic areas",
+    "modules_sub": "The same switches as the clinic's Settings → Modules. Turning one off hides it without deleting its data, and is recorded in the clinic's log.",
+    "modules_confirm": "Save the areas of {name}? Unticked areas will disappear for the clinic's team.",
+    "modules_saved": "Clinic areas saved.",
+    "usage_title": "Use of the new features",
+    "usage_sub": "Last 30 days.",
+    "usage_screens": "Waiting screens",
+    "usage_no_screens": "No screens"
   },
   "portal": {
     "book": "Book an appointment",

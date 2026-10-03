@@ -15,6 +15,10 @@ async function screenOf(token) {
   if (!k) return null;
   const b = await businesses.get(k.business_id);
   if (!b || (b.status || 'active') !== 'active') return null;
+  try {
+    const ops = require('../platformops/ops.service'); // eslint-disable-line global-require
+    if ((await ops.state(b)).off.has('queue_screens')) return null; // the clinic turned the waiting screen off
+  } catch { /* modules service unavailable: keep the screen on */ }
   return { k, b };
 }
 

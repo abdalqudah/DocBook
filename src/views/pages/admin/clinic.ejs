@@ -53,6 +53,42 @@
     </div>
   </section>
 </div>
+<% var _groups = { patients_care: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant', 'patient_sharing'], money: ['billing', 'doctor_payroll', 'staff_salaries', 'finance'], operations: ['queue_screens', 'staff_chat', 'supplies', 'marketplace', 'attendance', 'reports'] };
+   var _mk = {}; modules.list.forEach(function (m) { _mk[m.key] = m; }); %>
+<div class="grid grid-main mt-6">
+  <form class="panel" id="modules" method="post" action="/admin/clinics/<%= b.id %>/modules" data-confirm="<%= t('admin.modules_confirm', { name: b.name }) %>" data-confirm-yes="<%= t('common.save') %>" data-confirm-tone="primary">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%- icon('layout-grid', 'icon-sm') %> <%= t('admin.modules_title') %></h2><p class="panel-sub"><%= t('admin.modules_sub') %></p></div></div>
+    <div class="panel-body stack">
+      <% Object.keys(_groups).forEach(function (g) { %>
+      <div>
+        <div class="small strong muted mb-2"><%= t('modules_cfg.group_' + g) %></div>
+        <div class="adm-mods">
+        <% _groups[g].forEach(function (k) { var m = _mk[k]; if (!m) return; %>
+          <label class="check adm-mod<%= m.inPlan ? '' : ' is-locked' %>" title="<%= t('modules_cfg.d.' + k) %>">
+            <input type="checkbox" name="<%= k %>" value="1"<%= m.toggled ? ' checked' : '' %><%= m.inPlan ? '' : ' disabled' %>>
+            <span><%- icon(m.icon, 'icon-sm') %> <%= t('modules_cfg.m.' + k) %><% if (!m.inPlan) { %> <span class="badge badge-neutral"><%= t('modules_cfg.not_in_plan') %></span><% } %></span>
+          </label>
+        <% }) %>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <div class="panel-foot"><button class="btn btn-secondary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('activity', 'icon-sm') %> <%= t('admin.usage_title') %></h2><p class="panel-sub"><%= t('admin.usage_sub') %></p></div></div>
+    <div class="panel-body">
+      <dl class="dl">
+        <dt><%= t('admin.stat_sent') %></dt><dd><%= fmt.number(usage.sent) %></dd>
+        <dt><%= t('admin.stat_chats') %></dt><dd><%= fmt.number(usage.chats) %></dd>
+        <dt><%= t('admin.usage_screens') %></dt>
+        <dd><% if (!usage.screens.length) { %><span class="muted"><%= t('admin.usage_no_screens') %></span><% } else { usage.screens.forEach(function (s) { var on = s.is_active && s.last_seen_at && Date.now() - new Date(s.last_seen_at).getTime() < 60000; %><div class="row-sm"><span><%= s.name %></span><span class="badge <%= on ? 'badge-success' : 'badge-neutral' %> badge-dot"><%= on ? t('attendance.screen_online') : (s.is_active ? (s.last_seen_at ? fmt.date(s.last_seen_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : t('attendance.screen_never')) : t('attendance.screen_off')) %></span></div><% }) } %></dd>
+        <dt><%= t('admin.backup.title') %></dt><dd><% if (backups.length) { %><%= fmt.date(backups[0].at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %><% } else { %><span class="muted"><%= t('admin.backup.never') %></span><% } %></dd>
+      </dl>
+    </div>
+  </section>
+</div>
 <section class="panel flush mt-6" id="backups">
   <div class="panel-head"><div><h2><%- icon('database', 'icon-sm') %> <%= t('admin.backup.title') %></h2><p class="panel-sub"><%= t('admin.backup.sub') %></p></div>
     <form method="post" action="/admin/clinics/<%= b.id %>/backups"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('admin.backup.create') %></button></form></div>

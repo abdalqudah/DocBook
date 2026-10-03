@@ -9,8 +9,10 @@ body.site { background: var(--surface); overflow-x: hidden; }
 .site-nav.is-scrolled { box-shadow: 0 6px 24px color-mix(in srgb, var(--text) 7%, transparent); }
 .site-nav .inner { gap: 20px; }
 .site-links { gap: 4px; }
-.site-links a { padding: 7px 12px; border-radius: var(--pill); transition: background .15s, color .15s; }
+.site-links a { white-space: nowrap; padding: 7px 12px; border-radius: var(--pill); transition: background .15s, color .15s; }
 .site-links a:hover { background: var(--surface-sunken); }
+@media (max-width: 1200px) { .site-links a { padding: 7px 8px; } .site-links a:nth-child(n+6) { display: none; } }
+@media (max-width: 1080px) { .site-links a:nth-child(n+5) { display: none; } }
 .site-menu { position: relative; display: none; }
 .site-menu > summary { list-style: none; }
 .site-menu > summary::-webkit-details-marker { display: none; }

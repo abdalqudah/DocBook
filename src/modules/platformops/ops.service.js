@@ -31,6 +31,9 @@ const MODULES = [
   { key: 'specialty_records', icon: 'heart-pulse', feature: 'specialty_modules', paths: [seg('specialty'), /^\/patients\/\d+\/(?:dental|growth|pregnancy)(?:\/|$)/] },
   { key: 'ai_assistant', icon: 'sparkles', feature: 'ai_assistant', paths: [seg('settings/ai'), /^\/visits\/\d+\/ai(?:\/|$)/, seg('finance/assistant'), seg('ai')] },
   { key: 'attendance', icon: 'clock', nav: ['attendance'], paths: [seg('attendance')] },
+  { key: 'queue_screens', icon: 'monitor', paths: [seg('queue-screens')] },
+  { key: 'staff_chat', icon: 'message-circle', paths: [seg('chat')] },
+  { key: 'patient_sharing', icon: 'send', paths: [seg('share')] },
   { key: 'reports', icon: 'chart-pie', nav: ['reports'], paths: [seg('reports')] },
 ];
 const KEYS = MODULES.map((m) => m.key);

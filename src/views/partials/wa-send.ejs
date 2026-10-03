@@ -1,6 +1,8 @@
 <%/* "Send on WhatsApp" (a secure link to this document in a ready message) and "Send by e-mail" (the same link, e-mailed
    now through the page-wide #share-mail-form, so it also works inside another form). Args: kind, id; optional extra
    query, small, label. */%>
+<% if (typeof moduleOn === 'undefined' || moduleOn('patient_sharing')) { %>
 <% var _sm = typeof small !== 'undefined' && small; var _lbl = typeof label === 'undefined' || label; %>
 <a class="btn <%= _sm ? 'btn-ghost btn-sm' : 'btn-secondary' %><%= _lbl ? '' : ' btn-icon' %> wa-send" href="/app/share/wa?kind=<%= kind %>&id=<%= id %><%= typeof extra !== 'undefined' && extra ? '&' + extra : '' %>" target="_blank" rel="noopener" title="<%= t('share.send_wa') %>" aria-label="<%= t('share.send_wa') %>"><%- icon('message-circle', 'icon-sm') %><% if (_lbl) { %><span class="<%= _sm ? 'hide-sm' : '' %>"><%= t('share.send_wa_short') %></span><% } %></a>
 <button class="btn btn-ghost<%= _sm ? ' btn-sm' : '' %> btn-icon no-print" type="submit" form="share-mail-form" formaction="/app/share/email?kind=<%= kind %>&id=<%= id %><%= typeof extra !== 'undefined' && extra ? '&' + extra : '' %>" title="<%= t('share.send_email') %>" aria-label="<%= t('share.send_email') %>"><%- icon('mail', 'icon-sm') %></button>
+<% } %>

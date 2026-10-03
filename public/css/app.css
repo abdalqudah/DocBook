@@ -978,3 +978,8 @@ td.actions > details.dropdown, td.actions > a { display: inline-flex; vertical-a
   :root:not([data-theme="light"]) .clinic-logo.logo-light, :root:not([data-theme="light"]) .topbar-brand img.logo-light { display: none; }
   :root:not([data-theme="light"]) .clinic-logo.logo-dark, :root:not([data-theme="light"]) .topbar-brand img.logo-dark { display: block; }
 }
+/* Admin → clinic: the clinic's optional areas as a two-column list of switches. */
+.adm-mods { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 16px; }
+.adm-mod > span { display: inline-flex; align-items: center; gap: 6px; }
+.adm-mod > span .icon { flex: none; }
+.adm-mod.is-locked { opacity: .65; }
