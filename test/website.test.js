@@ -758,3 +758,50 @@ test('a mail server name that does not exist: the nearby name that does is used'
   assert.deepEqual(await mailSvc.workingHost('doc.thinkn.test', 'info@doc.thinkn.test', resolver), { host: 'doc.thinkn.test', changedFrom: null });
   assert.deepEqual(await mailSvc.workingHost('nowhere.invalid', 'x@nowhere.invalid', resolver), { host: 'nowhere.invalid', changedFrom: null });
 });
+
+test('partners carousel, carousel options on list sections, alignment, and the dental icon library', async () => {
+  const o = app.agent();
+  await o.login(mail('owner-a'));
+  let r = await o.submit('/app/website/builder', '/app/website/builder/sections', { type: 'partners' });
+  assert.equal(r.status, 302);
+  let { doc } = await site.draft(A.ctx, A.business);
+  const p = doc.pages[0].sections.find((s) => s.type === 'partners');
+  assert.ok(p && p.settings.carousel === true && p.settings.per_view === '5', 'partners slide by default');
+  r = await o.submit('/app/website/builder', `/app/website/builder/sections/${p.id}`, {
+    variant: 'logos', 'content[ar][title]': 'شركاؤنا', 'content[en][title]': 'Our partners',
+    'settings[items][0][image]': String(A.mediaId), 'settings[items][0][name]': 'Lab One',
+    'settings[items][1][image]': String(A.mediaId), 'settings[items][1][name]': 'Insurer Two',
+    'settings[carousel]': '1', 'settings[per_view]': '4', 'settings[car_dir]': 'right', 'settings[autoplay]': 's3', 'settings[style][align]': 'center',
+  });
+  assert.equal(r.status, 302);
+  ({ doc } = await site.draft(A.ctx, A.business));
+  const saved = doc.pages[0].sections.find((s) => s.id === p.id);
+  assert.equal(saved.settings.items.length, 2);
+  assert.equal(saved.settings.car_dir, 'right');
+  r = await o.get('/app/website/preview?lang=en');
+  assert.match(r.text, /class="[^"]*ws-carousel[^"]*ws-a-center|class="[^"]*ws-a-center[^"]*ws-carousel/);
+  assert.match(r.text, /data-ws-carousel data-per="4" data-dir="right" data-auto="s3"/);
+  assert.match(r.text, /<ul class="ws-partners ws-partners-logos/);
+  assert.match(r.text, /alt="Lab One"/);
+
+  // Cards can slide too; an unknown direction falls back to "follow the language".
+  r = await o.submit('/app/website/builder', '/app/website/builder/sections', { type: 'cards' });
+  ({ doc } = await site.draft(A.ctx, A.business));
+  const cards = doc.pages[0].sections.filter((s) => s.type === 'cards').pop();
+  assert.equal(cards.settings.carousel, false, 'a grid until the clinic turns the carousel on');
+  r = await o.submit('/app/website/builder', `/app/website/builder/sections/${cards.id}`, {
+    variant: 'grid', 'content[en][items][0][title]': 'Implants', 'content[ar][items][0][title]': 'زراعة', 'settings[items][0][icon]': 'dt-implant',
+    'content[en][items][1][title]': 'Braces', 'settings[items][1][icon]': 'dt-braces', 'settings[carousel]': '1', 'settings[car_dir]': 'sideways',
+  });
+  ({ doc } = await site.draft(A.ctx, A.business));
+  const c2 = doc.pages[0].sections.find((s) => s.id === cards.id);
+  assert.equal(c2.settings.car_dir, 'auto');
+  assert.deepEqual(c2.settings.items.map((x) => x.icon), ['dt-implant', 'dt-braces'], 'dental icons are valid');
+
+  // The dental clinic's icon picker opens on the dental library.
+  r = await o.get(`/app/website/builder?s=${cards.id}&lang=en`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /<option value="dentistry" selected>Dentistry ★<\/option>/);
+  assert.match(r.text, /data-ws-iconlib="dentistry">/);
+  assert.match(r.text, /#i-dt-tooth"/);
+});

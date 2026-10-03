@@ -204,3 +204,11 @@
     });
   }
 }());
+
+// Icon picker: switch the icon library (the clinic's specialty first; every library stays available).
+document.addEventListener('change', function (e) {
+  var sel = e.target.closest && e.target.closest('[data-ws-iconlib-select]');
+  if (!sel) return;
+  var box = sel.closest('[data-ws-iconlibs]');
+  Array.prototype.forEach.call(box.querySelectorAll('[data-ws-iconlib]'), function (g) { g.hidden = g.getAttribute('data-ws-iconlib') !== sel.value; });
+});

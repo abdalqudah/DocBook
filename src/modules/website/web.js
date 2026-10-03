@@ -58,6 +58,8 @@ router.get('/', can('website.view'), wrap(async (req, res) => {
 }));
 
 // ---------------------------------------------------------------- builder
+const iconLib = require('./icon-library');
+
 async function builderLocals(req) {
   const { row, doc } = await site.draft(req.ctx, req.business);
   const st = await site.state(req.ctx.businessId);
@@ -72,7 +74,9 @@ async function builderLocals(req) {
     entitled(req, 'website.templates'),
   ]);
   const media = await render.mediaUrls({ ...req.business, id: req.ctx.businessId }, doc, { preview: true });
-  return { row, doc, st, page, pages: doc.pages, panel, list, selected, doctors, media, HEADER: sections.HEADER, FOOTER: sections.FOOTER, SOCIAL: Object.keys(sections.SOCIAL), NAV_KINDS: sections.NAV_KINDS, MAX_PAGES: sections.MAX_PAGES, TYPES: sections.TYPES, TYPE_KEYS: sections.TYPE_KEYS, ICONS: sections.ICONS, SHAPES: sections.SHAPES, allowedTemplates, TEMPLATES };
+  return { row, doc, st, page, pages: doc.pages, panel, list, selected, doctors, media, HEADER: sections.HEADER, FOOTER: sections.FOOTER, SOCIAL: Object.keys(sections.SOCIAL), NAV_KINDS: sections.NAV_KINDS, MAX_PAGES: sections.MAX_PAGES, TYPES: sections.TYPES, TYPE_KEYS: sections.TYPE_KEYS, ICONS: sections.ICONS, SHAPES: sections.SHAPES, allowedTemplates, TEMPLATES,
+    // Icon libraries: the picker opens on the clinic's specialty (dentistry → the dental set).
+    ICON_LIBS: iconLib.LIBS, ICON_LIB_KEYS: iconLib.KEYS, iconLibDefault: iconLib.libFor(req.business.specialty) };
 }
 const lockedPage = (req, res, feature) => page(req, res, 'locked', { title: req.t('navx.sec_website'), feature, manager: req.ctx.permissions.has('settings.manage') });
 

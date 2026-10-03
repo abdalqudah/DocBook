@@ -36,8 +36,12 @@
        if (st.shape_bottom && st.shape_bottom !== 'none') cls.push('has-shape-bottom');
        // Motion: the site's level (brand) and the section's own entrance (auto = rise, the hero fades in).
        var anim = st.anim && st.anim !== 'auto' ? st.anim : (s.type === 'hero' ? 'fade' : 'up');
-       if (motion !== 'none' && anim !== 'none' && s.type !== 'divider') cls.push('ws-anim', 'ws-anim-' + anim); %>
-  <div class="<%= cls.join(' ') %>"<% if (preview) { %> data-ws-sec="<%= s.id %>" data-ws-label="<%= t('website.sec.' + s.type) %>"<% } %>>
+       if (motion !== 'none' && anim !== 'none' && s.type !== 'divider') cls.push('ws-anim', 'ws-anim-' + anim);
+       // Carousel: the items slide in one row (public/js/website-site.js); data-* carry how.
+       var car = s.settings.carousel === true;
+       if (car) cls.push('ws-carousel');
+       var carAttrs = car ? ' data-ws-carousel data-per="' + (s.settings.per_view || '3') + '" data-dir="' + (s.settings.car_dir || 'auto') + '" data-auto="' + (s.settings.autoplay || 's4') + '" data-arrows="' + (s.settings.arrows === false ? '0' : '1') + '" data-left="' + t('website.car.left') + '" data-right="' + t('website.car.right') + '" style="--ws-per:' + (s.settings.per_view || '3') + '"' : ''; %>
+  <div class="<%= cls.join(' ') %>"<%- carAttrs %><% if (preview) { %> data-ws-sec="<%= s.id %>" data-ws-label="<%= t('website.sec.' + s.type) %>"<% } %>>
     <% if (bgIm) { %><img class="ws-bg-img" src="<%= bgIm.url %>" alt="" loading="lazy"><span class="ws-ov" aria-hidden="true"></span><% } %>
     <% if (st.shape_top && st.shape_top !== 'none') { %><%- include('sections/_shape', { shape: st.shape_top, edge: 'top' }) %><% } %>
     <%- html %>

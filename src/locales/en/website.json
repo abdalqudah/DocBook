@@ -149,7 +149,8 @@
       "slider": "Slider (moving slides)",
       "framed": "Framed",
       "tight": "Tight",
-      "divided": "Divided"
+      "divided": "Divided",
+      "logos": "Logos"
     },
     "field": {
       "headline": "Headline",
@@ -198,7 +199,15 @@
       "content_y": "Words and buttons (up/down)",
       "btn_size": "Button size",
       "btn_layout": "Button arrangement",
-      "caption": "Caption"
+      "caption": "Caption",
+      "carousel": "Show as a sliding row (carousel)",
+      "per_view": "Items shown at once",
+      "car_dir": "Direction",
+      "autoplay": "Auto-advance",
+      "arrows": "Show arrows",
+      "logo_size": "Logo size",
+      "grayscale": "Grey logos (colour on hover)",
+      "name": "Name"
     },
     "opt": {
       "2": "Two columns",
@@ -260,7 +269,13 @@
       "top": "Top",
       "bottom": "Bottom",
       "row": "Side by side",
-      "stack": "Stacked"
+      "stack": "Stacked",
+      "s3": "3 seconds",
+      "s6": "6 seconds",
+      "off": "Off",
+      "car_auto": "Follow the language",
+      "car_left": "← Toward the left",
+      "car_right": "Toward the right →"
     },
     "doctors_pick_help": "Used with \"Selected doctors\".",
     "item_n": "Item {n}",
@@ -298,7 +313,8 @@
       "steps": "Steps",
       "divider": "Divider & shapes",
       "images": "Images",
-      "columns": "Columns"
+      "columns": "Columns",
+      "partners": "Our partners"
     },
     "section_added_ok": "Section added to the draft.",
     "saved": "Saved to the draft.",
@@ -566,7 +582,8 @@
       "steps": "Numbered steps.",
       "divider": "A wave, curve or line between sections.",
       "images": "Pictures side by side: two, three or four per row, with a caption under each.",
-      "columns": "Content in two, three or four columns: a picture or icon, title, text and button."
+      "columns": "Content in two, three or four columns: a picture or icon, title, text and button.",
+      "partners": "Logos of partners, insurers and labs — a sliding row or a grid."
     },
     "style": {
       "align": "Alignment",
@@ -669,7 +686,8 @@
         "steps": "Add at least one step.",
         "divider": "",
         "images": "Add at least one picture.",
-        "columns": "Add at least one column."
+        "columns": "Add at least one column.",
+        "partners": "Add partner logos from the media library."
       },
       "tab_site": "Site",
       "page": "Page",
@@ -751,7 +769,10 @@
         "below": "Under the logo",
         "beside": "Beside the logo"
       },
-      "f_name": "Show the clinic name"
+      "f_name": "Show the clinic name",
+      "carousel": "Sliding row (carousel)",
+      "carousel_help": "“Follow the language”: in Arabic the items travel right, in English left. The row pauses on hover or touch.",
+      "icon_library": "Icon library"
     },
     "item_field": {
       "title": "Title",
@@ -762,7 +783,8 @@
       "q": "Question",
       "a": "Answer",
       "headline": "Headline",
-      "subtext": "Text"
+      "subtext": "Text",
+      "name": "Partner name"
     },
     "slider_prev": "Previous slide",
     "slider_next": "Next slide",
@@ -887,6 +909,26 @@
       "auth": "The server refused the user name or password. Use the full e-mail address as the user name and that mailbox's password.",
       "conn": "The server could not be reached on this port. Try 465 (SSL) or 587 (STARTTLS).",
       "tls": "The security certificate does not match the server name. Use the name shown in the certificate (often the hosting server's name)."
+    },
+    "car": {
+      "left": "Move left",
+      "right": "Move right"
+    },
+    "iconlib": {
+      "general": "General",
+      "dentistry": "Dentistry",
+      "dermatology": "Dermatology",
+      "cosmetic": "Cosmetic",
+      "paediatrics": "Paediatrics",
+      "obgyn": "Obstetrics & gynaecology",
+      "orthopaedics": "Orthopaedics",
+      "physiotherapy": "Physiotherapy",
+      "ophthalmology": "Ophthalmology",
+      "ent": "ENT",
+      "cardiology": "Cardiology",
+      "psychiatry": "Psychiatry",
+      "nutrition": "Nutrition",
+      "lab": "Laboratory"
     }
   },
   "errors_website": {

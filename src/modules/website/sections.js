@@ -10,8 +10,8 @@
 const crypto = require('crypto');
 const { THEMES, TEMPLATES } = require('./catalog');
 
-const ICONS = ['stethoscope', 'heart-pulse', 'shield-check', 'clock', 'star', 'smile', 'baby', 'award', 'hospital', 'syringe', 'pill', 'thermometer', 'activity', 'badge-check', 'calendar-check', 'map-pin', 'phone', 'users', 'sparkles', 'hand-coins',
-  'heart', 'hand-heart', 'leaf', 'flower-2', 'sun-medium', 'brain', 'baby', 'ruler', 'droplet', 'zap', 'wand-sparkles'].filter((x, i, a) => a.indexOf(x) === i);
+// Icons a section may use: the common set and every specialty library (icon-library.js; the dental set is DocBook's own).
+const ICONS = require('./icon-library').ALL;
 
 // What a button inside a section does (never a free address: links stay on the clinic's own actions).
 const ACTIONS = ['none', 'book', 'call', 'whatsapp', 'directions'];
@@ -35,6 +35,18 @@ const IMAGE_OPTS = [
   { key: 'image_fit', kind: 'select', options: ['cover', 'contain'], def: 'cover', group: 'image' },
   { key: 'image_ratio', kind: 'select', options: ['auto', 'landscape', 'square', 'portrait'], def: 'auto', group: 'image' },
 ];
+
+// Carousel (Design tab): the section's items slide in one row instead of a grid — how many show at once, which way
+// they travel (auto = the page language: Arabic moves right, English moves left), the pause between slides.
+const CAROUSEL = [
+  { key: 'carousel', kind: 'bool', def: false, group: 'carousel' },
+  { key: 'per_view', kind: 'select', options: ['3', '1', '2', '4', '5', '6'], def: '3', group: 'carousel' },
+  { key: 'car_dir', kind: 'select', options: ['auto', 'left', 'right'], def: 'auto', group: 'carousel' },
+  { key: 'autoplay', kind: 'select', options: ['s4', 's3', 's6', 'off'], def: 's4', group: 'carousel' },
+  { key: 'arrows', kind: 'bool', def: true, group: 'carousel' },
+];
+// The section types whose items can be a carousel.
+const CAROUSEL_TYPES = ['cards', 'doctors', 'reviews', 'services', 'features', 'gallery', 'images', 'columns', 'stats', 'steps', 'partners'];
 
 // kinds — text (one line), textarea, bool, select, number, media (one image), media_list, doctors (ids), date, icon
 const TYPES = {
@@ -109,10 +121,17 @@ const TYPES = {
       { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait'], def: 'landscape', group: 'image' }],
     list: { key: 'items', max: 4, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false },
       { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 1500 }, { key: 'button', max: 40 }] } },
+  // Partners / insurers / labs the clinic works with: their logos in a row that slides (or a grid).
+  partners: { icon: 'handshake', variants: ['logos', 'cards'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
+    settings: [{ key: 'logo_size', kind: 'select', options: ['m', 's', 'l'], def: 'm' }, { key: 'grayscale', kind: 'bool', def: true }],
+    list: { key: 'items', max: 24, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'name', max: 80, i18n: false }] } },
   divider: { icon: 'waves', variants: ['shape'], group: 'blocks', text: [],
     settings: [{ key: 'shape', kind: 'select', options: ['wave', 'curve', 'slant', 'zigzag', 'peaks', 'drops', 'line', 'dots', 'space'], def: 'wave' },
       { key: 'color', kind: 'select', options: ['soft', 'accent', 'brand', 'dark'], def: 'soft' }, { key: 'height', kind: 'select', options: ['s', 'm', 'l'], def: 'm' }, { key: 'flip', kind: 'bool', def: false }] },
 };
+// Carousel options on every section that lists items (partners slide by default).
+CAROUSEL_TYPES.forEach((k) => { TYPES[k].settings.push(...CAROUSEL.map((f) => (k === 'partners' && f.key === 'carousel' ? { ...f, def: true } : k === 'partners' && f.key === 'per_view' ? { ...f, def: '5' } : f))); });
 const TYPE_KEYS = Object.keys(TYPES);
 const MAX_SECTIONS = 24;
 
@@ -387,4 +406,4 @@ function mediaIn(doc) {
   return [...out];
 }
 
-module.exports = { TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MOTION, HEADER, FOOTER, SOCIAL, NAV_KINDS, MAX_PAGES, PAGE_SLUG, RESERVED_PAGES, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };
+module.exports = { CAROUSEL, CAROUSEL_TYPES, TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MOTION, HEADER, FOOTER, SOCIAL, NAV_KINDS, MAX_PAGES, PAGE_SLUG, RESERVED_PAGES, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };

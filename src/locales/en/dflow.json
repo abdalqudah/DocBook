@@ -74,5 +74,10 @@
   },
   "errors_dflow": {
     "VISIT_NO_SHOW": "The patient did not come to this appointment, so there is nothing to finish."
+  },
+  "vt": {
+    "running": "Consultation time — in progress",
+    "paused": "Consultation time — paused",
+    "done": "Consultation time — finished"
   }
 }

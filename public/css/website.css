@@ -434,3 +434,45 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
    transparent header over the hero image or slider — whether dark mode is on or off. */
 body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled) .logo-light { display: none; }
 body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled) .logo-dark { display: block; }
+
+/* Alignment (section style "align") reaches every part of every section: headings, cards, doctors, columns,
+   steps, numbers, pictures' captions, reviews, buttons and icons — not only the heading. */
+.ws-a-center .ws-section, .ws-a-center > .container { text-align: center; }
+.ws-a-end .ws-section, .ws-a-end > .container { text-align: end; }
+.ws-a-start .ws-section, .ws-a-start > .container { text-align: start; }
+.ws-a-center :is(.ws-card-body, .ws-column, .ws-features li, .doc-info, .ws-step, .portal-card) { align-items: center; text-align: center; }
+.ws-a-end :is(.ws-card-body, .ws-column, .ws-features li, .doc-info, .ws-step, .portal-card) { align-items: flex-end; text-align: end; }
+.ws-a-center .doc-card { flex-direction: column; align-items: center; text-align: center; }
+.ws-a-end .doc-card { flex-direction: column; align-items: flex-end; text-align: end; }
+.ws-a-center :is(.doc-foot, .ws-stats, .ws-chips, .ws-partners, .ws-hero-actions, .row-sm) { justify-content: center; }
+.ws-a-end :is(.doc-foot, .ws-stats, .ws-chips, .ws-partners, .ws-hero-actions, .row-sm) { justify-content: flex-end; }
+.ws-a-center :is(.ws-feature-icon, .svc-icon) { margin-inline: auto; }
+.ws-a-end :is(.ws-feature-icon, .svc-icon) { margin-inline-start: auto; }
+.ws-a-center .ws-column .btn, .ws-a-center .ws-card-body .btn { align-self: center; }
+.ws-a-end .ws-column .btn, .ws-a-end .ws-card-body .btn { align-self: flex-end; }
+.ws-a-center .ws-faq summary, .ws-a-end .ws-faq summary { text-align: start; } /* questions stay readable */
+.ws-a-center figcaption { text-align: center; } .ws-a-end figcaption { text-align: end; }
+
+/* Carousel sections: one sliding row (JS adds .ws-track); --ws-per items at once, fewer on small screens. */
+.ws-car { position: relative; }
+.ws-carousel .ws-track { display: flex !important; flex-wrap: nowrap !important; grid-template-columns: none !important; gap: 20px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; padding-block: 4px 8px; }
+.ws-carousel .ws-track::-webkit-scrollbar { display: none; }
+.ws-carousel .ws-track.ws-track > * { flex: 0 0 calc((100% - (var(--ws-per, 3) - 1) * 20px) / var(--ws-per, 3)); min-width: 0; scroll-snap-align: start; }
+@media (max-width: 960px) { .ws-carousel { --ws-per: 2 !important; } .ws-carousel[data-per="1"] { --ws-per: 1 !important; } .ws-carousel.ws-t-partners { --ws-per: 3 !important; } }
+@media (max-width: 600px) { .ws-carousel .ws-track.ws-track > * { flex-basis: 82%; } .ws-carousel[data-per="5"] .ws-track.ws-track > *, .ws-carousel[data-per="6"] .ws-track.ws-track > * { flex-basis: 42%; } }
+.ws-car-nav { display: flex; justify-content: center; gap: 10px; margin-top: 14px; direction: ltr; }
+.ws-car-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.ws-car-btn:hover { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.ws-car-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Partners: logos (grid, or a sliding row when the carousel is on). */
+.ws-partners { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 20px; }
+.ws-partner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 0; text-align: center; }
+.ws-partners-logos .ws-partner { flex: 0 1 160px; }
+.ws-partners-cards .ws-partner { flex: 0 1 200px; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); color: var(--text); }
+.ws-partner img { display: block; max-width: 100%; height: 56px; width: auto; object-fit: contain; }
+.ws-logo-s .ws-partner img { height: 40px; } .ws-logo-l .ws-partner img { height: 80px; }
+.ws-partners.is-gray .ws-partner img { filter: grayscale(1); opacity: .75; transition: filter .25s, opacity .25s; }
+.ws-partners.is-gray .ws-partner:hover img { filter: none; opacity: 1; }
+.ws-carousel .ws-partners.ws-track { justify-content: flex-start; align-items: center; }
+.ws-car-nav[hidden] { display: none; }

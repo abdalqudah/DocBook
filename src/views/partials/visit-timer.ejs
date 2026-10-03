@@ -1,0 +1,5 @@
+<%/* The consultation timer of a visit beside the patient (Today, My day): counts live while running (public/js/app.js
+   [data-vt]), shows the paused time while paused and the final length once done. Arg: tv (timer.view) or null. */%>
+<% if (typeof tv !== 'undefined' && tv && tv.state !== 'idle') { var _s = Number(tv.seconds) || 0; var _h = Math.floor(_s / 3600), _mm = Math.floor((_s % 3600) / 60), _ss = _s % 60; var _p = function (n) { return (n < 10 ? '0' : '') + n; }; var _txt = (_h ? _h + ':' + _p(_mm) : _p(_mm)) + ':' + _p(_ss); %>
+<span class="vt-chip is-<%= tv.state %>" data-vt="<%= _s %>" data-vt-state="<%= tv.state %>" title="<%= t('vt.' + tv.state) %>" aria-label="<%= t('vt.' + tv.state) %> <%= _txt %>"><%- icon(tv.state === 'paused' ? 'hourglass' : 'timer', 'icon-sm') %><span class="mono" dir="ltr" data-vt-text><%= _txt %></span></span>
+<% } %>

@@ -18,6 +18,7 @@
         </span>
         <span class="row-sm wrap end">
           <% if (a.source === 'website') { %><span class="badge" title="<%= t('dashboard.sources.website') %>"><%- icon('globe', 'icon-sm') %></span><% } %>
+          <%- include(P + 'visit-timer', { tv: a.timer }) %>
           <% if (a.payment_status === 'paid') { %><span class="badge badge-neutral"><%= t('billing.paid') %></span><% } %>
           <span class="badge badge-<%= st.tone %> badge-dot"><%= t('dashboard.' + st.key) %></span>
         </span>

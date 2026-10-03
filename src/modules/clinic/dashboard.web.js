@@ -115,6 +115,10 @@ async function withDocs(ctx, rows) {
     pids.length ? knex('patients').where('business_id', ctx.businessId).whereIn('id', pids).whereNotNull('email').select('id', 'email') : [],
     by(clin, 'consultations', ['id']), by(clin && ['certificates.view', 'certificates.issue'].some((k) => p.has(k)), 'certificates', ['id', 'doc_type', 'revoked_at']), by(clin, 'patient_files', ['id', 'title', 'name'])]);
   const mailOf = Object.fromEntries(mails.map((r) => [r.id, r.email]));
+  // Consultation timer of each visit (running, paused or done): shown live beside the patient.
+  const timer = require('../clinicalplus/timer.service'); // eslint-disable-line global-require
+  const timers = ids.length ? await knex('consultation_timers').where('business_id', ctx.businessId).whereIn('appointment_id', ids) : [];
+  const timerOf = Object.fromEntries(timers.map((t) => [t.appointment_id, timer.view(t)]));
   const paper = (a, kind, id) => `/app/cashier/papers/${a.id}/${kind}/${id}.pdf`;
   rows.forEach((a) => {
     const items = [];
@@ -144,6 +148,7 @@ async function withDocs(ctx, rows) {
     ];
     a.docs = { items, send, print: !clin, clinical: papers, billing, any: items.some((x) => x.on) };
     a.email = mailOf[a.patient_id] || a.patient_email || null;
+    a.timer = timerOf[a.id] || null;
   });
   return rows;
 }

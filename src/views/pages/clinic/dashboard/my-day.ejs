@@ -83,6 +83,7 @@
           </a>
           <span class="df-day-state">
             <span class="badge badge-<%= stateTone(a) %> badge-dot"><%= stateText(a) %></span>
+            <%- include('../../../partials/visit-timer', { tv: a.timer }) %>
             <% if (a.state === 'waiting' && a.arrivedTime) { %><span class="tiny muted"><%= t('my_day.waiting_since', { time: a.arrivedTime }) %></span><% } %>
             <% if (a.state === 'to_pay' || a.state === 'paid') { %><span class="tiny muted mono" dir="ltr"><%= fmt.money(a.amount_due) %></span><% } %>
           </span>

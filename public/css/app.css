@@ -983,3 +983,10 @@ td.actions > details.dropdown, td.actions > a { display: inline-flex; vertical-a
 .adm-mod > span { display: inline-flex; align-items: center; gap: 6px; }
 .adm-mod > span .icon { flex: none; }
 .adm-mod.is-locked { opacity: .65; }
+/* Consultation timer beside a patient (Today, My day). */
+.vt-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--pill); font-size: 12px; font-weight: var(--fw-semibold); white-space: nowrap; background: var(--surface-sunken); color: var(--text-muted); }
+.vt-chip.is-running { background: var(--primary-soft); color: var(--primary); }
+.vt-chip.is-running .icon { animation: vt-pulse 2s ease-in-out infinite; }
+.vt-chip.is-paused { background: var(--warning-soft); color: var(--warning); }
+@keyframes vt-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .vt-chip.is-running .icon { animation: none; } }

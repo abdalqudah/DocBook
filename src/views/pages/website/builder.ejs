@@ -166,7 +166,7 @@
           </fieldset>
           <% }) %>
 
-          <% def.settings.filter(function (f) { return f.group !== 'image'; }).forEach(function (f) { var v = sel.settings[f.key]; var fid = 's-' + f.key; %>
+          <% def.settings.filter(function (f) { return f.group !== 'image' && f.group !== 'carousel'; }).forEach(function (f) { var v = sel.settings[f.key]; var fid = 's-' + f.key; %>
             <% if (f.only) { %><div class="stack-sm" data-ws-only="<%= f.only %>"<%= sel.variant === f.only ? '' : ' hidden' %>><% } %>
             <% if (f.kind === 'bool') { %><input type="hidden" name="settings[<%= f.key %>]" value="0"><label class="check"><input type="checkbox" name="settings[<%= f.key %>]" value="1"<%= v ? ' checked' : '' %>><span><%= fieldLabel(f.key) %></span></label>
             <% } else if (f.kind === 'select' && f.options.length <= 4) { %><fieldset class="wsb-field"><legend class="label"><%= fieldLabel(f.key) %></legend><div class="wsb-choices"><% f.options.forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="settings[<%= f.key %>]" value="<%= o %>"<%= v === o ? ' checked' : '' %>><span><%= optLabel(o) %></span></label><% }) %></div></fieldset>
@@ -203,7 +203,14 @@
               <div class="stack-sm">
               <% def.list.fields.forEach(function (f) { %>
                 <% if (f.i18n === false) { var cur = (extras[i] || {})[f.key]; var nm = 'settings[' + def.list.key + '][' + i + '][' + f.key + ']'; %>
-                  <% if (f.kind === 'icon') { %><div class="field"><span class="label"><%= fieldLabel('icon') %></span><div class="wsb-icons"><% (f.none ? ['none'] : []).concat(ICONS).forEach(function (ic, k) { %><label class="wsb-icon-pick" title="<%= ic === 'none' ? optLabel('none') : ic %>"><input type="radio" name="<%= nm %>" value="<%= ic %>"<%= (cur || (f.none ? 'none' : ICONS[0])) === ic ? ' checked' : '' %>><span><%- ic === 'none' ? icon('x', 'icon-sm') : icon(ic, 'icon-sm') %></span></label><% }) %></div></div>
+                  <% if (f.kind === 'icon') { var curIc = cur || (f.none ? 'none' : ICONS[0]);
+                       // Open on the library holding the chosen icon, else the clinic's specialty.
+                       var openLib = curIc !== 'none' && ICON_LIBS[iconLibDefault].indexOf(curIc) === -1 ? (ICON_LIB_KEYS.find(function (k) { return ICON_LIBS[k].indexOf(curIc) !== -1; }) || iconLibDefault) : iconLibDefault; %>
+                  <div class="field" data-ws-iconlibs><div class="row between wrap"><span class="label"><%= fieldLabel('icon') %></span>
+                    <select class="select select-sm wsb-iconlib-select" data-ws-iconlib-select aria-label="<%= t('website.b.icon_library') %>"><% [iconLibDefault].concat(ICON_LIB_KEYS.filter(function (k) { return k !== iconLibDefault; })).forEach(function (k) { %><option value="<%= k %>"<%= k === openLib ? ' selected' : '' %>><%= t('website.iconlib.' + k) %><%= k === iconLibDefault && k !== 'general' ? ' ★' : '' %></option><% }) %></select></div>
+                    <% if (f.none) { %><div class="wsb-icons"><label class="wsb-icon-pick" title="<%= optLabel('none') %>"><input type="radio" name="<%= nm %>" value="none"<%= curIc === 'none' ? ' checked' : '' %>><span><%- icon('x', 'icon-sm') %></span></label></div><% } %>
+                    <% ICON_LIB_KEYS.forEach(function (k) { %><div class="wsb-icons" data-ws-iconlib="<%= k %>"<%= k === openLib ? '' : ' hidden' %>><% ICON_LIBS[k].forEach(function (ic) { %><label class="wsb-icon-pick" title="<%= ic %>"><input type="radio" name="<%= nm %>" value="<%= ic %>"<%= curIc === ic && k === openLib ? ' checked' : '' %>><span><%- icon(ic, 'icon-sm') %></span></label><% }) %></div><% }) %>
+                  </div>
                   <% } else if (f.kind === 'media') { var im = imgOf(cur); %><div class="stack-sm"><span class="label"><%= fieldLabel('image') %></span><div class="pm-cover ws-pick-preview is-small" data-media-preview="<%= nm %>"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div><input type="hidden" name="<%= nm %>" value="<%= cur || '' %>"><div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="button" data-media-pick="<%= nm %>"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button><button class="btn btn-ghost btn-sm" type="button" data-media-clear="<%= nm %>"<%= im ? '' : ' hidden' %>><%= t('media_lib.remove') %></button></div></div>
                   <% } else if (f.kind === 'select') { %><div class="field"><label class="label"><%= fieldLabel(f.key) %></label><select class="select" name="<%= nm %>"><% f.options.forEach(function (o) { %><option value="<%= o %>"<%= (cur || f.options[0]) === o ? ' selected' : '' %>><%= optLabel(o) %></option><% }) %></select></div>
                   <% } else { %><div class="field"><label class="label"><%= itemLabel(f.key) %></label><input class="input" name="<%= nm %>" value="<%= cur || '' %>" maxlength="<%= f.max || 80 %>" dir="auto"></div><% } %>
@@ -230,6 +237,15 @@
           <% imgOpts.forEach(function (f) { var v = sel.settings[f.key]; %>
           <fieldset class="wsb-field"><legend class="label"><%= fieldLabel(f.key) %></legend><div class="wsb-choices"><% f.options.forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="settings[<%= f.key %>]" value="<%= o %>"<%= v === o ? ' checked' : '' %>><span><%= optLabel(o) %></span></label><% }) %></div></fieldset>
           <% }) %>
+          <% } %>
+
+          <% var carOpts = def.settings.filter(function (f) { return f.group === 'carousel'; }); if (carOpts.length) { %>
+          <h3 class="wsb-group"><%= t('website.b.carousel') %></h3>
+          <% carOpts.forEach(function (f) { var v = sel.settings[f.key]; %>
+            <% if (f.kind === 'bool') { %><input type="hidden" name="settings[<%= f.key %>]" value="0"><label class="check"><input type="checkbox" name="settings[<%= f.key %>]" value="1"<%= v ? ' checked' : '' %><%- f.key === 'carousel' ? ' data-ws-car-toggle' : '' %>><span><%= fieldLabel(f.key) %></span></label>
+            <% } else { %><fieldset class="wsb-field" data-ws-car-opt><legend class="label"><%= fieldLabel(f.key) %></legend><div class="wsb-choices"><% f.options.forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="settings[<%= f.key %>]" value="<%= o %>"<%= v === o ? ' checked' : '' %>><span><%= f.key === 'per_view' ? fmt.number(Number(o)) : optLabel(f.key === 'car_dir' ? 'car_' + o : o) %></span></label><% }) %></div></fieldset><% } %>
+          <% }) %>
+          <p class="help"><%= t('website.b.carousel_help') %></p>
           <% } %>
 
           <h3 class="wsb-group"><%= t('website.b.look') %></h3>

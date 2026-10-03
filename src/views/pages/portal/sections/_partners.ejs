@@ -1,0 +1,17 @@
+<%
+  // Partners: logos from the clinic's media library, each with the partner's name (the picture's text alternative).
+  var extra = s.settings.items || [];
+  var items = extra.map(function (e) { return { image: img(e && e.image), name: (e && e.name) || '' }; }).filter(function (x) { return x.image; });
+%>
+<% if (items.length) { %>
+<section class="ws-section ws-partners-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <ul class="ws-partners ws-partners-<%= s.variant %> ws-logo-<%= s.settings.logo_size || 'm' %><%= s.settings.grayscale ? ' is-gray' : '' %>">
+      <% items.forEach(function (x) { %>
+      <li class="ws-partner" title="<%= x.name %>"><img src="<%= x.image.url %>" alt="<%= x.name || altOf(x.image) %>" loading="lazy"><% if (s.variant === 'cards' && x.name) { %><span class="small"><%= x.name %></span><% } %></li>
+      <% }) %>
+    </ul>
+  </div>
+</section>
+<% } %>

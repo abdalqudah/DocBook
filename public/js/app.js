@@ -339,3 +339,16 @@
     if (kbd && /Mac|iPhone|iPad/.test(navigator.platform || '')) kbd.textContent = '⌘K';
   }
 }());
+
+// Consultation timers beside patients (partials/visit-timer.ejs): a running one counts on from the page's time.
+(function () {
+  var chips = document.querySelectorAll('[data-vt][data-vt-state="running"]');
+  if (!chips.length) return;
+  var t0 = Date.now();
+  var fmt = function (s) { var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return (h ? h + ':' + p(m) : p(m)) + ':' + p(x); };
+  var tick = function () {
+    var add = Math.floor((Date.now() - t0) / 1000);
+    chips.forEach(function (c) { var el = c.querySelector('[data-vt-text]'); if (el) el.textContent = fmt((Number(c.getAttribute('data-vt')) || 0) + add); });
+  };
+  setInterval(tick, 1000);
+}());
