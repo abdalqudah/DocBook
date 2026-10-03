@@ -117,6 +117,18 @@
           "security": {
             "title": "Data protection",
             "text": "Role permissions, a log of every change, invoices voided by managers only, and an encrypted backup per clinic."
+          },
+          "centres": {
+            "title": "Pharmacies & centres",
+            "text": "Send prescriptions and lab / imaging requests to the places you work with, or to a centre inside the clinic."
+          },
+          "texts": {
+            "title": "Messages from your clinic",
+            "text": "Message and e-mail texts in your words, with the clinic's logo and colours."
+          },
+          "site": {
+            "title": "A website in your clinic's look",
+            "text": "Templates, sections, sliding rows and your specialty's icons, with booking on the page."
           }
         }
       },
@@ -221,7 +233,13 @@
         "q10": "How do prescriptions and invoices reach the patient?",
         "a10": "From Today, reception picks the papers and sends them on WhatsApp or e-mail. The patient gets a secure link showing them in the clinic's colours, ready to print or save as PDF.",
         "q11": "What do I need for the waiting-room screen?",
-        "a11": "Any TV or screen with a web browser. Add the screen at the front desk and open its secret link on the TV — no sign-in."
+        "a11": "Any TV or screen with a web browser. Add the screen at the front desk and open its secret link on the TV — no sign-in.",
+        "q12": "Can I send the prescription to a pharmacy?",
+        "a12": "Yes. Add pharmacies, imaging centres and labs in Settings, then send the prescription or request from its page on WhatsApp or e-mail through a secure link. A centre inside the clinic sees requests on its own list.",
+        "q13": "Can I change the text of the messages patients get?",
+        "a13": "Yes. In Settings → Message texts you write every message and e-mail in Arabic and English, and choose where the review link goes: Google or the clinic website.",
+        "q14": "Does the database need a manual update after each version?",
+        "a14": "No. DocBook applies its database updates by itself on start and while running, and shows their state to the platform admin."
       },
       "cta": {
         "title": "Ready to open your clinic's DocBook?",
@@ -245,7 +263,7 @@
       "showcase": {
         "kicker": "What's new in DocBook",
         "title": "New features, built with clinics",
-        "lead": "Our latest additions: a waiting-room screen, the visit's papers sent to the patient in one tap, a chime when a patient is called in, team chat, and an encrypted backup for every clinic.",
+        "lead": "Our latest additions: pharmacies and imaging centres, a waiting screen that calls patients aloud, a consultation timer, messages in your own words, and a richer website with sliding rows and your specialty's icons.",
         "tag": "New",
         "items": {
           "website": {
@@ -335,6 +353,30 @@
           "letterhead": {
             "title": "One letterhead for every paper",
             "text": "The same header on invoices, prescriptions, requests and referrals, with the logo size you choose and the name shown or hidden."
+          },
+          "centres": {
+            "title": "Pharmacies, imaging centres and labs",
+            "text": "Add the places you work with and send them the prescription or the lab / imaging request on WhatsApp or e-mail through a secure link. A centre or pharmacy inside the clinic gets requests on its own list."
+          },
+          "voice": {
+            "title": "The waiting screen calls patients aloud",
+            "text": "After the ding-dong the screen says “Lina, please go to Room 1”, with a welcome message at the top and the clinic name shown or hidden."
+          },
+          "timer": {
+            "title": "Automatic consultation timer",
+            "text": "The timer starts when the patient goes in, can be paused and stops when the visit is finished — and shows beside each patient on Today."
+          },
+          "texts": {
+            "title": "Messages in your words",
+            "text": "Write every message patients get — WhatsApp, SMS and e-mail — in Arabic and English; e-mails carry the clinic's logo and colours and read right to left."
+          },
+          "carousel": {
+            "title": "A website with sliding rows",
+            "text": "Show cards, doctors, reviews and pictures as a sliding row, with a partners logo strip and a direction that follows the language."
+          },
+          "icons": {
+            "title": "Icons for your specialty",
+            "text": "An icon library for each specialty — over 250 icons, including a dental set drawn for DocBook."
           }
         }
       },
@@ -542,7 +584,8 @@
         "vendor_suspended": "Rep / warehouse suspended",
         "vendor_reactivated": "Rep / warehouse reactivated",
         "vendor_product_hidden": "Rep product hidden",
-        "vendor_offer_hidden": "Rep offer hidden"
+        "vendor_offer_hidden": "Rep offer hidden",
+        "database_updated": "Database updated"
       },
       "clinic": {
         "backup_created": "Clinic backup made",
@@ -810,7 +853,16 @@
     "usage_title": "Use of the new features",
     "usage_sub": "Last 30 days.",
     "usage_screens": "Waiting screens",
-    "usage_no_screens": "No screens"
+    "usage_no_screens": "No screens",
+    "stat_centres": "Papers to pharmacies & centres",
+    "stat_centres_meta": "Last 30 days · {n} clinics have partners",
+    "usage_centres": "Pharmacies & centres",
+    "usage_centres_val": "{n} partners · {sent} papers in 30 days",
+    "usage_texts": "Message texts",
+    "usage_texts_yes": "{n} texts in the clinic's words",
+    "usage_texts_no": "DocBook's texts",
+    "db_pending": "{n} database updates waiting — applied by themselves within minutes.",
+    "db_open": "Updates"
   },
   "portal": {
     "book": "Book an appointment",

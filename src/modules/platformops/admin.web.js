@@ -26,7 +26,13 @@ const render = async (req, res, extra = {}) => {
   const root = ROOT();
   const [[{ v: dbVersion }]] = await knex.raw('SELECT VERSION() AS v');
   const st = updater.status(root);
+  // Database changes: brought up to date by themselves (start, every 5 minutes, on a missing table); shown here.
+  const auto = require('../../db/auto'); // eslint-disable-line global-require
+  let pendingDb = [];
+  try { pendingDb = await auto.ensureLatest({ reason: 'admin page' }).then(() => auto.pending()); } catch (e) { pendingDb = ['error']; }
+  const [[{ n: appliedDb }]] = await knex.raw('SELECT COUNT(*) AS n FROM knex_migrations');
   res.page('pages/admin/updates', {
+    pendingDb, appliedDb: Number(appliedDb), lastDbRun: auto.lastRun(),
     layout: 'admin', title: req.t('updater.title'), current: { version: st.version, node: process.version },
     dist: updater.isDistBuild(root), backups: updater.listBackups(root), log: updater.readLog(root), dbVersion,
     updated: req.query.updated, restored: req.query.restored, maxMb: updater.MAX_ZIP_BYTES / 1048576,
@@ -34,6 +40,12 @@ const render = async (req, res, extra = {}) => {
   });
 };
 router.get('/updates', wrap((req, res) => render(req, res)));
+router.post('/updates/database', wrap(async (req, res) => {
+  const applied = await require('../../db/auto').ensureLatest({ reason: 'admin' }); // eslint-disable-line global-require
+  await audit.record(req.ctx, 'platform.database_updated', { entityType: 'app_update', newValues: { applied: applied.length } });
+  flash(req, 'success', applied.length ? req.t('updater.db_applied', { n: applied.length }) : req.t('updater.db_uptodate'));
+  res.redirect('/admin/updates');
+}));
 
 async function confirmPassword(req) {
   const user = await knex('users').where({ id: req.user.id }).first('id', 'password_hash');

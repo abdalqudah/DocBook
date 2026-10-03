@@ -25,7 +25,8 @@
       "queue_screens": "Waiting-room screen",
       "staff_chat": "Team chat",
       "patient_sharing": "Send papers to patients",
-      "reports": "Reports"
+      "reports": "Reports",
+      "centres": "Pharmacies & imaging centres"
     },
     "d": {
       "online_booking": "Patients book from the clinic page. Off: the booking page is closed and booking links are hidden.",
@@ -44,7 +45,8 @@
       "queue_screens": "A TV in the waiting room showing who goes in now, the room number and who is next, with a chime.",
       "staff_chat": "Messages, pictures and files between the team inside the clinic.",
       "patient_sharing": "Send the prescription, requests and invoice by secure link on WhatsApp or e-mail, plus the thank-you and review request.",
-      "reports": "Revenue, visits and performance reports."
+      "reports": "Revenue, visits and performance reports.",
+      "centres": "Send prescriptions and lab / imaging requests to pharmacies and centres, and lists for centres inside the clinic."
     },
     "not_in_plan": "Not in your plan",
     "core_title": "Always on",
@@ -249,7 +251,15 @@
     "log_update": "Update",
     "log_restore": "Restore",
     "restore_title": "Restore this version",
-    "restore_sub": "The current version is backed up first, then the system restarts."
+    "restore_sub": "The current version is backed up first, then the system restarts.",
+    "db_state": "Database updates",
+    "db_ok": "Up to date",
+    "db_pending": "{n} waiting",
+    "db_count": "({n} applied)",
+    "db_auto": "Applied by themselves on start, every 5 minutes while running, and whenever a page needs a new table — no command needed.",
+    "db_run": "Update the database now",
+    "db_applied": "{n} database updates applied.",
+    "db_uptodate": "The database is up to date."
   },
   "errors_platformops": {
     "MODULE_OFF": "This section is turned off for the clinic.",

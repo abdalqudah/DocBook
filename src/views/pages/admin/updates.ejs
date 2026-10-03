@@ -18,7 +18,10 @@
       <dl class="dl mt-4">
         <dt>Node.js</dt><dd class="mono" dir="ltr"><%= current.node %></dd>
         <dt><%= t('updater.database') %></dt><dd class="mono small" dir="ltr"><%= dbVersion %></dd>
+        <dt><%= t('updater.db_state') %></dt><dd><% if (pendingDb.length) { %><span class="badge badge-warning badge-dot"><%= t('updater.db_pending', { n: pendingDb.length }) %></span><% } else { %><span class="badge badge-success badge-dot"><%= t('updater.db_ok') %></span><% } %> <span class="tiny muted"><%= t('updater.db_count', { n: appliedDb }) %></span></dd>
       </dl>
+      <p class="tiny muted mt-2"><%= t('updater.db_auto') %></p>
+      <form method="post" action="/admin/updates/database" class="mt-2"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('database', 'icon-sm') %><%= t('updater.db_run') %></button></form>
     </div>
   </section>
 

@@ -40,7 +40,7 @@ const pageMeta = (total, p) => { const pages = Math.max(1, Math.ceil(total / PER
 router.get('/', wrap(async (req, res) => {
   const count = async (q) => Number((await q.count({ n: '*' }))[0].n);
   const d30 = since(30);
-  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats] = await Promise.all([
+  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats, centreSends, centreClinics] = await Promise.all([
     count(knex('businesses')), count(knex('businesses').where({ status: 'active' })), count(knex('businesses').where({ status: 'suspended' })),
     count(knex('users')), count(knex('users').where('last_login_at', '>=', d30)),
     count(knex('appointments').where('created_at', '>=', d30).whereNot('appointment_type', 'blocked')),
@@ -51,6 +51,8 @@ router.get('/', wrap(async (req, res) => {
     count(knex('share_links').where('created_at', '>=', d30)),
     count(knex('queue_screens').where({ is_active: true }).where('last_seen_at', '>=', new Date(Date.now() - 60_000))),
     count(knex('staff_chat_messages').where('created_at', '>=', d30)),
+    count(knex('partner_sends').where('created_at', '>=', d30)),
+    knex('clinic_partners').countDistinct({ n: 'business_id' }).then((r) => Number(r[0].n)),
   ]);
   // Clinics whose own backup is younger than a day (the nightly job keeps one per clinic).
   const live = await knex('businesses').whereNot('status', 'deleted').pluck('id');
@@ -59,7 +61,7 @@ router.get('/', wrap(async (req, res) => {
   const { isLocalUrl, isLocalHost } = require('../../middleware/web'); // eslint-disable-line global-require
   const appUrlWarning = (!process.env.APP_URL || isLocalUrl(process.env.APP_URL)) && !isLocalHost(req.hostname)
     ? { current: process.env.APP_URL || '', suggested: `https://${req.hostname}` } : null;
-  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, backedUp, backupTotal: live.length }, recentClinics, activity, appUrlWarning });
+  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
 }));
 
 // ---------------------------------------------------------------- clinics
@@ -96,14 +98,19 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
     businesses.listMembers(b.id),
   ]);
   const d30 = since(30);
-  const [full, sent, screens, chats] = await Promise.all([
+  const [full, sent, screens, chats, centres, centreSends, msgRow] = await Promise.all([
     businesses.get(b.id),
     count(knex('share_links').where({ business_id: b.id }).where('created_at', '>=', d30)),
     knex('queue_screens').where({ business_id: b.id }).select('name', 'is_active', 'last_seen_at'),
     count(knex('staff_chat_messages').where({ business_id: b.id }).where('created_at', '>=', d30)),
+    count(knex('clinic_partners').where({ business_id: b.id, is_active: true })),
+    count(knex('partner_sends').where({ business_id: b.id }).where('created_at', '>=', d30)),
+    knex('clinic_messages').where({ business_id: b.id }).first('texts'),
   ]);
+  let ownTexts = 0;
+  try { ownTexts = Object.keys(JSON.parse((msgRow && msgRow.texts) || '{}')).length; } catch { ownTexts = 0; }
   const modules = await ops.state(full);
-  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats } });
+  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts } });
 }));
 
 // The clinic's optional areas (the same switches as the clinic's Settings → Modules), recorded in the clinic's audit log.

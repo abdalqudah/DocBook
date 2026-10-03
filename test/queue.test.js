@@ -135,6 +135,7 @@ test('platform admin: clinic areas switch the waiting screen and team chat off; 
   assert.equal(r.status, 200);
   assert.match(r.text, /Backups up to date/);
   assert.match(r.text, /Waiting screens on now/);
+  assert.match(r.text, /Papers to pharmacies &amp; centres/);
   r = await ad.get('/admin/clinics?lang=en');
   assert.match(r.text, /Last backup/);
   r = await ad.get(`/admin/clinics/${businessId}?lang=en`);
@@ -160,6 +161,9 @@ test('platform admin: clinic areas switch the waiting screen and team chat off; 
   assert.match(r.text, /Waiting-room screen/);
   assert.match(r.text, /An encrypted backup per clinic/);
   assert.match(r.text, /What do I need for the waiting-room screen\?/);
+  assert.match(r.text, /Pharmacies, imaging centres and labs/);
+  assert.match(r.text, /The waiting screen calls patients aloud/);
+  assert.match(r.text, /Does the database need a manual update after each version\?/);
 });
 
 test('screen top bar: clinic name shown or hidden and a message in the middle — waiting screen and door screen', async () => {

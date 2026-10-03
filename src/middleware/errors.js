@@ -7,6 +7,15 @@ function notFound(req, res, next) {
 
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
+  // A table or column of this version is missing (an update whose database changes have not run yet): bring the
+  // database up to date now and ask the visitor to reload, instead of a server error.
+  const auto = require('../db/auto'); // eslint-disable-line global-require
+  if (auto.isMissingSchema(err) && config.autoMigrate && !config.isTest) {
+    auto.ensureLatest({ reason: 'missing table/column' }).catch((e) => console.error('[db] update failed:', e.message)); // eslint-disable-line no-console
+    res.set({ 'Retry-After': '5', 'Cache-Control': 'no-store' });
+    if ((req.get('accept') || '').startsWith('application/json')) return res.status(503).json({ success: false, error: { code: 'UPDATING', message: 'Updating the database, try again in a few seconds.' } });
+    return res.status(503).type('html').send('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="5"><body style="font-family:Tahoma,Arial,sans-serif;max-width:520px;margin:15vh auto;text-align:center"><p dir="rtl" lang="ar">جاري تحديث قاعدة البيانات… ستتحدث الصفحة تلقائيًا.</p><p>Updating the database… this page refreshes by itself.</p></body>');
+  }
   const known = err instanceof AppError;
   const status = known ? err.status : 500;
   if (!known && !config.isTest) console.error(`[error] ${req.method} ${req.originalUrl}`, err); // eslint-disable-line no-console

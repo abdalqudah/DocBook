@@ -6,7 +6,7 @@ const config = require('../../config');
 const SECTIONS = [
   { group: 'profile', items: [
     { key: 'clinic', href: '/app/settings/clinic', icon: 'building-2', perms: ['settings.manage'] },
-    { key: 'partners', href: '/app/settings/partners', icon: 'handshake', perms: ['settings.manage'] },
+    { key: 'partners', href: '/app/settings/partners', icon: 'handshake', perms: ['settings.manage'], module: 'centres' },
   ] },
   // The clinic online — moved to the Website workspace (redesign 4.3); kept for page access (settings_<key>).
   { group: 'online', items: [

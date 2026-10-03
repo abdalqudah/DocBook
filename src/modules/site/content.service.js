@@ -110,13 +110,22 @@ const BLOCKS = { header: HEADER, footer: FOOTER };
 const isI18n = (kind) => kind === 'text' || kind === 'textarea';
 
 // ---------------------------------------------------------------- default content (from the translation files)
-// Added in content revision 2 (waiting screen, sending papers, team chat, per-clinic backups…). A page the platform
-// already edited gets these once (mergeNew) — items the admin removes afterwards are not brought back.
-const REV = 2;
-const NEW_SHOWCASE = [['queue', 'monitor', 'wide'], ['call', 'bell'], ['share', 'file-check', 'wide'], ['review', 'star'], ['backup', 'shield-check', 'wide'],
-  ['chat', 'message-square'], ['specialty', 'stethoscope'], ['letterhead', 'stamp']];
-const NEW_FEATURES = [['share', 'send'], ['queue', 'monitor'], ['security', 'shield-check']];
-const NEW_FAQ = [9, 10, 11];
+// What each content revision added (2: waiting screen, sending papers, team chat, backups… 3: pharmacies & centres,
+// the screen that calls patients aloud, the consultation timer, message texts, website carousels & icon libraries).
+// A page the platform already edited gets a revision's items once (mergeNew) — items the admin removes afterwards are
+// not brought back. Only the latest revision's cards carry the "new" tag on a fresh page.
+const REV = 3;
+const ADDED = {
+  2: { showcase: [['queue', 'monitor', 'wide'], ['call', 'bell'], ['share', 'file-check', 'wide'], ['review', 'star'], ['backup', 'shield-check', 'wide'],
+    ['chat', 'message-square'], ['specialty', 'stethoscope'], ['letterhead', 'stamp']],
+  features: [['share', 'send'], ['queue', 'monitor'], ['security', 'shield-check']], faq: [9, 10, 11] },
+  3: { showcase: [['centres', 'pill-bottle', 'wide'], ['voice', 'volume-2'], ['timer', 'timer'], ['texts', 'pen-line', 'wide'], ['carousel', 'layout-grid'], ['icons', 'dt-tooth']],
+    features: [['centres', 'pill-bottle'], ['texts', 'pen-line'], ['site', 'layout-template']], faq: [12, 13, 14] },
+};
+const NEW_SHOWCASE = [...ADDED[3].showcase, ...ADDED[2].showcase];
+const NEW_FEATURES = [...ADDED[2].features, ...ADDED[3].features];
+const NEW_FAQ = [...ADDED[2].faq, ...ADDED[3].faq];
+const LATEST = new Set(ADDED[REV].showcase.map(([k]) => k));
 
 function defaults() {
   const en = translator('en');
@@ -142,9 +151,8 @@ function defaults() {
       } },
       { id: 'showcase', type: 'showcase', anchor: 'new', hidden: false, data: {
         kicker: T('showcase.kicker'), title: T('showcase.title'), lead: T('showcase.lead'),
-        items: [...NEW_SHOWCASE.map(([k, icon, size]) => [k, icon, size, true]),
-          ['website', 'layout-template', 'wide'], ['branches', 'building-2'], ['booking', 'calendar-check'], ['cash', 'calculator', 'wide'], ['intake', 'heart-pulse'],
-          ['orders', 'activity'], ['referrals', 'send'], ['files', 'paperclip'], ['telehealth', 'video'], ['ai', 'bot', 'wide']]
+        items: [...NEW_SHOWCASE.map(([k, icon, size]) => [k, icon, size, LATEST.has(k)]),
+          ['website', 'layout-template', 'wide'], ['branches', 'building-2'], ['booking', 'calendar-check'], ['telehealth', 'video'], ['ai', 'bot', 'wide']]
           .map(([k, icon, size, isNew]) => ({ icon, title: T(`showcase.items.${k}.title`), text: T(`showcase.items.${k}.text`), tag: isNew ? T('showcase.tag') : { ar: '', en: '' }, size: size || 'normal' })),
       } },
       { id: 'features', type: 'features', anchor: 'features', hidden: false, data: {
@@ -202,14 +210,16 @@ function defaults() {
 }
 
 // ---------------------------------------------------------------- reading
-/** Adds this revision's new cards / features / questions to a page the platform already edited (not saved until the next edit). */
-function mergeNew(saved, d) {
+/** Adds the cards / features / questions of the revisions after `from` to a page the platform already edited (not saved until the next edit). */
+function mergeNew(saved, d, from = 0) {
   const v = structuredClone(saved);
   const en = (x) => String((x && (x.en || x.ar)) || '').trim();
+  const revs = Object.keys(ADDED).map(Number).filter((r) => r > from);
+  const of = (part) => revs.flatMap((r) => ADDED[r][part]);
   const fresh = {
-    showcase: { first: true, id: (it) => en(it.title), keys: new Set(NEW_SHOWCASE.map(([k]) => en(translatorPair(`showcase.items.${k}.title`)))) },
-    features: { first: false, id: (it) => en(it.title), keys: new Set(NEW_FEATURES.map(([k]) => en(translatorPair(`features.items.${k}.title`)))) },
-    faq: { first: false, id: (it) => en(it.q), keys: new Set(NEW_FAQ.map((i) => en(translatorPair(`faq.q${i}`)))) },
+    showcase: { first: true, id: (it) => en(it.title), keys: new Set(of('showcase').map(([k]) => en(translatorPair(`showcase.items.${k}.title`)))) },
+    features: { first: false, id: (it) => en(it.title), keys: new Set(of('features').map(([k]) => en(translatorPair(`features.items.${k}.title`)))) },
+    faq: { first: false, id: (it) => en(it.q), keys: new Set(of('faq').map((i) => en(translatorPair(`faq.q${i}`)))) },
   };
   for (const ds of d.sections) {
     const rule = fresh[ds.type];
@@ -227,7 +237,7 @@ const translatorPair = (k) => ({ en: translator('en')(`site.d.${k}`), ar: transl
 function normalise(v) {
   const d = defaults();
   if (!v || !Array.isArray(v.sections)) return d;
-  if ((Number(v.rev) || 0) < REV) v = mergeNew(v, d);
+  if ((Number(v.rev) || 0) < REV) v = mergeNew(v, d, Number(v.rev) || 0);
   return {
     version: 1,
     rev: REV,

@@ -9,10 +9,12 @@
   <div class="stat"><div class="stat-label"><%= t('admin.stat_appts') %><span class="stat-icon"><%- icon('calendar-check') %></span></div><div class="stat-value"><%= fmt.number(stats.appts) %></div><div class="stat-meta"><%= t('admin.stat_appts_meta') %></div></div>
   <div class="stat"><div class="stat-label"><%= t('admin.stat_online') %><span class="stat-icon accent"><%- icon('globe') %></span></div><div class="stat-value"><%= fmt.number(stats.online) %></div><div class="stat-meta"><%= t('admin.stat_online_meta', { pct: fmt.pct(stats.appts ? stats.online / stats.appts * 100 : 0) }) %></div></div>
 </div>
+<% if (typeof dbPending !== 'undefined' && dbPending.length) { %><div class="alert alert-warning mt-4"><%- icon('database') %><div class="grow"><%= t('admin.db_pending', { n: dbPending.length }) %></div><a class="btn btn-secondary btn-sm" href="/admin/updates"><%= t('admin.db_open') %></a></div><% } %>
 <div class="stats mt-4">
   <div class="stat"><div class="stat-label"><%= t('admin.stat_backups') %><span class="stat-icon <%= stats.backedUp < stats.backupTotal ? 'warning' : 'success' %>"><%- icon('database') %></span></div><div class="stat-value"><%= fmt.number(stats.backedUp) %> / <%= fmt.number(stats.backupTotal) %></div><div class="stat-meta"><%= t('admin.stat_backups_meta') %></div></div>
   <div class="stat"><div class="stat-label"><%= t('admin.stat_sent') %><span class="stat-icon"><%- icon('send') %></span></div><div class="stat-value"><%= fmt.number(stats.sent) %></div><div class="stat-meta"><%= t('admin.stat_appts_meta') %></div></div>
   <div class="stat"><div class="stat-label"><%= t('admin.stat_screens') %><span class="stat-icon info"><%- icon('monitor') %></span></div><div class="stat-value"><%= fmt.number(stats.screens) %></div><div class="stat-meta"><%= t('admin.stat_screens_meta') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('admin.stat_centres') %><span class="stat-icon"><%- icon('pill-bottle') %></span></div><div class="stat-value"><%= fmt.number(stats.centreSends) %></div><div class="stat-meta"><%= t('admin.stat_centres_meta', { n: fmt.number(stats.centreClinics) }) %></div></div>
   <div class="stat"><div class="stat-label"><%= t('admin.stat_chats') %><span class="stat-icon accent"><%- icon('message-circle') %></span></div><div class="stat-value"><%= fmt.number(stats.chats) %></div><div class="stat-meta"><%= t('admin.stat_appts_meta') %></div></div>
 </div>
 <div class="grid grid-main mt-6">

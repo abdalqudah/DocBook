@@ -2,7 +2,7 @@
   var o = (typeof old !== 'undefined' && old && old._csrf !== undefined) ? old : null;
   var isOn = function (m) { return o ? (o[m.key] === '1') : m.toggled; };
   var groups = [
-    { key: 'patients_care', items: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant', 'patient_sharing'] },
+    { key: 'patients_care', items: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant', 'patient_sharing', 'centres'] },
     { key: 'money', items: ['billing', 'doctor_payroll', 'staff_salaries', 'finance'] },
     { key: 'operations', items: ['queue_screens', 'staff_chat', 'supplies', 'marketplace', 'attendance', 'reports'] }
   ];

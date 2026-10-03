@@ -72,6 +72,8 @@ async function start(server) {
       if (applied.length) console.log(`[db] applied migrations: ${applied.join(', ')}`); // eslint-disable-line no-console
     });
   }
+  // Keep the database up to date while running (files updated without a restart): checked every 5 minutes.
+  require('./db/auto').watch(); // eslint-disable-line global-require
   // Platform super admin from SUPER_ADMIN_* (never overwrites an existing password).
   await require('./modules/rbac/rbac.service').syncSystemRoles(); // eslint-disable-line global-require
   await require('./modules/auth/auth.service').ensureSuperAdmin() // eslint-disable-line global-require

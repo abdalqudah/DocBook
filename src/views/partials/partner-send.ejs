@@ -3,7 +3,7 @@
    order), docId, partnerKind (pharmacy | imaging | lab), small. */%>
 <% var _ps = (typeof clinicPartners !== 'undefined' ? clinicPartners : []).filter(function (p) { return p.kind === partnerKind; });
    var _sm = typeof small !== 'undefined' && small; var _back = typeof currentPath !== 'undefined' && currentPath ? currentPath : '/app'; %>
-<% if (_ps.length) { %>
+<% if (_ps.length && (typeof moduleOn === 'undefined' || moduleOn('centres'))) { %>
 <details class="dropdown partner-dd">
   <summary class="btn <%= _sm ? 'btn-ghost btn-sm' : 'btn-secondary' %>"><%- icon(partnerKind === 'pharmacy' ? 'pill-bottle' : partnerKind === 'imaging' ? 'scan-line' : 'microscope', 'icon-sm') %><span class="<%= _sm ? 'hide-sm' : '' %>"><%= t('centres.send_to.' + partnerKind) %></span></summary>
   <div class="menu partner-menu">

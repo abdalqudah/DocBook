@@ -53,7 +53,7 @@
     </div>
   </section>
 </div>
-<% var _groups = { patients_care: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant', 'patient_sharing'], money: ['billing', 'doctor_payroll', 'staff_salaries', 'finance'], operations: ['queue_screens', 'staff_chat', 'supplies', 'marketplace', 'attendance', 'reports'] };
+<% var _groups = { patients_care: ['online_booking', 'online_consultations', 'certificates', 'specialty_records', 'reviews', 'ai_assistant', 'patient_sharing', 'centres'], money: ['billing', 'doctor_payroll', 'staff_salaries', 'finance'], operations: ['queue_screens', 'staff_chat', 'supplies', 'marketplace', 'attendance', 'reports'] };
    var _mk = {}; modules.list.forEach(function (m) { _mk[m.key] = m; }); %>
 <div class="grid grid-main mt-6">
   <form class="panel" id="modules" method="post" action="/admin/clinics/<%= b.id %>/modules" data-confirm="<%= t('admin.modules_confirm', { name: b.name }) %>" data-confirm-yes="<%= t('common.save') %>" data-confirm-tone="primary">
@@ -82,6 +82,8 @@
       <dl class="dl">
         <dt><%= t('admin.stat_sent') %></dt><dd><%= fmt.number(usage.sent) %></dd>
         <dt><%= t('admin.stat_chats') %></dt><dd><%= fmt.number(usage.chats) %></dd>
+        <dt><%= t('admin.usage_centres') %></dt><dd><%= t('admin.usage_centres_val', { n: fmt.number(usage.centres), sent: fmt.number(usage.centreSends) }) %></dd>
+        <dt><%= t('admin.usage_texts') %></dt><dd><%= usage.ownTexts ? t('admin.usage_texts_yes', { n: fmt.number(usage.ownTexts) }) : t('admin.usage_texts_no') %></dd>
         <dt><%= t('admin.usage_screens') %></dt>
         <dd><% if (!usage.screens.length) { %><span class="muted"><%= t('admin.usage_no_screens') %></span><% } else { usage.screens.forEach(function (s) { var on = s.is_active && s.last_seen_at && Date.now() - new Date(s.last_seen_at).getTime() < 60000; %><div class="row-sm"><span><%= s.name %></span><span class="badge <%= on ? 'badge-success' : 'badge-neutral' %> badge-dot"><%= on ? t('attendance.screen_online') : (s.is_active ? (s.last_seen_at ? fmt.date(s.last_seen_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : t('attendance.screen_never')) : t('attendance.screen_off')) %></span></div><% }) } %></dd>
         <dt><%= t('admin.backup.title') %></dt><dd><% if (backups.length) { %><%= fmt.date(backups[0].at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %><% } else { %><span class="muted"><%= t('admin.backup.never') %></span><% } %></dd>
