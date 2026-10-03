@@ -161,7 +161,7 @@
           : '<form class="pos-side-finish" data-pos-finish="' + v.id + '"><input class="pos-side-amt" name="amount" inputmode="decimal" autocomplete="off" value="' + (v.due > 0 ? esc(String(round(v.due))) : '') + '" placeholder="' + esc(T.amount_ph) + '" aria-label="' + esc(T.amount_ph) + '"><button type="submit" class="pos-side-btn is-primary">' + esc(T.finish) + '</button></form>';
         return '<div class="pos-side-row">'
           + '<div class="pos-side-top"><span class="pos-side-time num" dir="ltr">' + esc(v.time) + '</span>'
-          + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span></span></div>'
+          + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span>' + (v.practice ? '<span class="pos-card-practice">' + esc(v.practice) + '</span>' : '') + '</span></div>'
           + act + '</div>';
       }).join('') : '<p class="pos-side-empty">' + esc((T.side_none || {})[k] || '') + '</p>';
     });
