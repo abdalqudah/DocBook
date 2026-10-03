@@ -302,3 +302,30 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .sx-sent { display: inline-flex; align-items: center; gap: 4px; }
 .sx-preview { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; background: var(--surface-sunken); max-height: 260px; overflow: auto; }
 .table tr.table-group th { background: var(--surface-sunken); font-weight: var(--fw-semibold); text-align: start; padding: 8px 16px; }
+/* Surgeries: day / week / month */
+.sx-bar { flex-wrap: wrap; gap: 10px; }
+.sx-tools { flex-wrap: wrap; gap: 8px; }
+.sx-tools .select, .sx-tools .input { max-width: 200px; }
+.sx-card { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--border); border-inline-start: 4px solid var(--primary); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); text-decoration: none; }
+.sx-card:hover { border-color: var(--border-strong); background: var(--surface-sunken); }
+.sx-card-lg { flex-direction: row; align-items: center; gap: 16px; padding: 14px 16px; }
+.sx-card-time { min-width: 110px; font-weight: var(--fw-semibold); }
+.sx-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sx-card-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.sx-day { display: flex; flex-direction: column; gap: 10px; }
+.sx-week { display: grid; grid-template-columns: repeat(7, minmax(118px, 1fr)); gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.sx-col { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); min-height: 220px; display: flex; flex-direction: column; }
+.sx-col.is-today { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.sx-col-head { display: flex; flex-direction: column; padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text); text-decoration: none; }
+.sx-col-head span { font-size: 12px; color: var(--text-muted); }
+.sx-col-body { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.sx-none { text-align: center; padding: 8px 0; }
+.sx-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+.sx-month-dow { padding: 8px; font-size: 12px; font-weight: var(--fw-semibold); color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--surface-sunken); }
+.sx-month-day { min-height: 104px; padding: 6px; border-top: 1px solid var(--border); border-inline-start: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sx-month-day:nth-child(7n + 1) { border-inline-start: 0; }
+.sx-month-day.is-out { background: var(--surface-sunken); opacity: .65; }
+.sx-month-day.is-today .sx-month-num { background: var(--primary); color: var(--primary-ink); }
+.sx-month-num { align-self: flex-start; min-width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: var(--pill); font-size: 12px; font-weight: var(--fw-semibold); color: var(--text); text-decoration: none; }
+.sx-chip { display: block; font-size: 11.5px; padding: 2px 6px; border-radius: 6px; border-inline-start: 3px solid var(--primary); background: var(--primary-soft); color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 720px) { .sx-card-lg { flex-direction: column; align-items: flex-start; } .sx-card-side { align-items: flex-start; } .sx-month-day { min-height: 70px; } .sx-chip span { display: none; } }

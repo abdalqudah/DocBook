@@ -74,13 +74,26 @@ test('a time block as a surgery: listed under Surgeries with patient, procedure 
   assert.equal(block.appointment_type, 'blocked');
   assert.match(block.patient_name, /خلع ضرس عقل — خالد عمر/);
 
-  const list = await o.get('/app/surgeries');
+  const list = await o.get('/app/surgeries?view=list');
   assert.equal(list.status, 200);
   assert.match(list.text, /خالد عمر/);
   assert.match(list.text, /خلع ضرس عقل/);
   assert.match(list.text, /10:00–12:00/);
   const nav = await o.get('/app/patients');
-  assert.match(nav.text, /href="\/app\/surgeries"/);
+  assert.match(nav.text, /href="\/app\/surgeries" class="[^"]*" title="[^"]*" data-nav-ws="surgeries"/); // its own line in the sidebar
+  // Day, week and month show it on its date.
+  for (const v of ['day', 'week', 'month']) {
+    const r = await o.get(`/app/surgeries?view=${v}&date=${date}`);
+    assert.equal(r.status, 200, v);
+    assert.match(r.text, /خالد عمر/, v);
+  }
+  // The patient's page: a Surgeries tab, and the coming surgery on the overview.
+  const pt = await o.get(`/app/patients/${pid}?tab=surgeries`);
+  assert.match(pt.text, /خلع ضرس عقل/);
+  assert.match(pt.text, new RegExp(`/app/appointments\\?surgery=1&amp;patient=${pid}|/app/appointments\\?surgery=1&patient=${pid}`));
+  assert.match((await o.get(`/app/patients/${pid}`)).text, /خلع ضرس عقل/);
+  const pre = await o.get(`/app/appointments?surgery=1&patient=${pid}`);
+  assert.match(pre.text, new RegExp(`name="patient_id" value="${pid}"`));
 
   // A surgery form without a procedure is refused and nothing is reserved.
   const before = await knex('appointments').where({ business_id: B, appointment_type: 'blocked' }).count({ n: '*' });
@@ -119,7 +132,7 @@ test('send to the hospital by e-mail (clinic mail) and WhatsApp; moving the bloc
   assert.equal(c.status, 'cancelled');
   assert.equal(c.appointment_id, null);
   assert.equal(await knex('appointments').where({ id: s.appointment_id }).first(), undefined);
-  const past = await o.get('/app/surgeries?when=all');
+  const past = await o.get('/app/surgeries?view=list&when=all');
   assert.match(past.text, /ملغاة|Cancelled/);
 });
 
@@ -136,7 +149,7 @@ test('a doctor login books a surgery on their own time and sees only their own s
   const mine = await knex('surgeries').where({ business_id: B, doctor_id: doc2 }).first();
   assert.equal(mine.hospital_name, 'مستشفى الشفاء');
   assert.equal(mine.hospital_id, null);
-  const list = await d.get('/app/surgeries?when=all');
+  const list = await d.get('/app/surgeries?view=list&when=all');
   assert.match(list.text, /زراعة/);
   assert.doesNotMatch(list.text, /خلع ضرس عقل/);
   const other = await knex('surgeries').where({ business_id: B, doctor_id: doc }).first();

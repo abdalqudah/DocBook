@@ -216,7 +216,7 @@
 </div>
 <% } %>
 
-<% if (canBlock && doctors.length) { var bOld = (typeof old !== 'undefined' && old) || {}; var bDoc = bOld.doctor_id || (bookDoctor || (doctors.length === 1 ? doctors[0].id : '')); %>
+<% if (canBlock && doctors.length) { var bOld = (typeof old !== 'undefined' && old && Object.keys(old).length && old) || (typeof blockPrefill !== 'undefined' && blockPrefill) || {}; var bDoc = bOld.doctor_id || (bookDoctor || (doctors.length === 1 ? doctors[0].id : '')); %>
 <dialog class="dialog" id="block-dialog" aria-labelledby="block-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'block-dialog') { %> data-open-on-load<% } %>>
   <form method="post" action="/app/appointments/blocks" novalidate data-booking>
     <div class="dialog-head"><div><h2 id="block-title"><%= t('appointments.block_time') %></h2><p class="small muted"><%= t('appointments.block_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>

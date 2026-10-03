@@ -451,6 +451,12 @@ async function patientFile(d, locale = 'ar') {
       w.text([dateText(r.created_at, locale), r.specialty, r.to_doctor || r.to_facility].filter(Boolean).join(' · '), { size: 10.5, bold: true, gap: 2 });
       if (r.reason) w.text(String(r.reason), { size: 10, gap: 1 });
     });
+    if ((d.surgeries || []).length) {
+      list(x('surgeries', { n: d.surgeries.length }), d.surgeries, (sx) => {
+        w.text([dateText(sx.surgery_date, locale), ltr(sx.surgery_time), sx.procedure_name, t(`surgeries.status.${sx.status}`)].filter(Boolean).join(' · '), { size: 10.5, bold: true, gap: 2 });
+        if (sx.hospital_name || sx.notes) w.text([sx.hospital_name, sx.notes].filter(Boolean).join(' · '), { size: 10, gap: 1, color: C.textMuted });
+      });
+    }
     if (d.certificates.length) list(x('certificates', { n: d.certificates.length }), d.certificates, (c) => w.text([dateText(c.created_at, locale), t(`patient_docs.cert_types.${c.doc_type}`)].join(' · '), { size: 10.5, gap: 2 }));
     list(x('files', { n: d.files.length }), d.files, (f) => {
       w.text([dateText(f.date, locale), f.title].filter(Boolean).join(' · '), { size: 10.5, bold: true, gap: 1 });

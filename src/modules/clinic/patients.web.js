@@ -238,7 +238,8 @@ async function renderShow(req, res, extra = {}) {
   const timeline = buildTimeline(tl, req.ctx.permissions, req.ctx.ownDoctorId, access.clinical, codes);
   // Patient workspace tabs (redesign 3.9): one address, ?tab=…; a tab shows only to members who may see its records.
   const perms = req.ctx.permissions;
-  const tabs = ['overview', clinicalOk || (perms.has('clinical.view') && !access.clinical) ? 'clinical' : null, 'appointments', clinicalOk ? 'prescriptions' : null,
+  const surgeriesOn = (perms.has('clinical.view') || perms.has('appointments.manage')) && (typeof res.locals.moduleOn !== 'function' || res.locals.moduleOn('surgeries'));
+  const tabs = ['overview', clinicalOk || (perms.has('clinical.view') && !access.clinical) ? 'clinical' : null, 'appointments', surgeriesOn ? 'surgeries' : null, clinicalOk ? 'prescriptions' : null,
     clinicalOk ? 'orders' : null, perms.has('certificates.view') || clinicalOk ? 'documents' : null, perms.has('billing.view') ? 'billing' : null, 'timeline'].filter(Boolean);
   const tab = tabs.includes(req.query.tab) ? req.query.tab : 'overview';
   const byDateDesc = (a, b) => `${b.appointment_date} ${b.appointment_time}`.localeCompare(`${a.appointment_date} ${a.appointment_time}`);
@@ -257,9 +258,11 @@ async function renderShow(req, res, extra = {}) {
     const [ol, rl, fl] = await Promise.all([orders.ordersForPatient(req.ctx, p.id), orders.referralsForPatient(req.ctx, p.id), orders.filesForPatient(req.ctx, p.id)]);
     orderTab = { orders: ol, referrals: rl, files: fl };
   }
+  // Surgeries (Patients → Surgeries): the tab lists them all, the overview shows the coming ones.
+  const surgeries = surgeriesOn ? await require('../surgeries/surgeries.service').forPatient(req.ctx, p.id) : []; // eslint-disable-line global-require
   const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
   res.page('pages/clinic/patients/show', {
-    tab, tabs, prescriptions, certificates, orderTab, unpaid, allAppointments: apptsMine.slice().sort(byDateDesc),
+    tab, tabs, prescriptions, certificates, orderTab, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
     timeline, invoices: tl.invoices.filter(mine),

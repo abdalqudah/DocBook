@@ -72,6 +72,19 @@
       "wa": "مرحباً {hospital}،\nموعد عملية من {clinic}:\nالمريض: {name} — {phone}\nالعملية: {procedure}\nالطبيب: {doctor}\nالموعد: {date}، {time}\nملاحظات: {notes}",
       "mail_subject": "موعد عملية — {name} — {date}",
       "mail_body": "مرحباً {hospital}،\n\nنرجو حجز غرفة العمليات للموعد التالي:\n\nالمريض: {name}\nالهاتف: {phone}\nالعملية: {procedure}\nالطبيب: {doctor}\nالموعد: {date}، {time}\nملاحظات: {notes}\n\nمع الشكر،\n{clinic}"
-    }
+    },
+    "views": "طريقة العرض",
+    "view": {
+      "day": "اليوم",
+      "week": "الأسبوع",
+      "month": "الشهر",
+      "list": "القائمة"
+    },
+    "prev": "السابق",
+    "next": "التالي",
+    "empty_day": "لا عمليات في هذا اليوم.",
+    "upcoming_for": "عمليات قادمة",
+    "patient_sub": "كل عمليات المريض: موعدها، الإجراء، المستشفى، والحالة.",
+    "patient_empty": "لا عمليات لهذا المريض."
   }
 }

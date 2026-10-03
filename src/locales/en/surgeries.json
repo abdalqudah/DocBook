@@ -72,6 +72,19 @@
       "wa": "Hello {hospital},\nA surgery from {clinic}:\nPatient: {name} — {phone}\nProcedure: {procedure}\nDoctor: {doctor}\nDate: {date}, {time}\nNotes: {notes}",
       "mail_subject": "Surgery booking — {name} — {date}",
       "mail_body": "Hello {hospital},\n\nPlease book the operating room for the following:\n\nPatient: {name}\nPhone: {phone}\nProcedure: {procedure}\nDoctor: {doctor}\nDate: {date}, {time}\nNotes: {notes}\n\nThank you,\n{clinic}"
-    }
+    },
+    "views": "View",
+    "view": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "list": "List"
+    },
+    "prev": "Previous",
+    "next": "Next",
+    "empty_day": "No surgeries on this day.",
+    "upcoming_for": "Coming surgeries",
+    "patient_sub": "All of the patient's surgeries: date, procedure, hospital and status.",
+    "patient_empty": "No surgeries for this patient."
   }
 }

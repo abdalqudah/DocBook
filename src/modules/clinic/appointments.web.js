@@ -147,6 +147,10 @@ async function renderIndex(req, res, extra = {}) {
   // Hospitals for the "surgery" option of a time block; ?surgery=1 (from Patients → Surgeries) opens it ready.
   const hospitals = (await require('../partners/partners.service').list(ctx.businessId, { activeOnly: true })).filter((p) => p.kind === 'hospital'); // eslint-disable-line global-require
   const surgeryOpen = req.query.surgery === '1' && !extra.openDialog ? { openDialog: 'block-dialog', blockKind: 'surgery' } : {};
+  if (surgeryOpen.openDialog && /^\d+$/.test(String(req.query.patient || ''))) { // from the patient's page: the patient is already chosen
+    const pt = await knex('patients').where({ id: Number(req.query.patient), business_id: ctx.businessId }).first('id', 'full_name', 'phone');
+    if (pt) surgeryOpen.blockPrefill = { kind: 'surgery', patient_id: pt.id, patient_name: pt.full_name, patient_phone: pt.phone || '' };
+  }
   const base = { title: req.t('appointments.title'), view, f, doctors, statuses: appts.STATUSES, branchOpts, hospitals, ...surgeryOpen, ...ASSETS, pageScripts: [...(ASSETS.pageScripts || []), '/js/surgeries.js'] };
 
   if (view === 'list') {

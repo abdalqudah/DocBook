@@ -22,15 +22,43 @@ const mayChange = (req, s) => req.ctx.permissions.has('appointments.manage') || 
 const hospitalsOf = async (ctx) => (await require('../partners/partners.service').list(ctx.businessId, { activeOnly: true })).filter((p) => p.kind === 'hospital'); // eslint-disable-line global-require
 const errText = (req, e) => { for (const k of [`surgeries.err.${e.code}`, `errors.${e.code}`]) { const s = req.t(k); if (s !== k) return s; } return e.message; };
 
+// Dates: weeks start on Saturday (as the appointments calendar).
+const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) && !Number.isNaN(Date.parse(`${v}T12:00:00Z`));
+const addDays = (d, n) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+const weekStart = (d) => addDays(d, -((new Date(`${d}T12:00:00Z`).getUTCDay() + 1) % 7));
+const VIEWS = ['day', 'week', 'month', 'list'];
+
 router.get('/', wrap(async (req, res) => {
-  const f = { when: ['upcoming', 'past', 'all'].includes(req.query.when) ? req.query.when : 'upcoming', doctor: Number(req.query.doctor) || null, hospital: Number(req.query.hospital) || null, status: req.query.status || '' };
-  const [rows, hospitals, doctors] = await Promise.all([
-    svc.list(req.ctx, f), hospitalsOf(req.ctx),
-    req.ctx.ownDoctorId ? [] : knex('doctors').where({ business_id: req.ctx.businessId, is_active: true }).orderBy('full_name').select('id', 'full_name', 'full_name_en'),
+  const { ctx } = req;
+  const view = VIEWS.includes(req.query.view) ? req.query.view : 'week';
+  const date = isDate(req.query.date) ? req.query.date : ctx.today;
+  const f = { view, date, when: ['upcoming', 'past', 'all'].includes(req.query.when) ? req.query.when : 'upcoming', doctor: Number(req.query.doctor) || null, hospital: Number(req.query.hospital) || null };
+  const [hospitals, doctors] = await Promise.all([
+    hospitalsOf(ctx),
+    ctx.ownDoctorId ? [] : knex('doctors').where({ business_id: ctx.businessId, is_active: true }).orderBy('full_name').select('id', 'full_name', 'full_name_en', 'color'),
   ]);
-  const days = [];
-  rows.forEach((r) => { const k = String(r.surgery_date); let d = days.find((x) => x.date === k); if (!d) { d = { date: k, rows: [] }; days.push(d); } d.rows.push(r); });
-  res.page('pages/surgeries/index', { title: req.t('surgeries.title'), f, days, total: rows.length, hospitals, doctors, canAdd: mayChange(req, null), ...ASSETS });
+  const data = { title: req.t('surgeries.title'), f, view, date, hospitals, doctors, canAdd: mayChange(req, null), today: ctx.today, ...ASSETS };
+  if (view === 'list') {
+    const rows = await svc.list(ctx, f);
+    const days = [];
+    rows.forEach((r) => { const k = String(r.surgery_date); let d = days.find((x) => x.date === k); if (!d) { d = { date: k, rows: [] }; days.push(d); } d.rows.push(r); });
+    return res.page('pages/surgeries/index', { ...data, days, total: rows.length });
+  }
+  let from; let to; let prev; let next;
+  if (view === 'day') { from = date; to = date; prev = addDays(date, -1); next = addDays(date, 1); }
+  else if (view === 'week') { from = weekStart(date); to = addDays(from, 6); prev = addDays(from, -7); next = addDays(from, 7); }
+  else {
+    const first = `${date.slice(0, 7)}-01`;
+    const last = addDays(`${addDays(first, 32).slice(0, 7)}-01`, -1);
+    from = weekStart(first); to = addDays(weekStart(last), 6);
+    prev = addDays(first, -1).slice(0, 7) + '-01'; next = addDays(last, 1);
+    data.month = first.slice(0, 7);
+  }
+  const rows = await svc.range(ctx, from, to, f);
+  const byDate = {};
+  rows.forEach((r) => { const k = String(r.surgery_date); (byDate[k] = byDate[k] || []).push(r); });
+  const days = []; for (let d = from; d <= to; d = addDays(d, 1)) days.push(d);
+  return res.page('pages/surgeries/index', { ...data, from, to, prev, next, days, byDate, total: rows.length });
 }));
 
 router.get('/patient-lookup', wrap(async (req, res) => {

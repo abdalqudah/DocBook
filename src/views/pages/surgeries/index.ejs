@@ -1,30 +1,107 @@
-<% var S = 'surgeries.'; var qs = function (o) { var p = Object.assign({ when: f.when, doctor: f.doctor || '', hospital: f.hospital || '' }, o); return '?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); };
+<% var S = 'surgeries.';
+   var qs = function (o) { var p = Object.assign({ view: view, date: date, when: view === 'list' ? f.when : '', doctor: f.doctor || '', hospital: f.hospital || '' }, o); return '?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); };
    var end = function (s) { if (!s.duration_minutes) return ''; var a = String(s.surgery_time).split(':'); var x = Number(a[0]) * 60 + Number(a[1]) + Number(s.duration_minutes); return ('0' + (Math.floor(x / 60) % 24)).slice(-2) + ':' + ('0' + (x % 60)).slice(-2); };
-   var tone = { scheduled: 'badge-info', done: 'badge-success', cancelled: 'badge-neutral' }; %>
+   var span = function (s) { return s.surgery_time + (end(s) ? '–' + end(s) : ''); };
+   var tone = { scheduled: 'badge-info', done: 'badge-success', cancelled: 'badge-neutral' };
+   var dot = function (s) { return s.doctor_color ? 'border-inline-start-color:' + s.doctor_color : ''; };
+   var addHref = '/app/appointments?surgery=1' + (ctx.ownDoctorId ? '&doctor=' + ctx.ownDoctorId : (f.doctor ? '&doctor=' + f.doctor : '')); %>
 <div class="page-head">
   <div>
-    <div class="breadcrumbs"><%= t('navx.sec_patients') %></div>
     <h1><%= t(S + 'title') %></h1>
     <p><%= t(S + 'lead') %></p>
   </div>
   <div class="page-actions">
-    <% if (canAdd) { %><a class="btn btn-primary" href="/app/appointments?surgery=1<%= ctx.ownDoctorId ? '&doctor=' + ctx.ownDoctorId : '' %>"><%- icon('scissors', 'icon-sm') %><%= t(S + 'add') %></a><% } %>
+    <% if (canAdd) { %><a class="btn btn-primary" href="<%= addHref %>"><%- icon('scissors', 'icon-sm') %><%= t(S + 'add') %></a><% } %>
   </div>
 </div>
-<div class="panel flush">
-  <div class="panel-body">
-    <form class="row-sm" style="flex-wrap:wrap" method="get" data-autosubmit role="search">
-      <div class="segmented">
-        <% ['upcoming', 'past', 'all'].forEach(function (w) { %><a href="<%= qs({ when: w }) %>" class="<%= f.when === w ? 'active' : '' %>"><%= t(S + 'when.' + w) %></a><% }) %>
-      </div>
-      <input type="hidden" name="when" value="<%= f.when %>">
-      <% if (doctors.length > 1) { %><select class="select" name="doctor" aria-label="<%= t('common.doctor') %>" style="max-width:220px"><option value=""><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= f.doctor === d.id ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% } %>
-      <% if (hospitals.length) { %><select class="select" name="hospital" aria-label="<%= t(S + 'hospital') %>" style="max-width:220px"><option value=""><%= t(S + 'all_hospitals') %></option><% hospitals.forEach(function (h) { %><option value="<%= h.id %>"<%= f.hospital === h.id ? ' selected' : '' %>><%= h.name %></option><% }) %></select><% } %>
+
+<div class="cal-bar sx-bar">
+  <div class="cal-nav">
+    <% if (view !== 'list') { %>
+    <a class="btn btn-secondary btn-icon btn-sm" href="<%= qs({ date: prev }) %>" aria-label="<%= t(S + 'prev') %>" title="<%= t(S + 'prev') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a>
+    <a class="btn btn-secondary btn-sm" href="<%= qs({ date: today }) %>"><%= t('common.today') %></a>
+    <a class="btn btn-secondary btn-icon btn-sm" href="<%= qs({ date: next }) %>" aria-label="<%= t(S + 'next') %>" title="<%= t(S + 'next') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a>
+    <h2 class="cal-title">
+      <% if (view === 'day') { %><%= fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %>
+      <% } else if (view === 'week') { %><%= fmt.date(days[0], { day: 'numeric', month: 'short' }) %> – <%= fmt.date(days[6], { day: 'numeric', month: 'short', year: 'numeric' }) %>
+      <% } else { %><%= fmt.date(month + '-01', { month: 'long', year: 'numeric' }) %><% } %>
+    </h2>
+    <% } else { %>
+    <div class="segmented"><% ['upcoming', 'past', 'all'].forEach(function (w) { %><a href="<%= qs({ when: w }) %>" class="<%= f.when === w ? 'active' : '' %>"><%= t(S + 'when.' + w) %></a><% }) %></div>
+    <% } %>
+  </div>
+  <div class="row-sm sx-tools">
+    <div class="segmented" role="tablist" aria-label="<%= t(S + 'views') %>">
+      <% ['day', 'week', 'month', 'list'].forEach(function (v) { %><a href="<%= qs({ view: v }) %>" class="<%= view === v ? 'active' : '' %>"<%= view === v ? ' aria-current="page"' : '' %>><%= t(S + 'view.' + v) %></a><% }) %>
+    </div>
+    <form class="row-sm" method="get" data-autosubmit role="search">
+      <input type="hidden" name="view" value="<%= view %>"><% if (view === 'list') { %><input type="hidden" name="when" value="<%= f.when %>"><% } %>
+      <% if (view !== 'list') { %><input class="input" type="date" name="date" value="<%= date %>" aria-label="<%= t('common.date') %>"><% } %>
+      <% if (doctors.length > 1) { %><select class="select" name="doctor" aria-label="<%= t('common.doctor') %>"><option value=""><%= t('common.all_doctors') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"<%= f.doctor === d.id ? ' selected' : '' %>><%= L(d.full_name, d.full_name_en) %></option><% }) %></select><% } %>
+      <% if (hospitals.length) { %><select class="select" name="hospital" aria-label="<%= t(S + 'hospital') %>"><option value=""><%= t(S + 'all_hospitals') %></option><% hospitals.forEach(function (h) { %><option value="<%= h.id %>"<%= f.hospital === h.id ? ' selected' : '' %>><%= h.name %></option><% }) %></select><% } %>
       <noscript><button class="btn btn-secondary" type="submit"><%= t('common.filter') %></button></noscript>
     </form>
   </div>
+</div>
+
+<% if (view === 'day') { var list = byDate[date] || []; %>
+<section class="panel">
+  <div class="panel-body">
+    <% if (!list.length) { %><div class="empty"><%- icon('scissors') %><h3><%= t(S + 'empty_title') %></h3><p><%= t(S + 'empty_day') %></p><% if (canAdd) { %><a class="btn btn-secondary" href="<%= addHref %>&date=<%= date %>"><%= t(S + 'add') %></a><% } %></div>
+    <% } else { %>
+    <div class="sx-day">
+      <% list.forEach(function (s) { %>
+      <a class="sx-card sx-card-lg" href="/app/surgeries/<%= s.id %>" style="<%= dot(s) %>">
+        <div class="sx-card-time"><bdi dir="ltr"><%= span(s) %></bdi></div>
+        <div class="sx-card-main">
+          <div class="strong" dir="auto"><%= s.patient_name %><% if (s.patient_phone) { %> <span class="small muted">· <bdi dir="ltr"><%= s.patient_phone %></bdi></span><% } %></div>
+          <div><%= s.procedure_name %></div>
+          <div class="small muted"><%- icon('hospital', 'icon-sm') %> <%= s.hospital_name || t(S + 'no_hospital') %> · <%= s.doctor_id ? L(s.doctor_name, s.doctor_name_en) : '—' %></div>
+        </div>
+        <div class="sx-card-side"><span class="badge <%= tone[s.status] %>"><%= t(S + 'status.' + s.status) %></span><% if (s.sent_at) { %><span class="tiny muted sx-sent"><%- icon(s.sent_channel === 'whatsapp' ? 'message-circle' : 'mail', 'icon-sm') %><%= t(S + 'sent_short', { date: fmt.date(s.sent_at, { day: 'numeric', month: 'short' }) }) %></span><% } %></div>
+      </a>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</section>
+
+<% } else if (view === 'week') { %>
+<div class="sx-week">
+  <% days.forEach(function (d) { var list = byDate[d] || []; %>
+  <section class="sx-col<%= d === today ? ' is-today' : '' %>">
+    <a class="sx-col-head" href="<%= qs({ view: 'day', date: d }) %>"><span><%= fmt.date(d, { weekday: 'short' }) %></span><strong><%= fmt.date(d, { day: 'numeric', month: 'short' }) %></strong></a>
+    <div class="sx-col-body">
+      <% list.forEach(function (s) { %>
+      <a class="sx-card" href="/app/surgeries/<%= s.id %>" style="<%= dot(s) %>">
+        <bdi dir="ltr" class="tiny strong"><%= span(s) %></bdi>
+        <span class="small strong" dir="auto"><%= s.patient_name %></span>
+        <span class="small"><%= s.procedure_name %></span>
+        <span class="tiny muted"><%= s.hospital_name || '' %></span>
+      </a>
+      <% }) %>
+      <% if (!list.length) { %><span class="tiny muted sx-none">—</span><% } %>
+    </div>
+  </section>
+  <% }) %>
+</div>
+
+<% } else if (view === 'month') { %>
+<div class="sx-month">
+  <% days.slice(0, 7).forEach(function (d) { %><div class="sx-month-dow"><%= fmt.date(d, { weekday: 'short' }) %></div><% }) %>
+  <% days.forEach(function (d) { var list = byDate[d] || []; var out = d.slice(0, 7) !== month; %>
+  <div class="sx-month-day<%= out ? ' is-out' : '' %><%= d === today ? ' is-today' : '' %>">
+    <a class="sx-month-num" href="<%= qs({ view: 'day', date: d }) %>"><%= Number(d.slice(8)) %></a>
+    <% list.slice(0, 3).forEach(function (s) { %><a class="sx-chip" href="/app/surgeries/<%= s.id %>" style="<%= dot(s) %>" title="<%= s.procedure_name %> — <%= s.patient_name %>"><bdi dir="ltr"><%= s.surgery_time %></bdi> <span dir="auto"><%= s.patient_name %></span></a><% }) %>
+    <% if (list.length > 3) { %><a class="tiny muted" href="<%= qs({ view: 'day', date: d }) %>">+<%= list.length - 3 %></a><% } %>
+  </div>
+  <% }) %>
+</div>
+
+<% } else { %>
+<div class="panel flush">
   <% if (!days.length) { %>
-  <div class="empty"><%- icon('scissors') %><h3><%= t(S + 'empty_title') %></h3><p><%= t(S + 'empty_' + f.when) %></p><% if (canAdd) { %><a class="btn btn-secondary" href="/app/appointments?surgery=1"><%= t(S + 'add') %></a><% } %></div>
+  <div class="empty"><%- icon('scissors') %><h3><%= t(S + 'empty_title') %></h3><p><%= t(S + 'empty_' + f.when) %></p><% if (canAdd) { %><a class="btn btn-secondary" href="<%= addHref %>"><%= t(S + 'add') %></a><% } %></div>
   <% } else { %>
   <div class="table-wrap">
     <table class="table responsive">
@@ -34,7 +111,7 @@
         <tr class="table-group"><th colspan="7"><%= fmt.date(d.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> <span class="muted small">· <%= t(S + 'n', { n: fmt.number(d.rows.length) }) %></span></th></tr>
         <% d.rows.forEach(function (s) { %>
         <tr data-href="/app/surgeries/<%= s.id %>">
-          <td data-label="<%= t(S + 'col_time') %>" class="nowrap"><bdi dir="ltr" class="strong"><%= s.surgery_time %><%= end(s) ? '–' + end(s) : '' %></bdi></td>
+          <td data-label="<%= t(S + 'col_time') %>" class="nowrap"><bdi dir="ltr" class="strong"><%= span(s) %></bdi></td>
           <td class="primary-cell"><a class="strong" href="/app/surgeries/<%= s.id %>" dir="auto"><%= s.patient_name %></a><% if (s.patient_phone) { %><div class="small muted"><bdi dir="ltr"><%= s.patient_phone %></bdi></div><% } %></td>
           <td data-label="<%= t(S + 'procedure') %>"><%= s.procedure_name %></td>
           <td data-label="<%= t(S + 'hospital') %>"><%= s.hospital_name || '—' %><% if (s.sent_at) { %><div class="tiny muted sx-sent"><%- icon(s.sent_channel === 'whatsapp' ? 'message-circle' : 'mail', 'icon-sm') %><%= t(S + 'sent_short', { date: fmt.date(s.sent_at, { day: 'numeric', month: 'short' }) }) %></div><% } %></td>
@@ -49,3 +126,4 @@
   </div>
   <% } %>
 </div>
+<% } %>

@@ -85,6 +85,20 @@ async function list(ctx, f = {}) {
   return q.limit(500);
 }
 
+/** Surgeries between two dates (calendar views), cancelled ones left out unless asked. */
+async function range(ctx, from, to, f = {}) {
+  const q = base(ctx).where('s.surgery_date', '>=', from).where('s.surgery_date', '<=', to).orderBy([{ column: 's.surgery_date' }, { column: 's.surgery_time' }]);
+  if (Number(f.doctor)) q.where('s.doctor_id', Number(f.doctor));
+  if (Number(f.hospital)) q.where('s.hospital_id', Number(f.hospital));
+  if (!f.cancelled) q.whereNot('s.status', 'cancelled');
+  return q.select('d.color as doctor_color');
+}
+
+/** A patient's surgeries (patient page), newest first. */
+async function forPatient(ctx, patientId) {
+  return base(ctx).where('s.patient_id', Number(patientId) || 0).orderBy([{ column: 's.surgery_date', order: 'desc' }, { column: 's.surgery_time', order: 'desc' }]).limit(100);
+}
+
 async function get(ctx, sid) {
   const s = await base(ctx).where('s.id', Number(sid) || 0).first();
   if (!s) throw E.notFound('Surgery');
@@ -146,4 +160,4 @@ async function markSent(ctx, s, channel, to) {
   await audit.record(ctx, 'surgery.sent', { entityType: 'surgery', entityId: s.id, newValues: { channel, to: String(to).slice(0, 190) } });
 }
 
-module.exports = { STATUSES, schema, check, labelOf, fromBlock, list, get, update, setStatus, followBlock, blockRemoved, message, markSent };
+module.exports = { STATUSES, schema, check, labelOf, fromBlock, list, range, forPatient, get, update, setStatus, followBlock, blockRemoved, message, markSent };

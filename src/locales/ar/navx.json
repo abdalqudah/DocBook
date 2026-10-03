@@ -64,6 +64,7 @@
     },
     "setup_orders_catalog": "التحاليل والأشعة",
     "setup_orders_catalog_text": "قائمة الفحوصات المخبرية والصور التي يختار منها الطبيب.",
-    "sec_reps": "المناديب"
+    "sec_reps": "المناديب",
+    "sec_surgeries": "العمليات"
   }
 }

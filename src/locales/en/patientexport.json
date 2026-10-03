@@ -124,6 +124,7 @@
         "IMPORT_TOO_BIG": "The file is larger than allowed.",
         "IMPORT_RUNNING": "An import is already running. Wait until it finishes."
       }
-    }
+    },
+    "surgeries": "Surgeries ({n})"
   }
 }

@@ -32,6 +32,9 @@ const NAV = [
   { group: 'patients', icon: 'users', items: [
     { key: 'patients', href: '/app/patients', icon: 'users', perms: ['patients.view'] },
     { key: 'certificates', href: '/app/certificates', icon: 'badge-check', perms: ['certificates.view'] },
+  ] },
+  // Surgeries: their own line under Patients (day / week / month / list).
+  { group: 'surgeries', icon: 'scissors', items: [
     { key: 'surgeries', href: '/app/surgeries', icon: 'scissors', perms: ['clinical.view', 'appointments.manage'] },
   ] },
   // Medical reps: their visits first, the offers next to them (moved from Stock).

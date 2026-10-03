@@ -31,7 +31,7 @@
 </div>
 
 <% var tabHref = function (k) { return '/app/patients/' + p.id + (k === 'overview' ? '' : '?tab=' + k); };
-   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', prescriptions: 'pill', orders: 'activity', documents: 'file-text', billing: 'receipt', timeline: 'history' }; %>
+   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', surgeries: 'scissors', prescriptions: 'pill', orders: 'activity', documents: 'file-text', billing: 'receipt', timeline: 'history' }; %>
 <nav class="tabs mb-4 pt-tabs" aria-label="<%= t('patients.workspace') %>">
   <% tabs.forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%- icon(tabIcon[k], 'icon-sm') %><%= t('patients.tab.' + k) %></a><% }) %>
 </nav>
@@ -73,6 +73,11 @@
       <ul class="action-list"><% upcoming.slice(0, 4).forEach(function (a) { %><li><a href="<%= can('appointments.view') ? '/app/appointments/' + a.id : visitHref(a.id) %>"><span class="action-icon brand"><%- icon('calendar-days') %></span><div class="grow"><div class="strong"><%= fmt.date(a.appointment_date) %> · <span dir="ltr"><%= a.appointment_time %></span></div><div class="small muted"><%= [a.doctor_name, a.service_name].filter(Boolean).join(' · ') %></div></div><span class="badge badge-<%= statusTone[a.status] %>"><%= t('dashboard.statuses.' + a.status) %></span></a></li><% }) %></ul>
     </div>
     <% } %>
+    <% var _sxNext = surgeries.filter(function (s) { return s.status === 'scheduled' && String(s.surgery_date) >= clinicToday; }).reverse(); if (_sxNext.length) { %>
+    <div class="panel flush"><div class="panel-head"><h2><%= t('surgeries.upcoming_for') %></h2><a class="btn btn-ghost btn-sm" href="<%= tabHref('surgeries') %>"><%= t('common.view_all') %></a></div>
+      <ul class="action-list"><% _sxNext.slice(0, 3).forEach(function (s) { %><li><a href="/app/surgeries/<%= s.id %>"><span class="action-icon brand"><%- icon('scissors') %></span><div class="grow"><div class="strong"><%= s.procedure_name %></div><div class="small muted"><%= fmt.date(s.surgery_date) %> · <bdi dir="ltr"><%= s.surgery_time %></bdi><%= s.hospital_name ? ' · ' + s.hospital_name : '' %></div></div></a></li><% }) %></ul>
+    </div>
+    <% } %>
     <% if (!restrictedView && (typeof moduleOn !== 'function' || moduleOn('specialty_records'))) { %><%- include('../../specialty/_patient-panel') %><% } %>
     <% if (latestDiagnosis) { %><div class="panel"><div class="panel-body"><div class="small muted strong"><%= t('patients.latest_diagnosis') %></div><div class="mt-1"><%= latestDiagnosis %></div></div></div><% } %>
     <div class="panel"><div class="panel-head"><h2><%= t('patients.details') %></h2></div><div class="panel-body"><dl class="dl rec-dl-narrow">
@@ -92,6 +97,30 @@
     <% if (can('patients.delete')) { %><div class="panel-foot"><form method="post" action="/app/patients/<%= p.id %>/delete" data-confirm="<%= t('patients.delete_confirm') %>" data-confirm-title="<%= t('patients.delete') %>" data-confirm-yes="<%= t('common.delete') %>" data-confirm-type="<%= p.full_name %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('patients.delete') %></button></form></div><% } %>
     </div>
   </div>
+</div>
+<% } %>
+
+<% if (tab === 'surgeries') { var _tone = { scheduled: 'badge-info', done: 'badge-success', cancelled: 'badge-neutral' };
+     var _end = function (s) { if (!s.duration_minutes) return ''; var a = String(s.surgery_time).split(':'); var x = Number(a[0]) * 60 + Number(a[1]) + Number(s.duration_minutes); return ('0' + (Math.floor(x / 60) % 24)).slice(-2) + ':' + ('0' + (x % 60)).slice(-2); }; %>
+<div class="panel flush">
+  <div class="panel-head"><div><h2><%= t('surgeries.title') %></h2><p class="panel-sub"><%= t('surgeries.patient_sub') %></p></div>
+    <% if (canSurgery) { %><a class="btn btn-primary btn-sm" href="/app/appointments?surgery=1&patient=<%= p.id %><%= ctx.ownDoctorId ? '&doctor=' + ctx.ownDoctorId : '' %>"><%- icon('scissors', 'icon-sm') %><%= t('surgeries.add') %></a><% } %></div>
+  <% if (!surgeries.length) { %>
+    <%- include(P + 'empty', { compact: true, emptyIcon: 'scissors', emptyTitle: t('surgeries.empty_title'), emptyText: t('surgeries.patient_empty'), emptyAction: '' }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('surgeries.procedure') %></th><th><%= t('surgeries.hospital') %></th><th><%= t('common.doctor') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+    <tbody><% surgeries.forEach(function (s) { %>
+      <tr data-href="/app/surgeries/<%= s.id %>">
+        <td class="nowrap"><div class="strong"><%= fmt.date(s.surgery_date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %></div><div class="small muted"><bdi dir="ltr"><%= s.surgery_time %><%= _end(s) ? '–' + _end(s) : '' %></bdi></div></td>
+        <td class="primary-cell"><a class="strong" href="/app/surgeries/<%= s.id %>"><%= s.procedure_name %></a><% if (s.notes) { %><div class="small muted"><%= s.notes %></div><% } %></td>
+        <td data-label="<%= t('surgeries.hospital') %>"><%= s.hospital_name || '—' %><% if (s.sent_at) { %><div class="tiny muted"><%= t('surgeries.sent_short', { date: fmt.date(s.sent_at, { day: 'numeric', month: 'short' }) }) %></div><% } %></td>
+        <td data-label="<%= t('common.doctor') %>"><%= s.doctor_id ? L(s.doctor_name, s.doctor_name_en) : '—' %></td>
+        <td data-label="<%= t('common.status') %>"><span class="badge <%= _tone[s.status] %>"><%= t('surgeries.status.' + s.status) %></span></td>
+        <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="/app/surgeries/<%= s.id %>" aria-label="<%= t('common.open') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
+      </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
 </div>
 <% } %>
 
