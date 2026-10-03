@@ -215,7 +215,6 @@
     var v = byId[id];
     if (!v || inBill(id) || SIDE.indexOf(v.state) >= 0) return; // still waiting / with the doctor: not payable yet
     // One patient per payment: choosing another patient replaces the one being prepared (each invoice closes alone).
-    if (bill.length) showNotice(tr(T.one_patient, { name: bill[0].v.patient }));
     bill = [];
     bill.push({ id: id, v: v, amount: v.due > 0 ? String(round(v.due)) : '', discount: '', insurer: '', coverage: '', reason: '', edited: false });
     hideAlert();

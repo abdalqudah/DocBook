@@ -94,3 +94,14 @@ test('dates: a timestamp is shown on the clinic\'s day; a calendar date as is', 
   assert.match(fmt.formatDate(new Date('2026-10-02T22:30:00Z'), 'en', o, 'Asia/Amman'), /3 Oct.*01:30/);
   assert.equal(fmt.formatDate('2026-10-03', 'en', undefined, 'America/New_York'), '3 Oct 2026');
 });
+
+test('P&L memo: supplies received count every delivery in its own month, partial ones included', async () => {
+  const [po] = await knex('purchase_orders').insert({ business_id: ctx.businessId, status: 'cancelled', supplier_name: 'Med Supply' });
+  const [line] = await knex('purchase_order_items').insert({ purchase_order_id: po, name: 'Gloves', quantity: 8, received_quantity: 5, unit_cost: 0.125 });
+  await knex('purchase_receipts').insert([
+    { business_id: ctx.businessId, purchase_order_id: po, line_id: line, quantity: 3, unit_cost: 0.125, received_at: new Date('2026-08-25T10:00:00Z') },
+    { business_id: ctx.businessId, purchase_order_id: po, line_id: line, quantity: 2, unit_cost: 0.125, received_at: new Date('2026-09-02T10:00:00Z') },
+  ]);
+  assert.equal((await pnl.monthNet(ctx, '2026-08')).suppliesReceived, 0.375);
+  assert.equal((await pnl.monthNet(ctx, '2026-09')).suppliesReceived, 0.25);
+});

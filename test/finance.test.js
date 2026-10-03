@@ -177,7 +177,9 @@ test('P&L: revenue, expenses, doctor + staff salaries; received purchase orders 
   await staff.markPaid(ctx, line.id, { paid_on: '2026-04-30', payment_method: 'cash' });
   // The same supplies received on a purchase order (their bill is the expense above).
   const [poId] = await knex('purchase_orders').insert({ business_id: b, supplier_name: 'Supplier', status: 'received', received_at: new Date('2026-04-12T10:00:00Z') });
-  await knex('purchase_order_items').insert({ purchase_order_id: poId, name: 'Gloves', quantity: 10, received_quantity: 10, unit_cost: 15 });
+  const [lineId] = await knex('purchase_order_items').insert({ purchase_order_id: poId, name: 'Gloves', quantity: 10, received_quantity: 10, unit_cost: 15 });
+  // Receiving writes the delivery (purchasing.receive); the memo counts deliveries in their month.
+  await knex('purchase_receipts').insert({ business_id: b, purchase_order_id: poId, line_id: lineId, quantity: 10, unit_cost: 15, received_at: new Date('2026-04-12T10:00:00Z') });
 
   const s = await pnl.monthNet(ctx, month);
   assert.equal(s.revenue, 1200); assert.equal(s.discounts, 100); assert.equal(s.gross, 1300);

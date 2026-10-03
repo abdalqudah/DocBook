@@ -931,7 +931,8 @@
       "email": "Appointment e-mails",
       "partners": "To pharmacies, imaging centres and labs",
       "surgeries": "Surgery dates to the hospital",
-      "payroll": "Salaries & bank"
+      "payroll": "Salaries & bank",
+      "insurance": "Insurance statements"
     },
     "group_sub": {
       "booking": "Sent automatically on WhatsApp or SMS. E-mails use the “Appointment e-mails” texts below; when those are empty, this text.",
@@ -940,7 +941,8 @@
       "email": "Subject and text of each e-mail; the link is a button under the text.",
       "partners": "When a prescription or request goes to a partner of the clinic.",
       "surgeries": "When a surgery date is sent to the hospital from the Surgeries page.",
-      "payroll": "The payslip to a staff member or doctor, and the salary file e-mail to the bank. Amounts are only in the attachment."
+      "payroll": "The payslip to a staff member or doctor, and the salary file e-mail to the bank. Amounts are only in the attachment.",
+      "insurance": "Claims statements e-mailed to insurance companies"
     },
     "item": {
       "messaging_text_received": "Booking request received (online booking)",
@@ -974,7 +976,9 @@
       "payouts_msg_slip_subject": "Payslip e-mail subject",
       "payouts_msg_slip_body": "Payslip e-mail text",
       "payouts_msg_bank_subject": "Bank file e-mail subject",
-      "payouts_msg_bank_body": "Bank file e-mail text"
+      "payouts_msg_bank_body": "Bank file e-mail text",
+      "inscl_msg_subject": "Insurance statement e-mail subject",
+      "inscl_msg_body": "Insurance statement e-mail text"
     },
     "vars": "Words you can use:",
     "var": {

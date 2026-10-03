@@ -1,0 +1,116 @@
+<% var canManage = can('billing.manage'); var q = 'from=' + period.from + '&to=' + period.to; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('navx.sec_finance') %></div>
+    <h1><%= t('inscl.title') %></h1>
+    <p><%= t('inscl.lead') %></p>
+  </div>
+  <form class="page-actions row wrap" method="get" action="/app/insurance-claims">
+    <% if (st) { %><input type="hidden" name="provider" value="<%= st.provider.id %>"><% } %>
+    <label class="sr-only" for="ic-from"><%= t('common.from') %></label><input class="input" type="date" id="ic-from" name="from" value="<%= period.from %>" title="<%= t('common.from') %>">
+    <label class="sr-only" for="ic-to"><%= t('common.to') %></label><input class="input" type="date" id="ic-to" name="to" value="<%= period.to %>" title="<%= t('common.to') %>">
+    <button class="btn btn-secondary" type="submit"><%= t('common.apply') %></button>
+  </form>
+</div>
+
+<div class="grid grid-main">
+  <div class="stack">
+  <% if (!st) { %>
+    <div class="panel flush">
+      <% if (!summary.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'shield-plus', emptyTitle: t('inscl.no_companies'), emptyText: t('inscl.no_companies_text'), emptyAction: can('settings.manage') ? '<a class="btn btn-primary btn-sm" href="/app/settings/insurance">' + t('inscl.add_company') + '</a>' : '' }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('inscl.company') %></th><th class="num"><%= t('inscl.invoices') %></th><th class="num"><%= t('inscl.col.total') %></th><th class="num"><%= t('inscl.col.insurer') %> (<%= currency %>)</th><th class="actions"></th></tr></thead>
+        <tbody>
+        <% summary.forEach(function (s) { %>
+          <tr>
+            <td class="primary-cell"><a class="strong link" href="/app/insurance-claims?provider=<%= s.provider.id %>&<%= q %>"><%= s.provider.name %></a><% if (s.provider.email) { %><div class="tiny muted" dir="ltr"><%= s.provider.email %></div><% } %></td>
+            <td class="num" data-label="<%= t('inscl.invoices') %>"><%= s.totals.count %></td>
+            <td class="num" data-label="<%= t('inscl.col.total') %>"><%= fmt.amount(s.totals.total) %></td>
+            <td class="num strong" data-label="<%= t('inscl.col.insurer') %>"><%= fmt.amount(s.totals.insurer) %></td>
+            <td class="actions"><a class="btn btn-secondary btn-sm" href="/app/insurance-claims?provider=<%= s.provider.id %>&<%= q %>"><%= t('inscl.open') %></a></td>
+          </tr>
+        <% }) %>
+        </tbody>
+        <tfoot><tr><td><%= t('common.total') %></td><td class="num"><%= summary.reduce(function (a, s) { return a + s.totals.count; }, 0) %></td><td class="num"><%= fmt.amount(summary.reduce(function (a, s) { return a + s.totals.total; }, 0)) %></td><td class="num"><%= fmt.amount(summary.reduce(function (a, s) { return a + s.totals.insurer; }, 0)) %></td><td></td></tr></tfoot>
+      </table></div>
+      <% } %>
+    </div>
+  <% } else { %>
+    <div class="panel flush">
+      <div class="panel-head">
+        <div><h2><%- icon('shield-plus', 'icon-sm') %> <%= st.provider.name %></h2><div class="panel-sub"><%= fmt.date(period.from) %> – <%= fmt.date(period.to) %> · <%= t('inscl.n_invoices', { n: st.totals.count }) %></div></div>
+        <a class="btn btn-ghost btn-sm" href="/app/insurance-claims?<%= q %>"><%= t('inscl.all_companies') %></a>
+      </div>
+      <% if (!st.lines.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'file-text', emptyTitle: t('inscl.empty'), emptyText: t('inscl.empty_text') }) %>
+      <% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('inscl.col.date') %></th><th><%= t('inscl.col.invoice') %></th><th><%= t('inscl.col.patient') %></th><th><%= t('inscl.col.doctor') %></th><th><%= t('inscl.col.codes') %></th><th class="num"><%= t('inscl.col.total') %></th><th class="num"><%= t('inscl.col.insurer') %></th><th class="num"><%= t('inscl.col.patient_part') %></th></tr></thead>
+        <tbody>
+        <% st.lines.forEach(function (l) { %>
+          <tr>
+            <td data-label="<%= t('inscl.col.date') %>" class="nowrap"><%= fmt.date(l.date) %></td>
+            <td data-label="<%= t('inscl.col.invoice') %>"><a class="link mono" href="/app/billing/<%= l.id %>">#<%= l.number %></a></td>
+            <td class="primary-cell"><div class="strong"><%= l.patient %></div><% if (l.insuranceNo) { %><div class="tiny muted" dir="ltr"><%= l.insuranceNo %></div><% } %></td>
+            <td data-label="<%= t('inscl.col.doctor') %>"><%= l.doctor %><div class="tiny muted"><%= l.service %></div></td>
+            <td data-label="<%= t('inscl.col.codes') %>" class="mono small" dir="ltr"><%= l.codes || '—' %></td>
+            <td data-label="<%= t('inscl.col.total') %>" class="num"><%= fmt.amount(l.total) %></td>
+            <td data-label="<%= t('inscl.col.insurer') %>" class="num strong"><%= fmt.amount(l.insurer) %><% if (l.coverage !== null) { %><div class="tiny muted"><%= fmt.number(l.coverage) %>%</div><% } %></td>
+            <td data-label="<%= t('inscl.col.patient_part') %>" class="num"><%= fmt.amount(l.patientPart) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+        <tfoot><tr><td colspan="5"><%= t('common.total') %></td><td class="num"><%= fmt.amount(st.totals.total) %></td><td class="num"><%= fmt.amount(st.totals.insurer) %></td><td class="num"><%= fmt.amount(st.totals.patient) %></td></tr></tfoot>
+      </table></div>
+      <% } %>
+    </div>
+  <% } %>
+  <% if (log.length) { %>
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('inscl.history') %></h2></div>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('common.date') %></th><th><%= t('inscl.company') %></th><th><%= t('inscl.period') %></th><th><%= t('inscl.how') %></th><th class="num"><%= t('inscl.col.insurer') %></th></tr></thead>
+        <tbody>
+        <% log.forEach(function (h) { %>
+          <tr>
+            <td class="nowrap" data-label="<%= t('common.date') %>"><%= fmt.date(h.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %></td>
+            <td data-label="<%= t('inscl.company') %>"><%= h.provider_name %></td>
+            <td data-label="<%= t('inscl.period') %>" class="nowrap"><%= fmt.date(h.date_from) %> – <%= fmt.date(h.date_to) %></td>
+            <td data-label="<%= t('inscl.how') %>"><%= h.action === 'email' ? t('inscl.sent_to', { to: h.sent_to }) : h.action.toUpperCase() %><span class="tiny muted"><%= h.by_name ? ' · ' + h.by_name : '' %></span></td>
+            <td class="num" data-label="<%= t('inscl.col.insurer') %>"><%= fmt.amount(h.total) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+    </div>
+  <% } %>
+  </div>
+
+  <aside class="stack">
+    <% if (st) { %>
+    <div class="stat hero"><div class="stat-label"><%= t('inscl.due_from', { company: st.provider.name }) %><span class="stat-icon"><%- icon('shield-plus') %></span></div><div class="stat-value"><%= fmt.money(st.totals.insurer) %></div><div class="stat-meta"><%= t('inscl.n_invoices', { n: st.totals.count }) %></div></div>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('inscl.export') %></h2></div>
+      <div class="panel-body row wrap">
+        <a class="btn btn-secondary" href="/app/insurance-claims/<%= st.provider.id %>/export?format=xlsx&<%= q %>"><%- icon('download', 'icon-sm') %>Excel</a>
+        <a class="btn btn-secondary" href="/app/insurance-claims/<%= st.provider.id %>/export?format=pdf&<%= q %>" target="_blank" rel="noopener"><%- icon('file-text', 'icon-sm') %>PDF</a>
+      </div>
+    </div>
+    <% if (canManage) { %>
+    <form class="panel" method="post" action="/app/insurance-claims/<%= st.provider.id %>/send" data-confirm="<%= t('inscl.send_confirm', { company: st.provider.name }) %>">
+      <div class="panel-head"><h2><%= t('inscl.send_title') %></h2></div>
+      <div class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="from" value="<%= period.from %>"><input type="hidden" name="to" value="<%= period.to %>">
+        <%- include('../../partials/field', { name: 'email_to', label: t('inscl.f_email'), type: 'email', value: st.provider.email || '', attrs: 'dir="ltr"', help: st.provider.email ? t('inscl.attached') : t('inscl.no_email_help') }) %>
+        <%- include('../../partials/field', { name: 'lang_msg', label: t('inscl.lang'), type: 'select', value: locale, options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }] }) %>
+        <button class="btn btn-primary" type="submit"<%= st.lines.length ? '' : ' disabled' %>><%- icon('send', 'icon-sm') %><%= t('inscl.send') %></button>
+      </div>
+    </form>
+    <% } %>
+    <% } else { %>
+    <div class="alert alert-info small"><div class="alert-title"><%= t('inscl.how_title') %></div><%= t('inscl.how_text') %></div>
+    <% } %>
+  </aside>
+</div>

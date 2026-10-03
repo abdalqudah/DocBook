@@ -9,11 +9,11 @@
     <div class="table-wrap"><table class="table responsive">
       <thead><tr><th><%= t('settings.insurance_name') %></th><th class="num"><%= t('settings.coverage') %></th><th class="num"><%= t('settings.insured_patients') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
       <tbody><% rows.forEach(function (r) { %><tr>
-        <td class="primary-cell"><div class="row-sm"><span class="action-icon"><%- icon('shield-plus', 'icon-sm') %></span><span class="strong"><%= r.name %></span></div></td>
+        <td class="primary-cell"><div class="row-sm"><span class="action-icon"><%- icon('shield-plus', 'icon-sm') %></span><span><span class="strong"><%= r.name %></span><% if (r.email) { %><span class="tiny muted" style="display:block" dir="ltr"><%= r.email %></span><% } %></span></div></td>
         <td class="num" data-label="<%= t('settings.coverage') %>"><%= fmt.pct(Number(r.coverage_percent) / 100, 0) %></td>
         <td class="num" data-label="<%= t('settings.insured_patients') %>"><%= fmt.number(used[r.id] || 0) %></td>
         <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= r.is_active ? 'badge-success' : 'badge-neutral' %>"><%= r.is_active ? t('common.active') : t('common.inactive') %></span></td>
-        <td class="actions nowrap"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="insurance-dialog" data-action="/app/settings/insurance/<%= r.id %>" data-dialog-title="<%= t('settings.insurance_edit') %>" data-fill="<%= json({ name: r.name, coverage_percent: Number(r.coverage_percent), is_active: !!r.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/settings/insurance/' + r.id + '/delete', confirmText: t('settings.insurance_delete_confirm', { name: r.name }) }) %></td>
+        <td class="actions nowrap"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" title="<%= t('common.edit') %>" data-open-dialog="insurance-dialog" data-action="/app/settings/insurance/<%= r.id %>" data-dialog-title="<%= t('settings.insurance_edit') %>" data-fill="<%= json({ name: r.name, coverage_percent: Number(r.coverage_percent), is_active: !!r.is_active, email: r.email || '', contact_name: r.contact_name || '' }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/settings/insurance/' + r.id + '/delete', confirmText: t('settings.insurance_delete_confirm', { name: r.name }) }) %></td>
       </tr><% }) %></tbody>
     </table></div>
     <% } %>
@@ -25,6 +25,8 @@
     <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (dlg) { %><%- include('../../partials/form-error') %><% } %>
       <%- include('../../partials/field', { name: 'name', label: t('settings.insurance_name'), required: true, placeholder: t('settings.insurance_name_ph') }) %>
       <%- include('../../partials/field', { name: 'coverage_percent', label: t('settings.coverage'), value: 0, suffix: '%', help: t('settings.coverage_help'), attrs: 'inputmode="decimal" data-default="0"' }) %>
+      <%- include('../../partials/field', { name: 'email', label: t('inscl.f_email'), type: 'email', attrs: 'dir="ltr"', help: t('inscl.f_email_help') }) %>
+      <%- include('../../partials/field', { name: 'contact_name', label: t('inscl.f_contact') }) %>
       <label class="check"><input type="checkbox" name="is_active" value="1"<%= !dlg || old.is_active ? ' checked' : '' %>><span><%= t('common.active') %></span></label>
     </div>
     <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>

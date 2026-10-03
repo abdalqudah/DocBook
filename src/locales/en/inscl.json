@@ -1,0 +1,61 @@
+{
+  "inscl": {
+    "title": "Insurance statements",
+    "lead": "A statement per insurance company with its invoices and share for a period — Excel or PDF, or e-mailed to the company as attachments.",
+    "company": "Insurance company",
+    "period": "Period",
+    "invoices": "Invoices",
+    "n_invoices": "{n} invoices",
+    "open": "Open statement",
+    "all_companies": "All companies",
+    "col": {
+      "no": "#",
+      "date": "Date",
+      "invoice": "Invoice no.",
+      "patient": "Patient",
+      "insurance_no": "Insurance no.",
+      "national_id": "National ID",
+      "doctor": "Doctor",
+      "service": "Service",
+      "codes": "Diagnosis (ICD-10)",
+      "total": "Invoice total",
+      "coverage": "Coverage %",
+      "insurer": "Insurer's share",
+      "patient_part": "Patient's share"
+    },
+    "due_from": "Due from {company}",
+    "export": "Export",
+    "send_title": "Send to the company",
+    "f_email": "Insurance company e-mail",
+    "f_email_help": "Claims statements are sent to it (PDF + Excel).",
+    "f_contact": "Contact person (optional)",
+    "attached": "The statement is attached as PDF and Excel.",
+    "no_email_help": "Add the company's e-mail in Settings → Insurance, or type it here.",
+    "lang": "Language of the message and statement",
+    "send": "Send statement",
+    "send_confirm": "Send the claims statement to {company}?",
+    "sent": "Statement of {n} invoices sent to {to}.",
+    "sent_to": "Sent to {to}",
+    "history": "Previous statements",
+    "how": "How",
+    "empty": "No insurance invoices for this company in the period",
+    "empty_text": "Change the period above.",
+    "no_companies": "No insurance companies",
+    "no_companies_text": "Add the insurance companies the clinic works with first.",
+    "add_company": "Add an insurance company",
+    "how_title": "How the statement is made",
+    "how_text": "Every invoice of the period where the insurance company pays a part, with its share as recorded at the cashier. Default period: last month.",
+    "tax_no": "Tax no.",
+    "pdf_note": "Amounts as invoiced by the clinic in the period shown; diagnoses as ICD-10 codes recorded by the doctor.",
+    "err": {
+      "NO_EMAIL": "This company has no e-mail — add or type one.",
+      "NO_MAIL": "E-mail is not set up — connect the clinic's mail in Settings.",
+      "MAIL_FAILED": "The e-mail could not be sent; try again later.",
+      "EMPTY": "There are no invoices to send for this period."
+    },
+    "msg": {
+      "subject": "Claims statement {company} — {clinic} ({from} – {to})",
+      "body": "Dear {company},\nPlease find attached the claims statement of {clinic} for {from} to {to}: {count} invoices, insurer's share {total}.\nThe statement is attached as PDF and Excel.\nKind regards,\n{clinic}"
+    }
+  }
+}

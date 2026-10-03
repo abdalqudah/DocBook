@@ -102,7 +102,9 @@ async function saveMedication(ctx, mid, input) {
   return medications.create(ctx, row);
 }
 async function saveInsurance(ctx, iid, input) {
-  const d = validate(z.object({ name: z.string().trim().min(1, 'Required.').max(190), coverage_percent: z.preprocess((v) => (v === '' || v === undefined ? 0 : Number(v)), z.number().min(0, 'Must be between 0 and 100.').max(100, 'Must be between 0 and 100.')), is_active: bool() }), input);
+  const d = validate(z.object({ name: z.string().trim().min(1, 'Required.').max(190), coverage_percent: z.preprocess((v) => (v === '' || v === undefined ? 0 : Number(v)), z.number().min(0, 'Must be between 0 and 100.').max(100, 'Must be between 0 and 100.')), is_active: bool(),
+    email: z.preprocess((v) => (v === '' || v === undefined ? undefined : v), z.string().trim().toLowerCase().email('Enter a valid email address.').max(190).optional()), contact_name: optionalString(190) }), input);
+  d.email = d.email || null; d.contact_name = d.contact_name || null; // where its claims statements are e-mailed
   if (iid) { await insurance.update(ctx, iid, d); return iid; }
   return insurance.create(ctx, d);
 }

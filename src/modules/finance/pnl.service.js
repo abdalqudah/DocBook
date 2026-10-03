@@ -41,10 +41,10 @@ async function monthly(businessId, timezone, fromMonth, toMonth) {
     knex('payroll_payments').where({ business_id: businessId }).whereBetween('period', [fromMonth, toMonth])
       .groupBy('period').select('period').sum({ net: 'net_pay' }).sum({ adv: 'advances' }),
     staff.paidByMonth(businessId, fromMonth, toMonth),
-    lib.whereLocalDates(knex('purchase_orders as po').join('purchase_order_items as l', 'l.purchase_order_id', 'po.id')
-      .where({ 'po.business_id': businessId, 'po.status': 'received' }), 'po.received_at', from, to, timezone)
-      .groupBy('mon').select(localMonth('po.received_at').wrap('', ' as mon'))
-      .select(knex.raw('COALESCE(SUM(LEAST(l.received_quantity, l.quantity) * COALESCE(l.unit_cost, 0)), 0) as v')),
+    // Supplies received (memo): every delivery in the month it arrived — partial ones and those of later-cancelled orders too.
+    lib.whereLocalDates(knex('purchase_receipts as r').where({ 'r.business_id': businessId }), 'r.received_at', from, to, timezone)
+      .groupBy('mon').select(localMonth('r.received_at').wrap('', ' as mon'))
+      .select(knex.raw('COALESCE(SUM(r.quantity * COALESCE(r.unit_cost, 0)), 0) as v')),
     // Revenue by payment method from the payment parts (a cash + card invoice adds to both; never "mixed").
     payParts.totalsByMethodGrouped(lib.whereLocalDates(knex('invoices as i').where('i.business_id', businessId), 'i.created_at', from, to, timezone),
       'i.id', businessId, localMonth),

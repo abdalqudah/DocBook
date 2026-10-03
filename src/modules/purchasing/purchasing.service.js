@@ -358,6 +358,7 @@ async function receive(ctx, id, input) {
     for (const { line, q } of plan) {
       await trx('purchase_order_items').where({ id: line.id }).update({ received_quantity: round2(num(line.received_quantity) + q) }); // eslint-disable-line no-await-in-loop
       line.received_quantity = round2(num(line.received_quantity) + q);
+      await trx('purchase_receipts').insert({ business_id: ctx.businessId, purchase_order_id: id, line_id: line.id, quantity: q, unit_cost: line.unit_cost, received_by: ctx.userId || null, received_at: new Date() }); // eslint-disable-line no-await-in-loop
       const item = line.supply_item_id ? await trx('supply_items').where({ id: line.supply_item_id, business_id: ctx.businessId }).first('id') : null; // eslint-disable-line no-await-in-loop
       if (item) await supplies.move(ctx, item.id, { type: 'in', quantity: q, note: `PO #${po.po_number}` }, trx); // eslint-disable-line no-await-in-loop
     }

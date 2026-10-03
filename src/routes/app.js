@@ -39,6 +39,7 @@ router.use(wrap(async (req, res, next) => {
   res.locals.clinicToday = req.ctx.today;
   res.locals.today = req.ctx.today; // the clinic's day for every form default (not the server's UTC day)
   res.locals.thisMonth = req.ctx.today.slice(0, 7);
+  require('../core/mailer').warmLogo(req.business).catch(() => {}); // eslint-disable-line global-require -- the logo's proportions for the clinic's e-mails
   res.locals.navGroups = nav.forUser(perms, req.ctx);
   res.locals.navActions = nav.actionsFor(perms);
   res.locals.verifyBanner = verify.required() && !verify.isVerified(req.user);
@@ -124,7 +125,8 @@ router.use(require('../modules/finance/hooks')); // budget checks right after ex
 router.use('/payroll', require('../modules/clinic/payroll.web'));
 router.use('/expenses', require('../modules/expenses/web'));
 router.use('/payouts', require('../modules/payouts/web')); // bank transfer files for any bank, payslips by e-mail
-router.use('/articles', require('../modules/articles/web')); // doctors' articles for the clinic website and the main site
+router.use('/articles', require('../modules/articles/web'));
+router.use('/insurance-claims', require('../modules/insurance/web')); // insurance companies' claims statements (Excel / PDF / e-mail) // doctors' articles for the clinic website and the main site
 router.use('/doctors', require('../modules/clinic/doctors.web'));
 router.use('/services', require('../modules/clinic/services.web'));
 router.use('/supplies/orders', require('../modules/purchasing/web'));

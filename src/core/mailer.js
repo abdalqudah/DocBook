@@ -25,6 +25,32 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
  * the clinic's logo (or name) and colour instead of DocBook's. Arabic reads right to left — set on every block, as
  * mail apps drop the <html> attributes.
  */
+// Natural size of each clinic's logo (per logo version), read once from its bytes; e-mails show it fitted in
+// LOGO_BOX keeping its proportions. Until known, the logo is shown by width with an automatic height.
+const LOGO_BOX = { w: 170, h: 44 };
+const logoSizes = new Map();
+function logoSize(clinic) {
+  const key = `${clinic.id || clinic.slug}:${Number(clinic.logo_version) || 0}`;
+  if (logoSizes.has(key)) return logoSizes.get(key);
+  logoSizes.set(key, null);
+  (async () => {
+    const knex = require('../db/knex'); // eslint-disable-line global-require
+    const row = await knex('businesses').where(clinic.id ? { id: clinic.id } : { slug: clinic.slug }).first('logo', 'logo_mime');
+    const d = row && row.logo ? require('../modules/integrations/media.service').dimensions(row.logo, row.logo_mime) : null; // eslint-disable-line global-require
+    if (d && d.width && d.height) {
+      const k = Math.min(LOGO_BOX.w / d.width, LOGO_BOX.h / d.height, 1);
+      logoSizes.set(key, { w: Math.max(1, Math.round(d.width * k)), h: Math.max(1, Math.round(d.height * k)) });
+    }
+  })().catch(() => {});
+  return null;
+}
+/** Reads the clinic's logo size before an e-mail is built (call it before layout() when possible). */
+async function warmLogo(clinic) {
+  if (!clinic || !clinic.logo_mime) return;
+  logoSize(clinic);
+  for (let i = 0; i < 20 && logoSizes.get(`${clinic.id || clinic.slug}:${Number(clinic.logo_version) || 0}`) === null; i += 1) await new Promise((r) => { setTimeout(r, 10); }); // eslint-disable-line no-await-in-loop
+}
+
 function layout({ locale = 'en', title, body, cta, href, clinic = null, base = '' }) {
   const c = brand.colors.light;
   const rtl = locale === 'ar';
@@ -36,8 +62,11 @@ function layout({ locale = 'en', title, body, cta, href, clinic = null, base = '
   const name = clinic ? ((locale === 'en' && clinic.name_en) || clinic.name) : brand.name;
   const root = String(base || '').replace(/\/+$/, '');
   const logo = clinic && clinic.logo_mime && clinic.slug && /^https?:\/\//.test(root) ? `${root}/${clinic.slug}/logo?v=${Number(clinic.logo_version) || 0}` : null;
+  // The logo at its own proportions, fitted in a small box (a wide logo is never squeezed to a fixed height).
+  const size = logo ? logoSize(clinic) : null;
+  const dims = size ? `width="${size.w}" height="${size.h}" style="display:block;width:${size.w}px;height:${size.h}px;` : 'width="150" style="display:block;width:150px;max-width:150px;height:auto;';
   const head = logo
-    ? `<img src="${esc(logo)}" alt="${esc(name)}" height="48" style="display:block;height:48px;width:auto;max-width:220px;border:0;margin-${rtl ? 'left' : 'right'}:auto">`
+    ? `<img src="${esc(logo)}" alt="${esc(name)}" ${dims}border:0;margin-${rtl ? 'left' : 'right'}:auto">`
     : `<div style="font-weight:800;font-size:18px;color:${primary}">${esc(name)}</div>`;
   const text = esc(body).replace(/\n/g, '<br>');
   return `<!doctype html><html dir="${dir}" lang="${rtl ? 'ar' : 'en'}"><body dir="${dir}" style="margin:0;background:${c.background};font-family:Tahoma,Arial,sans-serif;color:${c.text}">
@@ -79,4 +108,4 @@ async function configuredFor(businessId) {
   return businessId ? require('../modules/clinicmail/clinicmail.service').canSend(businessId) : false; // eslint-disable-line global-require
 }
 
-module.exports = { configured, configuredFor, send, layout };
+module.exports = { configured, configuredFor, send, layout, warmLogo };

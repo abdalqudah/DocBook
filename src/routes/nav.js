@@ -48,6 +48,7 @@ const NAV = [
     { key: 'billing', href: '/app/billing', icon: 'receipt', perms: ['billing.view'], cluster: 'collect' },
     { key: 'payments_all', href: '/app/billing/payments', icon: 'credit-card', perms: ['billing.view'], cluster: 'collect', lights: ['/app/payments'] },
     { key: 'cash_closings', href: '/app/cashier/closings', icon: 'lock', perms: ['billing.view'], follows: 'cashier', viewAll: true, cluster: 'collect' },
+    { key: 'insurance_claims', href: '/app/insurance-claims', icon: 'shield-plus', perms: ['billing.view'], viewAll: true, cluster: 'collect' },
     { key: 'expenses', href: '/app/expenses', icon: 'receipt-text', perms: ['expenses.view'], cluster: 'spend' },
     { key: 'budgets', href: '/app/budgets', icon: 'target', perms: ['expenses.view'], cluster: 'spend' },
     { key: 'payroll', href: '/app/payroll', icon: 'wallet', perms: ['payroll.view'], badge: 'pendingAdjustments', cluster: 'people' },

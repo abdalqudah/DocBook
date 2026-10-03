@@ -43,6 +43,10 @@ const GROUPS = [
     { key: 'payouts.msg.bank_subject', vars: ['bank', 'clinic', 'period'], line: true },
     { key: 'payouts.msg.bank_body', vars: ['bank', 'clinic', 'period', 'count', 'total', 'account'] },
   ] },
+  { key: 'insurance', items: [
+    { key: 'inscl.msg.subject', vars: ['company', 'clinic', 'from', 'to'], line: true },
+    { key: 'inscl.msg.body', vars: ['company', 'clinic', 'from', 'to', 'count', 'total'] },
+  ] },
   { key: 'after', items: [
     { key: 'share.thanks_message', vars: ['name', 'clinic', 'link'] },
     { key: 'messaging.text.review', vars: ['clinic', 'doctor', 'link'] },
