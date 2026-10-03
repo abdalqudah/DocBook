@@ -26,6 +26,8 @@
     "education_en": "Education (English)",
     "whatsapp": "WhatsApp",
     "license": "Licence no.",
+    "room": "Clinic room no.",
+    "room_hint": "Shown on the waiting-room screen next to the patient name (e.g. 3 or 2B).",
     "section_booking": "Booking & pay",
     "slot": "Appointment length",
     "slot_help": "Also the step between bookable start times.",

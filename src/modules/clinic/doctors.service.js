@@ -17,7 +17,7 @@ const doctorSchema = z.object({
   full_name: z.string().trim().min(1, 'Required.').max(190),
   full_name_en: optionalString(190), specialization: optionalString(190), specialization_en: optionalString(190),
   bio: optionalString(5000), bio_en: optionalString(5000), education: optionalString(3000), education_en: optionalString(3000),
-  phone: optionalString(40), whatsapp: optionalString(40), email: email(), license_number: optionalString(100),
+  phone: optionalString(40), whatsapp: optionalString(40), email: email(), license_number: optionalString(100), room: optionalString(20),
   slot_duration_minutes: int(5, 240), consultation_fee: money(), show_consultation_fee: bool(), base_salary: money(), is_active: bool(),
   sort_order: z.preprocess((v) => (v === '' || v === undefined ? 0 : Number(v)), z.number().int().min(0).max(9999)),
   color: z.preprocess(emptyToUndefined, z.string().regex(/^#[0-9a-fA-F]{6}$/).optional()),
@@ -32,6 +32,7 @@ async function clinicWeekOf(businessId) {
 async function saveDoctor(ctx, id, input) {
   const d = validate(doctorSchema, input);
   const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
+  if (!('room' in (input || {}))) delete row.room; // forms that do not show the room (setup, API) keep it
   // Hours: the clinic's usual week (kept in step when the clinic changes it) or the doctor's own.
   const clinicWeek = await clinicWeekOf(ctx.businessId);
   const mode = input.hours_mode === 'clinic' || input.hours_mode === 'custom' ? input.hours_mode : (id ? null : (clinicWeek ? 'clinic' : 'custom'));

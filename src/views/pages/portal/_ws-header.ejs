@@ -4,7 +4,7 @@
   <div class="container inner">
     <% var _lh = Number(h.logo_height) || 0; if (_lh && _lh < 20) _lh = 20; var _hasImg = Boolean(wsSite.logo || c.logo_mime); %>
     <a class="portal-brand ws-logo-<%= h.logo_size || 'm' %> ws-logo-<%= h.logo_shape || 'badge' %><%= _hasImg ? ' ws-logo-img' : '' %><%= _lh ? ' ws-logo-px' : '' %>" href="<%= wsSite.homeHref %>"<% if (_lh) { %> style="--ws-logo-h: <%= _lh %>px"<% } %>>
-      <span class="portal-mark"><% if (wsSite.logo) { %><img class="<%= wsSite.logoDark && wsSite.darkMode ? 'logo-light' : '' %>" src="<%= wsSite.logo.url %>" alt=""><% if (wsSite.logoDark && wsSite.darkMode) { %><img class="logo-dark" src="<%= wsSite.logoDark.url %>" alt=""><% } %><% } else if (c.logo_mime) { %><img src="/<%= c.slug %>/logo?v=<%= c.logo_version %>" alt=""><% } else { %><%- icon('hospital', 'icon-sm') %><% } %></span>
+      <span class="portal-mark"><% if (wsSite.logo) { %><img class="<%= wsSite.logoDark ? 'logo-light' : '' %>" src="<%= wsSite.logo.url %>" alt=""><% if (wsSite.logoDark) { %><img class="logo-dark" src="<%= wsSite.logoDark.url %>" alt=""><% } %><% } else if (c.logo_mime) { %><img src="/<%= c.slug %>/logo?v=<%= c.logo_version %>" alt=""><% } else { %><%- icon('hospital', 'icon-sm') %><% } %></span>
       <% if (h.show_name !== false) { %><span class="portal-brand-name"><%= c.displayName %></span><% } else { %><span class="sr-only"><%= c.displayName %></span><% } %>
     </a>
     <% if (wsSite.items.length) { %>

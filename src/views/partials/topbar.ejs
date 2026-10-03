@@ -3,7 +3,7 @@
   <%# Desktop: fold the sidebar to icons; the clinic's logo then moves here, into the top bar. %>
   <button class="btn btn-ghost btn-icon desktop-only sb-toggle" type="button" data-sb-toggle aria-label="<%= t('nav.toggle_sidebar') %>" title="<%= t('nav.toggle_sidebar') %>"><%- icon(dir === 'rtl' ? 'panel-right' : 'panel-left', 'icon-sm') %></button>
   <% var _tbName = locale === 'en' && business.name_en ? business.name_en : business.name; %>
-  <a class="topbar-brand" href="/app" title="<%= _tbName %>"><% if (business.logo_mime) { %><img src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= _tbName %>"><% } else { %><span class="ws-mark"><%= initials(_tbName) %></span><span class="topbar-brand-name truncate"><%= _tbName %></span><% } %></a>
+  <a class="topbar-brand" href="/app" title="<%= _tbName %>"><% if (business.logo_mime) { %><img<%- typeof logoDarkSrc !== 'undefined' && logoDarkSrc ? ' class="logo-light"' : '' %> src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= _tbName %>"><% if (typeof logoDarkSrc !== 'undefined' && logoDarkSrc) { %><img class="logo-dark" src="<%= logoDarkSrc %>" alt=""><% } %><% } else { %><span class="ws-mark"><%= initials(_tbName) %></span><span class="topbar-brand-name truncate"><%= _tbName %></span><% } %></a>
   <button class="search-trigger" type="button" data-cmdk-open aria-label="<%= t('search.open') %>"><%- icon('search', 'icon-sm') %><span class="label-text"><%= t('search.placeholder') %></span><span class="kbd">Ctrl K</span></button>
   <% var _create = navActions.filter(function (a) { return a.create; }); %>
   <% if (_create.length) { %>

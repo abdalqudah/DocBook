@@ -19,6 +19,7 @@
       <%- include('../../../partials/field', { name: 'whatsapp', label: t('doctors.whatsapp'), type: 'tel', value: v('whatsapp', '') }) %>
       <%- include('../../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: v('email', '') }) %>
       <%- include('../../../partials/field', { name: 'license_number', label: t('doctors.license'), value: v('license_number', '') }) %>
+      <%- include('../../../partials/field', { name: 'room', label: t('doctors.room'), value: v('room', ''), help: t('doctors.room_hint'), attrs: 'maxlength="20"' }) %>
     </div></div>
   <% var _ph = typeof photo !== 'undefined' ? photo : null; var _phId = old.photo_media_id !== undefined ? old.photo_media_id : (_ph ? _ph.id : ''); %>
   <div class="panel"><div class="panel-head"><div><h2><%= t('media_lib.doctor_photo') %></h2><div class="panel-sub"><%= t('media_lib.doctor_photo_sub') %></div></div></div>

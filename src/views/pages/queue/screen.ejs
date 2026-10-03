@@ -1,0 +1,56 @@
+<%# Waiting-room TV screen (/queue/<token>): going in now (big), next, two waiting, rooms busy now. public/js/queue.js refreshes it every 2 s. %>
+<% var roomTpl = t('queue.room', { n: '{n}' });
+   var roomOf = function (p) { return p && p.room ? (/^[0-9]+[A-Za-z]?$/.test(p.room) ? roomTpl.replace('{n}', p.room) : p.room) : ''; };
+   var docOf = function (p) { return p ? (locale === 'en' && p.doctorEn ? p.doctorEn : (p.doctor || '')) : ''; }; %>
+<main class="qs" data-queue-src="<%= src %>" data-sig="<%= board.sig %>" data-now="<%= board.now ? board.now.id : '' %>" data-tz="<%= clinic.timezone || 'UTC' %>" data-locale="<%= locale %>"
+  data-room-tpl="<%= roomTpl %>" data-more-tpl="<%= t('queue.more', { n: '{n}' }) %>" data-empty="<%= t('queue.none') %>" data-sound-on="<%= t('queue.sound_on') %>" data-sound-off="<%= t('queue.sound_off') %>">
+  <header class="qs-head">
+    <div class="qs-clinic">
+      <% if (clinic.logoUrl) { %><img class="qs-logo" src="<%= clinic.logoUrl %>" alt=""><% } %>
+      <strong><%= clinic.name %></strong>
+    </div>
+    <div class="qs-time"><div class="qs-clock" data-qs-clock dir="ltr">--:--</div><div class="qs-date" data-qs-date></div></div>
+  </header>
+
+  <div class="qs-grid">
+    <section class="qs-main">
+      <div class="qs-card qs-now" data-qs-now<%= board.now ? '' : ' hidden' %>>
+        <div class="qs-label"><%- icon('door-open', 'icon-sm') %><%= t('queue.now') %></div>
+        <div class="qs-name" data-f="name" dir="auto"><%= board.now ? board.now.name : '' %></div>
+        <div class="qs-row"><span class="qs-room" data-f="room"<%= roomOf(board.now) ? '' : ' hidden' %>><%= roomOf(board.now) %></span><span class="qs-doc" data-f="doctor"><%= docOf(board.now) %></span></div>
+      </div>
+      <div class="qs-card qs-next" data-qs-next<%= board.next ? '' : ' hidden' %>>
+        <div class="qs-label"><%- icon('arrow-down', 'icon-sm') %><%= t('queue.next') %></div>
+        <div class="qs-name" data-f="name" dir="auto"><%= board.next ? board.next.name : '' %></div>
+        <div class="qs-row"><span class="qs-room" data-f="room"<%= roomOf(board.next) ? '' : ' hidden' %>><%= roomOf(board.next) %></span><span class="qs-doc" data-f="doctor"><%= docOf(board.next) %></span></div>
+      </div>
+      <div class="qs-card qs-wait" data-qs-wait<%= board.waiting.length ? '' : ' hidden' %>>
+        <div class="qs-label"><%- icon('armchair', 'icon-sm') %><%= t('queue.waiting') %></div>
+        <ol class="qs-list" data-qs-list>
+          <% board.waiting.forEach(function (p) { %><li><span class="qs-wname" dir="auto"><%= p.name %></span><span class="qs-room qs-room-sm"<%= roomOf(p) ? '' : ' hidden' %>><%= roomOf(p) %></span></li><% }) %>
+        </ol>
+        <div class="qs-more" data-qs-more<%= board.more ? '' : ' hidden' %>><%= t('queue.more', { n: board.more }) %></div>
+      </div>
+      <div class="qs-empty" data-qs-empty<%= board.now || board.next ? ' hidden' : '' %>><%- icon('armchair') %><span><%= t('queue.none') %></span></div>
+    </section>
+
+    <aside class="qs-side">
+      <h2><%= t('queue.rooms_now') %></h2>
+      <ul class="qs-rooms" data-qs-rooms>
+        <% board.rooms.forEach(function (p) { %><li><span class="qs-room qs-room-sm"<%= roomOf(p) ? '' : ' hidden' %>><%= roomOf(p) %></span><span class="qs-rname" dir="auto"><%= p.name %></span></li><% }) %>
+      </ul>
+      <p class="qs-side-empty" data-qs-rooms-empty<%= board.rooms.length ? ' hidden' : '' %>><%= t('queue.rooms_empty') %></p>
+    </aside>
+  </div>
+
+  <footer class="qs-foot">
+    <span><%= brandName %></span>
+    <span class="qs-offline" data-qs-offline hidden role="status"><%- icon('triangle-alert', 'icon-sm') %><%= t('queue.offline') %></span>
+    <span class="qs-offline" data-qs-gone hidden role="status"><%- icon('triangle-alert', 'icon-sm') %><%= t('queue.gone') %></span>
+    <span class="qs-tools">
+      <button class="btn btn-ghost btn-sm" type="button" data-qs-sound><%- icon('volume-2', 'icon-sm') %><span data-qs-sound-label><%= t('queue.sound_on') %></span></button>
+      <button class="btn btn-ghost btn-sm" type="button" data-qs-fullscreen hidden><%- icon('maximize', 'icon-sm') %><%= t('attendance.fullscreen') %></button>
+    </span>
+  </footer>
+  <button class="qs-start" type="button" data-qs-start><%- icon('volume-2') %><span><%= t('queue.tap_to_start') %></span></button>
+</main>

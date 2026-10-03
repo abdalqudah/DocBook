@@ -970,3 +970,11 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .df-main .ord-forms > details[open] { flex-basis: 100%; }
 #orders .ord-forms.panel-body { padding: 12px var(--card-pad, 16px) 16px; }
 td.actions > details.dropdown, td.actions > a { display: inline-flex; vertical-align: middle; }
+/* The clinic's white logo in the sidebar / top bar when the app is dark (the colour logo otherwise). */
+.clinic-logo.logo-dark, .topbar-brand img.logo-dark { display: none; }
+:root[data-theme="dark"] .clinic-logo.logo-light, :root[data-theme="dark"] .topbar-brand img.logo-light { display: none; }
+:root[data-theme="dark"] .clinic-logo.logo-dark, :root[data-theme="dark"] .topbar-brand img.logo-dark { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .clinic-logo.logo-light, :root:not([data-theme="light"]) .topbar-brand img.logo-light { display: none; }
+  :root:not([data-theme="light"]) .clinic-logo.logo-dark, :root:not([data-theme="light"]) .topbar-brand img.logo-dark { display: block; }
+}

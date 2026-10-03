@@ -15,7 +15,7 @@
 <%# White label: the clinic's own logo and name at the top (switching clinics lives in the user menu). %>
 <% var _clinicName = locale === 'en' && business.name_en ? business.name_en : business.name; %>
 <%# With a logo, the logo alone fills the bar (the name is usually part of it); without one, initials + name. %>
-<div class="sidebar-brand clinic-brand<%= business.logo_mime ? ' has-logo' : '' %>"><% if (business.logo_mime) { %><a class="clinic-logo-link" href="/app" title="<%= _clinicName %>"><img class="clinic-logo" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= _clinicName %>"></a><% } else { %><a class="row-sm" href="/app"><span class="ws-mark"><%= initials(_clinicName) %></span><span class="clinic-brand-name truncate"><%= _clinicName %></span></a><% } %></div>
+<div class="sidebar-brand clinic-brand<%= business.logo_mime ? ' has-logo' : '' %>"><% if (business.logo_mime) { %><a class="clinic-logo-link" href="/app" title="<%= _clinicName %>"><img class="clinic-logo<%= typeof logoDarkSrc !== 'undefined' && logoDarkSrc ? ' logo-light' : '' %>" src="/app/logo/<%= business.id %>?v=<%= business.logo_version %>" alt="<%= _clinicName %>"><% if (typeof logoDarkSrc !== 'undefined' && logoDarkSrc) { %><img class="clinic-logo logo-dark" src="<%= logoDarkSrc %>" alt=""><% } %></a><% } else { %><a class="row-sm" href="/app"><span class="ws-mark"><%= initials(_clinicName) %></span><span class="clinic-brand-name truncate"><%= _clinicName %></span></a><% } %></div>
 <nav class="nav nav-workspaces" aria-label="<%= t('nav.main') %>">
   <div class="nav-flat nav-main">
     <% _main.forEach(function (g) { %><%- _line(g) %><% }) %>

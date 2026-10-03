@@ -429,3 +429,8 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
   :root:not([data-theme="light"]) .ws-body .ws-card p, :root:not([data-theme="light"]) .ws-body .ws-column p, :root:not([data-theme="light"]) .ws-body .ws-head p { color: color-mix(in srgb, var(--text) 78%, transparent); }
 }
 .ws-review-g { margin-top: 10px; align-self: flex-start; justify-self: start; width: auto; max-width: max-content; }
+
+/* The white logo (Theme & brand → logo for dark backgrounds) wherever the header sits on a dark picture — the
+   transparent header over the hero image or slider — whether dark mode is on or off. */
+body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled) .logo-light { display: none; }
+body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled) .logo-dark { display: block; }

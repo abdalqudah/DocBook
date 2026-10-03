@@ -385,14 +385,19 @@ router.get('/email', can('website.email'), wrap(async (req, res) => {
   const [acc, entOk, providers, log] = await Promise.all([m.status(req.ctx.businessId), entitled(req, 'website.clinic_email'), m.providers(), m.recentLog(req.ctx.businessId)]);
   if (!entOk && !acc) return lockedPage(req, res, 'email');
   const dns = req.query.dns === '1' && acc ? await m.deliverability(acc.from_address, String(req.query.selector || '')) : null;
+  // What was typed last time when it could not be saved (never the password).
+  const smtpOld = req.session && req.session.smtpOld; if (req.session) delete req.session.smtpOld;
   return page(req, res, 'email', {
-    title: req.t('website.email_title'), acc, entOk, providers, log, dns, kinds: m.KINDS, me: req.user,
+    title: req.t('website.email_title'), acc, entOk, providers, log, dns, kinds: m.KINDS, me: req.user, smtpOld,
     redirectUri: require('../clinicmail/oauth').redirectUri(), // eslint-disable-line global-require
   });
 }));
 const mailGate = wrap(async (req, res, next) => (await entitled(req, 'website.clinic_email') ? next() : lockedPage(req, res, 'email')));
 router.post('/email/smtp', can('website.email'), mailGate, act(async (req) => {
+  const { smtp_password: _pw, _csrf, ...typed } = req.body || {}; // eslint-disable-line no-unused-vars
+  req.session.smtpOld = typed;
   const r = await mailSvc().saveSmtp(req.ctx, req.body);
+  delete req.session.smtpOld;
   // The typed server name did not exist and a nearby one does: say which one is used.
   if (r && r.hostNote) flash(req, 'info', req.t('website.mail_host_fixed', r.hostNote));
   return r;

@@ -9,7 +9,7 @@
    var label = function (k) { return k === 'google' ? t('clinic_mkt.google_profile') : t('growth.social_' + k); };
    var about = L(f.about) || ''; var copy = L(f.copyright) || c.displayName; %>
 <% var _logoUrl = wsSite.logo ? wsSite.logo.url : (c.logo_mime ? '/' + c.slug + '/logo?v=' + c.logo_version : null);
-   var _dark = Boolean(wsSite.logoDark && wsSite.darkMode && wsSite.logo); // a light logo for dark mode
+   var _dark = Boolean(wsSite.logoDark && wsSite.logo); // the white logo, shown on dark backgrounds (dark mode)
    var _showLogo = f.show_logo !== false && _logoUrl; var _showName = f.show_name !== false; var _fh = Number(f.logo_height) || 48; if (_fh < 20) _fh = 20;
    // The logo and the name (shared by every footer style; the simple one shows it at the start of its single row).
    var _brand = (_showLogo || _showName) ? '<div class="ws-fbrand ws-fbrand-' + (f.name_pos === 'beside' ? 'beside' : 'below') + '">'

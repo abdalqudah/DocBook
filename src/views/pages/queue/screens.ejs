@@ -1,0 +1,113 @@
+<% var o = typeof old !== 'undefined' && old ? old : {}; var errs = typeof errors !== 'undefined' && errors ? errors : {};
+   var bv = function (k) { return k.branch_id === 0 ? 'main' : (k.branch_id ? String(k.branch_id) : ''); };
+   var noRoom = doctors.filter(function (d) { return !d.room; }); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/front-desk"><%= t('frontdesk.title') %></a></div>
+    <h1><%= t('queue.title') %></h1>
+    <p><%= t('queue.lead') %></p>
+  </div>
+</div>
+<% if (reach.via === 'local') { %><div class="alert alert-warning mb-4"><%- icon('triangle-alert') %><div><%= t('attendance.reach_local') %></div></div><% } %>
+
+<div class="grid grid-main">
+  <div class="stack">
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('queue.screens') %></h2><span class="badge badge-neutral"><%= fmt.number(list.length) %></span></div>
+      <% if (!list.length) { %>
+        <%- include('../../partials/empty', { emptyIcon: 'monitor', emptyTitle: t('queue.empty_title'), emptyText: t('queue.empty_text'), compact: true }) %>
+      <% } else { %>
+      <ul class="att-screens">
+      <% list.forEach(function (k) { %>
+        <li class="att-screen">
+          <div class="row between wrap">
+            <div class="row-sm">
+              <span class="att-screen-icon" aria-hidden="true"><%- icon('monitor', 'icon-sm') %></span>
+              <div>
+                <div class="strong"><%= k.name %></div>
+                <div class="small muted">
+                  <% if (!k.is_active) { %><span class="badge badge-neutral"><%= t('attendance.screen_off') %></span>
+                  <% } else if (k.online) { %><span class="badge badge-success badge-dot"><%= t('attendance.screen_online') %></span>
+                  <% } else if (k.last_seen_at) { %><%= t('attendance.screen_last_seen', { when: fmt.date(k.last_seen_at, { dateStyle: 'medium', timeStyle: 'short' }) }) %>
+                  <% } else { %><%= t('attendance.screen_never') %><% } %>
+                  · <%= t('queue.style_' + k.name_style) %>
+                </div>
+              </div>
+            </div>
+            <% if (k.is_active && k.url) { %><a class="btn btn-secondary btn-sm" href="/app/queue-screens/<%= k.id %>/open" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('attendance.open_screen') %></a><% } %>
+          </div>
+          <% if (k.is_active && k.url) { %>
+          <div class="row-sm mt-2 att-link-row">
+            <input class="input grow" id="queue-url-<%= k.id %>" value="<%= k.url %>" readonly dir="ltr" aria-label="<%= t('attendance.screen_link') %>">
+            <button class="btn btn-ghost btn-sm" type="button" data-copy="queue-url-<%= k.id %>"><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button>
+          </div>
+          <% } %>
+          <% if (canManage) { %>
+          <details class="att-more mt-2">
+            <summary class="small"><%= t('attendance.screen_manage') %></summary>
+            <form method="post" action="/app/queue-screens/<%= k.id %>" class="row-sm wrap mt-2">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input class="input att-name-input" name="name" value="<%= k.name %>" maxlength="80" aria-label="<%= t('attendance.screen_name') %>">
+              <select class="select" name="name_style" aria-label="<%= t('queue.names') %>">
+                <% ['short', 'full'].forEach(function (s) { %><option value="<%= s %>"<%= k.name_style === s ? ' selected' : '' %>><%= t('queue.style_' + s) %></option><% }) %>
+              </select>
+              <% if (branchOptions) { %><select class="select" name="branch_id" aria-label="<%= t('branches.branch') %>"><% branchOptions.forEach(function (b) { %><option value="<%= b.value %>"<%= b.value === bv(k) ? ' selected' : '' %>><%= b.label %></option><% }) %></select><% } %>
+              <label class="check"><input type="checkbox" name="is_active" value="1"<%= k.is_active ? ' checked' : '' %>><span><%= t('attendance.screen_active') %></span></label>
+              <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.save') %></button>
+            </form>
+            <div class="row-sm mt-2">
+              <form class="inline" method="post" action="/app/queue-screens/<%= k.id %>/regenerate" data-confirm="<%= t('attendance.screen_regenerate_confirm') %>" data-confirm-yes="<%= t('attendance.screen_regenerate') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('attendance.screen_regenerate') %></button></form>
+              <form class="inline" method="post" action="/app/queue-screens/<%= k.id %>/delete" data-confirm="<%= t('attendance.screen_delete_confirm', { name: k.name }) %>" data-confirm-title="<%= t('common.confirm_delete_title') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button></form>
+            </div>
+          </details>
+          <% } %>
+        </li>
+      <% }) %>
+      </ul>
+      <% } %>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('queue.rooms_title') %></h2><div class="panel-sub"><%= t('queue.rooms_sub') %></div></div></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th><%= t('doctors.title') %></th><th><%= t('doctors.room') %></th><th></th></tr></thead>
+        <tbody>
+        <% doctors.forEach(function (d) { %>
+          <tr><td><%= L(d.full_name, d.full_name_en) %></td>
+            <td><% if (d.room) { %><span class="badge badge-primary"><%= d.room %></span><% } else { %><span class="muted"><%= t('queue.no_room') %></span><% } %></td>
+            <td class="text-end"><% if (can('doctors.manage')) { %><a class="btn btn-ghost btn-sm" href="/app/doctors/<%= d.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %></td></tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+      <% if (noRoom.length) { %><p class="small muted mt-2 px-4 pb-4"><%= t('queue.no_room_help') %></p><% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <% if (canManage) { %>
+    <form class="panel" method="post" action="/app/queue-screens" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="panel-head"><div><h2><%= t('queue.add') %></h2><div class="panel-sub"><%= t('queue.add_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <% if (o.name !== undefined && typeof formError !== 'undefined' && formError && !errs.name) { %><%- include('../../partials/form-error') %><% } %>
+        <%- include('../../partials/field', { name: 'name', label: t('attendance.screen_name'), required: true, placeholder: t('queue.name_ph'), attrs: 'maxlength="80"', value: '' }) %>
+        <%- include('../../partials/field', { name: 'name_style', type: 'select', label: t('queue.names'), value: o.name_style || 'short', options: [{ value: 'short', label: t('queue.style_short') }, { value: 'full', label: t('queue.style_full') }], help: t('queue.names_help') }) %>
+        <% if (branchOptions) { %><%- include('../../partials/field', { name: 'branch_id', type: 'select', label: t('branches.branch'), value: o.branch_id || '', options: branchOptions }) %><% } %>
+      </div>
+      <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('queue.add') %></button></div>
+    </form>
+    <% } %>
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('attendance.setup_how') %></h2></div>
+      <div class="panel-body">
+        <ol class="att-steps">
+          <li><%= t('queue.how_1') %></li>
+          <li><%= t('queue.how_2') %></li>
+          <li><%= t('queue.how_3') %></li>
+          <li><%= t('queue.how_4') %></li>
+        </ol>
+        <p class="small muted mt-4 row-sm"><%- icon('lock', 'icon-sm') %><span><%= t('queue.security') %></span></p>
+      </div>
+    </section>
+  </div>
+</div>

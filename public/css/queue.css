@@ -1,0 +1,60 @@
+/* Waiting-room TV screen (/queue/<token>): big, calm, readable from across the room. Theme tokens only. */
+.qs-body { background: var(--background); color: var(--text); min-height: 100vh; min-height: 100dvh; margin: 0; overflow: hidden; }
+.qs { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; gap: clamp(12px, 2.2vh, 28px); padding: clamp(14px, 3vh, 36px) clamp(16px, 3.5vw, 56px); box-sizing: border-box; position: relative; }
+.qs-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.qs-clinic { display: flex; align-items: center; gap: 14px; min-width: 0; font-size: clamp(18px, 2.2vw, 32px); }
+.qs-clinic strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qs-logo { height: clamp(36px, 6vh, 72px); width: auto; max-width: 220px; object-fit: contain; }
+.qs-time { text-align: end; }
+.qs-clock { font-size: clamp(30px, 4.4vw, 68px); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.qs-date { color: var(--text-muted); font-size: clamp(13px, 1.2vw, 18px); margin-top: 6px; white-space: nowrap; }
+
+.qs-grid { flex: 1; display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: clamp(14px, 2vw, 32px); min-height: 0; }
+.qs-main { display: flex; flex-direction: column; gap: clamp(12px, 2vh, 24px); min-width: 0; }
+.qs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: clamp(16px, 2.6vh, 32px) clamp(18px, 2.4vw, 40px); box-shadow: var(--shadow-sm); min-width: 0; }
+.qs-card[hidden], .qs-room[hidden], .qs-empty[hidden], .qs-more[hidden], .qs-offline[hidden], .qs-side-empty[hidden], .qs-start[hidden] { display: none; }
+.qs-label { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: clamp(14px, 1.5vw, 22px); font-weight: 600; text-transform: none; }
+.qs-name { font-size: clamp(30px, 4.6vw, 78px); font-weight: 800; line-height: 1.15; margin: 6px 0 10px; overflow-wrap: break-word; }
+.qs-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; }
+.qs-room { display: inline-flex; align-items: center; padding: .2em .8em; border-radius: var(--pill); background: var(--primary); color: var(--primary-ink); font-weight: 800; font-size: clamp(20px, 2.6vw, 42px); white-space: nowrap; }
+.qs-room-sm { font-size: clamp(14px, 1.5vw, 24px); padding: .15em .7em; }
+.qs-doc { color: var(--text-muted); font-size: clamp(15px, 1.6vw, 26px); }
+
+.qs-now { background: var(--primary-soft); border-color: var(--primary); border-width: 2px; }
+.qs-now .qs-label { color: var(--primary); }
+.qs-next .qs-name { font-size: clamp(24px, 3.2vw, 54px); }
+.qs-next .qs-room { font-size: clamp(16px, 2vw, 32px); }
+.qs-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.qs-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); font-size: clamp(18px, 2.2vw, 36px); font-weight: 600; }
+.qs-list li:first-child { border-top: 0; }
+.qs-wname, .qs-rname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qs-more { color: var(--text-muted); font-size: clamp(14px, 1.4vw, 20px); margin-top: 6px; }
+.qs-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted); font-size: clamp(20px, 2.4vw, 36px); }
+.qs-empty .icon { width: 64px; height: 64px; }
+
+.qs-side { background: var(--surface-muted); border-radius: var(--radius-lg); padding: clamp(14px, 2.4vh, 28px) clamp(14px, 1.8vw, 28px); min-width: 0; overflow: hidden; }
+.qs-side h2 { margin: 0 0 12px; font-size: clamp(16px, 1.7vw, 26px); color: var(--text-muted); }
+.qs-rooms { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.qs-rooms li { display: flex; align-items: center; gap: 12px; font-size: clamp(16px, 1.8vw, 28px); font-weight: 600; min-width: 0; }
+.qs-side-empty { color: var(--text-muted); font-size: clamp(14px, 1.4vw, 20px); margin: 0; }
+
+.qs-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text-subtle); font-size: 13px; }
+.qs-tools { display: inline-flex; gap: 6px; }
+.qs-tools .is-off { opacity: .6; }
+.qs-offline { display: inline-flex; align-items: center; gap: 6px; color: var(--warning); font-size: 15px; }
+
+/* A new patient called in: the card slides down into place and glows for a moment. */
+@keyframes qs-slide { from { transform: translateY(-36px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes qs-glow { 0%, 100% { box-shadow: var(--shadow-sm); } 30% { box-shadow: 0 0 0 8px var(--primary-soft); } }
+.qs-in { animation: qs-slide .6s cubic-bezier(.2, .8, .2, 1) both; }
+.qs-flash .qs-now { animation: qs-slide .6s cubic-bezier(.2, .8, .2, 1) both, qs-glow 1.2s ease-in-out 2; }
+@media (prefers-reduced-motion: reduce) { .qs-in, .qs-flash .qs-now { animation: none; } }
+
+.qs-start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; border: 0; background: var(--overlay); color: var(--text); font: inherit; font-size: clamp(20px, 2.6vw, 40px); font-weight: 700; cursor: pointer; z-index: 5; }
+.qs-start .icon { width: 72px; height: 72px; padding: 20px; border-radius: 50%; background: var(--primary); color: var(--primary-ink); }
+.qs-start span { background: var(--surface); padding: 10px 22px; border-radius: var(--pill); }
+
+@media (max-width: 760px) {
+  .qs-body { overflow: auto; }
+  .qs-grid { grid-template-columns: minmax(0, 1fr); }
+}

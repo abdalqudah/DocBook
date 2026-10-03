@@ -74,6 +74,17 @@ async function resolveBusiness(req, res, next) {
     };
     req.business = business;
     res.locals.business = business;
+    // The clinic's white logo (website Theme & brand), used by the sidebar / top bar in dark mode.
+    res.locals.logoDarkSrc = await require('../core/cache').remember(`site:${businessId}:logodark`, async () => { // eslint-disable-line global-require
+      try {
+        const site = await knex('clinic_sites').where({ business_id: businessId }).first('draft_version_id', 'live_version_id');
+        const vid = site && (site.draft_version_id || site.live_version_id);
+        const v = vid ? await knex('clinic_site_versions').where({ business_id: businessId, id: vid }).first('doc') : null;
+        const doc = v ? (typeof v.doc === 'string' ? JSON.parse(v.doc) : v.doc) : null;
+        const id = doc && doc.brand && Number(doc.brand.logoDarkMediaId);
+        return id && (await knex('clinic_media').where({ business_id: businessId, id }).first('id')) ? `/app/media/${id}` : null;
+      } catch { return null; }
+    }, 300_000) || null;
     res.locals.membership = membership;
     res.locals.can = (p) => permissions.has(p);
     res.locals.canAny = (...ps) => ps.some((p) => permissions.has(p));

@@ -37,6 +37,7 @@
     <p><%= fmt.date(clinicToday, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span class="muted"><%= t('cashx.board_live') %></span></p>
   </div>
   <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/queue-screens"><%- icon('monitor', 'icon-sm') %><%= t('queue.short') %></a>
     <% if (canPay) { %><a class="btn btn-secondary" href="/app/cashier/screen?fs=1"><%- icon('maximize', 'icon-sm') %><%= t('cashx.open_screen') %></a><% } %>
     <% if (canBook) { %><button class="btn btn-primary" type="button" data-open-dialog="fx-walkin"><%- icon('user-plus', 'icon-sm') %><%= t('cashx.walkin') %></button><% } %>
   </div>
