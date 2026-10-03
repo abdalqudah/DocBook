@@ -161,28 +161,31 @@ tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
 .px-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--border); }
 .px-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
-/* Today's list: the same columns on every row — time · patient · state | papers · send. When the list is narrow
-   (beside other panels, tablets) the papers go on a second line under the patient, still in the same places. */
+/* Today's list: one line per visit, the same columns on every row — time · patient · state | papers · send.
+   Compact icons and chips so it stays on one line beside the other panels; only a very narrow list wraps. */
 .rec-sched { container-type: inline-size; }
-.rec-sched li { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: center; } /* papers column: the same width on every row, even without papers */
-.rec-sched li > a { display: grid; grid-template-columns: 46px 8px minmax(110px, 1fr) 200px; align-items: center; gap: 12px; }
+.rec-sched li { display: grid; grid-template-columns: minmax(0, 1fr) 196px; align-items: center; } /* papers column: the same width on every row, even without papers */
+.rec-sched li > a { display: grid; grid-template-columns: 42px 8px minmax(70px, 1fr) 200px; align-items: center; gap: 10px; padding-inline-end: 8px; }
 .rec-sched-who { display: flex; flex-direction: column; min-width: 0; }
 .rec-sched-who > span { display: block; }
-.rec-sched-state { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: flex-start; min-width: 0; overflow: hidden; }
-.rec-sched-state .badge { flex: none; }
-.rec-sched li > .rec-sched-docs { flex-wrap: nowrap; max-width: none; justify-content: flex-start; }
+.rec-sched-state { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; justify-content: flex-start; min-width: 0; overflow: hidden; }
+.rec-sched-state .badge { flex: none; font-size: 11px; padding: 2px 7px; gap: 4px; }
+.rec-sched-state .badge .icon { width: 12px; height: 12px; }
+.rec-sched li > .rec-sched-docs { flex-wrap: nowrap; max-width: none; justify-content: flex-start; gap: 3px; padding-inline-end: 12px; }
+.rec-sched .doc-ic { width: 26px; height: 26px; }
+.rec-sched .doc-ic .icon { width: 14px; height: 14px; }
+.rec-sched .doc-sep { margin-inline: 2px; height: 16px; }
+.rec-sched .doc-share { min-width: 0; gap: 3px; }
 .doc-ic { position: relative; flex: none; }
 .doc-ic.is-slot { visibility: hidden; }
-.doc-n { position: absolute; top: -3px; inset-inline-end: -3px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: var(--pill); background: var(--primary); color: var(--primary-ink); font-size: 10px; font-weight: var(--fw-bold); line-height: 15px; text-align: center; }
-@container (max-width: 820px) {
+.doc-n { position: absolute; top: -4px; inset-inline-end: -4px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: var(--pill); background: var(--primary); color: var(--primary-ink); font-size: 9.5px; font-weight: var(--fw-bold); line-height: 14px; text-align: center; }
+@container (max-width: 520px) {
   .rec-sched li { grid-template-columns: 1fr; }
-  .rec-sched li > a { grid-template-columns: 46px 8px minmax(0, 1fr) 190px; padding-bottom: 4px; }
-  .rec-sched li > .rec-sched-docs { padding: 0 var(--card-pad) 10px; padding-inline-start: calc(var(--card-pad) + 78px); }
-}
-@container (max-width: 480px) {
-  .rec-sched li > a { grid-template-columns: 46px 8px minmax(0, 1fr); }
-  .rec-sched-state { grid-column: 3; flex-wrap: wrap; justify-content: flex-start; }
-  .rec-sched li > .rec-sched-docs { padding-inline-start: calc(var(--card-pad) + 66px); }
+  .rec-sched li > a { grid-template-columns: 42px 8px minmax(0, 1fr); }
+  .rec-sched-state { grid-column: 3; flex-wrap: wrap; }
+  .rec-sched li > .rec-sched-docs { padding: 0 var(--card-pad) 10px; padding-inline-start: calc(var(--card-pad) + 62px); }
 }
 .doc-dd > summary { list-style: none; } .doc-dd > summary::-webkit-details-marker { display: none; }
 .doc-dd .menu { min-width: 200px; }
+.rec-sched-state .vt-chip { flex: none; font-size: 11px; padding: 2px 7px; gap: 3px; }
+.rec-sched-state .vt-chip .icon { width: 12px; height: 12px; }

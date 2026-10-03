@@ -123,7 +123,10 @@
         "IMPORT_BAD_FILE": "This is not a DocBook patient export, or it is damaged.",
         "IMPORT_TOO_BIG": "The file is larger than allowed.",
         "IMPORT_RUNNING": "An import is already running. Wait until it finishes."
-      }
+      },
+      "report_surgeries": "{n} surgeries",
+      "report_no_time": "{n} coming surgeries need their time booked again",
+      "rule_surgeries": "Surgeries come back with their hospital; a coming one gets the doctor's time booked when it is free, otherwise it comes in and asks for the time to be booked again."
     },
     "surgeries": "Surgeries ({n})"
   }

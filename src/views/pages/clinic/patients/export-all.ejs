@@ -82,7 +82,7 @@
     <li class="px-item"><div class="px-meta">
       <strong><%= fmt.date(x.finished_at || x.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %>
         <span class="badge <%= x.state === 'done' ? 'badge-success' : x.state === 'stopped' ? 'badge-warning' : 'badge-danger' %>"><%= t(I + 'state.' + x.state) %></span></strong>
-      <% if (x.state !== 'failed') { %><span class="small muted"><%= t(I + 'report', { added: fmt.number(r.patients_new || 0), merged: fmt.number(r.patients_merged || 0), visits: fmt.number(r.appointment || 0), files: fmt.number((r.file || 0) + (r.paper_invoice || 0) + (r.paper_certificate || 0)) }) %><% if (r.future) { %> · <%= t(I + 'report_future', { n: fmt.number(r.future) }) %><% } %><% if (x.failed) { %> · <%= t(I + 'report_failed', { n: fmt.number(x.failed) }) %><% } %><% if (x.stop === 'STORAGE_FULL') { %> · <%= t(I + 'report_full') %><% } %></span><% } %>
+      <% if (x.state !== 'failed') { %><span class="small muted"><%= t(I + 'report', { added: fmt.number(r.patients_new || 0), merged: fmt.number(r.patients_merged || 0), visits: fmt.number(r.appointment || 0), files: fmt.number((r.file || 0) + (r.paper_invoice || 0) + (r.paper_certificate || 0)) }) %><% if (r.surgery) { %> · <%= t(I + 'report_surgeries', { n: fmt.number(r.surgery) }) %><% } %><% if (r.future) { %> · <%= t(I + 'report_future', { n: fmt.number(r.future) }) %><% } %><% if (r.surgery_no_time) { %> · <%= t(I + 'report_no_time', { n: fmt.number(r.surgery_no_time) }) %><% } %><% if (x.failed) { %> · <%= t(I + 'report_failed', { n: fmt.number(x.failed) }) %><% } %><% if (x.stop === 'STORAGE_FULL') { %> · <%= t(I + 'report_full') %><% } %></span><% } %>
     </div></li>
     <% }) %>
   </ul>

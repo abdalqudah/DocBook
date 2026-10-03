@@ -31,7 +31,7 @@ const TABLES = {
   patient: 'patients', appointment: 'appointments', consultation: 'consultations', diagnosis: 'consultation_diagnoses',
   prescription: 'prescriptions', order: 'medical_orders', referral: 'referrals', file: 'patient_files',
   dental: 'dental_entries', dental_plan: 'dental_plan_items', growth: 'growth_measurements', pregnancy: 'pregnancies',
-  paper_invoice: 'patient_files', paper_certificate: 'patient_files',
+  paper_invoice: 'patient_files', paper_certificate: 'patient_files', surgery: 'surgeries',
 };
 const PATIENT_FILL = ['phone', 'email', 'date_of_birth', 'gender', 'national_id', 'insurance_number', 'allergies', 'chronic_conditions', 'notes'];
 
@@ -60,7 +60,7 @@ function readData(zip, prefix) {
   let d;
   try { d = JSON.parse(zip.read(`${prefix}data.json`).toString('utf8')); } catch { throw fail('IMPORT_BAD_FILE', 'The file is damaged.'); }
   if (!d || d.format !== 'docbook.patient-export' || Number(d.version) !== 1 || !d.patient || !d.patient.full_name) throw fail('IMPORT_BAD_FILE', 'Not a DocBook patient export.');
-  ['appointments', 'consultations', 'diagnoses', 'prescriptions', 'orders', 'referrals', 'files', 'dental', 'dental_plan', 'growth', 'pregnancies', 'papers', 'doctors']
+  ['appointments', 'consultations', 'diagnoses', 'prescriptions', 'orders', 'referrals', 'files', 'dental', 'dental_plan', 'growth', 'pregnancies', 'papers', 'doctors', 'surgeries']
     .forEach((k) => { if (!Array.isArray(d[k])) d[k] = []; });
   return d;
 }
@@ -243,6 +243,36 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
     await simple('dental_plan', d.dental_plan, (r) => ({ service_id: same ? r.service_id || null : null }));
     await simple('growth', d.growth);
     await simple('pregnancy', d.pregnancies);
+
+    // Surgeries: their hospital by name here; a coming one gets its time block back (the doctor's time) when that
+    // time is free, otherwise it comes in without the block and the report says to book the time again.
+    for (const sx of d.surgeries) { // eslint-disable-line no-restricted-syntax
+      if (await known('surgery', sx.id)) continue; // eslint-disable-line no-await-in-loop, no-continue
+      const doctorId = await doctorHere(sx.doctor_id); // eslint-disable-line no-await-in-loop
+      let hospitalId = null;
+      if (sx.hospital_id && same && await trx('clinic_partners').where({ id: sx.hospital_id, business_id: ctx.businessId }).first('id')) hospitalId = sx.hospital_id; // eslint-disable-line no-await-in-loop
+      else if (sx.hospital_name) { const h = await trx('clinic_partners').where({ business_id: ctx.businessId, kind: 'hospital', name: sx.hospital_name }).first('id'); hospitalId = h ? h.id : null; } // eslint-disable-line no-await-in-loop
+      let blockId = null;
+      const coming = sx.status === 'scheduled' && String(sx.surgery_date) >= today;
+      if (coming && doctorId) {
+        const kept = same && sx.appointment_id ? await trx('appointments').where({ id: sx.appointment_id, business_id: ctx.businessId, appointment_type: 'blocked' }).first('id') : null; // eslint-disable-line no-await-in-loop
+        if (kept && !(await trx('surgeries').where({ appointment_id: kept.id }).first('id'))) blockId = kept.id; // eslint-disable-line no-await-in-loop
+        else {
+          const toMin = (v) => { const [h, m] = String(v).split(':').map(Number); return h * 60 + m; };
+          const start = toMin(sx.surgery_time); const end = start + (Number(sx.duration_minutes) || 30);
+          const day = await trx('appointments').where({ business_id: ctx.businessId, doctor_id: doctorId, appointment_date: sx.surgery_date }).whereNotIn('status', ['cancelled', 'no_show']).select('appointment_time', 'duration_minutes'); // eslint-disable-line no-await-in-loop
+          const clash = day.some((a) => { const s = toMin(a.appointment_time); return s < end && start < s + (Number(a.duration_minutes) || 30); });
+          if (!clash) {
+            const label = `${sx.procedure_name} — ${sx.patient_name || p.full_name}`.slice(0, 190);
+            [blockId] = await trx('appointments').insert({ business_id: ctx.businessId, doctor_id: doctorId, patient_name: label, notes: label, appointment_date: sx.surgery_date, appointment_time: sx.surgery_time, duration_minutes: sx.duration_minutes || null, status: 'confirmed', appointment_type: 'blocked', source: 'staff', created_by: ctx.userId }); // eslint-disable-line no-await-in-loop
+          } else rep.surgery_no_time = (rep.surgery_no_time || 0) + 1;
+        }
+      }
+      await insert('surgery', sx, { // eslint-disable-line no-await-in-loop
+        patient_id: pid, patient_name: sx.patient_name || p.full_name, appointment_id: blockId, doctor_id: doctorId, hospital_id: hospitalId,
+        sent_at: same ? norm(sx.sent_at) : null, sent_to: same ? sx.sent_to : null, sent_channel: same ? sx.sent_channel : null, created_by: same ? sx.created_by || null : ctx.userId,
+      });
+    }
 
     // The stored files as they were (storage checked first).
     const adding = [];

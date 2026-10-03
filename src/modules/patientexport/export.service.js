@@ -138,7 +138,7 @@ async function collect(ctx, patientId, locale, add) {
     source: { instance: await instanceId(), business_id: ctx.businessId },
     clinic: { name: clinic.name, name_en: clinic.name_en || null },
     doctors: await (async () => {
-      const ids = [...new Set([d.appointments, d.consultations, d.prescriptions, d.orders, d.referrals, d.dental, d.plan, d.pregnancies].flat().map((r) => r.doctor_id).filter(Boolean))];
+      const ids = [...new Set([d.appointments, d.consultations, d.prescriptions, d.orders, d.referrals, d.dental, d.plan, d.pregnancies, d.surgeries].flat().map((r) => r.doctor_id).filter(Boolean))];
       return ids.length ? knex('doctors').where({ business_id: ctx.businessId }).whereIn('id', ids).select('id', 'full_name', 'full_name_en') : [];
     })(),
     patient: noBlobs(d.patient), appointments: d.appointments.map(noBlobs),

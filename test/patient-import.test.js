@@ -52,6 +52,11 @@ test.before(async () => {
   await knex('appointments').insert({ business_id: A, doctor_id: docA, patient_id: pidA, patient_name: 'ليلى حسن', appointment_date: '2099-01-01', appointment_time: '09:00', status: 'confirmed', appointment_type: 'in_person', source: 'staff' });
   await knex('consultations').insert({ business_id: A, appointment_id: v1, doctor_id: docA, patient_id: pidA, patient_name: 'ليلى حسن', diagnosis: 'التهاب لثة', vital_signs: JSON.stringify({ pulseBpm: '80' }) });
   [rxA] = await knex('prescriptions').insert({ business_id: A, appointment_id: v1, doctor_id: docA, patient_id: pidA, patient_name: 'ليلى حسن', items: JSON.stringify([{ medicationName: 'Chlorhexidine' }]) });
+  // Surgeries: one done in the past, one coming with its time block.
+  await knex('surgeries').insert({ business_id: A, doctor_id: docA, patient_id: pidA, patient_name: 'ليلى حسن', surgery_date: '2026-01-12', surgery_time: '09:00', duration_minutes: 60, procedure_name: 'قلع جراحي', hospital_name: 'مستشفى الأمل', status: 'done' });
+  const [blk] = await knex('appointments').insert({ business_id: A, doctor_id: docA, patient_name: 'زراعة — ليلى حسن', appointment_date: '2099-02-02', appointment_time: '10:00', duration_minutes: 90, status: 'confirmed', appointment_type: 'blocked', source: 'staff' });
+  await knex('surgeries').insert({ business_id: A, appointment_id: blk, doctor_id: docA, patient_id: pidA, patient_name: 'ليلى حسن', surgery_date: '2099-02-02', surgery_time: '10:00', duration_minutes: 90, procedure_name: 'زراعة', hospital_name: 'مستشفى الأمل', status: 'scheduled' });
+  await knex('clinic_partners').insert({ business_id: B, kind: 'hospital', name: 'مستشفى الأمل', is_active: true });
   await knex('invoices').insert({ business_id: A, invoice_number: 501, appointment_id: v1, doctor_id: docA, patient_id: pidA, patient_name: 'ليلى حسن', amount: 20, subtotal: 20 });
   const ctx = { businessId: A, userId: a.user, permissions: await rbac.getUserPermissions(A, a.user), ownDoctorId: null };
   [fileA] = await orders.addFiles(ctx, pidA, [{ buffer: PNG, size: PNG.length, originalname: 'xray.png' }], { category: 'imaging', title: 'أشعة', appointment_id: v1 });
@@ -108,13 +113,25 @@ test('into another clinic: the patient and the record come in; doctors by name; 
   assert.equal(files[0].appointment_id, visits[0].id);
   assert.equal(files[1].mime, 'application/pdf');
   assert.equal(await count('invoices', B), 0);
+  // Surgeries: both come in with the hospital matched by name; the coming one gets the doctor's time back.
+  const sxs = await knex('surgeries').where({ business_id: B, patient_id: p.id }).orderBy('surgery_date').select();
+  assert.equal(sxs.length, 2);
+  assert.equal(sxs[0].status, 'done');
+  assert.equal(sxs[0].appointment_id, null);
+  const hospB = await knex('clinic_partners').where({ business_id: B, kind: 'hospital' }).first('id');
+  assert.equal(sxs[1].hospital_id, hospB.id);
+  assert.equal(sxs[1].doctor_id, docB.id);
+  const blkB = await knex('appointments').where({ id: sxs[1].appointment_id }).first();
+  assert.equal(blkB.appointment_type, 'blocked');
+  assert.equal(blkB.appointment_time, '10:00');
+  assert.equal(meta.report.surgery, 2);
   assert.ok(await knex('audit_logs').where({ business_id: B, action: 'patients.imported' }).first());
 
   // The same file again: nothing doubles.
-  const before = [await count('patients', B), await count('appointments', B), await count('prescriptions', B), await count('patient_files', B)];
+  const before = [await count('patients', B), await count('appointments', B), await count('prescriptions', B), await count('patient_files', B), await count('surgeries', B)];
   const again = await importZip(ob, zip, B);
   assert.equal(again.meta.state, 'done');
-  assert.deepEqual([await count('patients', B), await count('appointments', B), await count('prescriptions', B), await count('patient_files', B)], before);
+  assert.deepEqual([await count('patients', B), await count('appointments', B), await count('prescriptions', B), await count('patient_files', B), await count('surgeries', B)], before);
 });
 
 test('back into the same clinic (every patient\'s file): deleted records return with their old numbers', async () => {
