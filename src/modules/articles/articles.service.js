@@ -83,7 +83,7 @@ function render(body, images = {}) {
   flushPara(); flushList();
   return out.join('\n');
 }
-const plain = (body) => String(body || '').replace(/\[\[img:[^\]]*\]\]/g, ' ').replace(/[#>*_`[\]()]/g, ' ').replace(/https?:\/\/\S+/g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (body) => String(body || '').replace(/^\s*(?:[-*•]|\d{1,3}[.)])\s+/gm, '').replace(/\[\[img:[^\]]*\]\]/g, ' ').replace(/[#>*_`[\]()]/g, ' ').replace(/https?:\/\/\S+/g, ' ').replace(/\s+/g, ' ').trim();
 /** Reading minutes (about 200 words a minute). */
 const readMinutes = (body) => Math.max(1, Math.round(plain(body).split(' ').filter(Boolean).length / 200));
 
