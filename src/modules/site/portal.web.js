@@ -268,17 +268,22 @@ router.get('/:slug/logo', wrap(async (req, res, next) => {
   return res.send(row.logo);
 }));
 
+/** The clinic's colours as CSS: its live website's theme (colours, fonts, dark mode), else its brand colour. */
+async function clinicThemeCss(clinic) {
+  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  if (state.status === 'live' && state.doc && clinic.slug) {
+    const fonts = await require('../website/fonts.service').list(clinic.id); // eslint-disable-line global-require
+    return require('../website/render').css(state.doc, clinic, { fonts, fontUrl: (f) => `/${clinic.slug}/fonts/${f.id}.${f.format}?v=${f.sha.slice(0, 10)}` }); // eslint-disable-line global-require
+  }
+  return theme.businessCss(clinic.color);
+}
+
 // The clinic's brand colour for its public pages.
 router.get('/:slug/theme.css', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
   res.set({ 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
-  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
-  if (state.status === 'live' && state.doc) {
-    const fonts = await require('../website/fonts.service').list(clinic.id); // eslint-disable-line global-require
-    return res.send(require('../website/render').css(state.doc, clinic, { fonts, fontUrl: (f) => `/${clinic.slug}/fonts/${f.id}.${f.format}?v=${f.sha.slice(0, 10)}` })); // eslint-disable-line global-require
-  }
-  return res.send(theme.businessCss(clinic.color));
+  return res.send(await clinicThemeCss(clinic));
 }));
 
 // A font the clinic uploaded for its website (same origin; the file was checked to be a font when uploaded).
@@ -358,3 +363,4 @@ module.exports.listDoctors = listDoctors;
 module.exports.listServices = listServices;
 module.exports.pricesShown = pricesShown;
 module.exports.renderSite = renderSite;
+module.exports.clinicThemeCss = clinicThemeCss;

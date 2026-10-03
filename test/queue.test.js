@@ -72,6 +72,15 @@ test('waiting-room screen: add, open by its secret link, now / next / waiting wi
   assert.match(r.text, /Sara K\./);
   assert.match(r.text, /Room 3/);
   assert.ok(!/Sara Ahmad Khalil/.test(r.text), 'short names by default');
+  assert.match(r.text, new RegExp(`<link rel="stylesheet" href="/queue/${token}/theme\\.css`), 'the clinic colours');
+  assert.match(r.text, new RegExp(`<link rel="icon" href="/queue/${token}/favicon`), 'the clinic browser icon');
+  await knex('businesses').where({ id: businessId }).update({ color: '#1e3a8a' });
+  cache.forgetPrefix('');
+  const css = await tv.get(`/queue/${token}/theme.css`);
+  assert.equal(css.status, 200);
+  assert.match(css.text, /--primary/);
+  assert.notEqual((await tv.get(`/queue/${token}/favicon`)).status, 404);
+  assert.equal((await tv.get('/queue/not-a-real-token-at-all-xxxxxxxx/theme.css')).status, 404);
   r = await tv.get(`/queue/${token}/data`);
   const b = JSON.parse(r.text).data;
   assert.equal(b.now.id, ids.inRoom);

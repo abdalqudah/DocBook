@@ -7,6 +7,7 @@ const express = require('express');
 const { wrap } = require('../../routes/helpers');
 const businesses = require('../businesses/business.service');
 const svc = require('./queue.service');
+const screenBrand = require('../../core/screen-brand');
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.get('/:token', wrap(async (req, res, next) => {
   return res.page('pages/queue/screen', {
     layout: 'kiosk', kioskClass: 'qs-body', title: `${b.name} · ${k.name}`, board, src: `${base}/data`, exitHref: null,
     clinic: { name: req.locale === 'en' && b.name_en ? b.name_en : b.name, timezone: b.timezone, logoUrl: b.logo_mime ? `${base}/logo?v=${b.logo_version}` : null },
-    pageStyles: ['/css/queue.css'], pageScripts: ['/js/queue.js'],
+    pageStyles: ['/css/queue.css'], pageScripts: ['/js/queue.js'], ...screenBrand.locals(base, b),
   });
 }));
 
@@ -46,6 +47,8 @@ router.get('/:token/data', wrap(async (req, res) => {
   await svc.touch(s.k);
   return res.json({ data: await svc.board(s.k, s.b) });
 }));
+
+screenBrand.addRoutes(router, screenOf); // the clinic's colours and browser icon
 
 router.get('/:token/logo', wrap(async (req, res) => {
   const s = await screenOf(req.params.token);

@@ -9,6 +9,7 @@ const { phoneBase } = require('../../middleware/web');
 const businesses = require('../businesses/business.service');
 const svc = require('./attendance.service');
 const kiosks = require('./kiosk.service');
+const screenBrand = require('../../core/screen-brand');
 
 const router = express.Router();
 
@@ -36,7 +37,7 @@ router.get('/:token', wrap(async (req, res, next) => {
   return res.page('pages/attendance/kiosk', {
     layout: 'kiosk', title: `${b.name} · ${k.name}`, qr, reach, feed, src: `/kiosk/${req.params.token}/qr`, exitHref: null, screenName: k.name,
     clinic: { name: b.name, timezone: b.timezone, logoUrl: b.logo_mime ? `/kiosk/${req.params.token}/logo?v=${b.logo_version}` : null },
-    pageStyles: ['/css/attendance.css'], pageScripts: ['/js/attendance.js'],
+    pageStyles: ['/css/attendance.css'], pageScripts: ['/js/attendance.js'], ...screenBrand.locals(`/kiosk/${req.params.token}`, b),
   });
 }));
 
@@ -48,6 +49,8 @@ router.get('/:token/qr', wrap(async (req, res) => {
   const [q, feed] = await Promise.all([svc.currentQr(s.b.id, phoneBase(req).base), svc.feed(s.b.id, s.b.timezone)]);
   return res.json({ data: { svg: q.svg, expiresIn: q.expiresIn, step: q.stepSeconds, feed } });
 }));
+
+screenBrand.addRoutes(router, screenOf); // the clinic's colours and browser icon
 
 router.get('/:token/logo', wrap(async (req, res) => {
   const s = await screenOf(req.params.token);
