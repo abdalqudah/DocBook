@@ -1,5 +1,5 @@
 <%
-  var kb = function (n) { return n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.max(1, Math.round(n / 1024))) + ' ' + t('media_lib.kb'); };
+  var kb = function (n) { if (n >= 1073741824) return fmt.number(Math.round(n / 107374182.4) / 10) + ' ' + t('media_lib.gb'); return n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.max(1, Math.round(n / 1024))) + ' ' + t('media_lib.kb'); };
   var pct = stats.quota ? Math.min(100, Math.round(stats.bytes * 100 / stats.quota)) : 0;
   var folderLabel = function (f) { return f ? f : t('media_lib.no_folder'); };
   var filtered = filters.q || filters.folder !== null || filters.kind;
@@ -25,8 +25,10 @@
           <noscript><button class="btn btn-secondary" type="submit"><%= t('common.filter') %></button></noscript>
         </form>
         <div class="ml-usage small muted">
-          <span><%= t('media_lib.usage', { n: fmt.number(stats.files), used: kb(stats.bytes), total: kb(stats.quota) }) %></span>
+          <% if (stats.quota === null) { %><span><%= t('media_lib.usage_unl', { n: fmt.number(stats.files), used: kb(stats.bytes) }) %></span>
+          <% } else { %><span><%= t('media_lib.usage', { n: fmt.number(stats.files), used: kb(stats.bytes), total: kb(stats.quota) }) %></span>
           <span class="meter ml-meter" aria-hidden="true"><span style="width:<%= pct %>%"></span></span>
+          <% if (pct >= 80 && stats.source === 'plan' && can('settings.manage')) { %><a href="/app/settings/subscription"><%= t('media_lib.quota_more') %></a><% } %><% } %>
         </div>
       </div>
     </section>

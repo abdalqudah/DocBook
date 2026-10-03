@@ -278,7 +278,7 @@ function groupByCategory(rows, categories, catOf = (r) => r.category_id) {
 }
 
 module.exports = {
-  entitled,
+  entitled, planFeatures,
   MODULES, KEYS, CORE, state, moduleForPath, hiddenNav, saveModules, forget,
   PAPERS, FIELDS, PLACES, LOGO_SIZES, INVOICE_DEFAULTS, invoiceTemplate, saveInvoiceTemplate, raiseInvoiceNumber,
   listCategories, saveCategory, removeCategory, checkCategory, setServiceCategory, groupByCategory,

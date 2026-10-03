@@ -14,7 +14,9 @@ const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const QUOTA_BYTES = 200 * 1024 * 1024; // per clinic
+const DEFAULT_MB = 200; // per clinic while no package applies (subscriptions off, trial without a plan…)
+const QUOTA_BYTES = DEFAULT_MB * 1024 * 1024;
+const MB = 1024 * 1024;
 const MAX_FILES = 2000;
 const IMAGE_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const MIMES = [...IMAGE_MIMES, 'application/pdf'];
@@ -118,9 +120,24 @@ async function folders(businessId) {
   return rows.map((r) => ({ folder: r.folder, n: Number(r.n) }));
 }
 
+/**
+ * The clinic's storage → { mb, source }: what the platform admin set for this clinic, else the package's
+ * media.storage_mb (null = no limit), else the platform default while no package applies. mb null = no limit.
+ */
+async function quotaOf(businessId) {
+  const b = await knex('businesses').where({ id: businessId }).first();
+  if (!b) return { mb: DEFAULT_MB, source: 'default' };
+  if (b.media_quota_mb !== null && b.media_quota_mb !== undefined) return { mb: Number(b.media_quota_mb), source: 'clinic' };
+  const ops = require('../platformops/ops.service'); // eslint-disable-line global-require
+  const features = await ops.planFeatures(b);
+  if (!features) return { mb: DEFAULT_MB, source: 'default' };
+  const entitlements = require('../subscriptions/entitlements'); // eslint-disable-line global-require
+  return { mb: entitlements.valueIn(features, 'media.storage_mb'), source: 'plan' };
+}
+
 async function stats(businessId) {
-  const [r] = await knex('clinic_media').where({ business_id: businessId }).count({ n: '*' }).sum({ bytes: 'size' });
-  return { files: Number(r.n) || 0, bytes: Number(r.bytes) || 0, quota: QUOTA_BYTES };
+  const [[r], q] = await Promise.all([knex('clinic_media').where({ business_id: businessId }).count({ n: '*' }).sum({ bytes: 'size' }), quotaOf(businessId)]);
+  return { files: Number(r.n) || 0, bytes: Number(r.bytes) || 0, quota: q.mb === null ? null : q.mb * MB, quotaMb: q.mb, source: q.source };
 }
 
 async function get(businessId, id) {
@@ -132,7 +149,7 @@ async function get(businessId, id) {
 async function upload(ctx, file, body = {}) {
   const info = inspect(file && file.buffer);
   const s = await stats(ctx.businessId);
-  if (s.files >= MAX_FILES || s.bytes + info.size > QUOTA_BYTES) throw fail('MEDIA_QUOTA', 'The media library is full. Delete files you no longer use.', 409);
+  if (s.files >= MAX_FILES || (s.quota !== null && s.bytes + info.size > s.quota)) throw fail('MEDIA_QUOTA', 'The media library is full. Delete files you no longer use.', 409, { mb: s.quotaMb });
   const sha = crypto.createHash('sha256').update(file.buffer).digest('hex').slice(0, 16);
   const row = {
     business_id: ctx.businessId, name: cleanName(body.name || (file && file.originalname), `file-${sha.slice(0, 6)}`),
@@ -291,7 +308,7 @@ async function publicDoctorPhotos(clinic) {
 
 module.exports = {
   setDoctorPhoto, doctorPhotos, publicDoctorPhotos,
-  MAX_BYTES, QUOTA_BYTES, MIMES, IMAGE_MIMES, EXT, GALLERY_MAX,
+  MAX_BYTES, QUOTA_BYTES, DEFAULT_MB, quotaOf, MIMES, IMAGE_MIMES, EXT, GALLERY_MAX,
   sniff, looksLikeMarkup, dimensions, inspect, isImage, cleanFolder,
   list, folders, stats, get, upload, update, usages, remove, file, publicFile, urlOf, publicUrlOf,
   pageMedia, setPageMedia, publicPage,

@@ -33,6 +33,7 @@
           <li><%- icon('stethoscope', 'icon-sm') %><span><%= p.limits.doctors === null ? t('site.pricing.doctors_unl') : p.limits.doctors === 1 ? t('site.pricing.doctors_1') : t('site.pricing.doctors_n', { n: p.limits.doctors }) %></span></li>
           <li><%- icon('users', 'icon-sm') %><span><%= p.limits.staff === null ? t('site.pricing.staff_unl') : t('site.pricing.staff_n', { n: p.limits.staff }) %></span></li>
           <li><%- icon('building-2', 'icon-sm') %><span><%= p.limits.branches === null ? t('site.pricing.branches_unl') : p.limits.branches <= 1 ? t('site.pricing.branches_1') : t('site.pricing.branches_n', { n: p.limits.branches }) %><% if (p.limits.secondBranch) { %><small class="muted"><%- t('site.pricing.second_branch', { price: money(p.limits.secondBranch, p.currency) }) %></small><% } %></span></li>
+          <li><%- icon('database', 'icon-sm') %><span><%= p.storage === null ? t('site.pricing.storage_unl') : t('site.pricing.storage_n', { n: p.storage.n, unit: t('site.pricing.unit_' + p.storage.unit) }) %></span></li>
           <% p.features.forEach(function (f) { %>
           <li class="<%= f.on ? 'on' : 'off' %>"><%- icon(f.on ? 'check' : 'minus', 'icon-sm') %><span><%= t('site.pricing.f.' + f.key) %></span></li>
           <% }) %>

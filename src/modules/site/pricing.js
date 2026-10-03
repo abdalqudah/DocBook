@@ -9,6 +9,8 @@ const branchPricing = require('../subscriptions/branch-pricing');
 const LISTED = ['website.builder', 'reminders', 'online_payments', 'online_consultations', 'ai_assistant', 'specialty_modules',
   'website.custom_domain', 'data_sync', 'website.white_label'];
 
+/** A storage size in MB as { n, unit } for the card (null = no limit). */
+const sizeOf = (mb) => (mb === null ? null : mb >= 1024 ? { n: num(Math.round((mb / 1024) * 10) / 10), unit: 'gb' } : { n: num(mb), unit: 'mb' });
 const num = (v) => new Intl.NumberFormat('en', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(Number(v) || 0);
 
 function card(p) {
@@ -32,6 +34,7 @@ function card(p) {
     features: LISTED.map((key) => ({ key: key.replace(/\./g, '_'), on: entitlements.valueIn(f, key) === true })),
     all: Object.fromEntries([...LISTED, 'website.clinic_email', 'website.analytics', 'website.advanced_seo'].map((key) => [key.replace(/\./g, '_'), entitlements.valueIn(f, key) === true])),
     pages: entitlements.valueIn(f, 'website.max_pages'),
+    storage: sizeOf(entitlements.valueIn(f, 'media.storage_mb')),
   };
 }
 

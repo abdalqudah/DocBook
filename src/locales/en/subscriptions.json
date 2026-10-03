@@ -141,7 +141,7 @@
       "website_advanced_seo": "Advanced search engine settings",
       "website_max_pages": "Extra pages",
       "website_white_label": "Hide the platform line in the site footer",
-      "media_storage_mb": "Media storage (MB)",
+      "media_storage_mb": "Clinic file storage in MB (1024 = 1 GB)",
       "limits_max_patients": "Maximum patient records",
       "clinic_max_branches": "Branches allowed (1 = main branch only, empty = no limit)"
     },

@@ -91,6 +91,33 @@
     </div>
   </section>
 </div>
+<% var _sz = function (n) { if (n === null) return t('admin.storage_unl'); return n >= 1073741824 ? fmt.number(Math.round(n / 107374182.4) / 10) + ' ' + t('media_lib.gb') : n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.max(n ? 1 : 0, Math.round(n / 1024))) + ' ' + t('media_lib.kb'); };
+   var _mbs = function (mb) { return mb === null ? t('admin.storage_unl') : _sz(mb * 1048576); };
+   var _pct = storage.quota ? Math.min(100, Math.round(storage.bytes * 100 / storage.quota)) : 0; %>
+<form class="panel mt-6" id="storage" method="post" action="/admin/clinics/<%= b.id %>/storage" data-confirm="<%= t('admin.storage_confirm', { name: b.name }) %>" data-confirm-yes="<%= t('common.save') %>" data-confirm-tone="primary">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-head"><div><h2><%- icon('database', 'icon-sm') %> <%= t('admin.storage_title') %></h2><p class="panel-sub"><%= t('admin.storage_sub') %></p></div>
+    <span class="badge <%= storage.source === 'clinic' ? 'badge-brand' : 'badge-neutral' %>"><%= t('admin.storage_source_' + storage.source) %></span></div>
+  <div class="panel-body stack">
+    <div class="stack-sm">
+      <div class="row-sm" style="justify-content:space-between;flex-wrap:wrap">
+        <strong class="num"><%= storage.quota === null ? t('admin.storage_used_unl', { used: _sz(storage.bytes) }) : t('admin.storage_used', { used: _sz(storage.bytes), total: _sz(storage.quota) }) %></strong>
+        <span class="small muted"><%= t('admin.storage_files', { n: fmt.number(storage.files) }) %></span>
+      </div>
+      <% if (storage.quota !== null) { %><span class="meter<%= _pct >= 100 ? ' full' : _pct >= 80 ? ' warn' : '' %>" aria-hidden="true"><span style="width:<%= _pct %>%"></span></span><% } %>
+      <span class="small muted"><%= storage.hasPlan ? t('admin.storage_plan', { size: _mbs(storage.planMb) }) : t('admin.storage_default', { size: _mbs(storage.planMb) }) %></span>
+    </div>
+    <div class="field">
+      <label for="media_quota_mb"><%= t('admin.storage_own') %></label>
+      <input class="input" type="number" min="1" max="1000000" step="1" id="media_quota_mb" name="media_quota_mb" value="<%= storage.ownMb === null ? '' : storage.ownMb %>" placeholder="<%= _mbs(storage.planMb) %>" dir="ltr" inputmode="numeric" style="max-width:220px">
+      <p class="help"><%= t('admin.storage_own_help') %></p>
+    </div>
+  </div>
+  <div class="panel-foot row-sm">
+    <button class="btn btn-secondary" type="submit"><%= t('common.save') %></button>
+    <% if (storage.ownMb !== null) { %><button class="btn btn-ghost" type="submit" name="follow_plan" value="1"><%= t('admin.storage_follow') %></button><% } %>
+  </div>
+</form>
 <section class="panel flush mt-6" id="backups">
   <div class="panel-head"><div><h2><%- icon('database', 'icon-sm') %> <%= t('admin.backup.title') %></h2><p class="panel-sub"><%= t('admin.backup.sub') %></p></div>
     <form method="post" action="/admin/clinics/<%= b.id %>/backups"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('plus', 'icon-sm') %><%= t('admin.backup.create') %></button></form></div>

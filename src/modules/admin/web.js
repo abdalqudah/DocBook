@@ -110,7 +110,35 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
   let ownTexts = 0;
   try { ownTexts = Object.keys(JSON.parse((msgRow && msgRow.texts) || '{}')).length; } catch { ownTexts = 0; }
   const modules = await ops.state(full);
-  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts } });
+  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts }, storage: await storageOf(full) });
+}));
+
+// ---------------------------------------------------------------- one clinic's media storage
+const clinicMedia = require('../integrations/media.service');
+const entitlements = require('../subscriptions/entitlements');
+/** Used space, the package's size (planMb: null = no limit) and this clinic's own size set here (null = follow the package). */
+async function storageOf(business) {
+  const [s, features, row] = await Promise.all([clinicMedia.stats(business.id), ops.planFeatures(business), knex('businesses').where({ id: business.id }).first('media_quota_mb')]);
+  const planMb = features ? entitlements.valueIn(features, 'media.storage_mb') : clinicMedia.DEFAULT_MB;
+  return { ...s, planMb, hasPlan: Boolean(features), ownMb: row.media_quota_mb === null || row.media_quota_mb === undefined ? null : Number(row.media_quota_mb) };
+}
+
+// Empty = follow the package. Recorded in the platform audit log.
+router.post('/clinics/:id(\\d+)/storage', wrap(async (req, res) => {
+  const full = await businesses.get(Number(req.params.id));
+  if (!full) throw E.notFound('Clinic');
+  const raw = String(req.body.media_quota_mb ?? '').trim();
+  const mb = raw === '' || req.body.follow_plan === '1' ? null : Math.floor(Number(raw));
+  if (mb !== null && (!Number.isFinite(mb) || mb < 1 || mb > 1_000_000)) {
+    flash(req, 'error', req.t('admin.storage_invalid'));
+    return res.redirect(`/admin/clinics/${full.id}#storage`);
+  }
+  const before = await knex('businesses').where({ id: full.id }).first('media_quota_mb');
+  await knex('businesses').where({ id: full.id }).update({ media_quota_mb: mb, updated_at: new Date() });
+  await audit.record(req.ctx, 'platform.clinic_storage', { entityType: 'clinic', entityId: full.id,
+    oldValues: { media_quota_mb: before ? before.media_quota_mb : null }, newValues: { media_quota_mb: mb } });
+  flash(req, 'success', req.t('admin.storage_saved'));
+  return res.redirect(`/admin/clinics/${full.id}#storage`);
 }));
 
 // The clinic's optional areas (the same switches as the clinic's Settings → Modules), recorded in the clinic's audit log.
