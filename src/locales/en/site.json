@@ -137,6 +137,10 @@
           "portable": {
             "title": "Export and import files",
             "text": "One patient's file or every patient in one ZIP, imported back into place."
+          },
+          "surgeries": {
+            "title": "Surgeries",
+            "text": "The doctor's time for operations, on its own calendar, with the hospital told."
           }
         }
       },
@@ -253,7 +257,9 @@
         "q16": "Can I take my patients' files with me?",
         "a16": "Yes. Export one patient or every patient as a ZIP with a PDF summary, all papers and images, and portable data — then import it into any clinic on DocBook.",
         "q17": "How much file storage do I get?",
-        "a17": "It depends on the package and is shown on the pricing page. It covers website media, patient files and chat attachments, and can be raised for your clinic when needed."
+        "a17": "It depends on the package and is shown on the pricing page. It covers website media, patient files and chat attachments, and can be raised for your clinic when needed.",
+        "q18": "Can the doctor's hospital surgeries be organised?",
+        "a18": "Yes. The doctor or reception books the time as a \"surgery\" with the patient, procedure and hospital; it shows on the Surgeries page and in the patient's file, and the date goes to the hospital by e-mail or WhatsApp."
       },
       "cta": {
         "title": "Ready to open your clinic's DocBook?",
@@ -277,7 +283,7 @@
       "showcase": {
         "kicker": "What's new in DocBook",
         "title": "New features, built with clinics",
-        "lead": "What's new: each member's own e-mail inside DocBook, exporting one patient's file or every patient and importing it back into place, and file storage by package — alongside pharmacies & centres and the waiting screen that calls patients aloud.",
+        "lead": "What's new: surgeries on their own calendar with the date sent to the hospital, each member's own e-mail, exporting and importing patient files into place, and file storage by package.",
         "tag": "New",
         "items": {
           "website": {
@@ -407,6 +413,14 @@
           "storage": {
             "title": "File storage by package",
             "text": "One size for all the clinic's files: website media, patient files, chat attachments. Shown in each package, and the clinic sees what each kind uses."
+          },
+          "surgeries": {
+            "title": "Surgeries on their own calendar",
+            "text": "The doctor books their time as a surgery — patient, procedure, hospital. It shows on the Surgeries page by day, week and month, and in the patient's file; cancelling frees the time."
+          },
+          "hospital": {
+            "title": "The surgery date to the hospital",
+            "text": "Send the surgery date and the patient's details to the hospital from the clinic's e-mail or on WhatsApp in one click, in the clinic's own wording."
           }
         }
       },
@@ -927,7 +941,11 @@
     "usage_mailboxes_val": "{n} members connected their e-mail",
     "usage_moves": "File exports & imports",
     "usage_moves_val": "{ex} exports · {im} imports in 30 days",
-    "usage_none": "None"
+    "usage_none": "None",
+    "stat_surgeries": "Surgeries booked",
+    "stat_surgeries_meta": "In 30 days · {n} clinics",
+    "usage_surgeries": "Surgeries",
+    "usage_surgeries_val": "{n} surgeries · {sent} sent to the hospital in 30 days"
   },
   "portal": {
     "book": "Book an appointment",

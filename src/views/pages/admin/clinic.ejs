@@ -84,6 +84,7 @@
         <dt><%= t('admin.stat_chats') %></dt><dd><%= fmt.number(usage.chats) %></dd>
         <dt><%= t('admin.usage_centres') %></dt><dd><%= t('admin.usage_centres_val', { n: fmt.number(usage.centres), sent: fmt.number(usage.centreSends) }) %></dd>
         <dt><%= t('admin.usage_texts') %></dt><dd><%= usage.ownTexts ? t('admin.usage_texts_yes', { n: fmt.number(usage.ownTexts) }) : t('admin.usage_texts_no') %></dd>
+        <dt><%= t('admin.usage_surgeries') %></dt><dd><%= usage.surgeries.n ? t('admin.usage_surgeries_val', { n: fmt.number(usage.surgeries.n), sent: fmt.number(usage.surgeries.sent) }) : t('admin.usage_none') %></dd>
         <dt><%= t('admin.usage_mailboxes') %></dt><dd><%= usage.mailboxes ? t('admin.usage_mailboxes_val', { n: fmt.number(usage.mailboxes) }) : t('admin.usage_none') %></dd>
         <dt><%= t('admin.usage_moves') %></dt><dd><% var _mv = usage.moves || {}; var _ex = (_mv['patient.exported'] || 0) + (_mv['patients.exported_all'] || 0); %><%= _ex || _mv['patients.imported'] ? t('admin.usage_moves_val', { ex: fmt.number(_ex), im: fmt.number(_mv['patients.imported'] || 0) }) : t('admin.usage_none') %></dd>
         <dt><%= t('admin.usage_screens') %></dt>

@@ -40,7 +40,7 @@ const pageMeta = (total, p) => { const pages = Math.max(1, Math.ceil(total / PER
 router.get('/', wrap(async (req, res) => {
   const count = async (q) => Number((await q.count({ n: '*' }))[0].n);
   const d30 = since(30);
-  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats, centreSends, centreClinics, mailboxes, moves, used] = await Promise.all([
+  const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats, centreSends, centreClinics, mailboxes, moves, used, surgeries, surgeryClinics] = await Promise.all([
     count(knex('businesses')), count(knex('businesses').where({ status: 'active' })), count(knex('businesses').where({ status: 'suspended' })),
     count(knex('users')), count(knex('users').where('last_login_at', '>=', d30)),
     count(knex('appointments').where('created_at', '>=', d30).whereNot('appointment_type', 'blocked')),
@@ -56,6 +56,8 @@ router.get('/', wrap(async (req, res) => {
     count(knex('staff_mailboxes')),
     count(knex('audit_logs').whereIn('action', ['patient.exported', 'patients.exported_all', 'patients.imported']).where('created_at', '>=', d30)),
     require('../storage/storage.service').usageAll(), // eslint-disable-line global-require
+    count(knex('surgeries').where('created_at', '>=', d30)),
+    knex('surgeries').where('created_at', '>=', d30).countDistinct({ n: 'business_id' }).then((r) => Number(r[0].n)),
   ]);
   // File storage: everything the clinics keep, and how many are at 80 % of their size or more.
   const storageSvc = require('../storage/storage.service'); // eslint-disable-line global-require
@@ -72,7 +74,7 @@ router.get('/', wrap(async (req, res) => {
   const { isLocalUrl, isLocalHost } = require('../../middleware/web'); // eslint-disable-line global-require
   const appUrlWarning = (!process.env.APP_URL || isLocalUrl(process.env.APP_URL)) && !isLocalHost(req.hostname)
     ? { current: process.env.APP_URL || '', suggested: `https://${req.hostname}` } : null;
-  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length, mailboxes, moves, storageBytes, nearFull }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
+  page(res, 'overview', { title: req.t('admin.nav_overview'), stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length, mailboxes, moves, storageBytes, nearFull, surgeries, surgeryClinics }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
 }));
 
 // ---------------------------------------------------------------- clinics
@@ -113,7 +115,7 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
     businesses.listMembers(b.id),
   ]);
   const d30 = since(30);
-  const [full, sent, screens, chats, centres, centreSends, msgRow, mailboxes, moves] = await Promise.all([
+  const [full, sent, screens, chats, centres, centreSends, msgRow, mailboxes, moves, surgeries] = await Promise.all([
     businesses.get(b.id),
     count(knex('share_links').where({ business_id: b.id }).where('created_at', '>=', d30)),
     knex('queue_screens').where({ business_id: b.id }).select('name', 'is_active', 'last_seen_at'),
@@ -124,11 +126,12 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
     count(knex('staff_mailboxes').where({ business_id: b.id })),
     knex('audit_logs').where({ business_id: b.id }).whereIn('action', ['patient.exported', 'patients.exported_all', 'patients.imported']).where('created_at', '>=', d30)
       .groupBy('action').select('action').count({ n: '*' }).then((rows) => Object.fromEntries(rows.map((r) => [r.action, Number(r.n)]))),
+    knex('surgeries').where({ business_id: b.id }).where('created_at', '>=', d30).select(knex.raw('COUNT(*) as n'), knex.raw('SUM(sent_at IS NOT NULL) as sent')).first(),
   ]);
   let ownTexts = 0;
   try { ownTexts = Object.keys(JSON.parse((msgRow && msgRow.texts) || '{}')).length; } catch { ownTexts = 0; }
   const modules = await ops.state(full);
-  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts, mailboxes, moves }, storage: await storageOf(full) });
+  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts, mailboxes, moves, surgeries: { n: Number(surgeries && surgeries.n) || 0, sent: Number(surgeries && surgeries.sent) || 0 } }, storage: await storageOf(full) });
 }));
 
 // ---------------------------------------------------------------- one clinic's file storage (media, patient files, chat …)

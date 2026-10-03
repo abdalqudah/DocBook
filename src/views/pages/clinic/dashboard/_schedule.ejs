@@ -12,15 +12,16 @@
       <a href="<%= apptHref(a.id) %>">
         <span class="rec-sched-time mono" dir="ltr"><%= a.appointment_time %></span>
         <span class="rec-sched-bar" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span>
-        <span class="grow" style="min-width:0">
-          <span class="strong truncate" style="display:block" dir="auto"><%= a.patient_name %></span>
-          <span class="small muted truncate" style="display:block"><%= [L(a.doctor_name, a.doctor_name_en), L(a.service_name, a.service_name_en)].filter(Boolean).join(' · ') || '—' %></span>
+        <span class="rec-sched-who">
+          <span class="strong truncate" dir="auto"><%= a.patient_name %></span>
+          <span class="small muted truncate"><%= [L(a.doctor_name, a.doctor_name_en), L(a.service_name, a.service_name_en)].filter(Boolean).join(' · ') || '—' %></span>
         </span>
-        <span class="row-sm wrap end">
-          <% if (a.source === 'website') { %><span class="badge" title="<%= t('dashboard.sources.website') %>"><%- icon('globe', 'icon-sm') %></span><% } %>
+        <%# Fixed order, starting at the same place on every row: state · timer · paid · booked online. %>
+        <span class="rec-sched-state">
+          <span class="badge badge-<%= st.tone %> badge-dot"><%= t('dashboard.' + st.key) %></span>
           <%- include(P + 'visit-timer', { tv: a.timer }) %>
           <% if (a.payment_status === 'paid') { %><span class="badge badge-neutral"><%= t('billing.paid') %></span><% } %>
-          <span class="badge badge-<%= st.tone %> badge-dot"><%= t('dashboard.' + st.key) %></span>
+          <% if (a.source === 'website') { %><span class="badge" title="<%= t('dashboard.sources.website') %>" aria-label="<%= t('dashboard.sources.website') %>"><%- icon('globe', 'icon-sm') %></span><% } %>
         </span>
       </a>
       <%- include(P + 'visit-docs', { a: a, mailOn: mailOn }) %>

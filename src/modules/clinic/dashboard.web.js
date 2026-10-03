@@ -146,7 +146,15 @@ async function withDocs(ctx, rows) {
       ...(certs[a.id] || []).filter((c) => !c.revoked_at).map((c) => ({ kind: 'certificate', id: c.id, key: 'share.doc.certificate', ic: 'badge-check' })),
       ...(files[a.id] || []).map((f) => ({ kind: 'file', id: f.id, key: 'share.doc.file', vars: { title: f.title || f.name }, ic: 'paperclip' })),
     ];
-    a.docs = { items, send, print: !clin, clinical: papers, billing, any: items.some((x) => x.on) };
+    // The same four places on every row (prescription · tests · referral · invoice), so the icons line up down the
+    // list: an empty place stays dimmed, several papers of one kind show their number.
+    const slot = (key, ic, list) => ({ key, ic, n: list.length, on: list.length > 0, href: list.length ? list[0].href : null, extra: list.map((x) => x.extra).filter(Boolean).join('، ') || null, list });
+    const on = (k) => items.filter((x) => x.on && k.includes(x.key));
+    const slots = [
+      ...(papers ? [slot('prescription', 'pill', on(['prescription'])), slot(on(['imaging']).length && !on(['lab']).length ? 'imaging' : 'orders', on(['imaging']).length && !on(['lab']).length ? 'scan-line' : 'activity', on(['lab', 'imaging'])), slot('referral', 'send', on(['referral']))] : []),
+      ...(billing ? [slot('invoice', 'receipt', on(['invoice']))] : []),
+    ];
+    a.docs = { items, slots, send, print: !clin, clinical: papers, billing, any: items.some((x) => x.on) };
     a.email = mailOf[a.patient_id] || a.patient_email || null;
     a.timer = timerOf[a.id] || null;
   });
