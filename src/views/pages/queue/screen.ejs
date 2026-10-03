@@ -3,7 +3,7 @@
    var roomOf = function (p) { return p && p.room ? (/^[0-9]+[A-Za-z]?$/.test(p.room) ? roomTpl.replace('{n}', p.room) : p.room) : ''; };
    var docOf = function (p) { return p ? (locale === 'en' && p.doctorEn ? p.doctorEn : (p.doctor || '')) : ''; }; %>
 <main class="qs" data-queue-src="<%= src %>" data-sig="<%= board.sig %>" data-now="<%= board.now ? board.now.id : '' %>" data-tz="<%= clinic.timezone || 'UTC' %>" data-locale="<%= locale %>"
-  data-room-tpl="<%= roomTpl %>" data-more-tpl="<%= t('queue.more', { n: '{n}' }) %>" data-empty="<%= t('queue.none') %>" data-sound-on="<%= t('queue.sound_on') %>" data-sound-off="<%= t('queue.sound_off') %>">
+  data-room-tpl="<%= roomTpl %>" data-more-tpl="<%= t('queue.more', { n: '{n}' }) %>" data-empty="<%= t('queue.none') %>" data-voice="<%= board.voice ? '1' : '' %>" data-say-tpl="<%= t('queue.say', { name: '{name}', room: '{room}' }) %>" data-say-tpl-plain="<%= t('queue.say_plain', { name: '{name}' }) %>" data-sound-on="<%= t('queue.sound_on') %>" data-sound-off="<%= t('queue.sound_off') %>">
   <header class="qs-head">
     <div class="qs-clinic">
       <% if (clinic.logoUrl) { %><img class="qs-logo" src="<%= clinic.logoUrl %>" alt=""><% } %>

@@ -38,6 +38,12 @@
     "gone": "This screen was turned off or its link changed.",
     "sound_on": "Sound on",
     "sound_off": "Sound off",
-    "tap_to_start": "Tap to start the screen and sound"
+    "tap_to_start": "Tap to start the screen and sound",
+    "voice": "Read the patient's name and room aloud",
+    "voice_help": "After the ding-dong the screen says: “Lina, please go to Room 1”. Turn it off to keep the chime only. Needs a browser with voices (Chrome or Edge).",
+    "voice_on": "Read aloud",
+    "voice_off": "Chime only",
+    "say": "{name}, please go to {room}",
+    "say_plain": "{name}, please go in"
   }
 }

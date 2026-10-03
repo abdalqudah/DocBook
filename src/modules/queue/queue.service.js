@@ -2,7 +2,7 @@
 // the doctor's room number (doctors.room). Each screen opens with its own secret link (/queue/<token>) — the TV is
 // never signed in with a staff account; "New link" replaces a link shared by mistake (the old one stops at once).
 //
-//   board(screen, clinic)  → { now, next, waiting[2], rooms[], sig } — what the screen shows, refreshed every 2 s
+//   board(screen, clinic)  → { voice, now, next, waiting[2], rooms[], sig } — what the screen shows, refreshed every 2 s
 //
 // Patients are shown as "Ahmad K." unless the clinic chooses full names for that screen.
 const crypto = require('crypto');
@@ -45,9 +45,9 @@ const newToken = () => {
 async function create(ctx, input) {
   const name = cleanName(input.name);
   if (!name) throw E.validation({ name: 'Required.' });
-  const row = { business_id: ctx.businessId, name, name_style: cleanStyle(input.name_style), branch_id: await cleanBranch(ctx.businessId, input.branch_id), created_by: ctx.userId || null, ...newToken() };
+  const row = { business_id: ctx.businessId, name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), created_by: ctx.userId || null, ...newToken() };
   const [id] = await knex('queue_screens').insert(row);
-  await audit.record(ctx, 'queue.screen_created', { entityType: 'queue_screen', entityId: id, newValues: { name, name_style: row.name_style, branch_id: row.branch_id } });
+  await audit.record(ctx, 'queue.screen_created', { entityType: 'queue_screen', entityId: id, newValues: { name, name_style: row.name_style, branch_id: row.branch_id, voice: row.voice } });
   return id;
 }
 
@@ -55,10 +55,10 @@ async function update(ctx, id, input) {
   const before = await get(ctx, id);
   const name = cleanName(input.name);
   if (!name) throw E.validation({ name: 'Required.' });
-  const patch = { name, name_style: cleanStyle(input.name_style), is_active: input.is_active === '1' || input.is_active === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), updated_at: new Date() };
+  const patch = { name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, is_active: input.is_active === '1' || input.is_active === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), updated_at: new Date() };
   await knex('queue_screens').where({ id: before.id }).update(patch);
   await audit.record(ctx, 'queue.screen_updated', { entityType: 'queue_screen', entityId: before.id,
-    oldValues: { name: before.name, name_style: before.name_style, is_active: Boolean(before.is_active), branch_id: before.branch_id }, newValues: { ...patch, updated_at: undefined } });
+    oldValues: { name: before.name, name_style: before.name_style, voice: Boolean(before.voice), is_active: Boolean(before.is_active), branch_id: before.branch_id }, newValues: { ...patch, updated_at: undefined } });
 }
 
 async function regenerate(ctx, id) {
@@ -121,11 +121,13 @@ async function board(screen, clinic) {
     .select('a.id', 'a.patient_name', 'a.with_doctor', 'a.called_at', 'a.arrived_at', 'a.appointment_time', 'a.doctor_id', 'a.appointment_type', 'a.payment_status',
       'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.room');
   const name = screen.name_style === 'full' ? (n) => String(n || '').trim() || '—' : shortName;
-  const show = (a) => a && ({ id: a.id, name: name(a.patient_name), room: a.room || null, doctor: a.doctor_name || null, doctorEn: a.doctor_name_en || null });
+  // Spoken name: the full name, or only the first name when the screen shows short names ("Ahmad S." reads badly).
+  const say = (n) => (screen.name_style === 'full' ? String(n || '').trim() : String(n || '').trim().split(/\s+/)[0] || '');
+  const show = (a) => a && ({ id: a.id, name: name(a.patient_name), say: say(a.patient_name), room: a.room || null, doctor: a.doctor_name || null, doctorEn: a.doctor_name_en || null });
   const inside = rows.filter((a) => a.with_doctor).sort((x, y) => (new Date(y.called_at || 0) - new Date(x.called_at || 0)) || (y.id - x.id));
   const queue = rows.filter((a) => !a.with_doctor)
     .sort((x, y) => (new Date(x.arrived_at || 0) - new Date(y.arrived_at || 0)) || String(x.appointment_time).localeCompare(String(y.appointment_time)));
-  const out = { now: show(inside[0]) || null, next: show(queue[0]) || null, waiting: queue.slice(1, 3).map(show), more: Math.max(0, queue.length - 3), rooms: inside.map(show) };
+  const out = { voice: Boolean(screen.voice), now: show(inside[0]) || null, next: show(queue[0]) || null, waiting: queue.slice(1, 3).map(show), more: Math.max(0, queue.length - 3), rooms: inside.map(show) };
   out.sig = [inside.map((a) => a.id).join('.'), queue.slice(0, 3).map((a) => a.id).join('.')].join('|');
   return out;
 }

@@ -30,7 +30,7 @@
                   <% } else if (k.online) { %><span class="badge badge-success badge-dot"><%= t('attendance.screen_online') %></span>
                   <% } else if (k.last_seen_at) { %><%= t('attendance.screen_last_seen', { when: fmt.date(k.last_seen_at, { dateStyle: 'medium', timeStyle: 'short' }) }) %>
                   <% } else { %><%= t('attendance.screen_never') %><% } %>
-                  · <%= t('queue.style_' + k.name_style) %>
+                  · <%= t('queue.style_' + k.name_style) %> · <%= t(k.voice ? 'queue.voice_on' : 'queue.voice_off') %>
                 </div>
               </div>
             </div>
@@ -52,6 +52,7 @@
                 <% ['short', 'full'].forEach(function (s) { %><option value="<%= s %>"<%= k.name_style === s ? ' selected' : '' %>><%= t('queue.style_' + s) %></option><% }) %>
               </select>
               <% if (branchOptions) { %><select class="select" name="branch_id" aria-label="<%= t('branches.branch') %>"><% branchOptions.forEach(function (b) { %><option value="<%= b.value %>"<%= b.value === bv(k) ? ' selected' : '' %>><%= b.label %></option><% }) %></select><% } %>
+              <label class="check"><input type="checkbox" name="voice" value="1"<%= k.voice ? ' checked' : '' %>><span><%= t('queue.voice') %></span></label>
               <label class="check"><input type="checkbox" name="is_active" value="1"<%= k.is_active ? ' checked' : '' %>><span><%= t('attendance.screen_active') %></span></label>
               <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.save') %></button>
             </form>
@@ -92,6 +93,10 @@
         <% if (o.name !== undefined && typeof formError !== 'undefined' && formError && !errs.name) { %><%- include('../../partials/form-error') %><% } %>
         <%- include('../../partials/field', { name: 'name', label: t('attendance.screen_name'), required: true, placeholder: t('queue.name_ph'), attrs: 'maxlength="80"', value: '' }) %>
         <%- include('../../partials/field', { name: 'name_style', type: 'select', label: t('queue.names'), value: o.name_style || 'short', options: [{ value: 'short', label: t('queue.style_short') }, { value: 'full', label: t('queue.style_full') }], help: t('queue.names_help') }) %>
+        <div>
+          <label class="check"><input type="checkbox" name="voice" value="1"<%= o.name === undefined || o.voice === '1' ? ' checked' : '' %>><span><%= t('queue.voice') %></span></label>
+          <p class="help mt-1"><%= t('queue.voice_help') %></p>
+        </div>
         <% if (branchOptions) { %><%- include('../../partials/field', { name: 'branch_id', type: 'select', label: t('branches.branch'), value: o.branch_id || '', options: branchOptions }) %><% } %>
       </div>
       <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('queue.add') %></button></div>

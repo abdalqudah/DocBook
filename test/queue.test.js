@@ -79,6 +79,8 @@ test('waiting-room screen: add, open by its secret link, now / next / waiting wi
   assert.equal(b.next.room, '3');
   assert.deepEqual(b.waiting.map((p) => p.id), [ids.second, ids.third]);
   assert.equal(b.more, 1);
+  assert.equal(b.voice, false, 'created without "read aloud": chime only');
+  assert.equal(b.now.say, 'Sara', 'short names: only the first name is spoken');
   assert.ok(!JSON.stringify(b).includes('Other Clinic') && !JSON.stringify(b).includes('Not Arrived'));
 
   // Reception sends the next patient in: the queue moves, the signature changes (the screen chimes).
@@ -90,9 +92,13 @@ test('waiting-room screen: add, open by its secret link, now / next / waiting wi
   assert.notEqual(b2.sig, b.sig);
 
   // Full names when the clinic chooses them.
-  r = await o.submit('/app/queue-screens', `/app/queue-screens/${k.id}`, { name: 'Hall TV', name_style: 'full', is_active: '1' });
+  r = await o.submit('/app/queue-screens', `/app/queue-screens/${k.id}`, { name: 'Hall TV', name_style: 'full', voice: '1', is_active: '1' });
   assert.equal(r.status, 302);
-  assert.match((await tv.get(`/queue/${token}/data`)).text, /Omar Yousef Haddad/);
+  const b3 = JSON.parse((await tv.get(`/queue/${token}/data`)).text).data;
+  assert.equal(b3.now.name, 'Omar Yousef Haddad');
+  assert.equal(b3.now.say, 'Omar Yousef Haddad');
+  assert.equal(b3.voice, true, 'read aloud turned on');
+  assert.match((await tv.get(`/queue/${token}?lang=en`)).text, /data-voice="1"[^>]*data-say-tpl="\{name\}, please go to \{room\}"/);
 
   // New link: the old one stops at once.
   r = await o.submit('/app/queue-screens', `/app/queue-screens/${k.id}/regenerate`, {});

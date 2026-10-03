@@ -1,5 +1,6 @@
 // Waiting-room TV screen (/queue/<token>): refreshes every 2 s from data-queue-src, slides the new patient in
-// when someone is called, and plays a "ding-dong" whenever the queue changes (going in, next or waiting).
+// when someone is called, and plays a "ding-dong" whenever the queue changes (going in, next or waiting); when the
+// screen's "voice" setting is on it then reads the name and room aloud (Web Speech, the browser's own voices).
 // Browsers only allow sound after a tap: the screen shows "Tap to start" once; the choice is remembered.
 (function () {
   var root = document.querySelector('[data-queue-src]');
@@ -33,6 +34,31 @@
       });
     } catch (e) { /* never break the screen */ }
   }
+  // Read the name and room aloud after the chime (screen setting "voice"; the clinic can turn it off = chime only).
+  var voiceOn = root.getAttribute('data-voice') === '1';
+  var sayTpl = root.getAttribute('data-say-tpl') || '{name} {room}';
+  var sayPlain = root.getAttribute('data-say-tpl-plain') || '{name}';
+  var synth = window.speechSynthesis || null;
+  var voices = [];
+  function loadVoices() { try { voices = synth ? synth.getVoices() : []; } catch (e) { voices = []; } }
+  if (synth) { loadVoices(); if ('onvoiceschanged' in synth) synth.onvoiceschanged = loadVoices; }
+  function voiceFor(lang) {
+    var want = voices.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(lang) === 0; });
+    return want.find(function (v) { return /google|microsoft|natural/i.test(v.name); }) || want[0] || null;
+  }
+  function speak(p) {
+    if (!voiceOn || !soundOn || !synth || !p) return;
+    var room = roomOf(p);
+    var text = (room ? sayTpl.replace('{room}', room) : sayPlain).replace('{name}', p.say || p.name);
+    try {
+      synth.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = locale === 'ar' ? 'ar-SA' : 'en-GB';
+      var v = voiceFor(locale === 'ar' ? 'ar' : 'en'); if (v) u.voice = v;
+      u.rate = 0.9;
+      synth.speak(u);
+    } catch (e) { /* no voice on this device: the chime still plays */ }
+  }
   var start = $('[data-qs-start]');
   var soundBtn = $('[data-qs-sound]');
   var soundLabel = $('[data-qs-sound-label]');
@@ -42,7 +68,12 @@
   }
   if (start) {
     if (!soundOn) start.hidden = true;
-    start.addEventListener('click', function () { arm(); start.hidden = true; dingDong(); });
+    // The tap also unlocks speech (browsers only speak after a tap): the screen says who is going in now.
+    start.addEventListener('click', function () {
+      arm(); start.hidden = true; dingDong();
+      if (synth) { try { synth.speak(new SpeechSynthesisUtterance('')); } catch (e) { /* ignore */ } }
+      if (current) setTimeout(function () { speak(current); }, 1600);
+    });
   }
   document.addEventListener('pointerdown', arm, { once: true });
   if (soundBtn) soundBtn.addEventListener('click', function () { soundOn = !soundOn; store.set('qs-sound', soundOn ? '1' : '0'); arm(); paintSound(); if (start) start.hidden = true; });
@@ -97,13 +128,17 @@
     var newNow = b.now ? String(b.now.id) : '';
     if (newNow && newNow !== nowId) { slide(nowCard); setTimeout(function () { slide(nextCard); }, 450); root.classList.add('qs-flash'); setTimeout(function () { root.classList.remove('qs-flash'); }, 2500); }
     else if (b.sig !== sig) { slide(nextCard); }
+    if (typeof b.voice === 'boolean') voiceOn = b.voice;
     if (b.sig !== sig) dingDong();
+    if (newNow && newNow !== nowId) { var who = b.now; setTimeout(function () { speak(who); }, 1600); }
+    current = b.now || null;
     nowId = newNow; sig = b.sig;
   }
 
   // ------------------------------------------------------------- refresh every 2 s
   var off = $('[data-qs-offline]'); var gone = $('[data-qs-gone]');
   var busy = false;
+  var current = null;
   function load() {
     if (busy) return;
     busy = true;
