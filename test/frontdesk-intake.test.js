@@ -115,3 +115,23 @@ test('the doctor calls the next patient in: reception gets a notice (with its di
   await require('../src/modules/clinic/dflow.service').start({ businessId, userId: owner.id, ownDoctorId: null, today }, next, { timer: false });
   assert.equal(Number((await knex('notifications').where({ business_id: businessId, type: 'patient.called_in' }).count({ n: '*' }))[0].n), 1);
 });
+
+test('consultation timer: starts when the patient is sent in, pauses when sent back, stops when the visit is finished', async () => {
+  const o = app.agent(); await o.login(mail('a'));
+  const timerOf = () => knex('consultation_timers').where({ business_id: businessId, appointment_id: waiting }).first();
+  let r = await o.submit('/app/front-desk', `/app/front-desk/${waiting}/call-in`, { on: '1' });
+  assert.equal(r.status, 302);
+  let t = await timerOf();
+  assert.ok(t && t.started_at && !t.paused_at && !t.ended_at, 'running from the moment the patient goes in');
+  r = await o.submit('/app/front-desk', `/app/front-desk/${waiting}/call-in`, { on: '0' });
+  t = await timerOf();
+  assert.ok(t.paused_at, 'back to the waiting room: paused');
+  r = await o.submit('/app/front-desk', `/app/front-desk/${waiting}/call-in`, { on: '1' });
+  t = await timerOf();
+  assert.ok(!t.paused_at && !t.ended_at, 'sent in again: running');
+  r = await o.get(`/app/visits/${waiting}?lang=en`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Vital signs/);
+  await require('../src/modules/clinicalplus/timer.service').stop({ businessId, userId: null }, { id: waiting });
+  assert.ok((await timerOf()).ended_at);
+});

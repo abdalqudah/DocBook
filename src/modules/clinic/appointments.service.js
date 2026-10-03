@@ -215,6 +215,15 @@ async function callIn(ctx, apptId, on = true) {
   if (on && !a.checked_in) throw E.conflict('NOT_CHECKED_IN', 'Check the patient in first.');
   await knex('appointments').where({ id: a.id }).update({ with_doctor: on, called_at: on ? new Date() : null, updated_at: new Date() });
   await audit.record(ctx, on ? 'appointment.called_in' : 'appointment.call_undone', { entityType: 'appointment', entityId: a.id });
+  // The consultation timer runs from the moment the patient goes in (the doctor can pause it; finishing the visit
+  // stops it). Sent back to the waiting room: the timer pauses. A timer problem never blocks the front desk.
+  if (['pending', 'confirmed'].includes(a.status)) {
+    try {
+      const timer = require('../clinicalplus/timer.service'); // eslint-disable-line global-require
+      if (!on) await timer.pause(ctx, a);
+      else if ((await timer.start(ctx, a)).paused_at) await timer.resume(ctx, a); // back in after a pause
+    } catch (e) { /* keep the call-in */ }
+  }
 }
 
 async function assignDoctor(ctx, apptId, doctorId) {

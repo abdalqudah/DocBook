@@ -83,7 +83,12 @@ async function renderVisit(req, res, extra = {}) {
     perms.has('prescriptions.create') ? clinical.activeMedications(ctx) : [],
     knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id', 'invoice_number'),
     clinicalView ? icd.listFor(ctx.businessId, a.id) : [],
-    clinicalView ? timer.get(ctx.businessId, a.id) : null,
+    // A patient already in the room (sent in before the timer started on its own): the timer starts now.
+    clinicalView ? (async () => {
+      const t = await timer.get(ctx.businessId, a.id);
+      if (t || !a.with_doctor || a.appointment_date !== ctx.today || !['pending', 'confirmed'].includes(a.status) || a.doctor_finished_at || !perms.has('clinical.edit')) return t;
+      return timer.start(ctx, a);
+    })() : null,
   ]);
   // Doctor journey: the bill the doctor sets ("amount to collect"), the next patient (after finishing) and a
   // confirmation after "Finish visit & send to reception" (?done=1).
