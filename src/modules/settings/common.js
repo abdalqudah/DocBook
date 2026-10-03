@@ -18,6 +18,7 @@ const SECTIONS = [
   ] },
   { group: 'communication', items: [
     { key: 'messaging', href: '/app/settings/messaging', icon: 'message-circle', perms: ['settings.manage'] },
+    { key: 'message_texts', href: '/app/settings/messaging/texts', icon: 'pen-line', perms: ['settings.manage'] },
     { key: 'notifications', href: '/app/settings/notifications', icon: 'bell', perms: [] }, // clinic-wide part needs settings.manage; personal part is for everyone
   ] },
   { group: 'payments', items: [

@@ -153,3 +153,8 @@
 .brand-list { list-style: none; margin: 0; padding: 0; }
 .brand-list .brand-row { display: flex; gap: 14px; padding: 14px 18px; border-top: 1px solid var(--border); }
 .brand-list .brand-row:first-child { border-top: 0; }
+/* Settings → Message texts */
+.mt-field { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.mt-lang { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 8px; align-items: start; }
+.mt-tag { width: 28px; height: 36px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: var(--fw-bold); color: var(--text-muted); background: var(--surface-sunken); border-radius: var(--radius-sm); }
+.mt-var { display: inline-block; padding: 1px 6px; border-radius: 6px; background: var(--surface-sunken); font-size: 12px; direction: ltr; }

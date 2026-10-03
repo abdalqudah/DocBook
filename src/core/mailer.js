@@ -20,15 +20,31 @@ function tx() {
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-/** Minimal branded HTML e-mail (colours from the brand config). */
-function layout({ locale = 'en', title, body, cta, href }) {
+/**
+ * Branded HTML e-mail. Patient e-mails pass `clinic` (the business row) and `base` (the public address): they carry
+ * the clinic's logo (or name) and colour instead of DocBook's. Arabic reads right to left — set on every block, as
+ * mail apps drop the <html> attributes.
+ */
+function layout({ locale = 'en', title, body, cta, href, clinic = null, base = '' }) {
   const c = brand.colors.light;
-  const dir = locale === 'ar' ? 'rtl' : 'ltr';
-  return `<!doctype html><html dir="${dir}"><body style="margin:0;background:${c.background};font-family:Arial,Tahoma,sans-serif;color:${c.text}">
-<div style="max-width:560px;margin:24px auto;background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:28px">
-<div style="font-weight:800;font-size:18px;color:${c.primary};margin-bottom:18px">${esc(brand.name)}</div>
-<h1 style="font-size:18px;margin:0 0 12px">${esc(title)}</h1><p style="line-height:1.7;margin:0 0 20px">${esc(body)}</p>
-${cta ? `<a href="${esc(href)}" style="display:inline-block;background:${c.primary};color:${c.primaryInk};padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700">${esc(cta)}</a>` : ''}
+  const rtl = locale === 'ar';
+  const dir = rtl ? 'rtl' : 'ltr';
+  const align = rtl ? 'right' : 'left';
+  const hex = clinic && /^#[0-9a-fA-F]{6}$/.test(clinic.color || '') ? clinic.color : null;
+  const primary = hex || c.primary;
+  const ink = hex ? require('../modules/branding/theme').inkFor(hex) : c.primaryInk; // eslint-disable-line global-require
+  const name = clinic ? ((locale === 'en' && clinic.name_en) || clinic.name) : brand.name;
+  const root = String(base || '').replace(/\/+$/, '');
+  const logo = clinic && clinic.logo_mime && clinic.slug && /^https?:\/\//.test(root) ? `${root}/${clinic.slug}/logo?v=${Number(clinic.logo_version) || 0}` : null;
+  const head = logo
+    ? `<img src="${esc(logo)}" alt="${esc(name)}" height="48" style="display:block;height:48px;width:auto;max-width:220px;border:0;margin-${rtl ? 'left' : 'right'}:auto">`
+    : `<div style="font-weight:800;font-size:18px;color:${primary}">${esc(name)}</div>`;
+  const text = esc(body).replace(/\n/g, '<br>');
+  return `<!doctype html><html dir="${dir}" lang="${rtl ? 'ar' : 'en'}"><body dir="${dir}" style="margin:0;background:${c.background};font-family:Tahoma,Arial,sans-serif;color:${c.text}">
+<div dir="${dir}" style="max-width:560px;margin:24px auto;background:${c.surface};border:1px solid ${c.border};border-top:4px solid ${primary};border-radius:12px;padding:28px;direction:${dir};text-align:${align}">
+<div style="margin-bottom:18px;text-align:${align}">${head}</div>
+<h1 dir="${dir}" style="font-size:18px;margin:0 0 12px;text-align:${align}">${esc(title)}</h1><p dir="${dir}" style="line-height:1.8;margin:0 0 20px;text-align:${align}">${text}</p>
+${cta ? `<div style="text-align:${align}"><a href="${esc(href)}" style="display:inline-block;background:${primary};color:${ink};padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700">${esc(cta)}</a></div>` : ''}
 </div></body></html>`;
 }
 

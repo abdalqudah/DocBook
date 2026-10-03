@@ -35,11 +35,14 @@ async function compose(req, src, extra = {}) {
   const kind = String(src.kind || '');
   const msgLocale = ['ar', 'en'].includes(src.lang_msg) ? src.lang_msg : req.locale;
   const made = await svc.create(req.ctx, kind, src.id, { opts: { sections: src.sections, pick: src.pick }, locale: msgLocale, base: publicBase(req), ...extra });
-  const t = translator(msgLocale);
+  const t = await require('../messaging/texts.service').translatorFor(req.ctx.businessId, msgLocale); // eslint-disable-line global-require
   const clinic = req.business;
   const clinicName = (msgLocale === 'en' && clinic.name_en) || clinic.name;
-  const docName = t(`share.doc.${kind}`, made.doc.label || {});
-  const vars = { name: made.doc.name || '', clinic: clinicName, doc: docName, link: made.url, date: made.expires.toISOString().slice(0, 10) };
+  // Dates and numbers stay whole inside Arabic text (left-to-right isolate), e.g. "حتى 2026-11-02".
+  const iso = (v) => (msgLocale === 'ar' && v ? `\u2066${v}\u2069` : v);
+  const label = Object.fromEntries(Object.entries(made.doc.label || {}).map(([k, v]) => [k, k === 'date' || k === 'n' ? iso(v) : v]));
+  const docName = t(`share.doc.${kind}`, label);
+  const vars = { name: made.doc.name || '', clinic: clinicName, doc: docName, link: made.url, date: iso(made.expires.toISOString().slice(0, 10)) };
   return { made, t, vars, msgLocale, docName, text: t('share.message', vars) };
 }
 
@@ -64,10 +67,11 @@ staff.get('/thanks', wrap(async (req, res) => {
   const a = await knex('appointments').where({ id: doc.appointment_id, business_id: ctx.businessId }).first('id', 'business_id', 'status', 'payment_status');
   if (!(a.status === 'completed' || a.payment_status === 'paid')) return failed(req, res, new AppError('THANKS_NOT_DONE', 'The visit is not finished yet.', 409));
   const msgLocale = ['ar', 'en'].includes(req.query.lang_msg) ? req.query.lang_msg : req.locale;
-  const t = translator(msgLocale);
+  const texts = require('../messaging/texts.service'); // eslint-disable-line global-require
+  const t = await texts.translatorFor(ctx.businessId, msgLocale);
   const clinic = req.business;
-  const marketing = await require('../website/marketing.service').get(ctx.businessId); // eslint-disable-line global-require
-  let link = marketing && marketing.google && marketing.google.review;
+  // Where the rating goes: the clinic's choice (Settings → Message texts) — Google, its own page, or Google when set.
+  let link = await texts.googleReviewLink(ctx.businessId, { manual: true });
   let via = 'google';
   if (!link) {
     const messaging = require('../messaging/messaging.service'); // eslint-disable-line global-require
@@ -104,7 +108,7 @@ staff.post('/email', wrap(async (req, res) => {
   try { c = await compose(req, { ...req.query, ...req.body }, { needEmail: true }); } catch (e) { return failed(req, res, e); }
   const clinic = req.business;
   const subject = c.t('share.mail_subject', c.vars);
-  const html = mailer.layout({ locale: c.msgLocale, title: subject, body: c.t('share.mail_body', c.vars), cta: c.t('share.mail_cta'), href: c.made.url });
+  const html = mailer.layout({ locale: c.msgLocale, title: subject, body: c.t('share.mail_body', c.vars), cta: c.t('share.mail_cta'), href: c.made.url, clinic, base: publicBase(req) });
   let ok = false;
   try { ok = await mailer.send({ to: c.made.doc.email, subject, html, replyTo: clinic.email || undefined, businessId: clinic.id, kind: 'patient_letters', fromName: (c.msgLocale === 'en' && clinic.name_en) || clinic.name }); } catch { ok = false; }
   await audit.record(req.ctx, ok ? 'share.emailed' : 'share.email_failed', { entityType: String(req.body.kind || req.query.kind), entityId: Number(req.body.id || req.query.id) || null, newValues: { link_id: c.made.id } });

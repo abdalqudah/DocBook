@@ -1,0 +1,43 @@
+<%# Settings → Message texts: the clinic's own wording of every message patients get (WhatsApp / SMS / e-mail), in
+    Arabic and English (empty = DocBook's text, shown as the placeholder), and where the "rate your visit" link goes. %>
+<%- include('_head', { heading: t('settings.nav_message_texts'), lead: t('msgtexts.lead') }) %>
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
+  <%- include('_nav') %>
+  <form class="stack-lg" method="post" action="/app/settings/messaging/texts" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <section class="panel">
+      <div class="panel-head"><div><h2><%- icon('star', 'icon-sm') %> <%= t('msgtexts.review_title') %></h2><div class="panel-sub"><%= t('msgtexts.review_sub') %></div></div></div>
+      <div class="panel-body stack-sm">
+        <% ['auto', 'google', 'site'].forEach(function (k) { %>
+        <label class="check"><input type="radio" name="review_target" value="<%= k %>"<%= data.reviewTarget === k ? ' checked' : '' %>><span><span class="strong"><%= t('msgtexts.review.' + k) %></span><span class="tiny muted" style="display:block"><%= t('msgtexts.review.' + k + '_help') %></span></span></label>
+        <% }) %>
+        <% if (!googleSet) { %><div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('msgtexts.no_google') %> <a class="link" href="/app/website/marketing"><%= t('msgtexts.no_google_link') %></a></div></div><% } %>
+      </div>
+    </section>
+
+    <% data.groups.forEach(function (g) { %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('msgtexts.group.' + g.key) %></h2><div class="panel-sub"><%= t('msgtexts.group_sub.' + g.key) %></div></div></div>
+      <div class="panel-body stack">
+        <% g.items.forEach(function (it) { var id = it.key.replace(/[^a-z0-9]/gi, '-'); %>
+        <fieldset class="mt-field">
+          <legend class="label"><%= t('msgtexts.item.' + it.key.replace(/\./g, '_')) %></legend>
+          <% ['ar', 'en'].forEach(function (lang) { %>
+          <div class="mt-lang">
+            <span class="mt-tag"><%= lang === 'ar' ? 'ع' : 'EN' %></span>
+            <% if (it.line) { %><input class="input" id="<%= id %>-<%= lang %>" name="t[<%= it.key %>][<%= lang %>]" value="<%= it.own[lang] %>" maxlength="700" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>" placeholder="<%= it.def[lang] %>" aria-label="<%= lang %>">
+            <% } else { %><textarea class="textarea" id="<%= id %>-<%= lang %>" name="t[<%= it.key %>][<%= lang %>]" rows="3" maxlength="700" dir="<%= lang === 'ar' ? 'rtl' : 'ltr' %>" placeholder="<%= it.def[lang] %>" aria-label="<%= lang %>"><%= it.own[lang] %></textarea><% } %>
+          </div>
+          <% }) %>
+          <p class="help"><%= t('msgtexts.vars') %> <% it.vars.forEach(function (v) { %><code class="mt-var" title="<%= t('msgtexts.var.' + v) %>">{<%= v %>}</code> <% }) %></p>
+        </fieldset>
+        <% }) %>
+      </div>
+    </section>
+    <% }) %>
+
+    <div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('msgtexts.wa_templates') %></div></div>
+    <div class="row-sm"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button><a class="btn btn-ghost" href="/app/settings/messaging"><%= t('settings.nav_messaging') %></a></div>
+  </form>
+</div>

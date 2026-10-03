@@ -17,15 +17,17 @@ const { errText } = require('./pages');
 const router = express.Router();
 router.use(can('settings.manage'));
 
-function previews(req, cfg) {
+async function previews(req, cfg) {
   const b = req.business;
   const sample = { doctor_name: req.t('messaging.sample_doctor'), appointment_date: req.ctx.today, appointment_time: '10:30' };
   const out = {};
+  const texts = require('./texts.service'); // eslint-disable-line global-require
   for (const locale of ['ar', 'en']) {
+    const own = await texts.translatorFor(req.ctx.businessId, locale); // eslint-disable-line no-await-in-loop
     const t = translator(locale);
     const vars = msg.messageVars({ ...sample, doctor_name: t('messaging.sample_doctor') }, b, locale);
     out[locale] = ['confirmation', 'reminder', 'review'].map((kind) => ({
-      kind, text: msg.composeText(kind, vars, `${publicBase(req)}/${kind === 'review' ? 'review' : 'r'}/…`, locale),
+      kind, text: msg.composeText(kind, vars, `${publicBase(req)}/${kind === 'review' ? 'review' : 'r'}/…`, locale, { t: own }),
     }));
   }
   out.cutoff = cfg.cancel_cutoff_hours;
@@ -40,7 +42,7 @@ async function page(req, res, extra = {}) {
   ]);
   const base = publicBase(req);
   render(req, res, 'messaging', 'messaging', {
-    title: req.t('settings.nav_messaging'), cfg, ready: msg.readiness(cfg), logRows, summary, optedOut, preview: previews(req, cfg),
+    title: req.t('settings.nav_messaging'), cfg, ready: msg.readiness(cfg), logRows, summary, optedOut, preview: await previews(req, cfg),
     hooks: {
       whatsapp: cfg.wa_hook_key ? `${base}/hooks/whatsapp/${cfg.wa_hook_key}` : null, verifyToken: cfg.wa_verify_token,
       sms: cfg.sms_inbound_key ? `${base}/hooks/sms/${cfg.sms_inbound_key}` : null,
@@ -54,6 +56,19 @@ async function page(req, res, extra = {}) {
 }
 
 router.get('/', wrap((req, res) => page(req, res)));
+
+// Message texts: the clinic's own wording (Arabic / English) and where the review link goes.
+async function textsPage(req, res, extra = {}) {
+  const texts = require('./texts.service'); // eslint-disable-line global-require
+  const m = await require('../website/marketing.service').get(req.ctx.businessId); // eslint-disable-line global-require
+  render(req, res, 'message-texts', 'message_texts', { title: req.t('settings.nav_message_texts'), data: await texts.forPage(req.ctx.businessId), googleSet: Boolean(m && m.google && m.google.review), ...extra });
+}
+router.get('/texts', wrap((req, res) => textsPage(req, res)));
+router.post('/texts', wrap(async (req, res) => {
+  await require('./texts.service').save(req.ctx, req.body); // eslint-disable-line global-require
+  flash(req, 'success', req.t('msgtexts.saved'));
+  res.redirect('/app/settings/messaging/texts');
+}));
 
 router.post('/', form(async (req, res) => {
   await msg.saveSettings(req.ctx, req.body);

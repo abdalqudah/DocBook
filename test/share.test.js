@@ -49,7 +49,7 @@ test('WhatsApp buttons open a chat with the patient and a secure link; the link 
   let r = await o.get(`/app/share/wa?kind=invoice&id=${invId}&lang_msg=ar`, { referer: `http://x/app/billing/${invId}` });
   const text = waLink(r);
   assert.match(text, /Share Patient/);
-  assert.match(text, /الفاتورة رقم 77/);
+  assert.match(text, /الفاتورة رقم \u2066?77/);
   const url = text.match(/https?:\/\/[^\s]+\/d\/([A-Za-z0-9_-]+)/);
   assert.ok(url, 'the message carries the link');
   const visitor = app.agent();

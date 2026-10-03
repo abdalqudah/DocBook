@@ -307,8 +307,8 @@ function messageVars(a, clinic, locale) {
 }
 
 /** Plain text for SMS, e-mail and click-to-chat. */
-function composeText(kind, vars, link, locale, { stop = true } = {}) {
-  const t = translator(locale);
+function composeText(kind, vars, link, locale, { stop = true, t: own = null } = {}) {
+  const t = own || translator(locale); // own = the clinic's wording (texts.service translatorFor)
   const body = t(`messaging.text.${kind}`, { ...vars, link });
   return stop ? `${body}\n${t('messaging.text.stop_hint')}` : body;
 }
@@ -343,8 +343,11 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
   const locale = cfg.message_locale === 'en' ? 'en' : 'ar';
   // A cancelled appointment has nothing to confirm: its message links to the clinic's booking page to book again.
   const { token } = kind === 'cancelled' ? { token: null } : await linkFor(a, kind === 'review' ? 'review' : 'action', now);
-  const link = kind === 'cancelled' ? `${base || ''}/${clinic.slug}` : kind === 'review' ? reviewUrl(base, token) : actionUrl(base, token);
+  const texts = require('./texts.service'); // eslint-disable-line global-require
+  const google = kind === 'review' ? await texts.googleReviewLink(clinic.id) : null; // the clinic chose Google for reviews
+  const link = kind === 'cancelled' ? `${base || ''}/${clinic.slug}` : kind === 'review' ? (google || reviewUrl(base, token)) : actionUrl(base, token);
   const vars = messageVars(a, clinic, locale);
+  const tt = await texts.translatorFor(clinic.id, locale);
   const ready = readiness(cfg);
   const results = [];
   let phoneDone = false;
@@ -362,14 +365,17 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
     if (!r.ok) await knex('clinic_messaging').where({ business_id: a.business_id }).update({ wa_last_error: String(r.error || '').slice(0, 255) });
   }
   if (to && !phoneDone && ready.sms) {
-    const r = await ch.sendSms(smsCfg(cfg), to, composeText(kind, vars, link, locale));
+    const r = await ch.sendSms(smsCfg(cfg), to, composeText(kind, vars, link, locale, { t: tt }));
     results.push(r.ok);
     await log({ business_id: a.business_id, appointment_id: a.id, dispatch_id: dispatchId, stage, channel: 'sms', recipient: ch.maskPhone(to), status: r.ok ? 'sent' : 'failed', provider_id: r.id, error: r.error });
   }
   if (a.patient_email && ready.email) {
     const t = translator(locale);
     const subject = t(`messaging.mail.${kind}_subject`, vars);
-    const html = mailer.layout({ locale, title: subject, body: t(`messaging.mail.${kind}_body`, vars), cta: t(`messaging.mail.${kind}_cta`), href: link });
+    // The clinic's own wording, when it wrote one, is the e-mail's text too (the link is the button).
+    const own = await texts.ownText(clinic.id, `messaging.text.${kind}`, locale);
+    const body = own ? texts.fill(own, { ...vars, link: '' }).replace(/[\s:：]+$/, '') : t(`messaging.mail.${kind}_body`, vars);
+    const html = mailer.layout({ locale, title: subject, body, cta: t(`messaging.mail.${kind}_cta`), href: link, clinic, base });
     const r = await ch.sendEmail({ to: a.patient_email, subject, html, replyTo: clinic.email || undefined, businessId: clinic.id });
     results.push(r.ok);
     await log({ business_id: a.business_id, appointment_id: a.id, dispatch_id: dispatchId, stage, channel: 'email', recipient: ch.maskEmail(a.patient_email), status: r.ok ? 'sent' : 'failed', error: r.error });
@@ -536,8 +542,10 @@ async function clickToChat(ctx, apptId, kind, base) {
   const k = kind === 'review' && visited ? 'review' : kind === 'confirmation' ? 'confirmation' : 'reminder';
   const locale = ctx.msgLocale || (cfg.message_locale === 'en' ? 'en' : 'ar');
   const { token } = await linkFor({ ...a, business_id: ctx.businessId }, k === 'review' ? 'review' : 'action');
-  const link = k === 'review' ? reviewUrl(base, token) : actionUrl(base, token);
-  const text = composeText(k, messageVars(a, clinic, locale), link, locale, { stop: false });
+  const texts = require('./texts.service'); // eslint-disable-line global-require
+  const google = k === 'review' ? await texts.googleReviewLink(ctx.businessId, { manual: true }) : null;
+  const link = k === 'review' ? (google || reviewUrl(base, token)) : actionUrl(base, token);
+  const text = composeText(k, messageVars(a, clinic, locale), link, locale, { stop: false, t: await texts.translatorFor(ctx.businessId, locale) });
   await log({ business_id: ctx.businessId, appointment_id: a.id, stage: 'manual', channel: 'link', recipient: ch.maskPhone(to), status: 'sent', user_id: ctx.userId });
   await audit.record(ctx, 'messaging.click_to_chat', { entityType: 'appointment', entityId: a.id, newValues: { kind: k } });
   return { href: ch.waMeLink(to, text), optedOut: await isOptedOut({ ...a, business_id: ctx.businessId }, dialFor(cfg, clinic)) };

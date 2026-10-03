@@ -708,7 +708,8 @@
     "favicon_saved": "Browser icon saved.",
     "favicon_invalid": "Choose a PNG, ICO, WebP or JPG image.",
     "favicon_too_big": "The icon is larger than 256 KB.",
-    "favicon_missing": "Upload the icon file first."
+    "favicon_missing": "Upload the icon file first.",
+    "nav_message_texts": "Message texts"
   },
   "team": {
     "lead": "Everyone who signs in to your clinic — doctors, nurses, reception, accounting and management. Each person gets their own login and sees only what their role allows.",
@@ -906,5 +907,54 @@
       "Another clinic already uses this address.": "Another clinic already uses this address.",
       "Too large.": "Too large."
     }
+  },
+  "msgtexts": {
+    "lead": "Write each message patients get, in Arabic and English. Leave a field empty to use DocBook's text (shown in grey). Words in { } are filled in when sending.",
+    "saved": "Message texts saved.",
+    "review_title": "Review link",
+    "review_sub": "Where patients go when we ask them to rate their visit.",
+    "review": {
+      "auto": "Automatic",
+      "auto_help": "The thank-you reception sends goes to Google when a link is set; the automatic message after the visit goes to the website review page.",
+      "google": "Always Google",
+      "google_help": "Every review request goes to the Google review link (the website page while no link is set).",
+      "site": "On the clinic website",
+      "site_help": "Every review request goes to the website review page, and reviews show on the website."
+    },
+    "no_google": "No Google review link yet.",
+    "no_google_link": "Add it in Website → Connections",
+    "group": {
+      "booking": "Appointment messages",
+      "papers": "Sending papers to the patient",
+      "after": "After the visit"
+    },
+    "group_sub": {
+      "booking": "Sent automatically on WhatsApp or SMS; the same text goes in the e-mail.",
+      "papers": "Prescription, requests and invoice on WhatsApp or e-mail.",
+      "after": "Thank-you and review request."
+    },
+    "item": {
+      "messaging_text_received": "Booking request received (online booking)",
+      "messaging_text_confirmation": "Booking confirmation",
+      "messaging_text_confirmed": "Online booking confirmed by reception",
+      "messaging_text_reminder": "Appointment reminder",
+      "messaging_text_cancelled": "Appointment cancelled",
+      "share_message": "WhatsApp message with the papers link",
+      "share_mail_subject": "E-mail subject",
+      "share_mail_body": "E-mail text (the link is a button)",
+      "share_thanks_message": "Thank-you and review request (sent by reception)",
+      "messaging_text_review": "Automatic review request after the visit"
+    },
+    "vars": "Words you can use:",
+    "var": {
+      "clinic": "Clinic name",
+      "doctor": "Doctor name",
+      "date": "Date",
+      "time": "Time",
+      "link": "Link",
+      "name": "Patient name",
+      "doc": "Document name"
+    },
+    "wa_templates": "Automatic WhatsApp messages through the WhatsApp Cloud API use Meta-approved templates (in Messages & reminders); SMS, e-mail and WhatsApp messages sent by the team use the texts here."
   }
 }
