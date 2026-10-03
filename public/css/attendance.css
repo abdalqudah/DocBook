@@ -30,7 +30,8 @@
 /* ---------- Door screen (kiosk) and scan page share this layout ---------- */
 .att-body { background: var(--background); color: var(--text); min-height: 100vh; min-height: 100dvh; margin: 0; }
 .kiosk { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; gap: clamp(12px, 2vh, 28px); padding: clamp(16px, 3vh, 36px) clamp(16px, 4vw, 56px); box-sizing: border-box; }
-.kiosk-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.kiosk-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; }
+.kiosk-head > :first-child { grid-column: 1; } .kiosk-head > :last-child { grid-column: 3; justify-self: end; }
 .kiosk-clinic { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .kiosk-clinic-text { display: flex; flex-direction: column; min-width: 0; }
 .kiosk-clinic-text strong { font-size: clamp(18px, 2.2vw, 28px); line-height: 1.2; }

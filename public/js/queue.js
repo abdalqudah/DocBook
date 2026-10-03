@@ -129,6 +129,11 @@
     if (newNow && newNow !== nowId) { slide(nowCard); setTimeout(function () { slide(nextCard); }, 450); root.classList.add('qs-flash'); setTimeout(function () { root.classList.remove('qs-flash'); }, 2500); }
     else if (b.sig !== sig) { slide(nextCard); }
     if (typeof b.voice === 'boolean') voiceOn = b.voice;
+    if (b.header) {
+      var nm = $('[data-screen-name]'); var msg = $('[data-screen-msg]');
+      if (nm) nm.hidden = !b.header.showName;
+      if (msg) { msg.textContent = b.header.message || ''; msg.hidden = !b.header.message; }
+    }
     if (b.sig !== sig) dingDong();
     if (newNow && newNow !== nowId) { var who = b.now; setTimeout(function () { speak(who); }, 1600); }
     current = b.now || null;

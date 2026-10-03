@@ -45,5 +45,20 @@
     "voice_off": "Chime only",
     "say": "{name}, please go to {room}",
     "say_plain": "{name}, please go in"
+  },
+  "screens_hdr": {
+    "show_name": "Show the clinic name",
+    "message": "Message in the middle of the top",
+    "message_ph": "e.g. Welcome",
+    "message_help": "Shown in the middle of the top of the screen. Leave empty to hide it, or pick a ready message.",
+    "preset": {
+      "welcome": "Welcome",
+      "eid": "Happy Eid",
+      "ramadan": "Ramadan Kareem",
+      "new_year": "Happy New Year",
+      "health": "Wishing you good health",
+      "phone": "Please keep your phone on silent",
+      "thanks": "Thank you for trusting us"
+    }
   }
 }

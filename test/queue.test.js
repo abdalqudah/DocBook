@@ -161,3 +161,31 @@ test('platform admin: clinic areas switch the waiting screen and team chat off; 
   assert.match(r.text, /An encrypted backup per clinic/);
   assert.match(r.text, /What do I need for the waiting-room screen\?/);
 });
+
+test('screen top bar: clinic name shown or hidden and a message in the middle — waiting screen and door screen', async () => {
+  const o = app.agent(); await o.login(mail('a'));
+  const k = await knex('queue_screens').where({ business_id: businessId }).first();
+  let r = await o.submit('/app/queue-screens', `/app/queue-screens/${k.id}`, { name: 'Hall TV', name_style: 'short', is_active: '1', show_name: '0', message: '  كل عام وأنتم بخير <b> ' });
+  assert.equal(r.status, 302);
+  const token = secrets.decrypt((await knex('queue_screens').where({ id: k.id }).first()).token_enc);
+  const tv = app.agent();
+  const b = JSON.parse((await tv.get(`/queue/${token}/data`)).text).data;
+  assert.deepEqual(b.header, { showName: false, message: 'كل عام وأنتم بخير b' }, 'plain one-line text, no markup');
+  r = await tv.get(`/queue/${token}?lang=ar`);
+  assert.match(r.text, /data-screen-name hidden/);
+  assert.match(r.text, /<div class="screen-msg" data-screen-msg dir="auto">كل عام وأنتم بخير b<\/div>/);
+  r = await o.get('/app/queue-screens?lang=ar');
+  assert.match(r.text, /<option value="أهلاً وسهلاً بكم">/, 'ready messages to pick');
+
+  // The attendance door screen has the same two options.
+  const kiosks = require('../src/modules/attendance/kiosk.service');
+  const kid = await kiosks.create({ businessId, userId: null }, { name: 'Door', show_name: '1', message: 'أهلاً وسهلاً بكم' });
+  const kt = secrets.decrypt((await knex('attendance_kiosks').where({ id: kid }).first()).display_token_enc);
+  r = await tv.get(`/kiosk/${kt}?lang=ar`);
+  assert.equal(r.status, 200);
+  assert.match(r.text, />أهلاً وسهلاً بكم<\/div>/);
+  assert.ok(!/data-screen-name hidden/.test(r.text));
+  await kiosks.update({ businessId, userId: null }, kid, { name: 'Door', is_active: true, show_name: ['0'], message: '' });
+  r = await tv.get(`/kiosk/${kt}/qr`);
+  assert.deepEqual(JSON.parse(r.text).data.header, { showName: false, message: '' });
+});

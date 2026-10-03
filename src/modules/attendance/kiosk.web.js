@@ -35,7 +35,7 @@ router.get('/:token', wrap(async (req, res, next) => {
   const reach = phoneBase(req);
   const [qr, feed] = await Promise.all([svc.currentQr(b.id, reach.base), svc.feed(b.id, b.timezone)]);
   return res.page('pages/attendance/kiosk', {
-    layout: 'kiosk', title: `${b.name} · ${k.name}`, qr, reach, feed, src: `/kiosk/${req.params.token}/qr`, exitHref: null, screenName: k.name,
+    layout: 'kiosk', title: `${b.name} · ${k.name}`, qr, reach, feed, src: `/kiosk/${req.params.token}/qr`, exitHref: null, screenName: k.name, showName: k.show_name !== false && k.show_name !== 0, message: k.message || '',
     clinic: { name: b.name, timezone: b.timezone, logoUrl: b.logo_mime ? `/kiosk/${req.params.token}/logo?v=${b.logo_version}` : null },
     pageStyles: ['/css/attendance.css'], pageScripts: ['/js/attendance.js'], ...screenBrand.locals(`/kiosk/${req.params.token}`, b),
   });
@@ -47,7 +47,7 @@ router.get('/:token/qr', wrap(async (req, res) => {
   if (!s) return res.status(404).json({ error: { code: 'SCREEN_GONE' } });
   await kiosks.touch(s.k, req.ip);
   const [q, feed] = await Promise.all([svc.currentQr(s.b.id, phoneBase(req).base), svc.feed(s.b.id, s.b.timezone)]);
-  return res.json({ data: { svg: q.svg, expiresIn: q.expiresIn, step: q.stepSeconds, feed } });
+  return res.json({ data: { svg: q.svg, expiresIn: q.expiresIn, step: q.stepSeconds, feed, header: { showName: s.k.show_name !== false && s.k.show_name !== 0, message: s.k.message || '' } } });
 }));
 
 screenBrand.addRoutes(router, screenOf); // the clinic's colours and browser icon

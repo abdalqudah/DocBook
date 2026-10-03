@@ -70,6 +70,12 @@
         offline.hidden = true;
         qrBox.classList.remove('is-changing');
         renderFeed(j.data.feed);
+        // The screen's top bar (clinic name shown or not, the message in the middle) follows the clinic's settings.
+        if (j.data.header) {
+          var nm = kiosk.querySelector('[data-screen-name]'); var msg = kiosk.querySelector('[data-screen-msg]');
+          if (nm) nm.hidden = !j.data.header.showName;
+          if (msg) { msg.textContent = j.data.header.message || ''; msg.hidden = !j.data.header.message; }
+        }
         paint();
         schedule(j.data.expiresIn * 1000 + 250);
       })

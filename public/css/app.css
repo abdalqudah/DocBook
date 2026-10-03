@@ -990,3 +990,7 @@ td.actions > details.dropdown, td.actions > a { display: inline-flex; vertical-a
 .vt-chip.is-paused { background: var(--warning-soft); color: var(--warning); }
 @keyframes vt-pulse { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .vt-chip.is-running .icon { animation: none; } }
+/* Waiting-room and door screens: the clinic's message in the middle of the top bar ("Welcome", "Happy Eid"…). */
+.screen-msg { grid-column: 2; justify-self: center; text-align: center; max-width: min(60vw, 900px); font-size: clamp(20px, 2.6vw, 44px); font-weight: var(--fw-bold); line-height: 1.25; color: var(--primary); text-wrap: balance; }
+.screen-msg[hidden], [data-screen-name][hidden] { display: none; }
+@media (max-width: 760px) { .screen-msg { grid-column: 1 / -1; grid-row: 2; font-size: 20px; } }

@@ -53,6 +53,7 @@
               </select>
               <% if (branchOptions) { %><select class="select" name="branch_id" aria-label="<%= t('branches.branch') %>"><% branchOptions.forEach(function (b) { %><option value="<%= b.value %>"<%= b.value === bv(k) ? ' selected' : '' %>><%= b.label %></option><% }) %></select><% } %>
               <label class="check"><input type="checkbox" name="voice" value="1"<%= k.voice ? ' checked' : '' %>><span><%= t('queue.voice') %></span></label>
+              <%- include('../../partials/screen-header-fields', { k: k, idp: 'q' + k.id, compact: true }) %>
               <label class="check"><input type="checkbox" name="is_active" value="1"<%= k.is_active ? ' checked' : '' %>><span><%= t('attendance.screen_active') %></span></label>
               <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.save') %></button>
             </form>
@@ -93,6 +94,7 @@
         <% if (o.name !== undefined && typeof formError !== 'undefined' && formError && !errs.name) { %><%- include('../../partials/form-error') %><% } %>
         <%- include('../../partials/field', { name: 'name', label: t('attendance.screen_name'), required: true, placeholder: t('queue.name_ph'), attrs: 'maxlength="80"', value: '' }) %>
         <%- include('../../partials/field', { name: 'name_style', type: 'select', label: t('queue.names'), value: o.name_style || 'short', options: [{ value: 'short', label: t('queue.style_short') }, { value: 'full', label: t('queue.style_full') }], help: t('queue.names_help') }) %>
+        <%- include('../../partials/screen-header-fields', { k: null, idp: 'qnew' }) %>
         <div>
           <label class="check"><input type="checkbox" name="voice" value="1"<%= o.name === undefined || o.voice === '1' ? ' checked' : '' %>><span><%= t('queue.voice') %></span></label>
           <p class="help mt-1"><%= t('queue.voice_help') %></p>

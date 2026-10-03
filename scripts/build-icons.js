@@ -24,7 +24,11 @@ bone ear glasses dumbbell microscope test-tube test-tubes dna bandage cross pill
 footprints accessibility apple salad carrot ribbon hand bed ambulance biceps-flexed brain-circuit brain-cog hand-helping person-standing
 heart-handshake thermometer-sun sun-snow shower-head soap-dispenser-droplet milk smile-plus laugh scan-eye venus mars heart-crack
 square-activity flask-conical scan-heart brush toothbrush spray-can wind puzzle book-heart cigarette-off citrus egg fish leafy-green
-wheat hand-platter`.split(/\s+/).filter((n, i, a) => n && a.indexOf(n) === i);
+wheat hand-platter bone-fracture toothbrush-sparkles virus bug glass-water cup-soda soup grape banana cherry drumstick beef egg-fried
+sandwich nut bike hand-fist hand-grab ruler-dimension-line weight-tilde headphones headset mic-vocal audio-lines audio-waveform eye-dashed
+crosshair sun-dim snowflake thermometer-snowflake flame sprout feather shell bath toy-brick blocks balloon cake gift party-popper rocking-chair
+file-heart calendar-heart message-circle-heart user-round-check venus-and-mars moon-star sunrise test-tube-diagonal flask-round scan-search
+file-scan siren heart-plus heart-minus frown meh hand-metal footprints mic flower ear-off`.split(/\s+/).filter((n, i, a) => n && a.indexOf(n) === i);
 
 const dir = process.argv[2];
 if (!dir) { console.error('Pass the lucide-static icons directory.'); process.exit(1); }

@@ -1,0 +1,11 @@
+<%/* Top bar of a waiting-room / door screen: show the clinic name, and a message in the middle (with ready suggestions).
+   Args: k (the screen row, or null for a new screen), idp (unique id prefix), compact (inline edit form). */%>
+<% var _k = typeof k !== 'undefined' && k ? k : null; var _show = _k ? (_k.show_name !== false && _k.show_name !== 0) : true; var _msg = _k ? (_k.message || '') : '';
+   var _list = 'screen-msgs-' + idp; var _c = typeof compact !== 'undefined' && compact; %>
+<label class="check"><input type="hidden" name="show_name" value="0"><input type="checkbox" name="show_name" value="1"<%= _show ? ' checked' : '' %>><span><%= t('screens_hdr.show_name') %></span></label>
+<div class="field<%= _c ? ' grow' : '' %>">
+  <% if (!_c) { %><label class="label" for="msg-<%= idp %>"><%= t('screens_hdr.message') %></label><% } %>
+  <input class="input" id="msg-<%= idp %>" name="message" value="<%= _msg %>" maxlength="160" dir="auto" list="<%= _list %>" placeholder="<%= t('screens_hdr.message_ph') %>" aria-label="<%= t('screens_hdr.message') %>">
+  <datalist id="<%= _list %>"><% ['welcome', 'eid', 'ramadan', 'new_year', 'health', 'phone', 'thanks'].forEach(function (m) { %><option value="<%= t('screens_hdr.preset.' + m) %>"></option><% }) %></datalist>
+  <% if (!_c) { %><span class="help"><%= t('screens_hdr.message_help') %></span><% } %>
+</div>

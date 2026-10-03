@@ -33,18 +33,25 @@ const newToken = () => {
   return { token, display_token_enc: secrets.encrypt(token), display_token_hash: sha256(token) };
 };
 
-async function create(ctx, { name }) {
+// Top bar of the screen: the clinic name shown or not, and a message in the middle ("Welcome"…).
+const cleanMessage = (v) => require('../queue/queue.service').cleanMessage(v); // eslint-disable-line global-require
+const isOn = (raw) => { const v = Array.isArray(raw) ? raw[raw.length - 1] : raw; return v === '1' || v === true || v === 'on'; }; // a checkbox posts a hidden "0" before it
+
+async function create(ctx, { name, show_name: showName, message }) {
   const clean = cleanName(name);
   if (!clean) throw E.validation({ name: 'Required.' });
   const { display_token_enc: enc, display_token_hash: hash } = newToken();
-  const [id] = await knex('attendance_kiosks').insert({ business_id: ctx.businessId, name: clean, display_token_enc: enc, display_token_hash: hash, created_by: ctx.userId });
+  const [id] = await knex('attendance_kiosks').insert({ business_id: ctx.businessId, name: clean, display_token_enc: enc, display_token_hash: hash, created_by: ctx.userId,
+    show_name: showName === undefined ? true : isOn(showName), message: cleanMessage(message) });
   await audit.record(ctx, 'attendance.screen_created', { entityType: 'attendance_kiosk', entityId: id, newValues: { name: clean } });
   return id;
 }
 
-async function update(ctx, id, { name, is_active: isActive }) {
+async function update(ctx, id, { name, is_active: isActive, show_name: showName, message }) {
   const before = await get(ctx, id);
   const patch = { is_active: Boolean(isActive), updated_at: new Date() };
+  if (showName !== undefined) patch.show_name = isOn(showName);
+  if (message !== undefined) patch.message = cleanMessage(message);
   if (name !== undefined) { patch.name = cleanName(name); if (!patch.name) throw E.validation({ name: 'Required.' }); }
   await knex('attendance_kiosks').where({ id: before.id }).update(patch);
   await audit.record(ctx, 'attendance.screen_updated', { entityType: 'attendance_kiosk', entityId: before.id, oldValues: { name: before.name, is_active: Boolean(before.is_active) }, newValues: { name: patch.name || before.name, is_active: patch.is_active } });

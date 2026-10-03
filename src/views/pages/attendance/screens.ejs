@@ -46,6 +46,7 @@
             <form method="post" action="/app/attendance/screens/<%= k.id %>" class="row-sm wrap mt-2">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <input class="input att-name-input" name="name" value="<%= k.name %>" maxlength="120" aria-label="<%= t('attendance.screen_name') %>">
+              <%- include('../../partials/screen-header-fields', { k: k, idp: 'a' + k.id, compact: true }) %>
               <label class="check"><input type="checkbox" name="is_active" value="1"<%= k.is_active ? ' checked' : '' %>><span><%= t('attendance.screen_active') %></span></label>
               <button class="btn btn-secondary btn-sm" type="submit"><%= t('common.save') %></button>
             </form>
@@ -81,6 +82,7 @@
       <div class="panel-body">
         <% if (o.name !== undefined && typeof formError !== 'undefined' && formError && !errs.name) { %><%- include('../../partials/form-error') %><% } %>
         <%- include('../../partials/field', { name: 'name', label: t('attendance.screen_name'), required: true, placeholder: t('attendance.screen_name_ph'), attrs: 'maxlength="120"', value: '' }) %>
+        <div class="stack mt-2"><%- include('../../partials/screen-header-fields', { k: null, idp: 'anew' }) %></div>
       </div>
       <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('attendance.screen_add') %></button></div>
     </form>

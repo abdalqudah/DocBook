@@ -30,6 +30,9 @@ async function get(ctx, id) {
 }
 
 const cleanName = (v) => String(v || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+// The message in the middle of the top bar ("Welcome", "Happy Eid"…): one line of plain text, or none.
+const cleanMessage = (v) => String(v || '').replace(/[\u0000-\u001F\u007F<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160) || null;
+const isOn = (raw) => { const v = Array.isArray(raw) ? raw[raw.length - 1] : raw; return v === '1' || v === true || v === 'on'; }; // a checkbox posts a hidden "0" before it
 const cleanStyle = (v) => (STYLES.includes(v) ? v : 'short');
 // '' = every branch (null), 'main' = the main branch (0), an id = that active branch.
 async function cleanBranch(businessId, v) {
@@ -45,7 +48,7 @@ const newToken = () => {
 async function create(ctx, input) {
   const name = cleanName(input.name);
   if (!name) throw E.validation({ name: 'Required.' });
-  const row = { business_id: ctx.businessId, name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), created_by: ctx.userId || null, ...newToken() };
+  const row = { business_id: ctx.businessId, name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, show_name: input.show_name === undefined ? true : isOn(input.show_name), message: cleanMessage(input.message), branch_id: await cleanBranch(ctx.businessId, input.branch_id), created_by: ctx.userId || null, ...newToken() };
   const [id] = await knex('queue_screens').insert(row);
   await audit.record(ctx, 'queue.screen_created', { entityType: 'queue_screen', entityId: id, newValues: { name, name_style: row.name_style, branch_id: row.branch_id, voice: row.voice } });
   return id;
@@ -55,7 +58,7 @@ async function update(ctx, id, input) {
   const before = await get(ctx, id);
   const name = cleanName(input.name);
   if (!name) throw E.validation({ name: 'Required.' });
-  const patch = { name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, is_active: input.is_active === '1' || input.is_active === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), updated_at: new Date() };
+  const patch = { name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, show_name: isOn(input.show_name), message: cleanMessage(input.message), is_active: input.is_active === '1' || input.is_active === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), updated_at: new Date() };
   await knex('queue_screens').where({ id: before.id }).update(patch);
   await audit.record(ctx, 'queue.screen_updated', { entityType: 'queue_screen', entityId: before.id,
     oldValues: { name: before.name, name_style: before.name_style, voice: Boolean(before.voice), is_active: Boolean(before.is_active), branch_id: before.branch_id }, newValues: { ...patch, updated_at: undefined } });
@@ -127,9 +130,9 @@ async function board(screen, clinic) {
   const inside = rows.filter((a) => a.with_doctor).sort((x, y) => (new Date(y.called_at || 0) - new Date(x.called_at || 0)) || (y.id - x.id));
   const queue = rows.filter((a) => !a.with_doctor)
     .sort((x, y) => (new Date(x.arrived_at || 0) - new Date(y.arrived_at || 0)) || String(x.appointment_time).localeCompare(String(y.appointment_time)));
-  const out = { voice: Boolean(screen.voice), now: show(inside[0]) || null, next: show(queue[0]) || null, waiting: queue.slice(1, 3).map(show), more: Math.max(0, queue.length - 3), rooms: inside.map(show) };
+  const out = { header: { showName: screen.show_name !== false && screen.show_name !== 0, message: screen.message || '' }, voice: Boolean(screen.voice), now: show(inside[0]) || null, next: show(queue[0]) || null, waiting: queue.slice(1, 3).map(show), more: Math.max(0, queue.length - 3), rooms: inside.map(show) };
   out.sig = [inside.map((a) => a.id).join('.'), queue.slice(0, 3).map((a) => a.id).join('.')].join('|');
   return out;
 }
 
-module.exports = { ONLINE_MS, STYLES, list, get, create, update, regenerate, remove, displayUrl, byToken, touch, shortName, board };
+module.exports = { cleanMessage, ONLINE_MS, STYLES, list, get, create, update, regenerate, remove, displayUrl, byToken, touch, shortName, board };

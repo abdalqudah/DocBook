@@ -4,8 +4,9 @@
   <header class="kiosk-head">
     <div class="kiosk-clinic">
       <% if (clinic.logoUrl) { %><img class="kiosk-logo" src="<%= clinic.logoUrl %>" alt=""><% } %>
-      <div class="kiosk-clinic-text"><strong><%= clinic.name %></strong><% if (screenName) { %><span><%= screenName %></span><% } %></div>
+      <div class="kiosk-clinic-text" data-screen-name<%= typeof showName !== 'undefined' && !showName ? ' hidden' : '' %>><strong><%= clinic.name %></strong><% if (screenName) { %><span><%= screenName %></span><% } %></div>
     </div>
+    <div class="screen-msg" data-screen-msg dir="auto"<%= typeof message !== 'undefined' && message ? '' : ' hidden' %>><%= typeof message !== 'undefined' && message ? message : '' %></div>
     <div class="kiosk-time">
       <div class="kiosk-clock" data-kiosk-clock dir="ltr">--:--</div>
       <div class="kiosk-date" data-kiosk-date></div>

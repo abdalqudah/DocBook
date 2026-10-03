@@ -805,3 +805,19 @@ test('partners carousel, carousel options on list sections, alignment, and the d
   assert.match(r.text, /data-ws-iconlib="dentistry">/);
   assert.match(r.text, /#i-dt-tooth"/);
 });
+
+test('icon libraries: every specialty has a large library, every icon is in the sprite and accepted by sections', () => {
+  const lib = require('../src/modules/website/icon-library');
+  const sprite = require('fs').readFileSync(require('path').join(__dirname, '..', 'public', 'icons.svg'), 'utf8');
+  for (const k of lib.KEYS) {
+    assert.ok(lib.LIBS[k].length >= 20, `${k} has at least 20 icons`);
+    for (const ic of lib.LIBS[k]) assert.ok(sprite.includes(`id="i-${ic}"`), `${ic} is in icons.svg`);
+  }
+  assert.equal(lib.libFor('orthopaedics'), 'orthopaedics');
+  assert.equal(lib.libFor('multi'), 'general');
+  const sections = require('../src/modules/website/sections');
+  const s = sections.blankSection('features');
+  s.settings.items = [{ icon: 'or-knee' }, { icon: 'oph-chart' }, { icon: 'javascript:alert(1)' }];
+  const doc = sections.sanitize({ pages: [{ key: 'home', sections: [s] }] });
+  assert.deepEqual(doc.pages[0].sections[0].settings.items.map((x) => x.icon), ['or-knee', 'oph-chart', sections.ICONS[0]]);
+});

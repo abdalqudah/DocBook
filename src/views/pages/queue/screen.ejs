@@ -7,8 +7,9 @@
   <header class="qs-head">
     <div class="qs-clinic">
       <% if (clinic.logoUrl) { %><img class="qs-logo" src="<%= clinic.logoUrl %>" alt=""><% } %>
-      <strong><%= clinic.name %></strong>
+      <strong data-screen-name<%= showName ? '' : ' hidden' %>><%= clinic.name %></strong>
     </div>
+    <div class="screen-msg" data-screen-msg dir="auto"<%= message ? '' : ' hidden' %>><%= message || '' %></div>
     <div class="qs-time"><div class="qs-clock" data-qs-clock dir="ltr">--:--</div><div class="qs-date" data-qs-date></div></div>
   </header>
 

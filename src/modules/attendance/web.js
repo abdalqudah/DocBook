@@ -219,7 +219,7 @@ router.get('/screens/:id(\\d+)/open', can('attendance.manage'), wrap(async (req,
   res.redirect(url);
 }));
 router.post('/screens/:id(\\d+)', can('attendance.manage'), form(async (req, res) => {
-  await kiosks.update(req.ctx, Number(req.params.id), { name: req.body.name, is_active: req.body.is_active === '1' });
+  await kiosks.update(req.ctx, Number(req.params.id), { name: req.body.name, is_active: req.body.is_active === '1', show_name: req.body.show_name === undefined ? '0' : req.body.show_name, message: req.body.message || '' });
   flash(req, 'success', req.t('common.saved'));
   res.redirect('/app/attendance/screens');
 }, renderScreens));

@@ -34,7 +34,7 @@ router.get('/:token', wrap(async (req, res, next) => {
   const board = await svc.board(k, b);
   const base = `/queue/${req.params.token}`;
   return res.page('pages/queue/screen', {
-    layout: 'kiosk', kioskClass: 'qs-body', title: `${b.name} · ${k.name}`, board, src: `${base}/data`, exitHref: null,
+    layout: 'kiosk', kioskClass: 'qs-body', title: `${b.name} · ${k.name}`, board, showName: k.show_name !== false && k.show_name !== 0, message: k.message || '', src: `${base}/data`, exitHref: null,
     clinic: { name: req.locale === 'en' && b.name_en ? b.name_en : b.name, timezone: b.timezone, logoUrl: b.logo_mime ? `${base}/logo?v=${b.logo_version}` : null },
     pageStyles: ['/css/queue.css'], pageScripts: ['/js/queue.js'], ...screenBrand.locals(base, b),
   });
