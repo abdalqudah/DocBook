@@ -32,6 +32,8 @@ async function chrome(req, res, next) {
       res.locals.siteChrome = c;
       res.locals.siteMedia = m;
       res.locals.siteSocial = Object.entries(mk.social || {}).map(([k, href]) => ({ key: k, href, icon: (seo.SOCIAL[k] || {}).icon || 'link' }));
+      // The main site's "Articles" link, once one doctor's article is approved for it.
+      res.locals.blogOn = await require('../../core/cache').remember('blog:on', async () => (await require('../articles/articles.service').platformList({ per: 1 })).total > 0, 60_000).catch(() => false); // eslint-disable-line global-require
     }
     next();
   } catch (err) { next(err); }
@@ -84,6 +86,28 @@ router.get('/features', wrap(async (req, res) => {
     groups: require('./catalog-features').groups(req.t), // eslint-disable-line global-require
     demos: { ...demos, id: 'features-demos', anchor: 'see-it', hidden: false, design: {} }, cta,
   });
+}));
+
+// ---------------------------------------------------------------- doctors' articles on the main site (approved by the platform)
+const articles = require('../articles/articles.service');
+const asClinic = (r) => ({ id: r.clinic_id, slug: r.clinic_slug });
+router.get('/blog', wrap(async (req, res) => {
+  const cat = articles.CATEGORIES.includes(req.query.cat) ? req.query.cat : '';
+  const data = await articles.platformList({ category: cat, page: req.query.page });
+  const items = await Promise.all(data.rows.map(async (r) => ({ ...(await articles.present(asClinic(r), r, req.locale)), clinicName: (req.locale === 'en' && r.clinic_name_en) || r.clinic_name, href: `/blog/${r.id}-${r.slug}` })));
+  const head = await seo.head(req, res, { kind: 'blog', title: req.t('articles.blog_title'), description: req.t('articles.blog_lead'), path: '/blog' });
+  res.page('pages/site/blog', { layout: 'public', bodyClass: 'lp-modern', pageTitle: head.title, seoHead: head, items, cat, categories: articles.CATEGORIES, page: data.page, pages: data.pages, pageStyles: ['/css/articles.css'] });
+}));
+router.get('/blog/:id(\\d{1,10})-:slug([a-z0-9-]{1,90})', wrap(async (req, res, next) => {
+  const r = await articles.platformArticle(req.params.id);
+  if (!r) return next();
+  if (r.slug !== req.params.slug) return res.redirect(301, `/blog/${r.id}-${r.slug}`);
+  articles.countView(r.id);
+  const art = await articles.present(asClinic(r), r, req.locale);
+  const clinicName = (req.locale === 'en' && r.clinic_name_en) || r.clinic_name;
+  const ld = { '@context': 'https://schema.org', '@type': 'BlogPosting', headline: art.title, datePublished: new Date(r.published_at).toISOString(), dateModified: new Date(r.updated_at).toISOString(), inLanguage: art.lang, author: art.doctor ? { '@type': 'Physician', name: art.doctor.name } : { '@type': 'MedicalClinic', name: clinicName }, publisher: { '@type': 'MedicalClinic', name: clinicName } };
+  const head = await seo.head(req, res, { kind: 'blog', title: art.title, description: art.excerpt, path: `/blog/${r.id}-${r.slug}`, shareImage: art.cover ? art.cover.url : null, ld: [ld] });
+  res.page('pages/site/blog-article', { layout: 'public', bodyClass: 'lp-modern', pageTitle: head.title, seoHead: head, art, clinicName, clinicSlug: r.clinic_slug, booking: Boolean(r.booking_enabled), pageStyles: ['/css/articles.css'] });
 }));
 
 // ---------------------------------------------------------------- media files

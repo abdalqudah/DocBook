@@ -258,6 +258,19 @@ async function sitemap(s, base) {
     const listed = new Set(urls.map((u) => u.loc));
     for (const p of await require('../website/site.service').livePages()) if (listed.has(`/${p.slug}`)) urls.push({ loc: `/${p.slug}/p/${p.page}`, lastmod: p.at }); // eslint-disable-line global-require
   }
+  // Doctors' articles: the main site's blog (approved ones) and the clinic websites' article pages.
+  try {
+    const arts = require('../articles/articles.service'); // eslint-disable-line global-require
+    if (s.index_home) {
+      const blog = await arts.sitemapPlatform();
+      if (blog.length) urls.push({ loc: '/blog' }, ...blog.map((a) => ({ loc: `/blog/${a.id}-${a.slug}`, lastmod: a.updated_at })));
+    }
+    if (s.index_clinics) {
+      const listed = new Set(urls.map((u) => u.loc));
+      const rows = await knex('articles as a').join('businesses as b', 'b.id', 'a.business_id').where({ 'a.status': 'published', 'a.on_site': true, 'b.status': 'active' }).select('b.slug as cs', 'a.slug', 'a.updated_at');
+      rows.filter((r) => listed.has(`/${r.cs}`)).forEach((r) => urls.push({ loc: `/${r.cs}/articles/${r.slug}`, lastmod: r.updated_at }));
+    }
+  } catch { /* the sitemap never fails on articles */ }
   const alt = (loc) => ['ar', 'en'].map((lc) => `<xhtml:link rel="alternate" hreflang="${lc}" href="${x(`${base}${loc}?lang=${lc}`)}"/>`).join('')
     + `<xhtml:link rel="alternate" hreflang="x-default" href="${x(base + loc)}"/>`;
   const body = urls.map((u) => `<url><loc>${x(base + u.loc)}</loc>${u.lastmod ? `<lastmod>${new Date(u.lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${alt(u.loc)}</url>`).join('\n');
@@ -429,9 +442,10 @@ function clinicRobots({ siteBase, slugPrefix, blockAi, hide }) {
   return lines.join('\n');
 }
 
-function clinicSitemap({ siteBase, doc, doctors, at }) {
+function clinicSitemap({ siteBase, doc, doctors, at, articles = [] }) {
   const x = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const locs = ['', '/book', ...((doc && doc.pages) || []).filter((p) => p.key !== 'home').map((p) => `/p/${p.slug}`), ...(doc ? doctors.map((d) => `/doctors/${d.id}`) : [])];
+  const locs = ['', '/book', ...((doc && doc.pages) || []).filter((p) => p.key !== 'home').map((p) => `/p/${p.slug}`), ...(doc ? doctors.map((d) => `/doctors/${d.id}`) : []),
+    ...(articles.length ? ['/articles', ...articles.map((a) => `/articles/${a.slug}`)] : [])];
   const alt = (loc) => ['ar', 'en'].map((lc) => `<xhtml:link rel="alternate" hreflang="${lc}" href="${x(`${siteBase}${loc}?lang=${lc}`)}"/>`).join('');
   const body = locs.map((l) => `<url><loc>${x(siteBase + l)}</loc>${at ? `<lastmod>${new Date(at).toISOString().slice(0, 10)}</lastmod>` : ''}${alt(l)}</url>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${body}\n</urlset>\n`;
@@ -487,7 +501,7 @@ async function llmsDefault({ s, site, base }) {
  * Tags for a public page. kind: 'home' | 'cookies' (marketing pages, may load pixels after consent) |
  * 'clinic' (clinic page: structured data, never pixels) | 'private' (noindex, nothing else).
  */
-async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, description: pageDesc, shareImage = null, hide = false, ws = null }) {
+async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, description: pageDesc, shareImage = null, hide = false, ws = null, path: pagePath = null, ld: extraLd = [] }) {
   const [s, mkt, media] = await Promise.all([get(), marketing(), require('./media.service').map()]); // eslint-disable-line global-require
   const locale = req.locale;
   const base = baseUrl(req, s);
@@ -500,13 +514,13 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
     const extra = require('../website/marketing.service').profileLinks(clinicMkt); // eslint-disable-line global-require
     ws = { ...(ws || {}), sameAs: [...new Set([...((ws && ws.sameAs) || []), ...extra])] }; // eslint-disable-line no-param-reassign
   }
-  const path = kind === 'clinic' ? ((ws && ws.path) || `/${clinic.slug}`) : kind === 'cookies' ? '/preferences/cookies' : kind === 'pricing' ? '/pricing' : kind === 'features' ? '/features' : '/';
+  const path = pagePath || (kind === 'clinic' ? ((ws && ws.path) || `/${clinic.slug}`) : kind === 'cookies' ? '/preferences/cookies' : kind === 'pricing' ? '/pricing' : kind === 'features' ? '/features' : '/');
   let title; let description; let noindex = false;
   if (kind === 'home') {
     title = L(s.title, locale) || L(siteContent.seo && siteContent.seo.title, locale) || name;
     description = L(s.description, locale) || L(siteContent.seo && siteContent.seo.description, locale);
     noindex = !s.index_home;
-  } else if (kind === 'pricing' || kind === 'features') {
+  } else if (kind === 'pricing' || kind === 'features' || kind === 'blog') {
     title = `${pageTitle} · ${name}`;
     description = pageDesc || '';
     noindex = !s.index_home;
@@ -545,7 +559,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   m('og:title', title, 'property');
   m('og:description', description, 'property');
   m('og:url', `${url}?lang=${locale}`, 'property');
-  if (kind === 'clinic' && shareImage) m('og:image', `${base}${shareImage}`, 'property'); // the website's own share image
+  if ((kind === 'clinic' || kind === 'blog') && shareImage) m('og:image', `${base}${shareImage}`, 'property'); // the page's own share image
   else if (clinicImg) m('og:image', clinicImg, 'property');
   else if (og) {
     m('og:image', `${base}${og.url}`, 'property');
@@ -559,10 +573,11 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   if (clinicMkt) { m('google-site-verification', clinicMkt.verify.google); m('msvalidate.01', clinicMkt.verify.bing); }
   const ld = kind === 'home' ? homeLd({ s, mkt, site: siteContent, base, locale, description, logoUrl: `${base}${brand.favicon || '/favicon.svg'}` })
     : kind === 'clinic' ? clinicLd({ clinic, doctors, base, locale, ws }) : [];
+  (extraLd || []).forEach((d) => ld.push(d)); // e.g. an article (BlogPosting)
   for (const d of ld) tags.push(`<script type="application/ld+json">${ldJson(d)}</script>`);
 
   // Pixels: marketing pages only, only with the visitor's consent.
-  const marketingPage = kind === 'home' || kind === 'cookies' || kind === 'pricing' || kind === 'features';
+  const marketingPage = kind === 'home' || kind === 'cookies' || kind === 'pricing' || kind === 'features' || kind === 'blog';
   const pixelsOn = marketingPage && hasPixels(mkt);
   const consent = consentOf(req);
   let pixels = null;

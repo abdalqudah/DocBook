@@ -75,6 +75,7 @@ const NAV = [
     { key: 'website_theme', href: '/app/website/theme', icon: 'palette', perms: ['website.edit'] },
     { key: 'website_booking', href: '/app/website/booking', icon: 'calendar-plus', perms: ['website.edit'] },
     { key: 'website_media', href: '/app/website/media', icon: 'images', perms: ['website.edit'] },
+    { key: 'articles', href: '/app/articles', icon: 'notebook-pen', perms: ['website.edit'], orDoctor: true }, // a doctor login writes its own
     { key: 'website_domain', href: '/app/website/domain', icon: 'link', perms: ['website.domain'] },
     { key: 'website_email', href: '/app/website/email', icon: 'mail', perms: ['website.email'] },
     { key: 'website_seo', href: '/app/website/seo', icon: 'search', perms: ['website.seo'] },
@@ -179,7 +180,7 @@ const CASH_ONLY = new Set(['cashier', 'billing', 'payments_all', 'cash_closings'
 function forUser(permissions, ctx = {}) {
   const has = (p) => permissions.has(p);
   const doctorHome = ctx.roleKey === 'doctor' && ctx.doctorId;
-  const visible = (item) => (!item.perms.length || item.perms.some(has)) && (!item.needsDoctor || ctx.doctorId) && !hidden(ctx, item.key)
+  const visible = (item) => (!item.perms.length || item.perms.some(has) || (item.orDoctor && ctx.doctorId)) && (!item.needsDoctor || ctx.doctorId) && !hidden(ctx, item.key)
     && !(item.doctorHome && doctorHome)
     // Whole-clinic pages (the cash drawer) stay out of the menu of a login limited to one doctor's visits.
     && (!item.viewAll || !ctx.ownDoctorId);

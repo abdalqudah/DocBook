@@ -1,0 +1,36 @@
+<% var L = function (ar, en) { return locale === 'en' ? (en || ar) : (ar || en); }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('navx.sec_website') %></div>
+    <h1><%= t('articles.title') %></h1>
+    <p><%= t('articles.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/app/articles/new"><%- icon('plus', 'icon-sm') %><%= t('articles.new') %></a>
+  </div>
+</div>
+<nav class="tabs mb-4" aria-label="<%= t('articles.title') %>">
+  <% [['', 'all'], ['published', 'published'], ['draft', 'drafts']].forEach(function (s) { %>
+  <a class="tab<%= status === s[0] ? ' active' : '' %>" href="/app/articles<%= s[0] ? '?status=' + s[0] : '' %>"><%= t('articles.tab.' + s[1]) %></a>
+  <% }) %>
+</nav>
+<% if (!rows.length) { %>
+  <div class="panel"><%- include('../../partials/empty', { emptyIcon: 'notebook-pen', emptyTitle: t('articles.empty_title'), emptyText: t('articles.empty_text'), emptyAction: '<a class="btn btn-primary btn-sm" href="/app/articles/new">' + t('articles.new') + '</a>' }) %></div>
+<% } else { %>
+<div class="art-list">
+  <% rows.forEach(function (a) { %>
+  <a class="art-item panel" href="/app/articles/<%= a.id %>">
+    <div class="art-item-main">
+      <div class="art-item-title"><%= L(a.title, a.title_en) %></div>
+      <div class="small muted"><%= a.doctor_id ? L(a.doctor_name, a.doctor_name_en) : t('articles.by_clinic') %> · <%= fmt.date(a.updated_at) %><%= a.views ? ' · ' + t('articles.views', { n: fmt.number(a.views) }) : '' %></div>
+    </div>
+    <div class="art-item-tags">
+      <% if (a.status === 'published') { %><span class="badge badge-success badge-dot"><%= t('articles.status.published') %></span><% } else { %><span class="badge"><%= t('articles.status.draft') %></span><% } %>
+      <% if (a.title && a.body) { %><span class="badge">ع</span><% } %><% if (a.title_en && a.body_en) { %><span class="badge">EN</span><% } %>
+      <% if (a.on_site) { %><span class="badge"><%- icon('globe', 'icon-sm') %> <%= t('articles.where.site') %></span><% } %>
+      <% if (a.on_platform) { %><span class="badge<%= a.platform_status === 'approved' ? ' badge-success' : a.platform_status === 'rejected' ? ' badge-danger' : ' badge-warning' %>"><%- icon('layout-template', 'icon-sm') %> <%= t('articles.where.platform') %> · <%= t('articles.platform.' + a.platform_status) %></span><% } %>
+    </div>
+  </a>
+  <% }) %>
+</div>
+<% } %>

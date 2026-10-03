@@ -1,0 +1,9 @@
+<%# The clinic website's articles. %>
+<section class="art-grid-page" id="main">
+  <div class="art-grid-head"><h1><%= t('articles.menu') %></h1><p><%= t('articles.site_lead', { clinic: clinic.displayName }) %></p></div>
+  <% if (!items.length) { %><p class="art-empty"><%= t('articles.none_public') %></p><% } else { %>
+  <div class="art-grid">
+    <% items.forEach(function (art) { %><%- include('../../partials/articles/card', { art: art, href: '/' + clinic.slug + '/articles/' + art.slug, by: art.doctor ? art.doctor.name : clinic.displayName }) %><% }) %>
+  </div>
+  <% } %>
+</section>

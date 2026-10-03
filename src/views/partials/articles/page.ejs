@@ -1,0 +1,25 @@
+<%# One article to read. Locals: art, homeHref, homeLabel, doctorHref, clinicLine, bookHref, otherLangHref. %>
+<article class="art-page" lang="<%= art.lang %>">
+  <nav class="breadcrumbs mb-4"><a href="<%= homeHref %>"><%= homeLabel %></a> <%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %> <span><%= t('articles.menu') %></span></nav>
+  <header class="art-page-head" dir="<%= art.dir %>">
+    <% if (art.category) { %><span class="art-cat"><%= t('articles.cat.' + art.category) %></span><% } %>
+    <h1><%= art.title %></h1>
+    <div class="art-meta">
+      <% if (art.doctor) { %><span><%- icon('stethoscope', 'icon-sm') %> <% if (doctorHref) { %><a href="<%= doctorHref %>"><%= art.doctor.name %></a><% } else { %><%= art.doctor.name %><% } %><%= art.doctor.specialty ? ' · ' + art.doctor.specialty : '' %></span><% } %>
+      <% if (clinicLine) { %><span><%- icon('building-2', 'icon-sm') %> <%- clinicLine %></span><% } %>
+      <% if (art.published) { %><span><%- icon('calendar', 'icon-sm') %> <%= fmt.date(art.published, { year: 'numeric', month: 'long', day: 'numeric' }) %></span><% } %>
+      <span><%- icon('clock', 'icon-sm') %> <%= t('articles.minutes', { n: art.minutes }) %></span>
+    </div>
+  </header>
+  <% if (art.lang !== locale) { %><p class="art-lang-note"><%= t('articles.only_in_' + art.lang) %></p><% } %>
+  <% if (art.cover) { %><figure class="art-hero"><img src="<%= art.cover.url %>" alt="<%= art.cover.alt || art.title %>"></figure><% } %>
+  <div class="art-prose" dir="<%= art.dir %>"><%- art.html %></div>
+  <aside class="art-author">
+    <div>
+      <strong><%= art.doctor ? art.doctor.name : homeLabel %></strong>
+      <span class="small muted"><%= art.doctor && art.doctor.specialty ? art.doctor.specialty : '' %></span>
+    </div>
+    <% if (bookHref) { %><a class="btn btn-primary" href="<%= bookHref %>"><%- icon('calendar-plus', 'icon-sm') %><%= art.doctor ? t('portal.book_with') : t('portal.book') %></a><% } %>
+  </aside>
+  <p class="tiny muted mt-4"><%= t('articles.disclaimer') %></p>
+</article>

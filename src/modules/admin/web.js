@@ -26,6 +26,7 @@ router.use(requireAuth, (req, res, next) => {
 router.use('/', require('./identity.web')); // Google sign-in + clinic custom domains (identity area)
 router.use('/', require('./vendors.web')); // reps & warehouses: approval and moderation
 router.use('/', require('./reviews.web'));
+router.use('/', require('./articles.web')); // doctors' articles asking for the main site: approve / reject
 router.use('/', require('../ai/admin.web')); // AI assistant: provider key and model
 router.use('/', require('../subscriptions/admin.web'));
 router.use('/', require('../platformops/admin.web')); // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)

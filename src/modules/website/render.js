@@ -89,6 +89,8 @@ function siteChrome(req, clinic, doc, page, { preview, img }) {
   }).filter((x) => x && x.label);
   // No menu chosen: the pages marked "in the menu" (only when there is more than the home page).
   if (!(header.items || []).length) items = pages.length > 1 ? pages.filter((p) => p.menu).map((p) => ({ label: p.title, href: p.href, current: p.key === page.key })) : [];
+  // The doctors' articles: a menu link once the clinic has published one on its website.
+  if (!preview && clinic.hasArticles) items.push({ label: req.t('articles.menu'), href: `${base}/articles`, current: page.key === 'articles' });
   const logo = doc.brand && doc.brand.logoMediaId ? img(doc.brand.logoMediaId) : null;
   const logoDark = doc.brand && doc.brand.logoDarkMediaId ? img(doc.brand.logoDarkMediaId) : null;
   return { header, footer: doc.footer || {}, items, pages, logo, logoDark, darkMode: header.dark_mode !== false, homeHref: pageHref(doc.pages[0]), preview, L };

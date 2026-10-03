@@ -124,6 +124,7 @@ router.use(require('../modules/finance/hooks')); // budget checks right after ex
 router.use('/payroll', require('../modules/clinic/payroll.web'));
 router.use('/expenses', require('../modules/expenses/web'));
 router.use('/payouts', require('../modules/payouts/web')); // bank transfer files for any bank, payslips by e-mail
+router.use('/articles', require('../modules/articles/web')); // doctors' articles for the clinic website and the main site
 router.use('/doctors', require('../modules/clinic/doctors.web'));
 router.use('/services', require('../modules/clinic/services.web'));
 router.use('/supplies/orders', require('../modules/purchasing/web'));

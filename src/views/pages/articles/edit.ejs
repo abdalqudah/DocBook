@@ -1,0 +1,121 @@
+<%
+  var o = typeof old !== 'undefined' && old ? old : {};
+  var A = a || {};
+  var v = function (k, d) { return o[k] !== undefined ? o[k] : (A[k] !== undefined && A[k] !== null ? A[k] : d); };
+  var err = typeof errors !== 'undefined' && errors ? errors : {};
+  var isNew = !A.id;
+  var published = A.status === 'published';
+  var onSite = o.title !== undefined || o.title_en !== undefined ? o.on_site === '1' : (isNew ? true : Boolean(A.on_site));
+  var onPlatform = o.title !== undefined || o.title_en !== undefined ? o.on_platform === '1' : Boolean(A.on_platform);
+  var L = function (ar, en) { return locale === 'en' ? (en || ar) : (ar || en); };
+  var siteUrl = A.id && published && A.on_site ? '/' + business.slug + '/articles/' + A.slug : null;
+  var platUrl = A.id && published && A.on_platform && A.platform_status === 'approved' ? '/blog/' + A.id + '-' + A.slug : null;
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/articles"><%= t('articles.title') %></a></div>
+    <h1><%= isNew ? t('articles.new') : L(A.title, A.title_en) %></h1>
+  </div>
+  <div class="page-actions">
+    <% if (siteUrl) { %><a class="btn btn-secondary" href="<%= siteUrl %>" target="_blank" rel="noopener"><%- icon('globe', 'icon-sm') %><%= t('articles.view_site') %></a><% } %>
+    <% if (platUrl) { %><a class="btn btn-secondary" href="<%= platUrl %>" target="_blank" rel="noopener"><%- icon('layout-template', 'icon-sm') %><%= t('articles.view_platform') %></a><% } %>
+  </div>
+</div>
+
+<form method="post" action="/app/articles<%= isNew ? '' : '/' + A.id %>" class="art-edit" data-art-form novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <input type="hidden" name="cover_media_id" value="<%= v('cover_media_id', '') || '' %>" data-art-cover-id>
+  <div class="art-main stack">
+    <%- include('../../partials/form-error') %>
+    <% if (A.on_platform && A.platform_status === 'rejected' && A.platform_note) { %><div class="alert alert-warning"><div class="alert-title"><%= t('articles.rejected_title') %></div><%= A.platform_note %></div><% } %>
+    <div class="panel">
+      <div class="panel-head art-langs" role="tablist">
+        <button type="button" class="art-lang is-on" data-art-lang="ar" role="tab" aria-selected="true">العربية</button>
+        <button type="button" class="art-lang" data-art-lang="en" role="tab" aria-selected="false">English</button>
+        <span class="tiny muted art-langs-hint"><%= t('articles.lang_hint') %></span>
+      </div>
+      <% [['ar', '', 'rtl'], ['en', '_en', 'ltr']].forEach(function (lg, i) { %>
+      <div class="panel-body stack art-pane" data-art-pane="<%= lg[0] %>"<%= i ? ' hidden' : '' %>>
+        <%- include('../../partials/field', { name: 'title' + lg[1], label: t('articles.f.title'), value: v('title' + lg[1], ''), attrs: 'dir="' + lg[2] + '" maxlength="200"', cls: 'full', id: 'f-title' + lg[1] }) %>
+        <%- include('../../partials/field', { name: 'excerpt' + lg[1], label: t('articles.f.excerpt'), type: 'textarea', value: v('excerpt' + lg[1], ''), help: t('articles.f.excerpt_help'), cls: 'full', id: 'f-excerpt' + lg[1] }) %>
+        <div class="field">
+          <label class="label" for="f-body<%= lg[1] %>"><%= t('articles.f.body') %></label>
+          <div class="art-toolbar" role="toolbar" aria-label="<%= t('articles.toolbar') %>" data-art-toolbar="f-body<%= lg[1] %>">
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="h2" title="<%= t('articles.tb.h2') %>">H2</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="h3" title="<%= t('articles.tb.h3') %>">H3</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="b" title="<%= t('articles.tb.bold') %>"><strong>B</strong></button>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="i" title="<%= t('articles.tb.italic') %>"><em>I</em></button>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="ul" title="<%= t('articles.tb.list') %>">•</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="ol" title="<%= t('articles.tb.numbered') %>">1.</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="q" title="<%= t('articles.tb.quote') %>">❝</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-md="link" title="<%= t('articles.tb.link') %>"><%- icon('link', 'icon-sm') %></button>
+            <label class="btn btn-ghost btn-sm" title="<%= t('articles.tb.image') %>"><%- icon('image', 'icon-sm') %><span><%= t('articles.tb.image') %></span><input type="file" accept="image/png,image/jpeg,image/webp" multiple hidden data-art-upload="body"></label>
+            <button type="button" class="btn btn-ghost btn-sm" data-art-preview title="<%= t('articles.preview') %>"><%- icon('eye', 'icon-sm') %><span><%= t('articles.preview') %></span></button>
+          </div>
+          <textarea class="textarea art-body<%= err['body'] ? ' is-invalid' : '' %>" id="f-body<%= lg[1] %>" name="body<%= lg[1] %>" dir="<%= lg[2] %>" rows="18" maxlength="60000" placeholder="<%= t('articles.f.body_ph') %>"><%= v('body' + lg[1], '') %></textarea>
+          <% if (err['body']) { %><span class="field-error"><%= err['body'] %></span><% } else { %><span class="help"><%= t('articles.f.body_help') %></span><% } %>
+          <div class="art-preview art-prose" data-art-preview-box dir="<%= lg[2] %>" hidden></div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <aside class="art-side stack">
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('articles.publish_title') %></h2>
+        <% if (!isNew) { %><span class="badge<%= published ? ' badge-success badge-dot' : '' %>"><%= t('articles.status.' + A.status) %></span><% } %></div>
+      <div class="panel-body stack">
+        <fieldset class="stack-sm">
+          <legend class="label"><%= t('articles.where_title') %></legend>
+          <label class="check"><input type="checkbox" name="on_site" value="1"<%= onSite ? ' checked' : '' %>> <span><span class="strong"><%= t('articles.where.site') %></span><span class="tiny muted" style="display:block"><%= t('articles.where.site_help') %></span></span></label>
+          <label class="check"><input type="checkbox" name="on_platform" value="1"<%= onPlatform ? ' checked' : '' %>> <span><span class="strong"><%= t('articles.where.platform') %></span><span class="tiny muted" style="display:block"><%= t('articles.where.platform_help') %></span></span></label>
+          <% if (A.on_platform && A.platform_status && A.platform_status !== 'none') { %><div class="small"><%= t('articles.platform_now') %> <span class="badge<%= A.platform_status === 'approved' ? ' badge-success' : A.platform_status === 'rejected' ? ' badge-danger' : ' badge-warning' %>"><%= t('articles.platform.' + A.platform_status) %></span></div><% } %>
+        </fieldset>
+        <div class="art-actions">
+          <button class="btn btn-primary" type="submit" name="action" value="publish"><%- icon('send', 'icon-sm') %><%= published ? t('articles.update_published') : t('articles.publish') %></button>
+          <button class="btn btn-secondary" type="submit" name="action" value="<%= published ? 'unpublish' : 'draft' %>"><%= published ? t('articles.unpublish') : t('articles.save_draft') %></button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('articles.details') %></h2></div>
+      <div class="panel-body stack">
+        <% if (rights.any) { %>
+          <%- include('../../partials/field', { name: 'doctor_id', label: t('articles.f.author'), type: 'select', value: String(v('doctor_id', rights.doctorId || '') || ''), options: [{ value: '', label: t('articles.by_clinic') }].concat(authors.map(function (d) { return { value: String(d.id), label: L(d.full_name, d.full_name_en) }; })) }) %>
+        <% } else { %>
+          <div class="field"><span class="label"><%= t('articles.f.author') %></span><div><%= authors[0] ? L(authors[0].full_name, authors[0].full_name_en) : '' %></div></div>
+        <% } %>
+        <%- include('../../partials/field', { name: 'category', label: t('articles.f.category'), type: 'select', value: v('category', '') || '', placeholder: t('common.select'), options: categories.map(function (c) { return { value: c, label: t('articles.cat.' + c) }; }) }) %>
+        <%- include('../../partials/field', { name: 'slug', label: t('articles.f.slug'), value: v('slug', ''), attrs: 'dir="ltr" maxlength="90"', help: t('articles.f.slug_help') }) %>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('articles.cover') %></h2></div>
+      <div class="panel-body stack">
+        <div class="art-cover" data-art-cover><% var cov = images.find(function (m) { return m.id === Number(v('cover_media_id', 0)); }); %><% if (cov) { %><img src="<%= cov.url %>" alt=""><% } else { %><span class="muted small"><%= t('articles.no_cover') %></span><% } %></div>
+        <div class="row wrap">
+          <label class="btn btn-secondary btn-sm"><%- icon('upload', 'icon-sm') %><%= t('articles.cover_upload') %><input type="file" accept="image/png,image/jpeg,image/webp" hidden data-art-upload="cover"></label>
+          <button type="button" class="btn btn-ghost btn-sm" data-art-cover-clear<%= cov ? '' : ' hidden' %>><%= t('articles.cover_remove') %></button>
+        </div>
+        <p class="tiny muted"><%= t('articles.images_help', { mb: Math.round(maxBytes / 1048576) }) %></p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('articles.images') %></h2></div>
+      <div class="panel-body">
+        <div class="art-imgs" data-art-images>
+          <% images.forEach(function (m) { %><button type="button" class="art-img" data-art-insert="<%= m.id %>" title="<%= t('articles.insert_image') %>"><img src="<%= m.url %>" alt=""></button><% }) %>
+        </div>
+        <p class="tiny muted mt-2"><%= t('articles.images_insert_help') %></p>
+      </div>
+    </div>
+  </aside>
+</form>
+<% if (!isNew) { %>
+<form method="post" action="/app/articles/<%= A.id %>/delete" class="art-delete" data-confirm="<%= t('articles.delete_confirm') %>" data-confirm-title="<%= t('common.confirm_delete_title') %>" data-confirm-yes="<%= t('common.delete') %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('articles.delete') %></button>
+</form>
+<% } %>
+<script type="application/json" data-art-i18n><%- JSON.stringify({ upload_failed: t('articles.err.UPLOAD'), link_url: t('articles.tb.link_url'), link_text: t('articles.tb.link_text'), preview_hide: t('articles.preview_hide'), preview: t('articles.preview'), cover_none: t('articles.no_cover') }).replace(/</g, '\\u003c') %></script>

@@ -22,4 +22,8 @@
   </ul></div>
   <% } %>
   <p class="mt-6"><a class="link" href="/<%= clinic.slug %>"><%- icon(dir === 'rtl' ? 'arrow-right' : 'arrow-left', 'icon-sm') %> <%= t('website.back_to_clinic', { clinic: clinic.displayName }) %></a></p>
+  <% if (typeof docArticles !== 'undefined' && docArticles.length) { %>
+  <div class="ws-head mt-6"><h2 class="ws-title"><%= t('articles.by_doctor') %></h2></div>
+  <div class="art-grid"><% docArticles.forEach(function (art) { %><%- include('../../partials/articles/card', { art: art, href: '/' + clinic.slug + '/articles/' + art.slug, by: d.name }) %><% }) %></div>
+  <% } %>
 </section>

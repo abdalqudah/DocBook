@@ -1,0 +1,42 @@
+<% var here = '/admin/articles?status=' + status; %>
+<div class="page-head"><div><h1><%= t('articles.admin.title') %></h1><p><%= t('articles.admin.lead') %></p></div></div>
+<nav class="pill-filter mb-4" aria-label="<%= t('common.status') %>">
+  <% ['pending', 'approved', 'rejected', 'all'].forEach(function (s) { %><a href="/admin/articles?status=<%= s %>" class="<%= status === s ? 'active' : '' %>"><%= t('articles.admin.tab_' + s) %></a><% }) %>
+</nav>
+<% if (!items.length) { %>
+  <section class="panel"><%- include('../../partials/empty', { emptyIcon: 'notebook-pen', emptyTitle: t('articles.admin.empty') }) %></section>
+<% } else { %>
+<div class="stack">
+  <% items.forEach(function (it) { var r = it.row; var art = it.art; %>
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2><%= art.title %></h2>
+        <div class="panel-sub"><a class="link" href="/<%= r.clinic_slug %>" target="_blank" rel="noopener"><%= r.clinic_name %></a><%= art.doctor ? ' · ' + art.doctor.name : '' %> · <%= fmt.date(r.updated_at) %> · <%= art.lang === 'ar' ? 'العربية' : 'English' %><%= (r.body && r.body_en) ? ' + ' + (art.lang === 'ar' ? 'English' : 'العربية') : '' %></div>
+      </div>
+      <span class="badge<%= r.platform_status === 'approved' ? ' badge-success' : r.platform_status === 'rejected' ? ' badge-danger' : ' badge-warning' %>"><%= t('articles.platform.' + r.platform_status) %></span>
+    </div>
+    <div class="panel-body stack">
+      <details>
+        <summary class="link"><%= t('articles.admin.read') %> (<%= t('articles.minutes', { n: art.minutes }) %>)</summary>
+        <div class="mt-4">
+          <% if (art.cover) { %><figure class="art-hero"><img src="<%= art.cover.url %>" alt=""></figure><% } %>
+          <div class="art-prose" dir="<%= art.dir %>"><%- art.html %></div>
+        </div>
+      </details>
+      <% if (r.platform_status === 'rejected' && r.platform_note) { %><div class="alert alert-warning small"><%= t('articles.admin.reason') %>: <%= r.platform_note %></div><% } %>
+      <div class="row wrap">
+        <% if (r.platform_status !== 'approved') { %>
+        <form method="post" action="/admin/articles/<%= r.id %>/approve"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= here %>"><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('articles.admin.approve') %></button></form>
+        <% } %>
+        <% if (r.platform_status !== 'rejected') { %>
+        <form method="post" action="/admin/articles/<%= r.id %>/reject" class="row wrap grow"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="<%= here %>">
+          <input class="input input-sm grow" name="note" maxlength="300" required placeholder="<%= t('articles.admin.reason_ph') %>" aria-label="<%= t('articles.admin.reason') %>">
+          <button class="btn btn-secondary btn-sm" type="submit"><%= r.platform_status === 'approved' ? t('articles.admin.remove') : t('articles.admin.reject') %></button></form>
+        <% } %>
+      </div>
+    </div>
+  </section>
+  <% }) %>
+</div>
+<% } %>

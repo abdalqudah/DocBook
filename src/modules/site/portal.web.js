@@ -36,10 +36,12 @@ async function loadClinic(req) {
     const pub = await require('../website/site.service').publicState(b.id); // eslint-disable-line global-require
     req.res.locals.siteLight = Boolean(pub.doc && pub.doc.header && pub.doc.header.dark_mode === false);
   }
+  const hasArticles = Boolean(await knex('articles').where({ business_id: b.id, status: 'published', on_site: true }).first('id').catch(() => null));
   const specialtyLabel = b.specialty ? ((k) => { const v = req.t(k); return v === k ? b.specialty : v; })(`specialties.${b.specialty}`) : '';
   return {
     ...b,
     specialtyKey: b.specialty || null,
+    hasArticles,
     specialty: specialtyLabel,
     displayName: (en && b.name_en) || b.name,
     otherName: en ? (b.name_en ? b.name : null) : b.name_en,
@@ -213,7 +215,8 @@ router.get('/:slug/sitemap.xml', wrap(async (req, res, next) => {
   const c = await crawlContext(req, res);
   if (!c || !c.custom) return next();
   const doctors = await listDoctors(req, c.clinic);
-  return res.set('Cache-Control', 'public, max-age=3600').type('application/xml; charset=utf-8').send(seo.clinicSitemap({ siteBase: c.siteBase, doc: c.doc, doctors, at: c.clinic.updated_at }));
+  const arts = await require('../articles/articles.service').sitemapSite(c.clinic.id); // eslint-disable-line global-require
+  return res.set('Cache-Control', 'public, max-age=3600').type('application/xml; charset=utf-8').send(seo.clinicSitemap({ siteBase: c.siteBase, doc: c.doc, doctors, at: c.clinic.updated_at, articles: arts }));
 }));
 
 // Another page of the published website: /<slug>/p/<page>.
@@ -239,13 +242,42 @@ router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
   d.bioFull = (req.locale === 'en' ? full.bio_en || full.bio : full.bio || full.bio_en) || '';
   clinic.reviews = await require('../reviews/reviews.service').publicSummary(clinic.id); // eslint-disable-line global-require
   res.locals.currency = clinic.currency;
+  const docArticles = await Promise.all((await articles.siteList(clinic)).filter((a) => a.doctor_id === d.id).slice(0, 6).map((a) => articles.present(clinic, a, req.locale)));
   const title = `${d.name} · ${clinic.displayName}`;
   const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors: [d], title, description: [d.specialty, d.bioFull].filter(Boolean).join(' · ').slice(0, 160) });
   const look = await siteChromeFor(req, res, clinic);
   return res.page('pages/portal/doctor', {
-    layout: 'public', title, pageTitle: title, seoHead, clinic, d, services: services.filter((x) => !x.doctorId || x.doctorId === d.id),
-    bodyClass: look.bodyClass, pageStyles: look.styles,
+    layout: 'public', title, pageTitle: title, seoHead, clinic, d, services: services.filter((x) => !x.doctorId || x.doctorId === d.id), docArticles,
+    bodyClass: look.bodyClass, pageStyles: [...look.styles, '/css/articles.css'],
   });
+}));
+
+// The doctors' articles on the clinic's website: /<slug>/articles and /<slug>/articles/<article>.
+const articles = require('../articles/articles.service');
+router.get('/:slug/articles', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const rows = await articles.siteList(clinic);
+  const items = await Promise.all(rows.map((a) => articles.present(clinic, a, req.locale)));
+  const title = `${req.t('articles.menu')} · ${clinic.displayName}`;
+  const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors: [], title, description: req.t('articles.site_lead', { clinic: clinic.displayName }), ws: { path: `/${clinic.slug}/articles` } });
+  const look = await siteChromeFor(req, res, clinic);
+  if (res.locals.wsSite) res.locals.wsSite.items.forEach((it) => { it.current = it.href === `/${clinic.slug}/articles`; });
+  return res.page('pages/portal/articles', { layout: 'public', title, pageTitle: title, seoHead, clinic, items, bodyClass: look.bodyClass, pageStyles: [...look.styles, '/css/articles.css'] });
+}));
+router.get('/:slug/articles/:article([a-z0-9-]{1,90})', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const a = await articles.siteArticle(clinic, req.params.article);
+  if (!a) return next();
+  articles.countView(a.id);
+  const art = await articles.present(clinic, a, req.locale);
+  const title = `${art.title} · ${clinic.displayName}`;
+  const ld = { '@context': 'https://schema.org', '@type': 'BlogPosting', headline: art.title, datePublished: new Date(a.published_at).toISOString(), dateModified: new Date(a.updated_at).toISOString(), inLanguage: art.lang, author: art.doctor ? { '@type': 'Physician', name: art.doctor.name } : { '@type': 'MedicalClinic', name: clinic.displayName }, publisher: { '@type': 'MedicalClinic', name: clinic.displayName } };
+  const seoHead = await seo.head(req, res, { kind: 'clinic', clinic, doctors: [], title, description: art.excerpt, shareImage: art.cover ? art.cover.url : null, ws: { path: `/${clinic.slug}/articles/${a.slug}` }, ld: [ld] });
+  const look = await siteChromeFor(req, res, clinic);
+  if (res.locals.wsSite) res.locals.wsSite.items.forEach((it) => { it.current = it.href === `/${clinic.slug}/articles`; });
+  return res.page('pages/portal/article', { layout: 'public', title, pageTitle: title, seoHead, clinic, art, bodyClass: look.bodyClass, pageStyles: [...look.styles, '/css/articles.css'] });
 }));
 
 // Public logo (the /app/logo route is for members only).

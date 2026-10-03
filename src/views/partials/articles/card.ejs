@@ -1,0 +1,10 @@
+<%# One article as a card. Locals: art (articles.present), href, by (author line). %>
+<a class="art-card" href="<%= href %>" lang="<%= art.lang %>">
+  <div class="art-card-img"><% if (art.cover) { %><img src="<%= art.cover.url %>" alt="" loading="lazy"><% } %></div>
+  <div class="art-card-body" dir="<%= art.dir %>">
+    <% if (art.category) { %><span class="art-cat"><%= t('articles.cat.' + art.category) %></span><% } %>
+    <h2><%= art.title %></h2>
+    <p><%= art.excerpt %></p>
+    <div class="art-card-foot"><%= by %><%= art.published ? ' · ' + fmt.date(art.published) : '' %> · <%= t('articles.minutes', { n: art.minutes }) %></div>
+  </div>
+</a>

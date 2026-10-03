@@ -1,0 +1,71 @@
+/* Articles: the editor (/app/articles) and the public pages (clinic website, main site /blog). Colours from tokens. */
+.art-list { display: grid; gap: var(--space-3); }
+.art-item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4); color: inherit; text-decoration: none; }
+.art-item:hover { border-color: var(--border-strong); }
+.art-item-title { font-weight: var(--fw-bold); font-size: 15px; margin-bottom: 2px; }
+.art-item-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 640px) { .art-item { flex-direction: column; align-items: stretch; } .art-item-tags { justify-content: flex-start; } }
+
+.art-edit { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-4); align-items: start; }
+@media (max-width: 1000px) { .art-edit { grid-template-columns: 1fr; } }
+.art-langs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.art-lang { font: inherit; font-weight: var(--fw-semibold); padding: 6px 14px; border-radius: var(--pill, 999px); border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; }
+.art-lang.is-on { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.art-langs-hint { margin-inline-start: auto; }
+.art-toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: 4px; margin-bottom: 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-muted); }
+.art-toolbar .btn { min-width: 34px; }
+.art-toolbar label.is-busy { opacity: .6; pointer-events: none; }
+.art-body { min-height: 360px; font-size: 15px; line-height: 1.8; }
+.art-preview { border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-4); min-height: 200px; background: var(--surface); }
+.art-actions { display: grid; gap: var(--space-2); }
+.art-cover { aspect-ratio: 16 / 9; border-radius: var(--radius-sm); border: 1px dashed var(--border-strong); display: grid; place-items: center; overflow: hidden; background: var(--surface-muted); }
+.art-cover img { width: 100%; height: 100%; object-fit: cover; }
+.art-imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
+.art-img { padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 1; background: var(--surface-muted); cursor: pointer; }
+.art-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.art-img:hover { border-color: var(--primary); }
+.art-delete { margin-top: var(--space-4); }
+
+/* Reading */
+.art-prose { font-size: 17px; line-height: 1.9; color: var(--text); overflow-wrap: anywhere; }
+.art-prose h2 { font-size: 1.45em; margin: 1.6em 0 .5em; line-height: 1.35; }
+.art-prose h3 { font-size: 1.2em; margin: 1.3em 0 .4em; }
+.art-prose p { margin: 0 0 1em; }
+.art-prose ul, .art-prose ol { margin: 0 0 1em; padding-inline-start: 1.4em; }
+.art-prose li { margin: .25em 0; }
+.art-prose blockquote { margin: 1.2em 0; padding: .6em 1em; border-inline-start: 4px solid var(--primary); background: var(--surface-muted); border-radius: var(--radius-sm); color: var(--text-muted); }
+.art-prose a { color: var(--primary); text-decoration: underline; }
+.art-fig { margin: 1.4em 0; }
+.art-fig img { display: block; width: 100%; height: auto; border-radius: var(--radius-md, 12px); }
+.art-fig figcaption { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 6px; }
+
+.art-page { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+.art-page-head { margin-bottom: 20px; }
+.art-page-head h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.3; margin: 8px 0 12px; }
+.art-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; color: var(--text-muted); font-size: 14px; }
+.art-meta a { color: inherit; }
+.art-cat { display: inline-block; font-size: 12px; font-weight: var(--fw-bold); color: var(--primary); text-transform: uppercase; letter-spacing: .04em; }
+.art-hero { margin: 0 0 28px; border-radius: var(--radius-lg, 16px); overflow: hidden; aspect-ratio: 16 / 9; background: var(--surface-muted); }
+.art-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.art-author { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 36px; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius-lg, 16px); background: var(--surface); }
+.art-author strong { display: block; font-size: 16px; }
+.art-lang-note { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
+.art-grid-page { max-width: 1160px; margin: 0 auto; padding: 32px 16px 64px; }
+.art-grid-head { text-align: center; margin-bottom: 28px; }
+.art-grid-head h1 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 8px; }
+.art-grid-head p { color: var(--text-muted); margin: 0 auto; max-width: 620px; }
+.art-cats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 0 0 24px; }
+.art-cats a { padding: 6px 14px; border-radius: var(--pill, 999px); border: 1px solid var(--border); color: var(--text-muted); text-decoration: none; font-size: 14px; background: var(--surface); }
+.art-cats a.is-on { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.art-card { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-lg, 16px); overflow: hidden; background: var(--surface); color: inherit; text-decoration: none; transition: transform .15s, box-shadow .15s; }
+.art-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, .08)); }
+.art-card-img { aspect-ratio: 16 / 9; background: var(--surface-muted); overflow: hidden; }
+.art-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.art-card-body { padding: 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.art-card-body h2 { font-size: 18px; line-height: 1.4; margin: 0; }
+.art-card-body p { color: var(--text-muted); font-size: 14px; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.art-card-foot { margin-top: auto; padding-top: 8px; font-size: 13px; color: var(--text-muted); }
+.art-empty { text-align: center; color: var(--text-muted); padding: 48px 0; }
+.art-pager { display: flex; justify-content: center; gap: 8px; margin-top: 28px; }

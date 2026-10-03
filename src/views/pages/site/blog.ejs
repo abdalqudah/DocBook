@@ -1,0 +1,20 @@
+<%# The main site's articles: written by the clinics' doctors, approved by the platform. %>
+<section class="art-grid-page" id="main">
+  <div class="art-grid-head"><h1><%= t('articles.blog_title') %></h1><p><%= t('articles.blog_lead') %></p></div>
+  <nav class="art-cats" aria-label="<%= t('articles.f.category') %>">
+    <a href="/blog" class="<%= !cat ? 'is-on' : '' %>"><%= t('articles.tab.all') %></a>
+    <% categories.forEach(function (c) { %><a href="/blog?cat=<%= c %>" class="<%= cat === c ? 'is-on' : '' %>"><%= t('articles.cat.' + c) %></a><% }) %>
+  </nav>
+  <% if (!items.length) { %><p class="art-empty"><%= t('articles.none_public') %></p><% } else { %>
+  <div class="art-grid">
+    <% items.forEach(function (art) { %><%- include('../../partials/articles/card', { art: art, href: art.href, by: (art.doctor ? art.doctor.name + ' · ' : '') + art.clinicName }) %><% }) %>
+  </div>
+  <% if (pages > 1) { %>
+  <nav class="art-pager" aria-label="<%= t('articles.pager') %>">
+    <% if (page > 1) { %><a class="btn btn-secondary btn-sm" href="/blog?<%= cat ? 'cat=' + cat + '&' : '' %>page=<%= page - 1 %>"><%= t('common.previous') %></a><% } %>
+    <span class="small muted"><%= page %> / <%= pages %></span>
+    <% if (page < pages) { %><a class="btn btn-secondary btn-sm" href="/blog?<%= cat ? 'cat=' + cat + '&' : '' %>page=<%= page + 1 %>"><%= t('common.next') %></a><% } %>
+  </nav>
+  <% } %>
+  <% } %>
+</section>

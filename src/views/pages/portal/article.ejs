@@ -1,0 +1,8 @@
+<%# One article on the clinic website. %>
+<div id="main">
+<%- include('../../partials/articles/page', {
+  art: art, homeHref: '/' + clinic.slug + '/articles', homeLabel: clinic.displayName,
+  doctorHref: art.doctor ? '/' + clinic.slug + '/doctors/' + art.doctor.id : null, clinicLine: null,
+  bookHref: clinic.booking_enabled ? '/' + clinic.slug + '/book' + (art.doctor ? '?doctor=' + art.doctor.id : '') : null,
+}) %>
+</div>

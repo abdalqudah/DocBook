@@ -140,6 +140,7 @@ const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|favicon)\/?$/, /^
   /^\/app\/chat\/\d+\/upload\/?$/, // images and documents in the staff chat
   /^\/app\/mail\/send\/?$/, // a member's own e-mail with attachments
   /^\/app\/website\/fonts\/?$/, // website fonts (Theme & brand)
+  /^\/app\/articles\/images\/?$/, // images of a doctor's article
   /^\/admin\/updates\/install\/?$/, // platform admin: system update package (zip)
   /^\/admin\/clinics\/restore\/?$/]; // platform admin: a clinic's backup file
 

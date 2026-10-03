@@ -45,6 +45,7 @@
       <% if (header && header.items && header.items.length) { %>
       <nav class="site-links" aria-label="<%= t('site.nav_label') %>">
         <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href) return; %><a href="<%= n.href %>"><%= Lx(n.label) %></a><% }) %>
+        <% if (typeof blogOn !== 'undefined' && blogOn) { %><a href="/blog"><%= t('articles.blog_nav') %></a><% } %>
       </nav>
       <% } %>
     <% } %>
@@ -53,6 +54,7 @@
       <% if (!_light) { %><button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button><% } %>
       <% if (!portalClinic && path !== '/clinics' && path.indexOf('/clinics/') !== 0) { %><a class="btn btn-ghost btn-sm" href="/clinics" aria-label="<%= t('directory.find_clinic') %>"><%- icon('search', 'icon-sm') %><span class="hide-sm"><%= t('directory.find_clinic') %></span></a><% } %>
       <% if (portalClinic) { %>
+        <% if (portalClinic.hasArticles) { %><a class="btn btn-ghost btn-sm" href="/<%= portalClinic.slug %>/articles"><%- icon('book-open', 'icon-sm') %><span class="hide-sm"><%= t('articles.menu') %></span></a><% } %>
         <% if (portalClinic.booking_enabled && !(typeof hideBookCta !== 'undefined' && hideBookCta)) { %><a class="btn btn-primary btn-sm" href="/<%= portalClinic.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><span><%= t('portal.book') %></span></a><% } %>
       <% } else if (currentUser) { %>
         <a class="btn btn-primary btn-sm" href="/app"><%= t('site.open_app') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
@@ -65,6 +67,7 @@
         <summary class="btn btn-ghost btn-icon" aria-label="<%= t('site.menu') %>"><%- icon('menu') %></summary>
         <div class="site-menu-panel">
           <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href) return; %><a href="<%= n.href %>" data-menu-close><%= Lx(n.label) %></a><% }) %>
+          <% if (typeof blogOn !== 'undefined' && blogOn) { %><a href="/blog" data-menu-close><%= t('articles.blog_nav') %></a><% } %>
           <% if (!currentUser) { %><a href="/login"><%= header ? Lx(header.login_label) || t('site.sign_in') : t('site.sign_in') %></a><% } %>
         </div>
       </details>
