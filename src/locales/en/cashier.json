@@ -118,6 +118,8 @@
     "payment": "Payment"
   },
   "errors_cashier": {
+    "ONE_VISIT": "One patient per payment: each invoice is closed on its own.",
+    "VISIT_STATE_CHANGED": "The visit changed on another screen — refresh the page.",
     "CASH_SHORT": "The amount received is less than the total to pay.",
     "DRAWER_CHANGED": "New cash receipts were recorded while you were counting. The figures below are up to date: check the count and close again.",
     "VISIT_NOT_DONE": "{name} is still waiting or with the doctor — they pay once the doctor is done, so no second invoice is issued."

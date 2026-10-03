@@ -87,6 +87,10 @@
     "side_label": "Waiting and with the doctor",
     "side_none_arrived": "Nobody is waiting.",
     "side_none_doctor": "Nobody is with the doctor now.",
-    "side_add": "Tap to add for early payment"
+    "side_add": "Tap to add for early payment",
+    "call_in": "Send in to the doctor",
+    "finish_visit": "Finish visit",
+    "finish_amount": "Amount",
+    "one_patient": "One patient per payment — {name} was taken off this payment."
   }
 }

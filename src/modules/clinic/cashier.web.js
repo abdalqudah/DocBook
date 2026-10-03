@@ -201,6 +201,38 @@ router.get('/screen/data', can('billing.manage'), wrap(async (req, res) => {
   res.set('Cache-Control', 'no-store').json(data);
 }));
 
+// The patient flow from the cash screen's side column: send a waiting patient in to the doctor, and finish a visit
+// (the amount to collect) so it comes down to the payments waiting. Both go through the same services as the front
+// desk and the doctor's page (audited, timer started / stopped).
+const screenAct = (fn) => wrap(async (req, res) => {
+  try {
+    await fn(req);
+    return res.json({ ok: true });
+  } catch (err) {
+    if (!(err instanceof AppError) || !EXPECTED_ERRORS.includes(err.status)) throw err;
+    const fields = fieldErrors(req, err); const first = Object.keys(fields)[0];
+    return res.status(err.status).json({ ok: false, code: err.code, error: err.code === 'VALIDATION_FAILED' && first ? fields[first] : errorText(req, err) });
+  }
+});
+router.post('/screen/visit/:id(\\d+)/call-in', can('billing.manage'), screenAct(async (req) => {
+  const a = await svc.visit(req.ctx, Number(req.params.id));
+  if (svc.flowState(a) !== 'arrived') throw new AppError('VISIT_STATE_CHANGED', 'The visit has moved on.', 409);
+  await require('./appointments.service').callIn(req.ctx, a.id, true); // eslint-disable-line global-require
+}));
+router.post('/screen/visit/:id(\\d+)/finish', can('billing.manage'), screenAct(async (req) => {
+  const a = await svc.visit(req.ctx, Number(req.params.id));
+  if (svc.flowState(a) !== 'with_doctor') throw new AppError('VISIT_STATE_CHANGED', 'The visit has moved on.', 409);
+  const dflow = require('./dflow.service'); // eslint-disable-line global-require
+  const def = dflow.defaultLines(a);
+  const raw = String((req.body && req.body.amount) ?? '').replace(/,/g, '').trim();
+  if (raw === '' || !Number.isFinite(Number(raw)) || Number(raw) < 0) throw E.validation({ amount: 'Enter a number.' });
+  const amount = round(Number(raw), req.ctx.currency);
+  const defTotal = round(def.reduce((t, l) => t + (Number(l.qty) || 1) * (Number(l.unit_price) || 0), 0), req.ctx.currency);
+  // The amount as entered: the visit's own lines when it matches them, else one line for the visit at that amount.
+  const lines = defTotal === amount ? def : [{ name: def.length === 1 ? def[0].name : (a.service_name || null), service_id: def.length === 1 ? def[0].service_id : null, qty: 1, unit_price: amount }];
+  await dflow.finish(req.ctx, a.id, { lines: lines.map((l) => ({ name: l.name || req.t('billing.consultation'), name_en: l.name_en || '', service_id: l.service_id || '', qty: l.qty || 1, unit_price: l.unit_price })) });
+}));
+
 router.post('/screen/checkout', can('billing.manage'), wrap(async (req, res) => {
   const { ctx } = req;
   const b = req.body || {};

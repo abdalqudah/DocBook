@@ -146,6 +146,8 @@
   var side = $('[data-pos-side]', root);
   function renderSide(list) {
     if (!side) return;
+    var typing = document.activeElement && side.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
+    if (typing) return; // a refresh never wipes an amount being typed
     SIDE.forEach(function (k) {
       var items = list.filter(function (v) { return v.state === k; });
       var box = $('[data-pos-side-list="' + k + '"]', side); var n = $('[data-pos-side-n="' + k + '"]', side);
@@ -153,10 +155,13 @@
       if (!box) return;
       box.innerHTML = items.length ? items.map(function (v) {
         var dot = v.doctorColor && COLOR.test(v.doctorColor) ? ' style="background:' + esc(v.doctorColor) + '"' : '';
+        var act = k === 'arrived'
+          ? '<button type="button" class="pos-side-btn" data-pos-callin="' + v.id + '">' + esc(T.call_in) + '</button>'
+          : '<form class="pos-side-finish" data-pos-finish="' + v.id + '"><input class="pos-side-amt" name="amount" inputmode="decimal" autocomplete="off" value="' + (v.due > 0 ? esc(String(round(v.due))) : '') + '" placeholder="' + esc(T.amount_ph) + '" aria-label="' + esc(T.amount_ph) + '"><button type="submit" class="pos-side-btn is-primary">' + esc(T.finish) + '</button></form>';
         return '<div class="pos-side-row">'
-          + '<span class="pos-side-time num" dir="ltr">' + esc(v.time) + '</span>'
-          + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span></span>'
-          + '</div>';
+          + '<div class="pos-side-top"><span class="pos-side-time num" dir="ltr">' + esc(v.time) + '</span>'
+          + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span></span></div>'
+          + act + '</div>';
       }).join('') : '<p class="pos-side-empty">' + esc((T.side_none || {})[k] || '') + '</p>';
     });
   }
@@ -181,10 +186,37 @@
   };
   grid.addEventListener('click', onPick);
 
+  // Side actions: send a waiting patient in to the doctor; finish a visit with the amount (it then waits for payment).
+  function sideCall(url, body, btn) {
+    if (btn) btn.disabled = true;
+    return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'x-csrf-token': D.csrf }, body: JSON.stringify(body || {}) })
+      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (d) { if (!d.ok) showAlert(d.error || T.failed); else hideAlert(); })
+      .catch(function () { showAlert(T.failed); })
+      .then(function () { if (btn) btn.disabled = false; if (document.activeElement && side && side.contains(document.activeElement)) document.activeElement.blur(); refresh(); });
+  }
+  if (side) {
+    side.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-pos-callin]');
+      if (b) sideCall('/app/cashier/screen/visit/' + b.getAttribute('data-pos-callin') + '/call-in', {}, b);
+    });
+    side.addEventListener('submit', function (e) {
+      var f = e.target.closest && e.target.closest('[data-pos-finish]');
+      if (!f) return;
+      e.preventDefault();
+      var amt = f.querySelector('[name="amount"]');
+      if (!amt.value.trim()) { amt.focus(); return; }
+      sideCall('/app/cashier/screen/visit/' + f.getAttribute('data-pos-finish') + '/finish', { amount: amt.value.trim() }, f.querySelector('button'));
+    });
+  }
+
   /* ---------------------------------------------------------------- the payment (bill) */
   function add(id, focus) {
     var v = byId[id];
     if (!v || inBill(id) || SIDE.indexOf(v.state) >= 0) return; // still waiting / with the doctor: not payable yet
+    // One patient per payment: choosing another patient replaces the one being prepared (each invoice closes alone).
+    if (bill.length) showNotice(tr(T.one_patient, { name: bill[0].v.patient }));
+    bill = [];
     bill.push({ id: id, v: v, amount: v.due > 0 ? String(round(v.due)) : '', discount: '', insurer: '', coverage: '', reason: '', edited: false });
     hideAlert();
     renderBill();
@@ -690,12 +722,12 @@
       var st = JSON.parse(saved);
       (st.lines || []).forEach(function (x) {
         var v = byId[x.id];
-        if (v && !inBill(x.id)) bill.push({ id: x.id, v: v, amount: x.edited ? x.amount : (v.due > 0 ? String(round(v.due)) : ''), discount: x.discount || '', insurer: x.insurer && insurerById[x.insurer] ? x.insurer : '', coverage: x.coverage || '', reason: x.reason || '', edited: !!x.edited });
+        if (v && !inBill(x.id) && !bill.length) bill.push({ id: x.id, v: v, amount: x.edited ? x.amount : (v.due > 0 ? String(round(v.due)) : ''), discount: x.discount || '', insurer: x.insurer && insurerById[x.insurer] ? x.insurer : '', coverage: x.coverage || '', reason: x.reason || '', edited: !!x.edited });
       });
       if (st.method) { var r = root.querySelector('input[name="pos_method"][value="' + st.method + '"]'); if (r) { r.checked = true; method = st.method; } }
     } catch (e) { /* ignore */ }
   }
-  (D.add || []).forEach(function (id) { if (byId[id] && !inBill(id) && SIDE.indexOf(byId[id].state) < 0) bill.push({ id: id, v: byId[id], amount: byId[id].due > 0 ? String(round(byId[id].due)) : '', discount: '', insurer: '', coverage: '', reason: '', edited: false }); });
+  (D.add || []).forEach(function (id) { if (byId[id] && !inBill(id) && !bill.length && SIDE.indexOf(byId[id].state) < 0) bill.push({ id: id, v: byId[id], amount: byId[id].due > 0 ? String(round(byId[id].due)) : '', discount: '', insurer: '', coverage: '', reason: '', edited: false }); });
   if ((D.add || []).length && window.history && history.replaceState) history.replaceState(null, '', location.pathname);
   renderToday(D.totals);
   renderBill();

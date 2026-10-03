@@ -574,6 +574,8 @@ async function payMany(ctx, input, { consultationLabel = 'Consultation', source 
   const d = validate(saleSchema, input);
   const ids = d.lines.map((l) => l.appointment_id);
   if (new Set(ids).size !== ids.length) throw E.validation({ lines: 'Choose a valid value.' });
+  // The cash screen takes one patient at a time: each visit is paid and closed on its own.
+  if (source === 'screen' && ids.length > 1) throw cashierError('ONE_VISIT', 'One patient at a time.', 422);
   const plan = planSale(d, ctx.currency);
   const tag = (err, id) => { if (err && typeof err === 'object') err.line = id; return err; };
 
