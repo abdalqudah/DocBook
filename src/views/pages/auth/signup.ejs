@@ -18,8 +18,21 @@
   </fieldset>
   <fieldset class="fieldset stack">
     <div class="row-sm"><span class="badge badge-brand">2</span><span class="fieldset-title" style="margin:0"><%= t('auth.section_business') %></span></div>
+    <% var _inv = typeof centerInvite !== 'undefined' && centerInvite ? centerInvite : null; var _type = old.account_type === 'center' ? 'center' : 'clinic'; %>
+    <% if (_inv) { %>
+      <input type="hidden" name="center_token" value="<%= _inv.token %>">
+      <div class="alert alert-info"><%- icon('building-2', 'icon-sm') %><div class="grow"><div class="strong"><%= t('center.signup_invited', { center: _inv.name }) %></div><div class="small"><%= t('center.signup_invited_help') %></div></div></div>
+    <% } else { %>
+    <div class="acct-types" role="radiogroup" aria-label="<%= t('center.account_type') %>">
+      <label class="acct-type"><input type="radio" name="account_type" value="clinic"<%= _type === 'clinic' ? ' checked' : '' %> data-acct-type><span><span class="strong"><%- icon('stethoscope', 'icon-sm') %> <%= t('center.type_clinic') %></span><span class="tiny muted"><%= t('center.type_clinic_help') %></span></span></label>
+      <label class="acct-type"><input type="radio" name="account_type" value="center"<%= _type === 'center' ? ' checked' : '' %> data-acct-type><span><span class="strong"><%- icon('building-2', 'icon-sm') %> <%= t('center.type_center') %></span><span class="tiny muted"><%= t('center.type_center_help') %></span></span></label>
+    </div>
+    <div data-center-only<%= _type === 'center' ? '' : ' hidden' %>>
+      <%- include('../../partials/field', { name: 'center_name', label: t('center.center_name'), placeholder: t('center.center_name_ph'), help: t('center.center_name_help') }) %>
+    </div>
+    <% } %>
     <div class="form-grid">
-      <%- include('../../partials/field', { name: 'clinic_name', label: t('auth.business_name'), required: true, cls: 'full', autocomplete: 'organization', placeholder: t('auth.business_name_ph') }) %>
+      <%- include('../../partials/field', { name: 'clinic_name', label: t('auth.business_name'), required: true, cls: 'full', autocomplete: 'organization', placeholder: t('auth.business_name_ph'), help: (typeof centerInvite !== 'undefined' && centerInvite) || old.account_type === 'center' ? t('center.practice_name_help') : undefined }) %>
       <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: specialtyOptions }) %>
       <%- include('../../partials/field', { name: 'city', label: t('auth.city'), autocomplete: 'address-level2' }) %>
       <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: 'JOD', options: currencyOptions }) %>

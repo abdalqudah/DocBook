@@ -135,6 +135,7 @@
       + '<span class="pos-card-top"><span class="pos-card-when" title="' + esc(v.online ? T.online : T.in_person) + '">' + when + '</span>' + (added ? '<span class="pos-tag">' + esc(T.added) + '</span>' : '') + '</span>'
       + '<span class="pos-card-name"><bdi>' + esc(v.patient) + '</bdi></span>'
       + '<span class="pos-card-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span>'
+      + (v.practice ? '<span class="pos-card-practice">' + esc(v.practice) + '</span>' : '')
       + '<span class="pos-card-state"><i class="pos-sdot is-' + esc(v.state) + '" aria-hidden="true"></i>' + esc((T.state || {})[v.state] || '') + '</span>'
       + '<span class="pos-card-amount">' + amount + (v.due > 0 ? '<span class="pos-card-src">' + esc(v.fromDoctor ? T.set_by_doctor : T.expected_fee) + '</span>' : '') + '</span>'
       + '</button>';
@@ -655,7 +656,7 @@
     if (loading) { again = true; return; }
     loading = true; lastLoad = Date.now();
     var keep = bill.map(function (l) { return l.id; }).filter(function (id) { return byId[id] && byId[id].date !== D.today; });
-    fetch('/app/cashier/screen/data' + (keep.length ? '?keep=' + keep.join(',') : ''), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+    fetch('/app/cashier/screen/data?' + (D.scope ? 'scope=' + D.scope + '&' : '') + (keep.length ? 'keep=' + keep.join(',') : ''), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { if (r.status === 401 || r.status === 403) { location.reload(); throw new Error('auth'); } if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then(function (d) { apply(d); })
       .catch(function () { /* next tick */ })

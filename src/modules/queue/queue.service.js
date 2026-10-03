@@ -48,7 +48,7 @@ const newToken = () => {
 async function create(ctx, input) {
   const name = cleanName(input.name);
   if (!name) throw E.validation({ name: 'Required.' });
-  const row = { business_id: ctx.businessId, name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, show_name: input.show_name === undefined ? true : isOn(input.show_name), message: cleanMessage(input.message), branch_id: await cleanBranch(ctx.businessId, input.branch_id), created_by: ctx.userId || null, ...newToken() };
+  const row = { business_id: ctx.businessId, name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, show_name: input.show_name === undefined ? true : isOn(input.show_name), message: cleanMessage(input.message), branch_id: await cleanBranch(ctx.businessId, input.branch_id), scope: ctx.centerId && input.scope === 'center' ? 'center' : 'clinic', created_by: ctx.userId || null, ...newToken() };
   const [id] = await knex('queue_screens').insert(row);
   await audit.record(ctx, 'queue.screen_created', { entityType: 'queue_screen', entityId: id, newValues: { name, name_style: row.name_style, branch_id: row.branch_id, voice: row.voice } });
   return id;
@@ -58,7 +58,7 @@ async function update(ctx, id, input) {
   const before = await get(ctx, id);
   const name = cleanName(input.name);
   if (!name) throw E.validation({ name: 'Required.' });
-  const patch = { name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, show_name: isOn(input.show_name), message: cleanMessage(input.message), is_active: input.is_active === '1' || input.is_active === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), updated_at: new Date() };
+  const patch = { name, name_style: cleanStyle(input.name_style), voice: input.voice === '1' || input.voice === true, show_name: isOn(input.show_name), message: cleanMessage(input.message), is_active: input.is_active === '1' || input.is_active === true, branch_id: await cleanBranch(ctx.businessId, input.branch_id), scope: ctx.centerId && input.scope === 'center' ? 'center' : 'clinic', updated_at: new Date() };
   await knex('queue_screens').where({ id: before.id }).update(patch);
   await audit.record(ctx, 'queue.screen_updated', { entityType: 'queue_screen', entityId: before.id,
     oldValues: { name: before.name, name_style: before.name_style, voice: Boolean(before.voice), is_active: Boolean(before.is_active), branch_id: before.branch_id }, newValues: { ...patch, updated_at: undefined } });
@@ -113,11 +113,17 @@ async function board(screen, clinic) {
   const today = clinicNow(clinic.timezone).date;
   const rows = await knex('appointments as a')
     .leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); })
-    .where({ 'a.business_id': clinic.id, 'a.appointment_date': today, 'a.checked_in': true })
+    .where({ 'a.appointment_date': today, 'a.checked_in': true })
+    // A medical centre's shared screen: every practice of the centre; otherwise this clinic only.
+    .modify((q) => {
+      if (screen.scope === 'center' && clinic.center_id) q.whereIn('a.business_id', knex('businesses').where({ center_id: clinic.center_id, status: 'active' }).select('id'));
+      else q.where('a.business_id', clinic.id);
+    })
     .whereIn('a.status', ['pending', 'confirmed'])
     .whereNot('a.appointment_type', 'blocked')
     .whereNull('a.doctor_finished_at')
     .modify((q) => {
+      if (screen.scope === 'center' && clinic.center_id) return;
       if (screen.branch_id === 0) q.whereNull('a.branch_id');
       else if (screen.branch_id) q.where('a.branch_id', screen.branch_id);
     })

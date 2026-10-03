@@ -28,6 +28,7 @@ const NAV = [
   ] },
   { group: 'front_desk', icon: 'armchair', items: [
     { key: 'front_desk', href: '/app/front-desk', icon: 'armchair', perms: ['frontdesk.use'], badge: 'waiting' },
+    { key: 'center_desk', href: '/app/center/desk', icon: 'building-2', perms: ['frontdesk.use'], needsCenter: true }, // the medical centre's shared reception
   ] },
   { group: 'patients', icon: 'users', items: [
     { key: 'patients', href: '/app/patients', icon: 'users', perms: ['patients.view'] },
@@ -62,6 +63,7 @@ const NAV = [
     { key: 'team', href: '/app/clinic/team', icon: 'user-cog', perms: ['users.manage'], also: ['/app/settings/team', '/app/settings/roles', '/app/clinic/roles'] },
     { key: 'clinic_hours', href: '/app/clinic/hours', icon: 'calendar-clock', perms: ['settings.manage'] },
     { key: 'branches', href: '/app/clinic/branches', icon: 'map-pin', perms: ['settings.manage'] },
+    { key: 'center', href: '/app/center', icon: 'building-2', perms: ['settings.manage'] }, // medical centre: practices sharing reception
     { key: 'attendance', href: '/app/attendance', icon: 'clock', perms: [], tabPerms: ['attendance.view'] }, // everyone clocks in (user menu); the tab is for managers
     { key: 'clinical_setup', href: '/app/clinic/setup', icon: 'pill', perms: ['settings.manage', 'prescriptions.create', 'clinical.edit'],
       lights: ['/app/settings/medications', '/app/settings/diagnosis-codes', '/app/settings/insurance', '/app/settings/signatures', '/app/specialty/settings', '/app/clinic/orders-catalog'] },
@@ -181,7 +183,7 @@ const CASH_ONLY = new Set(['cashier', 'billing', 'payments_all', 'cash_closings'
 function forUser(permissions, ctx = {}) {
   const has = (p) => permissions.has(p);
   const doctorHome = ctx.roleKey === 'doctor' && ctx.doctorId;
-  const visible = (item) => (!item.perms.length || item.perms.some(has) || (item.orDoctor && ctx.doctorId)) && (!item.needsDoctor || ctx.doctorId) && !hidden(ctx, item.key)
+  const visible = (item) => (!item.perms.length || item.perms.some(has) || (item.orDoctor && ctx.doctorId)) && (!item.needsDoctor || ctx.doctorId) && (!item.needsCenter || ctx.centerId) && !hidden(ctx, item.key)
     && !(item.doctorHome && doctorHome)
     // Whole-clinic pages (the cash drawer) stay out of the menu of a login limited to one doctor's visits.
     && (!item.viewAll || !ctx.ownDoctorId);

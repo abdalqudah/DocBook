@@ -1,0 +1,35 @@
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('nav.front_desk') %></div>
+    <h1><%= t('center.desk_title') %></h1>
+    <p><%= (locale === 'en' && center.name_en) || center.name %> · <%= t('center.desk_lead', { n: members.length }) %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('center.my_desk') %></a>
+    <a class="btn btn-secondary" href="/app/cashier/screen?scope=center"><%- icon('banknote', 'icon-sm') %><%= t('center.cash_screen') %></a>
+  </div>
+</div>
+<div class="ctr-desk" data-ctr-desk data-done-label="<%= t('center.done_today') %>">
+  <% cols.forEach(function (k) { var list = by[k]; %>
+  <section class="ctr-col is-<%= k %>">
+    <header><h2><%= t('cashpos.state.' + k) %></h2><span class="ctr-n num"><%= list.length %></span></header>
+    <div class="ctr-list">
+      <% if (!list.length) { %><p class="ctr-empty"><%= t('center.none') %></p><% } %>
+      <% list.forEach(function (v) { %>
+      <article class="ctr-card">
+        <div class="ctr-top"><span class="ctr-time num" dir="ltr"><%= v.time %></span><span class="ctr-name"><bdi><%= v.patient %></bdi></span></div>
+        <div class="ctr-meta"><span class="ctr-practice"><%= v.practice %></span><% if (v.doctor) { %> · <%= v.doctor %><% } %></div>
+        <div class="ctr-actions">
+          <% var post = function (action, label, primary) { %><form method="post" action="/app/center/desk/<%= v.bid %>/<%= v.id %>/<%= action %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-sm <%= primary ? 'btn-primary' : 'btn-ghost' %>" type="submit"><%= label %></button></form><% }; %>
+          <% if (k === 'expected') { post('check-in', t('center.act.check_in'), true); } %>
+          <% if (k === 'arrived') { post('call-in', t('center.act.call_in'), true); post('uncheck', t('center.act.uncheck')); } %>
+          <% if (k === 'with_doctor') { post('uncall', t('center.act.uncall')); } %>
+          <% if (k === 'ready') { %><a class="btn btn-sm btn-secondary" href="/app/cashier/screen?scope=center"><%= t('center.act.pay') %></a><% } %>
+        </div>
+      </article>
+      <% }) %>
+    </div>
+  </section>
+  <% }) %>
+</div>
+<p class="small muted mt-4"><%= t('center.done_today') %>: <strong class="num"><%= done %></strong></p>

@@ -140,7 +140,7 @@ function posVisit(req, a) {
     dateText: shortDate(req, a.appointment_date), online: a.appointment_type === 'online', state: a.state || svc.flowState(a),
     due, fromDoctor, what: lines.map((l) => (req.locale === 'en' && l.name_en ? l.name_en : l.name) || consult).join(' + '),
     rxs: (a.rxs || []).map((rx) => (clinical ? `/app/visits/${a.id}/prescriptions/${rx.id}?print=1&autoprint=1` : `/app/cashier/papers/${a.id}/prescription/${rx.id}.pdf`)),
-    finished: a.doctor_finished_at ? new Date(a.doctor_finished_at).getTime() : 0,
+    finished: a.doctor_finished_at ? new Date(a.doctor_finished_at).getTime() : 0, practice: a.practice || null,
   };
 }
 function shortDate(req, d) {
@@ -149,9 +149,45 @@ function shortDate(req, d) {
 
 const POS_RANK = { ready: 0, with_doctor: 1, arrived: 2, expected: 3 };
 /** Today's unpaid visits (ready to pay first), plus any visit asked for by ?add= (e.g. an older unpaid one). */
+const centers = require('../center/center.service');
+const CASH_GRANT = ['billing.manage', 'billing.view', 'frontdesk.use', 'appointments.view'];
+/** The medical centre's cash screen ("?scope=center"): only when this practice is in a centre. */
+const centerScope = (req) => Boolean(req.ctx.centerId) && (req.query.scope === 'center' || (req.body && req.body.scope === 'center'));
+/**
+ * The ctx to act on a visit with: this practice's own, or — on the centre's cash screen — the visit's practice when it
+ * is of the same centre AND shares its payments (each invoice stays in, and is numbered by, the visit's practice).
+ */
+async function ctxForVisit(req, apptId) {
+  const bid = await centers.practiceOfAppointment(req.ctx, apptId);
+  if (!bid) throw E.notFound('Appointment');
+  if (bid === req.ctx.businessId) return req.ctx;
+  const ctx = await centers.actCtx(req.ctx, bid, { need: 'billing.manage', grant: CASH_GRANT });
+  if (!ctx.shareCash) throw E.notFound('Appointment');
+  return ctx;
+}
+async function ctxForInvoice(req, invId) {
+  const inv = await knex('invoices').where({ id: Number(invId) || 0 }).first('business_id', 'appointment_id');
+  if (!inv || inv.business_id === req.ctx.businessId) return req.ctx;
+  const ctx = await centers.actCtx(req.ctx, inv.business_id, { need: 'billing.manage', grant: CASH_GRANT });
+  if (!ctx.shareCash) throw E.notFound('Invoice');
+  return ctx;
+}
+
 async function posData(req, addIds = []) {
   const { ctx } = req;
-  const [rows, totals] = await Promise.all([svc.today(ctx), svc.todayTotals(ctx)]);
+  const [rows0, totals] = await Promise.all([svc.today(ctx), svc.todayTotals(ctx)]);
+  let rows = rows0;
+  // The centre's cash screen: the visits of every practice that shares its payments, each labelled with its practice.
+  if (centerScope(req)) {
+    const L = (ar, en) => (req.locale === 'en' && en ? en : ar);
+    const bids = await centers.cashPractices(ctx);
+    const names = Object.fromEntries((await knex('businesses').whereIn('id', bids).select('id', 'name', 'name_en')).map((b) => [b.id, L(b.name, b.name_en)]));
+    rows = rows0.map((a) => ({ ...a, practice: names[ctx.businessId] || null, bid: ctx.businessId }));
+    for (const bid of bids.filter((x) => x !== ctx.businessId)) { // eslint-disable-line no-restricted-syntax
+      const c2 = await centers.actCtx(ctx, bid, { need: 'billing.manage', grant: CASH_GRANT }); // eslint-disable-line no-await-in-loop
+      (await svc.today(c2)).forEach((a) => rows.push({ ...a, practice: names[bid] || null, bid, rxs: [] })); // papers stay in their practice // eslint-disable-line no-await-in-loop
+    }
+  }
   const open = rows.filter((a) => a.payment_status !== 'paid' && a.state !== 'missed');
   const extra = [];
   for (const id of addIds.filter((x) => !open.some((a) => a.id === x))) { // eslint-disable-line no-restricted-syntax
@@ -191,7 +227,8 @@ router.get('/screen', can('billing.manage'), wrap(async (req, res) => {
   res.set('Cache-Control', 'no-store');
   return res.page('pages/clinic/cashier/screen', {
     title: req.t('cashpos.title'), layout: 'cashscreen', bodyClass: 'pos-body', expense,
-    pos: { ...data, add, insurers: insurers.map((i) => ({ id: i.id, name: i.name, coverage: Number(i.coverage_percent) || 0 })), decimals: decimalsOf(ctx.currency) },
+    pos: { ...data, add, insurers: insurers.map((i) => ({ id: i.id, name: i.name, coverage: Number(i.coverage_percent) || 0 })), decimals: decimalsOf(ctx.currency), scope: centerScope(req) ? 'center' : '' },
+    centerScope: centerScope(req), inCenter: Boolean(ctx.centerId),
     pageScripts: ['/js/cashpos.js'], pageStyles: ['/css/cashpos.css'],
   });
 }));
@@ -215,30 +252,34 @@ const screenAct = (fn) => wrap(async (req, res) => {
   }
 });
 router.post('/screen/visit/:id(\\d+)/call-in', can('billing.manage'), screenAct(async (req) => {
-  const a = await svc.visit(req.ctx, Number(req.params.id));
+  const vctx = await ctxForVisit(req, req.params.id);
+  const a = await svc.visit(vctx, Number(req.params.id));
   if (svc.flowState(a) !== 'arrived') throw new AppError('VISIT_STATE_CHANGED', 'The visit has moved on.', 409);
-  await require('./appointments.service').callIn(req.ctx, a.id, true); // eslint-disable-line global-require
+  await require('./appointments.service').callIn(vctx, a.id, true); // eslint-disable-line global-require
 }));
 router.post('/screen/visit/:id(\\d+)/finish', can('billing.manage'), screenAct(async (req) => {
-  const a = await svc.visit(req.ctx, Number(req.params.id));
+  const vctx = await ctxForVisit(req, req.params.id);
+  const a = await svc.visit(vctx, Number(req.params.id));
   if (svc.flowState(a) !== 'with_doctor') throw new AppError('VISIT_STATE_CHANGED', 'The visit has moved on.', 409);
   const dflow = require('./dflow.service'); // eslint-disable-line global-require
   const def = dflow.defaultLines(a);
   const raw = String((req.body && req.body.amount) ?? '').replace(/,/g, '').trim();
   if (raw === '' || !Number.isFinite(Number(raw)) || Number(raw) < 0) throw E.validation({ amount: 'Enter a number.' });
-  const amount = round(Number(raw), req.ctx.currency);
-  const defTotal = round(def.reduce((t, l) => t + (Number(l.qty) || 1) * (Number(l.unit_price) || 0), 0), req.ctx.currency);
+  const amount = round(Number(raw), vctx.currency);
+  const defTotal = round(def.reduce((t, l) => t + (Number(l.qty) || 1) * (Number(l.unit_price) || 0), 0), vctx.currency);
   // The amount as entered: the visit's own lines when it matches them, else one line for the visit at that amount.
   const lines = defTotal === amount ? def : [{ name: def.length === 1 ? def[0].name : (a.service_name || null), service_id: def.length === 1 ? def[0].service_id : null, qty: 1, unit_price: amount }];
-  await dflow.finish(req.ctx, a.id, { lines: lines.map((l) => ({ name: l.name || req.t('billing.consultation'), name_en: l.name_en || '', service_id: l.service_id || '', qty: l.qty || 1, unit_price: l.unit_price })) });
+  await dflow.finish(vctx, a.id, { lines: lines.map((l) => ({ name: l.name || req.t('billing.consultation'), name_en: l.name_en || '', service_id: l.service_id || '', qty: l.qty || 1, unit_price: l.unit_price })) });
 }));
 
 router.post('/screen/checkout', can('billing.manage'), wrap(async (req, res) => {
   const { ctx } = req;
   const b = req.body || {};
   try {
-    const r = await svc.payMany(ctx, b, { consultationLabel: req.t('billing.consultation'), source: 'screen' });
-    const paper = await paperOf(ctx);
+    const first = Array.isArray(b.lines) && b.lines[0] ? b.lines[0].appointment_id : null;
+    const payCtx = first ? await ctxForVisit(req, first) : ctx; // the visit's own practice (centre cash screen)
+    const r = await svc.payMany(payCtx, b, { consultationLabel: req.t('billing.consultation'), source: 'screen' });
+    const paper = await paperOf(payCtx);
     const ids = r.invoices.map((i) => i.id);
     const q = `autoprint=1${paper ? `&paper=${paper}` : ''}`;
     return res.json({
@@ -298,11 +339,12 @@ function allowSameOriginFrame(res) {
 }
 
 router.get('/receipt/:id(\\d+)', wrap(async (req, res) => {
-  const rec = await svc.receipt(req.ctx, Number(req.params.id));
+  const rctx = await ctxForInvoice(req, req.params.id); // a receipt of a practice sharing the centre's cash screen
+  const rec = await svc.receipt(rctx, Number(req.params.id));
   allowSameOriginFrame(res);
   res.page('pages/clinic/cashier/receipt', { paper: ['a4', 'a5'].includes(req.query.paper) ? req.query.paper : 'receipt80',
     title: req.t('cashx.receipt_no', { n: rec.inv.invoice_number }), layout: 'cashscreen', bodyClass: 'cx-receipt-page', paperLight: true, rec,
-    issued: lib.localTime(rec.inv.created_at, req.ctx.timezone), pageStyles: ['/css/cashx.css'], pageScripts: ['/js/cashx.js'],
+    issued: lib.localTime(rec.inv.created_at, rctx.timezone), pageStyles: ['/css/cashx.css'], pageScripts: ['/js/cashx.js'],
   });
 }));
 

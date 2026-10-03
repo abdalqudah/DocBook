@@ -19,6 +19,7 @@
       </div>
     </div>
     <div class="pos-head-actions">
+      <% if (typeof inCenter !== 'undefined' && inCenter) { %><nav class="pos-scope" aria-label="<%= t('center.cash_screen') %>"><a href="/app/cashier/screen" class="<%= centerScope ? '' : 'is-on' %>"><%= t('center.scope_mine') %></a><a href="/app/cashier/screen?scope=center" class="<%= centerScope ? 'is-on' : '' %>"><%= t('center.scope_center') %></a></nav><% } %>
       <% if (typeof expense !== 'undefined' && expense) { %><button class="btn btn-secondary btn-sm" type="button" data-open-dialog="pos-expense-dialog"><%- icon('receipt-text', 'icon-sm') %><span class="hide-sm"><%= t('expenses.add') %></span></button><% } %>
       <button class="btn btn-ghost btn-icon" type="button" data-pos-sound aria-pressed="true" title="<%= t('cashpos.sound') %>" aria-label="<%= t('cashpos.sound') %>"><span data-pos-sound-on><%- icon('volume-2') %></span><span data-pos-sound-off hidden><%- icon('volume-x') %></span></button>
       <button class="btn btn-ghost btn-icon" type="button" data-pos-fs hidden title="<%= t('cashpos.full_screen') %>" aria-label="<%= t('cashpos.full_screen') %>" data-on="<%= t('cashpos.exit_full_screen') %>" data-off="<%= t('cashpos.full_screen') %>"><span data-pos-fs-enter><%- icon('maximize') %></span><span data-pos-fs-exit hidden><%- icon('minimize') %></span></button>
@@ -126,7 +127,7 @@
 
 <script type="application/json" id="pos-data"><%- json({
   visits: pos.visits, totals: pos.totals, readyKey: pos.readyKey, add: pos.add, insurers: pos.insurers,
-  decimals: pos.decimals, currency: currency, locale: locale, today: clinicToday, csrf: csrfToken,
+  decimals: pos.decimals, currency: currency, locale: locale, today: clinicToday, csrf: csrfToken, scope: pos.scope || '',
   canInsure: pos.insurers.length > 0,
   icons: { online: icon('video', 'icon-xs'), clinic: icon('building-2', 'icon-xs'), trash: icon('trash-2', 'icon-sm'), pill: icon('pill', 'icon-sm'), shield: icon('shield-check', 'icon-xs') },
   texts: {

@@ -52,6 +52,7 @@
                 <% ['short', 'full'].forEach(function (s) { %><option value="<%= s %>"<%= k.name_style === s ? ' selected' : '' %>><%= t('queue.style_' + s) %></option><% }) %>
               </select>
               <% if (branchOptions) { %><select class="select" name="branch_id" aria-label="<%= t('branches.branch') %>"><% branchOptions.forEach(function (b) { %><option value="<%= b.value %>"<%= b.value === bv(k) ? ' selected' : '' %>><%= b.label %></option><% }) %></select><% } %>
+              <% if (ctx.centerId) { %><select class="select" name="scope" aria-label="<%= t('center.screen_scope') %>"><option value="clinic"<%= k.scope !== 'center' ? ' selected' : '' %>><%= t('center.screen_clinic') %></option><option value="center"<%= k.scope === 'center' ? ' selected' : '' %>><%= t('center.screen_center') %></option></select><% } %>
               <label class="check"><input type="checkbox" name="voice" value="1"<%= k.voice ? ' checked' : '' %>><span><%= t('queue.voice') %></span></label>
               <%- include('../../partials/screen-header-fields', { k: k, idp: 'q' + k.id, compact: true }) %>
               <label class="check"><input type="checkbox" name="is_active" value="1"<%= k.is_active ? ' checked' : '' %>><span><%= t('attendance.screen_active') %></span></label>
@@ -100,6 +101,7 @@
           <p class="help mt-1"><%= t('queue.voice_help') %></p>
         </div>
         <% if (branchOptions) { %><%- include('../../partials/field', { name: 'branch_id', type: 'select', label: t('branches.branch'), value: o.branch_id || '', options: branchOptions }) %><% } %>
+        <% if (ctx.centerId) { %><%- include('../../partials/field', { name: 'scope', type: 'select', label: t('center.screen_scope'), value: o.scope || 'center', options: [{ value: 'center', label: t('center.screen_center') }, { value: 'clinic', label: t('center.screen_clinic') }] }) %><% } %>
       </div>
       <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('plus', 'icon-sm') %><%= t('queue.add') %></button></div>
     </form>

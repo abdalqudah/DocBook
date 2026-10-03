@@ -1,0 +1,109 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('navx.sec_clinic') %></div>
+    <h1><%= center ? L(center.name, center.name_en) : t('center.title') %></h1>
+    <p><%= t('center.lead') %></p>
+  </div>
+  <% if (center) { %><div class="page-actions"><a class="btn btn-primary" href="/app/center/desk"><%- icon('armchair', 'icon-sm') %><%= t('center.desk_title') %></a></div><% } %>
+</div>
+
+<% if (!center) { %>
+<div class="grid grid-2">
+  <form class="panel" method="post" action="/app/center/create">
+    <div class="panel-head"><h2><%- icon('building-2', 'icon-sm') %> <%= t('center.create_title') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <p class="small muted"><%= t('center.create_help') %></p>
+      <%- include('../../partials/field', { name: 'center_name', label: t('center.center_name'), required: true, placeholder: t('center.center_name_ph') }) %>
+      <%- include('../../partials/field', { name: 'center_name_en', label: t('center.center_name_en'), attrs: 'dir="ltr"' }) %>
+      <button class="btn btn-primary" type="submit"><%= t('center.create') %></button>
+    </div>
+  </form>
+  <div class="panel"><div class="panel-body stack">
+    <h2><%= t('center.how_title') %></h2>
+    <ul class="ctr-points">
+      <% ['separate', 'desk', 'screen', 'cash', 'site'].forEach(function (k) { %><li><%- icon('circle-check', 'icon-sm') %><span><%= t('center.how.' + k) %></span></li><% }) %>
+    </ul>
+    <p class="small muted"><%= t('center.join_by_invite') %></p>
+  </div></div>
+</div>
+<% } else { %>
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('center.practices') %> (<%= members.length %>)</h2></div>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('center.practice') %></th><th><%= t('center.cash_col') %></th><th><%= t('center.since') %></th><th class="actions"></th></tr></thead>
+        <tbody>
+        <% members.forEach(function (m) { %>
+          <tr>
+            <td class="primary-cell"><div class="strong"><%= L(m.name, m.name_en) %><% if (m.id === business.id) { %> <span class="badge"><%= t('center.you') %></span><% } %><% if (center.owner_business_id === m.id) { %> <span class="badge badge-success"><%= t('center.founder') %></span><% } %></div><a class="tiny link" href="/<%= m.slug %>" target="_blank" rel="noopener">/<%= m.slug %></a></td>
+            <td data-label="<%= t('center.cash_col') %>"><span class="badge<%= m.center_share_cash ? ' badge-success badge-dot' : '' %>"><%= m.center_share_cash ? t('center.cash_shared') : t('center.cash_own') %></span></td>
+            <td data-label="<%= t('center.since') %>" class="nowrap"><%= m.center_joined_at ? fmt.date(m.center_joined_at) : '—' %></td>
+            <td class="actions">
+              <% if (founder && m.id !== business.id) { %>
+              <form method="post" action="/app/center/members/<%= m.id %>/remove" data-confirm="<%= t('center.remove_confirm', { name: L(m.name, m.name_en) }) %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('center.remove') %></button></form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+    </div>
+
+    <% if (founder) { %>
+    <div class="panel">
+      <div class="panel-head"><div><h2><%- icon('user-plus', 'icon-sm') %> <%= t('center.invite_title') %></h2><div class="panel-sub"><%= t('center.invite_help') %></div></div></div>
+      <div class="panel-body stack">
+        <form class="row wrap" method="post" action="/app/center/invite">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input class="input grow" type="email" name="email" required dir="ltr" placeholder="doctor@example.com" aria-label="<%= t('center.invite_email') %>">
+          <button class="btn btn-primary" type="submit"><%= t('center.invite') %></button>
+        </form>
+        <% if (lastLink) { %><div class="alert alert-success small"><div class="alert-title"><%= t('center.invite_link') %></div><input class="input mono" readonly value="<%= lastLink %>" dir="ltr" aria-label="<%= t('center.invite_link') %>"></div><% } %>
+        <% if (invites.length) { %>
+        <ul class="ctr-invites">
+          <% invites.forEach(function (i) { %><li><span dir="ltr"><%= i.email %></span><span class="tiny muted"><%= t('center.invite_until', { date: fmt.date(i.expires_at) }) %></span>
+            <form method="post" action="/app/center/invites/<%= i.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('center.invite_cancel') %></button></form></li><% }) %>
+        </ul>
+        <% } %>
+      </div>
+    </div>
+    <form class="panel" method="post" action="/app/center/rename">
+      <div class="panel-head"><h2><%= t('center.center_name') %></h2></div>
+      <div class="panel-body form-grid">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/field', { name: 'center_name', label: t('center.center_name'), value: center.name }) %>
+        <%- include('../../partials/field', { name: 'center_name_en', label: t('center.center_name_en'), value: center.name_en || '', attrs: 'dir="ltr"' }) %>
+        <div class="full"><button class="btn btn-secondary" type="submit"><%= t('common.save') %></button></div>
+      </div>
+    </form>
+    <% } %>
+  </div>
+
+  <aside class="stack">
+    <form class="panel" method="post" action="/app/center/share-cash">
+      <div class="panel-head"><h2><%- icon('banknote', 'icon-sm') %> <%= t('center.cash_title') %></h2></div>
+      <div class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label class="check"><input type="radio" name="on" value="0"<%= business.center_share_cash ? '' : ' checked' %>> <span><span class="strong"><%= t('center.cash_own') %></span><span class="tiny muted" style="display:block"><%= t('center.cash_own_help') %></span></span></label>
+        <label class="check"><input type="radio" name="on" value="1"<%= business.center_share_cash ? ' checked' : '' %>> <span><span class="strong"><%= t('center.cash_shared') %></span><span class="tiny muted" style="display:block"><%= t('center.cash_shared_help') %></span></span></label>
+        <button class="btn btn-secondary" type="submit"><%= t('common.save') %></button>
+      </div>
+    </form>
+    <div class="panel"><div class="panel-body stack">
+      <h2><%= t('center.shared_title') %></h2>
+      <ul class="ctr-points">
+        <li><%- icon('armchair', 'icon-sm') %><span><a class="link" href="/app/center/desk"><%= t('center.desk_title') %></a> — <%= t('center.how.desk') %></span></li>
+        <li><%- icon('monitor', 'icon-sm') %><span><a class="link" href="/app/queue-screens"><%= t('center.screen_title') %></a> — <%= t('center.how.screen') %></span></li>
+        <li><%- icon('banknote', 'icon-sm') %><span><a class="link" href="/app/cashier/screen?scope=center"><%= t('center.cash_screen') %></a> — <%= t('center.how.cash') %></span></li>
+      </ul>
+      <p class="tiny muted"><%= t('center.how.separate') %></p>
+    </div></div>
+    <% if (!founder) { %>
+    <form method="post" action="/app/center/leave" data-confirm="<%= t('center.leave_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('center.leave') %></button></form>
+    <% } %>
+  </aside>
+</div>
+<% } %>

@@ -1,0 +1,29 @@
+<% var o = typeof old !== 'undefined' && old ? old : {}; var mode = o.mode || (typeof owned !== 'undefined' && owned.length ? 'existing' : 'new'); %>
+<% if (!invite) { %>
+  <h1><%= t('center.invite_invalid_title') %></h1>
+  <p class="lead"><%= t('center.invite_invalid') %></p>
+  <a class="btn btn-secondary mt-4" href="/app"><%= t('common.back') %></a>
+<% } else { %>
+  <h1><%= t('center.join_heading', { center: (locale === 'en' && invite.center.name_en) || invite.center.name }) %></h1>
+  <p class="lead"><%= t('center.join_lead') %></p>
+  <form class="stack-lg mt-6" method="post" action="/workspaces/center/<%= token %>" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include('../../partials/form-error') %>
+    <div class="acct-types" role="radiogroup">
+      <label class="acct-type"><input type="radio" name="mode" value="new"<%= mode === 'new' ? ' checked' : '' %> data-join-mode><span><span class="strong"><%- icon('plus', 'icon-sm') %> <%= t('center.join_new') %></span><span class="tiny muted"><%= t('center.join_new_help') %></span></span></label>
+      <% if (owned.length) { %><label class="acct-type"><input type="radio" name="mode" value="existing"<%= mode === 'existing' ? ' checked' : '' %> data-join-mode><span><span class="strong"><%- icon('building-2', 'icon-sm') %> <%= t('center.join_existing') %></span><span class="tiny muted"><%= t('center.join_existing_help') %></span></span></label><% } %>
+    </div>
+    <div class="stack" data-join-pane="existing"<%= mode === 'existing' ? '' : ' hidden' %>>
+      <% if (owned.length) { %><%- include('../../partials/field', { name: 'business_id', label: t('center.your_clinic'), type: 'select', options: owned.map(function (b) { return { value: String(b.id), label: b.name }; }), value: o.business_id }) %><% } %>
+    </div>
+    <div class="form-grid" data-join-pane="new"<%= mode === 'new' ? '' : ' hidden' %>>
+      <%- include('../../partials/field', { name: 'clinic_name', label: t('auth.business_name'), cls: 'full', placeholder: t('auth.business_name_ph'), help: t('center.practice_name_help') }) %>
+      <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: specialtyOptions }) %>
+      <%- include('../../partials/field', { name: 'city', label: t('auth.city') }) %>
+      <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', value: 'JOD', options: currencyOptions }) %>
+      <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', value: 'Asia/Amman', options: zoneOptions }) %>
+    </div>
+    <div class="alert alert-info small"><%= t('center.join_what') %></div>
+    <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('center.join_button') %></button>
+  </form>
+<% } %>

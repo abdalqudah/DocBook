@@ -5,7 +5,7 @@ const config = require('../../config');
 const mailer = require('../../core/mailer');
 const { z, validate, email, password, optionalString } = require('../../core/validate');
 const { CURRENCIES } = require('../../core/money');
-const { E } = require('../../core/errors');
+const { E, AppError } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
 const { form } = require('../settings/form');
 const { requireAuth } = require('../../middleware/context');
@@ -13,6 +13,7 @@ const authService = require('./auth.service');
 const security = require('./security.service');
 const verify = require('./verify.service');
 const businesses = require('../businesses/business.service');
+const centers = require('../center/center.service');
 const options = require('../settings/options');
 const { signIn, afterLogin, landingFor } = require('./session');
 
@@ -47,11 +48,14 @@ router.post('/login', limiter, form(async (req, res) => {
 }, (req, res, extra) => renderLogin(req, res, extra)));
 
 // ---------- Clinic sign-up: owner account + clinic, then the in-app setup wizard continues
-const renderSignup = (req, res, extra = {}) => res.page('pages/auth/signup', { layout: 'auth', wide: true, title: req.t('auth.signup_title'), ...clinicChoices(req), ...extra });
-router.get('/signup', (req, res) => {
+const renderSignup = (req, res, extra = {}) => res.page('pages/auth/signup', { layout: 'auth', wide: true, title: req.t('auth.signup_title'), pageScripts: ['/js/center.js'], pageStyles: ['/css/center.css'], ...clinicChoices(req), ...extra });
+router.get('/signup', wrap(async (req, res) => {
   if (!config.allowSignup) return res.redirect('/login');
-  return req.user ? res.redirect('/app') : renderSignup(req, res);
-});
+  if (req.user) return res.redirect(req.query.center ? `/workspaces/center/${encodeURIComponent(req.query.center)}` : '/app');
+  // Invited to a medical centre: the new practice joins it.
+  const invite = req.query.center ? await centers.inviteByToken(req.query.center) : null;
+  return renderSignup(req, res, invite ? { centerInvite: { token: req.query.center, name: (req.locale === 'en' && invite.center.name_en) || invite.center.name, email: invite.email } } : {});
+}));
 router.post('/signup', limiter, form(async (req, res) => {
   if (!config.allowSignup) throw E.forbidden('signup');
   const data = validate(z.object({
@@ -61,9 +65,17 @@ router.post('/signup', limiter, form(async (req, res) => {
     ...clinicSchema,
     terms: z.literal('on', { errorMap: () => ({ message: 'Please accept the terms to continue.' }) }),
   }), req.body);
+  // Account type: one clinic, or a medical centre (several doctors, each with their own practice account sharing the
+  // reception) — the first practice is created and the centre with it; or joining a centre by invitation.
+  const invite = req.body.center_token ? await centers.inviteByToken(req.body.center_token) : null;
+  if (req.body.center_token && !invite) throw new AppError('CENTER_INVITE_INVALID', 'This invitation is no longer valid.', 410);
+  const asCenter = !invite && req.body.account_type === 'center';
+  if (asCenter && String(req.body.center_name || data.clinic_name).trim().length < 2) throw E.validation({ center_name: 'Required.' });
   const userId = await knex.transaction(async (trx) => {
     const id = await authService.createUser(trx, { name: data.name, email: data.email, password: data.password, locale: req.locale });
-    await businesses.create(id, clinicFields(data), trx);
+    const bid = await businesses.create(id, clinicFields(data), trx);
+    if (asCenter) await centers.create({ businessId: bid, userId: id }, { name: req.body.center_name || data.clinic_name }, trx);
+    if (invite) await centers.accept(id, req.body.center_token, bid, trx);
     return id;
   });
   const user = await authService.findUser(userId);
@@ -180,6 +192,50 @@ router.post('/workspaces/new', requireAuth, form(async (req, res) => {
   req.session.businessId = id;
   return res.redirect('/app/onboarding');
 }, renderNewWs));
+// ---------- Joining a medical centre by invitation: open a new practice in it, or bring a clinic you own
+const renderJoin = async (req, res, invite, extra = {}) => {
+  const owned = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').join('businesses as b', 'b.id', 'm.business_id')
+    .where({ 'm.user_id': req.user.id, 'r.key': 'owner', 'b.status': 'active' }).whereNull('b.center_id').select('b.id', 'b.name');
+  return res.page('pages/auth/center-join', { layout: 'auth', title: req.t('center.join_title'), invite, owned, token: req.params.token, pageStyles: ['/css/center.css'], pageScripts: ['/js/center.js'], ...clinicChoices(req), ...extra });
+};
+router.get('/workspaces/center/:token', wrap(async (req, res) => {
+  const invite = await centers.inviteByToken(req.params.token);
+  if (!req.user) {
+    if (!invite) return res.page('pages/auth/center-join', { layout: 'auth', title: req.t('center.join_title'), invite: null });
+    req.session.returnTo = `/workspaces/center/${req.params.token}`;
+    return res.redirect(`/signup?center=${encodeURIComponent(req.params.token)}`);
+  }
+  if (!invite) return res.page('pages/auth/center-join', { layout: 'auth', title: req.t('center.join_title'), invite: null });
+  return renderJoin(req, res, invite);
+}));
+router.post('/workspaces/center/:token', requireAuth, wrap(async (req, res) => {
+  const invite = await centers.inviteByToken(req.params.token);
+  if (!invite) return res.page('pages/auth/center-join', { layout: 'auth', title: req.t('center.join_title'), invite: null });
+  try {
+    let bid;
+    if (req.body.mode === 'existing') {
+      bid = Number(req.body.business_id) || 0;
+      await centers.accept(req.user.id, req.params.token, bid);
+    } else {
+      const data = validate(z.object(clinicSchema), req.body);
+      bid = await knex.transaction(async (trx) => {
+        const id = await businesses.create(req.user.id, clinicFields(data), trx);
+        await centers.accept(req.user.id, req.params.token, id, trx);
+        return id;
+      });
+    }
+    req.session.businessId = bid;
+    await knex('users').where({ id: req.user.id }).update({ last_business_id: bid });
+    flash(req, 'success', req.t('center.joined', { center: invite.center.name }));
+    return res.redirect(req.body.mode === 'existing' ? '/app/center' : '/app/onboarding');
+  } catch (err) {
+    if (!(err instanceof AppError) || err.status >= 500) throw err;
+    res.status(err.status === 403 ? 403 : 422);
+    const errors = err.code === 'VALIDATION_FAILED' ? err.details || {} : {};
+    return renderJoin(req, res, invite, { errors, old: req.body, formError: { message: err.code === 'VALIDATION_FAILED' ? req.t('errors.VALIDATION_FAILED') : (req.t(`center.err.${err.code}`) !== `center.err.${err.code}` ? req.t(`center.err.${err.code}`) : err.message) } });
+  }
+}));
+
 router.post('/workspaces/switch', requireAuth, wrap(async (req, res) => {
   const id = Number(req.body.business_id);
   if (!(await businesses.isMember(req.user.id, id))) throw E.forbidden('workspace');
