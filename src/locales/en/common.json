@@ -260,7 +260,8 @@
     "PLAN_LIMIT_BRANCHES": "Your package does not include another branch. Choose more branches on the subscription page.",
     "BRANCH_HAS_DOCTORS": "Move this branch's doctors to another branch first.",
     "BRANCH_HAS_APPOINTMENTS": "This branch has upcoming appointments. Move or cancel them first.",
-    "BRANCH_IN_USE": "This branch has doctors or appointments. Turn it off instead."
+    "BRANCH_IN_USE": "This branch has doctors or appointments. Turn it off instead.",
+    "CLINIC_NOT_EMPTY": "This clinic has patients, appointments or invoices, so it cannot be deleted."
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",
@@ -431,7 +432,10 @@
   "workspaces": {
     "new_title": "Add a clinic",
     "new_lead": "Each clinic (or branch) has its own doctors, patients, team and settings.",
-    "create": "Create clinic"
+    "create": "Create clinic",
+    "branch_q": "Want a new branch of the same clinic?",
+    "branch_hint": "A branch shares the clinic itself: patients, team, accounts and website, with its own address, phone and doctors. A “new clinic” here is fully separate with its own records.",
+    "branch_go": "Add a branch"
   },
   "days": {
     "sun": "Sunday",

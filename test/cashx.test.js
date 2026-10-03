@@ -242,3 +242,15 @@ test('payMany: all or nothing — an already-paid visit, a changed doctor bill w
   assert.equal(res.find((q) => q.status === 'rejected').reason.code, 'ALREADY_PAID');
   assert.equal(Number((await knex('invoices').whereIn('appointment_id', [x, y]).count({ n: '*' }))[0].n), 2);
 });
+
+test('cash screen: a patient still waiting or with the doctor is not paid there (no second invoice later)', async () => {
+  const w = await visit(); const d = await visit(); const done = await visit();
+  await knex('appointments').where({ id: w }).update({ checked_in: true });
+  await knex('appointments').where({ id: d }).update({ checked_in: true, with_doctor: true });
+  await doctorFinishes(done, [{ name: 'Consultation', qty: 1, unit_price: 15 }]);
+  await assert.rejects(cashier.payMany(ctx, { payment_method: 'cash', lines: [saleLine(done, 15), saleLine(w, 15)] }), (e) => e.code === 'VISIT_NOT_DONE' && e.line === w);
+  await assert.rejects(cashier.payMany(ctx, { payment_method: 'cash', lines: [saleLine(d, 15)] }), (e) => e.code === 'VISIT_NOT_DONE' && e.line === d);
+  assert.equal(Number((await knex('invoices').whereIn('appointment_id', [w, d, done]).count({ n: '*' }))[0].n), 0); // all or nothing
+  const r = await cashier.payMany(ctx, { payment_method: 'cash', lines: [saleLine(done, 15)] });
+  assert.equal(r.invoices.length, 1);
+});

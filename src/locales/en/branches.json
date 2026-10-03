@@ -39,6 +39,16 @@
     "choose": "Choose the branch",
     "work_branch": "Works at",
     "work_branch_help": "The doctor appears under this branch in online booking, and their appointments take place there.",
-    "our_branches": "Our branches"
+    "our_branches": "Our branches",
+    "others_title": "Your other clinics",
+    "others_sub": "Added a separate clinic with “Add a clinic” but meant a branch? Make it a branch here: the branch takes its name, address and phone, and its doctors are copied into it.",
+    "others_holds": "{p} patients · {a} appointments · {d} doctors",
+    "merge": "Make it a branch here",
+    "merge_remove": "and delete the separate (empty) clinic",
+    "merge_keeps": "It has patients or appointments, so it stays a separate clinic with its records — records are never moved between clinics.",
+    "merge_confirm": "Make “{name}” a branch of this clinic?",
+    "merge_confirm_empty": "Make “{name}” a branch of this clinic? With the delete option ticked, the separate clinic is deleted for good.",
+    "merged": "Branch added; {n} doctor(s) copied into it.",
+    "merged_removed": "Branch added; {n} doctor(s) copied into it, and the separate clinic was deleted."
   }
 }

@@ -1,5 +1,6 @@
 <h1><%= t('workspaces.new_title') %></h1>
 <p class="lead"><%= t('workspaces.new_lead') %></p>
+<% if (currentUser && currentUser.last_business_id) { %><div class="alert alert-info mt-4"><%- icon('building-2', 'icon-sm') %><div class="grow"><div class="strong"><%= t('workspaces.branch_q') %></div><div class="small"><%= t('workspaces.branch_hint') %></div></div><a class="btn btn-secondary btn-sm" href="/app/clinic/branches"><%= t('workspaces.branch_go') %></a></div><% } %>
 <form class="stack mt-6" method="post" action="/workspaces/new" novalidate>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <%- include('../../partials/form-error') %>

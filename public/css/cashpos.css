@@ -205,10 +205,8 @@ dialog.dialog.pos-done { width: min(420px, calc(100vw - 24px)); }
 .pos-side-head h2 { flex: 1; margin: 0; font-size: 14px; font-weight: var(--fw-bold); }
 .pos-side-n { font-size: 12px; font-weight: var(--fw-bold); background: var(--surface-sunken); border-radius: var(--pill, 999px); padding: 1px 8px; min-width: 24px; text-align: center; }
 .pos-side-list { display: flex; flex-direction: column; padding: 4px; }
-.pos-side-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; text-align: start; font: inherit; color: var(--text); background: transparent; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
-.pos-side-row:hover:not([disabled]) { background: var(--surface-sunken); }
+.pos-side-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; text-align: start; font: inherit; color: var(--text); background: transparent; border: 0; border-radius: var(--radius-sm); }
 .pos-side-row + .pos-side-row { border-top: 1px solid var(--border); border-radius: 0; }
-.pos-side-row.is-in { opacity: .6; cursor: default; }
 .pos-side-time { flex: none; font-size: 12px; font-weight: var(--fw-bold); color: var(--text-muted); }
 .pos-side-who { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .pos-side-name { font-size: 14px; font-weight: var(--fw-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -48,6 +48,30 @@
   <% if (!rows.length) { %><div class="panel-body"><p class="small muted"><%= room ? t('branches.empty_text') : t('branches.empty_locked') %></p></div><% } %>
 </section>
 <p class="help mt-4"><%= t('branches.how') %></p>
+<% if (others.length) { %>
+<section class="panel mt-6">
+  <div class="panel-head"><div><h2><%= t('branches.others_title') %></h2><div class="panel-sub"><%= t('branches.others_sub') %></div></div></div>
+  <div class="table-wrap"><table class="table responsive">
+    <tbody>
+    <% others.forEach(function (c) { %>
+      <tr>
+        <td class="primary-cell"><div class="strong"><%= L(c.name, c.name_en) %></div><div class="tiny muted"><%= t('branches.others_holds', { p: c.patients, a: c.appointments, d: c.doctors }) %></div></td>
+        <td class="actions">
+          <% if (room) { %>
+          <form method="post" action="/app/clinic/branches/from-clinic" class="row wrap" data-confirm="<%= t(c.empty ? 'branches.merge_confirm_empty' : 'branches.merge_confirm', { name: c.name }) %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="clinic_id" value="<%= c.id %>">
+            <% if (c.empty) { %><label class="check small"><input type="checkbox" name="remove" value="1" checked> <%= t('branches.merge_remove') %></label><% } %>
+            <button class="btn btn-primary btn-sm" type="submit"><%- icon('building-2', 'icon-sm') %><%= t('branches.merge') %></button>
+          </form>
+          <% if (!c.empty) { %><div class="tiny muted mt-1"><%= t('branches.merge_keeps') %></div><% } %>
+          <% } else { %><span class="tiny muted"><%= t('branches.full_title', { n: allowed }) %></span><% } %>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+<% } %>
 <dialog class="dialog wide" id="branch-dialog" data-new-dialog aria-labelledby="branch-title"<% if (typeof openDialog !== 'undefined' && openDialog) { %> data-open-on-load<% } %>>
   <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/clinic/branches' %>" novalidate>
     <div class="dialog-head"><h2 id="branch-title" data-dialog-title-target><%= t('branches.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>

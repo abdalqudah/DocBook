@@ -582,6 +582,9 @@ async function payMany(ctx, input, { consultationLabel = 'Consultation', source 
   const preps = d.lines.map((l, i) => {
     const a = byId.get(l.appointment_id);
     if (!a || a.appointment_type === 'blocked') throw tag(E.notFound('Appointment'), l.appointment_id);
+    // The cash screen bills a visit once the doctor is done: someone still waiting or with the doctor is not paid
+    // yet (their bill may still grow, which would mean a second invoice for the same visit).
+    if (source === 'screen' && ['arrived', 'with_doctor'].includes(flowState(a))) throw tag(cashierError('VISIT_NOT_DONE', 'The patient is still waiting or with the doctor.', 409, { name: a.patient_name }), l.appointment_id);
     const p = plan.lines[i];
     const def = defaultLines(a);
     const named = (x) => x.name || consultationLabel;

@@ -140,8 +140,8 @@
       + '</button>';
   }
 
-  // Side column: who is waiting and who is with the doctor (compact; a tap still adds the visit for early payment).
-  // The main grid keeps the rest: ready to pay and not arrived yet.
+  // Side column: who is waiting and who is with the doctor — for information only: a visit is paid once the doctor is
+  // done (no early payment, so no second invoice when the doctor adds to the bill). The grid keeps the rest.
   var SIDE = ['arrived', 'with_doctor'];
   var side = $('[data-pos-side]', root);
   function renderSide(list) {
@@ -152,21 +152,18 @@
       if (n) n.textContent = String(items.length);
       if (!box) return;
       box.innerHTML = items.length ? items.map(function (v) {
-        var added = inBill(v.id);
         var dot = v.doctorColor && COLOR.test(v.doctorColor) ? ' style="background:' + esc(v.doctorColor) + '"' : '';
-        return '<button type="button" class="pos-side-row' + (added ? ' is-in' : '') + '" data-pos-card="' + v.id + '"' + (added ? ' disabled aria-disabled="true"' : '') + ' title="' + esc(T.side_add) + '">'
+        return '<div class="pos-side-row">'
           + '<span class="pos-side-time num" dir="ltr">' + esc(v.time) + '</span>'
           + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span></span>'
-          + (added ? '<span class="pos-tag">' + esc(T.added) + '</span>' : '')
-          + '</button>';
+          + '</div>';
       }).join('') : '<p class="pos-side-empty">' + esc((T.side_none || {})[k] || '') + '</p>';
     });
   }
   function renderGrid() {
     var all = filtered();
     renderSide(all);
-    var sideShown = side && side.offsetParent !== null; // hidden on narrow screens: then everyone stays in the grid
-    var list = sideShown ? all.filter(function (v) { return SIDE.indexOf(v.state) < 0; }) : all;
+    var list = all.filter(function (v) { return SIDE.indexOf(v.state) < 0; }); // waiting / with the doctor: not payable yet
     if (!visits.length) {
       grid.innerHTML = '<div class="pos-empty"><strong>' + esc(T.empty_title) + '</strong><span>' + esc(T.empty_text) + '</span></div>';
     } else if (!list.length) {
@@ -183,14 +180,11 @@
     add(Number(b.getAttribute('data-pos-card')), true);
   };
   grid.addEventListener('click', onPick);
-  if (side) side.addEventListener('click', onPick);
-  var wasShown = null;
-  window.addEventListener('resize', function () { var now = Boolean(side && side.offsetParent !== null); if (now !== wasShown) { wasShown = now; renderGrid(); } });
 
   /* ---------------------------------------------------------------- the payment (bill) */
   function add(id, focus) {
     var v = byId[id];
-    if (!v || inBill(id)) return;
+    if (!v || inBill(id) || SIDE.indexOf(v.state) >= 0) return; // still waiting / with the doctor: not payable yet
     bill.push({ id: id, v: v, amount: v.due > 0 ? String(round(v.due)) : '', discount: '', insurer: '', coverage: '', reason: '', edited: false });
     hideAlert();
     renderBill();
@@ -572,7 +566,7 @@
     if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
     if (t === search) {
       e.preventDefault();
-      var first = filtered().filter(function (v) { return !inBill(v.id); })[0];
+      var first = filtered().filter(function (v) { return !inBill(v.id) && SIDE.indexOf(v.state) < 0; })[0];
       if (first) { add(first.id, false); search.select(); }
       return;
     }
@@ -701,7 +695,7 @@
       if (st.method) { var r = root.querySelector('input[name="pos_method"][value="' + st.method + '"]'); if (r) { r.checked = true; method = st.method; } }
     } catch (e) { /* ignore */ }
   }
-  (D.add || []).forEach(function (id) { if (byId[id] && !inBill(id)) bill.push({ id: id, v: byId[id], amount: byId[id].due > 0 ? String(round(byId[id].due)) : '', discount: '', insurer: '', coverage: '', reason: '', edited: false }); });
+  (D.add || []).forEach(function (id) { if (byId[id] && !inBill(id) && SIDE.indexOf(byId[id].state) < 0) bill.push({ id: id, v: byId[id], amount: byId[id].due > 0 ? String(round(byId[id].due)) : '', discount: '', insurer: '', coverage: '', reason: '', edited: false }); });
   if ((D.add || []).length && window.history && history.replaceState) history.replaceState(null, '', location.pathname);
   renderToday(D.totals);
   renderBill();

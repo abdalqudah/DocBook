@@ -38,7 +38,7 @@ const retOf = (v) => (Object.prototype.hasOwnProperty.call(RETURNS, v) ? v : 'ca
 
 /** Human text for an AppError: this area's codes first, then the shared table, then the English message. */
 function errorText(req, err) {
-  for (const key of [`errors_cashx.${err.code}`, `errors_cashier.${err.code}`, `errors.${err.code}`]) { const s = req.t(key); if (s !== key) return s; }
+  for (const key of [`errors_cashx.${err.code}`, `errors_cashier.${err.code}`, `errors.${err.code}`]) { const s = req.t(key, err.details && typeof err.details === 'object' ? err.details : undefined); if (s !== key) return s; }
   return err.message;
 }
 function fieldErrors(req, err) {
