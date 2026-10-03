@@ -7,7 +7,10 @@
   </div>
   <div class="page-actions">
     <%- include('_month') %>
-    <% if (rows.length) { %><%- include('../../../partials/export-menu', { href: '/app/payroll/export', query: { period: period } }) %><% } %>
+    <% if (rows.length) { %><%- include('../../../partials/export-menu', { href: '/app/payroll/export', query: { period: period } }) %>
+    <a class="btn btn-secondary" href="/app/payouts/bank?period=<%= period %>"><%- icon('landmark', 'icon-sm') %><%= t('nav.bank_transfers') %></a>
+    <% if (can('payroll.manage') && rows.some(function (r) { return r.payment; })) { %><form method="post" action="/app/payouts/slips/all" data-confirm="<%= t('payouts.slip_all_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><input type="hidden" name="_return" value="/app/payroll?period=<%= period %>"><button class="btn btn-secondary" type="submit"><%- icon('send', 'icon-sm') %><%= t('payouts.slip_send_all') %></button></form><% } %>
+    <% } %>
   </div>
 </div>
 

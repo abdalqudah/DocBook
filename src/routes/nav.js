@@ -52,6 +52,7 @@ const NAV = [
     { key: 'budgets', href: '/app/budgets', icon: 'target', perms: ['expenses.view'], cluster: 'spend' },
     { key: 'payroll', href: '/app/payroll', icon: 'wallet', perms: ['payroll.view'], badge: 'pendingAdjustments', cluster: 'people' },
     { key: 'staff_payroll', href: '/app/staff-payroll', icon: 'users', perms: ['payroll.view'], cluster: 'people' },
+    { key: 'bank_transfers', href: '/app/payouts/bank', icon: 'landmark', perms: ['payroll.view'], cluster: 'people' },
     { key: 'partners', href: '/app/partners', icon: 'handshake', perms: ['finance.view'], cluster: 'people' },
   ] },
   { group: 'clinic', icon: 'building-2', items: [

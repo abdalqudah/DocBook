@@ -148,6 +148,11 @@ router.post('/doctors/:id(\\d+)/unpay', can('payroll.approve'), attempt(async (r
 router.get('/doctors/:id(\\d+)/payslip', wrap(async (req, res) => {
   const period = periodOf(req);
   const id = Number(req.params.id);
+  if (req.query.format === 'pdf') {
+    const data = await require('../payouts/payslips.service').doctorSlip(req.ctx, id, period); // eslint-disable-line global-require
+    const pdf = require('../finance/pdf'); // eslint-disable-line global-require
+    return pdf.send(res, `payslip-${period}-${id}`, await pdf.doctorPayslip(req.ctx, data, req.t, req.locale), req.query.download === '1');
+  }
   const calc = await calcFull(req.ctx, id, period);
   const info = await knex('doctors').where({ id, business_id: req.ctx.businessId }).first();
   const p = calc.payment;
@@ -158,6 +163,7 @@ router.get('/doctors/:id(\\d+)/payslip', wrap(async (req, res) => {
     title: `${req.t('payroll.payslip')} · ${info.full_name} · ${period}`, ...nav(period), calc, info, rule, figures, draft: !p, printable: true,
     pageStyles: ['/css/ops.css'],
   });
+  return undefined;
 }));
 
 module.exports = router;

@@ -37,6 +37,12 @@ const GROUPS = [
     { key: 'surgeries.msg.mail_subject', vars: ['hospital', 'clinic', 'doctor', 'name', 'procedure', 'date'], line: true },
     { key: 'surgeries.msg.mail_body', vars: ['hospital', 'clinic', 'doctor', 'name', 'phone', 'procedure', 'date', 'time', 'notes'] },
   ] },
+  { key: 'payroll', items: [
+    { key: 'payouts.msg.slip_subject', vars: ['name', 'clinic', 'period'], line: true },
+    { key: 'payouts.msg.slip_body', vars: ['name', 'clinic', 'period'] },
+    { key: 'payouts.msg.bank_subject', vars: ['bank', 'clinic', 'period'], line: true },
+    { key: 'payouts.msg.bank_body', vars: ['bank', 'clinic', 'period', 'count', 'total', 'account'] },
+  ] },
   { key: 'after', items: [
     { key: 'share.thanks_message', vars: ['name', 'clinic', 'link'] },
     { key: 'messaging.text.review', vars: ['clinic', 'doctor', 'link'] },

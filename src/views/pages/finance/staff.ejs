@@ -31,6 +31,10 @@
       <% if (rows.length) { %>
         <%- include('../../partials/export-menu', { href: '/app/staff-payroll/export', query: { period: period } }) %>
         <a class="btn btn-secondary" href="/app/staff-payroll?period=<%= period %>&print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
+        <a class="btn btn-secondary" href="/app/payouts/bank?period=<%= period %>"><%- icon('landmark', 'icon-sm') %><%= t('nav.bank_transfers') %></a>
+        <% if (canManage && rows.some(function (r) { return r.status === 'paid'; })) { %>
+        <form method="post" action="/app/payouts/slips/all" data-confirm="<%= t('payouts.slip_all_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-secondary" type="submit"><%- icon('send', 'icon-sm') %><%= t('payouts.slip_send_all') %></button></form>
+        <% } %>
       <% } %>
       <% if (canManage && missing.length) { %>
         <form method="post" action="/app/staff-payroll/prepare"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-primary" type="submit"><%- icon('list-checks', 'icon-sm') %><%= t('staffpay.prepare') %></button></form>
@@ -105,6 +109,7 @@
               <% } %>
               <a class="btn btn-ghost btn-icon btn-sm" href="/app/staff-payroll/lines/<%= r.id %>/payslip" aria-label="<%= t('staffpay.payslip') %>" title="<%= t('staffpay.payslip') %>"><%- icon('file-text', 'icon-sm') %></a>
               <% if (canManage && !draft) { %>
+                <form method="post" action="/app/payouts/slips/staff/<%= r.id %>" class="fin-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-ghost btn-icon btn-sm<%= r.slip_sent_at ? ' fin-sent' : '' %>" type="submit" aria-label="<%= t('payouts.slip_send') %>" title="<%= r.slip_sent_at ? t('payouts.slip_sent_at', { date: fmt.date(r.slip_sent_at) }) + ' · ' + r.slip_sent_to : t('payouts.slip_send') %>"><%- icon('mail', 'icon-sm') %></button></form>
                 <button class="btn btn-ghost btn-icon btn-sm" type="button" data-open-dialog="reopen-dialog" data-reset-form data-action="/app/staff-payroll/lines/<%= r.id %>/reopen" data-dialog-title="<%= t('staffpay.reopen_for', { name: r.employee_name }) %>" aria-label="<%= t('staffpay.reopen') %>" title="<%= t('staffpay.reopen') %>"><%- icon('history', 'icon-sm') %></button>
               <% } %>
               <% if (canManage && draft) { %><%- include('../../partials/delete-form', { action: '/app/staff-payroll/lines/' + r.id + '/delete', confirmText: t('staffpay.line_remove_confirm', { name: r.employee_name }) }) %><% } %>

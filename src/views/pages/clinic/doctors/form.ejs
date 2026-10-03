@@ -47,6 +47,8 @@
       <%- include('../../../partials/field', { name: 'consultation_fee', label: t('doctors.fee'), value: v('consultation_fee', 0), suffix: currency, attrs: 'inputmode="decimal"' }) %>
       <%- include('../../../partials/field', { name: 'slot_duration_minutes', label: t('doctors.slot'), value: v('slot_duration_minutes', 30), suffix: t('common.minutes'), attrs: 'inputmode="numeric"', help: t('doctors.slot_help') }) %>
       <%- include('../../../partials/field', { name: 'base_salary', label: t('doctors.base_salary'), value: v('base_salary', 0), suffix: currency, attrs: 'inputmode="decimal"' }) %>
+      <% if (can('payroll.view')) { %><%- include('../../../partials/field', { name: 'bank_name', label: t('payouts.bank_name'), value: v('bank_name', '') || '' }) %>
+      <%- include('../../../partials/field', { name: 'iban', label: t('payouts.iban'), value: v('iban', '') || '', attrs: 'dir="ltr" autocomplete="off"', help: t('payouts.iban_help') }) %><% } %>
       <%- include('../../../partials/field', { name: 'sort_order', label: t('doctors.sort_order'), value: v('sort_order', 0), attrs: 'inputmode="numeric"' }) %>
       <div class="field"><label class="label" for="f-color"><%= t('doctors.color') %></label><input class="color-input" id="f-color" type="color" name="color" value="<%= v('color', '') || '#0e7c6b' %>"></div>
       <div class="stack-sm" style="justify-content:flex-end">

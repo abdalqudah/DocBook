@@ -5,6 +5,7 @@ const exporter = require('../../core/exporter');
 const charts = require('../../core/charts');
 const fmt = require('../../core/format');
 const svc = require('./expense.service');
+const recurring = require('./recurring.service');
 
 const router = express.Router();
 router.use(can('expenses.view'));
@@ -24,7 +25,9 @@ async function render(req, res, extra = {}) {
   const byCat = await svc.expenses.applyFilters(svc.expenses.scoped(req.ctx), req.ctx, req.query)
     .select('category').sum({ total: 'amount' }).groupBy('category').orderBy('total', 'desc');
   const breakdown = charts.bars({ items: byCat.slice(0, 8).map((r) => ({ label: catName(r.category), value: Number(r.total) })), fmt: (v) => fmt.formatCompact(v, req.business.currency, req.locale) });
+  const dueRows = await recurring.due(req.ctx);
   res.page('pages/expenses/index', {
+    dueCount: dueRows.length,
     title: req.t('nav.expenses'), rows, totals, meta, system, custom, catName, breakdown, hasBreakdown: byCat.length > 0,
     methods: svc.PAYMENT_METHODS, filtered: ['q', 'category', 'method', 'from', 'to', 'month'].some((k) => req.query[k] && req.query[k] !== 'all'), ...extra,
   });
@@ -65,5 +68,48 @@ router.post('/categories', can('expenses.manage'), form(async (req, res) => {
   flash(req, 'success', req.t('expenses.category_added'));
   res.redirect('/app/expenses');
 }, (req, res, extra) => render(req, res, { ...extra, openDialog: 'category-dialog' })));
+
+// Recurring expenses: rent, phone, internet… recorded on their date by themselves or after a click.
+async function renderRecurring(req, res, extra = {}) {
+  const { system, custom } = await svc.categories(req.ctx.businessId);
+  const [rows, dueRows] = await Promise.all([recurring.list(req.ctx), recurring.due(req.ctx)]);
+  const active = rows.filter((r) => r.is_active);
+  const perMonth = { week: 52 / 12, month: 1, quarter: 1 / 3, year: 1 / 12 };
+  const monthly = active.reduce((s, r) => s + Number(r.amount) * perMonth[r.every], 0);
+  res.page('pages/expenses/recurring', {
+    title: req.t('recurring.title'), rows, dueRows, monthly, activeCount: active.length, system, custom, catName: catLabel(res, custom),
+    methods: svc.PAYMENT_METHODS, everyList: recurring.EVERY, modes: recurring.MODES, pageStyles: ['/css/finance.css'], ...extra,
+  });
+}
+router.get('/recurring', wrap((req, res) => renderRecurring(req, res)));
+const recurringAgain = (req, res, extra) => renderRecurring(req, res, { ...extra, openDialog: 'recurring-dialog', formAction: req.originalUrl });
+router.post('/recurring', can('expenses.manage'), form(async (req, res) => {
+  await recurring.save(req.ctx, null, req.body);
+  flash(req, 'success', req.t('recurring.saved'));
+  res.redirect('/app/expenses/recurring');
+}, recurringAgain));
+router.post('/recurring/:id(\\d+)', can('expenses.manage'), form(async (req, res) => {
+  await recurring.save(req.ctx, Number(req.params.id), req.body);
+  flash(req, 'success', req.t('common.updated'));
+  res.redirect('/app/expenses/recurring');
+}, recurringAgain));
+router.post('/recurring/:id(\\d+)/delete', can('expenses.manage'), wrap(async (req, res) => {
+  await recurring.remove(req.ctx, Number(req.params.id));
+  flash(req, 'success', req.t('common.deleted'));
+  res.redirect('/app/expenses/recurring');
+}));
+// One due occurrence: record it (the amount can differ this time, e.g. the phone bill) or skip it.
+router.post('/recurring/:id(\\d+)/post', can('expenses.manage'), wrap(async (req, res) => {
+  const r = await recurring.get(req.ctx, Number(req.params.id));
+  await recurring.post(req.ctx, r, { amount: req.body.amount });
+  flash(req, 'success', req.t('recurring.posted', { title: r.title }));
+  res.redirect(backTo(req.body._return || '/app/expenses/recurring'));
+}));
+router.post('/recurring/:id(\\d+)/skip', can('expenses.manage'), wrap(async (req, res) => {
+  const r = await recurring.get(req.ctx, Number(req.params.id));
+  await recurring.skip(req.ctx, r);
+  flash(req, 'success', req.t('recurring.skipped', { title: r.title }));
+  res.redirect(backTo(req.body._return || '/app/expenses/recurring'));
+}));
 
 module.exports = router;

@@ -1,0 +1,53 @@
+<% var canManage = can('payroll.manage'); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/payouts/bank"><%= t('payouts.bank_title') %></a></div>
+    <h1><%= t('payouts.templates_title') %></h1>
+    <p><%= t('payouts.templates_lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (canManage) { %><a class="btn btn-primary" href="/app/payouts/bank/templates/new"><%- icon('plus', 'icon-sm') %><%= t('payouts.new_template') %></a><% } %>
+  </div>
+</div>
+<div class="grid grid-main">
+  <div class="panel flush">
+    <% if (!templates.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'landmark', emptyTitle: t('payouts.start_title'), emptyText: t('payouts.start_text'), emptyAction: '' }) %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('payouts.bank_name') %></th><th><%= t('payouts.format') %></th><th><%= t('payouts.columns') %></th><th><%= t('payouts.bank_email') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+        <% templates.forEach(function (tp) { %>
+          <tr>
+            <td class="primary-cell"><div class="strong"><%= tp.name %><% if (tp.is_default) { %> <span class="badge"><%= t('payouts.default') %></span><% } %></div><% if (tp.matchList.length) { %><div class="small muted"><%= tp.matchList.join(' · ') %></div><% } %></td>
+            <td data-label="<%= t('payouts.format') %>"><%= tp.format.toUpperCase() %></td>
+            <td data-label="<%= t('payouts.columns') %>" class="small"><%= tp.columns.map(function (c) { return c.label || t('payouts.field.' + c.field); }).join(' · ') %></td>
+            <td data-label="<%= t('payouts.bank_email') %>"><bdi dir="ltr"><%= tp.email || '—' %></bdi></td>
+            <td class="actions">
+              <% if (canManage) { %>
+                <a class="btn btn-ghost btn-icon btn-sm" href="/app/payouts/bank/templates/<%= tp.id %>" aria-label="<%= t('common.edit') %>"><%- icon('pencil', 'icon-sm') %></a>
+                <%- include('../../partials/delete-form', { action: '/app/payouts/bank/templates/' + tp.id + '/delete' }) %>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+  <div class="stack">
+    <% if (canManage) { %>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('payouts.presets') %></h2></div>
+      <div class="panel-body stack">
+        <% ['simple', 'detailed'].forEach(function (k) { %>
+        <form method="post" action="/app/payouts/bank/templates/preset"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="preset" value="<%= k %>"><button class="btn btn-secondary btn-block" type="submit"><%- icon('file-text', 'icon-sm') %><%= t('payouts.preset.' + k) %></button><div class="tiny muted mt-1"><%= t('payouts.preset_hint.' + k) %></div></form>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+    <div class="alert alert-info small"><div class="alert-title"><%= t('payouts.any_bank_title') %></div><%= t('payouts.any_bank') %></div>
+  </div>
+</div>

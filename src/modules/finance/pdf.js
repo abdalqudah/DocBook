@@ -98,6 +98,37 @@ async function payslip(ctx, data, t, locale) {
   return w.end();
 }
 
+/** Doctor payslip (base + commission + approved adjustments). data = { doctor, period, figures, payment, staffLabels } */
+async function doctorPayslip(ctx, data, t, locale) {
+  const en = locale === 'en';
+  const clinic = await clinicOf(ctx.businessId);
+  const money = (v, sign = '') => ltr(`${sign ? `${sign} ` : ''}${formatMoney(v, clinic.currency, locale)}`);
+  const { doctor: d, period, figures: f, payment: p } = data;
+  const name = pick(en, d.full_name, d.full_name_en);
+  const w = new Writer({ locale, title: `${t('payroll.payslip')} ${name} ${period}` });
+  letterhead(w, clinic, en);
+  titleRow(w, t('payroll.payslip'), [formatMonth(period, locale), p ? t('payroll.status.paid') : t('payroll.draft')]);
+  w.fields([
+    { label: t('payouts.doctor'), value: name },
+    { label: t('payouts.specialty'), value: pick(en, d.specialization, d.specialization_en) || '—' },
+    { label: t('staffpay.bank'), value: [d.bank_name, d.iban ? ltr(d.iban) : ''].filter(Boolean).join(' · ') || '—' },
+  ], { cols: 3 });
+  w.space(4);
+  line(w, t('payroll.base_salary'), money(f.base));
+  line(w, t('payroll.commission'), money(f.commission, '+'));
+  line(w, t('payroll.bonuses'), money(f.bonuses, '+'));
+  line(w, t('payroll.deductions'), money(f.deductions, '−'));
+  line(w, t('payroll.advances'), money(f.advances, '−'));
+  line(w, t('payroll.net_pay'), money(f.net), { strong: true });
+  if (p) {
+    w.space(10);
+    w.text(t('staffpay.paid_line', { date: formatDate(p.paid_at, locale), method: p.payment_method ? t(`payment_methods.${p.payment_method}`) : '—', ref: p.reference || '—' }), { size: 9, color: C.textMuted });
+  }
+  signatures(w, [t('staffpay.sign_prepared'), t('payouts.sign_doctor')]);
+  w.footer(`${pick(en, clinic.name, clinic.name_en)} · ${t('payroll.payslip')} ${period}`, (i, n) => `${i} / ${n}`);
+  return w.end();
+}
+
 /** Partner voucher (capital injection, withdrawal or profit share). data = partners.voucher() */
 async function voucher(ctx, data, t, locale) {
   const en = locale === 'en';
@@ -167,4 +198,4 @@ const send = (res, name, buf, download) => {
   res.send(buf);
 };
 
-module.exports = { payslip, voucher, statement, send };
+module.exports = { payslip, doctorPayslip, voucher, statement, send };

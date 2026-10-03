@@ -1,0 +1,76 @@
+<%
+  var o = typeof old !== 'undefined' && old ? old : {};
+  var tp = tpl || {};
+  var v = function (k, d) { return o[k] !== undefined ? o[k] : (tp[k] !== undefined && tp[k] !== null ? tp[k] : d); };
+  var cols = typeof draftCols !== 'undefined' && draftCols ? draftCols : (tp.columns || ['seq', 'name', 'iban', 'bank_name', 'amount', 'currency', 'reference'].map(function (f) { return { field: f, label: t('payouts.field.' + f), value: '' }; }));
+  var fieldOpts = function (sel) { return fields.map(function (f) { return '<option value="' + f + '"' + (f === sel ? ' selected' : '') + '>' + escapeHtml(t('payouts.field.' + f)) + '</option>'; }).join(''); };
+  var err = typeof errors !== 'undefined' && errors ? errors : {};
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/payouts/bank"><%= t('payouts.bank_title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/app/payouts/bank/templates"><%= t('payouts.templates_title') %></a></div>
+    <h1><%= tpl ? tpl.name : t('payouts.new_template') %></h1>
+  </div>
+</div>
+<form method="post" action="/app/payouts/bank/templates<%= tpl && tpl.id ? '/' + tpl.id : '' %>" novalidate class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('payouts.bank_section') %></h2></div>
+    <div class="panel-body form-grid">
+      <%- include('../../partials/field', { name: 'name', label: t('payouts.bank_name'), required: true, value: v('name', ''), placeholder: t('payouts.bank_name_ph') }) %>
+      <%- include('../../partials/field', { name: 'email', label: t('payouts.bank_email'), type: 'email', value: v('email', ''), attrs: 'dir="ltr"', help: t('payouts.bank_email_help') }) %>
+      <%- include('../../partials/field', { name: 'match', label: t('payouts.match'), value: v('match', ''), cls: 'full', help: t('payouts.match_help') }) %>
+      <%- include('../../partials/field', { name: 'debit_iban', label: t('payouts.debit_iban'), value: v('debit_iban', ''), attrs: 'dir="ltr" autocomplete="off"' }) %>
+      <%- include('../../partials/field', { name: 'debit_name', label: t('payouts.debit_name'), value: v('debit_name', '') }) %>
+      <label class="check full"><input type="checkbox" name="is_default" value="1"<%= v('is_default', false) && v('is_default', false) !== '0' ? ' checked' : '' %>> <%= t('payouts.is_default') %></label>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('payouts.file_section') %></h2></div>
+    <div class="panel-body form-grid">
+      <%- include('../../partials/field', { name: 'format', label: t('payouts.format'), type: 'select', value: v('format', 'csv'), options: formats.map(function (f) { return { value: f, label: t('payouts.formats.' + f) }; }) }) %>
+      <%- include('../../partials/field', { name: 'delimiter', label: t('payouts.delimiter'), type: 'select', value: o.delimiter || delimiterKey, options: delimiters.map(function (d) { return { value: d, label: t('payouts.delimiters.' + d) }; }), help: t('payouts.delimiter_help') }) %>
+      <%- include('../../partials/field', { name: 'decimals', label: t('payouts.decimals'), type: 'select', value: String(v('decimals', 3)), options: [0, 1, 2, 3].map(function (n) { return { value: String(n), label: String(n) }; }) }) %>
+      <%- include('../../partials/field', { name: 'date_format', label: t('payouts.date_format'), type: 'select', value: v('date_format', 'YYYY-MM-DD'), options: dateFormats.map(function (f) { return { value: f, label: f }; }) }) %>
+      <label class="check full"><input type="checkbox" name="header" value="1"<%= (tpl ? (o.name !== undefined ? o.header : tp.header) : (o.name !== undefined ? o.header : true)) ? ' checked' : '' %>> <%= t('payouts.header_row') %></label>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><h2><%= t('payouts.columns') %></h2><div class="panel-sub"><%= t('payouts.columns_help') %></div></div></div>
+    <div class="panel-body">
+      <% if (err.columns) { %><div class="alert alert-error small mb-4"><%= err.columns %></div><% } %>
+      <ol class="bk-cols" data-cols>
+        <% cols.forEach(function (c) { %>
+        <li class="bk-col" data-col>
+          <span class="bk-col-n" aria-hidden="true"></span>
+          <select class="select" name="col_field" aria-label="<%= t('payouts.col_field') %>" data-col-field><%- fieldOpts(c.field) %></select>
+          <input class="input" name="col_label" value="<%= c.label %>" placeholder="<%= t('payouts.col_label') %>" aria-label="<%= t('payouts.col_label') %>">
+          <input class="input" name="col_value" value="<%= c.value || '' %>" placeholder="<%= t('payouts.col_value') %>" aria-label="<%= t('payouts.col_value') %>" data-col-value>
+          <span class="bk-col-tools">
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-col-up aria-label="<%= t('payouts.move_up') %>"><%- icon('chevron-up', 'icon-sm') %></button>
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-col-down aria-label="<%= t('payouts.move_down') %>"><%- icon('chevron-down', 'icon-sm') %></button>
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-col-remove aria-label="<%= t('common.delete') %>"><%- icon('x', 'icon-sm') %></button>
+          </span>
+        </li>
+        <% }) %>
+      </ol>
+      <button class="btn btn-secondary btn-sm mt-2" type="button" data-col-add><%- icon('plus', 'icon-sm') %><%= t('payouts.add_column') %></button>
+      <template data-col-template>
+        <li class="bk-col" data-col>
+          <span class="bk-col-n" aria-hidden="true"></span>
+          <select class="select" name="col_field" aria-label="<%= t('payouts.col_field') %>" data-col-field><%- fieldOpts('text') %></select>
+          <input class="input" name="col_label" value="" placeholder="<%= t('payouts.col_label') %>" aria-label="<%= t('payouts.col_label') %>">
+          <input class="input" name="col_value" value="" placeholder="<%= t('payouts.col_value') %>" aria-label="<%= t('payouts.col_value') %>" data-col-value>
+          <span class="bk-col-tools">
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-col-up aria-label="<%= t('payouts.move_up') %>"><%- icon('chevron-up', 'icon-sm') %></button>
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-col-down aria-label="<%= t('payouts.move_down') %>"><%- icon('chevron-down', 'icon-sm') %></button>
+            <button class="btn btn-ghost btn-icon btn-sm" type="button" data-col-remove aria-label="<%= t('common.delete') %>"><%- icon('x', 'icon-sm') %></button>
+          </span>
+        </li>
+      </template>
+      <script type="application/json" data-field-labels><%- JSON.stringify(Object.fromEntries(fields.map(function (f) { return [f, t('payouts.field.' + f)]; }))).replace(/</g, '\\u003c') %></script>
+    </div>
+  </div>
+  <div class="row"><a class="btn btn-ghost" href="/app/payouts/bank/templates"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>

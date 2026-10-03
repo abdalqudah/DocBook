@@ -421,6 +421,18 @@
           "hospital": {
             "title": "The surgery date to the hospital",
             "text": "Send the surgery date and the patient's details to the hospital from the clinic's e-mail or on WhatsApp in one click, in the clinic's own wording."
+          },
+          "recurring": {
+            "title": "Automatic recurring expenses",
+            "text": "Rent, phone and internet are recorded on their date every month — by themselves or after confirming the actual amount."
+          },
+          "payslips": {
+            "title": "Payslips by e-mail",
+            "text": "A PDF payslip for every staff member and doctor, sent to their e-mail from the clinic’s mail — one by one or all at once."
+          },
+          "bank": {
+            "title": "Salary file for any bank",
+            "text": "Describe your bank’s file once (columns, order, CSV or Excel), then download it or e-mail it to the bank, with IBAN checks."
           }
         }
       },

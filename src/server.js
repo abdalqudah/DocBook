@@ -93,6 +93,9 @@ async function start(server) {
     setInterval(messagingTick, 60_000).unref();
     setInterval(() => require('./modules/subscriptions/subscriptions.service').runDue().catch((e) => console.error('[subscriptions]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- trials/periods ending, reminders (no-op while subscriptions are off)
     setInterval(() => require('./modules/finance/budgets.service').runDue().catch((e) => console.error('[budgets]', e.message)), 24 * 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- daily budget threshold / exceeded alerts (once per budget per month)
+    const recurringTick = () => require('./modules/expenses/recurring.service').runDue().catch((e) => console.error('[recurring]', e.message)); // eslint-disable-line global-require, no-console -- rent, phone… recorded on their date
+    setTimeout(recurringTick, 30_000).unref();
+    setInterval(recurringTick, 60 * 60_000).unref();
     setInterval(() => require('./modules/branding/domain.service').recheckDue().catch((e) => console.error('[domains]', e.message)), 6 * 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- daily re-check of connected domains (notify only)
     // Each clinic's own encrypted backup, once a day (checked hourly; the last 7 automatic ones are kept).
     setInterval(() => require('./modules/platformops/clinic-backup').runNightly().catch((e) => console.error('[clinic-backup]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console

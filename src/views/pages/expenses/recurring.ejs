@@ -1,0 +1,104 @@
+<% var canManage = can('expenses.manage'); var cats = system.map(function (k) { return { value: k, label: catName(k) }; }).concat(custom.map(function (c) { return { value: c.key, label: c.name }; })); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/expenses"><%= t('expenses.title') %></a></div>
+    <h1><%= t('recurring.title') %></h1>
+    <p><%= t('recurring.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <% if (canManage) { %><button class="btn btn-primary" type="button" data-open-dialog="recurring-dialog" data-reset-form data-action="/app/expenses/recurring" data-dialog-title="<%= t('recurring.add') %>"><%- icon('plus', 'icon-sm') %><%= t('recurring.add') %></button><% } %>
+  </div>
+</div>
+
+<% if (dueRows.length) { %>
+<div class="panel mb-4">
+  <div class="panel-head"><h2><%- icon('bell', 'icon-sm') %> <%= t('recurring.due_title', { n: dueRows.length }) %></h2></div>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('common.date') %></th><th><%= t('expenses.title_field') %></th><th class="actions"><%= t('common.amount') %> (<%= currency %>)</th></tr></thead>
+      <tbody>
+      <% dueRows.forEach(function (r) { %>
+        <tr>
+          <td data-label="<%= t('common.date') %>" class="nowrap"><%= fmt.date(r.next_date) %></td>
+          <td class="primary-cell"><div class="strong"><%= r.title %></div><div class="small muted"><%= catName(r.category) %> · <%= t('recurring.every.' + r.every) %></div></td>
+          <td class="actions rx-due">
+            <% if (canManage) { %>
+            <form method="post" action="/app/expenses/recurring/<%= r.id %>/post" class="rx-due-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input class="input input-sm" name="amount" value="<%= Number(r.amount) %>" inputmode="decimal" aria-label="<%= t('common.amount') %>">
+              <button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('recurring.post') %></button>
+            </form>
+            <form method="post" action="/app/expenses/recurring/<%= r.id %>/skip" class="rx-due-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-ghost btn-sm" type="submit"><%= t('recurring.skip') %></button>
+            </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
+
+<div class="grid grid-main">
+  <div class="panel flush">
+    <% if (!rows.length) { %>
+      <%- include('../../partials/empty', { emptyIcon: 'refresh-cw', emptyTitle: t('recurring.empty_title'), emptyText: t('recurring.empty_text'), emptyAction: canManage ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="recurring-dialog" data-reset-form>' + t('recurring.add') + '</button>' : '' }) %>
+    <% } else { %>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th><%= t('expenses.title_field') %></th><th><%= t('recurring.every_label') %></th><th><%= t('recurring.next') %></th><th><%= t('recurring.mode_label') %></th><th class="num"><%= t('common.amount') %> (<%= currency %>)</th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody>
+        <% rows.forEach(function (r) { %>
+          <tr<%= r.is_active ? '' : ' class="muted"' %>>
+            <td class="primary-cell"><div class="strong"><%= r.title %></div><div class="small muted"><%= catName(r.category) %> · <%= label('payment_methods', r.payment_method) %><%= r.last_posted ? ' · ' + t('recurring.last', { date: fmt.date(r.last_posted) }) : '' %></div></td>
+            <td data-label="<%= t('recurring.every_label') %>"><%= t('recurring.every.' + r.every) %></td>
+            <td data-label="<%= t('recurring.next') %>" class="nowrap"><%= r.is_active ? fmt.date(r.next_date) : t('recurring.stopped') %><%= r.end_date ? ' → ' + fmt.date(r.end_date) : '' %></td>
+            <td data-label="<%= t('recurring.mode_label') %>"><span class="badge<%= r.mode === 'auto' ? ' badge-success' : '' %>"><%= t('recurring.mode.' + r.mode) %></span></td>
+            <td data-label="<%= t('common.amount') %>" class="num strong"><%= fmt.amount(r.amount) %></td>
+            <td class="actions">
+              <% if (canManage) { %>
+                <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="recurring-dialog" data-action="/app/expenses/recurring/<%= r.id %>" data-dialog-title="<%= t('recurring.edit') %>" data-fill="<%= json({ title: r.title, category: r.category, amount: r.amount, payment_method: r.payment_method, every: r.every, next_date: r.next_date, end_date: r.end_date, mode: r.mode, notes: r.notes, is_active: !!r.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button>
+                <%- include('../../partials/delete-form', { action: '/app/expenses/recurring/' + r.id + '/delete' }) %>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+  <div class="stack">
+    <div class="stat hero"><div class="stat-label"><%= t('recurring.monthly') %><span class="stat-icon"><%- icon('refresh-cw') %></span></div><div class="stat-value"><%= fmt.money(monthly) %></div><div class="stat-meta"><%= t('recurring.active', { n: activeCount }) %></div></div>
+    <div class="alert alert-info small"><div class="alert-title"><%= t('recurring.how_title') %></div><%= t('recurring.how') %></div>
+  </div>
+</div>
+
+<% if (canManage) { %>
+<dialog class="dialog" id="recurring-dialog" data-new-dialog aria-labelledby="recurring-dialog-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'recurring-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/expenses/recurring' %>" novalidate>
+    <div class="dialog-head"><h2 id="recurring-dialog-title" data-dialog-title-target><%= t('recurring.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="_has_active" value="1">
+      <%- include('../../partials/form-error') %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'title', label: t('expenses.title_field'), required: true, cls: 'full', placeholder: t('recurring.title_placeholder') }) %>
+        <%- include('../../partials/field', { name: 'amount', label: t('common.amount'), required: true, type: 'text', suffix: currency, attrs: 'inputmode="decimal"' }) %>
+        <%- include('../../partials/field', { name: 'category', label: t('common.category'), type: 'select', required: true, options: cats, value: 'rent' }) %>
+        <%- include('../../partials/field', { name: 'every', label: t('recurring.every_label'), type: 'select', required: true, options: everyList.map(function (e) { return { value: e, label: t('recurring.every.' + e) }; }), value: 'month' }) %>
+        <%- include('../../partials/field', { name: 'next_date', label: t('recurring.first_date'), required: true, type: 'date', value: today, attrs: 'data-default="' + today + '"', help: t('recurring.first_date_help') }) %>
+        <%- include('../../partials/field', { name: 'payment_method', label: t('expenses.payment_method'), type: 'select', required: true, options: methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }), value: 'bank_transfer' }) %>
+        <%- include('../../partials/field', { name: 'end_date', label: t('recurring.end_date'), type: 'date', help: t('recurring.end_help') }) %>
+        <%- include('../../partials/field', { name: 'mode', label: t('recurring.mode_label'), type: 'select', required: true, cls: 'full', options: modes.map(function (m) { return { value: m, label: t('recurring.mode_help.' + m) }; }), value: 'confirm' }) %>
+        <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
+        <label class="check full"><input type="checkbox" name="is_active" value="1" checked> <%= t('recurring.is_active') %></label>
+      </div>
+    </div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>
+<% } %>

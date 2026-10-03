@@ -930,7 +930,8 @@
       "after": "After the visit",
       "email": "Appointment e-mails",
       "partners": "To pharmacies, imaging centres and labs",
-      "surgeries": "Surgery dates to the hospital"
+      "surgeries": "Surgery dates to the hospital",
+      "payroll": "Salaries & bank"
     },
     "group_sub": {
       "booking": "Sent automatically on WhatsApp or SMS. E-mails use the “Appointment e-mails” texts below; when those are empty, this text.",
@@ -938,7 +939,8 @@
       "after": "Thank-you and review request.",
       "email": "Subject and text of each e-mail; the link is a button under the text.",
       "partners": "When a prescription or request goes to a partner of the clinic.",
-      "surgeries": "When a surgery date is sent to the hospital from the Surgeries page."
+      "surgeries": "When a surgery date is sent to the hospital from the Surgeries page.",
+      "payroll": "The payslip to a staff member or doctor, and the salary file e-mail to the bank. Amounts are only in the attachment."
     },
     "item": {
       "messaging_text_received": "Booking request received (online booking)",
@@ -968,7 +970,11 @@
       "share_partner_mail_body": "E-mail text to the partner",
       "surgeries_msg_wa": "WhatsApp message to the hospital",
       "surgeries_msg_mail_subject": "E-mail subject",
-      "surgeries_msg_mail_body": "E-mail text"
+      "surgeries_msg_mail_body": "E-mail text",
+      "payouts_msg_slip_subject": "Payslip e-mail subject",
+      "payouts_msg_slip_body": "Payslip e-mail text",
+      "payouts_msg_bank_subject": "Bank file e-mail subject",
+      "payouts_msg_bank_body": "Bank file e-mail text"
     },
     "vars": "Words you can use:",
     "var": {

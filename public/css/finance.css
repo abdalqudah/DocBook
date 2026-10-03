@@ -97,3 +97,21 @@
   .table.responsive td.primary-cell { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2px; text-align: start; }
   .table.responsive td.actions .fin-actions { flex-wrap: wrap; }
 }
+
+/* Recurring expenses: each due occurrence is recorded (amount editable this time) or skipped, in one row. */
+.rx-due { white-space: nowrap; }
+.rx-due-form { display: inline-flex; align-items: center; gap: var(--space-2, .5rem); margin: 0; }
+.rx-due-form .input { width: 7.5rem; }
+
+/* Bank transfer: one form per bank file, and the column builder of a bank layout. */
+.bk-pick { width: 2.25rem; }
+.bk-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); align-items: end; border-top: 1px solid var(--border); }
+.bk-actions .row { justify-content: flex-end; }
+.bk-cols { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.bk-col { display: grid; grid-template-columns: 1.75rem minmax(140px, 1fr) minmax(140px, 1.2fr) minmax(120px, 1fr) auto; gap: var(--space-2); align-items: center; }
+.bk-col-n { font-variant-numeric: tabular-nums; color: var(--text-muted); text-align: center; font-size: 12px; }
+.bk-col [hidden] { display: block; visibility: hidden; }
+.bk-col-tools { display: inline-flex; }
+@media (max-width: 640px) { .bk-col { grid-template-columns: 1.5rem 1fr; } .bk-col > .input, .bk-col-tools { grid-column: 2; } .bk-col [hidden] { display: none; } }
+.fin-inline { display: inline-flex; margin: 0; }
+.fin-sent { color: var(--success); }

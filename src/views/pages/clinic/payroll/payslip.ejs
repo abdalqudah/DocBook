@@ -13,6 +13,10 @@
   </div>
   <div class="page-actions">
     <%- include('_month') %>
+    <a class="btn btn-secondary" href="?period=<%= period %>&format=pdf" target="_blank" rel="noopener"><%- icon('file-text', 'icon-sm') %>PDF</a>
+    <% if (can('payroll.manage')) { %>
+    <form method="post" action="/app/payouts/slips/doctor/<%= d.id %>"<%= draft ? ' data-confirm="' + t('payouts.draft_confirm') + '"' : '' %>><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><button class="btn btn-secondary" type="submit" title="<%= p && p.slip_sent_at ? t('payouts.slip_sent_at', { date: fmt.date(p.slip_sent_at) }) + ' · ' + p.slip_sent_to : (d.email || '') %>"><%- icon('send', 'icon-sm') %><%= t('payouts.slip_send') %></button></form>
+    <% } %>
     <a class="btn btn-primary" href="?period=<%= period %>&print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
   </div>
 </div>

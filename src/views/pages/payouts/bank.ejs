@@ -1,0 +1,105 @@
+<% var canManage = can('payroll.manage'); var L = function (p) { return locale === 'en' && p.name_en ? p.name_en : p.name; }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('navx.sec_finance') %></div>
+    <h1><%= t('payouts.bank_title') %></h1>
+    <p><%= t('payouts.bank_lead') %></p>
+  </div>
+  <div class="page-actions">
+    <%- include('../finance/_month') %>
+    <a class="btn btn-secondary" href="/app/payouts/bank/templates"><%- icon('settings', 'icon-sm') %><%= t('payouts.templates_title') %></a>
+  </div>
+</div>
+
+<% if (!templates.length) { %>
+  <div class="panel">
+    <div class="panel-body stack">
+      <h2><%= t('payouts.start_title') %></h2>
+      <p class="muted"><%= t('payouts.start_text') %></p>
+      <% if (canManage) { %>
+      <div class="row wrap">
+        <% ['simple', 'detailed'].forEach(function (k) { %>
+        <form method="post" action="/app/payouts/bank/templates/preset"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="preset" value="<%= k %>"><input type="hidden" name="_return" value="/app/payouts/bank?period=<%= period %>"><button class="btn btn-secondary" type="submit"><%- icon('file-text', 'icon-sm') %><%= t('payouts.preset.' + k) %> · <%= t('payouts.preset_hint.' + k) %></button></form>
+        <% }) %>
+        <a class="btn btn-primary" href="/app/payouts/bank/templates/new"><%- icon('plus', 'icon-sm') %><%= t('payouts.new_template') %></a>
+      </div>
+      <% } %>
+    </div>
+  </div>
+<% } else if (!people.length) { %>
+  <div class="panel"><%- include('../../partials/empty', { emptyIcon: 'landmark', emptyTitle: t('payouts.none_title'), emptyText: t('payouts.none_text'), emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/staff-payroll?period=' + period + '">' + t('nav.staff_payroll') + '</a> <a class="btn btn-secondary btn-sm" href="/app/payroll?period=' + period + '">' + t('nav.payroll') + '</a>' }) %></div>
+<% } else { %>
+  <div class="grid grid-3 mb-4">
+    <div class="stat"><div class="stat-label"><%= t('payouts.people') %></div><div class="stat-value"><%= people.length %></div></div>
+    <div class="stat"><div class="stat-label"><%= t('payouts.total') %></div><div class="stat-value"><%= fmt.money(total) %></div></div>
+    <div class="stat"><div class="stat-label"><%= t('payouts.files') %></div><div class="stat-value"><%= groups.length %></div></div>
+  </div>
+  <% groups.forEach(function (g, gi) { var tp = g.template; var fid = 'bk-' + gi; %>
+  <form class="panel mb-4 bk-group" method="post" action="/app/payouts/bank/make" data-bank-group>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="period" value="<%= period %>">
+    <input type="hidden" name="template_id" value="<%= tp.id %>">
+    <div class="panel-head">
+      <div>
+        <h2><%- icon('landmark', 'icon-sm') %> <%= tp.name %><% if (tp.is_default) { %> <span class="badge"><%= t('payouts.default') %></span><% } %></h2>
+        <div class="panel-sub"><%= t('payouts.group_sub', { n: g.payees.length, format: tp.format.toUpperCase() }) %> · <%= fmt.money(g.total) %><%= tp.email ? ' · ' + tp.email : '' %></div>
+      </div>
+      <% if (canManage) { %><a class="btn btn-ghost btn-sm" href="/app/payouts/bank/templates/<%= tp.id %>"><%- icon('pencil', 'icon-sm') %><%= t('payouts.edit_layout') %></a><% } %>
+    </div>
+    <div class="table-wrap">
+      <table class="table responsive">
+        <thead><tr><th class="bk-pick"><input type="checkbox" checked data-pick-all aria-label="<%= t('payouts.pick_all') %>"></th><th><%= t('common.name') %></th><th><%= t('payouts.bank_name') %></th><th><%= t('payouts.iban') %></th><th><%= t('common.status') %></th><th class="num"><%= t('payouts.net') %> (<%= currency %>)</th></tr></thead>
+        <tbody>
+        <% g.payees.forEach(function (p) { var ok = p.account === 'ok' || p.account === 'account'; %>
+          <tr>
+            <td class="bk-pick"><input type="checkbox" name="p" value="<%= p.key %>"<%= ok ? ' checked' : ' disabled' %> aria-label="<%= L(p) %>"></td>
+            <td class="primary-cell"><div class="strong"><%= L(p) %></div><div class="small muted"><%= t('payouts.type.' + p.type) %><%= p.job_title ? ' · ' + p.job_title : '' %></div></td>
+            <td data-label="<%= t('payouts.bank_name') %>"><%= p.bank_name || '—' %></td>
+            <td data-label="<%= t('payouts.iban') %>"><% if (p.iban) { %><bdi dir="ltr" class="mono small"><%= p.iban %></bdi><% } %>
+              <% if (p.account === 'missing') { %><span class="badge badge-danger"><%= t('payouts.account.missing') %></span><% } else if (p.account === 'bad') { %><span class="badge badge-danger"><%= t('payouts.account.bad') %></span><% } else if (p.account === 'account') { %><span class="badge"><%= t('payouts.account.account') %></span><% } %>
+            </td>
+            <td data-label="<%= t('common.status') %>"><% if (p.paid) { %><span class="badge badge-success badge-dot"><%= t('payouts.paid') %><%= p.method ? ' · ' + label('payment_methods', p.method) : '' %></span><% } else { %><span class="badge badge-warning"><%= t('payouts.unpaid') %></span><% } %></td>
+            <td data-label="<%= t('payouts.net') %>" class="num strong"><%= fmt.amount(p.amount) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% if (g.payees.some(function (p) { return p.account === 'missing' || p.account === 'bad'; })) { %><div class="panel-body"><div class="alert alert-warning small"><%= t('payouts.fix_accounts') %></div></div><% } %>
+    <% if (canManage) { %>
+    <div class="panel-body bk-actions">
+      <div class="field"><label class="label" for="<%= fid %>-date"><%= t('payouts.value_date') %></label><input class="input" type="date" id="<%= fid %>-date" name="value_date" value="<%= today %>"></div>
+      <div class="field"><label class="label" for="<%= fid %>-to"><%= t('payouts.bank_email') %></label><input class="input" type="email" id="<%= fid %>-to" name="to" value="<%= tp.email || '' %>" dir="ltr" placeholder="<%= t('payouts.bank_email_ph') %>"></div>
+      <label class="check"><input type="checkbox" name="mark_paid" value="1"> <%= t('payouts.mark_paid') %></label>
+      <div class="row wrap">
+        <button class="btn btn-secondary" type="submit" name="action" value="download"><%- icon('download', 'icon-sm') %><%= t('payouts.download') %></button>
+        <button class="btn btn-primary" type="submit" name="action" value="email" data-confirm="<%= t('payouts.email_confirm', { bank: tp.name }) %>"><%- icon('send', 'icon-sm') %><%= t('payouts.email_bank') %></button>
+      </div>
+    </div>
+    <% } %>
+  </form>
+  <% }) %>
+<% } %>
+
+<% if (log.length) { %>
+<div class="panel">
+  <div class="panel-head"><h2><%= t('payouts.history') %></h2></div>
+  <div class="table-wrap">
+    <table class="table responsive">
+      <thead><tr><th><%= t('common.date') %></th><th><%= t('payouts.bank_name') %></th><th><%= t('common.month') %></th><th><%= t('payouts.people') %></th><th><%= t('payouts.sent') %></th><th class="num"><%= t('payouts.total') %></th></tr></thead>
+      <tbody>
+      <% log.forEach(function (b) { %>
+        <tr>
+          <td data-label="<%= t('common.date') %>" class="nowrap"><%= fmt.date(b.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %></td>
+          <td data-label="<%= t('payouts.bank_name') %>"><%= b.bank_name || '—' %></td>
+          <td data-label="<%= t('common.month') %>"><%= fmt.month(b.period) %></td>
+          <td data-label="<%= t('payouts.people') %>"><%= b.payees %></td>
+          <td data-label="<%= t('payouts.sent') %>"><%= b.action === 'email' ? t('payouts.sent_to', { to: b.sent_to }) : t('payouts.downloaded') %><span class="small muted"><%= b.by_name ? ' · ' + b.by_name : '' %></span></td>
+          <td data-label="<%= t('payouts.total') %>" class="num"><%= fmt.amount(b.total) %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
