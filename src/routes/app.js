@@ -95,6 +95,8 @@ router.use('/api', require('../modules/clinic/api.web'));
 router.use('/search', require('../modules/clinic/search.web'));
 router.use('/notifications', require('../modules/notifications/web'));
 router.use('/chat', require('../modules/chat/web'));
+router.use(require('../modules/partners/web').locals); // the clinic's pharmacies & centres for the "send to" menus
+router.use('/', require('../modules/partners/web')); // pharmacies, imaging centres, labs: settings, sending papers, in-clinic centre lists
 router.use('/share', require('../modules/share/web').staff); // send a document to the patient on WhatsApp (secure link) // staff chat inside the clinic
 router.use('/', require('../modules/clinic/dashboard.web'));
 router.use('/appointments', require('../modules/clinic/appointments.web'));

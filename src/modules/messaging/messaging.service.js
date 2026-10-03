@@ -371,10 +371,11 @@ async function sendStage(clinic, cfg, a, stage, { base, now = Date.now() } = {})
   }
   if (a.patient_email && ready.email) {
     const t = translator(locale);
-    const subject = t(`messaging.mail.${kind}_subject`, vars);
-    // The clinic's own wording, when it wrote one, is the e-mail's text too (the link is the button).
-    const own = await texts.ownText(clinic.id, `messaging.text.${kind}`, locale);
-    const body = own ? texts.fill(own, { ...vars, link: '' }).replace(/[\s:：]+$/, '') : t(`messaging.mail.${kind}_body`, vars);
+    // The clinic's own e-mail wording (Settings → Message texts); else its WhatsApp/SMS text; else DocBook's.
+    const subject = tt(`messaging.mail.${kind}_subject`, vars);
+    const ownMail = await texts.ownText(clinic.id, `messaging.mail.${kind}_body`, locale);
+    const own = ownMail ? null : await texts.ownText(clinic.id, `messaging.text.${kind}`, locale);
+    const body = ownMail ? texts.fill(ownMail, vars) : own ? texts.fill(own, { ...vars, link: '' }).replace(/[\s:：]+$/, '') : t(`messaging.mail.${kind}_body`, vars);
     const html = mailer.layout({ locale, title: subject, body, cta: t(`messaging.mail.${kind}_cta`), href: link, clinic, base });
     const r = await ch.sendEmail({ to: a.patient_email, subject, html, replyTo: clinic.email || undefined, businessId: clinic.id });
     results.push(r.ok);

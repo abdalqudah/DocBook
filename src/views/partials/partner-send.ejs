@@ -1,0 +1,25 @@
+<%/* "Send to a pharmacy / imaging centre / lab": a menu of the clinic's partners that fit this paper — WhatsApp or e-mail
+   with a secure link to this paper only, or onto the list of a centre inside the clinic. Args: docKind (prescription |
+   order), docId, partnerKind (pharmacy | imaging | lab), small. */%>
+<% var _ps = (typeof clinicPartners !== 'undefined' ? clinicPartners : []).filter(function (p) { return p.kind === partnerKind; });
+   var _sm = typeof small !== 'undefined' && small; var _back = typeof currentPath !== 'undefined' && currentPath ? currentPath : '/app'; %>
+<% if (_ps.length) { %>
+<details class="dropdown partner-dd">
+  <summary class="btn <%= _sm ? 'btn-ghost btn-sm' : 'btn-secondary' %>"><%- icon(partnerKind === 'pharmacy' ? 'pill-bottle' : partnerKind === 'imaging' ? 'scan-line' : 'microscope', 'icon-sm') %><span class="<%= _sm ? 'hide-sm' : '' %>"><%= t('centres.send_to.' + partnerKind) %></span></summary>
+  <div class="menu partner-menu">
+    <% _ps.forEach(function (p) { %>
+    <div class="partner-row">
+      <div class="grow"><div class="strong small"><%= p.name %></div><% if (p.in_house) { %><div class="tiny muted"><%= t('centres.in_house') %></div><% } %></div>
+      <form method="post" action="/app/centres/send" class="row-sm"<%= !p.in_house ? ' target="_blank"' : '' %> data-no-busy>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="doc_kind" value="<%= docKind %>"><input type="hidden" name="doc_id" value="<%= docId %>"><input type="hidden" name="partner_id" value="<%= p.id %>"><input type="hidden" name="return_to" value="<%= _back %>">
+        <% if (p.in_house) { %><button class="btn btn-primary btn-sm" type="submit"><%- icon('send', 'icon-sm') %><%= t('centres.send_in_house') %></button>
+        <% } else { %>
+          <% if (p.phone) { %><button class="btn btn-secondary btn-sm btn-icon" type="submit" name="channel" value="whatsapp" title="<%= t('share.send_wa') %>" aria-label="<%= t('share.send_wa') %> — <%= p.name %>"><%- icon('message-circle', 'icon-sm') %></button><% } %>
+          <% if (p.email) { %><button class="btn btn-secondary btn-sm btn-icon" type="submit" name="channel" value="email" formtarget="_self" title="<%= t('share.send_email') %>" aria-label="<%= t('share.send_email') %> — <%= p.name %>"><%- icon('mail', 'icon-sm') %></button><% } %>
+        <% } %>
+      </form>
+    </div>
+    <% }) %>
+  </div>
+</details>
+<% } %>

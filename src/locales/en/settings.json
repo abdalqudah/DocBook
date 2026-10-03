@@ -709,7 +709,8 @@
     "favicon_invalid": "Choose a PNG, ICO, WebP or JPG image.",
     "favicon_too_big": "The icon is larger than 256 KB.",
     "favicon_missing": "Upload the icon file first.",
-    "nav_message_texts": "Message texts"
+    "nav_message_texts": "Message texts",
+    "nav_partners": "Pharmacies & centres"
   },
   "team": {
     "lead": "Everyone who signs in to your clinic — doctors, nurses, reception, accounting and management. Each person gets their own login and sees only what their role allows.",
@@ -926,12 +927,16 @@
     "group": {
       "booking": "Appointment messages",
       "papers": "Sending papers to the patient",
-      "after": "After the visit"
+      "after": "After the visit",
+      "email": "Appointment e-mails",
+      "partners": "To pharmacies, imaging centres and labs"
     },
     "group_sub": {
-      "booking": "Sent automatically on WhatsApp or SMS; the same text goes in the e-mail.",
+      "booking": "Sent automatically on WhatsApp or SMS. E-mails use the “Appointment e-mails” texts below; when those are empty, this text.",
       "papers": "Prescription, requests and invoice on WhatsApp or e-mail.",
-      "after": "Thank-you and review request."
+      "after": "Thank-you and review request.",
+      "email": "Subject and text of each e-mail; the link is a button under the text.",
+      "partners": "When a prescription or request goes to a partner of the clinic."
     },
     "item": {
       "messaging_text_received": "Booking request received (online booking)",
@@ -943,7 +948,22 @@
       "share_mail_subject": "E-mail subject",
       "share_mail_body": "E-mail text (the link is a button)",
       "share_thanks_message": "Thank-you and review request (sent by reception)",
-      "messaging_text_review": "Automatic review request after the visit"
+      "messaging_text_review": "Automatic review request after the visit",
+      "messaging_mail_received_subject": "Booking request received — e-mail subject",
+      "messaging_mail_received_body": "Booking request received — e-mail text",
+      "messaging_mail_confirmation_subject": "Booking confirmation — e-mail subject",
+      "messaging_mail_confirmation_body": "Booking confirmation — e-mail text",
+      "messaging_mail_confirmed_subject": "Online booking confirmed — e-mail subject",
+      "messaging_mail_confirmed_body": "Online booking confirmed — e-mail text",
+      "messaging_mail_reminder_subject": "Reminder — e-mail subject",
+      "messaging_mail_reminder_body": "Reminder — e-mail text",
+      "messaging_mail_cancelled_subject": "Cancellation — e-mail subject",
+      "messaging_mail_cancelled_body": "Cancellation — e-mail text",
+      "messaging_mail_review_subject": "Review request — e-mail subject",
+      "messaging_mail_review_body": "Review request — e-mail text",
+      "share_partner_message": "WhatsApp message to the partner",
+      "share_partner_mail_subject": "E-mail subject to the partner",
+      "share_partner_mail_body": "E-mail text to the partner"
     },
     "vars": "Words you can use:",
     "var": {
@@ -953,7 +973,8 @@
       "time": "Time",
       "link": "Link",
       "name": "Patient name",
-      "doc": "Document name"
+      "doc": "Document name",
+      "partner": "Partner name"
     },
     "wa_templates": "Automatic WhatsApp messages through the WhatsApp Cloud API use Meta-approved templates (in Messages & reminders); SMS, e-mail and WhatsApp messages sent by the team use the texts here."
   }

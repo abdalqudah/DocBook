@@ -1,0 +1,32 @@
+<%# A pharmacy / imaging centre / lab inside the clinic: the papers sent to it, open ones first. A request is done from
+    its own page (result note, and the scanned result in the patient's files); a prescription is marked handed over. %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/settings/partners"><%= t('settings.nav_partners') %></a></div>
+    <h1><%= partner.name %></h1>
+    <p><%= t('centres.queue_lead.' + partner.kind) %></p>
+  </div>
+</div>
+<section class="panel flush">
+  <% if (!items.length) { %>
+    <%- include('../../partials/empty', { emptyIcon: 'clipboard-list', emptyTitle: t('centres.queue_empty'), compact: true }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('centres.col_patient') %></th><th><%= t('centres.col_what') %></th><th><%= t('centres.col_sent') %></th><th><%= t('centres.col_status') %></th><th></th></tr></thead>
+    <tbody>
+    <% items.forEach(function (r) { var href = r.doc_kind === 'order' ? '/app/orders/' + r.doc_id : '/app/visits/' + r.appointment_id + '/prescriptions/' + r.doc_id; %>
+      <tr<%= r.open ? '' : ' class="is-dim"' %>>
+        <td class="primary-cell"><span class="strong" dir="auto"><%= r.patient_name || '—' %></span></td>
+        <td data-label="<%= t('centres.col_what') %>"><% if (r.doc_kind === 'order') { %><%= (r.items || []).map(function (x) { return x.name; }).join('، ') || t('centres.request') %><% if (r.urgency === 'urgent') { %> <span class="badge badge-danger"><%= t('centres.urgent') %></span><% } %><% } else { %><%= t('centres.prescription') %><% } %></td>
+        <td data-label="<%= t('centres.col_sent') %>" class="nowrap small"><%= fmt.date(r.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></td>
+        <td data-label="<%= t('centres.col_status') %>"><span class="badge <%= r.open ? 'badge-warning' : 'badge-success' %> badge-dot"><%= r.open ? t('centres.status_open') : t('centres.status_done') %></span></td>
+        <td class="actions"><div class="row-sm end">
+          <a class="btn btn-secondary btn-sm" href="<%= href %>"><%- icon('external-link', 'icon-sm') %><%= t('centres.open_paper') %></a>
+          <% if (r.open && r.doc_kind === 'prescription') { %><form class="inline" method="post" action="/app/centres/sends/<%= r.id %>/done"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('centres.mark_given') %></button></form><% } %>
+        </div></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>

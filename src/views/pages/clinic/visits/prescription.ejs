@@ -12,6 +12,7 @@
   <div class="page-actions">
     <a class="btn btn-secondary" href="/app/visits/<%= a.id %>#prescriptions"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('common.back') %></a>
     <%- include('../../../partials/wa-send', { kind: 'prescription', id: rx.id }) %>
+    <%- include('../../../partials/partner-send', { docKind: 'prescription', docId: rx.id, partnerKind: 'pharmacy' }) %>
     <a class="btn btn-secondary" href="/app/patient-docs/<%= a.id %>/prescription/<%= rx.id %>.pdf?download=1"><%- icon('download', 'icon-sm') %><%= t('patient_docs.download_pdf') %></a>
     <a class="btn btn-primary" href="/app/visits/<%= a.id %>/prescriptions/<%= rx.id %>?print=1&autoprint=1"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
   </div>

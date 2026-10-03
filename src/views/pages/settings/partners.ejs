@@ -1,0 +1,52 @@
+<%# Settings → Pharmacies & centres: the pharmacies, imaging centres and labs the clinic works with (outside, or inside
+    the clinic). Papers are sent to them from the prescription and request pages. %>
+<% var o = typeof old !== 'undefined' && old ? old : null; var errs = typeof errors !== 'undefined' && errors ? errors : {};
+   var e = edit; var v = function (k, d) { return o ? (o[k] !== undefined ? o[k] : '') : (e ? (e[k] === null || e[k] === undefined ? '' : e[k]) : (d || '')); };
+   var icons = { pharmacy: 'pill-bottle', imaging: 'scan-line', lab: 'microscope' }; %>
+<%- include('_head', { heading: t('settings.nav_partners'), lead: t('centres.lead') }) %>
+<div class="settings-layout<%= typeof workspace !== 'undefined' && workspace ? ' is-bare' : '' %>">
+  <%- include('_nav') %>
+  <div class="stack-lg">
+    <%- include('../../partials/form-error') %>
+    <% KINDS.forEach(function (k) { var rows = all.filter(function (p) { return p.kind === k; }); %>
+    <section class="panel flush" id="k-<%= k %>">
+      <div class="panel-head"><div><h2><%- icon(icons[k], 'icon-sm') %> <%= t('centres.kinds.' + k) %></h2><div class="panel-sub"><%= t('centres.kind_sub.' + k) %></div></div><span class="badge badge-neutral"><%= fmt.number(rows.length) %></span></div>
+      <% if (!rows.length) { %><div class="panel-body"><p class="small muted"><%= t('centres.none') %></p></div><% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('centres.name') %></th><th><%= t('centres.contact') %></th><th></th></tr></thead>
+        <tbody>
+        <% rows.forEach(function (p) { %>
+          <tr<%= p.is_active ? '' : ' class="is-dim"' %>>
+            <td class="primary-cell"><div class="strong"><%= p.name %></div><div class="small muted"><% if (p.in_house) { %><span class="badge badge-primary"><%= t('centres.in_house') %></span><% } %><% if (!p.is_active) { %> <span class="badge badge-neutral"><%= t('centres.inactive') %></span><% } %><% if (p.address) { %> <%= p.address %><% } %></div></td>
+            <td data-label="<%= t('centres.contact') %>" class="small"><% if (p.phone) { %><div dir="ltr" style="text-align:start"><%- icon('message-circle', 'icon-sm') %> <%= p.phone %></div><% } %><% if (p.email) { %><div dir="ltr" style="text-align:start"><%- icon('mail', 'icon-sm') %> <%= p.email %></div><% } %><% if (p.in_house) { %><span class="muted"><%= t('centres.in_house_list') %></span><% } %></td>
+            <td class="actions"><div class="row-sm end">
+              <% if (p.in_house) { %><a class="btn btn-secondary btn-sm" href="/app/centres/<%= p.id %>"><%- icon('clipboard-list', 'icon-sm') %><%= t('centres.open_list') %></a><% } %>
+              <a class="btn btn-ghost btn-sm" href="/app/settings/partners?edit=<%= p.id %>#partner-form"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a>
+              <form class="inline" method="post" action="/app/settings/partners/<%= p.id %>/delete" data-confirm="<%= t('centres.delete_confirm', { name: p.name }) %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm btn-icon" type="submit" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button></form>
+            </div></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+      <% } %>
+    </section>
+    <% }) %>
+
+    <form class="panel" id="partner-form" method="post" action="/app/settings/partners<%= e ? '/' + e.id : '' %>" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="panel-head"><div><h2><%= e ? t('centres.edit_title', { name: e.name }) : t('centres.add') %></h2><div class="panel-sub"><%= t('centres.add_sub') %></div></div></div>
+      <div class="panel-body form-grid">
+        <%- include('../../partials/field', { name: 'kind', type: 'select', label: t('centres.kind'), value: v('kind', 'pharmacy'), options: KINDS.map(function (k) { return { value: k, label: t('centres.kinds_one.' + k) }; }) }) %>
+        <%- include('../../partials/field', { name: 'name', label: t('centres.name'), required: true, value: v('name'), attrs: 'maxlength="120"' }) %>
+        <%- include('../../partials/field', { name: 'phone', type: 'tel', label: t('centres.phone'), value: v('phone'), help: t('centres.phone_help'), attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'email', type: 'email', label: t('common.email'), value: v('email'), attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'address', label: t('centres.address'), value: v('address'), cls: 'span-2' }) %>
+        <div class="span-2 stack-sm">
+          <label class="check"><input type="hidden" name="in_house" value="0"><input type="checkbox" name="in_house" value="1"<%= (o ? o.in_house === '1' || (Array.isArray(o.in_house) && o.in_house.indexOf('1') !== -1) : e && e.in_house) ? ' checked' : '' %>><span><span class="strong"><%= t('centres.in_house_q') %></span><span class="tiny muted" style="display:block"><%= t('centres.in_house_help') %></span></span></label>
+          <% if (e) { %><label class="check"><input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" value="1"<%= e.is_active ? ' checked' : '' %>><span><%= t('centres.active') %></span></label><% } %>
+        </div>
+      </div>
+      <div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon(e ? 'check' : 'plus', 'icon-sm') %><%= e ? t('common.save') : t('centres.add') %></button><% if (e) { %> <a class="btn btn-ghost" href="/app/settings/partners"><%= t('common.cancel') %></a><% } %></div>
+    </form>
+  </div>
+</div>

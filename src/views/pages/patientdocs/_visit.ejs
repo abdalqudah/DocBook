@@ -24,6 +24,7 @@
           <label class="check grow"><input type="checkbox" name="rx" value="<%= rx.id %>"<%= D.rxs[0].id === rx.id ? ' checked' : '' %>><span><span class="strong"><%= t('patient_docs.rx_label', { n: rx.id }) %></span> <span class="muted small">· <%= fmt.date(rx.created_at) %> · <%= t('patient_docs.items', { n: rx.items.length }) %></span></span></label>
           <a class="btn btn-ghost btn-sm" href="/app/patient-docs/<%= V.apptId %>/prescription/<%= rx.id %>.pdf" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><span class="hide-sm"><%= t('patient_docs.preview') %></span></a>
           <%- include('../../partials/wa-send', { kind: 'prescription', id: rx.id, small: true }) %>
+          <%- include('../../partials/partner-send', { docKind: 'prescription', docId: rx.id, partnerKind: 'pharmacy', small: true }) %>
         </li>
         <% }) %>
         <% if (D.sections.length) { %>

@@ -70,6 +70,9 @@
     "thanks_message": "مرحباً {name}، شكراً لزيارتكم {clinic}. نتمنى لكم دوام الصحة والعافية.\nيسعدنا تقييم زيارتكم من هنا:\n{link}",
     "thanks_btn": "رسالة شكر وطلب تقييم على واتساب",
     "thanks_title": "رسالة الشكر والتقييم",
-    "thanks_link": "رابط التقييم"
+    "thanks_link": "رابط التقييم",
+    "partner_message": "مرحباً {partner}، أرسلت لكم {clinic} {doc} للمريض {name}:\n{link}\nالرابط صالح حتى {date}.",
+    "partner_mail_subject": "{doc} للمريض {name} — {clinic}",
+    "partner_mail_body": "مرحباً {partner}، أرسلت لكم {clinic} {doc} للمريض {name}. اضغط الزر لفتحها. الرابط صالح حتى {date}."
   }
 }

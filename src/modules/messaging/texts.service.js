@@ -17,10 +17,20 @@ const GROUPS = [
     { key: 'messaging.text.reminder', vars: ['clinic', 'doctor', 'date', 'time', 'link'] },
     { key: 'messaging.text.cancelled', vars: ['clinic', 'doctor', 'date', 'time', 'link'] },
   ] },
+  // The e-mail version of the appointment messages (subject + text; the link is the button under the text).
+  { key: 'email', items: ['received', 'confirmation', 'confirmed', 'reminder', 'cancelled', 'review'].flatMap((k) => [
+    { key: `messaging.mail.${k}_subject`, vars: ['clinic', 'doctor', 'date', 'time'], line: true },
+    { key: `messaging.mail.${k}_body`, vars: ['clinic', 'doctor', 'date', 'time'] },
+  ]) },
   { key: 'papers', items: [
     { key: 'share.message', vars: ['name', 'clinic', 'doc', 'link', 'date'] },
     { key: 'share.mail_subject', vars: ['name', 'clinic', 'doc'], line: true },
     { key: 'share.mail_body', vars: ['name', 'clinic', 'doc', 'date'] },
+  ] },
+  { key: 'partners', items: [
+    { key: 'share.partner_message', vars: ['partner', 'clinic', 'doc', 'name', 'link', 'date'] },
+    { key: 'share.partner_mail_subject', vars: ['partner', 'clinic', 'doc', 'name'], line: true },
+    { key: 'share.partner_mail_body', vars: ['partner', 'clinic', 'doc', 'name', 'date'] },
   ] },
   { key: 'after', items: [
     { key: 'share.thanks_message', vars: ['name', 'clinic', 'link'] },

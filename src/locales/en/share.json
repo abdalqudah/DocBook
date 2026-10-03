@@ -70,6 +70,9 @@
     "thanks_message": "Hello {name}, thank you for visiting {clinic}. We wish you good health.\nWe would be glad if you rated your visit here:\n{link}",
     "thanks_btn": "Thank-you and review request on WhatsApp",
     "thanks_title": "Thank-you and review message",
-    "thanks_link": "Review link"
+    "thanks_link": "Review link",
+    "partner_message": "Hello {partner}, {clinic} sent you {doc} for {name}:\n{link}\nThe link works until {date}.",
+    "partner_mail_subject": "{doc} for {name} — {clinic}",
+    "partner_mail_body": "Hello {partner}, {clinic} sent you {doc} for {name}. Press the button to open it. The link works until {date}."
   }
 }
