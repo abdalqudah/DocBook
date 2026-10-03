@@ -35,6 +35,7 @@ const MODULES = [
   { key: 'staff_chat', icon: 'message-circle', paths: [seg('chat')] },
   { key: 'patient_sharing', icon: 'send', paths: [seg('share')] },
   { key: 'staff_mail', icon: 'mail', paths: [seg('mail')] },
+  { key: 'surgeries', icon: 'scissors', paths: [seg('surgeries')] },
   { key: 'centres', icon: 'pill-bottle', paths: [seg('centres'), seg('settings/partners')] },
   { key: 'reports', icon: 'chart-pie', nav: ['reports'], paths: [seg('reports')] },
 ];

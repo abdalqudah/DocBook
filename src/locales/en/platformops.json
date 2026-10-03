@@ -27,7 +27,8 @@
       "patient_sharing": "Send papers to patients",
       "reports": "Reports",
       "centres": "Pharmacies & imaging centres",
-      "staff_mail": "Staff e-mail"
+      "staff_mail": "Staff e-mail",
+      "surgeries": "Surgeries"
     },
     "d": {
       "online_booking": "Patients book from the clinic page. Off: the booking page is closed and booking links are hidden.",
@@ -48,7 +49,8 @@
       "patient_sharing": "Send the prescription, requests and invoice by secure link on WhatsApp or e-mail, plus the thank-you and review request.",
       "reports": "Revenue, visits and performance reports.",
       "centres": "Send prescriptions and lab / imaging requests to pharmacies and centres, and lists for centres inside the clinic.",
-      "staff_mail": "Each member connects their own e-mail to read and send from their address with the clinic's papers. Automatic messages stay on the clinic address."
+      "staff_mail": "Each member connects their own e-mail to read and send from their address with the clinic's papers. Automatic messages stay on the clinic address.",
+      "surgeries": "Book the doctor's time for operations — patient, procedure, hospital — and send the date to the hospital by e-mail or WhatsApp."
     },
     "not_in_plan": "Not in your plan",
     "core_title": "Always on",

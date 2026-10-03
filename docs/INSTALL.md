@@ -72,7 +72,7 @@ pm2 startup        # ونفّذ الأمر الذي يظهر لك، ليعمل �
 server {
     listen 80;
     server_name docbook.yourdomain.com;
-    client_max_body_size 60m;   # رفع ملفات المرضى في الاستشارة الأونلاين
+    client_max_body_size 4g;    # ملفات المرضى، واستيراد ملفات المرضى (حتى 4 غيغابايت)
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -178,7 +178,7 @@ pm2 restart docbook
 
 ## English summary
 1. Requirements: Node.js ≥ 20, MySQL 8 / MariaDB 10.6+, HTTPS, one app instance.
-2. Unzip the dist (bundled `app.js`, no `npm install`; from source: `npm ci --omit=dev`, build with `npm run build`) → `cp .env.example .env` and set `APP_URL`, `SESSION_SECRET`, `APP_KEY` (never change it later), `DB_*`, `SUPER_ADMIN_*` → `node app.js migrate` → `pm2 start app.js --name docbook` behind nginx with TLS (`client_max_body_size 60m`, forward `X-Forwarded-Proto`).
+2. Unzip the dist (bundled `app.js`, no `npm install`; from source: `npm ci --omit=dev`, build with `npm run build`) → `cp .env.example .env` and set `APP_URL`, `SESSION_SECRET`, `APP_KEY` (never change it later), `DB_*`, `SUPER_ADMIN_*` → `node app.js migrate` → `pm2 start app.js --name docbook` behind nginx with TLS (`client_max_body_size 4g` for patient-file imports, forward `X-Forwarded-Proto`).
 3. cPanel: Setup Node.js App (startup file `app.js`), add the same environment variables, Restart, AutoSSL.
 4. Sign in as the super admin → `/admin`; create clinics via `/signup`.
 5. Optional services (SMTP, WhatsApp Cloud API, SMS, PayTabs/HyperPay, Google sign-in, TURN, custom domains) are configured as in the table above.

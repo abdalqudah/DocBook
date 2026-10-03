@@ -290,3 +290,15 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
   .mcal-wd { padding: 6px 4px; font-size: 11px; text-align: center; }
   .mcal-num { align-self: center; flex-direction: column; gap: 2px; }
 }
+
+/* Time-block dialog: the "block / surgery" choice */
+[data-kind-block][hidden], [data-kind-surgery][hidden] { display: none; }
+.sx-patient .patient-picked { margin-bottom: 4px; }
+[data-sx-find] { position: relative; }
+[data-sx-find] .patient-results { top: 46px; }
+
+/* Patients → Surgeries */
+.sx-when { display: flex; flex-direction: column; gap: 2px; }
+.sx-sent { display: inline-flex; align-items: center; gap: 4px; }
+.sx-preview { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; background: var(--surface-sunken); max-height: 260px; overflow: auto; }
+.table tr.table-group th { background: var(--surface-sunken); font-weight: var(--fw-semibold); text-align: start; padding: 8px 16px; }

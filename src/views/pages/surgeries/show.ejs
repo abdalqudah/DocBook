@@ -1,0 +1,72 @@
+<% var S = 'surgeries.'; var o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null; var errs = typeof errors !== 'undefined' && errors ? errors : {};
+   var end = (function () { if (!s.duration_minutes) return ''; var a = String(s.surgery_time).split(':'); var x = Number(a[0]) * 60 + Number(a[1]) + Number(s.duration_minutes); return ('0' + (Math.floor(x / 60) % 24)).slice(-2) + ':' + ('0' + (x % 60)).slice(-2); })();
+   var tone = { scheduled: 'badge-info', done: 'badge-success', cancelled: 'badge-neutral' }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/surgeries"><%= t(S + 'title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1 class="row-sm"><%= s.procedure_name %> <span class="badge <%= tone[s.status] %>"><%= t(S + 'status.' + s.status) %></span></h1>
+    <p><%= fmt.date(s.surgery_date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <bdi dir="ltr"><%= s.surgery_time %><%= end ? '–' + end : '' %></bdi><%= s.doctor_id ? ' · ' + L(s.doctor_name, s.doctor_name_en) : '' %></p>
+  </div>
+  <div class="page-actions">
+    <% if (s.appointment_id) { %><a class="btn btn-secondary" href="/app/appointments?date=<%= s.surgery_date %><%= s.doctor_id ? '&doctor=' + s.doctor_id : '' %>"><%- icon('calendar-days', 'icon-sm') %><%= t(S + 'in_calendar') %></a><% } %>
+    <% if (s.patient_id) { %><a class="btn btn-secondary" href="/app/patients/<%= s.patient_id %>"><%- icon('user-round', 'icon-sm') %><%= t(S + 'patient_file') %></a><% } %>
+  </div>
+</div>
+<%- include('../../partials/form-error') %>
+<div class="grid grid-main">
+  <div class="stack-lg">
+    <% if (canChange) { %>
+    <form class="panel" method="post" action="/app/surgeries/<%= s.id %>" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="panel-head"><h2><%= t(S + 'details') %></h2></div>
+      <div class="panel-body form-grid">
+        <%- include('_fields', { v: o || s, errs: errs, hospitals: hospitals, prefix: 's-' }) %>
+      </div>
+      <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+    </form>
+    <% } else { %>
+    <section class="panel"><div class="panel-head"><h2><%= t(S + 'details') %></h2></div><div class="panel-body"><dl class="dl">
+      <dt><%= t('common.patient') %></dt><dd dir="auto"><%= s.patient_name %><% if (s.patient_phone) { %> · <bdi dir="ltr"><%= s.patient_phone %></bdi><% } %></dd>
+      <dt><%= t(S + 'hospital') %></dt><dd><%= s.hospital_name || '—' %></dd>
+      <dt><%= t(S + 'notes') %></dt><dd><%= s.notes || '—' %></dd>
+    </dl></div></section>
+    <% } %>
+  </div>
+  <div class="stack-lg">
+    <% if (canChange && s.status !== 'cancelled') { %>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%- icon('send', 'icon-sm') %> <%= t(S + 'send_title') %></h2><p class="panel-sub"><%= s.sent_at ? t(S + 'sent_on', { date: fmt.date(s.sent_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }), to: s.sent_to }) : t(S + 'send_sub') %></p></div></div>
+      <div class="panel-body stack">
+        <div class="segmented segmented-sm"><% ['ar', 'en'].forEach(function (l) { %><a href="?lang=<%= l %>" class="<%= msgLocale === l ? 'active' : '' %>"><%= l === 'ar' ? 'العربية' : 'English' %></a><% }) %></div>
+        <div class="sx-preview small" dir="<%= msgLocale === 'ar' ? 'rtl' : 'ltr' %>"><div class="strong"><%= msg.subject %></div><div style="white-space:pre-line" class="muted mt-2"><%= msg.body %></div></div>
+        <form class="stack-sm" method="post" action="/app/surgeries/<%= s.id %>/send">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="channel" value="email"><input type="hidden" name="lang_msg" value="<%= msgLocale %>">
+          <label class="label" for="sx-to"><%= t(S + 'to_email') %></label>
+          <input class="input" id="sx-to" type="email" name="to_email" value="<%= s.hospital_email || '' %>" dir="ltr" placeholder="hospital@example.com" required>
+          <button class="btn btn-primary" type="submit"><%- icon('mail', 'icon-sm') %><%= t(S + 'send_email') %></button>
+        </form>
+        <form class="stack-sm" method="post" action="/app/surgeries/<%= s.id %>/send">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="channel" value="whatsapp"><input type="hidden" name="lang_msg" value="<%= msgLocale %>">
+          <label class="label" for="sx-wa"><%= t(S + 'to_phone') %></label>
+          <input class="input" id="sx-wa" name="to_phone" value="<%= s.hospital_phone || '' %>" dir="ltr" inputmode="tel" required>
+          <button class="btn btn-secondary" type="submit"><%- icon('message-circle', 'icon-sm') %><%= t(S + 'send_wa') %></button>
+        </form>
+        <p class="help"><%- t(S + 'texts_help_html') %></p>
+      </div>
+    </section>
+    <% } %>
+    <% if (canChange) { %>
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('common.status') %></h2></div>
+      <div class="panel-body row-sm" style="flex-wrap:wrap">
+        <% if (s.status === 'scheduled') { %>
+        <form method="post" action="/app/surgeries/<%= s.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="done"><button class="btn btn-secondary" type="submit"><%- icon('check', 'icon-sm') %><%= t(S + 'mark_done') %></button></form>
+        <form method="post" action="/app/surgeries/<%= s.id %>/status" data-confirm="<%= t(S + 'cancel_confirm') %>" data-confirm-yes="<%= t(S + 'mark_cancelled') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="cancelled"><button class="btn btn-ghost" type="submit"><%- icon('x', 'icon-sm') %><%= t(S + 'mark_cancelled') %></button></form>
+        <% } else if (s.status === 'done') { %>
+        <form method="post" action="/app/surgeries/<%= s.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="scheduled"><button class="btn btn-ghost" type="submit"><%= t(S + 'mark_scheduled') %></button></form>
+        <% } else { %><p class="small muted"><%= t(S + 'cancelled_note') %></p><% } %>
+      </div>
+    </section>
+    <% } %>
+  </div>
+</div>

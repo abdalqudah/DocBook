@@ -105,6 +105,7 @@ router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));
 router.use('/queue-screens', require('../modules/queue/web'));
 router.use('/patients', require('../modules/clinic/patients.web'));
+router.use('/surgeries', require('../modules/surgeries/web'));
 router.use(require('../modules/orders/web')); // lab & imaging orders, referrals, patient files, tests list, clinical report (before /visits)
 router.use(require('../modules/certificates/web')); // /certificates + the visit page's "Documents" panel data (before /visits)
 router.use('/', require('../modules/clinicalplus/web')); // ICD-10 codes, consultation timer, record privacy + access log

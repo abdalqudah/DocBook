@@ -234,14 +234,21 @@ async function assignDoctor(ctx, apptId, doctorId) {
   });
 }
 
-/** A calendar reservation without a patient (DocBook "time block"). */
+/**
+ * A calendar reservation without a patient (DocBook "time block"). With kind = 'surgery' the block is an operation:
+ * patient, procedure and hospital are kept in surgeries (Patients → Surgeries) and the block is labelled with them.
+ */
 async function block(ctx, input) {
   const d = validate(z.object({ doctor_id: z.coerce.number().int().positive(), appointment_date: isoDate(), appointment_time: time(),
     duration_minutes: z.preprocess(emptyToUndefined, z.coerce.number().int().min(scheduling.MIN_BLOCK_MINUTES).max(scheduling.MAX_BLOCK_MINUTES).optional()), label: optionalString(190) }), input);
+  const surgeries = require('../surgeries/surgeries.service'); // eslint-disable-line global-require
+  const surgery = input.kind === 'surgery' ? await surgeries.check(ctx, input) : null;
+  const label = surgery ? surgeries.labelOf(surgery) : d.label;
   return scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: d.doctor_id, durationOverride: d.duration_minutes, date: d.appointment_date, time: d.appointment_time }, async (trx) => {
-    const [bid] = await trx('appointments').insert({ business_id: ctx.businessId, branch_id: await branches.ofDoctor(ctx.businessId, d.doctor_id, trx), doctor_id: d.doctor_id, patient_name: d.label || '—', appointment_date: d.appointment_date, appointment_time: d.appointment_time,
-      duration_minutes: d.duration_minutes || null, status: 'confirmed', appointment_type: 'blocked', source: 'staff', notes: d.label || null, created_by: ctx.userId });
-    await audit.record(ctx, 'appointment.blocked', { entityType: 'appointment', entityId: bid, newValues: d }, trx);
+    const [bid] = await trx('appointments').insert({ business_id: ctx.businessId, branch_id: await branches.ofDoctor(ctx.businessId, d.doctor_id, trx), doctor_id: d.doctor_id, patient_name: label || '—', appointment_date: d.appointment_date, appointment_time: d.appointment_time,
+      duration_minutes: d.duration_minutes || null, status: 'confirmed', appointment_type: 'blocked', source: 'staff', notes: label || null, created_by: ctx.userId });
+    await audit.record(ctx, 'appointment.blocked', { entityType: 'appointment', entityId: bid, newValues: { ...d, label, surgery: Boolean(surgery) } }, trx);
+    if (surgery) await surgeries.fromBlock(trx, ctx, { id: bid, doctor_id: d.doctor_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: d.duration_minutes }, input);
     return bid;
   });
 }
@@ -270,6 +277,7 @@ async function move(ctx, apptId, input) {
     if (a.appointment_type === 'in_person' && a.doctor_id !== d.doctor_id) patch.amount_due = await expectedFee(trx, ctx.businessId, d.doctor_id, a.service_id);
     if (a.doctor_id !== d.doctor_id) patch.branch_id = await branches.ofDoctor(ctx.businessId, d.doctor_id, trx); // the visit goes where the doctor works
     await trx('appointments').where({ id: a.id, business_id: ctx.businessId }).update(patch);
+    if (a.appointment_type === 'blocked') await require('../surgeries/surgeries.service').followBlock(trx, ctx, a.id, d); // eslint-disable-line global-require
     await audit.record(ctx, 'appointment.moved', { entityType: 'appointment', entityId: a.id,
       oldValues: { doctor_id: a.doctor_id, date: a.appointment_date, time: a.appointment_time }, newValues: { doctor_id: d.doctor_id, date: d.appointment_date, time: d.appointment_time } }, trx);
   });
@@ -305,6 +313,7 @@ async function remove(ctx, apptId) {
   const a = await get(ctx, apptId);
   const inv = await knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).first('id');
   if (inv) throw E.conflict('APPOINTMENT_INVOICED', 'This visit has an invoice. Void the invoice first.');
+  if (a.appointment_type === 'blocked') await require('../surgeries/surgeries.service').blockRemoved(knex, ctx, a.id); // eslint-disable-line global-require
   await knex('appointments').where({ id: a.id }).del();
   await audit.record(ctx, 'appointment.deleted', { entityType: 'appointment', entityId: a.id, oldValues: { patient: a.patient_name, date: a.appointment_date, time: a.appointment_time } });
 }

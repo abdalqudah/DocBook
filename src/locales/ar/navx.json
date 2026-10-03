@@ -59,7 +59,8 @@
       "marketplace": "العروض",
       "front_desk": "الاستقبال",
       "certificates": "الإجازات والتقارير",
-      "reviews": "التقييمات"
+      "reviews": "التقييمات",
+      "surgeries": "العمليات"
     },
     "setup_orders_catalog": "التحاليل والأشعة",
     "setup_orders_catalog_text": "قائمة الفحوصات المخبرية والصور التي يختار منها الطبيب.",

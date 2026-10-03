@@ -1,6 +1,7 @@
 <%
   var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
   var canManage = can('appointments.manage');
+  var canBlock = canManage || (ctx.ownDoctorId && can('clinical.edit'));
   var own = Boolean(ctx.ownDoctorId);
   var isMonth = view === 'month';
   var isCal = view === 'day' || view === 'week';
@@ -35,7 +36,7 @@
     </nav>
     <% if (view === 'list') { %><%- include('../../../partials/export-menu', { href: '/app/appointments/export' }) %><% } %>
     <% if (typeof printHref !== 'undefined' && printHref) { %><a class="btn btn-secondary btn-sm btn-icon" href="<%= printHref %>" target="_blank" rel="noopener" title="<%= t('common.print') %>" aria-label="<%= t('common.print') %>"><%- icon('printer', 'icon-sm') %></a><% } %>
-    <% if (canManage && doctors.length) { %><button class="btn btn-secondary btn-sm btn-icon" type="button" data-open-dialog="block-dialog" data-reset-form data-block-open title="<%= t('appointments.block_time') %>" aria-label="<%= t('appointments.block_time') %>"><%- icon('lock', 'icon-sm') %></button><% } %>
+    <% if (canBlock && doctors.length) { %><button class="btn btn-secondary btn-sm btn-icon" type="button" data-open-dialog="block-dialog" data-reset-form data-block-open title="<%= t('appointments.block_time') %>" aria-label="<%= t('appointments.block_time') %>"><%- icon('lock', 'icon-sm') %></button><% } %>
     <details class="dropdown lv-more">
       <summary class="btn btn-secondary btn-icon btn-sm" aria-label="<%= t('live.more_actions') %>" title="<%= t('live.more_actions') %>"><%- icon('ellipsis', 'icon-sm') %></summary>
       <div class="menu">
@@ -215,7 +216,7 @@
 </div>
 <% } %>
 
-<% if (canManage && doctors.length) { var bOld = (typeof old !== 'undefined' && old) || {}; var bDoc = bOld.doctor_id || (bookDoctor || (doctors.length === 1 ? doctors[0].id : '')); %>
+<% if (canBlock && doctors.length) { var bOld = (typeof old !== 'undefined' && old) || {}; var bDoc = bOld.doctor_id || (bookDoctor || (doctors.length === 1 ? doctors[0].id : '')); %>
 <dialog class="dialog" id="block-dialog" aria-labelledby="block-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'block-dialog') { %> data-open-on-load<% } %>>
   <form method="post" action="/app/appointments/blocks" novalidate data-booking>
     <div class="dialog-head"><div><h2 id="block-title"><%= t('appointments.block_time') %></h2><p class="small muted"><%= t('appointments.block_help') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
@@ -227,7 +228,20 @@
         <%- include('../../../partials/field', { name: 'doctor_id', id: 'b-doctor', label: t('common.doctor'), type: 'select', required: true, value: bDoc, placeholder: t('appointments.choose_doctor'), options: doctors.map(function (d) { return { value: d.id, label: L(d.full_name, d.full_name_en) }; }), attrs: 'data-default="' + bDoc + '" data-doctor-field' }) %>
         <%- include('../../../partials/field', { name: 'appointment_date', id: 'b-date', label: t('common.date'), type: 'date', required: true, value: bOld.appointment_date || bookDate, attrs: 'min="' + clinicToday + '" data-date-field data-default="' + bookDate + '"' }) %>
         <%- include('../../../partials/field', { name: 'duration_minutes', id: 'b-duration', label: t('appointments.duration'), value: bOld.duration_minutes || 60, suffix: t('common.minutes'), required: true, attrs: 'inputmode="numeric" data-default="60" data-duration-input' }) %>
+        <% var bKind = bOld.kind || (typeof blockKind !== 'undefined' && blockKind) || 'block'; var bErr = (typeof errors !== 'undefined' && errors) || {}; %>
+        <div class="field full">
+          <span class="label"><%= t('surgeries.kind') %></span>
+          <div class="segmented" role="radiogroup" aria-label="<%= t('surgeries.kind') %>">
+            <label><input type="radio" name="kind" value="block"<%= bKind !== 'surgery' ? ' checked' : '' %> data-block-kind><span><%- icon('lock', 'icon-sm') %> <%= t('surgeries.kind_block') %></span></label>
+            <label><input type="radio" name="kind" value="surgery"<%= bKind === 'surgery' ? ' checked' : '' %> data-block-kind><span><%- icon('scissors', 'icon-sm') %> <%= t('surgeries.kind_surgery') %></span></label>
+          </div>
+        </div>
+        <div class="full" data-kind-block<%= bKind === 'surgery' ? ' hidden' : '' %>>
         <%- include('../../../partials/field', { name: 'label', id: 'b-label', label: t('appointments.block_label'), placeholder: t('appointments.block_label_ph'), value: bOld.label || '' }) %>
+        </div>
+        <div class="full form-grid" data-kind-surgery<%= bKind === 'surgery' ? '' : ' hidden' %>>
+          <%- include('../../surgeries/_fields', { v: bOld, errs: bErr, hospitals: typeof hospitals !== 'undefined' ? hospitals : [], prefix: 'b-' }) %>
+        </div>
         <%- include('_slots', { slotId: 'b-slots', selected: bOld.appointment_time || '', exclude: '' }) %>
       </div>
     </div>

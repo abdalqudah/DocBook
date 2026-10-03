@@ -176,7 +176,8 @@
     "branches": "Branches",
     "clinic_hours": "Working hours",
     "website_marketing": "Connections",
-    "toggle_sidebar": "Collapse / expand the sidebar"
+    "toggle_sidebar": "Collapse / expand the sidebar",
+    "surgeries": "Surgeries"
   },
   "search": {
     "open": "Search and quick actions",

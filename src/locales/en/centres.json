@@ -1,20 +1,23 @@
 {
   "centres": {
-    "lead": "The pharmacies, imaging centres and labs the clinic works with — outside, or inside the clinic. Send them the prescription or the lab / imaging request from its page.",
+    "lead": "The pharmacies, imaging centres and labs the clinic works with — outside, or inside the clinic. Send them the prescription or the lab / imaging request from its page; surgery dates go to hospitals from the Surgeries page.",
     "kinds": {
       "pharmacy": "Pharmacies",
       "imaging": "Imaging centres",
-      "lab": "Laboratories"
+      "lab": "Laboratories",
+      "hospital": "Hospitals"
     },
     "kinds_one": {
       "pharmacy": "Pharmacy",
       "imaging": "Imaging centre",
-      "lab": "Laboratory"
+      "lab": "Laboratory",
+      "hospital": "Hospital"
     },
     "kind_sub": {
       "pharmacy": "Prescriptions are sent to them.",
       "imaging": "Imaging requests are sent to them.",
-      "lab": "Lab requests are sent to them."
+      "lab": "Lab requests are sent to them.",
+      "hospital": "Surgery dates are sent to them from the Surgeries page."
     },
     "none": "None yet.",
     "name": "Name",

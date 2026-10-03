@@ -32,6 +32,11 @@ const GROUPS = [
     { key: 'share.partner_mail_subject', vars: ['partner', 'clinic', 'doc', 'name'], line: true },
     { key: 'share.partner_mail_body', vars: ['partner', 'clinic', 'doc', 'name', 'date'] },
   ] },
+  { key: 'surgeries', items: [
+    { key: 'surgeries.msg.wa', vars: ['hospital', 'clinic', 'doctor', 'name', 'phone', 'procedure', 'date', 'time', 'notes'] },
+    { key: 'surgeries.msg.mail_subject', vars: ['hospital', 'clinic', 'doctor', 'name', 'procedure', 'date'], line: true },
+    { key: 'surgeries.msg.mail_body', vars: ['hospital', 'clinic', 'doctor', 'name', 'phone', 'procedure', 'date', 'time', 'notes'] },
+  ] },
   { key: 'after', items: [
     { key: 'share.thanks_message', vars: ['name', 'clinic', 'link'] },
     { key: 'messaging.text.review', vars: ['clinic', 'doctor', 'link'] },

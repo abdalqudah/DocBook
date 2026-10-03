@@ -929,14 +929,16 @@
       "papers": "Sending papers to the patient",
       "after": "After the visit",
       "email": "Appointment e-mails",
-      "partners": "To pharmacies, imaging centres and labs"
+      "partners": "To pharmacies, imaging centres and labs",
+      "surgeries": "Surgery dates to the hospital"
     },
     "group_sub": {
       "booking": "Sent automatically on WhatsApp or SMS. E-mails use the “Appointment e-mails” texts below; when those are empty, this text.",
       "papers": "Prescription, requests and invoice on WhatsApp or e-mail.",
       "after": "Thank-you and review request.",
       "email": "Subject and text of each e-mail; the link is a button under the text.",
-      "partners": "When a prescription or request goes to a partner of the clinic."
+      "partners": "When a prescription or request goes to a partner of the clinic.",
+      "surgeries": "When a surgery date is sent to the hospital from the Surgeries page."
     },
     "item": {
       "messaging_text_received": "Booking request received (online booking)",
@@ -963,7 +965,10 @@
       "messaging_mail_review_body": "Review request — e-mail text",
       "share_partner_message": "WhatsApp message to the partner",
       "share_partner_mail_subject": "E-mail subject to the partner",
-      "share_partner_mail_body": "E-mail text to the partner"
+      "share_partner_mail_body": "E-mail text to the partner",
+      "surgeries_msg_wa": "WhatsApp message to the hospital",
+      "surgeries_msg_mail_subject": "E-mail subject",
+      "surgeries_msg_mail_body": "E-mail text"
     },
     "vars": "Words you can use:",
     "var": {
@@ -974,7 +979,11 @@
       "link": "Link",
       "name": "Patient name",
       "doc": "Document name",
-      "partner": "Partner name"
+      "partner": "Partner name",
+      "hospital": "Hospital name",
+      "procedure": "Procedure",
+      "phone": "Patient's phone",
+      "notes": "Notes"
     },
     "wa_templates": "Automatic WhatsApp messages through the WhatsApp Cloud API use Meta-approved templates (in Messages & reminders); SMS, e-mail and WhatsApp messages sent by the team use the texts here."
   }

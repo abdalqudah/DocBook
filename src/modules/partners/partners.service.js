@@ -10,7 +10,7 @@ const audit = require('../../core/audit');
 const { z, validate, optionalString, email, emptyToUndefined } = require('../../core/validate');
 const { E } = require('../../core/errors');
 
-const KINDS = ['pharmacy', 'imaging', 'lab'];
+const KINDS = ['pharmacy', 'imaging', 'lab', 'hospital'];
 const schema = z.object({
   kind: z.enum(KINDS, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
   name: z.string().trim().min(1, 'Required.').max(120),

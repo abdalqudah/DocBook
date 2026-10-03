@@ -1,0 +1,77 @@
+{
+  "surgeries": {
+    "title": "Surgeries",
+    "lead": "Every operation booked as a doctor's time: patient, procedure and hospital — and the date sent to the hospital.",
+    "add": "Book a surgery",
+    "saved": "Surgery time booked.",
+    "updated": "Surgery saved.",
+    "kind": "Booking type",
+    "kind_block": "Time block",
+    "kind_surgery": "Surgery",
+    "patient_name": "Patient name (without a file)",
+    "find_patient": "Search by name or phone…",
+    "patient_help": "Pick a patient from the clinic's files, or type the name and phone.",
+    "procedure": "Surgery / procedure",
+    "procedure_ph": "e.g. Surgical wisdom tooth extraction",
+    "hospital": "Hospital",
+    "no_hospital": "No hospital",
+    "other_hospital": "Another hospital…",
+    "hospital_name": "Hospital name",
+    "add_hospitals_html": "Add the hospitals you work with in <a href=\"/app/settings/partners#k-hospital\">Settings → Pharmacies & centres</a>.",
+    "notes": "Notes",
+    "notes_ph": "Anaesthesia, pre-op tests, room…",
+    "err_field": "Check this field.",
+    "when": {
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "all": "All"
+    },
+    "all_hospitals": "All hospitals",
+    "empty_title": "No surgeries",
+    "empty_upcoming": "No upcoming surgeries. Block the doctor's time and choose \"Surgery\".",
+    "empty_past": "No past surgeries.",
+    "empty_all": "No surgery has been booked yet.",
+    "col_time": "Time",
+    "n": "{n} surgeries",
+    "sent_short": "Sent {date}",
+    "status": {
+      "scheduled": "Booked",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "status_saved": {
+      "scheduled": "The surgery is booked again.",
+      "done": "The surgery is marked done.",
+      "cancelled": "The surgery is cancelled and the doctor's time freed."
+    },
+    "in_calendar": "In the calendar",
+    "patient_file": "Patient file",
+    "details": "Surgery details",
+    "send_title": "Send to the hospital",
+    "send_sub": "Send the surgery date and the patient's details to the hospital from the clinic's e-mail or on WhatsApp.",
+    "sent_on": "Sent on {date} to {to}",
+    "to_email": "Hospital e-mail",
+    "to_phone": "Hospital WhatsApp",
+    "send_email": "Send by e-mail",
+    "send_wa": "Send on WhatsApp",
+    "texts_help_html": "Change the wording in <a href=\"/app/settings/message-texts#surgeries\">Settings → Message texts</a>.",
+    "emailed": "The surgery date was sent to {to}.",
+    "mark_done": "Surgery done",
+    "mark_cancelled": "Cancel the surgery",
+    "mark_scheduled": "Book it again",
+    "cancel_confirm": "Cancel the surgery? The doctor's time is freed in the calendar; the surgery stays in the list as cancelled.",
+    "cancelled_note": "The surgery is cancelled. To book it again, block the doctor's time and choose \"Surgery\".",
+    "err": {
+      "NO_EMAIL": "Enter the hospital's e-mail.",
+      "NO_PHONE": "Enter a valid WhatsApp number for the hospital.",
+      "NO_MAIL": "The clinic's e-mail is not set up yet (Settings → E-mail).",
+      "MAIL_FAILED": "The e-mail could not be sent. Try again.",
+      "SURGERY_NO_TIME": "The surgery's time was freed; book it again from the calendar."
+    },
+    "msg": {
+      "wa": "Hello {hospital},\nA surgery from {clinic}:\nPatient: {name} — {phone}\nProcedure: {procedure}\nDoctor: {doctor}\nDate: {date}, {time}\nNotes: {notes}",
+      "mail_subject": "Surgery booking — {name} — {date}",
+      "mail_body": "Hello {hospital},\n\nPlease book the operating room for the following:\n\nPatient: {name}\nPhone: {phone}\nProcedure: {procedure}\nDoctor: {doctor}\nDate: {date}, {time}\nNotes: {notes}\n\nThank you,\n{clinic}"
+    }
+  }
+}

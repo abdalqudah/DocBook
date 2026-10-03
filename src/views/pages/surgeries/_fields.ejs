@@ -1,0 +1,47 @@
+<%# The surgery part of a form (time-block dialog, surgery page): patient (search or type), procedure, hospital, notes.
+    v: values · errs: field errors · hospitals: the clinic's hospitals · prefix: id prefix %>
+<% var _v = function (k) { return v && v[k] !== undefined && v[k] !== null ? v[k] : ''; };
+   var _e = function (k) { return errs && errs[k] ? '<span class="field-error">' + escapeHtml(t('surgeries.err_field')) + '</span>' : ''; };
+   var hid = String(_v('hospital_id')); var other = !hid && _v('hospital_name'); %>
+<div class="field full sx-patient" data-sx-patient>
+  <label class="label" for="<%= prefix %>sx-search"><%= t('common.patient') %><span class="req">*</span></label>
+  <input type="hidden" name="patient_id" value="<%= _v('patient_id') %>" data-sx-pid>
+  <div class="patient-picked<%= _v('patient_id') ? '' : ' hidden' %>" data-sx-chip>
+    <span class="avatar" data-sx-initials><%= initials(_v('patient_name') || '?') %></span>
+    <div class="grow"><div class="strong" data-sx-chip-name><%= _v('patient_name') %></div><div class="small muted"><span dir="ltr" data-sx-chip-phone><%= _v('patient_phone') %></span></div></div>
+    <button class="btn btn-ghost btn-sm" type="button" data-sx-clear><%= t('appointments.change') %></button>
+  </div>
+  <div class="<%= _v('patient_id') ? 'hidden' : '' %>" data-sx-find>
+    <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" id="<%= prefix %>sx-search" type="search" autocomplete="off" placeholder="<%= t('surgeries.find_patient') %>" data-sx-search data-empty="<%= t('appointments.no_patient_match') %>"></div>
+    <div class="patient-results hidden" role="listbox" data-sx-results></div>
+    <div class="form-grid mt-2">
+      <div class="field"><label class="label" for="<%= prefix %>sx-name"><%= t('surgeries.patient_name') %></label><input class="input" id="<%= prefix %>sx-name" name="patient_name" value="<%= _v('patient_name') %>" autocomplete="off" data-sx-name><%- _e('patient_name') %></div>
+      <div class="field"><label class="label" for="<%= prefix %>sx-phone"><%= t('common.phone') %></label><input class="input" id="<%= prefix %>sx-phone" name="patient_phone" value="<%= _v('patient_phone') %>" inputmode="tel" dir="ltr" autocomplete="off" data-sx-phone></div>
+    </div>
+    <span class="help"><%= t('surgeries.patient_help') %></span>
+  </div>
+  <%- _e('patient_id') %>
+</div>
+<div class="field full">
+  <label class="label" for="<%= prefix %>sx-proc"><%= t('surgeries.procedure') %><span class="req">*</span></label>
+  <input class="input" id="<%= prefix %>sx-proc" name="procedure_name" value="<%= _v('procedure_name') %>" maxlength="190" placeholder="<%= t('surgeries.procedure_ph') %>" data-sx-required>
+  <%- _e('procedure_name') %>
+</div>
+<div class="field">
+  <label class="label" for="<%= prefix %>sx-hosp"><%= t('surgeries.hospital') %></label>
+  <select class="select" id="<%= prefix %>sx-hosp" name="hospital_id" data-sx-hospital>
+    <option value=""><%= t('surgeries.no_hospital') %></option>
+    <% hospitals.forEach(function (h) { %><option value="<%= h.id %>"<%= String(h.id) === hid ? ' selected' : '' %>><%= h.name %></option><% }) %>
+    <option value="other"<%= other ? ' selected' : '' %>><%= t('surgeries.other_hospital') %></option>
+  </select>
+  <% if (!hospitals.length) { %><span class="help"><%- t('surgeries.add_hospitals_html') %></span><% } %>
+  <%- _e('hospital_id') %>
+</div>
+<div class="field<%= other ? '' : ' hidden' %>" data-sx-hospital-name>
+  <label class="label" for="<%= prefix %>sx-hname"><%= t('surgeries.hospital_name') %></label>
+  <input class="input" id="<%= prefix %>sx-hname" name="hospital_name" value="<%= other ? _v('hospital_name') : '' %>" maxlength="190">
+</div>
+<div class="field full">
+  <label class="label" for="<%= prefix %>sx-notes"><%= t('surgeries.notes') %></label>
+  <textarea class="textarea" id="<%= prefix %>sx-notes" name="notes" rows="2" maxlength="2000" placeholder="<%= t('surgeries.notes_ph') %>"><%= _v('notes') %></textarea>
+</div>

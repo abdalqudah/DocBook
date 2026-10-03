@@ -144,7 +144,10 @@ async function renderIndex(req, res, extra = {}) {
   if (!branchOpts) f.branch = null;
   const doctors = (await bookableDoctors(ctx)).filter(inBranch(f));
   const lenOf = await lengths(ctx);
-  const base = { title: req.t('appointments.title'), view, f, doctors, statuses: appts.STATUSES, branchOpts, ...ASSETS };
+  // Hospitals for the "surgery" option of a time block; ?surgery=1 (from Patients → Surgeries) opens it ready.
+  const hospitals = (await require('../partners/partners.service').list(ctx.businessId, { activeOnly: true })).filter((p) => p.kind === 'hospital'); // eslint-disable-line global-require
+  const surgeryOpen = req.query.surgery === '1' && !extra.openDialog ? { openDialog: 'block-dialog', blockKind: 'surgery' } : {};
+  const base = { title: req.t('appointments.title'), view, f, doctors, statuses: appts.STATUSES, branchOpts, hospitals, ...surgeryOpen, ...ASSETS, pageScripts: [...(ASSETS.pageScripts || []), '/js/surgeries.js'] };
 
   if (view === 'list') {
     const from = pickDate(req.query.from, ctx.today);
@@ -281,10 +284,12 @@ router.get('/patient-lookup', can('appointments.manage'), wrap(async (req, res) 
 }));
 
 // ---------------------------------------------------------------- time blocks
-router.post('/blocks', can('appointments.manage'), form(async (req, res) => {
+// Time blocks: reception / managers for any doctor; a doctor login for their own time (e.g. a surgery).
+const canBlock = (req, res, next) => (req.ctx.permissions.has('appointments.manage') || (req.ctx.ownDoctorId && req.ctx.permissions.has('clinical.edit')) ? next() : next(E.forbidden('appointments.manage')));
+router.post('/blocks', canBlock, form(async (req, res) => {
   if (req.ctx.ownDoctorId && Number(req.body.doctor_id) !== req.ctx.ownDoctorId) throw E.forbidden('appointments.view_all');
   await appts.block(req.ctx, req.body);
-  flash(req, 'success', req.t('appointments.block_saved'));
+  flash(req, 'success', req.t(req.body.kind === 'surgery' ? 'surgeries.saved' : 'appointments.block_saved'));
   res.redirect(safeReturn(req.body.return_to) || `/app/appointments?date=${encodeURIComponent(req.body.appointment_date)}`);
 }, (req, res, extra) => {
   const back = new URLSearchParams(String(safeReturn(req.body.return_to) || '').split('?')[1] || '');
@@ -292,9 +297,9 @@ router.post('/blocks', can('appointments.manage'), form(async (req, res) => {
   return renderIndex(req, res, { ...extra, openDialog: 'block-dialog' });
 }));
 
-router.post('/blocks/:id(\\d+)/delete', can('appointments.manage'), wrap(async (req, res) => {
+router.post('/blocks/:id(\\d+)/delete', canBlock, wrap(async (req, res) => {
   const a = await appts.get(req.ctx, Number(req.params.id));
-  if (a.appointment_type !== 'blocked') throw E.notFound('Appointment');
+  if (a.appointment_type !== 'blocked' || (req.ctx.ownDoctorId && a.doctor_id !== req.ctx.ownDoctorId)) throw E.notFound('Appointment');
   await appts.remove(req.ctx, a.id);
   flash(req, 'success', req.t('appointments.block_deleted'));
   res.redirect(`/app/appointments?date=${a.appointment_date}`);
