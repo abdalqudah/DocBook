@@ -6,7 +6,7 @@
     <p><%= ctx.ownDoctorId ? t('patients.lead_doctor') : t('patients.lead') %></p>
   </div>
   <div class="page-actions">
-    <%- include(P + 'export-menu', { href: '/app/patients/export' }) %>
+    <%- include(P + 'export-menu', { href: '/app/patients/export', more: can('patients.view') ? [{ href: '/app/patients/export-all', icon: 'package', label: t('patient_export.bulk.menu') }] : [] }) %>
     <% var _pq = Object.assign({}, query); delete _pq.page; delete _pq.new; _pq.print = '1'; %><a class="btn btn-secondary" href="/app/patients/print?<%= Object.keys(_pq).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(_pq[k]); }).join('&') %>" target="_blank" rel="noopener"><%- icon('printer', 'icon-sm') %><%= t('common.print') %></a>
     <% if (canCreate) { %><button class="btn btn-primary" type="button" data-open-dialog="patient-dialog" data-reset-form><%- icon('user-plus', 'icon-sm') %><%= t('patients.add') %></button><% } %>
   </div>

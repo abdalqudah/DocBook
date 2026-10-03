@@ -63,14 +63,17 @@ async function gather(ctx, patientId) {
   return { patient, access, clinicalOk, billingOk, appointments, consultations, diagnoses, prescriptions, orders, referrals, certificates, files, invoices, payments, dental, plan, growth, pregnancies };
 }
 
-/** The ZIP → { filename, buffer, counts }. */
-async function build(ctx, patientId, locale = 'ar') {
+/**
+ * Writes one patient's file through add(path, buffer) (an in-memory zip, or a folder of the whole-clinic export)
+ * → { patient, access, counts, clinicalOk, billingOk }. Nothing is logged here; the callers log.
+ */
+async function collect(ctx, patientId, locale, add) {
   const d = await gather(ctx, patientId);
   const t = translator(locale);
   const { paper } = require('../share/papers'); // eslint-disable-line global-require
   const docsSvc = require('../patientdocs/docs.service'); // eslint-disable-line global-require
   const documents = require('../patientdocs/documents'); // eslint-disable-line global-require
-  const zip = new AdmZip();
+  const zip = { addFile: (name, buf) => add(name, buf) };
   const index = []; // what is in the zip, for the summary and the README
   const missing = [];
 
@@ -88,7 +91,7 @@ async function build(ctx, patientId, locale = 'ar') {
     try {
       const out = await paper(ctx, p.kind, p.id, locale); // eslint-disable-line no-await-in-loop
       const name = `papers/${p.date || 'undated'}_${p.kind}${p.sub ? `-${ascii(p.sub, '')}` : ''}-${p.id}.pdf`;
-      zip.addFile(name, Buffer.from(out.content));
+      await zip.addFile(name, Buffer.from(out.content)); // eslint-disable-line no-await-in-loop
       index.push({ path: name, kind: p.kind, date: p.date });
     } catch (e) { missing.push(`${p.kind} #${p.id}`); }
   }
@@ -97,7 +100,7 @@ async function build(ctx, patientId, locale = 'ar') {
     const ext = (String(f.name || '').match(/\.([A-Za-z0-9]{1,5})$/) || [])[1] || (String(f.mime).split('/')[1] || 'bin');
     const base = ascii(String(f.name || '').replace(/\.[A-Za-z0-9]{1,5}$/, ''), f.category || 'file');
     const name = `files/${day(f.created_at)}_${f.id}_${base}.${ext.toLowerCase()}`;
-    zip.addFile(name, Buffer.from(f.data));
+    await zip.addFile(name, Buffer.from(f.data)); // eslint-disable-line no-await-in-loop
     index.push({ path: name, kind: 'file', date: day(f.created_at), title: f.title || f.name, category: f.category, id: f.id });
   }
 
@@ -116,7 +119,7 @@ async function build(ctx, patientId, locale = 'ar') {
     vitals: d.consultations.slice().reverse().map((c) => ({ at: c.created_at, v: parse(c.vital_signs, {}) })).find((x) => x.v && Object.values(x.v).some(Boolean)) || null,
     icdTitle: (r) => icd.titleOf(r, locale),
   }, locale);
-  zip.addFile('00-summary.pdf', Buffer.from(summary));
+  await zip.addFile('00-summary.pdf', Buffer.from(summary));
 
   // Machine-readable copy.
   const data = {
@@ -131,17 +134,23 @@ async function build(ctx, patientId, locale = 'ar') {
     papers: index.filter((x) => x.kind !== 'file'),
     not_included: [...(d.clinicalOk ? [] : ['clinical']), ...(d.billingOk ? [] : ['billing']), ...missing],
   };
-  zip.addFile('data.json', Buffer.from(JSON.stringify(data, null, 2)));
+  await zip.addFile('data.json', Buffer.from(JSON.stringify(data, null, 2)));
   const readme = [t('patient_export.readme', { name: d.patient.full_name, date: today, clinic: clinic.name }), '',
     translator(locale === 'en' ? 'ar' : 'en')('patient_export.readme', { name: d.patient.full_name, date: today, clinic: clinic.name_en || clinic.name }),
     ...(missing.length || !d.clinicalOk || !d.billingOk ? ['', t('patient_export.readme_partial')] : [])].join('\r\n');
-  zip.addFile('README.txt', Buffer.from(`﻿${readme}`, 'utf8'));
-
+  await zip.addFile('README.txt', Buffer.from(`\ufeff${readme}`, 'utf8'));
   const counts = { papers: index.filter((x) => x.kind !== 'file').length, files: d.files.length, visits: d.appointments.length };
-  await audit.record(ctx, 'patient.exported', { entityType: 'patient', entityId: d.patient.id, newValues: { ...counts, clinical: d.clinicalOk, billing: d.billingOk } });
-  const privacy = require('../clinicalplus/privacy.service'); // eslint-disable-line global-require
-  await privacy.log(ctx, { patientId: d.patient.id, what: 'export', access: privacy.levelOf(d.access) });
-  return { filename: `patient-${d.patient.id}-${ascii(d.patient.full_name, 'file')}-${today}.zip`, buffer: zip.toBuffer(), counts };
+  return { patient: d.patient, access: d.access, counts, clinicalOk: d.clinicalOk, billingOk: d.billingOk };
 }
 
-module.exports = { gather, build };
+/** One patient's ZIP (in memory) → { filename, buffer, counts }; audited and written to the record's access log. */
+async function build(ctx, patientId, locale = 'ar') {
+  const zip = new AdmZip();
+  const r = await collect(ctx, patientId, locale, (name, buf) => zip.addFile(name, buf));
+  await audit.record(ctx, 'patient.exported', { entityType: 'patient', entityId: r.patient.id, newValues: { ...r.counts, clinical: r.clinicalOk, billing: r.billingOk } });
+  const privacy = require('../clinicalplus/privacy.service'); // eslint-disable-line global-require
+  await privacy.log(ctx, { patientId: r.patient.id, what: 'export', access: privacy.levelOf(r.access) });
+  return { filename: `patient-${r.patient.id}-${ascii(r.patient.full_name, 'file')}-${new Date().toISOString().slice(0, 10)}.zip`, buffer: zip.toBuffer(), counts: r.counts };
+}
+
+module.exports = { gather, collect, build, ascii };

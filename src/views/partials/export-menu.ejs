@@ -4,6 +4,7 @@
   <div class="menu">
     <a href="<%= href %>?<%= _qs %>&format=xlsx"><%- icon('file-spreadsheet', 'icon-sm') %><%= t('common.export_xlsx') %></a>
     <a href="<%= href %>?<%= _qs %>&format=csv"><%- icon('table', 'icon-sm') %><%= t('common.export_csv') %></a>
+    <% (typeof more !== 'undefined' && more || []).forEach(function (m) { %><a href="<%= m.href %>"><%- icon(m.icon, 'icon-sm') %><%= m.label %></a><% }) %>
   </div>
 </details>
 <% } %>

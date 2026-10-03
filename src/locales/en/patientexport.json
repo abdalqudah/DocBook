@@ -33,10 +33,52 @@
     "in_zip": "In the ZIP: {path}",
     "none": "None",
     "restricted": "Clinical parts are not included: you may not read this patient's medical record.",
-    "status": { "pending": "Pending", "confirmed": "Confirmed", "completed": "Completed", "cancelled": "Cancelled", "no_show": "No-show", "checked_in": "Arrived", "in_progress": "With the doctor" },
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No-show",
+      "checked_in": "Arrived",
+      "in_progress": "With the doctor"
+    },
     "lab": "Lab",
     "imaging": "Imaging",
     "readme": "Patient file: {name}\r\nClinic: {clinic}\r\nExported on: {date}\r\n\r\n00-summary.pdf  Summary of the whole file\r\npapers/         Prescriptions, reports, requests, referrals, certificates and invoices (PDF)\r\nfiles/          Images and files as uploaded (X-rays, results, scanned papers)\r\ndata.json       All the data, in a form another system can import",
-    "readme_partial": "Note: this export holds only what the staff member who made it may see."
+    "readme_partial": "Note: this export holds only what the staff member who made it may see.",
+    "bulk": {
+      "menu": "Every patient's file (ZIP)",
+      "title": "Export every patient's file",
+      "lead": "One ZIP with a folder per patient: a PDF summary, every prescription, report, request, referral, certificate and invoice as PDF, the images and files as uploaded, and JSON data — with an Excel index of the patients and their folders.",
+      "how": "The export is built in the background while you keep working; a large clinic can take a few minutes. The file stays 24 hours, then is removed.",
+      "start": "Start the export",
+      "confirm": "Export every patient's file? The export is recorded in the clinic's log and every file's access log. Keep the file somewhere safe.",
+      "confirm_yes": "Start",
+      "started": "The export has started. Its progress shows here.",
+      "running": "Exporting… {done} of {total} patients",
+      "preparing": "Preparing…",
+      "ready_title": "Ready files",
+      "none": "No exports yet.",
+      "by": "By {name}",
+      "patients_n": "{n} patients",
+      "skipped_n": "{n} could not be included",
+      "failed": "The export failed",
+      "download": "Download",
+      "delete": "Delete",
+      "delete_confirm": "Delete this export file?",
+      "deleted": "Export file deleted.",
+      "expires": "Removed automatically 24 hours after it was made.",
+      "privacy": "Each file holds only what you may see.",
+      "sheet": "Patients",
+      "col_visits": "Visits",
+      "col_papers": "Papers",
+      "col_files": "Files",
+      "col_folder": "Folder",
+      "skipped_row": "This file could not be included",
+      "readme": "Patient files — {n} patients — exported on {date}\r\n\r\nindex.xlsx / index.csv   every patient and their folder\r\npatients/                one folder per patient with:\r\n   00-summary.pdf        the file summary\r\n   papers/               prescriptions, reports, requests, referrals, certificates, invoices (PDF)\r\n   files/                images and files as uploaded\r\n   data.json             the data in a portable form",
+      "err": {
+        "EXPORT_RUNNING": "An export is already running. Wait until it finishes."
+      }
+    }
   }
 }

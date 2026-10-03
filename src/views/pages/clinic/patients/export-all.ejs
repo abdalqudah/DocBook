@@ -1,0 +1,55 @@
+<% var B = 'patient_export.bulk.';
+   var size = function (n) { n = Number(n) || 0; return n >= 1073741824 ? fmt.number(Math.round(n / 107374182.4) / 10) + ' ' + t('media_lib.gb') : n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.max(1, Math.round(n / 1024))) + ' ' + t('media_lib.kb'); };
+   var run = exports.find(function (x) { return x.state === 'running'; });
+   var done = exports.filter(function (x) { return x.state !== 'running'; }); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t(B + 'title') %></h1>
+    <p><%= t(B + 'lead') %></p>
+  </div>
+</div>
+<div class="grid grid-main">
+  <section class="panel">
+    <div class="panel-body stack">
+      <p class="small muted"><%- icon('clock', 'icon-sm') %> <%= t(B + 'how') %></p>
+      <p class="small muted"><%- icon('shield-check', 'icon-sm') %> <%= t(B + 'privacy') %></p>
+      <% if (run) { var pct = run.total ? Math.round((run.done || 0) * 100 / run.total) : 0; %>
+      <div class="stack-sm" data-export-running data-status="/app/patients/export-all/status" role="status" aria-live="polite">
+        <strong data-export-text data-text-running="<%= t(B + 'running', { done: '{done}', total: '{total}' }) %>"><%= run.total ? t(B + 'running', { done: fmt.number(run.done || 0), total: fmt.number(run.total) }) : t(B + 'preparing') %></strong>
+        <span class="meter" aria-hidden="true"><span data-export-bar style="width:<%= pct %>%"></span></span>
+      </div>
+      <% } else { %>
+      <form method="post" action="/app/patients/export-all" data-confirm="<%= t(B + 'confirm') %>" data-confirm-yes="<%= t(B + 'confirm_yes') %>" data-confirm-tone="primary">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary" type="submit"><%- icon('package', 'icon-sm') %><%= t(B + 'start') %></button>
+      </form>
+      <% } %>
+    </div>
+  </section>
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t(B + 'ready_title') %></h2><p class="panel-sub"><%= t(B + 'expires') %></p></div></div>
+    <% if (!done.length) { %><div class="panel-body"><p class="muted small"><%= t(B + 'none') %></p></div><% } else { %>
+    <ul class="px-list">
+      <% done.forEach(function (x) { %>
+      <li class="px-item">
+        <div class="px-meta">
+          <strong><%= fmt.date(x.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></strong>
+          <span class="small muted">
+            <% if (x.state === 'ready') { %><%= t(B + 'patients_n', { n: fmt.number(x.patients || 0) }) %> · <bdi><%= size(x.size) %></bdi><% if (x.skipped) { %> · <%= t(B + 'skipped_n', { n: fmt.number(x.skipped) }) %><% } %>
+            <% } else { %><span class="badge badge-danger"><%= t(B + 'failed') %></span><% } %>
+            <% if (x.by_name) { %> · <%= t(B + 'by', { name: x.by_name }) %><% } %>
+          </span>
+        </div>
+        <div class="row-sm">
+          <% if (x.state === 'ready') { %><a class="btn btn-secondary btn-sm" href="/app/patients/export-all/<%= x.name %>"><%- icon('download', 'icon-sm') %><%= t(B + 'download') %></a><% } %>
+          <form method="post" action="/app/patients/export-all/<%= x.name %>/delete" data-confirm="<%= t(B + 'delete_confirm') %>" data-confirm-yes="<%= t(B + 'delete') %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t(B + 'delete') %></button>
+          </form>
+        </div>
+      </li>
+      <% }) %>
+    </ul>
+    <% } %>
+  </section>
+</div>

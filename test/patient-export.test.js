@@ -1,6 +1,7 @@
 // The patient file export (one ZIP: summary PDF, every paper as PDF, the stored files, data.json, README), what each
 // role gets, the audit + access log, and the one storage size that now counts patient files and chat attachments.
 process.env.NODE_ENV = 'test';
+process.env.PATIENT_EXPORT_DIR = require('path').join(require('os').tmpdir(), `px-${process.pid}-${Date.now()}`);
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const AdmZip = require('adm-zip');
@@ -13,6 +14,7 @@ const scheduling = require('../src/modules/clinic/scheduling');
 const storage = require('../src/modules/storage/storage.service');
 const orders = require('../src/modules/orders/orders.service');
 const chat = require('../src/modules/chat/chat.service');
+const bulk = require('../src/modules/patientexport/bulk.service');
 const { serve } = require('./_http');
 
 const tag = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -118,4 +120,40 @@ test('one storage size: patient files and chat attachments count, and are refuse
   await assert.rejects(chat.send(ctx, room.id, 'صورة', [{ buffer: PNG, originalname: 'c.png', mimetype: 'image/png' }]), (e) => e.code === 'STORAGE_FULL');
   await chat.send(ctx, room.id, 'نص فقط'); // a message without files still goes
   await knex('businesses').where({ id: B }).update({ media_quota_mb: null });
+});
+
+test('every patient in one ZIP: built in the background, index + a folder per patient, download, delete; data.export only', async () => {
+  const o = app.agent(); await o.login(mail('o'));
+  const list = await o.get('/app/patients');
+  assert.match(list.text, /href="\/app\/patients\/export-all"/);
+  let page = await o.get('/app/patients/export-all');
+  assert.equal(page.status, 200);
+  let r = await o.post('/app/patients/export-all', { _csrf: o.csrf(page.text) });
+  assert.equal(r.status, 302);
+  await bulk.settle(B);
+  const st = JSON.parse((await o.get('/app/patients/export-all/status')).text);
+  assert.equal(st.state, 'idle');
+  page = await o.get('/app/patients/export-all');
+  const name = (page.text.match(/href="\/app\/patients\/export-all\/(patients-[^"]+\.zip)"/) || [])[1];
+  assert.ok(name, 'download link');
+  r = await o.get(`/app/patients/export-all/${name}`);
+  assert.equal(r.status, 200);
+  const zip = new AdmZip(r.body);
+  const names = zip.getEntries().map((e) => e.entryName);
+  assert.ok(names.includes('index.xlsx') && names.includes('index.csv') && names.includes('README.txt'));
+  const folder = names.find((n) => new RegExp(`^patients/\\d{5}_${pid}_[^/]+/00-summary\\.pdf$`).test(n));
+  assert.ok(folder, names.join(','));
+  assert.ok(names.some((n) => n.startsWith(folder.replace('00-summary.pdf', 'files/'))));
+  assert.match(zip.getEntry('index.csv').getData().toString('utf8'), /أحمد يوسف/);
+  assert.ok(await knex('audit_logs').where({ business_id: B, action: 'patients.exported_all' }).first());
+  assert.ok(await knex('audit_logs').where({ business_id: B, action: 'patients.export_downloaded' }).first());
+  assert.equal((await o.get('/app/patients/export-all/../../x.zip')).status, 404);
+
+  const n = app.agent(); await n.login(mail('n'));
+  assert.equal((await n.get('/app/patients/export-all')).status, 403);
+  assert.equal((await n.get(`/app/patients/export-all/${name}`)).status, 403);
+
+  r = await o.post(`/app/patients/export-all/${name}/delete`, { _csrf: o.csrf(page.text) });
+  assert.equal(r.status, 302);
+  assert.equal((await o.get(`/app/patients/export-all/${name}`)).status, 404);
 });

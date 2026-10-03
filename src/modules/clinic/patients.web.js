@@ -64,6 +64,39 @@ router.get('/print', wrap(async (req, res) => {
   res.page('pages/clinic/patients/print-list', { title: req.t('prints.patient_list'), rows, capped: rows.length >= 2000, ageOf: (d) => lib.ageOf(d, req.ctx.today), printable: true });
 }));
 
+// ---------------------------------------------------------------- every patient's file in one ZIP (patientexport/bulk.service.js)
+const bulk = require('../patientexport/bulk.service');
+const bulkPage = (req, res) => res.page('pages/clinic/patients/export-all', {
+  title: req.t('patient_export.bulk.title'), exports: bulk.list(req.ctx.businessId), pageScripts: ['/js/patient-export.js'], pageStyles: PAGE_STYLES,
+});
+router.get('/export-all', can('data.export'), wrap(async (req, res) => bulkPage(req, res)));
+router.get('/export-all/status', can('data.export'), wrap(async (req, res) => {
+  const run = bulk.list(req.ctx.businessId).find((x) => x.state === 'running');
+  res.set('Cache-Control', 'no-store');
+  return res.json(run ? { state: 'running', done: run.done || 0, total: run.total || 0 } : { state: 'idle' });
+}));
+router.post('/export-all', can('data.export'), wrap(async (req, res) => {
+  try {
+    await bulk.start(req.ctx, req.locale);
+    flash(req, 'success', req.t('patient_export.bulk.started'));
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    flash(req, 'error', req.t(`patient_export.bulk.err.${e.code}`) !== `patient_export.bulk.err.${e.code}` ? req.t(`patient_export.bulk.err.${e.code}`) : e.message);
+  }
+  return res.redirect('/app/patients/export-all');
+}));
+router.get('/export-all/:name', can('data.export'), wrap(async (req, res) => {
+  const { file } = bulk.fileOf(req.ctx.businessId, req.params.name);
+  await audit.record(req.ctx, 'patients.export_downloaded', { entityType: 'patient_export', entityId: null, newValues: { file: req.params.name } });
+  res.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' });
+  return res.download(file, req.params.name);
+}));
+router.post('/export-all/:name/delete', can('data.export'), wrap(async (req, res) => {
+  await bulk.removeOne(req.ctx, req.params.name);
+  flash(req, 'success', req.t('patient_export.bulk.deleted'));
+  return res.redirect('/app/patients/export-all');
+}));
+
 router.get('/export', can('data.export'), wrap(async (req, res) => {
   const rows = await listQuery(req.ctx, req.query).limit(20000);
   const t = req.t;
