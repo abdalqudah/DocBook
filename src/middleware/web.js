@@ -92,7 +92,7 @@ function locals(req, res, next) {
     query: req.query,
     flash: req.session?.flash || [],
     fmt: {
-      date: (v, o) => fmt.formatDate(v, locale, o),
+      date: (v, o) => fmt.formatDate(v, locale, o, (res.locals.business && res.locals.business.timezone) || null), // timestamps in the clinic's zone
       month: (k) => fmt.formatMonth(k, locale),
       money: (a, c) => fmt.formatMoney(a, c || cur(), locale),
       amount: (a, c) => fmt.formatAmount(a, c || cur(), locale),

@@ -207,7 +207,8 @@
   if (closing) {
     var counted = closing.querySelector('[name="counted_cash"]');
     var expected = Number(closing.getAttribute('data-expected')) || 0;
-    var afterExp = Number(closing.getAttribute('data-expected-after')) || expected;
+    var afterAttr = closing.getAttribute('data-expected-after');
+    var afterExp = afterAttr === null || afterAttr === '' ? expected : Number(afterAttr) || 0; // 0 is a real value
     var varOut = closing.querySelector('[data-variance]');
     var varText = closing.querySelector('[data-variance-text]');
     var counter = closing.querySelector('[data-denoms]');

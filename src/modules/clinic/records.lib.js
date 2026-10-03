@@ -46,8 +46,42 @@ const whereLocalDates = (q, col, from, to, tz) => {
   const [a, b] = dayRange(from, to, tz);
   return q.where(col, '>=', a).where(col, '<', b);
 };
-/** SQL expression turning a UTC timestamp into the clinic's local date (offset of "now" — fine for grouping). */
-const localDateSql = (col, tz) => knex.raw('DATE(DATE_ADD(??, INTERVAL ? MINUTE))', [col, tzOffset(tz, new Date())]);
+/**
+ * The offset changes of a time zone (daylight saving) from 6 years back to 2 years ahead: [{ at: Date, offset }],
+ * the first entry being the offset before any change. Cached per zone for a day.
+ */
+const tzCache = new Map();
+function tzSegments(tz) {
+  const key = `${tz}|${new Date().toISOString().slice(0, 10)}`;
+  if (tzCache.has(key)) return tzCache.get(key);
+  const DAY = 86_400_000; const now = Date.now();
+  let t = now - 6 * 366 * DAY; const end = now + 2 * 366 * DAY;
+  let off = tzOffset(tz, new Date(t));
+  const segs = [{ at: null, offset: off }];
+  for (; t < end; t += DAY) {
+    const next = tzOffset(tz, new Date(t + DAY));
+    if (next !== off) {
+      let lo = t; let hi = t + DAY; // the change happens in (lo, hi]: narrow it to the minute
+      while (hi - lo > 60_000) { const mid = Math.floor((lo + hi) / 2); if (tzOffset(tz, new Date(mid)) === off) lo = mid; else hi = mid; }
+      segs.push({ at: new Date(Math.floor(hi / 60_000) * 60_000), offset: next });
+      off = next;
+    }
+  }
+  tzCache.clear(); tzCache.set(key, segs);
+  return segs;
+}
+/**
+ * SQL expression turning a UTC timestamp into the clinic's local date. Each row uses the offset in force at its own
+ * time (summer / winter time), so grouping by day or month matches the clinic's calendar all year.
+ */
+function localDateSql(col, tz) {
+  const segs = tzSegments(tz || 'UTC');
+  if (segs.length === 1) return knex.raw('DATE(DATE_ADD(??, INTERVAL ? MINUTE))', [col, segs[0].offset]);
+  const whens = segs.slice(1).map(() => 'WHEN ?? < ? THEN ?').join(' ');
+  const binds = [];
+  segs.slice(1).forEach((sg, i) => binds.push(col, sg.at, segs[i].offset));
+  return knex.raw(`DATE(DATE_ADD(??, INTERVAL (CASE ${whens} ELSE ? END) MINUTE))`, [col, ...binds, segs[segs.length - 1].offset]);
+}
 
 /** Clinic-local "HH:MM" and date of a UTC timestamp. */
 function localTime(ts, tz) {

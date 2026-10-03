@@ -96,7 +96,9 @@ async function list(ctx, params = {}, { perPage = 25, all = false } = {}) {
 }
 
 // ---------------------------------------------------------------- drafts
-const qty = () => z.preprocess((v) => (v === '' || v === undefined || v === null ? 0 : Number(String(v).replace(/,/g, ''))),
+// Quantities are kept with 2 decimals: rounded here so the stock, its movement and the audit all show the same number.
+const q2 = (x) => (Number.isFinite(x) ? Math.round(x * 100) / 100 : x);
+const qty = () => z.preprocess((v) => (v === '' || v === undefined || v === null ? 0 : q2(Number(String(v).replace(/,/g, '')))),
   z.number({ invalid_type_error: 'Enter a number.' }).finite('Enter a number.').min(0, 'Must be zero or more.').max(1e9, 'Too large.'));
 const optMoney = () => z.preprocess((v) => (v === '' || v === undefined || v === null ? undefined : Number(String(v).replace(/,/g, ''))),
   z.number({ invalid_type_error: 'Enter a number.' }).finite('Enter a number.').min(0, 'Must be zero or more.').max(1e10, 'Too large.').optional());

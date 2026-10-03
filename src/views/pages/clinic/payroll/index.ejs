@@ -64,7 +64,7 @@
           <td class="num" data-label="<%= t('payroll.commission') %>"><%= fmt.amount(r.commission.totalCommission) %></td>
           <td class="num" data-label="<%= t('payroll.base_salary') %>"><%= fmt.amount(r.baseSalary) %></td>
           <td class="num" data-label="<%= t('payroll.adjustments') %>"><% if (!r.bonuses && !(r.deductions + r.advances)) { %><span class="muted">—</span><% } %><% if (r.bonuses) { %><div class="ops-pos"><bdi dir="ltr">+<%= fmt.amount(r.bonuses) %></bdi></div><% } %><% if (r.deductions + r.advances) { %><div class="ops-neg"><bdi dir="ltr">−<%= fmt.amount(r.deductions + r.advances) %></bdi></div><% } %></td>
-          <td class="num strong" data-label="<%= t('payroll.net_pay') %>"><%= fmt.amount(r.netPayroll) %><% if (r.payment && Math.abs(Number(r.payment.net_pay) - r.netPayroll) >= 0.005) { %><div class="tiny muted" title="<%= t('payroll.paid_differs') %>"><%= t('payroll.paid_short', { amount: fmt.amount(r.payment.net_pay) }) %></div><% } %></td>
+          <td class="num strong" data-label="<%= t('payroll.net_pay') %>"><%= fmt.amount(r.netPayroll) %><% if (r.payment && Math.abs(r.liveNet - r.netPayroll) >= 0.0005) { %><div class="tiny muted" title="<%= t('payroll.paid_differs') %>"><%= t('payroll.live_short', { amount: fmt.amount(r.liveNet) }) %></div><% } %></td>
           <td data-label="<%= t('common.status') %>">
             <% if (r.payment) { %><span class="badge badge-dot badge-success"><%= t('payroll.status.paid') %></span>
             <% } else if (r.pending) { %><span class="badge badge-dot badge-warning"><%= t('payroll.status.pending', { n: fmt.number(r.pending) }) %></span>

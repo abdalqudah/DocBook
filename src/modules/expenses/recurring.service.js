@@ -50,6 +50,7 @@ async function get(ctx, id) {
 async function save(ctx, id, input) {
   const d = validate(await schema(ctx.businessId), input);
   const row = { ...d, end_date: d.end_date || null, notes: d.notes || null, day_of_month: Number(d.next_date.slice(8)), is_active: input._has_active ? ['1', 'on', true].includes(input.is_active) : true };
+  if (row.end_date && row.next_date > row.end_date) row.is_active = false; // nothing left to record
   if (id) {
     const before = await get(ctx, id);
     await knex('recurring_expenses').where({ id: before.id }).update({ ...row, updated_at: new Date() });
@@ -70,6 +71,7 @@ async function remove(ctx, id) {
 /** Records this occurrence as an expense (amount may be changed for this time) and moves to the next date. */
 async function post(ctx, r, { amount } = {}) {
   const date = String(r.next_date);
+  if (r.end_date && date > String(r.end_date)) throw E.validation({ next_date: 'Choose a valid value.' }); // the series has ended
   const value = amount !== undefined && amount !== '' && Number(amount) > 0 ? Math.round(Number(amount) * 1000) / 1000 : Number(r.amount);
   await knex.transaction(async (trx) => {
     const [eid] = await trx('expenses').insert({
@@ -93,7 +95,8 @@ async function skip(ctx, r) {
 /** Occurrences waiting for a click (mode "confirm") on or before today. */
 async function due(ctx) {
   const today = ctx.today || scheduling.clinicNow(ctx.timezone || 'Asia/Amman').date;
-  return knex('recurring_expenses').where({ business_id: ctx.businessId, is_active: true, mode: 'confirm' }).where('next_date', '<=', today).orderBy('next_date');
+  return knex('recurring_expenses').where({ business_id: ctx.businessId, is_active: true, mode: 'confirm' }).where('next_date', '<=', today)
+    .where((q) => q.whereNull('end_date').orWhereRaw('next_date <= end_date')).orderBy('next_date');
 }
 
 /** Hourly: records the "auto" ones whose date came, in each clinic's own time zone (catching up missed dates). */
@@ -104,7 +107,7 @@ async function runDue() {
   for (const r0 of rows) { // eslint-disable-line no-restricted-syntax
     const today = scheduling.clinicNow(r0.timezone || 'Asia/Amman').date;
     let r = r0;
-    for (let i = 0; i < 12 && r && r.is_active && String(r.next_date) <= today; i += 1) {
+    for (let i = 0; i < 12 && r && r.is_active && String(r.next_date) <= today && !(r.end_date && String(r.next_date) > String(r.end_date)); i += 1) {
       await post({ businessId: r.business_id, userId: null, userName: null }, r); // eslint-disable-line no-await-in-loop
       posted += 1;
       r = await knex('recurring_expenses').where({ id: r.id }).first(); // eslint-disable-line no-await-in-loop

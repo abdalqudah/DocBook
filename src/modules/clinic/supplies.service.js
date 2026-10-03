@@ -14,7 +14,9 @@ const suppliers = repo({ table: 'suppliers', entity: 'supplier', searchable: ['n
 const items = repo({ table: 'supply_items', entity: 'supply_item', searchable: ['name', 'unit'], filters: { supplier: 'supplier_id', low: (q, v) => v === 'yes' && q.whereRaw('supply_items.current_stock <= supply_items.reorder_level') }, defaultSort: ['name', 'asc'] });
 
 const bool = () => z.preprocess((v) => v === '1' || v === 'on' || v === true, z.boolean());
-const qty = () => z.preprocess((v) => (v === '' || v === undefined ? 0 : Number(String(v).replace(/,/g, ''))), z.number({ invalid_type_error: 'Enter a number.' }).min(0, 'Must be zero or more.').max(1e9, 'Too large.'));
+// Quantities are kept with 2 decimals: rounded here so the stock, its movement and the audit all show the same number.
+const q2 = (x) => (Number.isFinite(x) ? Math.round(x * 100) / 100 : x);
+const qty = () => z.preprocess((v) => (v === '' || v === undefined ? 0 : q2(Number(String(v).replace(/,/g, '')))), z.number({ invalid_type_error: 'Enter a number.' }).min(0, 'Must be zero or more.').max(1e9, 'Too large.'));
 
 async function saveSupplier(ctx, id, input) {
   const d = validate(z.object({ name: z.string().trim().min(1, 'Required.').max(190), email: z.preprocess(emptyToUndefined, z.string().trim().email('Enter a valid email address.').optional()), phone: optionalString(40), notes: optionalString(3000), is_active: bool() }), input);

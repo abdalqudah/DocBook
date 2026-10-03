@@ -100,7 +100,7 @@ test('comped never expires; cancelled keeps access until the end', () => {
 });
 
 test('period arithmetic: month ends and next period start', () => {
-  assert.equal(subs.periodEnd('2026-01-31', 'monthly'), '2026-02-27');
+  assert.equal(subs.periodEnd('2026-01-31', 'monthly'), '2026-02-28'); // a 31st start runs to the month's end, never short
   assert.equal(subs.periodEnd('2026-10-01', 'monthly'), '2026-10-31');
   assert.equal(subs.periodEnd('2026-10-01', 'yearly'), '2027-09-30');
   assert.equal(subs.nextPeriodStart({ status: 'active', current_period_end: '2026-10-31' }, '2026-10-20'), '2026-11-01');

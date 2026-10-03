@@ -41,10 +41,17 @@ async function calcFull(ctx, doctorId, period) {
   const detail = await svc.commission(ctx, doctorId, c.range.from, c.range.to);
   return { ...c, commissionTotal: detail.totalCommission, commission: detail };
 }
+/** A paid month shows (and totals, and exports) the figures stored at payment, like the payslip and the P&L; the live
+ *  calculation is kept on `liveNet` for the "changed after payment" note. */
+function paidFigures(r) {
+  const p = r.payment;
+  if (!p) return { ...r, liveNet: r.netPayroll };
+  return { ...r, liveNet: r.netPayroll, baseSalary: Number(p.base_salary), commissionTotal: Number(p.commission), bonuses: Number(p.bonuses), deductions: Number(p.deductions), advances: Number(p.advances), netPayroll: Number(p.net_pay) };
+}
 async function sheet(ctx, period) {
   const docs = await knex('doctors').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id');
   const rows = [];
-  for (const d of docs) rows.push(await calcFull(ctx, d.id, period)); // eslint-disable-line no-await-in-loop
+  for (const d of docs) rows.push(paidFigures(await calcFull(ctx, d.id, period))); // eslint-disable-line no-await-in-loop
   return rows;
 }
 const sumRows = (rows) => rows.reduce((t, r) => ({ base: t.base + r.baseSalary, commission: t.commission + r.commissionTotal, bonuses: t.bonuses + r.bonuses,
@@ -91,7 +98,7 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
     name: `${t('payroll.title')} ${period}`,
     header: [t('common.doctor'), t('payroll.revenue'), t('payroll.visits'), t('payroll.patients'), t('payroll.basis'), t('payroll.commission'), t('payroll.base_salary'), t('payroll.bonuses'), t('payroll.deductions'), t('payroll.advances'), t('payroll.net_pay'), t('common.status')],
     rows: rows.map((r) => [L(r.info), r.commission.totalRevenue, r.commission.visitCount, r.commission.uniquePatientCount, r.rule ? t(`commission.basis.${r.rule.basis}`) : t('payroll.no_rule'),
-      r.commission.totalCommission, r.baseSalary, r.bonuses, r.deductions, r.advances, r.netPayroll, r.payment ? t('payroll.status.paid') : t('payroll.status.unpaid')]),
+      r.commissionTotal, r.baseSalary, r.bonuses, r.deductions, r.advances, r.netPayroll, r.payment ? t('payroll.status.paid') : t('payroll.status.unpaid')]),
   });
 }));
 

@@ -27,8 +27,11 @@ async function saveRule(ctx, doctorId, input) {
   await audit.record(ctx, 'commission.rule_saved', { entityType: 'doctor', entityId: doctorId, oldValues: before, newValues: { ...d, overrides: overrides.length } });
 }
 
+// The month is the clinic's own calendar month (as in the profit & loss), not the UTC one: an invoice issued at 01:30
+// on the 1st in Amman belongs to that month.
 async function invoicesFor(ctx, doctorId, from, to) {
-  return knex('invoices').where({ business_id: ctx.businessId, doctor_id: doctorId }).where('created_at', '>=', from).whereRaw('created_at < DATE_ADD(?, INTERVAL 1 DAY)', [to])
+  const tz = ctx.timezone || (await knex('businesses').where({ id: ctx.businessId }).first('timezone') || {}).timezone || 'Asia/Amman';
+  return require('./records.lib').whereLocalDates(knex('invoices').where({ business_id: ctx.businessId, doctor_id: doctorId }), 'created_at', from, to, tz) // eslint-disable-line global-require
     .orderBy('created_at').select('id', 'invoice_number', 'created_at', 'service_name', 'patient_id as patientId', 'patient_name', 'amount')
     .then((rows) => rows.map((r) => ({ ...r, serviceName: r.service_name, amount: Number(r.amount) })));
 }

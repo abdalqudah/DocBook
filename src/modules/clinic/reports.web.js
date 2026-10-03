@@ -100,9 +100,11 @@ async function build(req, range) {
   if (finance) {
     const [exp, pay] = await Promise.all([
       knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [range.from, range.to]).first(knex.raw('COALESCE(SUM(amount),0) as v'), knex.raw('COUNT(*) as n')),
-      knex('payroll_payments').where({ business_id: ctx.businessId }).whereBetween('period', [range.from.slice(0, 7), range.to.slice(0, 7)]).first(knex.raw('COALESCE(SUM(net_pay),0) as v'), knex.raw('COUNT(*) as n')),
+      // Salaries as in the profit & loss: doctors' net + advances taken back, plus paid staff salaries.
+      knex('payroll_payments').where({ business_id: ctx.businessId }).whereBetween('period', [range.from.slice(0, 7), range.to.slice(0, 7)]).first(knex.raw('COALESCE(SUM(net_pay + advances),0) as v'), knex.raw('COUNT(*) as n')),
     ]);
-    const expenses = num(exp.v); const payroll = num(pay.v);
+    const staffPaid = await require('../finance/staff.service').paidByMonth(ctx.businessId, range.from.slice(0, 7), range.to.slice(0, 7)); // eslint-disable-line global-require
+    const expenses = num(exp.v); const payroll = Math.round((num(pay.v) + Object.values(staffPaid).reduce((a, v) => a + num(v), 0)) * 1000) / 1000;
     fin = { revenue, expenses, expenseCount: num(exp.n), payroll, payrollCount: num(pay.n), net: revenue - expenses - payroll, margin: revenue ? ((revenue - expenses - payroll) * 100) / revenue : null };
   }
 

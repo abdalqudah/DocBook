@@ -163,7 +163,8 @@ async function staffSalaries(ctx, from, to) {
     }
     if (cols.includes('status')) q.whereNotIn('status', ['cancelled', 'void', 'draft', 'pending']);
     // eslint-disable-next-line no-await-in-loop
-    const row = await q.first(knex.raw(`COALESCE(SUM(??),0) as v`, [amount]), knex.raw('COUNT(*) as n'));
+    // Salary cost = net paid + advances taken back (the advance itself was paid earlier), as in the profit & loss.
+    const row = await q.first(cols.includes('advances') ? knex.raw('COALESCE(SUM(?? + ??),0) as v', [amount, 'advances']) : knex.raw('COALESCE(SUM(??),0) as v', [amount]), knex.raw('COUNT(*) as n'));
     return { total: round2(row.v), count: num(row.n) };
   }
   return null;
@@ -194,7 +195,7 @@ async function periodData(ctx, from, to, locale = 'ar') {
     apptBase(ctx, from, to).groupBy('a.source').select('a.source').count({ n: '*' }),
     knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [from, to]).groupBy('category').select('category').sum({ v: 'amount' }).count({ n: '*' }),
     DOCTOR_SCOPE(ctx, knex('payroll_payments').where({ business_id: ctx.businessId }).whereBetween('period', [from.slice(0, 7), to.slice(0, 7)]), 'doctor_id')
-      .first(knex.raw('COALESCE(SUM(net_pay),0) as v'), knex.raw('COUNT(*) as n')),
+      .first(knex.raw('COALESCE(SUM(net_pay + advances),0) as v'), knex.raw('COUNT(*) as n')), // as in the P&L
     staffSalaries(ctx, from, to),
     hasPayments
       ? lib.whereLocalDates(knex('payments').where({ business_id: ctx.businessId, status: 'refunded' }), 'refunded_at', from, to, ctx.timezone)
@@ -244,7 +245,8 @@ function composeFigures(d) {
   const payroll = round2(d.payroll && d.payroll.v);
   const staff = d.staff ? round2(d.staff.total) : 0;
   const refunds = d.refunds ? round2(d.refunds.v) : 0;
-  const net = round2(revenue - refunds - expenses - payroll - staff);
+  // A refund voids its invoice, so it is already out of revenue: shown for information, not subtracted again (as in the P&L).
+  const net = round2(revenue - expenses - payroll - staff);
   return {
     period: { from: d.from, to: d.to },
     currency: d.currency,

@@ -25,7 +25,7 @@ function certificatesService() {
 function ageOn(dob, onDate) {
   if (!dob || !/^\d{4}-\d{2}-\d{2}$/.test(String(dob))) return null;
   const [y, m, d] = String(dob).split('-').map(Number);
-  const [ty, tm, td] = String(onDate || new Date().toISOString().slice(0, 10)).split('-').map(Number);
+  const [ty, tm, td] = String(onDate || require('../clinic/scheduling').clinicNow('Asia/Amman').date).split('-').map(Number); // eslint-disable-line global-require
   let age = ty - y;
   if (tm < m || (tm === m && td < d)) age -= 1;
   return age >= 0 ? age : null;
@@ -59,7 +59,7 @@ async function orderPdf(ctx, kind, id, locale = 'ar') {
   const sig = require('../signatures/signatures.service'); // eslint-disable-line global-require
   const o = kind === 'order' ? await orders.getOrder(ctx, id) : await orders.getReferral(ctx, id);
   const [clinic, marks] = await Promise.all([clinicInfo(ctx.businessId), sig.forDocument(ctx.businessId, 'reports', o.doctor_id).catch(() => ({}))]);
-  const pdf = await documents.orderSheet({ clinic, doc: o, kind, age: lib.ageOf(o.date_of_birth, new Date().toISOString().slice(0, 10)), marks }, locale);
+  const pdf = await documents.orderSheet({ clinic, doc: o, kind, age: lib.ageOf(o.date_of_birth, require('../clinic/scheduling').clinicNow(clinic.timezone || 'Asia/Amman').date), marks }, locale);
   return { filename: `${kind}-${o.id}.pdf`, pdf, doc: o };
 }
 

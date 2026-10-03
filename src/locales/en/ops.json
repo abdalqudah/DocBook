@@ -13,7 +13,7 @@
     "sheet_title": "Payroll sheet — {month}", "sheet_hint": "Open a doctor for the full breakdown.", "sheet_note": "Amounts in {currency}. Commission is calculated from the invoices issued to each doctor during the month; figures stay live until the month is marked as paid.",
     "revenue": "Revenue", "n_patients": "{n} patients", "visits": "Visits", "patients": "Patients", "commission": "Commission", "base_salary": "Base salary", "bonuses": "Bonuses", "deductions": "Deductions", "advances": "Advances",
     "deductions_advances": "Deductions & advances", "net_pay": "Net pay", "basis": "Commission basis", "rate": "Rate", "no_rule": "No commission rule",
-    "paid_short": "paid {amount}", "paid_differs": "The live figure changed after the month was paid (for example a new invoice).",
+    "paid_short": "paid {amount}", "live_short": "live now {amount}", "paid_differs": "The live figure changed after the month was paid (for example a new invoice).",
     "status": { "paid": "Paid", "unpaid": "Not paid", "pending": "{n} pending" },
     "types": { "bonus": "Bonus", "deduction": "Deduction", "advance": "Salary advance" },
     "approval": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected" },

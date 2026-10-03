@@ -168,7 +168,9 @@ async function start(clinic, row, { brand = 'card', baseUrl, locale = 'ar', stat
   if (!opt) throw new AppError('PAY_NOT_CONFIGURED', 'Online payment is not available.', 409);
   if (!opt.payable) throw new AppError('PAY_NOT_DUE', 'Nothing to pay for this booking.', 409);
   if (!opt.brands.includes(brand)) brand = 'card'; // eslint-disable-line no-param-reassign
-  const amount = round3(row.amount_due);
+  // HyperPay takes 2 decimals: the amount is rounded once here, so what is charged, stored and invoiced is the same
+  // (12.345 JOD → 12.35, not a 12.35 charge against a 12.345 invoice).
+  const amount = opt.provider === 'hyperpay' ? Math.round(Number((Number(row.amount_due) * 100).toPrecision(12))) / 100 : round3(row.amount_due);
   const currency = String(clinic.currency || 'JOD').toUpperCase();
   const publicId = newPublicId();
   const cartId = `DB${row.appointment_id}-${publicId.slice(0, 10)}`;

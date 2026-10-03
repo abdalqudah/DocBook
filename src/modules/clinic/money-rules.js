@@ -5,19 +5,21 @@
 //   payroll()          ← payroll.ts calculatePayroll
 // ============================================================================
 const n = (v) => Number(v) || 0;
-const r2 = (v) => Math.round(v * 100) / 100;
+const { round } = require('../../core/money');
 
 /**
  * Checkout. `amountPaid` is what the patient actually pays (already after the discount), exactly as the
  * DocBook front desk enters it; the pre-discount price and the discount amount are derived from it.
  */
-function checkoutAmounts(amountPaid, discountPercent) {
+function checkoutAmounts(amountPaid, discountPercent, currency = 'JOD') {
   const amount = n(amountPaid);
   const pct = n(discountPercent) > 0 ? Math.min(100, n(discountPercent)) : 0;
   if (pct >= 100) return { amount, discountPercent: 100, discountAmount: 0, originalAmount: amount };
   const originalAmount = pct > 0 ? amount / (1 - pct / 100) : amount;
-  const discountAmount = pct > 0 ? r2(originalAmount - amount) : 0;
-  return { amount, discountPercent: pct, discountAmount, originalAmount: r2(originalAmount) };
+  // At the currency's own precision (3 decimals for JOD), as every invoice is.
+  const orig = round(originalAmount, currency);
+  const discountAmount = pct > 0 ? round(orig - amount, currency) : 0;
+  return { amount, discountPercent: pct, discountAmount, originalAmount: orig };
 }
 
 const BASES = ['percentage', 'fixed_per_visit', 'fixed_per_patient'];
@@ -32,6 +34,8 @@ const BASES = ['percentage', 'fixed_per_visit', 'fixed_per_patient'];
  * @param {{ basis, rate, serviceOverrides }|null} rule
  * @param {{ id, amount, serviceName, patientId }[]} invoices
  */
+const r3 = (v) => round(Number(v) || 0, 'JOD'); // stored at 3 decimals
+
 function commission(rule, invoices) {
   const patients = new Set();
   let totalRevenue = 0;
@@ -48,11 +52,11 @@ function commission(rule, invoices) {
     let c = 0;
     if (basisApplied === 'percentage') c = amount * (rateApplied / 100);
     else if (basisApplied === 'fixed_per_visit') c = rateApplied;
-    lines.push({ ...inv, amount, basisApplied, rateApplied, commission: c });
+    lines.push({ ...inv, amount, basisApplied, rateApplied, commission: r3(c) });
     totalCommission += c;
   }
   if (rule && rule.basis === 'fixed_per_patient') totalCommission = patients.size * n(rule.rate);
-  return { hasRule: Boolean(rule), totalRevenue, totalCommission, visitCount: invoices.length, uniquePatientCount: patients.size, lines };
+  return { hasRule: Boolean(rule), totalRevenue: r3(totalRevenue), totalCommission: r3(totalCommission), visitCount: invoices.length, uniquePatientCount: patients.size, lines };
 }
 
 /** Net doctor pay for a period: base + commission + approved bonuses − approved deductions − approved advances. */
@@ -62,7 +66,9 @@ function payroll(baseSalary, commissionTotal, adjustments = []) {
   const bonuses = sum('bonus');
   const deductions = sum('deduction');
   const advances = sum('advance');
-  return { baseSalary: n(baseSalary), commission: n(commissionTotal), bonuses, deductions, advances, netPayroll: n(baseSalary) + n(commissionTotal) + bonuses - deductions - advances };
+  // Each part at the stored precision (3 decimals), so net = the shown parts exactly.
+  const [b, c, bo, de, ad] = [n(baseSalary), n(commissionTotal), bonuses, deductions, advances].map(r3);
+  return { baseSalary: b, commission: c, bonuses: bo, deductions: de, advances: ad, netPayroll: r3(b + c + bo - de - ad) };
 }
 
 /** First and last day of a 'YYYY-MM' period. */

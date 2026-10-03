@@ -175,6 +175,8 @@ function groups(templates, list) {
 }
 
 // ------------------------------------------------------------------ the file
+/** Half-up rounding at `d` decimals that survives binary fractions (1.005 → 1.01). */
+const roundTo = (v, d) => { const f = 10 ** d; return Math.round(Number((Number(v) * f).toPrecision(12))) / f; };
 function dateText(iso, f) {
   const [y, m, d] = String(iso).slice(0, 10).split('-');
   return { 'YYYY-MM-DD': `${y}-${m}-${d}`, 'DD/MM/YYYY': `${d}/${m}/${y}`, 'MM/DD/YYYY': `${m}/${d}/${y}`, YYYYMMDD: `${y}${m}${d}`, 'DD-MM-YYYY': `${d}-${m}-${y}` }[f] || `${y}-${m}-${d}`;
@@ -192,7 +194,7 @@ function build(tpl, list, info) {
       case 'name': return p.name;
       case 'iban': return p.iban;
       case 'bank_name': return p.bank_name;
-      case 'amount': return tpl.format === 'xlsx' ? Math.round(p.amount * 10 ** tpl.decimals) / 10 ** tpl.decimals : p.amount.toFixed(tpl.decimals);
+      case 'amount': { const v = roundTo(p.amount, tpl.decimals); return tpl.format === 'xlsx' ? v : v.toFixed(tpl.decimals); }
       case 'currency': return info.currency;
       case 'period': return info.period;
       case 'reference': return c.value || info.reference;
@@ -230,14 +232,15 @@ async function make(ctx, { templateId, period, keys, action, to, markPaid, value
   const tpl = await get(ctx, templateId);
   const all = await payees(ctx, period);
   const wanted = new Set([].concat(keys || []).map(String));
-  const chosen = all.filter((p) => wanted.has(p.key) && p.account !== 'missing' && p.account !== 'bad');
+  // Each amount at the bank's decimals once, so the file, its total, the log and the e-mail agree.
+  const chosen = all.filter((p) => wanted.has(p.key) && p.account !== 'missing' && p.account !== 'bad').map((p) => ({ ...p, amount: roundTo(p.amount, tpl.decimals) }));
   if (!chosen.length) throw new AppError('NO_PAYEES', 'Choose at least one person with a valid account.', 422);
   const clinic = await knex('businesses').where({ id: ctx.businessId }).first('id', 'name', 'name_en', 'email', 'currency', 'slug', 'color', 'logo_mime', 'logo_version');
   const clinicName = (locale === 'en' && clinic.name_en) || clinic.name;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(String(valueDate || '')) ? valueDate : ctx.today;
   const reference = t('payouts.reference_text', { period });
   const file = build(tpl, chosen, { period, valueDate: date, currency: clinic.currency, clinicName, reference, t });
-  const total = Math.round(chosen.reduce((s, p) => s + p.amount, 0) * 1000) / 1000;
+  const total = roundTo(chosen.reduce((s, p) => s + p.amount, 0), tpl.decimals);
   let sentTo = null;
   if (action === 'email') {
     const address = String(to || tpl.email || '').trim().toLowerCase();
@@ -273,4 +276,4 @@ async function make(ctx, { templateId, period, keys, action, to, markPaid, value
 const history = (ctx, period) => knex('bank_transfers as b').leftJoin('users as u', 'u.id', 'b.created_by').where({ 'b.business_id': ctx.businessId })
   .modify((q) => { if (period) q.where('b.period', period); }).orderBy('b.created_at', 'desc').limit(30).select('b.*', 'u.name as by_name');
 
-module.exports = { FIELDS, FORMATS, DELIMITERS, DATE_FORMATS, PRESETS, ibanValid, accountState, list, get, save, remove, fromPreset, payees, templateFor, groups, build, make, history };
+module.exports = { roundTo, FIELDS, FORMATS, DELIMITERS, DATE_FORMATS, PRESETS, ibanValid, accountState, list, get, save, remove, fromPreset, payees, templateFor, groups, build, make, history };

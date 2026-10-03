@@ -51,8 +51,14 @@ function addMonths(s, n) {
   d.setUTCDate(Math.min(day, last));
   return iso(d);
 }
-/** Last day covered by a period that starts on `start` (monthly: to the day before the same day next month). */
-const periodEnd = (start, cycle) => addDays(addMonths(start, cycle === 'yearly' ? 12 : 1), -1);
+/**
+ * Last day covered by a period that starts on `start` (monthly: to the day before the same day next month). When
+ * that month has no such day (a 31st, or 29 Feb a year on), the period runs to the month's last day — never short.
+ */
+function periodEnd(start, cycle) {
+  const same = addMonths(start, cycle === 'yearly' ? 12 : 1);
+  return Number(same.slice(8)) < Number(String(start).slice(8, 10)) ? same : addDays(same, -1);
+}
 const dateStr = (v) => (v instanceof Date ? iso(new Date(Date.UTC(v.getFullYear(), v.getMonth(), v.getDate()))) : v ? String(v).slice(0, 10) : null);
 let nowFn = () => new Date();
 /** Replaces the clock (tests only). */
@@ -369,6 +375,8 @@ async function getInvoice(businessId, id) {
 /** Where the next paid period starts: right after the current one while it is active / in grace, else today. */
 function nextPeriodStart(sub, today) {
   if (sub && ['active', 'past_due'].includes(sub.status) && sub.current_period_end) return addDays(sub.current_period_end, 1);
+  // A cancelled subscription still paid ahead: the new period starts after the days already paid for.
+  if (sub && sub.status === 'cancelled' && sub.current_period_end && dateStr(sub.current_period_end) >= today) return addDays(dateStr(sub.current_period_end), 1);
   if (sub && sub.status === 'trialing' && sub.trial_ends_at && sub.trial_ends_at >= today) return addDays(sub.trial_ends_at, 1);
   return today;
 }
@@ -489,7 +497,9 @@ async function recordPayment(ctx, businessId, input) {
   if (end < start) throw E.validation({ period_end: 'Enter a valid date.' });
   const branches = inv ? Number(inv.branches) || 1 : d.branches || Number(sub.branches) || 1;
   if (plan && !inv) checkBranches(plan, branches);
-  const amount = d.amount || (inv ? inv.amount : 0);
+  // A blank amount means the price of what is paid for (the invoice's, else the plan's for these branches and cycle).
+  const blank = input.amount === undefined || input.amount === null || String(input.amount).trim() === '';
+  const amount = !blank ? d.amount : inv ? inv.amount : plan ? branchPricing.priceFor(plan, branches, cycle) : 0;
   await knex.transaction(async (trx) => {
     const paid = { status: 'paid', method: d.method, reference: d.reference || (inv && inv.reference) || null, amount, period_start: start, period_end: end, paid_at: new Date(), confirmed_by: ctx.userId, updated_at: new Date() };
     if (inv) {

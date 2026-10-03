@@ -86,7 +86,7 @@ router.get('/staff-payroll/export', can('payroll.view'), wrap(async (req, res) =
     header: [t('staffpay.employee'), t('staffpay.job_title'), t('staffpay.base_salary'), t('staffpay.allowances'), t('staffpay.bonuses'), t('staffpay.fixed_deductions'), t('staffpay.extra_deductions'), t('staffpay.advances'), t('staffpay.net_pay'), t('common.status'), t('staffpay.paid_on'), t('staffpay.method'), t('common.reference'), t('staffpay.bank'), t('staffpay.iban')],
     rows: rows.map((r) => [r.employee_name, r.job_title || '', r.f.base, r.f.allowances, r.f.bonuses, r.f.deductions, r.f.extraDeductions, r.f.advances, r.f.net,
       t(`staffpay.status.${r.status}`), r.paid_on || '', r.payment_method ? t(`payment_methods.${r.payment_method}`) : '', r.reference || '', r.bank_name || '', r.iban || ''])
-      .concat([[t('common.total'), '', totals.base, totals.allowances, totals.bonuses, '', '', totals.advances, totals.net, '', '', '', '', '', '']]),
+      .concat([[t('common.total'), '', totals.base, totals.allowances, totals.bonuses, totals.fixedDeductions, totals.extraDeductions, totals.advances, totals.net, '', '', '', '', '', '']]),
   });
 }));
 
@@ -329,17 +329,22 @@ router.get('/finance/export', can('finance.view'), wrap(async (req, res) => {
   const catName = await catNamer(req, res);
   const t = req.t;
   const s = data.cur; const b = data.before;
-  // Costs are exported as negative numbers; the change % compares the amounts themselves.
-  const r = (label, cur, prev) => { const d = m.delta(Math.abs(Number(cur) || 0), Math.abs(Number(prev) || 0)); return [label, cur, prev, d === null ? '' : d]; };
+  // Costs are exported as negative numbers; their change % compares the cost amounts (cost = true). Every other line
+  // (net profit included, which can be negative) compares the values as they are, as the page does.
+  const r = (label, cur, prev, cost = false) => {
+    const k = cost ? -1 : 1;
+    const d = m.delta(k * (Number(cur) || 0), k * (Number(prev) || 0));
+    return [label, cur, prev, d === null ? '' : d];
+  };
   const rows = [
-    r(t('pnl.gross_revenue'), s.gross, b.gross), r(t('pnl.discounts'), -s.discounts, -b.discounts), r(t('pnl.revenue'), s.revenue, b.revenue),
+    r(t('pnl.gross_revenue'), s.gross, b.gross), r(t('pnl.discounts'), -s.discounts, -b.discounts, true), r(t('pnl.revenue'), s.revenue, b.revenue),
     r(t('pnl.of_which_online'), s.online, b.online),
     ...[...new Set([...(s.byMethod || []), ...(b.byMethod || [])].map((x) => x.method))].map((k) => r(t('invoicex.of_which', { m: t(`invoicex.m.${k}`) }),
       ((s.byMethod || []).find((x) => x.method === k) || {}).amount || 0, ((b.byMethod || []).find((x) => x.method === k) || {}).amount || 0)),
     ...[...new Set([...s.expenses.map((e) => e.category), ...b.expenses.map((e) => e.category)])].map((c) => r(`${t('pnl.operating_expenses')} · ${catName(c)}`,
-      -((s.expenses.find((e) => e.category === c) || {}).amount || 0), -((b.expenses.find((e) => e.category === c) || {}).amount || 0))),
-    r(t('pnl.doctor_payroll'), -s.doctorPayroll, -b.doctorPayroll), r(t('pnl.staff_salaries'), -s.staffSalaries, -b.staffSalaries),
-    r(t('pnl.total_costs'), -s.costs, -b.costs), r(t('pnl.net_profit'), s.net, b.net), r(t('pnl.margin'), s.margin ?? '', b.margin ?? ''),
+      -((s.expenses.find((e) => e.category === c) || {}).amount || 0), -((b.expenses.find((e) => e.category === c) || {}).amount || 0), true)),
+    r(t('pnl.doctor_payroll'), -s.doctorPayroll, -b.doctorPayroll, true), r(t('pnl.staff_salaries'), -s.staffSalaries, -b.staffSalaries, true),
+    r(t('pnl.total_costs'), -s.costs, -b.costs, true), r(t('pnl.net_profit'), s.net, b.net), r(t('pnl.margin'), s.margin ?? '', b.margin ?? ''),
     r(t('pnl.refunds_memo'), s.refunds, b.refunds), r(t('pnl.supplies_memo'), s.suppliesReceived, b.suppliesReceived),
   ];
   exporter.send(req, res, { name: `${t('pnl.title')} ${period.key}`, header: [t('pnl.line'), periodLabel(req, period), periodLabel(req, data.prev), t('pnl.change_pct')], rows });

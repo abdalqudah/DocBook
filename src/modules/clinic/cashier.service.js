@@ -123,12 +123,15 @@ async function todayTotals(ctx) {
   const invs = await todayInvoices(ctx).select('id', 'amount', 'payment_method');
   const map = await partsFor(ctx, invs.map((i) => i.id));
   const byMethod = Object.fromEntries(PAYMENT_METHODS.map((m) => [m, 0]));
-  let total = 0;
+  let total = 0; let billed = 0;
   invs.forEach((inv) => {
-    total += n(inv.amount);
-    partsOf(inv, map).forEach((p) => { byMethod[p.method] = round(n(byMethod[p.method]) + p.amount, ctx.currency); });
+    billed += n(inv.amount);
+    partsOf(inv, map).forEach((p) => {
+      byMethod[p.method] = round(n(byMethod[p.method]) + p.amount, ctx.currency);
+      if (p.method !== 'insurance') total += n(p.amount); // "collected" = money received; the insurer's share is still owed
+    });
   });
-  return { byMethod, total: round(total, ctx.currency), count: invs.length };
+  return { byMethod, total: round(total, ctx.currency), billed: round(billed, ctx.currency), count: invs.length };
 }
 
 // ---------------------------------------------------------------- cash screen & reception board

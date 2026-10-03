@@ -21,7 +21,7 @@ async function page(req, res, extra = {}) {
   const [plans, invoices, usage] = st ? await Promise.all([subs.listPlans({ activeOnly: true, publicOnly: true }), subs.listInvoices(req.ctx.businessId), subs.usage(req.ctx.businessId, req.ctx.today)]) : [[], [], null];
   const pending = invoices.find((i) => i.status === 'open' || i.status === 'reported') || null;
   // Each plan's branch limit and its price for 1 … 10 branches (the cards update with the number chosen).
-  plans.forEach((pl) => { pl.maxBranches = entitlements.valueIn(pl.features, 'clinic.max_branches'); pl.bpTable = branchPricing.table(pl, pl.maxBranches, 20); });
+  plans.forEach((pl) => { pl.maxBranches = entitlements.valueIn(pl.features, 'clinic.max_branches'); pl.bpTable = branchPricing.table(pl, pl.maxBranches, branchPricing.MAX_CHOICE); }); // every count that can be chosen
   const branchesNow = st ? Math.max(Number(st.sub.branches) || 1, usage ? usage.branches : 1) : 1;
   return render(req, res, 'subscription', 'subscription', {
     st, cfg, plans, invoices, usage, pending, features: subs.FEATURES, methods: subs.METHODS, branchesNow, priceFor: branchPricing.priceFor,

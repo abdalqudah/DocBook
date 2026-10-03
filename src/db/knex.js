@@ -23,7 +23,9 @@ const knex = knexFactory({
   pool: {
     min: 0,
     max: Number(process.env.DB_POOL_MAX || 10),
-    afterCreate: (conn, done) => conn.query("SET SESSION default_storage_engine = 'InnoDB'", (err) => done(err, conn)),
+    // UTC sessions: CURRENT_TIMESTAMP / NOW() must match the UTC dates the app passes in (timezone 'Z'),
+    // whatever zone the database server itself runs in.
+    afterCreate: (conn, done) => conn.query("SET SESSION default_storage_engine = 'InnoDB', time_zone = '+00:00'", (err) => done(err, conn)),
   },
   migrations: { directory: path.join(__dirname, 'migrations'), tableName: 'knex_migrations' },
 });

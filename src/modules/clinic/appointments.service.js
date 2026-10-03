@@ -331,7 +331,7 @@ async function checkout(ctx, apptId, input) {
   if (a.appointment_type === 'blocked') throw E.validation({ _: 'Choose a valid value.' });
   if (a.payment_status === 'paid') throw E.conflict('ALREADY_PAID', 'This visit is already paid.');
   const d = validate(checkoutSchema, input);
-  const amounts = rules.checkoutAmounts(d.amount_paid, d.discount_percent);
+  const amounts = rules.checkoutAmounts(d.amount_paid, d.discount_percent, ctx.currency);
   return knex.transaction(async (trx) => {
     let insuranceName = null;
     if (d.insurance_provider_id) {

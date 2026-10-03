@@ -46,8 +46,16 @@ const profitShare = (netProfit, equityPercent) => round((num(netProfit) * num(eq
 
 /** Allocations of a month's net profit to partners (only active partners with equity). */
 function allocate(netProfit, partners) {
-  return partners.filter((p) => (p.status || 'active') === 'active' && num(p.equity_percent) > 0)
+  const out = partners.filter((p) => (p.status || 'active') === 'active' && num(p.equity_percent) > 0)
     .map((p) => ({ partnerId: p.id, name: p.name, equity: num(p.equity_percent), amount: profitShare(netProfit, p.equity_percent) }));
+  // When the shares make up 100 %, they must add up to the whole profit: the rounding remainder (e.g. 1 split
+  // 33.33/33.33/33.34 → 0.333×3 = 0.999) goes to the largest holder.
+  const equity = round(out.reduce((t, p) => t + p.equity, 0));
+  if (out.length && equity === 100) {
+    const rest = round(num(netProfit) - out.reduce((t, p) => t + p.amount, 0));
+    if (rest) { const top = out.reduce((a, b) => (b.equity > a.equity ? b : a)); top.amount = round(top.amount + rest); }
+  }
+  return out;
 }
 
 /** Balance = initial investment + injections + profit shares allocated − withdrawals. */

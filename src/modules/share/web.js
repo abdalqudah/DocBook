@@ -175,7 +175,8 @@ async function serveDoc(req, res, got, doc, sigBase) {
   const orders = require('../orders/orders.service'); // eslint-disable-line global-require
   const lib = require('../clinic/records.lib'); // eslint-disable-line global-require
   const d = doc.kind === 'order' ? await orders.getOrder(ctx, doc.ref_id) : await orders.getReferral(ctx, doc.ref_id);
-  return res.page(`pages/orders/${doc.kind}`, { title: clinic.name, doc: d, age: lib.ageOf(d.date_of_birth, new Date().toISOString().slice(0, 10)), printable: true, pageStyles: ['/css/appointments.css'] });
+  return res.page(`pages/orders/${doc.kind}`, { title: clinic.name, doc: d, age: lib.ageOf(d.date_of_birth, require('../clinic/scheduling').clinicNow(clinic.timezone || 'Asia/Amman').date), // eslint-disable-line global-require
+    printable: true, pageStyles: ['/css/appointments.css'] });
 }
 
 function localise(req, res, locale, clinic) {

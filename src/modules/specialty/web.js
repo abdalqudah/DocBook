@@ -59,11 +59,17 @@ const selfUrl = (c, key, extra = '') => {
 };
 const L = (req) => (ar, en) => (req.locale === 'en' && en ? en : ar);
 
-/** Age as "1 y 3 m" / "5 m" / "12 d" for children. */
-function childAge(req, days) {
+/** Whole calendar months from `dob` to `on` ('YYYY-MM-DD'): a first birthday is 12 months, not 11. */
+function calendarMonths(dob, on) {
+  const [y, m, d] = String(dob).slice(0, 10).split('-').map(Number);
+  const [ty, tm, td] = String(on).slice(0, 10).split('-').map(Number);
+  return (ty - y) * 12 + (tm - m) - (td < d ? 1 : 0);
+}
+/** Age as "1 y 3 m" / "5 m" / "12 d" for children (calendar months when the birth date and the day are known). */
+function childAge(req, days, dob, on) {
   if (days === null || days === undefined || days < 0) return null;
   if (days < 61) return req.t('child_growth.age_days', { n: days });
-  const months = Math.floor(days / growthChart.DAYS_PER_MONTH);
+  const months = dob && on ? calendarMonths(dob, on) : Math.floor(days / growthChart.DAYS_PER_MONTH);
   const y = Math.floor(months / 12); const m = months % 12;
   if (!y) return req.t('child_growth.age_months', { n: m });
   return m ? req.t('child_growth.age_years_months', { y, m }) : req.t('child_growth.age_years', { y });
@@ -171,7 +177,7 @@ async function renderGrowth(req, res, extra = {}) {
   const dateLabel = (d) => res.locals.fmt.date(d);
   const charts = hasDob ? IND.map((ind) => {
     const points = measurements.filter((m) => m.a[ind.key].value).map((m) => ({
-      ageDays: m.a.ageDays, value: m.a[ind.key].value, label: `${dateLabel(m.measured_on)} · ${childAge(req, m.a.ageDays) || ''}`,
+      ageDays: m.a.ageDays, value: m.a[ind.key].value, label: `${dateLabel(m.measured_on)} · ${childAge(req, m.a.ageDays, c.patient.date_of_birth, m.measured_on) || ''}`,
       tip: `${num(m.a[ind.key].value, ind.digits)} ${t(`child_growth.units.${ind.key}`)}${m.a[ind.key].p !== null ? ` · P${num(m.a[ind.key].p, 0)}` : ''}`,
     }));
     return {
@@ -185,7 +191,7 @@ async function renderGrowth(req, res, extra = {}) {
   const prefill = c.visit ? { weight_kg: c.visit.vitals.weightKg || '', length_cm: c.visit.vitals.heightCm || '', measured_on: c.visit.appointment_date } : {};
   res.page('pages/specialty/growth', {
     title: `${t('child_growth.title')} · ${c.patient.full_name}`, printable: true, ...c, measurements: [...measurements].reverse(), fromVisits, charts, sex, hasDob, beyond,
-    ageText: childAge(req, c.ageDays), childAge: (d) => childAge(req, d), num, prefill, whoSource: growth.WHO_SOURCE,
+    ageText: childAge(req, c.ageDays, c.patient.date_of_birth, req.ctx.today), childAge: (d, on) => childAge(req, d, c.patient.date_of_birth, on), num, prefill, whoSource: growth.WHO_SOURCE,
     canRecord: req.ctx.permissions.has('clinical.edit') || req.ctx.permissions.has('vitals.edit'),
     selfUrl: (q) => selfUrl(c, 'growth', q), ...ASSETS, ...extra,
     openDialog: extra.openDialog || (c.visit && req.query.record === '1' ? 'growth-dialog' : undefined),

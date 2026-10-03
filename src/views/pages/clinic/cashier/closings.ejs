@@ -2,7 +2,7 @@
   var canClose = can('billing.manage');
   var stamp = function (d) { var l = localTime(d) || {}; return { date: l.date, time: l.time }; };
   var ps = stamp(period.start); var pe = stamp(period.end);
-  var afterExpenses = period.expected - period.expenses.total;
+  var afterExpenses = Math.round((period.expected - period.expenses.total) * 1000) / 1000;
   var varianceCell = function (v) {
     v = Number(v) || 0;
     if (v === 0) return '<span class="cs-var">' + escapeHtml(t('cashier.balanced')) + '</span>';

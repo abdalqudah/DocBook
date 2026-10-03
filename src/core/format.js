@@ -2,11 +2,19 @@ const { decimalsOf } = require('./money');
 
 const numLocale = (locale) => (locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US');
 
-function formatDate(value, locale = 'en', opts = { year: 'numeric', month: 'short', day: 'numeric' }) {
+/**
+ * A calendar date ('YYYY-MM-DD', or a Date at exactly 00:00 UTC built from one) is shown as is. A moment in time (a
+ * timestamp) is shown in the clinic's time zone `tz` — 01:30 on the 3rd in Amman is the 3rd, not the 2nd at 22:30.
+ */
+function formatDate(value, locale = 'en', opts = { year: 'numeric', month: 'short', day: 'numeric' }, tz = null) {
   if (!value) return '—';
-  const d = value instanceof Date ? value : new Date(String(value).length === 10 ? `${value}T00:00:00Z` : value);
+  const isDay = typeof value === 'string' && value.length === 10;
+  const d = value instanceof Date ? value : new Date(isDay ? `${value}T00:00:00Z` : value);
   if (Number.isNaN(d.getTime())) return '—';
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG-u-ca-gregory-nu-latn' : 'en-GB', { ...opts, timeZone: 'UTC' }).format(d);
+  const calendar = isDay || (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0 && d.getUTCMilliseconds() === 0);
+  let zone = 'UTC';
+  if (!calendar && tz) { try { new Intl.DateTimeFormat('en', { timeZone: tz }); zone = tz; } catch { zone = 'UTC'; } } // eslint-disable-line no-new
+  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-EG-u-ca-gregory-nu-latn' : 'en-GB', { ...opts, timeZone: zone }).format(d);
 }
 
 function formatMonth(key, locale = 'en') {
@@ -34,7 +42,7 @@ function formatAmount(amount, currency = 'USD', locale = 'en') {
 function formatCompact(amount, currency = 'USD', locale = 'en') {
   if (amount === null || amount === undefined) return '—';
   const n = Number(amount) || 0;
-  if (Math.abs(n) < 10000) return formatMoney(Math.round(n * 100) / 100, currency, locale);
+  if (Math.abs(n) < 10000) return formatMoney(n, currency, locale); // formatMoney keeps the currency's own decimals
   return `${new Intl.NumberFormat(numLocale(locale), { notation: 'compact', maximumFractionDigits: 1 }).format(n)} ${currency}`;
 }
 

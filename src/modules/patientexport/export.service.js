@@ -117,7 +117,7 @@ async function collect(ctx, patientId, locale, add) {
 
   // The summary PDF.
   const clinic = await docsSvc.clinicInfo(ctx.businessId);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = require('../clinic/scheduling').clinicNow(clinic.timezone || 'Asia/Amman').date; // eslint-disable-line global-require -- the clinic's own day
   const doctorOf = new Map(d.appointments.map((a) => [a.doctor_id, a.doctor_name]));
   const consultBy = new Map(d.consultations.map((c) => [c.appointment_id, c]));
   const icd = require('../clinicalplus/icd.service'); // eslint-disable-line global-require

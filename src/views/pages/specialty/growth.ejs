@@ -54,7 +54,7 @@
     <thead><tr><th><%= t('common.date') %></th><th><%= t('child_growth.age') %></th><th class="num"><%= t('child_growth.weight') %></th><th class="num"><%= t('child_growth.length') %></th><th class="num"><%= t('child_growth.head') %></th><th class="num"><%= t('child_growth.bmi') %></th><th class="actions no-print"></th></tr></thead>
     <tbody><% measurements.forEach(function (m) { %><tr>
       <td class="primary-cell"><span class="strong"><%= fmt.date(m.measured_on) %></span><% if (m.appointment_id) { %> <a class="tiny link no-print" href="/app/visits/<%= m.appointment_id %>"><%= t('specialty_mod.visit_link') %></a><% } %><% if (m.notes) { %><div class="tiny muted"><%= m.notes %></div><% } %></td>
-      <td data-label="<%= t('child_growth.age') %>"><%= childAge(m.a.ageDays) || '—' %></td>
+      <td data-label="<%= t('child_growth.age') %>"><%= childAge(m.a.ageDays, m.measured_on) || '—' %></td>
       <td class="num" data-label="<%= t('child_growth.weight') %>"><%= m.weight_kg !== null ? num(Number(m.weight_kg), 2) : '—' %> <%- pBadge(m.a.wfa) %></td>
       <td class="num" data-label="<%= t('child_growth.length') %>"><%= m.length_cm !== null ? num(Number(m.length_cm), 1) : '—' %><% if (m.position) { %> <span class="tiny muted"><%= t('child_growth.positions.' + m.position) %></span><% } %> <%- pBadge(m.a.lhfa) %></td>
       <td class="num" data-label="<%= t('child_growth.head') %>"><%= m.head_cm !== null ? num(Number(m.head_cm), 1) : '—' %> <%- pBadge(m.a.hcfa) %></td>

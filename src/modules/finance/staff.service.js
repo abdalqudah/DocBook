@@ -147,9 +147,9 @@ async function sheet(ctx, period) {
   });
   const totals = rows.reduce((t, r) => ({
     base: m.round(t.base + r.f.base), allowances: m.round(t.allowances + r.f.allowances), bonuses: m.round(t.bonuses + r.f.bonuses),
-    deductions: m.round(t.deductions + r.f.deductions + r.f.extraDeductions), advances: m.round(t.advances + r.f.advances), net: m.round(t.net + r.f.net),
+    deductions: m.round(t.deductions + r.f.deductions + r.f.extraDeductions), fixedDeductions: m.round(t.fixedDeductions + r.f.deductions), extraDeductions: m.round(t.extraDeductions + r.f.extraDeductions), advances: m.round(t.advances + r.f.advances), net: m.round(t.net + r.f.net),
     paid: m.round(t.paid + (r.status === 'paid' ? r.f.net : 0)), paidCount: t.paidCount + (r.status === 'paid' ? 1 : 0),
-  }), { base: 0, allowances: 0, bonuses: 0, deductions: 0, advances: 0, net: 0, paid: 0, paidCount: 0 });
+  }), { base: 0, allowances: 0, bonuses: 0, deductions: 0, fixedDeductions: 0, extraDeductions: 0, advances: 0, net: 0, paid: 0, paidCount: 0 });
   const inRun = new Set(lines.map((l) => l.employee_id));
   const missing = (await knex('staff_employees').where({ business_id: ctx.businessId, status: 'active' }).orderBy('name').select('id', 'name', 'hire_date'))
     .filter((e) => !inRun.has(e.id) && !(e.hire_date && String(e.hire_date).slice(0, 7) > period));

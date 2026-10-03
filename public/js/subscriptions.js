@@ -34,11 +34,11 @@
     var update = function () {
       var n = Math.max(1, Math.floor(Number(nb.value) || 1));
       Array.prototype.forEach.call(document.querySelectorAll('[data-bp-for]'), function (el) {
-        var max = el.getAttribute('data-max'); var prices = {};
+        var rawMax = el.getAttribute('data-max'); var max = rawMax === null || rawMax === '' ? 0 : Math.max(1, Number(rawMax) || 1); var prices = {}; // empty = no limit; 0 = the main branch only
         try { prices = JSON.parse(el.getAttribute('data-prices') || '{}'); } catch (e) { prices = {}; }
         var k = max ? Math.min(n, Number(max)) : n;
         var box = el.closest('.box'); var p = prices[String(k)];
-        var tooFew = Boolean(max) && n > Number(max);
+        var tooFew = max > 0 && n > max;
         el.textContent = (el.getAttribute(tooFew ? 'data-too-few' : 'data-text') || '{n}').replace('{n}', tooFew ? max : k);
         el.classList.toggle('warn-text', tooFew); el.classList.toggle('muted', !tooFew);
         if (!box || !p) return;
