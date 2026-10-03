@@ -114,7 +114,7 @@ async function start(kind, { businessId = null, vendorId = null, invoiceId, user
       callbackUrl: `${base}/pay/platform/callback/${publicId}`, returnUrl: `${base}/pay/platform/return/${publicId}`,
     });
     await knex('platform_payments').where({ id }).update({ provider_ref: r.ref, updated_at: new Date() });
-    return { redirectUrl: r.redirectUrl, publicId };
+    return { redirectUrl: r.redirectUrl, publicId, amount: inv.amount, currency: inv.currency };
   } catch (e) {
     await knex('platform_payments').where({ id }).update({ status: 'failed', message: String(e.message).slice(0, 250), updated_at: new Date() });
     throw e;

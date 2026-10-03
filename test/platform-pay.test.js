@@ -145,8 +145,9 @@ test('pages: admin payment methods, rep billing shows card + wallet, return rout
   assert.match(page.text, new RegExp(`/vendor/billing/invoices/${invId}/card`));
   assert.match(page.text, /0791112223/);
   const go = await r.submit('/vendor/billing', `/vendor/billing/invoices/${invId}/card`, {});
-  assert.equal(go.status, 303);
-  assert.match(go.location, /^https:\/\/secure-jordan\.paytabs\.com\/payment\/page\//);
+  // A hand-over page (a form post may not redirect to another site under CSP form-action 'self').
+  assert.equal(go.status, 200);
+  assert.match(go.text, /href="https:\/\/secure-jordan\.paytabs\.com\/payment\/page\/[^"]+" rel="noreferrer" data-pay-redirect/);
   const pid = (await knex('platform_payments').where({ invoice_id: invId, kind: 'vendor' }).first('public_id')).public_id;
   const back = await r.post(`/pay/platform/return/${pid}`, { tranRef: 'x' });
   assert.equal(back.status, 303);

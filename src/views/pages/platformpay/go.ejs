@@ -1,0 +1,9 @@
+<%/* Hand-over page before PayTabs: after a form post the browser may not follow a redirect to another site (CSP
+     form-action 'self'), so this page moves on by itself (payments.js) and keeps the button for browsers without JS. */%>
+<div class="stack" style="text-align:center">
+  <h1 class="h3"><%= t('ppay.go_title') %></h1>
+  <div><span class="small muted"><%= t('ppay.go_amount') %></span> <strong class="num"><%= fmt.money(amount, currency) %></strong></div>
+  <p class="small muted"><%= t('ppay.go_text') %></p>
+  <div><a class="btn btn-primary btn-lg" href="<%= redirectUrl %>" rel="noreferrer" data-pay-redirect><%- icon('lock', 'icon-sm') %><%= t('ppay.go_btn') %></a></div>
+  <p><a class="small link" href="<%= back %>"><%= t('common.cancel') %></a></p>
+</div>

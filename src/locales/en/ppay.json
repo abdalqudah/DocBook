@@ -55,6 +55,10 @@
       "kind_clinic": "Clinic (subscription)",
       "kind_vendor": "Rep / company",
       "moved": "Bank transfer, CliQ, wallet and card payment details are now on the “Payment gateways” page."
-    }
+    },
+    "go_title": "Taking you to the secure payment page",
+    "go_amount": "Amount",
+    "go_text": "You will move to the PayTabs page to enter your card in a moment. If not, press the button.",
+    "go_btn": "Continue to payment"
   }
 }

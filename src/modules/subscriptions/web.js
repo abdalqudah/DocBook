@@ -53,7 +53,7 @@ router.post('/settings/subscription/invoices/:id(\\d+)/card', gate, enabledOnly,
   const ppay = require('../platformpay/platformpay.service'); // eslint-disable-line global-require
   try {
     const r = await ppay.start('clinic', { businessId: req.ctx.businessId, invoiceId: req.params.id, userId: req.ctx.userId, baseUrl: require('../../middleware/web').publicBase(req), lang: req.locale, customer: { name: req.business.name, email: req.user.email } }); // eslint-disable-line global-require
-    return res.redirect(303, r.redirectUrl);
+    return res.page('pages/platformpay/go', { layout: 'auth', title: req.t('ppay.go_title'), ...r, back: `${BASE}#pay`, noindex: true, pageScripts: ['/js/payments.js'] });
   } catch (e) {
     if (!e.code || (e.status >= 500 && e.code !== 'PAY_PROVIDER_ERROR' && e.code !== 'PAY_PROVIDER_UNREACHABLE')) throw e;
     flash(req, 'error', req.t(`ppay.err.${e.code}`) !== `ppay.err.${e.code}` ? req.t(`ppay.err.${e.code}`) : req.t('ppay.err.generic'));

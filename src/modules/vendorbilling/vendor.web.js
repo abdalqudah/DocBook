@@ -36,7 +36,7 @@ billingRouter.post('/invoices/:id(\\d+)/report', form(async (req, res) => {
 billingRouter.post('/invoices/:id(\\d+)/card', wrap(async (req, res) => {
   try {
     const r = await ppay.start('vendor', { vendorId: req.vendor.id, invoiceId: req.params.id, userId: req.user.id, baseUrl: require('../../middleware/web').publicBase(req), lang: req.locale, customer: { name: req.vendor.name, email: req.user.email } }); // eslint-disable-line global-require
-    return res.redirect(303, r.redirectUrl);
+    return res.page('pages/platformpay/go', { layout: 'auth', title: req.t('ppay.go_title'), ...r, back: '/vendor/billing#invoices', noindex: true, pageScripts: ['/js/payments.js'] });
   } catch (e) {
     if (!e.code || (e.status >= 500 && e.code !== 'PAY_PROVIDER_ERROR' && e.code !== 'PAY_PROVIDER_UNREACHABLE')) throw e;
     flash(req, 'error', req.t(`ppay.err.${e.code}`) !== `ppay.err.${e.code}` ? req.t(`ppay.err.${e.code}`) : req.t('ppay.err.generic'));
