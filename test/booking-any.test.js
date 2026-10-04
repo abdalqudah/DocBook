@@ -169,13 +169,17 @@ test('clinic prices: hidden on the website and in booking for the whole clinic, 
   await o.login(mail('owner'));
   const book = () => app.agent().get(`/${slug}/book?lang=en`);
   const site = () => app.agent().get(`/${slug}?lang=en`);
-  assert.match((await book()).text, /27 JOD/);
-  assert.match((await site()).text, /43 JOD/);
+  // Off by default: no price anywhere until the clinic turns them on.
+  assert.ok(!/27 JOD/.test((await book()).text), 'no price in booking by default');
+  assert.ok(!/43 JOD/.test((await site()).text), 'no price on the website by default');
   const page = await o.get('/app/website/booking?lang=en');
-  assert.match(page.text, /name="prices_on_booking" value="1" checked/);
+  assert.match(page.text, /name="prices_on_booking" value="1">/);
   const save = async (site1, book1) => { const f = await o.get('/app/website/booking?lang=en'); const pairs = [['_csrf', o.csrf(f.text)], ['prices_on_site', '0'], ['prices_on_booking', '0']];
     if (site1) pairs.push(['prices_on_site', '1']); if (book1) pairs.push(['prices_on_booking', '1']); return o.post('/app/website/booking/prices', pairs); };
-  let r = await save(false, true);
+  let r = await save(true, true);
+  assert.match((await book()).text, /27 JOD/);
+  assert.match((await site()).text, /43 JOD/);
+  r = await save(false, true);
   assert.equal(r.status, 302);
   assert.ok(!/43 JOD|27 JOD/.test((await site()).text), 'hidden on the website');
   assert.match((await book()).text, /27 JOD/, 'still shown in booking');
