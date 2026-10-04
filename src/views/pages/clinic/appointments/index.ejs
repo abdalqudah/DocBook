@@ -87,7 +87,7 @@
     <% } else { %><%- include('../../../partials/empty', { emptyIcon: 'filter', emptyTitle: t('table.no_matches'), emptyText: '', emptyAction: '<a class="btn btn-secondary btn-sm" href="/app/appointments?date=' + date + '">' + t('table.clear_filters') + '</a>' }) %><% } %>
   </div>
 <% } else { var nowY = now.minutes >= range.start && now.minutes <= range.end ? y(now.minutes) : null; %>
-<div class="cal cal-<%= view %><%= canManage ? ' can-manage' : '' %>" data-cal data-view="<%= view %>">
+<div class="cal cal-<%= view %><%= canManage ? ' can-manage' : '' %>" data-cal data-view="<%= view %>" data-order-failed="<%= t('appointments.cal.move_failed') %>">
   <% if (view === 'day' && columns.length > 1) { %>
   <div class="cal-switch">
     <label class="label" for="cal-switch"><%= t('appointments.cal.doctor_switch') %></label>
@@ -109,7 +109,9 @@
     <div class="cal-grid" role="grid" aria-label="<%= t('appointments.cal.grid_label') %>" style="--cols:<%= columns.length %>;--rows:<%= (range.end - range.start) / ROW %>">
       <div class="cal-corner" aria-hidden="true"></div>
       <% columns.forEach(function (c, i) { var isToday = c.date === clinicToday; %>
-      <div class="cal-head<%= isToday && view === 'week' ? ' is-today' : '' %>" data-col="<%= i %>" role="columnheader">
+      <% var movable = canManage && view === 'day' && columns.length > 1 && c.doctorId && !c.orphan && !c.unassigned; %>
+      <div class="cal-head<%= isToday && view === 'week' ? ' is-today' : '' %><%= movable ? ' is-movable' : '' %>" data-col="<%= i %>" role="columnheader"<% if (movable) { %> data-doctor-id="<%= c.doctorId %>"<% } %>>
+        <% if (movable) { %><button class="cal-grip" type="button" data-cal-grip title="<%= t('appointments.cal.move_doctor') %>" aria-label="<%= t('appointments.cal.move_doctor') %>"><%- icon('grip-vertical', 'icon-sm') %></button><% } %>
         <% if (view === 'week') { %>
           <a class="cal-head-link" href="/app/appointments?date=<%= c.date %><%= own ? '' : '&doctor=' + c.doctorId %>">
             <span class="cal-wd"><%= fmt.date(c.date, { weekday: 'short' }) %></span>

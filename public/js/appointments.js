@@ -450,6 +450,50 @@
       place();
     }());
 
+    /* move a doctor's column: hold the grip and drop it on another doctor's header (mouse or touch) */
+    (function moveDoctors() {
+      var grips = $$('[data-cal-grip]', cal);
+      if (!grips.length) return;
+      var mv = null;
+      var headAt = function (x, y) { var el = document.elementFromPoint(x, y); var h = el && el.closest ? el.closest('.cal-head.is-movable') : null; return h && cal.contains(h) ? h : null; };
+      grips.forEach(function (g) {
+        g.addEventListener('pointerdown', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          var head = g.closest('.cal-head');
+          var ghost = document.createElement('div'); ghost.className = 'cal-ghost';
+          ghost.textContent = ($('.cal-name', head) || head).textContent.trim();
+          document.body.appendChild(ghost);
+          mv = { head: head, ghost: ghost, target: null };
+          head.classList.add('is-source'); cal.classList.add('cal-moving');
+          ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
+          g.setPointerCapture(e.pointerId);
+        });
+        g.addEventListener('pointermove', function (e) {
+          if (!mv) return;
+          mv.ghost.style.left = e.clientX + 'px'; mv.ghost.style.top = e.clientY + 'px';
+          var t = headAt(e.clientX, e.clientY);
+          if (t === mv.head) t = null;
+          if (t !== mv.target) { if (mv.target) mv.target.classList.remove('is-target'); mv.target = t; if (t) t.classList.add('is-target'); }
+          // near the calendar's sides: scroll the columns along
+          var box = $('[data-cal-scroll]', cal); var r = box.getBoundingClientRect();
+          if (e.clientX < r.left + 40) box.scrollBy({ left: -24 }); else if (e.clientX > r.right - 40) box.scrollBy({ left: 24 });
+        });
+        var finish = function () {
+          if (!mv) return;
+          var src = mv.head; var t = mv.target;
+          mv.ghost.remove(); src.classList.remove('is-source'); if (t) t.classList.remove('is-target'); cal.classList.remove('cal-moving');
+          mv = null;
+          if (!t) return;
+          fetch('/app/appointments/doctor-order', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'x-csrf-token': D.csrf },
+            body: JSON.stringify({ doctor_id: src.getAttribute('data-doctor-id'), target_id: t.getAttribute('data-doctor-id') }) })
+            .then(function (r) { if (!r.ok) throw new Error(String(r.status)); location.reload(); })
+            .catch(function () { window.alert(cal.getAttribute('data-order-failed')); });
+        };
+        g.addEventListener('pointerup', finish);
+        g.addEventListener('pointercancel', function () { if (mv) { mv.target = null; } finish(); });
+      });
+    }());
+
     /* now line */
     function tickNow() {
       var m = nowMin();

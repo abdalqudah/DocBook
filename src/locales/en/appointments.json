@@ -147,7 +147,7 @@
       "hint_view": "Click an appointment to open it.",
       "time_axis": "Time",
       "now": "Now",
-      "rail_prev": "Previous doctors", "rail_next": "Next doctors", "rail_label": "Move between doctors", "rail_count": "{from}–{to} of {n}", "doctor_switch": "Doctor",
+      "rail_prev": "Previous doctors", "rail_next": "Next doctors", "rail_label": "Move between doctors", "rail_count": "{from}–{to} of {n}", "move_doctor": "Drag to move this doctor", "move_failed": "The doctors' order could not be saved. Please try again.", "doctor_switch": "Doctor",
       "sel_label": "Selected time",
       "unavailable": "This time is not available",
       "sel_book": "Book appointment",

@@ -287,6 +287,24 @@ router.get('/patient-lookup', can('appointments.manage'), wrap(async (req, res) 
   return res.json({ data: rows.map((p) => ({ id: p.id, name: p.full_name, phone: p.phone || '', email: p.email || '', dob: p.date_of_birth || '' })) });
 }));
 
+// ---------------------------------------------------------------- the doctors' order (the calendar's columns)
+// A doctor's column dragged onto another's place: the clinic's doctors get that order everywhere (doctors.sort_order).
+router.post('/doctor-order', can('appointments.manage'), wrap(async (req, res) => {
+  const { ctx } = req;
+  const id = Number(req.body.doctor_id) || 0; const target = Number(req.body.target_id) || 0;
+  const list = await knex('doctors').where({ business_id: ctx.businessId, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).pluck('id');
+  const from = list.indexOf(id); const to = list.indexOf(target);
+  if (from < 0 || to < 0) return res.status(404).json({ ok: false });
+  if (from === to) return res.json({ ok: true });
+  list.splice(from, 1);
+  list.splice(list.indexOf(target) + (from < to ? 1 : 0), 0, id); // moving along: after the target; moving back: before it
+  await knex.transaction(async (trx) => {
+    for (let i = 0; i < list.length; i += 1) await trx('doctors').where({ business_id: ctx.businessId, id: list[i] }).update({ sort_order: (i + 1) * 10 }); // eslint-disable-line no-await-in-loop
+  });
+  await require('../../core/audit').record(ctx, 'doctors.reordered', { entityType: 'doctor', entityId: id, newValues: { order: list.join(',') } }); // eslint-disable-line global-require
+  return res.json({ ok: true });
+}));
+
 // ---------------------------------------------------------------- time blocks
 // Time blocks: reception / managers for any doctor; a doctor login for their own time (e.g. a surgery).
 const canBlock = (req, res, next) => (req.ctx.permissions.has('appointments.manage') || (req.ctx.ownDoctorId && req.ctx.permissions.has('clinical.edit')) ? next() : next(E.forbidden('appointments.manage')));
