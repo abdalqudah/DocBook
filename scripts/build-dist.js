@@ -64,6 +64,11 @@ function copy(from, to, filter) {
 
   copy('src/views', 'src/views');
   copy('src/locales', 'src/locales');
+  // Migrations ship as loose files next to the bundle: they may require packages only, never the app's own files.
+  for (const f of fs.readdirSync(path.join(ROOT, 'src/db/migrations'))) {
+    const src = fs.readFileSync(path.join(ROOT, 'src/db/migrations', f), 'utf8');
+    if (/require\(\s*['"]\./.test(src)) throw new Error(`Migration ${f} requires an app file — it would fail in the release. Make it self-contained.`);
+  }
   copy('src/db/migrations', 'src/db/migrations');
   copy('public', 'public');
   copy('node_modules/pdfkit/js/data', 'vendor/pdfkit/data');
