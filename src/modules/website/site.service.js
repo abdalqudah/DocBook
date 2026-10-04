@@ -302,12 +302,13 @@ function publicState(businessId) {
 function look(businessId) {
   return cache.remember(`site:${businessId}:look`, async () => {
     const r = await row(businessId);
-    if (!r) return { light: false, logoDarkMediaId: null, faviconMediaId: null };
+    if (!r) return { light: false, logoDarkMediaId: null, faviconMediaId: null, primary: null };
     const vid = r.status === 'live' && r.live_version_id ? r.live_version_id : r.draft_version_id;
     const v = await version(businessId, vid);
     const doc = v && v.doc ? v.doc : null;
     const brand = (doc && doc.brand) || {};
-    return { light: Boolean(doc && doc.header && doc.header.dark_mode === false), logoDarkMediaId: Number(brand.logoDarkMediaId) || null, faviconMediaId: Number(brand.faviconMediaId) || null };
+    return { light: Boolean(doc && doc.header && doc.header.dark_mode === false), logoDarkMediaId: Number(brand.logoDarkMediaId) || null, faviconMediaId: Number(brand.faviconMediaId) || null,
+      primary: typeof brand.primary === 'string' && /^#[0-9a-f]{6}$/i.test(brand.primary) ? brand.primary : null };
   }, 30_000);
 }
 

@@ -50,6 +50,8 @@ test('close the public site, then everything, then reopen', async () => {
   assert.match(r.text, /نعود الساعة الخامسة/);
   assert.equal((await visitor.get('/')).status, 503);
   assert.equal((await visitor.get('/login')).status, 200);
+  // The clinic's look still loads on the maintenance page: colours, logo, brand images.
+  for (const p of [`/${slug}/theme.css`, `/${slug}/logo`, `/${slug}/brand/logo-dark`]) assert.notEqual((await visitor.get(p)).status, 503, p);
   assert.equal((await staff.get('/app/patients')).status, 200);
   assert.equal((await admin.get(`/${slug}`)).status, 200); // the admin sees the site to check it
   // Everything: the clinic's staff too; the admin still works.

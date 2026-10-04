@@ -343,7 +343,9 @@ async function clinicThemeCss(clinic) {
     const fonts = await require('../website/fonts.service').list(clinic.id); // eslint-disable-line global-require
     return require('../website/render').css(state.doc, clinic, { fonts, fontUrl: (f) => `/${clinic.slug}/fonts/${f.id}.${f.format}?v=${f.sha.slice(0, 10)}` }); // eslint-disable-line global-require
   }
-  return theme.businessCss(clinic.color);
+  // Not published from the editor yet: the clinic colour (Settings → Appearance), else the website's brand colour.
+  const look = await require('../website/site.service').look(clinic.id); // eslint-disable-line global-require
+  return theme.businessCss(clinic.color || look.primary);
 }
 
 // The clinic's brand colour for its public pages.
@@ -352,6 +354,19 @@ router.get('/:slug/theme.css', wrap(async (req, res, next) => {
   if (!clinic) return next();
   res.set({ 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
   return res.send(await clinicThemeCss(clinic));
+}));
+
+// The logo for dark backgrounds and the browser icon chosen in Website → Theme & brand: served even before the site is
+// published (only the one image the brand names, never any other file of the library).
+router.get('/:slug/brand/:kind(logo-dark|favicon)', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const look = await require('../website/site.service').look(clinic.id); // eslint-disable-line global-require
+  const id = req.params.kind === 'favicon' ? look.faviconMediaId : look.logoDarkMediaId;
+  const m = id ? await knex('clinic_media').where({ business_id: clinic.id, id }).first('data', 'mime') : null;
+  if (!m || !/^image\//.test(m.mime || '') || m.mime === 'image/svg+xml') return next();
+  res.set(require('../../core/images').headers(m.mime, 'public, max-age=86400')); // eslint-disable-line global-require
+  return res.send(m.data);
 }));
 
 // A font the clinic uploaded for its website (same origin; the file was checked to be a font when uploaded).

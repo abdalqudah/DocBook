@@ -75,14 +75,19 @@ test('dark mode turned off for the website (even unpublished): the site and the 
   const b = await businesses.get(clinic.id);
   // A logo made for dark backgrounds (a white one) in the website's brand.
   const [mediaId] = await tenant.runFor(clinic.id, () => knex('clinic_media').insert({ business_id: clinic.id, name: 'white.png', folder: '', alt_ar: '', alt_en: '', mime: 'image/png', size: 4, sha: 'abc123', data: Buffer.from('x'), is_public: true, created_at: new Date(), updated_at: new Date() }));
-  await tenant.runFor(clinic.id, () => site.edit(ctx, b, (d) => { d.header = { ...(d.header || {}), dark_mode: false }; d.brand = { ...(d.brand || {}), logoDarkMediaId: mediaId, faviconMediaId: mediaId }; return d; }, { note: 'website.brand_changed' }));
+  await tenant.runFor(clinic.id, () => site.edit(ctx, b, (d) => { d.header = { ...(d.header || {}), dark_mode: false }; d.brand = { ...(d.brand || {}), logoDarkMediaId: mediaId, faviconMediaId: mediaId, primary: '#5B2A86' }; return d; }, { note: 'website.brand_changed' }));
   cache.forgetPrefix('');
   try {
     const login = await app.agent().get('/login');
     assert.match(login.text, /<html[^>]*data-theme="light"/);
-    assert.ok(login.text.includes(`/m/${clinic.slug}/${mediaId}?v=abc123`), 'the dark-background logo on the coloured side panel');
+    assert.ok(login.text.includes(`/${clinic.slug}/brand/logo-dark?v=abc123`), 'the dark-background logo on the coloured side panel');
+    // Served before the site is published (only the image the brand names).
+    const img = await app.agent().get(`/${clinic.slug}/brand/logo-dark`);
+    assert.equal(img.status, 200);
+    assert.equal(img.type, 'image/png');
+    assert.equal((await app.agent().get(`/${clinic.slug}/brand/favicon`)).status, 200);
     // The website's icon is the browser icon of every page (never the built-in mark).
-    for (const pg of [login, await app.agent().get("/")]) assert.ok(pg.text.includes(`<link rel="icon" href="/m/${clinic.slug}/${mediaId}?v=abc123">`), `${pg === login ? "login" : "home"}: ${(pg.text.match(/<link rel="icon"[^>]*>/) || ["none"])[0]}`);
+    for (const pg of [login, await app.agent().get("/")]) assert.ok(pg.text.includes(`<link rel="icon" href="/${clinic.slug}/brand/favicon?v=abc123">`), `${pg === login ? "login" : "home"}: ${(pg.text.match(/<link rel="icon"[^>]*>/) || ["none"])[0]}`);
     // The name: under the logo, or hidden (the logo alone).
     const lp = require('../src/modules/platformops/loginpage'); // eslint-disable-line global-require
     await lp.save({ businessId: null }, { style: 'color', show_points: '1', name_mode: 'below' });
@@ -93,10 +98,14 @@ test('dark mode turned off for the website (even unpublished): the site and the 
     assert.doesNotMatch(hid.text.slice(hid.text.indexOf('auth-side'), hid.text.indexOf('<h2')), /brand-word/);
     await knex.main('platform_settings').where({ key: 'login_page' }).del();
     assert.doesNotMatch(login.text, /data-theme-toggle/);
+    // The website's brand colour on the sign-in page (no colour in Settings → Appearance).
+    const css = await app.agent().get(`/${clinic.slug}/theme.css`);
+    assert.match(css.text, /#5B2A86/i);
+    assert.ok(login.text.includes(`href="/${clinic.slug}/theme.css"`));
     const home = await app.agent().get('/');
     assert.match(home.text, /<html[^>]*data-theme="light"/);
   } finally {
-    await tenant.runFor(clinic.id, () => site.edit(ctx, b, (d) => { d.header = { ...(d.header || {}), dark_mode: true }; if (d.brand) { delete d.brand.logoDarkMediaId; delete d.brand.faviconMediaId; } return d; }, { note: 'website.brand_changed' }));
+    await tenant.runFor(clinic.id, () => site.edit(ctx, b, (d) => { d.header = { ...(d.header || {}), dark_mode: true }; if (d.brand) { delete d.brand.logoDarkMediaId; delete d.brand.faviconMediaId; d.brand.primary = null; } return d; }, { note: 'website.brand_changed' }));
     await tenant.runFor(clinic.id, () => knex('clinic_media').where({ id: mediaId }).del());
     cache.forgetPrefix('');
   }

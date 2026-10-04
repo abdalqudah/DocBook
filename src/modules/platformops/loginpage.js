@@ -47,14 +47,15 @@ async function clinicOf() {
   const tenant = require('../../db/tenant'); // eslint-disable-line global-require
   const look = await cache.remember(`edition:look:${b.id}`, () => tenant.runFor(b.id, async () => {
     const l = await require('../website/site.service').look(b.id); // eslint-disable-line global-require
-    const pub = async (id) => { const m = id ? await knex('clinic_media').where({ business_id: b.id, id, is_public: true }).first('id', 'sha') : null; return m ? `/m/${b.slug}/${m.id}?v=${m.sha}` : null; };
-    return { light: l.light, logoDark: await pub(l.logoDarkMediaId), siteFavicon: await pub(l.faviconMediaId) };
-  }), 30_000).catch(() => ({ light: false, logoDark: null, siteFavicon: null }));
+    // The brand's own images (served by /<slug>/brand/… even before the site is published).
+    const pub = async (id, kind) => { const m = id ? await knex('clinic_media').where({ business_id: b.id, id }).first('id', 'sha') : null; return m ? `/${b.slug}/brand/${kind}?v=${m.sha}` : null; };
+    return { light: l.light, primary: l.primary, logoDark: await pub(l.logoDarkMediaId, 'logo-dark'), siteFavicon: await pub(l.faviconMediaId, 'favicon') };
+  }), 30_000).catch(() => ({ light: false, primary: null, logoDark: null, siteFavicon: null }));
   // The browser icon of every page: Settings → Appearance, else the website's icon, else the logo (never the built-in mark).
   const businesses = require('../businesses/business.service'); // eslint-disable-line global-require
   const favicon = businesses.faviconPath(b, `/${b.slug}`) || look.siteFavicon
     || (b.logo_square_mime ? `/${b.slug}/logo-square?v=${b.logo_square_version}` : b.logo_mime ? `/${b.slug}/logo?v=${b.logo_version}` : null);
-  return { slug: b.slug, name: b.name, name_en: b.name_en, color: b.color || null, logo: Boolean(b.logo_mime), logoVersion: b.logo_version, ...look, favicon };
+  return { slug: b.slug, name: b.name, name_en: b.name_en, logo: Boolean(b.logo_mime), logoVersion: b.logo_version, ...look, color: b.color || look.primary || null, favicon };
 }
 
 /** Locals for the pages drawn in the sign-in layout. */

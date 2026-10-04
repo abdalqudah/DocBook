@@ -9,7 +9,9 @@ const audit = require('../../core/audit');
 
 const KEY = 'maintenance';
 const SCOPES = ['site', 'all'];
-const ALWAYS = [/^\/(login|logout|forgot|reset|password|admin|healthz|hooks|pay\/hook|brand|theme\.css|favicon)(\/|$|\.)/, /^\/[a-z0-9-]+\/login$/];
+const ALWAYS = [/^\/(login|logout|forgot|reset|password|admin|healthz|hooks|pay\/hook|brand|theme\.css|favicon)(\/|$|\.)/, /^\/[a-z0-9-]+\/login$/,
+  // the clinic's look on the maintenance and sign-in pages: its colours, logos, browser icon and fonts
+  /^\/[a-z0-9-]+\/(theme\.css|logo|logo-square|favicon|brand\/(logo-dark|favicon)|fonts\/[^/]+)$/, /^\/m\/[a-z0-9-]+\/\d+$/];
 const STAFF = /^\/(app|vendor|workspaces)(\/|$)/;
 
 const clean = (v, n) => String(v || '').trim().slice(0, n);
