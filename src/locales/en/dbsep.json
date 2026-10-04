@@ -1,0 +1,53 @@
+{
+  "dbsep": {
+    "nav": "Clinic databases",
+    "title": "Clinic databases",
+    "lead": "Each clinic (or medical centre with all its practices) in a fully separate database: its patients, visits, money and files. Accounts, the list of clinics and subscriptions stay in the main database.",
+    "own": "Clinics in their own database",
+    "own_meta": "{n} databases",
+    "in_main": "Clinics still in the main database",
+    "in_main_meta": "{db} — {size}",
+    "setup_title": "Setup",
+    "state_on": "On",
+    "state_off": "Off",
+    "on": {
+      "cpanel": "Every new clinic gets its database automatically through cPanel.",
+      "mysql": "Every new clinic gets its database automatically on the MySQL server."
+    },
+    "off": "Every clinic is in the main database for now. Turn it on in the settings file (.env), then restart the app.",
+    "how": "On cPanel hosting add these lines to the .env file in the app folder, then restart the app from Setup Node.js App:",
+    "token_placeholder": "an API token from cPanel",
+    "how_token": "The token is made in cPanel → Security → Manage API Tokens. It is never shown in the app nor sent anywhere. Database names start with the cPanel user name.",
+    "how_mysql": "On your own server (VPS): TENANT_DB_DRIVER=mysql, if the database user may create databases.",
+    "prefix": "New database names start with {prefix}",
+    "safety": "A move happens in one go: everything moves or nothing does. While a clinic moves, its users see \"moving, try again in a minute\" for a few seconds. Take a backup before moving them all.",
+    "move_title": "Move clinics to their own databases",
+    "move_sub": "New clinics are created in their own database. Older ones are moved from here — a medical centre moves with all its practices into one database.",
+    "progress": "{done} of {total}",
+    "finished": "Finished: {done} moved, {failed} failed.",
+    "stop": "Stop after the current one",
+    "move_all": "Move every clinic",
+    "move_all_confirm": "{n} (clinics or centres) will move to separate databases, one after another. Make sure you have a backup. Continue?",
+    "sync": "Sync database structure",
+    "waiting_title": "Still in the main database",
+    "waiting_sub": "Move one first to try it before moving all.",
+    "clinic": "Clinic",
+    "since": "Since",
+    "centre_unit": "Medical centre ({n} accounts)",
+    "move": "Move",
+    "move_one_confirm": "This clinic (or the centre with all its practices) moves to a database of its own. Continue?",
+    "list_title": "Databases",
+    "database": "Database",
+    "clinics": "Clinics",
+    "size": "Size",
+    "synced": "{n} databases synced ({c} changes).",
+    "none": "No separate databases yet.",
+    "started": "Moving in the background ({n}).",
+    "stopping": "Moving stops after the current clinic.",
+    "not_started": {
+      "off": "Separate databases are off in the settings.",
+      "running": "A move is already running.",
+      "nothing": "Nothing to move."
+    }
+  }
+}

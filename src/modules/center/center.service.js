@@ -117,6 +117,9 @@ async function leave(ctx, businessId = ctx.businessId) {
   await audit.record({ ...ctx, businessId: target.id }, 'center.left', { entityType: 'center', entityId: c.id, newValues: { by: ctx.businessId } });
   if (!self) await audit.record(ctx, 'center.member_removed', { entityType: 'center', entityId: c.id, newValues: { practice: target.id } });
   forgetBiz(target.id);
+  // Out of the centre's database into its own (when separate databases are on) — in the background: it is told "moving"
+  // for a few seconds meanwhile.
+  require('../../db/tenant-admin').outOfCenter(target.id).catch((e) => console.error('[db] leaving the centre database failed:', e.message)); // eslint-disable-line global-require, no-console
 }
 
 /** This practice's choice: its visits on the centre's shared cash screen, or only on its own. */

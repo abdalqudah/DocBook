@@ -1,0 +1,89 @@
+<%# Platform admin → Clinic databases: each clinic (or medical centre) in a database of its own. %>
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var size = function (b) { return b >= 1073741824 ? (Math.round(b / 107374182.4) / 10) + ' GB' : b >= 1048576 ? (Math.round(b / 104857.6) / 10) + ' MB' : Math.max(0, Math.round(b / 1024)) + ' KB'; };
+%>
+<div class="page-head"><div><h1><%= t('dbsep.title') %></h1><p><%= t('dbsep.lead') %></p></div></div>
+
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('dbsep.own') %><span class="stat-icon"><%- icon('database') %></span></div><div class="stat-value num"><%= fmt.number(o.counts.own) %></div><div class="stat-meta"><%= t('dbsep.own_meta', { n: o.databases.length }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('dbsep.in_main') %><span class="stat-icon"><%- icon('building-2') %></span></div><div class="stat-value num<%= o.counts.main ? ' text-warning' : '' %>"><%= fmt.number(o.counts.main) %></div><div class="stat-meta"><%= t('dbsep.in_main_meta', { db: o.mainDb, size: size(o.mainBytes) }) %></div></div>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('dbsep.setup_title') %></h2><div class="panel-sub"><%= o.enabled ? t('dbsep.on.' + o.driver) : t('dbsep.off') %></div></div>
+    <span class="badge badge-dot <%= o.enabled ? 'badge-success' : 'badge-warning' %>"><%= o.enabled ? t('dbsep.state_on') : t('dbsep.state_off') %></span></div>
+  <div class="panel-body stack">
+    <% if (!o.enabled || (o.driver === 'cpanel' && !o.cpanelReady)) { %>
+    <p class="small"><%= t('dbsep.how') %></p>
+    <pre class="code-box" dir="ltr">TENANT_DB_DRIVER=cpanel
+CPANEL_URL=https://your-host:2083
+CPANEL_USER=your-cpanel-user
+CPANEL_TOKEN=<%= t('dbsep.token_placeholder') %></pre>
+    <p class="small muted"><%= t('dbsep.how_token') %></p>
+    <p class="small muted"><%= t('dbsep.how_mysql') %></p>
+    <% } else { %>
+    <p class="small"><%= t('dbsep.prefix', { prefix: o.prefix }) %></p>
+    <% } %>
+    <p class="small muted"><%= t('dbsep.safety') %></p>
+  </div>
+</section>
+
+<section class="panel" data-dbsep data-running="<%= job.running ? '1' : '0' %>" data-progress-text="<%= t('dbsep.progress', { done: '{done}', total: '{total}' }) %>">
+  <div class="panel-head"><div><h2><%= t('dbsep.move_title') %></h2><div class="panel-sub"><%= t('dbsep.move_sub') %></div></div></div>
+  <div class="panel-body stack">
+    <% if (job.running || job.finishedAt) { %>
+    <div class="stack-sm">
+      <div class="meter"><span data-dbsep-bar style="width:<%= job.total ? Math.round(((job.done + job.failed) / job.total) * 100) : 0 %>%"></span></div>
+      <div class="small muted" data-dbsep-text><%= t('dbsep.progress', { done: job.done + job.failed, total: job.total }) %></div>
+      <% if (!job.running) { %><div class="small"><%= t('dbsep.finished', { done: job.done, failed: job.failed }) %></div><% } %>
+      <% (job.errors || []).forEach(function (e) { %><div class="small text-danger" dir="ltr"><%= e %></div><% }) %>
+    </div>
+    <% } %>
+    <div class="row wrap">
+      <% if (job.running) { %>
+      <form method="post" action="/admin/databases/stop"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('square', 'icon-sm') %><%= t('dbsep.stop') %></button></form>
+      <% } else { %>
+      <form method="post" action="/admin/databases/move-all" data-confirm="<%= t('dbsep.move_all_confirm', { n: o.units.length }) %>" data-confirm-yes="<%= t('dbsep.move_all') %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary" type="submit"<%= o.enabled && o.units.length ? '' : ' disabled' %>><%- icon('database', 'icon-sm') %><%= t('dbsep.move_all') %></button>
+      </form>
+      <% } %>
+      <form method="post" action="/admin/databases/sync"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"<%= o.databases.length ? '' : ' disabled' %>><%- icon('refresh-cw', 'icon-sm') %><%= t('dbsep.sync') %></button></form>
+    </div>
+  </div>
+</section>
+
+<% if (o.units.length) { %>
+<section class="panel flush">
+  <div class="panel-head"><div><h2><%= t('dbsep.waiting_title') %></h2><div class="panel-sub"><%= t('dbsep.waiting_sub') %></div></div></div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('dbsep.clinic') %></th><th><%= t('dbsep.since') %></th><th class="actions"></th></tr></thead>
+    <tbody><% o.units.slice(0, 300).forEach(function (u) { var first = u[0]; var admin = u.find(function (c) { return c.kind === 'center_admin'; }); %><tr>
+      <td class="primary-cell" data-label="<%= t('dbsep.clinic') %>">
+        <% if (u.length > 1 || admin) { %><div class="strong"><%- icon('building-2', 'icon-sm') %> <%= t('dbsep.centre_unit', { n: u.length }) %></div><div class="tiny muted"><%= u.map(function (c) { return L(c.name, c.name_en); }).join(' · ') %></div>
+        <% } else { %><div class="strong"><%= L(first.name, first.name_en) %></div><% if (first.slug) { %><div class="tiny muted" dir="ltr">/<%= first.slug %></div><% } %><% } %>
+      </td>
+      <td class="nowrap" data-label="<%= t('dbsep.since') %>"><%= fmt.date(first.created_at) %></td>
+      <td class="actions"><form method="post" action="/admin/databases/move/<%= first.id %>" data-confirm="<%= t('dbsep.move_one_confirm') %>" data-confirm-yes="<%= t('dbsep.move') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"<%= o.enabled && !job.running ? '' : ' disabled' %>><%= t('dbsep.move') %></button></form></td>
+    </tr><% }) %></tbody>
+  </table></div>
+</section>
+<% } %>
+
+<section class="panel flush">
+  <div class="panel-head"><div><h2><%= t('dbsep.list_title') %></h2></div></div>
+  <% if (o.databases.length) { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('dbsep.database') %></th><th><%= t('dbsep.clinics') %></th><th class="num"><%= t('dbsep.size') %></th><th><%= t('dbsep.synced') %></th></tr></thead>
+    <tbody><% o.databases.forEach(function (d) { %><tr>
+      <td class="primary-cell" data-label="<%= t('dbsep.database') %>"><span class="mono" dir="ltr"><%= d.db_name %></span></td>
+      <td data-label="<%= t('dbsep.clinics') %>"><%= d.clinics.length ? d.clinics.map(function (c) { return L(c.name, c.name_en); }).join(' · ') : '—' %></td>
+      <td class="num" data-label="<%= t('dbsep.size') %>"><%= size(d.bytes) %></td>
+      <td class="nowrap" data-label="<%= t('dbsep.synced') %>"><%= d.synced_at ? fmt.date(d.synced_at, { dateStyle: "medium", timeStyle: "short" }) : "—" %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } else { %>
+  <div class="panel-body"><p class="small muted"><%= t('dbsep.none') %></p></div>
+  <% } %>
+</section>

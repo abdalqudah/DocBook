@@ -79,6 +79,7 @@ async function addDoctor(ctx, input, { locale = 'ar', t = null } = {}) {
   const dctx = { businessId: out.bid, userId: out.userId, permissions: await rbac.getUserPermissions(out.bid, out.userId), timezone: founder.timezone, currency: founder.currency, locale };
   await setup.addDoctor(dctx, { full_name: d.doctor_name, specialization: d.specialization || '', consultation_fee: '0', slot_duration_minutes: '30', is_me: '1' }).catch(() => null);
   businesses.forget(out.bid);
+  await require('../../db/tenant-admin').placeSafely(out.bid); // eslint-disable-line global-require -- into the centre's database when it has one
   const link = `${String(ctx.baseUrl || config.appUrl).replace(/\/+$/, '')}/reset/${token}`;
   let emailed = false;
   try {
@@ -109,6 +110,7 @@ async function addOwnPractice(ctx, c, d, locale) {
   const dctx = { businessId: bid, userId: ctx.userId, permissions: await rbac.getUserPermissions(bid, ctx.userId), timezone: founder.timezone, currency: founder.currency, locale };
   await setup.addDoctor(dctx, { full_name: d.doctor_name, specialization: d.specialization || '', consultation_fee: '0', slot_duration_minutes: '30', is_me: '1' }).catch(() => null);
   businesses.forget(bid);
+  await require('../../db/tenant-admin').placeSafely(bid); // eslint-disable-line global-require -- into the centre's database when it has one
   return { created: true, own: true, practiceId: bid, link: null, emailed: false, email: d.email };
 }
 

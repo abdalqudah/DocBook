@@ -277,7 +277,8 @@
     "BRANCH_HAS_DOCTORS": "Move this branch's doctors to another branch first.",
     "BRANCH_HAS_APPOINTMENTS": "This branch has upcoming appointments. Move or cancel them first.",
     "BRANCH_IN_USE": "This branch has doctors or appointments. Turn it off instead.",
-    "CLINIC_NOT_EMPTY": "This clinic has patients, appointments or invoices, so it cannot be deleted."
+    "CLINIC_NOT_EMPTY": "This clinic has patients, appointments or invoices, so it cannot be deleted.",
+    "CLINIC_DB_MOVING": "This clinic is being moved to its own database. Try again in a minute."
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",

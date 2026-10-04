@@ -75,9 +75,11 @@ router.post('/signup', limiter, form(async (req, res) => {
   const invite = req.body.center_token ? await centers.inviteByToken(req.body.center_token) : null;
   if (req.body.center_token && !invite) throw new AppError('CENTER_INVITE_INVALID', 'This invitation is no longer valid.', 410);
   const asCenter = !invite && req.body.account_type === 'center';
+  let newBid = null;
   const userId = await knex.transaction(async (trx) => {
     const id = await authService.createUser(trx, { name: data.name, email: data.email, password: data.password, locale: req.locale });
     const bid = await businesses.create(id, clinicFields(data), trx);
+    newBid = bid;
     if (asCenter) {
       // The centre's administration: no clinic set-up wizard — it starts on the centre's page (add the doctors).
       await centers.create({ businessId: bid, userId: id }, { name: data.clinic_name }, trx);
@@ -86,6 +88,8 @@ router.post('/signup', limiter, form(async (req, res) => {
     if (invite) await centers.accept(id, req.body.center_token, bid, trx);
     return id;
   });
+  // Its own database (or its medical centre's) when separate databases are on — src/db/tenant-admin.js.
+  await require('../../db/tenant-admin').placeSafely(newBid); // eslint-disable-line global-require
   const user = await authService.findUser(userId);
   await verify.send(user, { locale: req.locale }).catch(() => {});
   await signIn(req, user);
@@ -197,6 +201,7 @@ router.get('/workspaces/new', requireAuth, (req, res) => renderNewWs(req, res));
 router.post('/workspaces/new', requireAuth, form(async (req, res) => {
   const data = validate(z.object(clinicSchema), req.body);
   const id = await knex.transaction((trx) => businesses.create(req.user.id, clinicFields(data), trx));
+  await require('../../db/tenant-admin').placeSafely(id); // eslint-disable-line global-require -- its own database when they are on
   req.session.businessId = id;
   return res.redirect('/app/onboarding');
 }, renderNewWs));
@@ -224,6 +229,8 @@ router.post('/workspaces/center/:token', requireAuth, wrap(async (req, res) => {
     if (req.body.mode === 'existing') {
       bid = Number(req.body.business_id) || 0;
       await centers.accept(req.user.id, req.params.token, bid);
+      // Its data joins the centre's database (the shared reception and cash screen work across its practices).
+      await require('../../db/tenant-admin').intoCenter(bid).catch((e) => console.error('[db] joining the centre database failed:', e.message)); // eslint-disable-line global-require, no-console
     } else {
       const data = validate(z.object(clinicSchema), req.body);
       bid = await knex.transaction(async (trx) => {
@@ -231,6 +238,7 @@ router.post('/workspaces/center/:token', requireAuth, wrap(async (req, res) => {
         await centers.accept(req.user.id, req.params.token, id, trx);
         return id;
       });
+      await require('../../db/tenant-admin').placeSafely(bid); // eslint-disable-line global-require -- in the centre's database
     }
     req.session.businessId = bid;
     await knex('users').where({ id: req.user.id }).update({ last_business_id: bid });

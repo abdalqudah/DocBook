@@ -55,7 +55,7 @@ async function newDb() {
  * Moves the rows of clinics `ids` (all in the same database) to database `to` (null = main). The clinics answer
  * "moving, try again in a minute" while it runs; the copy and the removal happen in one transaction.
  */
-async function move(ids, to) {
+async function move(ids, to, { settle = SETTLE_MS() } = {}) {
   const k = main();
   const list = [...new Set(ids.map(Number).filter(Boolean))];
   if (!list.length) return { moved: 0 };
@@ -71,7 +71,7 @@ async function move(ids, to) {
   await k('businesses').whereIn('id', list).update({ db_name: '!moving' });
   list.forEach((id) => tenant.forget(id));
   try {
-    await sleep(SETTLE_MS());
+    if (settle) await sleep(settle);
     const idList = list.join(',');
     const counts = {};
     await k.transaction(async (trx) => {
@@ -108,19 +108,70 @@ async function move(ids, to) {
   }
 }
 
-/** The database a clinic belongs in: its medical centre's (the centre's administration account decides), or its own. */
-async function placeNew(businessId) {
-  if (!provision.enabled()) return null;
+/** The clinics that share one database: a medical centre (its administration and every practice), else the clinic. */
+async function unitOf(businessId) {
   const k = main();
-  const b = await k('businesses').where({ id: businessId }).first('id', 'db_name', 'center_id', 'kind');
+  const b = await k('businesses').where({ id: businessId }).first('id', 'center_id');
+  if (!b) return [];
+  if (!b.center_id) return [b.id];
+  return k('businesses').where({ center_id: b.center_id }).pluck('id');
+}
+
+/**
+ * Where a new clinic belongs: inside its medical centre's database (practices of one centre always share it — the
+ * shared reception and cash screen work across them), else a new database of its own. Nothing happens while
+ * separate databases are off. A brand-new clinic is moved at once (nobody uses it yet).
+ */
+async function placeNew(businessId) {
+  const k = main();
+  const b = await k('businesses').where({ id: businessId }).first('id', 'db_name', 'center_id');
   if (!b || b.db_name) return b ? b.db_name : null;
-  let target = null;
   if (b.center_id) {
     const c = await k('centers').where({ id: b.center_id }).first('owner_business_id');
-    const owner = c && c.owner_business_id !== b.id ? await k('businesses').where({ id: c.owner_business_id }).first('db_name') : null;
-    target = owner && owner.db_name && !owner.db_name.startsWith('!') ? owner.db_name : null;
+    if (c && c.owner_business_id !== b.id) {
+      const owner = await k('businesses').where({ id: c.owner_business_id }).first('db_name');
+      const target = owner ? owner.db_name || null : null;
+      if (target) await move([b.id], target, { settle: 0 });
+      return target; // a centre still in the main database keeps its practices there too (whatever the setting)
+    }
   }
-  if (!target) target = await newDb();
+  if (!provision.enabled()) return null;
+  const target = await newDb();
+  await move([b.id], target, { settle: 0 });
+  return target;
+}
+
+/** A clinic (or a whole medical centre) into a database of its own. */
+async function separate(businessId) {
+  const ids = await unitOf(businessId);
+  if (!ids.length) throw new Error('Unknown clinic.');
+  const target = await newDb();
+  try { return { db: target, ...(await move(ids, target)) }; } catch (e) {
+    await provision.dropDatabase(main(), target).catch(() => {});
+    await main()('tenant_dbs').where({ db_name: target }).del().catch(() => {});
+    throw e;
+  }
+}
+
+/** A clinic joining a medical centre: its rows go to the centre's database (when that is another one). */
+async function intoCenter(businessId) {
+  const k = main();
+  const b = await k('businesses').where({ id: businessId }).first('id', 'db_name', 'center_id');
+  if (!b || !b.center_id) return null;
+  const c = await k('centers').where({ id: b.center_id }).first('owner_business_id');
+  const owner = c ? await k('businesses').where({ id: c.owner_business_id }).first('db_name') : null;
+  const target = owner ? owner.db_name || null : null;
+  if ((b.db_name || null) === target) return target;
+  await move([b.id], target);
+  return target;
+}
+
+/** A practice leaving its medical centre: out of the centre's database into one of its own (when separate databases are on). */
+async function outOfCenter(businessId) {
+  if (!provision.enabled()) return null;
+  const b = await main()('businesses').where({ id: businessId }).first('id', 'db_name');
+  if (!b || !b.db_name) return null;
+  const target = await newDb();
   await move([b.id], target);
   return target;
 }
@@ -140,4 +191,7 @@ async function syncAll(log = () => {}) {
   return out;
 }
 
-module.exports = { CHILDREN, newDb, move, placeNew, syncAll };
+/** placeNew that never stops sign-up: a failure leaves the clinic in the main database (the admin can move it later). */
+const placeSafely = (businessId) => placeNew(businessId).catch((e) => { console.error('[db] own database for clinic', businessId, 'failed:', e.message); return null; }); // eslint-disable-line no-console
+
+module.exports = { placeSafely, CHILDREN, newDb, move, placeNew, unitOf, separate, intoCenter, outOfCenter, syncAll };
