@@ -527,7 +527,7 @@ test('hero slider and motion: slides with their own words, motion classes, empty
   const faqId = new URL(r.location, 'http://x').searchParams.get('s');
   r = await o.get('/app/website/preview?lang=en');
   assert.match(r.text, /data-ws-slider data-interval="7"/);
-  assert.match(r.text, /ws-tr-zoom ws-h-tall/);
+  assert.match(r.text, /ws-tr-zoom ws-ta-up ws-ind-dots ws-arw-circle ws-h-tall/);
   assert.match(r.text, /<h1>First slide<\/h1>/);
   assert.match(r.text, /ws-motion-lively/);
   assert.match(r.text, /ws-anim ws-anim-zoom/);
