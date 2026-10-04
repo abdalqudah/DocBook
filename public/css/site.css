@@ -794,3 +794,8 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .portal-mark:has(img), .portal-logo:has(img) { width: auto; max-width: 260px; background: transparent; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
 .portal-mark img, .portal-logo img { width: auto; height: 100%; max-width: 100%; object-fit: contain; background: transparent; border-radius: 0; }
 .share-visit-logo { border-radius: 0; }
+
+/* A doctor's social-media profiles: round icon links (doctor cards, team cards, the doctor's page). */
+.doc-social { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.doc-soc { width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); transition: background .25s, color .25s, border-color .25s, transform .25s cubic-bezier(.2, .7, .2, 1); }
+.doc-soc:hover, .doc-soc:focus-visible { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); transform: translateY(-2px); }

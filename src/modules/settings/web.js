@@ -219,9 +219,55 @@ router.post('/appearance/favicon', can('settings.manage'), (req, res, next) => i
 // ---------------------------------------------------------------- personal account & preferences
 const renderAccount = async (req, res, extra = {}) => {
   const memberships = await businesses.listForUser(req.user.id);
-  render(req, res, 'account', 'account', { me: req.user, memberships, ...extra });
+  const mem = await myMembership(req);
+  render(req, res, 'account', 'account', { me: req.user, memberships, myOwnPhoto: Boolean(mem && mem.photo_media_id), myDoctor: Boolean(mem && mem.doctor_id), ...extra });
 };
 router.get('/account', wrap((req, res) => renderAccount(req, res)));
+
+// My photo: uploaded into the clinic's media library (folder "team"); a doctor's account also becomes the doctor's photo
+// on the website, booking page and staff screens. Removing it leaves the file in the library.
+const media = require('../integrations/media.service');
+const photoUpload = uploads.memory({ limits: { fileSize: media.MAX_BYTES + 1, files: 1, fields: 5 }, maxSide: 900 });
+const myMembership = (req) => knex('memberships').where({ business_id: req.ctx.businessId, user_id: req.user.id }).first('id', 'doctor_id', 'photo_media_id');
+router.post('/account/photo', (req, res, next) => photoUpload.single('photo')(req, res, (e) => {
+  if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'MEDIA_TOO_BIG' : 'MEDIA_TYPE';
+  next();
+}), verifyCsrfAfterUpload, wrap(async (req, res) => {
+  const mem = await myMembership(req);
+  if (!mem) throw E.notFound('Membership');
+  const fail = (code) => { const k = `errors_integrations.${code}`; const t = req.t(k); flash(req, 'error', t !== k ? t : req.t('settings.photo_invalid')); return res.redirect('/app/settings/account'); };
+  if (req.uploadError) return fail(req.uploadError);
+  if (!req.file) return fail('photo_missing');
+  let m;
+  try {
+    m = await media.upload(req.ctx, req.file, { folder: 'team', is_public: mem.doctor_id ? '1' : '0', name: req.user.name });
+  } catch (err) { if (!(err instanceof AppError) || err.status >= 500) throw err; return fail(err.code); }
+  if (!m.isImage) { await media.remove(req.ctx, m.id, { force: true }).catch(() => {}); return fail('MEDIA_TYPE'); }
+  await knex('memberships').where({ id: mem.id }).update({ photo_media_id: m.id, updated_at: new Date() });
+  await knex('media_usages').where({ business_id: req.ctx.businessId, context: 'member.photo', ref_id: mem.id }).del();
+  await knex('media_usages').insert({ business_id: req.ctx.businessId, media_id: m.id, context: 'member.photo', ref_id: mem.id, sort_order: 0 });
+  if (mem.doctor_id) await media.setDoctorPhoto(req.ctx, mem.doctor_id, m.id);
+  require('../../core/cache').forgetPrefix(`media:me:${req.ctx.businessId}:`); // eslint-disable-line global-require
+  await audit.record(req.ctx, 'user.photo_updated', { entityType: 'user', entityId: req.user.id, oldValues: { photo_media_id: mem.photo_media_id || null }, newValues: { photo_media_id: m.id, doctor_id: mem.doctor_id || null } });
+  flash(req, 'success', req.t(mem.doctor_id ? 'settings.photo_saved_doctor' : 'settings.photo_saved'));
+  return res.redirect('/app/settings/account');
+}));
+router.post('/account/photo/delete', wrap(async (req, res) => {
+  const mem = await myMembership(req);
+  if (!mem) throw E.notFound('Membership');
+  if (mem.photo_media_id) {
+    await knex('memberships').where({ id: mem.id }).update({ photo_media_id: null, updated_at: new Date() });
+    await knex('media_usages').where({ business_id: req.ctx.businessId, context: 'member.photo', ref_id: mem.id }).del();
+    if (mem.doctor_id) {
+      const d = await knex('doctors').where({ business_id: req.ctx.businessId, id: mem.doctor_id }).first('photo_media_id');
+      if (d && d.photo_media_id === mem.photo_media_id) await media.setDoctorPhoto(req.ctx, mem.doctor_id, null);
+    }
+    require('../../core/cache').forgetPrefix(`media:me:${req.ctx.businessId}:`); // eslint-disable-line global-require
+    await audit.record(req.ctx, 'user.photo_removed', { entityType: 'user', entityId: req.user.id, oldValues: { photo_media_id: mem.photo_media_id } });
+  }
+  flash(req, 'success', req.t('settings.photo_removed'));
+  res.redirect('/app/settings/account');
+}));
 
 function applyPreferences(res, { locale, theme }) {
   const cookie = { maxAge: 365 * 86_400_000, sameSite: 'lax', secure: config.isProd };

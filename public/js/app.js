@@ -176,6 +176,11 @@
     $$('input[type=search]', form).forEach(function (i) { i.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { form.submit(); }, 450); }); });
   });
 
+  /* ---------- A file picker that sends its form as soon as a file is chosen (My account → photo) ---------- */
+  $$('input[type=file][data-send-on-pick]').forEach(function (inp) {
+    inp.addEventListener('change', function () { if (inp.files && inp.files.length && inp.form) { inp.form.classList.add('is-busy'); inp.form.submit(); } });
+  });
+
   /* ---------- Filter a list of checkboxes (lab / imaging tests on the visit page) ---------- */
   $$('[data-ord-filter]').forEach(function (inp) {
     var list = inp.parentNode.querySelector('[data-ord-list]');

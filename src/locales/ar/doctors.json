@@ -71,7 +71,25 @@
     "hours_clinic_set": "حدّد دوام العيادة",
     "add_shift": "وقت آخر",
     "add_break": "استراحة",
-    "day_extras": "إضافات اليوم (اختياري)"
+    "day_extras": "إضافات اليوم (اختياري)",
+    "social_title": "حسابات التواصل الاجتماعي",
+    "social_sub": "تظهر كأيقونات على بطاقة الطبيب وصفحته في الموقع. اترك الحقل فارغًا لإخفائه.",
+    "social_facebook": "فيسبوك",
+    "social_ph_facebook": "facebook.com/…",
+    "social_instagram": "إنستغرام",
+    "social_ph_instagram": "instagram.com/…",
+    "social_x": "إكس (تويتر)",
+    "social_ph_x": "x.com/…",
+    "social_linkedin": "لينكدإن",
+    "social_ph_linkedin": "linkedin.com/in/…",
+    "social_youtube": "يوتيوب",
+    "social_ph_youtube": "youtube.com/@…",
+    "social_tiktok": "تيك توك",
+    "social_ph_tiktok": "tiktok.com/@…",
+    "social_snapchat": "سناب شات",
+    "social_ph_snapchat": "snapchat.com/add/…",
+    "social_website": "موقع شخصي",
+    "social_ph_website": "https://…"
   },
   "commission": {
     "basis": {

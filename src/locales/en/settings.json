@@ -715,7 +715,18 @@
     "favicon_too_big": "The icon is larger than 256 KB.",
     "favicon_missing": "Upload the icon file first.",
     "nav_message_texts": "Message texts",
-    "nav_partners": "Pharmacies & centres"
+    "nav_partners": "Pharmacies & centres",
+    "photo_title": "My photo",
+    "photo_help": "Shown next to your name in the system. JPG, PNG or WebP up to 5 MB.",
+    "photo_help_doctor": "Also becomes your doctor photo: on the website, the booking page and team screens. JPG, PNG or WebP up to 5 MB.",
+    "photo_upload": "Upload a photo",
+    "photo_change": "Change photo",
+    "photo_remove": "Remove photo",
+    "photo_remove_confirm": "Remove your photo? A copy stays in the media library.",
+    "photo_saved": "Your photo is saved.",
+    "photo_saved_doctor": "Your photo is saved and now shows on the website and booking page.",
+    "photo_removed": "Photo removed.",
+    "photo_invalid": "Choose a JPG, PNG or WebP image."
   },
   "team": {
     "lead": "Everyone who signs in to your clinic — doctors, nurses, reception, accounting and management. Each person gets their own login and sees only what their role allows.",

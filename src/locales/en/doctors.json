@@ -71,7 +71,25 @@
     "hours_clinic_set": "Set the clinic's hours",
     "add_shift": "Another time",
     "add_break": "Break",
-    "day_extras": "Extras for the day (optional)"
+    "day_extras": "Extras for the day (optional)",
+    "social_title": "Social media",
+    "social_sub": "Shown as icons on the doctor's card and page on the website. Leave a field empty to hide it.",
+    "social_facebook": "Facebook",
+    "social_ph_facebook": "facebook.com/…",
+    "social_instagram": "Instagram",
+    "social_ph_instagram": "instagram.com/…",
+    "social_x": "X (Twitter)",
+    "social_ph_x": "x.com/…",
+    "social_linkedin": "LinkedIn",
+    "social_ph_linkedin": "linkedin.com/in/…",
+    "social_youtube": "YouTube",
+    "social_ph_youtube": "youtube.com/@…",
+    "social_tiktok": "TikTok",
+    "social_ph_tiktok": "tiktok.com/@…",
+    "social_snapchat": "Snapchat",
+    "social_ph_snapchat": "snapchat.com/add/…",
+    "social_website": "Personal website",
+    "social_ph_website": "https://…"
   },
   "commission": {
     "basis": {

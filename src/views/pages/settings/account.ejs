@@ -3,8 +3,22 @@
   <%- include('_nav') %>
   <div class="stack-lg">
     <section class="panel">
-      <div class="panel-head"><div class="row"><span class="avatar avatar-lg"><%= initials(me.name) %></span><div><h2><%= me.name %></h2><div class="panel-sub" dir="ltr" style="text-align:start"><%= me.email %></div></div></div>
+      <div class="panel-head"><div class="row"><span class="avatar avatar-lg acc-photo"><% if (myPhoto) { %><img src="<%= myPhoto %>" alt="<%= me.name %>"><% } else { %><%= initials(me.name) %><% } %></span><div><h2><%= me.name %></h2><div class="panel-sub" dir="ltr" style="text-align:start"><%= me.email %></div></div></div>
         <% if (membership) { %><span class="badge badge-brand"><%= roleName(membership) %></span><% } %></div>
+      <% if (membership) { %>
+      <div class="panel-body row between wrap" style="gap:12px;border-bottom:1px solid var(--border)">
+        <div class="grow" style="min-width:220px"><div class="strong"><%= t('settings.photo_title') %></div><div class="small muted"><%= t(myDoctor ? 'settings.photo_help_doctor' : 'settings.photo_help') %></div></div>
+        <div class="row-sm wrap">
+          <form method="post" action="/app/settings/account/photo" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label class="btn btn-secondary btn-sm"><%- icon('upload', 'icon-sm') %><%= t(myPhoto ? 'settings.photo_change' : 'settings.photo_upload') %>
+              <input class="sr-only" type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-send-on-pick></label>
+            <noscript><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button></noscript>
+          </form>
+          <% if (myOwnPhoto) { %><form method="post" action="/app/settings/account/photo/delete" data-confirm="<%= t('settings.photo_remove_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('settings.photo_remove') %></button></form><% } %>
+        </div>
+      </div>
+      <% } %>
       <div class="panel-body">
         <form method="post" action="/app/settings/account" class="stack" novalidate>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">

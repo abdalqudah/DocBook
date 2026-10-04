@@ -3,7 +3,7 @@
   var extra = s.settings.items || [];
   var fromDoctors = (s.settings.source || 'doctors') === 'doctors';
   var people = fromDoctors
-    ? doctors.map(function (d) { return { name: d.name, role: d.specialty, text: d.bio, photo: d.photo ? { url: d.photo, alt_ar: d.name, alt_en: d.name } : null, href: clinic.booking_enabled && s.settings.show_book !== false ? '/' + clinic.slug + '/book?doctor=' + d.id : null, page: '/' + clinic.slug + '/doctors/' + d.id, button: null }; })
+    ? doctors.map(function (d) { return { name: d.name, role: d.specialty, text: d.bio, photo: d.photo ? { url: d.photo, alt_ar: d.name, alt_en: d.name } : null, href: clinic.booking_enabled && s.settings.show_book !== false ? '/' + clinic.slug + '/book?doctor=' + d.id : null, page: '/' + clinic.slug + '/doctors/' + d.id, button: null, social: d.social, d: d }; })
     : (c.items || []).map(function (x, i) { var e = extra[i] || {}; var a = act(e.action); return { name: x && x.name, role: x && x.role, text: x && x.text, photo: img(e.image), href: a ? a.href : null, ext: a && a.ext, button: (x && x.button) || (a ? a.label : null), icon: a ? a.icon : null }; })
         .filter(function (x) { return x.name || x.photo; });
   var showBio = s.settings.show_bio !== false;
@@ -27,6 +27,7 @@
           <div class="ws-person-more">
             <% if (s.variant === 'flip') { %><% if (p.name) { %><h3><%= p.name %></h3><% } %><% if (p.role) { %><div class="ws-person-role"><%= p.role %></div><% } %><% } %>
             <% if (showBio && p.text) { %><p><%= p.text %></p><% } %>
+            <% if (p.d && s.settings.show_social !== false) { %><%- include('../../../partials/site/doc-social', { d: p.d, cls: '' }) %><% } %>
             <div class="ws-person-actions">
               <% if (p.href) { %><a class="btn btn-primary btn-sm" href="<%= p.href %>"<%- p.ext ? ' target="_blank" rel="noopener"' : '' %>><% if (p.icon) { %><%- icon(p.icon, 'icon-sm') %><% } %><%= p.button || bookLabel %></a><% } %>
               <% if (p.page) { %><a class="btn btn-ghost btn-sm" href="<%= p.page %>"><%= t('website.team_profile') %></a><% } %>

@@ -1,0 +1,2 @@
+<%# A doctor's social-media profiles as round icon links (d.social = [{ key, url, icon }]). %>
+<% if (d.social && d.social.length) { %><div class="doc-social<%= typeof cls !== 'undefined' ? ' ' + cls : '' %>"><% d.social.forEach(function (x) { %><a class="doc-soc doc-soc-<%= x.key %>" href="<%= x.url %>" target="_blank" rel="noopener nofollow" aria-label="<%= t('doctors.social_' + x.key) %> · <%= d.name %>" title="<%= t('doctors.social_' + x.key) %>"><%- icon(x.icon, 'icon-sm') %></a><% }) %></div><% } %>

@@ -269,9 +269,25 @@ async function setDoctorPhoto(ctx, doctorId, mediaId, trx = knex) {
   await trx('doctors').where({ id: doc.id, business_id: ctx.businessId }).update({ photo_media_id: id, updated_at: new Date() });
   await trx('media_usages').where({ business_id: ctx.businessId, context: 'doctor.photo', ref_id: doc.id }).del();
   if (id) await trx('media_usages').insert({ business_id: ctx.businessId, media_id: id, context: 'doctor.photo', ref_id: doc.id, sort_order: 0 });
-  cache.forgetPrefix(`media:docs:${ctx.businessId}`);
+  cache.forgetPrefix(`media:docs:${ctx.businessId}`); cache.forgetPrefix(`media:me:${ctx.businessId}:`);
   await audit.record(ctx, 'doctor.photo_updated', { entityType: 'doctor', entityId: doc.id, oldValues: { photo_media_id: doc.photo_media_id || null }, newValues: { photo_media_id: id } }, trx);
   return id;
+}
+
+/**
+ * The photo of a team member for staff screens: their own (My account), else their doctor's photo; null = none.
+ * Cached briefly; cleared when either photo changes.
+ */
+async function memberPhoto(businessId, { photoMediaId = null, doctorId = null } = {}) {
+  if (!businessId || (!photoMediaId && !doctorId)) return null;
+  return cache.remember(`media:me:${businessId}:${photoMediaId || 0}:${doctorId || 0}`, async () => {
+    if (photoMediaId) {
+      const m = await knex('clinic_media').where({ business_id: businessId, id: Number(photoMediaId) }).whereIn('mime', IMAGE_MIMES).first('id', 'sha');
+      if (m) return urlOf(m);
+    }
+    if (doctorId) { const p = (await doctorPhotos(businessId, [doctorId]))[doctorId]; if (p) return p.url; }
+    return null;
+  }, 60_000);
 }
 
 /** { [doctorId]: { id, url } } for staff screens (member-only URLs). */
@@ -294,7 +310,7 @@ async function publicDoctorPhotos(clinic) {
 }
 
 module.exports = {
-  setDoctorPhoto, doctorPhotos, publicDoctorPhotos,
+  setDoctorPhoto, doctorPhotos, publicDoctorPhotos, memberPhoto,
   MAX_BYTES, QUOTA_BYTES, DEFAULT_MB, quotaOf, MIMES, IMAGE_MIMES, EXT, GALLERY_MAX,
   sniff, looksLikeMarkup, dimensions, inspect, isImage, cleanFolder,
   list, folders, stats, get, upload, update, usages, remove, file, publicFile, urlOf, publicUrlOf,

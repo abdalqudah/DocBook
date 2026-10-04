@@ -1,9 +1,39 @@
 <% var list = s.settings.mode === 'selected' && s.settings.doctor_ids && s.settings.doctor_ids.length ? s.settings.doctor_ids.map(function (id) { return doctors.find(function (d) { return d.id === id; }); }).filter(Boolean) : doctors;
-   var teleOn = clinic.booking_enabled && clinic.online_enabled; %>
+   var teleOn = clinic.booking_enabled && clinic.online_enabled;
+   var showSocial = s.settings.show_social !== false; var showBio = s.settings.show_bio !== false; %>
 <% if (list.length) { %>
 <section class="ws-section" id="s-<%= s.id %>">
   <div class="container">
     <div class="ws-head"><h2 class="ws-title"><%= c.title || t('portal.doctors') %></h2><% if (c.intro) { %><p><%= c.intro %></p><% } else if (clinic.booking_enabled) { %><p><%= t('portal.doctors_sub') %></p><% } %></div>
+    <% if (s.variant === 'cards') { %>
+    <div class="portal-doctors ws-dcards ws-cols-<%= s.settings.columns || '3' %> ws-pr-<%= s.settings.photo_ratio || 'portrait' %>">
+      <% list.forEach(function (d, i) { %>
+      <article class="ws-dcard" style="--i:<%= i %>">
+        <div class="ws-dcard-media">
+        <a class="ws-dcard-photo" href="/<%= clinic.slug %>/doctors/<%= d.id %>" tabindex="-1" aria-hidden="true">
+          <% if (d.photo) { %><img src="<%= d.photo %>" alt="" loading="lazy"><% } else { %><span class="ws-dcard-initials"><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span><% } %>
+        </a>
+        <% if (showSocial) { %><%- include('../../../partials/site/doc-social', { d: d, cls: 'ws-dcard-social' }) %><% } %>
+        </div>
+        <div class="ws-dcard-body">
+          <% if (d.specialty) { %><span class="ws-dcard-spec"><%= d.specialty %></span><% } %>
+          <h3><a class="ws-doc-link" href="/<%= clinic.slug %>/doctors/<%= d.id %>"><%= d.name %></a></h3>
+          <% if (d.practice) { %><div class="tiny muted"><%= d.practice %></div><% } %>
+          <%- include('../../../partials/site/reviews', { part: 'doctor', doctorId: d.id, clinic: Object.assign({}, clinic, { reviews: reviewsSummary }) }) %>
+          <% if (showBio && d.bio) { %><p class="ws-dcard-bio"><%= d.bio %></p><% } %>
+          <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
+          <div class="ws-dcard-foot">
+            <% if (s.settings.show_fee && d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } %>
+            <div class="ws-dcard-actions">
+              <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book_with') %></a><% } %>
+              <a class="btn btn-ghost btn-sm" href="/<%= clinic.slug %>/doctors/<%= d.id %>"><%= t('website.team_profile') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
+            </div>
+          </div>
+        </div>
+      </article>
+      <% }) %>
+    </div>
+    <% } else { %>
     <div class="portal-doctors ws-doctors-<%= s.variant %>">
       <% list.forEach(function (d) { %>
       <article class="doc-card">
@@ -13,7 +43,8 @@
           <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
           <% if (d.practice) { %><div class="tiny muted"><%= d.practice %></div><% } %>
           <%- include('../../../partials/site/reviews', { part: 'doctor', doctorId: d.id, clinic: Object.assign({}, clinic, { reviews: reviewsSummary }) }) %>
-          <% if (d.bio) { %><p><%= d.bio %></p><% } %>
+          <% if (showSocial) { %><%- include('../../../partials/site/doc-social', { d: d, cls: '' }) %><% } %>
+          <% if (showBio && d.bio) { %><p><%= d.bio %></p><% } %>
           <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
           <div class="doc-foot">
             <% if (s.settings.show_fee && d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } else { %><span></span><% } %>
@@ -23,6 +54,7 @@
       </article>
       <% }) %>
     </div>
+    <% } %>
   </div>
 </section>
 <% } %>

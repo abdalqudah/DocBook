@@ -5,8 +5,10 @@
   // Slider: the slides that have a picture (their own words, else the hero's).
   // (every slide with a picture counts, with or without its own words)
   var _sw = c.slides || []; var _ss = s.settings.slides || []; var slides = [];
-  if (s.variant === 'slider') for (var _k = 0; _k < Math.max(_sw.length, _ss.length); _k += 1) { var _x = _sw[_k] || {}; var _e = _ss[_k] || {}; var _im = img(_e.image); if (_im) slides.push({ im: _im, head: _x.headline || head, sub: _x.subtext || sub }); }
+  if (s.variant === 'slider') for (var _k = 0; _k < Math.max(_sw.length, _ss.length); _k += 1) { var _x = _sw[_k] || {}; var _e = _ss[_k] || {}; var _im = img(_e.image); if (_im) slides.push({ im: _im, head: _x.headline || head, sub: _x.subtext || sub, mode: _e.text_mode && _e.text_mode !== 'txt_follow' ? _e.text_mode : null }); }
   if (s.variant === 'slider' && !slides.length && im) slides = [{ im: im, head: head, sub: sub }];
+  // Words over each picture: the slide's own choice, else the slider's (all · headline only · none); buttons on/off.
+  var slideMode = s.settings.slide_text || 'txt_all'; var slideBtns = s.settings.slide_buttons !== false;
   var variant = s.variant === 'slider' && !slides.length ? 'centered' : s.variant;
   var back = variant === 'image_back' && im;
   var heightCls = ' ws-h-' + (s.settings.height || 'auto');
@@ -26,13 +28,17 @@
 <section class="ws-hero ws-hero-slider has-image ws-tr-<%= s.settings.transition || 'fade' %> ws-ta-<%= s.settings.text_anim || 'up' %> ws-ind-<%= ind %> ws-arw-<%= arw %><%= heightCls %><%= place %>" id="s-<%= s.id %>" data-ws-slider data-interval="<%= String(s.settings.interval || 's5').slice(1) %>"<%- s.settings.pause_hover === false ? ' data-no-pause' : '' %> aria-roledescription="carousel" aria-label="<%= head %>">
   <div class="ws-slides">
     <% slides.forEach(function (x, i) { %>
-    <div class="ws-slide<%= i === 0 ? ' is-on' : '' %>" role="group" aria-roledescription="slide" aria-label="<%= i + 1 %> / <%= slides.length %>"<%- i === 0 ? '' : ' aria-hidden="true"' %>>
+    <% var md = x.mode || slideMode; %>
+    <div class="ws-slide<%= i === 0 ? ' is-on' : '' %><%= md === 'txt_none' && !slideBtns ? ' is-bare' : '' %>" role="group" aria-roledescription="slide" aria-label="<%= i + 1 %> / <%= slides.length %>"<%- i === 0 ? '' : ' aria-hidden="true"' %>>
       <img class="ws-slide-img" src="<%= x.im.url %>" alt="<%= altOf(x.im) %>"<%- i === 0 ? '' : ' loading="lazy"' %>>
+      <% if (md === 'txt_none' && i === 0) { %><h1 class="sr-only"><%= x.head %></h1><% } %>
+      <% if (md !== 'txt_none' || slideBtns) { %>
       <div class="container ws-hero-inner"><div class="ws-hero-text">
-        <% if (i === 0) { %><h1><%= x.head %></h1><% } else { %><p class="ws-slide-title"><%= x.head %></p><% } %>
-        <% if (x.sub) { %><p class="ws-lead"><%= x.sub %></p><% } %>
-        <% actions(); %>
+        <% if (md !== 'txt_none') { if (i === 0) { %><h1><%= x.head %></h1><% } else { %><p class="ws-slide-title"><%= x.head %></p><% } } %>
+        <% if (md === 'txt_all' && x.sub) { %><p class="ws-lead"><%= x.sub %></p><% } %>
+        <% if (slideBtns) actions(); %>
       </div></div>
+      <% } %>
     </div>
     <% }) %>
   </div>

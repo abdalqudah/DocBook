@@ -7,6 +7,7 @@
       <h1><%= d.name %></h1>
       <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
       <%- include('../../partials/site/reviews', { part: 'doctor', doctorId: d.id }) %>
+      <%- include('../../partials/site/doc-social', { d: d, cls: 'mt-3' }) %>
       <div class="ws-hero-actions mt-4">
         <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%- icon('calendar-plus') %><%= t('portal.book_with') %></a><% } %>
         <% if (clinic.booking_enabled && clinic.online_enabled && d.online) { %><a class="btn btn-secondary btn-lg" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video') %><%= t('telehealth.book_online_cta') %></a><% } %>

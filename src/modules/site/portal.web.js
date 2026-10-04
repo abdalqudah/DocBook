@@ -89,6 +89,7 @@ const doctorView = (req, prices = true) => (d) => {
     fee: prices && d.show_consultation_fee && Number(d.consultation_fee) > 0 ? Number(d.consultation_fee) : null, color: d.color && theme.HEX.test(d.color) ? d.color : null,
     bio: bio.length > 180 ? `${bio.slice(0, 177).trim()}…` : bio, slot: d.slot_duration_minutes, online: Boolean(d.online_enabled),
     branchId: d.branch_id || null, // null = main branch
+    social: d.social_links ? require('../clinic/doctor-social').list(d.social_links) : [], // eslint-disable-line global-require
   };
 };
 /**
@@ -112,7 +113,7 @@ const listDoctors = async (req, clinic, where = 'site') => {
   const media = require('../integrations/media.service'); // eslint-disable-line global-require
   const [rows, photos] = await Promise.all([
     knex('doctors').whereIn('business_id', practices ? practices.map((p) => p.id) : [clinic.id]).where({ is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
-      .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled', 'branch_id'),
+      .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled', 'branch_id', 'social_links'),
     practices ? Promise.all(practices.map((p) => media.publicDoctorPhotos(p))).then((all) => Object.assign({}, ...all)) : media.publicDoctorPhotos(clinic),
   ]);
   const practiceName = (bid) => { const p = practices && practices.find((x) => x.id === bid); return p ? (req.locale === 'en' && p.name_en) || p.name : null; };

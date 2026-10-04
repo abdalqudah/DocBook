@@ -348,6 +348,7 @@ function clinicLd({ clinic, doctors, base, locale, ws = null }) {
     ld.member = docs.map((d) => ({
       '@type': 'Physician', name: d.name, ...(d.specialty ? { description: d.specialty } : {}),
       ...(clinic.booking_enabled ? { url: `${url}/book?doctor=${d.id}` } : {}),
+      ...(d.social && d.social.length ? { sameAs: d.social.map((x) => x.url) } : {}),
     }));
   }
   if (clinic.reviews && clinic.reviews.count) Object.assign(ld, require('../reviews/reviews.service').jsonLd(clinic.reviews, locale)); // eslint-disable-line global-require -- verified reviews

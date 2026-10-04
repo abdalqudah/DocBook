@@ -89,7 +89,7 @@ async function withBusiness(req, res, next, businessId) {
   try {
     let [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);
     let membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id })
-      .first('m.doctor_id', 'm.job_title', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
+      .first('m.doctor_id', 'm.job_title', 'm.photo_media_id', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
     let chrome = business;
     let actAs = null;
     if (business.kind === 'center_admin' && business.center_id && actPath(req)) {
@@ -143,6 +143,8 @@ async function withBusiness(req, res, next, businessId) {
       const own = actAs ? { ...req.ctx, businessId: chromeId, permissions: actAs.navPermissions } : req.ctx; // the signed-in account's own inbox
       res.locals.unreadNotifications = await notifications.unreadCount(own);
       res.locals.unreadChat = await require('../modules/chat/chat.service').unreadTotal(own).catch(() => 0); // eslint-disable-line global-require
+      // The signed-in member's photo (My account, else their doctor's photo) for the avatar in the top bar.
+      res.locals.myPhoto = membership ? await require('../modules/integrations/media.service').memberPhoto(businessId, { photoMediaId: membership.photo_media_id, doctorId: membership.doctor_id }).catch(() => null) : null; // eslint-disable-line global-require
     }
     // Any successful write refreshes this workspace's cached figures.
     if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) cache.forgetPrefix(`fin:${businessId}`); });

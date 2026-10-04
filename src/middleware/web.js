@@ -142,6 +142,7 @@ const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|logo-square|favic
   /^\/app\/mail\/send\/?$/, // a member's own e-mail with attachments
   /^\/app\/website\/fonts\/?$/, // website fonts (Theme & brand)
   /^\/app\/articles\/images\/?$/, // images of a doctor's article
+  /^\/app\/settings\/account\/photo\/?$/, // My account: my photo
   /^\/admin\/updates\/install\/?$/, // platform admin: system update package (zip)
   /^\/app\/settings\/system-update\/install\/?$/, // the same, from the clinic settings of the installation's own account
   /^\/admin\/clinics\/restore\/?$/]; // platform admin: a clinic's backup file

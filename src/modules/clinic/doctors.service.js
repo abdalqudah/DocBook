@@ -36,6 +36,12 @@ async function saveDoctor(ctx, id, input) {
   if (!('room' in (input || {}))) delete row.room; // forms that do not show the room (setup, API) keep it
   ['bank_name', 'iban'].forEach((k) => { if (!(k in (input || {}))) delete row[k]; }); // only the doctor form carries the bank details
   if (row.iban) row.iban = String(row.iban).replace(/[\s-]+/g, '').toUpperCase();
+  // Social-media profiles (only the doctor form carries them).
+  if (input && input.social_form) {
+    const { links, errors } = require('./doctor-social').parse(input); // eslint-disable-line global-require
+    if (Object.keys(errors).length) throw E.validation(errors);
+    row.social_links = Object.keys(links).length ? JSON.stringify(links) : null;
+  }
   // Hours: the clinic's usual week (kept in step when the clinic changes it) or the doctor's own.
   const clinicWeek = await clinicWeekOf(ctx.businessId);
   const mode = input.hours_mode === 'clinic' || input.hours_mode === 'custom' ? input.hours_mode : (id ? null : (clinicWeek ? 'clinic' : 'custom'));

@@ -254,6 +254,8 @@
 .ws-slide { grid-area: 1 / 1; position: relative; display: flex; align-items: center; min-height: inherit; opacity: 0; visibility: hidden; transition: opacity .8s ease, transform .8s ease, visibility 0s .8s; }
 .ws-slide.is-on { opacity: 1; visibility: visible; transition: opacity .8s ease, transform .8s ease, visibility 0s; }
 .ws-slide-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .6; }
+/* A slide shown without words: the picture at full strength (no dimming behind absent text). */
+.ws-slide.is-bare .ws-slide-img { opacity: 1; }
 .ws-slide .ws-hero-inner { position: relative; padding-block: clamp(64px, 10vw, 120px); width: 100%; }
 .ws-slide-title { font-size: clamp(28px, 4.4vw, 46px); line-height: 1.15; margin: 0 0 12px; font-weight: var(--fw-bold); }
 .ws-hero-slider .btn-secondary, .ws-hero-slider .btn-ghost { background: transparent; color: white; border-color: currentColor; }
@@ -683,3 +685,53 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
   .ws-person-cap { padding: 10px 10px 2px; } .ws-person-more { padding: 4px 10px 12px; } .ws-person-cap h3, .ws-person-more h3 { font-size: .95rem; }
   .ws-team-reveal .ws-person-cap { padding: 32px 10px 10px; }
 }
+
+/* ===================================================================== doctors as profile cards (doctors section,
+   "cards" layout): a large photo, the social profiles floating on it, name, specialty, rating, short bio, booking. */
+.ws-dcards { display: grid; gap: 22px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ws-dcards.ws-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ws-dcards.ws-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 960px) { .ws-dcards.ws-cols-3, .ws-dcards.ws-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ws-dcards { grid-template-columns: minmax(0, 1fr) !important; } }
+.ws-dcard { position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: var(--site-radius, 20px); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; isolation: isolate;
+  transition: transform .5s cubic-bezier(.2, .7, .2, 1), box-shadow .5s ease, border-color .4s ease; }
+.ws-dcard::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1.5px; background: linear-gradient(135deg, var(--primary), transparent 45%, transparent 60%, var(--accent, var(--primary)));
+  -webkit-mask: linear-gradient(black 0 0) content-box, linear-gradient(black 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+.ws-dcard:hover, .ws-dcard:focus-within { transform: translateY(-10px); box-shadow: var(--shadow-lg); border-color: transparent; }
+.ws-dcard:hover::before, .ws-dcard:focus-within::before { opacity: 1; }
+.ws-dcard-media { position: relative; }
+.ws-dcard-photo { display: grid; place-items: center; aspect-ratio: 3 / 4; overflow: hidden; background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--primary) 22%, var(--surface)), var(--surface-sunken)); }
+.ws-pr-square .ws-dcard-photo { aspect-ratio: 1; } .ws-pr-landscape .ws-dcard-photo { aspect-ratio: 4 / 3; }
+.ws-dcard-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s cubic-bezier(.2, .7, .2, 1), filter .6s ease; }
+.ws-dcard:hover .ws-dcard-photo img { transform: scale(1.07); filter: saturate(1.08); }
+.ws-dcard-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, black 55%, transparent), transparent 42%); opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+.ws-dcard:hover .ws-dcard-photo::after, .ws-dcard:focus-within .ws-dcard-photo::after { opacity: 1; }
+.ws-dcard-initials { font-size: clamp(40px, 6vw, 72px); font-weight: 800; letter-spacing: .02em; color: var(--primary); }
+/* The social icons sit on the photo and rise one after another on hover (always shown on touch screens). */
+.ws-dcard-social { position: absolute; inset-inline: 0; bottom: 14px; z-index: 2; justify-content: center; margin: 0; }
+.ws-dcard-social .doc-soc { background: color-mix(in srgb, var(--surface) 88%, transparent); border-color: transparent; color: var(--text); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: var(--shadow-sm);
+  opacity: 0; transform: translateY(14px); transition: opacity .4s ease, transform .5s cubic-bezier(.2, .7, .2, 1), background .25s, color .25s; }
+.ws-dcard-social .doc-soc:nth-child(2) { transition-delay: 50ms; } .ws-dcard-social .doc-soc:nth-child(3) { transition-delay: 100ms; } .ws-dcard-social .doc-soc:nth-child(4) { transition-delay: 150ms; }
+.ws-dcard-social .doc-soc:nth-child(5) { transition-delay: 200ms; } .ws-dcard-social .doc-soc:nth-child(n+6) { transition-delay: 250ms; }
+.ws-dcard:hover .ws-dcard-social .doc-soc, .ws-dcard:focus-within .ws-dcard-social .doc-soc { opacity: 1; transform: none; }
+.ws-dcard-social .doc-soc:hover, .ws-dcard-social .doc-soc:focus-visible { background: var(--primary); color: var(--primary-ink); transform: translateY(-3px) !important; }
+@media (hover: none) { .ws-dcard-social .doc-soc { opacity: 1; transform: none; } }
+.ws-dcard-body { display: flex; flex-direction: column; gap: 8px; padding: 18px 18px 20px; flex: 1; }
+.ws-dcard-spec { align-self: flex-start; font-size: .8rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); }
+.ws-dcard-body h3 { margin: 0; font-size: 1.15rem; line-height: 1.3; }
+.ws-dcard-body h3 a { color: inherit; text-decoration: none; background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 1.5px; transition: background-size .35s ease; }
+[dir="rtl"] .ws-dcard-body h3 a { background-position: 100% 100%; }
+.ws-dcard-body h3 a:hover { background-size: 100% 1.5px; }
+.ws-dcard-bio { margin: 0; color: var(--text-muted); font-size: .92rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ws-dcard-foot { margin-top: auto; padding-top: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px dashed var(--border); }
+.ws-dcard-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-inline-start: auto; }
+.ws-anim.is-in .ws-dcard { animation: ws-rise .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(min(var(--i, 0), 8) * 90ms); }
+
+/* Reading progress line at the top of the page and a "back to top" button (added by website-site.js). */
+.ws-progress { position: fixed; inset-inline: 0; top: 0; height: 3px; z-index: 60; pointer-events: none; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); background: linear-gradient(90deg, var(--primary), var(--accent, var(--primary))); }
+[dir="rtl"] .ws-progress { transform-origin: 100% 50%; }
+.ws-totop { position: fixed; bottom: 22px; inset-inline-end: 22px; z-index: 55; width: 46px; height: 46px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; color: var(--primary-ink); background: var(--primary); box-shadow: var(--shadow-lg);
+  opacity: 0; visibility: hidden; transform: translateY(16px) scale(.9); transition: opacity .35s ease, transform .4s cubic-bezier(.2, .7, .2, 1), visibility 0s .4s; }
+.ws-totop.is-on { opacity: 1; visibility: visible; transform: none; transition: opacity .35s ease, transform .4s cubic-bezier(.2, .7, .2, 1), visibility 0s; }
+.ws-totop:hover { transform: translateY(-3px); }
+@media print { .ws-progress, .ws-totop { display: none; } }
+@media (prefers-reduced-motion: reduce) { .ws-dcard, .ws-dcard-photo img, .ws-dcard-social .doc-soc { transition: none !important; animation: none !important; } }

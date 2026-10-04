@@ -183,3 +183,26 @@
     if (!reduce) setInterval(function () { if (!hold && !document.hidden) show(i + 1); }, 6000);
   });
 }());
+
+/* Reading progress line at the top and a "back to top" button once the visitor has scrolled a screen down. */
+(function () {
+  if (!document.body || !document.body.classList.contains('ws-body')) return;
+  var bar = document.createElement('div'); bar.className = 'ws-progress'; bar.setAttribute('aria-hidden', 'true');
+  var top = document.createElement('button'); top.type = 'button'; top.className = 'ws-totop';
+  top.setAttribute('aria-label', document.documentElement.lang === 'ar' ? 'العودة إلى الأعلى' : 'Back to top');
+  top.innerHTML = '<svg class="icon" aria-hidden="true"><use href="' + ((document.querySelector('use[href*="icons.svg"]') || { getAttribute: function () { return '/icons.svg#'; } }).getAttribute('href').split('#')[0]) + '#i-arrow-up"></use></svg>';
+  document.body.appendChild(bar); document.body.appendChild(top);
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  top.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
+  var ticking = false;
+  function update() {
+    ticking = false;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    var y = window.scrollY || window.pageYOffset;
+    bar.style.setProperty('--p', h > 0 ? Math.min(1, y / h).toFixed(4) : 0);
+    top.classList.toggle('is-on', y > window.innerHeight * 0.9);
+  }
+  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+}());

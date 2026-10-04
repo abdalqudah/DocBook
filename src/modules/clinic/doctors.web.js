@@ -27,6 +27,7 @@ const renderForm = async (req, res, extra = {}) => {
   const onlineWindows = tele.windowsByDay(doctor ? await tele.windowsOf(req.ctx.businessId, doctor.id) : []);
   res.page('pages/clinic/doctors/form', {
     title: doctor ? req.t('doctors.edit') : req.t('doctors.add'), doctor, wh: doctor ? svc.parseWh(doctor.working_hours) : scheduling.defaultWorkingHours(), days: scheduling.DAY_KEYS,
+    socialKeys: require('./doctor-social').KEYS, socialOf: require('./doctor-social').read, // eslint-disable-line global-require
     onlineWindows, jitsiReady: Boolean(tele.jitsiBase()), clinicOnline: Boolean(req.business.online_enabled),
     clinicWeek: (() => { const w = svc.parseWh(req.business.default_working_hours || 'null'); return Object.keys(w).length ? w : null; })(),
     photo: doctor ? (await media.doctorPhotos(req.ctx.businessId, [doctor.id]))[doctor.id] || null : null,
