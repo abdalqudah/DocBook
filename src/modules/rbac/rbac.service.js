@@ -55,16 +55,26 @@ async function getRole(businessId, id) {
 
 const getRoleByKey = (businessId, key, trx = knex) => trx('roles').where({ business_id: businessId, key }).first();
 
+// Nobody but an owner hands out a permission they do not hold themselves (a manager cannot build an all-powerful role).
+function checkGrantable(ctx, perms, kept = []) {
+  if (ctx.roleKey === 'owner') return;
+  const own = ctx.permissions instanceof Set ? ctx.permissions : new Set(ctx.permissions || []);
+  const extra = perms.filter((p) => !own.has(p) && !kept.includes(p));
+  if (extra.length) throw E.forbidden('grant');
+}
+
 async function saveRole(ctx, { id, name, description, permissions }) {
   const perms = normalise(permissions || []);
   if (id) {
     const role = await getRole(ctx.businessId, id);
     if (role.key === 'owner') throw E.conflict('ROLE_LOCKED', 'The Owner role always has every permission.');
+    checkGrantable(ctx, perms, role.permissions); // what the role already had may stay; nothing new beyond one's own
     await knex('roles').where({ id }).update({ name: role.is_system ? role.name : name, description: description || null, permissions: JSON.stringify(perms), updated_at: new Date() });
     await audit.record(ctx, 'role.updated', { entityType: 'role', entityId: id, oldValues: { permissions: role.permissions.join(',') }, newValues: { name, permissions: perms.join(',') } });
     invalidate(ctx.businessId);
     return id;
   }
+  checkGrantable(ctx, perms);
   const [newId] = await knex('roles').insert({ business_id: ctx.businessId, key: `custom_${Date.now().toString(36)}`, name, description: description || null, is_system: false, permissions: JSON.stringify(perms) });
   await audit.record(ctx, 'role.created', { entityType: 'role', entityId: newId, newValues: { name, permissions: perms.join(',') } });
   return newId;
@@ -79,4 +89,4 @@ async function deleteRole(ctx, id) {
   await audit.record(ctx, 'role.deleted', { entityType: 'role', entityId: id, oldValues: { name: role.name } });
 }
 
-module.exports = { seedRoles, syncSystemRoles, getUserPermissions, invalidate, listRoles, getRole, getRoleByKey, saveRole, deleteRole };
+module.exports = { checkGrantable, seedRoles, syncSystemRoles, getUserPermissions, invalidate, listRoles, getRole, getRoleByKey, saveRole, deleteRole };

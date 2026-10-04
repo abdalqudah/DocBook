@@ -435,6 +435,7 @@
       return request('POST', '/join');
     }).then(function (j) {
       if (!j || !j.ok) throw new Error((j && j.error) || L.closed);
+      if (j.ice) cfg.ice = j.ice; // relay servers with their passwords, only once the call may start
       return request('GET', '/signal');
     }).then(function (j) {
       if (!j || !j.ok) throw new Error((j && j.error) || L.closed);

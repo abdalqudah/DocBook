@@ -213,8 +213,13 @@ async function ownerCount(businessId, trx = knex) {
 async function resolveRole(ctx, roleId, trx = knex) {
   const role = await trx('roles').where({ id: roleId, business_id: ctx.businessId }).first();
   if (!role) throw E.validation({ role_id: 'Choose a valid role.' });
-  // Only people who can manage everything may hand out the owner role.
-  if (role.key === 'owner' && !ctx.permissions.has('data.manage')) throw E.forbidden('owner');
+  // Only an owner hands out the owner role, and a custom role with permissions the actor lacks (a manager cannot
+  // promote anyone — or a second account of their own — above themselves). Built-in roles keep their usual use.
+  if (role.key === 'owner' && ctx.roleKey !== 'owner') throw E.forbidden('owner');
+  if (!role.is_system && ctx.roleKey !== 'owner') {
+    const perms = typeof role.permissions === 'string' ? JSON.parse(role.permissions || '[]') : (role.permissions || []);
+    rbac.checkGrantable(ctx, perms);
+  }
   return role;
 }
 
@@ -232,6 +237,8 @@ async function resolveDoctor(ctx, role, doctorId, trx = knex) {
 async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTitle }) {
   const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.id': membershipId, 'm.business_id': ctx.businessId }).first('m.*', 'r.key as role_key');
   if (!m) throw E.notFound('Staff member');
+  // Nobody but an owner changes their own access or an owner's account.
+  if (ctx.roleKey !== 'owner' && (m.user_id === ctx.userId || m.role_key === 'owner')) throw E.forbidden('owner');
   const role = roleId ? await resolveRole(ctx, roleId) : await knex('roles').where({ id: m.role_id }).first();
   const losingOwner = m.role_key === 'owner' && (role.key !== 'owner' || status === 'disabled');
   if (losingOwner && (await ownerCount(ctx.businessId)) <= 1) throw E.conflict('LAST_OWNER', 'A clinic must keep at least one active owner.');
@@ -253,6 +260,7 @@ async function removeMember(ctx, membershipId) {
   const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.id': membershipId, 'm.business_id': ctx.businessId }).first('m.*', 'r.key as role_key');
   if (!m) throw E.notFound('Staff member');
   if (m.user_id === ctx.userId) throw E.conflict('SELF_REMOVE', 'You cannot remove yourself.');
+  if (m.role_key === 'owner' && ctx.roleKey !== 'owner') throw E.forbidden('owner');
   if (m.role_key === 'owner' && (await ownerCount(ctx.businessId)) <= 1) throw E.conflict('LAST_OWNER', 'A clinic must keep at least one active owner.');
   await knex('memberships').where({ id: membershipId }).del();
   await audit.record(ctx, 'staff.removed', { entityType: 'staff', entityId: m.user_id });
@@ -314,7 +322,16 @@ async function adminResetLink(ctx, membershipId) {
   const [{ n }] = await knex('memberships').where({ user_id: m.user_id }).whereNot({ business_id: ctx.businessId }).count({ n: '*' });
   const user = await knex('users').where({ id: m.user_id }).first();
   // A platform admin or a supplier's account is never reset by a clinic: the link only goes to its own e-mail.
-  const guarded = Boolean(user.is_platform_admin) || Boolean(await knex('vendor_users').where({ user_id: user.id }).first('user_id').catch(() => null));
+  // Nor is the account of someone with more access than the person asking (an owner, or permissions they lack):
+  // that would let a manager sign in as the owner.
+  let above = false;
+  if (ctx.roleKey !== 'owner') {
+    const r = await knex('roles').where({ id: m.role_id, business_id: ctx.businessId }).first('key');
+    const theirs = await rbac.getUserPermissions(ctx.businessId, m.user_id);
+    const mine = ctx.permissions instanceof Set ? ctx.permissions : new Set(ctx.permissions || []);
+    above = (r && r.key === 'owner') || [...theirs].some((p) => !mine.has(p));
+  }
+  const guarded = above || Boolean(user.is_platform_admin) || Boolean(await knex('vendor_users').where({ user_id: user.id }).first('user_id').catch(() => null));
   const token = randomToken(32);
   await knex('password_resets').insert({ user_id: user.id, token_hash: sha256(token), created_by: ctx.userId, expires_at: new Date(Date.now() + 24 * 3600_000) });
   const link = `${linkBase(ctx)}/reset/${token}`;

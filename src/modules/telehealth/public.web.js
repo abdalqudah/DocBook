@@ -77,7 +77,8 @@ router.get('/:token', pageLimiter, wrap(async (req, res) => {
     countryName: row.patient_country ? countries.regionName(row.patient_country, req.locale) : null, length: tele.lengthOf(row),
     tzOffset: tele.offsetLabel(tz, win.startMs), clinicOffset: tele.offsetLabel(clinic.timezone, win.startMs),
     call: {
-      role: 'patient', method, base: `/c/${req.params.token}`, ice: tele.iceServers(), openMs: win.openMs, closeMs: win.closeMs, startMs: win.startMs, endMs: win.endMs, serverNow: Date.now(),
+      // Relay (TURN) passwords are given only when the call may start (POST /join), never in the page.
+      role: 'patient', method, base: `/c/${req.params.token}`, ice: tele.iceServers().map((x) => ({ urls: x.urls })).filter((x) => [].concat(x.urls || []).every((u) => /^stuns?:/i.test(String(u)))), openMs: win.openMs, closeMs: win.closeMs, startMs: win.startMs, endMs: win.endMs, serverNow: Date.now(),
       state, jitsiUrl: method === 'jitsi' && jitsi && state === 'confirmed' ? `${jitsi}/${tele.jitsiRoom(row)}#config.prejoinPageEnabled=true&userInfo.displayName=${encodeURIComponent(JSON.stringify(row.patient_name))}` : null,
       link: method === 'link' && state === 'confirmed' ? row.online_link : null, locale: req.locale, tz,
     },
@@ -103,7 +104,7 @@ router.post('/:token/join', signalLimiter, wrap(async (req, res) => {
   const { row, clinic } = found;
   if (!tele.canJoin(row, clinic.timezone, 'patient')) return res.status(403).json({ ok: false, error: req.t('errors_telehealth.JOIN_CLOSED') });
   await tele.markJoined(row, 'patient');
-  return res.json({ ok: true });
+  return res.json({ ok: true, ice: tele.iceServers() });
 }));
 
 router.post('/:token/signal', signalLimiter, wrap(async (req, res) => {
