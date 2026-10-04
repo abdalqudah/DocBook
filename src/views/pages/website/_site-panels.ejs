@@ -42,6 +42,8 @@
         <input type="range" id="wsb-logo-h" name="header[logo_height]" min="0" max="140" step="2" value="<%= Number(hdr.logo_height) || 0 %>" data-ws-range data-auto="<%= t('website.b.logo_height_auto') %>">
         <span class="help"><%= t('website.b.logo_height_help') %></span>
       </div>
+      <fieldset class="wsb-field"><legend class="label"><%= t('website.b.menu_pos') %></legend>
+        <div class="wsb-choices"><% ['center', 'start', 'end'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="header[menu_pos]" value="<%= o %>"<%= (hdr.menu_pos || 'center') === o ? ' checked' : '' %>><span><%= t('website.b.mp.' + o) %></span></label><% }) %></div></fieldset>
       <% boolRow('header[sticky]', hdr.sticky !== false, t('website.b.h_sticky')) %>
       <% boolRow('header[show_name]', hdr.show_name !== false, t('website.b.h_name')) %>
       <% boolRow('header[show_book]', hdr.show_book !== false, t('website.b.h_book')) %>

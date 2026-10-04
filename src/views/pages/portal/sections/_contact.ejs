@@ -1,7 +1,8 @@
 <% var _br = typeof branches !== 'undefined' ? branches : []; %>
 <% if (clinic.address || clinic.phone || clinic.email || clinic.working_hours_text || _br.length) { %>
+<% var _mq = s.settings.map_embed !== false ? (s.settings.map_query || [clinic.address, clinic.city].filter(Boolean).join('، ')) : ''; %>
 <section class="ws-section" id="s-<%= s.id %>">
-  <div class="container ws-contact ws-contact-<%= s.variant %>">
+  <div class="container ws-contact ws-contact-<%= s.variant %><%= _mq ? ' has-map' : '' %>">
     <div class="portal-card">
       <h2 class="ws-title"><%= c.title || t('portal.info') %></h2>
       <ul class="info-list">
@@ -18,6 +19,7 @@
       </ul>
       <% } %>
     </div>
+    <% if (_mq) { %><div class="ws-contact-map"><iframe src="<%= mapSrc(_mq) %>" title="<%= c.title || t('portal.info') %>" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div><% } %>
   </div>
 </section>
 <% } %>

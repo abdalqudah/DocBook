@@ -12,9 +12,9 @@
     <article class="doc-card">
       <span class="doc-av<%= d.photo ? ' has-photo' : '' %>"><% if (d.photo) { %><img src="<%= d.photo %>" alt="<%= d.name %>" loading="lazy"><% } else { %><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %><% } %></span>
       <div class="doc-info">
-        <h3><a class="ws-doc-link" href="/<%= g.slug %>/doctors/<%= d.id %>"><%= d.name %></a></h3>
+        <h3><a class="ws-doc-link" href="/<%= g.slug %>/doctors/<%= d.slug || d.id %>"><%= d.name %></a></h3>
         <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
-        <% if (g.booking) { %><a class="btn btn-primary btn-sm mt-2" href="/<%= g.slug %>/book<%= suffix %>?doctor=<%= d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book_with') %></a><% } %>
+        <% if (g.booking) { %><a class="btn btn-primary btn-sm mt-2" href="/<%= g.slug %>/book<%= suffix %>?doctor=<%= d.slug || d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book_with') %></a><% } %>
       </div>
     </article>
     <% }) %>

@@ -15,7 +15,7 @@ async function serve() {
         for (const h of res.headers['set-cookie'] || []) { const [kv] = h.split(';'); const i = kv.indexOf('='); jar[kv.slice(0, i)] = kv.slice(i + 1); }
         const chunks = [];
         res.on('data', (d) => { chunks.push(d); });
-        res.on('end', () => { const body = Buffer.concat(chunks); resolve({ status: res.statusCode, location: res.headers.location || null, type: res.headers['content-type'] || '', text: body.toString('utf8'), body }); });
+        res.on('end', () => { const body = Buffer.concat(chunks); resolve({ status: res.statusCode, location: res.headers.location || null, type: res.headers['content-type'] || '', text: body.toString('utf8'), body, csp: res.headers['content-security-policy'] || '' }); });
       });
       r.on('error', reject); r.end(body);
     });

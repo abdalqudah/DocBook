@@ -1,0 +1,26 @@
+<%
+  // Maps: each place with an embedded Google map, its words and a directions button (its own link, else Google's route).
+  var extra = s.settings.items || [];
+  var places = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, q: e.query, link: e.link }; })
+    .concat(extra.slice((c.items || []).length).map(function (e) { return { q: e.query, link: e.link }; }))
+    .filter(function (p) { return p.q; });
+%>
+<% if (places.length) { %>
+<section class="ws-section ws-map-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <div class="ws-maps ws-maps-<%= s.variant %> ws-maps-n<%= Math.min(places.length, 3) %> ws-map-h-<%= s.settings.height || 'm' %>">
+      <% places.forEach(function (p) { %>
+      <article class="ws-map-card">
+        <div class="ws-map-frame"><iframe src="<%= mapSrc(p.q) %>" title="<%= p.title || p.q %>" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>
+        <% if (p.title || p.text) { %><div class="ws-map-body">
+          <% if (p.title) { %><h3><%- icon('map-pin', 'icon-sm') %><%= p.title %></h3><% } %>
+          <% if (p.text) { %><p class="pre-line" dir="auto"><%= p.text %></p><% } %>
+          <a class="btn btn-secondary btn-sm" href="<%= p.link || mapDir(p.q) %>" target="_blank" rel="noopener"><%- icon('map-pin', 'icon-sm') %><%= t('portal.directions') %></a>
+        </div><% } %>
+      </article>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>

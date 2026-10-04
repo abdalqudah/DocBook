@@ -7,8 +7,9 @@ const portal = require('../site/portal.web');
 async function centerBook(req, res, clinic, { online = false } = {}) {
   const suffix = online ? '/online' : '';
   if (req.query.doctor) {
-    const p = await portal.centerPracticeOf(clinic, req.query.doctor);
-    if (p) return res.redirect(302, `/${p.slug}/book${suffix}?doctor=${Number(req.query.doctor)}`);
+    const found = portal.doctorByRef(await portal.listDoctors(req, clinic, 'booking'), req.query.doctor);
+    const p = found ? await portal.centerPracticeOf(clinic, found.id) : null;
+    if (p) return res.redirect(302, `/${p.slug}/book${suffix}?doctor=${found.id}`);
   }
   const [practices, doctors] = await Promise.all([portal.centerPractices(clinic), portal.listDoctors(req, clinic, 'booking')]);
   const look = await portal.siteChromeFor(req, res, clinic);

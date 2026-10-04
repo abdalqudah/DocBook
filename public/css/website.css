@@ -737,3 +737,40 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-totop:hover { transform: translateY(-3px); }
 @media print { .ws-progress, .ws-totop { display: none; } }
 @media (prefers-reduced-motion: reduce) { .ws-dcard, .ws-dcard-photo img, .ws-dcard-social .doc-soc { transition: none !important; animation: none !important; } }
+
+/* Contact section with an embedded map beside the details. */
+.ws-contact.has-map { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 20px; align-items: stretch; }
+.ws-contact-map { min-height: 320px; border-radius: var(--site-radius, 18px); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); background: var(--surface-sunken); }
+.ws-contact-map iframe { width: 100%; height: 100%; min-height: 320px; border: 0; display: block; }
+@media (max-width: 820px) { .ws-contact.has-map { grid-template-columns: 1fr; } }
+
+/* Maps section: one card per place. */
+.ws-maps { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.ws-maps-wide { grid-template-columns: 1fr; }
+.ws-map-card { display: flex; flex-direction: column; border-radius: var(--site-radius, 18px); overflow: hidden; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: box-shadow .35s ease, transform .35s ease; }
+.ws-map-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+.ws-map-frame { position: relative; height: 300px; background: var(--surface-sunken); }
+.ws-map-h-s .ws-map-frame { height: 220px; } .ws-map-h-l .ws-map-frame { height: 420px; }
+.ws-maps-wide .ws-map-frame { height: 380px; } .ws-maps-wide.ws-map-h-l .ws-map-frame { height: 520px; }
+.ws-map-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ws-map-body { display: grid; gap: 8px; padding: 16px 18px 18px; justify-items: start; }
+.ws-map-body h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.05rem; }
+.ws-map-body h3 .icon { color: var(--primary); }
+.ws-map-body p { margin: 0; color: var(--text-muted); }
+
+/* Instagram: the profile widget, or chosen posts in a grid. */
+.ws-ig-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.ws-ig-feed { max-width: 760px; margin-inline: auto; border-radius: var(--site-radius, 18px); overflow: hidden; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow-sm); }
+.ws-ig-feed iframe { width: 100%; height: 760px; border: 0; display: block; }
+.ws-ig-posts { display: grid; gap: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ws-ig-posts.ws-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ws-ig-posts.ws-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 860px) { .ws-ig-posts { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+@media (max-width: 520px) { .ws-ig-posts { grid-template-columns: 1fr !important; } .ws-ig-feed iframe { height: 620px; } }
+.ws-ig-post { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
+.ws-ig-post iframe { width: 100%; height: 560px; border: 0; display: block; }
+
+/* Menu position (header): centred between the logo and the buttons, beside the logo, or beside the buttons. */
+.ws-nav:not(.ws-nav-centered).ws-menu-center .ws-nav-links { margin-inline: auto; }
+.ws-nav:not(.ws-nav-centered).ws-menu-center .right, .ws-nav:not(.ws-nav-centered).ws-menu-end .right { margin-inline-start: 0; }
+.ws-nav:not(.ws-nav-centered).ws-menu-end .ws-nav-links { margin-inline-start: auto; }
+@media (max-width: 900px) { .ws-nav:not(.ws-nav-centered) .right { margin-inline-start: auto !important; } }

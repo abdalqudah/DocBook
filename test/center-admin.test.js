@@ -207,9 +207,9 @@ test('the centre\'s website: every doctor of its clinics, booking and doctor pag
   const book = await pub.get(`/${centre.slug}/book`);
   assert.equal(book.status, 200);
   assert.match(book.text, /Dr Basel/);
-  assert.ok(book.text.includes(`href="/${b.slug}/book?doctor=${doc}"`));
+  assert.ok(new RegExp(`href="/${b.slug}/book\\?doctor=(dr-|doctor-)[a-z0-9-]*"`).test(book.text));
   assert.equal((await pub.get(`/${centre.slug}/book?doctor=${doc}`)).location, `/${b.slug}/book?doctor=${doc}`);
-  assert.equal((await pub.get(`/${centre.slug}/doctors/${doc}`)).location, `/${b.slug}/doctors/${doc}`);
+  assert.match((await pub.get(`/${centre.slug}/doctors/${doc}`)).location, new RegExp(`^/${b.slug}/doctors/(dr-|doctor-)`));
   // A doctor of another clinic (outside the centre) is never reached through the centre's site.
   const [out] = await knex('businesses').insert({ name: 'Away', slug: `away-${tag}`, currency: 'JOD', timezone: 'Asia/Amman', status: 'active' });
   const [far] = await knex('doctors').insert({ business_id: out, full_name: 'Dr Far', is_active: true, working_hours: JSON.stringify(scheduling.defaultWorkingHours()) });

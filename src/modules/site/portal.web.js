@@ -117,7 +117,29 @@ const listDoctors = async (req, clinic, where = 'site') => {
     practices ? Promise.all(practices.map((p) => media.publicDoctorPhotos(p))).then((all) => Object.assign({}, ...all)) : media.publicDoctorPhotos(clinic),
   ]);
   const practiceName = (bid) => { const p = practices && practices.find((x) => x.id === bid); return p ? (req.locale === 'en' && p.name_en) || p.name : null; };
-  return rows.map((r) => ({ ...doctorView(req, pricesShown(clinic, where))(r), photo: photos[r.id] || null, practice: practiceName(r.business_id), practiceId: practices ? r.business_id : null })); // photo: public media-library URL (or null)
+  const slugs = doctorSlugs(rows);
+  return rows.map((r) => ({ ...doctorView(req, pricesShown(clinic, where))(r), slug: slugs[r.id], photo: photos[r.id] || null, practice: practiceName(r.business_id), practiceId: practices ? r.business_id : null })); // photo: public media-library URL (or null)
+};
+/**
+ * Each doctor's address on the website, from the name: "dr-mansour-alqudah" (English name, else the Arabic one in Latin
+ * letters). Unique among the listed doctors; a doctor whose name gives nothing keeps "doctor-<id>".
+ */
+function doctorSlugs(rows) {
+  const { latinize } = require('../businesses/business.service'); // eslint-disable-line global-require
+  const out = {}; const taken = new Set();
+  [...rows].sort((a, b) => a.id - b.id).forEach((r) => {
+    const name = String(r.full_name_en || latinize(r.full_name || '')).toLowerCase().normalize('NFKD').replace(/[^\x20-\x7E]/g, '')
+      .replace(/^\s*(dr\.?|doctor)\s*/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
+    let slug = name.length >= 2 ? `dr-${name}` : `doctor-${r.id}`;
+    if (taken.has(slug)) slug = `${slug}-${r.id}`;
+    taken.add(slug); out[r.id] = slug;
+  });
+  return out;
+}
+/** A doctor of the list from an address part: their name address or (older links) their number. */
+const doctorByRef = (doctors, ref) => {
+  const v = String(ref || ''); const tail = /(?:^|-)(\d{1,10})$/.exec(v); // "10", or a name address that ends with the number
+  return doctors.find((d) => d.slug === v) || (tail ? doctors.find((d) => d.id === Number(tail[1])) : null) || null;
 };
 // Services with their (active) category, if any — the pages group them by category (platformops).
 const listServices = async (req, clinic, where = 'site') => (await knex('services as s').leftJoin('service_categories as c', function j() { this.on('c.id', 's.category_id').andOn('c.business_id', 's.business_id').andOnVal('c.is_active', true); })
@@ -253,16 +275,19 @@ router.get('/:slug/p/:page([a-z0-9-]{1,40})', wrap(async (req, res, next) => {
 }));
 
 // A doctor's own page (website): photo, specialty, full bio, their services, rating, and booking with them.
-router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
+router.get('/:slug/doctors/:ref([a-z0-9-]{1,80})', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
   if (clinic.kind === 'center_admin') { // a centre's doctor: the page on the doctor's own clinic site
-    const p = await centerPracticeOf(clinic, req.params.id);
-    return p ? res.redirect(302, `/${p.slug}/doctors/${Number(req.params.id)}`) : next();
+    const found = doctorByRef(await listDoctors(req, clinic), req.params.ref);
+    const p = found ? await centerPracticeOf(clinic, found.id) : null;
+    return p ? res.redirect(302, `/${p.slug}/doctors/${found.slug}`) : next();
   }
   const [doctors, services] = await Promise.all([listDoctors(req, clinic), listServices(req, clinic)]);
-  const d = doctors.find((x) => x.id === Number(req.params.id));
+  const d = doctorByRef(doctors, req.params.ref);
   if (!d) return next();
+  // Older links with the number go to the page's name address.
+  if (req.params.ref !== d.slug) return res.redirect(301, `/${req.params.slug}/doctors/${d.slug}${req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''}`);
   require('../website/stats').hit(req, clinic, 'doctor'); // eslint-disable-line global-require
   const full = await knex('doctors').where({ business_id: clinic.id, id: d.id }).first('bio', 'bio_en', 'education', 'education_en', 'profile');
   d.bioFull = (req.locale === 'en' ? full.bio_en || full.bio : full.bio || full.bio_en) || '';
@@ -446,6 +471,7 @@ module.exports = router;
 module.exports.loadClinic = loadClinic;
 module.exports.clinicStyles = clinicStyles;
 module.exports.siteChromeFor = siteChromeFor;
+module.exports.doctorByRef = doctorByRef;
 /** The website's own header, footer and look for any public page of the clinic (booking, reviews, payment …). */
 module.exports.siteLook = async (req, res, clinic, extra = []) => { const look = await siteChromeFor(req, res, clinic); return { bodyClass: look.bodyClass, pageStyles: [...look.styles, ...extra] }; };
 module.exports.listDoctors = listDoctors;

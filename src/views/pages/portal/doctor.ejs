@@ -19,8 +19,8 @@
         <% } %>
         <%- include('../../partials/site/doc-social', { d: d, cls: 'dp-social' }) %>
         <div class="ws-hero-actions mt-4">
-          <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%- icon('calendar-plus') %><%= t('portal.book_with') %></a><% } %>
-          <% if (clinic.booking_enabled && clinic.online_enabled && d.online) { %><a class="btn btn-secondary btn-lg" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video') %><%= t('telehealth.book_online_cta') %></a><% } %>
+          <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-lg" href="/<%= clinic.slug %>/book?doctor=<%= d.slug || d.id %>"><%- icon('calendar-plus') %><%= t('portal.book_with') %></a><% } %>
+          <% if (clinic.booking_enabled && clinic.online_enabled && d.online) { %><a class="btn btn-secondary btn-lg" href="/<%= clinic.slug %>/book/online?doctor=<%= d.slug || d.id %>"><%- icon('video') %><%= t('telehealth.book_online_cta') %></a><% } %>
         </div>
         <% if (d.fee !== null) { %><p class="small muted mt-2"><%= t('portal.fee') %> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></p><% } %>
       </div>
@@ -54,7 +54,7 @@
         <div class="dp-card dp-book">
           <strong><%= t('portal.book_with') %></strong>
           <span class="small muted"><%= d.name %><% if (d.specialty) { %> · <%= d.specialty %><% } %></span>
-          <% if (clinic.booking_enabled) { %><a class="btn btn-primary" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book') %></a><% } %>
+          <% if (clinic.booking_enabled) { %><a class="btn btn-primary" href="/<%= clinic.slug %>/book?doctor=<%= d.slug || d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book') %></a><% } %>
           <% if (clinic.waHref) { %><a class="btn btn-secondary" href="<%= clinic.waHref %>" target="_blank" rel="noopener"><%- icon('message-square', 'icon-sm') %><%= t('portal.whatsapp') %></a><% } %>
         </div>
       </aside>

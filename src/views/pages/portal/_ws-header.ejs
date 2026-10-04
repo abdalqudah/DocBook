@@ -1,6 +1,6 @@
 <%# Header of a builder site (doc.header): style, sticky, the clinic's logo/name, the menu and its buttons. %>
 <% var h = wsSite.header || {}; var c = clinic; var menuId = 'ws-menu'; %>
-<header class="site-nav ws-nav ws-nav-<%= h.style || 'solid' %><%= h.sticky === false ? ' is-static' : '' %>"<% if (wsSite.preview) { %> data-ws-sec="__header" data-ws-label="<%= t('website.b.header') %>"<% } %>>
+<header class="site-nav ws-nav ws-nav-<%= h.style || 'solid' %><%= h.sticky === false ? ' is-static' : '' %> ws-menu-<%= h.menu_pos || 'center' %>"<% if (wsSite.preview) { %> data-ws-sec="__header" data-ws-label="<%= t('website.b.header') %>"<% } %>>
   <div class="container inner">
     <% var _lh = Number(h.logo_height) || 0; if (_lh && _lh < 20) _lh = 20; var _hasImg = Boolean(wsSite.logo || c.logo_mime); %>
     <a class="portal-brand ws-logo-<%= h.logo_size || 'm' %> ws-logo-<%= h.logo_shape || 'badge' %><%= _hasImg ? ' ws-logo-img' : '' %><%= _lh ? ' ws-logo-px' : '' %>" href="<%= wsSite.homeHref %>"<% if (_lh) { %> style="--ws-logo-h: <%= _lh %>px"<% } %>>

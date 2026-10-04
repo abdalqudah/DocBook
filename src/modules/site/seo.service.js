@@ -347,7 +347,7 @@ function clinicLd({ clinic, doctors, base, locale, ws = null }) {
   if (docs.length) {
     ld.member = docs.map((d) => ({
       '@type': 'Physician', name: d.name, ...(d.specialty ? { description: d.specialty } : {}),
-      ...(clinic.booking_enabled ? { url: `${url}/book?doctor=${d.id}` } : {}),
+      ...(clinic.booking_enabled ? { url: `${url}/book?doctor=${d.slug || d.id}` } : {}),
       ...(d.social && d.social.length ? { sameAs: d.social.map((x) => x.url) } : {}),
     }));
   }
@@ -416,7 +416,7 @@ function clinicLlms({ clinic, doc, doctors, services, reviews, base, siteBase })
   lines.push(...facts.map((f) => `- ${f}`), '');
   if (doctors.length) {
     lines.push('## Doctors', '');
-    doctors.forEach((d) => lines.push(`- ${d.name}${d.specialty ? ` — ${d.specialty}` : ''}${d.fee !== null && d.fee !== undefined ? ` — consultation ${d.fee} ${clinic.currency}` : ''}${clinic.booking_enabled ? ` — book: ${siteBase}/book?doctor=${d.id}` : ''}`));
+    doctors.forEach((d) => lines.push(`- ${d.name}${d.specialty ? ` — ${d.specialty}` : ''}${d.fee !== null && d.fee !== undefined ? ` — consultation ${d.fee} ${clinic.currency}` : ''}${clinic.booking_enabled ? ` — book: ${siteBase}/book?doctor=${d.slug || d.id}` : ''}`));
     lines.push('');
   }
   if (services.length) {

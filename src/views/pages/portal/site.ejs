@@ -4,7 +4,8 @@
     shapes at its edges. A section with nothing to show (e.g. a gallery without pictures) leaves no empty block. %>
 <%
   // A button inside a section only ever runs one of the clinic's own actions.
-  var actionHref = function (a, pageKey) {
+  var actionHref = function (a, pageKey, link) {
+    if (a === 'link') return link ? { href: link, icon: /^tel:/.test(link) ? 'phone' : /^mailto:/.test(link) ? 'mail' : 'external-link', label: t('website.open_link'), ext: /^https:/.test(link) } : null;
     if (a === 'page') { var pg = pageKey && wsSite.pages.find(function (x) { return x.key === pageKey; }); return pg ? { href: pg.href, icon: dir === 'rtl' ? 'arrow-left' : 'arrow-right', label: t('website.read_more'), page: true } : null; }
     if (a === 'book') return clinic.booking_enabled ? { href: '/' + clinic.slug + '/book', icon: 'calendar-plus', label: t('portal.book') } : null;
     if (a === 'call') return clinic.telHref ? { href: clinic.telHref, icon: 'phone', label: t('portal.call') } : null;
@@ -12,6 +13,9 @@
     if (a === 'directions') return clinic.mapHref ? { href: clinic.mapHref, icon: 'map-pin', label: t('portal.directions'), ext: true } : null;
     return null;
   };
+  // Google Maps: an embedded map of a place (name, address or "lat,lng") and a directions link to it.
+  var mapSrc = function (q) { return 'https://www.google.com/maps?q=' + encodeURIComponent(q) + '&z=16&output=embed&hl=' + (locale === 'en' ? 'en' : 'ar'); };
+  var mapDir = function (q) { return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(q); };
   var altOf = function (im) { return (locale === 'en' ? im.alt_en || im.alt_ar : im.alt_ar || im.alt_en) || ''; };
   // Picture options shared by hero / about / text-with-image.
   var imgCls = function (st) { return 'ws-img ws-img-' + (st.image_shape || 'rounded') + ' ws-fit-' + (st.image_fit || 'cover') + ' ws-ratio-' + (st.image_ratio || 'auto'); };
@@ -22,7 +26,7 @@
 <% var motion = (doc.brand && doc.brand.motion) || 'none'; %>
 <div class="ws-page ws-theme-<%= doc.theme %> ws-motion-<%= motion %>" id="main"<%- motion !== 'none' ? ' data-ws-motion' : '' %>>
   <% sections.forEach(function (s) {
-       var html = include('sections/_' + s.type, { s: s, c: s.c, act: actionHref, altOf: altOf, imgCls: imgCls });
+       var html = include('sections/_' + s.type, { s: s, c: s.c, act: actionHref, altOf: altOf, imgCls: imgCls, mapSrc: mapSrc, mapDir: mapDir });
        if (!String(html).trim()) {
          // Nothing to show yet: invisible on the site; in the builder's preview a placeholder to click and fill.
          if (preview) { %><div class="ws-block ws-placeholder-block" data-ws-sec="<%= s.id %>" data-ws-label="<%= t('website.sec.' + s.type) %>"><div class="container ws-placeholder"><strong><%= t('website.sec.' + s.type) %></strong><span><%= t('website.b.empty_hint.' + s.type) %></span></div></div><% }

@@ -59,7 +59,12 @@ async function locals(req, clinic, doc, { preview = false, portal, page: chosen 
   const img = (id) => (id && media[id]) || null;
   // Video sections: the privacy-friendly player address; the page may then frame only those two players.
   const withVideo = shown.filter((s) => s.type === 'video' && sections.videoEmbed(s.settings.url));
-  if (withVideo.length) allowVideoFrames(req.res);
+  // Frames the page may show: the video players, Google Maps, Instagram — only those a section uses.
+  const frames = [];
+  if (withVideo.length) frames.push('https://www.youtube-nocookie.com', 'https://player.vimeo.com');
+  if (shown.some((s) => s.type === 'map' || (s.type === 'contact' && s.settings.map_embed !== false))) frames.push('https://www.google.com', 'https://maps.google.com');
+  if (shown.some((s) => s.type === 'instagram')) frames.push('https://www.instagram.com');
+  if (frames.length) allowFrames(req.res, frames);
   return {
     doc, page, sections: shown.map((s) => ({ ...s, c: words(s), embed: s.type === 'video' ? sections.videoEmbed(s.settings.url) : null })), doctors, services, insurers, branches, hours: hoursRows(clinic), media, img,
     wsSite: siteChrome(req, clinic, doc, page, { preview, img }),
@@ -99,13 +104,13 @@ function siteChrome(req, clinic, doc, page, { preview, img }) {
   return { header, footer: doc.footer || {}, items, pages, logo, logoDark, darkMode: header.dark_mode !== false, homeHref: pageHref(doc.pages[0]), preview, L };
 }
 
-/** Lets this page frame the YouTube (no-cookie) and Vimeo players — nothing else. */
-function allowVideoFrames(res) {
+/** Lets this page frame the given hosts (video players, Google Maps, Instagram) — nothing else. */
+function allowFrames(res, hosts) {
   if (!res || res.headersSent || typeof res.getHeader !== 'function') return;
   const cur = String(res.getHeader('Content-Security-Policy') || '');
   if (!cur) return;
   const parts = cur.split(';').map((x) => x.trim()).filter((x) => x && !/^frame-src\b/.test(x));
-  res.setHeader('Content-Security-Policy', [...parts, 'frame-src https://www.youtube-nocookie.com https://player.vimeo.com'].join('; '));
+  res.setHeader('Content-Security-Policy', [...parts, `frame-src ${[...new Set(hosts)].join(' ')}`].join('; '));
 }
 
 function announcementOn(s, req) {

@@ -160,7 +160,9 @@
       "tabs": "Underlined tabs",
       "pills": "Pill buttons",
       "wide": "Full width",
-      "outline": "Outline only"
+      "outline": "Outline only",
+      "feed": "Latest posts (automatic)",
+      "posts": "Posts I choose"
     },
     "field": {
       "headline": "Headline",
@@ -227,7 +229,7 @@
       "label_before": "“Before” word",
       "label_after": "“After” word",
       "image_side": "Picture position",
-      "url": "Video link",
+      "url": "Post link",
       "ratio": "Video shape",
       "speed": "Speed",
       "m_dir": "Direction",
@@ -245,7 +247,12 @@
       "slide_buttons": "Buttons over the pictures",
       "text_mode": "Words over this picture",
       "show_social": "Social-media profiles",
-      "page": "Page"
+      "page": "Page",
+      "query": "Place on the map",
+      "link": "Link",
+      "username": "Instagram username",
+      "map_embed": "Show a Google map beside the details",
+      "map_query": "Map place"
     },
     "opt": {
       "1": "One column",
@@ -345,7 +352,8 @@
       "txt_title": "Headline only",
       "txt_none": "No words (picture only)",
       "txt_follow": "Same as the slider",
-      "page": "Open a page of the site"
+      "page": "Open a page of the site",
+      "link": "Custom link"
     },
     "doctors_pick_help": "Used with \"Selected doctors\".",
     "item_n": "Item {n}",
@@ -390,7 +398,9 @@
       "testimonials": "Testimonials (written)",
       "tabs": "Tabs",
       "video": "Video",
-      "marquee": "Moving band"
+      "marquee": "Moving band",
+      "map": "Maps",
+      "instagram": "Instagram"
     },
     "section_added_ok": "Section added to the draft.",
     "saved": "Saved to the draft.",
@@ -665,7 +675,9 @@
       "testimonials": "Patients’ words you write, with a photo and stars: cards, one big rotating quote, or speech bubbles.",
       "tabs": "Titles to click; each shows its own text, picture and button.",
       "video": "A YouTube or Vimeo video, full width or next to text.",
-      "marquee": "Short phrases scrolling across the page (services, slogans)."
+      "marquee": "Short phrases scrolling across the page (services, slogans).",
+      "map": "A Google map for each branch with its address and a directions button.",
+      "instagram": "Your latest Instagram posts automatically, or posts you choose."
     },
     "style": {
       "align": "Alignment",
@@ -778,7 +790,9 @@
         "testimonials": "Add at least one patient quote.",
         "tabs": "Add a tab with a title.",
         "video": "Paste a YouTube or Vimeo link.",
-        "marquee": "Add short phrases."
+        "marquee": "Add short phrases.",
+        "map": "Add a place: its Google Maps name or coordinates.",
+        "instagram": "Write your Instagram username."
       },
       "tab_site": "Site",
       "page": "Page",
@@ -870,7 +884,13 @@
       "f_contact_extra": "Extra lines under contact",
       "f_contact_extra_help": "For example another branch's address and phone. Each line shows as you write it.",
       "f_links_title": "Links column heading",
-      "f_hours_title": "Opening hours column heading"
+      "f_hours_title": "Opening hours column heading",
+      "menu_pos": "Menu position",
+      "mp": {
+        "center": "Centred",
+        "start": "Next to the logo",
+        "end": "Next to the buttons"
+      }
     },
     "item_field": {
       "title": "Title",
@@ -888,7 +908,10 @@
       "after": "“After” picture",
       "caption": "Caption (e.g. the treatment)",
       "rating": "Stars",
-      "quote": "What the patient said"
+      "quote": "What the patient said",
+      "query": "Place on the map",
+      "link": "Directions button link (optional)",
+      "url": "Post link"
     },
     "slider_prev": "Previous slide",
     "slider_next": "Next slide",
@@ -1070,6 +1093,14 @@
       "doctors": "Doctors",
       "opt_services": "Add the main services and sub-services to the system (booking and invoices — you set the prices)",
       "r_services": "New main services: {c} · new sub-services: {n}"
+    },
+    "open_link": "Open link",
+    "help": {
+      "query": "The place name as on Google Maps (e.g. Abdali Hospital Amman) or coordinates such as 31.9655,35.9001.",
+      "map_query": "Leave empty to use the clinic address, or write the Google Maps place name or coordinates.",
+      "username": "Without @ — e.g. mqdentalcenter. The account must be public.",
+      "link": "A link starting with https://, tel: or mailto: — used when the button action is \"Custom link\".",
+      "url": "An Instagram post or reel link, e.g. https://www.instagram.com/p/…"
     }
   },
   "errors_website": {

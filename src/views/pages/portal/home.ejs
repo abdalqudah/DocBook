@@ -41,10 +41,10 @@
             <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
             <%- include('../../partials/site/reviews', { part: 'doctor', doctorId: d.id }) %>
             <% if (d.bio) { %><p><%= d.bio %></p><% } %>
-            <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
+            <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.slug || d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
             <div class="doc-foot">
               <% if (d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } else { %><span></span><% } %>
-              <% if (clinic.booking_enabled) { %><a class="btn btn-secondary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%= t('portal.book_with') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
+              <% if (clinic.booking_enabled) { %><a class="btn btn-secondary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.slug || d.id %>"><%= t('portal.book_with') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
             </div>
           </div>
         </article>

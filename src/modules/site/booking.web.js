@@ -13,7 +13,7 @@ const { wrap } = require('../../routes/helpers');
 const { translateMessage } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
 const appointments = require('../clinic/appointments.service');
-const { loadClinic: loadPortalClinic, listDoctors, listServices } = require('./portal.web');
+const { loadClinic: loadPortalClinic, listDoctors, listServices, doctorByRef } = require('./portal.web');
 const branches = require('../clinic/branches.service');
 const subscriptions = require('../subscriptions/subscriptions.service');
 
@@ -95,6 +95,8 @@ async function renderBook(req, res, clinic, extra = {}) {
     return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, ...(await siteLook(req, res, clinic)) });
   }
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
+  // ?doctor=dr-mansour-alqudah (the doctor's name address) or an older ?doctor=10.
+  if (src.doctor && src.doctor !== 'any' && !/^\d+$/.test(String(src.doctor))) { const f = doctorByRef(doctors, src.doctor); src.doctor = f ? String(f.id) : ''; }
   // Branches: the patient picks the branch first; only branches with a doctor are offered.
   const branchChoices = await branchChoicesOf(req, clinic, doctors);
   const branchSel = branchChoices.length === 1 ? branchChoices[0].value : (branchChoices.some((b) => b.value === branchOf(src.branch)) ? branchOf(src.branch) : null);

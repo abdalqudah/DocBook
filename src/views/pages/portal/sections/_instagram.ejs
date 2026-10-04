@@ -1,0 +1,22 @@
+<%
+  // Instagram: the account's own profile widget (its latest posts, always current) or the posts the clinic chose.
+  var user = String(s.settings.username || '').replace(/^@/, '').trim();
+  if (!/^[A-Za-z0-9._]{1,30}$/.test(user)) user = '';
+  var posts = (s.settings.items || []).map(function (e) { var m = /^https:\/\/(?:www\.)?instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]{5,40})/.exec(e && e.url || ''); return m ? 'https://www.instagram.com/' + m[1] + '/' + m[2] + '/embed' : null; }).filter(Boolean);
+  var feed = s.variant !== 'posts' && user;
+%>
+<% if (feed || posts.length) { %>
+<section class="ws-section ws-ig-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <div class="ws-head ws-ig-head">
+      <div><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div>
+      <% if (user) { %><a class="btn btn-primary btn-sm ws-ig-follow" href="https://www.instagram.com/<%= user %>/" target="_blank" rel="noopener"><%- icon('instagram', 'icon-sm') %><%= c.button || ('@' + user) %></a><% } %>
+    </div>
+    <% if (feed) { %>
+    <div class="ws-ig-feed"><iframe src="https://www.instagram.com/<%= user %>/embed" title="Instagram @<%= user %>" loading="lazy" scrolling="no" allowtransparency="true"></iframe></div>
+    <% } else { %>
+    <div class="ws-ig-posts ws-cols-<%= s.settings.columns || '3' %>"><% posts.forEach(function (src, i) { %><div class="ws-ig-post"><iframe src="<%= src %>" title="Instagram <%= i + 1 %>" loading="lazy" scrolling="no" allowtransparency="true"></iframe></div><% }) %></div>
+    <% } %>
+  </div>
+</section>
+<% } %>

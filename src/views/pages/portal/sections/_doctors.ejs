@@ -10,23 +10,23 @@
       <% list.forEach(function (d, i) { %>
       <article class="ws-dcard" style="--i:<%= i %>">
         <div class="ws-dcard-media">
-        <a class="ws-dcard-photo" href="/<%= clinic.slug %>/doctors/<%= d.id %>" tabindex="-1" aria-hidden="true">
+        <a class="ws-dcard-photo" href="/<%= clinic.slug %>/doctors/<%= d.slug || d.id %>" tabindex="-1" aria-hidden="true">
           <% if (d.photo) { %><img src="<%= d.photo %>" alt="" loading="lazy"><% } else { %><span class="ws-dcard-initials"><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %></span><% } %>
         </a>
         <% if (showSocial) { %><%- include('../../../partials/site/doc-social', { d: d, cls: 'ws-dcard-social' }) %><% } %>
         </div>
         <div class="ws-dcard-body">
           <% if (d.specialty) { %><span class="ws-dcard-spec"><%= d.specialty %></span><% } %>
-          <h3><a class="ws-doc-link" href="/<%= clinic.slug %>/doctors/<%= d.id %>"><%= d.name %></a></h3>
+          <h3><a class="ws-doc-link" href="/<%= clinic.slug %>/doctors/<%= d.slug || d.id %>"><%= d.name %></a></h3>
           <% if (d.practice) { %><div class="tiny muted"><%= d.practice %></div><% } %>
           <%- include('../../../partials/site/reviews', { part: 'doctor', doctorId: d.id, clinic: Object.assign({}, clinic, { reviews: reviewsSummary }) }) %>
           <% if (showBio && d.bio) { %><p class="ws-dcard-bio"><%= d.bio %></p><% } %>
-          <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
+          <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.slug || d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
           <div class="ws-dcard-foot">
             <% if (s.settings.show_fee && d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } %>
             <div class="ws-dcard-actions">
-              <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book_with') %></a><% } %>
-              <a class="btn btn-ghost btn-sm" href="/<%= clinic.slug %>/doctors/<%= d.id %>"><%= t('website.team_profile') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
+              <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.slug || d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book_with') %></a><% } %>
+              <a class="btn btn-ghost btn-sm" href="/<%= clinic.slug %>/doctors/<%= d.slug || d.id %>"><%= t('website.team_profile') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a>
             </div>
           </div>
         </div>
@@ -39,16 +39,16 @@
       <article class="doc-card">
         <span class="doc-av<%= d.photo ? ' has-photo' : '' %>"><% if (d.photo) { %><img src="<%= d.photo %>" alt="<%= d.name %>" loading="lazy"><% } else { %><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %><% } %></span>
         <div class="doc-info">
-          <h3><a class="ws-doc-link" href="/<%= clinic.slug %>/doctors/<%= d.id %>"><%= d.name %></a></h3>
+          <h3><a class="ws-doc-link" href="/<%= clinic.slug %>/doctors/<%= d.slug || d.id %>"><%= d.name %></a></h3>
           <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
           <% if (d.practice) { %><div class="tiny muted"><%= d.practice %></div><% } %>
           <%- include('../../../partials/site/reviews', { part: 'doctor', doctorId: d.id, clinic: Object.assign({}, clinic, { reviews: reviewsSummary }) }) %>
           <% if (showSocial) { %><%- include('../../../partials/site/doc-social', { d: d, cls: '' }) %><% } %>
           <% if (showBio && d.bio) { %><p><%= d.bio %></p><% } %>
-          <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
+          <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.slug || d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>
           <div class="doc-foot">
             <% if (s.settings.show_fee && d.fee !== null) { %><span class="doc-fee"><span class="muted small"><%= t('portal.fee') %></span> <strong class="num"><%= fmt.money(d.fee, clinic.currency) %></strong></span><% } else { %><span></span><% } %>
-            <% if (clinic.booking_enabled) { %><a class="btn btn-secondary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.id %>"><%= t('portal.book_with') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
+            <% if (clinic.booking_enabled) { %><a class="btn btn-secondary btn-sm" href="/<%= clinic.slug %>/book?doctor=<%= d.slug || d.id %>"><%= t('portal.book_with') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a><% } %>
           </div>
         </div>
       </article>

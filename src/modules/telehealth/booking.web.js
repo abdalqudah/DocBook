@@ -57,6 +57,7 @@ async function renderOnline(req, res, clinic, extra = {}) {
     return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('telehealth.unavailable_title'), clinic, hideBookCta: !clinic.booking_enabled, ...(await siteLook(req, res, clinic)) });
   }
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
+  if (src.doctor && !/^\d+$/.test(String(src.doctor))) { const portal = require('../site/portal.web'); const f = portal.doctorByRef(await portal.listDoctors(req, clinic), src.doctor); src.doctor = f ? String(f.id) : ''; } // eslint-disable-line global-require -- ?doctor=<name address>
   const docId = idOf(src.doctor_id || src.doctor);
   const sel = {
     doctor: doctors.some((d) => d.id === docId) ? docId : (doctors.length === 1 ? doctors[0].id : null),

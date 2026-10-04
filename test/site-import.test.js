@@ -52,6 +52,9 @@ const CONTENT = {
       { key: 'home', sections: [
         { id: 'a0c0000002', type: 'hero', variant: 'slider', content: { ar: { headline: `مرحبا ${tag}`, slides: [{ headline: 'شريحة' }] }, en: { headline: `Welcome ${tag}` } }, settings: { slides: [{ image: '@media:team', text_mode: 'txt_follow' }] } },
         { id: 'a0c0000003', type: 'cards', variant: 'grid', content: { ar: { title: 'خدماتنا', items: [{ title: 'زراعة', text: 'نص', button: 'اعرف المزيد' }] }, en: {} }, settings: { media: 'icons', items: [{ icon: 'dt-implant', action: 'page', page: SVC }] } },
+        { id: 'a0c0000006', type: 'map', variant: 'cards', content: { ar: { title: 'مواقعنا', items: [{ title: 'الخالدي', text: 'شارع ابن العوام' }] }, en: {} }, settings: { items: [{ query: 'XW32+34 Amman', link: 'javascript:alert(1)' }] } },
+        { id: 'a0c0000007', type: 'instagram', variant: 'feed', content: { ar: { title: 'إنستغرام' }, en: {} }, settings: { username: '@mq.dental' } },
+        { id: 'a0c0000008', type: 'columns', variant: 'boxed', content: { ar: { items: [{ title: 'العبدلي', text: 'الطابق 21', button: 'الاتجاهات' }] }, en: {} }, settings: { columns: '2', items: [{ action: 'link', link: 'https://www.google.com/maps/search/?api=1&query=Abdali' }] } },
         { id: DOCS, type: 'doctors', variant: 'cards', content: { ar: { title: 'أطباؤنا' }, en: {} }, settings: { mode: 'all', show_fee: false } }] },
       { key: ABOUT, slug: 'about', title: { ar: 'من نحن', en: 'About' }, menu: true, sections: [{ id: 'a0c0000004', type: 'text', variant: 'plain', content: { ar: { title: 'من نحن', text: `عن المركز ${tag}` }, en: {} }, settings: {} }] },
       { key: SVC, slug: 'implants', title: { ar: 'زراعة الأسنان', en: 'Implants' }, menu: false, sections: [{ id: 'a0c0000005', type: 'text', variant: 'plain', content: { ar: { text: `صفحة الزراعة ${tag}` }, en: {} }, settings: {} }] },
@@ -150,14 +153,26 @@ test('published: card links to the page, the doctor page shows the full profile,
   let r = await v.get(`/${slug}`);
   assert.equal(r.status, 200);
   assert.match(r.text, new RegExp(`href="/${slug}/p/implants"`));
+  assert.match(r.text, new RegExp(`href="/${slug}/doctors/dr-mansour-alqudah"`), 'doctor links use the name');
+  assert.match(r.text, new RegExp(`href="/${slug}/book\\?doctor=dr-mansour-alqudah"`));
+  const bk = await v.get(`/${slug}/book?doctor=dr-mansour-alqudah`);
+  assert.match(bk.text, new RegExp(`value="${mansourId}"[^>]*checked`), 'booking by the name address picks the doctor');
   assert.doesNotMatch(r.text, /0000 0001/);
   assert.match(r.text, new RegExp(`<h3>تواصل ${tag}</h3>`), 'own footer heading');
+  // maps, Instagram, a custom link; the page may frame Google Maps and Instagram only
+  assert.match(r.text, /<iframe src="https:\/\/www\.google\.com\/maps\?q=XW32%2B34%20Amman&amp;z=16&amp;output=embed/);
+  assert.match(r.text, /href="https:\/\/www\.google\.com\/maps\/dir\/\?api=1&amp;destination=XW32%2B34%20Amman"/, 'a bad link falls back to Google directions');
+  assert.doesNotMatch(r.text, /javascript:alert/);
+  assert.match(r.text, /<iframe src="https:\/\/www\.instagram\.com\/mq\.dental\/embed"/);
+  assert.match(r.text, /href="https:\/\/www\.google\.com\/maps\/search\/\?api=1&amp;query=Abdali" target="_blank"/);
+  const frameSrc = (r.csp.split(';').map((x) => x.trim()).find((x) => x.startsWith('frame-src')) || '').split(/\s+/).slice(1);
+  assert.deepEqual(frameSrc.sort(), ['https://maps.google.com', 'https://www.google.com', 'https://www.instagram.com'], 'only the frames the page uses');
   assert.match(r.text, /فرع العبدلي — الطابق 21/);
   r = await v.get(`/${slug}/book`);
   assert.match(r.text, /<optgroup label="زراعة الأسنان"/);
   r = await v.get(`/${slug}/p/implants`);
   assert.match(r.text, new RegExp(`صفحة الزراعة ${tag}`));
-  r = await v.get(`/${slug}/doctors/${mansourId}`);
+  r = await v.get(`/${slug}/doctors/dr-mansour-alqudah`);
   assert.equal(r.status, 200);
   assert.match(r.text, /class="dp-spec">استشاري جراحة الفم والفكين/);
   assert.match(r.text, /<span class="dp-fact-num num">25\+<\/span>/);
@@ -167,6 +182,8 @@ test('published: card links to the page, the doctor page shows the full profile,
   assert.match(r.text, /href="https:\/\/instagram.com\/mq"/);
   assert.doesNotMatch(r.text, /0000 0001/);
   r = await v.get(`/${slug}/doctors/${mansourId}?lang=en`);
+  assert.equal(r.location, `/${slug}/doctors/dr-mansour-alqudah?lang=en`);
+  r = await v.get(r.location);
   assert.match(r.text, /<li>Wisdom teeth<\/li>/);
 });
 

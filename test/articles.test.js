@@ -99,7 +99,9 @@ test('a doctor writes in both languages with an image, publishes on the site and
   assert.match(art.text, /BlogPosting/);
   const en = await app.agent().get(`/${slug}/articles/fever-in-children?lang=en`);
   assert.match(en.text, /Fever in children/);
-  const dp = await app.agent().get(`/${slug}/doctors/${doc}`);
+  let dp = await app.agent().get(`/${slug}/doctors/${doc}`);
+  assert.equal(dp.status, 301, 'the number address goes to the name address');
+  dp = await app.agent().get(dp.location);
   assert.match(dp.text, /fever-in-children/);
   assert.equal((await app.agent().get(`/blog/${artId}-fever-in-children`)).status, 404);
 });

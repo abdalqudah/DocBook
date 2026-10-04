@@ -241,6 +241,9 @@ test('website workspace: reception has no access; moved pages redirect; doctor p
     assert.match(r.text, /data-nav-ws="website"[^>]*>|class="active"[^>]*data-nav-ws="website"/, `${p}: website workspace`);
   }
   r = await app.agent().get(`/${A.slug}/doctors/${A.doctorId}`);
+  assert.equal(r.status, 301);
+  assert.match(r.location, new RegExp(`^/${A.slug}/doctors/(dr-|doctor-)`), 'the doctor page lives at their name address');
+  r = await app.agent().get(r.location);
   assert.equal(r.status, 200);
   assert.match(r.text, /Dr a/);
   assert.equal((await app.agent().get(`/${A.slug}/doctors/${B.doctorId}`)).status, 404, 'another clinic\'s doctor is not found');
@@ -417,7 +420,7 @@ test('statistics: anonymous visits counted per day and kind; staff and robots ar
   await visitor.get(`/${A.slug}`);
   await visitor.get(`/${A.slug}`, { 'user-agent': 'Googlebot/2.1' });
   await visitor.get(`/${A.slug}/book`);
-  await visitor.get(`/${A.slug}/doctors/${A.doctorId}`);
+  await visitor.get((await visitor.get(`/${A.slug}/doctors/${A.doctorId}`)).location);
   const o = app.agent();
   await o.login(mail('owner-a'));
   await o.get(`/${A.slug}`);
@@ -470,8 +473,8 @@ test('free blocks and section looks: cards, text with image, numbers, steps, tex
   const out = sections.sanitize(doc, { media: new Set([A.mediaId]), doctors: new Set() });
   const c = out.pages[0].sections.find((s) => s.type === 'cards');
   assert.equal(c.content.en.items[0].title, '<b>One</b>', 'stored as plain text (escaped on output)');
-  assert.deepEqual(c.settings.items[0], { icon: 'heart', image: A.mediaId, action: 'book', page: null });
-  assert.deepEqual(c.settings.items[1], { icon: sections.ICONS[0], image: null, action: 'none', page: null }, 'unknown icon, foreign picture and free address dropped');
+  assert.deepEqual(c.settings.items[0], { icon: 'heart', image: A.mediaId, action: 'book', page: null, link: null });
+  assert.deepEqual(c.settings.items[1], { icon: sections.ICONS[0], image: null, action: 'none', page: null, link: null }, 'unknown icon, foreign picture and free address dropped');
   assert.deepEqual(c.settings.style, { align: 'center', bg: 'image', bg_image: null, overlay: 'dark', spacing: 'roomy', width: 'wide', shape_top: 'none', shape_bottom: 'wave', anim: 'auto' });
   assert.ok(sections.mediaIn(out).includes(A.mediaId), 'pictures inside cards are published with the site');
   for (const type of ['image_text', 'stats', 'steps', 'text', 'divider']) assert.ok(out.pages[0].sections.find((s) => s.type === type).settings.style, `${type} has a look`);

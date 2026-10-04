@@ -15,8 +15,9 @@ const ICONS = require('./icon-library').ALL;
 
 // What a button inside a section does (never a free address: links stay on the clinic's own actions).
 // page = open one of the site's own pages (chosen in the "page" field next to it).
-const ACTIONS = ['none', 'book', 'call', 'whatsapp', 'directions', 'page'];
-const PAGE_LINK = { key: 'page', kind: 'page', i18n: false };
+// link = any address the clinic writes (https://…, tel:, mailto:) in the "link" field next to it.
+const ACTIONS = ['none', 'book', 'call', 'whatsapp', 'directions', 'page', 'link'];
+const PAGE_LINK = [{ key: 'page', kind: 'page', i18n: false }, { key: 'link', kind: 'link', i18n: false }];
 // Look of every section (settings.style): alignment, background, spacing, width and a decorative shape at its edges.
 const SHAPES = ['none', 'wave', 'curve', 'slant', 'zigzag', 'peaks', 'drops'];
 const STYLE = [
@@ -96,7 +97,9 @@ const TYPES = {
   insurance: { icon: 'shield-plus', variants: ['chips'], single: true,
     text: [{ key: 'title', max: 80 }, { key: 'note', kind: 'textarea', max: 300 }], settings: [] },
   contact: { icon: 'map-pin', variants: ['card', 'split'], single: true,
-    text: [{ key: 'title', max: 80 }], settings: [{ key: 'show_map', kind: 'bool', def: true }, { key: 'show_hours', kind: 'bool', def: true }] },
+    text: [{ key: 'title', max: 80 }], settings: [{ key: 'show_map', kind: 'bool', def: true }, { key: 'show_hours', kind: 'bool', def: true },
+      // An embedded Google map beside the details: the place written here (name or "lat,lng"), else the clinic's address.
+      { key: 'map_embed', kind: 'bool', def: true }, { key: 'map_query', kind: 'text', max: 200 }] },
   hours: { icon: 'clock', variants: ['table'], single: true, text: [{ key: 'title', max: 80 }], settings: [] },
   features: { icon: 'award', variants: ['grid'],
     text: [{ key: 'title', max: 80 }], settings: [],
@@ -108,11 +111,11 @@ const TYPES = {
     text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
     settings: [{ key: 'media', kind: 'select', options: ['mixed', 'images', 'icons', 'none'], def: 'mixed' }, { key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3' }, { key: 'card_style', kind: 'select', options: ['shadow', 'outline', 'filled', 'plain'], def: 'shadow' },
       { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait'], def: 'landscape', group: 'image' }],
-    list: { key: 'items', max: 12, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, PAGE_LINK,
+    list: { key: 'items', max: 12, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, ...PAGE_LINK,
       { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }] } },
   image_text: { icon: 'image', variants: ['image_start', 'image_end', 'image_top', 'image_back'], group: 'blocks',
     text: [{ key: 'title', max: 120 }, { key: 'text', kind: 'textarea', max: 2000 }, { key: 'button', max: 40 }],
-    settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS, { key: 'action', kind: 'select', options: ACTIONS, def: 'book' }, { key: 'page', kind: 'page' }] },
+    settings: [{ key: 'image', kind: 'media' }, ...IMAGE_OPTS, { key: 'action', kind: 'select', options: ACTIONS, def: 'book' }, { key: 'page', kind: 'page' }, { key: 'link', kind: 'link' }] },
   text: { icon: 'type', variants: ['plain', 'boxed', 'quote', 'columns'], group: 'blocks',
     text: [{ key: 'title', max: 120 }, { key: 'text', kind: 'textarea', max: 5000 }], settings: [] },
   stats: { icon: 'chart-no-axes-column', variants: ['row', 'cards'], group: 'blocks',
@@ -133,7 +136,7 @@ const TYPES = {
     text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
     settings: [{ key: 'columns', kind: 'select', options: ['2', '3', '4'], def: '2' },
       { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait'], def: 'landscape', group: 'image' }],
-    list: { key: 'items', max: 4, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, PAGE_LINK,
+    list: { key: 'items', max: 4, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, ...PAGE_LINK,
       { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 1500 }, { key: 'button', max: 40 }] } },
   // Partners / insurers / labs the clinic works with: their logos in a row that slides (or a grid).
   partners: { icon: 'handshake', variants: ['logos', 'cards'], group: 'blocks',
@@ -146,7 +149,7 @@ const TYPES = {
     settings: [{ key: 'source', kind: 'select', options: ['doctors', 'custom'], def: 'doctors' }, { key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3' },
       { key: 'photo_ratio', kind: 'select', options: ['portrait', 'square', 'landscape'], def: 'portrait', group: 'image' },
       { key: 'show_bio', kind: 'bool', def: true }, { key: 'show_book', kind: 'bool', def: true }, { key: 'show_social', kind: 'bool', def: true }],
-    list: { key: 'items', max: 16, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, PAGE_LINK,
+    list: { key: 'items', max: 16, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, ...PAGE_LINK,
       { key: 'name', max: 80 }, { key: 'role', max: 80 }, { key: 'text', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }] } },
   // Before / after: two pictures on top of each other and a line the visitor drags to compare (or side by side).
   before_after: { icon: 'scan-line', variants: ['slider', 'side'], group: 'blocks',
@@ -163,7 +166,7 @@ const TYPES = {
   // Tabs: a title per tab; its picture, text and button show when the tab is chosen.
   tabs: { icon: 'layers', variants: ['tabs', 'pills', 'side'], group: 'blocks',
     text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }], settings: [{ key: 'image_side', kind: 'select', options: ['end', 'start', 'top'], def: 'end' }],
-    list: { key: 'items', max: 8, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, PAGE_LINK,
+    list: { key: 'items', max: 8, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false }, ...PAGE_LINK,
       { key: 'title', max: 60 }, { key: 'text', kind: 'textarea', max: 1500 }, { key: 'button', max: 40 }] } },
   // A YouTube or Vimeo video (privacy mode), wide or in a card next to text.
   video: { icon: 'video', variants: ['wide', 'card'], group: 'blocks',
@@ -173,6 +176,17 @@ const TYPES = {
   marquee: { icon: 'sliders-horizontal', variants: ['band', 'outline'], group: 'blocks', text: [],
     settings: [{ key: 'speed', kind: 'select', options: ['m', 's', 'l'], def: 'm' }, { key: 'color', kind: 'select', options: ['brand', 'dark', 'soft', 'accent'], def: 'brand' }, { key: 'm_dir', kind: 'select', options: ['auto', 'left', 'right'], def: 'auto' }],
     list: { key: 'items', max: 12, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'text', max: 60 }] } },
+  // Maps: one embedded Google map per place (a branch, a hospital), each with its words and a directions button.
+  map: { icon: 'map-pin', variants: ['cards', 'wide'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
+    settings: [{ key: 'height', kind: 'select', options: ['m', 's', 'l'], def: 'm' }],
+    list: { key: 'items', max: 4, fields: [{ key: 'query', kind: 'text', max: 200, i18n: false }, { key: 'link', kind: 'link', i18n: false },
+      { key: 'title', max: 80 }, { key: 'text', kind: 'textarea', max: 300 }] } },
+  // Instagram: the account's latest posts (Instagram's own profile widget, always current) and/or chosen posts.
+  instagram: { icon: 'instagram', variants: ['feed', 'posts'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }, { key: 'button', max: 40 }],
+    settings: [{ key: 'username', kind: 'text', max: 30 }, { key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3', only: 'posts' }],
+    list: { key: 'items', max: 12, only: 'posts', fields: [{ key: 'url', kind: 'link', i18n: false }] } },
   divider: { icon: 'waves', variants: ['shape'], group: 'blocks', text: [],
     settings: [{ key: 'shape', kind: 'select', options: ['wave', 'curve', 'slant', 'zigzag', 'peaks', 'drops', 'line', 'dots', 'space'], def: 'wave' },
       { key: 'color', kind: 'select', options: ['soft', 'accent', 'brand', 'dark'], def: 'soft' }, { key: 'height', kind: 'select', options: ['s', 'm', 'l'], def: 'm' }, { key: 'flip', kind: 'bool', def: false }] },
@@ -207,6 +221,8 @@ const HEADER = [
   { key: 'style', kind: 'select', options: ['solid', 'transparent', 'centered', 'minimal'], def: 'solid' },
   { key: 'sticky', kind: 'bool', def: true }, { key: 'show_book', kind: 'bool', def: true }, { key: 'show_lang', kind: 'bool', def: true },
   { key: 'show_theme', kind: 'bool', def: true }, { key: 'show_phone', kind: 'bool', def: false }, { key: 'show_name', kind: 'bool', def: true },
+  // Where the menu links sit between the logo and the buttons: centred, beside the logo, or beside the buttons.
+  { key: 'menu_pos', kind: 'select', options: ['center', 'start', 'end'], def: 'center' },
   { key: 'logo_size', kind: 'select', options: ['m', 's', 'l', 'xl'], def: 'm' },
   { key: 'logo_shape', kind: 'select', options: ['badge', 'free'], def: 'badge' }, // badge = on a rounded tile; free = the logo as it is
   // Exact logo height in px (0 = follow logo_size). An image logo always keeps its own proportions.
@@ -275,6 +291,14 @@ const RADII = ['soft', 'rounded', 'square'];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 const newId = () => crypto.randomBytes(5).toString('hex');
+/** A link a clinic may write: https://… (no credentials), tel:, mailto: — anything else is dropped. */
+function safeLink(v) {
+  const x = String(v === undefined || v === null ? '' : v).trim().slice(0, 500);
+  if (!x) return null;
+  if (/^tel:\+?[0-9 ()-]{3,30}$/i.test(x)) return x.replace(/\s+/g, '');
+  if (/^mailto:[^\s<>"'@]+@[^\s<>"'@]+\.[a-z]{2,}$/i.test(x)) return x;
+  try { const u = new URL(/^[a-z][a-z0-9+.-]*:/i.test(x) ? x : `https://${x}`); return u.protocol === 'https:' && !u.username && !u.password ? u.toString() : null; } catch { return null; }
+}
 // Plain text: no control characters, no markup brackets turned into anything — the page escapes on output anyway.
 const clean = (v, max) => String(v === undefined || v === null ? '' : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').replace(/\r\n?/g, '\n').trim().slice(0, max);
 const cleanLine = (v, max) => clean(v, max).replace(/\s*\n\s*/g, ' ');
@@ -348,7 +372,7 @@ function cleanValue(f, v, refs = {}) {
   const okMedia = (id) => !refs.media || refs.media.has(id);
   const okDoctor = (id) => !refs.doctors || refs.doctors.has(id);
   // A checkbox posts with a hidden "0" before it: the last value wins.
-  if (Array.isArray(v) && ['bool', 'select', 'number', 'date', 'media', 'icon', 'text', 'url', 'page'].includes(f.kind || 'text')) v = v[v.length - 1];
+  if (Array.isArray(v) && ['bool', 'select', 'number', 'date', 'media', 'icon', 'text', 'url', 'page', 'link'].includes(f.kind || 'text')) v = v[v.length - 1];
   switch (f.kind) {
     case 'bool': return v === undefined ? f.def : v === true || v === '1' || v === 'on' || v === 'true';
     case 'select': return f.options.includes(v) ? v : (f.def !== undefined ? f.def : f.options[0]);
@@ -357,6 +381,7 @@ function cleanValue(f, v, refs = {}) {
     case 'media_list': return ids(v).filter(okMedia).slice(0, f.max || 12);
     case 'doctors': return ids(v).filter(okDoctor).slice(0, 50);
     case 'date': return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null;
+    case 'link': return safeLink(v);
     case 'page': return /^(home|[a-f0-9]{10})$/.test(String(v || '')) ? String(v) : null; // a page key of this site (checked when shown)
     case 'icon': return (f.none && v === 'none') ? 'none' : (ICONS.includes(v) ? v : ICONS[0]);
     case 'url': return videoEmbed(v) ? String(v).trim().slice(0, f.max || 300) : null; // only a YouTube / Vimeo address
