@@ -22,7 +22,7 @@ router.post('/databases/move/:id(\\d+)', wrap(async (req, res) => { said(req, aw
 router.post('/databases/stop', wrap(async (req, res) => { svc.stop(); flash(req, 'success', req.t('dbsep.stopping')); res.redirect('/admin/databases'); }));
 router.post('/databases/sync', wrap(async (req, res) => {
   const r = await svc.syncNow(req.ctx);
-  flash(req, 'success', req.t('dbsep.synced', { n: r.databases, c: r.changes }));
+  flash(req, 'success', req.t('dbsep.synced_done', { n: r.databases, c: r.changes }));
   res.redirect('/admin/databases');
 }));
 

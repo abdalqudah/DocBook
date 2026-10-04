@@ -40,7 +40,7 @@
     "database": "Database",
     "clinics": "Clinics",
     "size": "Size",
-    "synced": "{n} databases synced ({c} changes).",
+    "synced": "Last sync",
     "none": "No separate databases yet.",
     "started": "Moving in the background ({n}).",
     "stopping": "Moving stops after the current clinic.",
@@ -48,6 +48,7 @@
       "off": "Separate databases are off in the settings.",
       "running": "A move is already running.",
       "nothing": "Nothing to move."
-    }
+    },
+    "synced_done": "{n} databases synced ({c} changes)."
   }
 }
