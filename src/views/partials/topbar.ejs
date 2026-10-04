@@ -16,10 +16,10 @@
   </details>
   <% } %>
   <div class="topbar-actions">
-    <a class="btn btn-ghost btn-sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" title="<%= t('common.language') %>" data-lang-switch="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
-    <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
-    <% if (can('billing.manage')) { %><a class="btn btn-ghost btn-icon" href="/app/cashier/screen" title="<%= t('cashpos.title') %>" aria-label="<%= t('cashpos.title') %>"><%- icon('banknote') %></a><% } %>
-    <% if (typeof moduleOn === 'undefined' || moduleOn('staff_mail')) { %><a class="btn btn-ghost btn-icon" href="/app/mail" aria-label="<%= t('mailbox.title') %>" title="<%= t('mailbox.title') %>"><%- icon('mail') %></a><% } %><% if (typeof moduleOn === 'undefined' || moduleOn('staff_chat')) { %><% var _uc = typeof unreadChat !== 'undefined' ? unreadChat : 0; %><a class="btn btn-ghost btn-icon chat-link" href="/app/chat" data-chat-badge aria-label="<%= t('chat.title') %><%= _uc ? ' (' + _uc + ')' : '' %>" title="<%= t('chat.title') %>"><%- icon('message-circle') %><% if (_uc) { %><span class="bell-count"><%= _uc > 9 ? '9+' : _uc %></span><% } %></a><% } %>
+    <a class="btn btn-ghost btn-sm tb-wide" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" title="<%= t('common.language') %>" data-lang-switch="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
+    <button class="btn btn-ghost btn-icon tb-wide" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
+    <% if (can('billing.manage')) { %><a class="btn btn-ghost btn-icon tb-wide" href="/app/cashier/screen" title="<%= t('cashpos.title') %>" aria-label="<%= t('cashpos.title') %>"><%- icon('banknote') %></a><% } %>
+    <% if (typeof moduleOn === 'undefined' || moduleOn('staff_mail')) { %><a class="btn btn-ghost btn-icon tb-wide" href="/app/mail" aria-label="<%= t('mailbox.title') %>" title="<%= t('mailbox.title') %>"><%- icon('mail') %></a><% } %><% if (typeof moduleOn === 'undefined' || moduleOn('staff_chat')) { %><% var _uc = typeof unreadChat !== 'undefined' ? unreadChat : 0; %><a class="btn btn-ghost btn-icon chat-link" href="/app/chat" data-chat-badge aria-label="<%= t('chat.title') %><%= _uc ? ' (' + _uc + ')' : '' %>" title="<%= t('chat.title') %>"><%- icon('message-circle') %><% if (_uc) { %><span class="bell-count"><%= _uc > 9 ? '9+' : _uc %></span><% } %></a><% } %>
     <details class="dropdown notif-dd" data-notif>
       <summary class="btn btn-ghost btn-icon bell" data-notif-bell aria-label="<%= t('notifications.title') %><%= unreadNotifications ? ' (' + unreadNotifications + ')' : '' %>" title="<%= t('notifications.title') %>"><%- icon('bell') %><% if (unreadNotifications) { %><span class="bell-count"><%= unreadNotifications > 9 ? '9+' : unreadNotifications %></span><% } %></summary>
       <div class="menu notif-menu" data-notif-panel>
@@ -29,9 +29,17 @@
       </div>
     </details>
     <details class="dropdown">
-      <summary class="user-chip"><span class="avatar"><% if (typeof myPhoto !== 'undefined' && myPhoto) { %><img src="<%= myPhoto %>" alt=""><% } else { %><%= initials(currentUser.name) %><% } %></span><span class="user-name small strong"><%= currentUser.name %></span><%- icon('chevron-down', 'icon-sm muted') %></summary>
+      <summary class="user-chip"><span class="avatar"><% if (typeof myPhoto !== 'undefined' && myPhoto) { %><img src="<%= myPhoto %>" alt=""><% } else { %><%= initials(currentUser.name) %><% } %></span><span class="user-name small strong"><%= currentUser.name %></span><%- icon('chevron-down', 'icon-sm muted user-chev') %></summary>
       <div class="menu">
         <div class="menu-label truncate"><%= currentUser.email %></div>
+        <%# Phones: the top-bar buttons that do not fit (language, theme, cash screen, mail) live here. %>
+        <div class="tb-narrow">
+          <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" data-lang-switch="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages', 'icon-sm') %><%= locale === 'ar' ? 'English' : 'العربية' %></a>
+          <button type="button" data-theme-toggle><%- icon('moon', 'icon-sm theme-moon') %><%- icon('sun', 'icon-sm theme-sun hidden') %><%= t('common.toggle_theme') %></button>
+          <% if (can('billing.manage')) { %><a href="/app/cashier/screen"><%- icon('banknote', 'icon-sm') %><%= t('cashpos.title') %></a><% } %>
+          <% if (typeof moduleOn === 'undefined' || moduleOn('staff_mail')) { %><a href="/app/mail"><%- icon('mail', 'icon-sm') %><%= t('mailbox.title') %></a><% } %>
+          <div class="sep"></div>
+        </div>
         <% if (!(typeof moduleOn === 'function') || moduleOn('attendance')) { %><a href="/app/attendance"><%- icon('clock', 'icon-sm') %><%= t('navx.clock') %></a><% } %>
         <div class="sep"></div>
         <% if (typeof workspaces !== 'undefined' && workspaces.length > 1) { %>

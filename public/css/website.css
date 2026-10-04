@@ -774,3 +774,57 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
 .ws-nav:not(.ws-nav-centered).ws-menu-center .right, .ws-nav:not(.ws-nav-centered).ws-menu-end .right { margin-inline-start: 0; }
 .ws-nav:not(.ws-nav-centered).ws-menu-end .ws-nav-links { margin-inline-start: auto; }
 @media (max-width: 900px) { .ws-nav:not(.ws-nav-centered) .right { margin-inline-start: auto !important; } }
+
+/* ===================================================================== phones: compact, two-up lists so a page is
+   not one endless column; hover-only details shown on touch screens. Same in Arabic and English. */
+@media (max-width: 600px) {
+  .ws-section { padding-block: clamp(36px, 9vw, 56px); }
+  .ws-head { margin-bottom: 18px; }
+  .ws-title { font-size: clamp(22px, 6.4vw, 28px); }
+  /* doctors as two compact cards per row */
+  .ws-dcards, .ws-dcards.ws-cols-2, .ws-dcards.ws-cols-3, .ws-dcards.ws-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px; }
+  .ws-dcard:hover, .ws-dcard:focus-within { transform: none; }
+  .ws-dcard-body { padding: 12px 12px 14px; gap: 6px; }
+  .ws-dcard-body h3 { font-size: .95rem; }
+  .ws-dcard-spec { font-size: .7rem; padding: 3px 8px; }
+  .ws-dcard-bio, .ws-dcard-body .doc-online { display: none; }
+  .ws-dcard-foot { flex-direction: column; align-items: stretch; gap: 6px; padding-top: 8px; }
+  .ws-dcard-actions { margin: 0; display: grid; grid-template-columns: 1fr; gap: 4px; }
+  .ws-dcard-actions .btn { justify-content: center; width: 100%; }
+  .ws-dcard-actions .btn-ghost { padding-block: 4px; }
+  .ws-dcard-social { bottom: 8px; gap: 4px; flex-wrap: wrap; padding-inline: 6px; }
+  .ws-dcard-social .doc-soc { width: 28px; height: 28px; }
+  .ws-dcard-initials { font-size: 34px; }
+  /* cards with icons (services): two per row, the text kept short */
+  .ws-cards:not(.ws-cards-list):has(> .ws-card > .ws-feature-icon) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+  .ws-cards:has(> .ws-card > .ws-feature-icon) .ws-card { padding: 14px; gap: 8px; }
+  .ws-cards:has(> .ws-card > .ws-feature-icon) .ws-card h3 { font-size: 15px; }
+  .ws-cards:has(> .ws-card > .ws-feature-icon) .ws-card p { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .ws-cards:has(> .ws-card > .ws-feature-icon) .ws-card .btn { width: 100%; justify-content: center; }
+  /* features grid two-up too */
+  .ws-features { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+  /* team cards: two per row */
+  .ws-team, .ws-team.ws-cols-2, .ws-team.ws-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px; }
+  .ws-person-cap { padding: 10px 10px 2px; } .ws-person-more { padding: 4px 10px 12px; }
+  .ws-person-more p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: .85rem; }
+  .ws-person-actions .btn { width: 100%; justify-content: center; }
+  /* hero buttons full width, stacked */
+  .ws-hero-text { max-width: 100%; min-width: 0; }
+  .ws-hero-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 100%; }
+  .ws-hero-actions .btn { justify-content: center; width: 100%; }
+  .ws-hero-actions .btn:only-child { grid-column: 1 / -1; }
+  /* booking band */
+  .ws-t-booking_cta .container { text-align: center; }
+  /* map and Instagram heights */
+  .ws-map-frame { height: 240px; }
+  .ws-ig-head { align-items: stretch; flex-direction: column; }
+}
+/* Touch screens have no hover: the details that appear on hover are always shown. */
+@media (hover: none) {
+  .ws-team-reveal .ws-person-cap { position: static; color: inherit; background: none; padding: 10px 12px 2px; }
+  .ws-team-reveal .ws-person-cap .ws-person-role { color: var(--primary); }
+  .ws-team-reveal .ws-person-more { position: static; transform: none; background: none; color: inherit; }
+  .ws-team-reveal .ws-person-more p { color: var(--text-muted); }
+  .ws-team-reveal .ws-person-more .btn-ghost { color: inherit; }
+  .ws-team-reveal .ws-person-in { border: 1px solid var(--border); }
+}

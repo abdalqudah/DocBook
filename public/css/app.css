@@ -480,6 +480,7 @@ body.is-navigating .loading-bar { display: block; }
 .banner.warning { background: var(--warning-soft); } .banner.info { background: var(--surface-muted); }
 .banner .btn { margin-inline-start: auto; }
 .mobile-only { display: none !important; }
+.tb-narrow { display: none; }
 /* Global "+ New" (top bar on desktop, middle of the bottom bar on phones). */
 .new-menu > summary { list-style: none; gap: 6px; }
 .new-menu > summary::-webkit-details-marker { display: none; }
@@ -1035,3 +1036,16 @@ a.pn-title:hover { color: var(--primary); }
 /* Option groups inside panels: no browser frame around the radios. */
 .panel-body fieldset { border: 0; padding: 0; margin-inline: 0; min-width: 0; }
 .panel-body fieldset > legend { padding: 0; margin-bottom: 6px; }
+
+/* Phones: the top bar keeps menu, search, chat, notifications and the account; the rest moves into the account menu.
+   Nothing may push the page sideways (in Arabic a too-wide bar shifted the whole screen). */
+@media (max-width: 640px) {
+  .topbar { gap: 6px; }
+  .topbar-actions { gap: 0; min-width: 0; }
+  .topbar .tb-wide, .topbar .user-chev { display: none !important; }
+  .topbar .tb-narrow { display: block; }
+  .topbar .user-chip { padding: 2px; }
+  .topbar .notif-menu { position: fixed; inset-inline: 8px; top: calc(var(--topbar-h) + 4px); width: auto; max-width: none; }
+  .topbar .dropdown > .menu { max-width: calc(100vw - 16px); }
+}
+@media (max-width: 900px) { html, body { overflow-x: clip; } }

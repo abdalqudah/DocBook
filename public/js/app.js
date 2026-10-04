@@ -176,6 +176,18 @@
     $$('input[type=search]', form).forEach(function (i) { i.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { form.submit(); }, 450); }); });
   });
 
+  /* ---------- Dropdown menus stay on the screen (phones, buttons near an edge, Arabic and English) ---------- */
+  document.addEventListener('toggle', function (e) {
+    var d = e.target;
+    if (!d || d.tagName !== 'DETAILS' || !d.open) return;
+    var m = d.querySelector(':scope > .menu'); if (!m) return;
+    m.style.transform = '';
+    var r = m.getBoundingClientRect(); var vw = document.documentElement.clientWidth; var pad = 8; var dx = 0;
+    if (r.right > vw - pad) dx = (vw - pad) - r.right;
+    if (r.left + dx < pad) dx = pad - r.left;
+    if (dx) m.style.transform = 'translateX(' + Math.round(dx) + 'px)';
+  }, true);
+
   /* ---------- A file picker that sends its form as soon as a file is chosen (My account → photo) ---------- */
   $$('input[type=file][data-send-on-pick]').forEach(function (inp) {
     inp.addEventListener('change', function () { if (inp.files && inp.files.length && inp.form) { inp.form.classList.add('is-busy'); inp.form.submit(); } });
