@@ -3,7 +3,7 @@
 <title><%= typeof title !== 'undefined' && title ? title + ' · ' : '' %><%= brandName %></title>
 <meta name="description" content="<%= tagline %>">
 <meta name="color-scheme" content="light dark">
-<% if (typeof faviconHref !== 'undefined' && faviconHref) { %><link rel="icon" href="<%= faviconHref %>"><% } else { %><link rel="icon" href="<%= brand.favicon || '/favicon.svg' %>"><% } %>
+<% if (typeof faviconHref !== 'undefined' && faviconHref) { %><link rel="icon" href="<%= faviconHref %>"><% } else if (typeof editionFavicon !== 'undefined' && editionFavicon) { /* one clinic / centre: its own icon everywhere */ %><link rel="icon" href="<%= editionFavicon %>"><% } else { %><link rel="icon" href="<%= brand.favicon || '/favicon.svg' %>"><% } %>
 <link rel="stylesheet" href="/theme.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/app.css?v=<%= assetV %>">
 <% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function (h) { %><link rel="stylesheet" href="<%= h %>?v=<%= assetV %>"><% }) %>

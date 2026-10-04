@@ -294,6 +294,23 @@ function publicState(businessId) {
   }, 30_000);
 }
 
+/**
+ * The site's look for every public page of the clinic (website, sign-in, maintenance): dark mode off (always light)
+ * the logo for dark backgrounds and the browser icon — from the published site, else from the draft (a site never published from the
+ * editor still follows the Theme & brand choices).
+ */
+function look(businessId) {
+  return cache.remember(`site:${businessId}:look`, async () => {
+    const r = await row(businessId);
+    if (!r) return { light: false, logoDarkMediaId: null, faviconMediaId: null };
+    const vid = r.status === 'live' && r.live_version_id ? r.live_version_id : r.draft_version_id;
+    const v = await version(businessId, vid);
+    const doc = v && v.doc ? v.doc : null;
+    const brand = (doc && doc.brand) || {};
+    return { light: Boolean(doc && doc.header && doc.header.dark_mode === false), logoDarkMediaId: Number(brand.logoDarkMediaId) || null, faviconMediaId: Number(brand.faviconMediaId) || null };
+  }, 30_000);
+}
+
 /** Addresses of the clinics whose live website asks AI crawlers not to read it (for the platform robots.txt). */
 function aiBlockedSlugs() {
   return cache.remember('site:aiblocked', async () => {
@@ -313,4 +330,4 @@ function livePages() {
   }, 600_000);
 }
 
-module.exports = { aiBlockedSlugs, livePages, state, draft, saveDraft, edit, ops, pageOf, pageWith, pageSlug, publish, unpublish, republish, versions, restore, discard, publicState, refsOf, forget, setLiveDarkMode, KEEP, MEDIA_CONTEXT };
+module.exports = { aiBlockedSlugs, livePages, state, draft, saveDraft, edit, ops, pageOf, pageWith, pageSlug, publish, unpublish, republish, versions, restore, discard, publicState, look, refsOf, forget, setLiveDarkMode, KEEP, MEDIA_CONTEXT };

@@ -27,6 +27,11 @@
     "en": "English",
     "save": "Save",
     "saved": "The sign-in page is saved.",
-    "nav": "Sign-in page"
+    "nav": "Sign-in page",
+    "name_mode": "The clinic name with the logo",
+    "name_beside": "Beside the logo",
+    "name_below": "Under the logo",
+    "name_hidden": "Hide the name (logo only)",
+    "name_help": "On the sign-in page only. Without a logo the name always shows."
   }
 }

@@ -12,6 +12,13 @@
       <label class="check"><input type="radio" name="style" value="<%= s %>"<%= lp.style === s ? ' checked' : '' %>><span><strong><%= t('loginpage.style_' + s) %></strong> — <span class="muted small"><%= t('loginpage.style_' + s + '_help') %></span></span></label>
       <% }) %>
       <label class="check"><input type="checkbox" name="show_points" value="1"<%= lp.show_points ? ' checked' : '' %>><span><%= t('loginpage.show_points') %></span></label>
+      <fieldset class="stack-sm mt-2">
+        <legend class="label"><%= t('loginpage.name_mode') %></legend>
+        <% ['beside', 'below', 'hidden'].forEach(function (m) { %>
+        <label class="check"><input type="radio" name="name_mode" value="<%= m %>"<%= (lp.name_mode || 'beside') === m ? ' checked' : '' %>><span><%= t('loginpage.name_' + m) %></span></label>
+        <% }) %>
+        <span class="help"><%= t('loginpage.name_help') %></span>
+      </fieldset>
     </div>
   </section>
   <% [['form', ['title', 'lead']], ['side', ['side_title', 'side_text', 'point_1', 'point_2', 'point_3']]].forEach(function (grp) { %>

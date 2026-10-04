@@ -33,8 +33,7 @@ async function loadClinic(req) {
   if (req.res && req.res.locals) req.res.locals.faviconHref = businesses.faviconPath(b, `/${b.slug}`); // the clinic's browser icon on its pages
   // Dark mode turned off on the clinic's published site: every public page of the clinic stays light.
   if (req.res && req.res.locals) {
-    const pub = await require('../website/site.service').publicState(b.id); // eslint-disable-line global-require
-    req.res.locals.siteLight = Boolean(pub.doc && pub.doc.header && pub.doc.header.dark_mode === false);
+    req.res.locals.siteLight = (await require('../website/site.service').look(b.id)).light; // eslint-disable-line global-require
   }
   const hasArticles = Boolean(await knex('articles').where({ business_id: b.id, status: 'published', on_site: true }).first('id').catch(() => null));
   const specialtyLabel = b.specialty ? ((k) => { const v = req.t(k); return v === k ? b.specialty : v; })(`specialties.${b.specialty}`) : '';

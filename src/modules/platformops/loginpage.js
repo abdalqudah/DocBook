@@ -8,10 +8,11 @@ const edition = require('../../config/edition');
 
 const KEY = 'login_page';
 const STYLES = ['color', 'dark', 'light'];
+const NAME_MODES = ['beside', 'below', 'hidden']; // the clinic's name next to its logo, under it, or not shown
 const TEXTS = ['title', 'lead', 'side_title', 'side_text', 'point_1', 'point_2', 'point_3'];
 const LIMITS = { title: 80, lead: 240, side_title: 120, side_text: 400, point_1: 120, point_2: 120, point_3: 120 };
 
-const defaults = () => ({ style: edition.single ? 'color' : 'dark', show_points: true });
+const defaults = () => ({ style: edition.single ? 'color' : 'dark', show_points: true, name_mode: 'beside' });
 
 async function get() {
   return cache.remember('platform:login_page', async () => {
@@ -20,12 +21,13 @@ async function get() {
     try { v = row ? (typeof row.value === 'string' ? JSON.parse(row.value) : row.value) || {} : {}; } catch { v = {}; }
     const out = { ...defaults(), ...v };
     if (!STYLES.includes(out.style)) out.style = defaults().style;
+    if (!NAME_MODES.includes(out.name_mode)) out.name_mode = 'beside';
     return out;
   }, 30_000);
 }
 
 async function save(ctx, input) {
-  const value = { style: STYLES.includes(input.style) ? input.style : defaults().style, show_points: input.show_points === '1' };
+  const value = { style: STYLES.includes(input.style) ? input.style : defaults().style, show_points: input.show_points === '1', name_mode: NAME_MODES.includes(input.name_mode) ? input.name_mode : 'beside' };
   for (const k of TEXTS) for (const l of ['ar', 'en']) value[`${k}_${l}`] = String(input[`${k}_${l}`] || '').trim().replace(/\s+/g, ' ').slice(0, LIMITS[k]); // eslint-disable-line no-restricted-syntax
   await knex.main('platform_settings').insert({ key: KEY, value: JSON.stringify(value) }).onConflict('key').merge({ value: JSON.stringify(value), updated_at: new Date() });
   cache.forgetPrefix('platform:login_page');
@@ -40,16 +42,29 @@ async function clinicOf() {
   if (!slug) return null;
   // The clinic's own cache: refreshed as soon as its name, colour or logo changes (Settings).
   const b = await require('../businesses/business.service').bySlug(slug); // eslint-disable-line global-require
-  return b ? { slug: b.slug, name: b.name, name_en: b.name_en, color: b.color || null, logo: Boolean(b.logo_mime) } : null;
+  if (!b) return null;
+  // The website's look (Website → Theme & brand): dark mode off, and the logo made for dark backgrounds.
+  const tenant = require('../../db/tenant'); // eslint-disable-line global-require
+  const look = await cache.remember(`edition:look:${b.id}`, () => tenant.runFor(b.id, async () => {
+    const l = await require('../website/site.service').look(b.id); // eslint-disable-line global-require
+    const pub = async (id) => { const m = id ? await knex('clinic_media').where({ business_id: b.id, id, is_public: true }).first('id', 'sha') : null; return m ? `/m/${b.slug}/${m.id}?v=${m.sha}` : null; };
+    return { light: l.light, logoDark: await pub(l.logoDarkMediaId), siteFavicon: await pub(l.faviconMediaId) };
+  }), 30_000).catch(() => ({ light: false, logoDark: null, siteFavicon: null }));
+  // The browser icon of every page: Settings → Appearance, else the website's icon, else the logo (never the built-in mark).
+  const businesses = require('../businesses/business.service'); // eslint-disable-line global-require
+  const favicon = businesses.faviconPath(b, `/${b.slug}`) || look.siteFavicon
+    || (b.logo_square_mime ? `/${b.slug}/logo-square?v=${b.logo_square_version}` : b.logo_mime ? `/${b.slug}/logo?v=${b.logo_version}` : null);
+  return { slug: b.slug, name: b.name, name_en: b.name_en, color: b.color || null, logo: Boolean(b.logo_mime), logoVersion: b.logo_version, ...look, favicon };
 }
 
 /** Locals for the pages drawn in the sign-in layout. */
 async function middleware(req, res, next) {
   try {
     // One clinic / centre without BRAND_NAME: the product carries the clinic's current name (Settings → Clinic).
-    if (edition.single && !(process.env.BRAND_NAME || '').trim()) {
+    if (edition.single) {
       const c = await clinicOf();
-      if (c) res.locals.brandName = (req.locale === 'en' && c.name_en) || c.name;
+      if (c && !(process.env.BRAND_NAME || '').trim()) res.locals.brandName = (req.locale === 'en' && c.name_en) || c.name;
+      if (c && c.favicon) res.locals.editionFavicon = c.favicon; // pages without an icon of their own (sign-in, app, site)
     }
     if (req.path.startsWith('/app') || req.path.startsWith('/admin/') || req.method !== 'GET') return next();
     const [lp, clinic] = await Promise.all([get(), clinicOf()]);
@@ -60,4 +75,4 @@ async function middleware(req, res, next) {
   } catch (e) { return next(e); }
 }
 
-module.exports = { get, save, middleware, clinicOf, STYLES, TEXTS, LIMITS };
+module.exports = { get, save, middleware, clinicOf, STYLES, NAME_MODES, TEXTS, LIMITS };

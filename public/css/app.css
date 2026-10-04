@@ -1024,3 +1024,14 @@ a.pn-title:hover { color: var(--primary); }
 /* An uploaded logo shows exactly as it is: no tile, frame, rounding or shadow behind it (the built-in mark keeps its tile). */
 .logo-preview:has(img), .set-hero-logo:has(img), .set-logo-lg:has(img) { background: transparent; border-color: transparent; }
 .logo-preview img, .set-hero-logo img, .set-logo-lg img { object-fit: contain; background: transparent; border-radius: 0; }
+
+
+/* The clinic's logo and name on the sign-in page: side by side, the name under the logo, or the logo alone. */
+.auth-brand { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; min-width: 0; }
+.auth-brand.is-below { flex-direction: column; align-items: flex-start; gap: 8px; }
+.auth-brand .brand-word { font-weight: var(--fw-bold); line-height: 1.3; }
+.auth-brand.auth-mobile-logo { display: none; }
+@media (max-width: 900px) { .auth-brand.auth-mobile-logo { display: inline-flex; } }
+/* Option groups inside panels: no browser frame around the radios. */
+.panel-body fieldset { border: 0; padding: 0; margin-inline: 0; min-width: 0; }
+.panel-body fieldset > legend { padding: 0; margin-bottom: 6px; }
