@@ -7,6 +7,7 @@
 //   • booking holds a MySQL named lock for clinic+doctor+date+time and re-checks the slot — no double booking
 // Patients and patient appointments are never read here: reps only see the rep windows' availability.
 const knex = require('../../db/knex');
+const cross = require('../../db/cross');
 const audit = require('../../core/audit');
 const mailer = require('../../core/mailer');
 const { AppError, E } = require('../../core/errors');
@@ -122,8 +123,9 @@ function openToReps(query) {
 }
 
 /** Active doctors with their working hours (request mode: every active doctor of the clinic). */
-const allDoctors = (businessIds) => knex('doctors').whereIn('business_id', businessIds).andWhere('is_active', true)
-  .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'working_hours').orderBy('sort_order').orderBy('id');
+// Doctors live in each clinic's own database (src/db/tenant.js): gathered from each.
+const allDoctors = (businessIds) => cross.gatherFor(businessIds, (ids) => knex('doctors').whereIn('business_id', ids).andWhere('is_active', true)
+  .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'working_hours').orderBy('sort_order').orderBy('id'));
 
 /** Clinics a rep can reach (see openToReps), each with its mode and doctors. */
 async function bookableClinics({ q, specialty } = {}) {
@@ -150,8 +152,8 @@ async function bookableDoctors(businessIds) {
   const wins = await knex('rep_visit_slots').whereIn('business_id', businessIds).andWhere('is_active', true).select('business_id', 'doctor_id');
   const wide = new Set(wins.filter((w) => !w.doctor_id).map((w) => w.business_id));
   const own = new Set(wins.filter((w) => w.doctor_id).map((w) => w.doctor_id));
-  const docs = await knex('doctors').whereIn('business_id', businessIds).andWhere('is_active', true)
-    .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en').orderBy('sort_order').orderBy('id');
+  const docs = await cross.gatherFor(businessIds, (ids) => knex('doctors').whereIn('business_id', ids).andWhere('is_active', true)
+    .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en').orderBy('sort_order').orderBy('id'));
   return docs.filter((d) => wide.has(d.business_id) || own.has(d.id));
 }
 
@@ -162,7 +164,7 @@ async function bookableDoctors(businessIds) {
 async function linkedClinics(vendorId, businessIds) {
   const ids = [...new Set(businessIds.map(Number).filter(Boolean))];
   if (!vendorId || !ids.length) return new Set();
-  return new Set((await knex('suppliers').where({ vendor_id: vendorId }).whereIn('business_id', ids).pluck('business_id')).map(Number));
+  return new Set((await cross.gatherFor(ids, (list) => knex('suppliers').where({ vendor_id: vendorId }).whereIn('business_id', list).pluck('business_id'))).map(Number));
 }
 
 /** A bookable clinic (only what a rep may see) or null. */
@@ -322,15 +324,15 @@ async function tellClinic(clinic, vendor, { id, status, doctorId, date, time, pu
   return { id, status };
 }
 
-const vendorVisitsQuery = (vendorId) => knex('rep_visits as r').join('businesses as b', 'b.id', 'r.business_id').leftJoin('doctors as d', 'd.id', 'r.doctor_id')
+const vendorVisitsQuery = (vendorId) => knex('rep_visits as r').join('businesses as b', 'b.id', 'r.business_id').leftJoin('doctors as d', function j() { this.on('d.id', 'r.doctor_id').andOn('d.business_id', 'r.business_id'); })
   .where('r.vendor_id', vendorId)
   .select('r.id', 'r.visit_date', 'r.visit_time', 'r.duration_minutes', 'r.purpose', 'r.status', 'r.clinic_note', 'r.created_at',
-    'r.business_id', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.city as clinic_city', 'b.address as clinic_address', 'b.map_url as clinic_map_url', 'b.timezone',
+    'r.business_id', 'r.doctor_id', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.city as clinic_city', 'b.address as clinic_address', 'b.map_url as clinic_map_url', 'b.timezone',
     'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
   .orderBy('r.visit_date', 'desc').orderBy('r.visit_time', 'desc').limit(200);
 /** The vendor's visits; a clinic's address and map link once the clinic confirmed the visit or added the vendor as a supplier. */
 async function vendorVisits(vendorId) {
-  const rows = await vendorVisitsQuery(vendorId);
+  const rows = await cross.fillDoctors(await vendorVisitsQuery(vendorId));
   const linked = await linkedClinics(vendorId, rows.map((r) => r.business_id));
   // The address and map: for suppliers, and for a visit the clinic confirmed (the rep has to find the clinic).
   rows.forEach((r) => {

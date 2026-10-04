@@ -8,6 +8,9 @@ const feeds = require('./feeds');
 const router = express.Router();
 const limiter = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: true, legacyHeaders: false });
 
+// Which clinic's database has this calendar (src/db/tenant.js).
+router.param('token', require('../../db/tenant').byParam('ical', (token) => require('../../db/knex')('calendar_feeds').where({ token_hash: require('../../core/tokens').sha256(String(token)) }).first('id'))); // eslint-disable-line global-require
+
 router.get('/:token([A-Za-z0-9_-]{20,64}).ics', limiter, wrap(async (req, res) => {
   const body = await feeds.render(req.params.token);
   if (!body) return res.status(404).type('text/plain').send('Not found');

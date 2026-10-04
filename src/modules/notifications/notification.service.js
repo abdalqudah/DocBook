@@ -3,6 +3,9 @@
 const knex = require('../../db/knex');
 
 async function notify(businessId, { userId = null, permission = null, type, title, body = null, link = null, severity = 'info', dedupeKey = null }, trx = knex) {
+  // Sent from outside that clinic's own database (platform admin, another practice of a centre…): written there.
+  const tenant = require('../../db/tenant'); // eslint-disable-line global-require
+  if (!(await tenant.isHere(businessId))) return tenant.runFor(businessId, () => notify(businessId, { userId, permission, type, title, body, link, severity, dedupeKey }));
   if (dedupeKey) {
     const exists = await trx('notifications').where({ business_id: businessId, dedupe_key: dedupeKey }).first('id');
     if (exists) return exists.id;

@@ -123,6 +123,9 @@ pub.use(rateLimit({ windowMs: 15 * 60_000, limit: config.isTest ? 1000 : 120, st
 const ctxFor = (link, clinic) => ({ businessId: link.business_id, userId: null, ownDoctorId: null, permissions: new Set(), currency: clinic.currency, timezone: clinic.timezone, today: null });
 const gone = (req, res) => res.status(404).page('pages/share/gone', { layout: 'public', title: req.t('share.gone_title'), noindex: true });
 
+// Which clinic's database has this link (src/db/tenant.js).
+pub.param('token', require('../../db/tenant').byParam('share', (token) => svc.resolve(token)));
+
 async function load(req) {
   const link = await svc.resolve(req.params.token);
   if (!link) return null;

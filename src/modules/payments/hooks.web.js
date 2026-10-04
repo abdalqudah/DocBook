@@ -13,6 +13,9 @@ const limiter = rateLimit({ windowMs: 60_000, limit: config.isTest ? 5000 : 120,
 const raw = express.raw({ type: () => true, limit: '64kb' });
 const env = (req) => ({ ip: req.ip, userAgent: req.get('user-agent'), baseUrl: require('../../middleware/web').publicBase(req) }); // eslint-disable-line global-require
 
+// Which clinic's database has this payment (src/db/tenant.js); the platform's own payments are in the main one.
+router.param('pid', require('../../db/tenant').byParam('pay', (pid) => (pay.PUBLIC_ID_RE.test(pid) ? pay.byPublicId(pid) : null)));
+
 router.post('/callback/paytabs/:pid', limiter, raw, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {

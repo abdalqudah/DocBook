@@ -8,6 +8,7 @@ const media = require('./media.service');
 const router = express.Router();
 const HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'", 'Cross-Origin-Resource-Policy': 'cross-origin' };
 
+router.param('slug', require('../../db/tenant').slugParam); // the clinic's own database (src/db/tenant.js)
 router.get('/:slug([a-z0-9-]{3,40})/:id(\\d{1,10})', wrap(async (req, res) => {
   const row = await media.publicFile(req.params.slug, req.params.id);
   // The address carries the image's fingerprint (?v=<sha>, as the site writes it): numbers alone cannot be walked

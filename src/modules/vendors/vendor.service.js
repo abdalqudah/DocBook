@@ -473,10 +473,11 @@ async function dashboard(ctx, today) {
     n0(knex('purchase_orders').where({ vendor_id: v }).whereIn('status', ['sent', 'acknowledged'])),
     n0(knex('vendor_offers').where({ vendor_id: v, status: 'draft' })),
     // Only doctor name, clinic name/city and date/time — never anything about patients.
-    knex('rep_visits as r').join('businesses as b', 'b.id', 'r.business_id').leftJoin('doctors as d', 'd.id', 'r.doctor_id')
+    knex('rep_visits as r').join('businesses as b', 'b.id', 'r.business_id').leftJoin('doctors as d', function j() { this.on('d.id', 'r.doctor_id').andOn('d.business_id', 'r.business_id'); })
       .where('r.vendor_id', v).whereIn('r.status', ['requested', 'confirmed']).where('r.visit_date', '>=', today)
       .orderBy('r.visit_date').orderBy('r.visit_time').limit(5)
-      .select('r.id', 'r.visit_date', 'r.visit_time', 'r.status', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.city as clinic_city', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en'),
+      .select('r.id', 'r.visit_date', 'r.visit_time', 'r.status', 'r.business_id', 'r.doctor_id', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.city as clinic_city', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
+      .then((rows) => require('../../db/cross').fillDoctors(rows)), // eslint-disable-line global-require -- names from each clinic's own database
     knex('vendor_offers as o').where({ 'o.vendor_id': v, 'o.status': 'published' }).orderBy('o.published_at', 'desc').limit(5)
       .select('o.id', 'o.title', 'o.title_en', 'o.ends_on', knex('vendor_offer_views').count('*').where('offer_id', knex.ref('o.id')).as('views')),
   ]);

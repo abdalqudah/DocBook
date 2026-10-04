@@ -36,6 +36,9 @@ function page(req, res, found, extra = {}) {
   });
 }
 
+// Which clinic's database has this review link (src/db/tenant.js).
+router.param('token', require('../../db/tenant').byParam('review', (token) => msg.byToken(token, 'review')));
+
 router.get('/:token', pageLimiter, wrap(async (req, res) => {
   noStore(res);
   const found = await load(req);

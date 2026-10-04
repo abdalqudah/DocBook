@@ -7,6 +7,7 @@
 // batched queries per clinic (doctors, days off, bookings), then cached per clinic for 5 minutes. A request
 // computes at most MAX_FRESH clinics that are not cached yet; the rest follow on later requests.
 const knex = require('../../db/knex');
+const cross = require('../../db/cross');
 const cache = require('../../core/cache');
 const { translator } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
@@ -41,9 +42,10 @@ function specialtyKey(raw) {
 }
 
 // ---------------------------------------------------------------- listed clinics
+// A listed clinic needs an active doctor; doctors are in each clinic's own database (src/db/tenant.js), so that part is
+// checked after reading the clinics.
 const eligible = () => knex('businesses as b')
-  .where({ 'b.status': 'active', 'b.booking_enabled': true, 'b.directory_listed': true }).whereNotNull('b.onboarding_completed_at')
-  .whereExists(knex('doctors as d').whereRaw('d.business_id = b.id').where('d.is_active', true).select(knex.raw(1)));
+  .where({ 'b.status': 'active', 'b.booking_enabled': true, 'b.directory_listed': true }).whereNotNull('b.onboarding_completed_at');
 
 /** Every listed clinic with its active doctors and insurance names (cached for a minute). */
 function listed() {
@@ -52,13 +54,18 @@ function listed() {
       .select('b.id', 'b.slug', 'b.name', 'b.name_en', 'b.specialty', 'b.city', 'b.timezone', 'b.logo_mime', 'b.logo_version', 'b.about', 'b.about_en',
         'b.address', 'b.phone', 'b.online_enabled', 'b.updated_at');
     if (!clinics.length) return [];
+    const allIds = clinics.map((c) => c.id);
+    const docsAll = await cross.gatherFor(allIds, (list) => knex('doctors').whereIn('business_id', list).where('is_active', true).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+      .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'online_enabled'));
+    const withDoctors = new Set(docsAll.map((d) => d.business_id));
+    clinics.splice(0, clinics.length, ...clinics.filter((c) => withDoctors.has(c.id)));
+    if (!clinics.length) return [];
     const ids = clinics.map((c) => c.id);
     // Verified patient reviews (published only), when the reviews feature is installed.
     const hasReviews = await knex.schema.hasTable('reviews');
     const [docs, ins, revs] = await Promise.all([
-      knex('doctors').whereIn('business_id', ids).where('is_active', true).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
-        .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'online_enabled'),
-      knex('insurance_providers').whereIn('business_id', ids).where('is_active', true).select('business_id', 'name'),
+      docsAll,
+      cross.gatherFor(ids, (list) => knex('insurance_providers').whereIn('business_id', list).where('is_active', true).select('business_id', 'name')),
       hasReviews ? knex('reviews').whereIn('business_id', ids).where('status', 'published').groupBy('business_id')
         .select('business_id', knex.raw('AVG(rating) as avg'), knex.raw('COUNT(*) as n')) : [],
     ]);
@@ -112,6 +119,9 @@ function earliestSlot({ doctors, daysOff = [], booked = [], today, nowMinutes = 
 
 /** Reads the clinic's schedule data for the next 14 days and finds the earliest free slot. */
 async function computeNext(clinic, at = new Date()) {
+  return require('../../db/tenant').inClinic(clinic.id, () => computeNextHere(clinic, at)); // eslint-disable-line global-require -- the clinic's own database
+}
+async function computeNextHere(clinic, at) {
   const { date: today, minutes: nowMinutes } = scheduling.clinicNow(clinic.timezone || 'UTC', at);
   const last = addDays(today, HORIZON_DAYS - 1);
   const doctors = await knex('doctors').where({ business_id: clinic.id, is_active: true }).select('id', 'working_hours', 'slot_duration_minutes');
@@ -224,7 +234,7 @@ async function sitemapUrls() {
 async function readiness(businessId) {
   const [b, [{ n }]] = await Promise.all([
     knex('businesses').where({ id: businessId }).first('status', 'booking_enabled', 'directory_listed', 'onboarding_completed_at', 'slug', 'city', 'specialty'),
-    knex('doctors').where({ business_id: businessId, is_active: true }).count({ n: '*' }),
+    require('../../db/tenant').inClinic(businessId, () => knex('doctors').where({ business_id: businessId, is_active: true }).count({ n: '*' })), // eslint-disable-line global-require
   ]);
   const checks = { booking: Boolean(b.booking_enabled), doctors: Number(n) > 0, slug: Boolean(b.slug), setup: Boolean(b.onboarding_completed_at), city: Boolean(b.city), specialty: Boolean(specialtyKey(b.specialty)) };
   return { listed: Boolean(b.directory_listed), visible: Boolean(b.directory_listed) && b.status === 'active' && checks.booking && checks.doctors && checks.slug && checks.setup, checks };

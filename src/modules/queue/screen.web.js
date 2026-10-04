@@ -23,6 +23,9 @@ async function screenOf(token) {
   return { k, b };
 }
 
+// Which clinic's database has this waiting screen (src/db/tenant.js).
+router.param('token', require('../../db/tenant').byParam('queue', (token) => screenOf(token)));
+
 const NO_STORE = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex', 'Referrer-Policy': 'no-referrer' };
 
 router.get('/:token', wrap(async (req, res, next) => {

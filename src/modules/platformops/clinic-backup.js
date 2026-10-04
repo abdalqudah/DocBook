@@ -72,7 +72,10 @@ async function tenantTables(db = knex) {
   return [...new Set(rows.map((r) => r.t || r.T || r.TABLE_NAME))].filter((t) => !SKIP.has(t)).sort();
 }
 
-async function snapshot(businessId) {
+// A clinic with its own database (src/db/tenant.js) is read and restored there; that database also shows its shared
+// rows (members, roles…) through views, so the backup holds the same things either way.
+const snapshot = (businessId) => require('../../db/tenant').inClinic(businessId, () => snapshotHere(businessId)); // eslint-disable-line global-require
+async function snapshotHere(businessId) {
   const biz = await knex('businesses').where({ id: businessId }).first();
   if (!biz) throw E.notFound('Clinic');
   const tables = {};
@@ -132,8 +135,9 @@ async function restore(buf, { businessId = null, ctx = null } = {}) {
   const id = Number(data.business && data.business.id);
   if (!id || (businessId && Number(businessId) !== id)) throw new AppError('BACKUP_OTHER_CLINIC', 'This backup belongs to another clinic.', 422);
   const isPg = /pg|postgres/.test(knex.client.config.client);
-  const present = new Set(await tenantTables());
   let rows = 0;
+  await require('../../db/tenant').inClinic(id, async () => { // eslint-disable-line global-require
+  const present = new Set(await tenantTables());
   await knex.transaction(async (trx) => {
     if (!isPg) await trx.raw('SET FOREIGN_KEY_CHECKS=0');
     try {
@@ -159,6 +163,7 @@ async function restore(buf, { businessId = null, ctx = null } = {}) {
     } finally {
       if (!isPg) await trx.raw('SET FOREIGN_KEY_CHECKS=1');
     }
+  });
   });
   require('../../core/cache').forgetPrefix(''); // eslint-disable-line global-require
   if (ctx) await audit.record(ctx, 'clinic.backup_restored', { entityType: 'clinic', entityId: id, newValues: { taken_at: data.created_at, rows } });

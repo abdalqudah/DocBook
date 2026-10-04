@@ -62,6 +62,14 @@ async function resolveBusiness(req, res, next) {
       if (await knex('vendor_users').where({ user_id: req.user.id }).first('id')) return res.redirect('/vendor');
       return res.redirect('/workspaces/new');
     }
+    // The rest of the request works in this clinic's own database (src/db/tenant.js) — or the main one.
+    const tenant = require('../db/tenant'); // eslint-disable-line global-require
+    return tenant.run(await tenant.dbOf(businessId), () => withBusiness(req, res, next, businessId));
+  } catch (err) { return next(err); }
+}
+
+async function withBusiness(req, res, next, businessId) {
+  try {
     const [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);
     const membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id })
       .first('m.doctor_id', 'm.job_title', 'r.key as role_key', 'r.name as role_name', 'r.is_system');

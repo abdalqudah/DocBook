@@ -29,6 +29,9 @@ function widgetCsp(res, origin) {
   res.setHeader('Content-Security-Policy', csp.join('; '));
 }
 
+// Which clinic's database has this payment (src/db/tenant.js).
+router.param('pid', require('../../db/tenant').byParam('pay', (pid) => (pay.PUBLIC_ID_RE.test(pid) ? pay.byPublicId(pid) : null)));
+
 router.get('/return/hyperpay/:pid', limiter, wrap(async (req, res) => {
   res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
   const out = await pay.hyperpayReturn(req.params.pid, String(req.query.id || ''), env(req));

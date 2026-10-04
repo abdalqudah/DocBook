@@ -27,7 +27,9 @@ function diff(before, after) {
 
 /** @param {object} ctx { businessId, userId, ip, userAgent } */
 async function record(ctx, action, { entityType, entityId, oldValues, newValues } = {}, trx = knex) {
-  await trx('audit_logs').insert({
+  // In that clinic's own database, wherever the action was taken from (sign-up, platform admin…) — src/db/tenant.js.
+  const table = await require('../db/tenant').tableFor(ctx.businessId, 'audit_logs'); // eslint-disable-line global-require
+  await trx(table).insert({
     business_id: ctx.businessId ?? null,
     user_id: ctx.userId ?? null,
     action,

@@ -19,6 +19,13 @@ const base = (req, extra) => ({
 });
 const errText = (req, e) => { for (const k of [`errors_market.${e.code}`, `vbill.err.${e.code}`]) { const tr = req.t(k); if (tr !== k) return tr; } return e.message; };
 
+// Booking with one clinic: the request runs in that clinic's own database (src/db/tenant.js).
+router.use((req, res, next) => {
+  const id = Number(req.query.clinic || (req.body && req.body.business_id)) || 0;
+  if (!id) return next();
+  return require('../../db/tenant').runFor(id, () => next()).catch(next); // eslint-disable-line global-require
+});
+
 router.get('/', wrap(async (req, res) => {
   const visits = await svc.vendorVisits(req.vendor.id);
   visits.forEach((v) => { v.isPast = v.visit_date < clinicNow(v.timezone).date; });

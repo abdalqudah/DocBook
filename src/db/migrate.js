@@ -32,7 +32,10 @@ async function migrateLatest(knex, log = console.log) { // eslint-disable-line n
     });
   };
   try {
-    return await knex.migrate.latest();
+    const out = await knex.migrate.latest();
+    // Clinics with their own database (tenant.js): the same structure there too.
+    await require('./tenant-admin').syncAll(log); // eslint-disable-line global-require
+    return out;
   } finally {
     if (own) proto.query = query; else delete proto.query;
   }

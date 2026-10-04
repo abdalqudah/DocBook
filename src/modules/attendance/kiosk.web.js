@@ -26,6 +26,9 @@ async function screenOf(token) {
   return { k, b };
 }
 
+// Which clinic's database has this door screen (src/db/tenant.js).
+router.param('token', require('../../db/tenant').byParam('kiosk', (token) => screenOf(token)));
+
 router.get('/:token', wrap(async (req, res, next) => {
   const s = await screenOf(req.params.token);
   if (!s) return next();

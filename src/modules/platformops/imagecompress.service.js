@@ -8,6 +8,8 @@ const knex = require('../../db/knex');
 const cache = require('../../core/cache');
 const audit = require('../../core/audit');
 const imageopt = require('../../core/imageopt');
+const tenant = require('../../db/tenant');
+const { isTenant } = require('../../db/tables');
 
 const OLD = ['image/png', 'image/jpeg', 'image/jpg'];
 const BIG_WEBP = 400 * 1024; // a WebP larger than this is worth another pass (scaled down)
@@ -42,12 +44,15 @@ function candidates(t) {
 const available = async (t) => knex.schema.hasTable(t.table).then((ok) => ok && knex.schema.hasColumn(t.table, t.data)).catch(() => false);
 
 /** What can be compressed: per target, the number of pictures and their size now. */
+// A clinic's pictures are in its own database (src/db/tenant.js): those places are gone through in every database.
+const inEach = (t, fn) => (isTenant(t.table) ? tenant.eachDb(fn) : tenant.run(null, fn).then((r) => [r]));
+
 async function scan() {
   const out = [];
   for (const t of TARGETS) { // eslint-disable-line no-restricted-syntax
     if (!(await available(t))) continue; // eslint-disable-line no-await-in-loop, no-continue
-    const [r] = await candidates(t).count({ n: '*' }).select(knex.raw(`COALESCE(SUM(LENGTH(??)), 0) as bytes`, [t.data])); // eslint-disable-line no-await-in-loop
-    out.push({ key: t.key, count: Number(r.n) || 0, bytes: Number(r.bytes) || 0 });
+    const parts = await inEach(t, async () => (await candidates(t).count({ n: '*' }).select(knex.raw('COALESCE(SUM(LENGTH(??)), 0) as bytes', [t.data])))[0]); // eslint-disable-line no-await-in-loop
+    out.push({ key: t.key, count: parts.reduce((a, r) => a + (Number(r.n) || 0), 0), bytes: parts.reduce((a, r) => a + (Number(r.bytes) || 0), 0) });
   }
   return out;
 }
@@ -81,6 +86,7 @@ async function runAll(ctx) {
     for (const t of TARGETS) { // eslint-disable-line no-restricted-syntax
       if (!(await available(t))) continue; // eslint-disable-line no-await-in-loop, no-continue
       job.current = t.key;
+      await inEach(t, async () => { // eslint-disable-line no-await-in-loop
       for (;;) {
         const ids = await candidates(t).orderBy('id').limit(25).pluck('id'); // eslint-disable-line no-await-in-loop
         if (!ids.length) break;
@@ -94,6 +100,7 @@ async function runAll(ctx) {
         }
         if (job.stop) break;
       }
+      });
       if (job.stop) break;
     }
   } finally {

@@ -117,7 +117,7 @@ test('media: only real PNG/JPEG/WebP (content-checked), size read, served with s
   await owner.post('/login', { email: 'owner@growth.test', password: 'Passw0rd!x' });
   assert.equal((await owner.get('/admin/site/media')).status, 404);
 
-  const audits = await knex('audit_logs').where({ action: 'platform.site_media_uploaded' });
+  const audits = await knex.main('audit_logs').where({ action: 'platform.site_media_uploaded' }); // platform actions: main database
   assert.equal(audits.length, 1);
   assert.equal(audits[0].business_id, null);
   assert.equal((await admin.get('/admin/site/media')).status, 200);
@@ -192,7 +192,7 @@ test('SEO: validation, head tags, JSON-LD for DocBook and the clinic page, audit
   // Staff sign-in and the booking confirmation are never indexed
   assert.match((await client().get(`/${clinicSlug}/login`)).text, /noindex/);
 
-  const audit = await knex('audit_logs').where({ action: 'platform.seo_updated' }).first();
+  const audit = await knex.main('audit_logs').where({ action: 'platform.seo_updated' }).first(); // platform actions: main database
   assert.equal(audit.business_id, null);
 });
 
@@ -239,7 +239,7 @@ test('social links and pixels: strict IDs, consent first, marketing pages only, 
 
   r = await admin.post('/admin/growth', { social_x: 'https://x.com/docbook', pixel_ga4: 'G-ABC1234567', pixel_meta: '123456789012345' });
   assert.equal(r.status, 302);
-  const audit = await knex('audit_logs').where({ action: 'platform.marketing_updated' }).orderBy('id', 'desc').first();
+  const audit = await knex.main('audit_logs').where({ action: 'platform.marketing_updated' }).orderBy('id', 'desc').first(); // platform actions: main database
   assert.equal(audit.business_id, null);
 
   const v = client();

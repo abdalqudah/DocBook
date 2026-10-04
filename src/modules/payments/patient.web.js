@@ -34,6 +34,9 @@ async function holdUntil(row, gw) {
   return a ? new Date(a.created_at).getTime() + gw.holdMinutes * 60_000 : null;
 }
 
+// Which clinic's database has this consultation link (src/db/tenant.js).
+router.param('token', require('../../db/tenant').byParam('tele', (token) => tele.byToken(token)));
+
 router.get('/:token', wrap(async (req, res, next) => {
   const found = await load(req.params.token);
   if (!found) return next();

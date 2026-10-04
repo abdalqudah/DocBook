@@ -3,6 +3,9 @@ const { requireAuth, resolveBusiness } = require('../middleware/context');
 const site = require('../modules/site/web');
 
 const router = express.Router();
+// A /<slug>/… address (a clinic's public pages, booking, website — custom domains are rewritten to it): the rest of
+// the request runs in that clinic's own database (src/db/tenant.js).
+router.use(require('../db/tenant').slugMiddleware(require('../modules/businesses/business.service').RESERVED));
 router.use(site.chrome); // header/footer content of the public pages
 router.use('/', site);
 router.use('/', require('../modules/auth/web'));

@@ -2,6 +2,7 @@
 // Overview, clinics (suspend / reactivate), user accounts (disable / enable), the landing-page editor
 // ported from the previous platform release, and (growth.web.js) its media library, Search & AI and Social & tracking. Every change is written to audit_logs with business_id NULL (platform scope).
 const express = require('express');
+const tenant = require('../../db/tenant');
 const knex = require('../../db/knex');
 const cache = require('../../core/cache');
 const audit = require('../../core/audit');
@@ -45,25 +46,28 @@ const pageMeta = (total, p) => { const pages = Math.max(1, Math.ceil(total / PER
 // ---------------------------------------------------------------- overview
 router.get('/', wrap(async (req, res) => {
   const count = async (q) => Number((await q.count({ n: '*' }))[0].n);
+  // Clinics' own data: added up over every database (each clinic may have its own — src/db/tenant.js).
+  const all = (build) => tenant.sum(() => count(build()));
+  const allN = (build) => tenant.sum(async () => Number((await build())[0].n));
   const d30 = since(30);
   const [clinics, active, suspended, users, activeUsers, appts, online, recentClinics, activity, sent, screens, chats, centreSends, centreClinics, mailboxes, moves, used, surgeries, surgeryClinics] = await Promise.all([
     count(knex('businesses')), count(knex('businesses').where({ status: 'active' })), count(knex('businesses').where({ status: 'suspended' })),
     count(knex('users')), count(knex('users').where('last_login_at', '>=', d30)),
-    count(knex('appointments').where('created_at', '>=', d30).whereNot('appointment_type', 'blocked')),
-    count(knex('appointments').where('created_at', '>=', d30).where({ source: 'website' })),
+    all(() => knex('appointments').where('created_at', '>=', d30).whereNot('appointment_type', 'blocked')),
+    all(() => knex('appointments').where('created_at', '>=', d30).where({ source: 'website' })),
     knex('businesses').orderBy('created_at', 'desc').limit(6).select('id', 'name', 'name_en', 'slug', 'status', 'created_at', 'onboarding_completed_at'),
     knex('audit_logs as l').leftJoin('users as u', 'u.id', 'l.user_id').whereNull('l.business_id').where((w) => w.where('l.action', 'like', 'platform.%').orWhere('l.action', 'like', 'clinic.backup%'))
       .orderBy('l.id', 'desc').limit(8).select('l.action', 'l.entity_type', 'l.entity_id', 'l.new_values', 'l.created_at', 'u.name as user_name'),
-    count(knex('share_links').where('created_at', '>=', d30)),
-    count(knex('queue_screens').where({ is_active: true }).where('last_seen_at', '>=', new Date(Date.now() - 60_000))),
-    count(knex('staff_chat_messages').where('created_at', '>=', d30)),
-    count(knex('partner_sends').where('created_at', '>=', d30)),
-    knex('clinic_partners').countDistinct({ n: 'business_id' }).then((r) => Number(r[0].n)),
-    count(knex('staff_mailboxes')),
-    count(knex('audit_logs').whereIn('action', ['patient.exported', 'patients.exported_all', 'patients.imported']).where('created_at', '>=', d30)),
+    all(() => knex('share_links').where('created_at', '>=', d30)),
+    all(() => knex('queue_screens').where({ is_active: true }).where('last_seen_at', '>=', new Date(Date.now() - 60_000))),
+    all(() => knex('staff_chat_messages').where('created_at', '>=', d30)),
+    all(() => knex('partner_sends').where('created_at', '>=', d30)),
+    allN(() => knex('clinic_partners').countDistinct({ n: 'business_id' })),
+    all(() => knex('staff_mailboxes')),
+    all(() => knex('audit_logs').whereIn('action', ['patient.exported', 'patients.exported_all', 'patients.imported']).where('created_at', '>=', d30)),
     require('../storage/storage.service').usageAll(), // eslint-disable-line global-require
-    count(knex('surgeries').where('created_at', '>=', d30)),
-    knex('surgeries').where('created_at', '>=', d30).countDistinct({ n: 'business_id' }).then((r) => Number(r[0].n)),
+    all(() => knex('surgeries').where('created_at', '>=', d30)),
+    allN(() => knex('surgeries').where('created_at', '>=', d30).countDistinct({ n: 'business_id' })),
   ]);
   // File storage: everything the clinics keep, and how many are at 80 % of their size or more.
   const storageSvc = require('../storage/storage.service'); // eslint-disable-line global-require
@@ -115,9 +119,21 @@ router.get('/clinics', wrap(async (req, res) => {
   const rows = await base.clone().orderBy('b.created_at', 'desc').limit(PER_PAGE).offset((meta.page - 1) * PER_PAGE).select(
     'b.id', 'b.name', 'b.name_en', 'b.slug', 'b.status', 'b.city', 'b.currency', 'b.booking_enabled', 'b.created_at', 'b.onboarding_completed_at',
     knex('memberships').count('*').where('business_id', knex.ref('b.id')).where('status', 'active').as('staff'),
-    knex('doctors').count('*').where('business_id', knex.ref('b.id')).where('is_active', true).as('doctors'),
-    knex('appointments').count('*').where('business_id', knex.ref('b.id')).where('created_at', '>=', d30).as('appts'),
   );
+  // Doctors and visits live in each clinic's own database: counted there.
+  const ids = rows.map((r) => r.id);
+  const per = new Map(ids.map((id) => [id, { doctors: 0, appts: 0 }]));
+  if (ids.length) {
+    await tenant.eachDb(async () => {
+      const [d, a] = await Promise.all([
+        knex('doctors').whereIn('business_id', ids).where('is_active', true).groupBy('business_id').select('business_id').count({ n: '*' }),
+        knex('appointments').whereIn('business_id', ids).where('created_at', '>=', d30).groupBy('business_id').select('business_id').count({ n: '*' }),
+      ]);
+      d.forEach((x) => { per.get(Number(x.business_id)).doctors += Number(x.n); });
+      a.forEach((x) => { per.get(Number(x.business_id)).appts += Number(x.n); });
+    });
+  }
+  rows.forEach((r) => Object.assign(r, per.get(r.id)));
   rows.forEach((r) => { const last = backup.list(r.id)[0]; r.lastBackup = last ? last.at : null; });
   // File storage of the clinics on this page: used of their size.
   const storageSvc = require('../storage/storage.service'); // eslint-disable-line global-require
@@ -126,6 +142,8 @@ router.get('/clinics', wrap(async (req, res) => {
   page(res, 'clinics', { title: req.t('admin.nav_clinics'), rows, meta, q, status });
 }));
 
+// A clinic's page and its actions run in that clinic's own database (src/db/tenant.js).
+router.use('/clinics/:id(\\d+)', (req, res, next) => { tenant.runFor(req.params.id, () => next()).catch(next); });
 router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
   const b = await knex('businesses').where({ id: req.params.id }).first('id', 'name', 'name_en', 'slug', 'specialty', 'country', 'city', 'currency', 'timezone', 'phone', 'whatsapp', 'email',
     'address', 'booking_enabled', 'status', 'created_at', 'onboarding_completed_at');

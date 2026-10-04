@@ -22,6 +22,8 @@ function createApp() {
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
 
+  // Every request has a database context (src/db/tenant.js): the main database until its clinic is known.
+  app.use((req, res, next) => require('./db/tenant').als.run({ req: true }, next)); // eslint-disable-line global-require
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -66,7 +68,8 @@ function createApp() {
     resave: false,
     saveUninitialized: false,
     rolling: true,
-    store: new ConnectSessionKnexStore({ knex, tableName: 'sessions', createTable: true, cleanupInterval: config.isTest ? 0 : 3_600_000 }),
+    store: new ConnectSessionKnexStore({ knex: knex.main, tableName: 'sessions', // sign-in sessions live in the main database
+      createTable: true, cleanupInterval: config.isTest ? 0 : 3_600_000 }),
     // 'auto': Secure over HTTPS (behind a trusted proxy too); still works when a clinic runs DocBook over plain http
     // on its local network — otherwise phones could never stay signed in there (e.g. attendance QR scans).
     cookie: { httpOnly: true, sameSite: 'lax', secure: config.isProd ? 'auto' : false, maxAge: 14 * 86_400_000 },

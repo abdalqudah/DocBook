@@ -80,26 +80,29 @@ async function start(server) {
     .catch((e) => console.error('[auth] could not ensure the platform admin:', e.message)); // eslint-disable-line no-console
   // Copies of clinic data to their own databases (Settings → Your database), checked every 5 minutes.
   if (config.env !== 'test') {
+    // Jobs over the clinics' data run once in each database (each clinic or centre may have its own — db/tenant.js).
+    const tenant = require('./db/tenant'); // eslint-disable-line global-require
+    const each = (fn) => () => tenant.eachDb(() => fn().catch((e) => console.error('[job]', e.message))).catch((e) => console.error('[job]', e.message)); // eslint-disable-line no-console
     const syncTick = () => require('./modules/datasync/datasync.service').runDue().catch((e) => console.error('[datasync]', e.message)); // eslint-disable-line global-require, no-console
-    setInterval(syncTick, 5 * 60_000).unref();
+    setInterval(each(syncTick), 5 * 60_000).unref();
     // Online consultations: reminder e-mails ~1 hour before, and old video-call signaling messages purged.
     const teleTick = () => require('./modules/telehealth/telehealth.service').runDue().catch((e) => console.error('[telehealth]', e.message)); // eslint-disable-line global-require, no-console
-    setInterval(teleTick, 5 * 60_000).unref();
+    setInterval(each(teleTick), 5 * 60_000).unref();
     // Online payments: unpaid online bookings past the clinic's hold time are released; stuck payments settled.
     const payTick = () => require('./modules/payments/payments.service').runDue().catch((e) => console.error('[payments]', e.message)); // eslint-disable-line global-require, no-console
-    setInterval(payTick, 5 * 60_000).unref();
+    setInterval(each(payTick), 5 * 60_000).unref();
     // Appointment messages (WhatsApp / SMS / e-mail): confirmations, reminders and review requests, every minute.
     const messagingTick = () => require('./modules/messaging/messaging.service').runDue().catch((e) => console.error('[messaging]', e.message)); // eslint-disable-line global-require, no-console
-    setInterval(messagingTick, 60_000).unref();
+    setInterval(each(messagingTick), 60_000).unref();
     setInterval(() => require('./modules/subscriptions/subscriptions.service').runDue().catch((e) => console.error('[subscriptions]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- trials/periods ending, reminders (no-op while subscriptions are off)
-    setInterval(() => require('./modules/finance/budgets.service').runDue().catch((e) => console.error('[budgets]', e.message)), 24 * 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- daily budget threshold / exceeded alerts (once per budget per month)
+    setInterval(each(() => require('./modules/finance/budgets.service').runDue()), 24 * 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- daily budget threshold / exceeded alerts (once per budget per month)
     const recurringTick = () => require('./modules/expenses/recurring.service').runDue().catch((e) => console.error('[recurring]', e.message)); // eslint-disable-line global-require, no-console -- rent, phone… recorded on their date
-    setTimeout(recurringTick, 30_000).unref();
-    setInterval(recurringTick, 60 * 60_000).unref();
+    setTimeout(each(recurringTick), 30_000).unref();
+    setInterval(each(recurringTick), 60 * 60_000).unref();
     setInterval(() => require('./modules/branding/domain.service').recheckDue().catch((e) => console.error('[domains]', e.message)), 6 * 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- daily re-check of connected domains (notify only)
     // Each clinic's own encrypted backup, once a day (checked hourly; the last 7 automatic ones are kept).
     setInterval(() => require('./modules/platformops/clinic-backup').runNightly().catch((e) => console.error('[clinic-backup]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console
-    setInterval(() => require('./modules/integrations/sheets.service').runDue().catch((e) => console.error('[gsheets]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- Google Sheets daily export (clinics that switched it on)
+    setInterval(each(() => require('./modules/integrations/sheets.service').runDue()), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- Google Sheets daily export (clinics that switched it on)
   }
   server.removeAllListeners('request');
   server.on('request', createApp());

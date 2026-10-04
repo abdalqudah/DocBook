@@ -297,8 +297,9 @@ function publicState(businessId) {
 /** Addresses of the clinics whose live website asks AI crawlers not to read it (for the platform robots.txt). */
 function aiBlockedSlugs() {
   return cache.remember('site:aiblocked', async () => {
-    const rows = await knex('clinic_sites as s').join('businesses as b', 'b.id', 's.business_id').join('clinic_site_versions as v', 'v.id', 's.live_version_id')
-      .where({ 's.status': 'live', 'b.status': 'active' }).whereNotNull('b.slug').select('b.slug', 'v.doc');
+    // Websites are in each clinic's own database (src/db/tenant.js): read from every one.
+    const rows = (await require('../../db/tenant').eachDb(() => knex('clinic_sites as s').join('businesses as b', 'b.id', 's.business_id').join('clinic_site_versions as v', 'v.id', 's.live_version_id') // eslint-disable-line global-require
+      .where({ 's.status': 'live', 'b.status': 'active' }).whereNotNull('b.slug').select('b.slug', 'v.doc'))).flat();
     return rows.filter((r) => { const d = parseDoc(r.doc); return d && d.seo && d.seo.ai && d.seo.ai.bots === 'block'; }).map((r) => r.slug);
   }, 600_000);
 }
@@ -306,8 +307,8 @@ function aiBlockedSlugs() {
 /** The other pages of live websites (for the platform sitemap): [{ slug, page, hide }]. */
 function livePages() {
   return cache.remember('site:livepages', async () => {
-    const rows = await knex('clinic_sites as s').join('businesses as b', 'b.id', 's.business_id').join('clinic_site_versions as v', 'v.id', 's.live_version_id')
-      .where({ 's.status': 'live', 'b.status': 'active' }).whereNotNull('b.slug').select('b.slug', 'v.doc', 's.published_at');
+    const rows = (await require('../../db/tenant').eachDb(() => knex('clinic_sites as s').join('businesses as b', 'b.id', 's.business_id').join('clinic_site_versions as v', 'v.id', 's.live_version_id') // eslint-disable-line global-require
+      .where({ 's.status': 'live', 'b.status': 'active' }).whereNotNull('b.slug').select('b.slug', 'v.doc', 's.published_at'))).flat();
     return rows.flatMap((r) => { const d = parseDoc(r.doc); if (!d || (d.seo && d.seo.hide)) return []; return (d.pages || []).filter((p) => p.key !== 'home' && p.slug).map((p) => ({ slug: r.slug, page: p.slug, at: r.published_at })); });
   }, 600_000);
 }

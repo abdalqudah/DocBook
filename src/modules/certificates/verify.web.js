@@ -55,7 +55,9 @@ async function lookup(req, res, find, form) {
   return render(req, res, { state: row.revoked_at ? 'revoked' : 'valid', row, form });
 }
 
-router.get('/', wrap(async (req, res) => {
+// Which clinic's database has the document (src/db/tenant.js).
+router.param('code', require('../../db/tenant').byParam('cert', (code) => svc.byCode(String(code || '').slice(0, 40))));
+router.get('/', require('../../db/tenant').resolveBy((req) => (req.query.serial || req.query.code ? svc.bySerialAndCode(String(req.query.serial || '').slice(0, 40), String(req.query.code || '').slice(0, 40)) : null)), wrap(async (req, res) => {
   const serial = String(req.query.serial || '').slice(0, 40);
   const code = String(req.query.code || '').slice(0, 40);
   if (!serial && !code) return render(req, res, { state: 'form' });

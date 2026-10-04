@@ -38,6 +38,9 @@ const clinicView = (req, b) => {
 };
 
 /** Loads the consultation for :token or ends with a plain 404 (same answer for malformed and unknown tokens). */
+// Which clinic's database has this consultation link (src/db/tenant.js).
+router.param('token', require('../../db/tenant').byParam('tele', (token) => tele.byToken(token)));
+
 async function load(req, res) {
   const row = await tele.byToken(req.params.token);
   if (!row) { res.status(404); return null; }

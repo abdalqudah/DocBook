@@ -23,6 +23,9 @@ const postLimiter = rateLimit({ windowMs: 10 * 60_000, limit: config.isTest ? 50
 const RESCHEDULE_DAYS = 21;
 
 /** Appointment + clinic + settings for :token, or null (malformed, unknown, clinic suspended, or expired). */
+// Which clinic's database has this appointment link (src/db/tenant.js).
+router.param('token', require('../../db/tenant').byParam('msg', (token) => msg.byToken(token, 'action')));
+
 async function load(req, { allowExpired = false } = {}) {
   const a = await msg.byToken(req.params.token, 'action');
   if (!a) return null;

@@ -8,6 +8,7 @@
 // Body format (plain text, safe): blank line = new paragraph · "## " heading · "### " small heading · "- " list ·
 // "1. " numbered list · "> " quote · **bold** · *italic* · [text](https://…) · [[img:ID]] or [[img:ID|caption]] an image.
 const knex = require('../../db/knex');
+const tenant = require('../../db/tenant');
 const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
 const { z, validate, optionalString } = require('../../core/validate');
@@ -208,8 +209,8 @@ async function remove(ctx, id) {
 async function imageMap(clinic, a, locale) {
   const ids = [...imageIds(a.body), ...imageIds(a.body_en), a.cover_media_id].filter(Boolean);
   if (!ids.length) return {};
-  const rows = await knex('clinic_media').where({ business_id: clinic.id, is_public: true }).whereIn('id', [...new Set(ids)]).whereIn('mime', IMAGE_MIMES)
-    .select('id', 'sha', 'alt_ar', 'alt_en', 'width', 'height');
+  const rows = await tenant.inClinic(clinic.id, () => knex('clinic_media').where({ business_id: clinic.id, is_public: true }).whereIn('id', [...new Set(ids)]).whereIn('mime', IMAGE_MIMES)
+    .select('id', 'sha', 'alt_ar', 'alt_en', 'width', 'height')); // the clinic's own database (src/db/tenant.js)
   return Object.fromEntries(rows.map((m) => [m.id, { url: `/m/${clinic.slug}/${m.id}?v=${m.sha}`, alt: (locale === 'en' ? m.alt_en || m.alt_ar : m.alt_ar || m.alt_en) || '', width: m.width, height: m.height }]));
 }
 
@@ -231,6 +232,20 @@ async function present(clinic, a, locale) {
 }
 
 const publicBase = (q) => withDoctor(q).where('a.status', 'published');
+// The main site lists articles of every clinic: the doctors are in each clinic's own database (src/db/tenant.js), so
+// their names are filled in from there.
+const PLATFORM_COLS = ['a.*'];
+async function fillDoctors(rows) {
+  const list = (Array.isArray(rows) ? rows : [rows]).filter(Boolean);
+  const byClinic = new Map();
+  list.forEach((r) => { if (r.doctor_id) byClinic.set(r.business_id, [...(byClinic.get(r.business_id) || []), r]); });
+  for (const [bid, rs] of byClinic) { // eslint-disable-line no-restricted-syntax
+    const docs = await tenant.inClinic(bid, () => knex('doctors').where({ business_id: bid }).whereIn('id', rs.map((r) => r.doctor_id)).select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en')); // eslint-disable-line no-await-in-loop
+    rs.forEach((r) => { const d = docs.find((x) => x.id === r.doctor_id); if (d) Object.assign(r, { doctor_name: d.full_name, doctor_name_en: d.full_name_en, doctor_specialty: d.specialization, doctor_specialty_en: d.specialization_en }); });
+  }
+  return rows;
+}
+const platformBase = (q) => q.where('a.status', 'published');
 
 /** Published articles of a clinic's website. */
 async function siteList(clinic, { limit = 60 } = {}) {
@@ -242,28 +257,29 @@ async function siteArticle(clinic, slug) {
 
 /** Approved articles of the main site (active clinics only), newest first, optionally of one category. */
 async function platformList({ category = '', page = 1, per = 12 } = {}) {
-  const q = publicBase(knex('articles as a')).join('businesses as b', 'b.id', 'a.business_id')
+  const q = platformBase(knex('articles as a')).join('businesses as b', 'b.id', 'a.business_id')
     .where({ 'a.on_platform': true, 'a.platform_status': 'approved', 'b.status': 'active' });
   if (CATEGORIES.includes(category)) q.where('a.category', category);
   const [{ n }] = await q.clone().clearSelect().count({ n: '*' });
   const p = Math.max(1, Number(page) || 1);
   const rows = await q.orderBy('a.published_at', 'desc').limit(per).offset((p - 1) * per)
-    .select(COLS.concat(['b.slug as clinic_slug', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.id as clinic_id']));
+    .select(PLATFORM_COLS.concat(['b.slug as clinic_slug', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.id as clinic_id']));
+  await fillDoctors(rows);
   return { rows, total: Number(n), page: p, pages: Math.max(1, Math.ceil(Number(n) / per)) };
 }
 async function platformArticle(id) {
-  return publicBase(knex('articles as a')).join('businesses as b', 'b.id', 'a.business_id')
+  return fillDoctors(await platformBase(knex('articles as a')).join('businesses as b', 'b.id', 'a.business_id')
     .where({ 'a.id': Number(id) || 0, 'a.on_platform': true, 'a.platform_status': 'approved', 'b.status': 'active' })
-    .first(COLS.concat(['b.slug as clinic_slug', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.id as clinic_id', 'b.booking_enabled']));
+    .first(PLATFORM_COLS.concat(['b.slug as clinic_slug', 'b.name as clinic_name', 'b.name_en as clinic_name_en', 'b.id as clinic_id', 'b.booking_enabled'])));
 }
 
 const countView = (id) => knex('articles').where({ id }).increment('views', 1).catch(() => {});
 
 // ---------------------------------------------------------------- platform admin
 async function adminList({ status = 'pending' } = {}) {
-  const q = withDoctor(knex('articles as a')).join('businesses as b', 'b.id', 'a.business_id').where('a.on_platform', true).where('a.status', 'published');
+  const q = knex('articles as a').join('businesses as b', 'b.id', 'a.business_id').where('a.on_platform', true).where('a.status', 'published');
   if (['pending', 'approved', 'rejected'].includes(status)) q.where('a.platform_status', status);
-  return q.orderBy('a.updated_at', 'desc').limit(200).select(COLS.concat(['b.slug as clinic_slug', 'b.name as clinic_name']));
+  return fillDoctors(await q.orderBy('a.updated_at', 'desc').limit(200).select(PLATFORM_COLS.concat(['b.slug as clinic_slug', 'b.name as clinic_name'])));
 }
 async function moderate(ctx, id, action, note) {
   const a = await knex('articles').where({ id: Number(id) || 0, on_platform: true }).first();

@@ -98,7 +98,7 @@ test('the job turns old pictures into WebP and never touches PDFs; nothing is tr
   assert.ok(log[0].bytes_after < log[0].bytes_before);
   assert.equal((await svc.scan()).reduce((s, x) => s + x.count, 0), 0);
   assert.equal(await svc.start({ userId: null }), false); // nothing left
-  assert.ok(await knex('audit_logs').where({ action: 'platform.images_compressed' }).first());
+  assert.ok(await knex.main('audit_logs').where({ action: 'platform.images_compressed' }).first()); // platform actions: main database
   const after = await a.get('/admin/images');
   assert.equal(after.status, 200);
   const json = JSON.parse((await a.get('/admin/images/status')).text);

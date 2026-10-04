@@ -20,6 +20,9 @@ const safe = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((err) => 
   if (!res.headersSent) res.status(500).json({ ok: false });
 });
 
+// Which clinic's database has this hook (src/db/tenant.js).
+router.param('key', require('../../db/tenant').byParam('hook', async (key) => (await msg.configByHook('wa_hook_key', key)) || msg.configByHook('sms_inbound_key', key)));
+
 router.get('/whatsapp/:key', safe(async (req, res) => {
   const cfg = await msg.configByHook('wa_hook_key', req.params.key);
   if (!cfg || req.query['hub.mode'] !== 'subscribe' || !cfg.wa_verify_token || !require('../../core/tokens').safeEqual(String(req.query['hub.verify_token'] || ''), String(cfg.wa_verify_token))) return res.sendStatus(403);
