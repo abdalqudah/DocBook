@@ -3,11 +3,12 @@
 //   TENANT_DB_DRIVER=mysql    CREATE DATABASE with the app's own database user (a VPS / dedicated server)
 //   TENANT_DB_DRIVER=cpanel   the cPanel API: CPANEL_URL (https://host:2083), CPANEL_USER, CPANEL_TOKEN (an API token
 //                             from cPanel → Security → Manage API Tokens); the new database is given to DB_USER
-//   TENANT_DB_PREFIX          name prefix (default <DB_NAME>_c → e.g. cpuser_docbook_c12; cPanel needs "cpuser_")
+//   TENANT_DB_PREFIX          name prefix (default <DB_NAME>_ → e.g. cpuser_docbook_alnoor, the clinic's own name;
+//                             cPanel needs "cpuser_")
 const config = require('../config');
 
 const DRIVER = (process.env.TENANT_DB_DRIVER || 'off').toLowerCase();
-const PREFIX = process.env.TENANT_DB_PREFIX || `${config.db.database}_c`;
+const PREFIX = process.env.TENANT_DB_PREFIX || `${config.db.database}_`;
 const enabled = () => DRIVER === 'mysql' || DRIVER === 'cpanel';
 const q = (s) => `\`${String(s).replace(/`/g, '')}\``;
 
@@ -39,4 +40,14 @@ async function dropDatabase(main, name) {
   await main.raw(`DROP DATABASE IF EXISTS ${q(name)}`);
 }
 
-module.exports = { DRIVER, PREFIX, enabled, createDatabase, dropDatabase };
+/**
+ * A database name from the clinic's name in its address (slug): PREFIX + letters, digits and _ only, at most 64
+ * characters (MySQL and cPanel). `fallback` when the slug gives nothing usable (e.g. an Arabic-only slug).
+ */
+function nameFor(label, fallback) {
+  const room = Math.max(1, 64 - PREFIX.length - 3); // keep 3 for a "_2" suffix when the name is taken
+  const clean = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, room).replace(/_+$/, '');
+  return `${PREFIX}${clean || fallback}`;
+}
+
+module.exports = { DRIVER, PREFIX, enabled, createDatabase, dropDatabase, nameFor };

@@ -78,7 +78,7 @@ test('requests of two clinics at the same time never mix: each sees and writes o
   const b = app.agent(); await b.login(mail('b'), 'Passw0rd!x-Long');
   await b.submit('/app/patients', '/app/patients', { full_name: `Patient B ${tag}`, phone: '0797654321' });
   // Both clinics write (one request at a time per sign-in) while both keep reading, all at the same moment.
-  const writes = (agent, who, n) => (async () => { for (let i = 0; i < n; i += 1) await agent.submit('/app/patients', '/app/patients', { full_name: `${who}${i} ${tag}`, phone: `0790${who === 'A' ? 1 : 2}0000${String(i).padStart(2, '0')}` }); })(); // eslint-disable-line no-await-in-loop
+  const writes = (agent, who, n) => (async () => { for (let i = 0; i < n; i += 1) { const w = await agent.submit('/app/patients', '/app/patients', { full_name: `${who}${i} ${tag}`, phone: `0790${who === 'A' ? 1 : 2}0000${String(i).padStart(2, '0')}` }); assert.ok(String(w.location).startsWith('/app/patients'), `${who}${i}: ${w.status} → ${w.location}`); } })(); // eslint-disable-line no-await-in-loop
   const reads = [];
   for (let i = 0; i < 12; i += 1) {
     reads.push(a.get('/app/patients').then((r) => ['a', r.text]));
@@ -184,4 +184,30 @@ test('platform admin: the databases page lists them, moves a clinic in the backg
   assert.equal(s.status, 302);
   const owner = app.agent(); await owner.login(mail('a'), 'Passw0rd!x-Long');
   assert.equal((await owner.get('/admin/databases')).status, 404);
+});
+
+test('databases are named after the clinic; an older numbered name is renamed with every row kept', { skip }, async () => {
+  const provision = require('../src/db/provision'); // eslint-disable-line global-require
+  assert.equal(provision.nameFor('Al-Noor Clinic!', 'c9'), `${process.env.TENANT_DB_PREFIX}al_noor_clinic`);
+  assert.equal(provision.nameFor('عيادة', 'c9'), `${process.env.TENANT_DB_PREFIX}c9`);
+  assert.ok(provision.nameFor('x'.repeat(200), 'c9').length <= 64);
+  // B signed up as its first address; its address is now tdb-b-…: the database follows the clinic's name.
+  const old = await dbOf('b');
+  const want = provision.nameFor((await knex.main('businesses').where({ id: biz.b }).first('slug')).slug, '');
+  assert.notEqual(old, want);
+  const before = Number((await tenant.forDb(old)('audit_logs').where({ business_id: biz.b }).count({ n: '*' }))[0].n);
+  assert.ok(before > 0);
+  const r = await admin.rename(old);
+  assert.equal(r.renamed, true);
+  assert.equal(r.db, want);
+  assert.equal(await dbOf('b'), want);
+  assert.equal(await count(want, 'audit_logs', { business_id: biz.b }), before);
+  assert.equal(await knex.main('tenant_dbs').where({ db_name: old }).first(), undefined);
+  const [[gone]] = await knex.main.raw('SELECT COUNT(*) AS n FROM information_schema.schemata WHERE schema_name = ?', [old]);
+  assert.equal(Number(gone.n), 0);
+  // Already right: nothing to do.
+  assert.equal((await admin.rename(want)).renamed, false);
+  tenant.forget(biz.b);
+  const ag = app.agent(); await ag.login(mail('b'), 'Passw0rd!x-Long');
+  assert.equal((await ag.get('/app/patients')).status, 200);
 });

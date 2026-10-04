@@ -49,6 +49,9 @@
       "running": "A move is already running.",
       "nothing": "Nothing to move."
     },
-    "synced_done": "{n} databases synced ({c} changes)."
+    "synced_done": "{n} databases synced ({c} changes).",
+    "rename": "Name databases after their clinics",
+    "rename_confirm": "{n} databases will be moved to new databases named after their clinic (or centre), then the old empty ones removed. Each clinic pauses for about a minute. Continue?",
+    "rename_hint": "{n} databases still have a numbered name:"
   }
 }

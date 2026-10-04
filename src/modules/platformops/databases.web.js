@@ -19,6 +19,7 @@ const said = (req, r) => {
 };
 router.post('/databases/move-all', wrap(async (req, res) => { said(req, await svc.startAll(req.ctx)); res.redirect('/admin/databases'); }));
 router.post('/databases/move/:id(\\d+)', wrap(async (req, res) => { said(req, await svc.start(req.ctx, [req.params.id])); res.redirect('/admin/databases'); }));
+router.post('/databases/rename', wrap(async (req, res) => { said(req, await svc.startRename(req.ctx)); res.redirect('/admin/databases'); }));
 router.post('/databases/stop', wrap(async (req, res) => { svc.stop(); flash(req, 'success', req.t('dbsep.stopping')); res.redirect('/admin/databases'); }));
 router.post('/databases/sync', wrap(async (req, res) => {
   const r = await svc.syncNow(req.ctx);

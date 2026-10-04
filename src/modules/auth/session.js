@@ -1,6 +1,7 @@
 // Shared sign-in helpers used by the regular login, sign-up, invitations and the clinic staff portal.
 const knex = require('../../db/knex');
 const { entryFor } = require('../rbac/permissions');
+const { randomToken } = require('../../core/tokens');
 
 /** Starts a fresh session for `user` (session fixation safe). `businessId` pins the clinic to open. */
 function signIn(req, user, { businessId } = {}) {
@@ -16,6 +17,9 @@ function signIn(req, user, { businessId } = {}) {
       req.session.ua = String(req.get('user-agent') || '').slice(0, 200);
       req.session.ip = req.ip;
       req.session.since = new Date().toISOString();
+      // The form token is set now, not lazily by the first page: several pages opened at once right after signing in
+      // would each make one, and the last one saved would leave the others' forms refused.
+      req.session.csrf = randomToken(24);
       return req.session.save((e) => (e ? reject(e) : resolve()));
     });
   });

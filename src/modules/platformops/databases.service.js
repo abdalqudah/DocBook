@@ -29,6 +29,7 @@ async function overview() {
     driver: provision.DRIVER, enabled: provision.enabled(), prefix: provision.PREFIX,
     cpanelReady: Boolean(process.env.CPANEL_URL && process.env.CPANEL_USER && process.env.CPANEL_TOKEN),
     mainDb: tenant.MAIN, mainBytes: sizes.get(tenant.MAIN) || 0,
+    toRename: await namesToFix(),
     databases: [...byDb.values()], units: [...units.values()], counts: { total: clinics.length, own: clinics.length - inMain.length, main: inMain.length },
   };
 }
@@ -38,21 +39,51 @@ let job = null;
 const status = () => (job ? { ...job, errors: [...job.errors] } : { running: false });
 
 async function runMoves(ctx, unitIds) {
+  return runJob(unitIds, async (id) => {
+    const r = await admin.separate(id);
+    job.rows += r.moved || 0;
+    await audit.record({ ...ctx, businessId: null }, 'platform.clinic_db_moved', { entityType: 'clinic', entityId: id, newValues: { db: r.db, rows: r.moved } });
+  });
+}
+async function runJob(items, fn) {
   try {
-    for (const id of unitIds) { // eslint-disable-line no-restricted-syntax
+    for (const item of items) { // eslint-disable-line no-restricted-syntax
       if (job.stop) break;
-      job.current = id;
+      job.current = item;
       try {
-        const r = await admin.separate(id); // eslint-disable-line no-await-in-loop
-        job.done += 1; job.rows += r.moved || 0;
-        await audit.record({ ...ctx, businessId: null }, 'platform.clinic_db_moved', { entityType: 'clinic', entityId: id, newValues: { db: r.db, rows: r.moved } }); // eslint-disable-line no-await-in-loop
+        await fn(item); // eslint-disable-line no-await-in-loop
+        job.done += 1;
       } catch (e) {
-        job.failed += 1; job.errors.push(`#${id}: ${e.message}`);
+        job.failed += 1; job.errors.push(`${typeof item === 'number' ? `#${item}` : item}: ${e.message}`);
       }
     }
   } finally {
     job.running = false; job.current = null; job.finishedAt = new Date();
   }
+}
+
+/** Databases still named by number (e.g. …_c1): each given its clinic's (or centre's) name, in the background. */
+async function namesToFix() {
+  const dbs = await main()('tenant_dbs').orderBy('id').pluck('db_name');
+  const out = [];
+  for (const db of dbs) { // eslint-disable-line no-restricted-syntax
+    if (await admin.wantedName(db)) out.push(db); // eslint-disable-line no-await-in-loop
+  }
+  return out;
+}
+async function startRename(ctx) {
+  if (!provision.enabled()) return { ok: false, reason: 'off' };
+  if (job && job.running) return { ok: false, reason: 'running' };
+  const dbs = await namesToFix();
+  if (!dbs.length) return { ok: false, reason: 'nothing' };
+  job = { running: true, total: dbs.length, done: 0, failed: 0, rows: 0, errors: [], startedAt: new Date(), finishedAt: null, current: null, stop: false };
+  await audit.record({ ...ctx, businessId: null }, 'platform.clinic_db_renames_started', { entityType: 'platform', newValues: { databases: dbs.length } });
+  runJob(dbs, async (db) => {
+    const r = await admin.rename(db);
+    job.rows += r.moved || 0;
+    if (r.renamed) await audit.record({ ...ctx, businessId: null }, 'platform.clinic_db_renamed', { entityType: 'platform', oldValues: { db: r.from }, newValues: { db: r.db, rows: r.moved } });
+  }).catch(() => {});
+  return { ok: true, total: dbs.length };
 }
 
 /** Moves clinics (by id; each with its medical centre) to their own databases, in the background. */
@@ -83,4 +114,4 @@ async function syncNow(ctx) {
   return { databases: out.length, changes };
 }
 
-module.exports = { overview, status, start, startAll, stop, wait, syncNow };
+module.exports = { overview, status, start, startAll, startRename, namesToFix, stop, wait, syncNow };

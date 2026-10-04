@@ -26,6 +26,7 @@ CPANEL_TOKEN=<%= t('dbsep.token_placeholder') %></pre>
     <p class="small"><%= t('dbsep.prefix', { prefix: o.prefix }) %></p>
     <% } %>
     <p class="small muted"><%= t('dbsep.safety') %></p>
+    <% if (o.toRename.length) { %><p class="small"><%- icon('info', 'icon-sm') %> <%= t('dbsep.rename_hint', { n: o.toRename.length }) %> <span class="mono" dir="ltr"><%= o.toRename.slice(0, 5).join(', ') %></span></p><% } %>
   </div>
 </section>
 
@@ -47,6 +48,12 @@ CPANEL_TOKEN=<%= t('dbsep.token_placeholder') %></pre>
       <form method="post" action="/admin/databases/move-all" data-confirm="<%= t('dbsep.move_all_confirm', { n: o.units.length }) %>" data-confirm-yes="<%= t('dbsep.move_all') %>">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button class="btn btn-primary" type="submit"<%= o.enabled && o.units.length ? '' : ' disabled' %>><%- icon('database', 'icon-sm') %><%= t('dbsep.move_all') %></button>
+      </form>
+      <% } %>
+      <% if (o.toRename.length && !job.running) { %>
+      <form method="post" action="/admin/databases/rename" data-confirm="<%= t('dbsep.rename_confirm', { n: o.toRename.length }) %>" data-confirm-yes="<%= t('dbsep.rename') %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-secondary" type="submit"<%= o.enabled ? '' : ' disabled' %>><%- icon('pencil', 'icon-sm') %><%= t('dbsep.rename') %></button>
       </form>
       <% } %>
       <form method="post" action="/admin/databases/sync"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"<%= o.databases.length ? '' : ' disabled' %>><%- icon('refresh-cw', 'icon-sm') %><%= t('dbsep.sync') %></button></form>

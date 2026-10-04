@@ -31,13 +31,38 @@ async function columns(db, t) {
   return rows.map((r) => r.column_name || r.COLUMN_NAME);
 }
 
-/** A new clinic database: registered with its block of ids, created on the server, tables and views built. */
-async function newDb() {
+/** The name a unit's database should have: the clinic's address (slug) — for a medical centre, the centre's. */
+async function labelOf(ids) {
+  const k = main();
+  const rows = await k('businesses').whereIn('id', ids).select('id', 'slug', 'center_id');
+  const centerId = rows.map((r) => r.center_id).find(Boolean);
+  if (centerId) {
+    const c = await k('centers').where({ id: centerId }).first('owner_business_id');
+    const owner = c && await k('businesses').where({ id: c.owner_business_id }).first('slug');
+    if (owner && owner.slug) return owner.slug;
+  }
+  const first = rows.sort((a, b) => a.id - b.id)[0];
+  return first ? first.slug : '';
+}
+
+/** A free database name for `label` (never one registered or already on the server). */
+async function freeName(label, fallback) {
+  const k = main();
+  const base = provision.nameFor(label, fallback);
+  const [taken] = await k.raw('SELECT schema_name AS s FROM information_schema.schemata');
+  const used = new Set([...taken.map((r) => r.s || r.SCHEMA_NAME), ...(await k('tenant_dbs').pluck('db_name')), MAIN]);
+  if (!used.has(base)) return base;
+  for (let n = 2; n < 1000; n += 1) if (!used.has(`${base}_${n}`)) return `${base}_${n}`;
+  throw new Error(`No free database name for ${base}.`);
+}
+
+/** A new clinic database (named after the clinic): registered with its block of ids, created on the server, tables and views built. */
+async function newDb(label = '') {
   const k = main();
   const [{ m }] = await k('tenant_dbs').max({ m: 'block' });
   const block = Math.max(schema.FIRST_BLOCK, (Number(m) || 0) + 1);
   const [id] = await k('tenant_dbs').insert({ db_name: `__pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, block, driver: provision.DRIVER });
-  const name = `${provision.PREFIX}${id}`;
+  const name = await freeName(label, `c${id}`);
   await k('tenant_dbs').where({ id }).update({ db_name: name });
   try {
     await provision.createDatabase(k, name);
@@ -136,7 +161,7 @@ async function placeNew(businessId) {
     }
   }
   if (!provision.enabled()) return null;
-  const target = await newDb();
+  const target = await newDb(await labelOf([b.id]));
   await move([b.id], target, { settle: 0 });
   return target;
 }
@@ -145,7 +170,7 @@ async function placeNew(businessId) {
 async function separate(businessId) {
   const ids = await unitOf(businessId);
   if (!ids.length) throw new Error('Unknown clinic.');
-  const target = await newDb();
+  const target = await newDb(await labelOf(ids));
   try { return { db: target, ...(await move(ids, target)) }; } catch (e) {
     await provision.dropDatabase(main(), target).catch(() => {});
     await main()('tenant_dbs').where({ db_name: target }).del().catch(() => {});
@@ -171,7 +196,7 @@ async function outOfCenter(businessId) {
   if (!provision.enabled()) return null;
   const b = await main()('businesses').where({ id: businessId }).first('id', 'db_name');
   if (!b || !b.db_name) return null;
-  const target = await newDb();
+  const target = await newDb(await labelOf([b.id]));
   await move([b.id], target);
   return target;
 }
@@ -191,7 +216,37 @@ async function syncAll(log = () => {}) {
   return out;
 }
 
+/** The database's wanted name (its clinic's or centre's), or null when it already has it / holds no clinic. */
+async function wantedName(db) {
+  const ids = await main()('businesses').where({ db_name: db }).pluck('id');
+  if (!ids.length) return null;
+  const label = await labelOf(ids);
+  const base = provision.nameFor(label, '');
+  if (!label || base === provision.PREFIX || db === base || (db.startsWith(`${base}_`) && /^\d+$/.test(db.slice(base.length + 1)))) return null; // "_2": the name was taken
+  return { ids, label };
+}
+
+/**
+ * Gives a clinic database its clinic's name (MySQL cannot rename a database): a new database with the right name,
+ * the clinics moved into it (the same safe move), then the old, now empty, database removed.
+ */
+async function rename(db) {
+  const want = await wantedName(db);
+  if (!want) return { db, renamed: false };
+  const target = await newDb(want.label);
+  try {
+    const r = await move(want.ids, target);
+    await provision.dropDatabase(main(), db).catch(() => {});
+    await main()('tenant_dbs').where({ db_name: db }).del();
+    return { db: target, from: db, renamed: true, moved: r.moved };
+  } catch (e) {
+    await provision.dropDatabase(main(), target).catch(() => {});
+    await main()('tenant_dbs').where({ db_name: target }).del().catch(() => {});
+    throw e;
+  }
+}
+
 /** placeNew that never stops sign-up: a failure leaves the clinic in the main database (the admin can move it later). */
 const placeSafely = (businessId) => placeNew(businessId).catch((e) => { console.error('[db] own database for clinic', businessId, 'failed:', e.message); return null; }); // eslint-disable-line no-console
 
-module.exports = { placeSafely, CHILDREN, newDb, move, placeNew, unitOf, separate, intoCenter, outOfCenter, syncAll };
+module.exports = { placeSafely, CHILDREN, labelOf, wantedName, rename, newDb, move, placeNew, unitOf, separate, intoCenter, outOfCenter, syncAll };
