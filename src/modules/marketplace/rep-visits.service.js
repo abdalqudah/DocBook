@@ -7,6 +7,7 @@
 //   • booking holds a MySQL named lock for clinic+doctor+date+time and re-checks the slot — no double booking
 // Patients and patient appointments are never read here: reps only see the rep windows' availability.
 const knex = require('../../db/knex');
+const lock = require('../../db/lock');
 const cross = require('../../db/cross');
 const audit = require('../../core/audit');
 const mailer = require('../../core/mailer');
@@ -246,24 +247,19 @@ async function book(vctx, vendor, input) {
 
   const name = `rep_${clinic.id}_${d.doctor_id || 0}_${d.visit_date}_${d.visit_time}`.slice(0, 64);
   const status = clinic.rep_visits_auto_confirm ? 'confirmed' : 'requested';
-  const id = await knex.transaction(async (trx) => {
-    const [[{ got }]] = await trx.raw('SELECT GET_LOCK(?, 10) AS got', [name]);
-    if (Number(got) !== 1) throw new AppError('SLOT_BUSY', 'The system is busy — please try again.', 409);
-    try {
-      const free = await freeSlots({ businessId: clinic.id, doctorId: d.doctor_id || null, date: d.visit_date, timezone: clinic.timezone }, trx);
-      const slot = free.find((s) => s.time === d.visit_time);
-      if (!slot) throw new AppError('SLOT_TAKEN', 'This time is no longer available. Choose another time.', 409, { visit_time: 'This time is no longer available.' });
-      const [newId] = await trx('rep_visits').insert({
-        business_id: clinic.id, doctor_id: d.doctor_id || null, vendor_id: vendor.id, user_id: vctx.userId, visit_date: d.visit_date, visit_time: d.visit_time,
-        duration_minutes: slot.minutes, purpose, status,
-      });
-      await audit.record({ businessId: clinic.id, userId: vctx.userId, ip: vctx.ip, userAgent: vctx.userAgent }, 'rep_visit.requested',
-        { entityType: 'rep_visit', entityId: newId, newValues: { vendor_id: vendor.id, doctor_id: d.doctor_id || null, visit_date: d.visit_date, visit_time: d.visit_time, status } }, trx);
-      return newId;
-    } finally {
-      await trx.raw('SELECT RELEASE_LOCK(?)', [name]);
-    }
-  });
+  // the lock outlives the transaction: a second rep for this slot reads only after this visit is committed
+  const id = await lock.withLock(name, () => knex.transaction(async (trx) => {
+    const free = await freeSlots({ businessId: clinic.id, doctorId: d.doctor_id || null, date: d.visit_date, timezone: clinic.timezone }, trx);
+    const slot = free.find((s) => s.time === d.visit_time);
+    if (!slot) throw new AppError('SLOT_TAKEN', 'This time is no longer available. Choose another time.', 409, { visit_time: 'This time is no longer available.' });
+    const [newId] = await trx('rep_visits').insert({
+      business_id: clinic.id, doctor_id: d.doctor_id || null, vendor_id: vendor.id, user_id: vctx.userId, visit_date: d.visit_date, visit_time: d.visit_time,
+      duration_minutes: slot.minutes, purpose, status,
+    });
+    await audit.record({ businessId: clinic.id, userId: vctx.userId, ip: vctx.ip, userAgent: vctx.userAgent }, 'rep_visit.requested',
+      { entityType: 'rep_visit', entityId: newId, newValues: { vendor_id: vendor.id, doctor_id: d.doctor_id || null, visit_date: d.visit_date, visit_time: d.visit_time, status } }, trx);
+    return newId;
+  }));
 
   await tellClinic(clinic, vendor, { id, status, doctorId: d.doctor_id, date: d.visit_date, time: d.visit_time, purpose: d.purpose });
   return { id, status };

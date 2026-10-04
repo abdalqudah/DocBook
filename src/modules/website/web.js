@@ -263,7 +263,7 @@ router.post('/versions/:id(\\d+)/restore', can('website.edit'), builderGate, act
 const importSvc = require('./import.service');
 const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: importSvc.MAX_ZIP + 1, files: 1, fields: 24, parts: 30 } });
 router.get('/import', can('website.edit'), builderGate, wrap(async (req, res) => {
-  page(req, res, 'import', { title: req.t('website.import.title'), result: req.session.siteImport || null, canDoctors: req.ctx.permissions.has('doctors.manage'), canServices: req.ctx.permissions.has('services.manage') });
+  page(req, res, 'import', { title: req.t('website.import.title'), result: req.session.siteImport || null, canDoctors: req.ctx.permissions.has('doctors.manage'), canServices: req.ctx.permissions.has('services.manage'), isCentre: req.business.kind === 'center_admin' });
   delete req.session.siteImport;
 }));
 router.post('/import', can('website.edit'), builderGate, (req, res, next) => importUpload.single('package')(req, res, (e) => { if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'IMPORT_TOO_BIG' : 'IMPORT_BAD_FILE'; next(); }),

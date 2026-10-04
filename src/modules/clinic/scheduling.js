@@ -10,6 +10,7 @@
 // The pure functions are unit-tested (test/scheduling.test.js); availableSlots() adds the database reads.
 // ============================================================================
 const knex = require('../../db/knex');
+const lock = require('../../db/lock');
 const { AppError, E } = require('../../core/errors');
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -119,18 +120,13 @@ async function availableSlots(req, trx = knex) {
  * still free — so two people confirming the same slot at the same instant can never both succeed.
  */
 async function withSlot(req, fn) {
-  return knex.transaction(async (trx) => {
-    const name = `appt_${req.businessId}_${req.doctorId}_${req.date}_${req.time}`.slice(0, 64);
-    const [[{ got }]] = await trx.raw('SELECT GET_LOCK(?, 10) AS got', [name]);
-    if (Number(got) !== 1) throw new AppError('SLOT_BUSY', 'The system is busy — please try again.', 409);
-    try {
-      const slots = await availableSlots(req, trx);
-      if (!slots.includes(req.time)) throw new AppError('SLOT_TAKEN', 'This time is no longer available. Choose another time.', 409, { appointment_time: 'This time is no longer available.' });
-      return await fn(trx);
-    } finally {
-      await trx.raw('SELECT RELEASE_LOCK(?)', [name]);
-    }
-  });
+  const name = `appt_${req.businessId}_${req.doctorId}_${req.date}_${req.time}`.slice(0, 64);
+  // the lock outlives the transaction: the next request for this slot reads only after this one has committed
+  return lock.withLock(name, () => knex.transaction(async (trx) => {
+    const slots = await availableSlots(req, trx);
+    if (!slots.includes(req.time)) throw new AppError('SLOT_TAKEN', 'This time is no longer available. Choose another time.', 409, { appointment_time: 'This time is no longer available.' });
+    return fn(trx);
+  }));
 }
 
 /** Default week: Sat–Thu 09:00–17:00, Friday off, no break (a break is added only when the clinic or doctor chooses one). */

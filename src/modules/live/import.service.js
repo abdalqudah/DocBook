@@ -10,6 +10,7 @@ const dns = require('dns');
 const https = require('https');
 const http = require('http');
 const knex = require('../../db/knex');
+const dbLock = require('../../db/lock');
 const audit = require('../../core/audit');
 const { AppError } = require('../../core/errors');
 const httpCore = require('../../core/http');
@@ -210,7 +211,8 @@ async function plan(ctx, occurrences, o) {
 async function commit(ctx, rows, { allowOutsideHours = false, sourceKind = 'file' } = {}) {
   const { date: today, minutes: nowMinutes } = scheduling.clinicNow(ctx.timezone);
   const result = { imported: 0, ids: [], skipped: [] };
-  await knex.transaction(async (outer) => {
+  // every slot lock taken below is held until the whole import has committed (see db/lock.js)
+  await dbLock.holding((take) => knex.transaction(async (outer) => {
     const doctors = await outer('doctors').where({ business_id: ctx.businessId, is_active: true }).select('id', 'branch_id', 'working_hours', 'slot_duration_minutes');
     const docById = new Map(doctors.map((d) => [d.id, { ...d, wh: parseWh(d.working_hours) }]));
     for (const r of rows) {
@@ -224,33 +226,28 @@ async function commit(ctx, rows, { allowOutsideHours = false, sourceKind = 'file
       try {
         // eslint-disable-next-line no-await-in-loop
         const id = await outer.transaction(async (trx) => {
-          const [[{ got }]] = await trx.raw('SELECT GET_LOCK(?, 10) AS got', [lock]);
-          if (Number(got) !== 1) throw fail('SLOT_BUSY', 'busy', 409);
-          try {
-            if (await trx('appointments').where({ business_id: ctx.businessId, external_uid: uid }).first('id')) throw fail('duplicate', 'duplicate', 409);
-            const [off, booked] = await Promise.all([
-              trx('doctor_days_off').where({ business_id: ctx.businessId, doctor_id: doctor.id, off_date: r.date }).first('id'),
-              trx('appointments as a').leftJoin('services as s', 's.id', 'a.service_id').where({ 'a.business_id': ctx.businessId, 'a.doctor_id': doctor.id, 'a.appointment_date': r.date })
-                .whereNot('a.status', 'cancelled').select('a.appointment_time', trx.raw('COALESCE(a.duration_minutes, s.duration_minutes, ?) as len', [doctor.slot_duration_minutes || 30])),
-            ]);
-            const problem = checkSlot({ date: r.date, time: r.time, minutes }, { workingHours: doctor.wh, dayOff: Boolean(off), busy: booked.map((b) => [T(b.appointment_time), T(b.appointment_time) + Number(b.len)]), today, nowMinutes });
-            if (problem && !(problem === 'outside_hours' && allowOutsideHours)) throw fail(problem, problem, 409);
-            const name = String(r.name || '').trim().slice(0, 190) || '—';
-            const phone = String(r.phone || '').trim().slice(0, 40) || null;
-            let patientId = null;
-            if (Number(r.patientId)) { const p = await trx('patients').where({ id: Number(r.patientId), business_id: ctx.businessId }).first('id'); patientId = p ? p.id : null; }
-            if (!patientId && phone) patientId = await appts.resolveOrCreatePatient(ctx, { name, phone }, trx);
-            const [newId] = await trx('appointments').insert({
-              business_id: ctx.businessId, branch_id: doctor.branch_id || null, doctor_id: doctor.id, service_id: null, patient_id: patientId, patient_name: name, patient_phone: phone,
-              appointment_date: r.date, appointment_time: r.time, duration_minutes: minutes, status: 'confirmed', appointment_type: 'in_person',
-              source: 'import', booking_channel: 'staff', amount_due: await appts.expectedFee(trx, ctx.businessId, doctor.id, null),
-              notes: String(r.notes || '').slice(0, 3000) || null, created_by: ctx.userId || null, external_source: sourceKind === 'url' ? 'ical_url' : 'ical_file', external_uid: uid,
-            });
-            await audit.record(ctx, 'appointment.created', { entityType: 'appointment', entityId: newId, newValues: { date: r.date, time: r.time, doctor_id: doctor.id, source: 'import' } }, trx);
-            return newId;
-          } finally {
-            await trx.raw('SELECT RELEASE_LOCK(?)', [lock]);
-          }
+          await take(lock);
+          if (await trx('appointments').where({ business_id: ctx.businessId, external_uid: uid }).first('id')) throw fail('duplicate', 'duplicate', 409);
+          const [off, booked] = await Promise.all([
+            trx('doctor_days_off').where({ business_id: ctx.businessId, doctor_id: doctor.id, off_date: r.date }).first('id'),
+            trx('appointments as a').leftJoin('services as s', 's.id', 'a.service_id').where({ 'a.business_id': ctx.businessId, 'a.doctor_id': doctor.id, 'a.appointment_date': r.date })
+              .whereNot('a.status', 'cancelled').select('a.appointment_time', trx.raw('COALESCE(a.duration_minutes, s.duration_minutes, ?) as len', [doctor.slot_duration_minutes || 30])),
+          ]);
+          const problem = checkSlot({ date: r.date, time: r.time, minutes }, { workingHours: doctor.wh, dayOff: Boolean(off), busy: booked.map((b) => [T(b.appointment_time), T(b.appointment_time) + Number(b.len)]), today, nowMinutes });
+          if (problem && !(problem === 'outside_hours' && allowOutsideHours)) throw fail(problem, problem, 409);
+          const name = String(r.name || '').trim().slice(0, 190) || '—';
+          const phone = String(r.phone || '').trim().slice(0, 40) || null;
+          let patientId = null;
+          if (Number(r.patientId)) { const p = await trx('patients').where({ id: Number(r.patientId), business_id: ctx.businessId }).first('id'); patientId = p ? p.id : null; }
+          if (!patientId && phone) patientId = await appts.resolveOrCreatePatient(ctx, { name, phone }, trx);
+          const [newId] = await trx('appointments').insert({
+            business_id: ctx.businessId, branch_id: doctor.branch_id || null, doctor_id: doctor.id, service_id: null, patient_id: patientId, patient_name: name, patient_phone: phone,
+            appointment_date: r.date, appointment_time: r.time, duration_minutes: minutes, status: 'confirmed', appointment_type: 'in_person',
+            source: 'import', booking_channel: 'staff', amount_due: await appts.expectedFee(trx, ctx.businessId, doctor.id, null),
+            notes: String(r.notes || '').slice(0, 3000) || null, created_by: ctx.userId || null, external_source: sourceKind === 'url' ? 'ical_url' : 'ical_file', external_uid: uid,
+          });
+          await audit.record(ctx, 'appointment.created', { entityType: 'appointment', entityId: newId, newValues: { date: r.date, time: r.time, doctor_id: doctor.id, source: 'import' } }, trx);
+          return newId;
         });
         result.imported += 1; result.ids.push(id);
       } catch (e) {
@@ -261,7 +258,7 @@ async function commit(ctx, rows, { allowOutsideHours = false, sourceKind = 'file
     }
     await audit.record(ctx, 'appointments.imported', { entityType: 'appointment', entityId: null,
       newValues: { source: sourceKind, imported: result.imported, skipped: result.skipped.length, allow_outside_hours: Boolean(allowOutsideHours) } }, outer);
-  });
+  }));
   return result;
 }
 

@@ -32,10 +32,11 @@
         <span class="help"><%= t('website.import.file_help') %></span></div>
       <fieldset class="stack-sm"><legend class="label"><%= t('website.import.what') %></legend>
         <input type="hidden" name="site" value="0"><label class="check"><input type="checkbox" name="site" value="1" checked><span><%= t('website.import.opt_site') %></span></label>
-        <% if (canServices) { %><input type="hidden" name="services" value="0"><label class="check"><input type="checkbox" name="services" value="1" checked><span><%= t('website.import.opt_services') %></span></label><% } %>
+        <% if (isCentre) { %><span class="help"><%= t('website.import.centre_note') %></span><% } %>
+        <% if (canServices && !isCentre) { %><input type="hidden" name="services" value="0"><label class="check"><input type="checkbox" name="services" value="1" checked><span><%= t('website.import.opt_services') %></span></label><% } %>
         <% if (canDoctors) { %>
         <input type="hidden" name="doctors" value="0"><label class="check"><input type="checkbox" name="doctors" value="1" checked><span><%= t('website.import.opt_doctors') %></span></label>
-        <input type="hidden" name="create_doctors" value="0"><label class="check"><input type="checkbox" name="create_doctors" value="1" checked><span><%= t('website.import.opt_create') %></span></label>
+        <% if (!isCentre) { %><input type="hidden" name="create_doctors" value="0"><label class="check"><input type="checkbox" name="create_doctors" value="1" checked><span><%= t('website.import.opt_create') %></span></label><% } %>
         <input type="hidden" name="replace_photos" value="0"><label class="check"><input type="checkbox" name="replace_photos" value="1" checked><span><%= t('website.import.opt_photos') %></span></label>
         <% } else { %><span class="help"><%= t('website.import.no_doctors_perm') %></span><% } %>
       </fieldset>

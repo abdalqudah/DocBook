@@ -127,6 +127,33 @@ async function importDoctors(ctx, data, mediaIds, { create = true, photos = true
 }
 
 /**
+ * A medical centre's website: its doctors belong to the centre's clinics. Each doctor of the package is matched in the
+ * clinic they work at (in that clinic's own database) and updated there; the photo goes into that clinic's library.
+ * No doctor is ever created in the centre's administration account.
+ */
+async function importDoctorsCenter(ctx, business, data, zip, { photos = true } = {}) {
+  const tenant = require('../../db/tenant'); // eslint-disable-line global-require
+  const portal = require('../site/portal.web'); // eslint-disable-line global-require
+  const practices = (await portal.centerPractices(business)) || [];
+  const list = (Array.isArray(data.doctors) ? data.doctors : []).slice(0, MAX_DOCTORS);
+  const out = { updated: [], created: [] };
+  for (const p of practices) { // eslint-disable-line no-restricted-syntax
+    await tenant.runFor(p.id, async () => { // eslint-disable-line no-await-in-loop
+      const pctx = { ...ctx, businessId: p.id };
+      const mine = await knex('doctors').where({ business_id: p.id }).select('full_name', 'full_name_en');
+      const here = new Set(); mine.forEach((d) => [d.full_name, d.full_name_en].forEach((n) => { const k = nameKey(n); if (k) here.add(k); }));
+      const matched = list.filter((d) => d && [d.full_name, d.full_name_en, ...(Array.isArray(d.names) ? d.names : [])].map(nameKey).some((k) => k && here.has(k)));
+      if (!matched.length) return;
+      const refs = new Set(matched.map((d) => d.photo).filter(Boolean));
+      const ids = await importMedia(pctx, { media: Object.fromEntries(Object.entries(data.media || {}).filter(([k]) => refs.has(k))) }, zip);
+      const r = await importDoctors(pctx, { doctors: matched }, ids, { create: false, photos });
+      out.updated.push(...r.updated);
+    });
+  }
+  return out;
+}
+
+/**
  * Main services (categories) and their sub-services, matched by name (no duplicates on a second import). A new
  * service has no price shown (the clinic sets prices); an existing one keeps its price and only gets what it lacks.
  */
@@ -208,8 +235,14 @@ async function run(ctx, business, file, opts = {}) {
   const { data, zip } = open(file);
   try {
     const mediaIds = await importMedia(ctx, data, zip);
-    const docs = opts.doctors === false ? { updated: [], created: [] } : await importDoctors(ctx, data, mediaIds, { create: opts.createDoctors !== false, photos: opts.replacePhotos !== false });
-    const svc = opts.services === false ? { categories: 0, services: 0 } : await importServices(ctx, data);
+    const centre = business && business.kind === 'center_admin';
+    let docs = { updated: [], created: [] };
+    if (opts.doctors !== false) {
+      docs = centre ? await importDoctorsCenter(ctx, business, data, zip, { photos: opts.replacePhotos !== false })
+        : await importDoctors(ctx, data, mediaIds, { create: opts.createDoctors !== false, photos: opts.replacePhotos !== false });
+    }
+    // A centre's services belong to its clinics (each clinic imports its own).
+    const svc = opts.services === false || centre ? { categories: 0, services: 0 } : await importServices(ctx, data);
     const pages = opts.site === false ? 0 : await importSite(ctx, business, data, mediaIds);
     await audit.record(ctx, 'website.import', { entityType: 'clinic_site', entityId: ctx.businessId, newValues: { media: Object.keys(mediaIds).length, doctors_updated: docs.updated.length, doctors_created: docs.created.length, pages, ...svc } });
     require('../../core/cache').forgetPrefix(`media:docs:${ctx.businessId}`); // eslint-disable-line global-require

@@ -1092,7 +1092,8 @@
       "preview": "Preview",
       "doctors": "Doctors",
       "opt_services": "Add the main services and sub-services to the system (booking and invoices — you set the prices)",
-      "r_services": "New main services: {c} · new sub-services: {n}"
+      "r_services": "New main services: {c} · new sub-services: {n}",
+      "centre_note": "Centre website: each doctor is updated in their own clinic within the centre (no doctor is created here); each clinic imports its own services."
     },
     "open_link": "Open link",
     "help": {

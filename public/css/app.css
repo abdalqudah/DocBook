@@ -65,7 +65,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .grid-main { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
 .span-2 { grid-column: span 2; }
-@media (max-width: 1180px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-main { grid-template-columns: 1fr; } }
+@media (max-width: 1180px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-main { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 720px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } .span-2 { grid-column: auto; } }
 .mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; } .mt-8 { margin-top: 32px; }
 .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
@@ -1065,3 +1065,8 @@ a.pn-title:hover { color: var(--primary); }
 .menu .att-go.btn-primary:hover { background: var(--primary-hover, var(--primary)); color: var(--primary-ink); }
 .att-note { margin: 0; padding: 0 6px; }
 .menu .att-go.btn-secondary { border: 1px solid var(--border-strong, var(--border)); color: var(--text); background: var(--surface); }
+/* Bottom bar on phones: equal columns whatever the labels' length (a centre's "Shared reception"); labels end in "…". */
+@media (max-width: 900px) {
+  .bottom-nav { grid-auto-columns: minmax(0, 1fr); }
+  .bottom-nav a > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
