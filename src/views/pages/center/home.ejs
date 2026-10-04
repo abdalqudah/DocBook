@@ -1,0 +1,61 @@
+<%# The medical centre's home (administration account): where things stand and the next step, in order. %>
+<%
+  var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+  var steps = [
+    { k: 'center', done: true, href: '/app/center/settings', icon: 'building-2' },
+    { k: 'doctors', done: members.length > 0, href: '/app/center/doctors', icon: 'stethoscope', n: members.length },
+    { k: 'reception', done: members.length > 0, href: '/app/center/desk', icon: 'armchair', optional: false },
+    { k: 'staff', done: staffCount > 0, href: '/app/center/staff', icon: 'users', optional: true, n: staffCount },
+    { k: 'costs', done: hasExpenses, href: '/app/center/expenses', icon: 'receipt-text', optional: true },
+  ];
+  var next = steps.find(function (s) { return !s.done && !s.optional; }) || null;
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('center.home.kicker') %></div>
+    <h1><%= L(center.name, center.name_en) %></h1>
+    <p><%= t('center.home.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/app/center/doctors"><%- icon('user-plus', 'icon-sm') %><%= t('center.add_doctor') %></a>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('center.home.doctors') %><span class="stat-icon"><%- icon('stethoscope') %></span></div><div class="stat-value num"><%= fmt.number(members.length) %></div><div class="stat-meta"><%= t('center.home.sharing', { n: sharing }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('center.home.visits') %><span class="stat-icon info"><%- icon('calendar-days') %></span></div><div class="stat-value num"><%= fmt.number(visits) %></div><div class="stat-meta"><a class="link" href="/app/center/desk"><%= t('center.desk_title') %></a></div></div>
+  <div class="stat"><div class="stat-label"><%= t('center.home.staff') %><span class="stat-icon"><%- icon('users') %></span></div><div class="stat-value num"><%= fmt.number(staffCount) %></div><div class="stat-meta"><a class="link" href="/app/center/staff"><%= t('center.tab.staff') %></a></div></div>
+  <div class="stat"><div class="stat-label"><%= t('center.home.owed') %><span class="stat-icon"><%- icon('receipt-text') %></span></div><div class="stat-value num<%= owed > 0 ? ' text-warning' : '' %>"><%= fmt.money(owed) %></div><div class="stat-meta"><a class="link" href="/app/center/expenses"><%= t('center.tab.costs') %></a></div></div>
+</div>
+
+<div class="grid grid-main">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('center.home.steps_title') %></h2><div class="panel-sub"><%= t('center.home.steps_sub') %></div></div></div>
+    <ol class="ctr-steps">
+      <% steps.forEach(function (s, i) { %>
+      <li class="ctr-step<%= s.done ? ' is-done' : '' %><%= next === s ? ' is-next' : '' %>">
+        <span class="ctr-step-n" aria-hidden="true"><% if (s.done) { %><%- icon('check', 'icon-sm') %><% } else { %><%= i + 1 %><% } %></span>
+        <div class="grow stack-sm">
+          <div class="strong"><%= t('center.home.s.' + s.k) %><% if (s.optional) { %> <span class="badge"><%= t('center.home.optional') %></span><% } %><% if (typeof s.n === 'number' && s.n) { %> <span class="badge badge-success"><%= fmt.number(s.n) %></span><% } %></div>
+          <div class="small muted"><%= t('center.home.h.' + s.k) %></div>
+          <% if (s.k === 'reception') { %><div class="row wrap small"><a class="link" href="/app/center/desk"><%= t('center.desk_title') %></a><a class="link" href="/app/cashier/screen?scope=center"><%= t('nav.cadm_cash') %></a><a class="link" href="/app/queue-screens"><%= t('nav.cadm_screens') %></a></div><% } %>
+        </div>
+        <a class="btn btn-sm <%= next === s ? 'btn-primary' : 'btn-secondary' %>" href="<%= s.href %>"><%= t(s.done ? 'center.home.open' : 'center.home.go') %></a>
+      </li>
+      <% }) %>
+    </ol>
+  </section>
+  <aside class="stack">
+    <section class="panel flush">
+      <div class="panel-head"><div><h2><%= t('center.home.doctors') %></h2></div><a class="btn btn-ghost btn-sm" href="/app/center/doctors"><%= t('center.home.open') %></a></div>
+      <% if (members.length) { %>
+      <ul class="ctr-mini">
+        <% members.forEach(function (m) { %><li><span class="strong"><%= L(m.name, m.name_en) %></span><span class="badge<%= m.center_share_cash ? ' badge-success badge-dot' : '' %>"><%= m.center_share_cash ? t('center.cash_shared') : t('center.cash_own') %></span></li><% }) %>
+      </ul>
+      <% } else { %>
+      <div class="panel-body"><p class="small muted"><%= t('center.home.no_doctors') %></p></div>
+      <% } %>
+    </section>
+    <div class="alert alert-info small"><%- icon('shield-check', 'icon-sm') %><div class="grow"><%= t('center.home.separation') %></div></div>
+  </aside>
+</div>

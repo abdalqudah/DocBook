@@ -67,6 +67,12 @@
     "setup_orders_catalog": "التحاليل والأشعة",
     "setup_orders_catalog_text": "قائمة الفحوصات المخبرية والصور التي يختار منها الطبيب.",
     "sec_reps": "المناديب",
-    "sec_surgeries": "العمليات"
+    "sec_surgeries": "العمليات",
+    "sec_cadm_home": "الرئيسية",
+    "sec_cadm_doctors": "الأطباء والعيادات",
+    "sec_cadm_reception": "الاستقبال والمحاسبة",
+    "sec_cadm_staff": "الموظفون المشتركون",
+    "sec_cadm_costs": "المصاريف المشتركة",
+    "sec_cadm_settings": "الإعدادات"
   }
 }

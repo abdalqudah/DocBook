@@ -33,6 +33,7 @@ router.use('/', require('./reviews.web'));
 router.use('/', require('./articles.web')); // doctors' articles asking for the main site: approve / reject
 router.use('/', require('../ai/admin.web')); // AI assistant: provider key and model
 router.use('/', require('../subscriptions/admin.web'));
+router.use('/', require('../platformops/images.web')); // compress pictures stored before uploads were compressed
 router.use('/', require('../platformops/admin.web')); // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)
 
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });

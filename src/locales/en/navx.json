@@ -67,6 +67,12 @@
     "setup_orders_catalog": "Lab tests & imaging",
     "setup_orders_catalog_text": "The lab tests and imaging studies doctors pick from.",
     "sec_reps": "Medical reps",
-    "sec_surgeries": "Surgeries"
+    "sec_surgeries": "Surgeries",
+    "sec_cadm_home": "Home",
+    "sec_cadm_doctors": "Doctors & clinics",
+    "sec_cadm_reception": "Reception & cash",
+    "sec_cadm_staff": "Shared staff",
+    "sec_cadm_costs": "Shared expenses",
+    "sec_cadm_settings": "Settings"
   }
 }

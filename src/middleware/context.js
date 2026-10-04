@@ -69,7 +69,7 @@ async function resolveBusiness(req, res, next) {
     const ownDoctorId = membership && membership.doctor_id && !permissions.has('appointments.view_all') ? membership.doctor_id : null;
     req.ctx = {
       businessId, userId: req.user.id, userName: req.user.name, permissions, currency: business.currency, timezone: business.timezone,
-      roleKey: membership && membership.role_key, doctorId: membership ? membership.doctor_id : null, ownDoctorId, centerId: business.center_id || null,
+      roleKey: membership && membership.role_key, doctorId: membership ? membership.doctor_id : null, ownDoctorId, centerId: business.center_id || null, centerAdmin: business.kind === 'center_admin', // the medical centre's administration account (not a clinic)
       ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale, baseUrl: res.locals.baseUrl,
     };
     req.business = business;

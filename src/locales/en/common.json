@@ -184,7 +184,17 @@
     "clinic_hours": "Working hours",
     "website_marketing": "Connections",
     "toggle_sidebar": "Collapse / expand the sidebar",
-    "surgeries": "Surgeries"
+    "surgeries": "Surgeries",
+    "cadm_home": "Home",
+    "cadm_doctors": "Doctors & clinics",
+    "cadm_desk": "Shared reception",
+    "cadm_cash": "Shared cash screen",
+    "cadm_screens": "Waiting screens",
+    "cadm_staff": "Shared staff",
+    "cadm_team": "Logins",
+    "cadm_expenses": "Shared expenses",
+    "cadm_settings": "Centre settings",
+    "cadm_subscription": "Subscription"
   },
   "search": {
     "open": "Search and quick actions",

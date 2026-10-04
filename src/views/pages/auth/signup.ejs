@@ -28,12 +28,14 @@
       <label class="acct-type"><input type="radio" name="account_type" value="center"<%= _type === 'center' ? ' checked' : '' %> data-acct-type><span><span class="strong"><%- icon('building-2', 'icon-sm') %> <%= t('center.type_center') %></span><span class="tiny muted"><%= t('center.type_center_help') %></span></span></label>
     </div>
     <div data-center-only<%= _type === 'center' ? '' : ' hidden' %>>
-      <%- include('../../partials/field', { name: 'center_name', label: t('center.center_name'), placeholder: t('center.center_name_ph'), help: t('center.center_name_help') }) %>
+      <%- include('../../partials/field', { name: 'center_name', label: t('center.center_name'), required: true, placeholder: t('center.center_name_ph'), help: t('center.center_name_help'), attrs: _type === 'center' ? '' : 'disabled' }) %>
     </div>
     <% } %>
+    <div class="form-grid" data-clinic-only<%= !_inv && _type === 'center' ? ' hidden' : '' %>>
+      <%- include('../../partials/field', { name: 'clinic_name', label: t('auth.business_name'), required: true, cls: 'full', autocomplete: 'organization', placeholder: t('auth.business_name_ph'), help: _inv ? t('center.practice_name_help') : undefined, attrs: !_inv && _type === 'center' ? 'disabled' : '' }) %>
+      <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: specialtyOptions, attrs: !_inv && _type === 'center' ? 'disabled' : '' }) %>
+    </div>
     <div class="form-grid">
-      <%- include('../../partials/field', { name: 'clinic_name', label: t('auth.business_name'), required: true, cls: 'full', autocomplete: 'organization', placeholder: t('auth.business_name_ph'), help: (typeof centerInvite !== 'undefined' && centerInvite) || old.account_type === 'center' ? t('center.practice_name_help') : undefined }) %>
-      <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: specialtyOptions }) %>
       <%- include('../../partials/field', { name: 'city', label: t('auth.city'), autocomplete: 'address-level2' }) %>
       <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: 'JOD', options: currencyOptions }) %>
       <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', required: true, value: 'Asia/Amman', options: zoneOptions }) %>

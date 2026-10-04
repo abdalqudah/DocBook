@@ -45,16 +45,20 @@ test.before(async () => {
 });
 test.after(async () => { if (app) await app.close(); await knex.destroy(); });
 
-test('sign up as a medical centre: the first practice and the centre', async () => {
+test('sign up as a medical centre: the centre\'s administration account (not a clinic) and the centre', async () => {
   const a = app.agent();
   const page = await a.get('/signup');
   assert.match(page.text, /account_type/);
-  const r = await a.post('/signup', { _csrf: a.csrf(page.text), name: 'Dr Mansour', email: mail('a'), password: 'Passw0rd!x-Long', clinic_name: 'عيادة د. منصور', center_name: 'مجمع الشفاء', account_type: 'center', currency: 'JOD', timezone: 'Asia/Amman', terms: 'on' });
+  const r = await a.post('/signup', { _csrf: a.csrf(page.text), name: 'Dr Mansour', email: mail('a'), password: 'Passw0rd!x-Long', center_name: 'مجمع الشفاء', account_type: 'center', currency: 'JOD', timezone: 'Asia/Amman', terms: 'on' });
   assert.equal(r.status, 302);
+  assert.equal(r.location, '/app/center'); // no clinic set-up wizard
   const u = await knex('users').where({ email: mail('a') }).first();
   A = u.last_business_id;
   const b = await knex('businesses').where({ id: A }).first();
   assert.ok(b.center_id);
+  assert.equal(b.kind, 'center_admin');
+  assert.equal(b.name, 'مجمع الشفاء');
+  assert.ok(b.onboarding_completed_at);
   center = await knex('centers').where({ id: b.center_id }).first();
   assert.equal(center.name, 'مجمع الشفاء');
   assert.equal(center.owner_business_id, A);
@@ -68,7 +72,7 @@ test('an invited doctor signs up into the centre; another brings the clinic they
   assert.equal(pg.status, 200);
   let r = await a.post('/app/center/invite', { _csrf: a.csrf(pg.text), email: mail('b') });
   assert.equal(r.status, 302);
-  const link = (await a.get('/app/center')).text.match(/\/workspaces\/center\/([A-Za-z0-9_-]+)/)[1];
+  const link = (await a.get('/app/center/doctors')).text.match(/\/workspaces\/center\/([A-Za-z0-9_-]+)/)[1];
   // New doctor: the invitation leads to sign-up, the new practice joins.
   const b = app.agent();
   r = await b.get(`/workspaces/center/${link}`);
@@ -98,11 +102,11 @@ test('an invited doctor signs up into the centre; another brings the clinic they
 });
 
 test('shared reception: sees every practice today and checks in / sends in their patients; nothing outside the centre', async () => {
-  apptA = await visit(A, 'Ahmad');
+  apptA = await visit(C, 'Ahmad'); // the administration account has no visits: a practice of the centre
   apptB = await visit(Bp, 'Farah');
   X = await owned(mail('x'), 'Outside');
   const apptX = await visit(X, 'Outsider');
-  // A receptionist of practice A only.
+  // A receptionist of the centre (a login in its administration account).
   const rid = await knex.transaction((trx) => auth.createUser(trx, { name: 'Rec', email: mail('r'), password: 'Passw0rd!x' }));
   await knex('users').where({ id: rid }).update({ last_business_id: A, email_verified_at: new Date() });
   await knex('memberships').insert({ business_id: A, user_id: rid, role_id: (await rbac.getRoleByKey(A, 'receptionist')).id });
@@ -121,10 +125,13 @@ test('shared reception: sees every practice today and checks in / sends in their
   // Outside the centre, or a wrong practice id for the visit: refused.
   await r.post(`/app/center/desk/${X}/${apptX}/check-in`, { _csrf: r.csrf(desk.text) });
   assert.equal(Boolean((await knex('appointments').where({ id: apptX }).first()).checked_in), false);
-  await r.post(`/app/center/desk/${Bp}/${apptA}/check-in`, { _csrf: r.csrf(desk.text) }); // A's visit under B's id
+  await r.post(`/app/center/desk/${Bp}/${apptA}/check-in`, { _csrf: r.csrf(desk.text) }); // C's visit under B's id
   assert.equal(Boolean((await knex('appointments').where({ id: apptA }).first()).checked_in), false);
   // Still nothing else is shared: B's patients list stays B's.
-  assert.equal((await r.get(`/app/appointments/${apptB}`)).status, 404);
+  const other = await r.get(`/app/appointments/${apptB}`);
+  assert.equal(other.status, 302); // a clinic's page in the centre's account leads back to the shared reception
+  assert.equal(other.location, '/app/center/desk');
+  assert.doesNotMatch(other.text, /Farah/);
 });
 
 test('shared cash screen: only practices that share their payments; the invoice stays in the visit\'s practice', async () => {
@@ -153,7 +160,7 @@ test('shared cash screen: only practices that share their payments; the invoice 
 test('a waiting screen for the whole centre shows every practice; a clinic screen only its own', async () => {
   await knex('appointments').where({ id: apptA }).update({ checked_in: true, arrived_at: new Date() });
   await visit(Bp, 'Sara', { checked_in: true, arrived_at: new Date() });
-  const clinic = await businesses.get(A);
+  const clinic = await businesses.get(C);
   const both = await queue.board({ scope: 'center', name_style: 'full' }, clinic);
   const own = await queue.board({ scope: 'clinic', name_style: 'full' }, clinic);
   const names = (bd) => [bd.now, bd.next, ...bd.waiting, ...bd.rooms].filter(Boolean).map((x) => x.name);

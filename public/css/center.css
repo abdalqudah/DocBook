@@ -38,3 +38,16 @@
 @media (max-width: 720px) { .ctr-shares, .ctr-exp { min-width: 0; } }
 .ctr-shares li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
 .text-warning { color: var(--warning); }
+/* The centre's home: the steps, in order */
+.ctr-steps { list-style: none; margin: 0; padding: 0; }
+.ctr-step { display: flex; gap: 14px; align-items: flex-start; padding: 14px var(--card-pad); border-top: 1px solid var(--border); }
+.ctr-step:first-child { border-top: 0; }
+.ctr-step-n { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: var(--fw-bold); font-size: .85rem; background: var(--surface-sunken); color: var(--text-muted); }
+.ctr-step.is-done .ctr-step-n { background: var(--success-soft, var(--primary-soft)); color: var(--success, var(--primary)); }
+.ctr-step.is-next { background: var(--primary-soft); }
+.ctr-step.is-next .ctr-step-n { background: var(--primary); color: var(--primary-ink); }
+.ctr-mini { list-style: none; margin: 0; padding: 0; }
+.ctr-mini li { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 10px var(--card-pad); border-top: 1px solid var(--border); font-size: .9rem; }
+@media (max-width: 720px) { .ctr-step { flex-wrap: wrap; } .ctr-step > .btn { margin-inline-start: 42px; } }
+/* Sign-up and the add-doctor form: blocks hidden by the account type / "I am a doctor too" stay hidden whatever their layout. */
+[data-clinic-only][hidden], [data-center-only][hidden], [data-ctr-email][hidden] { display: none !important; }

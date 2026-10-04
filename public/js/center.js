@@ -3,7 +3,14 @@
   'use strict';
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   $$('[data-acct-type]').forEach(function (r) {
-    r.addEventListener('change', function () { $$('[data-center-only]').forEach(function (b) { b.hidden = r.value !== 'center'; }); });
+    // A centre signs up its administration (the centre's name only); a clinic gives its name and specialty.
+    var sync = function () {
+      if (!r.checked) return;
+      var center = r.value === 'center';
+      $$('[data-center-only]').forEach(function (b) { b.hidden = !center; $$('input,select', b).forEach(function (i) { i.disabled = !center; }); });
+      $$('[data-clinic-only]').forEach(function (b) { b.hidden = center; $$('input,select', b).forEach(function (i) { i.disabled = center; }); });
+    };
+    r.addEventListener('change', sync); sync();
   });
   $$('[data-join-mode]').forEach(function (r) {
     r.addEventListener('change', function () { $$('[data-join-pane]').forEach(function (p) { p.hidden = p.getAttribute('data-join-pane') !== r.value; }); });
@@ -13,6 +20,12 @@
     var box = document.querySelector('[data-ctr-custom]');
     var sync = function () { if (box) box.hidden = sel.value !== 'custom'; };
     sel.addEventListener('change', sync); sync();
+  });
+  // "I am a doctor too": the practice opens with the admin's own login — no e-mail to type.
+  $$('[data-ctr-me]').forEach(function (cb) {
+    var box = document.querySelector('[data-ctr-email]');
+    var sync = function () { if (!box) return; box.hidden = cb.checked; $$('input', box).forEach(function (i) { i.disabled = cb.checked; }); };
+    cb.addEventListener('change', sync); sync();
   });
   // The board: reload every 20 s while nobody is pressing a button (simple and always consistent with the server).
   if (document.querySelector('[data-ctr-desk]')) {

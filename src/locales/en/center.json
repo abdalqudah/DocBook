@@ -48,11 +48,11 @@
     "account_type": "Account type",
     "type_clinic": "Independent clinic",
     "type_clinic_help": "One or more doctors on one account, one team and shared accounts.",
-    "type_center": "Medical centre (separate clinics)",
-    "type_center_help": "Each doctor with their own account, staff, expenses and website — sharing the reception and waiting screen.",
+    "type_center": "Medical centre (several doctors)",
+    "type_center_help": "Sign up the centre as its administration, then add the doctors — each with a separate clinic account — sharing reception and cash.",
     "center_name": "Centre name",
     "center_name_ph": "e.g. Al Shifa Medical Complex",
-    "center_name_help": "Invite the other doctors from the Medical centre page after signing up.",
+    "center_name_help": "You sign in as the centre's administrator and add the doctors, staff and shared expenses from there.",
     "center_name_en": "Centre name in English",
     "practice_name_help": "Your own clinic's name inside the centre (on your website and invoices).",
     "join_title": "Join a medical centre",
@@ -191,6 +191,45 @@
     "in_expenses": "In expenses",
     "share_paid": "The share was paid and recorded in your expenses.",
     "all_practices": "All clinics",
-    "salaries_expense": "Shared staff salaries — {month}"
+    "salaries_expense": "Shared staff salaries — {month}",
+    "own_added": "Your own clinic is open in the centre. Switch to it from the account menu (switch clinic).",
+    "is_me": "I am a doctor in the centre too",
+    "is_me_help": "Your clinic opens with your own login; switch between it and the centre from the account menu.",
+    "sub": {
+      "practices": "Each doctor has a separate clinic account: own patients, staff, money and website. Add the doctor here and they get a link to set a password.",
+      "staff": "People who work for the whole centre (reception, accounts, cleaning…) and their salaries, split among the clinics.",
+      "costs": "Rent, electricity, shared salaries… split among the clinics; each clinic sees and pays its share.",
+      "settings": "The centre name as clinics and waiting screens show it."
+    },
+    "home": {
+      "kicker": "Medical centre administration",
+      "lead": "You run the centre: add the doctors (each with a separate clinic account), the shared reception and cash screen, shared staff and shared expenses.",
+      "doctors": "Doctors & clinics",
+      "sharing": "{n} on the shared cash screen",
+      "visits": "Visits today in the centre",
+      "staff": "Shared staff",
+      "owed": "Unpaid shares",
+      "steps_title": "Setting up the centre",
+      "steps_sub": "In order — the next step is highlighted.",
+      "optional": "Optional",
+      "open": "Open",
+      "go": "Start",
+      "no_doctors": "No doctor yet. Start by adding the first one.",
+      "separation": "Every clinic is fully separate: neither the centre nor the other clinics see a clinic's patients or money. Shared only: the reception, waiting screens, the cash screen (for those who choose) and the shared expenses.",
+      "s": {
+        "center": "The centre is ready",
+        "doctors": "Add the doctors",
+        "reception": "Shared reception and cash screen",
+        "staff": "Shared staff",
+        "costs": "Shared expenses"
+      },
+      "h": {
+        "center": "Rename the centre or add an English name in settings.",
+        "doctors": "Each doctor gets a clinic with a separate account and their own staff, and a link to set a password. If you are a doctor too, open your clinic here.",
+        "reception": "Works as soon as doctors are added: one reception for every clinic with a tab per clinic, a shared cash screen, and waiting screens for the whole centre.",
+        "staff": "Add reception and accounts staff… and give them a login to the centre only.",
+        "costs": "Add rent, electricity and salaries and choose how to split them; each clinic receives its share."
+      }
+    }
   }
 }

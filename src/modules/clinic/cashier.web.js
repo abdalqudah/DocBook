@@ -152,7 +152,8 @@ const POS_RANK = { ready: 0, with_doctor: 1, arrived: 2, expected: 3 };
 const centers = require('../center/center.service');
 const CASH_GRANT = ['billing.manage', 'billing.view', 'frontdesk.use', 'appointments.view'];
 /** The medical centre's cash screen ("?scope=center"): only when this practice is in a centre. */
-const centerScope = (req) => Boolean(req.ctx.centerId) && (req.query.scope === 'center' || (req.body && req.body.scope === 'center'));
+// The centre's administration account has no visits of its own: its cash screen is always the centre's.
+const centerScope = (req) => Boolean(req.ctx.centerId) && (req.ctx.centerAdmin || req.query.scope === 'center' || (req.body && req.body.scope === 'center'));
 /**
  * The ctx to act on a visit with: this practice's own, or — on the centre's cash screen — the visit's practice when it
  * is of the same centre AND shares its payments (each invoice stays in, and is numbered by, the visit's practice).
@@ -219,7 +220,7 @@ const addIdsOf = (v) => String(v || '').split(',').map(Number).filter((x) => Num
 /** The tabs of the centre's cash screen: every practice sharing it (the signed-in one first). */
 async function practiceTabs(req) {
   const bids = await centers.cashPractices(req.ctx);
-  const rows = await knex('businesses').whereIn('id', bids).select('id', 'name', 'name_en');
+  const rows = await knex('businesses').whereIn('id', bids).whereNot('kind', 'center_admin').select('id', 'name', 'name_en'); // the doctors' practices
   const L = (b) => (req.locale === 'en' && b.name_en) || b.name;
   return rows.sort((a, b) => (a.id === req.ctx.businessId ? -1 : b.id === req.ctx.businessId ? 1 : 0)).map((b) => ({ id: b.id, name: L(b) }));
 }
@@ -239,7 +240,7 @@ router.get('/screen', can('billing.manage'), wrap(async (req, res) => {
   return res.page('pages/clinic/cashier/screen', {
     title: req.t('cashpos.title'), layout: 'cashscreen', bodyClass: 'pos-body', expense,
     pos: { ...data, add, insurers: insurers.map((i) => ({ id: i.id, name: i.name, coverage: Number(i.coverage_percent) || 0 })), decimals: decimalsOf(ctx.currency), scope: centerScope(req) ? 'center' : '', practice: centerScope(req) ? Number(req.query.p) || 0 : 0 },
-    centerScope: centerScope(req), inCenter: Boolean(ctx.centerId), practiceTabs: centerScope(req) ? await practiceTabs(req) : [], practiceTab: Number(req.query.p) || 0,
+    centerScope: centerScope(req), inCenter: Boolean(ctx.centerId) && !ctx.centerAdmin, practiceTabs: centerScope(req) ? await practiceTabs(req) : [], practiceTab: Number(req.query.p) || 0,
     pageScripts: ['/js/cashpos.js'], pageStyles: ['/css/cashpos.css'],
   });
 }));

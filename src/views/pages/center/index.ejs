@@ -1,9 +1,15 @@
 <% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
 <div class="page-head">
   <div>
+    <% if (typeof adminAccount !== 'undefined' && adminAccount && center) { %>
+    <div class="breadcrumbs"><%= L(center.name, center.name_en) %></div>
+    <h1><%= t('center.tab.' + tab) %></h1>
+    <p><%= t('center.sub.' + tab) %></p>
+    <% } else { %>
     <div class="breadcrumbs"><%= t('navx.sec_clinic') %></div>
     <h1><%= center ? L(center.name, center.name_en) : t('center.title') %></h1>
     <p><%= t('center.lead') %></p>
+    <% } %>
   </div>
   <% if (center) { %><div class="page-actions"><a class="btn btn-primary" href="/app/center/desk"><%- icon('armchair', 'icon-sm') %><%= t('center.desk_title') %></a></div><% } %>
 </div>
@@ -30,9 +36,9 @@
 </div>
 <% } else if (founder) { %>
 <% var mName = function (id) { var m = members.find(function (x) { return x.id === id; }); return m ? L(m.name, m.name_en) : '—'; }; %>
-<nav class="pill-filter mb-4" aria-label="<%= t('center.title') %>">
-  <% ['practices', 'staff', 'costs', 'settings'].forEach(function (k) { %><a href="/app/center?tab=<%= k %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%= t('center.tab.' + k) %></a><% }) %>
-</nav>
+<% if (!adminAccount) { %><nav class="pill-filter mb-4" aria-label="<%= t('center.title') %>">
+  <% ['practices', 'staff', 'costs', 'settings'].forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%= t('center.tab.' + k) %></a><% }) %>
+</nav><% } %>
 
 <% if (tab === 'practices') { %>
 <div class="grid grid-main">
@@ -59,8 +65,9 @@
       <div class="panel-head"><div><h2><%- icon('user-plus', 'icon-sm') %> <%= t('center.add_doctor') %></h2><div class="panel-sub"><%= t('center.add_doctor_help') %></div></div></div>
       <div class="panel-body stack">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% if (adminAccount) { %><label class="check"><input type="checkbox" name="is_me" value="1" data-ctr-me><span><strong><%= t('center.is_me') %></strong> — <span class="muted small"><%= t('center.is_me_help') %></span></span></label><% } %>
         <%- include('../../partials/field', { name: 'doctor_name', label: t('center.doctor_name'), required: true, placeholder: t('center.doctor_name_ph') }) %>
-        <%- include('../../partials/field', { name: 'email', label: t('center.doctor_email'), type: 'email', required: true, attrs: 'dir="ltr"', help: t('center.doctor_email_help') }) %>
+        <div data-ctr-email><%- include('../../partials/field', { name: 'email', label: t('center.doctor_email'), type: 'email', required: true, attrs: 'dir="ltr"', help: t('center.doctor_email_help') }) %></div>
         <%- include('../../partials/field', { name: 'practice_name', label: t('center.practice_name'), placeholder: t('center.practice_name_ph') }) %>
         <%- include('../../partials/field', { name: 'specialization', label: t('center.doctor_spec') }) %>
         <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', attrs: 'dir="ltr"' }) %>
@@ -197,7 +204,7 @@
       <div><button class="btn btn-secondary" type="submit"><%= t('common.save') %></button></div>
     </div>
   </form>
-  <%- include('_share-cash') %>
+  <% if (!adminAccount) { %><%- include('_share-cash') %><% } %>
 </div>
 <% } %>
 <% } else { %>

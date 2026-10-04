@@ -1,0 +1,46 @@
+<%# Platform admin → Compress old images: what can be made smaller, start / stop, live progress. %>
+<%
+  var mb = function (b) { return b >= 1048576 ? (Math.round(b / 104857.6) / 10) + ' MB' : Math.max(0, Math.round(b / 1024)) + ' KB'; };
+  var count = rows.reduce(function (s, r) { return s + r.count; }, 0);
+  var bytes = rows.reduce(function (s, r) { return s + r.bytes; }, 0);
+%>
+<div class="page-head"><div><h1><%= t('imgopt.title') %></h1><p><%= t('imgopt.lead') %></p></div></div>
+
+<div class="stats">
+  <div class="stat hero"><div class="stat-label"><%= t('imgopt.to_do') %><span class="stat-icon"><%- icon('images') %></span></div><div class="stat-value num"><%= fmt.number(count) %></div><div class="stat-meta"><%= t('imgopt.to_do_meta', { size: mb(bytes) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('imgopt.done_so_far') %><span class="stat-icon info"><%- icon('minimize') %></span></div><div class="stat-value num" data-io-done><%= fmt.number(done.count) %></div><div class="stat-meta" data-io-saved><%= t('imgopt.saved', { size: mb(done.before - done.after) }) %></div></div>
+</div>
+
+<section class="panel" data-io data-running="<%= job.running ? '1' : '0' %>" data-saved-text="<%= t('imgopt.saved', { size: '{size}' }) %>" data-progress-text="<%= t('imgopt.progress', { done: '{done}', total: '{total}' }) %>">
+  <div class="panel-head"><div><h2><%= t('imgopt.run_title') %></h2><div class="panel-sub"><%= t('imgopt.run_sub') %></div></div></div>
+  <div class="panel-body stack">
+    <% if (job.running || job.finishedAt) { %><div class="stack-sm" data-io-progress>
+      <div class="meter"><span data-io-bar style="width:<%= job.total ? Math.round((job.done / job.total) * 100) : 0 %>%"></span></div>
+      <div class="small muted" data-io-text><%= job.total ? t('imgopt.progress', { done: job.done, total: job.total }) : '' %></div>
+      <% if (job.finishedAt && !job.running) { %><div class="small"><%= t('imgopt.finished', { done: job.done - job.kept - job.failed, kept: job.kept, size: mb(job.before - job.after) }) %></div><% } %>
+    </div><% } %>
+    <div class="row wrap">
+      <% if (job.running) { %>
+      <form method="post" action="/admin/images/stop"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('square', 'icon-sm') %><%= t('imgopt.stop') %></button></form>
+      <% } else { %>
+      <form method="post" action="/admin/images/start" data-confirm="<%= t('imgopt.confirm', { n: count }) %>" data-confirm-yes="<%= t('imgopt.start') %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary" type="submit"<%= count ? '' : ' disabled' %>><%- icon('minimize', 'icon-sm') %><%= t('imgopt.start') %></button>
+      </form>
+      <% } %>
+    </div>
+    <p class="small muted"><%= t('imgopt.rules') %></p>
+  </div>
+</section>
+
+<section class="panel flush">
+  <div class="panel-head"><div><h2><%= t('imgopt.where') %></h2></div></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th><%= t('imgopt.place') %></th><th class="num"><%= t('imgopt.pictures') %></th><th class="num"><%= t('imgopt.size') %></th></tr></thead>
+    <tbody><% rows.forEach(function (r) { %><tr>
+      <td data-label="<%= t('imgopt.place') %>"><%= t('imgopt.t.' + r.key) %></td>
+      <td class="num" data-label="<%= t('imgopt.pictures') %>"><%= fmt.number(r.count) %></td>
+      <td class="num" data-label="<%= t('imgopt.size') %>"><%= mb(r.bytes) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+</section>

@@ -2,6 +2,7 @@ const express = require('express');
 const knex = require('../db/knex');
 const { wrap } = require('./helpers');
 const nav = require('./nav');
+const { E } = require('../core/errors');
 const theme = require('../modules/branding/theme');
 const businesses = require('../modules/businesses/business.service');
 const verify = require('../modules/auth/verify.service');
@@ -49,7 +50,7 @@ router.use(wrap(async (req, res, next) => {
   res.locals.thisMonth = req.ctx.today.slice(0, 7);
   require('../core/mailer').warmLogo(req.business).catch(() => {}); // eslint-disable-line global-require -- the logo's proportions for the clinic's e-mails
   res.locals.navGroups = nav.forUser(perms, req.ctx);
-  res.locals.navActions = nav.actionsFor(perms);
+  res.locals.navActions = nav.actionsFor(perms, req.ctx);
   res.locals.verifyBanner = verify.required() && !verify.isVerified(req.user);
   res.locals.ctx = req.ctx;
   res.locals.faviconHref = businesses.faviconPath(req.business, '/app'); // the clinic's browser icon (null = the platform's)
@@ -86,6 +87,19 @@ router.use(wrap(async (req, res, next) => {
   res.locals.navBadges = badges;
   next();
 }));
+
+// The medical centre's administration account is not a clinic: its home is the centre, and a clinic's pages (patients,
+// appointments, the clinic's money…) lead back there. The doctors' practices keep those pages in their own accounts.
+router.use((req, res, next) => {
+  if (!req.ctx.centerAdmin) return next();
+  const p = req.ctx.permissions;
+  // A shared receptionist / cashier of the centre lands on their own work, the centre's admin on its home.
+  const home = p.has('settings.manage') ? '/app/center' : p.has('frontdesk.use') ? '/app/center/desk' : p.has('billing.manage') ? '/app/cashier/screen?scope=center' : '/app/help';
+  if (req.path === '/' || req.path === '') return res.redirect(home);
+  if (nav.CENTER_ADMIN_PATHS.some((x) => req.path.startsWith(x))) return next();
+  if (req.method === 'GET' || req.method === 'HEAD') return res.redirect(home);
+  return next(E.notFound('Page'));
+});
 
 // New clinics go through the setup wizard first (people who can manage settings only).
 router.use((req, res, next) => {

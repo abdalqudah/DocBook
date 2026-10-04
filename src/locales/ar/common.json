@@ -184,7 +184,17 @@
     "clinic_hours": "دوام العيادة",
     "website_marketing": "الربط والتسويق",
     "toggle_sidebar": "طي القائمة الجانبية / فتحها",
-    "surgeries": "العمليات"
+    "surgeries": "العمليات",
+    "cadm_home": "الرئيسية",
+    "cadm_doctors": "الأطباء والعيادات",
+    "cadm_desk": "الاستقبال المشترك",
+    "cadm_cash": "شاشة المحاسبة المشتركة",
+    "cadm_screens": "شاشات الانتظار",
+    "cadm_staff": "الموظفون المشتركون",
+    "cadm_team": "حسابات الدخول",
+    "cadm_expenses": "المصاريف المشتركة",
+    "cadm_settings": "إعدادات المركز",
+    "cadm_subscription": "الاشتراك"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",

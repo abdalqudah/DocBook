@@ -26,7 +26,8 @@ async function ofBusiness(businessId) {
 }
 /** The centre's active practices (with the doctors' names for the pages). */
 async function members(centerId) {
-  return knex('businesses').where({ center_id: centerId, status: 'active' }).orderBy('center_joined_at')
+  // The doctors' practices (the centre's administration account is not one of them).
+  return knex('businesses').where({ center_id: centerId, status: 'active' }).whereNot('kind', 'center_admin').orderBy('center_joined_at')
     .select('id', 'name', 'name_en', 'slug', 'specialty', 'timezone', 'currency', 'center_share_cash', 'center_joined_at', 'logo_mime', 'logo_version');
 }
 const isFounder = (center, businessId) => Boolean(center && center.owner_business_id === businessId);

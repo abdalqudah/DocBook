@@ -5,7 +5,7 @@
     <p><%= (locale === 'en' && center.name_en) || center.name %> · <%= t('center.desk_lead', { n: members.length }) %></p>
   </div>
   <div class="page-actions">
-    <a class="btn btn-secondary" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('center.my_desk') %></a>
+    <% if (!ctx.centerAdmin) { %>    <a class="btn btn-secondary" href="/app/front-desk"><%- icon('armchair', 'icon-sm') %><%= t('center.my_desk') %></a><% } %>
     <a class="btn btn-secondary" href="/app/cashier/screen?scope=center"><%- icon('banknote', 'icon-sm') %><%= t('center.cash_screen') %></a>
   </div>
 </div>

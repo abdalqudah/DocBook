@@ -10,6 +10,7 @@
   _nav.push(['/admin/payments', 'credit-card', 'ppay.admin.nav', false, 'clinics']); // payment methods and PayTabs
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav'], ['/admin/ai', 'sparkles', 'ai_admin.nav'], ['/admin/updates', 'cloud-upload', 'platformops.admin_nav']);
   _nav.push(['/admin/branding', 'image', 'branding_admin.nav', false, 'platform']); // platform logo and browser icon
+  _nav.push(['/admin/images', 'minimize', 'imgopt.nav', false, 'platform']); // compress pictures stored before uploads were compressed
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
   // Sidebar groups: an entry may name its group in a 5th field (n[4]); otherwise it is looked up by href; unknown → platform.

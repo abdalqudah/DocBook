@@ -58,6 +58,11 @@ router.get('/signup', wrap(async (req, res) => {
 }));
 router.post('/signup', limiter, form(async (req, res) => {
   if (!config.allowSignup) throw E.forbidden('signup');
+  // A medical centre signs up its administration account: named after the centre (no clinic name of its own).
+  if (!req.body.center_token && req.body.account_type === 'center') {
+    if (String(req.body.center_name || '').trim().length < 2) throw E.validation({ center_name: 'Required.' });
+    req.body.clinic_name = req.body.center_name;
+  }
   const data = validate(z.object({
     name: z.string().trim().min(2, 'Enter your full name.').max(160),
     email: email(),
@@ -70,18 +75,21 @@ router.post('/signup', limiter, form(async (req, res) => {
   const invite = req.body.center_token ? await centers.inviteByToken(req.body.center_token) : null;
   if (req.body.center_token && !invite) throw new AppError('CENTER_INVITE_INVALID', 'This invitation is no longer valid.', 410);
   const asCenter = !invite && req.body.account_type === 'center';
-  if (asCenter && String(req.body.center_name || data.clinic_name).trim().length < 2) throw E.validation({ center_name: 'Required.' });
   const userId = await knex.transaction(async (trx) => {
     const id = await authService.createUser(trx, { name: data.name, email: data.email, password: data.password, locale: req.locale });
     const bid = await businesses.create(id, clinicFields(data), trx);
-    if (asCenter) await centers.create({ businessId: bid, userId: id }, { name: req.body.center_name || data.clinic_name }, trx);
+    if (asCenter) {
+      // The centre's administration: no clinic set-up wizard — it starts on the centre's page (add the doctors).
+      await centers.create({ businessId: bid, userId: id }, { name: data.clinic_name }, trx);
+      await trx('businesses').where({ id: bid }).update({ kind: 'center_admin', onboarding_completed_at: new Date() });
+    }
     if (invite) await centers.accept(id, req.body.center_token, bid, trx);
     return id;
   });
   const user = await authService.findUser(userId);
   await verify.send(user, { locale: req.locale }).catch(() => {});
   await signIn(req, user);
-  return res.redirect('/app/onboarding');
+  return res.redirect(asCenter ? '/app/center' : '/app/onboarding');
 }, renderSignup));
 
 // ---------- First sign-in with a temporary password: choose your own

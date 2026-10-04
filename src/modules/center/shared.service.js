@@ -42,7 +42,15 @@ const doctorSchema = z.object({
  */
 async function addDoctor(ctx, input, { locale = 'ar', t = null } = {}) {
   const c = await adminCenter(ctx);
+  // "I am a doctor too": the centre's admin opens their own practice with the login they already use.
+  if (['1', 'on', true].includes(input && input.is_me)) {
+    const me = await knex('users').where({ id: ctx.userId || 0 }).first('id', 'name', 'email');
+    if (!me) throw E.forbidden('center.manage');
+    input = { ...input, email: me.email, doctor_name: String(input.doctor_name || '').trim() || me.name }; // eslint-disable-line no-param-reassign
+  }
   const d = validate(doctorSchema, input);
+  const self = ctx.userId && (await knex('users').where({ id: ctx.userId }).first('email')).email === d.email;
+  if (self) return addOwnPractice(ctx, c, d, locale);
   const existing = await knex('users').where({ email: d.email }).first('id');
   if (existing) {
     const inv = await centers.invite(ctx, d.email, { base: ctx.baseUrl, locale, t });
@@ -61,7 +69,7 @@ async function addDoctor(ctx, input, { locale = 'ar', t = null } = {}) {
       must_change_password: true, locale,
     });
     const bid = await businesses.create(userId, { name, currency: founder.currency, timezone: founder.timezone, country: founder.country, city: founder.city, specialty: founder.specialty }, trx);
-    await trx('businesses').where({ id: bid }).update({ center_id: c.id, center_joined_at: new Date(), onboarding_completed_at: new Date() });
+    await trx('businesses').where({ id: bid }).update({ center_id: c.id, center_joined_at: new Date(), onboarding_completed_at: new Date(), center_share_cash: true }); // on the shared cash screen (the doctor can turn it off)
     await trx('password_resets').insert({ user_id: userId, token_hash: sha(token), created_by: ctx.userId || null, expires_at: new Date(Date.now() + 7 * 86_400_000) });
     await audit.record(ctx, 'center.doctor_added', { entityType: 'center', entityId: c.id, newValues: { doctor: d.doctor_name, email: d.email, practice: bid } }, trx);
     await audit.record({ businessId: bid, userId: ctx.userId }, 'center.joined', { entityType: 'center', entityId: c.id, newValues: { center: c.name, added_by_center: true } }, trx);
@@ -82,6 +90,26 @@ async function addDoctor(ctx, input, { locale = 'ar', t = null } = {}) {
     }
   } catch { /* the link is shown to copy */ }
   return { created: true, practiceId: out.bid, link, emailed, email: d.email };
+}
+
+/** The admin's own practice in the centre (same login; they switch between the centre and their clinic). */
+async function addOwnPractice(ctx, c, d, locale) {
+  const businesses = require('../businesses/business.service'); // eslint-disable-line global-require
+  const rbac = require('../rbac/rbac.service'); // eslint-disable-line global-require
+  const setup = require('../onboarding/setup.service'); // eslint-disable-line global-require
+  const founder = await knex('businesses').where({ id: ctx.businessId }).first('currency', 'timezone', 'country', 'city', 'specialty');
+  const name = d.practice_name || (locale === 'en' ? `Dr. ${d.doctor_name.replace(/^(dr\.?|د\.)\s*/i, '')} clinic` : `عيادة ${d.doctor_name}`);
+  const bid = await knex.transaction(async (trx) => {
+    const id = await businesses.create(ctx.userId, { name, currency: founder.currency, timezone: founder.timezone, country: founder.country, city: founder.city, specialty: founder.specialty }, trx);
+    await trx('businesses').where({ id }).update({ center_id: c.id, center_joined_at: new Date(), onboarding_completed_at: new Date(), center_share_cash: true });
+    await trx('users').where({ id: ctx.userId }).update({ last_business_id: ctx.businessId }); // still lands on the centre
+    await audit.record(ctx, 'center.doctor_added', { entityType: 'center', entityId: c.id, newValues: { doctor: d.doctor_name, email: d.email, practice: id, own: true } }, trx);
+    return id;
+  });
+  const dctx = { businessId: bid, userId: ctx.userId, permissions: await rbac.getUserPermissions(bid, ctx.userId), timezone: founder.timezone, currency: founder.currency, locale };
+  await setup.addDoctor(dctx, { full_name: d.doctor_name, specialization: d.specialization || '', consultation_fee: '0', slot_duration_minutes: '30', is_me: '1' }).catch(() => null);
+  businesses.forget(bid);
+  return { created: true, own: true, practiceId: bid, link: null, emailed: false, email: d.email };
 }
 
 // ---------------------------------------------------------------- shared staff
@@ -170,7 +198,7 @@ const expenseSchema = z.object({
 async function addExpense(ctx, input, { period = null } = {}) {
   const c = await adminCenter(ctx);
   const d = validate(expenseSchema, input);
-  const members = await knex('businesses').where({ center_id: c.id, status: 'active' }).orderBy('center_joined_at').select('id', 'center_percent');
+  const members = await knex('businesses').where({ center_id: c.id, status: 'active' }).whereNot('kind', 'center_admin').orderBy('center_joined_at').select('id', 'center_percent');
   const mode = d.split_mode || c.split_mode || 'equal';
   const custom = Object.fromEntries(members.map((m) => [m.id, input[`share_${m.id}`]]));
   const shares = splitAmounts(d.amount, members, mode, custom);

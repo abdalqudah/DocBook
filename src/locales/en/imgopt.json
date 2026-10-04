@@ -1,0 +1,39 @@
+{
+  "imgopt": {
+    "nav": "Compress old images",
+    "title": "Compress old images",
+    "lead": "Pictures uploaded before automatic compression: turned into light, sharp WebP with the same rules as a new upload — a smaller database and backups, and faster pages.",
+    "to_do": "Pictures to compress",
+    "to_do_meta": "{size} now",
+    "done_so_far": "Compressed so far",
+    "saved": "{size} saved",
+    "run_title": "Run",
+    "run_sub": "Runs in the background, one picture after another — you can leave this page and come back.",
+    "progress": "{done} of {total}",
+    "finished": "Finished: {done} compressed, {kept} kept as they were (already small), {size} saved.",
+    "start": "Start compressing",
+    "stop": "Stop",
+    "confirm": "{n} pictures will be replaced with a compressed WebP (up to 2048 px on the long side). This cannot be undone. Continue?",
+    "rules": "Never touched: browser icons, signatures and stamps (used in PDFs), PDFs, fonts and other files. A picture that does not get smaller stays as it is and is not tried again.",
+    "where": "Where the pictures are",
+    "place": "Place",
+    "pictures": "Pictures",
+    "size": "Size now",
+    "started": "Compression started in the background.",
+    "nothing": "Nothing to compress, or a run is already in progress.",
+    "stopping": "Compression stops after the current picture.",
+    "t": {
+      "clinic_media": "Clinic media libraries and articles",
+      "logos": "Clinic logos",
+      "square_logos": "Square logos",
+      "site_media": "Main website images",
+      "patient_files": "Patient file photos (scans, results…)",
+      "online_files": "Online consultation attachments",
+      "chat_files": "Team chat photos",
+      "vendor_logos": "Rep and warehouse logos",
+      "vendor_products": "Product images",
+      "vendor_offers": "Offer images",
+      "vendor_ads": "Ad images"
+    }
+  }
+}

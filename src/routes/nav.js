@@ -102,6 +102,40 @@ const NAV = [
 ];
 NAV.forEach((g) => { g.label = `navx.sec_${g.group}`; g.items.forEach((i) => { i.section = g.group; }); });
 
+// The medical centre's administration account (businesses.kind = 'center_admin') is not a clinic: its menu is the
+// centre — the doctors' practices, the shared reception, cash and waiting screens, shared staff and shared costs.
+const CENTER_NAV = [
+  { group: 'cadm_home', icon: 'house', items: [
+    { key: 'cadm_home', href: '/app/center', icon: 'layout-dashboard', perms: ['settings.manage'], exact: true },
+  ] },
+  { group: 'cadm_doctors', icon: 'stethoscope', items: [
+    { key: 'cadm_doctors', href: '/app/center/doctors', icon: 'stethoscope', perms: ['settings.manage'] },
+  ] },
+  { group: 'cadm_reception', icon: 'armchair', items: [
+    { key: 'cadm_desk', href: '/app/center/desk', icon: 'armchair', perms: ['frontdesk.use'] },
+    { key: 'cadm_cash', href: '/app/cashier/screen?scope=center', icon: 'banknote', perms: ['billing.manage'], lights: ['/app/cashier/screen'] },
+    { key: 'cadm_screens', href: '/app/queue-screens', icon: 'monitor', perms: ['frontdesk.use'] },
+  ] },
+  { group: 'cadm_staff', icon: 'users', items: [
+    { key: 'cadm_staff', href: '/app/center/staff', icon: 'users', perms: ['settings.manage'] },
+    { key: 'cadm_team', href: '/app/clinic/team', icon: 'user-cog', perms: ['users.manage'] },
+  ] },
+  { group: 'cadm_costs', icon: 'receipt-text', items: [
+    { key: 'cadm_expenses', href: '/app/center/expenses', icon: 'receipt-text', perms: ['settings.manage'] },
+  ] },
+  { group: 'cadm_settings', icon: 'settings', foot: true, items: [
+    { key: 'cadm_settings', href: '/app/center/settings', icon: 'settings', perms: ['settings.manage'] },
+    { key: 'cadm_subscription', href: '/app/settings/subscription', icon: 'credit-card', perms: ['settings.manage'] },
+  ] },
+  { group: 'support', icon: 'life-buoy', foot: true, items: [
+    { key: 'support', href: '/app/help', icon: 'life-buoy', perms: [] },
+  ] },
+];
+CENTER_NAV.forEach((g) => { g.label = `navx.sec_${g.group}`; g.items.forEach((i) => { i.section = g.group; }); });
+/** Addresses the centre's administration account may open (everything else of a clinic leads back to the centre). */
+const CENTER_ADMIN_PATHS = ['/center', '/cashier/screen', '/cashier/receipt', '/queue-screens', '/clinic/team', '/clinic/roles', '/notifications', '/chat', '/mail',
+  '/search', '/api', '/theme', '/logo', '/favicon', '/help', '/tickets', '/settings', '/attendance', '/share'];
+
 // Mobile bottom bar: three pages for the role around the central "+ New" button (the fifth button opens the full menu).
 const BOTTOM_ORDER = {
   default: ['dashboard', 'appointments', 'patients', 'front_desk', 'my_day', 'cashier'],
@@ -191,7 +225,7 @@ function forUser(permissions, ctx = {}) {
     && (!item.viewAll || !ctx.ownDoctorId);
   const ok = (item) => visible(item) && (!item.follows || (byKey.has(item.follows) ? !hidden(ctx, item.follows) : true));
   const tabOk = (item) => item.tab !== false && (!item.tabPerms || item.tabPerms.some(has));
-  const groups = NAV.map((g) => {
+  const groups = (ctx.centerAdmin ? CENTER_NAV : NAV).map((g) => {
     const items = g.items.filter(ok);
     const tabs = items.filter(tabOk);
     let label = g.label;
@@ -203,7 +237,7 @@ function forUser(permissions, ctx = {}) {
   Object.defineProperty(groups, 'locate', { value: (path) => locate(groups, path) });
   Object.defineProperty(groups, 'tabsFor', { value: (path) => tabsFor(groups, path) });
   Object.defineProperty(groups, 'sectionCount', { value: (g, badges) => sectionCount(g, badges) });
-  Object.defineProperty(groups, 'bottom', { value: () => bottomFor(groups, ctx.roleKey) });
+  Object.defineProperty(groups, 'bottom', { value: () => (ctx.centerAdmin ? groups.flatMap((g) => g.tabs).filter((i) => !i.href.includes('?')).slice(0, 3) : bottomFor(groups, ctx.roleKey)) });
   return groups;
 }
 
@@ -219,6 +253,6 @@ function bottomFor(groups, roleKey) {
   return picked.slice(0, 3);
 }
 
-const actionsFor = (permissions, ctx = {}) => ACTIONS.filter((a) => a.perms.some((p) => permissions.has(p)) && !hidden(ctx, a.key));
+const actionsFor = (permissions, ctx = {}) => (ctx.centerAdmin ? [] : ACTIONS).filter((a) => a.perms.some((p) => permissions.has(p)) && !hidden(ctx, a.key));
 
-module.exports = { NAV, SECTIONS: NAV, ACTIONS, BOTTOM_ORDER, forUser, actionsFor, locate, tabsFor, sectionCount, matches };
+module.exports = { NAV, CENTER_NAV, CENTER_ADMIN_PATHS, SECTIONS: NAV, ACTIONS, BOTTOM_ORDER, forUser, actionsFor, locate, tabsFor, sectionCount, matches };
