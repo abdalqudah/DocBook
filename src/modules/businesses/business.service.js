@@ -15,7 +15,7 @@ const { AppError, E } = require('../../core/errors');
 const rbac = require('../rbac/rbac.service');
 
 const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email',
-  'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'booking_enabled', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode', 'invoice_next_number', 'favicon_mode', 'favicon_mime', 'favicon_version',
+  'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'logo_square_mime', 'logo_square_version', 'booking_enabled', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode', 'invoice_next_number', 'favicon_mode', 'favicon_mime', 'favicon_version',
   'onboarding_step', 'onboarding_completed_at', 'status', 'created_at', 'center_id', 'center_share_cash',
   'online_enabled', 'online_payment_required', 'online_payment_instructions', 'online_payment_instructions_en', 'online_cancellation_policy', 'online_cancellation_policy_en'];
 
@@ -120,17 +120,28 @@ async function updateProfile(ctx, data) {
   forget(ctx.businessId);
 }
 
-async function setAppearance(ctx, { color, logo, logoMime, removeLogo }) {
+async function setAppearance(ctx, { color, logo, logoMime, removeLogo, square, squareMime, removeSquare }) {
   const patch = { updated_at: new Date() };
+  if (square) { patch.logo_square = square; patch.logo_square_mime = squareMime; patch.logo_square_version = knex.raw('logo_square_version + 1'); }
+  if (removeSquare) { patch.logo_square = null; patch.logo_square_mime = null; patch.logo_square_version = knex.raw('logo_square_version + 1'); }
   if (color !== undefined) patch.color = color || null;
   if (logo) { patch.logo = logo; patch.logo_mime = logoMime; patch.logo_version = knex.raw('logo_version + 1'); }
   if (removeLogo) { patch.logo = null; patch.logo_mime = null; patch.logo_version = knex.raw('logo_version + 1'); }
   await knex('businesses').where({ id: ctx.businessId }).update(patch);
-  await audit.record(ctx, 'clinic.appearance_updated', { entityType: 'clinic', entityId: ctx.businessId, newValues: { color: color || null, logo: logo ? 'uploaded' : removeLogo ? 'removed' : undefined } });
+  await audit.record(ctx, 'clinic.appearance_updated', { entityType: 'clinic', entityId: ctx.businessId, newValues: { color: color || null, logo: logo ? 'uploaded' : removeLogo ? 'removed' : undefined, square_logo: square ? 'uploaded' : removeSquare ? 'removed' : undefined } });
   forget(ctx.businessId);
 }
 
 const logo = (id) => knex('businesses').where({ id }).first('logo', 'logo_mime', 'logo_version');
+/** The square logo, else the main logo (for square places). */
+async function squareLogo(id) {
+  const r = await knex('businesses').where({ id }).first('logo_square', 'logo_square_mime', 'logo', 'logo_mime');
+  if (!r) return null;
+  if (r.logo_square) return { data: r.logo_square, mime: r.logo_square_mime };
+  return r.logo ? { data: r.logo, mime: r.logo_mime } : null;
+}
+/** The URL of the clinic's mark for square places under `base`, or null (no logo at all). */
+const markUrl = (b, base) => (b && b.logo_square_mime ? `${base}/logo-square?v=${b.logo_square_version}` : b && b.logo_mime ? `${base}/logo?v=${b.logo_version}` : null);
 
 // ---------------------------------------------------------------- browser icon (favicon)
 const FAVICON_MODES = ['platform', 'logo', 'custom'];
@@ -141,15 +152,16 @@ const FAVICON_MODES = ['platform', 'logo', 'custom'];
 function faviconPath(b, base) {
   if (!b) return null;
   if (b.favicon_mode === 'custom' && b.favicon_mime) return `${base}/favicon?v=c${b.favicon_version}`;
-  if (b.favicon_mode === 'logo' && b.logo_mime) return `${base}/favicon?v=l${b.logo_version}`;
+  if (b.favicon_mode === 'logo' && (b.logo_square_mime || b.logo_mime)) return `${base}/favicon?v=l${b.logo_version}s${b.logo_square_version || 0}`;
   return null;
 }
 /** The icon bytes to serve (uploaded icon or logo), or null when the clinic uses the platform's icon. */
 async function faviconFile(id, { uploaded = false } = {}) {
-  const r = await knex('businesses').where({ id }).first('favicon_mode', 'favicon', 'favicon_mime', 'logo', 'logo_mime');
+  const r = await knex('businesses').where({ id }).first('favicon_mode', 'favicon', 'favicon_mime', 'logo', 'logo_mime', 'logo_square', 'logo_square_mime');
   if (!r) return null;
   if (uploaded) return r.favicon ? { data: r.favicon, mime: r.favicon_mime } : null; // the settings preview of the uploaded icon
   if (r.favicon_mode === 'custom' && r.favicon) return { data: r.favicon, mime: r.favicon_mime };
+  if (r.favicon_mode === 'logo' && r.logo_square) return { data: r.logo_square, mime: r.logo_square_mime }; // the square logo fits a tab icon best
   if (r.favicon_mode === 'logo' && r.logo) return { data: r.logo, mime: r.logo_mime };
   return null;
 }
@@ -369,7 +381,7 @@ async function destroy(ctx, confirmName) {
 }
 
 module.exports = {
-  create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, setOnboarding, claimInvoiceNumber, FAVICON_MODES, faviconPath, faviconFile, setFavicon,
+  create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, squareLogo, markUrl, setOnboarding, claimInvoiceNumber, FAVICON_MODES, faviconPath, faviconFile, setFavicon,
   setSlug, bySlug, validateSlug, normalizeSlug, suggestSlug, latinize, RESERVED,
   listMembers, changeMember, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
 };

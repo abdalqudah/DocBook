@@ -1,0 +1,7 @@
+<div class="page-head"><div><h1><%= t('nav.my_online') %></h1><p><%= t('telehealth.mine.lead') %></p></div></div>
+<form method="post" action="/app/telehealth/mine" novalidate class="stack-lg">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <%- include('_doctor-form') %>
+  <div><button class="btn btn-primary" type="submit"><%= t('common.save_changes') %></button></div>
+</form>

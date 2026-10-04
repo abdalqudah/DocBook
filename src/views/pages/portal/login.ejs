@@ -2,7 +2,7 @@
 <div class="portal-login-wrap">
   <div class="portal-login">
     <div class="portal-login-head">
-      <span class="portal-logo sm"><% if (clinic.logo_mime) { %><img src="/<%= clinic.slug %>/logo?v=<%= clinic.logo_version %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
+      <span class="portal-logo sm"><% if (clinic.markUrl || clinic.logo_mime) { %><img src="<%= clinic.markUrl || ('/' + clinic.slug + '/logo?v=' + clinic.logo_version) %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
       <div>
         <h1><%= t('portal.login_title', { clinic: clinic.displayName }) %></h1>
         <p class="muted small"><%= t('portal.login_lead') %></p>

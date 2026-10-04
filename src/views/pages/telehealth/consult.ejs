@@ -55,10 +55,12 @@
 
   <% if (typeof payExtras !== 'undefined' && payExtras) { %><%- include('../payments/_consult') %><% } %>
   <div class="tele-grid">
-    <% if (unpaid && (state === 'awaiting_payment' || (row.payment_required && live))) { %>
+    <% var _payLink = typeof doctorPayLink !== 'undefined' ? doctorPayLink : null; %>
+    <% if (unpaid && (state === 'awaiting_payment' || (row.payment_required && live) || (_payLink && live))) { %>
     <section class="tele-card">
       <h2 class="tele-h2"><%- icon('banknote', 'icon-sm') %> <%= t('telehealth.payment_title') %></h2>
       <dl class="dl"><dt><%= t('telehealth.amount') %></dt><dd class="strong"><%= fmt.money(row.amount_due, clinic.currency) %></dd></dl>
+      <% if (_payLink) { %><p class="mt-2"><a class="btn btn-primary" href="<%= _payLink %>" target="_blank" rel="noopener noreferrer"><%- icon('credit-card', 'icon-sm') %><%= t('telehealth.pay_online_link') %></a></p><p class="tiny muted"><%= t('telehealth.pay_online_link_help') %></p><% } %>
       <% if (settings.instructions) { %><p class="small tele-pre mt-2"><%= settings.instructions %></p><% } %>
     </section>
     <% } else if (row.payment_status === 'paid') { %>

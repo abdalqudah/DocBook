@@ -1,0 +1,12 @@
+<%# The clinic at the top of the booking summary: its square logo with the name, or (only a wide logo) the wide logo
+    at its own proportions — the name is then in the logo, so it is only kept for screen readers. %>
+<% var _c = clinic; var _wide = !_c.squareMark && _c.wideLogoUrl; %>
+<div class="book-summary-clinic<%= _wide ? ' is-wide' : '' %>">
+  <% if (_wide) { %>
+    <span class="book-wordmark"><img src="<%= _c.wideLogoUrl %>" alt="<%= _c.displayName %>"></span>
+    <% if (_c.address) { %><span class="muted small"><%= _c.address %></span><% } %>
+  <% } else { %>
+    <span class="portal-logo xs"><% if (_c.markUrl) { %><img src="<%= _c.markUrl %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
+    <span class="grow"><strong><%= _c.displayName %></strong><% if (_c.address) { %><span class="muted small"><%= _c.address %></span><% } %></span>
+  <% } %>
+</div>

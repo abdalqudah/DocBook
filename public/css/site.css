@@ -366,6 +366,9 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .book-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow); }
 .book-summary-clinic { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
 .book-summary-clinic .grow { display: flex; flex-direction: column; min-width: 0; }
+.book-summary-clinic.is-wide { flex-direction: column; align-items: flex-start; gap: 6px; }
+.book-wordmark { display: block; max-width: 100%; }
+.book-wordmark img { display: block; max-width: min(240px, 100%); max-height: 56px; width: auto; height: auto; object-fit: contain; }
 .book-summary-card > h2 { font-size: 13px; color: var(--text-subtle); margin: 16px 0 10px; text-transform: uppercase; letter-spacing: .05em; }
 [dir="rtl"] .book-summary-card > h2 { letter-spacing: 0; }
 .book-sum-list { margin: 0; display: grid; gap: 10px; }

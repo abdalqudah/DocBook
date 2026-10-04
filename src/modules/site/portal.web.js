@@ -44,6 +44,9 @@ async function loadClinic(req) {
     hasArticles,
     specialty: specialtyLabel,
     displayName: (en && b.name_en) || b.name,
+    markUrl: businesses.markUrl(b, `/${b.slug}`), // square places: the square logo, else the main one
+    squareMark: Boolean(b.logo_square_mime),
+    wideLogoUrl: b.logo_mime ? `/${b.slug}/logo?v=${b.logo_version}` : null,
     otherName: en ? (b.name_en ? b.name : null) : b.name_en,
     aboutText: (en ? b.about_en || b.about : b.about || b.about_en) || '',
     telHref: b.phone ? `tel:${String(b.phone).replace(/[^0-9+]/g, '')}` : null,
@@ -73,10 +76,10 @@ async function siteChromeFor(req, res, clinic) {
   return { bodyClass: `ws-body ws-theme-${state.doc.theme}`, styles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', `/${clinic.slug}/theme.css`] };
 }
 
-/** Clinic-wide price display: 'site' (website pages, search data) or 'booking' (the booking pages). On unless turned off. */
+/** Clinic-wide price display: 'site' (website pages, search data) or 'booking' (the booking pages). Off unless turned on. */
 const pricesShown = (clinic, where = 'site') => {
   const v = clinic && clinic[where === 'booking' ? 'prices_on_booking' : 'prices_on_site'];
-  return v === undefined || v === null || Boolean(Number(v));
+  return v !== undefined && v !== null && Boolean(Number(v));
 };
 
 const doctorView = (req, prices = true) => (d) => {
@@ -84,7 +87,7 @@ const doctorView = (req, prices = true) => (d) => {
   const bio = (en ? d.bio_en || d.bio : d.bio || d.bio_en) || '';
   return {
     id: d.id, name: (en && d.full_name_en) || d.full_name, specialty: (en ? d.specialization_en || d.specialization : d.specialization || d.specialization_en) || '',
-    fee: prices && d.show_consultation_fee ? Number(d.consultation_fee) || 0 : null, color: d.color && theme.HEX.test(d.color) ? d.color : null,
+    fee: prices && d.show_consultation_fee && Number(d.consultation_fee) > 0 ? Number(d.consultation_fee) : null, color: d.color && theme.HEX.test(d.color) ? d.color : null,
     bio: bio.length > 180 ? `${bio.slice(0, 177).trim()}…` : bio, slot: d.slot_duration_minutes, online: Boolean(d.online_enabled),
     branchId: d.branch_id || null, // null = main branch
   };
@@ -107,7 +110,7 @@ const listServices = async (req, clinic, where = 'site') => (await knex('service
   .map((s) => ({
     id: s.id, doctorId: s.doctor_id, name: (req.locale === 'en' && s.name_en) || s.name,
     description: (req.locale === 'en' ? s.description_en || s.description : s.description || s.description_en) || '',
-    price: s.show_price && pricesShown(clinic, where) ? Number(s.price) || 0 : null, duration: s.duration_minutes,
+    price: s.show_price && pricesShown(clinic, where) && Number(s.price) > 0 ? Number(s.price) : null, duration: s.duration_minutes,
     category: s.category_id ? { id: s.category_id, name: (req.locale === 'en' && s.category_name_en) || s.category_name, sort: s.category_sort } : null,
   }));
 
@@ -288,6 +291,15 @@ router.get('/:slug/favicon', wrap(async (req, res, next) => {
   const f = await businesses.faviconFile(clinic.id);
   if (!f) return res.redirect(302, '/favicon.svg');
   res.set(require('../../core/images').headers(f.mime, 'public, max-age=604800')); // eslint-disable-line global-require
+  return res.send(f.data);
+}));
+
+router.get('/:slug/logo-square', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const f = await businesses.squareLogo(clinic.id);
+  if (!f) return res.status(404).end();
+  res.set({ 'Content-Type': f.mime, 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
   return res.send(f.data);
 }));
 

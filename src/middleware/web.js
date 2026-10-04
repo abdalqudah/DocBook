@@ -131,7 +131,7 @@ function flash(req, type, message) {
 }
 
 // Multipart bodies are only parsed by these routes; their token is checked after parsing.
-const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|favicon)\/?$/, /^\/admin\/branding\/?$/, /^\/app\/settings\/data\/(restore|import)\/?$/, /^\/app\/[a-z-]+\/import\/?$/,
+const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|logo-square|favicon)\/?$/, /^\/admin\/branding\/?$/, /^\/app\/settings\/data\/(restore|import)\/?$/, /^\/app\/[a-z-]+\/import\/?$/,
   /^\/vendor\/(profile\/logo|products|products\/\d+|offers|offers\/\d+|ads)\/?$/, // vendor portal images (and ads)
   /^\/[a-z0-9-]+\/book\/online\/?$/, // online-consultation booking (optional medical files)
   /^\/app\/settings\/signatures\/(stamp|doctors\/\d+\/upload)\/?$/, // doctor signature / clinic stamp images

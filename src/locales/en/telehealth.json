@@ -202,7 +202,9 @@
       "clinic_off": "Online consultations are turned off for the clinic. Turn them on in Settings → Clinic page.",
       "summary_off": "Doesn't offer online consultations.",
       "uses_hours": "During working hours",
-      "hours": "Hours"
+      "hours": "Hours",
+      "pay_link": "Online payment link",
+      "pay_link_help": "Optional: a link to your own payment page (PayTabs, bank or wallet). Shown to the patient with the consultation price."
     },
     "settings": {
       "title": "Online consultations",
@@ -242,6 +244,12 @@
       "view_booking": "View my booking",
       "open_link": "Open the consultation page",
       "foot": "This link is personal — please don't share it."
+    },
+    "pay_online_link": "Pay online",
+    "pay_online_link_help": "Opens the doctor's payment page in a new tab. The clinic confirms the payment once received.",
+    "mine": {
+      "lead": "Turn your online consultations on or off and set the price, length, call method and payment link. When on, they appear on the booking page.",
+      "saved": "Online consultation settings saved."
     }
   },
   "errors_telehealth": {

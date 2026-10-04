@@ -73,6 +73,45 @@ router.post('/settings', canAny('website.edit', 'settings.manage'), wrap(async (
   res.redirect('/app/website/booking#telehealth');
 }));
 
+// ---------------------------------------------------------------- the doctor's own online consultations
+// A doctor turns their online consultations on or off, sets the price and length, the video method and their own
+// payment link — without needing access to the clinic's doctor settings.
+const scheduling = require('../clinic/scheduling');
+const businesses = require('../businesses/business.service');
+const ownDoctor = (req) => req.ctx.ownDoctorId || req.ctx.doctorId || null;
+async function renderMine(req, res, extra = {}) {
+  const id = ownDoctor(req);
+  if (!id) throw E.notFound('Doctor');
+  const doctor = await knex('doctors').where({ id, business_id: req.ctx.businessId }).first();
+  if (!doctor) throw E.notFound('Doctor');
+  res.page('pages/telehealth/mine', {
+    title: req.t('nav.my_online'), doctor, days: scheduling.DAY_KEYS, onlineWindows: tele.windowsByDay(await tele.windowsOf(req.ctx.businessId, id)),
+    jitsiReady: Boolean(tele.jitsiBase()), clinicOnline: true, currency: req.ctx.currency, old: {}, errors: {}, ...extra,
+  });
+}
+router.get('/mine', wrap((req, res) => renderMine(req, res)));
+router.post('/mine', wrap(async (req, res) => {
+  const id = ownDoctor(req);
+  if (!id) throw E.notFound('Doctor');
+  try {
+    const parsed = tele.parseDoctorOnline(req.body);
+    await tele.applyDoctorOnline(req.ctx, id, parsed);
+    // A doctor who turns it on wants patients to see it: open online consultations for the clinic too.
+    if (parsed.row.online_enabled && !req.business.online_enabled) {
+      await knex('businesses').where({ id: req.ctx.businessId }).update({ online_enabled: true, updated_at: new Date() });
+      await audit.record(req.ctx, 'clinic.telehealth_updated', { entityType: 'clinic', entityId: req.ctx.businessId, oldValues: { online_enabled: false }, newValues: { online_enabled: true, by_doctor: id } });
+      businesses.forget(req.ctx.businessId);
+    }
+  } catch (e) {
+    if (!(e instanceof AppError) || e.code !== 'VALIDATION_FAILED') throw e;
+    const { translateMessage } = require('../../core/i18n'); // eslint-disable-line global-require
+    res.status(422);
+    return renderMine(req, res, { old: req.body, errors: Object.fromEntries(Object.entries(e.details || {}).map(([k, v]) => [k, translateMessage(req.locale, v)])), formError: { code: e.code, message: req.t('errors.VALIDATION_FAILED') } });
+  }
+  flash(req, 'success', req.t('telehealth.mine.saved'));
+  return res.redirect('/app/telehealth/mine');
+}));
+
 // ---------------------------------------------------------------- one consultation
 const load = async (req) => {
   const a = await appts.get(req.ctx, Number(req.params.id)); // clinic + a doctor's own schedule

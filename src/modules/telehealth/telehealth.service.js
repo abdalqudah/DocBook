@@ -171,6 +171,7 @@ const doctorSchema = z.object({
   online_duration_minutes: z.preprocess(emptyToUndefined, z.coerce.number({ invalid_type_error: 'Enter a number.' }).int('Enter a number.').min(5, 'Too small.').max(240, 'Too large.').optional()),
   online_method: z.preprocess((v) => emptyToUndefined(v) || 'builtin', z.enum(METHODS, { errorMap: () => ({ message: 'Choose a valid value.' }) })),
   online_link: z.preprocess(emptyToUndefined, z.string().trim().max(500).url('Enter a valid URL.').refine((v) => /^https:\/\//i.test(v), 'Use an https:// URL.').optional()),
+  online_pay_link: z.preprocess(emptyToUndefined, z.string().trim().max(500).url('Enter a valid URL.').refine((v) => /^https:\/\//i.test(v), 'Use an https:// URL.').optional()),
 });
 
 /** Weekly online windows from the doctor form: ow[<day>][enabled|s1|e1|s2|e2]. */
@@ -195,7 +196,7 @@ function parseDoctorOnline(input) {
   const d = validate(doctorSchema, input);
   if (d.online_enabled && d.online_method === 'link' && !d.online_link) throw E.validation({ online_link: 'Required.' });
   return {
-    row: { online_enabled: d.online_enabled, online_fee: d.online_fee === undefined ? null : d.online_fee, online_duration_minutes: d.online_duration_minutes || null, online_method: d.online_method, online_link: d.online_link || null },
+    row: { online_enabled: d.online_enabled, online_fee: d.online_fee === undefined ? null : d.online_fee, online_duration_minutes: d.online_duration_minutes || null, online_method: d.online_method, online_link: d.online_link || null, online_pay_link: d.online_pay_link || null },
     windows: parseWindowsForm(input.ow),
   };
 }
@@ -235,6 +236,7 @@ function doctorOnline(d) {
     fee: d.online_fee !== null && d.online_fee !== undefined ? Number(d.online_fee) : Number(d.consultation_fee) || 0,
     duration: Number(d.online_duration_minutes) || Number(d.slot_duration_minutes) || 30,
     method: d.online_method || 'builtin', link: d.online_link || null,
+    payLink: d.online_pay_link && /^https:\/\//i.test(d.online_pay_link) ? d.online_pay_link : null,
   };
 }
 
@@ -247,7 +249,7 @@ async function onlineDoctors(clinic, locale) {
     const o = doctorOnline(d);
     return {
       id: d.id, name: (en && d.full_name_en) || d.full_name, specialty: (en ? d.specialization_en || d.specialization : d.specialization || d.specialization_en) || '',
-      fee: o.fee, duration: o.duration,
+      fee: o.fee, duration: o.duration, ownFee: d.online_fee !== null && d.online_fee !== undefined && Number(d.online_fee) > 0, payLink: o.payLink,
     };
   });
 }

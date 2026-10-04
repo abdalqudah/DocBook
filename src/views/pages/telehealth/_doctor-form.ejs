@@ -26,6 +26,7 @@
         <span class="help"><%= t('telehealth.doctor.method_help.' + method) %><% if (method === 'jitsi' && !jitsiReady) { %> <%= t('telehealth.doctor.jitsi_missing') %><% } %></span>
         <% if (errors.online_method) { %><span class="field-error"><%= errors.online_method %></span><% } %>
       </div>
+      <%- include('../../partials/field', { name: 'online_pay_link', cls: 'full', label: t('telehealth.doctor.pay_link'), type: 'url', value: v('online_pay_link', ''), attrs: 'dir="ltr" placeholder="https://"', help: t('telehealth.doctor.pay_link_help') }) %>
       <%- include('../../partials/field', { name: 'online_link', cls: 'full', label: t('telehealth.doctor.link'), type: 'url', value: v('online_link', ''), attrs: 'dir="ltr" placeholder="https://"', help: t('telehealth.doctor.link_help') + ' · ' + t('telehealth.doctor.method_help.link') }) %>
     </div>
   </div>

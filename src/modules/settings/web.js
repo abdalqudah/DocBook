@@ -166,6 +166,25 @@ router.post('/appearance/logo', can('settings.manage'), logoUpload, verifyCsrfAf
   flash(req, 'success', req.t('settings.logo_saved'));
   return res.redirect('/app/settings/appearance');
 }));
+// Square logo: for square places (booking summary, the public pages' badge, the browser icon).
+const squareUpload = (req, res, next) => upload.single('logo_square')(req, res, (err) => {
+  if (err) { req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'logo_too_big' : 'logo_invalid'; }
+  next();
+});
+router.post('/appearance/logo-square', can('settings.manage'), squareUpload, verifyCsrfAfterUpload, wrap(async (req, res) => {
+  const f = req.file;
+  let problem = req.uploadError || (!f ? 'logo_missing' : null);
+  if (!problem && (!LOGO_TYPES[f.mimetype] || !LOGO_TYPES[f.mimetype](f.buffer))) problem = 'logo_invalid';
+  if (problem) { flash(req, 'error', req.t(`settings.${problem}`)); return res.redirect('/app/settings/appearance#square-logo'); }
+  await businesses.setAppearance(req.ctx, { square: f.buffer, squareMime: f.mimetype });
+  flash(req, 'success', req.t('settings.logo_saved'));
+  return res.redirect('/app/settings/appearance#square-logo');
+}));
+router.post('/appearance/logo-square/delete', can('settings.manage'), wrap(async (req, res) => {
+  await businesses.setAppearance(req.ctx, { removeSquare: true });
+  flash(req, 'success', req.t('settings.logo_removed'));
+  res.redirect('/app/settings/appearance#square-logo');
+}));
 router.post('/appearance/logo/delete', can('settings.manage'), wrap(async (req, res) => {
   await businesses.setAppearance(req.ctx, { removeLogo: true });
   flash(req, 'success', req.t('settings.logo_removed'));

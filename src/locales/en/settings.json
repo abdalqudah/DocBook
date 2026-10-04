@@ -1,5 +1,9 @@
 {
   "settings": {
+    "square_logo_title": "Square logo",
+    "square_logo_sub": "A square version of your logo (the mark only) for square places: the booking summary, the clinic badge on its pages, and the browser icon.",
+    "square_logo_help": "PNG, JPEG or WebP, ideally 512×512 with a transparent background, up to 1 MB. Without it, the main logo is used.",
+    "square_logo_remove_confirm": "Remove the square logo? The main logo is used instead.",
     "title": "Settings",
     "lead": "Your clinic, your team's logins and your own account — all in one place.",
     "account": "My account",

@@ -75,6 +75,29 @@
       </div>
     </section>
 
+    <section class="panel" id="square-logo">
+      <div class="panel-head"><div><h2><%= t('settings.square_logo_title') %></h2><div class="panel-sub"><%= t('settings.square_logo_sub') %></div></div></div>
+      <div class="panel-body">
+        <div class="row wrap" style="align-items:flex-start;gap:20px">
+          <div class="logo-preview set-logo-lg"><% if (b.logo_square_mime) { %><img src="/app/logo-square/<%= b.id %>?v=<%= b.logo_square_version %>" alt="<%= t('settings.square_logo_title') %>"><% } else { %><%- icon('square', '') %><% } %></div>
+          <div class="stack grow" style="min-width:240px">
+            <form method="post" action="/app/settings/appearance/logo-square" enctype="multipart/form-data" class="stack-sm">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input class="input" type="file" name="logo_square" accept="image/png,image/jpeg,image/webp" required>
+              <span class="help"><%= t('settings.square_logo_help') %></span>
+              <div class="row-sm"><button class="btn btn-primary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('settings.logo_upload') %></button></div>
+            </form>
+            <% if (b.logo_square_mime) { %>
+            <form method="post" action="/app/settings/appearance/logo-square/delete" data-confirm="<%= t('settings.square_logo_remove_confirm') %>" data-confirm-yes="<%= t('settings.logo_remove') %>">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('settings.logo_remove') %></button>
+            </form>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel" id="favicon">
       <div class="panel-head"><div><h2><%= t('settings.favicon_title') %></h2><div class="panel-sub"><%= t('settings.favicon_sub') %></div></div></div>
       <div class="panel-body">

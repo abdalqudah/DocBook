@@ -25,6 +25,14 @@ router.get('/logo/:id', wrap(async (req, res) => {
   return res.send(row.logo);
 }));
 
+router.get('/logo-square/:id', wrap(async (req, res) => {
+  if (Number(req.params.id) !== req.ctx.businessId) return res.status(404).end();
+  const f = await businesses.squareLogo(req.ctx.businessId);
+  if (!f) return res.status(404).end();
+  res.set({ 'Content-Type': f.mime, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
+  return res.send(f.data);
+}));
+
 router.get('/favicon', wrap(async (req, res) => {
   const f = await businesses.faviconFile(req.ctx.businessId, { uploaded: req.query.show === '1' });
   if (!f) return res.redirect(302, '/favicon.svg');

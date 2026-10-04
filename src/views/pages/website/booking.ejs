@@ -20,7 +20,7 @@
     </form>
   </div>
 </section>
-<% var priceOn = function (k) { return b[k] === undefined || b[k] === null || Boolean(Number(b[k])); }; %>
+<% var priceOn = function (k) { return b[k] !== undefined && b[k] !== null && Boolean(Number(b[k])); }; %>
 <section class="panel mt-6">
   <div class="panel-head"><div><h2><%= t('website.prices_title') %></h2><div class="panel-sub"><%= t('website.prices_sub') %></div></div></div>
   <form method="post" action="/app/website/booking/prices" class="panel-body stack">

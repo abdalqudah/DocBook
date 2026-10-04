@@ -4,6 +4,7 @@
 // Signaling (built-in WebRTC call): POST /c/<token>/signal, GET /c/<token>/signal?after=<id> (short long-poll).
 // The token is the only credential; nothing else about the clinic's patients is reachable from here.
 const express = require('express');
+const knex = require('../../db/knex');
 const rateLimit = require('express-rate-limit');
 const config = require('../../config');
 const { wrap } = require('../../routes/helpers');
@@ -68,6 +69,7 @@ router.get('/:token', pageLimiter, wrap(async (req, res) => {
   return res.page('pages/telehealth/consult', {
     layout: 'public', title: req.t('telehealth.page_title'), pageTitle: `${req.t('telehealth.page_title')} · ${clinic.displayName}`, noindex: true, hideBookCta: true,
     clinic, row, state, tz, local, clinicLocal, win, method, settings, justBooked: req.query.new === '1',
+    doctorPayLink: row.doctor_id ? tele.doctorOnline(await knex('doctors').where({ id: row.doctor_id, business_id: row.business_id }).first('online_pay_link') || {}).payLink : null, // the doctor's own payment page
     doctor: (en && row.doctor_name_en) || row.doctor_name, doctorSpec: (en ? row.doctor_spec_en || row.doctor_spec : row.doctor_spec || row.doctor_spec_en) || '',
     countryName: row.patient_country ? countries.regionName(row.patient_country, req.locale) : null, length: tele.lengthOf(row),
     tzOffset: tele.offsetLabel(tz, win.startMs), clinicOffset: tele.offsetLabel(clinic.timezone, win.startMs),

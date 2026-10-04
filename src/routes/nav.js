@@ -22,6 +22,7 @@ const NAV = [
   { group: 'today', icon: 'house', items: [
     { key: 'dashboard', href: '/app', icon: 'layout-dashboard', perms: ['dashboard.view'], exact: true, doctorHome: true },
     { key: 'my_day', href: '/app/my-day', icon: 'stethoscope', perms: ['clinical.view'], needsDoctor: true },
+    { key: 'my_online', href: '/app/telehealth/mine', icon: 'video', perms: [], needsDoctor: true }, // the doctor's own online consultations: on/off, price, payment link
   ] },
   { group: 'appointments', icon: 'calendar-days', items: [
     { key: 'appointments', href: '/app/appointments', icon: 'calendar-days', perms: ['appointments.view'] },
