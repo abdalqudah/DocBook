@@ -127,11 +127,16 @@ test('shared reception: sees every practice today and checks in / sends in their
   assert.equal(Boolean((await knex('appointments').where({ id: apptX }).first()).checked_in), false);
   await r.post(`/app/center/desk/${Bp}/${apptA}/check-in`, { _csrf: r.csrf(desk.text) }); // C's visit under B's id
   assert.equal(Boolean((await knex('appointments').where({ id: apptA }).first()).checked_in), false);
-  // Still nothing else is shared: B's patients list stays B's.
-  const other = await r.get(`/app/appointments/${apptB}`);
-  assert.equal(other.status, 302); // a clinic's page in the centre's account leads back to the shared reception
-  assert.equal(other.location, '/app/center/desk');
-  assert.doesNotMatch(other.text, /Farah/);
+  // The centre's reception books in a practice's calendar (acting for that practice of the centre: the visit opens);
+  // the practice's patient files stay the practice's.
+  const other = await r.get(`/app/appointments/${apptB}?practice=${Bp}`);
+  assert.equal(other.status, 200);
+  assert.match(other.text, /Farah/);
+  const outside = await r.get(`/app/appointments/${apptX}?practice=${X}`); // another centre's clinic: never
+  assert.notEqual(outside.status, 200);
+  const files = await r.get('/app/patients');
+  assert.equal(files.status, 302);
+  assert.equal(files.location, '/app/center/desk');
 });
 
 test('shared cash screen: only practices that share their payments; the invoice stays in the visit\'s practice', async () => {

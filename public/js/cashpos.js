@@ -656,9 +656,10 @@
     if (loading) { again = true; return; }
     loading = true; lastLoad = Date.now();
     var keep = bill.map(function (l) { return l.id; }).filter(function (id) { return byId[id] && byId[id].date !== D.today; });
-    fetch('/app/cashier/screen/data?' + (D.scope ? 'scope=' + D.scope + '&' : '') + (D.practice ? 'p=' + D.practice + '&' : '') + (keep.length ? 'keep=' + keep.join(',') : ''), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+    var asked = D.practice || 0;
+    fetch('/app/cashier/screen/data?' + (D.scope ? 'scope=' + D.scope + '&' : '') + (asked ? 'p=' + asked + '&' : '') + (keep.length ? 'keep=' + keep.join(',') : ''), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { if (r.status === 401 || r.status === 403) { location.reload(); throw new Error('auth'); } if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then(function (d) { apply(d); })
+      .then(function (d) { if (asked === (D.practice || 0)) apply(d); else again = true; }) // the tab changed meanwhile
       .catch(function () { /* next tick */ })
       .then(function () { loading = false; if (again) { again = false; setTimeout(refresh, 300); } });
   }
@@ -680,7 +681,8 @@
     if (gone.length) showAlert(gone.map(function (n) { return tr(T.paid_elsewhere, { name: n }); }).join(' '));
     var fresh = idsOf(d.readyKey).filter(function (id) { return before.indexOf(id) < 0; });
     readyKey = d.readyKey || '';
-    if (fresh.length) {
+    var quiet = switched; switched = false; // another practice's tab: its waiting visits are not "new"
+    if (fresh.length && !quiet) {
       showNotice(fresh.map(function (id) { var v = byId[id]; return v ? tr(T.new_ready, { name: v.patient, amount: v.due > 0 ? money(v.due) : T.no_amount }) : ''; }).filter(Boolean).join(' · '));
       fresh.forEach(function (id) {
         var c = grid.querySelector('[data-pos-card="' + id + '"]');
@@ -689,6 +691,56 @@
       chime();
     }
   }
+  /* ---------------------------------------------------------------- "add an expense": saved in place (full screen stays on) */
+  var expForm = document.querySelector('[data-pos-expense]');
+  if (expForm) {
+    expForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var body = {};
+      Array.prototype.forEach.call(expForm.elements, function (el) { if (el.name && el.name.charAt(0) !== '_' && !el.disabled) body[el.name] = el.value; });
+      var btn = expForm.querySelector('[type="submit"]');
+      if (btn) btn.disabled = true;
+      var box = expForm.querySelector('[data-pos-expense-error]');
+      if (!box) { box = document.createElement('div'); box.className = 'form-error'; box.setAttribute('data-pos-expense-error', ''); box.setAttribute('role', 'alert'); var bodyEl = expForm.querySelector('.dialog-body'); if (bodyEl) bodyEl.insertBefore(box, bodyEl.firstChild); }
+      box.hidden = true;
+      fetch(expForm.getAttribute('action'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'x-csrf-token': D.csrf }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (d) {
+          if (!d.ok) { box.textContent = d.error || T.failed; box.hidden = false; return; }
+          var dlg = expForm.closest('dialog'); if (dlg && dlg.open) dlg.close();
+          var keepDate = expForm.elements.date ? expForm.elements.date.value : '';
+          expForm.reset(); if (expForm.elements.date) expForm.elements.date.value = keepDate;
+          showNotice(expForm.getAttribute('data-saved') || '');
+        })
+        .catch(function () { box.textContent = T.failed; box.hidden = false; })
+        .then(function () { if (btn) btn.disabled = false; });
+    });
+  }
+
+  /* ---------------------------------------------------------------- practice tabs (medical centre)
+     Switching tabs reloads the visits in place: the page never navigates, so full screen stays on. */
+  var switched = false;
+  var tabs = $('.pos-practices', root) || document.querySelector('.pos-practices');
+  if (tabs) {
+    tabs.addEventListener('click', function (e) {
+      var a = e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button > 0) return;
+      e.preventDefault();
+      var p = 0;
+      try { p = Number(new URL(a.href, location.href).searchParams.get('p')) || 0; } catch (err) { p = 0; }
+      if (p === (D.practice || 0)) return;
+      D.practice = p;
+      Array.prototype.forEach.call(tabs.querySelectorAll('a'), function (x) {
+        var on = x === a;
+        x.classList.toggle('is-on', on);
+        if (on) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current');
+      });
+      try { history.replaceState(history.state, '', a.getAttribute('href')); } catch (err) { /* address only */ }
+      switched = true;
+      refresh();
+    });
+  }
+
   var liveBox = $('[data-pos-live]', root);
   function liveUi(on) {
     if (!liveBox) return;

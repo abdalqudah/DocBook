@@ -188,13 +188,22 @@
     "cadm_home": "Home",
     "cadm_doctors": "Doctors & clinics",
     "cadm_desk": "Shared reception",
+    "cadm_appointments": "Doctors' appointments",
+    "cadm_surgeries": "Surgeries",
     "cadm_cash": "Shared cash screen",
     "cadm_screens": "Waiting screens",
     "cadm_staff": "Shared staff",
     "cadm_team": "Logins",
     "cadm_expenses": "Shared expenses",
     "cadm_settings": "Centre settings",
-    "cadm_subscription": "Subscription"
+    "cadm_subscription": "Subscription",
+    "cadm_website": "Centre website",
+    "cadm_website_builder": "Site editor",
+    "cadm_website_theme": "Theme & brand",
+    "cadm_website_media": "Images",
+    "cadm_website_domain": "Domain",
+    "cadm_website_seo": "SEO",
+    "cadm_website_settings": "Site settings"
   },
   "search": {
     "open": "Search and quick actions",

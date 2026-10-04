@@ -1007,3 +1007,10 @@ td.actions > details.dropdown, td.actions > a { display: inline-flex; vertical-a
 .pn-item.is-new { background: var(--primary-soft); }
 .pn-title { font-weight: var(--fw-semibold); color: var(--text); text-decoration: none; display: block; }
 a.pn-title:hover { color: var(--primary); }
+
+/* The medical centre's reception working for a doctor's practice: which practice, switch to another. */
+.act-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 16px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.act-bar-label { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--fw-semibold); color: var(--text-muted); font-size: .9rem; }
+.act-bar-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; }
+.act-bar-tabs a { flex: none; padding: 6px 14px; border-radius: var(--pill, 999px); border: 1px solid var(--border); color: var(--text); text-decoration: none; font-weight: var(--fw-semibold); font-size: .9rem; }
+.act-bar-tabs a.is-on { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }

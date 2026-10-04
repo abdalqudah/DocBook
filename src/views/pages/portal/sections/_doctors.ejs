@@ -11,6 +11,7 @@
         <div class="doc-info">
           <h3><a class="ws-doc-link" href="/<%= clinic.slug %>/doctors/<%= d.id %>"><%= d.name %></a></h3>
           <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
+          <% if (d.practice) { %><div class="tiny muted"><%= d.practice %></div><% } %>
           <%- include('../../../partials/site/reviews', { part: 'doctor', doctorId: d.id, clinic: Object.assign({}, clinic, { reviews: reviewsSummary }) }) %>
           <% if (d.bio) { %><p><%= d.bio %></p><% } %>
           <% if (teleOn && d.online) { %><a class="doc-online tiny" href="/<%= clinic.slug %>/book/online?doctor=<%= d.id %>"><%- icon('video', 'icon-sm') %><%= t('telehealth.available') %></a><% } %>

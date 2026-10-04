@@ -153,7 +153,7 @@
 }) %></script>
 <% if (typeof expense !== 'undefined' && expense) { %>
 <dialog class="dialog" id="pos-expense-dialog" aria-labelledby="pos-expense-title">
-  <form method="post" action="/app/expenses" novalidate>
+  <form method="post" action="/app/cashier/screen/expense" novalidate data-pos-expense data-saved="<%= t('expenses.saved') %>">
     <div class="dialog-head"><h2 id="pos-expense-title"><%= t('expenses.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
     <div class="dialog-body">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="/app/cashier/screen">
@@ -162,7 +162,11 @@
         <%- include('../../../partials/field', { name: 'amount', label: t('common.amount'), required: true, type: 'text', suffix: currency, attrs: 'inputmode="decimal"' }) %>
         <%- include('../../../partials/field', { name: 'date', label: t('common.date'), required: true, type: 'date', value: today }) %>
         <%- include('../../../partials/field', { name: 'category', label: t('common.category'), type: 'select', required: true, options: expense.cats, value: 'miscellaneous' }) %>
+        <% if (expense.center) { %>
+        <%- include('../../../partials/field', { name: 'for_practice', label: t('center.expense_for'), type: 'select', required: true, cls: 'full', value: 'all', options: [{ value: 'all', label: t('center.expense_for_all') }].concat(expense.practices.map(function (p) { return { value: String(p.id), label: t('center.expense_for_one', { name: p.name }) }; })) }) %>
+        <% } else { %>
         <%- include('../../../partials/field', { name: 'payment_method', label: t('expenses.payment_method'), type: 'select', required: true, options: expense.methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }), value: 'cash' }) %>
+        <% } %>
         <%- include('../../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
       </div>
     </div>

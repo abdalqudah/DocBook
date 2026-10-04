@@ -68,22 +68,63 @@ async function resolveBusiness(req, res, next) {
   } catch (err) { return next(err); }
 }
 
+// The medical centre's administration account works for the doctors' practices on these pages: its shared reception
+// books with any doctor, blocks times and adds surgeries — in the practice it picked (session.centerActAs, always one
+// of the SAME centre's active practices, checked here), with only the reception permissions it holds itself.
+const ACT_PATHS = ['/app/appointments', '/app/surgeries', '/app/api/slots', '/app/api/services'];
+const ACT_GRANT = ['appointments.view', 'appointments.view_all', 'appointments.manage', 'frontdesk.use', 'patients.view', 'patients.create'];
+const actPath = (req) => ACT_PATHS.some((p) => req.originalUrl === p || req.originalUrl.startsWith(`${p}/`) || req.originalUrl.startsWith(`${p}?`));
+
+/** The centre's practices the administration account may act for, and the one it acts for now (null: none). */
+async function actTarget(req, business) {
+  const practices = await knex('businesses').where({ center_id: business.center_id, status: 'active' }).whereNot('kind', 'center_admin')
+    .orderBy('center_joined_at').orderBy('id').select('id', 'name', 'name_en', 'specialty');
+  const wanted = Number(req.query.practice) || Number(req.session.centerActAs) || 0;
+  const practice = practices.find((p) => p.id === wanted) || practices[0] || null;
+  if (practice) req.session.centerActAs = practice.id;
+  return practice ? { practices, practice } : null;
+}
+
 async function withBusiness(req, res, next, businessId) {
   try {
-    const [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);
-    const membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id })
+    let [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);
+    let membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id })
       .first('m.doctor_id', 'm.job_title', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
+    let chrome = business;
+    let actAs = null;
+    if (business.kind === 'center_admin' && business.center_id && actPath(req)) {
+      const target = await actTarget(req, business);
+      if (target) {
+        const navPermissions = permissions;
+        const practice = await businesses.get(target.practice.id);
+        const granted = new Set(ACT_GRANT.filter((p) => navPermissions.has(p)));
+        if (navPermissions.pagesOff) granted.pagesOff = navPermissions.pagesOff;
+        const base = ACT_PATHS.find((p) => req.originalUrl.startsWith(p)).split('/').slice(0, 3).join('/');
+        const keep = ['date', 'view'].filter((k) => typeof req.query[k] === 'string' && /^[\w-]{1,20}$/.test(req.query[k])).map((k) => `&${k}=${req.query[k]}`).join('');
+        actAs = { adminBusinessId: business.id, practiceId: practice.id, practices: target.practices, navPermissions, base, keep };
+        // The page chrome stays the centre's (logo, name, menu); dates and money follow the practice.
+        chrome = { ...business, timezone: practice.timezone, currency: practice.currency };
+        business = practice;
+        businessId = practice.id; // eslint-disable-line no-param-reassign
+        permissions = granted;
+        membership = membership ? { ...membership, doctor_id: null } : membership;
+      }
+    }
     // A doctor account only ever sees its own schedule unless its role grants appointments.view_all.
     const ownDoctorId = membership && membership.doctor_id && !permissions.has('appointments.view_all') ? membership.doctor_id : null;
     req.ctx = {
       businessId, userId: req.user.id, userName: req.user.name, permissions, currency: business.currency, timezone: business.timezone,
-      roleKey: membership && membership.role_key, doctorId: membership ? membership.doctor_id : null, ownDoctorId, centerId: business.center_id || null, centerAdmin: business.kind === 'center_admin', // the medical centre's administration account (not a clinic)
+      roleKey: membership && membership.role_key, doctorId: membership ? membership.doctor_id : null, ownDoctorId, centerId: business.center_id || null, centerAdmin: business.kind === 'center_admin' || Boolean(actAs), // the medical centre's administration account (not a clinic)
+      actAs, viaPractice: actAs ? actAs.adminBusinessId : undefined,
       ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale, baseUrl: res.locals.baseUrl,
     };
     req.business = business;
-    res.locals.business = business;
+    res.locals.business = chrome;
+    res.locals.actAs = actAs;
     // The clinic's white logo (website Theme & brand), used by the sidebar / top bar in dark mode.
-    res.locals.logoDarkSrc = await require('../core/cache').remember(`site:${businessId}:logodark`, async () => { // eslint-disable-line global-require
+    const chromeId = chrome.id;
+    res.locals.logoDarkSrc = await require('../core/cache').remember(`site:${chromeId}:logodark`, async () => { // eslint-disable-line global-require
+      const businessId = chromeId; // eslint-disable-line no-shadow
       try {
         const site = await knex('clinic_sites').where({ business_id: businessId }).first('draft_version_id', 'live_version_id');
         const vid = site && (site.draft_version_id || site.live_version_id);
@@ -99,8 +140,9 @@ async function withBusiness(req, res, next, businessId) {
     res.locals.currency = business.currency;
     if (!isJson(req)) {
       res.locals.workspaces = await businesses.listForUser(req.user.id);
-      res.locals.unreadNotifications = await notifications.unreadCount(req.ctx);
-      res.locals.unreadChat = await require('../modules/chat/chat.service').unreadTotal(req.ctx).catch(() => 0); // eslint-disable-line global-require
+      const own = actAs ? { ...req.ctx, businessId: chromeId, permissions: actAs.navPermissions } : req.ctx; // the signed-in account's own inbox
+      res.locals.unreadNotifications = await notifications.unreadCount(own);
+      res.locals.unreadChat = await require('../modules/chat/chat.service').unreadTotal(own).catch(() => 0); // eslint-disable-line global-require
     }
     // Any successful write refreshes this workspace's cached figures.
     if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) cache.forgetPrefix(`fin:${businessId}`); });

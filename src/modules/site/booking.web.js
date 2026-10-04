@@ -136,6 +136,7 @@ async function branchChoicesOf(req, clinic, doctors) {
 router.get('/:slug/book', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
+  if (clinic.kind === 'center_admin') return require('../center/site.web').centerBook(req, res, clinic); // eslint-disable-line global-require -- a medical centre: each doctor's own clinic
   require('../website/stats').hit(req, clinic, 'book'); // eslint-disable-line global-require -- first-party daily counter
   return renderBook(req, res, clinic);
 }));

@@ -188,13 +188,22 @@
     "cadm_home": "الرئيسية",
     "cadm_doctors": "الأطباء والعيادات",
     "cadm_desk": "الاستقبال المشترك",
+    "cadm_appointments": "مواعيد الأطباء",
+    "cadm_surgeries": "العمليات",
     "cadm_cash": "شاشة المحاسبة المشتركة",
     "cadm_screens": "شاشات الانتظار",
     "cadm_staff": "الموظفون المشتركون",
     "cadm_team": "حسابات الدخول",
     "cadm_expenses": "المصاريف المشتركة",
     "cadm_settings": "إعدادات المركز",
-    "cadm_subscription": "الاشتراك"
+    "cadm_subscription": "الاشتراك",
+    "cadm_website": "موقع المركز",
+    "cadm_website_builder": "محرر الموقع",
+    "cadm_website_theme": "الهوية والألوان",
+    "cadm_website_media": "الصور",
+    "cadm_website_domain": "النطاق",
+    "cadm_website_seo": "محركات البحث",
+    "cadm_website_settings": "إعدادات الموقع"
   },
   "search": {
     "open": "البحث والإجراءات السريعة",

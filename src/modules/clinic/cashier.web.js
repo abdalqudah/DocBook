@@ -230,12 +230,21 @@ router.get('/screen', can('billing.manage'), wrap(async (req, res) => {
   const add = addIdsOf(req.query.add);
   const canExpense = ctx.permissions.has('expenses.manage');
   const expensesSvc = canExpense ? require('../expenses/expense.service') : null; // eslint-disable-line global-require
-  const [data, insurers, expCats] = await Promise.all([posData(req, add), svc.activeInsurance(ctx), canExpense ? expensesSvc.categories(ctx.businessId) : null]);
-  // "Add an expense" from the cash screen (paid from the drawer): the same form as Finance → Expenses.
-  const expense = canExpense ? {
-    cats: expCats.system.map((k) => ({ value: k, label: res.locals.label('categories', k) })).concat(expCats.custom.map((c) => ({ value: c.key, label: c.name }))),
-    methods: expensesSvc.PAYMENT_METHODS,
-  } : null;
+  const [data, insurers, expCats] = await Promise.all([posData(req, add), svc.activeInsurance(ctx), canExpense && !ctx.centerAdmin ? expensesSvc.categories(ctx.businessId) : null]);
+  // "Add an expense" from the cash screen (paid from the drawer): the same form as Finance → Expenses; for the centre's
+  // administration a shared expense — for all the clinics (split) or for one of them.
+  let expense = null;
+  if (canExpense && ctx.centerAdmin) {
+    expense = {
+      center: true, practices: (await centers.members(ctx.centerId)).map((m) => ({ id: m.id, name: (req.locale === 'en' && m.name_en) || m.name })),
+      cats: expensesSvc.SYSTEM_CATEGORIES.filter((k) => k !== 'center_share').map((k) => ({ value: k, label: res.locals.label('categories', k) })),
+    };
+  } else if (canExpense) {
+    expense = {
+      cats: expCats.system.map((k) => ({ value: k, label: res.locals.label('categories', k) })).concat(expCats.custom.map((c) => ({ value: c.key, label: c.name }))),
+      methods: expensesSvc.PAYMENT_METHODS,
+    };
+  }
   res.set('Cache-Control', 'no-store');
   return res.page('pages/clinic/cashier/screen', {
     title: req.t('cashpos.title'), layout: 'cashscreen', bodyClass: 'pos-body', expense,
@@ -263,6 +272,18 @@ const screenAct = (fn) => wrap(async (req, res) => {
     return res.status(err.status).json({ ok: false, code: err.code, error: err.code === 'VALIDATION_FAILED' && first ? fields[first] : errorText(req, err) });
   }
 });
+// "Add an expense" on the cash screen, saved in place (the screen stays in full screen). The centre's administration
+// account records a shared expense: split among all the clinics, or for one clinic of the centre.
+router.post('/screen/expense', can('expenses.manage'), screenAct(async (req) => {
+  const b = req.body || {};
+  if (req.ctx.centerAdmin) {
+    const target = String(b.for_practice || 'all');
+    await require('../center/shared.service').addExpense(req.ctx, { title: b.title, amount: b.amount, date: b.date, category: b.category, note: b.notes, // eslint-disable-line global-require
+      ...(target === 'all' ? {} : { split_mode: 'one', for_practice: target }) });
+    return;
+  }
+  await require('../expenses/expense.service').save(req.ctx, null, b); // eslint-disable-line global-require
+}));
 router.post('/screen/visit/:id(\\d+)/call-in', can('billing.manage'), screenAct(async (req) => {
   const vctx = await ctxForVisit(req, req.params.id);
   const a = await svc.visit(vctx, Number(req.params.id));

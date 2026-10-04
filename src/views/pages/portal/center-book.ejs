@@ -1,0 +1,23 @@
+<%# A medical centre's website → Book: choose the doctor; booking continues on the doctor's own clinic site. %>
+<section class="container ws-section" id="main">
+  <nav class="breadcrumbs mb-4"><a href="/<%= clinic.slug %>"><%= clinic.displayName %></a> <%- icon(dir === 'rtl' ? 'chevron-left' : 'chevron-right', 'icon-sm') %> <span><%= title %></span></nav>
+  <div class="ws-head"><h1 class="ws-title"><%= title %></h1><p class="ws-sub"><%= t('portal.center_book_lead') %></p></div>
+  <% if (!groups.length) { %>
+  <div class="portal-card"><p class="muted"><%= t('portal.center_book_none') %></p></div>
+  <% } %>
+  <% groups.forEach(function (g) { %>
+  <div class="ws-head mt-6"><h2 class="ws-title"><%= g.name %></h2></div>
+  <div class="portal-doctors">
+    <% g.doctors.forEach(function (d) { %>
+    <article class="doc-card">
+      <span class="doc-av<%= d.photo ? ' has-photo' : '' %>"><% if (d.photo) { %><img src="<%= d.photo %>" alt="<%= d.name %>" loading="lazy"><% } else { %><%= initials(d.name.replace(/^(د\.|dr\.?)\s*/i, '')) %><% } %></span>
+      <div class="doc-info">
+        <h3><a class="ws-doc-link" href="/<%= g.slug %>/doctors/<%= d.id %>"><%= d.name %></a></h3>
+        <% if (d.specialty) { %><div class="doc-spec"><%= d.specialty %></div><% } %>
+        <% if (g.booking) { %><a class="btn btn-primary btn-sm mt-2" href="/<%= g.slug %>/book<%= suffix %>?doctor=<%= d.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('portal.book_with') %></a><% } %>
+      </div>
+    </article>
+    <% }) %>
+  </div>
+  <% }) %>
+</section>

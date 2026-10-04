@@ -50,7 +50,7 @@
         <tbody>
         <% members.forEach(function (m) { %>
           <tr>
-            <td class="primary-cell"><div class="strong"><%= L(m.name, m.name_en) %><% if (m.id === business.id) { %> <span class="badge"><%= t('center.admin_account') %></span><% } %></div><a class="tiny link" href="/<%= m.slug %>" target="_blank" rel="noopener">/<%= m.slug %></a></td>
+            <td class="primary-cell"><div class="strong"><%= L(m.name, m.name_en) %><% if (m.id === business.id) { %> <span class="badge"><%= t('center.admin_account') %></span><% } %></div><a class="tiny link" href="/<%= m.slug %>" target="_blank" rel="noopener" title="<%= t('center.doctor_site') %>"><%- icon('globe', 'icon-sm') %> <%= t('center.doctor_site') %> <span dir="ltr">/<%= m.slug %></span></a></td>
             <td data-label="<%= t('center.cash_col') %>"><span class="badge<%= m.center_share_cash ? ' badge-success badge-dot' : '' %>"><%= m.center_share_cash ? t('center.cash_shared') : t('center.cash_own') %></span></td>
             <td data-label="<%= t('center.since') %>" class="nowrap"><%= m.center_joined_at ? fmt.date(m.center_joined_at) : '—' %></td>
             <td class="actions"><% if (m.id !== business.id) { %><form method="post" action="/app/center/members/<%= m.id %>/remove" data-confirm="<%= t('center.remove_confirm', { name: L(m.name, m.name_en) }) %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('center.remove') %></button></form><% } %></td>
@@ -162,7 +162,8 @@
           <%- include('../../partials/field', { name: 'date', label: t('common.date'), type: 'date' }) %>
         </div>
         <%- include('../../partials/field', { name: 'category', label: t('common.category'), type: 'select', value: 'rent', options: categories.map(function (k) { return { value: k, label: label('categories', k) }; }) }) %>
-        <%- include('../../partials/field', { name: 'split_mode', label: t('center.split_label'), type: 'select', value: center.split_mode || 'equal', options: ['equal', 'percent', 'custom'].map(function (k) { return { value: k, label: t('center.split.' + k) }; }), attrs: 'data-ctr-split' }) %>
+        <%- include('../../partials/field', { name: 'split_mode', label: t('center.split_label'), type: 'select', value: center.split_mode || 'equal', options: ['equal', 'percent', 'custom', 'one'].map(function (k) { return { value: k, label: t('center.split.' + k) }; }), attrs: 'data-ctr-split' }) %>
+        <div data-ctr-one hidden><%- include('../../partials/field', { name: 'for_practice', label: t('center.expense_for'), type: 'select', options: members.map(function (m) { return { value: String(m.id), label: L(m.name, m.name_en) }; }) }) %></div>
         <div class="stack-sm" data-ctr-custom hidden>
           <span class="small muted"><%= t('center.custom_help') %></span>
           <% members.forEach(function (m) { %><div class="field"><label class="label" for="sh-<%= m.id %>"><%= L(m.name, m.name_en) %></label><input class="input" id="sh-<%= m.id %>" name="share_<%= m.id %>" inputmode="decimal"></div><% }) %>

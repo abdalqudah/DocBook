@@ -96,7 +96,9 @@ router.use((req, res, next) => {
   // A shared receptionist / cashier of the centre lands on their own work, the centre's admin on its home.
   const home = p.has('settings.manage') ? '/app/center' : p.has('frontdesk.use') ? '/app/center/desk' : p.has('billing.manage') ? '/app/cashier/screen?scope=center' : '/app/help';
   if (req.path === '/' || req.path === '') return res.redirect(home);
-  if (nav.CENTER_ADMIN_PATHS.some((x) => req.path.startsWith(x))) return next();
+  // A practice's calendar and surgeries open only while acting for one of the centre's practices (context.js).
+  const forPractice = ['/appointments', '/surgeries'].some((x) => req.path.startsWith(x));
+  if (forPractice ? Boolean(req.ctx.actAs) : nav.CENTER_ADMIN_PATHS.some((x) => req.path.startsWith(x))) return next();
   if (req.method === 'GET' || req.method === 'HEAD') return res.redirect(home);
   return next(E.notFound('Page'));
 });

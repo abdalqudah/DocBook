@@ -18,7 +18,8 @@
   // Shared expense form: the amount per practice only for "custom amounts".
   $$('[data-ctr-split]').forEach(function (sel) {
     var box = document.querySelector('[data-ctr-custom]');
-    var sync = function () { if (box) box.hidden = sel.value !== 'custom'; };
+    var one = document.querySelector('[data-ctr-one]');
+    var sync = function () { if (box) box.hidden = sel.value !== 'custom'; if (one) one.hidden = sel.value !== 'one'; };
     sel.addEventListener('change', sync); sync();
   });
   // "I am a doctor too": the practice opens with the admin's own login — no e-mail to type.

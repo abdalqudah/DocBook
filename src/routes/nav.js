@@ -113,6 +113,8 @@ const CENTER_NAV = [
   ] },
   { group: 'cadm_reception', icon: 'armchair', items: [
     { key: 'cadm_desk', href: '/app/center/desk', icon: 'armchair', perms: ['frontdesk.use'] },
+    { key: 'cadm_appointments', href: '/app/appointments', icon: 'calendar-days', perms: ['appointments.view'] }, // any doctor's calendar: book, block a time
+    { key: 'cadm_surgeries', href: '/app/surgeries', icon: 'scissors', perms: ['appointments.manage'] },
     { key: 'cadm_cash', href: '/app/cashier/screen?scope=center', icon: 'banknote', perms: ['billing.manage'], lights: ['/app/cashier/screen'] },
     { key: 'cadm_screens', href: '/app/queue-screens', icon: 'monitor', perms: ['frontdesk.use'] },
   ] },
@@ -122,6 +124,16 @@ const CENTER_NAV = [
   ] },
   { group: 'cadm_costs', icon: 'receipt-text', items: [
     { key: 'cadm_expenses', href: '/app/center/expenses', icon: 'receipt-text', perms: ['settings.manage'] },
+  ] },
+  // The centre's own website: every doctor of its clinics, booking with each doctor's clinic (each doctor keeps a site of their own too).
+  { group: 'cadm_website', icon: 'globe', items: [
+    { key: 'cadm_website', href: '/app/website', icon: 'globe', perms: ['website.view'], exact: true },
+    { key: 'cadm_website_builder', href: '/app/website/builder', icon: 'layout-template', perms: ['website.edit'], lights: ['/app/website/preview'] },
+    { key: 'cadm_website_theme', href: '/app/website/theme', icon: 'palette', perms: ['website.edit'] },
+    { key: 'cadm_website_media', href: '/app/website/media', icon: 'images', perms: ['website.edit'] },
+    { key: 'cadm_website_domain', href: '/app/website/domain', icon: 'link', perms: ['website.domain'] },
+    { key: 'cadm_website_seo', href: '/app/website/seo', icon: 'search', perms: ['website.seo'] },
+    { key: 'cadm_website_settings', href: '/app/website/settings', icon: 'settings', perms: ['website.edit'] },
   ] },
   { group: 'cadm_settings', icon: 'settings', foot: true, items: [
     { key: 'cadm_settings', href: '/app/center/settings', icon: 'settings', perms: ['settings.manage'] },
@@ -133,7 +145,7 @@ const CENTER_NAV = [
 ];
 CENTER_NAV.forEach((g) => { g.label = `navx.sec_${g.group}`; g.items.forEach((i) => { i.section = g.group; }); });
 /** Addresses the centre's administration account may open (everything else of a clinic leads back to the centre). */
-const CENTER_ADMIN_PATHS = ['/center', '/cashier/screen', '/cashier/receipt', '/queue-screens', '/clinic/team', '/clinic/roles', '/notifications', '/chat', '/mail',
+const CENTER_ADMIN_PATHS = ['/center', '/appointments', '/surgeries', '/website', '/media', '/logo-square', '/cashier/screen', '/cashier/receipt', '/queue-screens', '/clinic/team', '/clinic/roles', '/notifications', '/chat', '/mail',
   '/search', '/api', '/theme', '/logo', '/favicon', '/help', '/tickets', '/settings', '/attendance', '/share'];
 
 // Mobile bottom bar: three pages for the role around the central "+ New" button (the fifth button opens the full menu).
@@ -216,7 +228,9 @@ const orderOf = (table, roleKey) => table[roleKey] || table.default;
 // A login whose finance pages are only the cash desk sees the workspace as "Cashier" (redesign: الصندوق).
 const CASH_ONLY = new Set(['cashier', 'billing', 'payments_all', 'cash_closings']);
 
-function forUser(permissions, ctx = {}) {
+function forUser(perms, ctx = {}) {
+  // The centre's administration account acting for a practice keeps its own menu (its own permissions).
+  const permissions = ctx.actAs ? ctx.actAs.navPermissions : perms;
   const has = (p) => permissions.has(p);
   const doctorHome = ctx.roleKey === 'doctor' && ctx.doctorId;
   const visible = (item) => (!item.perms.length || item.perms.some(has) || (item.orDoctor && ctx.doctorId)) && (!item.needsDoctor || ctx.doctorId) && (!item.needsCenter || ctx.centerId) && !hidden(ctx, item.key)

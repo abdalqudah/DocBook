@@ -160,7 +160,8 @@
     "split": {
       "equal": "Equally",
       "percent": "By percentage",
-      "custom": "Custom amounts"
+      "custom": "Custom amounts",
+      "one": "One clinic only"
     },
     "paid": "Paid",
     "unpaid": "Unpaid",
@@ -230,6 +231,11 @@
         "staff": "Add reception and accounts staff… and give them a login to the centre only.",
         "costs": "Add rent, electricity and salaries and choose how to split them; each clinic receives its share."
       }
-    }
+    },
+    "act_for": "Working for",
+    "expense_for": "This expense is for",
+    "expense_for_all": "All clinics (split between them)",
+    "expense_for_one": "{name} only",
+    "doctor_site": "Doctor's website"
   }
 }

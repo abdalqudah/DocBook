@@ -82,6 +82,7 @@ async function renderOnline(req, res, clinic, extra = {}) {
 router.get('/:slug/book/online', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
+  if (clinic.kind === 'center_admin') return require('../center/site.web').centerBook(req, res, clinic, { online: true }); // eslint-disable-line global-require
   const { website, _csrf, ...kept } = req.query; // eslint-disable-line no-unused-vars
   return renderOnline(req, res, clinic, { old: kept });
 }));

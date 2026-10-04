@@ -118,3 +118,103 @@ test('a shared receptionist of the centre lands on the shared reception', async 
   assert.equal((await r.get('/app/center/desk')).status, 200);
   assert.equal((await r.get('/app/center/expenses')).status, 403);
 });
+
+test('the shared reception works for any doctor\'s clinic: calendar, booking, a blocked time, a surgery', async () => {
+  const r = app.agent(); await r.login(mail('r'));
+  const date = new Date(Date.parse(`${scheduling.clinicNow('Asia/Amman').date}T00:00:00Z`) + 86400000).toISOString().slice(0, 10); // tomorrow: every time still open
+  // The calendar opens for the centre's first clinic, with a switch to every clinic of the centre.
+  let cal = await r.get('/app/appointments');
+  assert.equal(cal.status, 200);
+  assert.match(cal.text, /class="act-bar"/);
+  assert.match(cal.text, /عيادة العظام/);
+  assert.match(cal.text, /عيادة الجلدية/);
+  assert.ok(cal.text.includes('href="/app/appointments"'), 'menu item');
+  cal = await r.get(`/app/appointments?practice=${B}&date=${date}`);
+  assert.match(cal.text, new RegExp(`href="/app/appointments\\?practice=${B}[^"]*" class="is-on"`));
+  const doc = (await knex('doctors').where({ business_id: B }).first('id')).id;
+  // Booking with Dr Basel: the visit belongs to Dr Basel's clinic, audited there by the receptionist.
+  const form = await r.get(`/app/appointments/new?doctor=${doc}&date=${date}`);
+  assert.equal(form.status, 200);
+  let res = await r.post('/app/appointments/new', { _csrf: r.csrf(form.text), doctor_id: String(doc), patient_name: 'Sami Desk', patient_phone: '0791112223', appointment_date: date, appointment_time: '13:00', duration_minutes: '20', appointment_type: 'in_person' });
+  assert.equal(res.status, 302, res.text && res.text.slice(0, 400));
+  const booked = await knex('appointments').where({ patient_name: 'Sami Desk', business_id: B }).orderBy('id', 'desc').first();
+  assert.equal(booked.business_id, B);
+  const u = await knex('users').where({ email: mail('r') }).first('id');
+  assert.ok(await knex('audit_logs').where({ business_id: B, user_id: u.id }).first('id'));
+  // A blocked time and a surgery for the doctor.
+  res = await r.post('/app/appointments/blocks', { _csrf: r.csrf(form.text), doctor_id: String(doc), appointment_date: date, appointment_time: '11:00', duration_minutes: '30', notes: 'meeting' });
+  assert.equal(res.status, 302, res.text && res.text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').match(/.{0,200}(error|alert|تعارض|conflict).{0,200}/i)?.[0]);
+  assert.ok(await knex('appointments').where({ business_id: B, appointment_type: 'blocked', appointment_time: '11:00' }).first('id'));
+  res = await r.post('/app/appointments/blocks', { _csrf: r.csrf(form.text), doctor_id: String(doc), appointment_date: date, appointment_time: '12:00', duration_minutes: '60', kind: 'surgery', patient_name: 'Sami Desk', patient_phone: '0791112223', procedure_name: 'Arthroscopy' });
+  assert.equal(res.status, 302, res.text && res.text.slice(0, 400));
+  assert.ok(await knex('surgeries').where({ business_id: B, procedure_name: 'Arthroscopy' }).first('id'));
+  assert.equal((await r.get('/app/surgeries')).status, 200);
+  // Never another centre's clinic (the choice falls back to this centre's), never the clinic's patient records.
+  const [other] = await knex('businesses').insert({ name: 'Elsewhere', slug: `else-${tag}`, currency: 'JOD', timezone: 'Asia/Amman', status: 'active' });
+  const away = await r.get(`/app/appointments?practice=${other}`);
+  assert.equal(away.status, 200);
+  assert.doesNotMatch(away.text, /Elsewhere/);
+  assert.notEqual((await r.get('/app/appointments')).text.includes(`practice=${other}" class="is-on"`), true);
+  assert.equal((await r.get('/app/patients')).location, '/app/center/desk');
+  // The centre's own pages are unchanged by the choice.
+  assert.equal((await r.get('/app/center/desk')).status, 200);
+});
+
+test('a shared expense for all the clinics or for one clinic — on the centre page and on the cash screen', async () => {
+  const pg = await admin.get('/app/center/expenses');
+  assert.match(pg.text, /value="one"/);
+  let r = await admin.post('/app/center/expenses', { _csrf: admin.csrf(pg.text), title: 'X-ray film', amount: '90', category: 'medical_supplies', split_mode: 'one', for_practice: String(B) });
+  assert.equal(r.location, '/app/center/expenses');
+  let e = await knex('center_expenses').where({ title: 'X-ray film' }).orderBy('id', 'desc').first();
+  assert.equal(e.split_mode, 'one');
+  assert.deepEqual((await knex('center_expense_shares').where({ expense_id: e.id })).map((s) => [s.business_id, Number(s.amount)]), [[B, 90]]);
+  // A clinic outside the centre: refused, nothing saved.
+  const [other] = await knex('businesses').insert({ name: 'Out', slug: `out-${tag}`, currency: 'JOD', timezone: 'Asia/Amman', status: 'active' });
+  await admin.post('/app/center/expenses', { _csrf: admin.csrf(pg.text), title: 'Sneaky', amount: '5', split_mode: 'one', for_practice: String(other) });
+  assert.equal(await knex('center_expenses').where({ title: 'Sneaky' }).first(), undefined);
+  // The cash screen: the dialog asks who the expense is for, and saves without leaving the page (JSON).
+  const screen = await admin.get('/app/cashier/screen');
+  assert.match(screen.text, /name="for_practice"/);
+  assert.match(screen.text, /data-pos-expense/);
+  const csrf = admin.csrf(screen.text);
+  r = await admin.post('/app/cashier/screen/expense', { _csrf: csrf, title: 'Water', amount: '12', category: 'utilities', for_practice: String(Own.id) }, { accept: 'application/json' });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(JSON.parse(r.text).ok, true);
+  e = await knex('center_expenses').where({ title: 'Water' }).orderBy('id', 'desc').first();
+  assert.deepEqual((await knex('center_expense_shares').where({ expense_id: e.id })).map((s) => s.business_id), [Own.id]);
+  r = await admin.post('/app/cashier/screen/expense', { _csrf: csrf, title: 'Internet', amount: '30', category: 'utilities', for_practice: 'all' }, { accept: 'application/json' });
+  assert.equal(JSON.parse(r.text).ok, true);
+  e = await knex('center_expenses').where({ title: 'Internet' }).orderBy('id', 'desc').first();
+  assert.equal((await knex('center_expense_shares').where({ expense_id: e.id })).length, 2);
+  r = await admin.post('/app/cashier/screen/expense', { _csrf: csrf, title: '', amount: '30' }, { accept: 'application/json' });
+  assert.equal(r.status, 422);
+  assert.equal(JSON.parse(r.text).ok, false);
+});
+
+test('the centre\'s website: every doctor of its clinics, booking and doctor pages on each doctor\'s own site', async () => {
+  const centre = await knex('businesses').where({ id: A }).first('slug', 'center_id');
+  const b = await knex('businesses').where({ id: B }).first('slug');
+  const doc = (await knex('doctors').where({ business_id: B }).first('id')).id;
+  // The administration account manages the centre's website (its own menu item).
+  const home = await admin.get('/app/center');
+  assert.ok(home.text.includes('href="/app/website"'));
+  assert.equal((await admin.get('/app/website')).status, 200);
+  // Public pages.
+  const pub = app.agent();
+  const site = await pub.get(`/${centre.slug}`);
+  assert.equal(site.status, 200);
+  assert.match(site.text, /Dr Basel/);
+  const book = await pub.get(`/${centre.slug}/book`);
+  assert.equal(book.status, 200);
+  assert.match(book.text, /Dr Basel/);
+  assert.ok(book.text.includes(`href="/${b.slug}/book?doctor=${doc}"`));
+  assert.equal((await pub.get(`/${centre.slug}/book?doctor=${doc}`)).location, `/${b.slug}/book?doctor=${doc}`);
+  assert.equal((await pub.get(`/${centre.slug}/doctors/${doc}`)).location, `/${b.slug}/doctors/${doc}`);
+  // A doctor of another clinic (outside the centre) is never reached through the centre's site.
+  const [out] = await knex('businesses').insert({ name: 'Away', slug: `away-${tag}`, currency: 'JOD', timezone: 'Asia/Amman', status: 'active' });
+  const [far] = await knex('doctors').insert({ business_id: out, full_name: 'Dr Far', is_active: true, working_hours: JSON.stringify(scheduling.defaultWorkingHours()) });
+  assert.equal((await pub.get(`/${centre.slug}/doctors/${far}`)).status, 404);
+  assert.equal((await pub.get(`/${centre.slug}/book?doctor=${far}`)).location, null);
+  // Each doctor's clinic keeps its own website.
+  assert.equal((await pub.get(`/${b.slug}`)).status, 200);
+});

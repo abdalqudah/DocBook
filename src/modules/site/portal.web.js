@@ -92,17 +92,36 @@ const doctorView = (req, prices = true) => (d) => {
     branchId: d.branch_id || null, // null = main branch
   };
 };
+/**
+ * A medical centre's website (its administration account) shows every doctor of the centre's clinics; booking and
+ * each doctor's page belong to the doctor's own clinic (which keeps a website of its own). null: not a centre.
+ */
+async function centerPractices(clinic) {
+  if (!clinic || clinic.kind !== 'center_admin' || !clinic.center_id) return null;
+  return knex('businesses').where({ center_id: clinic.center_id, status: 'active' }).whereNot('kind', 'center_admin').whereNotNull('slug')
+    .orderBy('center_joined_at').orderBy('id').select('id', 'slug', 'name', 'name_en', 'booking_enabled');
+}
+/** The centre's clinic a doctor belongs to (null: not one of the centre's doctors). */
+async function centerPracticeOf(clinic, doctorId) {
+  const practices = await centerPractices(clinic);
+  if (!practices || !practices.length) return null;
+  const d = await knex('doctors').whereIn('business_id', practices.map((p) => p.id)).where({ id: Number(doctorId) || 0, is_active: true }).first('business_id');
+  return d ? practices.find((p) => p.id === d.business_id) || null : null;
+}
 const listDoctors = async (req, clinic, where = 'site') => {
+  const practices = await centerPractices(clinic);
+  const media = require('../integrations/media.service'); // eslint-disable-line global-require
   const [rows, photos] = await Promise.all([
-    knex('doctors').where({ business_id: clinic.id, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
-      .select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled', 'branch_id'),
-    require('../integrations/media.service').publicDoctorPhotos(clinic), // eslint-disable-line global-require
+    knex('doctors').whereIn('business_id', practices ? practices.map((p) => p.id) : [clinic.id]).where({ is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+      .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled', 'branch_id'),
+    practices ? Promise.all(practices.map((p) => media.publicDoctorPhotos(p))).then((all) => Object.assign({}, ...all)) : media.publicDoctorPhotos(clinic),
   ]);
-  return rows.map(doctorView(req, pricesShown(clinic, where))).map((d) => ({ ...d, photo: photos[d.id] || null })); // photo: public media-library URL (or null)
+  const practiceName = (bid) => { const p = practices && practices.find((x) => x.id === bid); return p ? (req.locale === 'en' && p.name_en) || p.name : null; };
+  return rows.map((r) => ({ ...doctorView(req, pricesShown(clinic, where))(r), photo: photos[r.id] || null, practice: practiceName(r.business_id), practiceId: practices ? r.business_id : null })); // photo: public media-library URL (or null)
 };
 // Services with their (active) category, if any — the pages group them by category (platformops).
 const listServices = async (req, clinic, where = 'site') => (await knex('services as s').leftJoin('service_categories as c', function j() { this.on('c.id', 's.category_id').andOn('c.business_id', 's.business_id').andOnVal('c.is_active', true); })
-  .where({ 's.business_id': clinic.id, 's.is_active': true, 's.show_on_site': true })
+  .whereIn('s.business_id', await centerPractices(clinic).then((ps) => (ps ? ps.map((p) => p.id) : [clinic.id]))).where({ 's.is_active': true, 's.show_on_site': true })
   // A main service (category) the clinic hid from the site hides its sub-services too.
   .whereNotExists(function hidden() { this.select(knex.raw('1')).from('service_categories as hc').whereRaw('hc.id = s.category_id').andWhere('hc.show_on_site', false); })
   .orderBy([{ column: 's.sort_order' }, { column: 's.name' }])
@@ -237,6 +256,10 @@ router.get('/:slug/p/:page([a-z0-9-]{1,40})', wrap(async (req, res, next) => {
 router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
+  if (clinic.kind === 'center_admin') { // a centre's doctor: the page on the doctor's own clinic site
+    const p = await centerPracticeOf(clinic, req.params.id);
+    return p ? res.redirect(302, `/${p.slug}/doctors/${Number(req.params.id)}`) : next();
+  }
   const [doctors, services] = await Promise.all([listDoctors(req, clinic), listServices(req, clinic)]);
   const d = doctors.find((x) => x.id === Number(req.params.id));
   if (!d) return next();
@@ -410,3 +433,5 @@ module.exports.listServices = listServices;
 module.exports.pricesShown = pricesShown;
 module.exports.renderSite = renderSite;
 module.exports.clinicThemeCss = clinicThemeCss;
+module.exports.centerPractices = centerPractices;
+module.exports.centerPracticeOf = centerPracticeOf;

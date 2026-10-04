@@ -1,0 +1,14 @@
+<%# The medical centre's reception working for a doctor's practice (calendar, surgeries): which practice, and a switch to any other. %>
+<% if (typeof actAs !== 'undefined' && actAs) {
+  var _base = actAs.base;
+  var _keep = actAs.keep || '';
+%>
+<nav class="act-bar" aria-label="<%= t('center.act_for') %>">
+  <span class="act-bar-label"><%- icon('building-2', 'icon-sm') %><%= t('center.act_for') %></span>
+  <div class="act-bar-tabs">
+    <% actAs.practices.forEach(function (p) { var _n = locale === 'en' && p.name_en ? p.name_en : p.name; %>
+    <a href="<%= _base %>?practice=<%= p.id %><%= _keep %>" class="<%= p.id === actAs.practiceId ? 'is-on' : '' %>"<%- p.id === actAs.practiceId ? ' aria-current="page"' : '' %>><%= _n %></a>
+    <% }) %>
+  </div>
+</nav>
+<% } %>

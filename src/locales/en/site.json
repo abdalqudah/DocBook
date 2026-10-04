@@ -1104,7 +1104,9 @@
     "not_member": "This account is not a staff member of this clinic. Check the e-mail address, or ask the clinic manager to add you.",
     "role_mismatch": "You signed in as {actual} — your account's role at this clinic — rather than {chosen}.",
     "back_to_clinic": "Back to the clinic page",
-    "powered": "Clinic page by {brand}"
+    "powered": "Clinic page by {brand}",
+    "center_book_lead": "Choose the doctor, then finish booking with their clinic.",
+    "center_book_none": "No doctors are taking bookings right now."
   },
   "booking": {
     "title": "Book an appointment",

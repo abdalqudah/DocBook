@@ -14,7 +14,7 @@ const { z, validate, optionalString, email: emailField } = require('../../core/v
 const { clinicNow } = require('../clinic/scheduling');
 const centers = require('./center.service');
 
-const SPLITS = ['equal', 'percent', 'custom'];
+const SPLITS = ['equal', 'percent', 'custom', 'one']; // one: the whole amount on a single practice (for_practice)
 const r3 = (n) => Math.round((Number(n) || 0) * 1000) / 1000;
 const sha = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
 
@@ -202,8 +202,16 @@ async function addExpense(ctx, input, { period = null } = {}) {
   const d = validate(expenseSchema, input);
   const members = await knex('businesses').where({ center_id: c.id, status: 'active' }).whereNot('kind', 'center_admin').orderBy('center_joined_at').select('id', 'center_percent');
   const mode = d.split_mode || c.split_mode || 'equal';
-  const custom = Object.fromEntries(members.map((m) => [m.id, input[`share_${m.id}`]]));
-  const shares = splitAmounts(d.amount, members, mode, custom);
+  let shares;
+  if (mode === 'one') {
+    // An expense of one practice only: always one of this centre's practices (checked here, never trusted from the form).
+    const one = members.find((m) => m.id === Number(input.for_practice));
+    if (!one) throw E.validation({ for_practice: 'Choose a clinic.' });
+    shares = [{ business_id: one.id, amount: r3(d.amount) }];
+  } else {
+    const custom = Object.fromEntries(members.map((m) => [m.id, input[`share_${m.id}`]]));
+    shares = splitAmounts(d.amount, members, mode, custom);
+  }
   const date = d.date || clinicNow((await knex('businesses').where({ id: ctx.businessId }).first('timezone')).timezone || 'Asia/Amman').date;
   const id = await knex.transaction(async (trx) => {
     const [eid] = await trx('center_expenses').insert({ center_id: c.id, date, title: d.title, category: d.category, amount: r3(d.amount), split_mode: mode, period, note: d.note || null, created_by: ctx.userId || null });
