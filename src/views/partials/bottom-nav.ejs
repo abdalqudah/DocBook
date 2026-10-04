@@ -3,9 +3,11 @@
   var _bn = navGroups.bottom ? navGroups.bottom() : [];
   var _bnHere = navGroups.locate ? navGroups.locate(fullPath).item : null;
   var _bnNew = navActions.filter(function (a) { return a.create; });
+  // short label when there is one ("Today"), otherwise the menu's own label (a centre's "Shared reception")
+  var _bnLabel = function (k) { var s = t('nav.short.' + k); return s === 'nav.short.' + k ? t('nav.' + k) : s; };
   var _bnLink = function (i) { var active = _bnHere === i, n = i.badge && navBadges ? Number(navBadges[i.badge]) || 0 : 0;
     return '<a href="' + i.href + '" class="' + (active ? 'active' : '') + '"' + (active ? ' aria-current="page"' : '') + '><span class="bottom-nav-icon">' + icon(i.icon)
-      + (n ? '<span class="bottom-nav-dot" role="img" aria-label="' + escapeFn(t('navx.pending', { count: n })) + '"></span>' : '') + '</span><span>' + escapeFn(t('nav.short.' + i.key)) + '</span></a>'; };
+      + (n ? '<span class="bottom-nav-dot" role="img" aria-label="' + escapeFn(t('navx.pending', { count: n })) + '"></span>' : '') + '</span><span>' + escapeFn(_bnLabel(i.key)) + '</span></a>'; };
 %>
 <% if (_bn.length) { %>
 <nav class="bottom-nav" aria-label="<%= t('nav.quick') %>">

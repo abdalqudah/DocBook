@@ -841,8 +841,7 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 }
 /* Phones: the platform header keeps logo, language, theme, sign-up and menu in one row in both languages. */
 @media (max-width: 480px) {
-  .site-nav .inner > a.row-sm { min-width: 0; flex-shrink: 1; overflow: hidden; }
   .site-nav .right { flex-shrink: 0; }
   .site-nav .right .btn-sm { padding-inline: 10px; white-space: nowrap; }
 }
-@media (max-width: 380px) { .site-nav .right [data-theme-toggle] { display: none; } }
+@media (max-width: 420px) { body:not(.site-portal) .site-nav .right [data-theme-toggle] { display: none; } }
