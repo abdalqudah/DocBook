@@ -428,6 +428,28 @@
       setTimeout(draw, 300); // after fonts and layout settle
     }());
 
+    /* the doctors' row follows the page down (its box scrolls sideways, so plain CSS cannot pin it to the page) */
+    (function pinHeads() {
+      var box = $('[data-cal-scroll]', cal);
+      var heads = $$('.cal-head, .cal-corner', cal);
+      if (!box || !heads.length) return;
+      var topbar = document.querySelector('.topbar');
+      var rail = $('[data-cal-rail]', cal);
+      var ticking = false;
+      function place() {
+        ticking = false;
+        var top = (topbar ? topbar.getBoundingClientRect().bottom : 0) + (rail && !rail.hidden ? rail.getBoundingClientRect().height : 0);
+        var r = box.getBoundingClientRect();
+        var h = heads[0].getBoundingClientRect().height;
+        var y = Math.max(0, Math.min(top - r.top, r.height - h - 24)); // stop before the calendar's end
+        heads.forEach(function (el) { el.style.transform = y ? 'translateY(' + y + 'px)' : ''; el.classList.toggle('is-pinned', y > 0); });
+      }
+      var ask = function () { if (!ticking) { ticking = true; requestAnimationFrame(place); } };
+      window.addEventListener('scroll', ask, { passive: true });
+      window.addEventListener('resize', ask);
+      place();
+    }());
+
     /* now line */
     function tickNow() {
       var m = nowMin();

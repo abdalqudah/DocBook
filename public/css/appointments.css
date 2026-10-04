@@ -26,7 +26,7 @@
 
 /* ---------- Calendar grid ---------- */
 .cal { --row: 22px; --axis: 58px; --colmin: 180px; --line: color-mix(in srgb, var(--border) 55%, transparent); --hour: var(--border);
-  margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; position: relative; }
+  margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; overflow: clip; position: relative; } /* clip (not hidden): the slider can stick to the page */
 .cal-week { --colmin: 120px; }
 .cal-switch { display: none; }
 .cal-scroll { overflow-x: auto; overflow-y: hidden; } /* full height: the page itself scrolls; sideways only when the columns don't fit */
@@ -331,7 +331,7 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 @media (max-width: 720px) { .sx-card-lg { flex-direction: column; align-items: flex-start; } .sx-card-side { align-items: flex-start; } .sx-month-day { min-height: 70px; } .sx-chip span { display: none; } }
 
 /* The slider above the calendar (many doctors): arrows, a draggable thumb and which columns are on screen. */
-.cal-rail { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+.cal-rail { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-muted); position: sticky; top: var(--topbar-h, 60px); z-index: 12; }
 .cal-rail[hidden] { display: none; }
 .cal-rail-btn { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s, border-color .15s, opacity .15s; }
 .cal-rail-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
@@ -343,3 +343,6 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .cal-rail.is-dragging .cal-rail-thumb { cursor: grabbing; }
 .cal-rail-count { flex: none; white-space: nowrap; min-width: 92px; text-align: end; }
 @media (max-width: 720px) { .cal.js-switch .cal-rail { display: none; } }
+
+/* The doctors' row stays under the top bar (and the slider) while the page scrolls down the day (appointments.js). */
+.cal-head.is-pinned, .cal-corner.is-pinned { box-shadow: 0 6px 10px -8px color-mix(in srgb, var(--text) 35%, transparent); }
