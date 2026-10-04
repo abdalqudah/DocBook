@@ -373,6 +373,61 @@
       sw.addEventListener('change', function () { closePop(); showCol(sw.value); try { sessionStorage.setItem('cal-col', sw.value); } catch (e) { /* ignore */ } });
     }
 
+    /* many doctors: a slider above the calendar, kept in step with the calendar's own scroll */
+    (function rail() {
+      var bar = $('[data-cal-rail]', cal); var box = $('[data-cal-scroll]', cal);
+      if (!bar || !box) return;
+      var track = $('[data-cal-rail-track]', bar); var thumb = $('[data-cal-rail-thumb]', bar);
+      var prev = $('[data-cal-rail-prev]', bar); var next = $('[data-cal-rail-next]', bar); var count = $('[data-cal-rail-count]', bar);
+      var rtl = getComputedStyle(box).direction === 'rtl';
+      var cols = $$('.cal-head', cal).length;
+      // How far along the columns we are, 0 … max (the browser counts RTL scrolling as negative).
+      var pos = function () { return Math.abs(box.scrollLeft); };
+      var max = function () { return Math.max(0, box.scrollWidth - box.clientWidth); };
+      var setPos = function (v) { var p = Math.max(0, Math.min(max(), v)); box.scrollLeft = rtl ? -p : p; };
+      var colW = function () { var h = $('.cal-head', cal); return h ? h.getBoundingClientRect().width : 180; };
+      function draw() {
+        var m = max();
+        bar.hidden = m < 2;
+        if (bar.hidden) return;
+        var tw = track.clientWidth; var ratio = box.clientWidth / box.scrollWidth;
+        var w = Math.max(36, Math.round(tw * ratio));
+        thumb.style.width = w + 'px';
+        var off = m ? Math.round((tw - w) * (pos() / m)) : 0;
+        thumb.style.transform = 'translateX(' + (rtl ? -off : off) + 'px)';
+        prev.disabled = pos() < 2; next.disabled = pos() > m - 2;
+        var cw = colW(); var axis = box.scrollWidth - cw * cols;
+        var from = Math.min(cols, Math.floor(pos() / cw) + 1); var to = Math.min(cols, Math.floor((pos() + box.clientWidth - axis + 4) / cw));
+        if (count) count.textContent = count.getAttribute('data-tpl').replace('{from}', from).replace('{to}', Math.max(from, to)).replace('{n}', cols);
+      }
+      box.addEventListener('scroll', draw, { passive: true });
+      window.addEventListener('resize', draw);
+      prev.addEventListener('click', function () { box.scrollBy({ left: (rtl ? 1 : -1) * colW(), behavior: 'smooth' }); });
+      next.addEventListener('click', function () { box.scrollBy({ left: (rtl ? -1 : 1) * colW(), behavior: 'smooth' }); });
+      track.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); var fwd = (e.key === 'ArrowRight') !== rtl; setPos(pos() + (fwd ? 1 : -1) * colW()); }
+      });
+      // Drag the thumb, or press anywhere on the track to jump there.
+      var drag = null;
+      function at(clientX) {
+        var r = track.getBoundingClientRect(); var w = thumb.getBoundingClientRect().width;
+        var x = rtl ? r.right - clientX : clientX - r.left;
+        return ((x - w / 2) / Math.max(1, r.width - w)) * max();
+      }
+      track.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        if (e.target === thumb) drag = { x: e.clientX, start: pos(), per: max() / Math.max(1, track.clientWidth - thumb.getBoundingClientRect().width) };
+        else { setPos(at(e.clientX)); drag = { x: e.clientX, start: pos(), per: max() / Math.max(1, track.clientWidth - thumb.getBoundingClientRect().width) }; }
+        bar.classList.add('is-dragging');
+        track.setPointerCapture(e.pointerId);
+      });
+      track.addEventListener('pointermove', function (e) { if (drag) setPos(drag.start + (rtl ? drag.x - e.clientX : e.clientX - drag.x) * drag.per); });
+      var end = function () { drag = null; bar.classList.remove('is-dragging'); };
+      track.addEventListener('pointerup', end); track.addEventListener('pointercancel', end);
+      draw();
+      setTimeout(draw, 300); // after fonts and layout settle
+    }());
+
     /* now line */
     function tickNow() {
       var m = nowMin();

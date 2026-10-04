@@ -147,7 +147,7 @@
       "hint_view": "انقر على الموعد لفتحه.",
       "time_axis": "الوقت",
       "now": "الآن",
-      "doctor_switch": "الطبيب",
+      "rail_prev": "الأطباء السابقون", "rail_next": "الأطباء التاليون", "rail_label": "التنقّل بين الأطباء", "rail_count": "{from}–{to} من {n}", "doctor_switch": "الطبيب",
       "sel_label": "الوقت المحدد",
       "unavailable": "هذا الوقت غير متاح",
       "sel_book": "حجز موعد",

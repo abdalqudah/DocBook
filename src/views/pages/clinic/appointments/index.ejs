@@ -96,6 +96,15 @@
     </select>
   </div>
   <% } %>
+  <% if (columns.length > 1) { %>
+  <%# More columns than fit: a slider above the calendar too (drag, click, arrows), with which columns are on screen. %>
+  <div class="cal-rail" data-cal-rail hidden>
+    <button class="cal-rail-btn" type="button" data-cal-rail-prev aria-label="<%= t('appointments.cal.rail_prev') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></button>
+    <div class="cal-rail-track" data-cal-rail-track role="scrollbar" aria-orientation="horizontal" aria-label="<%= t('appointments.cal.rail_label') %>" tabindex="0"><span class="cal-rail-thumb" data-cal-rail-thumb></span></div>
+    <button class="cal-rail-btn" type="button" data-cal-rail-next aria-label="<%= t('appointments.cal.rail_next') %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></button>
+    <span class="cal-rail-count tiny muted" data-cal-rail-count data-tpl="<%= t('appointments.cal.rail_count', { from: '{from}', to: '{to}', n: '{n}' }) %>"></span>
+  </div>
+  <% } %>
   <div class="cal-scroll" data-cal-scroll>
     <div class="cal-grid" role="grid" aria-label="<%= t('appointments.cal.grid_label') %>" style="--cols:<%= columns.length %>;--rows:<%= (range.end - range.start) / ROW %>">
       <div class="cal-corner" aria-hidden="true"></div>
