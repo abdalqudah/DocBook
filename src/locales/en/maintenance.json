@@ -1,0 +1,32 @@
+{
+  "maintenance": {
+    "nav": "Maintenance mode",
+    "admin_title": "Maintenance mode / close the site",
+    "admin_lead": "Close the site for a while with a message for visitors, then reopen it in one click. Your admin account always keeps working.",
+    "state_on": "Site closed",
+    "state_off": "Site open",
+    "on_label": "Close the site now (under maintenance)",
+    "scope": "What closes?",
+    "scope_site": "The public site only",
+    "scope_site_help": "Home page, clinic websites and booking; staff keep working in the system.",
+    "scope_all": "Everything",
+    "scope_all_help": "The site and the staff system too (e.g. during a big update).",
+    "title_ar": "Title in Arabic",
+    "title_en": "Title in English",
+    "message_ar": "Message in Arabic",
+    "message_en": "Message in English",
+    "title": "Under maintenance",
+    "message": "We are making improvements and will be back shortly. Thank you for your patience.",
+    "staff_login": "Staff sign-in",
+    "admin_note": "While closed, visitors see an \"under maintenance\" page (status 503, so search engines are not affected). Sign-in and the admin pages stay available.",
+    "save": "Save",
+    "preview": "View the site",
+    "saved_on": "The site is closed for maintenance.",
+    "saved_off": "The site is open.",
+    "confirm_on": "Visitors will see the \"under maintenance\" page. Continue?",
+    "from_env": "Maintenance is on from the .env file (MAINTENANCE); remove that line and restart to reopen.",
+    "bar": "The site is closed for maintenance — visitors see the maintenance page.",
+    "bar_link": "Manage maintenance",
+    "system_settings": "System settings"
+  }
+}

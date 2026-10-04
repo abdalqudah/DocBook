@@ -35,7 +35,7 @@ const render = async (req, res, extra = {}) => {
   res.page('pages/admin/updates', {
     pendingDb, appliedDb: Number(appliedDb), lastDbRun: auto.lastRun(),
     layout: 'admin', title: req.t('updater.title'), current: { version: st.version, node: process.version },
-    dist: updater.isDistBuild(root), backups: updater.listBackups(root), log: updater.readLog(root), dbVersion,
+    dist: updater.isDistBuild(root) || updater.isOwnSource(root), fromSource: !updater.isDistBuild(root), backups: updater.listBackups(root), log: updater.readLog(root), dbVersion,
     updated: req.query.updated, restored: req.query.restored, maxMb: updater.MAX_ZIP_BYTES / 1048576,
     pageStyles: ['/css/site.css', '/css/platformops.css'], ...extra,
   });

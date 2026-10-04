@@ -10,6 +10,7 @@
   _nav.push(['/admin/payments', 'credit-card', 'ppay.admin.nav', false, 'clinics']); // payment methods and PayTabs
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav'], ['/admin/ai', 'sparkles', 'ai_admin.nav'], ['/admin/updates', 'cloud-upload', 'platformops.admin_nav']);
   _nav.push(['/admin/branding', 'image', 'branding_admin.nav', false, 'platform']); // platform logo and browser icon
+  _nav.push(['/admin/maintenance', 'wrench', 'maintenance.nav', false, 'platform']); // close the site for maintenance
   _nav.push(['/admin/databases', 'database', 'dbsep.nav', false, 'platform']); // each clinic's own database
   _nav.push(['/admin/images', 'minimize', 'imgopt.nav', false, 'platform']); // compress pictures stored before uploads were compressed
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
@@ -77,6 +78,8 @@
       </div>
     </header>
     <main class="content admin-content" id="main">
+      <% if (typeof maintenanceOn !== 'undefined' && maintenanceOn) { %><div class="alert alert-warning mb-4" role="status"><%- icon('wrench', 'icon-sm') %><div class="grow"><%= t('maintenance.bar') %></div><a class="btn btn-secondary btn-sm" href="/admin/maintenance"><%= t('maintenance.bar_link') %></a></div><% } %>
+
       <%- body %>
     </main>
   </div>

@@ -34,6 +34,7 @@ router.use('/', require('./reviews.web'));
 router.use('/', require('./articles.web')); // doctors' articles asking for the main site: approve / reject
 router.use('/', require('../ai/admin.web')); // AI assistant: provider key and model
 router.use('/', require('../subscriptions/admin.web'));
+router.use('/', require('../platformops/maintenance.web')); // close the site for maintenance, reopen
 router.use('/', require('../platformops/databases.web')); // each clinic's own database: status, moving clinics, structure sync
 router.use('/', require('../platformops/images.web')); // compress pictures stored before uploads were compressed
 router.use('/', require('../platformops/admin.web')); // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)

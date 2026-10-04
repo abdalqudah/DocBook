@@ -113,6 +113,64 @@ ${center ? '- **كل طبيب** له عيادة مستقلة وموقع خاص �
 `;
 }
 
+function sourceGuideFor(edition) {
+  const center = edition === 'center';
+  return `# ${center ? 'المركز الطبي' : 'العيادة'} — الكود المصدري الكامل
+
+هذا الكود الكامل للنظام (للتطوير أو للتشغيل من المصدر). ملف \`.env\` جاهز بنفس إعدادات النسخة الجاهزة.
+
+## التشغيل على cPanel من الكود المصدري
+1. أنشئ قاعدة بيانات ومستخدمًا (ALL PRIVILEGES).
+2. ارفع الملف وفكّه في مجلد الدومين، وعبّئ \`.env\` (الأسطر المعلَّمة بـ «←»).
+3. Setup Node.js App ← Create Application: Node.js 20+، Startup file = \`app.js\` ← Create.
+4. اضغط **Run NPM Install** (يثبّت المكتبات)، ثم **Restart**.
+5. افتح الدومين للموقع، و **/admin** للإدارة.
+
+## التحديث من لوحة الإدارة
+**/admin/platform** ← «تحديث النظام»: ارفع ملف التحديث الجاهز (update-….zip) واكتب كلمة مرورك. تُحفظ نسخة احتياطية من ملفاتك أولًا، ويمكن الرجوع إليها من نفس الصفحة. بعد أول تحديث يعمل الموقع بالنسخة الجاهزة (لا يحتاج npm install).
+
+## وضع الصيانة
+**/admin/platform** ← «وضع الصيانة»: إغلاق الموقع العام (أو كل النظام) برسالة للزوار، وفتحه بضغطة. للطوارئ: أضف \`MAINTENANCE=site\` أو \`MAINTENANCE=all\` إلى \`.env\` وأعد التشغيل.
+
+## للمطوّر
+- \`npm test\` الاختبارات (تحتاج قاعدة اختبار: DB_NAME_TEST).
+- \`npm run build\` يبني النسخة الجاهزة وملف التحديث في \`dist/\`.
+`;
+}
+
+// The full source (tracked files), scrubbed the same way, with the edition's .env.
+function buildSource(edition, file) {
+  const out = path.join(ROOT, 'dist', file);
+  fs.rmSync(out, { recursive: true, force: true });
+  const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean)
+    .filter((f) => f !== 'scripts/build-editions.js' && fs.existsSync(path.join(ROOT, f)));
+  for (const f of files) { fs.mkdirSync(path.join(out, path.dirname(f)), { recursive: true }); fs.copyFileSync(path.join(ROOT, f), path.join(out, f)); }
+  scrub(out);
+  fs.writeFileSync(path.join(out, '.env'), envFor(edition));
+  fs.writeFileSync(path.join(out, 'INSTALL.md'), sourceGuideFor(edition));
+  const left = spawnSync('grep', ['-ril', NAME, '.'], { cwd: out, encoding: 'utf8' }).stdout.trim();
+  if (left) throw new Error(`${file}: still mentions the platform's name:\n${left}`);
+  const zip = path.join(ROOT, 'dist', `${file}.zip`);
+  fs.rmSync(zip, { force: true });
+  execFileSync('zip', ['-qr', zip, '.'], { cwd: out });
+  console.log(`Built dist/${file}.zip`);
+}
+
+// The update file for the admin page (System update): the ready build without .env — the same for both editions.
+{
+  const out = path.join(ROOT, 'dist', `update-${version}`);
+  fs.rmSync(out, { recursive: true, force: true });
+  fs.cpSync(SRC, out, { recursive: true });
+  for (const f of ['INSTALL.md', '.env.example']) fs.rmSync(path.join(out, f), { force: true });
+  scrub(out);
+  const zip = path.join(ROOT, 'dist', `update-${version}.zip`);
+  fs.rmSync(zip, { force: true });
+  execFileSync('zip', ['-qr', zip, '.'], { cwd: out });
+  console.log(`Built dist/update-${version}.zip`);
+}
+
+for (const [edition, file] of [['clinic', `single-clinic-source-${version}`], ['center', `medical-center-source-${version}`]]) buildSource(edition, file);
+
 for (const [edition, file] of [['clinic', `single-clinic-${version}`], ['center', `medical-center-${version}`]]) {
   const out = path.join(ROOT, 'dist', file);
   fs.rmSync(out, { recursive: true, force: true });

@@ -282,3 +282,26 @@ test('update (RemoteWay flow): lenient package check, one-step install, restore 
     assert.deepEqual(updater.readLog(root).map((l) => l.action), ['restore', 'update']);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+
+test('update: an installation running from its own source code takes the ready package (backed up first)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'docbook-srcupd-'));
+  try {
+    fs.writeFileSync(path.join(root, 'app.js'), "require('./src/server').run();\n");
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'docbook', version: '2.0.0', dependencies: { express: '4' } }));
+    fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'src/server.js'), 'module.exports = {};');
+    fs.writeFileSync(path.join(root, '.env'), 'SECRET=keep');
+    assert.ok(!updater.isDistBuild(root) && updater.isOwnSource(root));
+    const r = updater.install(distZip({ version: '2.1.0' }), { root, by: 'admin@x' });
+    assert.equal(r.to, '2.1.0');
+    assert.ok(updater.isDistBuild(root), 'now runs the ready build');
+    assert.equal(fs.readFileSync(path.join(root, '.env'), 'utf8'), 'SECRET=keep');
+    assert.equal(updater.listBackups(root)[0].version, '2.0.0');
+    // Another product's source: refused.
+    const other = fs.mkdtempSync(path.join(os.tmpdir(), 'docbook-other-'));
+    fs.writeFileSync(path.join(other, 'app.js'), 'x');
+    fs.writeFileSync(path.join(other, 'package.json'), JSON.stringify({ name: 'something-else' }));
+    assert.equal(code(() => updater.install(distZip(), { root: other })), 'UPDATE_SOURCE_BUILD');
+    fs.rmSync(other, { recursive: true, force: true });
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});

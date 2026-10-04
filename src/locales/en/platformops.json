@@ -186,7 +186,7 @@
     "source_title": "Updates are available in the installed build only",
     "source_text": "This copy runs from source code. Update it from the code repository.",
     "upload_title": "Upload a new version",
-    "upload_sub": "The zip made by “npm run build” (docbook-<version>-dist.zip), up to {mb} MB.",
+    "upload_sub": "The update file (.zip), up to {mb} MB.",
     "file": "Dist zip",
     "file_help": "Checked before anything is written: only {brand}'s own files, no node_modules, no .env, no paths outside the app.",
     "upload": "Upload and check",
@@ -239,7 +239,7 @@
     "current_version": "Current version",
     "database": "Database",
     "install_title": "Install an update",
-    "install_sub": "Upload the update file (docbook-…-dist.zip) as you received it.",
+    "install_sub": "Upload the update file (.zip) as you received it.",
     "package": "Update file (.zip)",
     "package_help": "Up to {mb} MB. A zip with its files inside one folder is accepted too.",
     "confirm_password": "Your password to confirm",
@@ -263,7 +263,9 @@
     "db_auto": "Applied by themselves on start, every 5 minutes while running, and whenever a page needs a new table — no command needed.",
     "db_run": "Update the database now",
     "db_applied": "{n} database updates applied.",
-    "db_uptodate": "The database is up to date."
+    "db_uptodate": "The database is up to date.",
+    "from_source_title": "This installation runs from its source code",
+    "from_source_text": "You can update it here with the ready update file: your current files are backed up first, then the site runs the new ready build (no npm install needed)."
   },
   "errors_platformops": {
     "MODULE_OFF": "This section is turned off for the clinic.",

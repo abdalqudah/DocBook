@@ -1,0 +1,25 @@
+<%# Platform admin → Maintenance: close the site with a message, or reopen it. %>
+<div class="page-head"><div><h1><%= t('maintenance.admin_title') %></h1><p><%= t('maintenance.admin_lead') %></p></div>
+  <span class="badge badge-dot <%= st.on ? 'badge-warning' : 'badge-success' %>"><%= st.on ? t('maintenance.state_on') : t('maintenance.state_off') %></span></div>
+
+<% if (st.fromEnv) { %><div class="alert alert-warning mb-4"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('maintenance.from_env') %></div></div><% } %>
+
+<form class="panel" method="post" action="/admin/maintenance"<% if (!st.on) { %> data-confirm="<%= t('maintenance.confirm_on') %>" data-confirm-yes="<%= t('maintenance.save') %>"<% } %>>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack">
+    <label class="check"><input type="checkbox" name="on" value="1"<%= st.on ? ' checked' : '' %>><span><strong><%= t('maintenance.on_label') %></strong></span></label>
+    <fieldset class="stack-sm">
+      <legend class="label"><%= t('maintenance.scope') %></legend>
+      <label class="check"><input type="radio" name="scope" value="site"<%= st.scope !== 'all' ? ' checked' : '' %>><span><strong><%= t('maintenance.scope_site') %></strong> — <span class="muted small"><%= t('maintenance.scope_site_help') %></span></span></label>
+      <label class="check"><input type="radio" name="scope" value="all"<%= st.scope === 'all' ? ' checked' : '' %>><span><strong><%= t('maintenance.scope_all') %></strong> — <span class="muted small"><%= t('maintenance.scope_all_help') %></span></span></label>
+    </fieldset>
+    <div class="form-grid">
+      <%- include('../../partials/field', { name: 'title_ar', label: t('maintenance.title_ar'), value: st.title_ar, placeholder: t('maintenance.title') }) %>
+      <%- include('../../partials/field', { name: 'title_en', label: t('maintenance.title_en'), value: st.title_en, attrs: 'dir="ltr"', placeholder: 'Under maintenance' }) %>
+      <%- include('../../partials/field', { name: 'message_ar', label: t('maintenance.message_ar'), type: 'textarea', value: st.message_ar, placeholder: t('maintenance.message') }) %>
+      <%- include('../../partials/field', { name: 'message_en', label: t('maintenance.message_en'), type: 'textarea', value: st.message_en, attrs: 'dir="ltr"', placeholder: "We are making improvements and will be back shortly." }) %>
+    </div>
+    <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('maintenance.admin_note') %></p>
+  </div>
+  <div class="panel-foot"><button class="btn btn-primary" type="submit"><%= t('maintenance.save') %></button><a class="btn btn-ghost" href="/" target="_blank" rel="noopener"><%= t('maintenance.preview') %></a></div>
+</form>

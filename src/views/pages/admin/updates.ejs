@@ -6,6 +6,9 @@
 <% if (updated || restored) { %>
 <div class="alert alert-success mb-4"><%- icon('rocket') %><div class="grow"><div class="alert-title"><%= updated ? t('updater.update_started', { v: updated }) : t('updater.restore_started', { v: restored }) %></div><div class="small"><%= t('updater.restart_note') %></div></div><a class="btn btn-secondary btn-sm" href="/admin/updates"><%= t('updater.refresh') %></a></div>
 <% } %>
+<% if (typeof fromSource !== 'undefined' && fromSource && dist) { %>
+<div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('updater.from_source_title') %></div><div><%= t('updater.from_source_text') %></div></div></div>
+<% } %>
 <% if (!dist) { %>
 <div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('updater.source_title') %></div><div><%= t('updater.source_text') %></div></div></div>
 <% } %>

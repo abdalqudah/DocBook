@@ -124,6 +124,7 @@ function createApp() {
     try { await knex.raw('select 1'); res.json({ status: 'ok' }); } catch { res.status(503).json({ status: 'db_unavailable' }); }
   });
 
+  app.use(require('./modules/platformops/maintenance').middleware); // closed for maintenance (the platform admin still gets through)
   app.use('/', require('./routes/web'));
   app.use(notFound);
   app.use(errorHandler);

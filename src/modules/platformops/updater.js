@@ -23,6 +23,7 @@ const MAX_ENTRIES = 20000;
 const OWNED = ['app.js', 'package.json', 'src', 'public', 'vendor', 'INSTALL.md', '.env.example'];
 const KEEP_BACKUPS = 3;
 const UPDATES = '.updates';
+const PKG_NAME = 'docbook'; // the package name of every build (package.json)
 
 const fail = (code, message, details) => new AppError(code, message, 422, details);
 
@@ -100,7 +101,7 @@ function inspectZip(buffer) {
   if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
   let pkg;
   try { pkg = JSON.parse(pkgEntry.getData().toString('utf8')); } catch { throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.'); }
-  if (!pkg || pkg.name !== 'docbook') throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
+  if (!pkg || pkg.name !== PKG_NAME) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
   return { zip, names, version: String(pkg.version || ''), files, bytes };
 }
 
@@ -174,6 +175,11 @@ function touchRestart(root) {
     fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
     fs.writeFileSync(path.join(root, 'tmp', 'restart.txt'), `restart requested ${new Date().toISOString()}\n`);
   } catch { /* best effort: the process exit below restarts it under pm2 / Passenger anyway */ }
+}
+
+/** The app root runs this product's own source code (its package.json carries the build's package name). */
+function isOwnSource(root = DEFAULT_ROOT) {
+  try { return JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).name === PKG_NAME; } catch { return false; }
 }
 
 function requireDist(root) {
@@ -267,7 +273,7 @@ function inspectPackage(buffer) {
   if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
   let pkg;
   try { pkg = JSON.parse(pkgEntry.getData().toString('utf8')); } catch { throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.'); }
-  if (!pkg || pkg.name !== 'docbook') throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
+  if (!pkg || pkg.name !== PKG_NAME) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
   return { files, version: String(pkg.version || ''), count: files.size, bytes, sha256: require('crypto').createHash('sha256').update(buffer).digest('hex') }; // eslint-disable-line global-require
 }
 
@@ -293,7 +299,9 @@ function makeBackup(root, meta) {
 
 /** Validates the package, backs up the running files, writes the new ones and requests a restart. */
 function install(buffer, { root = DEFAULT_ROOT, by = null, fileName = '' } = {}) {
-  requireDist(root);
+  // An installation running from its source code takes the ready package too (its own package name only): the
+  // server then starts the bundled app.js, which needs no node_modules. The source files are backed up first.
+  if (!isDistBuild(root) && !isOwnSource(root)) requireDist(root);
   const info = inspectPackage(buffer);
   const from = readVersion(root);
   const backup = makeBackup(root, { replacedBy: info.version, by });
@@ -339,5 +347,5 @@ function restore(backupId, { root = DEFAULT_ROOT, by = null } = {}) {
 module.exports = {
   inspectPackage, install, restore, listBackups, readLog,
   DEFAULT_ROOT, MAX_ZIP_BYTES, OWNED, KEEP_BACKUPS,
-  hasDistBanner, isDistBuild, compareVersions, safeName, inspectZip, status, stage, discard, activate, rollback, restartAfter,
+  hasDistBanner, isDistBuild, isOwnSource, compareVersions, safeName, inspectZip, status, stage, discard, activate, rollback, restartAfter,
 };
