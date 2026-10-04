@@ -16,7 +16,7 @@
 //   GET  /media/api                                   JSON list for the picker                          settings.manage
 //   GET  /media/:id                                   the file, for members of the clinic
 const express = require('express');
-const multer = require('multer');
+const uploads = require('../../core/uploads');
 const config = require('../../config');
 const { AppError } = require('../../core/errors');
 const { dictionaries, translateMessage } = require('../../core/i18n');
@@ -165,7 +165,7 @@ router.get(['/settings/media', '/website/media'], canAny('website.edit', 'settin
   return mediaPage(req, res);
 }));
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: media.MAX_BYTES + 1, files: 10, fields: 12, parts: 24 } });
+const upload = uploads.memory({ limits: { fileSize: media.MAX_BYTES + 1, files: 10, fields: 12, parts: 24 } }); // photos → small WebP
 const uploadFiles = (req, res, next) => upload.array('files', 10)(req, res, (e) => {
   if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'MEDIA_TOO_BIG' : e.code === 'LIMIT_FILE_COUNT' ? 'MEDIA_TOO_MANY' : 'MEDIA_TYPE';
   next();

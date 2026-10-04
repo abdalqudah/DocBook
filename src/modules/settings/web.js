@@ -2,6 +2,7 @@
 // Staff & logins live in team.web.js, data & audit in data.web.js.
 const express = require('express');
 const multer = require('multer');
+const uploads = require('../../core/uploads');
 const knex = require('../../db/knex');
 const config = require('../../config');
 const audit = require('../../core/audit');
@@ -152,7 +153,7 @@ router.post('/appearance', can('settings.manage'), form(async (req, res) => {
 const LOGO_TYPES = { 'image/png': (b) => b.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
   'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
   'image/webp': (b) => b.slice(0, 4).toString('ascii') === 'RIFF' && b.slice(8, 12).toString('ascii') === 'WEBP' };
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024, files: 1, fields: 5 } });
+const upload = uploads.memory({ limits: { fileSize: 1024 * 1024, files: 1, fields: 5 }, maxSide: 1200 }); // logos → small WebP
 const logoUpload = (req, res, next) => upload.single('logo')(req, res, (err) => {
   if (err) { req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'logo_too_big' : 'logo_invalid'; }
   next();

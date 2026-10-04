@@ -14,6 +14,8 @@ const { version } = require('../package.json');
 const REMAP = [
   ['node_modules/@expo-google-fonts/', 'vendor/fonts/'],
   ['node_modules/pdfkit/js', 'vendor/pdfkit'],
+  ['node_modules/@jsquash/webp/codec/', 'vendor/webp/'],
+  ['node_modules/@jsquash/jpeg/codec/', 'vendor/jpeg/'],
 ];
 const remap = (rel) => REMAP.reduce((p, [from, to]) => (p.startsWith(from) ? to + p.slice(from.length) : p), rel);
 const at = (rel) => `require("path").join(__DOCBOOK_ROOT, ${JSON.stringify(rel)})`;
@@ -53,6 +55,8 @@ function copy(from, to, filter) {
     keepNames: true,
     legalComments: 'none',
     external: EXTERNAL,
+    // The image codecs (emscripten) build a URL from import.meta.url even though their WebAssembly is handed to them.
+    define: { 'import.meta.url': '"file:///docbook/app.js"' },
     banner: { js: '#!/usr/bin/env node\nconst __DOCBOOK_ROOT = __dirname;' },
     plugins: [paths],
     logLevel: 'warning',
@@ -63,6 +67,9 @@ function copy(from, to, filter) {
   copy('src/db/migrations', 'src/db/migrations');
   copy('public', 'public');
   copy('node_modules/pdfkit/js/data', 'vendor/pdfkit/data');
+  // Image compression on upload (core/imageopt): the WebAssembly codecs, read from disk at start.
+  for (const f of ['enc/webp_enc.wasm', 'enc/webp_enc_simd.wasm', 'dec/webp_dec.wasm']) copy(`node_modules/@jsquash/webp/codec/${f}`, `vendor/webp/${f}`);
+  copy('node_modules/@jsquash/jpeg/codec/dec/mozjpeg_dec.wasm', 'vendor/jpeg/dec/mozjpeg_dec.wasm');
   for (const [pkg, file] of [['noto-naskh-arabic', 'NotoNaskhArabic'], ['noto-sans', 'NotoSans']]) {
     for (const w of ['400Regular', '700Bold']) copy(`node_modules/@expo-google-fonts/${pkg}/${w}/${file}_${w}.ttf`, `vendor/fonts/${pkg}/${w}/${file}_${w}.ttf`);
   }

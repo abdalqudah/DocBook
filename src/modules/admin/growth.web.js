@@ -51,7 +51,8 @@ router.get('/site/media', wrap(async (req, res) => {
 
 // Uploads arrive as the raw file (sent by site-editor.js with the CSRF token in a header), so no multipart parser is needed.
 const MB = Math.round(media.MAX_BYTES / 1048576);
-const rawImage = (req, res, next) => express.raw({ type: () => true, limit: media.MAX_BYTES })(req, res, (err) => {
+const { RAW_IMAGE_MAX } = require('../../core/uploads'); // photos up to this size are accepted, then compressed
+const rawImage = (req, res, next) => express.raw({ type: () => true, limit: RAW_IMAGE_MAX })(req, res, (err) => {
   if (err && err.type === 'entity.too.large') { req.uploadError = req.t('growth_err.file_too_big', { mb: MB }); return next(); }
   return next(err);
 });

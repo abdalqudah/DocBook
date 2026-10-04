@@ -38,7 +38,7 @@
     "reason": "Reason for the consultation",
     "reason_ph": "Your symptoms, questions, or the treatment you're considering…",
     "files": "Medical files",
-    "files_help": "Optional — up to 5 files (PDF, JPEG or PNG, 10 MB each): reports, test results, scans. Only the clinic's medical team can open them.",
+    "files_help": "Optional — up to 5 files (PDF or photos; photos are compressed automatically, PDFs up to 10 MB each): reports, test results, scans. Only the clinic's medical team can open them.",
     "files_chosen": "{n} file(s) selected",
     "submit": "Request online consultation",
     "privacy": "Your details and files are shared only with the clinic.",

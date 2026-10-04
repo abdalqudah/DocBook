@@ -117,7 +117,7 @@
         </div>
         <div class="field full">
           <label class="label" for="f-files"><%= t('telehealth.files') %></label>
-          <input class="input tele-file<%= errors.files ? ' is-invalid' : '' %>" id="f-files" name="files" type="file" multiple accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" data-files data-max="<%= maxFiles %>" data-max-bytes="10485760">
+          <input class="input tele-file<%= errors.files ? ' is-invalid' : '' %>" id="f-files" name="files" type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" data-files data-max="<%= maxFiles %>" data-max-bytes="15728640">
           <% if (errors.files) { %><%- err('files') %><% } else { %><span class="help" data-files-help><%= t('telehealth.files_help') %></span><% } %>
           <span class="field-error" data-files-error hidden></span>
         </div>

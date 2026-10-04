@@ -60,7 +60,7 @@
     "attach_result": "Attach the result file",
     "patient_file": "Patient file",
     "files_label": "Files",
-    "files_help": "PDF, JPG or PNG, up to {mb} MB each and {n} files at a time.",
+    "files_help": "PDF, JPG, PNG or WebP — {n} files at a time. Photos are compressed automatically; PDFs up to {mb} MB each.",
     "category": "Type",
     "file_title": "Title (optional)",
     "for_order": "For order",

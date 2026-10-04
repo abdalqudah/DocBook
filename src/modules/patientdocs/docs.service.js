@@ -32,7 +32,7 @@ function ageOn(dob, onDate) {
 }
 
 async function clinicInfo(businessId) {
-  const c = await knex('businesses').where({ id: businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'logo', 'logo_mime', 'timezone', 'currency', 'color', 'tax_number');
+  const c = await require('../../core/imageopt').pdfLogo(await knex('businesses').where({ id: businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'logo', 'logo_mime', 'timezone', 'currency', 'color', 'tax_number')); // eslint-disable-line global-require
   if (!c) throw E.notFound('Clinic');
   // The same letterhead settings as every other paper (Settings → Invoice template).
   const tpl = await require('../platformops/ops.service').invoiceTemplate(businessId).catch(() => ({})); // eslint-disable-line global-require

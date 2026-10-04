@@ -101,7 +101,7 @@ test('media: only real PNG/JPEG/WebP (content-checked), size read, served with s
   assert.equal(ok.body.data.width, 1200);
   const file = await fetch(base + ok.body.data.url);
   assert.equal(file.status, 200);
-  assert.equal(file.headers.get('content-type'), 'image/png');
+  assert.equal(file.headers.get('content-type'), 'image/webp'); // compressed on upload
   assert.equal(file.headers.get('x-content-type-options'), 'nosniff');
   assert.match(file.headers.get('cache-control'), /immutable/);
   assert.match(file.headers.get('content-security-policy'), /default-src 'none'/);
@@ -142,7 +142,7 @@ test('sections: alignment, background and images render on the landing page', as
 
   const home = (await client().get('/?lang=en')).text;
   assert.match(home, /class="section alt lp-faq al-center sec-has-bg"/);
-  assert.match(home, /<div class="sec-bg" aria-hidden="true" style="background-image:url\('\/assets\/media\/\d+\/[a-f0-9]{16}\.png'\)">/);
+  assert.match(home, /<div class="sec-bg" aria-hidden="true" style="background-image:url\('\/assets\/media\/\d+\/[a-f0-9]{16}\.webp'\)">/);
   assert.match(home, /class="sec-split media-end"/);
   assert.match(home, /alt="Front desk" width="1200" height="630"/);
   assert.match(home, /lp-hero sec-muted/);
@@ -169,7 +169,7 @@ test('SEO: validation, head tags, JSON-LD for DocBook and the clinic page, audit
   assert.match(home, /<title>DocBook for clinics<\/title>/);
   assert.match(home, /<link rel="canonical" href="https:\/\/docbook\.example\/\?lang=en">/);
   assert.match(home, /hreflang="ar" href="https:\/\/docbook\.example\/\?lang=ar"/);
-  assert.match(home, /<meta property="og:image" content="https:\/\/docbook\.example\/assets\/media\/\d+\/[a-f0-9]{16}\.png">/);
+  assert.match(home, /<meta property="og:image" content="https:\/\/docbook\.example\/assets\/media\/\d+\/[a-f0-9]{16}\.webp">/);
   assert.match(home, /<meta name="google-site-verification" content="abc123_XYZ">/);
   assert.match(home, /<meta name="twitter:site" content="@docbook">/);
   const types = ld(home).map((d) => d['@type']);

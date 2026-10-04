@@ -9,7 +9,7 @@
 //   /clinic/orders-catalog                 → the clinic's list of lab tests and imaging studies
 //   GET  /reports/clinical                 → orders, referrals, files, messages and insured visits for a period
 const express = require('express');
-const multer = require('multer');
+const uploads = require('../../core/uploads');
 const knex = require('../../db/knex');
 const audit = require('../../core/audit');
 const { wrap, form, flash } = require('../../routes/helpers');
@@ -94,7 +94,7 @@ router.post('/orders/:id(\\d+)/status', canAny('clinical.edit', 'prescriptions.c
 }));
 
 // ---------------------------------------------------------------- patient files
-const upload = multer({ storage: multer.memoryStorage(), limits: { files: svc.MAX_FILES, fileSize: svc.MAX_FILE_BYTES + 1, fields: 20, fieldSize: 10_000 } });
+const upload = uploads.memory({ limits: { files: svc.MAX_FILES, fileSize: svc.MAX_FILE_BYTES + 1, fields: 20, fieldSize: 10_000 } }); // photos → small WebP
 const parseUpload = (req, res, next) => upload.array('files', svc.MAX_FILES)(req, res, (err) => {
   if (err && err.code && String(err.code).startsWith('LIMIT_')) { req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'FILE_TOO_BIG' : 'FILE_TOO_MANY'; req.body = req.body || {}; return next(); }
   return next(err);

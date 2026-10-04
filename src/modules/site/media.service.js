@@ -50,8 +50,10 @@ function dimensions(buf, mime) {
 
 const cleanName = (n, fallback) => String(n || '').replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[\u0000-\u001f<>"`]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150) || fallback;
 
-async function upload(ctx, buf, name) {
-  if (!Buffer.isBuffer(buf) || !buf.length) throw E.validation({ file: 'growth_err.file_required' });
+async function upload(ctx, raw, name) {
+  if (!Buffer.isBuffer(raw) || !raw.length) throw E.validation({ file: 'growth_err.file_required' });
+  const small = await require('../../core/imageopt').optimize(raw); // eslint-disable-line global-require
+  const buf = small ? small.buffer : raw; // photos → small WebP
   if (buf.length > MAX_BYTES) throw E.validation({ file: 'growth_err.file_too_big' });
   const mime = sniff(buf);
   if (!mime) throw E.validation({ file: 'growth_err.file_type' });

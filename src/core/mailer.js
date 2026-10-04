@@ -61,7 +61,7 @@ function layout({ locale = 'en', title, body, cta, href, clinic = null, base = '
   const ink = hex ? require('../modules/branding/theme').inkFor(hex) : c.primaryInk; // eslint-disable-line global-require
   const name = clinic ? ((locale === 'en' && clinic.name_en) || clinic.name) : brand.name;
   const root = String(base || '').replace(/\/+$/, '');
-  const logo = clinic && clinic.logo_mime && clinic.slug && /^https?:\/\//.test(root) ? `${root}/${clinic.slug}/logo?v=${Number(clinic.logo_version) || 0}` : null;
+  const logo = clinic && clinic.logo_mime && clinic.slug && /^https?:\/\//.test(root) ? `${root}/${clinic.slug}/logo?v=${Number(clinic.logo_version) || 0}${/webp/.test(clinic.logo_mime) ? '&f=png' : ''}` : null;
   // The logo at its own proportions, fitted in a small box (a wide logo is never squeezed to a fixed height).
   const size = logo ? logoSize(clinic) : null;
   const dims = size ? `width="${size.w}" height="${size.h}" style="display:block;width:${size.w}px;height:${size.h}px;` : 'width="150" style="display:block;width:150px;max-width:150px;height:auto;';

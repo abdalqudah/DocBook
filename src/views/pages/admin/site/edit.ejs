@@ -106,5 +106,5 @@
     <a class="btn btn-ghost" href="/admin/site"><%= t('common.cancel') %></a>
   </div>
 </form>
-<script type="application/json" id="icon-picker-data"><%- json({ search: t('admin.site.search_icons'), none: t('admin.site.no_icon'), choose: t('admin.site.choose_icon'), uploading: t('admin.site.media.uploading'), uploaded: t('admin.site.media.uploaded'), failed: t('admin.site.media.failed'), tooBig: t('growth_err.file_too_big', { mb: 5 }), maxBytes: 5242880 }) %></script>
+<script type="application/json" id="icon-picker-data"><%- json({ search: t('admin.site.search_icons'), none: t('admin.site.no_icon'), choose: t('admin.site.choose_icon'), uploading: t('admin.site.media.uploading'), uploaded: t('admin.site.media.uploaded'), failed: t('admin.site.media.failed'), tooBig: t('growth_err.file_too_big', { mb: 15 }), maxBytes: 15728640 }) %></script>
 <input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file aria-hidden="true" tabindex="-1">

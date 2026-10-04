@@ -5,6 +5,7 @@
 //   POST /admin/updates/restore   a backup id + your password → put that version back, restart
 const express = require('express');
 const multer = require('multer');
+const uploads = require('../../core/uploads');
 const knex = require('../../db/knex');
 const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
@@ -117,7 +118,7 @@ router.post('/clinic-types', wrap(async (req, res) => {
 
 // ---------------------------------------------------------------- platform branding (logo, logo on dark, browser icon)
 const branding = require('./branding');
-const brandUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024, files: 3, fields: 10 } })
+const brandUpload = uploads.memory({ limits: { fileSize: 1024 * 1024, files: 3, fields: 10 }, maxSide: 1200, skip: ['favicon'] }) // logos → small WebP (the icon stays as sent)
   .fields(branding.KEYS.map((name) => ({ name, maxCount: 1 })));
 router.get('/branding', wrap(async (req, res) => {
   const st = await branding.load();

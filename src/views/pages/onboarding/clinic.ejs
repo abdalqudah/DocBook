@@ -11,7 +11,7 @@
           <div class="strong"><%= t('ownerx.wiz.logo') %></div>
           <div class="small muted"><%= t('ownerx.wiz.logo_help') %></div>
           <div class="row-sm wrap">
-            <label class="btn btn-secondary btn-sm ox-file"><%- icon('upload', 'icon-sm') %><span><%= logoUrl ? t('ownerx.wiz.logo_change') : t('ownerx.wiz.logo_choose') %></span><input type="file" accept="image/png,image/jpeg,image/webp" data-ox-logo-input data-max="1048576" data-too-big="<%= t('ownerx.wiz.logo_too_big') %>" data-bad="<%= t('ownerx.wiz.logo_bad') %>"></label>
+            <label class="btn btn-secondary btn-sm ox-file"><%- icon('upload', 'icon-sm') %><span><%= logoUrl ? t('ownerx.wiz.logo_change') : t('ownerx.wiz.logo_choose') %></span><input type="file" accept="image/png,image/jpeg,image/webp" data-ox-logo-input data-max="15728640" data-too-big="<%= t('ownerx.wiz.logo_too_big') %>" data-bad="<%= t('ownerx.wiz.logo_bad') %>"></label>
             <span class="small muted" data-ox-logo-name></span>
           </div>
           <input type="hidden" name="logo_data" value="" data-ox-logo-data>

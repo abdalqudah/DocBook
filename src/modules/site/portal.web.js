@@ -306,8 +306,10 @@ router.get('/:slug/logo-square', wrap(async (req, res, next) => {
 router.get('/:slug/logo', wrap(async (req, res, next) => {
   const clinic = await loadClinic(req);
   if (!clinic) return next();
-  const row = await businesses.logo(clinic.id);
+  let row = await businesses.logo(clinic.id);
   if (!row || !row.logo) return res.status(404).end();
+  if (req.query.f === 'png') row = await require('../../core/imageopt').pdfLogo(row); // e-mail programs that cannot show WebP // eslint-disable-line global-require
+  if (!row.logo) return res.status(404).end();
   res.set({ 'Content-Type': row.logo_mime, 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
   return res.send(row.logo);
 }));

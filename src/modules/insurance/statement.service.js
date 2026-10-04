@@ -80,7 +80,7 @@ function excel(st, t, locale) {
 async function pdf(ctx, st, t, locale) {
   const { Writer, ltr, colors: C } = require('../patientdocs/pdf'); // eslint-disable-line global-require
   const en = locale === 'en';
-  const clinic = await knex('businesses').where({ id: ctx.businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'currency', 'logo', 'logo_mime', 'tax_number');
+  const clinic = await require('../../core/imageopt').pdfLogo(await knex('businesses').where({ id: ctx.businessId }).first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'currency', 'logo', 'logo_mime', 'tax_number')); // eslint-disable-line global-require
   const money = (v) => ltr(formatMoney(v, clinic.currency, locale));
   const w = new Writer({ locale, title: `${t('inscl.title')} ${st.provider.name}` });
   // Letterhead

@@ -72,7 +72,7 @@
     "no_cover": "No cover",
     "cover_upload": "Upload image",
     "cover_remove": "Remove",
-    "images_help": "PNG, JPG or WebP up to {mb} MB — kept in the clinic's media library.",
+    "images_help": "PNG, JPG or WebP — compressed automatically to a light WebP and kept in the clinic's media library.",
     "images": "Article images",
     "insert_image": "Insert in the text",
     "images_insert_help": "Click an image to insert it where the cursor is.",

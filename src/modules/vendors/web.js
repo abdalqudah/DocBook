@@ -3,7 +3,7 @@
 // (/vendor/orders) are separate routers rendered in the same layout ('vendor').
 // Pending vendors can prepare everything; nothing reaches clinics and offers stay drafts until approval.
 const express = require('express');
-const multer = require('multer');
+const uploads = require('../../core/uploads');
 const knex = require('../../db/knex');
 const audit = require('../../core/audit');
 const { z, validate, password } = require('../../core/validate');
@@ -31,7 +31,7 @@ const specialtyOptions = (req) => vendors.TARGET_SPECIALTIES.map((k) => ({ value
 const today = (req) => vendors.todayFor(req.vendor);
 
 // Multipart (image) forms: parsed here, CSRF token checked after parsing (routes listed in middleware/web MULTIPART_ROUTES).
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: vendors.IMAGE_MAX_BYTES, files: 1, fields: 200 } });
+const upload = uploads.memory({ limits: { fileSize: vendors.IMAGE_MAX_BYTES, files: 1, fields: 200 }, maxSide: 1600 }); // photos → small WebP
 const imageUpload = (field) => (req, res, next) => upload.single(field)(req, res, (err) => {
   if (err) req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'too_big' : 'invalid';
   next();

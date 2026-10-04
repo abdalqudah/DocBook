@@ -4,7 +4,7 @@
 // time AND the clinic's time. The form is multipart (optional medical files); the CSRF token is checked after
 // parsing. Same anti-abuse as the in-clinic booking: rate limit, honeypot, CSRF, max pending per phone.
 const express = require('express');
-const multer = require('multer');
+const uploads = require('../../core/uploads');
 const rateLimit = require('express-rate-limit');
 const knex = require('../../db/knex');
 const config = require('../../config');
@@ -24,7 +24,7 @@ const MAX_PENDING_PER_PHONE = 3;
 
 const bookLimiter = rateLimit({ windowMs: 60 * 60_000, limit: config.isTest ? 1000 : 10, standardHeaders: true, legacyHeaders: false, handler: (req, res, next) => { req.bookingLimited = true; next(); } });
 const slotsLimiter = rateLimit({ windowMs: 10 * 60_000, limit: config.isTest ? 5000 : 300, standardHeaders: true, legacyHeaders: false, handler: (req, res) => res.status(429).json({ data: [], error: req.t('booking.rate_limited') }) });
-const upload = multer({ storage: multer.memoryStorage(), limits: { files: tele.MAX_FILES + 1, fileSize: tele.MAX_FILE_BYTES + 1, fields: 40, fieldSize: 20_000, parts: 60 } });
+const upload = uploads.memory({ limits: { files: tele.MAX_FILES + 1, fileSize: tele.MAX_FILE_BYTES + 1, fields: 40, fieldSize: 20_000, parts: 60 } }); // photos → small WebP
 
 const addDays = (date, n) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const range = (clinic) => { const today = scheduling.clinicNow(clinic.timezone).date; return { min: today, max: addDays(today, HORIZON_DAYS) }; };

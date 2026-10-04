@@ -3,7 +3,7 @@
 <form method="post" action="/app/patients/<%= pid %>/files" enctype="multipart/form-data" class="stack mt-3">
   <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>">
   <% if (typeof apptId !== 'undefined' && apptId) { %><input type="hidden" name="appointment_id" value="<%= apptId %>"><% } %>
-  <div class="field"><label class="label small"><%= t('orders.files_label') %> <span class="req">*</span></label><input class="input" type="file" name="files" accept="application/pdf,image/jpeg,image/png" multiple required><span class="help"><%= t('orders.files_help', { mb: 10, n: 10 }) %></span></div>
+  <div class="field"><label class="label small"><%= t('orders.files_label') %> <span class="req">*</span></label><input class="input" type="file" name="files" accept="application/pdf,image/jpeg,image/png,image/webp" multiple required><span class="help"><%= t('orders.files_help', { mb: 10, n: 10 }) %></span></div>
   <div class="form-grid">
     <div class="field"><label class="label small"><%= t('orders.category') %></label><select class="select" name="category"><% ['scan', 'lab_result', 'imaging', 'report', 'other'].forEach(function (c) { %><option value="<%= c %>"><%= t('orders.cat.' + c) %></option><% }) %></select></div>
     <div class="field"><label class="label small"><%= t('orders.file_title') %></label><input class="input" name="title" maxlength="160" dir="auto"></div>

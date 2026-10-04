@@ -6,7 +6,7 @@
     "preview": "Preview",
     "preview_sub": "How the logo shows in the sidebar and on sign-in pages.",
     "images": "Images",
-    "images_sub": "PNG, JPG or WebP up to 1 MB. Icon: a square PNG or ICO.",
+    "images_sub": "PNG, JPG or WebP — compressed automatically to WebP. Icon: a square PNG or ICO (kept as sent).",
     "k": {
       "logo": "Logo",
       "logo_dark": "Logo for dark mode",

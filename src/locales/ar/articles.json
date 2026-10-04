@@ -72,7 +72,7 @@
     "no_cover": "بدون غلاف",
     "cover_upload": "رفع صورة",
     "cover_remove": "إزالة",
-    "images_help": "PNG أو JPG أو WebP حتى {mb} ميغا — تُحفظ في مكتبة وسائط العيادة.",
+    "images_help": "PNG أو JPG أو WebP — تُضغط تلقائيًا إلى WebP خفيف وتُحفظ في مكتبة وسائط العيادة.",
     "images": "صور المقال",
     "insert_image": "إدراج في النص",
     "images_insert_help": "اضغط على صورة لإدراجها في مكان المؤشر.",

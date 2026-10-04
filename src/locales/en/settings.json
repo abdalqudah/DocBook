@@ -2,7 +2,7 @@
   "settings": {
     "square_logo_title": "Square logo",
     "square_logo_sub": "A square version of your logo (the mark only) for square places: the booking summary, the clinic badge on its pages, and the browser icon.",
-    "square_logo_help": "PNG, JPEG or WebP, ideally 512×512 with a transparent background, up to 1 MB. Without it, the main logo is used.",
+    "square_logo_help": "PNG, JPEG or WebP, ideally square with a transparent background. Large images are compressed automatically to a light, sharp WebP. Without it, the main logo is used.",
     "square_logo_remove_confirm": "Remove the square logo? The main logo is used instead.",
     "title": "Settings",
     "lead": "Your clinic, your team's logins and your own account — all in one place.",
@@ -133,7 +133,7 @@
     "cal_mode_help": "How appointments are coloured in the calendar.",
     "logo_title": "Clinic logo",
     "logo_sub": "Shown in the sidebar, on the clinic page and on printed invoices and prescriptions.",
-    "logo_help": "PNG, JPG or WebP, up to 1 MB. A square image works best.",
+    "logo_help": "PNG, JPG or WebP. Large images are compressed automatically to a light, sharp WebP. A square image works best.",
     "logo_upload": "Upload logo",
     "logo_remove": "Remove logo",
     "logo_remove_confirm": "Remove the clinic logo?",

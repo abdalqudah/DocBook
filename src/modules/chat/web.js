@@ -1,7 +1,7 @@
 // /app/chat — staff chat of the signed-in clinic: the clinic room and one-to-one conversations.
 // Works without JavaScript (the form posts and comes back); with it, new messages arrive every few seconds.
 const express = require('express');
-const multer = require('multer');
+const uploads = require('../../core/uploads');
 const { verifyCsrfAfterUpload } = require('../../middleware/web');
 const { wrap } = require('../../routes/helpers');
 const { AppError } = require('../../core/errors');
@@ -10,7 +10,7 @@ const svc = require('./chat.service');
 const router = express.Router();
 const wantsJson = (req) => (req.get('accept') || '').includes('application/json');
 const out = (m) => ({ id: m.id, body: m.body, user_id: m.user_id, user_name: m.user_name || '', at: m.created_at, files: m.files || [] });
-const upload = multer({ storage: multer.memoryStorage(), limits: { files: svc.MAX_FILES, fileSize: svc.MAX_FILE_BYTES + 1, fields: 10, fieldSize: 10_000 } });
+const upload = uploads.memory({ limits: { files: svc.MAX_FILES, fileSize: svc.MAX_FILE_BYTES + 1, fields: 10, fieldSize: 10_000 } }); // photos → small WebP
 const parseUpload = (req, res, next) => upload.array('files', svc.MAX_FILES)(req, res, (err) => {
   if (err && err.code && String(err.code).startsWith('LIMIT_')) { req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'CHAT_FILE_BIG' : 'CHAT_TOO_MANY'; req.body = req.body || {}; return next(); }
   return next(err);

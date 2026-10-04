@@ -1,6 +1,6 @@
 // Vendor portal: subscription & invoices (/vendor/billing) and paid ads to doctors (/vendor/ads).
 const express = require('express');
-const multer = require('multer');
+const uploads = require('../../core/uploads');
 const knex = require('../../db/knex');
 const { verifyCsrfAfterUpload } = require('../../middleware/web');
 const { wrap, flash } = require('../../routes/helpers');
@@ -45,7 +45,7 @@ billingRouter.post('/invoices/:id(\\d+)/card', wrap(async (req, res) => {
 }));
 
 // ---------------------------------------------------------------- ads
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: vendors.IMAGE_MAX_BYTES, files: 1, fields: 100 } });
+const upload = uploads.memory({ limits: { fileSize: vendors.IMAGE_MAX_BYTES, files: 1, fields: 100 } }); // photos → small WebP
 const imageUpload = (req, res, next) => upload.single('image')(req, res, (err) => { if (err) req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'too_big' : 'invalid'; next(); });
 const specialtyOptions = (req) => vendors.TARGET_SPECIALTIES.map((k) => ({ value: k, label: req.t(`specialties.${k}`) }));
 

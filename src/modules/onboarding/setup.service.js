@@ -112,7 +112,8 @@ const clinicSchema = z.object({
 /** Saves the clinic basics (and the logo when one was chosen). Fields left out of the form keep their value. */
 async function saveClinic(ctx, input) {
   const d = validate(clinicSchema, input || {});
-  const logo = input && input.logo_data ? parseLogo(input.logo_data) : null;
+  let logo = input && input.logo_data ? parseLogo(input.logo_data) : null;
+  if (logo) { const small = await require('../../core/imageopt').optimize(logo.buffer, { maxSide: 1200 }); if (small) logo = { buffer: small.buffer, mime: small.mime }; } // eslint-disable-line global-require
   const patch = {
     name: d.name, name_en: d.name_en || null, specialty: d.specialty || null, phone: d.phone || null, whatsapp: d.whatsapp || null,
     city: d.city || null, address: d.address || null,

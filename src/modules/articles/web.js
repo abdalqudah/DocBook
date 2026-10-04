@@ -5,7 +5,7 @@
 //   POST /:id/delete      delete          POST /images      upload images (multipart, JSON)
 //   POST /preview         the body as it will look (JSON)
 const express = require('express');
-const multer = require('multer');
+const uploads = require('../../core/uploads');
 const knex = require('../../db/knex');
 const { AppError, E } = require('../../core/errors');
 const { translateMessage } = require('../../core/i18n');
@@ -76,7 +76,7 @@ router.post('/preview', wrap(async (req, res) => {
   res.json({ html: svc.render(body, images), minutes: svc.readMinutes(body) });
 }));
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: media.MAX_BYTES + 1, files: 6, fields: 6, parts: 12 } });
+const upload = uploads.memory({ limits: { fileSize: media.MAX_BYTES + 1, files: 6, fields: 6, parts: 12 } }); // photos → small WebP
 router.post('/images', (req, res, next) => upload.array('files', 6)(req, res, (e) => {
   if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'MEDIA_TOO_BIG' : e.code === 'LIMIT_FILE_COUNT' ? 'MEDIA_TOO_MANY' : 'MEDIA_TYPE';
   next();

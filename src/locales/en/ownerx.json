@@ -39,7 +39,7 @@
       "services_skipped": "Already in your list, not added again: {names}",
       "service_added": "{name} added.",
       "logo": "Clinic logo",
-      "logo_help": "Shown on receipts, prescriptions and your booking page. PNG, JPG or WebP, up to 1 MB.",
+      "logo_help": "Shown on receipts, prescriptions and your booking page. PNG, JPG or WebP — compressed automatically.",
       "logo_change": "Change logo",
       "logo_choose": "Choose a logo",
       "logo_too_big": "The image is larger than 1 MB.",

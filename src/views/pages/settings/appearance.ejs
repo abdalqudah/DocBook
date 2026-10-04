@@ -60,7 +60,7 @@
           <div class="stack grow" style="min-width:240px">
             <form method="post" action="/app/settings/appearance/logo" enctype="multipart/form-data" class="stack-sm" data-logo-form>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <input class="input" type="file" name="logo" accept="image/png,image/jpeg,image/webp" required data-logo-input data-max="1048576" data-too-big="<%= t('settings.logo_too_big') %>">
+              <input class="input" type="file" name="logo" accept="image/png,image/jpeg,image/webp" required data-logo-input data-max="15728640" data-too-big="<%= t('settings.logo_too_big') %>">
               <span class="help"><%= t('settings.logo_help') %></span>
               <div class="row-sm"><button class="btn btn-primary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('settings.logo_upload') %></button></div>
             </form>

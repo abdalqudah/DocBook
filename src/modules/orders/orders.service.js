@@ -22,7 +22,7 @@ const STATUSES = ['ordered', 'done', 'cancelled'];
 const FILE_CATEGORIES = ['scan', 'lab_result', 'imaging', 'report', 'other'];
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_FILES = 10;
-const FILE_TYPES = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png' };
+const FILE_TYPES = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 
 const parse = (v, d) => { if (!v) return d; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch { return d; } };
 

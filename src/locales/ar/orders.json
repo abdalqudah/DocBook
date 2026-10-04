@@ -60,7 +60,7 @@
     "attach_result": "إرفاق ملف النتيجة",
     "patient_file": "ملف المريض",
     "files_label": "الملفات",
-    "files_help": "PDF أو JPG أو PNG، حتى {mb} ميغابايت للملف و{n} ملفات في المرة.",
+    "files_help": "PDF أو JPG أو PNG أو WebP — {n} ملفات في المرة. تُضغط الصور تلقائيًا، وملفات PDF حتى {mb} ميغابايت للملف.",
     "category": "النوع",
     "file_title": "عنوان (اختياري)",
     "for_order": "مرتبط بطلب",

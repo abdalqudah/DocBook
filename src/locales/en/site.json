@@ -921,7 +921,7 @@
         "uploaded": "Added to the media library.",
         "failed": "The image could not be uploaded.",
         "upload": "Upload an image",
-        "rules": "PNG, JPEG or WebP, up to 5 MB. The file is checked by its content; SVG is not accepted.",
+        "rules": "PNG, JPEG or WebP — compressed automatically to a light, sharp WebP. The file is checked by its content; SVG is not accepted.",
         "file": "Image file",
         "name": "Name (optional)",
         "name_ph": "For example: reception desk",

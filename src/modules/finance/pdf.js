@@ -7,8 +7,8 @@ const { formatMoney, formatDate, formatMonth, formatPercent } = require('../../c
 const pick = (en, a, b) => (en ? b || a : a || b) || '';
 
 /** Clinic row with its logo bytes. */
-const clinicOf = (businessId) => knex('businesses').where({ id: businessId })
-  .first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'currency', 'logo', 'logo_mime', 'tax_number');
+const clinicOf = async (businessId) => require('../../core/imageopt').pdfLogo(await knex('businesses').where({ id: businessId }) // eslint-disable-line global-require
+  .first('id', 'name', 'name_en', 'address', 'city', 'phone', 'email', 'currency', 'logo', 'logo_mime', 'tax_number')); // a WebP logo as PNG
 
 function letterhead(w, clinic, en) {
   const top = w.y;

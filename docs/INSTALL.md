@@ -61,6 +61,7 @@ nano .env
 ### 5) إنشاء الجداول والتشغيل
 ```bash
 node app.js migrate
+node app.js check-images   # اختياري: يتأكد أن ضغط الصور المرفوعة إلى WebP يعمل على هذا السيرفر
 pm2 start app.js --name docbook
 pm2 save
 pm2 startup        # ونفّذ الأمر الذي يظهر لك، ليعمل التطبيق تلقائيًا بعد إعادة تشغيل السيرفر
