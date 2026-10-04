@@ -1,0 +1,11 @@
+<%
+  var extra = s.settings.items || [];
+  var list = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { text: x && x.text, icon: e.icon && e.icon !== 'none' ? e.icon : null }; }).filter(function (x) { return x.text; });
+  var mdir = s.settings.m_dir === 'left' || s.settings.m_dir === 'right' ? s.settings.m_dir : (dir === 'rtl' ? 'right' : 'left');
+  var row = function (hidden) { %><ul class="ws-mq-row"<%- hidden ? ' aria-hidden="true"' : '' %>><% list.forEach(function (x) { %><li><% if (x.icon) { %><%- icon(x.icon, 'icon-sm') %><% } else { %><span class="ws-mq-dot" aria-hidden="true"></span><% } %><span><%= x.text %></span></li><% }) %></ul><% };
+%>
+<% if (list.length) { %>
+<section class="ws-marquee ws-mq-<%= s.variant %> ws-mq-c-<%= s.settings.color || 'brand' %> ws-mq-s-<%= s.settings.speed || 'm' %> ws-mq-to-<%= mdir %>" id="s-<%= s.id %>">
+  <div class="ws-mq-track" dir="ltr"><% row(false); row(true); %></div>
+</section>
+<% } %>

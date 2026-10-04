@@ -1,0 +1,28 @@
+<%
+  var extra = s.settings.items || [];
+  var list = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, button: x && x.button, icon: e.icon && e.icon !== 'none' ? e.icon : null, image: img(e.image), action: act(e.action) }; })
+    .filter(function (x) { return x.title; });
+  var side = s.settings.image_side || 'end';
+%>
+<% if (list.length) { %>
+<section class="ws-section ws-tabs-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <div class="ws-tabs ws-tabs-<%= s.variant %>" data-ws-tabs>
+      <div class="ws-tab-list" role="tablist" aria-label="<%= c.title || t('website.sec.tabs') %>">
+        <% list.forEach(function (x, i) { %><button class="ws-tab<%= i === 0 ? ' is-on' : '' %>" type="button" role="tab" id="t-<%= s.id %>-<%= i %>" aria-controls="p-<%= s.id %>-<%= i %>" aria-selected="<%= i === 0 ? 'true' : 'false' %>"<%- i === 0 ? '' : ' tabindex="-1"' %>><% if (x.icon) { %><%- icon(x.icon, 'icon-sm') %><% } %><span><%= x.title %></span></button><% }) %>
+      </div>
+      <% list.forEach(function (x, i) { %>
+      <div class="ws-tab-panel ws-tab-img-<%= side %><%= x.image ? ' has-image' : '' %>" role="tabpanel" id="p-<%= s.id %>-<%= i %>" aria-labelledby="t-<%= s.id %>-<%= i %>"<%- i === 0 ? '' : ' hidden' %>>
+        <div class="ws-tab-text">
+          <h3><%= x.title %></h3>
+          <% if (x.text) { %><p><%= x.text %></p><% } %>
+          <% if (x.action) { %><a class="btn btn-primary btn-sm" href="<%= x.action.href %>"<%- x.action.ext ? ' target="_blank" rel="noopener"' : '' %>><%- icon(x.action.icon, 'icon-sm') %><%= x.button || x.action.label %></a><% } %>
+        </div>
+        <% if (x.image) { %><figure class="ws-tab-media"><img src="<%= x.image.url %>" alt="<%= altOf(x.image) %>" loading="lazy"></figure><% } %>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>

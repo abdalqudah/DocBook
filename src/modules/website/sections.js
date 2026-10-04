@@ -26,7 +26,7 @@ const STYLE = [
   { key: 'width', kind: 'select', options: ['normal', 'narrow', 'wide'], def: 'normal' },
   { key: 'shape_top', kind: 'select', options: SHAPES, def: 'none' },
   { key: 'shape_bottom', kind: 'select', options: SHAPES, def: 'none' },
-  { key: 'anim', kind: 'select', options: ['auto', 'none', 'fade', 'up', 'zoom', 'side'], def: 'auto' },
+  { key: 'anim', kind: 'select', options: ['auto', 'none', 'fade', 'up', 'zoom', 'side', 'blur', 'flip', 'stagger'], def: 'auto' },
 ];
 const MOTION = ['none', 'subtle', 'lively'];
 // Image options of a section that shows one picture.
@@ -46,7 +46,7 @@ const CAROUSEL = [
   { key: 'arrows', kind: 'bool', def: true, group: 'carousel' },
 ];
 // The section types whose items can be a carousel.
-const CAROUSEL_TYPES = ['cards', 'doctors', 'reviews', 'services', 'features', 'gallery', 'images', 'columns', 'stats', 'steps', 'partners'];
+const CAROUSEL_TYPES = ['cards', 'doctors', 'reviews', 'services', 'features', 'gallery', 'images', 'columns', 'stats', 'steps', 'partners', 'team', 'before_after', 'testimonials'];
 
 // kinds — text (one line), textarea, bool, select, number, media (one image), media_list, doctors (ids), date, icon
 const TYPES = {
@@ -57,7 +57,12 @@ const TYPES = {
       { key: 'content_y', kind: 'select', options: ['middle', 'top', 'bottom'], def: 'middle', group: 'buttons' },
       { key: 'btn_size', kind: 'select', options: ['l', 'm', 's'], def: 'l', group: 'buttons' },
       { key: 'btn_layout', kind: 'select', options: ['row', 'stack'], def: 'row', group: 'buttons' },
-      { key: 'interval', kind: 'select', options: ['s5', 's4', 's7', 's10'], def: 's5', only: 'slider' }, { key: 'transition', kind: 'select', options: ['fade', 'slide', 'zoom'], def: 'fade', only: 'slider' },
+      { key: 'interval', kind: 'select', options: ['s5', 's4', 's7', 's10'], def: 's5', only: 'slider' },
+      { key: 'transition', kind: 'select', options: ['fade', 'slide', 'zoom', 'kenburns', 'wipe', 'blur', 'rise', 'flip', 'curtain'], def: 'fade', only: 'slider' },
+      { key: 'text_anim', kind: 'select', options: ['up', 'fade', 'zoom', 'none'], def: 'up', only: 'slider' },
+      { key: 'indicators', kind: 'select', options: ['dots', 'lines', 'numbers', 'none'], def: 'dots', only: 'slider' },
+      { key: 'arrows_style', kind: 'select', options: ['circle', 'square', 'minimal', 'none'], def: 'circle', only: 'slider' },
+      { key: 'progress', kind: 'bool', def: false, only: 'slider' }, { key: 'pause_hover', kind: 'bool', def: true, only: 'slider' },
       { key: 'show_call', kind: 'bool', def: true }, { key: 'show_whatsapp', kind: 'bool', def: true }, { key: 'show_directions', kind: 'bool', def: true }],
     // Slides of the "slider" layout: a picture each, with its own headline and line (else the hero's own words).
     list: { key: 'slides', max: 6, only: 'slider', fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'headline', max: 120 }, { key: 'subtext', kind: 'textarea', max: 300 }] } },
@@ -126,6 +131,39 @@ const TYPES = {
     text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
     settings: [{ key: 'logo_size', kind: 'select', options: ['m', 's', 'l'], def: 'm' }, { key: 'grayscale', kind: 'bool', def: true }],
     list: { key: 'items', max: 24, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'name', max: 80, i18n: false }] } },
+  // Team / doctors photo cards that move: the clinic's doctors (live, with their photos) or people added by hand.
+  team: { icon: 'users', variants: ['lift', 'flip', 'reveal', 'circle'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }],
+    settings: [{ key: 'source', kind: 'select', options: ['doctors', 'custom'], def: 'doctors' }, { key: 'columns', kind: 'select', options: ['3', '2', '4'], def: '3' },
+      { key: 'photo_ratio', kind: 'select', options: ['portrait', 'square', 'landscape'], def: 'portrait', group: 'image' },
+      { key: 'show_bio', kind: 'bool', def: true }, { key: 'show_book', kind: 'bool', def: true }],
+    list: { key: 'items', max: 16, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false },
+      { key: 'name', max: 80 }, { key: 'role', max: 80 }, { key: 'text', kind: 'textarea', max: 400 }, { key: 'button', max: 40 }] } },
+  // Before / after: two pictures on top of each other and a line the visitor drags to compare (or side by side).
+  before_after: { icon: 'scan-line', variants: ['slider', 'side'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }, { key: 'label_before', max: 24 }, { key: 'label_after', max: 24 }],
+    settings: [{ key: 'columns', kind: 'select', options: ['2', '1', '3'], def: '2' }, { key: 'direction', kind: 'select', options: ['horizontal', 'vertical'], def: 'horizontal', only: 'slider' },
+      { key: 'start', kind: 'select', options: ['50', '30', '70'], def: '50', only: 'slider' },
+      { key: 'image_ratio', kind: 'select', options: ['landscape', 'square', 'portrait'], def: 'landscape', group: 'image' }],
+    list: { key: 'items', max: 8, fields: [{ key: 'before', kind: 'media', i18n: false }, { key: 'after', kind: 'media', i18n: false }, { key: 'caption', max: 120 }] } },
+  // Patients' words written by the clinic (with a photo and stars), as cards, one big quote at a time, or bubbles.
+  testimonials: { icon: 'quote', variants: ['cards', 'quote', 'bubbles'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }], settings: [],
+    list: { key: 'items', max: 12, fields: [{ key: 'image', kind: 'media', i18n: false }, { key: 'rating', kind: 'select', options: ['r5', 'r4', 'r3', 'r0'], i18n: false },
+      { key: 'name', max: 80 }, { key: 'role', max: 80 }, { key: 'quote', kind: 'textarea', max: 600 }] } },
+  // Tabs: a title per tab; its picture, text and button show when the tab is chosen.
+  tabs: { icon: 'layers', variants: ['tabs', 'pills', 'side'], group: 'blocks',
+    text: [{ key: 'title', max: 80 }, { key: 'intro', kind: 'textarea', max: 300 }], settings: [{ key: 'image_side', kind: 'select', options: ['end', 'start', 'top'], def: 'end' }],
+    list: { key: 'items', max: 8, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'image', kind: 'media', i18n: false }, { key: 'action', kind: 'select', options: ACTIONS, i18n: false },
+      { key: 'title', max: 60 }, { key: 'text', kind: 'textarea', max: 1500 }, { key: 'button', max: 40 }] } },
+  // A YouTube or Vimeo video (privacy mode), wide or in a card next to text.
+  video: { icon: 'video', variants: ['wide', 'card'], group: 'blocks',
+    text: [{ key: 'title', max: 120 }, { key: 'text', kind: 'textarea', max: 1000 }],
+    settings: [{ key: 'url', kind: 'url', max: 300 }, { key: 'ratio', kind: 'select', options: ['16x9', '4x3', '1x1', '9x16'], def: '16x9' }] },
+  // A moving band of short phrases (services, slogans) that scrolls across the page.
+  marquee: { icon: 'sliders-horizontal', variants: ['band', 'outline'], group: 'blocks', text: [],
+    settings: [{ key: 'speed', kind: 'select', options: ['m', 's', 'l'], def: 'm' }, { key: 'color', kind: 'select', options: ['brand', 'dark', 'soft', 'accent'], def: 'brand' }, { key: 'm_dir', kind: 'select', options: ['auto', 'left', 'right'], def: 'auto' }],
+    list: { key: 'items', max: 12, fields: [{ key: 'icon', kind: 'icon', i18n: false, none: true }, { key: 'text', max: 60 }] } },
   divider: { icon: 'waves', variants: ['shape'], group: 'blocks', text: [],
     settings: [{ key: 'shape', kind: 'select', options: ['wave', 'curve', 'slant', 'zigzag', 'peaks', 'drops', 'line', 'dots', 'space'], def: 'wave' },
       { key: 'color', kind: 'select', options: ['soft', 'accent', 'brand', 'dark'], def: 'soft' }, { key: 'height', kind: 'select', options: ['s', 'm', 'l'], def: 'm' }, { key: 'flip', kind: 'bool', def: false }] },
@@ -274,12 +312,31 @@ function cleanText(def, raw) {
   return out;
 }
 
-/** One setting value of kind bool/select/number/media/media_list/doctors/date/icon/text. */
+/**
+ * The embed address of a YouTube or Vimeo link (privacy-friendly players), or null for anything else.
+ * youtube.com/watch?v=ID · youtu.be/ID · youtube.com/shorts/ID · youtube.com/embed/ID · vimeo.com/ID
+ */
+function videoEmbed(v) {
+  let u;
+  try { u = new URL(String(v || '').trim()); } catch { return null; }
+  if (u.protocol !== 'https:') return null;
+  const host = u.hostname.replace(/^www\.|^m\./, '');
+  let m;
+  if (host === 'youtu.be' && (m = /^\/([\w-]{6,20})$/.exec(u.pathname))) return { provider: 'youtube', src: `https://www.youtube-nocookie.com/embed/${m[1]}?rel=0` };
+  if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+    const id = u.searchParams.get('v') || ((m = /^\/(?:shorts|embed|live)\/([\w-]{6,20})/.exec(u.pathname)) && m[1]);
+    if (id && /^[\w-]{6,20}$/.test(id)) return { provider: 'youtube', src: `https://www.youtube-nocookie.com/embed/${id}?rel=0` };
+  }
+  if ((host === 'vimeo.com' || host === 'player.vimeo.com') && (m = /\/(\d{5,12})(?:$|\/|\?)/.exec(u.pathname))) return { provider: 'vimeo', src: `https://player.vimeo.com/video/${m[1]}?dnt=1` };
+  return null;
+}
+
+/** One setting value of kind bool/select/number/media/media_list/doctors/date/icon/text/url. */
 function cleanValue(f, v, refs = {}) {
   const okMedia = (id) => !refs.media || refs.media.has(id);
   const okDoctor = (id) => !refs.doctors || refs.doctors.has(id);
   // A checkbox posts with a hidden "0" before it: the last value wins.
-  if (Array.isArray(v) && ['bool', 'select', 'number', 'date', 'media', 'icon', 'text'].includes(f.kind || 'text')) v = v[v.length - 1];
+  if (Array.isArray(v) && ['bool', 'select', 'number', 'date', 'media', 'icon', 'text', 'url'].includes(f.kind || 'text')) v = v[v.length - 1];
   switch (f.kind) {
     case 'bool': return v === undefined ? f.def : v === true || v === '1' || v === 'on' || v === 'true';
     case 'select': return f.options.includes(v) ? v : (f.def !== undefined ? f.def : f.options[0]);
@@ -289,6 +346,7 @@ function cleanValue(f, v, refs = {}) {
     case 'doctors': return ids(v).filter(okDoctor).slice(0, 50);
     case 'date': return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null;
     case 'icon': return (f.none && v === 'none') ? 'none' : (ICONS.includes(v) ? v : ICONS[0]);
+    case 'url': return videoEmbed(v) ? String(v).trim().slice(0, f.max || 300) : null; // only a YouTube / Vimeo address
     default: return cleanLine(v, f.max || 80);
   }
 }
@@ -406,4 +464,4 @@ function mediaIn(doc) {
   return [...out];
 }
 
-module.exports = { CAROUSEL, CAROUSEL_TYPES, TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MOTION, HEADER, FOOTER, SOCIAL, NAV_KINDS, MAX_PAGES, PAGE_SLUG, RESERVED_PAGES, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };
+module.exports = { videoEmbed, CAROUSEL, CAROUSEL_TYPES, TYPES, TYPE_KEYS, TEMPLATE_LAYOUT, SPECIALTY_TEMPLATE, FONTS, RADII, ICONS, ACTIONS, STYLE, SHAPES, MOTION, HEADER, FOOTER, SOCIAL, NAV_KINDS, MAX_PAGES, PAGE_SLUG, RESERVED_PAGES, MAX_SECTIONS, blankSection, defaultDoc, sanitize, mediaIn, newId, cleanStyle };

@@ -11,19 +11,24 @@
     if (slides.length < 2) return;
     var i = 0; var timer = null;
     var wait = (Number(box.getAttribute('data-interval')) || 5) * 1000;
+    var bar = box.querySelector('[data-ws-progress]');
+    // The progress bar fills over each slide's time (restarted on every change).
+    function progress() { if (!bar || reduce) return; bar.style.transition = 'none'; bar.style.width = '0'; void bar.offsetWidth; bar.style.transition = 'width ' + wait + 'ms linear'; bar.style.width = '100%'; }
     function show(n) {
+      var was = i;
       i = (n + slides.length) % slides.length;
-      Array.prototype.forEach.call(slides, function (s, k) { s.classList.toggle('is-on', k === i); if (k === i) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true'); });
+      Array.prototype.forEach.call(slides, function (s, k) { s.classList.toggle('is-on', k === i); s.classList.toggle('is-leaving', k === was && was !== i); if (k === i) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true'); });
+      progress();
       Array.prototype.forEach.call(dots, function (d, k) { d.classList.toggle('is-on', k === i); d.setAttribute('aria-current', k === i ? 'true' : 'false'); });
     }
-    function play() { if (reduce) return; stop(); timer = setInterval(function () { show(i + 1); }, wait); }
+    function play() { if (reduce) return; stop(); progress(); timer = setInterval(function () { show(i + 1); }, wait); }
     function stop() { if (timer) clearInterval(timer); timer = null; }
     var rtl = document.documentElement.dir === 'rtl';
     var prev = box.querySelector('[data-ws-prev]'); var next = box.querySelector('[data-ws-next]');
     if (prev) prev.addEventListener('click', function () { show(i - 1); play(); });
     if (next) next.addEventListener('click', function () { show(i + 1); play(); });
     Array.prototype.forEach.call(dots, function (d) { d.addEventListener('click', function () { show(Number(d.getAttribute('data-ws-dot'))); play(); }); });
-    box.addEventListener('mouseenter', stop); box.addEventListener('mouseleave', play);
+    if (!box.hasAttribute('data-no-pause')) { box.addEventListener('mouseenter', function () { stop(); if (bar) { bar.style.transition = 'none'; } }); box.addEventListener('mouseleave', play); }
     box.addEventListener('focusin', stop); box.addEventListener('focusout', play);
     box.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowLeft') { show(i + (rtl ? 1 : -1)); play(); }
@@ -65,7 +70,7 @@
 (function () {
   'use strict';
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var TRACKS = '.ws-cards, .portal-doctors, .ws-features, .ws-columns, .ws-images, .ws-gallery, .ws-stats, .ws-steps, .svc-list, .rv-list, .ws-partners';
+  var TRACKS = '.ws-cards, .portal-doctors, .ws-features, .ws-columns, .ws-images, .ws-gallery, .ws-stats, .ws-steps, .svc-list, .rv-list, .ws-partners, .ws-team, .ws-ba-list, .ws-tm-cards, .ws-tm-bubbles';
   Array.prototype.forEach.call(document.querySelectorAll('[data-ws-carousel]'), function (block) {
     var tracks = block.querySelectorAll(TRACKS);
     var isRtl = (getComputedStyle(block).direction || document.documentElement.dir) === 'rtl';
@@ -119,5 +124,62 @@
       fit();
       window.addEventListener('resize', fit);
     });
+  });
+}());
+
+/* Before / after (data-ws-ba): the "after" picture under the "before" one; a range input (keyboard and screen
+   readers) and dragging anywhere on the picture move the line. Vertical: the line moves up and down. */
+(function () {
+  'use strict';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ws-ba]'), function (box) {
+    var range = box.querySelector('.ws-ba-range');
+    var vertical = box.classList.contains('is-vertical');
+    function set(p) { p = Math.max(0, Math.min(100, p)); box.style.setProperty('--ba', p + '%'); if (range) range.value = String(Math.round(p)); }
+    if (range) range.addEventListener('input', function () { set(Number(range.value)); });
+    var dragging = false;
+    function at(e) {
+      var r = box.getBoundingClientRect();
+      var pt = e.touches ? e.touches[0] : e;
+      set(vertical ? ((pt.clientY - r.top) / r.height) * 100 : ((pt.clientX - r.left) / r.width) * 100);
+    }
+    box.addEventListener('pointerdown', function (e) { dragging = true; box.setPointerCapture && box.setPointerCapture(e.pointerId); at(e); box.classList.add('is-dragging'); });
+    box.addEventListener('pointermove', function (e) { if (dragging) at(e); });
+    ['pointerup', 'pointercancel'].forEach(function (k) { box.addEventListener(k, function () { dragging = false; box.classList.remove('is-dragging'); }); });
+  });
+
+  /* Tabs (data-ws-tabs): click or arrow keys choose a tab; the others hide. Without JS every panel shows. */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ws-tabs]'), function (box) {
+    var tabs = Array.prototype.slice.call(box.querySelectorAll('[role="tab"]'));
+    var panels = Array.prototype.slice.call(box.querySelectorAll('[role="tabpanel"]'));
+    function pick(n, focus) {
+      tabs.forEach(function (t, k) { var on = k === n; t.classList.toggle('is-on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+      panels.forEach(function (p, k) { p.hidden = k !== n; if (k === n) { p.classList.remove('is-shown'); void p.offsetWidth; p.classList.add('is-shown'); } });
+    }
+    tabs.forEach(function (t, k) {
+      t.addEventListener('click', function () { pick(k); });
+      t.addEventListener('keydown', function (e) {
+        var rtl = (getComputedStyle(box).direction || 'ltr') === 'rtl';
+        var next = { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1, ArrowDown: 1, ArrowUp: -1 }[e.key];
+        if (next) { e.preventDefault(); pick((k + next + tabs.length) % tabs.length, true); }
+        if (e.key === 'Home') { e.preventDefault(); pick(0, true); }
+        if (e.key === 'End') { e.preventDefault(); pick(tabs.length - 1, true); }
+      });
+    });
+  });
+
+  /* One quote at a time (data-ws-rotate): changes every 6 s, dots to choose; pauses on hover / focus. */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ws-rotate]'), function (list) {
+    var items = list.children; var dots = list.parentNode.querySelectorAll('[data-ws-rotate-dots] button');
+    var i = 0; var hold = false;
+    function show(n) {
+      i = (n + items.length) % items.length;
+      Array.prototype.forEach.call(items, function (x, k) { x.classList.toggle('is-on', k === i); });
+      Array.prototype.forEach.call(dots, function (d, k) { d.classList.toggle('is-on', k === i); d.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    }
+    Array.prototype.forEach.call(dots, function (d) { d.addEventListener('click', function () { show(Number(d.getAttribute('data-i'))); }); });
+    ['mouseenter', 'focusin'].forEach(function (e) { list.addEventListener(e, function () { hold = true; }); });
+    ['mouseleave', 'focusout'].forEach(function (e) { list.addEventListener(e, function () { hold = false; }); });
+    if (!reduce) setInterval(function () { if (!hold && !document.hidden) show(i + 1); }, 6000);
   });
 }());

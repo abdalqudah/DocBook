@@ -1,0 +1,25 @@
+<%
+  var extra = s.settings.items || [];
+  var list = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { name: x && x.name, role: x && x.role, quote: x && x.quote, photo: img(e.image), rating: Number(String(e.rating || 'r5').slice(1)) }; })
+    .filter(function (x) { return x.quote; });
+%>
+<% if (list.length) { %>
+<section class="ws-section ws-tm-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <ul class="ws-tm ws-tm-<%= s.variant %>"<%- s.variant === 'quote' && list.length > 1 ? ' data-ws-rotate' : '' %>>
+      <% list.forEach(function (x, i) { %>
+      <li class="ws-tm-item<%= i === 0 ? ' is-on' : '' %>" style="--i:<%= i %>">
+        <blockquote class="ws-tm-quote"><%- icon('quote', 'ws-tm-mark') %><p><%= x.quote %></p></blockquote>
+        <div class="ws-tm-who">
+          <span class="ws-tm-av"><% if (x.photo) { %><img src="<%= x.photo.url %>" alt="" loading="lazy"><% } else { %><%= initials(x.name || '?') %><% } %></span>
+          <span><% if (x.name) { %><strong><%= x.name %></strong><% } %><% if (x.role) { %><span class="small muted"><%= x.role %></span><% } %>
+            <% if (x.rating) { %><span class="ws-tm-stars" aria-label="<%= t('website.stars_n', { n: x.rating }) %>"><% for (var k = 0; k < 5; k += 1) { %><%- icon('star', 'icon-sm' + (k < x.rating ? ' is-on' : '')) %><% } %></span><% } %></span>
+        </div>
+      </li>
+      <% }) %>
+    </ul>
+    <% if (s.variant === 'quote' && list.length > 1) { %><div class="ws-tm-dots" data-ws-rotate-dots><% list.forEach(function (x, i) { %><button type="button" class="<%= i === 0 ? 'is-on' : '' %>" data-i="<%= i %>" aria-label="<%= t('website.slide_n', { n: i + 1 }) %>"></button><% }) %></div><% } %>
+  </div>
+</section>
+<% } %>

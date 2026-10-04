@@ -36,7 +36,7 @@ async function locals(req, clinic, doc, { preview = false, portal, page: chosen 
   const shown = page.sections.filter((s) => s.visible && !(s.type === 'announcement' && !announcementOn(s, req)));
   const types = new Set(shown.map((s) => s.type));
   const [doctors, services, media, insurers, reviews, branchRows] = await Promise.all([
-    types.has('doctors') || types.has('services') ? portal.listDoctors(req, clinic) : [],
+    types.has('doctors') || types.has('services') || types.has('team') ? portal.listDoctors(req, clinic) : [],
     types.has('services') ? portal.listServices(req, clinic) : [],
     mediaUrls(clinic, doc, { preview }),
     types.has('insurance') ? knex('insurance_providers').where({ business_id: clinic.id, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'name' }]).pluck('name') : [],
@@ -57,8 +57,11 @@ async function locals(req, clinic, doc, { preview = false, portal, page: chosen 
     return new Proxy({}, { get: (_, k) => (typeof k === 'string' ? (mine[k] && (!Array.isArray(mine[k]) || mine[k].length) ? mine[k] : alt[k]) : undefined) });
   };
   const img = (id) => (id && media[id]) || null;
+  // Video sections: the privacy-friendly player address; the page may then frame only those two players.
+  const withVideo = shown.filter((s) => s.type === 'video' && sections.videoEmbed(s.settings.url));
+  if (withVideo.length) allowVideoFrames(req.res);
   return {
-    doc, page, sections: shown.map((s) => ({ ...s, c: words(s) })), doctors, services, insurers, branches, hours: hoursRows(clinic), media, img,
+    doc, page, sections: shown.map((s) => ({ ...s, c: words(s), embed: s.type === 'video' ? sections.videoEmbed(s.settings.url) : null })), doctors, services, insurers, branches, hours: hoursRows(clinic), media, img,
     wsSite: siteChrome(req, clinic, doc, page, { preview, img }),
     doctorNames: Object.fromEntries(doctors.map((d) => [d.id, d.name])), reviewsSummary: reviews, preview,
   };
@@ -94,6 +97,15 @@ function siteChrome(req, clinic, doc, page, { preview, img }) {
   const logo = doc.brand && doc.brand.logoMediaId ? img(doc.brand.logoMediaId) : null;
   const logoDark = doc.brand && doc.brand.logoDarkMediaId ? img(doc.brand.logoDarkMediaId) : null;
   return { header, footer: doc.footer || {}, items, pages, logo, logoDark, darkMode: header.dark_mode !== false, homeHref: pageHref(doc.pages[0]), preview, L };
+}
+
+/** Lets this page frame the YouTube (no-cookie) and Vimeo players — nothing else. */
+function allowVideoFrames(res) {
+  if (!res || res.headersSent || typeof res.getHeader !== 'function') return;
+  const cur = String(res.getHeader('Content-Security-Policy') || '');
+  if (!cur) return;
+  const parts = cur.split(';').map((x) => x.trim()).filter((x) => x && !/^frame-src\b/.test(x));
+  res.setHeader('Content-Security-Policy', [...parts, 'frame-src https://www.youtube-nocookie.com https://player.vimeo.com'].join('; '));
 }
 
 function announcementOn(s, req) {

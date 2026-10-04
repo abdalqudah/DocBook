@@ -1,0 +1,10 @@
+<% if (s.embed) { %>
+<section class="ws-section ws-video-sec ws-video-<%= s.variant %>" id="s-<%= s.id %>">
+  <div class="container">
+    <div class="ws-video-wrap">
+      <% if (c.title || c.text) { %><div class="ws-video-text"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.text) { %><p><%= c.text %></p><% } %></div><% } %>
+      <div class="ws-video ws-vr-<%= s.settings.ratio || '16x9' %>"><iframe src="<%= s.embed.src %>" title="<%= c.title || t('website.sec.video') %>" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+    </div>
+  </div>
+</section>
+<% } %>

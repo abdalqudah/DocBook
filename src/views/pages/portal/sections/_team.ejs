@@ -1,0 +1,41 @@
+<%
+  // People: the clinic's doctors (live, with their photos) or the people added by hand.
+  var extra = s.settings.items || [];
+  var fromDoctors = (s.settings.source || 'doctors') === 'doctors';
+  var people = fromDoctors
+    ? doctors.map(function (d) { return { name: d.name, role: d.specialty, text: d.bio, photo: d.photo ? { url: d.photo, alt_ar: d.name, alt_en: d.name } : null, href: clinic.booking_enabled && s.settings.show_book !== false ? '/' + clinic.slug + '/book?doctor=' + d.id : null, page: '/' + clinic.slug + '/doctors/' + d.id, button: null }; })
+    : (c.items || []).map(function (x, i) { var e = extra[i] || {}; var a = act(e.action); return { name: x && x.name, role: x && x.role, text: x && x.text, photo: img(e.image), href: a ? a.href : null, ext: a && a.ext, button: (x && x.button) || (a ? a.label : null), icon: a ? a.icon : null }; })
+        .filter(function (x) { return x.name || x.photo; });
+  var showBio = s.settings.show_bio !== false;
+  var bookLabel = t('portal.book_with');
+%>
+<% if (people.length) { %>
+<section class="ws-section ws-team-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <ul class="ws-team ws-team-<%= s.variant %> ws-cols-<%= s.settings.columns || '3' %> ws-pr-<%= s.settings.photo_ratio || 'portrait' %>">
+      <% people.forEach(function (p, i) { %>
+      <li class="ws-person" style="--i:<%= i %>"<%- s.variant === 'flip' ? ' tabindex="0"' : '' %>>
+        <div class="ws-person-in">
+          <div class="ws-person-front">
+            <figure class="ws-person-photo"><% if (p.photo) { %><img src="<%= p.photo.url %>" alt="<%= p.name || altOf(p.photo) %>" loading="lazy"><% } else { %><span class="ws-person-initials"><%= initials(String(p.name || '').replace(/^(د\.|dr\.?)\s*/i, '')) %></span><% } %></figure>
+            <div class="ws-person-cap">
+              <% if (p.name) { %><h3><%= p.name %></h3><% } %>
+              <% if (p.role) { %><div class="ws-person-role"><%= p.role %></div><% } %>
+            </div>
+          </div>
+          <div class="ws-person-more">
+            <% if (s.variant === 'flip') { %><% if (p.name) { %><h3><%= p.name %></h3><% } %><% if (p.role) { %><div class="ws-person-role"><%= p.role %></div><% } %><% } %>
+            <% if (showBio && p.text) { %><p><%= p.text %></p><% } %>
+            <div class="ws-person-actions">
+              <% if (p.href) { %><a class="btn btn-primary btn-sm" href="<%= p.href %>"<%- p.ext ? ' target="_blank" rel="noopener"' : '' %>><% if (p.icon) { %><%- icon(p.icon, 'icon-sm') %><% } %><%= p.button || bookLabel %></a><% } %>
+              <% if (p.page) { %><a class="btn btn-ghost btn-sm" href="<%= p.page %>"><%= t('website.team_profile') %></a><% } %>
+            </div>
+          </div>
+        </div>
+      </li>
+      <% }) %>
+    </ul>
+  </div>
+</section>
+<% } %>

@@ -1,0 +1,38 @@
+<%
+  var extra = s.settings.items || [];
+  var items = (c.items || [{}]).length ? c.items : [];
+  var n = Math.max(items.length, extra.length);
+  var list = [];
+  for (var k = 0; k < n; k += 1) { var e = extra[k] || {}; var b = img(e.before); var a = img(e.after); if (b && a) list.push({ b: b, a: a, cap: (items[k] || {}).caption }); }
+  var lb = c.label_before || t('website.ba_before'); var la = c.label_after || t('website.ba_after');
+  var vertical = s.settings.direction === 'vertical';
+  var start = Number(s.settings.start || 50);
+%>
+<% if (list.length) { %>
+<section class="ws-section ws-ba-sec" id="s-<%= s.id %>">
+  <div class="container">
+    <% if (c.title || c.intro) { %><div class="ws-head"><% if (c.title) { %><h2 class="ws-title"><%= c.title %></h2><% } %><% if (c.intro) { %><p><%= c.intro %></p><% } %></div><% } %>
+    <ul class="ws-ba-list ws-cols-<%= s.settings.columns || '2' %> ws-ratio-<%= s.settings.image_ratio || 'landscape' %>">
+      <% list.forEach(function (x, i) { %>
+      <li class="ws-ba-item">
+        <% if (s.variant === 'side') { %>
+        <div class="ws-ba-side">
+          <figure><img src="<%= x.b.url %>" alt="<%= altOf(x.b) || lb %>" loading="lazy"><figcaption class="ws-ba-tag"><%= lb %></figcaption></figure>
+          <figure><img src="<%= x.a.url %>" alt="<%= altOf(x.a) || la %>" loading="lazy"><figcaption class="ws-ba-tag is-after"><%= la %></figcaption></figure>
+        </div>
+        <% } else { %>
+        <div class="ws-ba<%= vertical ? ' is-vertical' : '' %>" data-ws-ba style="--ba:<%= start %>%" dir="ltr">
+          <img class="ws-ba-img" src="<%= x.a.url %>" alt="<%= altOf(x.a) || la %>" loading="lazy">
+          <div class="ws-ba-top"><img class="ws-ba-img" src="<%= x.b.url %>" alt="<%= altOf(x.b) || lb %>" loading="lazy"></div>
+          <span class="ws-ba-tag"><%= lb %></span><span class="ws-ba-tag is-after"><%= la %></span>
+          <span class="ws-ba-line" aria-hidden="true"><span class="ws-ba-knob"><% if (vertical) { %><%- icon('chevrons-up-down', 'icon-sm') %><% } else { %><%- icon('chevron-left', 'icon-sm') %><%- icon('chevron-right', 'icon-sm') %><% } %></span></span>
+          <input class="ws-ba-range" type="range" min="0" max="100" value="<%= start %>" aria-label="<%= t('website.ba_drag', { before: lb, after: la }) %>"<%- vertical ? ' aria-orientation="vertical"' : '' %>>
+        </div>
+        <% } %>
+        <% if (x.cap) { %><p class="ws-ba-cap"><%= x.cap %></p><% } %>
+      </li>
+      <% }) %>
+    </ul>
+  </div>
+</section>
+<% } %>
