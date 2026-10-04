@@ -9,6 +9,7 @@ const { AppError } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const svc = require('./center.service');
+const shared = require('./shared.service');
 const cashier = require('../clinic/cashier.service');
 const appts = require('../clinic/appointments.service');
 
@@ -17,21 +18,62 @@ const errText = (req, err) => { for (const k of [`center.err.${err.code}`, `erro
 const act = (fn, back = () => '/app/center') => wrap(async (req, res) => {
   try { await fn(req, res); } catch (err) {
     if (!(err instanceof AppError) || err.status >= 500) throw err;
-    flash(req, 'error', err.code === 'VALIDATION_FAILED' ? `${req.t('errors.VALIDATION_FAILED')}` : errText(req, err));
+    const { translateMessage } = require('../../core/i18n'); // eslint-disable-line global-require
+    flash(req, 'error', err.code === 'VALIDATION_FAILED' ? (Object.values(err.details || {}).map((m) => translateMessage(req.locale, m))[0] || req.t('errors.VALIDATION_FAILED')) : errText(req, err));
   }
   if (!res.headersSent) res.redirect(back(req));
 });
 
 // ---------------------------------------------------------------- the centre
+const TABS = ['practices', 'staff', 'costs', 'settings'];
 router.get('/', can('settings.manage'), wrap(async (req, res) => {
   const center = await svc.ofBusiness(req.ctx.businessId);
+  const founder = svc.isFounder(center, req.ctx.businessId);
+  const tab = founder && TABS.includes(req.query.tab) ? req.query.tab : 'practices';
   const [members, invites] = center ? await Promise.all([svc.members(center.id), svc.pendingInvites(center.id)]) : [[], []];
+  const extra = {};
+  if (center && founder && tab === 'staff') extra.staff = await shared.listStaff(center.id);
+  if (center && founder && tab === 'costs') {
+    const [expenses, balances, staff] = await Promise.all([shared.expenses(center.id), shared.balances(center.id), shared.listStaff(center.id)]);
+    Object.assign(extra, { expenses, balances: Object.fromEntries(balances.map((b) => [b.business_id, { owed: Number(b.owed), paid: Number(b.paid) }])), salaryTotal: staff.filter((x) => x.is_active).reduce((t, x) => t + Number(x.salary_monthly), 0) });
+  }
   res.page('pages/center/index', {
-    title: req.t('center.title'), center, members, invites, founder: svc.isFounder(center, req.ctx.businessId), lastLink: req.session.centerLink || null,
-    pageStyles: ['/css/center.css'],
+    title: req.t('center.title'), center, members, invites, founder, tab, lastLink: req.session.centerLink || null, lastLogin: req.session.centerLogin || null,
+    categories: require('../expenses/expense.service').SYSTEM_CATEGORIES.filter((k) => k !== 'center_share'), // eslint-disable-line global-require
+    thisMonth: req.ctx.today.slice(0, 7), pageStyles: ['/css/center.css'], pageScripts: ['/js/center.js'], ...extra,
   });
-  delete req.session.centerLink;
+  delete req.session.centerLink; delete req.session.centerLogin;
 }));
+const back = (tab) => () => `/app/center?tab=${tab}`;
+// Adding a doctor: a separate practice account with the doctor's own login (or an invitation for an existing account).
+router.post('/doctors', can('settings.manage'), act(async (req) => {
+  const r = await shared.addDoctor(req.ctx, req.body, { locale: req.locale, t: req.t });
+  req.session.centerLink = r.link;
+  req.session.centerLogin = { email: r.email, invited: Boolean(r.invited), emailed: Boolean(r.emailed) };
+  flash(req, 'success', req.t(r.invited ? 'center.invited' : 'center.doctor_added', { email: r.email }));
+}, back('practices')));
+router.post('/staff', can('settings.manage'), act(async (req) => {
+  const r = await shared.saveStaff(req.ctx, null, req.body);
+  if (r.login && r.login.password) req.session.centerLogin = { email: String(req.body.login_email || '').trim().toLowerCase(), password: r.login.password };
+  else if (r.login && r.login.link) req.session.centerLink = r.login.link;
+  flash(req, 'success', req.t('center.staff_saved'));
+}, back('staff')));
+router.post('/staff/:id(\\d+)', can('settings.manage'), act(async (req) => { await shared.saveStaff(req.ctx, req.params.id, req.body); flash(req, 'success', req.t('center.staff_saved')); }, back('staff')));
+router.post('/staff/:id(\\d+)/remove', can('settings.manage'), act(async (req) => { await shared.removeStaff(req.ctx, req.params.id); flash(req, 'success', req.t('center.staff_removed')); }, back('staff')));
+router.post('/split', can('settings.manage'), act(async (req) => { await shared.setSplit(req.ctx, req.body); flash(req, 'success', req.t('common.updated')); }, back('costs')));
+router.post('/expenses', can('settings.manage'), act(async (req) => { await shared.addExpense(req.ctx, req.body); flash(req, 'success', req.t('center.expense_added')); }, back('costs')));
+router.post('/expenses/:id(\\d+)/delete', can('settings.manage'), act(async (req) => { await shared.removeExpense(req.ctx, req.params.id); flash(req, 'success', req.t('common.deleted')); }, back('costs')));
+router.post('/salaries', can('settings.manage'), act(async (req) => { await shared.postSalaries(req.ctx, req.body.month, { t: req.t }); flash(req, 'success', req.t('center.salaries_posted')); }, back('costs')));
+
+// ---------------------------------------------------------------- a practice's share of the centre's costs
+router.get('/costs', can('expenses.view'), wrap(async (req, res) => {
+  const center = await svc.ofBusiness(req.ctx.businessId);
+  if (!center) return res.redirect('/app/expenses');
+  const rows = await shared.myShares(req.ctx);
+  const owed = rows.filter((r) => !r.paid_at).reduce((t, r) => t + Number(r.amount), 0);
+  return res.page('pages/center/costs', { title: req.t('center.costs_title'), center, rows, owed, pageStyles: ['/css/center.css'] });
+}));
+router.post('/costs/:id(\\d+)/pay', can('expenses.manage'), act(async (req) => { await shared.payShare(req.ctx, req.params.id, req.body); flash(req, 'success', req.t('center.share_paid')); }, () => '/app/center/costs'));
 router.post('/create', can('settings.manage'), act(async (req) => { await svc.create(req.ctx, { name: req.body.center_name, name_en: req.body.center_name_en }); flash(req, 'success', req.t('center.created')); }));
 router.post('/rename', can('settings.manage'), act(async (req) => { await svc.rename(req.ctx, { name: req.body.center_name, name_en: req.body.center_name_en }); flash(req, 'success', req.t('common.updated')); }));
 router.post('/invite', can('settings.manage'), act(async (req) => {
@@ -61,8 +103,11 @@ async function deskData(req) {
     }));
   }
   visits.sort((x, y) => x.time.localeCompare(y.time) || x.id - y.id);
+  // A practice's tab: only its visits (only practices of this centre are tabs).
+  const tab = Number(req.query.p) || 0;
+  if (tab && members.some((m) => m.id === tab)) { const keep = visits.filter((v) => v.bid === tab); visits.length = 0; visits.push(...keep); }
   const cols = ['expected', 'arrived', 'with_doctor', 'ready'];
-  return { center, members, cols, by: Object.fromEntries(cols.map((k) => [k, visits.filter((v) => v.state === k && !v.paid)])), done: visits.filter((v) => v.state === 'paid' || v.paid).length };
+  return { center, members, tab: members.some((m) => m.id === tab) ? tab : 0, cols, by: Object.fromEntries(cols.map((k) => [k, visits.filter((v) => v.state === k && !v.paid)])), done: visits.filter((v) => v.state === 'paid' || v.paid).length };
 }
 router.get('/desk', can('frontdesk.use'), wrap(async (req, res) => {
   const data = await deskData(req);
@@ -80,6 +125,6 @@ router.post('/desk/:bid(\\d+)/:id(\\d+)/:action(check-in|uncheck|call-in|uncall)
   if (action === 'check-in' || action === 'uncheck') await appts.checkIn(ctx, id, action === 'check-in');
   else await appts.callIn(ctx, id, action === 'call-in');
   flash(req, 'success', req.t(`center.done.${action}`));
-}, () => '/app/center/desk'));
+}, (req) => `/app/center/desk${Number(req.body.p) > 0 ? `?p=${Number(req.body.p)}` : ''}`));
 
 module.exports = router;

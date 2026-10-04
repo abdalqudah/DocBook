@@ -116,6 +116,7 @@
     "group_admin": "الإعدادات والمساعدة",
     "dashboard": "نظرة عامة",
     "my_day": "يومي",
+    "center_costs": "حصتي من مصاريف المركز",
     "my_online": "استشاراتي أونلاين",
     "appointments": "المواعيد",
     "front_desk": "الاستقبال وقائمة الانتظار",
@@ -415,6 +416,7 @@
     "office": "لوازم مكتبية",
     "hospitality": "الضيافة",
     "transport": "المواصلات",
+    "center_share": "حصة من مصاريف المركز الطبي",
     "miscellaneous": "متفرقات"
   },
   "payment_methods": {

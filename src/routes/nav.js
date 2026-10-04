@@ -52,6 +52,7 @@ const NAV = [
     { key: 'cash_closings', href: '/app/cashier/closings', icon: 'lock', perms: ['billing.view'], follows: 'cashier', viewAll: true, cluster: 'collect' },
     { key: 'insurance_claims', href: '/app/insurance-claims', icon: 'shield-plus', perms: ['billing.view'], viewAll: true, cluster: 'collect' },
     { key: 'expenses', href: '/app/expenses', icon: 'receipt-text', perms: ['expenses.view'], cluster: 'spend' },
+    { key: 'center_costs', href: '/app/center/costs', icon: 'building-2', perms: ['expenses.view'], needsCenter: true, cluster: 'spend' }, // this practice's share of the medical centre's costs
     { key: 'budgets', href: '/app/budgets', icon: 'target', perms: ['expenses.view'], cluster: 'spend' },
     { key: 'payroll', href: '/app/payroll', icon: 'wallet', perms: ['payroll.view'], badge: 'pendingAdjustments', cluster: 'people' },
     { key: 'staff_payroll', href: '/app/staff-payroll', icon: 'users', perms: ['payroll.view'], cluster: 'people' },

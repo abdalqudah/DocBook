@@ -229,3 +229,7 @@ dialog.dialog.pos-done { width: min(420px, calc(100vw - 24px)); }
 .pos-scope a { padding: 4px 12px; border-radius: var(--pill, 999px); font-size: 13px; font-weight: var(--fw-semibold); color: var(--text-muted); text-decoration: none; }
 .pos-scope a.is-on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm, none); }
 .pos-card-practice { font-size: 12px; font-weight: var(--fw-semibold); color: var(--primary); }
+/* Medical centre: one tab per practice sharing the cash screen */
+.pos-practices { display: flex; gap: 6px; overflow-x: auto; padding: 8px 16px 0; scrollbar-width: none; }
+.pos-practices a { flex: none; padding: 7px 14px; border-radius: var(--pill, 999px); border: 1px solid var(--border); background: var(--surface); color: var(--text); text-decoration: none; font-weight: 600; font-size: .9rem; }
+.pos-practices a.is-on { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }

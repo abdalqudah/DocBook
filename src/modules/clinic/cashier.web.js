@@ -187,6 +187,9 @@ async function posData(req, addIds = []) {
       const c2 = await centers.actCtx(ctx, bid, { need: 'billing.manage', grant: CASH_GRANT }); // eslint-disable-line no-await-in-loop
       (await svc.today(c2)).forEach((a) => rows.push({ ...a, practice: names[bid] || null, bid, rxs: [] })); // papers stay in their practice // eslint-disable-line no-await-in-loop
     }
+    // A practice's tab: only its visits (the tab ids are the practices sharing this screen — never anything else).
+    const tab = Number(req.query.p) || 0;
+    if (tab && bids.includes(tab)) rows = rows.filter((a) => a.bid === tab);
   }
   const open = rows.filter((a) => a.payment_status !== 'paid' && a.state !== 'missed');
   const extra = [];
@@ -213,6 +216,14 @@ async function paperOf(ctx) {
 
 const addIdsOf = (v) => String(v || '').split(',').map(Number).filter((x) => Number.isInteger(x) && x > 0).slice(0, svc.MAX_SALE);
 
+/** The tabs of the centre's cash screen: every practice sharing it (the signed-in one first). */
+async function practiceTabs(req) {
+  const bids = await centers.cashPractices(req.ctx);
+  const rows = await knex('businesses').whereIn('id', bids).select('id', 'name', 'name_en');
+  const L = (b) => (req.locale === 'en' && b.name_en) || b.name;
+  return rows.sort((a, b) => (a.id === req.ctx.businessId ? -1 : b.id === req.ctx.businessId ? 1 : 0)).map((b) => ({ id: b.id, name: L(b) }));
+}
+
 router.get('/screen', can('billing.manage'), wrap(async (req, res) => {
   const { ctx } = req;
   const add = addIdsOf(req.query.add);
@@ -227,8 +238,8 @@ router.get('/screen', can('billing.manage'), wrap(async (req, res) => {
   res.set('Cache-Control', 'no-store');
   return res.page('pages/clinic/cashier/screen', {
     title: req.t('cashpos.title'), layout: 'cashscreen', bodyClass: 'pos-body', expense,
-    pos: { ...data, add, insurers: insurers.map((i) => ({ id: i.id, name: i.name, coverage: Number(i.coverage_percent) || 0 })), decimals: decimalsOf(ctx.currency), scope: centerScope(req) ? 'center' : '' },
-    centerScope: centerScope(req), inCenter: Boolean(ctx.centerId),
+    pos: { ...data, add, insurers: insurers.map((i) => ({ id: i.id, name: i.name, coverage: Number(i.coverage_percent) || 0 })), decimals: decimalsOf(ctx.currency), scope: centerScope(req) ? 'center' : '', practice: centerScope(req) ? Number(req.query.p) || 0 : 0 },
+    centerScope: centerScope(req), inCenter: Boolean(ctx.centerId), practiceTabs: centerScope(req) ? await practiceTabs(req) : [], practiceTab: Number(req.query.p) || 0,
     pageScripts: ['/js/cashpos.js'], pageStyles: ['/css/cashpos.css'],
   });
 }));

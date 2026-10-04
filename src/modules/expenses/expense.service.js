@@ -6,7 +6,7 @@ const { E } = require('../../core/errors');
 
 // Built-in clinic expense categories (kept as keys; labels are translated). Each clinic can add its own.
 const SYSTEM_CATEGORIES = ['rent', 'utilities', 'medical_supplies', 'lab_fees', 'equipment', 'maintenance', 'cleaning', 'software', 'staff_salaries', 'advertising',
-  'licences', 'tax', 'insurance_premiums', 'office', 'hospitality', 'transport', 'miscellaneous'];
+  'licences', 'tax', 'insurance_premiums', 'office', 'hospitality', 'transport', 'center_share', 'miscellaneous']; // center_share: a medical centre's shared cost paid by this practice
 const PAYMENT_METHODS = ['cash', 'bank_transfer', 'card', 'digital_wallet'];
 
 const expenses = repo({

@@ -1,0 +1,28 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= L(center.name, center.name_en) %></div><h1><%= t('center.costs_title') %></h1><p><%= t('center.costs_lead') %></p></div>
+</div>
+<div class="stats mb-4">
+  <div class="stat hero"><div class="stat-label"><%= t('center.to_pay') %></div><div class="stat-value num"><%= fmt.money(owed) %></div><div class="stat-meta"><%= t('center.to_pay_meta', { n: rows.filter(function (r) { return !r.paid_at; }).length }) %></div></div>
+</div>
+<section class="panel flush">
+  <% if (!rows.length) { %><div class="panel-body small muted"><%= t('center.costs_none') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.date') %></th><th><%= t('center.expense') %></th><th class="num"><%= t('center.total') %></th><th class="num"><%= t('center.my_share') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+    <tbody><% rows.forEach(function (r) { %><tr>
+      <td class="small nowrap"><%= fmt.date(r.date) %></td>
+      <td data-label="<%= t('center.expense') %>"><div class="strong"><%= r.title %></div><div class="tiny muted"><%= label('categories', r.category) %> · <%= t('center.split.' + r.split_mode) %><%= r.note ? ' · ' + r.note : '' %></div></td>
+      <td class="num" data-label="<%= t('center.total') %>"><%= fmt.money(r.total) %></td>
+      <td class="num strong" data-label="<%= t('center.my_share') %>"><%= fmt.money(r.amount) %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= r.paid_at ? 'badge-success' : 'badge-warning' %>"><%= r.paid_at ? t('center.paid') : t('center.unpaid') %></span><% if (r.paid_at) { %><div class="tiny muted"><%= fmt.date(r.paid_at) %></div><% } %></td>
+      <td class="actions nowrap"><% if (!r.paid_at && can('expenses.manage')) { %>
+        <form method="post" action="/app/center/costs/<%= r.id %>/pay" class="row-sm" data-confirm="<%= t('center.pay_confirm', { amount: fmt.money(r.amount) }) %>" data-confirm-yes="<%= t('center.pay') %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <select class="select select-sm" name="payment_method" aria-label="<%= t('expenses.payment_method') %>"><% ['cash', 'bank_transfer', 'card', 'digital_wallet'].forEach(function (m) { %><option value="<%= m %>"><%= label('payment_methods', m) %></option><% }) %></select>
+          <button class="btn btn-primary btn-sm" type="submit"><%= t('center.pay') %></button>
+        </form>
+      <% } else if (r.practice_expense_id) { %><a class="btn btn-ghost btn-sm" href="/app/expenses"><%= t('center.in_expenses') %></a><% } %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

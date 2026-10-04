@@ -1,0 +1,9 @@
+<form class="panel" method="post" action="/app/center/share-cash">
+  <div class="panel-head"><h2><%- icon('banknote', 'icon-sm') %> <%= t('center.cash_title') %></h2></div>
+  <div class="panel-body stack">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label class="check"><input type="radio" name="on" value="0"<%= business.center_share_cash ? '' : ' checked' %>> <span><span class="strong"><%= t('center.cash_own') %></span><span class="tiny muted" style="display:block"><%= t('center.cash_own_help') %></span></span></label>
+    <label class="check"><input type="radio" name="on" value="1"<%= business.center_share_cash ? ' checked' : '' %>> <span><span class="strong"><%= t('center.cash_shared') %></span><span class="tiny muted" style="display:block"><%= t('center.cash_shared_help') %></span></span></label>
+    <button class="btn btn-secondary" type="submit"><%= t('common.save') %></button>
+  </div>
+</form>

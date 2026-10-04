@@ -51,7 +51,7 @@ function pages() {
   const byHref = new Map();
   for (const g of NAV) {
     for (const i of g.items) {
-      const p = { key: i.key, href: i.href, perms: i.perms || [], exact: Boolean(i.exact || i.exactSettings), needsDoctor: Boolean(i.needsDoctor), group: g.group, groupLabel: g.label || `nav.group_${g.group}`, groupFallback: `nav.group_${g.group}`, label: `nav.${i.key}`, icon: i.icon, settings: false, aliases: [], also: i.also || [] };
+      const p = { key: i.key, href: i.href, perms: i.perms || [], exact: Boolean(i.exact || i.exactSettings), needsDoctor: Boolean(i.needsDoctor), needsCenter: Boolean(i.needsCenter), group: g.group, groupLabel: g.label || `nav.group_${g.group}`, groupFallback: `nav.group_${g.group}`, label: `nav.${i.key}`, icon: i.icon, settings: false, aliases: [], also: i.also || [] };
       list.push(p);
       byHref.set(i.href, p);
     }
@@ -108,7 +108,8 @@ function compute(rolePerms, rows, { doctorId = null } = {}) {
   for (const p of list) if (!off.has(p.key) && usable(p) && !(opens(role, p) && (!p.needsDoctor || doctorId)) && !allowed.has(p.key)) off.add(p.key);
   if (denied.size) {
     const needed = new Set();
-    for (const p of list) if (!off.has(p.key) && usable(p)) for (const x of familyOf(p)) needed.add(x);
+    // A centre-only page (a practice's centre costs) is a side view: it never keeps a denied page's permission alive.
+    for (const p of list) if (!off.has(p.key) && usable(p) && !p.needsCenter) for (const x of familyOf(p)) needed.add(x);
     for (const k of denied) for (const x of familyOf(pageByKey(k))) if (!needed.has(x) && !PROTECTED.has(x)) eff.delete(x);
   }
   const out = new Set(normalise([...eff]));

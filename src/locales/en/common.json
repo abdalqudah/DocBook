@@ -116,6 +116,7 @@
     "group_admin": "Settings & help",
     "dashboard": "Overview",
     "my_day": "My day",
+    "center_costs": "My centre costs",
     "my_online": "My online consultations",
     "appointments": "Appointments",
     "front_desk": "Reception & waiting list",
@@ -404,6 +405,7 @@
     "office": "Office supplies",
     "hospitality": "Hospitality",
     "transport": "Transport",
+    "center_share": "Medical centre shared cost",
     "miscellaneous": "Miscellaneous"
   },
   "payment_methods": {

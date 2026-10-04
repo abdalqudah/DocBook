@@ -9,6 +9,11 @@
     <a class="btn btn-secondary" href="/app/cashier/screen?scope=center"><%- icon('banknote', 'icon-sm') %><%= t('center.cash_screen') %></a>
   </div>
 </div>
+<% var _L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+<nav class="pill-filter mb-4" aria-label="<%= t('center.practices') %>">
+  <a href="/app/center/desk" class="<%= tab ? '' : 'active' %>"<%- tab ? '' : ' aria-current="page"' %>><%= t('center.all_practices') %></a>
+  <% members.forEach(function (m) { %><a href="/app/center/desk?p=<%= m.id %>" class="<%= tab === m.id ? 'active' : '' %>"<%- tab === m.id ? ' aria-current="page"' : '' %>><%= _L(m.name, m.name_en) %></a><% }) %>
+</nav>
 <div class="ctr-desk" data-ctr-desk data-done-label="<%= t('center.done_today') %>">
   <% cols.forEach(function (k) { var list = by[k]; %>
   <section class="ctr-col is-<%= k %>">
@@ -20,7 +25,7 @@
         <div class="ctr-top"><span class="ctr-time num" dir="ltr"><%= v.time %></span><span class="ctr-name"><bdi><%= v.patient %></bdi></span></div>
         <div class="ctr-meta"><span class="ctr-practice"><%= v.practice %></span><% if (v.doctor) { %> · <%= v.doctor %><% } %></div>
         <div class="ctr-actions">
-          <% var post = function (action, label, primary) { %><form method="post" action="/app/center/desk/<%= v.bid %>/<%= v.id %>/<%= action %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-sm <%= primary ? 'btn-primary' : 'btn-ghost' %>" type="submit"><%= label %></button></form><% }; %>
+          <% var post = function (action, label, primary) { %><form method="post" action="/app/center/desk/<%= v.bid %>/<%= v.id %>/<%= action %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (tab) { %><input type="hidden" name="p" value="<%= tab %>"><% } %><button class="btn btn-sm <%= primary ? 'btn-primary' : 'btn-ghost' %>" type="submit"><%= label %></button></form><% }; %>
           <% if (k === 'expected') { post('check-in', t('center.act.check_in'), true); } %>
           <% if (k === 'arrived') { post('call-in', t('center.act.call_in'), true); post('uncheck', t('center.act.uncheck')); } %>
           <% if (k === 'with_doctor') { post('uncall', t('center.act.uncall')); } %>

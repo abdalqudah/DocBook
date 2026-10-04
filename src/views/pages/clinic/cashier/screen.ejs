@@ -27,6 +27,12 @@
     </div>
   </header>
 
+  <% if (typeof practiceTabs !== 'undefined' && practiceTabs.length > 1) { %>
+  <nav class="pos-practices" aria-label="<%= t('center.practices') %>">
+    <a href="/app/cashier/screen?scope=center" class="<%= practiceTab ? '' : 'is-on' %>"<%- practiceTab ? '' : ' aria-current="page"' %>><%= t('center.all_practices') %></a>
+    <% practiceTabs.forEach(function (p) { %><a href="/app/cashier/screen?scope=center&amp;p=<%= p.id %>" class="<%= practiceTab === p.id ? 'is-on' : '' %>"<%- practiceTab === p.id ? ' aria-current="page"' : '' %>><%= p.name %></a><% }) %>
+  </nav>
+  <% } %>
   <div class="pos-alert" data-pos-alert role="alert" hidden><span data-pos-alert-text></span><button class="btn btn-ghost btn-icon btn-sm" type="button" data-pos-alert-close aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
   <div class="pos-notice" data-pos-notice role="status" aria-live="polite" hidden></div>
 

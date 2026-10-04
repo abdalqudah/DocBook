@@ -656,7 +656,7 @@
     if (loading) { again = true; return; }
     loading = true; lastLoad = Date.now();
     var keep = bill.map(function (l) { return l.id; }).filter(function (id) { return byId[id] && byId[id].date !== D.today; });
-    fetch('/app/cashier/screen/data?' + (D.scope ? 'scope=' + D.scope + '&' : '') + (keep.length ? 'keep=' + keep.join(',') : ''), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+    fetch('/app/cashier/screen/data?' + (D.scope ? 'scope=' + D.scope + '&' : '') + (D.practice ? 'p=' + D.practice + '&' : '') + (keep.length ? 'keep=' + keep.join(',') : ''), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { if (r.status === 401 || r.status === 403) { location.reload(); throw new Error('auth'); } if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then(function (d) { apply(d); })
       .catch(function () { /* next tick */ })

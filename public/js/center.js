@@ -8,6 +8,12 @@
   $$('[data-join-mode]').forEach(function (r) {
     r.addEventListener('change', function () { $$('[data-join-pane]').forEach(function (p) { p.hidden = p.getAttribute('data-join-pane') !== r.value; }); });
   });
+  // Shared expense form: the amount per practice only for "custom amounts".
+  $$('[data-ctr-split]').forEach(function (sel) {
+    var box = document.querySelector('[data-ctr-custom]');
+    var sync = function () { if (box) box.hidden = sel.value !== 'custom'; };
+    sel.addEventListener('change', sync); sync();
+  });
   // The board: reload every 20 s while nobody is pressing a button (simple and always consistent with the server).
   if (document.querySelector('[data-ctr-desk]')) {
     var busy = false;

@@ -28,82 +28,190 @@
     <p class="small muted"><%= t('center.join_by_invite') %></p>
   </div></div>
 </div>
-<% } else { %>
+<% } else if (founder) { %>
+<% var mName = function (id) { var m = members.find(function (x) { return x.id === id; }); return m ? L(m.name, m.name_en) : '—'; }; %>
+<nav class="pill-filter mb-4" aria-label="<%= t('center.title') %>">
+  <% ['practices', 'staff', 'costs', 'settings'].forEach(function (k) { %><a href="/app/center?tab=<%= k %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%= t('center.tab.' + k) %></a><% }) %>
+</nav>
+
+<% if (tab === 'practices') { %>
 <div class="grid grid-main">
   <div class="stack">
     <div class="panel flush">
-      <div class="panel-head"><h2><%= t('center.practices') %> (<%= members.length %>)</h2></div>
+      <div class="panel-head"><div><h2><%= t('center.practices') %> (<%= members.length %>)</h2><div class="panel-sub"><%= t('center.practices_sub') %></div></div></div>
       <div class="table-wrap"><table class="table responsive">
         <thead><tr><th><%= t('center.practice') %></th><th><%= t('center.cash_col') %></th><th><%= t('center.since') %></th><th class="actions"></th></tr></thead>
         <tbody>
         <% members.forEach(function (m) { %>
           <tr>
-            <td class="primary-cell"><div class="strong"><%= L(m.name, m.name_en) %><% if (m.id === business.id) { %> <span class="badge"><%= t('center.you') %></span><% } %><% if (center.owner_business_id === m.id) { %> <span class="badge badge-success"><%= t('center.founder') %></span><% } %></div><a class="tiny link" href="/<%= m.slug %>" target="_blank" rel="noopener">/<%= m.slug %></a></td>
+            <td class="primary-cell"><div class="strong"><%= L(m.name, m.name_en) %><% if (m.id === business.id) { %> <span class="badge"><%= t('center.admin_account') %></span><% } %></div><a class="tiny link" href="/<%= m.slug %>" target="_blank" rel="noopener">/<%= m.slug %></a></td>
             <td data-label="<%= t('center.cash_col') %>"><span class="badge<%= m.center_share_cash ? ' badge-success badge-dot' : '' %>"><%= m.center_share_cash ? t('center.cash_shared') : t('center.cash_own') %></span></td>
             <td data-label="<%= t('center.since') %>" class="nowrap"><%= m.center_joined_at ? fmt.date(m.center_joined_at) : '—' %></td>
-            <td class="actions">
-              <% if (founder && m.id !== business.id) { %>
-              <form method="post" action="/app/center/members/<%= m.id %>/remove" data-confirm="<%= t('center.remove_confirm', { name: L(m.name, m.name_en) }) %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('center.remove') %></button></form>
-              <% } %>
-            </td>
+            <td class="actions"><% if (m.id !== business.id) { %><form method="post" action="/app/center/members/<%= m.id %>/remove" data-confirm="<%= t('center.remove_confirm', { name: L(m.name, m.name_en) }) %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('center.remove') %></button></form><% } %></td>
           </tr>
         <% }) %>
         </tbody>
       </table></div>
     </div>
-
-    <% if (founder) { %>
-    <div class="panel">
-      <div class="panel-head"><div><h2><%- icon('user-plus', 'icon-sm') %> <%= t('center.invite_title') %></h2><div class="panel-sub"><%= t('center.invite_help') %></div></div></div>
+  </div>
+  <aside class="stack">
+    <form class="panel" method="post" action="/app/center/doctors">
+      <div class="panel-head"><div><h2><%- icon('user-plus', 'icon-sm') %> <%= t('center.add_doctor') %></h2><div class="panel-sub"><%= t('center.add_doctor_help') %></div></div></div>
       <div class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/field', { name: 'doctor_name', label: t('center.doctor_name'), required: true, placeholder: t('center.doctor_name_ph') }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('center.doctor_email'), type: 'email', required: true, attrs: 'dir="ltr"', help: t('center.doctor_email_help') }) %>
+        <%- include('../../partials/field', { name: 'practice_name', label: t('center.practice_name'), placeholder: t('center.practice_name_ph') }) %>
+        <%- include('../../partials/field', { name: 'specialization', label: t('center.doctor_spec') }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', attrs: 'dir="ltr"' }) %>
+        <button class="btn btn-primary" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('center.add_doctor_btn') %></button>
+      </div>
+    </form>
+    <% if (lastLink) { %><div class="alert alert-success small"><div class="grow stack-sm"><div class="alert-title"><%= lastLogin && !lastLogin.invited ? t('center.account_link_title', { email: lastLogin.email }) : t('center.invite_link') %></div><input class="input mono" readonly value="<%= lastLink %>" dir="ltr" aria-label="<%= t('center.invite_link') %>"><span class="tiny"><%= lastLogin && lastLogin.emailed ? t('center.account_link_emailed') : t('center.account_link_copy') %></span></div></div><% } %>
+    <details class="panel"><summary class="panel-body strong small"><%= t('center.invite_title') %></summary>
+      <div class="panel-body stack">
+        <p class="small muted"><%= t('center.invite_help') %></p>
         <form class="row wrap" method="post" action="/app/center/invite">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <input class="input grow" type="email" name="email" required dir="ltr" placeholder="doctor@example.com" aria-label="<%= t('center.invite_email') %>">
-          <button class="btn btn-primary" type="submit"><%= t('center.invite') %></button>
+          <button class="btn btn-secondary" type="submit"><%= t('center.invite') %></button>
         </form>
-        <% if (lastLink) { %><div class="alert alert-success small"><div class="alert-title"><%= t('center.invite_link') %></div><input class="input mono" readonly value="<%= lastLink %>" dir="ltr" aria-label="<%= t('center.invite_link') %>"></div><% } %>
-        <% if (invites.length) { %>
-        <ul class="ctr-invites">
-          <% invites.forEach(function (i) { %><li><span dir="ltr"><%= i.email %></span><span class="tiny muted"><%= t('center.invite_until', { date: fmt.date(i.expires_at) }) %></span>
-            <form method="post" action="/app/center/invites/<%= i.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('center.invite_cancel') %></button></form></li><% }) %>
-        </ul>
-        <% } %>
+        <% if (invites.length) { %><ul class="ctr-invites"><% invites.forEach(function (i) { %><li><span dir="ltr"><%= i.email %></span><span class="tiny muted"><%= t('center.invite_until', { date: fmt.date(i.expires_at) }) %></span><form method="post" action="/app/center/invites/<%= i.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('center.invite_cancel') %></button></form></li><% }) %></ul><% } %>
       </div>
-    </div>
-    <form class="panel" method="post" action="/app/center/rename">
-      <div class="panel-head"><h2><%= t('center.center_name') %></h2></div>
-      <div class="panel-body form-grid">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <%- include('../../partials/field', { name: 'center_name', label: t('center.center_name'), value: center.name }) %>
-        <%- include('../../partials/field', { name: 'center_name_en', label: t('center.center_name_en'), value: center.name_en || '', attrs: 'dir="ltr"' }) %>
-        <div class="full"><button class="btn btn-secondary" type="submit"><%= t('common.save') %></button></div>
-      </div>
-    </form>
+    </details>
+  </aside>
+</div>
+<% } %>
+
+<% if (tab === 'staff') { %>
+<div class="grid grid-main">
+  <div class="panel flush">
+    <div class="panel-head"><div><h2><%= t('center.staff_title') %></h2><div class="panel-sub"><%= t('center.staff_sub') %></div></div></div>
+    <% if (!staff.length) { %><div class="panel-body small muted"><%= t('center.staff_none') %></div><% } else { %>
+    <div class="table-wrap"><table class="table responsive">
+      <thead><tr><th><%= t('common.name') %></th><th><%= t('center.job_title') %></th><th class="num"><%= t('center.salary') %></th><th><%= t('center.login') %></th><th class="actions"></th></tr></thead>
+      <tbody><% staff.forEach(function (p) { %><tr class="<%= p.is_active ? '' : 'muted' %>">
+        <td class="primary-cell strong"><%= p.name %><% if (!p.is_active) { %> <span class="badge"><%= t('center.inactive') %></span><% } %></td>
+        <td data-label="<%= t('center.job_title') %>"><%= p.job_title || '—' %></td>
+        <td class="num" data-label="<%= t('center.salary') %>"><%= fmt.money(p.salary_monthly) %></td>
+        <td data-label="<%= t('center.login') %>" class="small" dir="ltr"><%= p.login_email || '—' %></td>
+        <td class="actions"><% if (p.is_active) { %><form method="post" action="/app/center/staff/<%= p.id %>/remove" data-confirm="<%= t('center.staff_remove_confirm', { name: p.name }) %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('center.staff_remove') %></button></form><% } %></td>
+      </tr><% }) %></tbody>
+    </table></div>
     <% } %>
   </div>
-
   <aside class="stack">
-    <form class="panel" method="post" action="/app/center/share-cash">
-      <div class="panel-head"><h2><%- icon('banknote', 'icon-sm') %> <%= t('center.cash_title') %></h2></div>
+    <form class="panel" method="post" action="/app/center/staff">
+      <div class="panel-head"><h2><%- icon('user-plus', 'icon-sm') %> <%= t('center.staff_add') %></h2></div>
       <div class="panel-body stack">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <label class="check"><input type="radio" name="on" value="0"<%= business.center_share_cash ? '' : ' checked' %>> <span><span class="strong"><%= t('center.cash_own') %></span><span class="tiny muted" style="display:block"><%= t('center.cash_own_help') %></span></span></label>
-        <label class="check"><input type="radio" name="on" value="1"<%= business.center_share_cash ? ' checked' : '' %>> <span><span class="strong"><%= t('center.cash_shared') %></span><span class="tiny muted" style="display:block"><%= t('center.cash_shared_help') %></span></span></label>
+        <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true }) %>
+        <%- include('../../partials/field', { name: 'job_title', label: t('center.job_title'), placeholder: t('center.job_title_ph') }) %>
+        <%- include('../../partials/field', { name: 'salary_monthly', label: t('center.salary'), attrs: 'inputmode="decimal"', help: t('center.salary_help') }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'login_email', label: t('center.login_email'), type: 'email', attrs: 'dir="ltr"', help: t('center.login_email_help') }) %>
+        <%- include('../../partials/field', { name: 'login_role', label: t('center.login_role'), type: 'select', value: 'receptionist', options: ['receptionist', 'accountant', 'nurse'].map(function (r) { return { value: r, label: t('roles.' + r) }; }) }) %>
+        <button class="btn btn-primary" type="submit"><%= t('common.save') %></button>
+      </div>
+    </form>
+    <% if (lastLogin && lastLogin.password) { %><div class="alert alert-success small"><div class="grow stack-sm"><div class="alert-title"><%= t('center.login_created', { email: lastLogin.email }) %></div><input class="input mono" readonly value="<%= lastLogin.password %>" dir="ltr" aria-label="<%= t('center.temp_password') %>"><span class="tiny"><%= t('center.temp_password_help') %></span></div></div><% } %>
+    <% if (lastLink) { %><div class="alert alert-info small"><div class="grow stack-sm"><div class="alert-title"><%= t('center.invite_link') %></div><input class="input mono" readonly value="<%= lastLink %>" dir="ltr"></div></div><% } %>
+  </aside>
+</div>
+<% } %>
+
+<% if (tab === 'costs') { %>
+<div class="ctr-balances mb-4">
+  <% members.forEach(function (m) { var b = balances[m.id] || { owed: 0, paid: 0 }; %>
+  <div class="stat"><div class="stat-label"><%= L(m.name, m.name_en) %></div><div class="stat-value num<%= b.owed > 0 ? ' text-warning' : '' %>"><%= fmt.money(b.owed) %></div><div class="stat-meta"><%= t('center.owed_paid', { paid: fmt.money(b.paid) }) %></div></div>
+  <% }) %>
+</div>
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel flush">
+      <div class="panel-head"><div><h2><%= t('center.expenses_title') %></h2><div class="panel-sub"><%= t('center.expenses_sub') %></div></div></div>
+      <% if (!expenses.length) { %><div class="panel-body small muted"><%= t('center.expenses_none') %></div><% } else { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('common.date') %></th><th><%= t('center.expense') %></th><th class="num"><%= t('common.amount') %></th><th><%= t('center.shares') %></th><th class="actions"></th></tr></thead>
+        <tbody><% expenses.forEach(function (e) { var anyPaid = e.shares.some(function (x) { return x.paid_at; }); %><tr>
+          <td class="nowrap small"><%= fmt.date(e.date) %></td>
+          <td class="ctr-exp" data-label="<%= t('center.expense') %>"><div class="strong"><%= e.title %></div><div class="tiny muted"><%= label('categories', e.category) %> · <%= t('center.split.' + e.split_mode) %></div></td>
+          <td class="num" data-label="<%= t('common.amount') %>"><%= fmt.money(e.amount) %></td>
+          <td data-label="<%= t('center.shares') %>"><ul class="ctr-shares"><% e.shares.forEach(function (x) { %><li><span><%= mName(x.business_id) %></span><span class="num"><%= fmt.money(x.amount) %></span><span class="badge badge-dot <%= x.paid_at ? 'badge-success' : 'badge-warning' %>"><%= x.paid_at ? t('center.paid') : t('center.unpaid') %></span></li><% }) %></ul></td>
+          <td class="actions"><% if (!anyPaid) { %><form method="post" action="/app/center/expenses/<%= e.id %>/delete" data-confirm="<%= t('center.expense_delete_confirm', { title: e.title }) %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button></form><% } %></td>
+        </tr><% }) %></tbody>
+      </table></div>
+      <% } %>
+    </div>
+  </div>
+  <aside class="stack">
+    <form class="panel" method="post" action="/app/center/expenses" data-ctr-expense>
+      <div class="panel-head"><h2><%- icon('plus', 'icon-sm') %> <%= t('center.expense_add') %></h2></div>
+      <div class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/field', { name: 'title', label: t('center.expense'), required: true, placeholder: t('center.expense_ph') }) %>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 'amount', label: t('common.amount'), required: true, attrs: 'inputmode="decimal"' }) %>
+          <%- include('../../partials/field', { name: 'date', label: t('common.date'), type: 'date' }) %>
+        </div>
+        <%- include('../../partials/field', { name: 'category', label: t('common.category'), type: 'select', value: 'rent', options: categories.map(function (k) { return { value: k, label: label('categories', k) }; }) }) %>
+        <%- include('../../partials/field', { name: 'split_mode', label: t('center.split_label'), type: 'select', value: center.split_mode || 'equal', options: ['equal', 'percent', 'custom'].map(function (k) { return { value: k, label: t('center.split.' + k) }; }), attrs: 'data-ctr-split' }) %>
+        <div class="stack-sm" data-ctr-custom hidden>
+          <span class="small muted"><%= t('center.custom_help') %></span>
+          <% members.forEach(function (m) { %><div class="field"><label class="label" for="sh-<%= m.id %>"><%= L(m.name, m.name_en) %></label><input class="input" id="sh-<%= m.id %>" name="share_<%= m.id %>" inputmode="decimal"></div><% }) %>
+        </div>
+        <%- include('../../partials/field', { name: 'note', label: t('common.notes'), type: 'textarea' }) %>
+        <button class="btn btn-primary" type="submit"><%= t('center.expense_add_btn') %></button>
+      </div>
+    </form>
+    <form class="panel" method="post" action="/app/center/salaries">
+      <div class="panel-head"><h2><%- icon('users', 'icon-sm') %> <%= t('center.salaries_title') %></h2></div>
+      <div class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <p class="small muted"><%= t('center.salaries_help', { total: fmt.money(salaryTotal) }) %></p>
+        <div class="row-sm"><input class="input" type="month" name="month" value="<%= thisMonth %>" aria-label="<%= t('center.month') %>"><button class="btn btn-secondary" type="submit"><%= t('center.salaries_btn') %></button></div>
+      </div>
+    </form>
+    <form class="panel" method="post" action="/app/center/split">
+      <div class="panel-head"><div><h2><%- icon('percent', 'icon-sm') %> <%= t('center.split_title') %></h2><div class="panel-sub"><%= t('center.split_sub') %></div></div></div>
+      <div class="panel-body stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label class="check"><input type="radio" name="split_mode" value="equal"<%= center.split_mode !== 'percent' ? ' checked' : '' %>><span><%= t('center.split.equal') %></span></label>
+        <label class="check"><input type="radio" name="split_mode" value="percent"<%= center.split_mode === 'percent' ? ' checked' : '' %>><span><%= t('center.split.percent') %></span></label>
+        <% members.forEach(function (m) { %><div class="row-sm"><label class="grow small" for="pct-<%= m.id %>"><%= L(m.name, m.name_en) %></label><div class="input-affix" style="max-width:130px"><input class="input" id="pct-<%= m.id %>" name="pct_<%= m.id %>" value="<%= m.center_percent !== null && m.center_percent !== undefined ? Number(m.center_percent) : '' %>" inputmode="decimal"><span class="affix">%</span></div></div><% }) %>
         <button class="btn btn-secondary" type="submit"><%= t('common.save') %></button>
       </div>
     </form>
-    <div class="panel"><div class="panel-body stack">
-      <h2><%= t('center.shared_title') %></h2>
-      <ul class="ctr-points">
-        <li><%- icon('armchair', 'icon-sm') %><span><a class="link" href="/app/center/desk"><%= t('center.desk_title') %></a> — <%= t('center.how.desk') %></span></li>
-        <li><%- icon('monitor', 'icon-sm') %><span><a class="link" href="/app/queue-screens"><%= t('center.screen_title') %></a> — <%= t('center.how.screen') %></span></li>
-        <li><%- icon('banknote', 'icon-sm') %><span><a class="link" href="/app/cashier/screen?scope=center"><%= t('center.cash_screen') %></a> — <%= t('center.how.cash') %></span></li>
-      </ul>
-      <p class="tiny muted"><%= t('center.how.separate') %></p>
-    </div></div>
-    <% if (!founder) { %>
+  </aside>
+</div>
+<% } %>
+
+<% if (tab === 'settings') { %>
+<div class="grid grid-2">
+  <form class="panel" method="post" action="/app/center/rename">
+    <div class="panel-head"><h2><%= t('center.center_name') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/field', { name: 'center_name', label: t('center.center_name'), value: center.name }) %>
+      <%- include('../../partials/field', { name: 'center_name_en', label: t('center.center_name_en'), value: center.name_en || '', attrs: 'dir="ltr"' }) %>
+      <div><button class="btn btn-secondary" type="submit"><%= t('common.save') %></button></div>
+    </div>
+  </form>
+  <%- include('_share-cash') %>
+</div>
+<% } %>
+<% } else { %>
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="panel flush">
+      <div class="panel-head"><h2><%= t('center.practices') %> (<%= members.length %>)</h2></div>
+      <ul class="action-list"><% members.forEach(function (m) { %><li><div><span class="grow strong"><%= L(m.name, m.name_en) %></span><% if (m.id === business.id) { %><span class="badge"><%= t('center.you') %></span><% } %><% if (center.owner_business_id === m.id) { %><span class="badge badge-success"><%= t('center.admin_account') %></span><% } %></div></li><% }) %></ul>
+    </div>
+    <div class="panel"><div class="panel-body row between wrap"><span><%- icon('receipt-text', 'icon-sm') %> <%= t('center.costs_hint') %></span><a class="btn btn-secondary btn-sm" href="/app/center/costs"><%= t('nav.center_costs') %></a></div></div>
+  </div>
+  <aside class="stack">
+    <%- include('_share-cash') %>
     <form method="post" action="/app/center/leave" data-confirm="<%= t('center.leave_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('center.leave') %></button></form>
-    <% } %>
   </aside>
 </div>
 <% } %>
