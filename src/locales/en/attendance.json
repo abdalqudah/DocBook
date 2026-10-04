@@ -190,7 +190,14 @@
     "app_url_text": "It is now “{current}”. Links in e-mails, invitations and password resets are built from it, so they point to the wrong address. (The attendance QR code already uses the address the site was opened on.) Set APP_URL = {suggested} in the server environment and restart the app.",
     "reach_lan": "Phones open:",
     "reach_lan_help": "This page is open as “localhost”, which phones cannot reach, so the QR code and screen links use this computer’s network address instead. Staff phones must be on the same Wi-Fi as this computer:",
-    "reach_local": "Phones cannot open this QR code: the site is running as “localhost” and no network address was found. Open {brand} with its real address (or set APP_URL) and make sure staff phones can reach it."
+    "reach_local": "Phones cannot open this QR code: the site is running as “localhost” and no network address was found. Open {brand} with its real address (or set APP_URL) and make sure staff phones can reach it.",
+    "tb_title": "Attendance",
+    "tb_in": "In since {time}",
+    "tb_out": "Not clocked in",
+    "tb_clock_in": "Clock in",
+    "tb_clock_out": "Clock out",
+    "tb_qr_only": "Your clinic records attendance by scanning the QR code on the attendance screen.",
+    "tb_mine": "My attendance"
   },
   "errors_attendance": {
     "QR_INVALID": "This QR code is not valid. Scan the code on the screen at the door.",

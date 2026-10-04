@@ -1049,3 +1049,19 @@ a.pn-title:hover { color: var(--primary); }
   .topbar .dropdown > .menu { max-width: calc(100vw - 16px); }
 }
 @media (max-width: 900px) { html, body { overflow-x: clip; } }
+
+/* Attendance in the top bar: a clock with a dot (green = clocked in), a small menu to clock in / out. */
+.att-btn { position: relative; }
+.att-dot { position: absolute; top: 7px; inset-inline-end: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--text-subtle); border: 2px solid var(--background); }
+.att-btn.is-in .att-dot { background: var(--success); }
+.att-btn.is-in { color: var(--success); }
+.att-menu { min-width: 230px; display: grid; gap: 6px; }
+.att-state { padding: 4px 4px 2px; }
+.att-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--pill); font-size: 12px; font-weight: var(--fw-semibold); background: var(--surface-sunken); color: var(--text-muted); }
+.att-pill.is-in { background: var(--success-soft, var(--surface-sunken)); color: var(--success); }
+.att-menu form { margin: 0; }
+.menu .att-go { width: 100%; justify-content: center; font-size: 13px; }
+.menu .att-go.btn-primary { color: var(--primary-ink); background: var(--primary); }
+.menu .att-go.btn-primary:hover { background: var(--primary-hover, var(--primary)); color: var(--primary-ink); }
+.att-note { margin: 0; padding: 0 6px; }
+.menu .att-go.btn-secondary { border: 1px solid var(--border-strong, var(--border)); color: var(--text); background: var(--surface); }

@@ -81,7 +81,9 @@ router.post('/clock', wrap(async (req, res) => {
     if (!(e instanceof AppError) || e.status >= 500) throw e;
     flash(req, e.code === 'ATTENDANCE_ALREADY_IN' || e.code === 'ATTENDANCE_ALREADY_OUT' ? 'info' : 'error', errText(req, e));
   }
-  res.redirect(req.body._return && String(req.body._return).startsWith('/app/attendance') ? req.body._return : '/app/attendance');
+  // Back to where the button was pressed (the top bar works on every page) — a local /app address only.
+  const back = String(req.body._return || '');
+  res.redirect(/^\/app(\/[^/\\][^\\]*)?$/.test(back) && !back.includes('//') ? back : '/app/attendance');
 }));
 
 // ---------------------------------------------------------------- one person's month (manager, or yourself)

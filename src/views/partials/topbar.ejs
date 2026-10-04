@@ -20,6 +20,23 @@
     <button class="btn btn-ghost btn-icon tb-wide" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
     <% if (can('billing.manage')) { %><a class="btn btn-ghost btn-icon tb-wide" href="/app/cashier/screen" title="<%= t('cashpos.title') %>" aria-label="<%= t('cashpos.title') %>"><%- icon('banknote') %></a><% } %>
     <% if (typeof moduleOn === 'undefined' || moduleOn('staff_mail')) { %><a class="btn btn-ghost btn-icon tb-wide" href="/app/mail" aria-label="<%= t('mailbox.title') %>" title="<%= t('mailbox.title') %>"><%- icon('mail') %></a><% } %><% if (typeof moduleOn === 'undefined' || moduleOn('staff_chat')) { %><% var _uc = typeof unreadChat !== 'undefined' ? unreadChat : 0; %><a class="btn btn-ghost btn-icon chat-link" href="/app/chat" data-chat-badge aria-label="<%= t('chat.title') %><%= _uc ? ' (' + _uc + ')' : '' %>" title="<%= t('chat.title') %>"><%- icon('message-circle') %><% if (_uc) { %><span class="bell-count"><%= _uc > 9 ? '9+' : _uc %></span><% } %></a><% } %>
+    <% var _att = typeof myAttendance !== 'undefined' ? myAttendance : null; %>
+    <% if (_att && (typeof moduleOn === 'undefined' || moduleOn('attendance'))) { %>
+    <details class="dropdown att-dd">
+      <summary class="btn btn-ghost btn-icon att-btn<%= _att.open ? ' is-in' : '' %>" aria-label="<%= t('attendance.tb_title') %>: <%= _att.open ? t('attendance.tb_in', { time: _att.since }) : t('attendance.tb_out') %>" title="<%= _att.open ? t('attendance.tb_in', { time: _att.since }) : t('attendance.tb_out') %>"><%- icon('clock') %><span class="att-dot" aria-hidden="true"></span></summary>
+      <div class="menu att-menu">
+        <div class="att-state"><span class="att-pill<%= _att.open ? ' is-in' : '' %>"><%= _att.open ? t('attendance.tb_in', { time: _att.since }) : t('attendance.tb_out') %></span></div>
+        <% if (_att.qrOnly) { %><p class="small muted att-note"><%= t('attendance.tb_qr_only') %></p>
+        <% } else { %>
+        <form method="post" action="/app/attendance/clock">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="expect" value="<%= _att.open ? 'out' : 'in' %>"><input type="hidden" name="_return" value="<%= path && path.indexOf('/app') === 0 ? path : '/app' %>">
+          <button class="btn <%= _att.open ? 'btn-secondary' : 'btn-primary' %> att-go" type="submit"><%- icon(_att.open ? 'log-out' : 'log-in', 'icon-sm') %><%= _att.open ? t('attendance.tb_clock_out') : t('attendance.tb_clock_in') %></button>
+        </form>
+        <% } %>
+        <a href="/app/attendance?view=me"><%- icon('calendar-days', 'icon-sm') %><%= t('attendance.tb_mine') %></a>
+      </div>
+    </details>
+    <% } %>
     <details class="dropdown notif-dd" data-notif>
       <summary class="btn btn-ghost btn-icon bell" data-notif-bell aria-label="<%= t('notifications.title') %><%= unreadNotifications ? ' (' + unreadNotifications + ')' : '' %>" title="<%= t('notifications.title') %>"><%- icon('bell') %><% if (unreadNotifications) { %><span class="bell-count"><%= unreadNotifications > 9 ? '9+' : unreadNotifications %></span><% } %></summary>
       <div class="menu notif-menu" data-notif-panel>

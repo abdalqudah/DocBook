@@ -143,6 +143,15 @@ async function withBusiness(req, res, next, businessId) {
       const own = actAs ? { ...req.ctx, businessId: chromeId, permissions: actAs.navPermissions } : req.ctx; // the signed-in account's own inbox
       res.locals.unreadNotifications = await notifications.unreadCount(own);
       res.locals.unreadChat = await require('../modules/chat/chat.service').unreadTotal(own).catch(() => 0); // eslint-disable-line global-require
+      // Attendance in the top bar (every staff member except the owner / platform admin): clocked in since when, and
+      // whether this clinic records attendance by QR only.
+      if (membership && membership.role_key !== 'owner' && !req.user.is_platform_admin && !actAs && business.kind !== 'center_admin') {
+        try {
+          const att = require('../modules/attendance/attendance.service'); // eslint-disable-line global-require
+          const [open, st] = await Promise.all([att.openShift(businessId, req.user.id), att.settings(businessId)]);
+          res.locals.myAttendance = { open: Boolean(open), since: open ? att.localTime(business.timezone || 'Asia/Amman', open.clock_in) : null, qrOnly: st.qrOnly };
+        } catch { res.locals.myAttendance = null; }
+      }
       // The signed-in member's photo (My account, else their doctor's photo) for the avatar in the top bar.
       res.locals.myPhoto = membership ? await require('../modules/integrations/media.service').memberPhoto(businessId, { photoMediaId: membership.photo_media_id, doctorId: membership.doctor_id }).catch(() => null) : null; // eslint-disable-line global-require
     }
