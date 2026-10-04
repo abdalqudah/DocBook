@@ -22,7 +22,7 @@
   <div><div class="breadcrumbs"><%= t('navx.sec_website') %></div><h1><%= t('website.overview_title') %></h1><p><%= t('website.overview_lead') %></p></div>
   <div class="page-actions">
     <% if (b.slug) { %><a class="btn btn-secondary" href="/<%= b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('website.view_live') %></a><% } %>
-    <% if (ent.builder && can('website.edit')) { %><a class="btn btn-secondary" href="/app/website/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('website.preview') %></a><a class="btn btn-primary" href="/app/website/builder"><%- icon('layout-template', 'icon-sm') %><%= t('website.edit_site') %></a><% } %>
+    <% if (ent.builder && can('website.edit')) { %><a class="btn btn-secondary" href="/app/website/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('website.preview') %></a><a class="btn btn-ghost" href="/app/website/import"><%- icon('upload', 'icon-sm') %><%= t('website.import.title') %></a><a class="btn btn-primary" href="/app/website/builder"><%- icon('layout-template', 'icon-sm') %><%= t('website.edit_site') %></a><% } %>
   </div>
 </div>
 

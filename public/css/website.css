@@ -310,6 +310,8 @@
 .ws-nav-transparent { position: fixed; inset-inline: 0; top: 0; }
 .ws-nav-transparent.is-static { position: absolute; }
 .ws-nav-transparent ~ main .ws-page > .ws-block:first-child > section { padding-top: calc(clamp(40px, 7vw, 88px) + 68px); }
+/* Pages without a builder hero (a doctor's page, articles, booking): start below the floating menu. */
+.ws-nav-transparent ~ main:not(:has(> .ws-page)) { padding-top: 68px; }
 .ws-nav-transparent ~ main .ws-page > .ws-block:first-child > .ws-hero-slider .ws-slide .ws-hero-inner { padding-top: calc(clamp(64px, 10vw, 120px) + 68px); }
 body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled) { color: white; }
 body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled) .btn-ghost { color: white; }

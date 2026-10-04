@@ -2,7 +2,7 @@
   var extra = s.settings.items || [];
   // media: mixed = the card's picture, else its icon · images = pictures only · icons = icons only · none = text only.
   var mode = s.settings.media || 'mixed';
-  var items = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, button: x && x.button, icon: mode === 'images' || mode === 'none' ? null : e.icon, image: mode === 'icons' || mode === 'none' ? null : img(e.image), action: act(e.action) }; })
+  var items = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, button: x && x.button, icon: mode === 'images' || mode === 'none' ? null : e.icon, image: mode === 'icons' || mode === 'none' ? null : img(e.image), action: act(e.action, e.page) }; })
     .filter(function (x) { return x.title || x.text || x.image; });
 %>
 <% if (items.length) { %>

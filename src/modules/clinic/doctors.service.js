@@ -42,6 +42,8 @@ async function saveDoctor(ctx, id, input) {
     if (Object.keys(errors).length) throw E.validation(errors);
     row.social_links = Object.keys(links).length ? JSON.stringify(links) : null;
   }
+  // Full profile for the website (only the doctor form carries it).
+  if (input && input.profile_form) { const prof = require('./doctor-profile'); row.profile = prof.toStore(prof.fromForm(input)); } // eslint-disable-line global-require
   // Hours: the clinic's usual week (kept in step when the clinic changes it) or the doctor's own.
   const clinicWeek = await clinicWeekOf(ctx.businessId);
   const mode = input.hours_mode === 'clinic' || input.hours_mode === 'custom' ? input.hours_mode : (id ? null : (clinicWeek ? 'clinic' : 'custom'));

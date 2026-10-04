@@ -264,8 +264,11 @@ router.get('/:slug/doctors/:id(\\d{1,10})', wrap(async (req, res, next) => {
   const d = doctors.find((x) => x.id === Number(req.params.id));
   if (!d) return next();
   require('../website/stats').hit(req, clinic, 'doctor'); // eslint-disable-line global-require
-  const full = await knex('doctors').where({ business_id: clinic.id, id: d.id }).first('bio', 'bio_en');
+  const full = await knex('doctors').where({ business_id: clinic.id, id: d.id }).first('bio', 'bio_en', 'education', 'education_en', 'profile');
   d.bioFull = (req.locale === 'en' ? full.bio_en || full.bio : full.bio || full.bio_en) || '';
+  // Full profile: years, languages, focus areas, education, career, memberships (visitor's language first).
+  const en = req.locale === 'en';
+  d.profile = require('../clinic/doctor-profile').view(full.profile, req.locale, { education: en ? full.education_en : full.education, educationOther: en ? full.education : full.education_en }); // eslint-disable-line global-require
   clinic.reviews = await require('../reviews/reviews.service').publicSummary(clinic.id); // eslint-disable-line global-require
   res.locals.currency = clinic.currency;
   const docArticles = await Promise.all((await articles.siteList(clinic)).filter((a) => a.doctor_id === d.id).slice(0, 6).map((a) => articles.present(clinic, a, req.locale)));

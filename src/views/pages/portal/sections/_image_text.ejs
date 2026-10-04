@@ -1,4 +1,4 @@
-<% var im = img(s.settings.image); var a = act(s.settings.action); var back = s.variant === 'image_back' && im; if (c.title || c.text || im) { %>
+<% var im = img(s.settings.image); var a = act(s.settings.action, s.settings.page); var back = s.variant === 'image_back' && im; if (c.title || c.text || im) { %>
 <section class="ws-section ws-it ws-it-<%= s.variant %><%= im ? ' has-image' : '' %>" id="s-<%= s.id %>">
   <% if (back) { %><img class="ws-hero-back" src="<%= im.url %>" alt="<%= altOf(im) %>" loading="lazy"><% } %>
   <div class="container ws-it-inner">

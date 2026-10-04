@@ -89,7 +89,16 @@
     "social_snapchat": "Snapchat",
     "social_ph_snapchat": "snapchat.com/add/…",
     "social_website": "Personal website",
-    "social_ph_website": "https://…"
+    "social_ph_website": "https://…",
+    "profile_title": "Full profile on the website",
+    "profile_sub": "Shown on the doctor's page of the website. Education goes in the education fields above.",
+    "profile_years": "Years of experience",
+    "profile_languages": "Languages",
+    "profile_languages_ph": "Arabic, English",
+    "profile_focus": "Areas of focus",
+    "profile_career": "Career",
+    "profile_memberships": "Professional memberships",
+    "profile_lines": "One item per line."
   },
   "commission": {
     "basis": {

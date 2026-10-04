@@ -1,6 +1,6 @@
 <%# Columns of content side by side (2 / 3 / 4): picture or icon, title, text, button. %>
 <% var extra = s.settings.items || [];
-   var cols = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, button: x && x.button, icon: e.icon, image: img(e.image), action: act(e.action) }; })
+   var cols = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, button: x && x.button, icon: e.icon, image: img(e.image), action: act(e.action, e.page) }; })
      .filter(function (x) { return x.title || x.text || x.image; }); %>
 <% if (cols.length) { %>
 <section class="ws-section ws-columns-sec" id="s-<%= s.id %>">

@@ -4,7 +4,8 @@
     shapes at its edges. A section with nothing to show (e.g. a gallery without pictures) leaves no empty block. %>
 <%
   // A button inside a section only ever runs one of the clinic's own actions.
-  var actionHref = function (a) {
+  var actionHref = function (a, pageKey) {
+    if (a === 'page') { var pg = pageKey && wsSite.pages.find(function (x) { return x.key === pageKey; }); return pg ? { href: pg.href, icon: dir === 'rtl' ? 'arrow-left' : 'arrow-right', label: t('website.read_more'), page: true } : null; }
     if (a === 'book') return clinic.booking_enabled ? { href: '/' + clinic.slug + '/book', icon: 'calendar-plus', label: t('portal.book') } : null;
     if (a === 'call') return clinic.telHref ? { href: clinic.telHref, icon: 'phone', label: t('portal.call') } : null;
     if (a === 'whatsapp') return clinic.waHref ? { href: clinic.waHref, icon: 'message-square', label: t('portal.whatsapp'), ext: true } : null;

@@ -470,8 +470,8 @@ test('free blocks and section looks: cards, text with image, numbers, steps, tex
   const out = sections.sanitize(doc, { media: new Set([A.mediaId]), doctors: new Set() });
   const c = out.pages[0].sections.find((s) => s.type === 'cards');
   assert.equal(c.content.en.items[0].title, '<b>One</b>', 'stored as plain text (escaped on output)');
-  assert.deepEqual(c.settings.items[0], { icon: 'heart', image: A.mediaId, action: 'book' });
-  assert.deepEqual(c.settings.items[1], { icon: sections.ICONS[0], image: null, action: 'none' }, 'unknown icon, foreign picture and free address dropped');
+  assert.deepEqual(c.settings.items[0], { icon: 'heart', image: A.mediaId, action: 'book', page: null });
+  assert.deepEqual(c.settings.items[1], { icon: sections.ICONS[0], image: null, action: 'none', page: null }, 'unknown icon, foreign picture and free address dropped');
   assert.deepEqual(c.settings.style, { align: 'center', bg: 'image', bg_image: null, overlay: 'dark', spacing: 'roomy', width: 'wide', shape_top: 'none', shape_bottom: 'wave', anim: 'auto' });
   assert.ok(sections.mediaIn(out).includes(A.mediaId), 'pictures inside cards are published with the site');
   for (const type of ['image_text', 'stats', 'steps', 'text', 'divider']) assert.ok(out.pages[0].sections.find((s) => s.type === type).settings.style, `${type} has a look`);

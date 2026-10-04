@@ -1106,7 +1106,13 @@
     "back_to_clinic": "العودة إلى صفحة العيادة",
     "powered": "صفحة العيادة من {brand}",
     "center_book_lead": "اختر الطبيب، ثم أكمل الحجز في عيادته.",
-    "center_book_none": "لا يوجد أطباء متاحون للحجز حاليًا."
+    "center_book_none": "لا يوجد أطباء متاحون للحجز حاليًا.",
+    "years_experience": "سنة خبرة",
+    "about_doctor": "نبذة عن الطبيب",
+    "doctor_focus": "مجالات الاهتمام",
+    "doctor_education": "التعليم والتدريب",
+    "doctor_career": "الخبرات المهنية",
+    "doctor_memberships": "العضويات المهنية"
   },
   "booking": {
     "title": "احجز موعداً",

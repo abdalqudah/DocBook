@@ -1,0 +1,44 @@
+<%# Website → Import content: a prepared .zip (pages, pictures, doctors' profiles) fills the draft and the doctors. %>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/app/website"><%= t('navx.sec_website') %></a></div><h1><%= t('website.import.title') %></h1><p><%= t('website.import.lead') %></p></div></div>
+
+<% if (result) { %>
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('website.import.result_title') %></h2><div class="panel-sub"><%= t('website.import.result_sub') %></div></div><span class="badge badge-success badge-dot"><%= t('website.import.done_badge') %></span></div>
+  <div class="panel-body stack">
+    <ul class="stack-sm" style="margin:0;padding-inline-start:18px">
+      <li><%= t('website.import.r_pages', { n: result.pages }) %></li>
+      <li><%= t('website.import.r_media', { n: result.media }) %></li>
+      <% if (result.updated && result.updated.length) { %><li><%= t('website.import.r_updated', { n: result.updated.length }) %>: <span class="muted"><%= result.updated.join('، ') %></span></li><% } %>
+      <% if (result.created && result.created.length) { %><li><%= t('website.import.r_created', { n: result.created.length }) %>: <span class="muted"><%= result.created.join('، ') %></span></li><% } %>
+    </ul>
+    <div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('website.import.next') %></div></div>
+    <div class="row-sm wrap">
+      <a class="btn btn-primary" href="/app/website/builder"><%- icon('square-pen', 'icon-sm') %><%= t('website.import.open_builder') %></a>
+      <a class="btn btn-secondary" href="/app/website/preview" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('website.import.preview') %></a>
+      <a class="btn btn-ghost" href="/app/doctors"><%- icon('stethoscope', 'icon-sm') %><%= t('website.import.doctors') %></a>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="panel<%= result ? ' mt-6' : '' %>">
+  <div class="panel-head"><div><h2><%= t('website.import.upload_title') %></h2><div class="panel-sub"><%= t('website.import.upload_sub') %></div></div></div>
+  <div class="panel-body">
+    <form class="stack" method="post" action="/app/website/import" enctype="multipart/form-data" data-confirm="<%= t('website.import.confirm') %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field"><label class="label" for="f-package"><%= t('website.import.file') %></label>
+        <input class="input" type="file" id="f-package" name="package" accept=".zip,application/zip" required>
+        <span class="help"><%= t('website.import.file_help') %></span></div>
+      <fieldset class="stack-sm"><legend class="label"><%= t('website.import.what') %></legend>
+        <input type="hidden" name="site" value="0"><label class="check"><input type="checkbox" name="site" value="1" checked><span><%= t('website.import.opt_site') %></span></label>
+        <% if (canDoctors) { %>
+        <input type="hidden" name="doctors" value="0"><label class="check"><input type="checkbox" name="doctors" value="1" checked><span><%= t('website.import.opt_doctors') %></span></label>
+        <input type="hidden" name="create_doctors" value="0"><label class="check"><input type="checkbox" name="create_doctors" value="1" checked><span><%= t('website.import.opt_create') %></span></label>
+        <input type="hidden" name="replace_photos" value="0"><label class="check"><input type="checkbox" name="replace_photos" value="1" checked><span><%= t('website.import.opt_photos') %></span></label>
+        <% } else { %><span class="help"><%= t('website.import.no_doctors_perm') %></span><% } %>
+      </fieldset>
+      <div class="alert alert-warning small"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('website.import.warn') %></div></div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit"><%- icon('upload', 'icon-sm') %><%= t('website.import.submit') %></button></div>
+    </form>
+  </div>
+</section>

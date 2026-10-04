@@ -244,7 +244,8 @@
       "slide_text": "Words over the pictures",
       "slide_buttons": "Buttons over the pictures",
       "text_mode": "Words over this picture",
-      "show_social": "Social-media profiles"
+      "show_social": "Social-media profiles",
+      "page": "Page"
     },
     "opt": {
       "1": "One column",
@@ -343,7 +344,8 @@
       "txt_all": "Headline and text",
       "txt_title": "Headline only",
       "txt_none": "No words (picture only)",
-      "txt_follow": "Same as the slider"
+      "txt_follow": "Same as the slider",
+      "page": "Open a page of the site"
     },
     "doctors_pick_help": "Used with \"Selected doctors\".",
     "item_n": "Item {n}",
@@ -862,7 +864,8 @@
       "carousel": "Sliding row (carousel)",
       "carousel_help": "“Follow the language”: in Arabic the items travel right, in English left. The row pauses on hover or touch.",
       "icon_library": "Icon library",
-      "url_help": "YouTube (regular, shorts, youtu.be) and Vimeo links only. Shown in the privacy-friendly player."
+      "url_help": "YouTube (regular, shorts, youtu.be) and Vimeo links only. Shown in the privacy-friendly player.",
+      "page_link_help": "Used when the action is \"Open a page of the site\"."
     },
     "item_field": {
       "title": "Title",
@@ -1030,7 +1033,37 @@
     "ba_before": "Before",
     "ba_after": "After",
     "ba_drag": "Drag to compare {before} and {after}",
-    "stars_n": "{n} out of 5 stars"
+    "stars_n": "{n} out of 5 stars",
+    "read_more": "Read more",
+    "import": {
+      "title": "Import site content",
+      "lead": "Upload the prepared content file (zip): the website pages are created, the pictures added and the doctors' profiles filled in. Everything stays editable.",
+      "upload_title": "Content file",
+      "upload_sub": "A .zip holding content.json and the pictures.",
+      "file": "File",
+      "file_help": "Up to 80 MB.",
+      "what": "What to import",
+      "opt_site": "Website pages (written to the draft — the live site does not change until you publish)",
+      "opt_doctors": "Update the existing doctors (description, education, profile, social profiles)",
+      "opt_create": "Add the doctors that are missing",
+      "opt_photos": "Replace the doctors' photos with the file's",
+      "no_doctors_perm": "Updating doctors needs the permission to manage doctors.",
+      "warn": "The draft's pages are replaced by the file's. The current draft is kept as a version you can restore from Website settings → Versions.",
+      "confirm": "Import the content and replace the draft's pages?",
+      "submit": "Import",
+      "done": "Content imported. Review the draft, then publish.",
+      "result_title": "Imported",
+      "result_sub": "The content is in the draft — nothing is published yet.",
+      "done_badge": "Done",
+      "r_pages": "Website pages: {n}",
+      "r_media": "Pictures added to the media library: {n}",
+      "r_updated": "Doctors updated ({n})",
+      "r_created": "Doctors added ({n})",
+      "next": "Open the builder to review the pages and change any text or picture, then press \"Publish\".",
+      "open_builder": "Open the builder",
+      "preview": "Preview",
+      "doctors": "Doctors"
+    }
   },
   "errors_website": {
     "SECTION_ONCE": "This section is already on the page.",
@@ -1051,6 +1084,9 @@
     "FONT_EMPTY": "Choose a font file.",
     "FONT_TOO_BIG": "The font file is larger than 2 MB.",
     "FONT_TYPE": "This file is not a font (woff2, woff, ttf or otf).",
-    "FONT_LIMIT": "The clinic has the most fonts it can keep. Remove one first."
+    "FONT_LIMIT": "The clinic has the most fonts it can keep. Remove one first.",
+    "IMPORT_NO_CONTENT": "The file has no content.json.",
+    "IMPORT_BAD_FILE": "This is not a valid website content file.",
+    "IMPORT_TOO_BIG": "The file is larger than 80 MB."
   }
 }

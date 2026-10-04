@@ -1,6 +1,6 @@
 <%
   var extra = s.settings.items || [];
-  var list = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, button: x && x.button, icon: e.icon && e.icon !== 'none' ? e.icon : null, image: img(e.image), action: act(e.action) }; })
+  var list = (c.items || []).map(function (x, i) { var e = extra[i] || {}; return { title: x && x.title, text: x && x.text, button: x && x.button, icon: e.icon && e.icon !== 'none' ? e.icon : null, image: img(e.image), action: act(e.action, e.page) }; })
     .filter(function (x) { return x.title; });
   var side = s.settings.image_side || 'end';
 %>

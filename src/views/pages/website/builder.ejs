@@ -13,6 +13,10 @@
   var itemLabel = function (k) { var key = 'website.item_field.' + k; var s = t(key); return s === key ? fieldLabel(k) : s; };
   var val = function (lang, k) { return sel && sel.content[lang] && sel.content[lang][k] !== undefined ? sel.content[lang][k] : ''; };
   var imgOf = function (id) { return id && media[id] ? media[id] : null; };
+  // A link to one of the site's own pages (action "page"): a list of the pages.
+  var pageSelect = function (nm, cur, fid) { var out = '<div class="field"><label class="label"' + (fid ? ' for="' + fid + '"' : '') + '>' + escapeHtml(fieldLabel('page')) + '</label><select class="select"' + (fid ? ' id="' + fid + '"' : '') + ' name="' + nm + '"><option value="">—</option>';
+    pages.forEach(function (p) { var title = p.key === 'home' ? t('website.page_home') : ((p.title && (p.title[locale] || p.title.ar || p.title.en)) || p.slug); out += '<option value="' + p.key + '"' + (cur === p.key ? ' selected' : '') + '>' + escapeHtml(title) + '</option>'; });
+    return out + '</select><span class="help">' + escapeHtml(t('website.b.page_link_help')) + '</span></div>'; };
   var clinicName = locale === 'en' && business.name_en ? business.name_en : business.name;
   var startIcon = dir === 'rtl' ? 'align-right' : 'align-left'; var endIcon = dir === 'rtl' ? 'align-left' : 'align-right';
   var alignIcon = { auto: 'sparkles', start: startIcon, center: 'align-center', end: endIcon };
@@ -174,6 +178,7 @@
             <% } else if (f.kind === 'select') { %><div class="field"><label class="label" for="<%= fid %>"><%= fieldLabel(f.key) %></label><select class="select" id="<%= fid %>" name="settings[<%= f.key %>]"><% f.options.forEach(function (o) { %><option value="<%= o %>"<%= v === o ? ' selected' : '' %>><%= optLabel(o) %></option><% }) %></select></div>
             <% } else if (f.kind === 'number') { %><div class="field"><label class="label" for="<%= fid %>"><%= fieldLabel(f.key) %></label><input class="input" type="number" id="<%= fid %>" name="settings[<%= f.key %>]" value="<%= v %>" min="<%= f.min %>" max="<%= f.max %>" dir="ltr"></div>
             <% } else if (f.kind === 'url') { %><div class="field"><label class="label" for="<%= fid %>"><%= fieldLabel(f.key) %></label><input class="input" type="url" id="<%= fid %>" name="settings[<%= f.key %>]" value="<%= v || '' %>" maxlength="<%= f.max || 300 %>" dir="ltr" placeholder="https://www.youtube.com/watch?v=…"><span class="help"><%= t('website.b.url_help') %></span></div>
+            <% } else if (f.kind === 'page') { %><%- pageSelect('settings[' + f.key + ']', v, fid) %>
             <% } else if (f.kind === 'date') { %><div class="field"><label class="label" for="<%= fid %>"><%= fieldLabel(f.key) %></label><input class="input" type="date" id="<%= fid %>" name="settings[<%= f.key %>]" value="<%= v || '' %>"></div>
             <% } else if (f.kind === 'media') { var im = imgOf(v); %>
               <div class="stack-sm"><span class="label"><%= fieldLabel(f.key) %></span>
@@ -213,6 +218,7 @@
                     <% ICON_LIB_KEYS.forEach(function (k) { %><div class="wsb-icons" data-ws-iconlib="<%= k %>"<%= k === openLib ? '' : ' hidden' %>><% ICON_LIBS[k].forEach(function (ic) { %><label class="wsb-icon-pick" title="<%= ic %>"><input type="radio" name="<%= nm %>" value="<%= ic %>"<%= curIc === ic && k === openLib ? ' checked' : '' %>><span><%- icon(ic, 'icon-sm') %></span></label><% }) %></div><% }) %>
                   </div>
                   <% } else if (f.kind === 'media') { var im = imgOf(cur); %><div class="stack-sm"><span class="label"><%= itemLabel(f.key) %></span><div class="pm-cover ws-pick-preview is-small" data-media-preview="<%= nm %>"><% if (im) { %><img src="<%= im.url %>" alt=""><% } else { %><span class="pm-empty"><%- icon('image') %></span><% } %></div><input type="hidden" name="<%= nm %>" value="<%= cur || '' %>"><div class="row-sm wrap"><button class="btn btn-secondary btn-sm" type="button" data-media-pick="<%= nm %>"><%- icon('image', 'icon-sm') %><%= t('media_lib.choose') %></button><button class="btn btn-ghost btn-sm" type="button" data-media-clear="<%= nm %>"<%= im ? '' : ' hidden' %>><%= t('media_lib.remove') %></button></div></div>
+                  <% } else if (f.kind === 'page') { %><%- pageSelect(nm, cur, null) %>
                   <% } else if (f.kind === 'select') { %><div class="field"><label class="label"><%= fieldLabel(f.key) %></label><select class="select" name="<%= nm %>"><% f.options.forEach(function (o) { %><option value="<%= o %>"<%= (cur || f.options[0]) === o ? ' selected' : '' %>><%= optLabel(o) %></option><% }) %></select></div>
                   <% } else { %><div class="field"><label class="label"><%= itemLabel(f.key) %></label><input class="input" name="<%= nm %>" value="<%= cur || '' %>" maxlength="<%= f.max || 80 %>" dir="auto"></div><% } %>
                 <% } else { ['ar', 'en'].forEach(function (lang) { var cv = (items[lang][i] || {})[f.key] || ''; var nm = 'content[' + lang + '][' + def.list.key + '][' + i + '][' + f.key + ']'; %>

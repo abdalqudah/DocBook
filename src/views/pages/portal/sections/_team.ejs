@@ -4,7 +4,7 @@
   var fromDoctors = (s.settings.source || 'doctors') === 'doctors';
   var people = fromDoctors
     ? doctors.map(function (d) { return { name: d.name, role: d.specialty, text: d.bio, photo: d.photo ? { url: d.photo, alt_ar: d.name, alt_en: d.name } : null, href: clinic.booking_enabled && s.settings.show_book !== false ? '/' + clinic.slug + '/book?doctor=' + d.id : null, page: '/' + clinic.slug + '/doctors/' + d.id, button: null, social: d.social, d: d }; })
-    : (c.items || []).map(function (x, i) { var e = extra[i] || {}; var a = act(e.action); return { name: x && x.name, role: x && x.role, text: x && x.text, photo: img(e.image), href: a ? a.href : null, ext: a && a.ext, button: (x && x.button) || (a ? a.label : null), icon: a ? a.icon : null }; })
+    : (c.items || []).map(function (x, i) { var e = extra[i] || {}; var a = act(e.action, e.page); return { name: x && x.name, role: x && x.role, text: x && x.text, photo: img(e.image), href: a ? a.href : null, ext: a && a.ext, button: (x && x.button) || (a ? a.label : null), icon: a ? a.icon : null }; })
         .filter(function (x) { return x.name || x.photo; });
   var showBio = s.settings.show_bio !== false;
   var bookLabel = t('portal.book_with');

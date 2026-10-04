@@ -259,6 +259,26 @@ router.post('/unpublish', can('website.publish'), act((req) => site.unpublish(re
 router.post('/republish', can('website.publish'), act((req) => site.republish(req.ctx), 'website.republished_ok', '/app/website/settings'));
 router.post('/versions/:id(\\d+)/restore', can('website.edit'), builderGate, act((req) => site.restore(req.ctx, req.business, req.params.id), 'website.restored_ok', '/app/website/builder'));
 
+// ---------------------------------------------------------------- import content (a prepared .zip: pages, pictures, doctors)
+const importSvc = require('./import.service');
+const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: importSvc.MAX_ZIP + 1, files: 1, fields: 10, parts: 16 } });
+router.get('/import', can('website.edit'), builderGate, wrap(async (req, res) => {
+  page(req, res, 'import', { title: req.t('website.import.title'), result: req.session.siteImport || null, canDoctors: req.ctx.permissions.has('doctors.manage') });
+  delete req.session.siteImport;
+}));
+router.post('/import', can('website.edit'), builderGate, (req, res, next) => importUpload.single('package')(req, res, (e) => { if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'IMPORT_TOO_BIG' : 'IMPORT_BAD_FILE'; next(); }),
+  verifyCsrfAfterUpload, act(async (req) => {
+    if (req.uploadError) throw new AppError(req.uploadError, 'Upload refused.', 422);
+    const file = importSvc.toTemp(req.file && req.file.buffer);
+    try {
+      const on = (k) => { const v = [].concat(req.body[k]); return v[v.length - 1] === '1'; };
+      const doctorsOk = req.ctx.permissions.has('doctors.manage');
+      const r = await importSvc.run(req.ctx, req.business, file, { site: on('site'), doctors: doctorsOk && on('doctors'), createDoctors: on('create_doctors'), replacePhotos: on('replace_photos') });
+      req.session.siteImport = r;
+      return r;
+    } finally { require('fs').unlink(file, () => {}); } // eslint-disable-line global-require
+  }, 'website.import.done', '/app/website/import'));
+
 // ---------------------------------------------------------------- booking (online booking on/off, online consultations)
 router.get('/booking', can('website.edit'), wrap(async (req, res) => {
   const b = req.business;

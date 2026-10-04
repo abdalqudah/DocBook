@@ -40,6 +40,19 @@
         <% } else { %><span class="help"><%= t('media_lib.doctor_photo_manager_only') %></span><% } %>
       </div>
     </div></div>
+  <% var pf = function (k, lang) { var key = 'profile_' + k + (lang ? '_' + lang : ''); return old[key] !== undefined ? old[key] : (lang ? (profile[k] && profile[k][lang]) || '' : (profile[k] || '')); }; %>
+  <div class="panel"><div class="panel-head"><div><h2><%= t('doctors.profile_title') %></h2><div class="panel-sub"><%= t('doctors.profile_sub') %></div></div></div>
+    <div class="panel-body form-grid">
+      <input type="hidden" name="profile_form" value="1">
+      <%- include('../../../partials/field', { name: 'profile_years', label: t('doctors.profile_years'), type: 'number', value: pf('years'), attrs: 'min="0" max="79" inputmode="numeric"' }) %>
+      <div></div>
+      <%- include('../../../partials/field', { name: 'profile_languages_ar', label: t('doctors.profile_languages') + ' (ع)', value: pf('languages', 'ar'), placeholder: t('doctors.profile_languages_ph'), attrs: 'dir="rtl" maxlength="120"' }) %>
+      <%- include('../../../partials/field', { name: 'profile_languages_en', label: t('doctors.profile_languages') + ' (EN)', value: pf('languages', 'en'), placeholder: 'Arabic, English', attrs: 'dir="ltr" maxlength="120"' }) %>
+      <% ['focus', 'career', 'memberships'].forEach(function (k) { %>
+      <%- include('../../../partials/field', { name: 'profile_' + k + '_ar', label: t('doctors.profile_' + k) + ' (ع)', type: 'textarea', value: pf(k, 'ar'), help: t('doctors.profile_lines'), attrs: 'dir="rtl" rows="4" maxlength="2000"' }) %>
+      <%- include('../../../partials/field', { name: 'profile_' + k + '_en', label: t('doctors.profile_' + k) + ' (EN)', type: 'textarea', value: pf(k, 'en'), help: t('doctors.profile_lines'), attrs: 'dir="ltr" rows="4" maxlength="2000"' }) %>
+      <% }) %>
+    </div></div>
   <% var _soc = socialOf(d.social_links); %>
   <div class="panel"><div class="panel-head"><div><h2><%= t('doctors.social_title') %></h2><div class="panel-sub"><%= t('doctors.social_sub') %></div></div></div>
     <div class="panel-body form-grid">

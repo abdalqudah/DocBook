@@ -1106,7 +1106,13 @@
     "back_to_clinic": "Back to the clinic page",
     "powered": "Clinic page by {brand}",
     "center_book_lead": "Choose the doctor, then finish booking with their clinic.",
-    "center_book_none": "No doctors are taking bookings right now."
+    "center_book_none": "No doctors are taking bookings right now.",
+    "years_experience": "years of experience",
+    "about_doctor": "About",
+    "doctor_focus": "Areas of focus",
+    "doctor_education": "Education & training",
+    "doctor_career": "Career",
+    "doctor_memberships": "Professional memberships"
   },
   "booking": {
     "title": "Book an appointment",

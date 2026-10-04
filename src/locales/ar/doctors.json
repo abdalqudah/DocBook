@@ -89,7 +89,16 @@
     "social_snapchat": "سناب شات",
     "social_ph_snapchat": "snapchat.com/add/…",
     "social_website": "موقع شخصي",
-    "social_ph_website": "https://…"
+    "social_ph_website": "https://…",
+    "profile_title": "البروفايل الكامل في الموقع",
+    "profile_sub": "يظهر في صفحة الطبيب على الموقع. التعليم يُكتب في حقلي التعليم أعلاه.",
+    "profile_years": "سنوات الخبرة",
+    "profile_languages": "اللغات",
+    "profile_languages_ph": "العربية، الإنجليزية",
+    "profile_focus": "مجالات الاهتمام",
+    "profile_career": "الخبرات المهنية",
+    "profile_memberships": "العضويات المهنية",
+    "profile_lines": "كل بند في سطر."
   },
   "commission": {
     "basis": {
