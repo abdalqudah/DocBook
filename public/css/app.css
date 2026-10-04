@@ -547,7 +547,7 @@ body.is-navigating .loading-bar { display: block; }
 .auth-side.is-color .auth-points .icon { color: currentColor; }
 .auth-side.is-color::after { background: radial-gradient(circle, color-mix(in srgb, var(--primary-ink) 14%, transparent), transparent 70%); }
 .auth-side.is-light { background: var(--primary-soft); color: var(--text); }
-.auth-clinic-logo { height: 44px; width: auto; max-width: 180px; object-fit: contain; border-radius: var(--radius); background: var(--surface); padding: 4px; }
+.auth-clinic-logo { height: 48px; width: auto; max-width: 200px; object-fit: contain; }
 .auth-side h2 { font-size: clamp(28px, 3vw, 40px); font-weight: var(--fw-heavy); line-height: 1.1; letter-spacing: -.03em; }
 [dir="rtl"] .auth-side h2 { letter-spacing: 0; line-height: 1.3; }
 .auth-side p { font-size: 15px; max-width: 440px; margin-top: 14px; opacity: .82; }
@@ -1020,3 +1020,7 @@ a.pn-title:hover { color: var(--primary); }
 .act-bar-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; }
 .act-bar-tabs a { flex: none; padding: 6px 14px; border-radius: var(--pill, 999px); border: 1px solid var(--border); color: var(--text); text-decoration: none; font-weight: var(--fw-semibold); font-size: .9rem; }
 .act-bar-tabs a.is-on { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+
+/* An uploaded logo shows exactly as it is: no tile, frame, rounding or shadow behind it (the built-in mark keeps its tile). */
+.logo-preview:has(img), .set-hero-logo:has(img), .set-logo-lg:has(img) { background: transparent; border-color: transparent; }
+.logo-preview img, .set-hero-logo img, .set-logo-lg img { object-fit: contain; background: transparent; border-radius: 0; }

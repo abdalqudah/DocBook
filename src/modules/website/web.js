@@ -52,7 +52,7 @@ router.get('/', can('website.view'), wrap(async (req, res) => {
   let mail = null;
   try { mail = await require('../clinicmail/clinicmail.service').status(b.id); } catch { mail = null; } // eslint-disable-line global-require
   page(req, res, 'overview', {
-    title: req.t('navx.sec_website'), st, domain, b, publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null, mail,
+    title: req.t('navx.sec_website'), st, domain, b, publicUrl: b.slug ? require('../../config/edition').siteUrl(baseUrl(req), b) : null, mail,
     ent: { builder: builderOk, domain: domainOk, email: emailOk }, counts: { doctors, services },
   });
 }));
@@ -250,7 +250,7 @@ router.get('/settings', can('website.edit'), wrap(async (req, res) => {
   const b = req.business;
   const [st, versions] = await Promise.all([site.state(b.id), site.versions(b.id)]);
   page(req, res, 'settings', {
-    title: req.t('website.settings_title'), b, st, versions, base: baseUrl(req), publicUrl: b.slug ? `${baseUrl(req)}/${b.slug}` : null,
+    title: req.t('website.settings_title'), b, st, versions, base: baseUrl(req), publicUrl: b.slug ? require('../../config/edition').siteUrl(baseUrl(req), b) : null,
     suggestion: b.slug ? null : await businesses.suggestSlug(b.name_en || b.name), errors: {}, old: null,
   });
 }));

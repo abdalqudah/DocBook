@@ -13,7 +13,7 @@
 /* ---------------------------------------------------------------- header */
 .pos-head { flex: none; display: flex; align-items: center; gap: 10px 24px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .pos-id { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
-.pos-logo { height: 40px; width: auto; max-width: 120px; object-fit: contain; border-radius: var(--radius-sm); flex: none; }
+.pos-logo { height: 40px; width: auto; max-width: 160px; object-fit: contain; flex: none; }
 .pos-mark { width: 40px; height: 40px; border-radius: var(--radius); background: var(--surface-sunken); color: var(--text-muted); font-weight: var(--fw-bold); display: grid; place-items: center; flex: none; font-size: 14px; }
 .pos-id-text { min-width: 0; }
 .pos-clinic { font-size: 16px; font-weight: var(--fw-bold); line-height: 1.3; }

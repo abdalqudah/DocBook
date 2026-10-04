@@ -789,3 +789,8 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .lp-cat-card p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
 
 @media (prefers-reduced-motion: reduce) { .lp-tour-panel:not([hidden]) .lp-frame { animation: none; } }
+
+/* An uploaded logo shows exactly as it is: no coloured tile, frame, rounding or shadow; it keeps its own proportions. */
+.portal-mark:has(img), .portal-logo:has(img) { width: auto; max-width: 260px; background: transparent; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+.portal-mark img, .portal-logo img { width: auto; height: 100%; max-width: 100%; object-fit: contain; background: transparent; border-radius: 0; }
+.share-visit-logo { border-radius: 0; }

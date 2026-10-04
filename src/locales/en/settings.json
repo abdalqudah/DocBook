@@ -72,6 +72,7 @@
     "f_currency_warn": "You already have invoices. Changing the currency does not convert existing amounts.",
     "tax_help": "Printed on invoices when set.",
     "portal_lead": "Patients book online at your clinic's own address, and your staff sign in from the same page.",
+    "portal_main_domain": "This is the domain's main site: the clinic page opens right at the address above, no sub-address needed.",
     "portal_address": "Clinic page address",
     "portal_address_sub": "Share this link on social media, Google Maps and WhatsApp.",
     "portal_slug": "Address",

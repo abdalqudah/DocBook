@@ -325,7 +325,7 @@ const pairOf = (v, locale) => (v && (v[locale] || v[locale === 'en' ? 'ar' : 'en
 
 /** schema.org MedicalClinic for /<slug>, with only the details the clinic really entered. */
 function clinicLd({ clinic, doctors, base, locale, ws = null }) {
-  const url = `${base}/${clinic.slug}`;
+  const url = require('../../config/edition').siteUrl(base, clinic); // the domain itself for a single clinic's own site
   const other = locale === 'en' ? clinic.name : clinic.name_en;
   const address = {
     ...(clinic.address ? { streetAddress: clinic.address } : {}), ...(clinic.city ? { addressLocality: clinic.city } : {}),

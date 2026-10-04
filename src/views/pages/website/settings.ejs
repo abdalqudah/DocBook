@@ -10,9 +10,9 @@
     <% if (publicUrl) { %>
     <div class="set-url"><%- icon('globe', 'icon-sm muted') %><code class="grow truncate" data-copy-source dir="ltr"><%= publicUrl %></code>
       <button class="btn btn-secondary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('common.copy') %></button>
-      <a class="btn btn-ghost btn-sm" href="/<%= b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><span class="hide-sm"><%= t('common.open') %></span></a></div>
+      <a class="btn btn-ghost btn-sm" href="<%= edition.isMain(b) ? '/' : '/' + b.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><span class="hide-sm"><%= t('common.open') %></span></a></div>
     <% } %>
-    <form class="stack" method="post" action="/app/website/settings/slug" novalidate data-slug-form>
+    <% if (edition.isMain(b)) { %><div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('settings.portal_main_domain') %></div></div><% } else { %><form class="stack" method="post" action="/app/website/settings/slug" novalidate data-slug-form>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="field">
         <label class="label" for="f-slug"><%= t('settings.portal_slug') %></label>
@@ -21,7 +21,7 @@
       </div>
       <% if (b.slug) { %><div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><%= t('settings.portal_change_warn') %></div></div><% } %>
       <div class="form-actions"><button class="btn btn-primary" type="submit"><%= b.slug ? t('settings.portal_change') : t('settings.portal_set') %></button></div>
-    </form>
+    </form><% } %>
   </div>
 </section>
 

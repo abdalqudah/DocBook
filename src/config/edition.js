@@ -9,7 +9,15 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.e
 
 const EDITION = ['clinic', 'center'].includes(String(process.env.APP_EDITION || '').toLowerCase()) ? String(process.env.APP_EDITION).toLowerCase() : 'platform';
 
+const single = EDITION !== 'platform';
+/** The installation's own clinic (one clinic) or centre administration (one centre): its website is the domain itself. */
+const isMain = (b) => Boolean(single && b && (EDITION === 'center' ? b.kind === 'center_admin' : !b.center_id && b.kind !== 'center_admin'));
+/** A clinic's public address: the domain for the installation's own clinic, else <base>/<slug>. */
+const siteUrl = (base, b) => (isMain(b) ? String(base || '').replace(/\/+$/, '') || '/' : `${base || ''}/${b.slug}`);
+
 module.exports = {
+  isMain,
+  siteUrl,
   EDITION,
   single: EDITION !== 'platform',
   center: EDITION === 'center',

@@ -215,7 +215,7 @@ async function crawlContext(req, res) {
   const s = await seo.get();
   const base = seo.baseUrl(req, s);
   const custom = res.locals.customDomain && res.locals.customDomain.slug === clinic.slug;
-  const siteBase = custom ? `${req.protocol}://${res.locals.customDomain.host}` : `${base}/${clinic.slug}`;
+  const siteBase = custom ? `${req.protocol}://${res.locals.customDomain.host}` : require('../../config/edition').siteUrl(base, clinic); // eslint-disable-line global-require
   return { clinic, doc, s, base, siteBase, custom };
 }
 router.get('/:slug/llms.txt', wrap(async (req, res, next) => {

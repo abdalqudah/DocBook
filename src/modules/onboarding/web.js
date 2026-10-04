@@ -72,7 +72,7 @@ async function stepData(req, step) {
       ]);
       return {
         summary: { doctors: Number(doctors.n), services: Number(services.n), team: Number(members.n) - 1, booking: Boolean(req.business.booking_enabled && req.business.slug) },
-        publicUrl: req.business.slug ? `${baseUrl(req)}/${req.business.slug}` : null, demoState: demo,
+        publicUrl: req.business.slug ? require('../../config/edition').siteUrl(baseUrl(req), req.business) : null, demoState: demo,
       };
     }
     default: return {};

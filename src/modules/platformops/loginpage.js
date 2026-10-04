@@ -38,10 +38,9 @@ async function clinicOf() {
   if (!edition.single) return null;
   const slug = await require('../../middleware/edition').mainSlug(); // eslint-disable-line global-require
   if (!slug) return null;
-  return cache.remember(`edition:authclinic:${slug}`, async () => {
-    const b = await knex.main('businesses').where({ slug }).first('id', 'slug', 'name', 'name_en', 'color', 'logo_mime');
-    return b ? { slug: b.slug, name: b.name, name_en: b.name_en, color: b.color || null, logo: Boolean(b.logo_mime) } : null;
-  }, 60_000);
+  // The clinic's own cache: refreshed as soon as its name, colour or logo changes (Settings).
+  const b = await require('../businesses/business.service').bySlug(slug); // eslint-disable-line global-require
+  return b ? { slug: b.slug, name: b.name, name_en: b.name_en, color: b.color || null, logo: Boolean(b.logo_mime) } : null;
 }
 
 /** Locals for the pages drawn in the sign-in layout. */

@@ -58,3 +58,10 @@ test('the sign-in page in the clinic\'s colours and logo', async () => {
     assert.match(login.text, /auth-side is-color/);
   } finally { await knex('businesses').where({ id: clinic.id }).update({ color: before }); cache.forgetPrefix(''); }
 });
+
+test('the installation\'s own clinic lives at the domain itself; other clinics keep /<address>', () => {
+  const ed = require('../src/config/edition'); // eslint-disable-line global-require
+  assert.equal(ed.siteUrl('https://mq.example/', { slug: 'mqapp', kind: 'clinic', center_id: null }), 'https://mq.example');
+  assert.equal(ed.siteUrl('https://mq.example', { slug: 'doc', kind: 'clinic', center_id: 5 }), 'https://mq.example/doc');
+  assert.equal(ed.isMain({ kind: 'center_admin' }), false);
+});
