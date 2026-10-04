@@ -2,7 +2,7 @@
   "site": {
     "meta_title": "Clinic booking & management",
     "nav_label": "Site navigation",
-    "open_app": "Open DocBook",
+    "open_app": "Open {brand}",
     "sign_in": "Sign in",
     "start_free": "Start free",
     "menu": "Menu",
@@ -56,7 +56,7 @@
         "eyebrow": "Clinic management in Arabic and English",
         "title": "Bookings, visits and billing —",
         "title_accent": "one calm workspace for your clinic.",
-        "lead": "DocBook gives your clinic an online booking page, a shared calendar built on each doctor's hours, a front desk with a waiting-room screen, patient records and prescriptions sent to the patient on WhatsApp in one tap, invoices, commissions and supplies — with a separate sign-in for every staff member and an encrypted backup for every clinic.",
+        "lead": "{brand} gives your clinic an online booking page, a shared calendar built on each doctor's hours, a front desk with a waiting-room screen, patient records and prescriptions sent to the patient on WhatsApp in one tap, invoices, commissions and supplies — with a separate sign-in for every staff member and an encrypted backup for every clinic.",
         "note": "Setting up takes a few minutes: add your doctors, their hours and your services.",
         "points": {
           "booking": "Online booking page",
@@ -175,7 +175,7 @@
       "steps": {
         "kicker": "How it works",
         "title": "Up and running in four steps",
-        "lead": "No installation: DocBook runs in the browser on computers, tablets and phones.",
+        "lead": "No installation: {brand} runs in the browser on computers, tablets and phones.",
         "s1": {
           "title": "Create your clinic",
           "text": "Sign up, name your clinic and choose its currency and time zone."
@@ -229,11 +229,11 @@
         "q2": "Does every staff member get their own sign-in?",
         "a2": "Yes. Add staff with a role — doctor, nurse, reception, accountant or clinic manager. Each person sees only what their role allows, and a doctor sees only their own appointments.",
         "q3": "Does it work fully in Arabic?",
-        "a3": "Yes. DocBook works in Arabic (right to left) and English, and each person can switch language at any time.",
+        "a3": "Yes. {brand} works in Arabic (right to left) and English, and each person can switch language at any time.",
         "q4": "Can I run more than one clinic?",
         "a4": "Yes. One account can belong to several clinics and switch between them, while each clinic's data stays separate.",
         "q5": "Do I need to install anything?",
-        "a5": "No. DocBook runs in the browser on computers, tablets and phones.",
+        "a5": "No. {brand} runs in the browser on computers, tablets and phones.",
         "q6": "Can I take my data out?",
         "a6": "Yes. Lists and reports can be exported to Excel or CSV by the people whose role allows it.",
         "q7": "Can I run more than one branch?",
@@ -251,18 +251,18 @@
         "q13": "Can I change the text of the messages patients get?",
         "a13": "Yes. In Settings → Message texts you write every message and e-mail in Arabic and English, and choose where the review link goes: Google or the clinic website.",
         "q14": "Does the database need a manual update after each version?",
-        "a14": "No. DocBook applies its database updates by itself on start and while running, and shows their state to the platform admin.",
+        "a14": "No. {brand} applies its database updates by itself on start and while running, and shows their state to the platform admin.",
         "q15": "Can a doctor use their own e-mail?",
         "a15": "Yes. Each member connects their e-mail from the mail icon at the top, then reads, replies and sends papers from their own address. Nobody else sees it, and the password is stored encrypted.",
         "q16": "Can I take my patients' files with me?",
-        "a16": "Yes. Export one patient or every patient as a ZIP with a PDF summary, all papers and images, and portable data — then import it into any clinic on DocBook.",
+        "a16": "Yes. Export one patient or every patient as a ZIP with a PDF summary, all papers and images, and portable data — then import it into any clinic on {brand}.",
         "q17": "How much file storage do I get?",
         "a17": "It depends on the package and is shown on the pricing page. It covers website media, patient files and chat attachments, and can be raised for your clinic when needed.",
         "q18": "Can the doctor's hospital surgeries be organised?",
         "a18": "Yes. The doctor or reception books the time as a \"surgery\" with the patient, procedure and hospital; it shows on the Surgeries page and in the patient's file, and the date goes to the hospital by e-mail or WhatsApp."
       },
       "cta": {
-        "title": "Ready to open your clinic's DocBook?",
+        "title": "Ready to open your clinic's {brand}?",
         "text": "Create your clinic, add your doctors and share your booking page today."
       },
       "footer": {
@@ -271,7 +271,7 @@
         "col2": "Account"
       },
       "seo": {
-        "title": "DocBook — clinic booking & management",
+        "title": "{brand} — clinic booking & management",
         "description": "Online booking, doctor schedules, front desk, patient records, invoices, commissions and supplies for clinics — in Arabic and English."
       },
       "stats": {
@@ -281,7 +281,7 @@
         "install": "Installations — it runs in the browser"
       },
       "showcase": {
-        "kicker": "What's new in DocBook",
+        "kicker": "What's new in {brand}",
         "title": "New features, built with clinics",
         "lead": "What's new: surgeries on their own calendar with the date sent to the hospital, each member's own e-mail, exporting and importing patient files into place, and file storage by package.",
         "tag": "New",
@@ -396,11 +396,11 @@
           },
           "icons": {
             "title": "Icons for your specialty",
-            "text": "An icon library for each specialty — over 250 icons, including a dental set drawn for DocBook."
+            "text": "An icon library for each specialty — over 250 icons, including a dental set drawn for {brand}."
           },
           "mailbox": {
             "title": "Each member's own e-mail, inside",
-            "text": "A doctor or staff member connects their e-mail (Gmail, Outlook or hosting mail), reads and replies in DocBook, and sends a prescription, report or X-ray from their own address in one click. Private to them, password encrypted; automatic messages still go from the clinic."
+            "text": "A doctor or staff member connects their e-mail (Gmail, Outlook or hosting mail), reads and replies in {brand}, and sends a prescription, report or X-ray from their own address in one click. Private to them, password encrypted; automatic messages still go from the clinic."
           },
           "export": {
             "title": "Export a patient's whole file",
@@ -455,7 +455,7 @@
       },
       "tour": {
         "kicker": "A tour of the platform",
-        "title": "This is your clinic on DocBook",
+        "title": "This is your clinic on {brand}",
         "lead": "Real pictures of the platform: the clinic's day, appointments, the patient file, surgeries, the cash desk and the clinic website.",
         "btn": "All features",
         "items": {
@@ -581,7 +581,7 @@
     "features_page": {
       "kicker": "All features",
       "title": "Everything your clinic needs, in one platform",
-      "lead": "DocBook's features grouped by the clinic's work, with real pictures of the platform.",
+      "lead": "{brand}'s features grouped by the clinic's work, with real pictures of the platform.",
       "nav": "Feature groups",
       "cats": {
         "appointments": {
@@ -626,7 +626,7 @@
     "nav_users": "Users",
     "nav_site": "Landing page",
     "view_site": "View site",
-    "back_to_app": "Open DocBook",
+    "back_to_app": "Open {brand}",
     "sign_out": "Sign out",
     "overview_sub": "The whole platform at a glance.",
     "stat_clinics": "Clinics",
@@ -775,7 +775,7 @@
       "done_delete": "Section deleted.",
       "done_duplicate": "Section duplicated.",
       "reset": "Reset to defaults",
-      "reset_hint": "Replaces all your edits with DocBook's original page.",
+      "reset_hint": "Replaces all your edits with {brand}'s original page.",
       "reset_confirm": "Reset the landing page? All edits to the header, sections, footer and search texts will be lost.",
       "reset_word": "RESET",
       "reset_wrong": "Type RESET to confirm.",
@@ -1028,7 +1028,7 @@
     "usage_centres_val": "{n} partners · {sent} papers in 30 days",
     "usage_texts": "Message texts",
     "usage_texts_yes": "{n} texts in the clinic's words",
-    "usage_texts_no": "DocBook's texts",
+    "usage_texts_no": "{brand}'s texts",
     "db_pending": "{n} database updates waiting — applied by themselves within minutes.",
     "db_open": "Updates",
     "storage_title": "File storage",
@@ -1157,7 +1157,7 @@
   },
   "growth": {
     "cookie_prefs": "Cookie preferences",
-    "social_nav": "DocBook on social media",
+    "social_nav": "{brand} on social media",
     "social_x": "X",
     "social_instagram": "Instagram",
     "social_facebook": "Facebook",
@@ -1173,7 +1173,7 @@
     "consent_accept": "Accept",
     "consent_reject": "Reject",
     "cookies_title": "Cookie preferences",
-    "cookies_sub": "What DocBook stores in your browser, and your choice about measurement tools on our public pages.",
+    "cookies_sub": "What {brand} stores in your browser, and your choice about measurement tools on our public pages.",
     "essential_title": "Essential cookies",
     "always_on": "Always on",
     "essential_text": "These keep the site working and cannot be turned off. They are not used for advertising.",
@@ -1185,11 +1185,11 @@
     "now_yes": "Accepted",
     "now_no": "Rejected",
     "now_none": "Not chosen yet",
-    "measure_none": "DocBook does not use measurement or advertising tools at the moment. Only the essential cookies above are used.",
-    "measure_text": "If you accept, these tools load on DocBook's public pages (this page and the home page) to measure visits and ad performance:",
+    "measure_none": "{brand} does not use measurement or advertising tools at the moment. Only the essential cookies above are used.",
+    "measure_text": "If you accept, these tools load on {brand}'s public pages (this page and the home page) to measure visits and ad performance:",
     "measure_scope": "They never load inside clinic accounts, on clinic pages, on booking pages or on sign-in pages. You can change your choice here at any time.",
     "seo_title": "Search & AI",
-    "seo_sub": "How DocBook and the clinics' public pages appear in search engines, link previews and AI assistants.",
+    "seo_sub": "How {brand} and the clinics' public pages appear in search engines, link previews and AI assistants.",
     "files": "Public files",
     "checks": "Checklist",
     "checks_sub": "What is set up and what is still missing.",
@@ -1214,7 +1214,7 @@
       "og_image": "Upload an image (1200×630 works best) and choose it below.",
       "base_url": "Enter the site address starting with https:// so links in the sitemap and previews are correct.",
       "verify": "Paste the verification code from Google Search Console or Bing.",
-      "org": "Add an e-mail or phone for DocBook below.",
+      "org": "Add an e-mail or phone for {brand} below.",
       "social": "Add at least one profile in Social & tracking.",
       "faq": "Add or show a FAQ section in the landing page editor.",
       "home_indexed": "Tick “Home page” under Indexing.",
@@ -1242,7 +1242,7 @@
     "sec_verify_sub": "Proves to search engines that you own the site (a meta tag on the home page).",
     "verify_help": "Only the code from content=\"…\".",
     "sec_aeo": "Structured data (AEO)",
-    "sec_aeo_sub": "Machine-readable facts so search and answer engines can describe DocBook and each clinic correctly.",
+    "sec_aeo_sub": "Machine-readable facts so search and answer engines can describe {brand} and each clinic correctly.",
     "org_legal_name": "Legal name",
     "org_email": "Contact e-mail",
     "org_phone": "Contact phone",
@@ -1257,7 +1257,7 @@
     "disallow": "Extra paths to block",
     "disallow_help": "One path per line, starting with /. Added to robots.txt for every crawler.",
     "llms_ph": "Leave empty to use the summary generated from the landing page and the listed clinics.",
-    "llms_help": "Plain text (Markdown) describing DocBook factually.",
+    "llms_help": "Plain text (Markdown) describing {brand} factually.",
     "llms_view": "View the generated version",
     "updated": "Last saved",
     "saved": "Saved.",

@@ -61,6 +61,7 @@ function createApp() {
   app.use(express.json({ limit: '2mb' }));
   app.use(cookieParser());
   app.use(require('./middleware/domain').customDomain); // verified clinic domains serve the clinic page + booking
+  app.use(require('./middleware/edition').route); // one clinic / one centre: its website at /, its management at /admin
 
   app.use(session({
     name: 'db.sid',

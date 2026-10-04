@@ -12,6 +12,16 @@ for (const locale of config.locales) {
   }
 }
 
+// The product's name in every text: "{brand}" (src/config/brand.js, BRAND_NAME in .env).
+const brandName = require('../config/brand').name;
+const withBrand = (node) => {
+  for (const k of Object.keys(node)) {
+    if (typeof node[k] === 'string') node[k] = node[k].replace(/\{brand\}/g, brandName);
+    else if (node[k] && typeof node[k] === 'object') withBrand(node[k]);
+  }
+};
+Object.values(dictionaries).forEach(withBrand);
+
 const lookup = (dict, key) => key.split('.').reduce((node, part) => (node && typeof node === 'object' ? node[part] : undefined), dict);
 
 function translator(locale) {

@@ -11,7 +11,8 @@
     "migrate": "node scripts/migrate.js",
     "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
     "brand:check": "node scripts/brand-check.js",
-    "build": "node scripts/build-dist.js"
+    "build": "node scripts/build-dist.js",
+    "build:editions": "node scripts/build-dist.js && node scripts/build-editions.js"
   },
   "engines": {
     "node": ">=20"

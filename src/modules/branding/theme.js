@@ -71,9 +71,7 @@ function businessCss(color) {
 }
 
 function markSvg(color = brand.colors.light.primary, ink = brand.colors.light.primaryInk) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="${color}"/>`
-    + `<path d="M20 16h14c9.4 0 16 6.8 16 16s-6.6 16-16 16H20z" fill="none" stroke="${ink}" stroke-width="5" stroke-linejoin="round"/>`
-    + `<path d="M28 26h8M28 32h10M28 38h6" stroke="${ink}" stroke-width="4" stroke-linecap="round"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="${color}"/>${brand.markInner(ink)}</svg>`;
 }
 
 const css = baseCss();

@@ -53,7 +53,7 @@
       <div class="panel-body row wrap">
         <span class="action-icon brand"><%- icon('life-buoy') %></span>
         <div class="grow"><div class="strong"><%= t('help.contact_title') %></div><div class="small muted"><%= supportEmail ? t('help.contact_text') : t('help.contact_none') %></div></div>
-        <% if (supportEmail) { %><a class="btn btn-primary btn-sm" href="mailto:<%= supportEmail %>?subject=<%= encodeURIComponent('DocBook — ' + business.name) %>"><%- icon('mail', 'icon-sm') %><%= t('help.contact_btn') %></a><% } %>
+        <% if (supportEmail) { %><a class="btn btn-primary btn-sm" href="mailto:<%= supportEmail %>?subject=<%= encodeURIComponent(brandName + ' — ' + business.name) %>"><%- icon('mail', 'icon-sm') %><%= t('help.contact_btn') %></a><% } %>
       </div>
     </div>
   </div>

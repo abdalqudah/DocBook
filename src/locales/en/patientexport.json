@@ -82,9 +82,9 @@
     },
     "import": {
       "title": "Import patient files",
-      "lead": "Upload a DocBook export (one patient's file or every patient's file) and everything goes back where it belongs: the patient, visits, diagnoses, prescriptions, requests, referrals, vital signs, images and files.",
+      "lead": "Upload a {brand} export (one patient's file or every patient's file) and everything goes back where it belongs: the patient, visits, diagnoses, prescriptions, requests, referrals, vital signs, images and files.",
       "check": "Check the file",
-      "hint": "A ZIP exported by DocBook, up to {mb} MB. Nothing is imported until you review it and confirm.",
+      "hint": "A ZIP exported by {brand}, up to {mb} MB. Nothing is imported until you review it and confirm.",
       "preview_lead": "Review what the file holds before importing.",
       "patients": "Patients in the file",
       "new": "Will be added",
@@ -120,7 +120,7 @@
       "paper_invoice": "Invoice {date}",
       "paper_certificate": "Medical certificate {date}",
       "err": {
-        "IMPORT_BAD_FILE": "This is not a DocBook patient export, or it is damaged.",
+        "IMPORT_BAD_FILE": "This is not a {brand} patient export, or it is damaged.",
         "IMPORT_TOO_BIG": "The file is larger than allowed.",
         "IMPORT_RUNNING": "An import is already running. Wait until it finishes."
       },

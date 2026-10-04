@@ -8,8 +8,11 @@
 // A workspace can additionally override `primary` and the logo from
 // Settings → Appearance; that override is layered on top of these defaults.
 // ============================================================================
+const edition = require('./edition'); // also reads .env (BRAND_NAME, CLINIC_NAME)
+
 module.exports = {
-  name: 'DocBook',
+  // BRAND_NAME in .env renames the product everywhere (a single clinic / centre installation: its own name).
+  name: (process.env.BRAND_NAME || '').trim() || (edition.single && (process.env.CLINIC_NAME || '').trim()) || 'DocBook',
   // Short product line used in titles, the sidebar and the landing page.
   tagline: {
     en: 'Clinic bookings, patients and billing in one place',
@@ -21,6 +24,10 @@ module.exports = {
   logoOnDark: null,
   // Favicon: null = generated from the built-in mark in the primary colour (/favicon.svg).
   favicon: null,
+  // The built-in mark's drawing inside its rounded square (a single clinic / centre: a medical cross).
+  markInner: (ink) => (edition.single
+    ? `<path d="M26 16h12v10h10v12H38v10H26V38H16V26h10z" fill="${ink}"/>`
+    : `<path d="M20 16h14c9.4 0 16 6.8 16 16s-6.6 16-16 16H20z" fill="none" stroke="${ink}" stroke-width="5" stroke-linejoin="round"/><path d="M28 26h8M28 32h10M28 38h6" stroke="${ink}" stroke-width="4" stroke-linecap="round"/>`),
   // Letters used by the built-in mark (1–2 characters).
   monogram: 'D',
 

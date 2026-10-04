@@ -160,7 +160,7 @@
       "empty_title": "No visits yet",
       "empty_text": "Find a clinic that accepts rep visits and book a time.",
       "pending_title": "Your account is waiting for approval",
-      "pending_text": "You can book visits once the DocBook team approves your account.",
+      "pending_text": "You can book visits once the {brand} team approves your account.",
       "find_title": "Find a clinic",
       "find_lead": "Clinics that accept rep visits. Only the clinic, its doctors and free rep times are shown.",
       "search": "Clinic name or city…",

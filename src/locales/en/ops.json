@@ -91,7 +91,7 @@
       { "id": "getting-started", "icon": "rocket", "title": "Getting started", "items": [
         { "q": "What should I set up first?", "a": "Add your doctors with their working hours and consultation fee, then your services and prices. After that, create logins for your staff so each person signs in with their own account." },
         { "q": "How do I switch between Arabic and English?", "a": "Use the language button in the top bar. Your choice is remembered on this device. Doctor names and services can have both an Arabic and an English name." },
-        { "q": "Can I use DocBook on my phone?", "a": "Yes. Every screen works in the mobile browser — the bottom bar gives quick access to the calendar, front desk and patients." },
+        { "q": "Can I use {brand} on my phone?", "a": "Yes. Every screen works in the mobile browser — the bottom bar gives quick access to the calendar, front desk and patients." },
         { "q": "I manage more than one clinic. Do I need another account?", "a": "No. One login can belong to several clinics. Use the clinic switcher in the menu to move between them; each clinic's data stays completely separate." }
       ] },
       { "id": "appointments", "icon": "calendar-days", "title": "Appointments & online booking", "items": [

@@ -46,7 +46,7 @@
       <% if (f.style === 'simple' && _brand) { %><div class="ws-footer-simple-brand"><%- _brand %></div><% } %>
       <span>© <%= new Date().getFullYear() %> <%= copy %></span>
       <% if (f.style === 'simple' && f.show_social !== false && social.length) { %><span class="ws-social"><% social.forEach(function (k) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= links[k] %>" target="_blank" rel="noopener me" aria-label="<%= label(k) %>"><%- icon(ICON[k], 'icon-sm') %></a><% }) %></span><% } %>
-      <% if (f.show_powered !== false || !wsSite.whiteLabel) { %><a class="row-sm" href="/"><%= t('portal.powered', { brand: brandName }) %></a><% } %>
+      <% if (!edition.single && (f.show_powered !== false || !wsSite.whiteLabel)) { %><a class="row-sm" href="/"><%= t('portal.powered', { brand: brandName }) %></a><% } %>
     </div>
   </div>
 </footer>

@@ -27,7 +27,7 @@
     "try_title": "Search the ICD-10 list",
     "try_sub": "{n} codes from WHO ICD-10, with Arabic and English titles and common names.",
     "needs_js": "Searching needs JavaScript. On the visit page, codes can also be typed directly.",
-    "source_note": "Codes and English titles: WHO ICD-10 (2019). Arabic titles and search keywords: DocBook.",
+    "source_note": "Codes and English titles: WHO ICD-10 (2019). Arabic titles and search keywords: {brand}.",
     "custom_title": "Your clinic's codes",
     "custom_sub": "Shown in the search next to the ICD-10 codes.",
     "custom_empty": "No clinic codes yet",

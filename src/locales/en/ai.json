@@ -3,7 +3,7 @@
     "settings_saved": "AI assistant settings saved.",
     "settings_lead": "A clinical assistant that summarises visits, offers a second opinion and checks prescriptions. It is off until you switch it on.",
     "platform_off_title": "Not available yet",
-    "platform_off_text": "The AI assistant is currently switched off for DocBook. These settings will become available when it is switched on.",
+    "platform_off_text": "The AI assistant is currently switched off for {brand}. These settings will become available when it is switched on.",
     "status_title": "Status and usage",
     "status_sub": "Requests sent by your clinic this month.",
     "status_on": "On",
@@ -159,7 +159,7 @@
     "saved": "AI assistant settings saved."
   },
   "errors_ai": {
-    "AI_PLATFORM_OFF": "The AI assistant is switched off for DocBook.",
+    "AI_PLATFORM_OFF": "The AI assistant is switched off for {brand}.",
     "AI_NOT_CONFIGURED": "The AI assistant is not configured yet (no API key).",
     "AI_CLINIC_OFF": "The AI assistant is switched off for this clinic. An administrator can switch it on under Settings → AI assistant.",
     "AI_NO_PERMISSION": "You do not have access to clinical notes.",

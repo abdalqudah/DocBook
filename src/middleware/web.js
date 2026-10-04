@@ -83,6 +83,7 @@ function locals(req, res, next) {
     sidebarMini: req.cookies?.db_sb === 'mini', // the member folded the sidebar to icons (desktop)
     brand,
     brandName: brand.name,
+    edition: require('../config/edition'), // eslint-disable-line global-require -- one clinic / centre: no sign-up or platform links
     tagline: brand.tagline[locale] || brand.tagline.en,
     csrfToken: req.session?.csrf,
     currentUser: req.user || null,

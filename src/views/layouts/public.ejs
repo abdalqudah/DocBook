@@ -32,7 +32,7 @@
 <body class="site<%= portalClinic ? ' site-portal' : '' %><%= embed ? ' site-embed' : '' %><%= typeof bodyClass !== 'undefined' && bodyClass ? ' ' + bodyClass : '' %>">
 <a class="sr-only" href="#main"><%= t('site.skip') %></a>
 <% var _ws = typeof wsSite !== 'undefined' && wsSite && portalClinic ? wsSite : null; %>
-<% if (embed) { %><div class="embed-bar"><span class="strong truncate"><%= portalClinic.displayName %></span><a href="/" target="_blank" rel="noopener"><%= t('portal.powered', { brand: brandName }) %></a></div><% } else if (_ws) { %><%- include('../pages/portal/_ws-header') %><% } else { %>
+<% if (embed) { %><div class="embed-bar"><span class="strong truncate"><%= portalClinic.displayName %></span><% if (!edition.single) { %><a href="/" target="_blank" rel="noopener"><%= t('portal.powered', { brand: brandName }) %></a><% } %></div><% } else if (_ws) { %><%- include('../pages/portal/_ws-header') %><% } else { %>
 <header class="site-nav">
   <div class="container inner">
     <% if (portalClinic) { %>
@@ -83,7 +83,7 @@
 <footer class="footer portal-footer">
   <div class="container inner">
     <span>© <%= new Date().getFullYear() %> <%= portalClinic.displayName %></span>
-    <a class="row-sm" href="/"><%= t('portal.powered', { brand: brandName }) %></a>
+    <% if (!edition.single) { %><a class="row-sm" href="/"><%= t('portal.powered', { brand: brandName }) %></a><% } %>
   </div>
 </footer>
 <% } else { %>

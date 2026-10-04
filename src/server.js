@@ -78,6 +78,8 @@ async function start(server) {
   await require('./modules/rbac/rbac.service').syncSystemRoles(); // eslint-disable-line global-require
   await require('./modules/auth/auth.service').ensureSuperAdmin() // eslint-disable-line global-require
     .catch((e) => console.error('[auth] could not ensure the platform admin:', e.message)); // eslint-disable-line no-console
+  // One clinic / one centre (APP_EDITION): created at first start from .env, owned by the account above.
+  await require('./modules/edition/setup.service').ensure().catch((e) => console.error('[setup] could not create the clinic:', e.message)); // eslint-disable-line global-require, no-console
   // Copies of clinic data to their own databases (Settings → Your database), checked every 5 minutes.
   if (config.env !== 'test') {
     // Jobs over the clinics' data run once in each database (each clinic or centre may have its own — db/tenant.js).

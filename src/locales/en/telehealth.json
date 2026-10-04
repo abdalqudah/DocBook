@@ -188,7 +188,7 @@
       "length_help": "Empty = the appointment length.",
       "method": "Video method",
       "method_help": {
-        "builtin": "Video call inside DocBook — nothing to install.",
+        "builtin": "Video call inside {brand} — nothing to install.",
         "jitsi": "Your clinic's Jitsi server.",
         "link": "Your own Zoom, Google Meet or Teams link."
       },

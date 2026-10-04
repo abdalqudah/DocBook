@@ -28,7 +28,7 @@
     "net_formula": "Net = base + allowances + bonuses − deductions − advances",
     "link_login": "Clinic login (optional)",
     "no_login": "No login — employee only",
-    "link_help": "Link a team member who signs in to DocBook. Doctor logins are paid through doctor payroll.",
+    "link_help": "Link a team member who signs in to {brand}. Doctor logins are paid through doctor payroll.",
     "linked_to": "Login: {name}",
     "add_employee": "Add employee",
     "edit_employee": "Edit employee",

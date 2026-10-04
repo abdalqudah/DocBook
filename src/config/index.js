@@ -52,6 +52,6 @@ module.exports = {
   defaultLocale: process.env.DEFAULT_LOCALE === 'en' ? 'en' : 'ar',
   locales: ['en', 'ar'],
   // Self-service sign-up. Set ALLOW_SIGNUP=false for an invite-only installation.
-  allowSignup: process.env.ALLOW_SIGNUP !== 'false',
+  allowSignup: process.env.ALLOW_SIGNUP !== 'false' && !require('./edition').single, // eslint-disable-line global-require -- one clinic / centre: no public sign-up
   superAdmin: { email: (process.env.SUPER_ADMIN_EMAIL || '').toLowerCase().trim(), password: process.env.SUPER_ADMIN_PASSWORD || '', name: process.env.SUPER_ADMIN_NAME || 'Platform admin' },
 };

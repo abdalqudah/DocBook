@@ -36,13 +36,13 @@
     "blocked_home": "Go to my pages",
     "role_only_title": "Given through the role only",
     "role_only_text": "These pages open only with a role that includes them (clinic administration and settings). Change the member's role in the team list if they need them.",
-    "always_title": "Always available (needed to use DocBook)"
+    "always_title": "Always available (needed to use {brand})"
   },
   "errors_access": {
     "PAGE_ACCESS_DENIED": "You don't have access to this page.",
     "ACCESS_OWNER": "The owner always has access to every page.",
     "ACCESS_SELF": "You can't change your own page access.",
-    "ACCESS_CORE": "This page is needed to use DocBook and is always available.",
+    "ACCESS_CORE": "This page is needed to use {brand} and is always available.",
     "ACCESS_ROLE_ONLY": "This page is given through the role only.",
     "ACCESS_BEYOND_OWN": "You can only give access to pages you can open yourself."
   }

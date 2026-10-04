@@ -3,13 +3,13 @@
     "kicker": "For medical reps & warehouses",
     "landing_title": "Reach clinics that need what you supply",
     "landing_lead": "Create a free account for your rep office, drug warehouse or supply company. List your products by specialty, send offers to doctors, book visits in the hours clinics set aside for reps, and receive purchase orders by e-mail.",
-    "landing_note": "Every new account is reviewed by the DocBook team before clinics can see it.",
+    "landing_note": "Every new account is reviewed by the {brand} team before clinics can see it.",
     "open_portal": "Open your portal",
     "register_existing_cta": "Register this account as a rep",
     "signup_cta": "Create a rep account",
     "sign_in": "Sign in",
     "benefits_title": "What you get",
-    "benefits_lead": "One place to work with the clinics on DocBook — without cold calls or paper catalogues.",
+    "benefits_lead": "One place to work with the clinics on {brand} — without cold calls or paper catalogues.",
     "f_reach_title": "Reach clinics by specialty",
     "f_reach_text": "Choose the specialties you serve — dentistry, dermatology, paediatrics and more. Clinics see what fits their work.",
     "f_products_title": "Your product catalogue",
@@ -26,7 +26,7 @@
     "step1_title": "Create your account",
     "step1_text": "Your company, contact details and the specialties you serve.",
     "step2_title": "We review it",
-    "step2_text": "The DocBook team approves new accounts, usually within a working day.",
+    "step2_text": "The {brand} team approves new accounts, usually within a working day.",
     "step3_title": "Add products and offers",
     "step3_text": "Prepare them while you wait — they go live once you are approved.",
     "step4_title": "Clinics reach you",
@@ -85,7 +85,7 @@
     "mail_admin_body": "{name} has registered and is waiting for your review.",
     "mail_admin_cta": "Review the account",
     "mail_approved_subject": "Your account has been approved",
-    "mail_approved_body": "{name} is now visible to clinics on DocBook. You can publish offers and receive visit bookings and purchase orders.",
+    "mail_approved_body": "{name} is now visible to clinics on {brand}. You can publish offers and receive visit bookings and purchase orders.",
     "mail_approved_cta": "Open your portal",
     "admin": {
       "nav": "Reps & warehouses",
@@ -144,7 +144,7 @@
     "short_nav_offers": "Offers",
     "short_nav_visits": "Visits",
     "pending_title": "Your account is awaiting approval.",
-    "pending_text": "You can prepare your profile, products and offers now; clinics will see you once the DocBook team approves the account.",
+    "pending_text": "You can prepare your profile, products and offers now; clinics will see you once the {brand} team approves the account.",
     "welcome": "Welcome, {name}",
     "dashboard_lead": "Your products, offers, visits and purchase orders at a glance.",
     "stat_products": "Products shown",
@@ -179,7 +179,7 @@
     "step_profile": "Complete your profile (logo, phone, about)",
     "step_product": "Add your first product",
     "step_offer": "Publish an offer",
-    "step_approval": "Account approved by DocBook",
+    "step_approval": "Account approved by {brand}",
     "step_approval_help": "We review new accounts, usually within a working day.",
     "go": "Start",
     "privacy_note": "You will never see patient information — only clinic and doctor names, visit times and ordered items.",
@@ -329,6 +329,6 @@
   },
   "vendor_guard": {
     "suspended_title": "Account suspended",
-    "suspended_text": "This rep / warehouse account has been suspended by the platform, so clinics no longer see it. Contact the DocBook team if you think this is a mistake."
+    "suspended_text": "This rep / warehouse account has been suspended by the platform, so clinics no longer see it. Contact the {brand} team if you think this is a mistake."
   }
 }
