@@ -4,7 +4,7 @@
 
 <% if (st.fromEnv) { %><div class="alert alert-warning mb-4"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('maintenance.from_env') %></div></div><% } %>
 
-<form class="panel" method="post" action="/admin/maintenance"<% if (!st.on) { %> data-confirm="<%= t('maintenance.confirm_on') %>" data-confirm-yes="<%= t('maintenance.save') %>"<% } %>>
+<form class="panel" method="post" action="<%= typeof base !== 'undefined' ? base : '/admin/maintenance' %>"<% if (!st.on) { %> data-confirm="<%= t('maintenance.confirm_on') %>" data-confirm-yes="<%= t('maintenance.save') %>"<% } %>>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="panel-body stack">
     <label class="check"><input type="checkbox" name="on" value="1"<%= st.on ? ' checked' : '' %>><span><strong><%= t('maintenance.on_label') %></strong></span></label>

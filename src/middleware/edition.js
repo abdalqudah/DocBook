@@ -2,7 +2,7 @@
 //   /                        the clinic's (or centre's) website            (internally /<slug>)
 //   /book… /doctors/… /p/… /articles…  its booking and website pages     (internally /<slug>/…)
 //   /admin                   the management (sign-in, then the clinic's pages under /app)
-//   /admin/platform          the installation's own settings (the server owner's account)
+//   /admin/…                 no platform pages: the system's own (update, sign-in page, maintenance) are in Settings
 //   /<doctor's clinic>/…     a centre's doctors keep their own websites
 // The many-clinics pages (sign-up, clinic directory, pricing, reps' portal) lead home.
 const edition = require('../config/edition');
@@ -27,7 +27,8 @@ async function route(req, res, next) {
     const p = req.path;
     const q = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
     if (p === '/admin' || p === '/admin/') return res.redirect(302, '/app');
-    if (p === '/admin/platform') { req.url = `/admin${q}`; return next(); }
+    // No platform admin pages: the system's own pages (update, sign-in page, maintenance) are in Settings.
+    if (p.startsWith('/admin/')) return req.method === 'GET' || req.method === 'HEAD' ? res.redirect(302, '/app/settings') : res.status(404).end();
     if (p === '/signup') return res.redirect(302, '/login');
     if (AWAY.some((re) => re.test(p))) return res.redirect(302, '/');
     const slug = await mainSlug();

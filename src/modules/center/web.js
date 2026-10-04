@@ -45,7 +45,7 @@ async function renderCenter(req, res, wanted) {
     title: req.ctx.centerAdmin ? req.t(`center.tab.${tab}`) : req.t('center.title'), center, members, invites, founder, tab, lastLink: req.session.centerLink || null, lastLogin: req.session.centerLogin || null,
     adminAccount: Boolean(req.ctx.centerAdmin), tabHref: (k) => (req.ctx.centerAdmin ? `/app/center/${PATHS[k]}` : `/app/center?tab=${k}`),
     categories: require('../expenses/expense.service').SYSTEM_CATEGORIES.filter((k) => k !== 'center_share'), // eslint-disable-line global-require
-    thisMonth: req.ctx.today.slice(0, 7), pageStyles: ['/css/center.css'], pageScripts: ['/js/center.js'], ...extra,
+    thisMonth: req.ctx.today.slice(0, 7), pageStyles: ['/css/admin.css', '/css/center.css'], pageScripts: ['/js/center.js'], ...extra,
   });
   delete req.session.centerLink; delete req.session.centerLogin;
 }

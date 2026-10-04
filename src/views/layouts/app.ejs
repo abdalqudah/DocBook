@@ -14,7 +14,7 @@
     <main class="content" id="main">
       <%- include('../partials/section-tabs') %>
       <%- include('../partials/act-bar') %>
-      <% if (typeof maintenanceOn !== 'undefined' && maintenanceOn) { %><div class="alert alert-warning mb-4" role="status"><%- icon('wrench', 'icon-sm') %><div class="grow"><%= t('maintenance.bar') %></div><a class="btn btn-secondary btn-sm" href="/admin/maintenance"><%= t('maintenance.bar_link') %></a></div><% } %>
+      <% if (typeof maintenanceOn !== 'undefined' && maintenanceOn) { %><div class="alert alert-warning mb-4" role="status"><%- icon('wrench', 'icon-sm') %><div class="grow"><%= t('maintenance.bar') %></div><a class="btn btn-secondary btn-sm" href="<%= edition.single ? '/app/settings/maintenance' : '/admin/maintenance' %>"><%= t('maintenance.bar_link') %></a></div><% } %>
       <%- body %>
     </main>
   </div>

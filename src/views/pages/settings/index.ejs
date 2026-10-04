@@ -38,7 +38,7 @@
     <section>
       <h2 class="set-group-title"><%= t('maintenance.sys_group') %></h2>
       <div class="set-cards">
-        <% [['/app/settings/system-update', 'cloud-upload', 'sys_update'], ['/app/settings/login-page', 'log-in', 'sys_login'], ['/admin/maintenance', 'wrench', 'sys_maint']].forEach(function (c) { %>
+        <% [['/app/settings/system-update', 'cloud-upload', 'sys_update'], ['/app/settings/login-page', 'log-in', 'sys_login'], ['/app/settings/maintenance', 'wrench', 'sys_maint']].forEach(function (c) { %>
         <a class="set-card" href="<%= c[0] %>"><span class="set-card-icon"><%- icon(c[1]) %></span><span class="grow" style="min-width:0"><span class="set-card-title"><%= t('maintenance.' + c[2]) %></span><span class="set-card-text"><%= t('maintenance.' + c[2] + '_text') %></span></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a>
         <% }) %>
       </div>

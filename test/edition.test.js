@@ -44,8 +44,8 @@ test('the clinic\'s website at /, its management at /admin, no platform pages', 
   // Sign-up is closed even when posted directly.
   const r = await a.post('/signup', { _csrf: a.csrf(login.text), name: 'X', email: 'x@t.test', password: 'Passw0rd!x-Long', clinic_name: 'Another', terms: 'on' });
   assert.notEqual(r.location, '/app/onboarding');
-  // The installation's own settings stay reachable for its account.
-  assert.equal((await a.get('/admin/platform')).location, '/login');
+  // No platform admin pages: they lead to the clinic's Settings (System update, sign-in page, maintenance live there).
+  for (const p of ['/admin/updates', '/admin/maintenance', '/admin/clinics', '/admin/platform']) assert.equal((await a.get(p)).location, '/app/settings', p);
 });
 
 test('the sign-in page in the clinic\'s colours and logo', async () => {

@@ -207,6 +207,16 @@
   </form>
   <% if (!adminAccount) { %><%- include('_share-cash') %><% } %>
 </div>
+<% if (adminAccount) { /* the centre's look; for the installation's own account, the system itself */
+   var _cards = [['/app/settings/appearance', 'palette', t('settings.nav_appearance'), t('settings.desc_appearance')]];
+   if (currentUser && currentUser.is_platform_admin) _cards.push(['/app/settings/system-update', 'cloud-upload', t('maintenance.sys_update'), t('maintenance.sys_update_text')], ['/app/settings/login-page', 'log-in', t('maintenance.sys_login'), t('maintenance.sys_login_text')], ['/app/settings/maintenance', 'wrench', t('maintenance.sys_maint'), t('maintenance.sys_maint_text')]); %>
+<section class="mt-6">
+  <h2 class="set-group-title"><%= t('maintenance.sys_group') %></h2>
+  <div class="set-cards">
+    <% _cards.forEach(function (c) { %><a class="set-card" href="<%= c[0] %>"><span class="set-card-icon"><%- icon(c[1]) %></span><span class="grow" style="min-width:0"><span class="set-card-title"><%= c[2] %></span><span class="set-card-text"><%= c[3] %></span></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a><% }) %>
+  </div>
+</section>
+<% } %>
 <% } %>
 <% } else { %>
 <div class="grid grid-main">
