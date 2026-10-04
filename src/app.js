@@ -116,6 +116,7 @@ function createApp() {
   app.use(web.locals);
   const branding = require('./modules/platformops/branding');
   app.use(branding.middleware); // the platform admin's logo / icon over the built-in brand
+  app.use(require('./modules/platformops/loginpage').middleware); // the sign-in page's own words, look and (one clinic) colours
   app.get('/brand/:key', (req, res, next) => Promise.resolve(branding.serve(req, res, next)).catch(next));
   // CSRF check; the booking-widget embed mode (frameable /<slug>/book?embed=1) uses a signed token instead of the session.
   app.use(require('./modules/discover/embed').wrapCsrf(web.csrf));

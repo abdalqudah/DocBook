@@ -47,3 +47,14 @@ test('the clinic\'s website at /, its management at /admin, no platform pages', 
   // The installation's own settings stay reachable for its account.
   assert.equal((await a.get('/admin/platform')).location, '/login');
 });
+
+test('the sign-in page in the clinic\'s colours and logo', async () => {
+  const before = (await knex('businesses').where({ id: clinic.id }).first('color')).color;
+  await knex('businesses').where({ id: clinic.id }).update({ color: '#7A2E8C' });
+  cache.forgetPrefix('');
+  try {
+    const login = await app.agent().get('/login');
+    assert.ok(login.text.includes(`href="/${clinic.slug}/theme.css"`), 'the clinic theme');
+    assert.match(login.text, /auth-side is-color/);
+  } finally { await knex('businesses').where({ id: clinic.id }).update({ color: before }); cache.forgetPrefix(''); }
+});

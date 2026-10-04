@@ -2,19 +2,26 @@
 <html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>"<% if (theme !== 'system') { %> data-theme="<%= theme %>"<% } %>>
 <head><%- include('../partials/head') %></head>
 <body>
+<%
+  var _lp = typeof loginPage !== 'undefined' && loginPage ? loginPage : { style: 'dark', show_points: true, text: function (k, f) { return t(f); } };
+  var _ac = typeof authClinic !== 'undefined' && authClinic ? authClinic : null;
+  var _acName = _ac ? (locale === 'en' && _ac.name_en ? _ac.name_en : _ac.name) : brandName;
+%>
 <div class="auth">
-  <div class="auth-side">
-    <a class="row-sm" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
+  <div class="auth-side is-<%= _lp.style %>">
+    <a class="row-sm" href="/" aria-label="<%= _acName %>"><% if (_ac && _ac.logo) { %><img class="auth-clinic-logo" src="/<%= _ac.slug %>/logo" alt="<%= _acName %>"><span class="brand-word"><%= _acName %></span><% } else if (_ac) { %><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--primary)"/><%- brand.markInner('var(--primary-ink)') %></svg><span class="brand-word"><%= _acName %></span><% } else { %><%- include('../partials/logo') %><% } %></a>
     <div>
-      <h2><%= t('auth.side_title') %></h2>
-      <p><%= t('auth.side_text') %></p>
+      <h2><%= _lp.text('side_title', 'auth.side_title') %></h2>
+      <p><%= _lp.text('side_text', 'auth.side_text') %></p>
+      <% if (_lp.show_points) { %>
       <ul class="auth-points">
-        <li><%- icon('circle-check') %><%= t('auth.side_point_1') %></li>
-        <li><%- icon('circle-check') %><%= t('auth.side_point_2') %></li>
-        <li><%- icon('circle-check') %><%= t('auth.side_point_3') %></li>
+        <li><%- icon('circle-check') %><%= _lp.text('point_1', 'auth.side_point_1') %></li>
+        <li><%- icon('circle-check') %><%= _lp.text('point_2', 'auth.side_point_2') %></li>
+        <li><%- icon('circle-check') %><%= _lp.text('point_3', 'auth.side_point_3') %></li>
       </ul>
+      <% } %>
     </div>
-    <div class="small" style="opacity:.7">© <%= new Date().getFullYear() %> <%= brandName %></div>
+    <div class="small" style="opacity:.7">© <%= new Date().getFullYear() %> <%= _acName %></div>
   </div>
   <div class="auth-main">
     <div class="auth-top">
@@ -22,7 +29,7 @@
       <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button>
     </div>
     <div class="auth-card<%= typeof wide !== 'undefined' && wide ? ' wide' : '' %>">
-      <a class="auth-mobile-logo row-sm" href="/"><%- include('../partials/logo') %></a>
+      <a class="auth-mobile-logo row-sm" href="/"><% if (_ac && _ac.logo) { %><img class="auth-clinic-logo" src="/<%= _ac.slug %>/logo" alt="<%= _acName %>"><span class="brand-word"><%= _acName %></span><% } else if (_ac) { %><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="var(--primary)"/><%- brand.markInner('var(--primary-ink)') %></svg><span class="brand-word"><%= _acName %></span><% } else { %><%- include('../partials/logo') %><% } %></a>
       <%- include('../partials/toasts') %>
       <%- body %>
     </div>

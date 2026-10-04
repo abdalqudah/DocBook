@@ -36,7 +36,8 @@ const clinicChoices = (req) => ({ specialtyOptions: require('../platformops/clin
 // ---------- Login
 const renderLogin = (req, res, extra = {}) => res.page('pages/auth/login', { layout: 'auth', title: req.t('auth.login_title'), ...extra });
 router.get('/login', wrap(async (req, res) => {
-  if (req.user) return res.redirect(req.user.must_change_password ? '/password/new' : await landingFor(req.user.id, req.session.businessId));
+  // ?preview=1: the installation's own account looks at the sign-in page it is editing.
+  if (req.user && !(req.query.preview === '1' && req.user.is_platform_admin)) return res.redirect(req.user.must_change_password ? '/password/new' : await landingFor(req.user.id, req.session.businessId));
   return renderLogin(req, res);
 }));
 router.post('/login', limiter, form(async (req, res) => {

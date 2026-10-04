@@ -1,5 +1,5 @@
-<h1><%= t('auth.login_title') %></h1>
-<p class="lead"><%= t('auth.login_lead') %></p>
+<h1><%= typeof loginPage !== 'undefined' && loginPage ? loginPage.text('title', 'auth.login_title') : t('auth.login_title') %></h1>
+<p class="lead"><%= typeof loginPage !== 'undefined' && loginPage ? loginPage.text('lead', 'auth.login_lead') : t('auth.login_lead') %></p>
 <form class="stack mt-6" method="post" action="/login" novalidate>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <%- include('../../partials/form-error') %>

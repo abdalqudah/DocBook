@@ -5,7 +5,7 @@
       <h1 class="po-off-title"><%= t('updater.restarting_title') %></h1>
       <p class="muted"><%= t(kind === 'rollback' ? 'updater.rolled_back_text' : 'updater.activated_text', { from: r.from || '—', to: r.to || '—' }) %></p>
       <p class="small muted" role="status" aria-live="polite" data-po-restart-status><%= t('updater.restarting_wait') %></p>
-      <div class="row-sm wrap po-off-actions"><a class="btn btn-primary" href="/admin/updates"><%- icon('arrow-right', 'icon-sm flip-rtl') %><%= t('updater.open_again') %></a></div>
+      <div class="row-sm wrap po-off-actions"><a class="btn btn-primary" href="<%= typeof updBase !== 'undefined' ? updBase : '/admin/updates' %>"><%- icon('arrow-right', 'icon-sm flip-rtl') %><%= t('updater.open_again') %></a></div>
       <p class="tiny muted"><%= t('updater.restart_manual') %></p>
     </div>
   </div>

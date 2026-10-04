@@ -34,6 +34,16 @@
       </div>
     </section>
     <% }) %>
+    <% if (currentUser && currentUser.is_platform_admin) { /* the installation's own account: the system itself */ %>
+    <section>
+      <h2 class="set-group-title"><%= t('maintenance.sys_group') %></h2>
+      <div class="set-cards">
+        <% [['/app/settings/system-update', 'cloud-upload', 'sys_update'], ['/app/settings/login-page', 'log-in', 'sys_login'], ['/admin/maintenance', 'wrench', 'sys_maint']].forEach(function (c) { %>
+        <a class="set-card" href="<%= c[0] %>"><span class="set-card-icon"><%- icon(c[1]) %></span><span class="grow" style="min-width:0"><span class="set-card-title"><%= t('maintenance.' + c[2]) %></span><span class="set-card-text"><%= t('maintenance.' + c[2] + '_text') %></span></span><%- icon('chevron-right', 'icon-sm muted flip-rtl') %></a>
+        <% }) %>
+      </div>
+    </section>
+    <% } %>
     <%# Pages that moved to their workspaces (redesign): a pointer for people used to finding them here. %>
     <% var moved = []; if (can('users.manage') || can('roles.manage')) moved.push({ href: '/app/clinic/team', icon: 'user-cog', key: 'team' });
        if (canAny('settings.manage', 'prescriptions.create', 'clinical.edit')) moved.push({ href: '/app/clinic/setup', icon: 'pill', key: 'clinical' }); %>

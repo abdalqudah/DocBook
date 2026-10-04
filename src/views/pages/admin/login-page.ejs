@@ -1,0 +1,29 @@
+<%# Sign-in page editor: the texts (Arabic / English; empty = the built-in text) and the look of the side panel. %>
+<% var v = function (k) { return lp[k] || ''; }; %>
+<div class="page-head"><div><h1><%= t('loginpage.title') %></h1><p><%= t('loginpage.lead') %></p></div>
+  <a class="btn btn-secondary" href="/login?preview=1" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t('loginpage.preview') %></a></div>
+
+<form class="stack-lg" method="post" action="<%= base %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('loginpage.look') %></h2><div class="panel-sub"><%= clinic ? t('loginpage.look_clinic') : t('loginpage.look_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <% styles.forEach(function (s) { %>
+      <label class="check"><input type="radio" name="style" value="<%= s %>"<%= lp.style === s ? ' checked' : '' %>><span><strong><%= t('loginpage.style_' + s) %></strong> — <span class="muted small"><%= t('loginpage.style_' + s + '_help') %></span></span></label>
+      <% }) %>
+      <label class="check"><input type="checkbox" name="show_points" value="1"<%= lp.show_points ? ' checked' : '' %>><span><%= t('loginpage.show_points') %></span></label>
+    </div>
+  </section>
+  <% [['form', ['title', 'lead']], ['side', ['side_title', 'side_text', 'point_1', 'point_2', 'point_3']]].forEach(function (grp) { %>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('loginpage.group_' + grp[0]) %></h2><div class="panel-sub"><%= t('loginpage.empty_default') %></div></div></div>
+    <div class="panel-body form-grid">
+      <% grp[1].forEach(function (k) { var area = k === 'lead' || k === 'side_text'; %>
+      <%- include('../../partials/field', { name: k + '_ar', label: t('loginpage.f_' + k) + ' · ' + t('loginpage.ar'), type: area ? 'textarea' : 'text', value: v(k + '_ar'), attrs: 'maxlength="' + limits[k] + '"', placeholder: t('auth.' + ({ title: 'login_title', lead: 'login_lead', side_title: 'side_title', side_text: 'side_text', point_1: 'side_point_1', point_2: 'side_point_2', point_3: 'side_point_3' })[k]) }) %>
+      <%- include('../../partials/field', { name: k + '_en', label: t('loginpage.f_' + k) + ' · ' + t('loginpage.en'), type: area ? 'textarea' : 'text', value: v(k + '_en'), attrs: 'dir="ltr" maxlength="' + limits[k] + '"' }) %>
+      <% }) %>
+    </div>
+  </section>
+  <% }) %>
+  <div><button class="btn btn-primary" type="submit"><%= t('loginpage.save') %></button></div>
+</form>

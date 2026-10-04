@@ -4,7 +4,7 @@
 <div class="page-head"><div><h1><%= t('updater.title') %></h1><p><%= t('updater.lead') %></p></div></div>
 
 <% if (updated || restored) { %>
-<div class="alert alert-success mb-4"><%- icon('rocket') %><div class="grow"><div class="alert-title"><%= updated ? t('updater.update_started', { v: updated }) : t('updater.restore_started', { v: restored }) %></div><div class="small"><%= t('updater.restart_note') %></div></div><a class="btn btn-secondary btn-sm" href="/admin/updates"><%= t('updater.refresh') %></a></div>
+<div class="alert alert-success mb-4"><%- icon('rocket') %><div class="grow"><div class="alert-title"><%= updated ? t('updater.update_started', { v: updated }) : t('updater.restore_started', { v: restored }) %></div><div class="small"><%= t('updater.restart_note') %></div></div><a class="btn btn-secondary btn-sm" href="<%= typeof updBase !== 'undefined' ? updBase : '/admin/updates' %>"><%= t('updater.refresh') %></a></div>
 <% } %>
 <% if (typeof fromSource !== 'undefined' && fromSource && dist) { %>
 <div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><div class="alert-title"><%= t('updater.from_source_title') %></div><div><%= t('updater.from_source_text') %></div></div></div>
@@ -24,11 +24,11 @@
         <dt><%= t('updater.db_state') %></dt><dd><% if (pendingDb.length) { %><span class="badge badge-warning badge-dot"><%= t('updater.db_pending', { n: pendingDb.length }) %></span><% } else { %><span class="badge badge-success badge-dot"><%= t('updater.db_ok') %></span><% } %> <span class="tiny muted"><%= t('updater.db_count', { n: appliedDb }) %></span></dd>
       </dl>
       <p class="tiny muted mt-2"><%= t('updater.db_auto') %></p>
-      <form method="post" action="/admin/updates/database" class="mt-2"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('database', 'icon-sm') %><%= t('updater.db_run') %></button></form>
+      <form method="post" action="<%= typeof updBase !== 'undefined' ? updBase : '/admin/updates' %>/database" class="mt-2"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('database', 'icon-sm') %><%= t('updater.db_run') %></button></form>
     </div>
   </section>
 
-  <form method="post" action="/admin/updates/install" enctype="multipart/form-data" class="panel span-2" novalidate>
+  <form method="post" action="<%= typeof updBase !== 'undefined' ? updBase : '/admin/updates' %>/install" enctype="multipart/form-data" class="panel span-2" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="panel-head"><div><h2><%= t('updater.install_title') %></h2><div class="panel-sub"><%= t('updater.install_sub') %></div></div></div>
     <div class="panel-body stack">
@@ -71,7 +71,7 @@
 </div>
 
 <dialog class="dialog" id="restore-dialog"<%= typeof openRestore !== 'undefined' && openRestore ? ' data-open-on-load' : '' %>>
-  <form method="post" action="/admin/updates/restore" novalidate>
+  <form method="post" action="<%= typeof updBase !== 'undefined' ? updBase : '/admin/updates' %>/restore" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="backup" value="<%= typeof openRestore !== 'undefined' && openRestore ? openRestore : '' %>">
     <div class="dialog-head"><div><h2><%= t('updater.restore_title') %></h2><p class="muted small mt-1"><%= t('updater.restore_sub') %></p></div><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x') %></button></div>
     <div class="dialog-body"><div class="field"><label class="label" for="rs-pass"><%= t('updater.confirm_password') %></label><input class="input" id="rs-pass" type="password" name="password" required autocomplete="current-password">

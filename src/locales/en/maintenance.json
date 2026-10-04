@@ -27,6 +27,13 @@
     "from_env": "Maintenance is on from the .env file (MAINTENANCE); remove that line and restart to reopen.",
     "bar": "The site is closed for maintenance — visitors see the maintenance page.",
     "bar_link": "Manage maintenance",
-    "system_settings": "System settings"
+    "system_settings": "System settings",
+    "sys_group": "System",
+    "sys_update": "System update",
+    "sys_update_text": "Upload the update file; backups and rolling back.",
+    "sys_login": "Sign-in page",
+    "sys_login_text": "The sign-in page's words and colours.",
+    "sys_maint": "Maintenance mode",
+    "sys_maint_text": "Close the site with a message, reopen it."
   }
 }

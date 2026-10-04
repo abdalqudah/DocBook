@@ -1,0 +1,32 @@
+{
+  "loginpage": {
+    "title": "Sign-in page",
+    "lead": "The words and look of the sign-in page. An empty field keeps the built-in text.",
+    "preview": "Preview",
+    "look": "Look",
+    "look_sub": "The side panel's colour.",
+    "look_clinic": "The page takes the clinic's colours and logo automatically (Settings → Appearance).",
+    "style_color": "Clinic colours",
+    "style_color_help": "A background in the clinic's main colour.",
+    "style_dark": "Dark",
+    "style_dark_help": "A calm dark background.",
+    "style_light": "Light",
+    "style_light_help": "A light background with a touch of the clinic colour.",
+    "show_points": "Show the three points",
+    "group_form": "Sign-in form",
+    "group_side": "Side panel",
+    "empty_default": "Leave a field empty to use the built-in text.",
+    "f_title": "Title",
+    "f_lead": "Text under the title",
+    "f_side_title": "Big title",
+    "f_side_text": "Description",
+    "f_point_1": "Point 1",
+    "f_point_2": "Point 2",
+    "f_point_3": "Point 3",
+    "ar": "Arabic",
+    "en": "English",
+    "save": "Save",
+    "saved": "The sign-in page is saved.",
+    "nav": "Sign-in page"
+  }
+}

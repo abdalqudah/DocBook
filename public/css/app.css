@@ -542,6 +542,12 @@ body.is-navigating .loading-bar { display: block; }
 .auth-side { background: var(--secondary); color: var(--secondary-ink); padding: 44px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
 .auth-side::after { content: ''; position: absolute; width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(circle, var(--primary-soft-2), transparent 70%); inset-inline-end: -180px; bottom: -180px; pointer-events: none; }
 .auth-side .brand-word { color: inherit; }
+/* The sign-in page's look (Settings → Sign-in page): the clinic's colour, dark, or light. */
+.auth-side.is-color { background: linear-gradient(150deg, var(--primary), var(--primary-hover)); color: var(--primary-ink); }
+.auth-side.is-color .auth-points .icon { color: currentColor; }
+.auth-side.is-color::after { background: radial-gradient(circle, color-mix(in srgb, var(--primary-ink) 14%, transparent), transparent 70%); }
+.auth-side.is-light { background: var(--primary-soft); color: var(--text); }
+.auth-clinic-logo { height: 44px; width: auto; max-width: 180px; object-fit: contain; border-radius: var(--radius); background: var(--surface); padding: 4px; }
 .auth-side h2 { font-size: clamp(28px, 3vw, 40px); font-weight: var(--fw-heavy); line-height: 1.1; letter-spacing: -.03em; }
 [dir="rtl"] .auth-side h2 { letter-spacing: 0; line-height: 1.3; }
 .auth-side p { font-size: 15px; max-width: 440px; margin-top: 14px; opacity: .82; }
