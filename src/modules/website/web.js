@@ -261,9 +261,9 @@ router.post('/versions/:id(\\d+)/restore', can('website.edit'), builderGate, act
 
 // ---------------------------------------------------------------- import content (a prepared .zip: pages, pictures, doctors)
 const importSvc = require('./import.service');
-const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: importSvc.MAX_ZIP + 1, files: 1, fields: 10, parts: 16 } });
+const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: importSvc.MAX_ZIP + 1, files: 1, fields: 24, parts: 30 } });
 router.get('/import', can('website.edit'), builderGate, wrap(async (req, res) => {
-  page(req, res, 'import', { title: req.t('website.import.title'), result: req.session.siteImport || null, canDoctors: req.ctx.permissions.has('doctors.manage') });
+  page(req, res, 'import', { title: req.t('website.import.title'), result: req.session.siteImport || null, canDoctors: req.ctx.permissions.has('doctors.manage'), canServices: req.ctx.permissions.has('services.manage') });
   delete req.session.siteImport;
 }));
 router.post('/import', can('website.edit'), builderGate, (req, res, next) => importUpload.single('package')(req, res, (e) => { if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'IMPORT_TOO_BIG' : 'IMPORT_BAD_FILE'; next(); }),
@@ -273,7 +273,7 @@ router.post('/import', can('website.edit'), builderGate, (req, res, next) => imp
     try {
       const on = (k) => { const v = [].concat(req.body[k]); return v[v.length - 1] === '1'; };
       const doctorsOk = req.ctx.permissions.has('doctors.manage');
-      const r = await importSvc.run(req.ctx, req.business, file, { site: on('site'), doctors: doctorsOk && on('doctors'), createDoctors: on('create_doctors'), replacePhotos: on('replace_photos') });
+      const r = await importSvc.run(req.ctx, req.business, file, { site: on('site'), services: req.ctx.permissions.has('services.manage') && on('services'), doctors: doctorsOk && on('doctors'), createDoctors: on('create_doctors'), replacePhotos: on('replace_photos') });
       req.session.siteImport = r;
       return r;
     } finally { require('fs').unlink(file, () => {}); } // eslint-disable-line global-require

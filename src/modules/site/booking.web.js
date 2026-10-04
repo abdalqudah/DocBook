@@ -2,6 +2,7 @@
 // the "Show free times" button re-renders the page with the free times; with JavaScript they load from
 // /<slug>/book/slots as the patient picks a doctor, service and date. Bookings arrive as pending
 // (source "website") and notify the clinic's staff.
+const { siteLook } = require('./portal.web');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const knex = require('../../db/knex');
@@ -12,7 +13,7 @@ const { wrap } = require('../../routes/helpers');
 const { translateMessage } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
 const appointments = require('../clinic/appointments.service');
-const { loadClinic: loadPortalClinic, clinicStyles, listDoctors, listServices } = require('./portal.web');
+const { loadClinic: loadPortalClinic, listDoctors, listServices } = require('./portal.web');
 const branches = require('../clinic/branches.service');
 const subscriptions = require('../subscriptions/subscriptions.service');
 
@@ -85,13 +86,13 @@ async function freeTimes(req, clinic, { doctorId, serviceId, date, branch = null
 
 async function renderBook(req, res, clinic, extra = {}) {
   if (!clinic.booking_enabled) {
-    return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, pageStyles: clinicStyles(clinic) });
+    return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, ...(await siteLook(req, res, clinic)) });
   }
   const [doctors, services, onlineDoctors] = await Promise.all([listDoctors(req, clinic, 'booking'), listServices(req, clinic, 'booking'), require('../telehealth/telehealth.service').onlineDoctors(clinic, req.locale)]); // eslint-disable-line global-require
   // No doctor to book with (none added yet, or none taking online bookings): the same "call the clinic" page, not a
   // form that cannot be sent.
   if (!doctors.length) {
-    return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, pageStyles: clinicStyles(clinic) });
+    return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('booking.unavailable_title'), clinic, hideBookCta: true, ...(await siteLook(req, res, clinic)) });
   }
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
   // Branches: the patient picks the branch first; only branches with a doctor are offered.
@@ -114,7 +115,7 @@ async function renderBook(req, res, clinic, extra = {}) {
   return res.page('pages/portal/book', {
     branchChoices: branchChoices.length > 1 ? branchChoices : [],
     layout: 'public', title: req.t('booking.title'), pageTitle: `${req.t('booking.title')} · ${clinic.displayName}`, clinic, doctors, services, sel, slots, slotsError,
-    minDate: min, maxDate: max, hideBookCta: true, pageStyles: [...clinicStyles(clinic), '/css/telehealth.css'], pageScripts: ['/js/site.js'], onlineAvailable: onlineDoctors.length > 0,
+    minDate: min, maxDate: max, hideBookCta: true, ...(await siteLook(req, res, clinic, ['/css/telehealth.css'])), pageScripts: ['/js/site.js'], onlineAvailable: onlineDoctors.length > 0,
     errors: {}, formError: null, old: {}, ...extra,
   });
 }
@@ -257,7 +258,7 @@ router.get('/:slug/book/done', wrap(async (req, res, next) => {
   if (!clinic) return next();
   const a = await lastBooking(req, clinic);
   if (!a) return res.redirect(`/${clinic.slug}/book`);
-  return res.page('pages/portal/booked', { layout: 'public', title: req.t('booking.done_title'), clinic, appt: localise(req, a), hideBookCta: true, noindex: true, pageStyles: clinicStyles(clinic) });
+  return res.page('pages/portal/booked', { layout: 'public', title: req.t('booking.done_title'), clinic, appt: localise(req, a), hideBookCta: true, noindex: true, ...(await siteLook(req, res, clinic)) });
 }));
 
 /** UTC instant of a wall-clock time in a time zone. */

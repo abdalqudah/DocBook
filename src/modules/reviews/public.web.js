@@ -1,5 +1,6 @@
 // /review/<token>: the verified review form sent after a visit (public, noindex). One review per appointment,
 // only for visits that happened (completed or paid), link valid 30 days. Honeypot field + rate limit.
+const { siteLook } = require('../site/portal.web');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const config = require('../../config');
@@ -8,7 +9,6 @@ const { AppError, E } = require('../../core/errors');
 const { translateMessage } = require('../../core/i18n');
 const { publicBase } = require('../../middleware/web');
 const businesses = require('../businesses/business.service');
-const { clinicStyles } = require('../site/portal.web');
 const msg = require('../messaging/messaging.service');
 const { clinicView, noStore, notFound, errText } = require('../messaging/pages');
 const reviews = require('./reviews.service');
@@ -25,14 +25,14 @@ async function load(req) {
   return { link, clinic: clinicView(req, b), state: await reviews.linkState(link) };
 }
 
-function page(req, res, found, extra = {}) {
+async function page(req, res, found, extra = {}) {
   const { link, clinic, state } = found;
   const en = req.locale === 'en';
   return res.page('pages/engage/review', {
     layout: 'public', title: req.t('reviews.page_title'), pageTitle: `${req.t('reviews.page_title')} · ${clinic.displayName}`, noindex: true, hideBookCta: true,
     clinic, state, token: req.params.token, doctor: (en && link.doctor_name_en) || link.doctor_name, visitDate: link.appointment_date,
     patientName: link.patient_name, maxComment: reviews.MAX_COMMENT, thanks: req.query.done === '1',
-    pageStyles: [...clinicStyles(clinic), '/css/engage.css'], pageScripts: ['/js/engage.js'], ...extra,
+    ...(await siteLook(req, res, clinic, ['/css/engage.css'])), pageScripts: ['/js/engage.js'], ...extra,
   });
 }
 

@@ -5,6 +5,7 @@
 //   /r/<token>/stop            opt out of automated messages (and back in)
 //   /review/<token>            verified review after a visit (see src/modules/reviews/public.web.js)
 // An action link stops working once the appointment is over. Nothing about other patients is reachable here.
+const { siteLook } = require('../site/portal.web');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const config = require('../../config');
@@ -12,7 +13,6 @@ const { wrap } = require('../../routes/helpers');
 const { AppError } = require('../../core/errors');
 const { publicBase } = require('../../middleware/web');
 const businesses = require('../businesses/business.service');
-const { clinicStyles } = require('../site/portal.web');
 const scheduling = require('../clinic/scheduling');
 const msg = require('./messaging.service');
 const { clinicView, noStore, notFound, errText } = require('./pages');
@@ -39,7 +39,7 @@ async function load(req, { allowExpired = false } = {}) {
 
 const meta = (req, via = 'link') => ({ ip: req.ip, userAgent: req.get('user-agent'), locale: req.locale, base: publicBase(req), via });
 
-function view(req, res, found, extra = {}) {
+async function view(req, res, found, extra = {}) {
   const { a, clinic, cfg, st } = found;
   const en = req.locale === 'en';
   res.locals.currency = clinic.currency;
@@ -48,7 +48,7 @@ function view(req, res, found, extra = {}) {
     clinic, a, st, cfg, token: req.params.token, done: ['confirmed', 'cancelled', 'rescheduled', 'already', 'stopped', 'started'].includes(req.query.done) ? req.query.done : null,
     doctor: (en && a.doctor_name_en) || a.doctor_name, doctorSpec: (en ? a.doctor_spec_en || a.doctor_spec : a.doctor_spec || a.doctor_spec_en) || '',
     service: (en && a.service_name_en) || a.service_name, length: msg.lengthOf(a), error: null,
-    pageStyles: [...clinicStyles(clinic), '/css/engage.css'], pageScripts: ['/js/engage.js'], ...extra,
+    ...(await siteLook(req, res, clinic, ['/css/engage.css'])), pageScripts: ['/js/engage.js'], ...extra,
   });
 }
 

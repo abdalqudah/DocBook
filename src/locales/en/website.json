@@ -865,7 +865,12 @@
       "carousel_help": "“Follow the language”: in Arabic the items travel right, in English left. The row pauses on hover or touch.",
       "icon_library": "Icon library",
       "url_help": "YouTube (regular, shorts, youtu.be) and Vimeo links only. Shown in the privacy-friendly player.",
-      "page_link_help": "Used when the action is \"Open a page of the site\"."
+      "page_link_help": "Used when the action is \"Open a page of the site\".",
+      "f_contact_title": "Contact column heading",
+      "f_contact_extra": "Extra lines under contact",
+      "f_contact_extra_help": "For example another branch's address and phone. Each line shows as you write it.",
+      "f_links_title": "Links column heading",
+      "f_hours_title": "Opening hours column heading"
     },
     "item_field": {
       "title": "Title",
@@ -1062,7 +1067,9 @@
       "next": "Open the builder to review the pages and change any text or picture, then press \"Publish\".",
       "open_builder": "Open the builder",
       "preview": "Preview",
-      "doctors": "Doctors"
+      "doctors": "Doctors",
+      "opt_services": "Add the main services and sub-services to the system (booking and invoices — you set the prices)",
+      "r_services": "New main services: {c} · new sub-services: {n}"
     }
   },
   "errors_website": {

@@ -28,17 +28,18 @@
         <% if (conn && conn.google && conn.google.review) { %><a class="btn btn-secondary btn-sm ws-review-g" href="<%= conn.google.review %>" target="_blank" rel="noopener"><%- icon('star', 'icon-sm') %><%= t('clinic_mkt.review_us') %></a><% } %>
       </div>
       <% if (f.show_menu !== false && wsSite.items.length) { %>
-      <nav class="ws-footer-col" aria-label="<%= t('site.nav_label') %>"><h3><%= t('website.b.footer_links') %></h3><ul><% wsSite.items.forEach(function (n) { %><li><a href="<%= n.href %>"<%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a></li><% }) %></ul></nav>
+      <nav class="ws-footer-col" aria-label="<%= t('site.nav_label') %>"><h3><%= L(f.links_title) || t('website.b.footer_links') %></h3><ul><% wsSite.items.forEach(function (n) { %><li><a href="<%= n.href %>"<%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a></li><% }) %></ul></nav>
       <% } %>
-      <% if (f.show_contact !== false && (c.address || c.phone || c.email)) { %>
-      <div class="ws-footer-col"><h3><%= t('portal.info') %></h3><ul class="site-contact">
+      <% var _extra = L(f.contact_extra); %>
+      <% if (f.show_contact !== false && (c.address || c.phone || c.email || _extra)) { %>
+      <div class="ws-footer-col"><h3><%= L(f.contact_title) || t('portal.info') %></h3><ul class="site-contact">
         <% if (c.address) { %><li><%- icon('map-pin', 'icon-sm') %><span><%= c.address %></span></li><% } %>
         <% if (c.phone) { %><li><%- icon('phone', 'icon-sm') %><a href="<%= c.telHref %>" dir="ltr"><%= c.phone %></a></li><% } %>
         <% if (c.email) { %><li><%- icon('mail', 'icon-sm') %><a href="mailto:<%= c.email %>" dir="ltr"><%= c.email %></a></li><% } %>
-      </ul></div>
+      </ul><% if (_extra) { %><p class="pre-line small" dir="auto"><%= _extra %></p><% } %></div>
       <% } %>
       <% if (f.show_hours !== false && c.working_hours_text) { %>
-      <div class="ws-footer-col"><h3><%= t('portal.hours') %></h3><p class="pre-line" dir="auto"><%= c.working_hours_text %></p></div>
+      <div class="ws-footer-col"><h3><%= L(f.hours_title) || t('portal.hours') %></h3><p class="pre-line" dir="auto"><%= c.working_hours_text %></p></div>
       <% } %>
     </div>
     <% } %>

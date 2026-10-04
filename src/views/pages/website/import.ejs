@@ -8,6 +8,7 @@
     <ul class="stack-sm" style="margin:0;padding-inline-start:18px">
       <li><%= t('website.import.r_pages', { n: result.pages }) %></li>
       <li><%= t('website.import.r_media', { n: result.media }) %></li>
+      <% if (result.categories || result.services) { %><li><%= t('website.import.r_services', { c: result.categories || 0, n: result.services || 0 }) %></li><% } %>
       <% if (result.updated && result.updated.length) { %><li><%= t('website.import.r_updated', { n: result.updated.length }) %>: <span class="muted"><%= result.updated.join('، ') %></span></li><% } %>
       <% if (result.created && result.created.length) { %><li><%= t('website.import.r_created', { n: result.created.length }) %>: <span class="muted"><%= result.created.join('، ') %></span></li><% } %>
     </ul>
@@ -31,6 +32,7 @@
         <span class="help"><%= t('website.import.file_help') %></span></div>
       <fieldset class="stack-sm"><legend class="label"><%= t('website.import.what') %></legend>
         <input type="hidden" name="site" value="0"><label class="check"><input type="checkbox" name="site" value="1" checked><span><%= t('website.import.opt_site') %></span></label>
+        <% if (canServices) { %><input type="hidden" name="services" value="0"><label class="check"><input type="checkbox" name="services" value="1" checked><span><%= t('website.import.opt_services') %></span></label><% } %>
         <% if (canDoctors) { %>
         <input type="hidden" name="doctors" value="0"><label class="check"><input type="checkbox" name="doctors" value="1" checked><span><%= t('website.import.opt_doctors') %></span></label>
         <input type="hidden" name="create_doctors" value="0"><label class="check"><input type="checkbox" name="create_doctors" value="1" checked><span><%= t('website.import.opt_create') %></span></label>

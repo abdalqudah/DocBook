@@ -446,6 +446,8 @@ module.exports = router;
 module.exports.loadClinic = loadClinic;
 module.exports.clinicStyles = clinicStyles;
 module.exports.siteChromeFor = siteChromeFor;
+/** The website's own header, footer and look for any public page of the clinic (booking, reviews, payment …). */
+module.exports.siteLook = async (req, res, clinic, extra = []) => { const look = await siteChromeFor(req, res, clinic); return { bodyClass: look.bodyClass, pageStyles: [...look.styles, ...extra] }; };
 module.exports.listDoctors = listDoctors;
 module.exports.listServices = listServices;
 module.exports.pricesShown = pricesShown;

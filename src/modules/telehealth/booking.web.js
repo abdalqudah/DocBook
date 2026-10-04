@@ -3,6 +3,7 @@
 // patient's time zone is detected and the times load from /<slug>/book/online/slots, shown in the patient's
 // time AND the clinic's time. The form is multipart (optional medical files); the CSRF token is checked after
 // parsing. Same anti-abuse as the in-clinic booking: rate limit, honeypot, CSRF, max pending per phone.
+const { siteLook } = require('../site/portal.web');
 const express = require('express');
 const uploads = require('../../core/uploads');
 const rateLimit = require('express-rate-limit');
@@ -14,7 +15,7 @@ const { wrap } = require('../../routes/helpers');
 const { verifyCsrfAfterUpload } = require('../../middleware/web');
 const { translateMessage } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
-const { loadClinic, clinicStyles } = require('../site/portal.web');
+const { loadClinic } = require('../site/portal.web');
 const tele = require('./telehealth.service');
 const countries = require('./countries');
 
@@ -53,7 +54,7 @@ async function freeTimes(req, clinic, { doctorId, date, tz }) {
 async function renderOnline(req, res, clinic, extra = {}) {
   const doctors = clinic.booking_enabled ? await tele.onlineDoctors(clinic, req.locale) : [];
   if (!clinic.booking_enabled || !doctors.length) {
-    return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('telehealth.unavailable_title'), clinic, hideBookCta: !clinic.booking_enabled, pageStyles: clinicStyles(clinic) });
+    return res.page('pages/portal/unavailable', { layout: 'public', title: req.t('telehealth.unavailable_title'), clinic, hideBookCta: !clinic.booking_enabled, ...(await siteLook(req, res, clinic)) });
   }
   const src = { ...req.query, ...(req.method === 'POST' ? req.body : {}), ...(extra.old || {}) };
   const docId = idOf(src.doctor_id || src.doctor);
@@ -74,7 +75,7 @@ async function renderOnline(req, res, clinic, extra = {}) {
     layout: 'public', title: req.t('telehealth.book_title'), pageTitle: `${req.t('telehealth.book_title')} · ${clinic.displayName}`,
     clinic, doctors, sel, slots, slotsError, minDate: min, maxDate: max, hideBookCta: true, noindex: false,
     zones: tele.zoneOptions(), countryOptions: countries.options(req.locale), settings: tele.clinicSettings(clinic, req.locale),
-    maxFiles: tele.MAX_FILES, pageStyles: [...clinicStyles(clinic), '/css/telehealth.css'], pageScripts: ['/js/telehealth.js'],
+    maxFiles: tele.MAX_FILES, ...(await siteLook(req, res, clinic, ['/css/telehealth.css'])), pageScripts: ['/js/telehealth.js'],
     errors: {}, formError: null, old: {}, ...extra,
   });
 }

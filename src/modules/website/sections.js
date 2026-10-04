@@ -250,6 +250,9 @@ function cleanFooter(raw) {
   const out = Object.fromEntries(FOOTER.map((f) => [f.key, cleanValue(f, src[f.key])]));
   out.about = pair(src.about, 400, true);
   out.copyright = pair(src.copyright, 120);
+  // Column headings (own words in each language; empty = the default) and extra contact lines (a second branch, …).
+  out.contact_title = pair(src.contact_title, 40); out.links_title = pair(src.links_title, 40); out.hours_title = pair(src.hours_title, 40);
+  out.contact_extra = pair(src.contact_extra, 400, true);
   out.social = cleanSocial(src.social);
   return out;
 }

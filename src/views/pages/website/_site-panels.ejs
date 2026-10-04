@@ -94,6 +94,10 @@
         <div class="wsb-choices"><% ['below', 'beside'].forEach(function (o) { %><label class="wsb-choice"><input type="radio" name="footer[name_pos]" value="<%= o %>"<%= (ftr.name_pos || 'below') === o ? ' checked' : '' %>><span><%= t('website.b.fnp.' + o) %></span></label><% }) %></div></fieldset>
       <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.footer_about') %></legend><% pairRow('footer[about]', ftr.about, 400, true) %></fieldset>
       <% boolRow('footer[show_contact]', ftr.show_contact !== false, t('website.b.f_contact')) %>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.f_contact_title') %></legend><% pairRow('footer[contact_title]', ftr.contact_title, 40, false, t('portal.info')) %></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.f_contact_extra') %></legend><% pairRow('footer[contact_extra]', ftr.contact_extra, 400, true) %><span class="help"><%= t('website.b.f_contact_extra_help') %></span></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.f_links_title') %></legend><% pairRow('footer[links_title]', ftr.links_title, 40, false, t('website.b.footer_links')) %></fieldset>
+      <fieldset class="ws-i18n"><legend class="label"><%= t('website.b.f_hours_title') %></legend><% pairRow('footer[hours_title]', ftr.hours_title, 40, false, t('portal.hours')) %></fieldset>
       <% boolRow('footer[show_hours]', ftr.show_hours !== false, t('website.b.f_hours')) %>
       <% boolRow('footer[show_menu]', ftr.show_menu !== false, t('website.b.f_menu')) %>
       <% boolRow('footer[show_social]', ftr.show_social !== false, t('website.b.f_social')) %>

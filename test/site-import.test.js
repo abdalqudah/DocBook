@@ -46,6 +46,7 @@ const CONTENT = {
     { names: ['Ruba AlQudah'], full_name: 'د. ربى القضاة', full_name_en: 'Dr. Ruba AlQudah', specialization_en: 'Dentist', sort_order: 80 },
     { names: ['Not Here'], full_name: 'د. غير موجود', create: false },
   ],
+  services: [{ name: 'زراعة الأسنان', name_en: 'Dental implants', items: [{ name: 'زراعة سن واحد', name_en: 'Single implant', description: 'وصف', duration: 60 }, { name: 'كشف عام', name_en: 'Check-up' }] }],
   site: {
     pages: [
       { key: 'home', sections: [
@@ -56,7 +57,7 @@ const CONTENT = {
       { key: SVC, slug: 'implants', title: { ar: 'زراعة الأسنان', en: 'Implants' }, menu: false, sections: [{ id: 'a0c0000005', type: 'text', variant: 'plain', content: { ar: { text: `صفحة الزراعة ${tag}` }, en: {} }, settings: {} }] },
     ],
     header: { show_name: false, items: [{ kind: 'home', label: { ar: 'الرئيسية', en: 'Home' } }, { kind: 'page', target: ABOUT, label: { ar: 'من نحن', en: 'About' } }, { kind: 'section', target: DOCS, label: { ar: 'أطباؤنا', en: 'Doctors' } }] },
-    footer: { show_powered: false },
+    footer: { show_powered: false, contact_title: { ar: `تواصل ${tag}`, en: 'Reach us' }, contact_extra: { ar: 'فرع العبدلي — الطابق 21', en: '' } },
     seo: { title: { ar: `المركز ${tag}`, en: 'Center' } },
     brand: { logo: '@media:team' },
   },
@@ -74,6 +75,7 @@ test.before(async () => {
   const { last_business_id: businessId } = await knex('users').where({ id: userId }).first('last_business_id');
   await knex('businesses').where({ id: businessId }).update({ onboarding_completed_at: new Date(), slug, booking_enabled: true });
   ctx = { businessId, userId, roleKey: 'owner', permissions: await rbac.getUserPermissions(businessId, userId), locale: 'ar', timezone: 'Asia/Amman', currency: 'JOD', ip: '127.0.0.1' };
+  await knex('services').insert({ business_id: businessId, name: 'كشف عام', price: 15, duration_minutes: 30, is_active: true });
   [mansourId] = await knex('doctors').insert({ business_id: businessId, full_name: 'Dr.Mansour Alqudah', phone: null, is_active: true, working_hours: JSON.stringify(scheduling.defaultWorkingHours()) });
   business = await knex('businesses').where({ id: businessId }).first();
   zipPath = await makeZip(CONTENT, { 'images/dr-m.png': PNG, 'images/team.png': PNG });
@@ -95,7 +97,7 @@ test('upload a content package: draft pages, doctors, pictures; live site untouc
   const liveBefore = (await knex('clinic_sites').where({ business_id: ctx.businessId }).first()).live_version_id;
   const archivedBefore = await knex('clinic_site_versions').where({ business_id: ctx.businessId, kind: 'archived' }).count({ n: '*' }).then((r) => Number(r[0].n));
   const a = app.agent(); await a.login(email);
-  const r = await a.upload('/app/website/import', '/app/website/import', { site: ['0', '1'], doctors: ['0', '1'], create_doctors: ['0', '1'], replace_photos: ['0', '1'] }, { package: { buffer: fs.readFileSync(zipPath), name: 'content.zip' } });
+  const r = await a.upload('/app/website/import', '/app/website/import', { site: ['0', '1'], services: ['0', '1'], doctors: ['0', '1'], create_doctors: ['0', '1'], replace_photos: ['0', '1'] }, { package: { buffer: fs.readFileSync(zipPath), name: 'content.zip' } });
   assert.equal(r.status, 302);
   const result = await a.get('/app/website/import');
   assert.match(result.text, /Dr\. Ruba AlQudah/);
@@ -126,10 +128,20 @@ test('upload a content package: draft pages, doctors, pictures; live site untouc
   assert.ok(ruba && ruba.is_active);
   assert.ok(!(await knex('doctors').where({ business_id: ctx.businessId, full_name: 'د. غير موجود' }).first()), 'create: false is respected');
   assert.ok(await knex('audit_logs').where({ business_id: ctx.businessId, action: 'website.import' }).first('id'));
+  // main and sub-services in the system (an existing service keeps its price and gets the category)
+  const cat = await knex('service_categories').where({ business_id: ctx.businessId, name: 'زراعة الأسنان' }).first();
+  assert.ok(cat);
+  const one = await knex('services').where({ business_id: ctx.businessId, name: 'زراعة سن واحد' }).first();
+  assert.equal(one.category_id, cat.id); assert.equal(one.duration_minutes, 60); assert.ok(!one.show_price);
+  const checkup = await knex('services').where({ business_id: ctx.businessId, name: 'كشف عام' });
+  assert.equal(checkup.length, 1, 'the existing service is not duplicated');
+  assert.equal(Number(checkup[0].price), 15);
   // importing again reuses the same pictures (no duplicates)
   const before = await knex('clinic_media').where({ business_id: ctx.businessId }).count({ n: '*' }).then((x) => Number(x[0].n));
   await importer.run(ctx, business, zipPath, {});
   assert.equal(await knex('clinic_media').where({ business_id: ctx.businessId }).count({ n: '*' }).then((x) => Number(x[0].n)), before);
+  assert.equal(await knex('services').where({ business_id: ctx.businessId }).count({ n: '*' }).then((x) => Number(x[0].n)), 2, 'services not duplicated on a second import');
+  assert.equal(await knex('service_categories').where({ business_id: ctx.businessId }).count({ n: '*' }).then((x) => Number(x[0].n)), 1);
 });
 
 test('published: card links to the page, the doctor page shows the full profile, no doctor phone on the site', async () => {
@@ -139,6 +151,10 @@ test('published: card links to the page, the doctor page shows the full profile,
   assert.equal(r.status, 200);
   assert.match(r.text, new RegExp(`href="/${slug}/p/implants"`));
   assert.doesNotMatch(r.text, /0000 0001/);
+  assert.match(r.text, new RegExp(`<h3>تواصل ${tag}</h3>`), 'own footer heading');
+  assert.match(r.text, /فرع العبدلي — الطابق 21/);
+  r = await v.get(`/${slug}/book`);
+  assert.match(r.text, /<optgroup label="زراعة الأسنان"/);
   r = await v.get(`/${slug}/p/implants`);
   assert.match(r.text, new RegExp(`صفحة الزراعة ${tag}`));
   r = await v.get(`/${slug}/doctors/${mansourId}`);

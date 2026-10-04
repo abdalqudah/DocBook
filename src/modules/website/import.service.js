@@ -57,6 +57,7 @@ function summary(data) {
   return {
     media: Object.keys(data.media || {}).length,
     doctors: (Array.isArray(data.doctors) ? data.doctors : []).map((d) => d.full_name_en || d.full_name).filter(Boolean),
+    services: (Array.isArray(data.services) ? data.services : []).reduce((n, g) => n + ((g && Array.isArray(g.items)) ? g.items.length : 0), 0),
     pages: pages.map((p) => (p.key === 'home' ? 'home' : (p.title && (p.title.ar || p.title.en)) || p.slug)).filter(Boolean),
   };
 }
@@ -125,6 +126,49 @@ async function importDoctors(ctx, data, mediaIds, { create = true, photos = true
   return { updated, created };
 }
 
+/**
+ * Main services (categories) and their sub-services, matched by name (no duplicates on a second import). A new
+ * service has no price shown (the clinic sets prices); an existing one keeps its price and only gets what it lacks.
+ */
+async function importServices(ctx, data) {
+  const groups = (Array.isArray(data.services) ? data.services : []).slice(0, 30);
+  if (!groups.length) return { categories: 0, services: 0 };
+  const cats = await knex('service_categories').where({ business_id: ctx.businessId }).select('id', 'name', 'name_en');
+  const svcs = await knex('services').where({ business_id: ctx.businessId }).select('id', 'name', 'name_en', 'description', 'description_en', 'category_id');
+  const find = (list, x) => { const ks = [x.name, x.name_en].map(nameKey).filter(Boolean); return list.find((r) => ks.includes(nameKey(r.name)) || (r.name_en && ks.includes(nameKey(r.name_en)))); };
+  let nc = 0; let ns = 0;
+  for (const [gi, g] of groups.entries()) { // eslint-disable-line no-restricted-syntax
+    if (!g || !(g.name || g.name_en)) continue; // eslint-disable-line no-continue
+    let cat = find(cats, g);
+    if (!cat) {
+      const row = { business_id: ctx.businessId, name: text(g.name || g.name_en, 120), name_en: text(g.name_en, 120) || null, sort_order: (gi + 1) * 10, is_active: true };
+      const [id] = await knex('service_categories').insert(row); // eslint-disable-line no-await-in-loop
+      cat = { id, ...row }; cats.push(cat); nc += 1;
+      await audit.record(ctx, 'service_category.created', { entityType: 'service_category', entityId: id, newValues: { name: row.name, source: 'website_import' } }); // eslint-disable-line no-await-in-loop
+    }
+    for (const [si, x] of (Array.isArray(g.items) ? g.items : []).slice(0, 40).entries()) { // eslint-disable-line no-restricted-syntax
+      if (!x || !(x.name || x.name_en)) continue; // eslint-disable-line no-continue
+      const have = find(svcs, x);
+      const dur = Math.min(480, Math.max(5, Math.round(Number(x.duration) || 30)));
+      if (have) {
+        const patch = {};
+        if (!have.category_id) patch.category_id = cat.id;
+        if (!have.name_en && text(x.name_en, 190)) patch.name_en = text(x.name_en, 190);
+        if (!have.description && text(x.description, 3000)) patch.description = text(x.description, 3000);
+        if (!have.description_en && text(x.description_en, 3000)) patch.description_en = text(x.description_en, 3000);
+        if (Object.keys(patch).length) await knex('services').where({ business_id: ctx.businessId, id: have.id }).update({ ...patch, updated_at: new Date() }); // eslint-disable-line no-await-in-loop
+        continue; // eslint-disable-line no-continue
+      }
+      const row = { business_id: ctx.businessId, category_id: cat.id, name: text(x.name || x.name_en, 190), name_en: text(x.name_en, 190) || null,
+        description: text(x.description, 3000) || null, description_en: text(x.description_en, 3000) || null, price: 0, show_price: false, duration_minutes: dur, is_active: true, sort_order: (gi + 1) * 100 + si };
+      const [id] = await knex('services').insert(row); // eslint-disable-line no-await-in-loop
+      svcs.push({ id, ...row }); ns += 1;
+      await audit.record(ctx, 'service.created', { entityType: 'service', entityId: id, newValues: { name: row.name, source: 'website_import' } }); // eslint-disable-line no-await-in-loop
+    }
+  }
+  return { categories: nc, services: ns };
+}
+
 /** Replaces "@media:<ref>" strings (anywhere in the document) by the pictures' ids. */
 function resolveRefs(v, mediaIds) {
   if (typeof v === 'string') { const m = /^@media:([a-z0-9_-]{1,40})$/i.exec(v); return m ? (mediaIds[m[1]] || null) : v; }
@@ -165,10 +209,11 @@ async function run(ctx, business, file, opts = {}) {
   try {
     const mediaIds = await importMedia(ctx, data, zip);
     const docs = opts.doctors === false ? { updated: [], created: [] } : await importDoctors(ctx, data, mediaIds, { create: opts.createDoctors !== false, photos: opts.replacePhotos !== false });
+    const svc = opts.services === false ? { categories: 0, services: 0 } : await importServices(ctx, data);
     const pages = opts.site === false ? 0 : await importSite(ctx, business, data, mediaIds);
-    await audit.record(ctx, 'website.import', { entityType: 'clinic_site', entityId: ctx.businessId, newValues: { media: Object.keys(mediaIds).length, doctors_updated: docs.updated.length, doctors_created: docs.created.length, pages } });
+    await audit.record(ctx, 'website.import', { entityType: 'clinic_site', entityId: ctx.businessId, newValues: { media: Object.keys(mediaIds).length, doctors_updated: docs.updated.length, doctors_created: docs.created.length, pages, ...svc } });
     require('../../core/cache').forgetPrefix(`media:docs:${ctx.businessId}`); // eslint-disable-line global-require
-    return { media: Object.keys(mediaIds).length, ...docs, pages };
+    return { media: Object.keys(mediaIds).length, ...docs, pages, ...svc };
   } finally { zip.close(); }
 }
 
