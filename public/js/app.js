@@ -188,6 +188,14 @@
     if (dx) m.style.translate = Math.round(dx) + 'px 0';
   }, true);
 
+  /* ---------- Website → Theme & brand: choosing a colour turns on "use my colour" beside it (else it is not saved) ---------- */
+  document.addEventListener('input', function (e) {
+    var inp = e.target;
+    if (!inp || inp.type !== 'color') return;
+    var box = inp.closest('.ws-color'); var tick = box && box.querySelector('input[type=checkbox][name^="use_"]');
+    if (tick && !tick.checked) tick.checked = true;
+  });
+
   /* ---------- A file picker that sends its form as soon as a file is chosen (My account → photo) ---------- */
   $$('input[type=file][data-send-on-pick]').forEach(function (inp) {
     inp.addEventListener('change', function () { if (inp.files && inp.files.length && inp.form) { inp.form.classList.add('is-busy'); inp.form.submit(); } });

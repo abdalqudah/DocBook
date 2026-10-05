@@ -105,7 +105,8 @@ async function removeDayOff(ctx, doctorId, id) {
 
 const serviceSchema = z.object({
   name: z.string().trim().min(1, 'Required.').max(190), name_en: optionalString(190), description: optionalString(3000), description_en: optionalString(3000),
-  price: money(), show_price: bool(), duration_minutes: int(5, 480), is_active: bool(),
+  price: money(), show_price: bool(), // empty = no fixed time (the appointment takes the doctor's usual length)
+  duration_minutes: z.preprocess((v) => (v === '' || v === undefined || v === null ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a number.').min(5, 'Too small.').max(480, 'Too large.').optional()), is_active: bool(),
   doctor_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
   sort_order: z.preprocess((v) => (v === '' || v === undefined ? 0 : Number(v)), z.number().int().min(0).max(9999)),
 });
@@ -124,4 +125,49 @@ async function saveService(ctx, id, input) {
 const servicesFor = (ctx, doctorId) => knex('services').where({ business_id: ctx.businessId, is_active: true })
   .andWhere((q) => { q.whereNull('doctor_id'); if (doctorId) q.orWhere('doctor_id', doctorId); }).orderBy([{ column: 'sort_order' }, { column: 'name' }]);
 
-module.exports = { doctors, services, saveDoctor, saveService, listActive, daysOff, addDayOff, removeDayOff, servicesFor, parseWh };
+// ---------------------------------------------------------------- My profile (the doctor's own login)
+// A doctor linked to their login edits their own public profile and their own services — never another doctor's,
+// and never what the clinic decides (name, fee, hours, appointment length, active, branch, pay).
+const ownProfileSchema = z.object({
+  specialization: optionalString(190), specialization_en: optionalString(190),
+  bio: optionalString(5000), bio_en: optionalString(5000), education: optionalString(3000), education_en: optionalString(3000),
+});
+const myDoctorId = (ctx) => { if (!ctx.doctorId) throw E.forbidden(); return ctx.doctorId; };
+
+async function saveOwnProfile(ctx, input) {
+  const id = myDoctorId(ctx);
+  const d = validate(ownProfileSchema, input);
+  const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
+  const { links, errors } = require('./doctor-social').parse(input || {}); // eslint-disable-line global-require
+  if (Object.keys(errors).length) throw E.validation(errors);
+  row.social_links = Object.keys(links).length ? JSON.stringify(links) : null;
+  const prof = require('./doctor-profile'); // eslint-disable-line global-require
+  row.profile = prof.toStore(prof.fromForm(input || {}));
+  await doctors.update(ctx, id, row); // audited (doctor.updated)
+  await audit.record(ctx, 'doctor.own_profile_saved', { entityType: 'doctor', entityId: id });
+}
+
+/** The doctor's own services (active or not). */
+const ownServices = (ctx) => knex('services').where({ business_id: ctx.businessId, doctor_id: myDoctorId(ctx) }).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'name' }]);
+
+async function ownServiceRow(ctx, id) {
+  const row = await knex('services').where({ id, business_id: ctx.businessId, doctor_id: myDoctorId(ctx) }).first();
+  if (!row) throw E.notFound('Service');
+  return row;
+}
+
+/** A service of the doctor's own: always theirs (doctor_id is never taken from the form). */
+async function saveOwnService(ctx, id, input) {
+  const me = myDoctorId(ctx);
+  if (id) await ownServiceRow(ctx, id);
+  const body = { ...(input || {}), doctor_id: String(me) };
+  if (id && body.sort_order === undefined) body.sort_order = String((await ownServiceRow(ctx, id)).sort_order || 0);
+  return saveService(ctx, id, body);
+}
+
+async function removeOwnService(ctx, id) {
+  await ownServiceRow(ctx, id);
+  await services.remove(ctx, id);
+}
+
+module.exports = { saveOwnProfile, ownServices, saveOwnService, removeOwnService, doctors, services, saveDoctor, saveService, listActive, daysOff, addDayOff, removeDayOff, servicesFor, parseWh };

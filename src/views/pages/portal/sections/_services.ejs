@@ -17,7 +17,7 @@
             <span class="svc-icon"><%- icon('clipboard-plus', 'icon-sm') %></span>
             <span class="grow">
               <strong><%= x.name %></strong>
-              <span class="svc-meta"><span><%- icon('clock', 'icon-sm') %><%= t('portal.min', { n: x.duration }) %></span><% if (x.doctorId && doctorNames[x.doctorId]) { %><span><%- icon('stethoscope', 'icon-sm') %><%= doctorNames[x.doctorId] %></span><% } %></span>
+              <span class="svc-meta"><% if (x.duration) { %><span><%- icon('clock', 'icon-sm') %><%= t('portal.min', { n: x.duration }) %></span><% } %><% if (x.doctorId && doctorNames[x.doctorId]) { %><span><%- icon('stethoscope', 'icon-sm') %><%= doctorNames[x.doctorId] %></span><% } %></span>
               <% if (x.description) { %><span class="svc-desc"><%= x.description %></span><% } %>
             </span>
             <% if (s.settings.show_prices && x.price !== null) { %><span class="svc-price num"><%= fmt.money(x.price, clinic.currency) %></span><% } %>

@@ -3,7 +3,7 @@
   var oldv = function (k) { return old && old[k] !== undefined ? old[k] : ''; };
   var selDoctor = doctors.find(function (d) { return d.id === sel.doctor; });
   var selService = services.find(function (s) { return s.id === sel.service; });
-  var svcLabel = function (s) { return s.name + ' · ' + t('portal.min', { n: s.duration }) + (s.price !== null ? ' · ' + fmt.money(s.price, clinic.currency) : ''); };
+  var svcLabel = function (s) { return s.name + (s.duration ? ' · ' + t('portal.min', { n: s.duration }) : '') + (s.price !== null ? ' · ' + fmt.money(s.price, clinic.currency) : ''); };
 %>
 <section class="book-top">
   <div class="container book-top-inner">

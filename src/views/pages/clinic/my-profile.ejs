@@ -1,0 +1,67 @@
+<%# My profile: the doctor's own public profile and services (see modules/clinic/my-profile.web.js). %>
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; var v = function (k) { return old[k] !== undefined ? old[k] : (d[k] || ''); }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><%= L(d.full_name, d.full_name_en) %></div><h1><%= t('myprofile.title') %></h1><p><%= t('myprofile.lead') %></p></div>
+</div>
+<div class="panel"><div class="panel-body row wrap" style="gap:16px;align-items:center">
+  <div class="doc-photo"><% if (photo) { %><img src="<%= photo.url %>" alt="<%= d.full_name %>"><% } else { %><span class="pm-placeholder small muted"><%- icon('user') %></span><% } %></div>
+  <div class="stack-sm grow" style="min-width:220px">
+    <strong><%= L(d.full_name, d.full_name_en) %></strong>
+    <span class="small muted"><%= t('myprofile.photo_hint') %></span>
+    <div class="row-sm wrap"><a class="btn btn-secondary btn-sm" href="/app/settings/account"><%- icon('image', 'icon-sm') %><%= t('myprofile.change_photo') %></a></div>
+  </div>
+</div></div>
+
+<form method="post" action="/app/my-profile" class="stack mt-4" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (typeof openDialog === 'undefined') { %><%- include('../../partials/form-error') %><% } %>
+  <div class="panel"><div class="panel-head"><div><h2><%= t('doctors.section_profile') %></h2><div class="panel-sub"><%= t('myprofile.manager_note') %></div></div></div>
+    <div class="panel-body form-grid">
+      <%- include('../../partials/field', { name: 'specialization', label: t('doctors.specialization_ar'), value: v('specialization'), attrs: 'dir="rtl"' }) %>
+      <%- include('../../partials/field', { name: 'specialization_en', label: t('doctors.specialization_en'), value: v('specialization_en'), attrs: 'dir="ltr"' }) %>
+      <%- include('../../partials/field', { name: 'bio', label: t('doctors.bio_ar'), type: 'textarea', value: v('bio'), attrs: 'dir="rtl" rows="6"' }) %>
+      <%- include('../../partials/field', { name: 'bio_en', label: t('doctors.bio_en'), type: 'textarea', value: v('bio_en'), attrs: 'dir="ltr" rows="6"' }) %>
+      <%- include('../../partials/field', { name: 'education', label: t('doctors.education_ar'), type: 'textarea', value: v('education'), attrs: 'dir="rtl"' }) %>
+      <%- include('../../partials/field', { name: 'education_en', label: t('doctors.education_en'), type: 'textarea', value: v('education_en'), attrs: 'dir="ltr"' }) %>
+    </div></div>
+  <%- include('doctors/_profile-panels') %>
+  <div class="form-actions"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('myprofile.save') %></button></div>
+</form>
+
+<section class="panel flush mt-6" id="my-services">
+  <div class="panel-head"><div><h2><%= t('myprofile.services_title') %></h2><div class="panel-sub"><%= t('myprofile.services_sub') %></div></div>
+    <button class="btn btn-primary btn-sm" type="button" data-open-dialog="my-service-dialog" data-reset-form data-action="/app/my-profile/services" data-dialog-title="<%= t('services.add') %>"><%- icon('plus', 'icon-sm') %><%= t('services.add') %></button></div>
+  <% if (!services.length) { %><div class="panel-body small muted"><%= t('myprofile.no_services') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('services.service') %></th><th class="num"><%= t('services.duration') %></th><th class="num"><%= t('services.price') %></th><th><%= t('common.status') %></th><th></th></tr></thead>
+    <tbody><% services.forEach(function (s) { %><tr>
+      <td><div class="strong"><%= L(s.name, s.name_en) %></div><% if (s.description) { %><div class="tiny muted"><%= String(L(s.description, s.description_en)).slice(0, 120) %></div><% } %></td>
+      <td class="num" data-label="<%= t('services.duration') %>"><% if (s.duration_minutes) { %><%= s.duration_minutes %> <%= t('common.minutes') %><% } else { %><span class="muted"><%= t('services.no_fixed_time') %></span><% } %></td>
+      <td class="num" data-label="<%= t('services.price') %>"><%= fmt.money(s.price) %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= s.is_active ? 'badge-success' : 'badge-neutral' %>"><%= s.is_active ? t('common.active') : t('common.inactive') %></span></td>
+      <td class="actions"><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="my-service-dialog" data-action="/app/my-profile/services/<%= s.id %>" data-dialog-title="<%= t('services.edit') %>" data-fill="<%= json({ name: s.name, name_en: s.name_en, show_on_site: s.show_on_site !== 0 && s.show_on_site !== false, description: s.description, description_en: s.description_en, price: s.price, duration_minutes: s.duration_minutes, category_id: s.category_id, is_active: !!s.is_active, show_price: !!s.show_price }) %>"><%- icon('pencil', 'icon-sm') %></button><%- include('../../partials/delete-form', { action: '/app/my-profile/services/' + s.id + '/delete' }) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>
+
+<dialog class="dialog" id="my-service-dialog" aria-labelledby="my-service-title"<% if (typeof openDialog !== 'undefined' && openDialog === 'my-service-dialog') { %> data-open-on-load<% } %>>
+  <form method="post" action="<%= typeof formAction !== 'undefined' && formAction ? formAction : '/app/my-profile/services' %>" novalidate>
+    <div class="dialog-head"><h2 id="my-service-title" data-dialog-title-target><%= t('services.add') %></h2><button class="btn btn-ghost btn-icon btn-sm" type="button" data-close-dialog aria-label="<%= t('common.close') %>"><%- icon('x', 'icon-sm') %></button></div>
+    <div class="dialog-body"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (typeof openDialog !== 'undefined') { %><%- include('../../partials/form-error') %><% } %>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'name', label: t('services.name_ar'), required: true, attrs: 'dir="rtl"' }) %>
+        <%- include('../../partials/field', { name: 'name_en', label: t('services.name_en'), attrs: 'dir="ltr"' }) %>
+        <%- include('../../partials/field', { name: 'description', label: t('services.desc_ar'), type: 'textarea' }) %>
+        <%- include('../../partials/field', { name: 'description_en', label: t('services.desc_en'), type: 'textarea' }) %>
+        <%- include('../../partials/field', { name: 'price', label: t('services.price'), suffix: currency, help: t('services.price_help'), attrs: 'inputmode="decimal"' }) %>
+        <%- include('../../partials/field', { name: 'duration_minutes', label: t('services.duration'), value: '', suffix: t('common.minutes'), help: t('services.duration_help'), attrs: 'inputmode="numeric" data-default=""' }) %>
+        <% if (categories.length) { %><%- include('../../partials/field', { name: 'category_id', label: t('svc_cat.category'), type: 'select', placeholder: t('svc_cat.none'), options: categories.map(function (c) { return { value: c.id, label: L(c.name, c.name_en) }; }) }) %><% } %>
+        <label class="check"><input type="checkbox" name="is_active" value="1" checked><span><%= t('common.active') %></span></label>
+        <input type="hidden" name="site_field" value="1">
+        <label class="check"><input type="checkbox" name="show_on_site" value="1" checked><span><%= t('services.show_on_site') %></span></label>
+        <label class="check"><input type="checkbox" name="show_price" value="1"><span><%= t('services.show_price') %></span></label>
+      </div></div>
+    <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.cancel') %></button><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

@@ -83,3 +83,19 @@ test('on DocBook\'s own address the clinic keeps its /<address>/… links', asyn
   assert.equal((await v.get(`/${slug}/p/about`)).status, 200);
   assert.equal((await v.get(`/${slug}/doctors`)).status, 200);
 });
+
+test('the website\'s second colour reaches the live site, under a new colours address each time it changes', async () => {
+  const site = require('../src/modules/website/site.service'); // eslint-disable-line global-require
+  const biz = await knex('businesses').where({ slug }).first();
+  const owner = await knex('memberships').where({ business_id: biz.id }).first('user_id');
+  const ctx = { businessId: biz.id, userId: owner.user_id, roleKey: 'owner', permissions: await rbac.getUserPermissions(biz.id, owner.user_id), locale: 'ar', ip: '127.0.0.1' };
+  const hrefOf = (html) => (new RegExp(`/${slug}/theme\\.css\\?s=[0-9a-f]{10}`).exec(html) || [null])[0];
+  const before = hrefOf((await app.agent().get(`/${slug}`)).text);
+  assert.ok(before, 'the colours file carries its version');
+  await site.edit(ctx, biz, site.ops.brand({ primary: '#1f2a5a', secondary: '#8a6d3b' }), { note: 'website.brand_changed' });
+  await site.publish(ctx, biz); site.forget(biz.id);
+  const after = hrefOf((await app.agent().get(`/${slug}`)).text);
+  assert.notEqual(after, before, 'a new address once the colours change');
+  const css = await app.agent().get(after);
+  assert.match(css.text, /--accent: #8a6d3b/);
+});

@@ -46,7 +46,7 @@
         <% if (services.length) { %>
         <section class="dp-card flush"><h2><%- icon('clipboard-plus', 'icon-sm') %><%= t('portal.services') %></h2>
           <ul class="svc-list">
-            <% services.forEach(function (x) { %><li><span class="svc-icon"><%- icon('clipboard-plus', 'icon-sm') %></span><span class="grow"><strong><%= x.name %></strong><span class="svc-meta"><span><%- icon('clock', 'icon-sm') %><%= t('portal.min', { n: x.duration }) %></span></span><% if (x.description) { %><span class="svc-desc"><%= x.description %></span><% } %></span><% if (x.price !== null) { %><span class="svc-price num"><%= fmt.money(x.price, clinic.currency) %></span><% } %></li><% }) %>
+            <% services.forEach(function (x) { %><li><span class="svc-icon"><%- icon('clipboard-plus', 'icon-sm') %></span><span class="grow"><strong><%= x.name %></strong><% if (x.duration) { %><span class="svc-meta"><span><%- icon('clock', 'icon-sm') %><%= t('portal.min', { n: x.duration }) %></span></span><% } %><% if (x.description) { %><span class="svc-desc"><%= x.description %></span><% } %></span><% if (x.price !== null) { %><span class="svc-price num"><%= fmt.money(x.price, clinic.currency) %></span><% } %></li><% }) %>
           </ul></section>
         <% } %>
       </div>

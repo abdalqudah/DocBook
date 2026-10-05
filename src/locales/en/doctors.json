@@ -129,6 +129,8 @@
     "show_on_site": "Shown on the clinic website and booking page",
     "price_help": "Leave empty when the price depends on the case.",
     "billing_note": "The price here is shown on the website and suggested only: the bill comes from the services the doctor enters in the visit.",
-    "off_site": "Hidden from the website"
+    "off_site": "Hidden from the website",
+    "no_fixed_time": "No fixed time",
+    "duration_help": "Leave empty for a service with no fixed time: the appointment takes the doctor's usual length."
   }
 }

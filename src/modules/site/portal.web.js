@@ -55,6 +55,9 @@ async function loadClinic(req) {
 }
 
 /** Page styles for a clinic page: the site stylesheet plus the clinic's own brand colour (when it set one). */
+// The website's colours file: its address changes with the colours and fonts, so a browser (or the host's cache)
+// never keeps showing the old ones after the clinic publishes new colours.
+const themeHref = (clinic, doc) => `/${clinic.slug}/theme.css?s=${require('crypto').createHash('sha1').update(JSON.stringify([doc && doc.brand, doc && doc.header && doc.header.dark_mode, doc && doc.theme])).digest('hex').slice(0, 10)}`; // eslint-disable-line global-require
 const clinicStyles = (clinic) => ['/css/site.css', ...(clinic.color && theme.HEX.test(clinic.color) ? [`/${clinic.slug}/theme.css`] : [])];
 
 /**
@@ -72,7 +75,7 @@ async function siteChromeFor(req, res, clinic) {
   res.locals.wsSite.whiteLabel = await require('../platformops/ops.service').entitled(clinic, 'website.white_label'); // eslint-disable-line global-require
   res.locals.siteLight = Boolean(state.doc.header && state.doc.header.dark_mode === false);
   res.locals.wsConnections = await require('../website/marketing.service').get(clinic.id); // eslint-disable-line global-require
-  return { bodyClass: `ws-body ws-theme-${state.doc.theme}`, styles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', `/${clinic.slug}/theme.css`] };
+  return { bodyClass: `ws-body ws-theme-${state.doc.theme}`, styles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', themeHref(clinic, state.doc)] };
 }
 
 /** Clinic-wide price display: 'site' (website pages, search data) or 'booking' (the booking pages). Off unless turned on. */
@@ -192,7 +195,7 @@ async function renderSite(req, res, clinic, doc, { preview = false, page = null 
   return res.page('pages/portal/site', {
     layout: 'public', title, pageTitle: title, metaDescription: description.slice(0, 160), seoHead, noindex: preview, clinic, ...data,
     bodyClass: `ws-body ws-theme-${doc.theme}`, faviconHref: fav ? fav.url : res.locals.faviconHref, // the website's own icon, else the clinic's
-    pageStyles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', preview ? '/app/website/preview/theme.css' : `/${clinic.slug}/theme.css`, '/css/telehealth.css'],
+    pageStyles: [...clinicStyles(clinic).filter((h) => !h.endsWith('/theme.css')), '/css/website.css', preview ? '/app/website/preview/theme.css' : themeHref(clinic, doc), '/css/telehealth.css'],
   });
 }
 

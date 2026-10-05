@@ -1,0 +1,15 @@
+{
+  "myprofile": {
+    "title": "My profile & services",
+    "lead": "What the clinic website shows about you, and the services you offer.",
+    "photo_hint": "Change your photo from “My account”; it shows on the website right away.",
+    "change_photo": "Change photo",
+    "manager_note": "Your name, fee and working hours are set by the clinic manager.",
+    "save": "Save profile",
+    "saved": "Your profile was saved.",
+    "services_title": "My services",
+    "services_sub": "The services you offer: shown when booking with you and on your page on the website. Leave the length empty for a service with no fixed time.",
+    "no_services": "No services yet.",
+    "menu": "My profile & services"
+  }
+}

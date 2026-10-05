@@ -154,6 +154,7 @@ router.use('/insurance-claims', require('../modules/insurance/web')); // insuran
 router.use('/center', require('../modules/center/web')); // medical centre: practices sharing the reception, waiting screen and (optionally) the cash screen
 router.use('/doctors', require('../modules/clinic/doctors.web'));
 router.use('/services', require('../modules/clinic/services.web'));
+router.use('/my-profile', require('../modules/clinic/my-profile.web')); // a doctor's own profile and services
 router.use('/supplies/orders', require('../modules/purchasing/web'));
 router.use('/supplies', require('../modules/clinic/supplies.web'));
 router.use('/marketplace', require('../modules/marketplace/web'));

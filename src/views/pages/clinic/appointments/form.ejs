@@ -41,7 +41,7 @@
             <label class="label" for="f-service"><%= t('common.service') %></label>
             <select class="select<%= inv('service_id') %>" id="f-service" name="service_id" data-service-field data-min="<%= t('common.minutes') %>" data-none-label="<%= t('appointments.no_service') %>">
               <option value=""><%= t('appointments.no_service') %></option>
-              <% services.forEach(function (s) { %><option value="<%= s.id %>" data-duration="<%= s.duration_minutes %>" data-price="<%= Number(s.price) %>"<%= String(v.service_id) === String(s.id) ? ' selected' : '' %>><%= L(s.name, s.name_en) %> · <%= s.duration_minutes %> <%= t('common.minutes') %></option><% }) %>
+              <% services.forEach(function (s) { %><option value="<%= s.id %>" data-duration="<%= s.duration_minutes %>" data-price="<%= Number(s.price) %>"<%= String(v.service_id) === String(s.id) ? ' selected' : '' %>><%= L(s.name, s.name_en) %><% if (s.duration_minutes) { %> · <%= s.duration_minutes %> <%= t('common.minutes') %><% } %></option><% }) %>
             </select>
             <%- err('service_id') %>
           </div>

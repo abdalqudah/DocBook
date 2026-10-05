@@ -140,7 +140,7 @@
         getJson('/app/api/services' + (doctor.value ? '?doctor=' + encodeURIComponent(doctor.value) : '')).then(function (res) {
           var list = (res && res.data) || [];
           service.innerHTML = '<option value="">' + esc(service.getAttribute('data-none-label')) + '</option>' + list.map(function (s) {
-            return '<option value="' + s.id + '" data-duration="' + s.duration + '" data-price="' + s.price + '"' + (String(s.id) === keep ? ' selected' : '') + '>' + esc(s.name) + ' · ' + s.duration + ' ' + esc(minLabel) + '</option>';
+            return '<option value="' + s.id + '" data-duration="' + s.duration + '" data-price="' + s.price + '"' + (String(s.id) === keep ? ' selected' : '') + '>' + esc(s.name) + (s.duration ? ' · ' + s.duration + ' ' + esc(minLabel) : '') + '</option>';
           }).join('');
           syncDuration(); syncFee();
           var picker = $('[data-slot-picker]', form); if (picker && picker.refresh) picker.refresh();

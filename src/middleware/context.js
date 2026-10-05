@@ -153,6 +153,7 @@ async function withBusiness(req, res, next, businessId) {
         } catch { res.locals.myAttendance = null; }
       }
       // The signed-in member's photo (My account, else their doctor's photo) for the avatar in the top bar.
+      res.locals.myDoctorId = membership && membership.doctor_id ? membership.doctor_id : null; // My profile & services (a doctor's own login)
       res.locals.myPhoto = membership ? await require('../modules/integrations/media.service').memberPhoto(businessId, { photoMediaId: membership.photo_media_id, doctorId: membership.doctor_id }).catch(() => null) : null; // eslint-disable-line global-require
     }
     // Any successful write refreshes this workspace's cached figures.
