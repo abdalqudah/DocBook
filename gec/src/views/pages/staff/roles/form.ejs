@@ -1,0 +1,35 @@
+<% var ro = role.is_system; var perms = role.permissions || []; %>
+<nav class="breadcrumbs"><a href="/staff/settings"><%= t('nav.settings') %></a><%- icon('chevron-right') %><a href="/staff/roles"><%= t('settings.roles') %></a><%- icon('chevron-right') %><span><%= title %></span></nav>
+<div class="page-head"><h1><%= title %></h1></div>
+<% if (ro) { %><div class="alert mb4"><%- icon('info') %><p><%= t('roles.system_note') %></p></div><% } %>
+<% if (typeof formError !== 'undefined' && formError) { %><div class="alert error mb4"><%- icon('alert-circle') %><p><%= formError %></p></div><% } %>
+<form method="post" action="/staff/roles<%= role.id ? '/' + role.id : '' %>" class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <fieldset class="card" <%= ro ? 'disabled' : '' %>>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'name_en', label: t('common.name') + ' (English)', value: role.name_en, required: true }) %>
+      <%- include('../../../partials/field', { name: 'name_ar', label: t('common.name') + ' (العربية)', value: role.name_ar, attrs: 'dir="rtl"' }) %>
+      <%- include('../../../partials/field', { name: 'description', label: t('common.description'), value: role.description, cls: 'span-all' }) %>
+      <%- include('../../../partials/field', { name: 'data_scope', label: t('roles.scope'), type: 'select', value: role.data_scope, required: true, cls: 'span-all', hint: t('roles.scope_hint'), options: ['own', 'branch', 'all'].map(function (s) { return { value: s, label: t('roles.scope_' + s) }; }) }) %>
+    </div>
+  </fieldset>
+  <fieldset class="card" <%= ro ? 'disabled' : '' %>>
+    <legend><%= t('roles.permissions') %></legend>
+    <div class="grid" style="--min:240px">
+    <% groups.forEach(function (g) { %>
+      <div><h3 class="section-title"><%= t('nav.groups.' + g.key) %></h3>
+        <div class="stack" style="--gap:8px"><% g.perms.forEach(function (p) { %>
+          <label class="check"><input type="checkbox" name="permissions" value="<%= p %>" <%= perms.indexOf(p) >= 0 ? 'checked' : '' %>><span><%= t('perms.' + p.replace('.', '_')) %></span></label>
+        <% }) %></div>
+      </div>
+    <% }) %>
+    </div>
+  </fieldset>
+  <% if (!ro) { %>
+  <div class="form-actions sticky">
+    <button class="btn primary" type="submit"><%= t('common.save') %></button>
+    <a class="btn ghost" href="/staff/roles"><%= t('common.cancel') %></a>
+  </div>
+  <% } %>
+</form>
+<% if (role.id && !ro) { %><form method="post" action="/staff/roles/<%= role.id %>/delete" data-confirm="<%= t('roles.delete_confirm') %>" class="mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost" type="submit"><%- icon('trash-2') %><%= t('common.delete') %></button></form><% } %>

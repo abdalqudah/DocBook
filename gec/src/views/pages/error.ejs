@@ -1,0 +1,7 @@
+<div class="empty" style="padding-top:12vh">
+  <div class="empty-icon"><%- icon(status === 404 ? 'compass' : status === 403 ? 'lock' : 'alert-triangle') %></div>
+  <h1 style="font-size:1.5rem"><%= status === 404 ? t('errors.not_found_title') : status === 403 ? t('errors.forbidden_title') : t('errors.generic_title') %></h1>
+  <p><%= message %></p>
+  <div class="cluster" style="justify-content:center"><a class="btn primary" href="/"><%= t('common.go_home') %></a></div>
+  <% if (stack) { %><pre class="mt6 small" style="text-align:start;overflow:auto;max-width:100%"><%= stack %></pre><% } %>
+</div>

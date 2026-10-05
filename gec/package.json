@@ -1,0 +1,43 @@
+{
+  "name": "gec-platform",
+  "version": "0.1.0",
+  "description": "GEC — Global Education Consultants: study-abroad platform, student portal, admissions ATS and CRM",
+  "main": "app.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "NODE_ENV=development node app.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
+    "check": "node scripts/check.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.2",
+    "connect-session-knex": "^5.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.5",
+    "ejs": "^7.0.1",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "knex": "^3.3.0",
+    "multer": "^2.4.0",
+    "mysql2": "^3.24.5",
+    "nodemailer": "^10.0.15",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@fontsource/ibm-plex-sans-arabic": "^5.3.0",
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
+    "@fontsource/source-serif-4": "^5.3.0",
+    "lucide-static": "^1.52.0",
+    "supertest": "^7.3.1"
+  }
+}

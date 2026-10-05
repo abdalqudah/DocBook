@@ -1,0 +1,11 @@
+<section class="hero">
+  <div class="container hero-inner">
+    <span class="eyebrow"><%- icon('graduation-cap') %><%= branding.legal_name %></span>
+    <h1><%= t('site.hero_title') %></h1>
+    <p class="lead"><%= t('site.hero_lead') %></p>
+    <div class="cluster" style="justify-content:center">
+      <% if (company.whatsapp) { %><a class="btn primary lg" href="/go/whatsapp?from=home"><%= t('site.whatsapp_us') %></a><% } %>
+      <% if (company.email) { %><a class="btn lg" href="mailto:<%= company.email %>"><%- icon('mail') %><%= company.email %></a><% } %>
+    </div>
+  </div>
+</section>

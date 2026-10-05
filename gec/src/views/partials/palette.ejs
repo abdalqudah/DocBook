@@ -1,0 +1,5 @@
+<dialog class="palette" data-palette aria-label="<%= t('palette.title') %>">
+  <div class="palette-input"><%- icon('search') %><input type="search" data-palette-input placeholder="<%= t('palette.placeholder') %>" aria-label="<%= t('palette.placeholder') %>" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="palette-results"><kbd>Esc</kbd></div>
+  <div class="palette-results" id="palette-results" role="listbox" data-palette-results></div>
+  <div class="palette-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> <%= t('palette.navigate') %></span><span><kbd>↵</kbd> <%= t('palette.open_item') %></span></div>
+</dialog>

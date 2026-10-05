@@ -1,0 +1,19 @@
+{
+  "site": {
+    "home": "Home", "main_navigation": "Main navigation", "menu": "Menu", "search": "Search", "my_portal": "My portal", "book_consultation": "Book a free consultation",
+    "privacy": "Privacy", "staff_login": "Staff", "cookie_settings": "Cookie settings", "whatsapp_us": "Chat with us on WhatsApp", "whatsapp_default_text": "Hello {name}, I would like advice about studying abroad.",
+    "cookies_title": "Cookies.", "cookies_text": "We use necessary cookies to run this site. With your permission we also measure visits to improve our advice — never sold, never shared for advertising.",
+    "cookies_necessary": "Necessary only", "cookies_accept": "Accept all",
+    "hero_title": "Study abroad with a team that knows the way", "hero_lead": "Free, honest guidance on universities, programs, scholarships and visas — from your first question to your first day on campus.",
+    "nav": {}, "footer": { "study": "Study", "company": "GEC", "students": "Students" }
+  },
+  "privacy": {
+    "title": "Privacy policy", "intro": "This page explains how {name} uses the personal information you share with us.",
+    "what_h": "What we collect", "what": "Contact details you give us (name, e-mail, phone, WhatsApp), your study preferences, academic and English-test information, and documents you upload for applications. With your consent, we also record which pages of this website you visit.",
+    "why_h": "Why we use it", "why": "To advise you, prepare and submit applications on your behalf, book appointments, and send you updates you asked for. We share your information with universities and authorities only when needed for your application or visa, and with your knowledge.",
+    "cookies_h": "Cookies and analytics", "cookies": "Necessary cookies keep you signed in and protect forms. Analytics cookies are used only if you accept them; they are first-party (no advertising networks) and can be withdrawn at any time.",
+    "retention_h": "How long we keep it", "retention": "Enquiries that do not become applications are deleted or anonymised after {months} months of inactivity. Application records are kept as long as required by our agreements and the law.",
+    "rights_h": "Your rights", "rights": "You can ask for a copy of your data, ask us to correct it, withdraw marketing consent (every message has an unsubscribe link), or ask us to delete it.",
+    "contact_h": "Contact", "contact": "For any privacy request, write to us at", "review_note": "This policy template should be reviewed by GEC's legal adviser for each country of operation."
+  }
+}

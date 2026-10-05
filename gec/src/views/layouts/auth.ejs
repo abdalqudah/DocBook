@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>">
+<head>
+<%- include('../partials/head') %>
+<link rel="stylesheet" href="/css/staff.css?v=<%= assetV %>">
+<title><%= typeof title !== 'undefined' && title ? title + ' · ' : '' %><%= branding.name %></title>
+<meta name="robots" content="noindex">
+</head>
+<body>
+<main class="auth-wrap" id="main">
+  <div class="auth-card">
+    <a href="/" aria-label="<%= branding.legal_name %>"><%- include('../partials/logo', { height: 44 }) %></a>
+    <%- body %>
+  </div>
+</main>
+<%- include('../partials/flash') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+</body>
+</html>

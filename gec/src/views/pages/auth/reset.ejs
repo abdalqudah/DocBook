@@ -1,0 +1,12 @@
+<h1><%= t('auth.reset_title') %></h1>
+<% if (!valid) { %>
+  <div class="alert error" role="alert"><%- icon('alert-circle') %><p><%= t('errors.RESET_INVALID') %></p></div>
+  <p class="auth-foot"><a href="<%= portal === 'staff' ? '/staff/forgot' : '/forgot' %>"><%= t('auth.request_new_link') %></a></p>
+<% } else { %>
+  <form method="post" class="stack" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include('../../partials/field', { name: 'password', label: t('auth.new_password'), type: 'password', required: true, hint: t('auth.password_rule'), attrs: 'autocomplete="new-password" autofocus' }) %>
+    <%- include('../../partials/field', { name: 'password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
+    <button class="btn primary block lg" type="submit"><%= t('auth.save_password') %></button>
+  </form>
+<% } %>

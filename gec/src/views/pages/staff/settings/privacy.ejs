@@ -1,0 +1,12 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.privacy') %></h1><p class="lead"><%= t('settings.privacy_desc') %></p></div></div>
+<form method="post" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'cookie_banner', label: t('settings.cookie_banner'), type: 'checkbox', value: p.cookie_banner }) %>
+  <%- include('../../../partials/field', { name: 'analytics_requires_consent', label: t('settings.analytics_consent'), type: 'checkbox', value: p.analytics_requires_consent }) %>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'retention_months', label: t('settings.retention_months'), type: 'number', value: p.retention_months, attrs: 'min="6" max="120"', hint: t('settings.retention_hint') }) %>
+    <%- include('../../../partials/field', { name: 'policy_url', label: t('settings.policy_url'), value: p.policy_url }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

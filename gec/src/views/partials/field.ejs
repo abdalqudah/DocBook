@@ -1,0 +1,39 @@
+<%#
+  One form field. include('partials/field', { name, label, type?, value?, options?, hint?, required?, placeholder?, attrs?, cls?, rows?, multiple? })
+  options: [{ value, label }] for select / radios / checks. Errors and old input come from res.locals (errors, old).
+-%>
+<%
+  var type = (typeof type !== 'undefined' && type) || 'text';
+  var err = errors && errors[name];
+  var hasOld = old && Object.prototype.hasOwnProperty.call(old, name);
+  var v = hasOld ? old[name] : (typeof value !== 'undefined' && value !== null ? value : '');
+  var fid = 'f_' + name.replace(/[^a-zA-Z0-9_]/g, '_');
+  var req = typeof required !== 'undefined' && required;
+  var extra = typeof attrs !== 'undefined' ? attrs : '';
+  var ph = typeof placeholder !== 'undefined' && placeholder ? placeholder : '';
+  var opts = typeof options !== 'undefined' ? options : [];
+  var describedBy = (typeof hint !== 'undefined' && hint ? fid + '_h ' : '') + (err ? fid + '_e' : '');
+%>
+<div class="field <%= err ? 'has-error' : '' %> <%= typeof cls !== 'undefined' ? cls : '' %>">
+<% if (type === 'checkbox') { %>
+  <label class="check"><input type="hidden" name="<%= name %>" value="0"><input type="checkbox" id="<%= fid %>" name="<%= name %>" value="1" <%= (v === true || v === 1 || v === '1' || v === 'on') ? 'checked' : '' %> <%- extra %>><span><%= label %></span></label>
+<% } else if (type === 'checks') { var arr = Array.isArray(v) ? v.map(String) : String(v || '').split(',').filter(Boolean); %>
+  <fieldset><legend class="label <%= req ? 'req' : '' %>"><%= label %></legend><div class="cluster">
+  <% opts.forEach(function (o) { %><label class="filter-chip <%= arr.indexOf(String(o.value)) >= 0 ? 'on' : '' %>"><input type="checkbox" class="sr-only" name="<%= name %>" value="<%= o.value %>" <%= arr.indexOf(String(o.value)) >= 0 ? 'checked' : '' %> data-toggle-chip><%= o.label %></label><% }) %>
+  </div></fieldset>
+<% } else { %>
+  <label for="<%= fid %>" class="<%= req ? 'req' : '' %>"><%= label %></label>
+  <% if (type === 'textarea') { %>
+  <textarea id="<%= fid %>" name="<%= name %>" rows="<%= typeof rows !== 'undefined' ? rows : 4 %>" <%= req ? 'required' : '' %> placeholder="<%= ph %>" <% if (describedBy) { %>aria-describedby="<%= describedBy.trim() %>"<% } %> <%= err ? 'aria-invalid=true' : '' %> <%- extra %>><%= v %></textarea>
+  <% } else if (type === 'select') { %>
+  <select id="<%= fid %>" name="<%= name %>" <%= req ? 'required' : '' %> <% if (describedBy) { %>aria-describedby="<%= describedBy.trim() %>"<% } %> <%- extra %>>
+    <% if (!req || ph) { %><option value=""><%= ph || '—' %></option><% } %>
+    <% opts.forEach(function (o) { if (o.group) { %><optgroup label="<%= o.group %>"><% o.options.forEach(function (oo) { %><option value="<%= oo.value %>" <%= String(oo.value) === String(v) ? 'selected' : '' %>><%= oo.label %></option><% }) %></optgroup><% } else { %><option value="<%= o.value %>" <%= String(o.value) === String(v) ? 'selected' : '' %>><%= o.label %></option><% } }) %>
+  </select>
+  <% } else { %>
+  <input id="<%= fid %>" type="<%= type %>" name="<%= name %>" value="<%= v %>" <%= req ? 'required' : '' %> placeholder="<%= ph %>" <% if (describedBy) { %>aria-describedby="<%= describedBy.trim() %>"<% } %> <%= err ? 'aria-invalid=true' : '' %> <%- extra %>>
+  <% } %>
+<% } %>
+<% if (typeof hint !== 'undefined' && hint) { %><span class="hint" id="<%= fid %>_h"><%= hint %></span><% } %>
+<% if (err) { %><span class="error-text" id="<%= fid %>_e"><%= err %></span><% } %>
+</div>

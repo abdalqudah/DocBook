@@ -1,0 +1,12 @@
+<section class="section"><div class="container prose">
+  <h1><%= t('privacy.title') %></h1>
+  <p class="muted"><%= t('privacy.intro', { name: branding.legal_name }) %></p>
+  <h2><%= t('privacy.what_h') %></h2><p><%= t('privacy.what') %></p>
+  <h2><%= t('privacy.why_h') %></h2><p><%= t('privacy.why') %></p>
+  <h2><%= t('privacy.cookies_h') %></h2><p><%= t('privacy.cookies') %></p>
+  <p><button type="button" class="btn" data-cookie-settings><%= t('site.cookie_settings') %></button></p>
+  <h2><%= t('privacy.retention_h') %></h2><p><%= t('privacy.retention', { months: retention }) %></p>
+  <h2><%= t('privacy.rights_h') %></h2><p><%= t('privacy.rights') %></p>
+  <h2><%= t('privacy.contact_h') %></h2><p><%= t('privacy.contact') %> <% if (company.email) { %><a href="mailto:<%= company.email %>"><%= company.email %></a><% } %></p>
+  <p class="small subtle"><%= t('privacy.review_note') %></p>
+</div></section>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>">
+<head>
+<%- include('../partials/head') %>
+<link rel="stylesheet" href="/css/staff.css?v=<%= assetV %>">
+<% (typeof pageStyles !== 'undefined' ? pageStyles : []).forEach(function (h) { %><link rel="stylesheet" href="<%= h %>?v=<%= assetV %>"><% }) %>
+<title><%= typeof title !== 'undefined' && title ? title + ' · ' : '' %><%= branding.name %> <%= t('staff.workspace') %></title>
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body class="staff" data-csrf="<%= csrfToken %>" data-locale="<%= locale %>">
+<a class="skip-link" href="#main"><%= t('common.skip_to_content') %></a>
+<div class="shell <%= typeof sidebarMini !== 'undefined' && sidebarMini ? 'mini' : '' %>" data-shell>
+  <aside class="sidebar" id="sidebar" aria-label="<%= t('staff.navigation') %>" data-sidebar>
+    <div class="sb-brand"><a href="/staff" aria-label="<%= branding.name %>"><%- include('../partials/logo', { height: 32 }) %></a></div>
+    <nav class="sb-nav">
+      <% (typeof nav !== 'undefined' ? nav : []).forEach(function (g) { %>
+      <details class="sb-group" open data-group="<%= g.key %>">
+        <summary><span><%= t('nav.groups.' + g.key) %></span><%- icon('chevron-down') %></summary>
+        <% g.items.forEach(function (i) { %>
+        <a class="sb-link" href="<%= i.href %>" <%- i.current ? 'aria-current="page"' : '' %> title="<%= t('nav.' + i.key) %>"><%- icon(i.icon) %><span><%= t('nav.' + i.key) %></span><% if (i.count) { %><span class="badge-n"><%= i.count > 99 ? '99+' : i.count %></span><% } %></a>
+        <% }) %>
+      </details>
+      <% }) %>
+    </nav>
+    <div class="sb-foot">
+      <a class="sb-link" href="/" target="_blank" rel="noopener"><%- icon('globe') %><span><%= t('staff.view_website') %></span></a>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="btn ghost icon-only menu-toggle" data-sidebar-toggle aria-controls="sidebar" aria-expanded="false" aria-label="<%= t('staff.open_menu') %>"><%- icon('menu') %></button>
+      <button type="button" class="btn ghost icon-only mini-toggle" data-sidebar-mini aria-label="<%= t('staff.collapse_menu') %>"><%- icon('panel-left') %></button>
+      <button type="button" class="global-search" data-palette-open aria-label="<%= t('palette.open') %>"><%- icon('search') %><span class="label-text"><%= t('palette.placeholder_short') %></span><kbd data-kbd-mod>Ctrl K</kbd></button>
+      <span class="spacer"></span>
+      <% if (typeof quickNew !== 'undefined' && quickNew.length) { %>
+      <details class="menu quick-new">
+        <summary class="btn primary"><%- icon('plus') %><span><%= t('common.new') %></span></summary>
+        <div class="menu-panel" role="menu">
+          <% quickNew.forEach(function (q) { %><a role="menuitem" href="<%= q.href %>"><%- icon(q.icon) %><%= t('quick.' + q.key) %></a><% }) %>
+        </div>
+      </details>
+      <% } %>
+      <% if (typeof unreadNotifications !== 'undefined') { %>
+      <a class="btn ghost icon-only tb-btn" href="/staff/notifications" aria-label="<%= t('nav.notifications') %>"><%- icon('bell') %><% if (unreadNotifications) { %><span class="badge-n"><%= unreadNotifications > 9 ? '9+' : unreadNotifications %></span><% } %></a>
+      <% } %>
+      <details class="menu">
+        <summary class="user-chip" aria-label="<%= t('staff.account_menu') %>"><span class="avatar sm"><%= initials(currentUser.name) %></span></summary>
+        <div class="menu-panel">
+          <div class="user-menu-head"><div class="li-title"><%= currentUser.name %></div><div class="li-sub"><%= currentUser.email %></div><div class="li-sub"><%= staff.employee.roleName[locale] || staff.employee.roleName.en %></div></div>
+          <a href="/staff/account"><%- icon('user-cog') %><%= t('staff.my_account') %></a>
+          <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><%= locale === 'ar' ? 'English' : 'العربية' %></a>
+          <button type="button" data-theme-cycle><%- icon('moon') %><%= t('common.toggle_theme') %></button>
+          <hr>
+          <form method="post" action="/staff/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('log-out') %><%= t('auth.sign_out') %></button></form>
+        </div>
+      </details>
+    </header>
+    <main id="main" class="content <%= typeof narrow !== 'undefined' && narrow ? 'narrow' : '' %>" tabindex="-1">
+      <%- body %>
+    </main>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+<%- include('../partials/palette') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<script src="/js/staff.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (s) { %><script src="<%= s %>?v=<%= assetV %>" defer></script><% }) %>
+</body>
+</html>

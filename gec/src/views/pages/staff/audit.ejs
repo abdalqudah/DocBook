@@ -1,0 +1,30 @@
+<div class="page-head"><div><h1><%= t('nav.audit') %></h1><p class="lead"><%= t('audit.lead') %></p></div></div>
+<form class="toolbar" method="get">
+  <div class="search-inline"><%- icon('search') %><input type="search" name="action" value="<%= query.action || '' %>" placeholder="<%= t('audit.action_filter') %>" aria-label="<%= t('audit.action_filter') %>"></div>
+  <select name="entity" data-autosubmit aria-label="<%= t('audit.entity') %>"><option value=""><%= t('audit.all_entities') %></option><% entities.forEach(function (e) { %><option value="<%= e %>" <%= query.entity === e ? 'selected' : '' %>><%= e %></option><% }) %></select>
+  <input type="date" name="from" value="<%= query.from || '' %>" aria-label="<%= t('common.from') %>" style="width:auto">
+  <input type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('common.to') %>" style="width:auto">
+  <button class="btn" type="submit"><%= t('common.filter') %></button>
+</form>
+<% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('audit.empty'), emptyIcon: 'history', compact: true }) %></div><% } else { %>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><th><%= t('audit.when') %></th><th><%= t('audit.who') %></th><th><%= t('audit.action') %></th><th><%= t('audit.entity') %></th><th><%= t('audit.changes') %></th><th>IP</th></tr></thead>
+  <tbody>
+  <% rows.forEach(function (r) { %>
+    <tr>
+      <td data-label="<%= t('audit.when') %>" class="nowrap"><%= fmt.dateTime(r.created_at) %></td>
+      <td data-label="<%= t('audit.who') %>"><%= r.user_name || t('audit.system') %><% if (r.user_kind === 'student') { %> <span class="chip"><%= t('common.student') %></span><% } %></td>
+      <td data-label="<%= t('audit.action') %>"><code><%= r.action %></code></td>
+      <td data-label="<%= t('audit.entity') %>"><%= r.entity_type || '' %> <%= r.entity_id ? '#' + r.entity_id : '' %></td>
+      <td data-label="<%= t('audit.changes') %>" class="small">
+        <% var keys = Object.keys(Object.assign({}, r.old || {}, r.new || {})).slice(0, 6); keys.forEach(function (k) { %>
+          <div><strong><%= k %>:</strong> <% if (r.old && k in r.old) { %><span class="subtle"><%= String(r.old[k] == null ? '—' : (typeof r.old[k] === 'object' ? JSON.stringify(r.old[k]) : r.old[k])).slice(0, 60) %></span> → <% } %><%= String(r.new && k in r.new ? (r.new[k] == null ? '—' : (typeof r.new[k] === 'object' ? JSON.stringify(r.new[k]) : r.new[k])) : '').slice(0, 60) %></div>
+        <% }) %>
+      </td>
+      <td data-label="IP" class="small subtle"><%= r.ip || '' %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table></div>
+<%- include('../../partials/pager', { meta: meta }) %>
+<% } %>

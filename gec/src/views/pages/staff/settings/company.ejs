@@ -1,0 +1,20 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.company') %></h1><p class="lead"><%= t('settings.company_desc') %></p></div></div>
+<form method="post" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: c.email }) %>
+    <%- include('../../../partials/field', { name: 'phone', label: t('common.phone'), value: c.phone }) %>
+    <%- include('../../../partials/field', { name: 'whatsapp', label: t('settings.whatsapp_number'), value: c.whatsapp, hint: t('settings.whatsapp_hint') }) %>
+    <%- include('../../../partials/field', { name: 'website', label: t('settings.website'), type: 'url', value: c.website }) %>
+    <%- include('../../../partials/field', { name: 'address_en', label: t('common.address') + ' (English)', value: c.address_en }) %>
+    <%- include('../../../partials/field', { name: 'address_ar', label: t('common.address') + ' (العربية)', value: c.address_ar, attrs: 'dir="rtl"' }) %>
+  </div>
+  <h2 class="section-title mt4"><%= t('settings.social') %></h2>
+  <div class="form-grid two">
+    <% ['facebook', 'instagram', 'linkedin', 'tiktok', 'youtube', 'x'].forEach(function (s) { %>
+      <%- include('../../../partials/field', { name: s, label: s === 'x' ? 'X' : s.charAt(0).toUpperCase() + s.slice(1), type: 'url', value: (c.social || {})[s], placeholder: 'https://' }) %>
+    <% }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

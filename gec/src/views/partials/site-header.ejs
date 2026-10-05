@@ -1,0 +1,23 @@
+<% var links = site.nav; var feat = site.features; %>
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand-link" href="/" aria-label="<%= branding.legal_name %> — <%= t('site.home') %>"><%- include('logo', { height: 38 }) %></a>
+    <nav class="main-nav" id="main-nav" aria-label="<%= t('site.main_navigation') %>" data-main-nav>
+      <ul>
+        <% links.forEach(function (l) { var cur = path === l.href || (l.href !== '/' && path.indexOf(l.href + '/') === 0); %>
+        <li><a href="<%= l.href %>" <%- cur ? 'aria-current="page"' : '' %>><%= l.label ? (locale === 'ar' ? l.label.ar : l.label.en) : t('site.nav.' + l.key) %></a></li>
+        <% }) %>
+      </ul>
+      <div class="nav-mobile-extra">
+        <a class="btn block" href="<%= currentUser && currentUser.kind === 'student' ? '/portal' : '/login' %>"><%- icon('user') %><%= currentUser && currentUser.kind === 'student' ? t('site.my_portal') : t('auth.sign_in') %></a>
+      </div>
+    </nav>
+    <div class="header-actions">
+      <% if (feat.has('search')) { %><a class="btn ghost icon-only" href="/search" data-site-search aria-label="<%= t('site.search') %>"><%- icon('search') %></a><% } %>
+      <a class="btn ghost sm lang-switch" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
+      <a class="btn ghost sm hide-mobile" href="<%= currentUser && currentUser.kind === 'student' ? '/portal' : '/login' %>"><%= currentUser && currentUser.kind === 'student' ? t('site.my_portal') : t('auth.sign_in') %></a>
+      <% if (feat.has('book')) { %><a class="btn primary sm" href="/book"><%= t('site.book_consultation') %></a><% } %>
+      <button type="button" class="btn ghost icon-only nav-toggle" aria-controls="main-nav" aria-expanded="false" data-nav-toggle aria-label="<%= t('site.menu') %>"><%- icon('menu') %></button>
+    </div>
+  </div>
+</header>

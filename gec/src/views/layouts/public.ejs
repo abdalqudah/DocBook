@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>">
+<head>
+<%- include('../partials/head') %>
+<link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
+<% var s = seo || {}; var pageTitle = s.title || (typeof title !== 'undefined' && title) || branding.legal_name; %>
+<title><%= pageTitle === branding.legal_name ? pageTitle : pageTitle + ' · ' + branding.name %></title>
+<% if (s.description) { %><meta name="description" content="<%= s.description %>"><% } %>
+<% if (s.canonical) { %><link rel="canonical" href="<%= s.canonical %>"><% } %>
+<% if (s.alternates) { s.alternates.forEach(function (a) { %><link rel="alternate" hreflang="<%= a.lang %>" href="<%= a.href %>"><% }) } %>
+<meta property="og:site_name" content="<%= branding.legal_name %>">
+<meta property="og:title" content="<%= pageTitle %>">
+<% if (s.description) { %><meta property="og:description" content="<%= s.description %>"><% } %>
+<meta property="og:type" content="<%= s.ogType || 'website' %>">
+<% if (s.image) { %><meta property="og:image" content="<%= s.image %>"><meta name="twitter:card" content="summary_large_image"><% } %>
+<meta property="og:locale" content="<%= locale === 'ar' ? 'ar_AR' : 'en_US' %>">
+<% if (s.noindex) { %><meta name="robots" content="noindex"><% } %>
+<% if (s.jsonld) { [].concat(s.jsonld).forEach(function (j) { %><script type="application/ld+json"><%- json(j) %></script><% }) } %>
+</head>
+<body class="site" data-csrf="<%= csrfToken %>" data-locale="<%= locale %>">
+<a class="skip-link" href="#main"><%= t('common.skip_to_content') %></a>
+<%- include('../partials/site-header') %>
+<main id="main" tabindex="-1">
+<%- body %>
+</main>
+<%- include('../partials/site-footer') %>
+<%- include('../partials/flash') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<script src="/js/site.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (sc) { %><script src="<%= sc %>?v=<%= assetV %>" defer></script><% }) %>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<% if (meta && meta.pages > 1) { %><nav class="pager" aria-label="<%= t('common.pagination') %>">
+  <span><%= t('common.page_of', { page: meta.page, pages: meta.pages, total: fmt.number(meta.total) }) %></span>
+  <div class="cluster">
+    <% if (meta.page > 1) { %><a class="btn sm" href="<%= qs({ page: meta.page - 1 }) %>" rel="prev"><%- icon('chevron-left', 'flip-rtl') %><%= t('common.previous') %></a><% } %>
+    <% if (meta.page < meta.pages) { %><a class="btn sm" href="<%= qs({ page: meta.page + 1 }) %>" rel="next"><%= t('common.next') %><%- icon('chevron-right', 'flip-rtl') %></a><% } %>
+  </div>
+</nav><% } %>

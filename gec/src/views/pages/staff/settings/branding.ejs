@@ -1,0 +1,41 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.branding') %></h1><p class="lead"><%= t('settings.branding_lead') %></p></div></div>
+<form method="post" class="card stack mb4">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'name', label: t('settings.brand_short_name'), value: b.name, required: true }) %>
+    <%- include('../../../partials/field', { name: 'legal_name', label: t('settings.brand_legal_name'), value: b.legal_name, required: true }) %>
+    <%- include('../../../partials/field', { name: 'tagline_en', label: t('settings.tagline') + ' (English)', value: b.tagline_en }) %>
+    <%- include('../../../partials/field', { name: 'tagline_ar', label: t('settings.tagline') + ' (العربية)', value: b.tagline_ar, attrs: 'dir="rtl"' }) %>
+  </div>
+  <h2 class="section-title mt4"><%= t('settings.colours') %></h2>
+  <div class="form-grid three">
+    <% [['primary', b.primary], ['secondary', b.secondary], ['accent', b.accent]].forEach(function (c) { %>
+    <div class="field"><label for="c_<%= c[0] %>"><%= t('settings.colour_' + c[0]) %></label><div class="row"><input type="color" value="<%= c[1] %>" data-sync="#c_<%= c[0] %>" aria-label="<%= t('settings.colour_' + c[0]) %>" style="width:48px;height:42px;padding:2px;border-radius:8px"><input id="c_<%= c[0] %>" name="<%= c[0] %>" value="<%= c[1] %>" pattern="#[0-9a-fA-F]{6}" required></div></div>
+    <% }) %>
+  </div>
+  <% if (contrastPrimary < 4.5) { %><div class="alert warn"><%- icon('alert-triangle') %><p><%= t('settings.contrast_warning') %></p></div><% } %>
+  <h2 class="section-title mt4"><%= t('settings.email_footer') %></h2>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'email_footer_en', label: 'English', type: 'textarea', rows: 3, value: b.email_footer_en }) %>
+    <%- include('../../../partials/field', { name: 'email_footer_ar', label: 'العربية', type: 'textarea', rows: 3, value: b.email_footer_ar, attrs: 'dir="rtl"' }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<section class="card">
+  <div class="card-head"><h2><%= t('settings.brand_files') %></h2></div>
+  <div class="divider-list">
+  <% [['logo', '/brand/logo-h.webp'], ['logo_white', '/brand/logo-h-white.webp'], ['favicon', '/brand/mark-64.png'], ['email_logo', '/brand/logo-horizontal.png']].forEach(function (f) { var id = b[f[0] + '_media_id']; %>
+    <div class="list-item" style="flex-wrap:wrap">
+      <span style="width:140px;height:56px;display:grid;place-items:center;background:<%= f[0] === 'logo_white' ? 'var(--secondary)' : 'var(--surface-2)' %>;border-radius:10px;padding:6px"><img src="<%= id ? '/media/' + id : f[1] %>" alt="" style="max-height:44px;max-width:128px"></span>
+      <div class="li-body"><div class="li-title"><%= t('settings.file_' + f[0]) %></div><div class="li-sub"><%= id ? t('settings.custom_file') : t('settings.default_file') %> · PNG / WebP / JPG, ≤ 2 MB</div></div>
+      <form method="post" action="/staff/settings/branding/upload" enctype="multipart/form-data" class="cluster">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="which" value="<%= f[0] %>">
+        <input type="file" name="file" accept="image/png,image/webp,image/jpeg" required aria-label="<%= t('settings.file_' + f[0]) %>" style="max-width:220px;font-size:.85rem">
+        <button class="btn sm" type="submit"><%- icon('upload') %><%= t('common.upload') %></button>
+      </form>
+      <% if (id) { %><form method="post" action="/staff/settings/branding/reset-file"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="which" value="<%= f[0] %>"><button class="btn sm ghost" type="submit"><%= t('settings.use_default') %></button></form><% } %>
+    </div>
+  <% }) %>
+  </div>
+</section>

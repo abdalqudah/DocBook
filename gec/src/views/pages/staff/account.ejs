@@ -1,0 +1,36 @@
+<div class="page-head"><div><h1><%= t('staff.my_account') %></h1><p class="lead"><%= currentUser.email %> · <%= staff.employee.roleName[locale] || staff.employee.roleName.en %></p></div></div>
+<section class="card mb4">
+  <div class="card-head"><h2><%= t('account.profile') %></h2></div>
+  <form method="post" action="/staff/account/profile" class="form-grid two">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include('../../partials/field', { name: 'name', label: t('common.name'), value: currentUser.name, required: true }) %>
+    <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: currentUser.phone }) %>
+    <%- include('../../partials/field', { name: 'locale', label: t('account.language'), type: 'select', value: currentUser.locale, required: true, options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }] }) %>
+    <div class="form-actions span-all"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</section>
+<section class="card mb4" id="security">
+  <div class="card-head"><h2><%= t('account.password') %></h2></div>
+  <form method="post" action="/staff/account/password" class="form-grid two" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <%- include('../../partials/field', { name: 'current_password', label: t('auth.current_password'), type: 'password', required: true, cls: 'span-all', attrs: 'autocomplete="current-password"' }) %>
+    <%- include('../../partials/field', { name: 'password', label: t('auth.new_password'), type: 'password', required: true, hint: t('auth.password_rule'), attrs: 'autocomplete="new-password"' }) %>
+    <%- include('../../partials/field', { name: 'password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
+    <div class="form-actions span-all"><button class="btn primary" type="submit"><%= t('auth.save_password') %></button><span class="small subtle"><%= t('account.password_note') %></span></div>
+  </form>
+</section>
+<section class="card" id="sessions">
+  <div class="card-head"><h2><%= t('account.sessions') %></h2>
+    <% if (sessions.length > 1) { %><form method="post" action="/staff/account/sessions/revoke-others"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm" type="submit"><%= t('account.sign_out_others') %></button></form><% } %>
+  </div>
+  <div class="divider-list">
+    <% sessions.forEach(function (s) { %>
+    <div class="list-item">
+      <span class="queue-icon"><%- icon(/Mobile|Android|iPhone/.test(s.userAgent) ? 'smartphone' : 'monitor') %></span>
+      <div class="li-body"><div class="li-title"><%= (s.userAgent || '—').slice(0, 80) %></div><div class="li-sub"><%= s.ip %> · <%= t('account.since') %> <%= fmt.dateTime(s.since) %></div></div>
+      <% if (s.sid === currentSid) { %><span class="chip ok"><%= t('account.this_device') %></span><% } else { %>
+      <form method="post" action="/staff/account/sessions/<%= encodeURIComponent(s.sid) %>/revoke"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm danger-ghost" type="submit"><%= t('account.sign_out') %></button></form><% } %>
+    </div>
+    <% }) %>
+  </div>
+</section>

@@ -1,0 +1,14 @@
+<nav class="breadcrumbs"><a href="/staff/settings"><%= t('nav.settings') %></a><%- icon('chevron-right') %><span><%= t('settings.roles') %></span></nav>
+<div class="page-head"><div><h1><%= t('settings.roles') %></h1><p class="lead"><%= t('roles.lead') %></p></div><a class="btn primary" href="/staff/roles/new"><%- icon('plus') %><%= t('roles.new') %></a></div>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><th><%= t('roles.role') %></th><th><%= t('roles.scope') %></th><th><%= t('roles.permissions') %></th><th><%= t('roles.members') %></th><th></th></tr></thead>
+  <tbody><% roles.forEach(function (r) { %>
+    <tr>
+      <td class="primary"><a class="row-link" href="/staff/roles/<%= r.id %>"><%= locale === 'ar' && r.name_ar ? r.name_ar : r.name_en %></a> <% if (r.is_system) { %><span class="chip outline"><%= t('roles.built_in') %></span><% } %></td>
+      <td data-label="<%= t('roles.scope') %>"><%= t('roles.scope_' + r.data_scope) %></td>
+      <td data-label="<%= t('roles.permissions') %>"><%= r.permissions.length %></td>
+      <td data-label="<%= t('roles.members') %>"><%= r.members %></td>
+      <td class="actions"><a class="btn sm ghost" href="/staff/roles/<%= r.id %>"><%= r.is_system ? t('common.view') : t('common.edit') %></a></td>
+    </tr>
+  <% }) %></tbody>
+</table></div>

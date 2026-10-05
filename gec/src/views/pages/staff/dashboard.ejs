@@ -1,0 +1,39 @@
+<div class="page-head">
+  <div>
+    <h1><%= t('dashboard.greeting', { name: currentUser.name.split(' ')[0] }) %></h1>
+    <p class="lead"><%= fmt.date(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }) %></p>
+  </div>
+</div>
+<div class="split">
+  <section class="card" aria-labelledby="attention-h">
+    <div class="card-head"><h2 id="attention-h"><%= t('dashboard.needs_attention') %> <span class="count"><%= queue.length %></span></h2></div>
+    <% if (!queue.length) { %>
+      <%- include('../../partials/empty', { title: t('dashboard.all_clear'), text: t('dashboard.all_clear_text'), emptyIcon: 'check-circle-2', compact: true }) %>
+    <% } else { %>
+    <div class="queue">
+      <% queue.forEach(function (q) { %>
+      <a class="queue-item" href="<%= q.href %>">
+        <span class="queue-icon <%= q.tone %>"><%- icon(q.icon) %></span>
+        <span class="li-body"><span class="li-title" style="display:block"><%= q.title %></span><span class="li-sub" style="display:block"><%= q.sub %></span></span>
+        <% if (q.chip) { %><span class="chip <%= q.tone %>"><%= q.chip %></span><% } %>
+        <%- icon('chevron-right', 'flip-rtl subtle') %>
+      </a>
+      <% }) %>
+    </div>
+    <% } %>
+  </section>
+  <aside class="stack">
+    <% if (kpis.length) { %>
+    <section aria-labelledby="kpi-h"><h2 class="section-title" id="kpi-h"><%= t('dashboard.this_month') %></h2>
+      <div class="stats" style="grid-template-columns:1fr 1fr">
+        <% kpis.forEach(function (k) { %><a class="stat <%= k.tone === 'bad' ? 'attention' : '' %>" href="<%= k.href || '#' %>"><div class="stat-label"><%= k.label %></div><div class="stat-value"><%= k.value %></div><% if (k.note) { %><div class="stat-note"><%= k.note %></div><% } %></a><% }) %>
+      </div>
+    </section>
+    <% } %>
+    <% if (quickNew.length) { %>
+    <section class="card"><h2 class="section-title"><%= t('dashboard.quick_actions') %></h2>
+      <div class="cluster"><% quickNew.forEach(function (q) { %><a class="btn tonal sm" href="<%= q.href %>"><%- icon(q.icon) %><%= t('quick.' + q.key) %></a><% }) %></div>
+    </section>
+    <% } %>
+  </aside>
+</div>

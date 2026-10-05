@@ -1,0 +1,34 @@
+{
+  "common": {
+    "ok": "OK", "save": "Save", "saved": "Saved.", "cancel": "Cancel", "delete": "Delete", "deleted": "Deleted.", "edit": "Edit", "view": "View", "new": "New", "add": "Add",
+    "create": "Create", "close": "Close", "back": "Back", "next": "Next", "previous": "Previous", "continue": "Continue", "submit": "Submit", "search": "Search", "filter": "Filter",
+    "clear": "Clear", "all": "All", "none": "None", "yes": "Yes", "no": "No", "name": "Name", "email": "Email", "phone": "Phone", "address": "Address", "description": "Description",
+    "notes": "Notes", "status": "Status", "date": "Date", "from": "From", "to": "To", "actions": "Actions", "upload": "Upload", "download": "Download", "export": "Export", "import": "Import",
+    "skip_to_content": "Skip to content", "dismiss": "Dismiss", "pagination": "Pagination", "page_of": "Page {page} of {pages} · {total} results", "breadcrumbs": "Breadcrumbs",
+    "toggle_theme": "Light / dark theme", "go_home": "Go to home page", "student": "Student", "demo": "Demo", "demo_hint": "Sample record for testing — remove before going live.",
+    "loading": "Loading…", "retry": "Try again", "copied": "Copied", "copy_link": "Copy link", "print": "Print", "share": "Share", "more": "More", "optional": "optional",
+    "required": "Required", "unknown": "Unknown", "today": "Today", "tomorrow": "Tomorrow", "yesterday": "Yesterday", "overdue": "Overdue", "assigned_to": "Assigned to", "unassigned": "Unassigned",
+    "created": "Created", "updated": "Updated", "owner": "Owner", "branch": "Branch", "country": "Country", "city": "City", "total": "Total", "details": "Details", "open": "Open", "apply": "Apply",
+    "select": "Select…", "any": "Any", "remove": "Remove", "confirm": "Confirm", "send": "Send", "preview": "Preview", "enabled": "Enabled", "disabled": "Disabled", "language": "Language",
+    "english": "English", "arabic": "Arabic", "not_set": "Not set", "per_year": "/ year", "show_all": "Show all", "see_all": "See all", "learn_more": "Learn more"
+  },
+  "nav": {
+    "groups": { "overview": "Overview", "crm": "CRM", "admissions": "Admissions", "catalog": "Catalogue", "engagement": "Engagement", "communication": "Communication", "finance": "Finance", "team": "Team", "website": "Website", "analytics": "Analytics", "system": "System" },
+    "dashboard": "Dashboard", "settings": "Settings", "audit": "Audit log", "notifications": "Notifications"
+  },
+  "quick": {},
+  "palette": { "title": "Search and commands", "open": "Search or run a command (Ctrl+K)", "placeholder": "Search students, leads, programs… or type a command", "placeholder_short": "Search or jump to…", "navigate": "navigate", "open_item": "open", "pages": "Pages", "actions": "Actions" },
+  "staff": { "workspace": "Workspace", "navigation": "Main navigation", "open_menu": "Open menu", "collapse_menu": "Collapse or expand the menu", "account_menu": "Account menu", "my_account": "My account", "view_website": "View website" },
+  "dashboard": { "greeting": "Hello, {name}", "needs_attention": "Needs attention", "all_clear": "Nothing needs attention right now", "all_clear_text": "New leads, overdue tasks, deadlines and missing documents will appear here.", "this_month": "This month", "quick_actions": "Quick actions" },
+  "account": { "profile": "Profile", "language": "Language", "password": "Password", "password_note": "Other devices are signed out when you change it.", "sessions": "Signed-in devices", "sign_out_others": "Sign out all other devices", "since": "since", "this_device": "This device", "sign_out": "Sign out" },
+  "audit": { "lead": "Every sensitive action, with the values before and after.", "action_filter": "Filter by action, e.g. lead. or auth.", "entity": "Record type", "all_entities": "All record types", "when": "When", "who": "Who", "action": "Action", "changes": "Changes", "system": "System", "empty": "No entries match these filters." },
+  "errors": {
+    "NOT_FOUND": "We couldn't find that page.", "PERMISSION_DENIED": "You don't have permission to do that.", "UNAUTHENTICATED": "Please sign in to continue.",
+    "INVALID_CREDENTIALS": "The email or password is incorrect.", "ACCOUNT_LOCKED": "Too many failed attempts. Try again in {minutes} minutes.", "ACCOUNT_DISABLED": "This account is disabled. Contact your administrator.",
+    "CSRF_TOKEN_INVALID": "Your session expired. Please try again.", "RATE_LIMITED": "Too many requests. Please wait a moment and try again.", "VALIDATION_FAILED": "Please check the highlighted fields.",
+    "RESET_INVALID": "This link has expired or was already used.", "INTERNAL_ERROR": "Something went wrong on our side. Please try again.", "UPLOAD_TYPE": "This file type is not allowed.", "UPLOAD_MISSING": "Choose a file.",
+    "UPLOAD_FAILED": "The file could not be uploaded.", "NOT_CONFIGURED": "This integration is not connected yet. An administrator can connect it in Settings.",
+    "SYSTEM_ROLE": "Built-in roles cannot be changed. Create a custom role instead.", "ROLE_IN_USE": "Move the employees with this role to another role first.",
+    "not_found_title": "Page not found", "forbidden_title": "Access denied", "generic_title": "Something went wrong"
+  }
+}

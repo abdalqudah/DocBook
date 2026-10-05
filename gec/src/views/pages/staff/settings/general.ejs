@@ -1,0 +1,16 @@
+<%- include('_back') %>
+<div class="page-head"><h1><%= t('settings.general') %></h1></div>
+<form method="post" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'default_currency', label: t('settings.default_currency'), value: general.default_currency, required: true, hint: t('settings.currency_hint'), attrs: 'maxlength="3" style="text-transform:uppercase"' }) %>
+    <%- include('../../../partials/field', { name: 'timezone', label: t('settings.timezone'), value: general.timezone, required: true, hint: 'e.g. Asia/Amman, America/Chicago' }) %>
+  </div>
+  <hr>
+  <h2 class="section-title"><%= t('settings.lead_assignment') %></h2>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'assignment', label: t('settings.assignment_mode'), type: 'select', value: leads.assignment, required: true, options: ['round_robin', 'rules', 'manual'].map(function (k) { return { value: k, label: t('settings.assign_' + k) }; }), hint: t('settings.assignment_hint') }) %>
+    <%- include('../../../partials/field', { name: 'first_response_hours', label: t('settings.first_response_hours'), type: 'number', value: leads.first_response_hours, attrs: 'min="1" max="240"', hint: t('settings.first_response_hint') }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

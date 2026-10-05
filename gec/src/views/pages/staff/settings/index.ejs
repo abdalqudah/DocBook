@@ -1,0 +1,8 @@
+<div class="page-head"><div><h1><%= t('nav.settings') %></h1><p class="lead"><%= t('settings.lead') %></p></div></div>
+<div class="grid" style="--min:260px">
+  <% sections.forEach(function (s) { %>
+  <a class="card" href="<%= s.href %>">
+    <div class="row top"><span class="queue-icon brand"><%- icon(s.icon) %></span><div><h2 style="font-size:1rem;margin:0"><%= t('settings.' + s.key) %></h2><p class="small muted mb0"><%= t('settings.' + s.key + '_desc') %></p></div></div>
+  </a>
+  <% }) %>
+</div>

@@ -1,0 +1,10 @@
+<% var pv = typeof privacySettings !== 'undefined' ? privacySettings : null; %>
+<div class="cookie-bar" data-cookie-bar hidden role="region" aria-label="<%= t('site.cookies_title') %>">
+  <div class="container cookie-inner">
+    <p class="mb0"><strong><%= t('site.cookies_title') %></strong> <%= t('site.cookies_text') %> <a href="/privacy"><%= t('site.privacy') %></a></p>
+    <div class="cluster">
+      <button type="button" class="btn sm" data-consent="necessary"><%= t('site.cookies_necessary') %></button>
+      <button type="button" class="btn sm primary" data-consent="all"><%= t('site.cookies_accept') %></button>
+    </div>
+  </div>
+</div>
