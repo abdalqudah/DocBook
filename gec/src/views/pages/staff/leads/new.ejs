@@ -1,0 +1,16 @@
+<nav class="breadcrumbs"><a href="/staff/leads"><%= t('nav.leads') %></a><%- icon('chevron-right') %><span><%= t('leads.new') %></span></nav>
+<div class="page-head"><h1><%= t('leads.new') %></h1></div>
+<% if (typeof dupes !== 'undefined' && dupes.length) { %>
+  <div class="alert warn mb4"><%- icon('alert-triangle') %><div><p><strong><%= t('merge.found_before_create') %></strong></p>
+  <ul class="mb0"><% dupes.forEach(function (d) { %><li><a href="/staff/<%= d.kind === 'lead' ? 'leads' : 'students' %>/<%= d.id %>"><%= fullName(d) %></a> — <%= t('merge.kind_' + d.kind) %> <%= d.ref %> (<%= d.matched.map(function (m) { return t('merge.by_' + m); }).join(', ') %>)</li><% }) %></ul></div></div>
+<% } %>
+<form method="post" action="/staff/leads" class="card" data-autosave="lead-new" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (typeof dupes !== 'undefined' && dupes.length) { %><input type="hidden" name="confirm_duplicate" value="1"><% } %>
+  <p class="small subtle" data-draft-note hidden><%= t('common.draft_restored') %></p>
+  <%- include('../../../partials/lead-fields', { l: old || {}, destinations: destinations, withOwner: true, counsellors: counsellors, sourceList: sourceList }) %>
+  <div class="form-actions sticky">
+    <button class="btn primary" type="submit"><%= typeof dupes !== 'undefined' && dupes.length ? t('merge.create_anyway') : t('leads.create') %></button>
+    <a class="btn ghost" href="/staff/leads"><%= t('common.cancel') %></a>
+  </div>
+</form>

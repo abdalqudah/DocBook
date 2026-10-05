@@ -1,0 +1,120 @@
+<% var editable = can('students.manage'); var jIdx = journey.indexOf(s.journey_stage); %>
+<nav class="breadcrumbs"><a href="/staff/students"><%= t('nav.students') %></a><%- icon('chevron-right') %><span><%= s.ref %></span></nav>
+<div class="page-head">
+  <div class="row top">
+    <span class="avatar lg"><%= initials(fullName(s)) %></span>
+    <div>
+      <h1><%= fullName(s) %> <% if (s.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1>
+      <div class="cluster mt2 small muted">
+        <span><%= s.ref %></span>
+        <% if (s.nationality) { %><span><%= ref.flag(s.nationality) %> <%= ref.country(s.nationality) %></span><% } %>
+        <span><%= counsellor ? t('students.counsellor_is', { name: counsellor.name }) : t('common.unassigned') %></span>
+        <% if (s.user_id) { %><span class="chip ok"><%- icon('user-check') %><%= t('students.has_portal') %></span><% } %>
+        <% if (s.status !== 'active') { %><span class="chip"><%= t('students.status_' + s.status) %></span><% } %>
+      </div>
+    </div>
+  </div>
+  <div class="cluster">
+    <% if (s.phone || s.whatsapp) { %><a class="btn" href="https://wa.me/<%= (s.whatsapp || s.phone).replace(/\D/g, '') %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %>
+    <% if (s.email) { %><a class="btn" href="mailto:<%= s.email %>"><%- icon('mail') %><%= t('common.email') %></a><% } %>
+    <% if (editable) { %><button class="btn tonal" type="button" data-dialog-open="contact-dialog"><%- icon('notebook-pen') %><%= t('leads.log_contact') %></button><% } %>
+    <% if (typeof studentActions !== 'undefined') { studentActions.forEach(function (a) { %><a class="btn primary" href="<%= a.href %>"><%- icon(a.icon) %><%= a.label %></a><% }) } %>
+  </div>
+</div>
+
+<section class="card mb4" aria-label="<%= t('students.journey') %>">
+  <div class="spread mb4"><h2 class="section-title mb0"><%= t('students.journey') %></h2>
+    <% if (editable) { %><form method="post" action="/staff/students/<%= s.id %>/journey" class="cluster"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <select name="journey_stage" aria-label="<%= t('students.journey') %>" style="width:auto;min-height:32px;font-size:.85rem"><% journey.forEach(function (j) { %><option value="<%= j %>" <%= j === s.journey_stage ? 'selected' : '' %>><%= t('journey.' + j) %></option><% }) %></select>
+      <button class="btn sm" type="submit"><%= t('common.apply') %></button></form><% } %>
+  </div>
+  <ol class="journey">
+    <% journey.forEach(function (j, i) { %><li class="<%= i < jIdx ? 'done' : (i === jIdx ? 'current' : '') %>"><span class="step-dot"><% if (i < jIdx) { %><%- icon('check') %><% } %></span><span><%= t('journey.' + j) %></span></li><% }) %>
+  </ol>
+</section>
+
+<%- include('../../../partials/dupes', { dupes: dupes, mergeAction: '/staff/students/' + s.id + '/merge', selfKind: 'student' }) %>
+
+<div class="tabs" role="tablist">
+  <% tabList.forEach(function (tb) { %><a href="?tab=<%= tb.key %>" <%- tab === tb.key ? 'aria-current="page"' : '' %>><%- icon(tb.icon) %><%= t('students.tab_' + tb.key) %></a><% }) %>
+</div>
+
+<% if (tab === 'overview') { %>
+<div class="split">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2><%= t('students.profile_completion') %></h2><a class="btn sm ghost" href="?tab=profile"><%= t('common.edit') %></a></div>
+      <div class="row"><div class="ring" style="--p:<%= completion.percent %>"><%= completion.percent %>%</div>
+        <div class="grow"><% if (completion.missing.length) { %><p class="small muted mb2"><%= t('students.missing_fields') %></p><div class="cluster"><% completion.missing.forEach(function (m) { %><span class="chip warn"><%= t('students.f_' + m) %></span><% }) %></div><% } else { %><p class="mb0"><%= t('students.profile_complete') %></p><% } %></div>
+      </div>
+    </section>
+    <% if (typeof overviewCards !== 'undefined') { overviewCards.forEach(function (c) { %><%- c %><% }) } %>
+    <section class="card">
+      <div class="card-head"><h2><%= t('students.recent_activity') %></h2><a class="btn sm ghost" href="?tab=timeline"><%= t('common.see_all') %></a></div>
+      <%- include('../../../partials/timeline', { items: timeline }) %>
+    </section>
+  </div>
+  <aside class="stack">
+    <section class="card">
+      <div class="card-head"><h2><%= t('nav.tasks') %></h2><% if (editable) { %><button class="btn sm tonal" type="button" data-dialog-open="task-dialog"><%- icon('plus') %><%= t('tasks.add') %></button><% } %></div>
+      <%- include('../../../partials/task-list', { list: taskList.filter(function (x) { return x.status !== 'completed'; }).slice(0, 6) }) %>
+    </section>
+    <section class="card">
+      <h2 class="section-title"><%= t('students.snapshot') %></h2>
+      <dl class="kv">
+        <dt><%= t('students.goal') %></dt><dd><%= [s.pref_degree ? t('ref.degree.' + s.pref_degree) : null, prefFields.join(', ')].filter(Boolean).join(' · ') || '—' %></dd>
+        <dt><%= t('leads.destinations') %></dt><dd><%= prefCountries.map(function (c) { var d = destinations.find(function (x) { return x.value === c; }); return d ? d.label : c; }).join(', ') || '—' %></dd>
+        <dt><%= t('leads.intake') %></dt><dd><%= s.pref_intake ? ref.month(s.pref_intake) : '—' %></dd>
+        <dt><%= t('students.budget') %></dt><dd><%= s.budget_usd ? fmt.money(s.budget_usd, 'USD') + ' ' + t('common.per_year') : '—' %></dd>
+        <dt>GPA</dt><dd><%= s.gpa ? s.gpa + (s.gpa_scale ? ' / ' + s.gpa_scale : '') : '—' %></dd>
+        <dt><%= t('students.english') %></dt><dd><%= [s.ielts_overall ? 'IELTS ' + s.ielts_overall : null, s.toefl ? 'TOEFL ' + s.toefl : null, s.pte ? 'PTE ' + s.pte : null, s.duolingo ? 'Duolingo ' + s.duolingo : null].filter(Boolean).join(' · ') || '—' %></dd>
+      </dl>
+    </section>
+    <% if (can('leads.assign')) { %>
+    <section class="card">
+      <h2 class="section-title"><%= t('students.counsellor') %></h2>
+      <form method="post" action="/staff/students/<%= s.id %>/assign" class="cluster"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <select name="counsellor_id" aria-label="<%= t('students.counsellor') %>" style="flex:1"><option value=""><%= t('common.unassigned') %></option><% counsellors.forEach(function (c) { %><option value="<%= c.id %>" <%= s.counsellor_id === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %></select>
+        <button class="btn sm" type="submit"><%= t('common.save') %></button></form>
+    </section>
+    <% } %>
+    <% if (editable) { %>
+    <section class="card">
+      <h2 class="section-title"><%= t('common.status') %></h2>
+      <form method="post" action="/staff/students/<%= s.id %>/status" class="cluster"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <select name="status" aria-label="<%= t('common.status') %>" style="flex:1"><% ['active','on_hold','enrolled','closed'].forEach(function (x) { %><option value="<%= x %>" <%= s.status === x ? 'selected' : '' %>><%= t('students.status_' + x) %></option><% }) %></select>
+        <button class="btn sm" type="submit"><%= t('common.save') %></button></form>
+    </section>
+    <% } %>
+  </aside>
+</div>
+<% } else if (tab === 'profile') { %>
+  <%- include('_profile') %>
+<% } else if (tab === 'timeline') { %>
+  <div class="split"><div class="stack">
+    <% if (editable || can('notes.view')) { %>
+    <form method="post" action="/staff/students/<%= s.id %>/notes" class="card" style="padding:12px">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label class="sr-only" for="note-body"><%= t('notes.add') %></label>
+      <textarea id="note-body" name="body" rows="2" placeholder="<%= t('notes.placeholder') %>" required></textarea>
+      <div class="spread mt2"><label class="check small"><input type="checkbox" name="shareable" value="1"><span><%= t('notes.share_with_student') %></span></label><button class="btn sm primary" type="submit"><%= t('notes.add') %></button></div>
+    </form>
+    <% } %>
+    <section class="card"><%- include('../../../partials/timeline', { items: timeline }) %></section>
+  </div><aside></aside></div>
+<% } else if (tab === 'tasks') { %>
+  <section class="card">
+    <div class="card-head"><h2><%= t('nav.tasks') %></h2><% if (editable) { %><button class="btn sm tonal" type="button" data-dialog-open="task-dialog"><%- icon('plus') %><%= t('tasks.add') %></button><% } %></div>
+    <%- include('../../../partials/task-list', { list: taskList }) %>
+  </section>
+<% } else if (customTab) { %>
+  <%- include('../../../' + customTab.view.replace(/^pages\//, 'pages/'), tabData) %>
+<% } %>
+
+<% if (can('students.delete')) { %>
+<form method="post" action="/staff/students/<%= s.id %>/delete" data-confirm="<%= t('students.delete_confirm') %>" class="mt8"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost sm" type="submit"><%- icon('trash-2') %><%= t('students.delete') %></button></form>
+<% } %>
+<% if (editable) { %>
+<%- include('../../../partials/contact-dialog', { action: '/staff/students/' + s.id + '/contact', followUp: false }) %>
+<%- include('../../../partials/task-dialog', { action: '/staff/students/' + s.id + '/tasks', assignees: counsellors, defaultAssignee: s.counsellor_id || staff.employee.id }) %>
+<% } %>

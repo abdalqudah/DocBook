@@ -1,0 +1,15 @@
+<div class="form-grid two">
+  <%- include('../../../partials/field', { name: 'first_name', label: t('people.first_name'), value: s.first_name, required: true }) %>
+  <%- include('../../../partials/field', { name: 'last_name', label: t('people.last_name'), value: s.last_name }) %>
+  <%- include('../../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: s.email }) %>
+  <%- include('../../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: s.phone, attrs: 'dir="ltr"' }) %>
+  <%- include('../../../partials/field', { name: 'whatsapp', label: 'WhatsApp', type: 'tel', value: s.whatsapp, attrs: 'dir="ltr"' }) %>
+  <%- include('../../../partials/field', { name: 'preferred_locale', label: t('people.preferred_language'), type: 'select', value: s.preferred_locale || locale, options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }] }) %>
+  <%- include('../../../partials/field', { name: 'nationality', label: t('people.nationality'), type: 'select', value: s.nationality, options: ref.countries() }) %>
+  <%- include('../../../partials/field', { name: 'residence_country', label: t('people.residence'), type: 'select', value: s.residence_country, options: ref.countries() }) %>
+  <%- include('../../../partials/field', { name: 'city', label: t('common.city'), value: s.city }) %>
+  <%- include('../../../partials/field', { name: 'date_of_birth', label: t('people.dob'), type: 'date', value: fmt.dateInput(s.date_of_birth) }) %>
+  <%- include('../../../partials/field', { name: 'gender', label: t('people.gender'), type: 'select', value: s.gender, options: ['female','male','other','undisclosed'].map(function (g) { return { value: g, label: t('people.gender_' + g) }; }) }) %>
+  <%- include('../../../partials/field', { name: 'passport', label: t('people.passport'), value: '', placeholder: s.passport_last4 ? '•••• ' + s.passport_last4 : '', hint: s.passport_last4 ? t('people.passport_keep_hint') : t('people.passport_hint'), attrs: 'autocomplete="off" data-no-draft dir="ltr"' }) %>
+  <%- include('../../../partials/field', { name: 'passport_expiry', label: t('people.passport_expiry'), type: 'date', value: fmt.dateInput(s.passport_expiry) }) %>
+</div>

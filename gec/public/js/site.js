@@ -33,3 +33,35 @@
   });
   GEC.consent = consent;
 }());
+
+// Multi-step forms: <form data-stepper> with <fieldset data-step="n">. Without JS every step shows at once.
+(function () {
+  'use strict';
+  document.querySelectorAll('form[data-stepper]').forEach(function (form) {
+    var steps = Array.prototype.slice.call(form.querySelectorAll('[data-step]'));
+    var bars = form.querySelectorAll('[data-stepper-bar] span');
+    var cur = Math.max(0, Math.min(steps.length - 1, Number(form.getAttribute('data-start') || 1) - 1));
+    function show(i, focus) {
+      cur = i;
+      steps.forEach(function (s, k) { s.hidden = k !== i; });
+      bars.forEach(function (b, k) { b.classList.toggle('on', k <= i); });
+      if (focus) { var f = steps[i].querySelector('input:not([type=hidden]):not(.sr-only input), select, textarea'); if (f) f.focus(); }
+    }
+    function valid(step) {
+      var ok = true;
+      step.querySelectorAll('input, select, textarea').forEach(function (el) { if (ok && el.willValidate && !el.checkValidity()) { el.reportValidity(); ok = false; } });
+      if (ok && step.getAttribute('data-step') === '1') {
+        var email = form.elements.email; var phone = form.elements.phone;
+        if (email && phone && !email.value.trim() && !phone.value.trim()) { email.setCustomValidity(form.getAttribute('data-need-contact') || 'Enter an email or a phone number.'); email.reportValidity(); email.setCustomValidity(''); ok = false; }
+      }
+      return ok;
+    }
+    form.addEventListener('click', function (e) {
+      if (e.target.closest('[data-next]')) { e.preventDefault(); if (valid(steps[cur])) show(Math.min(steps.length - 1, cur + 1), true); }
+      if (e.target.closest('[data-prev]')) { e.preventDefault(); show(Math.max(0, cur - 1), true); }
+    });
+    form.querySelectorAll('[data-fill="landing"]').forEach(function (i) { i.value = location.pathname + location.search; });
+    form.querySelectorAll('[data-fill="referrer"]').forEach(function (i) { i.value = document.referrer && document.referrer.indexOf(location.host) < 0 ? document.referrer : ''; });
+    show(cur, false);
+  });
+}());

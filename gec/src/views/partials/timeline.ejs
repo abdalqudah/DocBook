@@ -1,0 +1,22 @@
+<%# include('partials/timeline', { items }) — items from activity.byDay() %>
+<% if (!items.length) { %>
+  <%- include('empty', { title: t('activity.empty'), text: t('activity.empty_text'), emptyIcon: 'history', compact: true }) %>
+<% } else { %>
+<ol class="timeline">
+  <% items.forEach(function (a) { if (a.day) { %>
+    <li class="day"><span class="t-day"><%= fmt.date(a.day + 'T12:00:00Z', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %></span></li>
+  <% } else { %>
+    <li>
+      <span class="t-icon <%= a.tone %>"><%- icon(a.icon) %></span>
+      <div>
+        <div class="t-title"><%= activityText(a) %><% if (a.is_shareable) { %> <span class="chip info"><%= t('notes.shared_with_student') %></span><% } %></div>
+        <div class="t-meta"><%= fmt.time(a.occurred_at) %><% if (a.actor_name) { %> · <%= a.actor_name %><% } %><% if (a.meta && a.meta.outcome && ['call','whatsapp','email','sms','meeting'].indexOf(a.type) < 0) { %> · <%= a.meta.outcome %><% } %></div>
+        <% if (a.body) { %><div class="t-body"><%= a.body %></div><% } %>
+        <% if (a.note_id && can('notes.view') && (a.actor_id === currentUser.id || can('records.merge'))) { %>
+        <form method="post" action="/staff/notes/<%= a.note_id %>/delete" data-confirm="<%= t('notes.delete_confirm') %>" class="mt2"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="linklike small subtle" type="submit"><%= t('common.delete') %></button></form>
+        <% } %>
+      </div>
+    </li>
+  <% } }) %>
+</ol>
+<% } %>

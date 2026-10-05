@@ -1,0 +1,108 @@
+{
+  "quick": { "lead": "عميل محتمل", "student": "طالب", "task": "مهمة" },
+  "attention": { "lead_new": "عميل جديد: {name}", "lead_not_contacted": "لم يتم التواصل بعد: {name}", "follow_up": "متابعة مع {name}" },
+  "kpi": { "new_leads": "عملاء جدد", "hot_leads": "عملاء مهتمون جداً", "active_students": "طلاب نشطون" },
+  "sources": {
+    "contact_form": "نموذج التواصل", "consultation": "طلب استشارة", "whatsapp": "واتساب", "course_inquiry": "استفسار عن دورة", "university_inquiry": "استفسار عن جامعة", "program_inquiry": "استفسار عن برنامج",
+    "scholarship_inquiry": "استفسار عن منحة", "event": "تسجيل في فعالية", "download": "تنزيل", "newsletter": "النشرة البريدية", "manual": "إدخال يدوي", "referral": "إحالة",
+    "social": "حملة تواصل اجتماعي", "google_ads": "إعلانات جوجل", "walk_in": "زيارة المكتب", "phone": "اتصال هاتفي", "ai_advisor": "المستشار الذكي", "website": "الموقع", "import": "استيراد"
+  },
+  "people": {
+    "first_name": "الاسم الأول", "last_name": "اسم العائلة", "nationality": "الجنسية", "residence": "بلد الإقامة", "preferred_language": "اللغة المفضلة", "education_level": "المؤهل الحالي",
+    "dob": "تاريخ الميلاد", "gender": "الجنس", "gender_female": "أنثى", "gender_male": "ذكر", "gender_other": "آخر", "gender_undisclosed": "أفضل عدم الذكر",
+    "passport": "رقم جواز السفر", "passport_hint": "يُحفظ مشفّراً، ولا يظهر إلا لمن يدير ملفات الطلاب.", "passport_keep_hint": "اتركه فارغاً للإبقاء على الرقم المحفوظ.", "passport_expiry": "انتهاء جواز السفر", "reveal": "إظهار"
+  },
+  "ref": {
+    "degree": { "foundation": "سنة تأسيسية", "diploma": "دبلوم", "bachelor": "بكالوريوس", "master": "ماجستير", "phd": "دكتوراه", "language": "دورة لغة", "certificate": "شهادة مهنية" },
+    "education": { "high_school": "ثانوية عامة", "diploma": "دبلوم", "bachelor": "بكالوريوس", "master": "ماجستير", "phd": "دكتوراه" },
+    "budget": { "lt10": "أقل من 10,000$ سنوياً", "10_20": "10,000$ – 20,000$ سنوياً", "20_35": "20,000$ – 35,000$ سنوياً", "35_50": "35,000$ – 50,000$ سنوياً", "gt50": "أكثر من 50,000$ سنوياً" },
+    "field": {
+      "computer_science": "علوم الحاسوب", "data_science": "علم البيانات", "artificial_intelligence": "الذكاء الاصطناعي", "cybersecurity": "الأمن السيبراني", "engineering": "الهندسة",
+      "business": "إدارة الأعمال", "finance": "المالية والمحاسبة", "marketing": "التسويق", "medicine": "الطب", "health": "العلوم الصحية", "nursing": "التمريض", "pharmacy": "الصيدلة",
+      "law": "القانون", "architecture": "العمارة", "design": "الفنون والتصميم", "media": "الإعلام والاتصال", "education": "التربية", "psychology": "علم النفس", "social_sciences": "العلوم الاجتماعية",
+      "natural_sciences": "العلوم الطبيعية", "mathematics": "الرياضيات", "hospitality": "الضيافة والسياحة", "aviation": "الطيران", "english": "اللغة الإنجليزية", "other": "أخرى"
+    },
+    "mode": { "on_campus": "في الحرم الجامعي", "online": "عن بُعد", "blended": "مدمج" }
+  },
+  "journey": { "profile": "الملف الشخصي", "counselling": "الاستشارة", "program_selection": "اختيار البرنامج", "documents": "المستندات", "application": "التقديم", "offer": "القبول", "visa": "التأشيرة", "pre_departure": "ما قبل السفر", "enrolled": "الالتحاق" },
+  "channels": { "call": "اتصال", "whatsapp": "واتساب", "email": "بريد إلكتروني", "sms": "رسالة نصية", "meeting": "اجتماع" },
+  "outcomes": { "reached": "تم التواصل", "no_answer": "لم يُجب", "left_message": "تُركت رسالة", "replied": "تم الرد", "meeting_held": "عُقد الاجتماع" },
+  "activity": {
+    "empty": "لا يوجد نشاط بعد", "empty_text": "ستظهر هنا المكالمات والرسائل والملاحظات وتغييرات المراحل وزيارات الموقع.",
+    "lead_created": "أُنشئ العميل من {source}", "form_submitted": "أرسل استفساراً جديداً ({source})", "student_created": "تم إنشاء ملف الطالب", "student_from_lead": "أصبح طالباً",
+    "assigned_to": "أُسند إلى {name}", "assigned_auto": "أُسند تلقائياً", "unassigned": "أُلغي الإسناد", "stage_moved": "نُقل من {from} إلى {to}", "journey_moved": "انتقلت الرحلة إلى {to}",
+    "marked_lost": "اعتُبر مفقوداً: {reason}", "converted": "تحوّل إلى الطالب {ref}", "merged": "دُمج مع السجل المكرر {ref}", "note": "ملاحظة",
+    "task_created": "أُنشئت مهمة: {title}", "task_completed": "أُنجزت مهمة: {title}",
+    "contact_call": "اتصال — {outcome}", "contact_whatsapp": "واتساب — {outcome}", "contact_email": "بريد — {outcome}", "contact_sms": "رسالة نصية — {outcome}", "contact_meeting": "اجتماع — {outcome}",
+    "msg_out_email": "أُرسل بريد: {subject}", "msg_in_email": "وصل بريد: {subject}", "msg_out_sms": "أُرسلت رسالة نصية", "msg_in_sms": "وصلت رسالة نصية", "msg_out_whatsapp": "أُرسلت رسالة واتساب", "msg_in_whatsapp": "وصلت رسالة واتساب"
+  },
+  "leads": {
+    "new": "عميل محتمل جديد", "create": "إنشاء العميل", "created": "تم إنشاء العميل.", "lead_text": "كل من تواصل مع GEC، من أول استفسار حتى يصبح طالباً.",
+    "view": "طريقة العرض", "view_list": "قائمة", "view_board": "لوحة", "search_ph": "الاسم أو البريد أو الهاتف أو الرقم المرجعي", "stage": "المرحلة", "all_stages": "كل المراحل", "status_open": "مفتوح", "status_converted": "تحوّل لطالب",
+    "status_lost": "مفقود", "status_merged": "مدموج", "status_all": "الكل", "anyone": "الجميع", "mine": "المُسندون إليّ", "temperature": "درجة الاهتمام", "any_temp": "أي درجة اهتمام",
+    "temp_hot": "مهتم جداً", "temp_warm": "مهتم", "temp_cold": "غير نشط", "source": "المصدر", "any_source": "أي مصدر", "destinations": "الوجهات", "any_destination": "أي وجهة", "interest": "الاهتمام",
+    "no_match": "لا يوجد عملاء مطابقون", "empty": "لا يوجد عملاء محتملون بعد", "empty_text": "يصل العملاء تلقائياً من نماذج الموقع وواتساب والفعاليات — أو أضف عميلاً يدوياً.",
+    "board_hint": "اسحب البطاقة إلى عمود آخر لنقلها. باستخدام لوحة المفاتيح: افتح العميل وغيّر مرحلته.", "lost_reason_prompt": "ما سبب فقدان هذا العميل؟",
+    "email_or_phone": "يلزم بريد إلكتروني أو رقم هاتف.", "degree": "الدرجة العلمية", "field": "مجال الدراسة", "intake": "موعد البدء", "budget": "الميزانية", "english": "مستوى الإنجليزية", "english_ph": "مثال: آيلتس 6.5",
+    "message": "الرسالة", "ownership": "المسؤولية", "assign_auto": "إسناد تلقائي", "assign_self_hint": "العملاء الذين تنشئهم يُسندون إليك.",
+    "in_stage_for": "في هذه المرحلة منذ {time}", "call": "اتصال", "log_contact": "تسجيل تواصل", "open_student": "فتح ملف الطالب", "convert": "تحويل إلى طالب",
+    "convert_confirm": "إنشاء ملف طالب من هذا العميل؟", "move_to": "نقل إلى", "lost_reason": "السبب (مطلوب عند الفقدان)", "tab_timeline": "السجل الزمني", "tab_details": "التفاصيل", "tab_tasks": "المهام",
+    "contact": "التواصل", "consent": "التسويق", "consent_marketing_yes": "وافق على استلام التحديثات", "consent_marketing_no": "لا توجد موافقة تسويقية", "unsubscribed": "ألغى الاشتراك",
+    "asked_about": "استفسر عن", "attribution": "مصدر الوصول", "first_touch": "أول تواصل", "latest_touch": "آخر تواصل", "campaign": "الحملة", "landing_page": "صفحة الوصول", "referrer": "الموقع المحيل", "first_visit": "أول زيارة",
+    "next_follow_up": "المتابعة التالية", "next_follow_up_hint": "سيظهر تذكير في قائمة المتابعة.", "delete": "حذف العميل", "delete_confirm": "حذف هذا العميل وسجله نهائياً؟",
+    "stage_changed": "تم تحديث المرحلة.", "assigned": "تم حفظ الإسناد.", "contact_logged": "تم تسجيل التواصل.", "converted": "تم إنشاء ملف الطالب.", "channel": "الوسيلة", "outcome": "النتيجة", "summary": "الملخص", "summary_ph": "ما الذي نوقش وما الذي تم الاتفاق عليه…"
+  },
+  "students": {
+    "new": "طالب جديد", "create": "إنشاء الطالب", "created": "تم إنشاء الطالب. أكمل ملفه عندما تتمكن.", "new_lead": "عادةً يأتي الطلاب من العملاء المحتملين (تحويل إلى طالب). استخدم هذا للزيارات المباشرة والإحالات.",
+    "lead_text": "الطلاب الذين ترشدهم GEC، وموقع كل منهم في رحلته.", "search_ph": "الاسم أو البريد أو الهاتف أو الجواز أو الرقم المرجعي", "journey": "الرحلة الدراسية", "any_stage": "أي مرحلة",
+    "status_current": "الحاليون", "status_active": "نشط", "status_on_hold": "معلّق", "status_enrolled": "ملتحق", "status_closed": "مغلق", "status_all": "الكل",
+    "no_match": "لا يوجد طلاب مطابقون", "empty": "لا يوجد طلاب بعد", "empty_text": "حوّل عميلاً مؤهلاً إلى طالب لبدء رحلة التقديم.", "go_to_leads": "الانتقال إلى العملاء",
+    "profile": "الملف", "goal": "الهدف", "last_activity": "آخر نشاط", "counsellor": "المستشار", "counsellor_is": "المستشار: {name}", "has_portal": "لديه حساب في البوابة",
+    "tab_overview": "نظرة عامة", "tab_profile": "الملف الشخصي", "tab_timeline": "السجل الزمني", "tab_tasks": "المهام", "tab_applications": "الطلبات", "tab_documents": "المستندات", "tab_shortlist": "القائمة المختصرة", "tab_messages": "الرسائل", "tab_payments": "المدفوعات", "tab_appointments": "المواعيد", "tab_visa": "التأشيرة", "tab_matches": "البرامج المناسبة",
+    "profile_completion": "اكتمال الملف", "missing_fields": "الناقص لاكتمال الملف:", "profile_complete": "الملف مكتمل.", "recent_activity": "آخر النشاطات", "snapshot": "لمحة",
+    "budget": "الميزانية", "english": "اللغة الإنجليزية", "sec_personal": "البيانات الشخصية", "sec_academic": "التعليم", "sec_english": "اختبارات اللغة", "sec_goals": "الأهداف الدراسية", "sec_history": "التأشيرات والخبرة",
+    "institution": "المؤسسة التعليمية", "major": "التخصص", "graduation": "تاريخ التخرج", "gpa_scale": "مقياس المعدل", "gpa_scale_hint": "مثال: 4 لمقياس 4.0، و100 للنسبة المئوية.", "ielts_min_band": "أدنى مهارة في الآيلتس",
+    "test_date": "تاريخ الاختبار", "fields": "مجالات الدراسة", "budget_usd": "الميزانية السنوية (دولار)", "budget_hint": "الرسوم الدراسية وتكاليف المعيشة سنوياً.", "work_after_study": "يرغب بالعمل بعد الدراسة",
+    "visa_refused": "سبق رفض تأشيرة له", "visa_history": "سجل التأشيرات", "work_years": "سنوات الخبرة", "delete": "حذف الطالب", "delete_confirm": "حذف هذا الطالب وكل السجلات المرتبطة به نهائياً؟",
+    "f_first_name": "الاسم الأول", "f_last_name": "اسم العائلة", "f_email": "البريد", "f_phone": "الهاتف", "f_nationality": "الجنسية", "f_residence_country": "الإقامة", "f_date_of_birth": "تاريخ الميلاد",
+    "f_passport_last4": "جواز السفر", "f_education_level": "المؤهل", "f_major": "التخصص", "f_gpa": "المعدل", "f_graduation_date": "التخرج", "f_english": "اختبار اللغة", "f_pref_countries": "الوجهات",
+    "f_pref_degree": "الدرجة", "f_pref_fields": "المجال", "f_budget_usd": "الميزانية", "f_pref_intake": "موعد البدء"
+  },
+  "notes": { "add": "إضافة ملاحظة", "added": "تمت إضافة الملاحظة.", "placeholder": "اكتب ملاحظة… استخدم @الاسم للإشارة إلى زميل", "private_hint": "الملاحظات داخلية — لا يراها الطلاب أبداً.", "share_with_student": "مشاركتها مع الطالب", "shared_with_student": "مُشاركة مع الطالب", "delete_confirm": "حذف هذه الملاحظة؟" },
+  "tasks": {
+    "new": "مهمة جديدة", "add": "إضافة مهمة", "created": "تمت إضافة المهمة.", "completed": "تم إنجاز المهمة.", "title": "المهمة", "title_ph": "مثال: معاودة الاتصال بخصوص نتيجة الآيلتس", "due": "الموعد", "priority": "الأولوية", "assignee": "مُسندة إلى",
+    "repeat": "التكرار", "every_n_days": "تكرار كل … يوم", "every_n_days_hint": "فقط عند اختيار \"كل بضعة أيام\".", "lead_text": "متابعاتك ومهامك، الأكثر إلحاحاً أولاً.",
+    "priority_low": "منخفضة", "priority_normal": "عادية", "priority_high": "عالية", "priority_urgent": "عاجلة", "status_todo": "للتنفيذ", "status_in_progress": "قيد التنفيذ", "status_waiting": "بانتظار رد", "status_completed": "منجزة",
+    "rec_none": "بدون تكرار", "rec_daily": "يومياً", "rec_weekly": "أسبوعياً", "rec_monthly": "شهرياً", "rec_every_n_days": "كل بضعة أيام",
+    "view_open": "المفتوحة", "view_today": "مستحقة اليوم", "view_overdue": "متأخرة", "view_completed": "المنجزة", "everyone_visible": "الجميع", "any_status": "أي حالة",
+    "complete": "تحديد كمنجزة", "reopen": "إعادة فتح", "no_due": "بلا موعد", "empty": "لا توجد مهام", "empty_text": "أنشئ مهمة لتتذكر الخطوة التالية.", "all_done": "لا شيء متأخر لديك", "none_completed": "لم تُنجز أي مهمة بعد",
+    "mark_todo": "تحديد للتنفيذ", "mark_in_progress": "تحديد قيد التنفيذ", "mark_waiting": "تحديد بانتظار رد", "delete_confirm": "حذف هذه المهمة؟"
+  },
+  "merge": {
+    "possible_duplicates": "سجلات مكررة محتملة", "kind_lead": "عميل محتمل", "kind_student": "طالب", "matched": "نفس", "by_email": "البريد", "by_phone": "الهاتف", "by_passport": "الجواز",
+    "keep": "الإبقاء على", "keep_this": "الإبقاء على هذا السجل", "keep_other": "الإبقاء على الآخر", "merge": "دمج", "link_to_student": "ربط بالطالب", "confirm": "دمج هذين السجلين؟ سينتقل السجل الزمني والمهام والمستندات إلى السجل الذي تبقيه.",
+    "done": "تم دمج السجلات.", "found_before_create": "تبدو هذه السجلات للشخص نفسه:", "create_anyway": "إنشاء على أي حال"
+  },
+  "team": {
+    "new_employee": "موظف جديد", "lead_text": "كل من لديه صلاحية دخول إلى مساحة عمل GEC.", "search_ph": "الاسم أو البريد", "all_roles": "كل الأدوار", "all_branches": "كل الفروع", "any_status": "أي حالة",
+    "status_active": "نشط", "status_invited": "مدعو", "status_disabled": "معطّل", "manager": "المدير", "last_sign_in": "آخر دخول", "counsellor": "مستشار", "job_title": "المسمى الوظيفي", "department": "القسم",
+    "counselling": "الإرشاد", "is_counsellor": "يعمل كمستشار (يمكن أن يتولى عملاء وطلاباً)", "auto_assign": "يستقبل العملاء الجدد تلقائياً", "countries": "الوجهات التي يغطيها",
+    "countries_hint": "تُستخدم عند ضبط الإسناد على \"حسب قواعد الوجهة\".", "access": "تسجيل الدخول", "mode_invite": "إرسال دعوة", "mode_invite_hint": "يختار كلمة المرور بنفسه من رابط (صالح 60 دقيقة).",
+    "mode_password": "تعيين كلمة مرور مؤقتة", "mode_password_hint": "يجب تغييرها عند أول دخول.", "temp_password": "كلمة المرور المؤقتة", "create": "إنشاء الموظف",
+    "invite_subject": "حسابك في مساحة عمل {brand}", "invite_body": "مرحباً {name}، تم إنشاء حساب لك في مساحة عمل {brand}. اختر كلمة المرور للبدء.", "invite_cta": "اختيار كلمة المرور",
+    "invite_sent": "تم إنشاء الموظف وإرسال الدعوة بالبريد.", "invite_not_sent": "تم إنشاء الموظف. البريد غير مُعد، لذا انسخ الرابط أدناه وأرسله إليه.", "created_with_password": "تم إنشاء الموظف. شارك كلمة المرور المؤقتة معه بطريقة آمنة.",
+    "reset_link": "رابط كلمة مرور جديد", "link_title": "رابط كلمة المرور.", "link_text": "صالح لمدة 60 دقيقة ويظهر مرة واحدة فقط. أرسله للموظف بشكل خاص.",
+    "enable": "تفعيل الحساب", "disable": "تعطيل الحساب", "enable_confirm": "تفعيل هذا الحساب؟", "disable_confirm": "تعطيل هذا الحساب؟ سيتم تسجيل خروجه فوراً.",
+    "open_leads": "عملاء مفتوحون", "open_tasks": "مهام مفتوحة", "branches_lead": "مكاتب GEC. ينتمي الموظفون والعملاء والطلاب إلى فرع، ويمكن تصفية التقارير حسب الفرع.", "edit_branch": "تعديل الفرع", "new_branch": "فرع جديد"
+  },
+  "book": {
+    "eyebrow": "مجانية · دون أي التزام", "title": "احجز استشارة مجانية", "lead": "أخبرنا قليلاً عنك وعمّا تود دراسته. سيتواصل معك أحد مستشاري GEC، غالباً خلال يوم عمل واحد.",
+    "step1": "عنك", "step2": "خططك الدراسية", "step3": "هل هناك شيء آخر؟", "phone_whatsapp": "الهاتف / واتساب", "phone_hint": "مع رمز الدولة، مثل ‎+962 7…", "current_education": "مؤهلك الحالي",
+    "where": "أين تود أن تدرس؟", "budget": "الميزانية السنوية (الرسوم + المعيشة)", "message": "أسئلتك", "message_ph": "أخبرنا عن أهدافك أو درجات اختباراتك أو أي شيء لست متأكداً منه.",
+    "contact_time": "أفضل وقت للتواصل", "time_any": "أي وقت", "time_morning": "صباحاً", "time_afternoon": "بعد الظهر", "time_evening": "مساءً",
+    "consent_contact": "أوافق على أن تتواصل معي GEC بخصوص استفساري.", "consent_required": "يرجى الموافقة لنتمكن من التواصل معك.", "consent_marketing": "أرسلوا لي مواعيد المنح والفعاليات ونصائح الدراسة (اختياري، يمكن الإلغاء في أي وقت).",
+    "submit": "اطلب استشارتي", "reassurance": "استشارتنا مجانية، ولا نشارك بياناتك دون إذنك.", "interested_in": "مهتم بـ",
+    "thanks_title": "شكراً لك — استلمنا طلبك", "thanks_text": "سيتواصل معك أحد مستشاري GEC قريباً. إذا رغبت بالتحدث الآن فراسلنا عبر واتساب.", "whatsapp_now": "تحدث عبر واتساب الآن"
+  },
+  "contact": { "title": "تواصل معنا", "lead": "لديك أسئلة عن الدراسة في الخارج أو طلب أو تأشيرة؟ راسلنا — نرد خلال يوم عمل واحد.", "subject": "الموضوع", "message": "الرسالة", "send": "إرسال الرسالة", "sent": "شكراً لك. تم إرسال رسالتك وسيرد عليك مستشار قريباً.", "reach_us": "تواصل معنا مباشرة" }
+}

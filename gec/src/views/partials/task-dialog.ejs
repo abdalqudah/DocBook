@@ -1,0 +1,20 @@
+<%# include('partials/task-dialog', { action, assignees, defaultAssignee? }) %>
+<dialog class="dialog" id="task-dialog" aria-labelledby="task-dialog-h">
+  <form method="post" action="<%= action %>">
+    <div class="dialog-head"><h2 id="task-dialog-h"><%= t('tasks.new') %></h2><button type="button" class="btn ghost icon-only" data-dialog-close aria-label="<%= t('common.close') %>"><%- icon('x') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('field', { name: 'title', label: t('tasks.title'), required: true, placeholder: t('tasks.title_ph') }) %>
+      <div class="form-grid two">
+        <%- include('field', { name: 'due_at', label: t('tasks.due'), type: 'datetime-local' }) %>
+        <%- include('field', { name: 'priority', label: t('tasks.priority'), type: 'select', value: 'normal', required: true, options: ['low','normal','high','urgent'].map(function (p) { return { value: p, label: t('tasks.priority_' + p) }; }) }) %>
+        <%- include('field', { name: 'assignee_id', label: t('tasks.assignee'), type: 'select', value: typeof defaultAssignee !== 'undefined' ? defaultAssignee : staff.employee.id, options: assignees.map(function (a) { return { value: a.id, label: a.name }; }) }) %>
+        <%- include('field', { name: 'recurrence', label: t('tasks.repeat'), type: 'select', value: 'none', required: true, options: ['none','daily','weekly','monthly','every_n_days'].map(function (r) { return { value: r, label: t('tasks.rec_' + r) }; }) }) %>
+      </div>
+      <%- include('field', { name: 'recurrence_days', label: t('tasks.every_n_days'), type: 'number', attrs: 'min="1" max="365"', hint: t('tasks.every_n_days_hint') }) %>
+      <%- include('field', { name: 'description', label: t('common.notes'), type: 'textarea', rows: 3 }) %>
+      <% if (typeof hidden !== 'undefined') { Object.keys(hidden).forEach(function (k) { %><input type="hidden" name="<%= k %>" value="<%= hidden[k] %>"><% }) } %>
+    </div>
+    <div class="dialog-foot"><button type="button" class="btn ghost" data-dialog-close><%= t('common.cancel') %></button><button class="btn primary" type="submit"><%= t('tasks.add') %></button></div>
+  </form>
+</dialog>

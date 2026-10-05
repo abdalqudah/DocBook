@@ -1,0 +1,64 @@
+<div class="page-head">
+  <div><h1><%= t('nav.leads') %></h1><p class="lead"><%= t('leads.lead_text') %></p></div>
+  <div class="cluster">
+    <div class="seg" role="tablist" aria-label="<%= t('leads.view') %>">
+      <a href="<%= qs({ view: 'list', page: null }) %>" <%- view === 'list' ? 'aria-current="page" class="on"' : '' %>><%- icon('list') %> <%= t('leads.view_list') %></a>
+      <a href="<%= qs({ view: 'board', page: null }) %>" <%- view === 'board' ? 'aria-current="page" class="on"' : '' %>><%- icon('kanban') %> <%= t('leads.view_board') %></a>
+    </div>
+    <% if (can('leads.manage')) { %><a class="btn primary" href="/staff/leads/new"><%- icon('plus') %><%= t('leads.new') %></a><% } %>
+  </div>
+</div>
+<form class="toolbar" method="get">
+  <input type="hidden" name="view" value="<%= view %>">
+  <div class="search-inline"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('leads.search_ph') %>" aria-label="<%= t('common.search') %>"></div>
+  <% if (view === 'list') { %>
+  <select name="stage" data-autosubmit aria-label="<%= t('leads.stage') %>"><option value=""><%= t('leads.all_stages') %></option><% stageList.forEach(function (s) { %><option value="<%= s.id %>" <%= String(query.stage) === String(s.id) ? 'selected' : '' %>><%= L(s, 'name') %></option><% }) %></select>
+  <select name="status" data-autosubmit aria-label="<%= t('common.status') %>"><% ['open','converted','lost','all'].forEach(function (s) { %><option value="<%= s %>" <%= (query.status || 'open') === s ? 'selected' : '' %>><%= t('leads.status_' + s) %></option><% }) %></select>
+  <% } %>
+  <select name="owner" data-autosubmit aria-label="<%= t('common.assigned_to') %>"><option value=""><%= t('leads.anyone') %></option><option value="me" <%= query.owner === 'me' ? 'selected' : '' %>><%= t('leads.mine') %></option><option value="none" <%= query.owner === 'none' ? 'selected' : '' %>><%= t('common.unassigned') %></option><% counsellors.forEach(function (c) { %><option value="<%= c.id %>" <%= String(query.owner) === String(c.id) ? 'selected' : '' %>><%= c.name %></option><% }) %></select>
+  <select name="temp" data-autosubmit aria-label="<%= t('leads.temperature') %>"><option value=""><%= t('leads.any_temp') %></option><% ['hot','warm','cold'].forEach(function (x) { %><option value="<%= x %>" <%= query.temp === x ? 'selected' : '' %>><%= t('leads.temp_' + x) %></option><% }) %></select>
+  <select name="source" data-autosubmit aria-label="<%= t('leads.source') %>"><option value=""><%= t('leads.any_source') %></option><% sourceList.forEach(function (s) { %><option value="<%= s.key %>" <%= query.source === s.key ? 'selected' : '' %>><%= t('sources.' + s.key) %></option><% }) %></select>
+  <select name="country" data-autosubmit aria-label="<%= t('leads.destinations') %>"><option value=""><%= t('leads.any_destination') %></option><% destinations.forEach(function (d) { %><option value="<%= d.value %>" <%= query.country === d.value ? 'selected' : '' %>><%= d.label %></option><% }) %></select>
+  <button class="btn" type="submit"><%= t('common.filter') %></button>
+  <% if (view === 'list') { %><a class="btn ghost" href="/staff/leads/export.csv<%= qs({ page: null, view: null }) %>"><%- icon('download') %><%= t('common.export') %></a><% } %>
+</form>
+
+<% if (view === 'board') { %>
+<div class="kanban" data-kanban data-endpoint="/api/leads/{id}/stage" data-lost-prompt="<%= t('leads.lost_reason_prompt') %>">
+  <% board.forEach(function (col) { %>
+  <section class="kanban-col" aria-label="<%= L(col.stage, 'name') %>">
+    <div class="kanban-col-head"><span><span class="dot" style="color:var(--<%= col.stage.tone === 'brand' ? 'brand' : col.stage.tone %>)"></span> <%= L(col.stage, 'name') %></span><span class="count" data-count><%= col.count %></span></div>
+    <div class="kanban-cards" data-stage="<%= col.stage.id %>" data-lost="<%= col.stage.is_lost ? 1 : 0 %>">
+      <% col.rows.forEach(function (l) { var cs = (typeof l.interest_countries === 'string' ? JSON.parse(l.interest_countries || '[]') : (l.interest_countries || [])); %>
+      <a class="kcard" href="/staff/leads/<%= l.id %>" draggable="true" data-id="<%= l.id %>">
+        <div class="k-title"><%= fullName(l) %> <% if (l.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></div>
+        <div class="k-sub"><%= [l.interest_degree ? t('ref.degree.' + l.interest_degree) : null, l.interest_field, cs.slice(0, 2).map(function (c) { return destLabel[c] || c; }).join(', ')].filter(Boolean).join(' · ') || '—' %></div>
+        <div class="k-foot"><span class="chip <%= l.temperature %>"><%- icon(l.temperature === 'hot' ? 'flame' : 'thermometer') %><%= t('leads.temp_' + l.temperature) %></span><span class="small subtle"><%= l.counsellor_name ? l.counsellor_name.split(' ')[0] : t('common.unassigned') %> · <%= fmt.relative(l.stage_entered_at) %></span></div>
+      </a>
+      <% }) %>
+    </div>
+  </section>
+  <% }) %>
+</div>
+<p class="small subtle"><%= t('leads.board_hint') %></p>
+<% } else if (!rows.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: query.q || query.stage ? t('leads.no_match') : t('leads.empty'), text: t('leads.empty_text'), href: can('leads.manage') ? '/staff/leads/new' : null, cta: t('leads.new'), emptyIcon: 'user-plus' }) %></div>
+<% } else { %>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><th><%= t('common.name') %></th><th><%= t('leads.stage') %></th><th><%= t('leads.interest') %></th><th><%= t('leads.temperature') %></th><th><%= t('common.assigned_to') %></th><th><%= t('leads.source') %></th><th><a href="<%= qs({ sort: 'created', dir: query.dir === 'asc' ? 'desc' : 'asc' }) %>"><%= t('common.created') %></a></th></tr></thead>
+  <tbody>
+  <% rows.forEach(function (l) { var cs = (typeof l.interest_countries === 'string' ? JSON.parse(l.interest_countries || '[]') : (l.interest_countries || [])); %>
+    <tr>
+      <td class="primary"><a class="row-link" href="/staff/leads/<%= l.id %>"><%= fullName(l) %></a> <% if (l.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %><div class="small subtle"><%= l.email || l.phone || '' %></div></td>
+      <td data-label="<%= t('leads.stage') %>"><span class="chip <%= l.stage_tone %>"><%= locale === 'ar' && l.stage_ar ? l.stage_ar : l.stage_en %></span></td>
+      <td data-label="<%= t('leads.interest') %>" class="small"><%= [l.interest_degree ? t('ref.degree.' + l.interest_degree) : null, l.interest_field].filter(Boolean).join(' · ') || '—' %><div class="subtle"><%= cs.map(function (c) { return destLabel[c] || c; }).join(', ') %></div></td>
+      <td data-label="<%= t('leads.temperature') %>"><span class="chip <%= l.temperature %>"><%= t('leads.temp_' + l.temperature) %> · <%= l.score %></span></td>
+      <td data-label="<%= t('common.assigned_to') %>"><%= l.counsellor_name || t('common.unassigned') %></td>
+      <td data-label="<%= t('leads.source') %>" class="small"><%= t('sources.' + l.source) %><% if (l.utm_campaign) { %><div class="subtle"><%= l.utm_campaign %></div><% } %></td>
+      <td data-label="<%= t('common.created') %>" class="small nowrap"><%= fmt.relative(l.created_at) %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>

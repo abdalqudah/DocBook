@@ -1,0 +1,58 @@
+<% var st = typeof step !== 'undefined' ? step : 1; %>
+<section class="section">
+  <div class="container" style="max-width:760px">
+    <div class="section-head center">
+      <span class="eyebrow"><%- icon('sparkles') %><%= t('book.eyebrow') %></span>
+      <h1><%= t('book.title') %></h1>
+      <p><%= t('book.lead') %></p>
+    </div>
+    <form method="post" action="/book" class="form-card" data-stepper data-start="<%= st %>" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="about" value="<%= about %>">
+      <% Object.keys(utm).forEach(function (k) { if (utm[k]) { %><input type="hidden" name="utm_<%= k %>" value="<%= utm[k] %>"><% } }) %>
+      <input type="hidden" name="landing_page" value="" data-fill="landing">
+      <input type="hidden" name="referrer" value="" data-fill="referrer">
+      <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <div class="stepper-bar" data-stepper-bar aria-hidden="true"><span class="on"></span><span></span><span></span></div>
+
+      <fieldset class="form-step stack" data-step="1">
+        <legend><%= t('book.step1') %></legend>
+        <div class="form-grid two">
+          <%- include('../../partials/field', { name: 'first_name', label: t('people.first_name'), value: old.first_name, required: true, attrs: 'autocomplete="given-name"' }) %>
+          <%- include('../../partials/field', { name: 'last_name', label: t('people.last_name'), value: old.last_name, attrs: 'autocomplete="family-name"' }) %>
+          <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: old.email, attrs: 'autocomplete="email"' }) %>
+          <%- include('../../partials/field', { name: 'phone', label: t('book.phone_whatsapp'), type: 'tel', value: old.phone, attrs: 'autocomplete="tel" dir="ltr"', hint: t('book.phone_hint') }) %>
+          <%- include('../../partials/field', { name: 'residence_country', label: t('people.residence'), type: 'select', value: old.residence_country, options: ref.countries() }) %>
+          <%- include('../../partials/field', { name: 'education_level', label: t('book.current_education'), type: 'select', value: old.education_level, options: ref.EDUCATION_LEVELS.map(function (e) { return { value: e, label: t('ref.education.' + e) }; }) }) %>
+        </div>
+        <div class="form-actions" data-step-nav><button type="button" class="btn primary lg" data-next><%= t('common.continue') %><%- icon('arrow-right', 'flip-rtl') %></button></div>
+      </fieldset>
+
+      <fieldset class="form-step stack" data-step="2">
+        <legend><%= t('book.step2') %></legend>
+        <%- include('../../partials/field', { name: 'interest_countries', label: t('book.where'), type: 'checks', value: old.interest_countries || [], options: destinations }) %>
+        <div class="form-grid two">
+          <%- include('../../partials/field', { name: 'interest_degree', label: t('leads.degree'), type: 'select', value: old.interest_degree, options: ref.DEGREES.map(function (d) { return { value: d, label: t('ref.degree.' + d) }; }) }) %>
+          <%- include('../../partials/field', { name: 'interest_field', label: t('leads.field'), value: old.interest_field, attrs: 'list="field-list"' }) %>
+          <%- include('../../partials/field', { name: 'interest_intake', label: t('leads.intake'), type: 'select', value: old.interest_intake, options: ref.intakes(24).map(function (m) { return { value: m, label: ref.month(m) }; }) }) %>
+          <%- include('../../partials/field', { name: 'budget_range', label: t('book.budget'), type: 'select', value: old.budget_range, options: ref.BUDGETS.map(function (b) { return { value: b[0], label: t('ref.budget.' + b[0]) }; }) }) %>
+        </div>
+        <datalist id="field-list"><% ref.FIELDS.forEach(function (f) { %><option value="<%= t('ref.field.' + f) %>"><% }) %></datalist>
+        <div class="form-actions" data-step-nav><button type="button" class="btn ghost" data-prev><%- icon('arrow-left', 'flip-rtl') %><%= t('common.back') %></button><button type="button" class="btn primary lg" data-next><%= t('common.continue') %><%- icon('arrow-right', 'flip-rtl') %></button></div>
+      </fieldset>
+
+      <fieldset class="form-step stack" data-step="3">
+        <legend><%= t('book.step3') %></legend>
+        <%- include('../../partials/field', { name: 'message', label: t('book.message'), type: 'textarea', rows: 4, value: old.message, placeholder: t('book.message_ph') }) %>
+        <%- include('../../partials/field', { name: 'contact_time', label: t('book.contact_time'), type: 'select', value: old.contact_time || 'any', options: ['any','morning','afternoon','evening'].map(function (x) { return { value: x, label: t('book.time_' + x) }; }) }) %>
+        <div class="consent-box">
+          <label class="check <%= errors.consent_contact ? 'has-error' : '' %>"><input type="checkbox" name="consent_contact" value="1" required <%= old.consent_contact ? 'checked' : '' %>><span><%= t('book.consent_contact') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+          <% if (errors.consent_contact) { %><span class="error-text"><%= t('book.consent_required') %></span><% } %>
+          <label class="check"><input type="checkbox" name="consent_marketing" value="1" <%= old.consent_marketing ? 'checked' : '' %>><span><%= t('book.consent_marketing') %></span></label>
+        </div>
+        <div class="form-actions" data-step-nav><button type="button" class="btn ghost" data-prev><%- icon('arrow-left', 'flip-rtl') %><%= t('common.back') %></button><button class="btn primary lg" type="submit"><%= t('book.submit') %></button></div>
+      </fieldset>
+    </form>
+    <p class="disclaimer mt4"><%- icon('shield-check', 'sm') %><span><%= t('book.reassurance') %></span></p>
+  </div>
+</section>

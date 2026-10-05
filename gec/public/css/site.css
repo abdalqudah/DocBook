@@ -152,3 +152,4 @@ body.nav-open { overflow: hidden; }
 .stepper-bar span.on { background: var(--brand); }
 .form-step[hidden] { display: none; }
 .consent-box { font-size: .85rem; color: var(--text-2); background: var(--surface-2); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 8px; }
+@media (max-width: 640px) { body:has(.cookie-bar:not([hidden])) .wa-fab { display: none; } }

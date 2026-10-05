@@ -1,0 +1,126 @@
+<% var editable = can('leads.manage'); var lostStage = stageList.find(function (s) { return s.is_lost; }); %>
+<nav class="breadcrumbs"><a href="/staff/leads"><%= t('nav.leads') %></a><%- icon('chevron-right') %><span><%= lead.ref %></span></nav>
+<div class="page-head">
+  <div class="row top">
+    <span class="avatar lg"><%= initials(fullName(lead)) %></span>
+    <div>
+      <h1><%= fullName(lead) %> <% if (lead.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1>
+      <div class="cluster mt2">
+        <span class="chip <%= stage.tone %>"><%= L(stage, 'name') %></span>
+        <span class="chip <%= lead.temperature %>"><%- icon(lead.temperature === 'hot' ? 'flame' : 'thermometer') %><%= t('leads.temp_' + lead.temperature) %> · <%= lead.score %></span>
+        <% if (lead.status !== 'open') { %><span class="chip <%= lead.status === 'lost' ? 'bad' : 'ok' %>"><%= t('leads.status_' + lead.status) %></span><% } %>
+        <span class="small subtle"><%= t('leads.in_stage_for', { time: fmt.relative(lead.stage_entered_at) }) %></span>
+      </div>
+    </div>
+  </div>
+  <div class="cluster">
+    <% if (lead.phone || lead.whatsapp) { %><a class="btn" href="https://wa.me/<%= (lead.whatsapp || lead.phone).replace(/\D/g, '') %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %>
+    <% if (lead.phone) { %><a class="btn" href="tel:<%= lead.phone.replace(/[^+\d]/g, '') %>"><%- icon('phone') %><%= t('leads.call') %></a><% } %>
+    <% if (editable) { %><button class="btn tonal" type="button" data-dialog-open="contact-dialog"><%- icon('notebook-pen') %><%= t('leads.log_contact') %></button><% } %>
+    <% if (student) { %><a class="btn primary" href="/staff/students/<%= student.id %>"><%- icon('graduation-cap') %><%= t('leads.open_student') %></a><% } else if (can('students.manage') && lead.status !== 'lost') { %>
+      <form method="post" action="/staff/leads/<%= lead.id %>/convert" data-confirm="<%= t('leads.convert_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn primary" type="submit"><%- icon('badge-check') %><%= t('leads.convert') %></button></form>
+    <% } %>
+  </div>
+</div>
+
+<div class="split">
+  <div class="stack" style="min-width:0">
+    <% if (editable && lead.status !== 'merged') { %>
+    <form method="post" action="/staff/leads/<%= lead.id %>/stage" class="card" style="padding:12px 16px">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="cluster">
+        <label for="stage_id" class="small subtle"><%= t('leads.move_to') %></label>
+        <select id="stage_id" name="stage_id" style="width:auto;min-height:36px" data-lost-toggle="#lost-reason"><% stageList.forEach(function (s) { %><option value="<%= s.id %>" data-lost="<%= s.is_lost ? 1 : 0 %>" <%= s.id === lead.stage_id ? 'selected' : '' %>><%= L(s, 'name') %></option><% }) %></select>
+        <input id="lost-reason" name="reason" placeholder="<%= t('leads.lost_reason') %>" hidden style="width:auto;min-height:36px;flex:1 1 200px" aria-label="<%= t('leads.lost_reason') %>">
+        <button class="btn sm" type="submit"><%= t('common.apply') %></button>
+      </div>
+    </form>
+    <% } %>
+
+    <%- include('../../../partials/dupes', { dupes: dupes, mergeAction: '/staff/leads/' + lead.id + '/merge', selfKind: 'lead' }) %>
+
+    <div class="tabs" role="tablist">
+      <% ['timeline','details','tasks'].forEach(function (k) { %><a href="?tab=<%= k %>" <%- tab === k ? 'aria-current="page"' : '' %>><%= t('leads.tab_' + k) %><% if (k === 'tasks' && taskList.filter(function (x) { return x.status !== 'completed'; }).length) { %><span class="badge-count"><%= taskList.filter(function (x) { return x.status !== 'completed'; }).length %></span><% } %></a><% }) %>
+    </div>
+
+    <% if (tab === 'details') { %>
+      <form method="post" action="/staff/leads/<%= lead.id %>" class="card" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <fieldset <%= editable ? '' : 'disabled' %>>
+          <%- include('../../../partials/lead-fields', { l: Object.assign({}, lead, { interest_countries_list: countries }), destinations: destinations, withOwner: false }) %>
+        </fieldset>
+        <% if (editable) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+      </form>
+    <% } else if (tab === 'tasks') { %>
+      <section class="card">
+        <div class="card-head"><h2><%= t('leads.tab_tasks') %></h2><% if (editable) { %><button class="btn sm tonal" type="button" data-dialog-open="task-dialog"><%- icon('plus') %><%= t('tasks.add') %></button><% } %></div>
+        <%- include('../../../partials/task-list', { list: taskList }) %>
+      </section>
+    <% } else { %>
+      <% if (editable || can('notes.view')) { %>
+      <form method="post" action="/staff/leads/<%= lead.id %>/notes" class="card" style="padding:12px">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label class="sr-only" for="note-body"><%= t('notes.add') %></label>
+        <textarea id="note-body" name="body" rows="2" placeholder="<%= t('notes.placeholder') %>" required></textarea>
+        <div class="spread mt2"><span class="small subtle"><%= t('notes.private_hint') %></span><button class="btn sm primary" type="submit"><%= t('notes.add') %></button></div>
+      </form>
+      <% } %>
+      <section class="card"><%- include('../../../partials/timeline', { items: timeline }) %></section>
+    <% } %>
+  </div>
+
+  <aside class="stack">
+    <section class="card">
+      <h2 class="section-title"><%= t('leads.contact') %></h2>
+      <dl class="kv">
+        <dt><%= t('common.email') %></dt><dd><% if (lead.email) { %><a href="mailto:<%= lead.email %>"><%= lead.email %></a><% } else { %>—<% } %></dd>
+        <dt><%= t('common.phone') %></dt><dd dir="ltr" style="text-align:start"><%= lead.phone || '—' %></dd>
+        <% if (lead.whatsapp) { %><dt>WhatsApp</dt><dd dir="ltr" style="text-align:start"><%= lead.whatsapp %></dd><% } %>
+        <dt><%= t('people.residence') %></dt><dd><%= lead.residence_country ? ref.flag(lead.residence_country) + ' ' + ref.country(lead.residence_country) : '—' %><%= lead.city ? ', ' + lead.city : '' %></dd>
+        <dt><%= t('people.nationality') %></dt><dd><%= lead.nationality ? ref.country(lead.nationality) : '—' %></dd>
+        <dt><%= t('leads.consent') %></dt><dd><%= lead.consent_marketing ? t('leads.consent_marketing_yes') : t('leads.consent_marketing_no') %><%= lead.unsubscribed_at ? ' · ' + t('leads.unsubscribed') : '' %></dd>
+      </dl>
+    </section>
+    <section class="card">
+      <h2 class="section-title"><%= t('leads.interest') %></h2>
+      <dl class="kv">
+        <dt><%= t('leads.destinations') %></dt><dd><%= countries.length ? countries.map(function (c) { var d = destinations.find(function (x) { return x.value === c; }); return d ? d.label : c; }).join(', ') : '—' %></dd>
+        <dt><%= t('leads.degree') %></dt><dd><%= lead.interest_degree ? t('ref.degree.' + lead.interest_degree) : '—' %></dd>
+        <dt><%= t('leads.field') %></dt><dd><%= lead.interest_field || '—' %></dd>
+        <dt><%= t('leads.intake') %></dt><dd><%= lead.interest_intake ? ref.month(lead.interest_intake) : '—' %></dd>
+        <dt><%= t('leads.budget') %></dt><dd><%= lead.budget_range ? t('ref.budget.' + lead.budget_range) : '—' %></dd>
+        <% if (lead.interest_ref) { %><dt><%= t('leads.asked_about') %></dt><dd><%= lead.interest_ref %></dd><% } %>
+      </dl>
+    </section>
+    <section class="card">
+      <h2 class="section-title"><%= t('common.assigned_to') %></h2>
+      <% if (can('leads.assign')) { %>
+      <form method="post" action="/staff/leads/<%= lead.id %>/assign" class="cluster">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <select name="counsellor_id" aria-label="<%= t('common.assigned_to') %>" style="flex:1"><option value=""><%= t('common.unassigned') %></option><% counsellors.forEach(function (c) { %><option value="<%= c.id %>" <%= lead.counsellor_id === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %></select>
+        <button class="btn sm" type="submit"><%= t('common.save') %></button>
+      </form>
+      <% } else { %><p class="mb0"><%= counsellor ? counsellor.name : t('common.unassigned') %></p><% } %>
+      <% if (lead.next_follow_up_at) { %><p class="small mt4 mb0"><%- icon('calendar-clock', 'sm') %> <%= t('leads.next_follow_up') %>: <strong><%= fmt.dateTime(lead.next_follow_up_at) %></strong></p><% } %>
+    </section>
+    <section class="card">
+      <h2 class="section-title"><%= t('leads.attribution') %></h2>
+      <dl class="kv small">
+        <dt><%= t('leads.first_touch') %></dt><dd><%= t('sources.' + lead.source) %><%= lead.utm_source ? ' · ' + lead.utm_source + (lead.utm_medium ? '/' + lead.utm_medium : '') : '' %></dd>
+        <% if (lead.utm_campaign) { %><dt><%= t('leads.campaign') %></dt><dd><%= lead.utm_campaign %></dd><% } %>
+        <dt><%= t('leads.latest_touch') %></dt><dd><%= lead.latest_source ? t('sources.' + lead.latest_source) : '—' %><%= lead.latest_utm_source ? ' · ' + lead.latest_utm_source : '' %></dd>
+        <% if (lead.landing_page) { %><dt><%= t('leads.landing_page') %></dt><dd class="truncate"><%= lead.landing_page %></dd><% } %>
+        <% if (lead.referrer) { %><dt><%= t('leads.referrer') %></dt><dd class="truncate"><%= lead.referrer %></dd><% } %>
+        <% if (lead.first_visit_at) { %><dt><%= t('leads.first_visit') %></dt><dd><%= fmt.dateTime(lead.first_visit_at) %></dd><% } %>
+        <dt><%= t('common.created') %></dt><dd><%= fmt.dateTime(lead.created_at) %></dd>
+      </dl>
+    </section>
+    <% if (can('leads.delete')) { %>
+    <form method="post" action="/staff/leads/<%= lead.id %>/delete" data-confirm="<%= t('leads.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost sm" type="submit"><%- icon('trash-2') %><%= t('leads.delete') %></button></form>
+    <% } %>
+  </aside>
+</div>
+<% if (editable) { %>
+<%- include('../../../partials/contact-dialog', { action: '/staff/leads/' + lead.id + '/contact' }) %>
+<%- include('../../../partials/task-dialog', { action: '/staff/leads/' + lead.id + '/tasks', assignees: counsellors, defaultAssignee: lead.counsellor_id || staff.employee.id }) %>
+<% } %>

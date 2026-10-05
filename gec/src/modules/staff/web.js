@@ -33,6 +33,8 @@ router.get('/api/palette', ah(async (req, res) => {
 }));
 
 router.use('/account', require('./account.web'));
+router.use('/', require('../crm/web'));
+router.use('/', require('../team/web'));
 router.use('/settings', require('../settings/web'));
 router.use('/roles', require('../rbac/web'));
 router.use('/audit', require('../audit/web'));

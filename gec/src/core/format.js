@@ -45,4 +45,35 @@ const toDateTimeInput = (v) => { if (!v) return ''; const d = v instanceof Date 
 const today = () => toDateInput(new Date());
 const daysBetween = (a, b = new Date()) => Math.floor((new Date(b).getTime() - new Date(a).getTime()) / 86_400_000);
 
-module.exports = { formatDate, formatDateTime, formatTime, formatMoney, formatNumber, formatPercent, relative, toDateInput, toDateTimeInput, today, daysBetween };
+// ---- Time zones: forms show and accept times in the organisation's zone; the database stores UTC.
+function zoneParts(date, tz) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(date);
+  const o = Object.fromEntries(parts.filter((p) => p.type !== 'literal').map((p) => [p.type, Number(p.value)]));
+  return o;
+}
+/** Minutes the zone is ahead of UTC at that instant. */
+function tzOffset(date, tz) {
+  const p = zoneParts(date, tz);
+  return (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(date.getTime() / 1000) * 1000) / 60000;
+}
+/** '2026-10-06T14:00' in `tz` → Date (UTC). */
+function zonedToUtc(local, tz = 'UTC') {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(String(local || ''));
+  if (!m) return null;
+  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  let t = guess - tzOffset(new Date(guess), tz) * 60000;
+  t = guess - tzOffset(new Date(t), tz) * 60000; // second pass settles daylight-saving edges
+  return new Date(t);
+}
+/** Date (UTC) → '2026-10-06T14:00' as seen in `tz` (for datetime-local inputs). */
+function toZonedInput(value, tz = 'UTC') {
+  if (!value) return '';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = zoneParts(d, tz);
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`;
+}
+/** Calendar date (YYYY-MM-DD) of an instant in `tz`. */
+const zonedDate = (value, tz = 'UTC') => toZonedInput(value, tz).slice(0, 10);
+
+module.exports = { zonedToUtc, toZonedInput, zonedDate, tzOffset, formatDate, formatDateTime, formatTime, formatMoney, formatNumber, formatPercent, relative, toDateInput, toDateTimeInput, today, daysBetween };

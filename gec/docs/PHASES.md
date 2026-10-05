@@ -36,3 +36,37 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   `npm run check` — dictionary parity, no hard-coded brand colours, no inline scripts.
 * **Known limitations:** rate limits are in-memory (one process); Google / Microsoft sign-in columns and adapters are
   prepared but not connected (need OAuth client credentials).
+
+---
+
+## Phase 2 — CRM: leads, students, activities, tasks, employees
+
+### Plan
+* **Exists:** accounts, roles with data scopes, staff shell (phase 1). In the GEC SPA: a 3-step consultation modal
+  and a contact form that stored nothing.
+* **Reuse:** the consultation modal's steps and fields (now `/book`), the contact page, DocBook's idea of one
+  record timeline and its CSV export.
+* **Change:** every website conversion becomes a lead; one chronological activity timeline for leads and students;
+  configurable lead pipeline with Kanban; automatic assignment (round-robin / destination rules / manual);
+  duplicate detection by e-mail, phone (last 9 digits) and passport (keyed hash); safe merge.
+* **Database:** `lead_stages`, `lead_sources`, `leads`, `students`, `notes`, `activities`, `tasks`.
+* **Routes:** `/book`, `/contact` (public); `/staff/leads[/:id]`, `/staff/students[/:id]`, `/staff/tasks`,
+  `/staff/employees`, `/staff/branches`; API `GET/POST /api/leads`, `PATCH /api/leads/:id/stage|assign`.
+* **Security:** all lists, pages, palette results and API calls filtered by data scope (own / branch / all) on the
+  server; passport numbers encrypted (AES-GCM) with an audited "reveal"; only Super Admins can grant Super Admin;
+  disabling an employee ends their sessions; CSV exports audited and protected against formula injection; honeypot
+  + rate limit on public forms; explicit contact consent, optional marketing consent with timestamp.
+
+### Report
+* **Files:** `src/modules/crm/*` (leads, students, stages, assignment, people, activity, notes, tasks, merge, forms,
+  web, api), `src/modules/team/*` (employees, branches), `src/modules/site/{capture,leads.web}.js`,
+  `src/modules/catalog/reference.js`, views under `views/pages/staff/{leads,students,tasks,team}` and
+  `views/pages/site/{book,contact,thanks}`, partials (timeline, task list/dialog, contact log, duplicates),
+  `public/js/kanban.js`, `src/db/seeds/demo-crm.js`, `scripts/seed.js`.
+* **Migration:** `20261005000200_phase2_crm.js`.
+* **Tests:** `test/phase2.test.js` (13): lead capture + attribution, returning enquiry de-duplication, round-robin,
+  consent + honeypot, data-scope isolation (page, list, palette, API), Kanban API + CSRF + lost reason,
+  conversion + profile completion + journey + encrypted passport, duplicate warning + merge, recurring tasks,
+  @mentions, employee privilege escalation + disable, CSV export. Total suite: 26 passing.
+* **Known limitations:** Kanban drag-and-drop uses the HTML5 API (desktop); on phones the stage is changed from the
+  lead page. @mention notifications are emitted as events and delivered by the notification centre (phase 8).

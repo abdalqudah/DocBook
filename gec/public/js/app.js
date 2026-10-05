@@ -139,3 +139,9 @@
 
   GEC.rtl = rtl;
 }());
+
+// Open a dialog when the page asks for it: <span data-open-dialog="id" hidden>
+(function () {
+  var m = document.querySelector('[data-open-dialog]');
+  if (m) { var d = document.getElementById(m.getAttribute('data-open-dialog')); if (d && d.showModal) d.showModal(); }
+}());

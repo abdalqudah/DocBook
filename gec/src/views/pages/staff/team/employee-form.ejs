@@ -1,0 +1,49 @@
+<% var isNew = !e.id; var ro = !can('employees.manage'); var v = function (k, d) { return old && k in old ? old[k] : d; }; %>
+<nav class="breadcrumbs"><a href="/staff/employees"><%= t('nav.employees') %></a><%- icon('chevron-right') %><span><%= title %></span></nav>
+<div class="page-head">
+  <div><h1><%= title %></h1><% if (!isNew) { %><p class="lead"><%= e.email %> · <span class="chip <%= e.status === 'active' ? 'ok' : e.status === 'disabled' ? 'bad' : 'warn' %>"><%= t('team.status_' + e.status) %></span></p><% } %></div>
+  <% if (!isNew && !ro) { %>
+  <div class="cluster">
+    <form method="post" action="/staff/employees/<%= e.id %>/reset-link"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit"><%- icon('key-round') %><%= t('team.reset_link') %></button></form>
+    <form method="post" action="/staff/employees/<%= e.id %>/status" data-confirm="<%= e.status === 'disabled' ? t('team.enable_confirm') : t('team.disable_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= e.status === 'disabled' ? 'active' : 'disabled' %>"><button class="btn <%= e.status === 'disabled' ? '' : 'danger-ghost' %>" type="submit"><%- icon(e.status === 'disabled' ? 'user-check' : 'ban') %><%= e.status === 'disabled' ? t('team.enable') : t('team.disable') %></button></form>
+  </div>
+  <% } %>
+</div>
+<% if (typeof inviteLink !== 'undefined' && inviteLink) { %>
+<div class="alert warn mb4"><%- icon('link') %><div><p><strong><%= t('team.link_title') %></strong> <%= t('team.link_text') %></p><p class="mb0" style="overflow-wrap:anywhere"><code><%= inviteLink %></code> <button type="button" class="btn sm" data-copy="<%= inviteLink %>" data-copied="<%= t('common.copied') %>"><%- icon('copy') %><%= t('common.copy_link') %></button></p></div></div>
+<% } %>
+<% if (typeof stats !== 'undefined') { %>
+<div class="stats mb4"><a class="stat" href="/staff/leads?owner=<%= e.id %>"><div class="stat-label"><%= t('team.open_leads') %></div><div class="stat-value"><%= stats.leads %></div></a><a class="stat" href="/staff/students?owner=<%= e.id %>"><div class="stat-label"><%= t('kpi.active_students') %></div><div class="stat-value"><%= stats.students %></div></a><div class="stat"><div class="stat-label"><%= t('team.open_tasks') %></div><div class="stat-value"><%= stats.tasks %></div></div></div>
+<% } %>
+<form method="post" action="/staff/employees<%= isNew ? '' : '/' + e.id %>" class="card stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <fieldset class="form-grid two" <%= ro ? 'disabled' : '' %>>
+    <%- include('../../../partials/field', { name: 'name', label: t('common.name'), value: v('name', e.name), required: true }) %>
+    <% if (isNew) { %><%- include('../../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: v('email', ''), required: true }) %><% } else { %><div class="field"><span class="label"><%= t('common.email') %></span><span><%= e.email %></span></div><% } %>
+    <%- include('../../../partials/field', { name: 'phone', label: t('common.phone'), value: v('phone', e.phone), attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'job_title', label: t('team.job_title'), value: v('job_title', e.job_title) }) %>
+    <%- include('../../../partials/field', { name: 'department', label: t('team.department'), value: v('department', e.department) }) %>
+    <%- include('../../../partials/field', { name: 'role_id', label: t('roles.role'), type: 'select', required: true, value: v('role_id', e.role_id), options: roles.map(function (r) { return { value: r.id, label: L(r, 'name') }; }) }) %>
+    <%- include('../../../partials/field', { name: 'branch_id', label: t('common.branch'), type: 'select', value: v('branch_id', e.branch_id), options: branches.map(function (b) { return { value: b.id, label: L(b, 'name') }; }) }) %>
+    <%- include('../../../partials/field', { name: 'manager_id', label: t('team.manager'), type: 'select', value: v('manager_id', e.manager_id), options: managers.filter(function (m) { return m.id !== e.id; }).map(function (m) { return { value: m.id, label: m.name }; }) }) %>
+    <% if (isNew) { %><%- include('../../../partials/field', { name: 'locale', label: t('account.language'), type: 'select', value: v('locale', 'en'), required: true, options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }] }) %><% } %>
+  </fieldset>
+  <fieldset class="stack" <%= ro ? 'disabled' : '' %>>
+    <h2 class="section-title mt4"><%= t('team.counselling') %></h2>
+    <%- include('../../../partials/field', { name: 'is_counsellor', label: t('team.is_counsellor'), type: 'checkbox', value: v('is_counsellor', e.is_counsellor) }) %>
+    <%- include('../../../partials/field', { name: 'auto_assign', label: t('team.auto_assign'), type: 'checkbox', value: v('auto_assign', e.auto_assign) }) %>
+    <%- include('../../../partials/field', { name: 'countries', label: t('team.countries'), type: 'checks', value: v('countries', e.countries || []), options: destinations, hint: t('team.countries_hint') }) %>
+  </fieldset>
+  <% if (isNew) { %>
+  <fieldset class="stack">
+    <legend class="section-title mt4"><%= t('team.access') %></legend>
+    <label class="check"><input type="radio" name="mode" value="invite" <%= v('mode', 'invite') === 'invite' ? 'checked' : '' %>><span><strong><%= t('team.mode_invite') %></strong><br><span class="small muted"><%= t('team.mode_invite_hint') %></span></span></label>
+    <label class="check"><input type="radio" name="mode" value="password" <%= v('mode', 'invite') === 'password' ? 'checked' : '' %>><span><strong><%= t('team.mode_password') %></strong><br><span class="small muted"><%= t('team.mode_password_hint') %></span></span></label>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'temp_password', label: t('team.temp_password'), type: 'password', attrs: 'autocomplete="new-password"', hint: t('auth.password_rule') }) %>
+      <%- include('../../../partials/field', { name: 'temp_password_confirm', label: t('auth.confirm_password'), type: 'password', attrs: 'autocomplete="new-password"' }) %>
+    </div>
+  </fieldset>
+  <% } %>
+  <% if (!ro) { %><div class="form-actions"><button class="btn primary" type="submit"><%= isNew ? t('team.create') : t('common.save') %></button><a class="btn ghost" href="/staff/employees"><%= t('common.cancel') %></a></div><% } %>
+</form>

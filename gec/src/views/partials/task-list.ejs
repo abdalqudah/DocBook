@@ -1,0 +1,24 @@
+<%# include('partials/task-list', { list, showLink? }) %>
+<% if (!list.length) { %>
+  <%- include('empty', { title: t('tasks.empty'), text: t('tasks.empty_text'), emptyIcon: 'list-checks', compact: true }) %>
+<% } else { %>
+<div class="divider-list">
+  <% list.forEach(function (tk) { var done = tk.status === 'completed'; var overdue = !done && tk.due_at && new Date(tk.due_at) < new Date(); %>
+  <div class="list-item">
+    <form method="post" action="/staff/tasks/<%= tk.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= done ? 'todo' : 'completed' %>">
+      <button class="btn ghost icon-only sm" type="submit" aria-label="<%= done ? t('tasks.reopen') : t('tasks.complete') %>" title="<%= done ? t('tasks.reopen') : t('tasks.complete') %>"><%- icon(done ? 'check-square' : 'square') %></button></form>
+    <div class="li-body">
+      <div class="li-title" style="<%= done ? 'text-decoration:line-through;color:var(--text-3)' : '' %>"><%= tk.title %></div>
+      <div class="li-sub">
+        <% if (tk.due_at) { %><span class="<%= overdue ? '' : '' %>" style="<%= overdue ? 'color:var(--bad);font-weight:600' : '' %>"><%= fmt.dateTime(tk.due_at) %></span><% } else { %><%= t('tasks.no_due') %><% } %>
+        <% if (tk.assignee_name) { %> · <%= tk.assignee_name %><% } %>
+        <% if (typeof showLink !== 'undefined' && showLink) { if (tk.student_id) { %> · <a href="/staff/students/<%= tk.student_id %>"><%= [tk.student_first, tk.student_last].filter(Boolean).join(' ') %></a><% } else if (tk.lead_id) { %> · <a href="/staff/leads/<%= tk.lead_id %>"><%= [tk.lead_first, tk.lead_last].filter(Boolean).join(' ') %></a><% } } %>
+        <% if (tk.recurrence && tk.recurrence !== 'none') { %> · <%- icon('refresh-cw', 'sm') %> <%= t('tasks.rec_' + tk.recurrence) %><% } %>
+      </div>
+    </div>
+    <% if (['urgent','high'].indexOf(tk.priority) >= 0 && !done) { %><span class="chip <%= tk.priority === 'urgent' ? 'bad' : 'warn' %>"><%= t('tasks.priority_' + tk.priority) %></span><% } %>
+    <% if (!done && tk.status !== 'todo') { %><span class="chip"><%= t('tasks.status_' + tk.status) %></span><% } %>
+  </div>
+  <% }) %>
+</div>
+<% } %>

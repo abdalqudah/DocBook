@@ -90,3 +90,26 @@
     f.addEventListener('input', function () { if (/^#[0-9a-fA-F]{6}$/.test(f.value)) c.value = f.value; });
   });
 }());
+
+// Show the "lost reason" field only when a lost stage is chosen: <select data-lost-toggle="#input">
+(function () {
+  document.querySelectorAll('select[data-lost-toggle]').forEach(function (s) {
+    var target = document.querySelector(s.getAttribute('data-lost-toggle'));
+    if (!target) return;
+    function sync() { var opt = s.options[s.selectedIndex]; var lost = opt && opt.getAttribute('data-lost') === '1'; target.hidden = !lost; target.required = lost; }
+    s.addEventListener('change', sync); sync();
+  });
+}());
+
+// Reveal an encrypted value on request (audited on the server): <button data-reveal="/url" data-target="#el">
+(function () {
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-reveal]');
+    if (!b) return;
+    window.GEC.api(b.getAttribute('data-reveal'), { method: 'POST' }).then(function (r) {
+      var el = document.querySelector(b.getAttribute('data-target'));
+      if (el) el.textContent = r.passport || '—';
+      b.remove();
+    }).catch(function (err) { window.GEC.toast(err.message, 'error'); });
+  });
+}());

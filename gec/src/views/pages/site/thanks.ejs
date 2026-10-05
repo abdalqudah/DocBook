@@ -1,0 +1,11 @@
+<section class="section">
+  <div class="container text-center" style="max-width:640px">
+    <div class="empty-icon" style="width:72px;height:72px;margin:0 auto 20px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center"><%- icon('check-circle-2', 'xl') %></div>
+    <h1><%= t('book.thanks_title') %></h1>
+    <p class="muted" style="font-size:1.05rem"><%= t('book.thanks_text') %></p>
+    <div class="cluster mt6" style="justify-content:center">
+      <% if (company.whatsapp) { %><a class="btn btn-whatsapp lg" href="/go/whatsapp?from=thanks"><%- icon('message-circle') %><%= t('book.whatsapp_now') %></a><% } %>
+      <a class="btn lg" href="/"><%= t('common.go_home') %></a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,22 @@
+<%# include('partials/dupes', { dupes, mergeAction?, selfKind }) %>
+<% if (dupes && dupes.length) { %>
+<section class="card" style="border-color:var(--warn)">
+  <div class="card-head"><h2><%- icon('alert-triangle') %> <%= t('merge.possible_duplicates') %></h2></div>
+  <div class="divider-list">
+  <% dupes.forEach(function (d) { %>
+    <div class="list-item" style="flex-wrap:wrap">
+      <span class="avatar sm"><%= initials(fullName(d)) %></span>
+      <div class="li-body"><a class="li-title" href="/staff/<%= d.kind === 'lead' ? 'leads' : 'students' %>/<%= d.id %>"><%= fullName(d) %></a>
+        <div class="li-sub"><%= t('merge.kind_' + d.kind) %> · <%= d.ref %> · <%= t('merge.matched') %>: <%= d.matched.map(function (m) { return t('merge.by_' + m); }).join(', ') %></div></div>
+      <% if (typeof mergeAction !== 'undefined' && mergeAction && can('records.merge') && (selfKind === 'lead' || d.kind === 'student')) { %>
+      <form method="post" action="<%= mergeAction %>" data-confirm="<%= t('merge.confirm') %>" class="cluster">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="other_id" value="<%= d.id %>"><input type="hidden" name="other_kind" value="<%= d.kind %>">
+        <% if (d.kind === selfKind) { %><select name="keep" aria-label="<%= t('merge.keep') %>" style="width:auto;min-height:32px;font-size:.85rem"><option value="self"><%= t('merge.keep_this') %></option><option value="other"><%= t('merge.keep_other') %></option></select><% } %>
+        <button class="btn sm" type="submit"><%- icon('merge') %><%= d.kind === selfKind ? t('merge.merge') : t('merge.link_to_student') %></button>
+      </form>
+      <% } %>
+    </div>
+  <% }) %>
+  </div>
+</section>
+<% } %>

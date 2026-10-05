@@ -1,0 +1,30 @@
+<nav class="breadcrumbs"><a href="/staff/settings"><%= t('nav.settings') %></a><%- icon('chevron-right') %><span><%= t('settings.branches') %></span></nav>
+<div class="page-head"><div><h1><%= t('settings.branches') %></h1><p class="lead"><%= t('team.branches_lead') %></p></div></div>
+<div class="split">
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.name') %></th><th><%= t('common.city') %></th><th><%= t('team.manager') %></th><th><%= t('nav.employees') %></th><th></th></tr></thead>
+    <tbody><% rows.forEach(function (b) { %><tr>
+      <td class="primary"><strong><%= L(b, 'name') %></strong><% if (!b.is_active) { %> <span class="chip"><%= t('common.disabled') %></span><% } %><div class="small subtle"><%= b.address || '' %></div></td>
+      <td data-label="<%= t('common.city') %>"><%= [b.city, b.country].filter(Boolean).join(', ') || '—' %></td>
+      <td data-label="<%= t('team.manager') %>"><%= b.manager_name || '—' %></td>
+      <td data-label="<%= t('nav.employees') %>"><a href="/staff/employees?branch=<%= b.id %>"><%= b.staff_count %></a></td>
+      <td class="actions"><a class="btn sm ghost" href="?edit=<%= b.id %>"><%= t('common.edit') %></a></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% var b = edit || { is_active: true, timezone: fmt.tz }; %>
+  <form method="post" action="/staff/branches" class="card stack">
+    <h2 style="font-size:1.05rem"><%= edit ? t('team.edit_branch') : t('team.new_branch') %></h2>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (edit) { %><input type="hidden" name="id" value="<%= edit.id %>"><% } %>
+    <%- include('../../../partials/field', { name: 'name', label: t('common.name') + ' (English)', value: b.name, required: true }) %>
+    <%- include('../../../partials/field', { name: 'name_ar', label: t('common.name') + ' (العربية)', value: b.name_ar, attrs: 'dir="rtl"' }) %>
+    <%- include('../../../partials/field', { name: 'country', label: t('common.country'), value: b.country }) %>
+    <%- include('../../../partials/field', { name: 'city', label: t('common.city'), value: b.city }) %>
+    <%- include('../../../partials/field', { name: 'address', label: t('common.address'), value: b.address }) %>
+    <%- include('../../../partials/field', { name: 'phone', label: t('common.phone'), value: b.phone }) %>
+    <%- include('../../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: b.email }) %>
+    <%- include('../../../partials/field', { name: 'timezone', label: t('settings.timezone'), value: b.timezone }) %>
+    <%- include('../../../partials/field', { name: 'manager_id', label: t('team.manager'), type: 'select', value: b.manager_id, options: managers.map(function (m) { return { value: m.id, label: m.name }; }) }) %>
+    <%- include('../../../partials/field', { name: 'is_active', label: t('common.enabled'), type: 'checkbox', value: b.is_active }) %>
+    <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button><% if (edit) { %><a class="btn ghost" href="/staff/branches"><%= t('common.cancel') %></a><% } %></div>
+  </form>
+</div>

@@ -1,0 +1,16 @@
+<%# include('partials/contact-dialog', { action }) — log a call / WhatsApp / e-mail done outside the system %>
+<dialog class="dialog" id="contact-dialog" aria-labelledby="contact-dialog-h">
+  <form method="post" action="<%= action %>">
+    <div class="dialog-head"><h2 id="contact-dialog-h"><%= t('leads.log_contact') %></h2><button type="button" class="btn ghost icon-only" data-dialog-close aria-label="<%= t('common.close') %>"><%- icon('x') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <fieldset><legend class="label"><%= t('leads.channel') %></legend>
+        <div class="seg"><% ['call','whatsapp','email','sms','meeting'].forEach(function (c, i) { %><label><input type="radio" name="channel" value="<%= c %>" <%= i === 0 ? 'checked' : '' %>><span><%= t('channels.' + c) %></span></label><% }) %></div>
+      </fieldset>
+      <%- include('field', { name: 'outcome', label: t('leads.outcome'), type: 'select', value: 'reached', required: true, options: ['reached','no_answer','left_message','replied','meeting_held'].map(function (o) { return { value: o, label: t('outcomes.' + o) }; }) }) %>
+      <%- include('field', { name: 'body', label: t('leads.summary'), type: 'textarea', rows: 3, placeholder: t('leads.summary_ph') }) %>
+      <% if (typeof followUp === 'undefined' || followUp) { %><%- include('field', { name: 'follow_up_at', label: t('leads.next_follow_up'), type: 'datetime-local', hint: t('leads.next_follow_up_hint') }) %><% } %>
+    </div>
+    <div class="dialog-foot"><button type="button" class="btn ghost" data-dialog-close><%= t('common.cancel') %></button><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+  </form>
+</dialog>

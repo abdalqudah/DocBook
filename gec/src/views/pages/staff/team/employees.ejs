@@ -1,0 +1,23 @@
+<div class="page-head">
+  <div><h1><%= t('nav.employees') %></h1><p class="lead"><%= t('team.lead_text') %></p></div>
+  <% if (can('employees.manage')) { %><a class="btn primary" href="/staff/employees/new"><%- icon('user-plus') %><%= t('team.new_employee') %></a><% } %>
+</div>
+<form class="toolbar" method="get">
+  <div class="search-inline"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('team.search_ph') %>" aria-label="<%= t('common.search') %>"></div>
+  <select name="role" data-autosubmit aria-label="<%= t('roles.role') %>"><option value=""><%= t('team.all_roles') %></option><% roles.forEach(function (r) { %><option value="<%= r.id %>" <%= String(query.role) === String(r.id) ? 'selected' : '' %>><%= L(r, 'name') %></option><% }) %></select>
+  <select name="branch" data-autosubmit aria-label="<%= t('common.branch') %>"><option value=""><%= t('team.all_branches') %></option><% branches.forEach(function (b) { %><option value="<%= b.id %>" <%= String(query.branch) === String(b.id) ? 'selected' : '' %>><%= L(b, 'name') %></option><% }) %></select>
+  <select name="status" data-autosubmit aria-label="<%= t('common.status') %>"><option value=""><%= t('team.any_status') %></option><% ['active','invited','disabled'].forEach(function (s) { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('team.status_' + s) %></option><% }) %></select>
+</form>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><th><%= t('common.name') %></th><th><%= t('roles.role') %></th><th><%= t('common.branch') %></th><th><%= t('team.manager') %></th><th><%= t('common.status') %></th><th><%= t('team.last_sign_in') %></th></tr></thead>
+  <tbody><% rows.forEach(function (e) { %>
+    <tr>
+      <td class="primary"><div class="row"><span class="avatar sm"><%= initials(e.name) %></span><div><a class="row-link" href="/staff/employees/<%= e.id %>"><%= e.name %></a><div class="small subtle"><%= e.job_title || e.email %></div></div></div></td>
+      <td data-label="<%= t('roles.role') %>"><%= locale === 'ar' && e.role_ar ? e.role_ar : e.role_en %><% if (e.is_counsellor) { %> <span class="chip brand"><%= t('team.counsellor') %></span><% } %></td>
+      <td data-label="<%= t('common.branch') %>"><%= e.branch_name || '—' %></td>
+      <td data-label="<%= t('team.manager') %>"><%= e.manager_name || '—' %></td>
+      <td data-label="<%= t('common.status') %>"><span class="chip <%= e.status === 'active' ? 'ok' : e.status === 'disabled' ? 'bad' : 'warn' %>"><%= t('team.status_' + e.status) %></span></td>
+      <td data-label="<%= t('team.last_sign_in') %>" class="small"><%= e.last_login_at ? fmt.relative(e.last_login_at) : '—' %></td>
+    </tr>
+  <% }) %></tbody>
+</table></div>

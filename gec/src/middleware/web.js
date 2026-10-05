@@ -8,6 +8,8 @@ const settings = require('../modules/settings/settings.service');
 const siteNav = require('../modules/site/nav');
 const siteFeatures = require('../modules/site/features');
 const siteFooter = require('../modules/site/footer');
+const ref = require('../modules/catalog/reference');
+const { activityText } = require('../modules/crm/activity-text');
 
 const ASSET_V = (() => {
   const fs = require('fs'); // eslint-disable-line global-require
@@ -39,7 +41,9 @@ async function locals(req, res, next) {
     req.locale = locale;
     if (req.session && !req.session.csrf) req.session.csrf = randomToken(24);
     const [branding, company] = await Promise.all([settings.get('branding'), settings.get('company')]);
-    const currency = (await settings.get('general')).default_currency || 'USD';
+    const general = await settings.get('general');
+    const currency = general.default_currency || 'USD';
+    const tz = general.timezone || 'UTC';
     Object.assign(res.locals, {
       t,
       locale,
@@ -59,15 +63,16 @@ async function locals(req, res, next) {
       appUrl: config.appUrl,
       assetV: ASSET_V,
       fmt: {
-        date: (v, o) => fmt.formatDate(v, locale, o),
-        dateTime: (v) => fmt.formatDateTime(v, locale),
-        time: (v) => fmt.formatTime(v, locale),
+        date: (v, o) => fmt.formatDate(v, locale, o, tz),
+        dateTime: (v) => fmt.formatDateTime(v, locale, tz),
+        time: (v) => fmt.formatTime(v, locale, tz),
+        tz,
         money: (a, c, d) => fmt.formatMoney(a, c || currency, locale, d),
         number: (n, d) => fmt.formatNumber(n, locale, d),
         pct: (n, d) => fmt.formatPercent(n, locale, d),
         relative: (v) => fmt.relative(v, locale),
         dateInput: fmt.toDateInput,
-        dateTimeInput: fmt.toDateTimeInput,
+        dateTimeInput: (v) => fmt.toZonedInput(v, tz),
       },
       esc,
       icon: (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true" focusable="false"><use href="/icons.svg?v=${ASSET_V}#i-${name}"></use></svg>`,
@@ -78,6 +83,16 @@ async function locals(req, res, next) {
       errors: {},
       old: {},
       seo: null,
+      activityText: (a) => activityText(a, t, locale),
+      fullName: (p) => [p && p.first_name, p && p.last_name].filter(Boolean).join(' ') || '—',
+      ref: {
+        country: (c) => ref.countryName(c, locale),
+        flag: ref.flag,
+        month: (ym) => ref.monthLabel(ym, locale),
+        countries: () => ref.countries(locale),
+        DEGREES: ref.DEGREES, FIELDS: ref.FIELDS, EDUCATION_LEVELS: ref.EDUCATION_LEVELS, BUDGETS: ref.BUDGETS, STUDY_MODES: ref.STUDY_MODES,
+        intakes: ref.intakeOptions,
+      },
       site: { nav: siteNav.LINKS, features: siteFeatures, footer: siteFooter.columns() },
     });
     if (req.session) req.session.flash = [];

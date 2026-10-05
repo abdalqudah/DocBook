@@ -1,0 +1,45 @@
+<section class="section">
+  <div class="container">
+    <div class="section-head"><h1><%= t('contact.title') %></h1><p><%= t('contact.lead') %></p></div>
+    <div class="split wide-side">
+      <div>
+        <% if (sent) { %>
+          <div class="alert ok" role="status"><%- icon('check-circle-2') %><p><%= t('contact.sent') %></p></div>
+        <% } else { %>
+        <form method="post" action="/contact" class="form-card stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+          <div class="form-grid two">
+            <%- include('../../partials/field', { name: 'name', label: t('common.name'), value: old.name, required: true, attrs: 'autocomplete="name"' }) %>
+            <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', value: old.email, attrs: 'autocomplete="email"' }) %>
+            <%- include('../../partials/field', { name: 'phone', label: t('book.phone_whatsapp'), type: 'tel', value: old.phone, attrs: 'autocomplete="tel" dir="ltr"' }) %>
+            <%- include('../../partials/field', { name: 'subject', label: t('contact.subject'), value: old.subject }) %>
+          </div>
+          <%- include('../../partials/field', { name: 'message', label: t('contact.message'), type: 'textarea', rows: 5, value: old.message, required: true }) %>
+          <label class="check <%= errors.consent_contact ? 'has-error' : '' %>"><input type="checkbox" name="consent_contact" value="1" required><span><%= t('book.consent_contact') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+          <% if (errors.consent_contact) { %><span class="error-text"><%= t('book.consent_required') %></span><% } %>
+          <div class="form-actions"><button class="btn primary lg" type="submit"><%= t('contact.send') %></button></div>
+        </form>
+        <% } %>
+      </div>
+      <aside class="stack">
+        <div class="card">
+          <h2 class="section-title"><%= t('contact.reach_us') %></h2>
+          <ul class="footer-contact">
+            <% if (company.whatsapp) { %><li><%- icon('message-circle') %><a href="/go/whatsapp?from=contact">WhatsApp</a></li><% } %>
+            <% if (company.email) { %><li><%- icon('mail') %><a href="mailto:<%= company.email %>"><%= company.email %></a></li><% } %>
+            <% if (company.phone) { %><li><%- icon('phone') %><a href="tel:<%= company.phone.replace(/[^+\d]/g, '') %>" dir="ltr"><%= company.phone %></a></li><% } %>
+          </ul>
+        </div>
+        <% offices.forEach(function (o) { %>
+        <div class="card">
+          <h3><%= L(o, 'name') %></h3>
+          <p class="small muted mb2"><%= [o.address, o.city, o.country].filter(Boolean).join(', ') %></p>
+          <% if (o.phone) { %><p class="small mb0" dir="ltr" style="text-align:start"><%= o.phone %></p><% } %>
+          <% if (o.email) { %><p class="small mb0"><a href="mailto:<%= o.email %>"><%= o.email %></a></p><% } %>
+        </div>
+        <% }) %>
+      </aside>
+    </div>
+  </div>
+</section>

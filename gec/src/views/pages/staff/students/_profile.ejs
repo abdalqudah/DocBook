@@ -1,0 +1,64 @@
+<% var sec = typeof openSection !== 'undefined' ? openSection : null; var o = function (k, v) { return sec && old && k in old ? old[k] : v; }; %>
+<div class="stack">
+  <form method="post" action="/staff/students/<%= s.id %>/profile/personal" class="card" id="personal" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="card-head"><h2><%= t('students.sec_personal') %></h2></div>
+    <fieldset <%= can('students.manage') ? '' : 'disabled' %>><%- include('_personal', { s: sec === 'personal' ? Object.assign({}, s, old) : s }) %></fieldset>
+    <% if (s.passport_last4 && can('students.manage')) { %><p class="small mt2"><%= t('people.passport') %>: <span id="pp-val">•••• <%= s.passport_last4 %></span> <button type="button" class="linklike small" data-reveal="/staff/students/<%= s.id %>/passport" data-target="#pp-val"><%= t('people.reveal') %></button></p><% } %>
+    <% if (can('students.manage')) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+  </form>
+
+  <form method="post" action="/staff/students/<%= s.id %>/profile/academic" class="card" id="academic" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="card-head"><h2><%= t('students.sec_academic') %></h2></div>
+    <fieldset class="form-grid two" <%= can('students.manage') ? '' : 'disabled' %>>
+      <%- include('../../../partials/field', { name: 'education_level', label: t('people.education_level'), type: 'select', value: o('education_level', s.education_level), options: ref.EDUCATION_LEVELS.map(function (e) { return { value: e, label: t('ref.education.' + e) }; }) }) %>
+      <%- include('../../../partials/field', { name: 'institution', label: t('students.institution'), value: o('institution', s.institution) }) %>
+      <%- include('../../../partials/field', { name: 'major', label: t('students.major'), value: o('major', s.major) }) %>
+      <%- include('../../../partials/field', { name: 'graduation_date', label: t('students.graduation'), type: 'date', value: o('graduation_date', fmt.dateInput(s.graduation_date)) }) %>
+      <%- include('../../../partials/field', { name: 'gpa', label: 'GPA', type: 'number', value: o('gpa', s.gpa), attrs: 'step="0.01" min="0"' }) %>
+      <%- include('../../../partials/field', { name: 'gpa_scale', label: t('students.gpa_scale'), type: 'number', value: o('gpa_scale', s.gpa_scale), attrs: 'step="0.01" min="1"', hint: t('students.gpa_scale_hint') }) %>
+    </fieldset>
+    <% if (can('students.manage')) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+  </form>
+
+  <form method="post" action="/staff/students/<%= s.id %>/profile/english" class="card" id="english" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="card-head"><h2><%= t('students.sec_english') %></h2></div>
+    <fieldset class="form-grid three" <%= can('students.manage') ? '' : 'disabled' %>>
+      <%- include('../../../partials/field', { name: 'ielts_overall', label: 'IELTS', type: 'number', value: o('ielts_overall', s.ielts_overall), attrs: 'step="0.5" min="0" max="9"' }) %>
+      <%- include('../../../partials/field', { name: 'ielts_min_band', label: t('students.ielts_min_band'), type: 'number', value: o('ielts_min_band', s.ielts_min_band), attrs: 'step="0.5" min="0" max="9"' }) %>
+      <%- include('../../../partials/field', { name: 'toefl', label: 'TOEFL iBT', type: 'number', value: o('toefl', s.toefl), attrs: 'min="0" max="120"' }) %>
+      <%- include('../../../partials/field', { name: 'pte', label: 'PTE', type: 'number', value: o('pte', s.pte), attrs: 'min="10" max="90"' }) %>
+      <%- include('../../../partials/field', { name: 'duolingo', label: 'Duolingo', type: 'number', value: o('duolingo', s.duolingo), attrs: 'min="10" max="160"' }) %>
+      <%- include('../../../partials/field', { name: 'english_test_date', label: t('students.test_date'), type: 'date', value: o('english_test_date', fmt.dateInput(s.english_test_date)) }) %>
+    </fieldset>
+    <% if (can('students.manage')) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+  </form>
+
+  <form method="post" action="/staff/students/<%= s.id %>/profile/goals" class="card" id="goals" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="card-head"><h2><%= t('students.sec_goals') %></h2></div>
+    <fieldset class="form-grid two" <%= can('students.manage') ? '' : 'disabled' %>>
+      <%- include('../../../partials/field', { name: 'pref_countries', label: t('leads.destinations'), type: 'checks', value: o('pref_countries', prefCountries), options: destinations, cls: 'span-all' }) %>
+      <%- include('../../../partials/field', { name: 'pref_fields', label: t('students.fields'), type: 'checks', value: o('pref_fields', prefFields), options: ref.FIELDS.map(function (f) { return { value: f, label: t('ref.field.' + f) }; }), cls: 'span-all' }) %>
+      <%- include('../../../partials/field', { name: 'pref_degree', label: t('leads.degree'), type: 'select', value: o('pref_degree', s.pref_degree), options: ref.DEGREES.map(function (d) { return { value: d, label: t('ref.degree.' + d) }; }) }) %>
+      <%- include('../../../partials/field', { name: 'pref_intake', label: t('leads.intake'), type: 'select', value: o('pref_intake', s.pref_intake), options: ref.intakes(24).map(function (m) { return { value: m, label: ref.month(m) }; }) }) %>
+      <%- include('../../../partials/field', { name: 'budget_usd', label: t('students.budget_usd'), type: 'number', value: o('budget_usd', s.budget_usd), attrs: 'min="0" step="500"', hint: t('students.budget_hint') }) %>
+      <%- include('../../../partials/field', { name: 'work_after_study', label: t('students.work_after_study'), type: 'checkbox', value: o('work_after_study', s.work_after_study) }) %>
+    </fieldset>
+    <% if (can('students.manage')) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+  </form>
+
+  <form method="post" action="/staff/students/<%= s.id %>/profile/history" class="card" id="history" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="card-head"><h2><%= t('students.sec_history') %></h2></div>
+    <fieldset class="form-grid two" <%= can('students.manage') ? '' : 'disabled' %>>
+      <%- include('../../../partials/field', { name: 'visa_refused', label: t('students.visa_refused'), type: 'checkbox', value: o('visa_refused', s.visa_refused), cls: 'span-all' }) %>
+      <%- include('../../../partials/field', { name: 'visa_history', label: t('students.visa_history'), type: 'textarea', rows: 3, value: o('visa_history', s.visa_history), cls: 'span-all' }) %>
+      <%- include('../../../partials/field', { name: 'work_experience_years', label: t('students.work_years'), type: 'number', value: o('work_experience_years', s.work_experience_years), attrs: 'step="0.5" min="0"' }) %>
+      <%- include('../../../partials/field', { name: 'profile_notes', label: t('common.notes'), type: 'textarea', rows: 3, value: o('profile_notes', s.profile_notes), cls: 'span-all' }) %>
+    </fieldset>
+    <% if (can('students.manage')) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+  </form>
+</div>

@@ -1,0 +1,51 @@
+<div class="page-head">
+  <div><h1><%= t('nav.tasks') %></h1><p class="lead"><%= t('tasks.lead_text') %></p></div>
+  <button class="btn primary" type="button" data-dialog-open="task-dialog"><%- icon('plus') %><%= t('tasks.new') %></button>
+</div>
+<div class="toolbar">
+  <div class="seg">
+    <% ['open','today','overdue','completed'].forEach(function (v) { %><a href="<%= qs({ view: v }) %>" <%- view === v ? 'aria-current="page" class="on"' : '' %>><%= t('tasks.view_' + v) %></a><% }) %>
+  </div>
+  <form method="get" class="cluster"><input type="hidden" name="view" value="<%= view %>">
+    <% if (can('tasks.view_all')) { %>
+    <select name="assignee" data-autosubmit aria-label="<%= t('tasks.assignee') %>"><option value=""><%= t('tasks.everyone_visible') %></option><% assignees.forEach(function (a) { %><option value="<%= a.id %>" <%= String(query.assignee) === String(a.id) ? 'selected' : '' %>><%= a.name %></option><% }) %></select>
+    <% } %>
+    <select name="status" data-autosubmit aria-label="<%= t('common.status') %>"><option value=""><%= t('tasks.any_status') %></option><% ['todo','in_progress','waiting'].forEach(function (s) { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('tasks.status_' + s) %></option><% }) %></select>
+  </form>
+</div>
+<section class="card">
+<% if (!rows.length) { %>
+  <%- include('../../../partials/empty', { title: view === 'completed' ? t('tasks.none_completed') : t('tasks.all_done'), text: t('tasks.empty_text'), emptyIcon: 'check-circle-2', compact: true }) %>
+<% } else { %>
+  <div class="divider-list">
+  <% rows.forEach(function (tk) { var done = tk.status === 'completed'; var overdue = !done && tk.due_at && new Date(tk.due_at) < new Date(); %>
+    <div class="list-item" style="flex-wrap:wrap">
+      <form method="post" action="/staff/tasks/<%= tk.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= done ? 'todo' : 'completed' %>"><button class="btn ghost icon-only sm" type="submit" aria-label="<%= done ? t('tasks.reopen') : t('tasks.complete') %>"><%- icon(done ? 'check-square' : 'square') %></button></form>
+      <div class="li-body">
+        <div class="li-title" style="white-space:normal;<%= done ? 'text-decoration:line-through;color:var(--text-3)' : '' %>"><%= tk.title %></div>
+        <div class="li-sub" style="white-space:normal">
+          <span style="<%= overdue ? 'color:var(--bad);font-weight:600' : '' %>"><%= tk.due_at ? fmt.dateTime(tk.due_at) : t('tasks.no_due') %></span>
+          <% if (tk.assignee_name) { %> · <%= tk.assignee_name %><% } %>
+          <% if (tk.student_id) { %> · <a href="/staff/students/<%= tk.student_id %>"><%= [tk.student_first, tk.student_last].filter(Boolean).join(' ') %></a><% } else if (tk.lead_id) { %> · <a href="/staff/leads/<%= tk.lead_id %>"><%= [tk.lead_first, tk.lead_last].filter(Boolean).join(' ') %></a><% } %>
+          <% if (tk.recurrence !== 'none') { %> · <%= t('tasks.rec_' + tk.recurrence) %><% } %>
+        </div>
+        <% if (tk.description) { %><div class="small muted mt2"><%= tk.description %></div><% } %>
+      </div>
+      <% if (['urgent','high'].indexOf(tk.priority) >= 0 && !done) { %><span class="chip <%= tk.priority === 'urgent' ? 'bad' : 'warn' %>"><%= t('tasks.priority_' + tk.priority) %></span><% } %>
+      <% if (!done) { %>
+      <details class="menu"><summary class="btn ghost icon-only sm" aria-label="<%= t('common.more') %>"><%- icon('more-horizontal') %></summary>
+        <div class="menu-panel">
+          <% ['todo','in_progress','waiting'].filter(function (s) { return s !== tk.status; }).forEach(function (s) { %>
+          <form method="post" action="/staff/tasks/<%= tk.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= s %>"><button type="submit"><%= t('tasks.mark_' + s) %></button></form>
+          <% }) %>
+          <form method="post" action="/staff/tasks/<%= tk.id %>/delete" data-confirm="<%= t('tasks.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('trash-2') %><%= t('common.delete') %></button></form>
+        </div>
+      </details>
+      <% } %>
+    </div>
+  <% }) %>
+  </div>
+<% } %>
+</section>
+<%- include('../../../partials/task-dialog', { action: '/staff/tasks', assignees: assignees }) %>
+<% if (showNew) { %><span data-open-dialog="task-dialog" hidden></span><% } %>

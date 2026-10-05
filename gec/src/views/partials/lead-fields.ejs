@@ -1,0 +1,32 @@
+<%# Lead form fields: include('partials/lead-fields', { l, destinations, withOwner, counsellors, sourceList }) %>
+<% var cs = (old && old.interest_countries) || (l && l.interest_countries_list) || []; cs = [].concat(cs); %>
+<div class="form-grid two">
+  <%- include('field', { name: 'first_name', label: t('people.first_name'), value: l.first_name, required: true, attrs: 'autocomplete="off"' }) %>
+  <%- include('field', { name: 'last_name', label: t('people.last_name'), value: l.last_name }) %>
+  <%- include('field', { name: 'email', label: t('common.email'), type: 'email', value: l.email, hint: t('leads.email_or_phone') }) %>
+  <%- include('field', { name: 'phone', label: t('common.phone'), type: 'tel', value: l.phone, attrs: 'dir="ltr"' }) %>
+  <%- include('field', { name: 'whatsapp', label: 'WhatsApp', type: 'tel', value: l.whatsapp, attrs: 'dir="ltr"' }) %>
+  <%- include('field', { name: 'preferred_locale', label: t('people.preferred_language'), type: 'select', value: l.preferred_locale || locale, options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }] }) %>
+  <%- include('field', { name: 'nationality', label: t('people.nationality'), type: 'select', value: l.nationality, options: ref.countries() }) %>
+  <%- include('field', { name: 'residence_country', label: t('people.residence'), type: 'select', value: l.residence_country, options: ref.countries() }) %>
+  <%- include('field', { name: 'city', label: t('common.city'), value: l.city }) %>
+  <%- include('field', { name: 'education_level', label: t('people.education_level'), type: 'select', value: l.education_level, options: ref.EDUCATION_LEVELS.map(function (e) { return { value: e, label: t('ref.education.' + e) }; }) }) %>
+</div>
+<h3 class="section-title mt6"><%= t('leads.interest') %></h3>
+<div class="form-grid two">
+  <%- include('field', { name: 'interest_countries', label: t('leads.destinations'), type: 'checks', value: cs, options: destinations, cls: 'span-all' }) %>
+  <%- include('field', { name: 'interest_degree', label: t('leads.degree'), type: 'select', value: l.interest_degree, options: ref.DEGREES.map(function (d) { return { value: d, label: t('ref.degree.' + d) }; }) }) %>
+  <%- include('field', { name: 'interest_field', label: t('leads.field'), value: l.interest_field, attrs: 'list="field-list"' }) %>
+  <%- include('field', { name: 'interest_intake', label: t('leads.intake'), type: 'select', value: l.interest_intake, options: ref.intakes(24).map(function (m) { return { value: m, label: ref.month(m) }; }) }) %>
+  <%- include('field', { name: 'budget_range', label: t('leads.budget'), type: 'select', value: l.budget_range, options: ref.BUDGETS.map(function (b) { return { value: b[0], label: t('ref.budget.' + b[0]) }; }) }) %>
+  <%- include('field', { name: 'english_level', label: t('leads.english'), value: l.english_level, placeholder: t('leads.english_ph') }) %>
+  <%- include('field', { name: 'message', label: t('leads.message'), type: 'textarea', rows: 3, value: l.message, cls: 'span-all' }) %>
+</div>
+<datalist id="field-list"><% ref.FIELDS.forEach(function (f) { %><option value="<%= t('ref.field.' + f) %>"><% }) %></datalist>
+<% if (typeof withOwner !== 'undefined' && withOwner) { %>
+<h3 class="section-title mt6"><%= t('leads.ownership') %></h3>
+<div class="form-grid two">
+  <%- include('field', { name: 'counsellor_id', label: t('common.assigned_to'), type: 'select', value: l.counsellor_id, placeholder: t('common.unassigned'), options: [{ value: 'auto', label: t('leads.assign_auto') }].concat(counsellors.map(function (c) { return { value: c.id, label: c.name }; })), hint: can('leads.assign') ? '' : t('leads.assign_self_hint'), attrs: can('leads.assign') ? '' : 'disabled' }) %>
+  <%- include('field', { name: 'source', label: t('leads.source'), type: 'select', value: l.source || 'manual', options: sourceList.map(function (s) { return { value: s.key, label: t('sources.' + s.key) }; }) }) %>
+</div>
+<% } %>

@@ -1,0 +1,33 @@
+<div class="page-head">
+  <div><h1><%= t('nav.students') %></h1><p class="lead"><%= t('students.lead_text') %></p></div>
+  <% if (can('students.manage')) { %><a class="btn primary" href="/staff/students/new"><%- icon('plus') %><%= t('students.new') %></a><% } %>
+</div>
+<form class="toolbar" method="get">
+  <div class="search-inline"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('students.search_ph') %>" aria-label="<%= t('common.search') %>"></div>
+  <select name="journey" data-autosubmit aria-label="<%= t('students.journey') %>"><option value=""><%= t('students.any_stage') %></option><% journey.forEach(function (j) { %><option value="<%= j %>" <%= query.journey === j ? 'selected' : '' %>><%= t('journey.' + j) %></option><% }) %></select>
+  <select name="owner" data-autosubmit aria-label="<%= t('common.assigned_to') %>"><option value=""><%= t('leads.anyone') %></option><option value="me" <%= query.owner === 'me' ? 'selected' : '' %>><%= t('leads.mine') %></option><% counsellors.forEach(function (c) { %><option value="<%= c.id %>" <%= String(query.owner) === String(c.id) ? 'selected' : '' %>><%= c.name %></option><% }) %></select>
+  <select name="country" data-autosubmit aria-label="<%= t('leads.destinations') %>"><option value=""><%= t('leads.any_destination') %></option><% destinations.forEach(function (d) { %><option value="<%= d.value %>" <%= query.country === d.value ? 'selected' : '' %>><%= d.label %></option><% }) %></select>
+  <select name="status" data-autosubmit aria-label="<%= t('common.status') %>"><option value=""><%= t('students.status_current') %></option><% ['active','on_hold','enrolled','closed','all'].forEach(function (s) { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('students.status_' + s) %></option><% }) %></select>
+  <button class="btn" type="submit"><%= t('common.filter') %></button>
+  <a class="btn ghost" href="/staff/students/export.csv<%= qs({ page: null }) %>"><%- icon('download') %><%= t('common.export') %></a>
+</form>
+<% if (!rows.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: query.q ? t('students.no_match') : t('students.empty'), text: t('students.empty_text'), href: can('leads.view') ? '/staff/leads' : null, cta: t('students.go_to_leads'), ctaIcon: 'user-plus', emptyIcon: 'graduation-cap' }) %></div>
+<% } else { %>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><th><%= t('common.name') %></th><th><%= t('students.journey') %></th><th><%= t('students.profile') %></th><th><%= t('students.goal') %></th><th><%= t('common.assigned_to') %></th><th><%= t('students.last_activity') %></th></tr></thead>
+  <tbody>
+  <% rows.forEach(function (s) { var cs = typeof s.pref_countries === 'string' ? JSON.parse(s.pref_countries || '[]') : (s.pref_countries || []); %>
+    <tr>
+      <td class="primary"><a class="row-link" href="/staff/students/<%= s.id %>"><%= fullName(s) %></a> <% if (s.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %><div class="small subtle"><%= s.ref %> · <%= s.email || s.phone || '' %></div></td>
+      <td data-label="<%= t('students.journey') %>"><span class="chip brand"><%= t('journey.' + s.journey_stage) %></span><% if (s.status !== 'active') { %> <span class="chip"><%= t('students.status_' + s.status) %></span><% } %></td>
+      <td data-label="<%= t('students.profile') %>" style="min-width:120px"><div class="row"><div class="progress thin grow"><span style="width:<%= s.completion %>%"></span></div><span class="small num"><%= s.completion %>%</span></div></td>
+      <td data-label="<%= t('students.goal') %>" class="small"><%= [s.pref_degree ? t('ref.degree.' + s.pref_degree) : null, cs.slice(0, 2).join(', ')].filter(Boolean).join(' · ') || '—' %></td>
+      <td data-label="<%= t('common.assigned_to') %>"><%= s.counsellor_name || t('common.unassigned') %></td>
+      <td data-label="<%= t('students.last_activity') %>" class="small"><%= fmt.relative(s.last_activity_at || s.created_at) %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>
