@@ -864,7 +864,8 @@
     "wa_opens": "WhatsApp opens with the message ready for their number — press send on your phone.",
     "wa_open": "Open WhatsApp",
     "wa_ready_text": "The message is ready: open WhatsApp and press send.",
-    "result_whatsapp_title": "WhatsApp message ready for {name}"
+    "result_whatsapp_title": "WhatsApp message ready for {name}",
+    "details_lock_owner": "Another owner changes their own details from their account."
   },
   "onboarding": {
     "title": "Set up your clinic",

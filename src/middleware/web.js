@@ -32,7 +32,11 @@ const ASSET_V = (() => {
 const isLocalUrl = (u) => /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(u || '');
 const isLocalHost = (h) => /^(localhost|127\.|0\.0\.0\.0|\[::1\]|::1$)/i.test(h || '');
 function requestHost(req) {
-  const host = req.app && req.app.enabled('trust proxy') && req.get('x-forwarded-host') ? String(req.get('x-forwarded-host')).split(',')[0].trim() : req.get('host');
+  // X-Forwarded-Host only from the hosting's own proxy (a local / private address in front of the app) — never from a
+  // visitor talking to the app directly, who could otherwise make e-mailed links point to their own site.
+  const peer = String((req.socket && req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
+  const viaLocalProxy = /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(peer) || peer === '::1' || /^f[cd]/i.test(peer);
+  const host = req.app && req.app.enabled('trust proxy') && viaLocalProxy && req.get('x-forwarded-host') ? String(req.get('x-forwarded-host')).split(',')[0].trim() : req.get('host');
   return /^[a-z0-9.-]+(:\d{1,5})?$|^\[[0-9a-f:.]+\](:\d{1,5})?$/i.test(host || '') ? host.toLowerCase() : null;
 }
 function publicBase(req) {

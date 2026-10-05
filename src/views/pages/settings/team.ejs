@@ -163,7 +163,7 @@
         <%- include('../../partials/field', { id: 'e-phone', name: 'phone', label: t('common.phone'), type: 'tel', value: eo.phone, attrs: 'data-details-field dir="ltr" maxlength="40"' }) %>
       </div>
       <%- include('../../partials/field', { id: 'e-email', name: 'email', label: t('common.email'), type: 'email', value: eo.email, help: t('team.email_change_help'), attrs: 'data-details-field dir="ltr" maxlength="190"' }) %>
-      <% ['self', 'shared', 'above', 'owner_email'].forEach(function (k) { %><p class="help" data-details-note="<%= k %>" hidden><%- icon('lock', 'icon-sm') %> <%= t('team.details_lock_' + k) %></p><% }) %>
+      <% ['self', 'shared', 'above', 'owner', 'owner_email'].forEach(function (k) { %><p class="help" data-details-note="<%= k %>" hidden><%- icon('lock', 'icon-sm') %> <%= t('team.details_lock_' + k) %></p><% }) %>
       <div class="field">
         <label class="label" for="e-role_id"><%= t('team.role') %></label>
         <select class="select" id="e-role_id" name="role_id" data-role-select>

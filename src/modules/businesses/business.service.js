@@ -216,7 +216,11 @@ async function resolveRole(ctx, roleId, trx = knex) {
   // Only an owner hands out the owner role, and a custom role with permissions the actor lacks (a manager cannot
   // promote anyone — or a second account of their own — above themselves). Built-in roles keep their usual use.
   if (role.key === 'owner' && ctx.roleKey !== 'owner') throw E.forbidden('owner');
-  if (!role.is_system && ctx.roleKey !== 'owner') {
+  if (ctx.roleKey !== 'owner') {
+    // Only an owner appoints a clinic manager (a manager could otherwise make a second, unrestricted manager account
+    // and step around page blocks the owner set); any other role — built-in or custom — must be within the actor's
+    // own access.
+    if (role.key === 'clinic_manager') throw E.forbidden('owner');
     const perms = typeof role.permissions === 'string' ? JSON.parse(role.permissions || '[]') : (role.permissions || []);
     rbac.checkGrantable(ctx, perms);
   }
@@ -239,6 +243,12 @@ async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTi
   if (!m) throw E.notFound('Staff member');
   // Nobody but an owner changes their own access or an owner's account.
   if (ctx.roleKey !== 'owner' && (m.user_id === ctx.userId || m.role_key === 'owner')) throw E.forbidden('owner');
+  // Nor anyone with more access than the person changing them (a custom role beyond theirs, a clinic manager).
+  if (ctx.roleKey !== 'owner') {
+    const theirs = await rbac.getUserPermissions(ctx.businessId, m.user_id);
+    const mine = ctx.permissions instanceof Set ? ctx.permissions : new Set(ctx.permissions || []);
+    if (m.role_key === 'clinic_manager' || [...theirs].some((p) => !mine.has(p))) throw E.forbidden('above');
+  }
   const role = roleId ? await resolveRole(ctx, roleId) : await knex('roles').where({ id: m.role_id }).first();
   const losingOwner = m.role_key === 'owner' && (role.key !== 'owner' || status === 'disabled');
   if (losingOwner && (await ownerCount(ctx.businessId)) <= 1) throw E.conflict('LAST_OWNER', 'A clinic must keep at least one active owner.');
@@ -325,6 +335,8 @@ async function adminResetLink(ctx, membershipId) {
   // Nor is the account of someone with more access than the person asking (an owner, or permissions they lack):
   // that would let a manager sign in as the owner.
   let above = false;
+  const tr = await knex('roles').where({ id: m.role_id, business_id: ctx.businessId }).first('key');
+  if (tr && tr.key === 'owner' && m.user_id !== ctx.userId) above = true; // another owner: the link only reaches them by e-mail
   if (ctx.roleKey !== 'owner') {
     const r = await knex('roles').where({ id: m.role_id, business_id: ctx.businessId }).first('key');
     const theirs = await rbac.getUserPermissions(ctx.businessId, m.user_id);
@@ -413,6 +425,7 @@ async function memberDetailsAccess(ctx, membershipId) {
   if (Number(n) > 0 || user.is_platform_admin || vendor) return { ok: false, reason: 'shared', user, member: m };
   const r = await knex('roles').where({ id: m.role_id, business_id: ctx.businessId }).first('key');
   const targetOwner = Boolean(r && r.key === 'owner');
+  if (targetOwner) return { ok: false, reason: 'owner', user, member: m }; // another owner keeps their own details
   if (ctx.roleKey !== 'owner') {
     const theirs = await rbac.getUserPermissions(ctx.businessId, m.user_id);
     const mine = ctx.permissions instanceof Set ? ctx.permissions : new Set(ctx.permissions || []);

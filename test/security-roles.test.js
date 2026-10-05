@@ -78,3 +78,21 @@ test('a manager gets no reset link for the owner; the owner still manages everyt
   await businesses.changeMember(o, manager.membershipId, { roleId: ownerRole.id, status: 'active' });
   assert.equal(await knex('memberships as mm').join('roles as rr', 'rr.id', 'mm.role_id').where({ 'mm.id': manager.membershipId }).first('rr.key').then((x) => x.key), 'owner');
 });
+
+test('only an owner appoints a clinic manager; a manager cannot change another manager; another owner\'s reset link is e-mailed only', async () => {
+  const m = await ctxOf(manager, 'clinic_manager');
+  const mgrRole = await rbac.getRoleByKey(bid, 'clinic_manager');
+  await assert.rejects(businesses.addStaff(m, { name: 'Second manager', email: `mgr2-${tag}@sec.test`, roleId: mgrRole.id, mode: 'password', locale: 'en' }), denied);
+  await assert.rejects(businesses.changeMember(m, staff.membershipId, { roleId: mgrRole.id, status: 'active' }), denied);
+  const other = await member('clinic_manager', 'manager2');
+  const rec = await rbac.getRoleByKey(bid, 'receptionist');
+  await assert.rejects(businesses.changeMember(m, other.membershipId, { roleId: rec.id, status: 'disabled' }), denied);
+  // two owners: neither gets the other's reset link on screen
+  const o = await ctxOf(owner, 'owner');
+  const co = await member('owner', 'coowner');
+  let r = null; let err = null;
+  try { r = await businesses.adminResetLink(o, co.membershipId); } catch (e) { err = e; }
+  assert.ok(!(r && r.link), 'no link shown for another owner');
+  assert.ok(err ? err.code === 'RESET_NEEDS_EMAIL' : r.emailed);
+  assert.equal((await businesses.memberDetailsAccess(o, co.membershipId)).ok, false);
+});
