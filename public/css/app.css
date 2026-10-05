@@ -1073,3 +1073,5 @@ a.pn-title:hover { color: var(--primary); }
   .bottom-nav { grid-auto-columns: minmax(0, 1fr); }
   .bottom-nav a > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+/* A field that cannot be changed here (e.g. Team → a member's own or shared details): visibly read-only. */
+.input:disabled, .select:disabled, .textarea:disabled { background: var(--surface-sunken); color: var(--text-subtle); cursor: not-allowed; }

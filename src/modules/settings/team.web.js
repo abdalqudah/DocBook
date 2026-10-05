@@ -43,8 +43,11 @@ async function teamData(req) {
   const linked = new Map(members.filter((m) => m.doctor_id).map((m) => [m.doctor_id, m]));
   const invitedDoctors = new Set(invitations.filter((i) => i.doctor_id).map((i) => i.doctor_id));
   const assignable = roles.filter((r) => r.key !== 'owner' || req.ctx.permissions.has('data.manage'));
+  // Who the clinic may change the name / e-mail / phone of (businesses.memberDetailsAccess).
+  const access = Object.fromEntries(await Promise.all(members.map(async (m) => [m.id, await businesses.memberDetailsAccess(req.ctx, m.id)])));
   return {
-    members: members.map((m) => ({ ...m, group: groupOf(m.role_key), isSelf: m.user_id === req.ctx.userId, pageAccess: pageAccess[m.id] || null })),
+    members: members.map((m) => ({ ...m, group: groupOf(m.role_key), isSelf: m.user_id === req.ctx.userId, pageAccess: pageAccess[m.id] || null,
+      detailsLock: access[m.id].ok ? '' : access[m.id].reason, emailLock: Boolean(access[m.id].emailLocked) })),
     roles, assignable, doctors: doctors.map((d) => ({ ...d, linkedTo: linked.get(d.id) || null, invited: invitedDoctors.has(d.id) })),
     invitations, groups: GROUPS,
   };
@@ -97,6 +100,9 @@ router.post('/', form(async (req, res) => {
 
 // ---------------------------------------------------------------- change a member
 const editSchema = z.object({
+  name: z.preprocess(emptyToUndefined, z.string().trim().min(2, 'Enter the full name.').max(160).optional()),
+  email: z.preprocess(emptyToUndefined, z.string().trim().max(190).email('Enter a valid e-mail.').optional()),
+  phone: z.preprocess(emptyToUndefined, z.string().trim().max(40).regex(/^[+0-9\s()-]{6,40}$/, 'Enter a valid phone number.').optional()),
   role_id: z.coerce.number({ invalid_type_error: 'Choose a valid role.' }).int().positive('Choose a valid role.'),
   doctor_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
   job_title: z.preprocess((v) => (v === undefined ? '' : v), z.string().trim().max(100)),
@@ -104,6 +110,11 @@ const editSchema = z.object({
 });
 router.post('/:id(\\d+)', form(async (req, res) => {
   const d = validate(editSchema, req.body);
+  // Name / e-mail / phone (only sent when the clinic may change them: the fields are read-only otherwise).
+  if (req.body.details_form === '1' && (d.name || d.email || req.body.phone !== undefined)) {
+    const a = await businesses.memberDetailsAccess(req.ctx, Number(req.params.id));
+    if (a.ok) await businesses.changeMemberDetails(req.ctx, Number(req.params.id), { name: d.name, email: a.emailLocked ? undefined : d.email, phone: d.phone });
+  }
   await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title });
   flash(req, 'success', req.t('team.member_updated'));
   res.redirect('/app/clinic/team');

@@ -61,7 +61,7 @@
             </td>
             <td data-label="<%= t('team.last_login') %>" class="small muted"><%= ago(m.last_login_at) %></td>
             <td class="actions nowrap">
-              <button class="btn btn-ghost btn-icon btn-sm" type="button" title="<%= t('team.edit') %>" aria-label="<%= t('team.edit') %>" data-open-dialog="edit-dialog" data-action="/app/clinic/team/<%= m.id %>" data-dialog-title="<%= t('team.edit_named', { name: m.name }) %>" data-fill="<%= json({ role_id: m.role_id, doctor_id: m.doctor_id || '', job_title: m.job_title || '', status: m.status }) %>" data-self="<%= m.isSelf ? '1' : '' %>"><%- icon('pencil', 'icon-sm') %></button>
+              <button class="btn btn-ghost btn-icon btn-sm" type="button" title="<%= t('team.edit') %>" aria-label="<%= t('team.edit') %>" data-open-dialog="edit-dialog" data-action="/app/clinic/team/<%= m.id %>" data-dialog-title="<%= t('team.edit_named', { name: m.name }) %>" data-fill="<%= json({ name: m.name, email: m.email, phone: m.phone || '', role_id: m.role_id, doctor_id: m.doctor_id || '', job_title: m.job_title || '', status: m.status }) %>" data-self="<%= m.isSelf ? '1' : '' %>" data-details-lock="<%= m.detailsLock %>" data-email-lock="<%= m.emailLock ? '1' : '' %>"><%- icon('pencil', 'icon-sm') %></button>
               <% if (!m.isSelf && m.role_key !== 'owner') { %><a class="btn btn-ghost btn-icon btn-sm" href="/app/clinic/team/<%= m.id %>/access" title="<%= t('access.open') %>" aria-label="<%= t('access.open') %>"><%- icon('shield-check', 'icon-sm') %></a><% } %>
               <% if (!m.isSelf) { %>
               <form method="post" action="/app/clinic/team/<%= m.id %>/reset-link" style="display:inline" data-confirm="<%= t('team.reset_confirm', { name: m.name }) %>" data-confirm-title="<%= t('team.reset_link') %>" data-confirm-yes="<%= t('team.reset_generate') %>" data-confirm-tone="primary">
@@ -126,6 +126,13 @@
     <div class="dialog-body stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <% if (dlg === 'edit-dialog') { %><%- include('../../partials/form-error') %><% } %>
       <% var eo = dlg === 'edit-dialog' ? old : {}; %>
+      <input type="hidden" name="details_form" value="1">
+      <div class="form-grid">
+        <%- include('../../partials/field', { id: 'e-name', name: 'name', label: t('team.name'), value: eo.name, attrs: 'data-details-field maxlength="160"' }) %>
+        <%- include('../../partials/field', { id: 'e-phone', name: 'phone', label: t('common.phone'), type: 'tel', value: eo.phone, attrs: 'data-details-field dir="ltr" maxlength="40"' }) %>
+      </div>
+      <%- include('../../partials/field', { id: 'e-email', name: 'email', label: t('common.email'), type: 'email', value: eo.email, help: t('team.email_change_help'), attrs: 'data-details-field dir="ltr" maxlength="190"' }) %>
+      <% ['self', 'shared', 'above', 'owner_email'].forEach(function (k) { %><p class="help" data-details-note="<%= k %>" hidden><%- icon('lock', 'icon-sm') %> <%= t('team.details_lock_' + k) %></p><% }) %>
       <div class="field">
         <label class="label" for="e-role_id"><%= t('team.role') %></label>
         <select class="select" id="e-role_id" name="role_id" data-role-select>

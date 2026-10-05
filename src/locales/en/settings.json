@@ -799,8 +799,8 @@
     "status_active": "Active",
     "status_disabled": "Disabled",
     "temp_pending": "Temporary password not changed yet",
-    "edit": "Edit access",
-    "edit_named": "Edit access — {name}",
+    "edit": "Edit member",
+    "edit_named": "Edit member — {name}",
     "access": "Access",
     "disable_help": "A disabled login can't sign in. Their history stays in the clinic.",
     "linked_to": "linked to {name}",
@@ -832,7 +832,15 @@
     "how_3_text": "Each role opens its own start page. First-time users with a temporary password choose their own password.",
     "invite_mail_subject": "You're invited to {clinic}",
     "invite_mail_body": "Hello {name}, {clinic} has invited you to {brand} as {role}. Open the link to set your password and join the clinic. The link is valid for 7 days.",
-    "invite_mail_cta": "Accept invitation"
+    "invite_mail_cta": "Accept invitation",
+    "name": "Name",
+    "email_change_help": "Changing the e-mail: the person is told at the old address and asked to confirm the new one.",
+    "details_lock_self": "Your own details are changed from “My account”.",
+    "details_lock_shared": "This account is also used at another clinic or on the platform: its owner changes the name, e-mail and phone from their account.",
+    "details_lock_above": "This person has more access than you: they (or the clinic owner) change these details.",
+    "details_lock_owner_email": "Another owner changes their e-mail from their own account.",
+    "email_changed_subject": "Your clinic account e-mail was changed",
+    "email_changed_body": "The clinic changed your account e-mail to {email}. If you did not expect this, contact the clinic."
   },
   "onboarding": {
     "title": "Set up your clinic",

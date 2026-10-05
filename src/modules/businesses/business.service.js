@@ -397,8 +397,60 @@ async function destroy(ctx, confirmName) {
   forget(ctx.businessId);
 }
 
+/**
+ * Whether the clinic may change this member's name, e-mail and phone: not their own (My account), not an account that
+ * also belongs to another clinic, a platform admin or a supplier, and never someone with more access than the person
+ * asking (a manager changing the owner's e-mail could then reset the owner's password). Another owner's e-mail stays
+ * theirs to change. Returns { ok, reason, user, member }.
+ */
+async function memberDetailsAccess(ctx, membershipId) {
+  const m = await knex('memberships').where({ id: membershipId, business_id: ctx.businessId }).first();
+  if (!m) throw E.notFound('Staff member');
+  const user = await knex('users').where({ id: m.user_id }).first();
+  if (m.user_id === ctx.userId) return { ok: false, reason: 'self', user, member: m };
+  const [{ n }] = await knex('memberships').where({ user_id: m.user_id }).whereNot({ business_id: ctx.businessId }).count({ n: '*' });
+  const vendor = await knex('vendor_users').where({ user_id: user.id }).first('user_id').catch(() => null);
+  if (Number(n) > 0 || user.is_platform_admin || vendor) return { ok: false, reason: 'shared', user, member: m };
+  const r = await knex('roles').where({ id: m.role_id, business_id: ctx.businessId }).first('key');
+  const targetOwner = Boolean(r && r.key === 'owner');
+  if (ctx.roleKey !== 'owner') {
+    const theirs = await rbac.getUserPermissions(ctx.businessId, m.user_id);
+    const mine = ctx.permissions instanceof Set ? ctx.permissions : new Set(ctx.permissions || []);
+    if (targetOwner || [...theirs].some((p) => !mine.has(p))) return { ok: false, reason: 'above', user, member: m };
+  }
+  return { ok: true, emailLocked: targetOwner, user, member: m };
+}
+
+/** Changes a member's name, e-mail and phone (see memberDetailsAccess). A new e-mail must be free; it is unverified
+ *  until the person confirms it, and the old address is told of the change. Audited. */
+async function changeMemberDetails(ctx, membershipId, { name, email, phone }) {
+  const a = await memberDetailsAccess(ctx, membershipId);
+  if (!a.ok) throw new AppError('MEMBER_DETAILS_LOCKED', 'This person changes these details from their own account.', 403, { reason: a.reason });
+  const u = a.user;
+  const values = {};
+  if (name && name !== u.name) values.name = name;
+  if ((phone || null) !== (u.phone || null)) values.phone = phone || null;
+  const newEmail = email ? String(email).trim().toLowerCase() : null;
+  if (newEmail && newEmail !== String(u.email).toLowerCase()) {
+    if (a.emailLocked) throw E.validation({ email: 'Another owner changes their e-mail from their own account.' });
+    const taken = await knex('users').whereRaw('LOWER(email) = ?', [newEmail]).whereNot({ id: u.id }).first('id');
+    if (taken) throw E.validation({ email: 'This e-mail is already used by another account.' });
+    values.email = newEmail;
+    values.email_verified_at = null;
+  }
+  if (!Object.keys(values).length) return { changed: false };
+  await knex('users').where({ id: u.id }).update({ ...values, updated_at: new Date() });
+  await audit.record(ctx, 'staff.details_changed', { entityType: 'staff', entityId: u.id,
+    oldValues: { name: u.name, email: u.email, phone: u.phone }, newValues: { name: values.name, email: values.email, phone: values.phone } });
+  if (values.email && mailer.configured()) {
+    const t = translator(u.locale || 'ar');
+    await mailer.send({ to: u.email, subject: `${brand.name} — ${t('team.email_changed_subject')}`, html: mailer.layout({ locale: u.locale, title: t('team.email_changed_subject'), body: t('team.email_changed_body', { email: values.email }) }) }).catch(() => {});
+  }
+  return { changed: true, emailChanged: Boolean(values.email) };
+}
+
 module.exports = {
   create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, squareLogo, markUrl, setOnboarding, claimInvoiceNumber, FAVICON_MODES, faviconPath, faviconFile, setFavicon,
   setSlug, bySlug, validateSlug, normalizeSlug, suggestSlug, latinize, RESERVED,
-  listMembers, changeMember, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
+  listMembers, changeMember, changeMemberDetails, memberDetailsAccess, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
 };

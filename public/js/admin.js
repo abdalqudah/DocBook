@@ -52,6 +52,12 @@
       if (!dlg) return;
       var self = btn.getAttribute('data-self') === '1';
       $$('[data-disable-radio]', dlg).forEach(function (r) { r.disabled = self; });
+      // Name, e-mail and phone: read-only when the clinic may not change them (own account, an account shared with
+      // another clinic, someone with more access); the reason is shown under them.
+      var lock = btn.getAttribute('data-details-lock') || '';
+      var emailLock = btn.getAttribute('data-email-lock') === '1';
+      $$('[data-details-field]', dlg).forEach(function (f) { f.disabled = Boolean(lock) || (emailLock && f.name === 'email'); });
+      $$('[data-details-note]', dlg).forEach(function (n) { n.hidden = n.getAttribute('data-details-note') !== (lock || (emailLock ? 'owner_email' : 'none')); });
       var role = $('[data-role-select]', dlg);
       if (role) role.dispatchEvent(new Event('change'));
     });
