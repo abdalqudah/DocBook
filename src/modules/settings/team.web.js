@@ -142,6 +142,25 @@ router.post('/:id(\\d+)/reset-link', form(async (req, res) => {
   res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));
 
+// ---------------------------------------------------------------- sign-in details (e-mail / WhatsApp)
+// E-mail: sent to the person's own address. WhatsApp: opens WhatsApp (new tab) with the ready message to the person's
+// number — the clinic presses send. See businesses.sendLoginDetails for who may receive which.
+router.post('/:id(\\d+)/send-login', form(async (req, res) => {
+  const channel = req.body.channel === 'whatsapp' ? 'whatsapp' : 'email';
+  const out = await businesses.sendLoginDetails(req.ctx, Number(req.params.id), channel);
+  if (channel === 'whatsapp') return res.redirect(out.href);
+  flash(req, 'success', req.t('team.login_sent_email', { name: out.name }));
+  return res.redirect('/app/clinic/team');
+}, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));
+
+const SEND_GROUPS = { all: null, doctors: ['doctor'], nurses: ['nurse'], reception: ['receptionist'], accounting: ['accountant'], management: ['clinic_manager', 'owner'] };
+router.post('/send-logins', form(async (req, res) => {
+  const key = Object.prototype.hasOwnProperty.call(SEND_GROUPS, req.body.group) ? req.body.group : 'all';
+  const out = await businesses.emailLoginDetailsToAll(req.ctx, { roleKeys: SEND_GROUPS[key] });
+  flash(req, out.failed ? 'warning' : 'success', req.t('team.login_sent_all', { n: out.sent, failed: out.failed }));
+  res.redirect('/app/clinic/team');
+}, (req, res, extra) => renderTeam(req, res, { ...extra, result: null, openDialog: 'send-dialog' })));
+
 // ---------------------------------------------------------------- invitations
 router.post('/invitations/:id(\\d+)/revoke', form(async (req, res) => {
   await businesses.revokeInvitation(req.ctx, Number(req.params.id));

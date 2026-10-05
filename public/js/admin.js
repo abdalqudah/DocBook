@@ -45,6 +45,19 @@
     sync();
   });
 
+  // Team → send sign-in details to one person: e-mail to their address; WhatsApp only with a number and when the
+  // clinic may manage the account fully (else the reason is shown).
+  $$('[data-open-dialog="send-one-dialog"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dlg = document.getElementById('send-one-dialog'); if (!dlg) return;
+      var wa = btn.getAttribute('data-send-wa');
+      var to = $('[data-send-email-to]', dlg); if (to) to.textContent = btn.getAttribute('data-send-email') || '';
+      var ph = $('[data-send-wa-to]', dlg); if (ph) ph.textContent = btn.getAttribute('data-send-phone') || '';
+      var wb = $('[data-send-wa-btn]', dlg); if (wb) wb.disabled = wa !== 'ok';
+      $$('[data-send-wa-note]', dlg).forEach(function (n) { n.hidden = n.getAttribute('data-send-wa-note') !== wa; });
+    });
+  });
+
   // You can't disable your own access: grey out "Disabled" when editing yourself.
   $$('[data-open-dialog="edit-dialog"]').forEach(function (btn) {
     btn.addEventListener('click', function () {

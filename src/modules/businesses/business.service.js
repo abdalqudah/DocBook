@@ -200,7 +200,7 @@ async function listMembers(businessId) {
   return knex('memberships as m').join('users as u', 'u.id', 'm.user_id').join('roles as r', 'r.id', 'm.role_id')
     .leftJoin('doctors as d', 'd.id', 'm.doctor_id')
     .where('m.business_id', businessId)
-    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'u.last_login_at', 'u.must_change_password',
+    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'd.phone as doctor_phone', 'd.whatsapp as doctor_whatsapp', 'u.last_login_at', 'u.must_change_password',
       'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
     .orderBy('u.name');
 }
@@ -449,8 +449,79 @@ async function changeMemberDetails(ctx, membershipId, { name, email, phone }) {
   return { changed: true, emailChanged: Boolean(values.email) };
 }
 
+// ---------------------------------------------------------------- sending a member their sign-in details
+// Passwords are stored hashed, so "sign-in details" are: the clinic's sign-in address, the person's username (their
+// e-mail) and a one-time link to set their own password (valid 72 hours). By e-mail: always to the person's own
+// address. By WhatsApp: a ready message to the person's own number that the clinic sends from its phone — only for
+// members the clinic may manage fully (memberDetailsAccess): never an account shared with another clinic or someone
+// with more access, whose link must only reach them by e-mail.
+const LOGIN_LINK_HOURS = 72;
+
+function memberPhone(user, doctor) {
+  return (user && user.phone) || (doctor && (doctor.whatsapp || doctor.phone)) || null;
+}
+
+async function loginDetailsFor(ctx, membershipId) {
+  const a = await memberDetailsAccess(ctx, membershipId);
+  if (a.reason === 'self') throw E.validation({ member: 'Use My account for your own sign-in.' });
+  const doctor = a.member.doctor_id ? await knex('doctors').where({ id: a.member.doctor_id, business_id: ctx.businessId }).first('phone', 'whatsapp').catch(() => null) : null;
+  const biz = await knex('businesses').where({ id: ctx.businessId }).first('name', 'name_en', 'slug', 'country', 'timezone');
+  return { ...a, phone: memberPhone(a.user, doctor), biz, whatsappAllowed: a.ok };
+}
+
+function loginMessage(t, { clinic, signIn, email, link }) {
+  return [t('team.login_msg_hello', { clinic }), '', `${t('team.login_msg_signin')}: ${signIn}`, `${t('team.login_msg_user')}: ${email}`, '',
+    t('team.login_msg_set', { hours: LOGIN_LINK_HOURS }), link].join('\n');
+}
+
+/** Sends (e-mail) or prepares (WhatsApp: returns the wa.me address) a member's sign-in details. Audited. */
+async function sendLoginDetails(ctx, membershipId, channel) {
+  const d = await loginDetailsFor(ctx, membershipId);
+  const u = d.user;
+  if (channel === 'whatsapp' && !d.whatsappAllowed) throw new AppError('LOGIN_DETAILS_EMAIL_ONLY', 'This person\'s sign-in link can only be e-mailed to them.', 403);
+  if (channel === 'email' && !mailer.configured()) throw E.conflict('EMAIL_NOT_CONFIGURED', 'E-mail is not set up yet.');
+  let to = null;
+  if (channel === 'whatsapp') {
+    const ch = require('../messaging/channels'); // eslint-disable-line global-require
+    const countries = require('../telehealth/countries'); // eslint-disable-line global-require
+    const options = require('../settings/options'); // eslint-disable-line global-require
+    to = ch.msisdn(d.phone, countries.dialOf(d.biz.country) || countries.dialOf(options.countryForZone(d.biz.timezone)));
+    if (!to) throw E.validation({ phone: 'Add this person\'s mobile number first (Edit member).' });
+  }
+  const token = randomToken(32);
+  await knex('password_resets').insert({ user_id: u.id, token_hash: sha256(token), created_by: ctx.userId, expires_at: new Date(Date.now() + LOGIN_LINK_HOURS * 3600_000) });
+  const base = linkBase(ctx);
+  const signIn = d.biz.slug ? `${base}/${d.biz.slug}/login` : `${base}/login`;
+  const link = `${base}/reset/${token}`;
+  const t = translator(u.locale || 'ar');
+  const clinic = (u.locale === 'en' && d.biz.name_en) || d.biz.name;
+  const text = loginMessage(t, { clinic, signIn, email: u.email, link });
+  await audit.record(ctx, 'staff.login_details_sent', { entityType: 'staff', entityId: u.id, newValues: { channel } });
+  if (channel === 'email') {
+    const body = [t('team.login_msg_hello', { clinic }), `${t('team.login_msg_signin')}: ${signIn}`, `${t('team.login_msg_user')}: ${u.email}`, t('team.login_msg_set', { hours: LOGIN_LINK_HOURS })].join('\n');
+    const sent = await mailer.send({ to: u.email, subject: `${clinic} — ${t('team.login_mail_subject')}`, html: mailer.layout({ locale: u.locale, title: t('team.login_mail_subject'), body, cta: t('team.login_mail_cta'), href: link }) }).then((ok) => ok !== false).catch(() => false);
+    if (!sent) throw E.conflict('EMAIL_FAILED', 'The e-mail could not be sent. Check the e-mail settings.');
+    return { channel, name: u.name, email: u.email };
+  }
+  const ch = require('../messaging/channels'); // eslint-disable-line global-require
+  return { channel, name: u.name, href: ch.waMeLink(to, text) };
+}
+
+/** E-mails every active member (or one group of roles) their sign-in details, except the person sending. */
+async function emailLoginDetailsToAll(ctx, { roleKeys = null } = {}) {
+  if (!mailer.configured()) throw E.conflict('EMAIL_NOT_CONFIGURED', 'E-mail is not set up yet.');
+  const q = knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': ctx.businessId, 'm.status': 'active' }).whereNot('m.user_id', ctx.userId);
+  if (roleKeys && roleKeys.length) q.whereIn('r.key', roleKeys);
+  const rows = await q.select('m.id');
+  const out = { sent: 0, failed: 0 };
+  for (const r of rows) { // eslint-disable-line no-restricted-syntax
+    try { await sendLoginDetails(ctx, r.id, 'email'); out.sent += 1; } catch { out.failed += 1; } // eslint-disable-line no-await-in-loop
+  }
+  return out;
+}
+
 module.exports = {
   create, get, forget, listForUser, isMember, updateProfile, setAppearance, logo, squareLogo, markUrl, setOnboarding, claimInvoiceNumber, FAVICON_MODES, faviconPath, faviconFile, setFavicon,
   setSlug, bySlug, validateSlug, normalizeSlug, suggestSlug, latinize, RESERVED,
-  listMembers, changeMember, changeMemberDetails, memberDetailsAccess, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
+  listMembers, changeMember, changeMemberDetails, memberDetailsAccess, sendLoginDetails, emailLoginDetailsToAll, loginDetailsFor, memberPhone, removeMember, addStaff, adminResetLink, listInvitations, revokeInvitation, findInvitation, acceptInvitation, destroy, AppError,
 };

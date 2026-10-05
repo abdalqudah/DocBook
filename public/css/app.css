@@ -1075,3 +1075,4 @@ a.pn-title:hover { color: var(--primary); }
 }
 /* A field that cannot be changed here (e.g. Team → a member's own or shared details): visibly read-only. */
 .input:disabled, .select:disabled, .textarea:disabled { background: var(--surface-sunken); color: var(--text-subtle); cursor: not-allowed; }
+.set-send-btn { justify-content: flex-start; text-align: start; width: 100%; height: auto; padding-block: 10px; }
