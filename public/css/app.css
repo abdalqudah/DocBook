@@ -488,8 +488,11 @@ body.is-navigating .loading-bar { display: block; }
 .bottom-new { position: relative; display: flex; justify-content: center; }
 .bottom-new > summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: var(--primary-ink); cursor: pointer; box-shadow: var(--shadow-md); }
 .bottom-new > summary::-webkit-details-marker { display: none; }
-.bottom-new .menu { position: absolute; bottom: calc(100% + 10px); inset-inline-start: 50%; transform: translateX(-50%); min-width: 230px; }
+.bottom-new .menu { position: absolute; top: auto; bottom: calc(100% + 10px); inset-inline-end: auto; inset-inline-start: 50%; max-height: calc(100vh - 120px); overflow-y: auto; transform: translateX(-50%); min-width: 230px; }
 [dir="rtl"] .bottom-new .menu { transform: translateX(50%); }
+.bottom-nav .bottom-new .menu a { flex-direction: row; align-items: center; gap: 10px; font-size: 14px; font-weight: var(--fw-medium, 500); color: var(--text); padding: 11px 12px; text-align: start; border-radius: var(--radius-sm); }
+.bottom-nav .bottom-new .menu a .icon { width: 18px; height: 18px; color: var(--text-subtle); }
+.bottom-nav .bottom-new .menu .menu-label { text-align: start; }
 .sidebar-backdrop { display: none; }
 .bottom-nav { display: none; }
 @media (max-width: 1024px) {

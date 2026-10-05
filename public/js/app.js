@@ -181,11 +181,11 @@
     var d = e.target;
     if (!d || d.tagName !== 'DETAILS' || !d.open) return;
     var m = d.querySelector(':scope > .menu'); if (!m) return;
-    m.style.transform = '';
+    m.style.translate = ''; // its own transform (centring) stays; the nudge is added on top
     var r = m.getBoundingClientRect(); var vw = document.documentElement.clientWidth; var pad = 8; var dx = 0;
     if (r.right > vw - pad) dx = (vw - pad) - r.right;
     if (r.left + dx < pad) dx = pad - r.left;
-    if (dx) m.style.transform = 'translateX(' + Math.round(dx) + 'px)';
+    if (dx) m.style.translate = Math.round(dx) + 'px 0';
   }, true);
 
   /* ---------- A file picker that sends its form as soon as a file is chosen (My account → photo) ---------- */
