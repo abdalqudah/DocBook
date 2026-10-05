@@ -15,7 +15,7 @@ const { TEMPLATES, THEMES } = require('./catalog');
 const KEEP = 10;
 const MEDIA_CONTEXT = 'website';
 const parseDoc = (v) => { if (!v) return null; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch { return null; } };
-const forget = (businessId) => cache.forgetPrefix(`site:${businessId}`);
+const forget = (businessId) => { cache.forgetPrefix(`site:${businessId}`); cache.forgetPrefix('site:pageslugs:'); };
 
 async function row(businessId) { return knex('clinic_sites').where({ business_id: businessId }).first(); }
 async function version(businessId, id) {

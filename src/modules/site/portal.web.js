@@ -184,7 +184,7 @@ async function renderSite(req, res, clinic, doc, { preview = false, page = null 
     const sameAs = Object.values((doc.footer && doc.footer.social) || {}).filter(Boolean);
     seoHead = await seo.head(req, res, {
       kind: 'clinic', clinic, doctors: data.doctors.length ? data.doctors : await listDoctors(req, clinic), title, description, shareImage: share ? share.url : null, hide: Boolean(doc.seo && doc.seo.hide),
-      ws: { seo: doc.seo, faq, services, sameAs, path: sub ? `/${clinic.slug}/p/${sub.slug}` : null, pageName: sub ? L(sub.title) : null },
+      ws: { seo: doc.seo, faq, services, sameAs, path: sub ? (sub.path || `/${clinic.slug}/p/${sub.slug}`) : null, pageName: sub ? L(sub.title) : null },
     });
   }
   res.locals.wsConnections = await require('../website/marketing.service').get(clinic.id); // eslint-disable-line global-require -- Website → Connections
@@ -238,14 +238,15 @@ async function crawlContext(req, res) {
   const base = seo.baseUrl(req, s);
   const custom = res.locals.customDomain && res.locals.customDomain.slug === clinic.slug;
   const siteBase = custom ? `${req.protocol}://${res.locals.customDomain.host}` : require('../../config/edition').siteUrl(base, clinic); // eslint-disable-line global-require
-  return { clinic, doc, s, base, siteBase, custom };
+  const short = custom || require('../../config/edition').isMain(clinic); // eslint-disable-line global-require
+  return { clinic, doc, s, base, siteBase, custom, short };
 }
 router.get('/:slug/llms.txt', wrap(async (req, res, next) => {
   const c = await crawlContext(req, res);
   if (!c) return next();
   if (c.doc && c.doc.seo && c.doc.seo.ai && c.doc.seo.ai.bots === 'block') return next(); // the clinic opted out of AI assistants
   const [doctors, services, reviews] = await Promise.all([listDoctors(req, c.clinic), listServices(req, c.clinic), require('../reviews/reviews.service').publicSummary(c.clinic.id)]); // eslint-disable-line global-require
-  const text = seo.clinicLlms({ clinic: c.clinic, doc: c.doc, doctors, services, reviews, base: c.base, siteBase: c.siteBase });
+  const text = seo.clinicLlms({ clinic: c.clinic, doc: c.doc, doctors, services, reviews, base: c.base, siteBase: c.siteBase, short: c.short });
   return res.set('Cache-Control', 'public, max-age=1800').type('text/plain; charset=utf-8').send(text);
 }));
 router.get('/:slug/robots.txt', wrap(async (req, res, next) => {
@@ -260,7 +261,7 @@ router.get('/:slug/sitemap.xml', wrap(async (req, res, next) => {
   if (!c || !c.custom) return next();
   const doctors = await listDoctors(req, c.clinic);
   const arts = await require('../articles/articles.service').sitemapSite(c.clinic.id); // eslint-disable-line global-require
-  return res.set('Cache-Control', 'public, max-age=3600').type('application/xml; charset=utf-8').send(seo.clinicSitemap({ siteBase: c.siteBase, doc: c.doc, doctors, at: c.clinic.updated_at, articles: arts }));
+  return res.set('Cache-Control', 'public, max-age=3600').type('application/xml; charset=utf-8').send(seo.clinicSitemap({ siteBase: c.siteBase, doc: c.doc, doctors, at: c.clinic.updated_at, articles: arts, short: c.short }));
 }));
 
 // Another page of the published website: /<slug>/p/<page>.
@@ -271,6 +272,26 @@ router.get('/:slug/p/:page([a-z0-9-]{1,40})', wrap(async (req, res, next) => {
   if (state.status !== 'live' || !state.doc) return next();
   const page = state.doc.pages.find((p) => p.key !== 'home' && p.slug === req.params.page);
   if (!page) return next();
+  return renderSite(req, res, clinic, state.doc, { page });
+}));
+
+// The doctors (website): /<slug>/doctors (/doctors on the clinic's own domain) — the home page's doctors section on a
+// page of its own (or a plain doctors section when the home page has none). A clinic without a published website:
+// its home page, which lists the doctors.
+router.get('/:slug/doctors', wrap(async (req, res, next) => {
+  const clinic = await loadClinic(req);
+  if (!clinic) return next();
+  const state = await require('../website/site.service').publicState(clinic.id); // eslint-disable-line global-require
+  if (state.status !== 'live' || !state.doc) return res.redirect(302, `/${clinic.slug}`);
+  const own = state.doc.pages.find((p) => p.key !== 'home' && p.slug === 'doctors');
+  if (own) return renderSite(req, res, clinic, state.doc, { page: own });
+  const sections = require('../website/sections'); // eslint-disable-line global-require
+  const home = state.doc.pages.find((p) => p.key === 'home') || state.doc.pages[0];
+  const found = home.sections.find((x) => x.type === 'doctors');
+  const sec = found ? { ...found, visible: true, settings: { ...found.settings, mode: 'all' } } : sections.blankSection('doctors');
+  const { translator } = require('../../core/i18n'); // eslint-disable-line global-require
+  const name = { ar: translator('ar')('website.sec.doctors'), en: translator('en')('website.sec.doctors') };
+  const page = { key: 'doctors', slug: 'doctors', title: name, menu: false, path: `/${clinic.slug}/doctors`, sections: [sec] };
   return renderSite(req, res, clinic, state.doc, { page });
 }));
 

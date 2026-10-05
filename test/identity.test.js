@@ -412,8 +412,9 @@ test('HTTP: a verified custom domain serves only the clinic page and booking', a
     assert.ok(r.text.includes('Clinic A'));
     r = await call('/book', { host, cookies: {} });
     assert.equal(r.status, 200);
-    r = await call('/clinic-a/book', { host, cookies: {} });
-    assert.equal(r.status, 200);
+    r = await call('/clinic-a/book', { host, cookies: {} }); // the long address → the short one on the clinic's domain
+    assert.equal(r.status, 301);
+    assert.equal(r.location, '/book');
     r = await call('/clinic-a', { host, cookies: {} });
     assert.equal(r.location, '/');
     const main = require('../src/config').appUrl.replace(/\/+$/, ''); // eslint-disable-line global-require

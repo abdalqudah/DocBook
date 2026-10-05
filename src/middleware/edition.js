@@ -1,12 +1,13 @@
 // One clinic or one medical centre on its own domain (APP_EDITION=clinic | center, src/config/edition.js):
 //   /                        the clinic's (or centre's) website            (internally /<slug>)
-//   /book… /doctors/… /p/… /articles…  its booking and website pages     (internally /<slug>/…)
+//   /book… /doctors… /about… /articles…  its booking and website pages  (internally /<slug>/…, see site/clean-urls.js)
 //   /admin                   the management (sign-in, then the clinic's pages under /app)
 //   /admin/…                 no platform pages: the system's own (update, sign-in page, maintenance) are in Settings
 //   /<doctor's clinic>/…     a centre's doctors keep their own websites
 // The many-clinics pages (sign-up, clinic directory, pricing, reps' portal) lead home.
 const edition = require('../config/edition');
 const cache = require('../core/cache');
+const clean = require('../modules/site/clean-urls');
 
 const SITE = [/^\/book(\/|$)/, /^\/doctors\//, /^\/p\//, /^\/fonts\//, /^\/articles(\/|$)/, /^\/(robots\.txt|sitemap\.xml|llms\.txt|logo|logo-square)$/];
 const AWAY = [/^\/(pricing|features|clinics|vendors|vendor|reps|join|marketplace)(\/|$)/, /^\/blog(\/|$)/];
@@ -33,6 +34,10 @@ async function route(req, res, next) {
     if (AWAY.some((re) => re.test(p))) return res.redirect(302, '/');
     const slug = await mainSlug();
     if (!slug) return next();
+    // short addresses (/about, /doctors…); old long ones redirect, links are written short
+    const done = await clean.serve(req, res, slug);
+    if (done === 'done') return undefined;
+    if (done === 'rewritten') return next();
     if (p === '/') { req.url = `/${slug}${q}`; return next(); }
     if (p === '/favicon.ico') { req.url = `/${slug}/favicon${q}`; return next(); }
     if (SITE.some((re) => re.test(p))) { req.url = `/${slug}${p}${q}`; return next(); }

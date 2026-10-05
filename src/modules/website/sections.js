@@ -215,7 +215,8 @@ const SPECIALTY_TEMPLATE = { general: 'general', dentistry: 'dental', dermatolog
 // ---------------------------------------------------------------- pages, menu (header), footer
 const MAX_PAGES = 16; // home + 15
 const PAGE_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
-const RESERVED_PAGES = new Set(['home', 'book', 'doctors', 'p', 'm', 'logo', 'login', 'enter', 'fonts', 'theme-css']);
+// Page addresses that are the system's own (on the clinic's domain a page is at /<address>).
+const RESERVED_PAGES = new Set(['home', 'book', 'doctors', 'p', 'm', 'logo', 'login', 'enter', 'fonts', 'theme-css', 'app', 'admin', 'api', 'articles', 'logout', 'signup', 'css', 'js', 'img', 'brand', 'pay', 'hooks', 'healthz', 'media', 'assets', 'auth', 'share', 'kiosk', 'telehealth', 'staff']);
 const NAV_KINDS = ['home', 'page', 'section', 'book', 'call', 'whatsapp'];
 const HEADER = [
   { key: 'style', kind: 'select', options: ['solid', 'transparent', 'centered', 'minimal'], def: 'solid' },

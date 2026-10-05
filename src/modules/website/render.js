@@ -88,7 +88,12 @@ function siteChrome(req, clinic, doc, page, { preview, img }) {
     switch (it.kind) {
       case 'home': return { label: label || req.t('website.page_home'), href: pageHref(doc.pages[0]), current: page.key === 'home' };
       case 'page': { const p = doc.pages.find((x) => x.key === it.target); return p ? { label: label || L(p.title), href: pageHref(p), current: page.key === p.key } : null; }
-      case 'section': return { label: label || sectionTitle(it.target), href: `${pageHref(doc.pages[0])}#s-${it.target}` };
+      case 'section': {
+        // the doctors section of the home page: the doctors' own page (/doctors) outside the builder's preview
+        const sec = doc.pages[0].sections.find((x) => x.id === it.target);
+        if (!preview && sec && sec.type === 'doctors') return { label: label || sectionTitle(it.target), href: `${base}/doctors`, current: page.key === 'doctors' };
+        return { label: label || sectionTitle(it.target), href: `${pageHref(doc.pages[0])}#s-${it.target}` };
+      }
       case 'book': return clinic.booking_enabled ? { label: label || req.t('portal.book'), href: `${base}/book` } : null;
       case 'call': return clinic.telHref ? { label: label || req.t('portal.call'), href: clinic.telHref } : null;
       case 'whatsapp': return clinic.waHref ? { label: label || req.t('portal.whatsapp'), href: clinic.waHref, ext: true } : null;

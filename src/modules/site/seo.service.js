@@ -393,7 +393,7 @@ function clinicLd({ clinic, doctors, base, locale, ws = null }) {
  * clinic's own summary, contact, map position, doctors, services and prices, hours, FAQ and verified rating.
  * `base` is the address the clinic is reached at (its own domain, or the platform's /<slug>).
  */
-function clinicLlms({ clinic, doc, doctors, services, reviews, base, siteBase }) {
+function clinicLlms({ clinic, doc, doctors, services, reviews, base, siteBase, short = false }) {
   const sd = (doc && doc.seo) || {};
   const both = (v) => [v && v.ar, v && v.en].filter(Boolean);
   const lines = [`# ${clinic.name}${clinic.name_en && clinic.name_en !== clinic.name ? ` (${clinic.name_en})` : ''}`, ''];
@@ -429,7 +429,7 @@ function clinicLlms({ clinic, doc, doctors, services, reviews, base, siteBase })
     .flatMap((x) => ['ar', 'en'].flatMap((l) => (x.content[l] && x.content[l].items) || [])).filter((x) => x.q && x.a);
   if (faq.length) { lines.push('## Frequently asked questions', ''); faq.slice(0, 40).forEach((x) => lines.push(`### ${strip(x.q)}`, '', strip(x.a), '')); }
   const pages = ((doc && doc.pages) || []).filter((p) => p.key !== 'home');
-  if (pages.length) { lines.push('## Pages', ''); pages.forEach((p) => lines.push(`- [${(p.title && (p.title.en || p.title.ar)) || p.slug}](${siteBase}/p/${p.slug})`)); lines.push(''); }
+  if (pages.length) { lines.push('## Pages', ''); pages.forEach((p) => lines.push(`- [${(p.title && (p.title.en || p.title.ar)) || p.slug}](${siteBase}${short ? '' : '/p'}/${p.slug})`)); lines.push(''); }
   lines.push(`Facts come from the clinic's own records on ${base}. Prices and availability can change; the booking page shows the current free times.`, '');
   return lines.join('\n');
 }
@@ -443,9 +443,10 @@ function clinicRobots({ siteBase, slugPrefix, blockAi, hide }) {
   return lines.join('\n');
 }
 
-function clinicSitemap({ siteBase, doc, doctors, at, articles = [] }) {
+// `short`: the website owns the domain (its own domain, or the installation's clinic): pages at /<page>, not /p/<page>.
+function clinicSitemap({ siteBase, doc, doctors, at, articles = [], short = false }) {
   const x = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const locs = ['', '/book', ...((doc && doc.pages) || []).filter((p) => p.key !== 'home').map((p) => `/p/${p.slug}`), ...(doc ? doctors.map((d) => `/doctors/${d.id}`) : []),
+  const locs = ['', '/book', ...((doc && doc.pages) || []).filter((p) => p.key !== 'home').map((p) => (short ? `/${p.slug}` : `/p/${p.slug}`)), ...(doc ? ['/doctors', ...doctors.map((d) => `/doctors/${d.slug || d.id}`)] : []),
     ...(articles.length ? ['/articles', ...articles.map((a) => `/articles/${a.slug}`)] : [])];
   const alt = (loc) => ['ar', 'en'].map((lc) => `<xhtml:link rel="alternate" hreflang="${lc}" href="${x(`${siteBase}${loc}?lang=${lc}`)}"/>`).join('');
   const body = locs.map((l) => `<url><loc>${x(siteBase + l)}</loc>${at ? `<lastmod>${new Date(at).toISOString().slice(0, 10)}</lastmod>` : ''}${alt(l)}</url>`).join('\n');
@@ -505,7 +506,9 @@ async function llmsDefault({ s, site, base }) {
 async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, description: pageDesc, shareImage = null, hide = false, ws = null, path: pagePath = null, ld: extraLd = [] }) {
   const [s, mkt, media] = await Promise.all([get(), marketing(), require('./media.service').map()]); // eslint-disable-line global-require
   const locale = req.locale;
-  const base = baseUrl(req, s);
+  // a clinic on its own domain: its addresses there (canonical, alternates, JSON-LD), like its sitemap
+  const own = kind === 'clinic' && clinic && res.locals.customDomain && res.locals.customDomain.slug === clinic.slug;
+  const base = own ? `${req.protocol}://${res.locals.customDomain.host}` : baseUrl(req, s);
   const name = siteName(s, locale);
   if (kind === 'private') return { title: pageTitle ? `${pageTitle} · ${name}` : name, html: '<meta name="robots" content="noindex, nofollow">' };
   const siteContent = site || await content.get();
