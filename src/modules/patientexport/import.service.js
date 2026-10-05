@@ -25,6 +25,8 @@ const { instanceId } = require('./export.service');
 const ROOT = process.env.PATIENT_IMPORT_DIR || path.join(__dirname, '..', '..', '..', 'storage', 'patient-imports');
 const TOKEN = /^[a-f0-9]{16}$/;
 const KEEP_MS = 7 * 24 * 3600_000;
+const MAX_FILES_PER_PATIENT = 1000;
+const MAX_BYTES_PER_PATIENT = 512 * 1024 * 1024;
 const running = new Map(); // businessId → job
 
 const TABLES = {
@@ -148,7 +150,18 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
   const key = sourceKey(d); const same = isSame(d, ctx, inst);
   const today = ctx.today || new Date().toISOString().slice(0, 10);
   const docOf = (srcId) => (srcId ? (Object.prototype.hasOwnProperty.call(plan.doctors, `${key}:${srcId}`) ? plan.doctors[`${key}:${srcId}`] : null) : null);
-  const files = []; // read before the transaction (storage check needs the sizes)
+  // Files are read before the transaction (the storage check needs the sizes) — bounded first from the archive's own
+  // directory, so a crafted file list (the same big entry named many times) cannot fill the server's memory.
+  if (d.files.length > MAX_FILES_PER_PATIENT) throw new AppError('IMPORT_TOO_MANY_FILES', 'Too many files for one patient in this archive.', 422);
+  const seenPaths = new Set(); let total = 0;
+  for (const f of d.files) { // eslint-disable-line no-restricted-syntax
+    if (!f.path) continue; // eslint-disable-line no-continue
+    if (seenPaths.has(f.path)) throw new AppError('IMPORT_BROKEN', 'This archive is not a valid patient export.', 422);
+    seenPaths.add(f.path);
+    total += zip.sizeOf(prefix + f.path) || 0;
+  }
+  if (total > MAX_BYTES_PER_PATIENT) throw new AppError('IMPORT_TOO_LARGE', 'One patient\'s files in this archive are too large to import at once.', 422);
+  const files = [];
   for (const f of d.files) { const buf = f.path ? zip.read(prefix + f.path) : null; files.push(buf); } // eslint-disable-line no-restricted-syntax
   const papers = d.papers.filter((p) => ['invoice', 'certificate'].includes(p.kind) && /-(\d+)\.pdf$/.test(p.path || ''))
     .map((p) => ({ ...p, src: Number(p.path.match(/-(\d+)\.pdf$/)[1]), buf: zip.read(prefix + p.path) })).filter((p) => p.buf);
@@ -237,10 +250,14 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
       }
     };
     await simple('prescription', d.prescriptions, (r) => ({ patient_name: r.patient_name || p.full_name }));
-    await simple('order', d.orders, (r) => ({ partner_id: same ? r.partner_id || null : null, patient_name: r.patient_name || p.full_name }));
+    // a partner / service id from the file only when it is this clinic's own
+    const ownId = async (table, id) => (same && id && await trx(table).where({ id, business_id: ctx.businessId }).first('id') ? id : null);
+    const orders = []; for (const r of d.orders) orders.push({ ...r, partner_id: await ownId('clinic_partners', r.partner_id) }); // eslint-disable-line no-restricted-syntax, no-await-in-loop
+    await simple('order', orders, (r) => ({ partner_id: r.partner_id, patient_name: r.patient_name || p.full_name }));
     await simple('referral', d.referrals, (r) => ({ patient_name: r.patient_name || p.full_name }));
     await simple('dental', d.dental);
-    await simple('dental_plan', d.dental_plan, (r) => ({ service_id: same ? r.service_id || null : null }));
+    const plans = []; for (const r of d.dental_plan) plans.push({ ...r, service_id: await ownId('services', r.service_id) }); // eslint-disable-line no-restricted-syntax, no-await-in-loop
+    await simple('dental_plan', plans, (r) => ({ service_id: r.service_id }));
     await simple('growth', d.growth);
     await simple('pregnancy', d.pregnancies);
 

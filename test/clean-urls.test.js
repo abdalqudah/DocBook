@@ -49,6 +49,8 @@ test('shorten: page, booking, doctors and home links; pictures and other clinics
   assert.equal(clean.shortOf(s, '/mq/p/about'), '/about');
   assert.equal(clean.shortOf(s, '/mq/doctors/dr-x'), '/doctors/dr-x');
   assert.equal(clean.shortOf(s, '/mq/theme.css'), null);
+  // never a redirect to another site
+  for (const bad of ['/mq/p//evil.com/x', '/mq/doctors//evil.com', '/mq/book/\\evil.com', '/mq/p/a/b']) assert.equal(clean.shortOf(s, bad), null, bad);
 });
 
 test('on the clinic\'s own domain: short addresses, short links, old ones redirect', async () => {
@@ -68,6 +70,8 @@ test('on the clinic\'s own domain: short addresses, short links, old ones redire
   assert.equal(r.status, 301);
   assert.equal(r.location, '/about');
   assert.equal((await v.get(`/${slug}/book`, { host })).location, '/book');
+  r = await v.get(`/${slug}/p//evil.com/login`, { host });
+  assert.ok(!/^\/\/|^https?:\/\/evil/.test(String(r.location || '')), 'no open redirect');
   // an unknown page is not the clinic's page; system addresses go to the main address
   assert.equal((await v.get('/app', { host })).status, 302);
   const sm = await v.get('/sitemap.xml', { host });

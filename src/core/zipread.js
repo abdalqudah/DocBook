@@ -68,11 +68,14 @@ class ZipReader {
   names() { return [...this.entries.keys()]; }
   has(name) { return this.entries.has(name); }
 
+  /** An entry's size once unpacked (from the directory, nothing read), or null. */
+  sizeOf(name) { const e = this.entries.get(name); return e ? Math.max(e.size, e.comp) : null; }
+
   /** One entry's bytes (null when it is not in the archive). */
   read(name) {
     const e = this.entries.get(name);
     if (!e) return null;
-    if (e.size > MAX_ENTRY) throw fail(`Entry too large: ${name}`);
+    if (e.size > MAX_ENTRY || e.comp > MAX_ENTRY) throw fail(`Entry too large: ${name}`);
     const h = readAt(this.fd, e.at, 30);
     if (h.readUInt32LE(0) !== 0x04034b50) throw fail('Broken ZIP archive.');
     const start = e.at + 30 + h.readUInt16LE(26) + h.readUInt16LE(28);

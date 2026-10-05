@@ -502,7 +502,10 @@ async function sendLoginDetails(ctx, membershipId, channel) {
   await audit.record(ctx, 'staff.login_details_sent', { entityType: 'staff', entityId: u.id, newValues: { channel } });
   if (channel === 'email') {
     const body = [t('team.login_msg_hello', { clinic }), `${t('team.login_msg_signin')}: ${signIn}`, `${t('team.login_msg_user')}: ${u.email}`, t('team.login_msg_set', { hours: LOGIN_LINK_HOURS })].join('\n');
-    const sent = await mailer.send({ to: u.email, businessId: ctx.businessId, kind: 'team', subject: `${clinic} — ${t('team.login_mail_subject')}`, html: mailer.layout({ locale: lang, title: t('team.login_mail_subject'), body, cta: t('team.login_mail_cta'), href: link }) }).then((ok) => ok !== false).catch(() => false);
+    // A shared or higher account (another clinic, the platform, a supplier, more access): its link never passes
+    // through this clinic's own mailbox (whose server or Sent folder the clinic controls) — the system's mail only.
+    const via = d.whatsappAllowed ? { businessId: ctx.businessId, kind: 'team' } : {};
+    const sent = await mailer.send({ to: u.email, ...via, subject: `${clinic} — ${t('team.login_mail_subject')}`, html: mailer.layout({ locale: lang, title: t('team.login_mail_subject'), body, cta: t('team.login_mail_cta'), href: link }) }).then((ok) => ok !== false).catch(() => false);
     if (!sent) throw E.conflict('EMAIL_FAILED', 'The e-mail could not be sent. Check the e-mail settings.');
     return { channel, name: u.name, email: u.email };
   }

@@ -48,10 +48,13 @@ function pageSlugs(slug) {
 }
 
 /** A long address of the root website → its short form (for a permanent redirect), else null. */
+// A short address is only ever a path of this site: never "//host" or "/\\host" (that would redirect a visitor to
+// another site), never a "//" or a backslash anywhere in it.
+const safeShort = (p) => (p && /^\/(?![\/\\])/.test(p) && !p.includes('//') && !p.includes('\\') ? p : null);
 function shortOf(slug, path) {
-  if (path.startsWith(`/${slug}/p/`)) return `/${path.slice(slug.length + 4)}`;
+  if (path.startsWith(`/${slug}/p/`)) { const rest = path.slice(slug.length + 4); return /^[a-z0-9-]{1,40}\/?$/.test(rest) ? `/${rest}` : null; }
   const m = new RegExp(`^/${esc(slug)}(/(?:book|doctors|articles)(?:/.*)?|/login)$`).exec(path);
-  return m ? m[1] : null;
+  return m ? safeShort(m[1]) : null;
 }
 
 /**
@@ -80,4 +83,4 @@ async function serve(req, res, slug) {
   return null;
 }
 
-module.exports = { SYSTEM, shorten, shortOf, longPath, pageSlugs, serve };
+module.exports = { SYSTEM, safeShort, shorten, shortOf, longPath, pageSlugs, serve };

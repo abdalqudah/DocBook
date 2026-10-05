@@ -87,8 +87,10 @@ async function saveSmtp(ctx, input, deps = {}) {
   const password = String(input.smtp_password || '');
   if (password.length > 500) throw E.validation({ smtp_password: 'Too long.' });
   // Write-only: an empty password keeps the saved one (same user name), otherwise one is required.
-  // The password belongs to the mail account (user name): changing only the server name or port keeps it.
-  const keep = !password && cur && cur.provider === 'smtp' && cur.secret_enc && cur.smtp_user === d.smtp_user;
+  // The saved password is kept only for the same account on the same server: a new server name or port needs it
+  // again (else the saved password would be sent to whatever server was typed in).
+  const keep = !password && cur && cur.provider === 'smtp' && cur.secret_enc && cur.smtp_user === d.smtp_user
+    && String(cur.smtp_host || '').toLowerCase() === String(d.smtp_host || '').toLowerCase() && Number(cur.smtp_port) === Number(d.smtp_port);
   if (!password && !keep) throw E.validation({ smtp_password: 'Enter the password of this mail account.' });
   const values = {
     provider: 'smtp', from_name: d.from_name || null, from_address: d.from_address, reply_to: d.reply_to || null,
