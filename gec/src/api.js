@@ -7,4 +7,5 @@ const router = express.Router();
 router.use(limits.api);
 router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 router.use('/leads', require('./modules/crm/api'));
+router.use('/applications', require('./modules/admissions/api'));
 module.exports = router;

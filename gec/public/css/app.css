@@ -118,9 +118,9 @@ input:not([type]), input[type="text"], input[type="email"], input[type="password
   width: 100%; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); color: var(--text);
   font: inherit; font-size: .95rem; transition: border-color var(--t-fast), box-shadow var(--t-fast); }
 textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
-select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--text-3) 50%), linear-gradient(135deg, var(--text-3) 50%, transparent 50%);
-  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-inline-end: 34px; }
-[dir="rtl"] select { background-position: 18px 50%, 13px 50%; }
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b776f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 12px center; background-size: 12px 12px; background-repeat: no-repeat; padding-inline-end: 34px; }
+[dir="rtl"] select { background-position: left 12px center; }
 input:hover, select:hover, textarea:hover { border-color: var(--text-3); }
 input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); outline: none; }
 .has-error input, .has-error select, .has-error textarea { border-color: var(--bad); }

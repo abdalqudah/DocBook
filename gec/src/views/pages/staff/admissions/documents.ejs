@@ -1,0 +1,16 @@
+<div class="page-head"><div><h1><%= t('nav.documents') %></h1><p class="lead"><%= t('documents.queue_lead') %></p></div></div>
+<div class="toolbar"><div class="seg">
+  <% [['review', t('documents.to_review')], ['rejected', t('documents.status_rejected')], ['missing', t('documents.status_missing')], ['expired', t('documents.status_expired')], ['approved', t('documents.status_approved')]].forEach(function (x) { %><a href="?status=<%= x[0] %>" <%- status === x[0] ? 'aria-current="page" class="on"' : '' %>><%= x[1] %></a><% }) %>
+</div><a class="btn sm ghost" href="?status=approved&expiring=1"><%- icon('calendar-clock') %><%= t('documents.expiring_30') %></a></div>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('documents.queue_empty'), emptyIcon: 'file-check', compact: true }) %></div><% } else { %>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><th><%= t('nav.students') %></th><th><%= t('documents.type') %></th><th><%= t('common.status') %></th><th><%= t('documents.uploaded') %></th><th></th></tr></thead>
+  <tbody><% rows.forEach(function (d) { %><tr>
+    <td class="primary"><a class="row-link" href="/staff/students/<%= d.student_id %>?tab=documents"><%= fullName(d) %></a><div class="small subtle"><%= d.student_ref %><%= d.application_ref ? ' · ' + d.application_ref : '' %></div></td>
+    <td data-label="<%= t('documents.type') %>"><%= locale === 'ar' ? d.type_ar : d.type_en %><%= d.title ? ' — ' + d.title : '' %></td>
+    <td data-label="<%= t('common.status') %>"><span class="chip"><%= t('documents.status_' + d.status) %></span></td>
+    <td data-label="<%= t('documents.uploaded') %>" class="small"><%= d.uploaded_at ? fmt.relative(d.uploaded_at) : (d.due_date ? t('documents.due', { date: fmt.date(d.due_date) }) : '—') %></td>
+    <td class="actions"><% if (d.media_id) { %><a class="btn sm ghost" href="/staff/documents/<%= d.id %>/file" target="_blank" rel="noopener"><%- icon('eye') %><%= t('common.open') %></a><% } %><a class="btn sm" href="/staff/students/<%= d.student_id %>?tab=documents"><%= t('documents.review') %></a></td>
+  </tr><% }) %></tbody>
+</table></div>
+<% } %>

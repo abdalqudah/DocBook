@@ -1,0 +1,27 @@
+<div class="spread mb4"><h2 class="mb0" style="font-size:1.1rem"><%= t('students.tab_applications') %></h2><% if (can('applications.manage')) { %><a class="btn primary sm" href="/staff/applications/new?student_id=<%= s.id %>"><%- icon('plus') %><%= t('applications.new') %></a><% } %></div>
+<% if (!list.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: t('applications.none_student'), text: t('applications.none_student_text'), href: can('applications.manage') ? '/staff/applications/new?student_id=' + s.id : null, cta: t('applications.new'), emptyIcon: 'kanban' }) %></div>
+<% } else { %>
+<div class="grid" style="--min:320px">
+  <% list.forEach(function (a) { var days = Math.floor((Date.now() - new Date(a.stage_entered_at)) / 86400000); %>
+  <a class="card" href="/staff/applications/<%= a.id %>">
+    <div class="spread"><span class="chip <%= a.stage_tone %>"><%= locale === 'ar' ? a.stage_ar : a.stage_en %></span><span class="small subtle"><%= a.ref %></span></div>
+    <h3 class="mt2 mb0" style="font-size:1rem"><%= L(a, 'p_name') || a.program_name %></h3>
+    <p class="small muted mb2"><%= L(a, 'u_name') || a.university_name %><%= a.intake ? ' · ' + ref.month(a.intake) : '' %></p>
+    <div class="cluster small subtle"><span><%- icon('hourglass', 'sm') %> <%= t('applications.days', { n: days }) %></span><% if (a.deadline) { %><span><%- icon('calendar-clock', 'sm') %> <%= fmt.date(a.deadline) %></span><% } %><% if (a.offer_type !== 'none') { %><span class="chip ok"><%= t('applications.offer_' + a.offer_type) %></span><% } %></div>
+  </a>
+  <% }) %>
+</div>
+<% } %>
+<% if (visaCases.length || can('visa.manage')) { %>
+<h2 class="mt8" style="font-size:1.1rem"><%= t('nav.visa') %></h2>
+<% if (visaCases.length) { %><div class="grid" style="--min:280px"><% visaCases.forEach(function (v) { %><a class="card" href="/staff/visa/<%= v.id %>"><div class="spread"><span class="chip <%= v.stage === 'approved' ? 'ok' : v.stage === 'refused' ? 'bad' : 'brand' %>"><%= t('visa.stage_' + v.stage) %></span><span class="small subtle"><%= v.ref %></span></div><h3 class="mt2 mb0" style="font-size:1rem"><%= ref.flag(v.country_code) %> <%= ref.country(v.country_code) %></h3><p class="small muted mb0"><%= v.visa_type || '' %></p></a><% }) %></div><% } %>
+<% if (can('visa.manage')) { %>
+<form method="post" action="/staff/students/<%= s.id %>/visa" class="card cluster mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <select name="country_code" required aria-label="<%= t('common.country') %>" style="width:auto"><% ref.countries().forEach(function (c) { %><option value="<%= c.value %>"><%= c.label %></option><% }) %></select>
+  <select name="application_id" aria-label="<%= t('nav.applications') %>" style="width:auto"><option value=""><%= t('visa.no_application') %></option><% list.forEach(function (a) { %><option value="<%= a.id %>"><%= a.ref %> — <%= a.program_name %></option><% }) %></select>
+  <input name="visa_type" placeholder="<%= t('visa.type_ph') %>" aria-label="<%= t('visa.type') %>" style="width:auto;flex:1 1 180px">
+  <button class="btn" type="submit"><%- icon('plane') %><%= t('visa.open_case') %></button>
+</form>
+<% } %>
+<% } %>

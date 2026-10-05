@@ -145,3 +145,9 @@
   var m = document.querySelector('[data-open-dialog]');
   if (m) { var d = document.getElementById(m.getAttribute('data-open-dialog')); if (d && d.showModal) d.showModal(); }
 }());
+
+// Upload as soon as a file is chosen: <input type="file" data-autosubmit-file>
+document.addEventListener('change', function (e) {
+  var f = e.target.closest('[data-autosubmit-file]');
+  if (f && f.files && f.files.length && f.form) f.form.submit();
+});

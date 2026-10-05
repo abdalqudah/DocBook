@@ -1,0 +1,68 @@
+<% var canWork = can('applications.manage') || can('documents.verify') || can('students.manage'); var cats = ['identity','academic','english','application','financial','visa','other']; %>
+<div class="split">
+  <div class="stack" style="min-width:0">
+    <section class="card">
+      <div class="spread mb4"><div><h2 class="mb0" style="font-size:1.1rem"><%= t('documents.checklist') %></h2><p class="small muted mb0"><%= t('documents.summary', { approved: summary.approved, total: summary.total, review: summary.review }) %></p></div><div class="ring" style="--p:<%= summary.percent %>"><%= summary.percent %>%</div></div>
+      <% if (!list.length) { %>
+        <%- include('../../../partials/empty', { title: t('documents.empty'), text: t('documents.empty_text'), emptyIcon: 'files', compact: true }) %>
+      <% } else { cats.forEach(function (cat) { var group = list.filter(function (d) { return d.category === cat; }); if (!group.length) return; %>
+        <h3 class="section-title mt4"><%= t('documents.cat_' + cat) %></h3>
+        <div class="divider-list">
+        <% group.forEach(function (d) { var tone = { missing: 'warn', uploaded: 'info', under_review: 'info', approved: 'ok', rejected: 'bad', expired: 'bad' }[d.status]; %>
+          <div class="list-item" style="flex-wrap:wrap;align-items:flex-start">
+            <span class="queue-icon <%= tone %>"><%- icon(d.status === 'approved' ? 'file-check' : d.status === 'missing' ? 'file-up' : d.status === 'rejected' || d.status === 'expired' ? 'file-x' : 'file-text') %></span>
+            <div class="li-body">
+              <div class="li-title" style="white-space:normal"><%= locale === 'ar' ? d.type_ar : d.type_en %><%= d.title ? ' — ' + d.title : '' %> <span class="chip <%= tone %>"><%= t('documents.status_' + d.status) %></span><% if (d.expiring) { %> <span class="chip warn"><%= t('documents.expiring') %></span><% } %></div>
+              <div class="li-sub" style="white-space:normal">
+                <% if (d.media_id) { %><a href="/staff/documents/<%= d.id %>/file" target="_blank" rel="noopener"><%= d.original_name || t('documents.file') %></a> · v<%= d.version %> · <%= fmt.relative(d.uploaded_at) %><%= d.uploader_kind === 'student' ? ' · ' + t('documents.by_student') : (d.uploader_name ? ' · ' + d.uploader_name : '') %><% } else if (d.requested_at) { %><%= t('documents.requested_on', { date: fmt.date(d.requested_at) }) %><%= d.due_date ? ' · ' + t('documents.due', { date: fmt.date(d.due_date) }) : '' %><% } else { %><%= t('documents.not_uploaded') %><% } %>
+                <% if (d.expiry_date) { %> · <%= t('documents.expires', { date: fmt.date(d.expiry_date) }) %><% } %>
+                <% if (d.application_ref) { %> · <%= d.application_ref %><% } %>
+              </div>
+              <% if (d.status === 'rejected' && d.rejection_reason) { %><div class="small" style="color:var(--bad)"><%= d.rejection_reason %></div><% } %>
+              <% if (d.notes) { %><div class="small muted"><%= d.notes %></div><% } %>
+            </div>
+            <div class="cluster">
+              <% if (can('documents.verify') && d.media_id && ['uploaded','under_review','rejected'].indexOf(d.status) >= 0) { %>
+              <form method="post" action="/staff/documents/<%= d.id %>/review" class="cluster"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="decision" value="approve">
+                <% if (d.has_expiry) { %><input type="date" name="expiry_date" value="<%= fmt.dateInput(d.expiry_date) %>" aria-label="<%= t('documents.expiry') %>" style="width:auto;min-height:32px;font-size:.82rem"><% } %>
+                <button class="btn sm tonal" type="submit"><%- icon('check') %><%= t('documents.approve') %></button></form>
+              <details class="menu"><summary class="btn sm ghost"><%= t('documents.reject') %></summary><div class="menu-panel" style="min-width:280px">
+                <form method="post" action="/staff/documents/<%= d.id %>/review" class="stack" style="padding:8px"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="decision" value="reject">
+                  <label class="small" for="rr-<%= d.id %>"><%= t('documents.reject_reason') %></label><textarea id="rr-<%= d.id %>" name="reason" rows="2" required></textarea><button class="btn sm danger" type="submit"><%= t('documents.reject') %></button></form></div></details>
+              <% } %>
+              <% if (canWork) { %>
+              <form method="post" action="/staff/students/<%= s.id %>/documents/upload" enctype="multipart/form-data" class="cluster doc-upload"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="document_id" value="<%= d.id %>">
+                <label class="btn sm ghost"><%- icon('upload') %><span><%= d.media_id ? t('documents.replace') : t('common.upload') %></span><input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" required class="sr-only" data-autosubmit-file></label></form>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+        </div>
+      <% }) } %>
+    </section>
+  </div>
+  <aside class="stack">
+    <% if (canWork) { %>
+    <form method="post" action="/staff/students/<%= s.id %>/documents/request" class="card stack">
+      <h2 class="section-title"><%= t('documents.request') %></h2>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../../partials/field', { name: 'type_key', label: t('documents.type'), type: 'select', required: true, options: types.map(function (ty) { return { value: ty.key, label: L(ty, 'name') }; }) }) %>
+      <%- include('../../../partials/field', { name: 'title', label: t('documents.title_opt') }) %>
+      <%- include('../../../partials/field', { name: 'due_date', label: t('documents.due_date'), type: 'date' }) %>
+      <% if (studentApps.length) { %><%- include('../../../partials/field', { name: 'application_id', label: t('nav.applications'), type: 'select', options: studentApps.map(function (a) { return { value: a.id, label: a.ref + ' — ' + a.program_name }; }) }) %><% } %>
+      <%- include('../../../partials/field', { name: 'note', label: t('documents.note_for_student'), type: 'textarea', rows: 2 }) %>
+      <button class="btn primary" type="submit"><%- icon('send') %><%= t('documents.send_request') %></button>
+      <p class="small subtle mb0"><%= t('documents.request_hint') %></p>
+    </form>
+    <form method="post" action="/staff/students/<%= s.id %>/documents/upload" enctype="multipart/form-data" class="card stack">
+      <h2 class="section-title"><%= t('documents.upload_on_behalf') %></h2>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../../partials/field', { name: 'type_key', label: t('documents.type'), type: 'select', required: true, options: types.map(function (ty) { return { value: ty.key, label: L(ty, 'name') }; }) }) %>
+      <%- include('../../../partials/field', { name: 'expiry_date', label: t('documents.expiry'), type: 'date' }) %>
+      <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" required aria-label="<%= t('documents.file') %>">
+      <p class="small subtle mb0"><%= t('documents.file_rules') %></p>
+      <button class="btn" type="submit"><%- icon('upload') %><%= t('common.upload') %></button>
+    </form>
+    <% } %>
+  </aside>
+</div>

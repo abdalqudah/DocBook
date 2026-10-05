@@ -1,0 +1,55 @@
+<% var editable = can('visa.manage'); var idx = stagesList.indexOf(v.stage); var main = ['preparing','documents_pending','ready','submitted','biometrics','interview','processing', v.stage === 'refused' ? 'refused' : 'approved']; var mIdx = main.indexOf(v.stage); %>
+<nav class="breadcrumbs"><a href="/staff/visa"><%= t('nav.visa') %></a><%- icon('chevron-right') %><span><%= v.ref %></span></nav>
+<div class="page-head"><div>
+  <h1><%= ref.flag(v.country_code) %> <%= ref.country(v.country_code) %> — <%= v.visa_type || t('visa.case') %></h1>
+  <p class="lead"><a href="/staff/students/<%= v.student_id %>?tab=applications"><%= fullName(v) %></a><%= v.application_ref ? ' · ' : '' %><% if (v.application_ref) { %><a href="/staff/applications/<%= v.application_id %>"><%= v.application_ref %></a> — <%= v.program_name %><% } %></p>
+</div><span class="chip <%= v.stage === 'approved' ? 'ok' : v.stage === 'refused' ? 'bad' : 'brand' %>"><%= t('visa.stage_' + v.stage) %></span></div>
+<div class="alert warn mb4"><%- icon('info') %><p><%= t('visa.not_legal_advice') %></p></div>
+<section class="card mb4">
+  <ol class="journey"><% main.forEach(function (s, i) { %><li class="<%= i < mIdx ? 'done' : (i === mIdx ? 'current' : '') %>"><span class="step-dot"><% if (i < mIdx) { %><%- icon('check') %><% } %></span><span><%= t('visa.stage_' + s) %></span></li><% }) %></ol>
+  <% if (editable) { %>
+  <form method="post" action="/staff/visa/<%= v.id %>/stage" class="cluster mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label class="small subtle" for="vst"><%= t('leads.move_to') %></label>
+    <select id="vst" name="stage" style="width:auto;min-height:36px" data-lost-toggle="#refusal"><% stagesList.forEach(function (s) { %><option value="<%= s %>" data-lost="<%= s === 'refused' ? 1 : 0 %>" <%= s === v.stage ? 'selected' : '' %>><%= t('visa.stage_' + s) %></option><% }) %></select>
+    <input id="refusal" name="refusal_reason" placeholder="<%= t('visa.refusal_reason') %>" hidden style="width:auto;min-height:36px;flex:1 1 200px" aria-label="<%= t('visa.refusal_reason') %>">
+    <button class="btn sm primary" type="submit"><%= t('common.apply') %></button>
+  </form>
+  <% } %>
+</section>
+<div class="split">
+  <div class="stack">
+    <form method="post" action="/staff/visa/<%= v.id %>" class="card stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="card-head"><h2><%= t('visa.details') %></h2></div>
+      <fieldset class="form-grid two" <%= editable ? '' : 'disabled' %>>
+        <%- include('../../../partials/field', { name: 'visa_type', label: t('visa.type'), value: v.visa_type }) %>
+        <%- include('../../../partials/field', { name: 'application_number', label: t('visa.application_number'), value: v.application_number }) %>
+        <%- include('../../../partials/field', { name: 'submitted_on', label: t('visa.submitted_on'), type: 'date', value: fmt.dateInput(v.submitted_on) }) %>
+        <%- include('../../../partials/field', { name: 'biometrics_at', label: t('visa.biometrics'), type: 'datetime-local', value: fmt.dateTimeInput(v.biometrics_at) }) %>
+        <%- include('../../../partials/field', { name: 'interview_at', label: t('visa.interview'), type: 'datetime-local', value: fmt.dateTimeInput(v.interview_at) }) %>
+        <%- include('../../../partials/field', { name: 'medical', label: t('visa.medical'), type: 'select', value: v.medical, required: true, options: ['not_required','required','done'].map(function (m) { return { value: m, label: t('visa.medical_' + m) }; }) }) %>
+        <%- include('../../../partials/field', { name: 'medical_on', label: t('visa.medical_on'), type: 'date', value: fmt.dateInput(v.medical_on) }) %>
+        <%- include('../../../partials/field', { name: 'travel_date', label: t('visa.travel'), type: 'date', value: fmt.dateInput(v.travel_date) }) %>
+        <%- include('../../../partials/field', { name: 'visa_expiry', label: t('visa.expiry'), type: 'date', value: fmt.dateInput(v.visa_expiry) }) %>
+        <%- include('../../../partials/field', { name: 'officer_id', label: t('visa.officer'), type: 'select', value: v.officer_id, options: officers.map(function (o) { return { value: o.id, label: o.name }; }) }) %>
+        <%- include('../../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', rows: 3, value: v.notes, cls: 'span-all' }) %>
+      </fieldset>
+      <% if (v.decision_on) { %><p class="small"><strong><%= t('visa.decision_on') %>:</strong> <%= fmt.date(v.decision_on) %><%= v.refusal_reason ? ' — ' + v.refusal_reason : '' %></p><% } %>
+      <% if (editable) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+    </form>
+    <section class="card"><div class="card-head"><h2><%= t('applications.activity') %></h2></div><%- include('../../../partials/timeline', { items: timeline }) %></section>
+  </div>
+  <aside class="stack">
+    <section class="card">
+      <div class="card-head"><h2><%= t('visa.documents') %></h2><a class="btn sm ghost" href="/staff/students/<%= v.student_id %>?tab=documents"><%= t('common.open') %></a></div>
+      <% if (!docList.length) { %><p class="small muted"><%= t('documents.empty') %></p><% } %>
+      <div class="divider-list"><% docList.forEach(function (d) { %><div class="list-item"><div class="li-body"><div class="li-title"><%= locale === 'ar' ? d.type_ar : d.type_en %></div><div class="li-sub"><%= t('documents.status_' + d.status) %><%= d.expiry_date ? ' · ' + t('documents.expires', { date: fmt.date(d.expiry_date) }) : '' %></div></div></div><% }) %></div>
+      <% if (editable) { %>
+      <form method="post" action="/staff/students/<%= v.student_id %>/documents/request" class="stack mt4" style="--gap:8px"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <select name="type_key" required aria-label="<%= t('documents.type') %>"><% types.filter(function (x) { return ['visa','financial','identity'].indexOf(x.category) >= 0; }).forEach(function (x) { %><option value="<%= x.key %>"><%= L(x, 'name') %></option><% }) %></select>
+        <input type="date" name="due_date" aria-label="<%= t('documents.due_date') %>">
+        <button class="btn sm" type="submit"><%- icon('send') %><%= t('documents.send_request') %></button></form>
+      <% } %>
+    </section>
+  </aside>
+</div>

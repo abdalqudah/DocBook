@@ -118,7 +118,10 @@
     "programs": "Programs",
     "universities": "Universities",
     "scholarships": "Scholarships",
-    "destinations": "Destinations"
+    "destinations": "Destinations",
+    "applications": "Applications",
+    "documents": "Documents",
+    "visa": "Visa cases"
   },
   "quick": {},
   "palette": {
@@ -192,6 +195,7 @@
     "ROLE_IN_USE": "Move the employees with this role to another role first.",
     "not_found_title": "Page not found",
     "forbidden_title": "Access denied",
-    "generic_title": "Something went wrong"
+    "generic_title": "Something went wrong",
+    "APPLICATION_EXISTS": "This student already has an open application for this program and intake."
   }
 }

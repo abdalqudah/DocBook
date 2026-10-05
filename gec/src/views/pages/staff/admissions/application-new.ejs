@@ -1,0 +1,29 @@
+<nav class="breadcrumbs"><a href="/staff/applications"><%= t('nav.applications') %></a><%- icon('chevron-right') %><span><%= t('applications.new') %></span></nav>
+<div class="page-head"><div><h1><%= t('applications.new') %></h1><p class="lead"><%= t('applications.new_lead') %></p></div></div>
+<% if (!student) { %>
+  <form method="get" class="card stack">
+    <%- include('../../../partials/field', { name: 'student_id', label: t('applications.student_ref'), type: 'number', required: true, hint: t('applications.student_hint') }) %>
+    <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.continue') %></button><a class="btn ghost" href="/staff/students"><%= t('nav.students') %></a></div>
+  </form>
+<% } else { %>
+<form method="post" action="/staff/applications" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="student_id" value="<%= student.id %>">
+  <div class="row"><span class="avatar"><%= initials(fullName(student)) %></span><div><div class="li-title"><%= fullName(student) %></div><div class="li-sub"><%= student.ref %></div></div></div>
+  <% if (program) { %>
+    <input type="hidden" name="program_id" value="<%= program.id %>">
+    <div class="alert ok"><%- icon('graduation-cap') %><p><strong><%= L(program, 'name') %></strong> — <%= program.uni_en %></p></div>
+  <% } else { %>
+    <%- include('../../../partials/field', { name: 'program_id', label: t('applications.program_from_shortlist'), type: 'select', options: shortlisted.map(function (p) { return { value: p.id, label: L(p, 'name') + ' — ' + L(p, 'university') }; }), hint: shortlisted.length ? '' : t('applications.no_shortlist') }) %>
+    <details class="card flat"><summary class="small"><%= t('applications.not_in_catalogue') %></summary>
+      <div class="form-grid two mt4"><%- include('../../../partials/field', { name: 'program_name', label: t('applications.program') }) %><%- include('../../../partials/field', { name: 'university_name', label: t('catalog.university') }) %></div>
+    </details>
+  <% } %>
+  <div class="form-grid three">
+    <%- include('../../../partials/field', { name: 'intake', label: t('leads.intake'), type: 'select', value: student.pref_intake, options: ref.intakes(24).map(function (m) { return { value: m, label: ref.month(m) }; }) }) %>
+    <%- include('../../../partials/field', { name: 'deadline', label: t('finder.deadline'), type: 'date', value: program && program.next_deadline ? fmt.dateInput(program.next_deadline) : '' }) %>
+    <%- include('../../../partials/field', { name: 'stage_key', label: t('applications.start_stage'), type: 'select', value: old.stage_key, required: true, options: stageList.map(function (s) { return { value: s.key, label: L(s, 'name') }; }) }) %>
+  </div>
+  <p class="small muted"><%= t('applications.checklist_note') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('applications.create') %></button><a class="btn ghost" href="/staff/students/<%= student.id %>?tab=applications"><%= t('common.cancel') %></a></div>
+</form>
+<% } %>

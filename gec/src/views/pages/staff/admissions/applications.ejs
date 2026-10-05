@@ -1,0 +1,52 @@
+<div class="page-head">
+  <div><h1><%= t('nav.applications') %></h1><p class="lead"><%= t('applications.lead_text') %></p></div>
+  <div class="cluster">
+    <div class="seg"><a href="<%= qs({ view: 'board', page: null }) %>" <%- view === 'board' ? 'aria-current="page" class="on"' : '' %>><%- icon('kanban') %> <%= t('leads.view_board') %></a><a href="<%= qs({ view: 'list', page: null }) %>" <%- view === 'list' ? 'aria-current="page" class="on"' : '' %>><%- icon('list') %> <%= t('leads.view_list') %></a></div>
+    <% if (can('applications.manage')) { %><a class="btn primary" href="/staff/applications/new"><%- icon('plus') %><%= t('applications.new') %></a><% } %>
+  </div>
+</div>
+<form class="toolbar" method="get">
+  <input type="hidden" name="view" value="<%= view %>">
+  <div class="search-inline"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('applications.search_ph') %>" aria-label="<%= t('common.search') %>"></div>
+  <select name="owner" data-autosubmit aria-label="<%= t('common.assigned_to') %>"><option value=""><%= t('leads.anyone') %></option><option value="me" <%= query.owner === 'me' ? 'selected' : '' %>><%= t('leads.mine') %></option><% counsellors.forEach(function (c) { %><option value="<%= c.id %>" <%= String(query.owner) === String(c.id) ? 'selected' : '' %>><%= c.name %></option><% }) %></select>
+  <select name="university" data-autosubmit aria-label="<%= t('catalog.university') %>"><option value=""><%= t('applications.any_university') %></option><% universities.forEach(function (u) { %><option value="<%= u.id %>" <%= String(query.university) === String(u.id) ? 'selected' : '' %>><%= L(u, 'name') %></option><% }) %></select>
+  <select name="intake" data-autosubmit aria-label="<%= t('leads.intake') %>"><option value=""><%= t('applications.any_intake') %></option><% ref.intakes(18, new Date(Date.now() - 180 * 86400000)).forEach(function (m) { %><option value="<%= m %>" <%= query.intake === m ? 'selected' : '' %>><%= ref.month(m) %></option><% }) %></select>
+  <% if (view === 'list') { %><select name="status" data-autosubmit aria-label="<%= t('common.status') %>"><% ['open','won','lost','withdrawn','all'].forEach(function (s) { %><option value="<%= s %>" <%= (query.status || 'open') === s ? 'selected' : '' %>><%= t('applications.status_' + s) %></option><% }) %></select><% } %>
+  <label class="check small"><input type="checkbox" name="stuck" value="1" <%= query.stuck === '1' ? 'checked' : '' %> data-autosubmit><span><%= t('applications.only_stuck') %></span></label>
+  <label class="check small"><input type="checkbox" name="deadline" value="soon" <%= query.deadline === 'soon' ? 'checked' : '' %> data-autosubmit><span><%= t('applications.deadline_soon') %></span></label>
+</form>
+<% if (view === 'board') { %>
+<div class="kanban" data-kanban data-endpoint="/api/applications/{id}/stage" data-lost-prompt="<%= t('applications.close_reason_prompt') %>">
+  <% board.forEach(function (col) { %>
+  <section class="kanban-col" aria-label="<%= L(col.stage, 'name') %>">
+    <div class="kanban-col-head"><span><span class="dot" style="color:var(--<%= col.stage.tone %>)"></span> <%= L(col.stage, 'name') %></span><span class="count" data-count><%= col.rows.length %></span></div>
+    <div class="kanban-cards" data-stage="<%= col.stage.id %>" data-lost="0">
+      <% col.rows.forEach(function (a) { var days = Math.floor((Date.now() - new Date(a.stage_entered_at)) / 86400000); var stuck = a.sla_days && days > a.sla_days; %>
+      <a class="kcard" href="/staff/applications/<%= a.id %>" draggable="true" data-id="<%= a.id %>">
+        <div class="k-title"><%= fullName(a) %> <% if (a.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></div>
+        <div class="k-sub"><%= L(a, 'p_name') || a.program_name %></div>
+        <div class="k-sub"><%= L(a, 'u_name') || a.university_name %><%= a.intake ? ' · ' + ref.month(a.intake) : '' %></div>
+        <div class="k-foot"><span class="chip <%= stuck ? 'warn' : '' %>"><%- icon('hourglass') %><%= t('applications.days', { n: days }) %></span><% if (a.deadline) { %><span class="small <%= new Date(a.deadline) < new Date(Date.now() + 14 * 86400000) && !a.submitted_at ? '' : 'subtle' %>" style="<%= new Date(a.deadline) < new Date(Date.now() + 14 * 86400000) && !a.submitted_at ? 'color:var(--bad);font-weight:600' : '' %>"><%- icon('calendar-clock', 'sm') %> <%= fmt.date(a.deadline, { day: 'numeric', month: 'short' }) %></span><% } %></div>
+      </a>
+      <% }) %>
+    </div>
+  </section>
+  <% }) %>
+</div>
+<p class="small subtle"><%= t('leads.board_hint') %></p>
+<% } else if (!rows.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: t('applications.empty'), text: t('applications.empty_text'), href: can('students.view') ? '/staff/students' : null, cta: t('nav.students'), ctaIcon: 'graduation-cap', emptyIcon: 'kanban' }) %></div>
+<% } else { %>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><th><%= t('nav.students') %></th><th><%= t('applications.program') %></th><th><%= t('leads.stage') %></th><th><%= t('applications.in_stage') %></th><th><%= t('finder.deadline') %></th><th><%= t('common.assigned_to') %></th></tr></thead>
+  <tbody><% rows.forEach(function (a) { var days = Math.floor((Date.now() - new Date(a.stage_entered_at)) / 86400000); %><tr>
+    <td class="primary"><a class="row-link" href="/staff/applications/<%= a.id %>"><%= fullName(a) %></a><div class="small subtle"><%= a.ref %></div></td>
+    <td data-label="<%= t('applications.program') %>" class="small"><%= L(a, 'p_name') || a.program_name %><div class="subtle"><%= L(a, 'u_name') || a.university_name %><%= a.intake ? ' · ' + ref.month(a.intake) : '' %></div></td>
+    <td data-label="<%= t('leads.stage') %>"><span class="chip <%= a.stage_tone %>"><%= locale === 'ar' ? a.stage_ar : a.stage_en %></span></td>
+    <td data-label="<%= t('applications.in_stage') %>"><span class="<%= a.sla_days && days > a.sla_days ? 'chip warn' : 'small' %>"><%= t('applications.days', { n: days }) %></span></td>
+    <td data-label="<%= t('finder.deadline') %>" class="small"><%= a.deadline ? fmt.date(a.deadline) : '—' %></td>
+    <td data-label="<%= t('common.assigned_to') %>"><%= a.counsellor_name || '—' %></td>
+  </tr><% }) %></tbody>
+</table></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>

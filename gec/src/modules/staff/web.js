@@ -37,7 +37,9 @@ router.use('/', require('../crm/web'));
 router.use('/', require('../team/web'));
 router.use('/', require('../catalog/admin').router);
 router.use('/', require('../catalog/staff.web'));
+router.use('/', require('../admissions/web'));
 router.use('/settings', require('../settings/web'));
+router.use('/settings/pipeline', require('../settings/pipelines.web'));
 router.use('/roles', require('../rbac/web'));
 router.use('/audit', require('../audit/web'));
 

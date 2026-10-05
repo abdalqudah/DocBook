@@ -118,7 +118,10 @@
     "programs": "البرامج",
     "universities": "الجامعات",
     "scholarships": "المنح الدراسية",
-    "destinations": "الوجهات"
+    "destinations": "الوجهات",
+    "applications": "الطلبات",
+    "documents": "المستندات",
+    "visa": "ملفات التأشيرة"
   },
   "quick": {},
   "palette": {
@@ -192,7 +195,8 @@
     "ROLE_IN_USE": "انقل الموظفين الذين يحملون هذا الدور إلى دور آخر أولاً.",
     "not_found_title": "الصفحة غير موجودة",
     "forbidden_title": "الوصول مرفوض",
-    "generic_title": "حدث خطأ ما"
+    "generic_title": "حدث خطأ ما",
+    "APPLICATION_EXISTS": "لدى هذا الطالب طلب مفتوح لهذا البرنامج وموعد البدء."
   },
   "vmsg": {
     "Required.": "هذا الحقل مطلوب.",

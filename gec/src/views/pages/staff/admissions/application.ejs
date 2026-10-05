@@ -1,0 +1,108 @@
+<% var editable = can('applications.manage'); var curIdx = allStages.findIndex(function (s) { return s.id === a.stage_id; }); var v = function (k) { return typeof old !== 'undefined' && old && k in old ? old[k] : a[k]; }; %>
+<nav class="breadcrumbs"><a href="/staff/applications"><%= t('nav.applications') %></a><%- icon('chevron-right') %><span><%= a.ref %></span></nav>
+<div class="page-head">
+  <div>
+    <h1><%= L(a, 'p_name') || a.program_name %> <% if (a.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></h1>
+    <p class="lead"><a href="/staff/students/<%= a.student_id %>?tab=applications"><%= fullName(a) %></a> · <%= L(a, 'u_name') || a.university_name %><%= a.intake ? ' · ' + ref.month(a.intake) : '' %></p>
+    <div class="cluster mt2"><span class="chip <%= a.stage_tone %>"><%= locale === 'ar' ? a.stage_ar : a.stage_en %></span><span class="chip <%= a.sla_days && daysInStage > a.sla_days ? 'warn' : '' %>"><%- icon('hourglass') %><%= t('applications.days_in_stage', { n: daysInStage }) %></span>
+      <% if (a.deadline) { %><span class="chip <%= !a.submitted_at && new Date(a.deadline) < new Date(Date.now() + 14 * 86400000) ? 'bad' : '' %>"><%- icon('calendar-clock') %><%= t('finder.deadline') %>: <%= fmt.date(a.deadline) %></span><% } %>
+      <% if (a.status !== 'open') { %><span class="chip <%= a.status === 'won' ? 'ok' : 'bad' %>"><%= t('applications.status_' + a.status) %></span><% } %>
+      <% if (a.counsellor_name) { %><span class="small subtle"><%= a.counsellor_name %></span><% } %></div>
+  </div>
+  <% if (a.program_slug) { %><a class="btn ghost" href="/programs/<%= a.program_slug %>" target="_blank" rel="noopener"><%- icon('external-link') %><%= t('applications.view_program') %></a><% } %>
+</div>
+
+<section class="card mb4" aria-label="<%= t('applications.progress') %>">
+  <% var visible = allStages.filter(function (s) { return s.is_active && s.key !== 'closed' && !(s.key === 'visa_refused' && a.stage_key !== 'visa_refused'); }); var vIdx = visible.findIndex(function (s) { return s.id === a.stage_id; }); %>
+  <ol class="journey" style="--n:<%= visible.length %>">
+    <% visible.forEach(function (s, i) { %><li class="<%= i < vIdx ? 'done' : (i === vIdx ? 'current' : '') %>" style="flex-basis:84px"><span class="step-dot"><% if (i < vIdx) { %><%- icon('check') %><% } %></span><span><%= L(s, 'name') %></span></li><% }) %>
+  </ol>
+  <% if (editable) { %>
+  <form method="post" action="/staff/applications/<%= a.id %>/stage" class="cluster mt4">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label class="small subtle" for="app-stage"><%= t('leads.move_to') %></label>
+    <select id="app-stage" name="stage_id" style="width:auto;min-height:36px" data-lost-toggle="#close-reason"><% allStages.filter(function (s) { return s.is_active; }).forEach(function (s) { %><option value="<%= s.id %>" data-lost="<%= s.key === 'closed' ? 1 : 0 %>" <%= s.id === a.stage_id ? 'selected' : '' %>><%= L(s, 'name') %></option><% }) %></select>
+    <input id="close-reason" name="reason" placeholder="<%= t('applications.close_reason') %>" hidden style="width:auto;min-height:36px;flex:1 1 180px" aria-label="<%= t('applications.close_reason') %>">
+    <input name="note" placeholder="<%= t('applications.stage_note') %>" style="width:auto;min-height:36px;flex:1 1 200px" aria-label="<%= t('applications.stage_note') %>">
+    <button class="btn sm primary" type="submit"><%= t('common.apply') %></button>
+  </form>
+  <% } %>
+</section>
+
+<div class="split">
+  <div class="stack" style="min-width:0">
+    <section class="card">
+      <div class="card-head"><h2><%= t('applications.next_action') %></h2></div>
+      <% if (a.next_action) { %><p class="mb2"><strong><%= a.next_action %></strong><%= a.next_action_due ? ' — ' + fmt.date(a.next_action_due) : '' %></p><% } else { %><p class="muted small"><%= t('applications.no_next_action') %></p><% } %>
+      <% if (missing.length) { %>
+        <h3 class="section-title mt4"><%= t('applications.missing_requirements', { n: missing.length }) %></h3>
+        <div class="cluster"><% missing.forEach(function (m) { %><span class="chip <%= m.status === 'rejected' ? 'bad' : (m.status === 'uploaded' || m.status === 'under_review' ? 'info' : 'warn') %>"><%- icon(m.kind === 'doc' ? 'file-text' : 'user') %><%= m.label %><%= m.status ? ' · ' + t('documents.status_' + m.status) : '' %></span><% }) %></div>
+        <a class="btn sm ghost mt4" href="/staff/students/<%= a.student_id %>?tab=documents"><%- icon('files') %><%= t('applications.open_documents') %> (<%= docSummary.approved %>/<%= docSummary.total %>)</a>
+      <% } else { %><div class="alert ok mt2"><%- icon('check-circle-2') %><p><%= t('applications.requirements_ok') %></p></div><% } %>
+    </section>
+
+    <form method="post" action="/staff/applications/<%= a.id %>" class="card stack" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="card-head"><h2><%= t('applications.details') %></h2></div>
+      <fieldset class="form-grid two" <%= editable ? '' : 'disabled' %>>
+        <%- include('../../../partials/field', { name: 'next_action', label: t('applications.next_action'), value: v('next_action') }) %>
+        <%- include('../../../partials/field', { name: 'next_action_due', label: t('applications.next_action_due'), type: 'date', value: fmt.dateInput(v('next_action_due')) }) %>
+        <%- include('../../../partials/field', { name: 'intake', label: t('leads.intake'), type: 'select', value: v('intake'), options: ref.intakes(30, new Date(Date.now() - 180 * 86400000)).map(function (m) { return { value: m, label: ref.month(m) }; }) }) %>
+        <%- include('../../../partials/field', { name: 'deadline', label: t('finder.deadline'), type: 'date', value: fmt.dateInput(v('deadline')) }) %>
+        <%- include('../../../partials/field', { name: 'priority', label: t('tasks.priority'), type: 'select', value: v('priority'), required: true, options: [{ value: 'normal', label: t('tasks.priority_normal') }, { value: 'high', label: t('tasks.priority_high') }] }) %>
+        <%- include('../../../partials/field', { name: 'university_ref', label: t('applications.university_ref'), value: v('university_ref') }) %>
+        <%- include('../../../partials/field', { name: 'portal_url', label: t('applications.portal_url'), type: 'url', value: v('portal_url'), cls: 'span-all', attrs: 'dir="ltr"' }) %>
+      </fieldset>
+      <h3 class="section-title mt4"><%= t('applications.offer') %></h3>
+      <fieldset class="form-grid two" <%= editable ? '' : 'disabled' %>>
+        <%- include('../../../partials/field', { name: 'offer_type', label: t('applications.offer_type'), type: 'select', value: v('offer_type'), required: true, options: ['none','conditional','unconditional','rejected'].map(function (o) { return { value: o, label: t('applications.offer_' + o) }; }) }) %>
+        <%- include('../../../partials/field', { name: 'cas_number', label: t('applications.cas'), value: v('cas_number') }) %>
+        <%- include('../../../partials/field', { name: 'offer_conditions', label: t('applications.offer_conditions'), type: 'textarea', rows: 2, value: v('offer_conditions'), cls: 'span-all' }) %>
+        <%- include('../../../partials/field', { name: 'deposit_amount', label: t('applications.deposit_amount'), type: 'number', value: v('deposit_amount'), attrs: 'min="0"' }) %>
+        <%- include('../../../partials/field', { name: 'deposit_currency', label: t('catalog.currency'), value: v('deposit_currency') || a.currency, attrs: 'maxlength="3"' }) %>
+        <%- include('../../../partials/field', { name: 'deposit_due', label: t('applications.deposit_due'), type: 'date', value: fmt.dateInput(v('deposit_due')) }) %>
+      </fieldset>
+      <% if (a.offer_received_at || a.deposit_paid_at || a.submitted_at) { %><p class="small subtle"><%= [a.submitted_at ? t('applications.submitted_on', { date: fmt.date(a.submitted_at) }) : null, a.offer_received_at ? t('applications.offer_on', { date: fmt.date(a.offer_received_at) }) : null, a.deposit_paid_at ? t('applications.deposit_paid_on', { date: fmt.date(a.deposit_paid_at) }) : null].filter(Boolean).join(' · ') %></p><% } %>
+      <% if (editable) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div><% } %>
+    </form>
+
+    <section class="card" id="timeline">
+      <div class="card-head"><h2><%= t('applications.activity') %></h2></div>
+      <% if (editable || can('notes.view')) { %>
+      <form method="post" action="/staff/applications/<%= a.id %>/notes" class="mb4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label class="sr-only" for="anote"><%= t('notes.add') %></label><textarea id="anote" name="body" rows="2" placeholder="<%= t('notes.placeholder') %>" required></textarea>
+        <div class="spread mt2"><label class="check small"><input type="checkbox" name="shareable" value="1"><span><%= t('notes.share_with_student') %></span></label><button class="btn sm primary" type="submit"><%= t('notes.add') %></button></div></form>
+      <% } %>
+      <%- include('../../../partials/timeline', { items: timeline }) %>
+    </section>
+  </div>
+  <aside class="stack">
+    <section class="card">
+      <h2 class="section-title"><%= t('applications.stage_history') %></h2>
+      <ol class="vsteps">
+        <% hist.forEach(function (h, i) { var last = i === hist.length - 1; %>
+        <li class="<%= last ? 'current' : 'done' %>"><span class="vdot"><% if (!last) { %><%- icon('check') %><% } %></span>
+          <div class="small"><strong><%= locale === 'ar' ? h.to_ar : h.to_en %></strong></div>
+          <div class="small subtle"><%= fmt.dateTime(h.changed_at) %><%= h.by_name ? ' · ' + h.by_name : '' %></div>
+          <% if (h.note) { %><div class="small muted"><%= h.note %></div><% } %></li>
+        <% }) %>
+      </ol>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2><%= t('nav.tasks') %></h2><% if (editable) { %><button class="btn sm tonal" type="button" data-dialog-open="task-dialog"><%- icon('plus') %><%= t('tasks.add') %></button><% } %></div>
+      <%- include('../../../partials/task-list', { list: taskList }) %>
+    </section>
+    <% if (visaCases.length || can('visa.manage')) { %>
+    <section class="card">
+      <h2 class="section-title"><%= t('nav.visa') %></h2>
+      <% visaCases.forEach(function (vc) { %><a class="list-item" href="/staff/visa/<%= vc.id %>"><span class="queue-icon brand"><%- icon('plane') %></span><div class="li-body"><div class="li-title"><%= ref.country(vc.country_code) %> · <%= vc.visa_type || '' %></div><div class="li-sub"><%= t('visa.stage_' + vc.stage) %></div></div></a><% }) %>
+      <% if (!visaCases.length && can('visa.manage')) { %>
+      <form method="post" action="/staff/students/<%= a.student_id %>/visa" class="stack" style="--gap:8px"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="application_id" value="<%= a.id %>">
+        <select name="country_code" required aria-label="<%= t('common.country') %>"><% ref.countries().forEach(function (c) { %><option value="<%= c.value %>"><%= c.label %></option><% }) %></select>
+        <input name="visa_type" placeholder="<%= t('visa.type_ph') %>" aria-label="<%= t('visa.type') %>">
+        <button class="btn sm" type="submit"><%- icon('plane') %><%= t('visa.open_case') %></button></form>
+      <% } %>
+    </section>
+    <% } %>
+  </aside>
+</div>
+<% if (editable) { %><%- include('../../../partials/task-dialog', { action: '/staff/applications/' + a.id + '/tasks', assignees: assignees, defaultAssignee: a.counsellor_id || staff.employee.id }) %><% } %>

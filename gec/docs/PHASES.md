@@ -106,3 +106,36 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   normalisation + CSV export column hiding + CSV upsert with bad rows, calculator + e-mailed estimate. Suite: 32.
 * **Known limitations:** demo catalogue figures are samples (flagged); exchange rates are maintained by hand;
   "Save as PDF" uses the browser's print dialog (print stylesheet) rather than server-side PDF generation.
+
+---
+
+## Phase 4 — Admissions ATS, documents, offers, visa
+
+### Plan
+* **Exists:** students, leads pipeline, catalogue, shortlist (phases 2–3). Nothing in the GEC SPA (visa page was
+  static guidance).
+* **Reuse:** the timeline, tasks, notes, data scopes, the Kanban component, upload validation, the student page tab
+  registry.
+* **Change:** applications with 22 configurable stages (rename / reorder / colour / "stuck after N days" / custom),
+  stage history with time-in-stage, offer / deposit / CAS fields; the student journey and the originating lead move
+  forward automatically; document centre with checklist, requests, uploads (staff on behalf, students in phase 8),
+  review with reasons, versions and expiry; visa cases with their own stages that drive the application stage.
+* **Database:** `application_stages`, `applications`, `application_stage_history`, `document_types`, `documents`,
+  `visa_cases` (+ FKs from notes / activities / tasks to applications).
+* **Routes:** `/staff/applications[/:id|/new]`, `/staff/documents`, `/staff/documents/:id/{file,review,delete}`,
+  `/staff/students/:id/documents/{request,upload}`, `/staff/visa[/:id]`, `/staff/students/:id/visa`,
+  `/staff/settings/pipeline/{leads,applications}`; API `GET /api/applications`, `PATCH /api/applications/:id/stage`.
+* **Security:** applications and documents inherit the student's data scope (owner / branch); files served only
+  after a scope check, as attachments, `nosniff`, every view audited; uploads checked by magic bytes (a disguised
+  HTML file is refused); verification limited to `documents.verify`; refusal / closure reasons required.
+
+### Report
+* **Files:** `src/modules/admissions/*` (stages, applications, documents, visa, handlers, web, api),
+  `src/modules/settings/pipelines.web.js`, views under `pages/staff/admissions/*` and `settings/pipeline.ejs`.
+* **Migration:** `20261005000400_phase4_admissions.js`.
+* **Tests:** `test/phase4.test.js` (6): application → checklist → journey → lead sync, duplicate prevention,
+  scope isolation; uploads (content check, CSRF, versions), reviewer permissions, scoped file access, rejection
+  reason, auto "Documents Complete"; stage history + offer event + Kanban API; visa workflow syncing application
+  and journey, permission denial; expiry job; pipeline settings. Suite: 38.
+* **Known limitations:** document previews open the original file (no in-browser PDF annotation); the lead pipeline
+  follows applications forward only (never backwards) by design.
