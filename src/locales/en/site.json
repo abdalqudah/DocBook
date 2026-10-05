@@ -245,7 +245,7 @@
         "q10": "How do prescriptions and invoices reach the patient?",
         "a10": "From Today, reception picks the papers and sends them on WhatsApp or e-mail. The patient gets a secure link showing them in the clinic's colours, ready to print or save as PDF.",
         "q11": "What do I need for the waiting-room screen?",
-        "a11": "Any TV or screen with a web browser. Add the screen at the front desk and open its secret link on the TV — no sign-in.",
+        "a11": "Any TV or screen with a web browser. Add the screen at the front desk; the owner or clinic manager opens its link on the TV once.",
         "q12": "Can I send the prescription to a pharmacy?",
         "a12": "Yes. Add pharmacies, imaging centres and labs in Settings, then send the prescription or request from its page on WhatsApp or e-mail through a secure link. A centre inside the clinic sees requests on its own list.",
         "q13": "Can I change the text of the messages patients get?",

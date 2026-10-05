@@ -170,7 +170,8 @@ async function serve() {
     r.on('error', reject); r.end(body);
   });
   const csrf = (html) => (html.match(/name="csrf-token" content="([^"]+)"/) || [])[1];
-  return { server, get: (p) => send('GET', p), post: (p, f) => send('POST', p, f), csrf };
+  const setCookie = (c) => { const i = c.indexOf('='); jar[c.slice(0, i)] = c.slice(i + 1); };
+  return { server, get: (p) => send('GET', p), post: (p, f) => send('POST', p, f), csrf, setCookie };
 }
 
 test('HTTP: scan → one tap clock in; another clinic\'s code is refused; sign-in comes first', async () => {
@@ -303,12 +304,17 @@ test('door screens: secret link, new link, switch off, other clinic; same-networ
   assert.ok(await knex('audit_logs').where({ business_id: A.businessId, action: 'attendance.screen_new_link' }).first());
 });
 
-test('HTTP: door screen link works without signing in; scan while signed out → login → the scan still counts', async () => {
-  const { server, get, post, csrf } = await serve();
+test('HTTP: door screen link opens only on a device an owner / manager authorised; scan while signed out → login → the scan still counts', async () => {
+  const { server, get, post, csrf, setCookie } = await serve();
   try {
     const [k] = await kiosks.list(A.businessId);
     const token = kiosks.displayUrl(k, 'http://x').split('/kiosk/')[1];
     let r = await get(`/kiosk/${token}`);
+    assert.equal(r.status, 302, 'the link alone does not open the door screen');
+    assert.equal(r.location, '/login');
+    assert.equal((await get(`/kiosk/${token}/qr`)).status, 401);
+    setCookie(require('../src/core/screen-access')._passCookie('kiosk', token)); // eslint-disable-line global-require -- the authorised door tablet
+    r = await get(`/kiosk/${token}`);
     assert.equal(r.status, 200);
     assert.match(r.text, /data-kiosk-qr/);
     assert.match(r.text, /Clinic A/);

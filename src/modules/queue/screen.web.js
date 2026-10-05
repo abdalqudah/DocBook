@@ -8,6 +8,7 @@ const { wrap } = require('../../routes/helpers');
 const businesses = require('../businesses/business.service');
 const svc = require('./queue.service');
 const screenBrand = require('../../core/screen-brand');
+const screenAccess = require('../../core/screen-access');
 
 const router = express.Router();
 
@@ -24,7 +25,9 @@ async function screenOf(token) {
 }
 
 // Which clinic's database has this waiting screen (src/db/tenant.js).
+router.use(screenAccess.limiter); // per address, before the link is even looked up
 router.param('token', require('../../db/tenant').byParam('queue', (token) => screenOf(token)));
+router.use('/:token', screenAccess.guard('queue', screenOf)); // only a device opened by an owner / manager / admin
 
 const NO_STORE = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex', 'Referrer-Policy': 'no-referrer' };
 

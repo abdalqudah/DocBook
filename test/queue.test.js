@@ -11,6 +11,7 @@ const auth = require('../src/modules/auth/auth.service');
 const businesses = require('../src/modules/businesses/business.service');
 const scheduling = require('../src/modules/clinic/scheduling');
 const queue = require('../src/modules/queue/queue.service');
+const screenPass = (kind, token) => ({ cookie: require('../src/core/screen-access')._passCookie(kind, token) }); // eslint-disable-line global-require
 const { serve } = require('./_http');
 
 const tag = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -65,7 +66,16 @@ test('waiting-room screen: add, open by its secret link, now / next / waiting wi
   assert.ok(k && k.token_hash && k.name === 'Hall TV');
   const token = secrets.decrypt(k.token_enc);
 
-  const tv = app.agent(); // the TV: no sign-in
+  // the link alone does not open the screen: sign-in first, then only an owner / manager / admin
+  const anon = app.agent();
+  r = await anon.get(`/queue/${token}?lang=en`);
+  assert.equal(r.status, 302);
+  assert.equal(r.location, '/login');
+  assert.equal((await anon.get(`/queue/${token}/data`)).status, 401);
+  // an owner opens it on the TV: the TV gets its pass for this screen
+  const paired = app.agent(); await paired.login(mail('a'));
+  assert.equal((await paired.get(`/queue/${token}?lang=en`)).status, 200);
+  const tv = { get: (path) => app.agent().get(path, { cookie: screenPass('queue', token).cookie }) }; // the TV, signed out, with its pass
   r = await tv.get(`/queue/${token}?lang=en`);
   assert.equal(r.status, 200);
   assert.match(r.text, /Please go in/);
@@ -155,7 +165,7 @@ test('platform admin: clinic areas switch the waiting screen and team chat off; 
   assert.notEqual((await o.get('/app/queue-screens')).status, 200);
   // Back on.
   r = await ad.submit(`/admin/clinics/${businessId}`, `/admin/clinics/${businessId}/modules`, Object.fromEntries([...keep, 'queue_screens', 'staff_chat'].map((x) => [x, '1'])));
-  assert.equal((await app.agent().get(`/queue/${token}/data`)).status, 200);
+  assert.equal((await app.agent().get(`/queue/${token}/data`, screenPass('queue', token))).status, 200);
 
   // Every feature card is on the "All features" page (the home page shows the main ones); questions stay home.
   r = await app.agent().get('/features?lang=en');
@@ -174,7 +184,7 @@ test('screen top bar: clinic name shown or hidden and a message in the middle �
   let r = await o.submit('/app/queue-screens', `/app/queue-screens/${k.id}`, { name: 'Hall TV', name_style: 'short', is_active: '1', show_name: '0', message: '  كل عام وأنتم بخير <b> ' });
   assert.equal(r.status, 302);
   const token = secrets.decrypt((await knex('queue_screens').where({ id: k.id }).first()).token_enc);
-  const tv = app.agent();
+  const tv = { get: (path) => app.agent().get(path, screenPass('queue', token)) };
   const b = JSON.parse((await tv.get(`/queue/${token}/data`)).text).data;
   assert.deepEqual(b.header, { showName: false, message: 'كل عام وأنتم بخير b' }, 'plain one-line text, no markup');
   r = await tv.get(`/queue/${token}?lang=ar`);
@@ -187,11 +197,12 @@ test('screen top bar: clinic name shown or hidden and a message in the middle �
   const kiosks = require('../src/modules/attendance/kiosk.service');
   const kid = await kiosks.create({ businessId, userId: null }, { name: 'Door', show_name: '1', message: 'أهلاً وسهلاً بكم' });
   const kt = secrets.decrypt((await knex('attendance_kiosks').where({ id: kid }).first()).display_token_enc);
-  r = await tv.get(`/kiosk/${kt}?lang=ar`);
+  const door = { get: (path) => app.agent().get(path, screenPass('kiosk', kt)) }; // the door tablet with its pass
+  r = await door.get(`/kiosk/${kt}?lang=ar`);
   assert.equal(r.status, 200);
   assert.match(r.text, />أهلاً وسهلاً بكم<\/div>/);
   assert.ok(!/data-screen-name hidden/.test(r.text));
   await kiosks.update({ businessId, userId: null }, kid, { name: 'Door', is_active: true, show_name: ['0'], message: '' });
-  r = await tv.get(`/kiosk/${kt}/qr`);
+  r = await door.get(`/kiosk/${kt}/qr`);
   assert.deepEqual(JSON.parse(r.text).data.header, { showName: false, message: '' });
 });
