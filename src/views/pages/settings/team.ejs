@@ -101,7 +101,7 @@
       <div class="panel-body">
         <div class="set-how">
           <div class="set-how-item"><span class="set-step-no">1</span><div><div class="strong small"><%= t('team.how_1') %></div><div class="small muted"><%= t('team.how_1_text') %></div></div></div>
-          <div class="set-how-item"><span class="set-step-no">2</span><div><div class="strong small"><%= t('team.how_2') %></div><div class="small muted"><% if (publicUrl) { %><%= t('team.how_2_text') %> <a class="link" href="/<%= business.slug %>/login" target="_blank" rel="noopener" dir="ltr"><%= publicUrl.replace(/^https?:\/\//, '') %>/login</a> <button class="btn btn-ghost btn-icon btn-sm" type="button" data-copy="<%= publicUrl %>/login" aria-label="<%= t('common.copy') %>" title="<%= t('common.copy') %>"><%- icon('copy', 'icon-sm') %></button><% } else { %><%= t('team.how_2_noslug') %><% } %></div>
+          <div class="set-how-item"><span class="set-step-no">2</span><div><div class="strong small"><%= t('team.how_2') %></div><div class="small muted"><% if (publicUrl) { %><%= t('team.how_2_text') %> <a class="link" href="<%= publicUrl.replace(/\/+$/, '') %>/login" target="_blank" rel="noopener" dir="ltr"><%= publicUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '') %>/login</a> <button class="btn btn-ghost btn-icon btn-sm" type="button" data-copy="<%= publicUrl.replace(/\/+$/, '') %>/login" aria-label="<%= t('common.copy') %>" title="<%= t('common.copy') %>"><%- icon('copy', 'icon-sm') %></button><% } else { %><%= t('team.how_2_noslug') %><% } %></div>
             <div class="set-role-chips mt-2"><% portalRoles.forEach(function (r) { %><span class="set-role-chip"><%- icon(r.icon, 'icon-sm') %><%= t('roles.' + r.key) %></span><% }) %></div></div></div>
           <div class="set-how-item"><span class="set-step-no">3</span><div><div class="strong small"><%= t('team.how_3') %></div><div class="small muted"><%= t('team.how_3_text') %></div></div></div>
         </div>
@@ -141,9 +141,11 @@
       <p class="small muted"><%= t('team.send_logins_lead') %></p>
       <button class="btn btn-secondary set-send-btn" type="submit" name="channel" value="email" data-send-email-btn<%= emailEnabled ? '' : ' disabled' %>><%- icon('mail', 'icon-sm') %><span class="grow"><%= t('team.send_by_email') %><span class="tiny muted" style="display:block" dir="ltr" data-send-email-to></span></span></button>
       <% if (!emailEnabled) { %><p class="help"><%- icon('info', 'icon-sm') %> <%= t('team.email_not_set') %></p><% } %>
-      <button class="btn btn-secondary set-send-btn" type="submit" name="channel" value="whatsapp" formtarget="_blank" data-send-wa-btn><%- icon('message-circle', 'icon-sm') %><span class="grow"><%= t('team.send_by_whatsapp') %><span class="tiny muted" style="display:block" dir="ltr" data-send-wa-to></span></span></button>
+      <button class="btn btn-secondary set-send-btn" type="submit" name="channel" value="whatsapp" data-send-wa-btn><%- icon('message-circle', 'icon-sm') %><span class="grow"><%= t('team.send_by_whatsapp') %><span class="tiny muted" style="display:block" dir="ltr" data-send-wa-to></span></span></button>
       <p class="help" data-send-wa-note="locked" hidden><%- icon('lock', 'icon-sm') %> <%= t('team.wa_email_only') %></p>
       <p class="help" data-send-wa-note="nophone" hidden><%- icon('info', 'icon-sm') %> <%= t('team.wa_no_phone') %></p>
+      <div class="alert alert-error small" data-send-error hidden></div>
+      <a class="btn btn-primary" href="#" target="_blank" rel="noopener" data-send-wa-open hidden><%- icon('message-circle', 'icon-sm') %><%= t('team.wa_open') %></a>
       <p class="help" data-send-wa-note="ok" hidden><%- icon('info', 'icon-sm') %> <%= t('team.wa_opens') %></p>
     </div>
     <div class="dialog-foot"><button class="btn btn-ghost" type="button" data-close-dialog><%= t('common.close') %></button></div>

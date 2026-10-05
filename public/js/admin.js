@@ -57,6 +57,31 @@
       $$('[data-send-wa-note]', dlg).forEach(function (n) { n.hidden = n.getAttribute('data-send-wa-note') !== wa; });
     });
   });
+  // WhatsApp: ask for the ready message (JSON) and open it as a link — a form may not redirect to wa.me. A window is
+  // opened at the click (so no pop-up blocker stops it) and sent to WhatsApp once the address is back; the button
+  // under it stays for a second try.
+  (function () {
+    var dlg = document.getElementById('send-one-dialog'); if (!dlg) return;
+    var form = $('form', dlg); var wb = $('[data-send-wa-btn]', dlg); var open = $('[data-send-wa-open]', dlg); var err = $('[data-send-error]', dlg);
+    dlg.addEventListener('close', function () { if (open) open.hidden = true; if (err) err.hidden = true; });
+    $$('[data-open-dialog="send-one-dialog"]').forEach(function (b) { b.addEventListener('click', function () { if (open) open.hidden = true; if (err) err.hidden = true; }); });
+    if (!form || !wb || !window.fetch || !window.FormData) return;
+    wb.addEventListener('click', function (e) {
+      e.preventDefault();
+      var w = null; try { w = window.open('', '_blank'); } catch (x) { w = null; }
+      var fd = new FormData(form); fd.set('channel', 'whatsapp');
+      wb.disabled = true; if (err) err.hidden = true;
+      fetch(form.getAttribute('action'), { method: 'POST', body: new URLSearchParams(fd), credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          wb.disabled = false;
+          if (!j || !j.ok || !j.href) { if (w) w.close(); if (err) { err.textContent = (j && j.error) || ''; err.hidden = false; } return; }
+          if (open) { open.href = j.href; open.hidden = false; }
+          if (w) { try { w.opener = null; w.location.href = j.href; } catch (x) { /* the button below stays */ } }
+        })
+        .catch(function () { wb.disabled = false; if (w) w.close(); if (err) { err.textContent = err.getAttribute('data-fallback') || ''; err.hidden = false; } });
+    });
+  })();
 
   // You can't disable your own access: grey out "Disabled" when editing yourself.
   $$('[data-open-dialog="edit-dialog"]').forEach(function (btn) {

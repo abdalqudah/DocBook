@@ -3,7 +3,7 @@
   <div class="panel-body stack">
     <div class="row between" style="align-items:flex-start">
       <div class="row" style="align-items:flex-start">
-        <span class="set-result-icon <%= result.type === 'reset' || result.type === 'reset_emailed' ? 'is-info' : 'is-success' %>"><%- icon(result.type === 'password' ? 'key-round' : result.type === 'invite' ? 'mail' : result.type === 'added' ? 'user-check' : 'refresh-cw') %></span>
+        <span class="set-result-icon <%= result.type === 'reset' || result.type === 'reset_emailed' || result.type === 'whatsapp' ? 'is-info' : 'is-success' %>"><%- icon(result.type === 'password' ? 'key-round' : result.type === 'invite' ? 'mail' : result.type === 'added' ? 'user-check' : 'refresh-cw') %></span>
         <div>
           <div class="strong"><%= t('team.result_' + result.type + '_title', { name: result.name, email: result.email }) %></div>
           <div class="small muted"><%= result.email %><% if (rn) { %> · <%= rn %><% } %></div>
@@ -28,6 +28,9 @@
       <div class="small"><%= t('team.reset_text', { name: result.name }) %></div>
       <div class="set-url"><%- icon('link', 'icon-sm muted') %><code class="grow truncate" data-copy-source dir="ltr"><%= result.link %></code><button class="btn btn-primary btn-sm" type="button" data-copy><%- icon('copy', 'icon-sm') %><%= t('team.copy_link') %></button></div>
       <div class="alert alert-warning small"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('team.shown_once') %></div><%= t('team.reset_valid') %></div></div>
+    <% } else if (result.type === 'whatsapp') { %>
+      <div class="small"><%= t('team.wa_ready_text') %></div>
+      <div><a class="btn btn-primary" href="<%= result.href %>" target="_blank" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= t('team.wa_open') %></a></div>
     <% } else if (result.type === 'reset_emailed') { %>
       <div class="small"><%= t('team.reset_emailed_text', { email: result.email }) %></div>
     <% } %>

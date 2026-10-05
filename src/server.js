@@ -106,6 +106,7 @@ async function start(server) {
     setInterval(() => require('./modules/platformops/clinic-backup').runNightly().catch((e) => console.error('[clinic-backup]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console
     setInterval(each(() => require('./modules/integrations/sheets.service').runDue()), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- Google Sheets daily export (clinics that switched it on)
   }
+  await require('./core/mailer').refreshInstallationMailbox().catch(() => null); // eslint-disable-line global-require -- one clinic without server SMTP: its own mailbox sends
   server.removeAllListeners('request');
   server.on('request', createApp());
   console.log(`[${brand.name}] ready on ${PORT} (${config.env})`); // eslint-disable-line no-console

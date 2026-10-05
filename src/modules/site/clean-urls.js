@@ -3,6 +3,7 @@
 //   /about  /services  /gallery …   a page of the website   (internally /<slug>/p/<page>)
 //   /doctors  /doctors/<name>       the doctors, a doctor   (internally /<slug>/doctors…)
 //   /book  /articles                booking, the articles   (internally /<slug>/…)
+//   /login                          the staff sign-in (the installation's own; a clinic domain sends it to DocBook's)
 // Links in the pages are written in that short form, and the long ones (/<slug>/p/about…) answer with a permanent
 // redirect to it. Other clinics (a centre's doctors) keep their /<their address>/… pages.
 const cache = require('../../core/cache');
@@ -23,7 +24,7 @@ function shorten(text, slug) {
   const s = esc(slug);
   return text
     .replace(new RegExp(`${at}/${s}/p/(?=[a-z0-9-])`, 'g'), '/')
-    .replace(new RegExp(`${at}/${s}/(?=(?:book|doctors|articles|llms\\.txt)(?:[/"'?#\\s<\\\\&]|$))`, 'g'), '/')
+    .replace(new RegExp(`${at}/${s}/(?=(?:book|doctors|articles|login|llms\\.txt)(?:[/"'?#\\s<\\\\&]|$))`, 'g'), '/')
     .replace(new RegExp(`${at}/${s}(?=["'?#\\s<\\\\])`, 'g'), '/');
 }
 
@@ -49,7 +50,7 @@ function pageSlugs(slug) {
 /** A long address of the root website → its short form (for a permanent redirect), else null. */
 function shortOf(slug, path) {
   if (path.startsWith(`/${slug}/p/`)) return `/${path.slice(slug.length + 4)}`;
-  const m = new RegExp(`^/${esc(slug)}(/(?:book|doctors|articles)(?:/.*)?)$`).exec(path);
+  const m = new RegExp(`^/${esc(slug)}(/(?:book|doctors|articles)(?:/.*)?|/login)$`).exec(path);
   return m ? m[1] : null;
 }
 

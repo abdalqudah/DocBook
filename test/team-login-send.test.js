@@ -29,6 +29,7 @@ test.before(async () => {
   await knex.migrate.latest();
   cache.forgetPrefix('');
   mailer.configured = () => true;
+  mailer.configuredFor = async () => true;
   mailer.send = async (m) => { sent.push(m); return true; };
   const uid = await knex.transaction((trx) => auth.createUser(trx, { name: 'Owner', email: mail('owner'), password: 'Passw0rd!x' }));
   bid = await knex.transaction((trx) => businesses.create(uid, { name: 'عيادة الدخول', currency: 'JOD', timezone: 'Asia/Amman' }, trx));
@@ -50,10 +51,17 @@ test('WhatsApp: a ready message to the member\'s own number with a one-time link
   const o = app.agent(); await o.login(mail('owner'));
   const page = await o.get('/app/clinic/team');
   assert.match(page.text, /data-open-dialog="send-dialog"/);
-  const r = await post(o, `/app/clinic/team/${rec.membershipId}/send-login`, { channel: 'whatsapp' });
-  assert.equal(r.status, 302);
-  assert.match(r.location, /^https:\/\/wa\.me\/962791234567\?text=/);
-  const text = decodeURIComponent(r.location.split('text=')[1]);
+  // the page asks for the address (a form may not redirect to wa.me) and opens it as a link
+  const pg = await o.get('/app/clinic/team');
+  const r = await o.post(`/app/clinic/team/${rec.membershipId}/send-login`, { _csrf: o.csrf(pg.text), channel: 'whatsapp' }, { accept: 'application/json' });
+  assert.equal(r.status, 200);
+  const j = JSON.parse(r.text);
+  assert.match(j.href, /^https:\/\/wa\.me\/962791234567\?text=/);
+  const text = decodeURIComponent(j.href.split('text=')[1]);
+  // without JavaScript: back to the team page with an "Open WhatsApp" button
+  const nojs = await post(o, `/app/clinic/team/${rec.membershipId}/send-login`, { channel: 'whatsapp' });
+  assert.equal(nojs.location, '/app/clinic/team');
+  assert.match((await o.get('/app/clinic/team')).text, /href="https:\/\/wa\.me\/962791234567\?text=/);
   assert.ok(text.includes(mail('rec')), 'the username');
   assert.match(text, /\/reset\/[A-Za-z0-9_-]{20,}/, 'a link to set the password');
   assert.ok(text.includes(`/ls${tag}/login`.slice(0, 20)), 'the clinic sign-in address');
@@ -64,9 +72,11 @@ test('WhatsApp: a ready message to the member\'s own number with a one-time link
   // no number → asked to add one; shared account → e-mail only (no link handed to the clinic)
   let x = await post(o, `/app/clinic/team/${nophone.membershipId}/send-login`, { channel: 'whatsapp' });
   assert.equal(x.status, 422);
-  x = await post(o, `/app/clinic/team/${shared.membershipId}/send-login`, { channel: 'whatsapp' });
-  assert.notEqual(x.status, 302);
-  assert.ok(!String(x.location || '').startsWith('https://wa.me'));
+  const pg2 = await o.get('/app/clinic/team');
+  x = await o.post(`/app/clinic/team/${shared.membershipId}/send-login`, { _csrf: o.csrf(pg2.text), channel: 'whatsapp' }, { accept: 'application/json' });
+  assert.equal(x.status, 403);
+  assert.equal(JSON.parse(x.text).ok, false);
+  assert.doesNotMatch(x.text, /wa\.me/);
 });
 
 test('e-mail: one person, or the whole team / a group, each to their own address', async () => {

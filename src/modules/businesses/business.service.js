@@ -465,7 +465,7 @@ async function loginDetailsFor(ctx, membershipId) {
   const a = await memberDetailsAccess(ctx, membershipId);
   if (a.reason === 'self') throw E.validation({ member: 'Use My account for your own sign-in.' });
   const doctor = a.member.doctor_id ? await knex('doctors').where({ id: a.member.doctor_id, business_id: ctx.businessId }).first('phone', 'whatsapp').catch(() => null) : null;
-  const biz = await knex('businesses').where({ id: ctx.businessId }).first('name', 'name_en', 'slug', 'country', 'timezone');
+  const biz = await knex('businesses').where({ id: ctx.businessId }).first('name', 'name_en', 'slug', 'country', 'timezone', 'kind', 'center_id');
   return { ...a, phone: memberPhone(a.user, doctor), biz, whatsappAllowed: a.ok };
 }
 
@@ -479,7 +479,7 @@ async function sendLoginDetails(ctx, membershipId, channel) {
   const d = await loginDetailsFor(ctx, membershipId);
   const u = d.user;
   if (channel === 'whatsapp' && !d.whatsappAllowed) throw new AppError('LOGIN_DETAILS_EMAIL_ONLY', 'This person\'s sign-in link can only be e-mailed to them.', 403);
-  if (channel === 'email' && !mailer.configured()) throw E.conflict('EMAIL_NOT_CONFIGURED', 'E-mail is not set up yet.');
+  if (channel === 'email' && !(await mailer.configuredFor(ctx.businessId))) throw E.conflict('EMAIL_NOT_CONFIGURED', 'E-mail is not set up yet.');
   let to = null;
   if (channel === 'whatsapp') {
     const ch = require('../messaging/channels'); // eslint-disable-line global-require
@@ -491,15 +491,18 @@ async function sendLoginDetails(ctx, membershipId, channel) {
   const token = randomToken(32);
   await knex('password_resets').insert({ user_id: u.id, token_hash: sha256(token), created_by: ctx.userId, expires_at: new Date(Date.now() + LOGIN_LINK_HOURS * 3600_000) });
   const base = linkBase(ctx);
-  const signIn = d.biz.slug ? `${base}/${d.biz.slug}/login` : `${base}/login`;
+  // the clinic's staff sign-in: /login for the installation's own clinic (one clinic / one centre), else /<address>/login
+  const signIn = d.biz.slug ? `${require('../../config/edition').siteUrl(base, d.biz).replace(/\/+$/, '')}/login` : `${base}/login`; // eslint-disable-line global-require
   const link = `${base}/reset/${token}`;
-  const t = translator(u.locale || 'ar');
-  const clinic = (u.locale === 'en' && d.biz.name_en) || d.biz.name;
+  // WhatsApp is written by the person sending it (their language); an e-mail is in the member's own language.
+  const lang = channel === 'whatsapp' ? (ctx.locale || u.locale || 'ar') : (u.locale || 'ar');
+  const t = translator(lang);
+  const clinic = (lang === 'en' && d.biz.name_en) || d.biz.name;
   const text = loginMessage(t, { clinic, signIn, email: u.email, link });
   await audit.record(ctx, 'staff.login_details_sent', { entityType: 'staff', entityId: u.id, newValues: { channel } });
   if (channel === 'email') {
     const body = [t('team.login_msg_hello', { clinic }), `${t('team.login_msg_signin')}: ${signIn}`, `${t('team.login_msg_user')}: ${u.email}`, t('team.login_msg_set', { hours: LOGIN_LINK_HOURS })].join('\n');
-    const sent = await mailer.send({ to: u.email, subject: `${clinic} — ${t('team.login_mail_subject')}`, html: mailer.layout({ locale: u.locale, title: t('team.login_mail_subject'), body, cta: t('team.login_mail_cta'), href: link }) }).then((ok) => ok !== false).catch(() => false);
+    const sent = await mailer.send({ to: u.email, businessId: ctx.businessId, kind: 'team', subject: `${clinic} — ${t('team.login_mail_subject')}`, html: mailer.layout({ locale: lang, title: t('team.login_mail_subject'), body, cta: t('team.login_mail_cta'), href: link }) }).then((ok) => ok !== false).catch(() => false);
     if (!sent) throw E.conflict('EMAIL_FAILED', 'The e-mail could not be sent. Check the e-mail settings.');
     return { channel, name: u.name, email: u.email };
   }
@@ -509,7 +512,7 @@ async function sendLoginDetails(ctx, membershipId, channel) {
 
 /** E-mails every active member (or one group of roles) their sign-in details, except the person sending. */
 async function emailLoginDetailsToAll(ctx, { roleKeys = null } = {}) {
-  if (!mailer.configured()) throw E.conflict('EMAIL_NOT_CONFIGURED', 'E-mail is not set up yet.');
+  if (!(await mailer.configuredFor(ctx.businessId))) throw E.conflict('EMAIL_NOT_CONFIGURED', 'E-mail is not set up yet.');
   const q = knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': ctx.businessId, 'm.status': 'active' }).whereNot('m.user_id', ctx.userId);
   if (roleKeys && roleKeys.length) q.whereIn('r.key', roleKeys);
   const rows = await q.select('m.id');

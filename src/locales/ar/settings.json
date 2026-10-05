@@ -861,7 +861,10 @@
     "login_msg_set": "لتعيين كلمة المرور (الرابط صالح {hours} ساعة):",
     "login_mail_subject": "بيانات الدخول إلى النظام",
     "login_mail_cta": "تعيين كلمة المرور",
-    "wa_opens": "يفتح الواتساب برسالة جاهزة لرقمه — اضغط إرسال من هاتفك."
+    "wa_opens": "يفتح الواتساب برسالة جاهزة لرقمه — اضغط إرسال من هاتفك.",
+    "wa_open": "فتح الواتساب",
+    "wa_ready_text": "الرسالة جاهزة: افتح الواتساب واضغط إرسال.",
+    "result_whatsapp_title": "رسالة الواتساب جاهزة لـ {name}"
   },
   "onboarding": {
     "title": "إعداد عيادتك",
@@ -1041,5 +1044,16 @@
       "notes": "ملاحظات"
     },
     "wa_templates": "رسائل واتساب التلقائية عبر WhatsApp Cloud API تستخدم قوالب معتمدة من Meta (من الرسائل والتذكيرات)، أما الرسائل القصيرة والبريد ورسائل واتساب التي يرسلها الفريق فتستخدم النصوص هنا."
+  },
+  "vmsg": {
+    "Add this person's mobile number first (Edit member).": "أضف رقم جوال هذا الشخص أولاً (تعديل الموظف).",
+    "This person's sign-in link can only be e-mailed to them.": "رابط دخول هذا الشخص يُرسل إلى بريده فقط.",
+    "E-mail is not set up yet.": "البريد غير مُعدّ بعد.",
+    "The e-mail could not be sent. Check the e-mail settings.": "تعذّر إرسال البريد. تحقق من إعدادات البريد.",
+    "Something went wrong. Try again.": "حدث خطأ. حاول مرة أخرى.",
+    "This e-mail is already used by another account.": "هذا البريد مستخدم في حساب آخر.",
+    "Another owner changes their e-mail from their own account.": "بريد مالك آخر يغيّره هو من حسابه.",
+    "This person changes these details from their own account.": "هذا الشخص يعدّل هذه البيانات من حسابه.",
+    "Use My account for your own sign-in.": "بيانات دخولك أنت من «حسابي»."
   }
 }

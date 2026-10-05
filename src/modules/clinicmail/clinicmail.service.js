@@ -131,7 +131,10 @@ async function disconnect(ctx) {
 // ---------------------------------------------------------------- transports
 const transports = new Map(); // businessId → { t, at }
 const TRANSPORT_TTL = 10 * 60_000;
-function forget(businessId) { const x = transports.get(businessId); if (x && x.t && x.t.close) x.t.close(); transports.delete(businessId); }
+function forget(businessId) {
+  const x = transports.get(businessId); if (x && x.t && x.t.close) x.t.close(); transports.delete(businessId);
+  require('../../core/mailer').refreshInstallationMailbox().catch(() => {}); // eslint-disable-line global-require -- connected / disconnected / verified
+}
 
 async function resolvePublic(host, resolver = new Resolver({ timeout: 3000, tries: 2 })) {
   let addrs = [];
@@ -175,6 +178,7 @@ async function testConnection(ctx, deps = {}) {
   try { await (await transportFor(r, { deps: { ...deps, fresh: true } })).verify(); } catch (e) { ok = false; error = e instanceof AppError ? e.message : safeError(e); }
   const values = { last_test_at: new Date(), last_error: error, status: ok ? 'verified' : 'failed', ...(ok ? { verified_at: r.verified_at || new Date() } : { verified_at: null }) };
   await knex('clinic_mail_accounts').where({ business_id: ctx.businessId }).update(values);
+  require('../../core/mailer').refreshInstallationMailbox().catch(() => {}); // eslint-disable-line global-require -- the installation's mailbox may now send (or stop)
   await audit.record(ctx, 'email.tested', { entityType: 'clinic_mail', entityId: ctx.businessId, newValues: { ok, error } });
   return { ok, error };
 }
@@ -190,6 +194,7 @@ async function testSend(ctx, to, { subject, html }) {
     const info = await (await transportFor(r)).sendMail({ from: { name: r.from_name || '', address: r.from_address }, to, subject, html, ...(r.reply_to ? { replyTo: r.reply_to } : {}) });
     await knex('clinic_mail_log').insert({ business_id: ctx.businessId, kind: 'test', to_email: cut(to, 190), subject: cut(subject, 190), status: 'test', provider: r.provider, message_id: cut(info && info.messageId, 190) });
     await knex('clinic_mail_accounts').where({ business_id: ctx.businessId }).update({ status: 'verified', verified_at: r.verified_at || new Date(), last_error: null, last_test_at: new Date() });
+    require('../../core/mailer').refreshInstallationMailbox().catch(() => {}); // eslint-disable-line global-require -- the installation's mailbox may now send
     await audit.record(ctx, 'email.test_sent', { entityType: 'clinic_mail', entityId: ctx.businessId, newValues: { to } });
     return { ok: true };
   } catch (e) {
@@ -205,10 +210,11 @@ async function testSend(ctx, to, { subject, html }) {
  * Tries to send `msg` from the clinic's account for this kind of e-mail. → { sent: true } or { sent: false, replyTo }
  * (the caller then sends from the platform with the clinic's address as Reply-To). Never throws.
  */
-async function trySend(businessId, kind, msg) {
+// `any`: the clinic's mailbox is the only way out (no server SMTP), so every kind of e-mail uses it.
+async function trySend(businessId, kind, msg, { any = false } = {}) {
   let r;
   try { r = await row(businessId); } catch { return { sent: false }; }
-  if (!r || r.status !== 'verified' || !parseUses(r.uses).includes(kind)) return { sent: false, replyTo: r && r.status === 'verified' ? (r.reply_to || r.from_address) : null };
+  if (!r || r.status !== 'verified' || (!any && !parseUses(r.uses).includes(kind))) return { sent: false, replyTo: r && r.status === 'verified' ? (r.reply_to || r.from_address) : null };
   // The clinic's package must include it (package changes apply at once; the platform account takes over).
   try {
     const business = await knex('businesses').where({ id: businessId }).first();

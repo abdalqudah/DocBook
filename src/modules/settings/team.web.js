@@ -60,7 +60,7 @@ async function renderTeam(req, res, extra = {}) {
   const doctorRole = data.roles.find((r) => r.key === 'doctor');
   render(req, res, 'team', 'team', {
     ...data, group, result: extra.result === undefined ? takeStash(req, 'teamResult') : extra.result,
-    emailEnabled: mailer.configured(), portalRoles: PORTAL_ROLES, publicUrl: req.business.slug ? `${baseUrl(req)}/${req.business.slug}` : null,
+    emailEnabled: await mailer.configuredFor(req.ctx.businessId), portalRoles: PORTAL_ROLES, publicUrl: req.business.slug ? require('../../config/edition').siteUrl(baseUrl(req), req.business) : null, // eslint-disable-line global-require -- the installation's own clinic: the domain itself
     prefill: prefillDoctor && data.doctors.some((d) => d.id === prefillDoctor && !d.linkedTo) ? { doctor_id: prefillDoctor, role_id: doctorRole && doctorRole.id } : null,
     ...extra,
   });
@@ -145,10 +145,23 @@ router.post('/:id(\\d+)/reset-link', form(async (req, res) => {
 // ---------------------------------------------------------------- sign-in details (e-mail / WhatsApp)
 // E-mail: sent to the person's own address. WhatsApp: opens WhatsApp (new tab) with the ready message to the person's
 // number — the clinic presses send. See businesses.sendLoginDetails for who may receive which.
+// WhatsApp: a form may not redirect to wa.me (the page's form-action policy), so the page asks for the address (JSON)
+// and opens it as a link; without JavaScript the team page shows an "Open WhatsApp" button.
+const wantsJson = (req) => /application\/json/.test(String(req.get('accept') || ''));
+router.post('/:id(\\d+)/send-login', (req, res, next) => {
+  if (!wantsJson(req)) return next();
+  const channel = req.body.channel === 'whatsapp' ? 'whatsapp' : 'email';
+  return businesses.sendLoginDetails(req.ctx, Number(req.params.id), channel)
+    .then((out) => res.json({ ok: true, channel, href: out.href || null, name: out.name, message: channel === 'email' ? req.t('team.login_sent_email', { name: out.name }) : null }))
+    .catch((e) => {
+      const msg = e.status && e.status < 500 ? ((e.details && typeof Object.values(e.details)[0] === 'string' && Object.values(e.details)[0]) || e.message) : 'Something went wrong. Try again.';
+      res.status(e.status && e.status < 600 ? e.status : 500).json({ ok: false, error: require('../../core/i18n').translateMessage(req.locale, msg) }); // eslint-disable-line global-require
+    });
+});
 router.post('/:id(\\d+)/send-login', form(async (req, res) => {
   const channel = req.body.channel === 'whatsapp' ? 'whatsapp' : 'email';
   const out = await businesses.sendLoginDetails(req.ctx, Number(req.params.id), channel);
-  if (channel === 'whatsapp') return res.redirect(out.href);
+  if (channel === 'whatsapp') { stash(req, 'teamResult', { type: 'whatsapp', name: out.name, href: out.href }); return res.redirect('/app/clinic/team'); }
   flash(req, 'success', req.t('team.login_sent_email', { name: out.name }));
   return res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null })));

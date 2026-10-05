@@ -1,13 +1,35 @@
-// Outgoing e-mail through SMTP (env). Without SMTP_HOST nothing is sent and callers show links on screen instead.
+// Outgoing e-mail through SMTP (env), or — on a one-clinic / one-centre installation without it — the clinic's own
+// verified mailbox. With neither, nothing is sent and callers show links on screen instead.
 const nodemailer = require('nodemailer');
 const brand = require('../config/brand');
 
 let transport = null;
+const serverSmtp = () => Boolean(process.env.SMTP_HOST);
+
+// One clinic / one centre installation without the server's own SMTP: the installation's clinic mailbox (Settings →
+// Clinic e-mail, verified) sends every e-mail, account e-mails included — there is no "platform address" to fall
+// back on. Refreshed at start, every minute and whenever a clinic mailbox changes (see refreshInstallationMailbox).
+let installationMailbox = null; // business id
+let checkedAt = 0;
+async function refreshInstallationMailbox() {
+  checkedAt = Date.now();
+  try {
+    const edition = require('../config/edition'); // eslint-disable-line global-require
+    if (serverSmtp() || !edition.single) { installationMailbox = null; return null; }
+    const slug = await require('../middleware/edition').mainSlug(); // eslint-disable-line global-require
+    const knex = require('../db/knex'); // eslint-disable-line global-require
+    const b = slug ? await knex.main('businesses').where({ slug }).first('id') : null;
+    const ok = b ? await require('../db/tenant').runFor(b.id, () => require('../modules/clinicmail/clinicmail.service').canSend(b.id)) : false; // eslint-disable-line global-require
+    installationMailbox = ok ? b.id : null;
+  } catch { installationMailbox = null; }
+  return installationMailbox;
+}
 function configured() {
-  return Boolean(process.env.SMTP_HOST);
+  if (Date.now() - checkedAt > 60_000) refreshInstallationMailbox().catch(() => {});
+  return serverSmtp() || Boolean(installationMailbox);
 }
 function tx() {
-  if (!configured()) return null;
+  if (!serverSmtp()) return null;
   if (!transport) {
     const port = Number(process.env.SMTP_PORT || 465);
     transport = nodemailer.createTransport({
@@ -90,13 +112,29 @@ function fromWithName(from, name) {
  * account sends it with the clinic's address as Reply-To. Account e-mails never pass a businessId.
  */
 async function send({ to, subject, html, replyTo, attachments, fromName, businessId, kind }) {
+  const cm = require('../modules/clinicmail/clinicmail.service'); // eslint-disable-line global-require
+  const msg = { to, subject, html, replyTo, attachments, fromName };
   if (businessId && kind) {
-    const r = await require('../modules/clinicmail/clinicmail.service').trySend(businessId, kind, { to, subject, html, replyTo, attachments, fromName }); // eslint-disable-line global-require
+    const r = await cm.trySend(businessId, kind, msg);
     if (r.sent) return true;
     if (r.replyTo && !replyTo) replyTo = r.replyTo; // eslint-disable-line no-param-reassign
   }
   const t = tx();
-  if (!t) return false;
+  if (!t) {
+    // No server SMTP: the clinic's own verified mailbox, else the installation's. On a one-clinic / one-centre
+    // installation it is the only way out, so every e-mail uses it; on the platform a kind the clinic switched off
+    // for its address (reminders, letters…) stays off.
+    const single = require('../config/edition').single; // eslint-disable-line global-require
+    const any = single || !cm.KINDS.includes(kind);
+    if (businessId && (await cm.trySend(businessId, kind || 'account', msg, { any })).sent) return true;
+    if (!installationMailbox && Date.now() - checkedAt > 5_000) await refreshInstallationMailbox();
+    if (installationMailbox && installationMailbox !== businessId) {
+      const id = installationMailbox;
+      const r = await require('../db/tenant').runFor(id, () => cm.trySend(id, kind || 'account', msg, { any: true })); // eslint-disable-line global-require
+      if (r.sent) return true;
+    }
+    return false;
+  }
   const from = process.env.MAIL_FROM || `${brand.name} <no-reply@localhost>`;
   await t.sendMail({ from: fromWithName(from, fromName), to, subject, html, ...(replyTo ? { replyTo } : {}), ...(attachments ? { attachments } : {}) });
   return true;
@@ -104,8 +142,10 @@ async function send({ to, subject, html, replyTo, attachments, fromName, busines
 
 /** Can e-mail go out for this clinic (the platform account, or the clinic's own verified account)? */
 async function configuredFor(businessId) {
-  if (configured()) return true;
+  if (serverSmtp()) return true;
+  if (!installationMailbox) await refreshInstallationMailbox();
+  if (installationMailbox) return true;
   return businessId ? require('../modules/clinicmail/clinicmail.service').canSend(businessId) : false; // eslint-disable-line global-require
 }
 
-module.exports = { configured, configuredFor, send, layout, warmLogo };
+module.exports = { configured, configuredFor, send, layout, warmLogo, refreshInstallationMailbox };
