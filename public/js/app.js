@@ -189,12 +189,16 @@
   }, true);
 
   /* ---------- Website → Theme & brand: choosing a colour turns on "use my colour" beside it (else it is not saved) ---------- */
-  document.addEventListener('input', function (e) {
+  var useMyColour = function (e) {
     var inp = e.target;
     if (!inp || inp.type !== 'color') return;
     var box = inp.closest('.ws-color'); var tick = box && box.querySelector('input[type=checkbox][name^="use_"]');
     if (tick && !tick.checked) tick.checked = true;
-  });
+  };
+  document.addEventListener('input', useMyColour);
+  document.addEventListener('change', useMyColour);
+  // clicking the colour itself also counts (choosing the colour already shown fires no change)
+  document.addEventListener('click', useMyColour);
 
   /* ---------- A file picker that sends its form as soon as a file is chosen (My account → photo) ---------- */
   $$('input[type=file][data-send-on-pick]').forEach(function (inp) {

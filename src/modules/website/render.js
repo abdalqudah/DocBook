@@ -160,10 +160,13 @@ function css(doc, clinic, { fonts = [], fontUrl = null } = {}) {
   };
   const body = stack(b.bodyFont || b.font); const headF = stack(b.headingFont || b.bodyFont || b.font);
   const vars = [`--site-font: ${body};`, `--site-font-head: ${headF};`, `--site-radius: ${RADIUS[b.radius] || RADIUS.rounded};`, `--site-fs: ${SIZE[b.size] || SIZE.m};`, `--site-hw: ${Number(b.headingWeight) || 700};`];
-  if (b.secondary) vars.push(`--accent: ${b.secondary};`, `--accent-soft: color-mix(in srgb, ${b.secondary} 16%, transparent);`);
+  // The second colour (gradients, hover edges, the reading bar): the one chosen, else the site's own main colour — never
+  // the system's default teal next to a clinic's own colours.
+  const second = b.secondary || primary;
+  if (second) vars.push(`--accent: ${second};`, `--accent-soft: color-mix(in srgb, ${second} 16%, transparent);`);
   out += `:root { ${vars.join(' ')} }\n`;
-  if (b.secondary) { // a dark second colour is lightened in dark mode, like the main one
-    const ad = theme.forDark(b.secondary);
+  if (second) { // a dark second colour is lightened in dark mode, like the main one
+    const ad = theme.forDark(second);
     const d = `--accent: ${ad}; --accent-soft: color-mix(in srgb, ${ad} 18%, transparent);`;
     out += `:root[data-theme="dark"] { ${d} }\n@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${d} } }\n`;
   }

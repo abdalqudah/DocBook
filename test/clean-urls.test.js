@@ -92,6 +92,11 @@ test('the website\'s second colour reaches the live site, under a new colours ad
   const hrefOf = (html) => (new RegExp(`/${slug}/theme\\.css\\?s=[0-9a-f]{10}`).exec(html) || [null])[0];
   const before = hrefOf((await app.agent().get(`/${slug}`)).text);
   assert.ok(before, 'the colours file carries its version');
+  // no second colour chosen: the clinic's own colour, never the system's default teal
+  await knex('businesses').where({ id: biz.id }).update({ color: '#1f2a5a' }); cache.forgetPrefix('');
+  let css0 = await app.agent().get(`/${slug}/theme.css?s=x`);
+  assert.match(css0.text, /--accent: #1f2a5a/);
+  assert.doesNotMatch(css0.text, /--accent: #0F766E/i);
   await site.edit(ctx, biz, site.ops.brand({ primary: '#1f2a5a', secondary: '#8a6d3b' }), { note: 'website.brand_changed' });
   await site.publish(ctx, biz); site.forget(biz.id);
   const after = hrefOf((await app.agent().get(`/${slug}`)).text);
