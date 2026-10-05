@@ -1,0 +1,15 @@
+<section class="section tight">
+  <div class="container">
+    <div class="section-head"><h1><%= t('shortlist.title') %></h1><p><%= currentUser && currentUser.kind === 'student' ? t('shortlist.lead_student') : t('shortlist.lead_visitor') %></p></div>
+    <% if (!items.count) { %>
+      <div class="card"><%- include('../../partials/empty', { title: t('shortlist.empty'), text: t('shortlist.empty_text'), href: '/programs', cta: t('shortlist.find_programs'), ctaIcon: 'search', emptyIcon: 'bookmark' }) %></div>
+    <% } else { %>
+      <% if (!(currentUser && currentUser.kind === 'student')) { %><div class="alert mb4"><%- icon('info') %><p><%= t('shortlist.sign_in_hint') %> <a href="/register"><%= t('auth.create_account') %></a> · <a href="/login"><%= t('auth.sign_in') %></a></p></div><% } %>
+      <% if (items.programs.length) { %><h2><%= t('nav.programs') %></h2><div class="grid mb6" style="--min:300px"><% items.programs.forEach(function (p) { %><%- include('../../partials/program-card', { p: p }) %><% }) %></div><% } %>
+      <% if (items.universities.length) { %><h2><%= t('nav.universities') %></h2><div class="grid mb6" style="--min:260px"><% items.universities.forEach(function (u) { %><div class="pcard"><div class="pcard-top"><span class="pcard-logo"><% if (u.logo) { %><img src="<%= u.logo %>" alt=""><% } else { %><%= L(u, 'name').charAt(0) %><% } %></span><div class="grow"><h3><a href="/universities/<%= u.slug %>"><%= L(u, 'name') %></a></h3><div class="pcard-sub"><%= L(u, 'city') %></div></div><%- include('../../partials/save-toggle', { type: 'university', id: u.id }) %></div></div><% }) %></div><% } %>
+      <% if (items.scholarships.length) { %><h2><%= t('nav.scholarships') %></h2><div class="grid" style="--min:280px"><% items.scholarships.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %></div><% } %>
+      <div class="cta-band mt8"><div><h2><%= t('shortlist.cta_title') %></h2><p><%= t('shortlist.cta_text') %></p></div><a class="btn primary lg" href="/book?about=<%= encodeURIComponent(t('shortlist.title')) %>"><%= t('site.book_consultation') %></a></div>
+    <% } %>
+  </div>
+</section>
+<%- include('../../partials/compare-bar') %>

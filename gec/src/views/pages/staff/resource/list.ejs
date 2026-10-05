@@ -1,0 +1,49 @@
+<div class="page-head">
+  <div><h1><%= title %></h1><p class="lead"><%= t('resources.' + def.key + '.lead') %></p></div>
+  <div class="cluster">
+    <% if (canImport) { %><button class="btn" type="button" data-dialog-open="import-dialog"><%- icon('upload') %><%= t('common.import') %></button><% } %>
+    <% if (def.csv) { %><a class="btn ghost" href="<%= base %>/export.csv<%= qs({ page: null }) %>"><%- icon('download') %><%= t('common.export') %></a><% } %>
+    <% if (canManage) { %><a class="btn primary" href="<%= base %>/new"><%- icon('plus') %><%= t('resources.' + def.key + '.new') %></a><% } %>
+  </div>
+</div>
+<% if (importResult) { %>
+<div class="alert <%= importResult.errors.length ? 'warn' : 'ok' %> mb4"><%- icon(importResult.errors.length ? 'alert-triangle' : 'check-circle-2') %><div>
+  <p><%= t('resources.import_result', { created: importResult.created, updated: importResult.updated, errors: importResult.errors.length }) %></p>
+  <% if (importResult.errors.length) { %><ul class="small mb0"><% importResult.errors.slice(0, 20).forEach(function (e) { %><li><%= t('resources.line') %> <%= e.line %>: <%= e.message %></li><% }) %></ul><% } %>
+</div></div>
+<% } %>
+<form class="toolbar" method="get">
+  <% if ((def.list && def.list.search || []).length) { %><div class="search-inline"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('common.search') %>" aria-label="<%= t('common.search') %>"></div><% } %>
+  <% ((def.list && def.list.filters) || []).forEach(function (fl) { %>
+  <select name="<%= fl.key %>" data-autosubmit aria-label="<%= t(fl.label) %>"><option value=""><%= t(fl.label) %>: <%= t('common.all') %></option><% (opts[fl.key] || []).forEach(function (o) { %><option value="<%= o.value %>" <%= String(query[fl.key]) === String(o.value) ? 'selected' : '' %>><%= o.label %></option><% }) %></select>
+  <% }) %>
+  <button class="btn" type="submit"><%= t('common.filter') %></button>
+</form>
+<% if (!rows.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: query.q ? t('resources.no_match') : t('resources.' + def.key + '.empty'), text: t('resources.' + def.key + '.empty_text'), href: canManage ? base + '/new' : null, cta: t('resources.' + def.key + '.new'), emptyIcon: 'inbox' }) %></div>
+<% } else { %>
+<div class="table-wrap"><table class="table responsive">
+  <thead><tr><% columns.forEach(function (c) { %><th><%= t(c.label) %></th><% }) %></tr></thead>
+  <tbody><% rows.forEach(function (r) { %><tr>
+    <% columns.forEach(function (c, i) { %>
+      <% if (i === 0) { %><td class="primary"><a class="row-link" href="<%= base %>/<%= r.id %>"><%= r.cells[i] %></a><% if (r.is_demo) { %> <span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></td>
+      <% } else { %><td data-label="<%= t(c.label) %>"><%= r.cells[i] %></td><% } %>
+    <% }) %>
+  </tr><% }) %></tbody>
+</table></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>
+<% if (canImport) { %>
+<dialog class="dialog" id="import-dialog" aria-labelledby="import-h">
+  <form method="post" action="<%= base %>/import" enctype="multipart/form-data">
+    <div class="dialog-head"><h2 id="import-h"><%= t('resources.import_title') %></h2><button type="button" class="btn ghost icon-only" data-dialog-close aria-label="<%= t('common.close') %>"><%- icon('x') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <p class="small muted"><%= t('resources.import_help') %></p>
+      <p class="small"><code style="overflow-wrap:anywhere"><%= def.csv.columns.join(', ') %></code></p>
+      <input type="file" name="file" accept=".csv,text/csv" required aria-label="CSV">
+    </div>
+    <div class="dialog-foot"><button type="button" class="btn ghost" data-dialog-close><%= t('common.cancel') %></button><button class="btn primary" type="submit"><%= t('common.import') %></button></div>
+  </form>
+</dialog>
+<% } %>

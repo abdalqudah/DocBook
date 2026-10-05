@@ -1,0 +1,36 @@
+<% var name = L(d, 'name'); var why = locale === 'ar' && d.why_ar.length ? d.why_ar : d.why_en; %>
+<section class="detail-hero" style="min-height:320px">
+  <% if (d.hero_image) { %><img class="cover" src="<%= d.hero_image %>" alt=""><% } %>
+  <div class="container">
+    <nav class="breadcrumbs" style="color:rgb(255 255 255 / .8)"><a href="/study" style="color:#fff"><%= t('dest.title') %></a><%- icon('chevron-right') %><span><%= name %></span></nav>
+    <span class="dest-flag" style="font-size:2rem"><%= ref.flag(d.country_code) %></span>
+    <h1><%= t('dest.study_in', { name: name }) %></h1>
+    <p style="max-width:640px"><%= L(d, 'tagline') %></p>
+    <div class="cluster mt4"><a class="btn primary" href="/programs?destination=<%= d.slug %>"><%= t('dest.find_programs') %></a><a class="btn" href="/book?destination=<%= d.slug %>" style="--b-bg:transparent;--b-fg:#fff;--b-line:rgb(255 255 255 / .5)"><%= t('site.book_consultation') %></a></div>
+  </div>
+</section>
+<section class="section tight">
+  <div class="container stack" style="--gap:32px">
+    <div class="fact-strip">
+      <div><div class="k"><%= t('dest.tuition') %></div><div class="v"><%= d.tuition_min ? fmt.money(d.tuition_min, d.currency) + (d.tuition_max ? ' – ' + fmt.money(d.tuition_max, d.currency) : '') : '—' %></div></div>
+      <div><div class="k"><%= t('dest.living') %></div><div class="v"><%= d.living_month_min ? fmt.money(d.living_month_min, d.currency) + (d.living_month_max ? ' – ' + fmt.money(d.living_month_max, d.currency) : '') + ' ' + t('dest.per_month') : '—' %></div></div>
+      <div><div class="k"><%= t('dest.work') %></div><div class="v"><%= L(d, 'post_study_work') || '—' %></div></div>
+      <div><div class="k"><%= t('dest.visa') %></div><div class="v"><%= d.visa_type || '—' %></div></div>
+      <div><div class="k"><%= t('finder.intakes') %></div><div class="v"><%= L(d, 'intakes') || '—' %></div></div>
+    </div>
+    <div class="grid-2">
+      <% if (L(d, 'intro')) { %><div class="prose"><%- md(L(d, 'intro')) %></div><% } %>
+      <% if (why.length) { %><div class="card"><h2 style="font-size:1.1rem"><%= t('dest.why', { name: name }) %></h2><ul class="reasons"><% why.forEach(function (w) { %><li><span class="ok"><%- icon('check', 'sm') %></span><span><%= w %></span></li><% }) %></ul></div><% } %>
+    </div>
+    <% if (d.regions && d.regions.length) { %>
+    <section><h2><%= t('dest.regions') %></h2><div class="grid" style="--min:260px">
+      <% d.regions.forEach(function (r) { %><div class="card"><h3><%= locale === 'ar' ? (r.name_ar || r.name_en) : r.name_en %></h3><% if (r.badge) { %><span class="chip brand mb2"><%= r.badge %></span><% } %><p class="small muted"><%= locale === 'ar' ? (r.overview_ar || r.overview_en) : r.overview_en %></p><% if (r.tuition) { %><p class="small mb0"><strong><%= t('dest.tuition') %>:</strong> <%= r.tuition %></p><% } %><% if (r.living) { %><p class="small mb0"><strong><%= t('dest.living') %>:</strong> <%= r.living %></p><% } %></div><% }) %>
+    </div></section>
+    <% } %>
+    <% if (programs.length) { %><section><div class="spread mb4"><h2 class="mb0"><%= t('dest.programs') %></h2><a class="btn ghost" href="/programs?destination=<%= d.slug %>"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div><div class="grid" style="--min:300px"><% programs.forEach(function (p) { %><%- include('../../partials/program-card', { p: p }) %><% }) %></div></section><% } %>
+    <% if (unis.length) { %><section><h2><%= t('dest.universities') %></h2><div class="grid" style="--min:240px"><% unis.forEach(function (u) { %><a class="card" href="/universities/<%= u.slug %>"><div class="row"><span class="pcard-logo"><% if (u.logo) { %><img src="<%= u.logo %>" alt="" loading="lazy"><% } else { %><%= L(u, 'name').charAt(0) %><% } %></span><div style="min-width:0"><div class="li-title"><%= L(u, 'name') %></div><div class="li-sub"><%= L(u, 'city') %></div></div></div></a><% }) %></div></section><% } %>
+    <% if (scholarships.length) { %><section><h2><%= t('program.scholarships') %></h2><div class="grid" style="--min:280px"><% scholarships.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %></div></section><% } %>
+    <p class="disclaimer"><%- icon('info', 'sm') %><span><%= t('dest.disclaimer') %></span></p>
+  </div>
+</section>
+<%- include('../../partials/compare-bar') %>

@@ -15,10 +15,6 @@ router.get('/media/:id', ah(async (req, res) => {
   return uploads.send(res, m.id);
 }));
 
-router.get('/', ah(async (req, res) => {
-  res.page('pages/site/home', { layout: 'public', title: res.locals.branding.legal_name });
-}));
-
 router.get('/privacy', ah(async (req, res) => {
   const p = await settings.get('privacy');
   res.page('pages/site/privacy', { layout: 'public', title: req.t('privacy.title'), retention: p.retention_months });

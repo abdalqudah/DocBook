@@ -28,7 +28,9 @@ const num = (min = 0, max = 1e12) => z.preprocess((v) => (blank(v) === undefined
   z.number({ invalid_type_error: 'Enter a number.' }).finite('Enter a number.').min(min, 'Too small.').max(max, 'Too large.').optional());
 const date = () => z.preprocess(blank, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').optional());
 const dateTime = () => z.preprocess(blank, z.string().regex(/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/, 'Enter a valid date and time.').optional());
-const bool = () => z.preprocess((v) => v === true || v === 'true' || v === '1' || v === 'on' || v === 1, z.boolean());
+// A checkbox sends "0" from its hidden twin and "1" when ticked (both arrive as ["0", "1"]): the last value wins.
+const lastOf = (v) => (Array.isArray(v) ? v[v.length - 1] : v);
+const bool = () => z.preprocess((raw) => { const v = lastOf(raw); return v === true || v === 'true' || v === '1' || v === 'on' || v === 1 || v === 'yes'; }, z.boolean());
 const oneOf = (values) => z.preprocess(blank, z.enum(values, { errorMap: () => ({ message: 'Choose a valid option.' }) }).optional());
 const list = (max = 50) => z.preprocess((v) => {
   if (blank(v) === undefined) return [];
@@ -36,4 +38,4 @@ const list = (max = 50) => z.preprocess((v) => {
   return String(v).split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
 }, z.array(z.string().max(120)).max(max));
 
-module.exports = { z, validate, blank, str, reqStr, id, reqId, email, optEmail, password, phone, num, date, dateTime, bool, oneOf, list };
+module.exports = { z, validate, blank, lastOf, str, reqStr, id, reqId, email, optEmail, password, phone, num, date, dateTime, bool, oneOf, list };

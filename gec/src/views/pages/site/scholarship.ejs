@@ -1,0 +1,42 @@
+<% var elig = locale === 'ar' && s.eligibility_ar.length ? s.eligibility_ar : s.eligibility_en; %>
+<section class="section tight">
+  <div class="container detail-grid">
+    <div class="stack" style="--gap:22px;min-width:0">
+      <nav class="breadcrumbs"><a href="/scholarships"><%= t('schol.title') %></a><%- icon('chevron-right') %><span><%= L(s, 'name') %></span></nav>
+      <div><h1 class="mb2"><%= L(s, 'name') %> <% if (s.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></h1>
+        <p class="muted mb0"><%= L(s, 'provider') %><% if (s.university_slug) { %> · <a href="/universities/<%= s.university_slug %>"><%= L(s, 'university') %></a><% } %><% if (s.destination_slug) { %> · <a href="/study/<%= s.destination_slug %>"><%= L(s, 'destination') %></a><% } %></p></div>
+      <div class="fact-strip">
+        <div><div class="k"><%= t('schol.amount') %></div><div class="v"><%= s.amount_type === 'full' ? t('catalog.amount_type.full') : s.amount_type === 'percentage' ? (s.amount_min || '') + (s.amount_max ? '–' + s.amount_max : '') + '%' : (s.amount_min || s.amount_max ? [s.amount_min ? fmt.money(s.amount_min, s.currency) : null, s.amount_max ? fmt.money(s.amount_max, s.currency) : null].filter(Boolean).join(' – ') : t('catalog.amount_type.varies')) %></div></div>
+        <div><div class="k"><%= t('finder.deadline') %></div><div class="v"><%= s.deadline ? fmt.date(s.deadline) : (s.deadline_note || '—') %></div></div>
+        <div><div class="k"><%= t('finder.degree') %></div><div class="v"><%= s.degree_levels.length ? s.degree_levels.map(function (d) { return t('ref.degree.' + d); }).join(', ') : t('common.any') %></div></div>
+        <div><div class="k"><%= t('people.nationality') %></div><div class="v"><%= s.nationalities.length ? s.nationalities.map(function (c) { return ref.country(c); }).join(', ') : t('common.any') %></div></div>
+      </div>
+      <% if (L(s, 'coverage')) { %><p><strong><%= t('schol.covers') %>:</strong> <%= L(s, 'coverage') %></p><% } %>
+      <% if (L(s, 'description')) { %><div class="prose"><%- md(L(s, 'description')) %></div><% } %>
+      <% if (elig.length) { %><section><h2><%= t('schol.eligibility') %></h2><ul class="reasons"><% elig.forEach(function (e) { %><li><span class="ok"><%- icon('check', 'sm') %></span><span><%= e %></span></li><% }) %></ul></section><% } %>
+      <section class="card" id="check">
+        <h2 style="font-size:1.05rem"><%= t('schol.check_title') %></h2>
+        <form method="get" action="/scholarships/<%= s.slug %>#check" class="form-grid two">
+          <input type="hidden" name="check" value="1">
+          <%- include('../../partials/field', { name: 'nationality', label: t('people.nationality'), type: 'select', value: query.nationality, options: ref.countries() }) %>
+          <%- include('../../partials/field', { name: 'degree', label: t('finder.degree'), type: 'select', value: query.degree, options: ref.DEGREES.map(function (d) { return { value: d, label: t('ref.degree.' + d) }; }) }) %>
+          <%- include('../../partials/field', { name: 'gpa', label: 'GPA', type: 'number', value: query.gpa, attrs: 'step="0.01" min="0"' }) %>
+          <%- include('../../partials/field', { name: 'gpa_scale', label: t('students.gpa_scale'), type: 'number', value: query.gpa_scale || 4, attrs: 'step="0.01" min="1"' }) %>
+          <%- include('../../partials/field', { name: 'ielts', label: 'IELTS', type: 'number', value: query.ielts, attrs: 'step="0.5" min="0" max="9"' }) %>
+          <div class="form-actions span-all" style="padding-top:0"><button class="btn primary" type="submit"><%= t('schol.check') %></button></div>
+        </form>
+        <% if (check) { %>
+          <% if (check.verdict) { %><div class="alert <%= check.verdict === 'likely' ? 'ok' : check.verdict === 'possible' ? 'warn' : 'bad' %> mt4"><%- icon(check.verdict === 'likely' ? 'check-circle-2' : 'alert-triangle') %><p><strong><%= t('schol.verdict_' + check.verdict) %></strong></p></div><% } %>
+          <ul class="reasons mt2"><% check.checks.forEach(function (c) { %><li><span class="<%= c.tone %>"><%- icon(c.tone === 'ok' ? 'check' : c.tone === 'bad' ? 'x' : 'alert-triangle', 'sm') %></span><span><%= t('schol.c_' + c.key, c.vars || {}) %></span></li><% }) %></ul>
+          <p class="disclaimer mb0"><%- icon('info', 'sm') %><span><%= t('schol.check_disclaimer') %></span></p>
+        <% } %>
+      </section>
+      <% if (s.source_url) { %><p class="disclaimer"><%- icon('external-link', 'sm') %><span><%= t('schol.source') %> <a href="<%= s.source_url %>" target="_blank" rel="noopener"><%= s.source_url.replace(/^https?:\/\//, '').slice(0, 60) %></a></span></p><% } %>
+    </div>
+    <aside><div class="card lift sticky-card stack">
+      <div class="spread"><h2 style="font-size:1.05rem;margin:0"><%= t('schol.apply_help') %></h2><%- include('../../partials/save-toggle', { type: 'scholarship', id: s.id }) %></div>
+      <p class="small muted mb0"><%= t('schol.apply_help_text') %></p>
+      <a class="btn primary block" href="/book?about=<%= encodeURIComponent(s.name_en) %>"><%= t('program.talk_to_counsellor') %></a>
+    </div></aside>
+  </div>
+</section>

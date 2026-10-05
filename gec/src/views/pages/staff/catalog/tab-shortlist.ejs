@@ -1,0 +1,43 @@
+<div class="split">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2><%= t('shortlist.title') %> <span class="count"><%= items.count || 0 %></span></h2><a class="btn sm ghost" href="?tab=matches"><%- icon('target') %><%= t('students.tab_matches') %></a></div>
+      <% if (!items.count) { %>
+        <%- include('../../../partials/empty', { title: t('shortlist.empty_staff'), text: t('shortlist.empty_staff_text'), emptyIcon: 'bookmark', compact: true }) %>
+      <% } else { %>
+      <div class="divider-list">
+        <% items.programs.forEach(function (p) { %>
+        <div class="list-item"><span class="queue-icon brand"><%- icon('graduation-cap') %></span><div class="li-body"><a class="li-title" href="/programs/<%= p.slug %>" target="_blank"><%= L(p, 'name') %></a><div class="li-sub"><%= L(p, 'university') %> · <%= t('ref.degree.' + p.degree_level) %><% if (p.tuition_fee) { %> · <%= fmt.money(p.tuition_fee, p.currency) %><% } %> · <%= p.added_by ? t('shortlist.by_counsellor') : t('shortlist.by_student') %></div></div>
+          <% if (can('students.manage')) { %><form method="post" action="/staff/students/<%= s.id %>/shortlist"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="type" value="program"><input type="hidden" name="item_id" value="<%= p.id %>"><input type="hidden" name="on" value="0"><button class="btn sm ghost" type="submit" aria-label="<%= t('common.remove') %>"><%- icon('x') %></button></form><% } %>
+        </div>
+        <% }) %>
+        <% items.universities.forEach(function (u) { %><div class="list-item"><span class="queue-icon"><%- icon('building-2') %></span><div class="li-body"><a class="li-title" href="/universities/<%= u.slug %>" target="_blank"><%= L(u, 'name') %></a><div class="li-sub"><%= L(u, 'city') %></div></div></div><% }) %>
+        <% items.scholarships.forEach(function (x) { %><div class="list-item"><span class="queue-icon ok"><%- icon('award') %></span><div class="li-body"><a class="li-title" href="/scholarships/<%= x.slug %>" target="_blank"><%= L(x, 'name') %></a></div></div><% }) %>
+      </div>
+      <% } %>
+    </section>
+  </div>
+  <aside class="stack">
+    <% if (can('students.manage')) { %>
+    <form method="post" action="/staff/students/<%= s.id %>/estimates" class="card stack">
+      <h2 class="section-title"><%= t('calc.personal_estimate') %></h2>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../../partials/field', { name: 'd', label: t('calc.destinations'), type: 'checks', value: [], options: dests.map(function (d) { return { value: d.slug, label: L(d, 'name') }; }) }) %>
+      <div class="form-grid two">
+        <%- include('../../../partials/field', { name: 'currency', label: t('catalog.currency'), type: 'select', value: 'USD', required: true, options: currencies.map(function (c) { return { value: c, label: c }; }) }) %>
+        <%- include('../../../partials/field', { name: 'years', label: t('calc.years'), type: 'number', value: 1, attrs: 'min="1" max="6"' }) %>
+        <%- include('../../../partials/field', { name: 'housing', label: t('calc.housing'), type: 'select', value: 'shared', required: true, options: ['shared','campus','private','homestay'].map(function (h) { return { value: h, label: t('calc.housing_' + h) }; }) }) %>
+        <%- include('../../../partials/field', { name: 'scholarship', label: t('calc.scholarship'), type: 'number', attrs: 'min="0"' }) %>
+      </div>
+      <%- include('../../../partials/field', { name: 'note', label: t('common.notes'), type: 'textarea', rows: 2 }) %>
+      <label class="check"><input type="checkbox" name="send" value="1" <%= s.email ? '' : 'disabled' %>><span><%= t('calc.email_to_student') %></span></label>
+      <button class="btn primary" type="submit"><%= t('calc.create_estimate') %></button>
+    </form>
+    <% } %>
+    <% if (estimates.length) { %>
+    <section class="card"><h2 class="section-title"><%= t('calc.saved_estimates') %></h2>
+      <div class="divider-list"><% estimates.forEach(function (e) { %><a class="list-item" href="/estimate/<%= e.token %>" target="_blank"><div class="li-body"><div class="li-title"><%= e.title || t('calc.estimate') %></div><div class="li-sub"><%= fmt.dateTime(e.created_at) %><%= e.sent_at ? ' · ' + t('calc.sent_short') : '' %></div></div><%- icon('external-link', 'subtle') %></a><% }) %></div>
+    </section>
+    <% } %>
+  </aside>
+</div>

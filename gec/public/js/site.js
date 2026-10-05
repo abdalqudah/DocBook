@@ -65,3 +65,38 @@
     show(cur, false);
   });
 }());
+
+// Search suggestions for <input data-suggest> (programs, universities, destinations, fields).
+(function () {
+  'use strict';
+  var GEC = window.GEC;
+  document.querySelectorAll('input[data-suggest]').forEach(function (input) {
+    var box = document.createElement('div');
+    box.className = 'suggest'; box.hidden = true; box.setAttribute('role', 'listbox'); box.id = 'suggest-' + Math.random().toString(36).slice(2, 7);
+    input.setAttribute('aria-controls', box.id); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('autocomplete', 'off');
+    input.parentElement.parentElement.appendChild(box);
+    var timer; var items = []; var sel = -1; var seq = 0;
+    function render() {
+      box.innerHTML = items.map(function (it, i) { return '<a role="option" id="' + box.id + '-' + i + '" href="' + GEC.esc(it.href) + '" aria-selected="' + (i === sel) + '">' + GEC.icon(it.icon || 'search') + '<span class="grow"><span style="display:block">' + GEC.esc(it.title) + '</span>' + (it.sub ? '<span class="small subtle">' + GEC.esc(it.sub) + '</span>' : '') + '</span></a>'; }).join('');
+      box.hidden = !items.length;
+      input.setAttribute('aria-expanded', String(!box.hidden));
+    }
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      var q = input.value.trim();
+      if (q.length < 2) { items = []; render(); return; }
+      timer = setTimeout(function () {
+        var mine = ++seq;
+        fetch('/api/suggest?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (j) { if (mine !== seq) return; items = j.items || []; sel = -1; render(); }).catch(function () {});
+      }, 150);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (box.hidden) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(items.length - 1, sel + 1); render(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(-1, sel - 1); render(); }
+      if (e.key === 'Enter' && sel >= 0 && items[sel]) { e.preventDefault(); location.href = items[sel].href; }
+      if (e.key === 'Escape') { items = []; render(); }
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target) && e.target !== input) { box.hidden = true; } });
+  });
+}());

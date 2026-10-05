@@ -1,11 +1,80 @@
 <section class="hero">
   <div class="container hero-inner">
-    <span class="eyebrow"><%- icon('graduation-cap') %><%= branding.legal_name %></span>
-    <h1><%= t('site.hero_title') %></h1>
-    <p class="lead"><%= t('site.hero_lead') %></p>
-    <div class="cluster" style="justify-content:center">
-      <% if (company.whatsapp) { %><a class="btn primary lg" href="/go/whatsapp?from=home"><%= t('site.whatsapp_us') %></a><% } %>
-      <% if (company.email) { %><a class="btn lg" href="mailto:<%= company.email %>"><%- icon('mail') %><%= company.email %></a><% } %>
+    <h1><%= t('home.title') %></h1>
+    <p class="lead"><%= t('home.lead') %></p>
+    <form class="hero-search" action="/programs" method="get" role="search">
+      <div class="searchbox">
+        <%- icon('search', 'lg') %>
+        <label class="sr-only" for="hero-q"><%= t('home.search_label') %></label>
+        <input id="hero-q" type="search" name="q" placeholder="<%= t('home.search_ph') %>" data-suggest autocomplete="off">
+        <button class="btn primary" type="submit"><%= t('common.search') %></button>
+      </div>
+    </form>
+    <div class="hero-chips">
+      <% [['master','data_science'],['bachelor','computer_science'],['master','business'],['bachelor','engineering'],['language','english']].forEach(function (c) { %>
+      <a class="filter-chip" href="/programs?degree=<%= c[0] %>&field=<%= c[1] %>"><%= t('ref.degree.' + c[0]) %> · <%= t('ref.field.' + c[1]) %></a>
+      <% }) %>
+    </div>
+    <div class="hero-trust">
+      <span><%- icon('graduation-cap') %><%= t('home.stat_programs', { n: fmt.number(stats.programs) }) %></span>
+      <span><%- icon('building-2') %><%= t('home.stat_unis', { n: fmt.number(stats.universities) }) %></span>
+      <span><%- icon('globe') %><%= t('home.stat_dests', { n: stats.destinations }) %></span>
+      <span><%- icon('shield-check') %><%= t('home.free_advice') %></span>
+    </div>
+  </div>
+</section>
+
+<% if (dests.length) { %>
+<section class="section tight">
+  <div class="container">
+    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('home.dest_title') %></h2><p><%= t('home.dest_lead') %></p></div><a class="btn ghost" href="/study"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="grid" style="--min:220px">
+      <% dests.slice(0, 8).forEach(function (d) { %>
+      <a class="dest-card" href="/study/<%= d.slug %>">
+        <% if (d.hero_image) { %><img src="<%= d.hero_image %>" alt="" loading="lazy" width="400" height="300"><% } %>
+        <div class="dest-overlay"><span class="dest-flag" aria-hidden="true"><%= ref.flag(d.country_code) %></span><h3><%= L(d, 'name') %></h3><p><%= L(d, 'tagline') %></p></div>
+      </a>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-head center"><span class="eyebrow"><%= t('home.how_eyebrow') %></span><h2><%= t('home.how_title') %></h2><p><%= t('home.how_lead') %></p></div>
+    <ol class="steps">
+      <% ['search','consult','apply','visa'].forEach(function (k) { %><li><h3><%= t('home.step_' + k) %></h3><p><%= t('home.step_' + k + '_text') %></p></li><% }) %>
+    </ol>
+    <div class="cluster mt6" style="justify-content:center"><a class="btn primary lg" href="/book"><%= t('site.book_consultation') %></a><a class="btn lg" href="/cost-calculator"><%- icon('calculator') %><%= t('site.nav.calculator') %></a></div>
+  </div>
+</section>
+
+<% if (featured.length) { %>
+<section class="section">
+  <div class="container">
+    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('home.featured_title') %></h2><p><%= t('home.featured_lead') %></p></div><a class="btn ghost" href="/programs"><%= t('home.explore_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="grid" style="--min:300px"><% featured.forEach(function (p) { %><%- include('../../partials/program-card', { p: p }) %><% }) %></div>
+  </div>
+</section>
+<% } %>
+
+<% if (scholarships.length) { %>
+<section class="section alt">
+  <div class="container">
+    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('home.schol_title') %></h2><p><%= t('home.schol_lead') %></p></div><a class="btn ghost" href="/scholarships"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="grid" style="--min:280px">
+      <% scholarships.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="section">
+  <div class="container">
+    <div class="cta-band">
+      <div><h2><%= t('home.cta_title') %></h2><p><%= t('home.cta_text') %></p></div>
+      <div class="cluster"><a class="btn primary lg" href="/book"><%= t('site.book_consultation') %></a><% if (company.whatsapp) { %><a class="btn lg" href="/go/whatsapp?from=home-cta" style="--b-bg:transparent;--b-fg:#fff;--b-line:rgb(255 255 255 / .4)"><%- icon('message-circle') %>WhatsApp</a><% } %></div>
     </div>
   </div>
 </section>

@@ -18,7 +18,14 @@
     "hero_title": "Study abroad with a team that knows the way",
     "hero_lead": "Free, honest guidance on universities, programs, scholarships and visas — from your first question to your first day on campus.",
     "nav": {
-      "contact": "Contact"
+      "contact": "Contact",
+      "programs": "Programs",
+      "universities": "Universities",
+      "destinations": "Destinations",
+      "scholarships": "Scholarships",
+      "calculator": "Cost calculator",
+      "compare": "Compare",
+      "shortlist": "My shortlist"
     },
     "footer": {
       "study": "Study",

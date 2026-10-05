@@ -1,0 +1,1 @@
+<span class="match <%= m.category %>" title="<%= t('match.disclaimer') %>"><%- icon(m.category === 'not_eligible' ? 'circle-x' : m.category === 'missing' ? 'help-circle' : 'target') %><% if (m.category !== 'missing' && m.category !== 'not_eligible') { %><%= m.score %>% · <% } %><%= t('match.cat_' + m.category) %></span>

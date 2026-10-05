@@ -66,7 +66,7 @@ async function mergeStudents(ctx, keepId, dropId) {
   const tables = await linkedTables();
   await knex.transaction(async (trx) => {
     for (const t of tables.student_id) { // eslint-disable-line no-restricted-syntax
-      if (t === 'shortlists' || t === 'student_shortlist') continue; // eslint-disable-line no-continue
+      if (t === 'shortlist_items') { await require('../catalog/shortlist.service').mergeStudents(keep.id, drop.id, trx); continue; } // eslint-disable-line global-require, no-continue, no-await-in-loop
       await trx(t).where({ student_id: drop.id }).update({ student_id: keep.id }); // eslint-disable-line no-await-in-loop
     }
     await trx('leads').where({ student_id: drop.id }).update({ student_id: keep.id });

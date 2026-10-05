@@ -1,0 +1,2137 @@
+{
+ "universitiesData": [
+  {
+   "id": "illinois-tech",
+   "name": "Illinois Institute of Technology (Illinois Tech)",
+   "nameAr": "معهد إلينوي للتكنولوجيا",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "state": "Illinois",
+   "city": "Chicago",
+   "cityAr": "شيكاغو",
+   "location": "Chicago, Illinois, USA",
+   "locationAr": "شيكاغو، إلينوي، أمريكا",
+   "ranking": "#98 in USA (Top 100)",
+   "worldRanking": 350,
+   "acceptanceRate": "61%",
+   "tuitionPerYear": "$52,000 / year",
+   "tuitionUndergrad": "$52,000 / yr",
+   "tuitionGraduate": "$42,000 / yr",
+   "avgLivingCost": "$14,500 / yr",
+   "tuitionNum": 52000,
+   "currency": "USD",
+   "accreditation": "Higher Learning Commission (HLC) & ABET",
+   "accreditationAr": "معتمدة رسمياً من HLC و ABET",
+   "degreesOffered": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "fields": [
+    "Computer Science",
+    "Artificial Intelligence",
+    "Engineering",
+    "Architecture",
+    "Business"
+   ],
+   "programsOffered": [
+    "Artificial Intelligence",
+    "Computer Science",
+    "Data Science",
+    "Civil Engineering",
+    "Finance"
+   ],
+   "programsOfferedAr": [
+    "الذكاء الاصطناعي",
+    "علوم الحاسوب",
+    "علم البيانات",
+    "الهندسة المدنية",
+    "المالية"
+   ],
+   "logo": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=200&q=80",
+   "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1000&q=80",
+   "popularMajors": [
+    "Artificial Intelligence",
+    "Computer Science",
+    "Data Science",
+    "Civil Engineering",
+    "Finance"
+   ],
+   "popularMajorsAr": [
+    "الذكاء الاصطناعي",
+    "علوم الحاسوب",
+    "علم البيانات",
+    "الهندسة المدنية",
+    "المالية"
+   ],
+   "scholarshipsAvailable": true,
+   "scholarshipAvailable": "Up to $30,000 / year Merit Scholarship",
+   "scholarshipAvailableAr": "منح تميز تصل حتى $30,000 سنوياً",
+   "maxScholarship": "Up to $30,000 / year merit scholarship",
+   "stemPrograms": true,
+   "overviewEn": "Located in the heart of Chicago near GEC headquarters, Illinois Tech is a top-ranked technology-focused research university with stellar STEM OPT opportunities and strong career outcomes.",
+   "overviewAr": "يقع في قلب مدينة شيكاغو بالقرب من المقر الرئيسي لـ GEC، وهو جامعة بحثية تكنولوجية عريقة توفر فرص تدريب STEM OPT متميزة وشبكة توظيف قوية.",
+   "descriptionEn": "Located in the heart of Chicago near GEC headquarters, Illinois Tech is a top-ranked technology-focused research university with stellar STEM OPT opportunities and strong career outcomes.",
+   "descriptionAr": "يقع في قلب مدينة شيكاغو بالقرب من المقر الرئيسي لـ GEC، وهو جامعة بحثية تكنولوجية عريقة توفر فرص تدريب STEM OPT متميزة وشبكة توظيف قوية.",
+   "campusType": "Urban",
+   "intakeMonths": [
+    "August (Fall)",
+    "January (Spring)"
+   ],
+   "featured": true,
+   "isUsa": true,
+   "satRequired": "Test Optional",
+   "toeflIelts": "IELTS 6.5 / TOEFL 80 / Duolingo 110"
+  },
+  {
+   "id": "depaul-university",
+   "name": "DePaul University",
+   "nameAr": "جامعة دي بول",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "state": "Illinois",
+   "city": "Chicago",
+   "cityAr": "شيكاغو",
+   "location": "Chicago, Illinois, USA",
+   "locationAr": "شيكاغو، إلينوي، أمريكا",
+   "ranking": "#135 in USA",
+   "worldRanking": 500,
+   "acceptanceRate": "70%",
+   "tuitionPerYear": "$43,000 / year",
+   "tuitionUndergrad": "$43,000 / yr",
+   "tuitionGraduate": "$36,000 / yr",
+   "avgLivingCost": "$15,000 / yr",
+   "tuitionNum": 43000,
+   "currency": "USD",
+   "accreditation": "Higher Learning Commission (HLC) & AACSB",
+   "accreditationAr": "معتمدة من HLC وكلية إدارة الأعمال معتمدة من AACSB",
+   "degreesOffered": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "fields": [
+    "Business",
+    "Computer Science",
+    "Film & Media",
+    "Cybersecurity",
+    "Marketing"
+   ],
+   "programsOffered": [
+    "Business Analytics",
+    "Computer Science",
+    "Animation",
+    "Accountancy",
+    "Digital Marketing"
+   ],
+   "programsOfferedAr": [
+    "تحليلات الأعمال",
+    "علوم الحاسوب",
+    "الرسوم المتحركة",
+    "المحاسبة",
+    "التسويق الرقمي"
+   ],
+   "logo": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=200&q=80",
+   "image": "https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=1000&q=80",
+   "popularMajors": [
+    "Business Analytics",
+    "Computer Science",
+    "Animation",
+    "Accountancy",
+    "Digital Marketing"
+   ],
+   "popularMajorsAr": [
+    "تحليلات الأعمال",
+    "علوم الحاسوب",
+    "الرسوم المتحركة",
+    "المحاسبة",
+    "التسويق الرقمي"
+   ],
+   "scholarshipsAvailable": true,
+   "scholarshipAvailable": "Up to $24,000 / year for international students",
+   "scholarshipAvailableAr": "منح تصل حتى $24,000 سنوياً للطلاب الدوليين",
+   "maxScholarship": "Up to $24,000 / year for international students",
+   "stemPrograms": true,
+   "overviewEn": "The largest private university in Chicago with 2 prime campuses in the Loop and Lincoln Park. Known for world-class Driehaus College of Business and Jarvis College of Computing.",
+   "overviewAr": "أكبر جامعة في شيكاغو بحرمين جامعيين متميزين في وسط المدينة، وتشتهر بكلية دريهاوس المرموقة لإدارة الأعمال وكلية علوم الحاسوب والوسائط الرقمية.",
+   "descriptionEn": "The largest Catholic university in the USA with 2 prime Chicago campuses. Known for world-class Driehaus College of Business and Jarvis College of Computing.",
+   "descriptionAr": "من أكبر الجامعات في شيكاغو، وتشتهر بكلية دريهاوس المرموقة لإدارة الأعمال وكلية علوم الحاسوب والوسائط الرقمية.",
+   "campusType": "Urban",
+   "intakeMonths": [
+    "September (Fall)",
+    "January (Winter)",
+    "March (Spring)"
+   ],
+   "featured": true,
+   "isUsa": true,
+   "satRequired": "Test Optional",
+   "toeflIelts": "IELTS 6.5 / TOEFL 80 / Duolingo 115"
+  },
+  {
+   "id": "usf-florida",
+   "name": "University of South Florida (USF)",
+   "nameAr": "جامعة جنوب فلوريدا",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "state": "Florida",
+   "city": "Tampa",
+   "cityAr": "تامبا",
+   "location": "Tampa, Florida, USA",
+   "locationAr": "تامبا، فلوريدا، أمريكا",
+   "ranking": "#89 in USA (#45 Public)",
+   "worldRanking": 250,
+   "acceptanceRate": "44%",
+   "tuitionPerYear": "$17,324 / year (High ROI)",
+   "tuitionUndergrad": "$17,324 / yr",
+   "tuitionGraduate": "$21,126 / yr",
+   "avgLivingCost": "$12,500 / yr",
+   "tuitionNum": 17324,
+   "currency": "USD",
+   "accreditation": "SACSCOC & Tier-1 Research (R1)",
+   "accreditationAr": "معتمدة وتصنيف R1 للبحوث المتقدمة",
+   "degreesOffered": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "fields": [
+    "Engineering",
+    "Computer Science",
+    "Medicine",
+    "Business",
+    "Biotechnology"
+   ],
+   "programsOffered": [
+    "Cybersecurity",
+    "Biomedical Engineering",
+    "Data Science",
+    "Finance",
+    "Public Health"
+   ],
+   "programsOfferedAr": [
+    "الأمن السيبراني",
+    "الهندسة الطبية الحيوية",
+    "علم البيانات",
+    "المالية",
+    "الصحة العامة"
+   ],
+   "logo": "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?auto=format&fit=crop&w=200&q=80",
+   "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1000&q=80",
+   "popularMajors": [
+    "Cybersecurity",
+    "Biomedical Engineering",
+    "Data Science",
+    "Finance",
+    "Public Health"
+   ],
+   "popularMajorsAr": [
+    "الأمن السيبراني",
+    "الهندسة الطبية الحيوية",
+    "علم البيانات",
+    "المالية",
+    "الصحة العامة"
+   ],
+   "scholarshipsAvailable": true,
+   "scholarshipAvailable": "Up to $12,000 / year Green & Gold Presidential Award",
+   "scholarshipAvailableAr": "منح رئاسية تصل حتى $12,000 سنوياً",
+   "maxScholarship": "Up to $12,000 / year Green & Gold Presidential Award",
+   "stemPrograms": true,
+   "overviewEn": "Top-50 US Public University in sunny Tampa Bay with outstanding ROI, exceptional research facilities, and generous international merit scholarships.",
+   "overviewAr": "إحدى أفضل 50 جامعة حكومية في أمريكا، تقع في خليج تامبا المشمس وتتميز بأعلى عائد استثماري وتكاليف دراسية مواتية.",
+   "descriptionEn": "Top-50 US Public University in sunny Tampa Bay with outstanding ROI, exceptional research facilities, and generous international merit scholarships.",
+   "descriptionAr": "إحدى أفضل 50 جامعة حكومية في أمريكا، تقع في خليج تامبا المشمس وتتميز بأعلى عائد استثماري وتكاليف دراسية مواتية.",
+   "campusType": "Suburban",
+   "intakeMonths": [
+    "August (Fall)",
+    "January (Spring)",
+    "May (Summer)"
+   ],
+   "featured": true,
+   "isUsa": true,
+   "satRequired": "Required for Direct Admission",
+   "toeflIelts": "IELTS 6.5 / TOEFL 79 / Duolingo 110"
+  },
+  {
+   "id": "asu-arizona",
+   "name": "Arizona State University (ASU)",
+   "nameAr": "جامعة ولاية أريزونا",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "state": "Arizona",
+   "city": "Phoenix / Tempe",
+   "cityAr": "فينيكس / تمبي",
+   "location": "Phoenix, Arizona, USA",
+   "locationAr": "فينيكس، أريزونا، أمريكا",
+   "ranking": "#1 in USA for Innovation (10 yrs straight)",
+   "worldRanking": 156,
+   "acceptanceRate": "88%",
+   "tuitionPerYear": "$34,000 / year",
+   "tuitionUndergrad": "$34,000 / yr",
+   "tuitionGraduate": "$37,000 / yr",
+   "avgLivingCost": "$13,000 / yr",
+   "tuitionNum": 34000,
+   "currency": "USD",
+   "accreditation": "Higher Learning Commission (HLC)",
+   "accreditationAr": "معتمدة من HLC ورائدة الابتكار الأمريكي",
+   "degreesOffered": [
+    "Bachelor",
+    "Master",
+    "PhD",
+    "Pathway"
+   ],
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "fields": [
+    "Engineering",
+    "Business",
+    "AI & Computing",
+    "Sustainability",
+    "Journalism"
+   ],
+   "programsOffered": [
+    "Computer Systems Engineering",
+    "Supply Chain Management",
+    "Software Engineering",
+    "Robotics"
+   ],
+   "programsOfferedAr": [
+    "هندسة أنظمة الحاسوب",
+    "إدارة سلاسل الإمداد",
+    "هندسة البرمجيات",
+    "الروبوتات والذكاء الاصطناعي"
+   ],
+   "logo": "https://images.unsplash.com/photo-1568792923760-d70635a89fa8?auto=format&fit=crop&w=200&q=80",
+   "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1000&q=80",
+   "popularMajors": [
+    "Computer Systems Engineering",
+    "Supply Chain Management",
+    "Software Engineering",
+    "Robotics"
+   ],
+   "popularMajorsAr": [
+    "هندسة أنظمة الحاسوب",
+    "إدارة سلاسل الإمداد",
+    "هندسة البرمجيات",
+    "الروبوتات والذكاء الاصطناعي"
+   ],
+   "scholarshipsAvailable": true,
+   "scholarshipAvailable": "New American University Scholar Award (Up to $15,500/yr)",
+   "scholarshipAvailableAr": "منحة المستجدين حتى $15,500 سنوياً",
+   "maxScholarship": "New American University Scholar Award (Up to $15,500/yr)",
+   "stemPrograms": true,
+   "overviewEn": "Ranked #1 for Innovation in the USA ahead of MIT and Stanford. Home to the Ira A. Fulton Schools of Engineering and W. P. Carey School of Business.",
+   "overviewAr": "المصنفة رقم 1 في الابتكار في أمريكا متفوقة على ستانفورد وMIT، وتضم كلية فولتون للهندسة وكلية كاري للأعمال.",
+   "descriptionEn": "Ranked #1 for Innovation in the USA ahead of MIT and Stanford. Home to the Ira A. Fulton Schools of Engineering and W. P. Carey School of Business.",
+   "descriptionAr": "المصنفة رقم 1 في الابتكار في أمريكا متفوقة على ستانفورد وMIT، وتضم كلية فولتون للهندسة وكلية كاري للأعمال.",
+   "campusType": "Suburban",
+   "intakeMonths": [
+    "August (Fall)",
+    "January (Spring)"
+   ],
+   "featured": true,
+   "isUsa": true,
+   "satRequired": "Test Optional",
+   "toeflIelts": "IELTS 6.0 / TOEFL 61 / Duolingo 95"
+  },
+  {
+   "id": "northeastern-boston",
+   "name": "Northeastern University",
+   "nameAr": "جامعة نورث إيسترن",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "state": "Massachusetts",
+   "city": "Boston",
+   "cityAr": "بوسطن",
+   "location": "Boston, Massachusetts, USA",
+   "locationAr": "بوسطن، ماساتشوستس، أمريكا",
+   "ranking": "#53 in USA (Top Tier-1)",
+   "worldRanking": 180,
+   "acceptanceRate": "18%",
+   "tuitionPerYear": "$62,000 / year",
+   "tuitionUndergrad": "$62,000 / yr",
+   "tuitionGraduate": "$52,000 / yr",
+   "avgLivingCost": "$18,000 / yr",
+   "tuitionNum": 62000,
+   "currency": "USD",
+   "accreditation": "NECHE & AACSB",
+   "accreditationAr": "معتمدة من NECHE وكلية الأعمال معتمدة من AACSB",
+   "degreesOffered": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "fields": [
+    "Computer Science",
+    "Engineering",
+    "Business",
+    "Data Science",
+    "Health Sciences"
+   ],
+   "programsOffered": [
+    "Computer Science (Co-op)",
+    "Information Systems",
+    "Data Analytics",
+    "Biotechnology",
+    "STEM MBA"
+   ],
+   "programsOfferedAr": [
+    "علوم الحاسوب مع تدريب Co-op",
+    "نظم المعلومات",
+    "تحليلات البيانات",
+    "التقنية الحيوية",
+    "ماجستير إدارة الأعمال STEM"
+   ],
+   "logo": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=200&q=80",
+   "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1000&q=80",
+   "popularMajors": [
+    "Computer Science (Co-op)",
+    "Information Systems",
+    "Data Analytics",
+    "Biotechnology",
+    "STEM MBA"
+   ],
+   "popularMajorsAr": [
+    "علوم الحاسوب مع تدريب Co-op",
+    "نظم المعلومات",
+    "تحليلات البيانات",
+    "التقنية الحيوية",
+    "ماجستير إدارة الأعمال STEM"
+   ],
+   "scholarshipsAvailable": true,
+   "scholarshipAvailable": "Dean’s Scholarship ($10,000 - $28,000 / yr)",
+   "scholarshipAvailableAr": "منحة العميد ($10,000 إلى $28,000 سنوياً)",
+   "maxScholarship": "Dean’s Scholarship ($10,000 - $28,000 / yr)",
+   "stemPrograms": true,
+   "overviewEn": "World leader in cooperative education (Co-op) program where students alternate semesters of academic study with full-time paid employment at top companies in Boston and Silicon Valley.",
+   "overviewAr": "الرائدة العالمية في برامج التدريب التعاوني مدفوع الأجر Co-op، حيث يكتسب الطالب خبرة عملية بدوام كامل في كبرى الشركات الأمريكية قبل التخرج.",
+   "descriptionEn": "World leader in cooperative education (Co-op) program where students alternate semesters of academic study with full-time paid employment at top companies in Boston and Silicon Valley.",
+   "descriptionAr": "الرائدة العالمية في برامج التدريب التعاوني مدفوع الأجر Co-op، حيث يكتسب الطالب خبرة عملية بدوام كامل في كبرى الشركات الأمريكية قبل التخرج.",
+   "campusType": "Urban",
+   "intakeMonths": [
+    "September (Fall)",
+    "January (Spring)"
+   ],
+   "featured": true,
+   "isUsa": true,
+   "satRequired": "Test Optional",
+   "toeflIelts": "IELTS 7.0 / TOEFL 100 / Duolingo 125"
+  },
+  {
+   "id": "seattle-colleges",
+   "name": "Seattle Community Colleges (2+2 Pathway)",
+   "nameAr": "كليات سياتل للمجتمع (مسار 2+2)",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "state": "Washington",
+   "city": "Seattle",
+   "cityAr": "سياتل",
+   "location": "Seattle, Washington, USA",
+   "locationAr": "سياتل، واشنطن، أمريكا",
+   "ranking": "Top Community College in USA",
+   "acceptanceRate": "95% (Open Admission)",
+   "tuitionPerYear": "$10,500 / year (Ultra Affordable)",
+   "tuitionUndergrad": "$10,500 / yr",
+   "tuitionGraduate": "N/A (2-Yr Transfer)",
+   "avgLivingCost": "$11,000 / yr",
+   "tuitionNum": 10500,
+   "currency": "USD",
+   "accreditation": "NWCCU & Guaranteed Transfer (TAG)",
+   "accreditationAr": "معتمدة واتفاقيات تحويل مضمونة TAG",
+   "degreesOffered": [
+    "Bachelor",
+    "Pathway"
+   ],
+   "degreeLevels": [
+    "Bachelor",
+    "Pathway"
+   ],
+   "fields": [
+    "Computer Science",
+    "Business",
+    "Engineering",
+    "General Science",
+    "Art & Design"
+   ],
+   "programsOffered": [
+    "Associate of Science (CS Track)",
+    "Associate of Business (DTA)",
+    "Engineering Transfer",
+    "Aviation Maintenance"
+   ],
+   "programsOfferedAr": [
+    "دبلوم مشارك في علوم الحاسوب",
+    "دبلوم مشارك في إدارة الأعمال",
+    "مسار التحويل الهندسي",
+    "صيانة الطيران"
+   ],
+   "logo": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=200&q=80",
+   "image": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80",
+   "popularMajors": [
+    "Associate of Science (CS Track)",
+    "Associate of Business (DTA)",
+    "Engineering Transfer",
+    "Aviation Maintenance"
+   ],
+   "popularMajorsAr": [
+    "دبلوم مشارك في علوم الحاسوب",
+    "دبلوم مشارك في إدارة الأعمال",
+    "مسار التحويل الهندسي",
+    "صيانة الطيران"
+   ],
+   "scholarshipsAvailable": true,
+   "scholarshipAvailable": "Foundation & Merit Waivers ($1,500 - $3,000 / yr)",
+   "scholarshipAvailableAr": "منح وإعفاءات جزئية من الرسوم",
+   "maxScholarship": "Foundation & Merit Waivers ($1,500 - $3,000 / yr)",
+   "stemPrograms": true,
+   "overviewEn": "The #1 cost-effective gateway to University of Washington, UC Berkeley, and other world-class universities. Study first 2 years for ~$10k/yr then transfer as a Junior with 60 guaranteed credits.",
+   "overviewAr": "البوابة الأذكى والأكثر توفيراً للتحويل إلى جامعة واشنطن وجامعات كاليفورنيا. ادخر حتى $60,000 في أول سنتين ثم انتقل للسنة الثالثة بالجامعة الكبرى.",
+   "descriptionEn": "The #1 cost-effective gateway to University of Washington, UC Berkeley, and other world-class universities. Study first 2 years for ~$10k/yr then transfer as a Junior with 60 guaranteed credits.",
+   "descriptionAr": "البوابة الأذكى والأكثر توفيراً للتحويل إلى جامعة واشنطن وجامعات كاليفورنيا. ادخر حتى $60,000 في أول سنتين ثم انتقل للسنة الثالثة بالجامعة الكبرى.",
+   "campusType": "Urban",
+   "intakeMonths": [
+    "September (Fall)",
+    "January (Winter)",
+    "April (Spring)",
+    "June (Summer)"
+   ],
+   "featured": true,
+   "isUsa": true,
+   "satRequired": "No SAT Required",
+   "toeflIelts": "IELTS 5.5 / TOEFL 56 or Intensive English Program (IEP)"
+  }
+ ],
+ "usStatesData": [
+  {
+   "id": "illinois",
+   "name": "Illinois (Chicago)",
+   "nameAr": "إلينوي (شيكاغو)",
+   "badge": "GEC HQ City & Financial Hub",
+   "image": "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "Illinois Tech",
+    "DePaul University",
+    "University of Illinois Urbana-Champaign (UIUC)",
+    "Northwestern University",
+    "University of Chicago"
+   ],
+   "topUniversitiesAr": [
+    "معهد إلينوي للتكنولوجيا",
+    "جامعة دي بول",
+    "جامعة إلينوي في إربانا-شامبين",
+    "جامعة نورث وسترن",
+    "جامعة شيكاغو"
+   ],
+   "avgTuitionRange": "$22,000 - $55,000 / year",
+   "avgLivingCost": "$1,200 - $1,800 / month",
+   "climate": "Four Distinct Seasons",
+   "climateAr": "أربعة فصول واضحة",
+   "keyIndustries": [
+    "Finance & Fintech",
+    "Aviation (Boeing)",
+    "Biotech",
+    "Information Technology"
+   ],
+   "keyIndustriesAr": [
+    "المالية والتكنولوجيا المالية",
+    "الطيران",
+    "التكنولوجيا الحيوية",
+    "تكنولوجيا المعلومات"
+   ],
+   "overviewEn": "Home of GEC Headquarters. Chicago is the 3rd largest US metropolis offering unmatched internships, architecture, global commerce, and friendly Midwest culture.",
+   "overviewAr": "مقر GEC الرئيسي. شيكاغو هي ثالث أكبر حاضرة اقتصادية في أمريكا وتوفر فرص تدريب وتوظيف استثنائية في مجالات المال والهندسة والتكنولوجيا."
+  },
+  {
+   "id": "california",
+   "name": "California",
+   "nameAr": "كاليفورنيا",
+   "badge": "Silicon Valley & Global Tech Leader",
+   "image": "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "UC Berkeley",
+    "UCLA",
+    "Stanford",
+    "USC",
+    "San Jose State",
+    "UC San Diego"
+   ],
+   "topUniversitiesAr": [
+    "جامعة كاليفورنيا بيركلي",
+    "جامعة كاليفورنيا لوس أنجلوس (UCLA)",
+    "ستانفورد",
+    "جامعة جنوب كاليفورنيا",
+    "جامعة سان خوسيه"
+   ],
+   "avgTuitionRange": "$28,000 - $65,000 / year",
+   "avgLivingCost": "$1,800 - $2,600 / month",
+   "climate": "Sunny Mediterranean",
+   "climateAr": "مشمس ومعتدل على مدار العام",
+   "keyIndustries": [
+    "Tech & AI",
+    "Entertainment & Media",
+    "Clean Energy",
+    "Aerospace"
+   ],
+   "keyIndustriesAr": [
+    "التكنولوجيا والذكاء الاصطناعي",
+    "الإعلام والسينما",
+    "الطاقة المتجددة",
+    "الفضاء"
+   ],
+   "overviewEn": "The world’s 5th largest economy, home to Silicon Valley, Hollywood, and the world-renowned University of California (UC) and California State University (CSU) systems.",
+   "overviewAr": "خامس أكبر اقتصاد في العالم، وموطن وادي السيليكون وهوليوود، وتضم أعرق منظومات الجامعات الحكومية والخاصة."
+  },
+  {
+   "id": "new-york",
+   "name": "New York",
+   "nameAr": "نيويورك",
+   "badge": "Global Financial & Media Capital",
+   "image": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "Columbia University",
+    "NYU",
+    "Cornell University",
+    "SUNY Buffalo",
+    "Fordham University"
+   ],
+   "topUniversitiesAr": [
+    "جامعة كولومبيا",
+    "جامعة نيويورك (NYU)",
+    "جامعة كورنيل",
+    "جامعة ولاية نيويورك بافلو",
+    "جامعة فوردهام"
+   ],
+   "avgTuitionRange": "$24,000 - $64,000 / year",
+   "avgLivingCost": "$1,800 - $2,500 / month",
+   "climate": "Temperate Four Seasons",
+   "climateAr": "معتدل بأربعة فصول",
+   "keyIndustries": [
+    "Wall Street Banking",
+    "Fashion & Design",
+    "Publishing & Media",
+    "Tech Startups"
+   ],
+   "keyIndustriesAr": [
+    "بنوك وول ستريت والمالية",
+    "الأزياء والتصميم",
+    "الإعلام والنشر",
+    "الشركات الناشئة"
+   ],
+   "overviewEn": "The international crossroads of commerce, arts, and diplomacy. Exceptional networking opportunities across Wall Street, the UN, and world-class universities.",
+   "overviewAr": "عاصمة العالم للمال والأعمال والدبلوماسية والفنون، وتوفر شبكة علاقات وتدريب عملي غير مسبوقة."
+  },
+  {
+   "id": "texas",
+   "name": "Texas",
+   "nameAr": "تكساس",
+   "badge": "Affordable Living & Tech Boom",
+   "image": "https://images.unsplash.com/photo-1531218150217-54595bc2b934?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "UT Austin",
+    "Texas A&M University",
+    "Rice University",
+    "University of Houston",
+    "UT Dallas"
+   ],
+   "topUniversitiesAr": [
+    "جامعة تكساس في أوستن",
+    "جامعة تكساس إيه آند إم",
+    "جامعة رايس",
+    "جامعة هيوستن",
+    "جامعة تكساس دالاس"
+   ],
+   "avgTuitionRange": "$20,000 - $44,000 / year",
+   "avgLivingCost": "$1,100 - $1,600 / month",
+   "climate": "Warm & Sunny",
+   "climateAr": "دافئ ومشمس",
+   "keyIndustries": [
+    "Energy & Oil/Gas",
+    "Semiconductor (Silicon Hills)",
+    "Aerospace (NASA)",
+    "Biomedical (TMC)"
+   ],
+   "keyIndustriesAr": [
+    "الطاقة والغاز والنفط",
+    "أشباه الموصلات والتكنولوجيا",
+    "أبحاث الفضاء (ناسا)",
+    "الطب الحيوي"
+   ],
+   "overviewEn": "Fastest-growing tech state in America with low cost of living, no state income tax, massive university endowments, and generous scholarship programs.",
+   "overviewAr": "الولاية الأسرع نمواً في استقطاب كبرى شركات التكنولوجيا، وتتميز بتكاليف معيشية منخفضة وفرص منح سخية."
+  },
+  {
+   "id": "massachusetts",
+   "name": "Massachusetts (Boston)",
+   "nameAr": "ماساتشوستس (بوسطن)",
+   "badge": "World Capital of Higher Education",
+   "image": "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "Harvard",
+    "MIT",
+    "Boston University",
+    "Northeastern",
+    "Boston College",
+    "Tufts"
+   ],
+   "topUniversitiesAr": [
+    "جامعة هارفارد",
+    "معهد ماساتشوستس للتكنولوجيا (MIT)",
+    "جامعة بوسطن",
+    "جامعة نورث إيسترن",
+    "جامعة بوسطن كوليدج"
+   ],
+   "avgTuitionRange": "$35,000 - $66,000 / year",
+   "avgLivingCost": "$1,700 - $2,400 / month",
+   "climate": "New England Seasons & Snowy Winter",
+   "climateAr": "مناخ نيو إنجلاند المميز مع شتاء ثلجي",
+   "keyIndustries": [
+    "Biotechnology & Pharma",
+    "Higher Education",
+    "Venture Capital",
+    "Robotics"
+   ],
+   "keyIndustriesAr": [
+    "التكنولوجيا الحيوية والأدوية",
+    "التعليم العالي",
+    "رأس المال الجريء",
+    "الروبوتات"
+   ],
+   "overviewEn": "Home to more than 50 colleges in the Boston area alone. Highest concentration of academic talent, Nobel laureates, and biotech research hubs in the world.",
+   "overviewAr": "عاصمة التعليم العالي الأولى في العالم، تضم أكثر من 50 جامعة ومعهداً في محيط بوسطن وتعتبر مركز أبحاث التكنولوجيا الحيوية الأول عالمياً."
+  },
+  {
+   "id": "florida",
+   "name": "Florida",
+   "nameAr": "فلوريدا",
+   "badge": "Affordable Tuition & Tropical Climate",
+   "image": "https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "University of Florida (UF)",
+    "University of South Florida (USF)",
+    "University of Miami",
+    "FIU",
+    "UCF"
+   ],
+   "topUniversitiesAr": [
+    "جامعة فلوريدا (UF)",
+    "جامعة جنوب فلوريدا (USF)",
+    "جامعة ميامي",
+    "جامعة فلوريدا الدولية",
+    "جامعة وسط فلوريدا"
+   ],
+   "avgTuitionRange": "$17,000 - $36,000 / year",
+   "avgLivingCost": "$1,200 - $1,700 / month",
+   "climate": "Subtropical Sunshine",
+   "climateAr": "استوائي مشمس ودافئ",
+   "keyIndustries": [
+    "Tourism & Hospitality",
+    "Aviation & Space (Cape Canaveral)",
+    "International Trade",
+    "Healthcare"
+   ],
+   "keyIndustriesAr": [
+    "السياحة والضيافة",
+    "الطيران وعلوم الفضاء",
+    "التجارة الدولية",
+    "الرعاية الصحية"
+   ],
+   "overviewEn": "Florida’s public university system offers some of the lowest tuition rates for international students in the USA, combined with vibrant beach lifestyle and tech growth.",
+   "overviewAr": "تقدم منظومة جامعات فلوريدا الحكومية أقل معدلات رسوم دراسية للطلاب الدوليين في أمريكا مع طقس رائع وجودة حياة ممتازة."
+  },
+  {
+   "id": "pennsylvania",
+   "name": "Pennsylvania",
+   "nameAr": "بنسلفانيا",
+   "badge": "Ivy League & Historic Academic Heritage",
+   "image": "https://images.unsplash.com/photo-1569091791842-7cfb64e04797?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "University of Pennsylvania (UPenn)",
+    "Carnegie Mellon University (CMU)",
+    "Penn State",
+    "University of Pittsburgh"
+   ],
+   "topUniversitiesAr": [
+    "جامعة بنسلفانيا (UPenn)",
+    "جامعة كارنيجي ميلون (CMU)",
+    "جامعة ولاية بنسلفانيا",
+    "جامعة بيتسبرغ"
+   ],
+   "avgTuitionRange": "$24,000 - $60,000 / year",
+   "avgLivingCost": "$1,200 - $1,800 / month",
+   "climate": "Four Seasons",
+   "climateAr": "أربعة فصول",
+   "keyIndustries": [
+    "AI & Robotics (CMU)",
+    "Healthcare (UPMC)",
+    "Wharton Finance",
+    "Advanced Manufacturing"
+   ],
+   "keyIndustriesAr": [
+    "الذكاء الاصطناعي والروبوتات",
+    "الرعاية الصحية والطب",
+    "إدارة الأعمال (وارتون)",
+    "التصنيع المتقدم"
+   ],
+   "overviewEn": "A cradle of American history featuring top Ivy League research, Carnegie Mellon’s world-#1 Computer Science program, and Penn State’s vast alumni network.",
+   "overviewAr": "مهد التاريخ الأمريكي وتضم كلية وارتون للأعمال وجامعة كارنيجي ميلون الأولى عالمياً في علوم الحاسوب والذكاء الاصطناعي."
+  },
+  {
+   "id": "washington",
+   "name": "Washington State (Seattle)",
+   "nameAr": "ولاية واشنطن (سياتل)",
+   "badge": "Tech Giants & Scenic Pacific Northwest",
+   "image": "https://images.unsplash.com/photo-1502175353174-a7a70e73b362?auto=format&fit=crop&w=800&q=80",
+   "topUniversities": [
+    "University of Washington (UW)",
+    "Seattle University",
+    "Washington State University",
+    "Seattle Colleges (2+2)"
+   ],
+   "topUniversitiesAr": [
+    "جامعة واشنطن (UW)",
+    "جامعة سياتل",
+    "جامعة ولاية واشنطن",
+    "كليات سياتل (مسار 2+2)"
+   ],
+   "avgTuitionRange": "$11,000 - $42,000 / year",
+   "avgLivingCost": "$1,500 - $2,100 / month",
+   "climate": "Mild Temperate & Green",
+   "climateAr": "معتدل مع طبيعة خضراء ساحرة",
+   "keyIndustries": [
+    "Cloud Computing (Amazon, Microsoft)",
+    "Aviation (Boeing)",
+    "Coffee & Retail (Starbucks, Costco)"
+   ],
+   "keyIndustriesAr": [
+    "الحوسبة السحابية (أمازون، مايكروسوفت)",
+    "صناعة الطيران (بوينغ)",
+    "الشركات العالمية"
+   ],
+   "overviewEn": "Headquarters of Microsoft, Amazon, and Boeing. Exceptional for CS, engineering, and 2+2 community college pathway programs leading to direct Junior admission.",
+   "overviewAr": "المقر الرئيسي لشركات مايكروسوفت وأمازون وبوينغ. بيئة مثالية لدارسي علوم الحاسوب ومسارات التحويل لكليات المجتمع."
+  }
+ ],
+ "destinationsData": [
+  {
+   "id": "usa",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة الأمريكية",
+   "code": "US",
+   "flag": "🇺🇸",
+   "heroImage": "https://images.unsplash.com/photo-1485738422979-f5c462d49f74?auto=format&fit=crop&w=1200&q=80",
+   "taglineEn": "The Gold Standard of Global Higher Education — 4,000+ Accredited Universities",
+   "taglineAr": "المعيار الذهبي للتعليم العالي عالمياً — أكثر من 4,000 جامعة وكلية معتمدة",
+   "whyStudyEn": [
+    "Over 50 of the world’s Top 100 universities are located in the USA.",
+    "3-Year OPT STEM Work Authorization allows graduates to work legally at American companies.",
+    "Flexible credit system with double majors, minors, and 2+2 transfer pathways.",
+    "Generous merit-based scholarships, research assistantships, and on-campus employment.",
+    "Global prestige that accelerates leadership careers worldwide."
+   ],
+   "whyStudyAr": [
+    "أكثر من 50 جامعة من بين أفضل 100 جامعة في العالم تقع في أمريكا.",
+    "إذن عمل وتدريب وظيفي OPT لمدة تصل إلى 3 سنوات لخريجي تخصصات STEM للعمل في كبرى الشركات الأمريكية.",
+    "مرونة أكاديمية استثنائية بنظام الساعات المعتمدة وإمكانية دراسة تخصصين ومسارات التحويل 2+2.",
+    "منح دراسية سخية للتفوق الأكاديمي وفرص مساعد باحث ومساعد تدريس.",
+    "اعتراف واعتماد دولي يفتح أوسع الآفاق المهنية حول العالم."
+   ],
+   "topUniversitiesCount": 150,
+   "avgTuition": "$18,000 - $55,000 / year",
+   "avgLivingCost": "$12,000 - $20,000 / year",
+   "postStudyWork": "Up to 3 Years (OPT STEM Extension)",
+   "postStudyWorkAr": "تصل إلى 3 سنوات (تدريب OPT لخريجي STEM)",
+   "visaType": "F-1 Student Visa",
+   "popularPrograms": [
+    "Computer Science & AI",
+    "Data Science",
+    "MBA & Finance",
+    "Biomedical Engineering",
+    "Aviation"
+   ],
+   "popularProgramsAr": [
+    "علوم الحاسوب والذكاء الاصطناعي",
+    "علم البيانات",
+    "ماجستير إدارة الأعمال والمالية",
+    "الهندسة الطبية الحيوية",
+    "علوم الطيران"
+   ],
+   "intakesEn": "August (Fall - Main), January (Spring), May (Summer)",
+   "intakesAr": "أغسطس (الخريف - الرئيسي)، يناير (الربيع)، مايو (الصيف)",
+   "isHeroDestination": true
+  },
+  {
+   "id": "uk",
+   "country": "United Kingdom",
+   "countryAr": "المملكة المتحدة",
+   "code": "GB",
+   "flag": "🇬🇧",
+   "heroImage": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80",
+   "taglineEn": "Centuries of Academic Prestige & Fast-Track Degree Programs",
+   "taglineAr": "عراقة أكاديمية تاريخية وبرامج دراسية سريعة الإنجاز",
+   "whyStudyEn": [
+    "Shorter degree duration: 3-year Bachelor’s and 1-year Master’s degrees saving time and tuition.",
+    "2-Year Graduate Route post-study work visa for all graduates (3 years for PhD).",
+    "Historic institutions with Russell Group excellence and cutting-edge research.",
+    "Strategic gateway to European commerce and financial capital in London."
+   ],
+   "whyStudyAr": [
+    "مدة دراسة أقصر: 3 سنوات للبكالوريوس وسنة واحدة للماجستير مما يوفر الوقت والتكاليف.",
+    "تأشيرة عمل بعد التخرج (Graduate Route) لمدة سنتين لجميع الخريجين (3 سنوات للدكتوراه).",
+    "جامعات تاريخية عريقة ضمن مجموعة راسل (Russell Group) وأبحاث رائدة.",
+    "بوابة رئيسية للمال والأعمال في قلب لندن."
+   ],
+   "topUniversitiesCount": 85,
+   "avgTuition": "£16,000 - £35,000 / year",
+   "avgLivingCost": "£12,000 - £16,000 / year",
+   "postStudyWork": "2 Years (Graduate Visa)",
+   "postStudyWorkAr": "سنتان (تأشيرة الخريجين)",
+   "visaType": "Student Visa (formerly Tier 4)",
+   "popularPrograms": [
+    "Business & Management",
+    "Law",
+    "Architecture",
+    "Finance & Accounting",
+    "Medicine"
+   ],
+   "popularProgramsAr": [
+    "إدارة الأعمال",
+    "القانون",
+    "العمارة والتصميم",
+    "المالية والمحاسبة",
+    "الطب البشري"
+   ],
+   "intakesEn": "September/October (Fall - Main), January (Winter)",
+   "intakesAr": "سبتمبر / أكتوبر (الخريف)، يناير (الشتاء)",
+   "isHeroDestination": false
+  },
+  {
+   "id": "canada",
+   "country": "Canada",
+   "countryAr": "كندا",
+   "code": "CA",
+   "flag": "🇨🇦",
+   "heroImage": "https://images.unsplash.com/photo-1517935703635-2717090c2210?auto=format&fit=crop&w=1200&q=80",
+   "taglineEn": "World-Class Quality of Life, Affordable Tuition & Clear Immigration Pathways",
+   "taglineAr": "جودة حياة عالمية، تكاليف دراسية مناسبة، ومسارات هجرة واضحة",
+   "whyStudyEn": [
+    "Post-Graduation Work Permit (PGWP) allows up to 3 years of open work permit.",
+    "Affordable tuition fees compared to US private universities with high academic rigor.",
+    "Safe, multicultural cities (Toronto, Vancouver, Montreal) with strong Arab student communities.",
+    "Opportunities for permanent residency (Express Entry) after Canadian studies and work."
+   ],
+   "whyStudyAr": [
+    "تصريح عمل بعد التخرج (PGWP) مفتوح لمدة تصل إلى 3 سنوات.",
+    "رسوم دراسية معقولة مقارنة بالجامعات الخاصة مع أعلى المعايير الأكاديمية.",
+    "مدن آمنة ومتعددة الثقافات ومجتمعات طلابية عربية واسعة.",
+    "إمكانية التقديم على الإقامة الدائمة بعد إتمام الدراسة والعمل."
+   ],
+   "topUniversitiesCount": 60,
+   "avgTuition": "CAD $22,000 - $48,000 / year",
+   "avgLivingCost": "CAD $14,000 - $18,000 / year",
+   "postStudyWork": "Up to 3 Years (PGWP)",
+   "postStudyWorkAr": "حتى 3 سنوات (تصريح PGWP)",
+   "visaType": "Canadian Study Permit",
+   "popularPrograms": [
+    "Computer Science",
+    "Civil Engineering",
+    "Business Analytics",
+    "Nursing",
+    "Digital Media"
+   ],
+   "popularProgramsAr": [
+    "علوم الحاسوب",
+    "الهندسة المدنية",
+    "تحليلات الأعمال",
+    "التمريض",
+    "الوسائط الرقمية"
+   ],
+   "intakesEn": "September (Fall), January (Winter), May (Summer)",
+   "intakesAr": "سبتمبر (الخريف)، يناير (الشتاء)، مايو (الصيف)",
+   "isHeroDestination": false
+  },
+  {
+   "id": "australia",
+   "country": "Australia",
+   "countryAr": "أستراليا",
+   "code": "AU",
+   "flag": "🇦🇺",
+   "heroImage": "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=1200&q=80",
+   "taglineEn": "Group of Eight Excellence, High Wages & Up to 4-Year Post-Study Work Visas",
+   "taglineAr": "جامعات النخبة الثمانية، رواتب عمل مرتفعة وتأشيرات عمل تصل لـ 4 سنوات",
+   "whyStudyEn": [
+    "7 Australian universities ranked in the global Top 50.",
+    "Generous post-study work rights (Subclass 485) ranging from 2 to 4 years.",
+    "Permission to work part-time up to 48 hours per fortnight during study terms.",
+    "World-leading healthcare, engineering, and environmental research."
+   ],
+   "whyStudyAr": [
+    "7 جامعات أسترالية ضمن أفضل 50 جامعة على مستوى العالم.",
+    "حقوق عمل بعد التخرج تمتد من سنتين إلى 4 سنوات حسب الدرجة والمنطقة.",
+    "السماح بالعمل الجزئي أثناء الفصل الدراسي حتى 48 ساعة كل أسبوعين.",
+    "ريادة عالمية في مجالات الرعاية الصحية والهندسة والتعدين."
+   ],
+   "topUniversitiesCount": 45,
+   "avgTuition": "AUD $30,000 - $48,000 / year",
+   "avgLivingCost": "AUD $20,000 - $25,000 / year",
+   "postStudyWork": "2 to 4 Years (Subclass 485)",
+   "postStudyWorkAr": "من سنتين إلى 4 سنوات",
+   "visaType": "Student Visa (Subclass 500)",
+   "popularPrograms": [
+    "Biomedical Sciences",
+    "Information Technology",
+    "Civil & Mining Engineering",
+    "Finance",
+    "Hospitality"
+   ],
+   "popularProgramsAr": [
+    "العلوم الطبية الحيوية",
+    "تكنولوجيا المعلومات",
+    "الهندسة المدنية والتعدين",
+    "المالية",
+    "الضيافة"
+   ],
+   "intakesEn": "February (Semester 1 - Main), July (Semester 2)",
+   "intakesAr": "فبراير (الفصل الأول - الرئيسي)، يوليو (الفصل الثاني)",
+   "isHeroDestination": false
+  },
+  {
+   "id": "germany",
+   "country": "Germany",
+   "countryAr": "ألمانيا",
+   "code": "DE",
+   "flag": "🇩🇪",
+   "heroImage": "https://images.unsplash.com/photo-1595867818082-083862f3d630?auto=format&fit=crop&w=1200&q=80",
+   "taglineEn": "Europe’s Engineering Hub — Low/Tuition-Free Public Universities & Strong Economy",
+   "taglineAr": "عاصمة الهندسة الأوروبية — رسوم شبه مجانية في الجامعات الحكومية واقتصاد عملاق",
+   "whyStudyEn": [
+    "Public universities charge little or no tuition (administrative fee only in most states).",
+    "Engineering powerhouse with direct industry ties (BMW, Mercedes, Siemens, Bosch, SAP).",
+    "Over 2,000 Master’s programs taught 100% in English.",
+    "18-Month job seeker visa after graduation with EU Blue Card fast-track."
+   ],
+   "whyStudyAr": [
+    "رسوم دراسية مجانية أو شبه مجانية في معظم الجامعات الحكومية.",
+    "الريادة الصناعية والهندسية مع شراكات مباشرة مع كبرى الشركات الألمانية.",
+    "أكثر من 2000 برنامج ماجستير يُدرّس باللغة الإنجليزية بالكامل.",
+    "تأشيرة بحث عن عمل لمدة 18 شهراً بعد التخرج مع مسار سريع للبطاقة الزرقاء الأوروبية."
+   ],
+   "topUniversitiesCount": 40,
+   "avgTuition": "€0 - €6,000 / year (Public) / €12,000 (Private)",
+   "avgLivingCost": "€11,200 / year (Blocked Account Requirement)",
+   "postStudyWork": "18 Months Job Seeker Visa",
+   "postStudyWorkAr": "18 شهراً للبحث عن عمل والاستقرار",
+   "visaType": "German National Student Visa",
+   "popularPrograms": [
+    "Automotive Engineering",
+    "Mechanical & Industrial Engineering",
+    "Informatics & AI",
+    "Renewable Energy"
+   ],
+   "popularProgramsAr": [
+    "هندسة السيارات",
+    "الهندسة الميكانيكية والصناعية",
+    "علوم الحاسوب والذكاء الاصطناعي",
+    "الطاقة المتجددة"
+   ],
+   "intakesEn": "October (Winter Semester - Main), April (Summer)",
+   "intakesAr": "أكتوبر (الفصل الشتوي - الرئيسي)، أبريل (الصيفي)",
+   "isHeroDestination": false
+  },
+  {
+   "id": "ireland",
+   "country": "Ireland",
+   "countryAr": "أيرلندا",
+   "code": "IE",
+   "flag": "🇮🇪",
+   "heroImage": "https://images.unsplash.com/photo-1590012314607-cda9d9b699ae?auto=format&fit=crop&w=1200&q=80",
+   "taglineEn": "Silicon Valley of Europe — 100% English Speaking EU Member with 2-Year Stay Back",
+   "taglineAr": "وادي السيليكون الأوروبي — دولة ناطقة بالإنجليزية بالكامل وعضو بالاتحاد الأوروبي",
+   "whyStudyEn": [
+    "European Headquarters for Google, Apple, Meta, Microsoft, Pfizer, and TikTok.",
+    "2-Year Third Level Graduate Scheme work permit for Master’s graduates.",
+    "Only native English-speaking country in the European Union Eurozone.",
+    "Global reputation in Pharmaceuticals, Tech, and Financial Services."
+   ],
+   "whyStudyAr": [
+    "المقر الأوروبي لشركات جوجل وآبل وميتا ومايكروسوفت وفايزر وتيك توك.",
+    "تصريح عمل وتدريب لمدة سنتين لخريجي برامج الماجستير.",
+    "الدولة الوحيدة الناطقة بالإنجليزية في منطقة اليورو بالاتحاد الأوروبي.",
+    "مكانة عالمية رائدة في علوم الأدوية والتكنولوجيا والخدمات المالية."
+   ],
+   "topUniversitiesCount": 20,
+   "avgTuition": "€12,000 - €26,000 / year",
+   "avgLivingCost": "€12,000 - €16,000 / year",
+   "postStudyWork": "2 Years (Third Level Graduate Scheme)",
+   "postStudyWorkAr": "سنتان لخريجي الماجستير",
+   "visaType": "Irish Student Visa (Stamp 2)",
+   "popularPrograms": [
+    "Data Science & AI",
+    "Pharmaceutical Chemistry",
+    "Cybersecurity",
+    "FinTech",
+    "Digital Marketing"
+   ],
+   "popularProgramsAr": [
+    "علم البيانات والذكاء الاصطناعي",
+    "الكيمياء الصيدلانية",
+    "الأمن السيبراني",
+    "التكنولوجيا المالية",
+    "التسويق الرقمي"
+   ],
+   "intakesEn": "September (Fall - Main), January (Winter)",
+   "intakesAr": "سبتمبر (الخريف - الرئيسي)، يناير (الشتاء)",
+   "isHeroDestination": false
+  }
+ ],
+ "scholarshipsData": [
+  {
+   "id": "illinois-tech-merit",
+   "titleEn": "Illinois Tech International Camras & Heald Merit Scholarships",
+   "titleAr": "منح التميز الأكاديمي للطلاب الدوليين في معهد إلينوي للتكنولوجيا",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "provider": "Illinois Institute of Technology (Chicago)",
+   "providerAr": "معهد إلينوي للتكنولوجيا (شيكاغو)",
+   "coverage": "Partial to Significant Tuition Reduction",
+   "coverageAr": "تغطية جزئية إلى كبيرة للرسوم الدراسية",
+   "amount": "$15,000 - $30,000 / year (Renewable for 4 years)",
+   "type": "Merit-Based",
+   "typeAr": "منحة تفوق أكاديمي",
+   "degreeLevel": [
+    "Bachelor",
+    "Master"
+   ],
+   "deadline": "Rolling (Priority: Nov 15 & March 1)",
+   "deadlineAr": "مستمر (الأولوية: 15 نوفمبر و 1 مارس)",
+   "descriptionEn": "Generous merit-based scholarship automatically awarded to high-achieving international students applying for STEM, Architecture, and Business programs at Illinois Tech.",
+   "descriptionAr": "منحة تميز أكاديمي سنوية متجددة تُمنح تلقائياً للطلاب الدوليين المتميزين المتقدمين لبرامج الهندسة والتكنولوجيا وإدارة الأعمال في شيكاغو.",
+   "eligibilityEn": [
+    "Cumulative high school GPA equivalent to 3.2+ (on 4.0 scale)",
+    "Demonstrated interest in STEM, Architecture, or Business",
+    "Automatically reviewed upon standard application submission through GEC",
+    "Maintain 3.0 GPA at university for annual renewal"
+   ],
+   "eligibilityAr": [
+    "معدل تراكمي في الثانوية العامة يعادل 3.2+ من 4.0",
+    "الرغبة في دراسة مجالات STEM أو العمارة أو إدارة الأعمال",
+    "يتم تقييم الطالب تلقائياً عند التقديم عبر GEC",
+    "المحافظة على معدل 3.0 في الجامعة لتجديد المنحة سنوياً"
+   ],
+   "isUsa": true
+  },
+  {
+   "id": "usf-green-gold",
+   "titleEn": "USF International Green & Gold Presidential Award",
+   "titleAr": "جائزة الرئيس للطلاب الدوليين بجامعة جنوب فلوريدا",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "provider": "University of South Florida",
+   "providerAr": "جامعة جنوب فلوريدا",
+   "coverage": "Annual Tuition Waiver",
+   "coverageAr": "إعفاء سنوي من الرسوم",
+   "amount": "$6,000 - $12,000 / year (Up to $48,000 total)",
+   "type": "Merit-Based",
+   "typeAr": "منحة تفوق أكاديمي",
+   "degreeLevel": [
+    "Bachelor"
+   ],
+   "deadline": "January 15 (Fall Intake)",
+   "deadlineAr": "15 يناير (لفصل الخريف)",
+   "descriptionEn": "High-value undergraduate merit award reducing out-of-state tuition fees substantially for qualified international candidates at USF.",
+   "descriptionAr": "منحة جامعية قيّمة تهدف لتقليل تكاليف الدراسة للطلاب الدوليين المتفوقين في جامعة جنوب فلوريدا في تامبا.",
+   "eligibilityEn": [
+    "High School GPA of 3.6+ with competitive SAT (1250+) or ACT (26+)",
+    "Proof of English proficiency (IELTS 6.5+ or TOEFL 79+)",
+    "Open to all international undergraduate degree majors"
+   ],
+   "eligibilityAr": [
+    "معدل ثانوية 3.6+ مع درجة تنافسية في اختبار SAT (1250+) أو ACT (26+)",
+    "إثبات كفاءة اللغة الإنجليزية (آيلتس 6.5+ أو توفل 79+)",
+    "متاحة لجميع التخصصات للطلاب الدوليين في مرحلة البكالوريوس"
+   ],
+   "isUsa": true
+  },
+  {
+   "id": "depaul-global-scholar",
+   "titleEn": "DePaul Global Leader International Scholarship",
+   "titleAr": "منحة القادة الدوليين في جامعة دي بول",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "provider": "DePaul University (Chicago)",
+   "providerAr": "جامعة دي بول (شيكاغو)",
+   "coverage": "Renewable Annual Tuition Grant",
+   "coverageAr": "منحة سنوية متجددة للرسوم الدراسية",
+   "amount": "$14,000 - $24,000 / year",
+   "type": "Merit-Based",
+   "typeAr": "منحة تميز للطلاب الدوليين",
+   "degreeLevel": [
+    "Bachelor",
+    "Master"
+   ],
+   "deadline": "February 1 (Priority)",
+   "deadlineAr": "1 فبراير (أولوية)",
+   "descriptionEn": "Recognizes academic excellence and global engagement for international students attending DePaul in downtown Chicago.",
+   "descriptionAr": "منحة مخصصة للطلاب المتميزين أكاديمياً والراغبين بالدراسة في قلب مدينة شيكاغو وتجدد سنوياً بناءً على الأداء الأكاديمي.",
+   "eligibilityEn": [
+    "Strong academic transcripts (GPA 3.0+ for UG, 3.2+ for Grad)",
+    "Letter of motivation and international background statement",
+    "Renewable every year with satisfactory academic progress"
+   ],
+   "eligibilityAr": [
+    "سجل أكاديمي قوي (معدل 3.0+ للبكالوريوس، 3.2+ للماجستير)",
+    "خطاب دوافع يوضح الأهداف الأكاديمية والمهنية",
+    "تجدد سنوياً عند الحفاظ على المستوى الدراسي المطلوب"
+   ],
+   "isUsa": true
+  },
+  {
+   "id": "fulbright-foreign-student",
+   "titleEn": "Fulbright Foreign Student Program (USA)",
+   "titleAr": "برنامج فولبرايت للطلاب الأجانب (الولايات المتحدة)",
+   "country": "United States",
+   "countryAr": "الولايات المتحدة",
+   "provider": "U.S. Department of State",
+   "providerAr": "وزارة الخارجية الأمريكية",
+   "coverage": "Full Ride (Tuition, Living Stipend, Flights & Health Insurance)",
+   "coverageAr": "منحة كاملة (الرسوم، الراتب الشهري، تذاكر الطيران، والتأمين الصحي)",
+   "amount": "100% Fully Funded (~$60,000 - $90,000 / year)",
+   "type": "Government Full-Ride",
+   "typeAr": "منحة حكومية شاملة بالكامل",
+   "degreeLevel": [
+    "Master",
+    "PhD"
+   ],
+   "deadline": "Varies by Country (Typically April – June annually)",
+   "deadlineAr": "يختلف حسب الدولة (غالباً بين أبريل ويونيو)",
+   "descriptionEn": "The flagship international exchange program funded by the US Government covering full tuition, living allowances, books, and flights for graduate students.",
+   "descriptionAr": "البرنامج الحكومي الأمريكي الرائد عالمياً لتمويل دراسات الماجستير والدكتوراه شاملاً كافة التكاليف وراتب شهري وتأمين صحي.",
+   "eligibilityEn": [
+    "Citizenship of participating country in MENA or worldwide",
+    "Completed Bachelor degree with outstanding academic record",
+    "Strong leadership potential and commitment to return home",
+    "English proficiency (TOEFL iBT 80+ / IELTS 6.5+)"
+   ],
+   "eligibilityAr": [
+    "مواطنة إحدى الدول المشاركة في الشرق الأوسط والعالم",
+    "إنهاء درجة البكالوريوس بمعدل أكاديمي متميز",
+    "إظهار إمكانات قيادية والالتزام بالعودة للوطن بعد التخرج",
+    "كفاءة عالية باللغة الإنجليزية (توفل 80+ أو آيلتس 6.5+)"
+   ],
+   "isUsa": true
+  },
+  {
+   "id": "uk-chevening-scholarship",
+   "titleEn": "Chevening Scholarships (United Kingdom)",
+   "titleAr": "منح تشيفنينغ البريطانية للدراسات العليا",
+   "country": "United Kingdom",
+   "countryAr": "المملكة المتحدة",
+   "provider": "UK Foreign, Commonwealth & Development Office (FCDO)",
+   "providerAr": "وزارة الخارجية والتنمية البريطانية",
+   "coverage": "Fully Funded 1-Year Master’s Degree",
+   "coverageAr": "تمويل كامل لدرجة الماجستير لمدة سنة واحدة",
+   "amount": "100% Full Tuition + Monthly Stipend + Flights",
+   "type": "Government Full-Ride",
+   "typeAr": "منحة حكومية شاملة",
+   "degreeLevel": [
+    "Master"
+   ],
+   "deadline": "Early November annually",
+   "deadlineAr": "أوائل نوفمبر سنوياً",
+   "descriptionEn": "The UK government’s premier global scholarship programme offering full financial support for a one-year Master’s degree at any UK university.",
+   "descriptionAr": "برنامج المنح الدراسية العالمي للحكومة البريطانية لتمويل دراسة الماجستير لمدة عام كامل في أي جامعة بريطانية مرموقة.",
+   "eligibilityEn": [
+    "Undergraduate degree qualifying for UK master entry",
+    "Minimum of 2 years (2,800 hours) work experience",
+    "Return to home country for minimum 2 years post-graduation",
+    "Apply to 3 eligible UK university master courses"
+   ],
+   "eligibilityAr": [
+    "شهادة بكالوريوس مؤهلة للقبول في الماجستير البريطاني",
+    "سنتين على الأقل من الخبرة العملية (2,800 ساعة عمل)",
+    "الالتزام بالعودة للوطن لمدة عامين بعد التخرج",
+    "التقديم على 3 برامج ماجستير مؤهلة في جامعات المملكة المتحدة"
+   ],
+   "isUsa": false
+  },
+  {
+   "id": "australia-awards",
+   "titleEn": "Australia Awards Scholarships",
+   "titleAr": "منح جوائز أستراليا الحكومية",
+   "country": "Australia",
+   "countryAr": "أستراليا",
+   "provider": "Department of Foreign Affairs and Trade (DFAT)",
+   "providerAr": "وزارة الشؤون الخارجية والتجارة الأسترالية",
+   "coverage": "Full Tuition, Return Airfare, Establishment Allowance & Living",
+   "coverageAr": "رسوم كاملة، تذاكر طيران، بدل استقرار، ومصاريف معيشة",
+   "amount": "100% Full Cost Covered",
+   "type": "Government Full-Ride",
+   "typeAr": "منحة حكومية شاملة",
+   "degreeLevel": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "deadline": "April 30 annually",
+   "deadlineAr": "30 أبريل سنوياً",
+   "descriptionEn": "Long-term development awards administered by DFAT aimed at emerging global leaders from developing regions.",
+   "descriptionAr": "منح تنموية طويلة الأجل تقدمها الحكومة الأسترالية لتمويل الدراسة في كبرى الجامعات الأسترالية للقادة المستقبليين.",
+   "eligibilityEn": [
+    "Minimum 18 years of age at commencement of scholarship",
+    "Citizen of an eligible participating country",
+    "Meet IELTS / TOEFL academic requirements of chosen institution",
+    "Commitment to contribute to home country development"
+   ],
+   "eligibilityAr": [
+    "ألا يقل عمر المتقدم عن 18 عاماً عند بدء المنحة",
+    "مواطنة إحدى الدول المؤهلة للمنحة",
+    "استيفاء شروط اللغة الإنجليزية للجامعة الأسترالية",
+    "الالتزام بالمساهمة في تنمية البلد الأم بعد إتمام الدراسة"
+   ],
+   "isUsa": false
+  }
+ ],
+ "programsData": [
+  {
+   "id": "ai-machine-learning",
+   "title": "Artificial Intelligence & Machine Learning",
+   "titleAr": "الذكاء الاصطناعي وتعلم الآلة",
+   "field": "Computer Science & AI",
+   "fieldAr": "علوم الحاسوب والذكاء الاصطناعي",
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "duration": "Bachelor: 4 yrs | Master: 1.5 - 2 yrs",
+   "durationAr": "بكالوريوس: 4 سنوات | ماجستير: 1.5 - 2 سنة",
+   "averageTuition": "$28,000 - $55,000 / year",
+   "careerOutlook": "Highest demand in tech & robotics ($115k+ starting avg)",
+   "careerOutlookEn": "Highest global demand with 3-Year STEM OPT extension in the USA. Starting salaries average $115,000+ in tech, robotics, and autonomous systems.",
+   "careerOutlookAr": "الطلب العالمي الأعلى مع تدريب STEM OPT لمدة 3 سنوات في أمريكا. متوسط رواتب البدء يتجاوز 115,000 دولار سنوياً في التكنولوجيا والروبوتات.",
+   "popularUniversities": [
+    "Illinois Tech",
+    "Carnegie Mellon",
+    "UC Berkeley",
+    "University of Toronto",
+    "TUM Germany"
+   ],
+   "stemEligible": true,
+   "iconName": "Cpu",
+   "requirementsEn": [
+    "High School Math & Calculus",
+    "IELTS 6.5 / TOEFL 80",
+    "Statement of Purpose"
+   ],
+   "requirementsAr": [
+    "رياضيات متقدمة وتفاضل وتكامل",
+    "آيلتس 6.5 أو توفل 80",
+    "رسالة الدوافع والمقال الشخصي"
+   ],
+   "descriptionEn": "Deep-dive into deep neural networks, natural language processing, computer vision, generative models, and ethical AI architectures.",
+   "descriptionAr": "دراسة متقدمة في الشبكات العصبية العميقة، معالجة اللغات الطبيعية، الرؤية الحاسوبية، والذكاء الاصطناعي التوليدي."
+  },
+  {
+   "id": "computer-science-software",
+   "title": "Computer Science & Software Engineering",
+   "titleAr": "علوم الحاسوب وهندسة البرمجيات",
+   "field": "Computer Science & AI",
+   "fieldAr": "علوم الحاسوب والذكاء الاصطناعي",
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "duration": "Bachelor: 4 yrs | Master: 1 - 2 yrs",
+   "durationAr": "بكالوريوس: 4 سنوات | ماجستير: 1 - 2 سنة",
+   "averageTuition": "$24,000 - $50,000 / year",
+   "careerOutlook": "Versatile tech career at FAANG & Silicon Valley firms",
+   "careerOutlookEn": "Versatile tech degree opening doors at Google, Microsoft, Amazon, and enterprise software firms with 36-month OPT work rights.",
+   "careerOutlookAr": "تخصص تقني شامل يفتح الأبواب لكبرى شركات التكنولوجيا العالمية مثل جوجل ومايكروسوفت مع تصريح عمل 36 شهراً.",
+   "popularUniversities": [
+    "Illinois Tech",
+    "DePaul University",
+    "ASU",
+    "Northeastern",
+    "Seattle Colleges (2+2)"
+   ],
+   "stemEligible": true,
+   "iconName": "Code",
+   "requirementsEn": [
+    "Strong analytical foundation",
+    "High School Diploma (GPA 3.0+)",
+    "English Proficiency"
+   ],
+   "requirementsAr": [
+    "أساس تحليلي قوي",
+    "شهادة الثانوية العامة بمعدل جيد جداً",
+    "إثبات الكفاءة في اللغة الإنجليزية"
+   ],
+   "descriptionEn": "Covers algorithms, cloud architecture, full-stack systems, distributed computing, and enterprise software design patterns.",
+   "descriptionAr": "يغطي الخوارزميات، الحوسبة السحابية، هندسة النظم الموزعة، وتصميم البرمجيات المؤسسية الضخمة."
+  },
+  {
+   "id": "cybersecurity-infosec",
+   "title": "Cybersecurity & Information Assurance",
+   "titleAr": "الأمن السيبراني وحماية المعلومات",
+   "field": "Computer Science & AI",
+   "fieldAr": "علوم الحاسوب والذكاء الاصطناعي",
+   "degreeLevels": [
+    "Bachelor",
+    "Master"
+   ],
+   "duration": "Bachelor: 4 yrs | Master: 1.5 - 2 yrs",
+   "durationAr": "بكالوريوس: 4 سنوات | ماجستير: 1.5 - 2 سنة",
+   "averageTuition": "$22,000 - $46,000 / year",
+   "careerOutlook": "100% employment rate across banks and security firms",
+   "careerOutlookEn": "Zero-percent unemployment rate in critical infrastructure defense, defense contractors, financial institutions, and cloud security.",
+   "careerOutlookAr": "معدل توظيف يقارب 100% في حماية البنى التحتية الحيوية، المؤسسات المالية، ومزودي الحوسبة السحابية.",
+   "popularUniversities": [
+    "University of South Florida (USF)",
+    "DePaul University",
+    "Illinois Tech",
+    "Purdue University"
+   ],
+   "stemEligible": true,
+   "iconName": "Shield",
+   "requirementsEn": [
+    "Math & IT background",
+    "IELTS 6.5 / TOEFL 79",
+    "Academic Transcripts"
+   ],
+   "requirementsAr": [
+    "خلفية في الرياضيات وتكنولوجيا المعلومات",
+    "آيلتس 6.5 أو توفل 79",
+    "كشوف العلامات الأكاديمية"
+   ],
+   "descriptionEn": "Penetration testing, cryptography, network defense, threat intelligence, and digital forensics in state-of-the-art security operations labs.",
+   "descriptionAr": "اختبار الاختراق، التشفير، الدفاع عن الشبكات، الاستخبارات التهديدية، والتحقيق الجنائي الرقمي."
+  },
+  {
+   "id": "data-science-analytics",
+   "title": "Data Science & Business Analytics",
+   "titleAr": "علم البيانات وتحليلات الأعمال",
+   "field": "Data & Analytics",
+   "fieldAr": "البيانات والتحليلات",
+   "degreeLevels": [
+    "Bachelor",
+    "Master"
+   ],
+   "duration": "Bachelor: 4 yrs | Master: 1.5 yrs",
+   "durationAr": "بكالوريوس: 4 سنوات | ماجستير: 1.5 سنة",
+   "averageTuition": "$26,000 - $52,000 / year",
+   "careerOutlook": "Essential across finance, healthcare, and consulting",
+   "careerOutlookEn": "High demand across fintech, healthcare, and global consulting with starting salaries exceeding $105,000.",
+   "careerOutlookAr": "طلب مرتفع في قطاعات التقنية المالية، الرعاية الصحية، والاستشارات الإدارية برواتب تبدأ من 105,000 دولار.",
+   "popularUniversities": [
+    "DePaul University",
+    "Illinois Tech",
+    "USF",
+    "Arizona State University"
+   ],
+   "stemEligible": true,
+   "iconName": "BarChart",
+   "requirementsEn": [
+    "Statistics & Linear Algebra",
+    "Bachelor for Master level",
+    "CV & Recommendation letters"
+   ],
+   "requirementsAr": [
+    "إحصاء وجبر خطي",
+    "شهادة بكالوريوس لمرحلة الماجستير",
+    "سيرة ذاتية ورسائل توصية"
+   ],
+   "descriptionEn": "Predictive modeling, big data frameworks, SQL/Python pipelines, and executive data-driven decision intelligence.",
+   "descriptionAr": "النمذجة التنبؤية، أطر البيانات الضخمة، لغات بايثون وSQL، وذكاء اتخاذ القرار المدعوم بالبيانات."
+  },
+  {
+   "id": "stem-mba",
+   "title": "STEM-Designated MBA & Business Leadership",
+   "titleAr": "ماجستير إدارة الأعمال المصنف STEM",
+   "field": "Business & Management",
+   "fieldAr": "الأعمال والإدارة",
+   "degreeLevels": [
+    "Master",
+    "Bachelor"
+   ],
+   "duration": "MBA: 1 - 2 yrs | BBA: 4 yrs",
+   "durationAr": "ماجستير: 1 - 2 سنة | بكالوريوس: 4 سنوات",
+   "averageTuition": "$30,000 - $65,000 / year",
+   "careerOutlook": "Executive management in USA with 3 years OPT rights",
+   "careerOutlookEn": "Combines premier managerial training with full 3-Year STEM OPT work authorization in American corporations.",
+   "careerOutlookAr": "يجمع بين المهارات القيادية الاستراتيجية وتصريح العمل في أمريكا لمدة 3 سنوات لتخصصات STEM.",
+   "popularUniversities": [
+    "DePaul Driehaus",
+    "Illinois Tech Stuart",
+    "Northeastern D’Amore-McKim",
+    "ASU Carey"
+   ],
+   "stemEligible": true,
+   "iconName": "Briefcase",
+   "requirementsEn": [
+    "Bachelor’s degree",
+    "2+ years work experience preferred",
+    "GMAT/GRE (often waived)"
+   ],
+   "requirementsAr": [
+    "شهادة البكالوريوس",
+    "يفضل خبرة عملية سنتين",
+    "إمكانية الإعفاء من اختبار GMAT/GRE عبر GEC"
+   ],
+   "descriptionEn": "Strategic decision-making, quantitative analytics, venture finance, digital product innovation, and executive operations.",
+   "descriptionAr": "اتخاذ القرارات الاستراتيجية، التحليلات الكمية، تمويل المشاريع الريادية، وإدارة العمليات التنفيذية."
+  },
+  {
+   "id": "mechanical-aerospace-eng",
+   "title": "Mechanical & Aerospace Engineering",
+   "titleAr": "الهندسة الميكانيكية وهندسة الطيران والفضاء",
+   "field": "Engineering",
+   "fieldAr": "الهندسة",
+   "degreeLevels": [
+    "Bachelor",
+    "Master",
+    "PhD"
+   ],
+   "duration": "Bachelor: 4 yrs | Master: 2 yrs",
+   "durationAr": "بكالوريوس: 4 سنوات | ماجستير: 2 سنة",
+   "averageTuition": "$26,000 - $54,000 / year",
+   "careerOutlook": "Boeing, NASA, automotive and energy leaders",
+   "careerOutlookEn": "Direct placement into aerospace, automotive, renewable energy, and industrial robotics sectors with 3-Year STEM OPT.",
+   "careerOutlookAr": "توظيف مباشر في قطاعات الفضاء، الطيران، السيارات، والطاقة المتجددة مع تدريب STEM 3 سنوات.",
+   "popularUniversities": [
+    "Illinois Tech",
+    "Purdue University",
+    "ASU Fulton",
+    "USF Engineering"
+   ],
+   "stemEligible": true,
+   "iconName": "Cog",
+   "requirementsEn": [
+    "Strong Physics & Math",
+    "High School transcripts (GPA 3.2+)",
+    "IELTS 6.5"
+   ],
+   "requirementsAr": [
+    "تفوق في الفيزياء والرياضيات",
+    "معدل ثانوية 80% فما فوق",
+    "آيلتس 6.5"
+   ],
+   "descriptionEn": "Thermodynamics, aerodynamics, computational fluid dynamics, CAD design, and next-generation composite manufacturing.",
+   "descriptionAr": "الديناميكا الحرارية، الديناميكا الهوائية، التصميم بمساعدة الحاسوب، وتصنيع المواد المركبة المتقدمة."
+  }
+ ],
+ "eventsData": [
+  {
+   "id": "usa-admissions-fair-2026",
+   "titleEn": "USA Universities & Scholarships Virtual Fair 2026",
+   "titleAr": "معرض الجامعات والمنح الدراسية الأمريكية الافتراضي 2026",
+   "type": "Education Fair",
+   "typeAr": "معرض تعليمي دولي",
+   "date": "October 15, 2026",
+   "time": "6:00 PM - 9:30 PM (CST / GMT-5) | 8:00 PM (Riyadh / Amman)",
+   "locationEn": "Live Interactive Zoom Hub & GEC Chicago Studio",
+   "locationAr": "منصة زووم التفاعلية المباشرة واستوديو GEC شيكاغو",
+   "isVirtual": true,
+   "descriptionEn": "Meet admissions deans and international recruiters from 25+ top US universities (Illinois Tech, DePaul, USF, ASU, and more). Live evaluation of transcripts and on-the-spot scholarship pre-screening.",
+   "descriptionAr": "التقِ بمسؤولي القبول من أكثر من 25 جامعة أمريكية رائدة. تقييم مباشر للشهادات واختبارات القبول مع فحص فوري للمنح الدراسية.",
+   "featuredSpeakersEn": [
+    "Almuez Alnimrawi (GEC Director)",
+    "Dr. Katherine Miller (US Admissions Dean)",
+    "Sarah Jenkins (F-1 Visa Specialist)"
+   ],
+   "featuredSpeakersAr": [
+    "أ. المعز النمراوي (مدير GEC)",
+    "د. كاثرين ميلر (عميد القبول بالجامعات الأمريكية)",
+    "سارة جنكينز (أخصائية تأشيرات F-1)"
+   ],
+   "image": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
+   "registrationOpen": true
+  },
+  {
+   "id": "f1-visa-masterclass",
+   "titleEn": "US F-1 Student Visa & Embassy Interview Masterclass",
+   "titleAr": "ماستركلاس تأشيرة F-1 واجتياز مقابلة السفارة الأمريكية",
+   "type": "Webinar",
+   "typeAr": "ورشة عمل افتراضية",
+   "date": "November 8, 2026",
+   "time": "7:00 PM (Amman/Riyadh/Dubai)",
+   "locationEn": "Online Webinar & Q&A Session",
+   "locationAr": "ندوة عبر الإنترنت مع جلسة أسئلة وأجوبة مباشرة",
+   "isVirtual": true,
+   "descriptionEn": "Step-by-step breakdown of DS-160, SEVIS payments, financial sponsorship affidavits, and 10 most common consular interview traps.",
+   "descriptionAr": "شرح عملي خطوة بخطوة لتعبئة DS-160، رسوم SEVIS، تدقيق الضمان المالي، وتفادي أهم 10 أسئلة فخاخ في المقابلة القنصلية.",
+   "featuredSpeakersEn": [
+    "GEC US Visa Advisory Board",
+    "Former Consular Advisors"
+   ],
+   "featuredSpeakersAr": [
+    "فريق مستشاري التأشيرة الأمريكية في GEC",
+    "مستشارون قنصليون سابقون"
+   ],
+   "image": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80",
+   "registrationOpen": true
+  },
+  {
+   "id": "stem-opt-career-summit",
+   "titleEn": "STEM OPT & Post-Study Career Opportunities in the USA",
+   "titleAr": "قمة تدريب STEM OPT وفرص العمل بعد التخرج في أمريكا",
+   "type": "USA Seminar",
+   "typeAr": "سيمينار متخصص",
+   "date": "December 2, 2026",
+   "time": "5:00 PM (Chicago CST)",
+   "locationEn": "GEC Chicago Headquarters & Online Stream",
+   "locationAr": "المقر الرئيسي لـ GEC في شيكاغو وبث مباشر عالمي",
+   "isVirtual": true,
+   "descriptionEn": "How international students in Computer Science, Data, AI, and Engineering leverage the 36-month OPT work authorization at Fortune 500 companies.",
+   "descriptionAr": "كيف يستفيد الطلاب الدوليون في تخصصات التكنولوجيا والهندسة والذكاء الاصطناعي من تصريح عمل 36 شهراً في كبرى الشركات الأمريكية.",
+   "featuredSpeakersEn": [
+    "Silicon Valley Corporate Recruiters",
+    "GEC Alumni in Tech"
+   ],
+   "featuredSpeakersAr": [
+    "مسؤولو توظيف في كبرى شركات التكنولوجيا",
+    "خريجو GEC العاملون في أمريكا"
+   ],
+   "image": "https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=800&q=80",
+   "registrationOpen": true
+  }
+ ],
+ "testimonialsData": [
+  {
+   "id": "t1",
+   "nameEn": "Omar Al-Husseini",
+   "nameAr": "عمر الحسيني",
+   "countryEn": "Jordan",
+   "countryAr": "الأردن",
+   "universityEn": "Illinois Institute of Technology (Chicago)",
+   "universityAr": "معهد إلينوي للتكنولوجيا (شيكاغو)",
+   "programEn": "B.S. in Computer Science & AI",
+   "programAr": "بكالوريوس علوم الحاسوب والذكاء الاصطناعي",
+   "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+   "quoteEn": "GEC was with me every step of the way—from selecting Chicago universities to polishing my essays. They helped me secure a $25,000 annual scholarship and prepared me thoroughly for my F-1 visa interview.",
+   "quoteAr": "كانت GEC معي في كل خطوة—من اختيار الجامعات في شيكاغو إلى تدقيق مقالاتي الأكاديمية. ساعدوني في الحصول على منحة بقيمة 25,000 دولار سنوياً وتدريبي لمقابلة تأشيرة F-1.",
+   "year": "Class of 2027",
+   "destination": "USA (Chicago, IL)"
+  },
+  {
+   "id": "t2",
+   "nameEn": "Sara Al-Ghamdi",
+   "nameAr": "سارة الغامدي",
+   "countryEn": "Saudi Arabia",
+   "countryAr": "المملكة العربية السعودية",
+   "universityEn": "Northeastern University (Boston)",
+   "universityAr": "جامعة نورث إيسترن (بوسطن)",
+   "programEn": "M.S. in Data Analytics & STEM Co-op",
+   "programAr": "ماجستير تحليل البيانات والتدريب التعاوني",
+   "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80",
+   "quoteEn": "The team at GEC provided unparalleled clarity on STEM OPT regulations and Co-op opportunities. Because of their guidance, I secured an internship at a major US healthcare tech firm during my studies!",
+   "quoteAr": "قدم لي فريق GEC وضوحاً تاماً حول لوائح STEM OPT وفرص التدريب التعاوني. بفضل توجيههم، حصلت على تدريب في كبرى شركات التكنولوجيا الطبية في أمريكا!",
+   "year": "Class of 2026",
+   "destination": "USA (Boston, MA)"
+  },
+  {
+   "id": "t3",
+   "nameEn": "Tariq Mansoor",
+   "nameAr": "طارق منصور",
+   "countryEn": "UAE",
+   "countryAr": "الإمارات العربية المتحدة",
+   "universityEn": "University of South Florida (USF)",
+   "universityAr": "جامعة جنوب فلوريدا",
+   "programEn": "B.S. in Cybersecurity Engineering",
+   "programAr": "بكالوريوس هندسة الأمن السيبراني",
+   "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+   "quoteEn": "I was overwhelmed by the application process, but GEC turned it into an easy 5-step roadmap. I received my I-20 within 3 weeks and got my US visa on the first attempt with their mock prep.",
+   "quoteAr": "كنت متخوفاً من تعقيدات التقديم، لكن GEC حولت الإجراءات لخارطة طريق واضحة. استلمت نموذج I-20 خلال 3 أسابيع وحصلت على التأشيرة الأمريكية من المحاولة الأولى.",
+   "year": "Class of 2028",
+   "destination": "USA (Tampa, FL)"
+  },
+  {
+   "id": "t4",
+   "nameEn": "Nour Al-Sabah",
+   "nameAr": "نور الصباح",
+   "countryEn": "Kuwait",
+   "countryAr": "الكويت",
+   "universityEn": "University College London (UCL)",
+   "universityAr": "كلية لندن الجامعية (UCL)",
+   "programEn": "M.Sc. in Sustainable Urban Planning",
+   "programAr": "ماجستير التخطيط الحضري المستدام",
+   "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80",
+   "quoteEn": "GEC’s global knowledge is impressive. Even though their biggest strength is the USA, they guided me to UCL in London with complete mastery of UK admission requirements.",
+   "quoteAr": "معرفة GEC الأكاديمية العالمية مبهرة. على الرغم من تميزهم الاستثنائي في أمريكا، إلا أنهم أرشدوني لجامعة UCL في لندن باحترافية تامة لمتطلبات بريطانيا.",
+   "year": "Class of 2026",
+   "destination": "UK (London)"
+  }
+ ],
+ "resourcesData": [
+  {
+   "id": "f1-visa-complete-guide-2026",
+   "titleEn": "The Ultimate Guide to Passing Your US F-1 Student Visa Interview in 2026",
+   "titleAr": "الدليل الشامل لاجتياز مقابلة تأشيرة الطالب الأمريكية F-1 بنجاح في 2026",
+   "category": "Student Visa",
+   "categoryAr": "تأشيرة الطالب",
+   "readTime": "6 min read",
+   "date": "August 2026",
+   "excerptEn": "Master the consular interview: How to prove non-immigrant intent under INA 214(b), structure financial evidence, and answer key questions with confidence.",
+   "excerptAr": "احتراف مقابلة السفارة: كيف تثبت نيتك الأكاديمية غير الهجرية، وترتيب الضمان المالي والإجابة بثقة على أسئلة القنصل.",
+   "contentEn": "Everything international students need to know before stepping into the US Embassy...",
+   "contentAr": "كل ما يحتاجه الطالب الدولي قبل الدخول إلى السفارة الأمريكية...",
+   "image": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80",
+   "tags": [
+    "USA",
+    "F-1 Visa",
+    "Embassy Interview",
+    "DS-160",
+    "I-20"
+   ]
+  },
+  {
+   "id": "stem-opt-3-year-work-explained",
+   "titleEn": "STEM OPT Explained: How International Students Work in the USA for 3 Years",
+   "titleAr": "دليل تمديد STEM OPT: كيف يعمل الطالب الدولي في أمريكا لمدة 3 سنوات بعد التخرج؟",
+   "category": "Study in USA",
+   "categoryAr": "الدراسة في أمريكا",
+   "readTime": "5 min read",
+   "date": "August 2026",
+   "excerptEn": "Discover which majors qualify for the 24-month STEM OPT extension, employer E-Verify requirements, and paths to H-1B or global tech careers.",
+   "excerptAr": "تعرف على التخصصات المؤهلة لتمديد 24 شهراً إضافية لتدريب STEM، وشروط الشركات وجهات العمل.",
+   "contentEn": "Optional Practical Training (OPT) is one of the most powerful benefits of the US higher education system...",
+   "contentAr": "يعتبر التدريب العملي الاختياري (OPT) من أهم المزايا التي يوفرها نظام التعليم العالي الأمريكي للطلاب الدوليين...",
+   "image": "https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=800&q=80",
+   "tags": [
+    "STEM",
+    "OPT Extension",
+    "Career",
+    "USA Tech Jobs"
+   ]
+  },
+  {
+   "id": "california-vs-texas-cost-comparison",
+   "titleEn": "Studying in California vs. Texas: Tuition, Living Costs & Job Markets Compared",
+   "titleAr": "مقارنة الدراسة بين كاليفورنيا وتكساس: التكاليف والمعيشة وسوق العمل",
+   "category": "University Admissions",
+   "categoryAr": "القبول الجامعي",
+   "readTime": "7 min read",
+   "date": "July 2026",
+   "excerptEn": "A detailed breakdown of tuition differences, Silicon Valley vs Silicon Hills tech hubs, housing expenses, and weather for Arab students.",
+   "excerptAr": "تحليل مقارن دقيق لفروق الرسوم الدراسية، مراكز التكنولوجيا في وادي السيليكون وتكساس، وتكاليف السكن والمعيشة.",
+   "contentEn": "Choosing between the Golden State and the Lone Star State is one of the most common dilemmas for international applicants...",
+   "contentAr": "المفاضلة بين ولاية كاليفورنيا وولاية تكساس هي إحدى أكثر المقارنات شيوعاً لدى الطلاب الراغبين بالدراسة في أمريكا...",
+   "image": "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?auto=format&fit=crop&w=800&q=80",
+   "tags": [
+    "USA States",
+    "Cost Comparison",
+    "Tuition",
+    "Living in USA"
+   ]
+  },
+  {
+   "id": "community-college-2-plus-2-pathway",
+   "titleEn": "The 2+2 Community College Route: Save $60,000 and Graduate from a Top 50 US University",
+   "titleAr": "مسار كليات المجتمع 2+2: وفّر 60,000 دولار وتخرج من أفضل 50 جامعة أمريكية",
+   "category": "Scholarships & Budget",
+   "categoryAr": "المنح والميزانية",
+   "readTime": "6 min read",
+   "date": "July 2026",
+   "excerptEn": "How Guaranteed Transfer Agreements (TAG) allow students to complete their first 2 years affordably and transfer seamlessly as Juniors.",
+   "excerptAr": "كيف تتيح اتفاقيات التحويل المضمون (TAG) للطلاب إتمام أول سنتين بتكلفة منخفضة ثم الانتقال المباشر للسنة الثالثة بالجامعات الكبرى.",
+   "contentEn": "Why pay $50,000/year for general education classes when you can take the exact same credits at an accredited community college for $10,000?",
+   "contentAr": "لماذا تدفع مبالغ طائلة لمتطلبات السنة الأولى بينما يمكنك دراسة نفس الساعات المعتمدة في كلية مجتمع معتمدة بربع التكلفة؟",
+   "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+   "tags": [
+    "2+2 Transfer",
+    "Affordable Study",
+    "Community College",
+    "USA"
+   ]
+  },
+  {
+   "id": "parents-guide-studying-in-usa",
+   "titleEn": "A Parent’s Complete Guide to Sending Your Son or Daughter to Study in the USA",
+   "titleAr": "دليل أولياء الأمور الشامل: كل ما يهمك عند ابتعاث ابنك أو ابنتك للدراسة في أمريكا",
+   "category": "Parent Guides",
+   "categoryAr": "أدلة أولياء الأمور",
+   "readTime": "8 min read",
+   "date": "June 2026",
+   "excerptEn": "Campus safety, health insurance coverage, financial management, accommodation vetting, and cultural transition support from GEC.",
+   "excerptAr": "الأمان في الحرم الجامعي، منظومة التأمين الصحي، الإدارة المالية، واختيار السكن الموثوق مع دعم مستمر من GEC.",
+   "contentEn": "Sending your child across the world is a momentous decision. Here is how GEC ensures safety, academic success, and family peace of mind...",
+   "contentAr": "سفر الأبناء للدراسة في الخارج قرار مصيري. إليك كيف تضمن GEC الأمان والتفوق الأكاديمي والاطمئنان الدائم للعائلة...",
+   "image": "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=800&q=80",
+   "tags": [
+    "Parents Guide",
+    "Campus Safety",
+    "Health Insurance",
+    "Support"
+   ]
+  }
+ ],
+ "faqsData": [
+  {
+   "category": "Study in USA",
+   "categoryAr": "الدراسة في أمريكا",
+   "questionEn": "How can GEC help me study in the United States?",
+   "questionAr": "كيف تساعدني GEC في الدراسة بالولايات المتحدة الأمريكية؟",
+   "answerEn": "With our headquarters in Chicago, IL, GEC provides end-to-end support: from profile evaluation and selecting best-fit universities, to securing admission, matching scholarships, and preparing you for the F-1 visa interview. We have direct relationships with US admissions offices.",
+   "answerAr": "بمقرنا الرئيسي في شيكاغو، تقدم GEC دعماً شاملاً ومتكاملاً: من تقييم ملفك الأكاديمي واختيار الجامعات المناسبة، حتى تأمين القبول الرسمي (I-20)، واستخراج المنح الدراسية وتدريبك لمقابلة تأشيرة F-1 في السفارة."
+  },
+  {
+   "category": "Costs & Tuition",
+   "categoryAr": "التكاليف والرسوم",
+   "questionEn": "How much does it cost to study in the USA per year?",
+   "questionAr": "كم تبلغ تكلفة الدراسة السنوية في أمريكا؟",
+   "answerEn": "Tuition varies depending on the institution: Community colleges average $9,000 - $12,000/year; public universities range from $18,000 - $38,000/year; and private universities range from $35,000 - $60,000/year. Living costs (housing, meals, insurance) typically range from $12,000 - $18,000/year depending on the state.",
+   "answerAr": "تتفاوت الرسوم حسب نوع المؤسسة: كليات المجتمع تتراوح بين 9,000 إلى 12,000 دولار سنوياً؛ الجامعات الحكومية بين 18,000 إلى 38,000 دولار سنوياً؛ والجامعات الخاصة بين 35,000 إلى 60,000 دولار سنوياً. وتتراوح تكاليف المعيشة والسكن بين 12,000 إلى 18,000 دولار سنوياً حسب الولاية."
+  },
+  {
+   "category": "Language Tests",
+   "categoryAr": "اختبارات اللغة",
+   "questionEn": "Do I need IELTS or TOEFL to study in the USA?",
+   "questionAr": "هل أحتاج بالضرورة إلى اختبار IELTS أو TOEFL للدراسة في أمريكا؟",
+   "answerEn": "Most universities accept IELTS, TOEFL iBT, or Duolingo English Test (DET). However, GEC can also help you secure Conditional Admission or English Language Waivers if you studied at an English-medium high school or university, or if you enroll in an on-campus ESL pathway first.",
+   "answerAr": "تقبل معظم الجامعات اختبارات IELTS أو TOEFL أو Duolingo. كما يمكن لـ GEC تأمين قبول مشروط أو طلب إعفاء من اختبار اللغة إذا كانت دراستك السابقة باللغة الإنجليزية، أو الالتحاق بمعهد لغة تابع للجامعة أولاً."
+  },
+  {
+   "category": "Scholarships",
+   "categoryAr": "المنح الدراسية",
+   "questionEn": "Can international students get scholarships in the USA?",
+   "questionAr": "هل يمكن للطلاب الدوليين الحصول على منح دراسية وتخفيضات في أمريكا؟",
+   "answerEn": "Yes! Many US universities award merit-based scholarships ranging from $5,000 to $30,000 per year based on high school GPA and test scores. For graduate students (Master’s/PhD), Teaching (TA) and Research (RA) Assistantships often provide full tuition waivers plus monthly living stipends.",
+   "answerAr": "نعم بالتأكيد! تقدم العديد من الجامعات الأمريكية منح تفوق أكاديمي تتراوح بين 5,000 إلى 30,000 دولار سنوياً بناءً على المعدل. وبالنسبة لطلاب الدراسات العليا، تتوفر فرص مساعد باحث ومساعد تدريس تغطي الرسوم بالكامل مع راتب شهري."
+  },
+  {
+   "category": "Admissions Timeline",
+   "categoryAr": "مواعيد وإجراءات التقديم",
+   "questionEn": "When should I start applying for university admission?",
+   "questionAr": "متى يجب أن أبدأ في إجراءات التقديم للجامعات؟",
+   "answerEn": "For the Fall intake (August/September start), we recommend applying 6 to 9 months in advance (between October and March). For the Spring intake (January start), apply between June and October. Early applications maximize scholarship availability and leave ample time for the F-1 visa process.",
+   "answerAr": "لفصل الخريف (البدء في أغسطس/سبتمبر)، نوصي بالبدء قبل 6 إلى 9 أشهر (بين أكتوبر ومارس). ولفصل الربيع (البدء في يناير)، التقديم بين يونيو وأكتوبر. التقديم المبكر يضمن أفضل فرص المنح الدراسية ووقتاً كافياً للتأشيرة."
+  },
+  {
+   "category": "Visas",
+   "categoryAr": "التأشيرات",
+   "questionEn": "What is an F-1 Student Visa and how does GEC assist?",
+   "questionAr": "ما هي تأشيرة الطالب F-1 وكيف تساعدني GEC في الحصول عليها؟",
+   "answerEn": "The F-1 visa is the official non-immigrant visa for full-time academic students in the USA. Once you receive your Form I-20 from an SEVP-certified school, GEC guides you through the DS-160 application, SEVIS I-901 fee payment, financial document verification, and conducts 1-on-1 mock embassy interviews to ensure you are fully prepared.",
+   "answerAr": "تأشيرة F-1 هي التأشيرة الرسمية للدراسة الأكاديمية بدوام كامل في أمريكا. بعد استلام نموذج I-20، ترشدك GEC في تعبئة طلب DS-160، سداد رسوم SEVIS، تدقيق الضمانات المالية، وإجراء مقابلات تجريبية تحاكي مقابلة السفارة بالكامل."
+  },
+  {
+   "category": "Work Rights",
+   "categoryAr": "العمل والتدريب",
+   "questionEn": "Can I work while studying in the USA?",
+   "questionAr": "هل يحق لي العمل أثناء الدراسة في أمريكا وبعد التخرج؟",
+   "answerEn": "During your studies, F-1 visa holders can work on-campus up to 20 hours/week during terms and full-time during holidays. Off-campus internships are permitted through CPT after your first academic year. After graduation, you can work full-time under OPT (1 year for general majors, and 3 full years for STEM degrees).",
+   "answerAr": "أثناء الدراسة، يحق لحامل تأشيرة F-1 العمل داخل الحرم الجامعي حتى 20 ساعة أسبوعياً، وبدوام كامل في العطلات. وبعد إتمام السنة الأولى، يمكن التدريب الخارجي عبر CPT. وبعد التخرج، يحق لك العمل عبر OPT (سنة للتخصصات العامة و3 سنوات كاملة لتخصصات STEM)."
+  }
+ ],
+ "servicesData": [
+  {
+   "id": 1,
+   "slug": "academic-counseling",
+   "titleEn": "Academic Counseling",
+   "titleAr": "الإرشاد الأكاديمي",
+   "descEn": "Comprehensive 1-on-1 diagnostic sessions to evaluate student transcripts, personal aptitude, English proficiency, and long-term career goals.",
+   "descAr": "جلسات تشخيصية فردية شاملة لتقييم السجل الأكاديمي للطالب، ومستوى اللغة الإنجليزية، وتحديد الأهداف المهنية المستقبلية.",
+   "iconName": "Compass",
+   "timeline": "1 - 2 Business Days",
+   "deliverablesEn": [
+    "Comprehensive profile evaluation & GPA conversion",
+    "Career aptitude matching with global job market trends",
+    "Custom admissions timeline & milestone roadmap",
+    "Direct counselor access via private WhatsApp & video calls"
+   ],
+   "deliverablesAr": [
+    "تقييم شامل لملف الطالب ومعادلة المعدل التراكمي (GPA)",
+    "مطابقة الميول الأكاديمية مع متطلبات سوق العمل العالمي",
+    "خارطة طريق زمنية مفصلة لمواعيد التقديم والقبول",
+    "تواصل مباشر ومستمر مع مستشارك الأكاديمي عبر واتساب والاتصال المرئي"
+   ],
+   "highlightEn": "Foundation for 100% of our successful admissions",
+   "highlightAr": "الركيزة الأساسية لجميع قبولاتنا الناجحة بنسبة 100%"
+  },
+  {
+   "id": 2,
+   "slug": "university-selection",
+   "titleEn": "University Selection",
+   "titleAr": "اختيار الجامعة",
+   "descEn": "Strategic matching against 500+ accredited institutions, balancing academic rankings, tuition budget, state preferences, and scholarship odds.",
+   "descAr": "مطابقة استراتيجية دقيقة بين أكثر من 500 جامعة معتمدة، مع الموازنة بين التصنيف الأكاديمي، الميزانية، والولاية أو الدولة المفضلة.",
+   "iconName": "Building2",
+   "timeline": "2 - 3 Business Days",
+   "deliverablesEn": [
+    "Curated tier list: Dream, Target, and Safety universities",
+    "In-depth tuition and true living cost breakdowns",
+    "Campus safety, climate, and student support ratings",
+    "State-specific job market and internship insights"
+   ],
+   "deliverablesAr": [
+    "قائمة متوازنة تشمل جامعات الطموح، والجامعات المناسبة، وجامعات الأمان الأكاديمي",
+    "حساب تفصيلي للرسوم الدراسية والتكاليف المعيشية الفعلية",
+    "تقييم أمان الحرم الجامعي والمناخ وتوفر الدعم للطلاب الدوليين",
+    "تحليل فرص التدريب والتوظيف في كل ولاية"
+   ],
+   "highlightEn": "Save up to 40% on tuition through smart matching",
+   "highlightAr": "توفير يصل حتى 40% من الرسوم باختيار الجامعة المناسبة"
+  },
+  {
+   "id": 3,
+   "slug": "program-selection",
+   "titleEn": "Program Selection",
+   "titleAr": "اختيار التخصص",
+   "descEn": "Navigating cutting-edge disciplines, STEM-designated degrees (3-year OPT in USA), interdisciplinary majors, and dual-degree programs.",
+   "descAr": "توجيه دقيق لاختيار أحدث التخصصات المستقبلية والبرامج المصنفة ضمن STEM (المؤهلة لتدريب 3 سنوات في أمريكا) والدرجات المزدوجة.",
+   "iconName": "GraduationCap",
+   "timeline": "1 - 2 Business Days",
+   "deliverablesEn": [
+    "STEM vs Non-STEM classification guidance",
+    "Curriculum depth and laboratory research analysis",
+    "Course prerequisite audit and credit transfer check",
+    "Post-graduation career roadmap per major"
+   ],
+   "deliverablesAr": [
+    "تحديد البرامج المؤهلة لـ STEM OPT للعمل القانوني 3 سنوات بأمريكا",
+    "مقارنة المناهج الدراسية والمعامل البحثية المتاحة",
+    "تدقيق متطلبات المواد وإمكانية معادلة الساعات السابقة",
+    "تحديد المسارات المهنية الواعدة لكل تخصص"
+   ],
+   "highlightEn": "3-Year US STEM OPT eligibility optimization",
+   "highlightAr": "تحقيق أقصى استفادة من ميزة العمل 3 سنوات لتخصصات STEM"
+  },
+  {
+   "id": 4,
+   "slug": "application-admissions",
+   "titleEn": "University Admissions & Application Processing",
+   "titleAr": "التقديم واستخراج القبولات الجامعية",
+   "descEn": "Flawless submission via Common App, direct institutional portals, and priority GEC partner channels with fee waiver opportunities.",
+   "descAr": "تقديم متكامل وخالٍ من الأخطاء عبر البوابات الرسمية والقنوات المباشرة لشراكات GEC مع إمكانية الإعفاء من رسوم التقديم.",
+   "iconName": "FileCheck",
+   "timeline": "3 - 10 Business Days",
+   "deliverablesEn": [
+    "Document formatting, transcript evaluations (WES/ECE)",
+    "Direct liaison with university admissions deans",
+    "Expedited decision tracking and offer letter review",
+    "Application fee waivers at select partner institutions"
+   ],
+   "deliverablesAr": [
+    "تجهيز وتنسيق المستندات وتقارير معادلة الشهادات الأجنبية",
+    "تواصل ومتابعة مباشرة مع عمادات القبول بالجامعات",
+    "تسريع دراسة الطلب واستخراج خطابات القبول الرسمية",
+    "إعفاءات حصرية من رسوم التقديم لدى الجامعات الشريكة"
+   ],
+   "highlightEn": "Direct admissions fast-tracking through Chicago HQ",
+   "highlightAr": "تسريع مباشر للقبول عبر مقرنا في شيكاغو"
+  },
+  {
+   "id": 5,
+   "slug": "scholarship-aid",
+   "titleEn": "Scholarship & Financial Aid Guidance",
+   "titleAr": "تأمين المنح والمساعدات المالية",
+   "descEn": "Unlocking university merit scholarships, international grants, athletic/arts waivers, and graduate assistantship applications.",
+   "descAr": "تأمين منح التميز الأكاديمي، والمنح الدولية الجزئية والكلية، ومساعدات التدريس والبحث لطلاب الدراسات العليا.",
+   "iconName": "Award",
+   "timeline": "Ongoing Support",
+   "deliverablesEn": [
+    "Personalized scholarship eligibility audit",
+    "Scholarship essay brainstorming and expert editing",
+    "Financial aid form filing (CSS Profile / Institutional forms)",
+    "Tuition negotiation support when multiple offers exist"
+   ],
+   "deliverablesAr": [
+    "فحص شامل لأهلية الطالب لكافة المنح المتوفرة",
+    "صياغة ومراجعة المقالات الخاصة بطلبات المنح الدراسية",
+    "تعبئة استمارات الدعم المالي والملف المالي للجامعات",
+    "التفاوض الأكاديمي لزيادة قيمة المنحة عند توفر عدة قبولات"
+   ],
+   "highlightEn": "Over $2.5M in scholarships secured for our students",
+   "highlightAr": "أكثر من 2.5 مليون دولار تم تأمينها كمنح لطلابنا"
+  },
+  {
+   "id": 6,
+   "slug": "sop-essay-editing",
+   "titleEn": "Statement of Purpose & Essay Editing",
+   "titleAr": "كتابة وتدقيق المقال الشخصي ورسالة الدوافع",
+   "descEn": "Crafting compelling, memorable personal narratives that capture the attention of selective university admissions committees.",
+   "descAr": "صياغة وتدقيق المقالات الشخصية ورسائل الدوافع بأسلوب أكاديمي جذاب يبرز تميز الطالب أمام لجان القبول.",
+   "iconName": "FileText",
+   "timeline": "3 - 5 Business Days",
+   "deliverablesEn": [
+    "Storytelling strategy and topic brainstorming session",
+    "Multiple rounds of structural, grammatical, and tone refinement",
+    "CV/Resume crafting following US/UK academic standards",
+    "Plagiarism-free, authentic human-crafted refinement"
+   ],
+   "deliverablesAr": [
+    "جلسة عصف ذهني لاستخراج القصة الشخصية والأهداف الأكاديمية",
+    "عدة جولات تدقيق لغوي وبنيوي لضمان البلاغة والتأثير",
+    "تجهيز السيرة الذاتية الأكاديمية وفق أعلى المعايير الدولية",
+    "ضمان الأصالة التامة وخلو النص من القوالب الجاهزة"
+   ],
+   "highlightEn": "Transforms average profiles into standout applicants",
+   "highlightAr": "يرفع جاذبية ملف الطالب ويزيد فرص القبول والمنح"
+  },
+  {
+   "id": 7,
+   "slug": "f1-visa-guidance",
+   "titleEn": "Student Visa Guidance & Mock Interviews",
+   "titleAr": "تجهيز التأشيرات وجلسات محاكاة المقابلة",
+   "descEn": "Rigorous preparation for the US F-1 Visa (I-20, DS-160, SEVIS), UK Student Visa (CAS), Canada Study Permit, and European Visas.",
+   "descAr": "إعداد دقيق وشامل لمتطلبات تأشيرة F-1 الأمريكية (I-20، SEVIS، DS-160) وتأشيرة بريطانيا وكندا وأوروبا مع محاكاة للمقابلة.",
+   "iconName": "ShieldCheck",
+   "timeline": "5 - 14 Days",
+   "deliverablesEn": [
+    "Step-by-step DS-160 & visa form audit",
+    "Financial affidavit & bank sponsorship structuring",
+    "1-on-1 consular mock interviews with instant feedback",
+    "Home-ties evidence preparation to eliminate 214(b) risks"
+   ],
+   "deliverablesAr": [
+    "مراجعة وتدقيق استمارة DS-160 وكافة استمارات السفارة بدقة",
+    "تجهيز وتدقيق الضمانات البنكية وإثباتات القدرة المالية",
+    "جلسات محاكاة حية فردية لمقابلة القنصل مع تدريب عملي",
+    "تأكيد إثباتات الروابط بالوطن لتفادي أسباب الرفض الشائعة"
+   ],
+   "highlightEn": "98% first-time student visa approval track record",
+   "highlightAr": "نسبة قبول 98% للتأشيرات من أول محاولة"
+  },
+  {
+   "id": 8,
+   "slug": "pre-departure-orientation",
+   "titleEn": "Pre-Departure Briefing & Flight Planning",
+   "titleAr": "التوجيه قبل السفر والتجهيز للرحلة",
+   "descEn": "Comprehensive orientation covering flight bookings, US Port of Entry procedures, customs declarations, packing, and initial settlement.",
+   "descAr": "جلسات إرشادية متكاملة تشمل إجراءات الدخول بالمطارات الأمريكية (Port of Entry)، الجمارك، الأمتعة، وترتيبات الوصول الأولى.",
+   "iconName": "Plane",
+   "timeline": "1 Week Before Travel",
+   "deliverablesEn": [
+    "Comprehensive pre-departure packing and documents checklist",
+    "Step-by-step US customs & immigration walkthrough",
+    "Health insurance enrollment and mandatory vaccination verification",
+    "Student emergency contact network and local SIM setup advice"
+   ],
+   "deliverablesAr": [
+    "قائمة تحقق شاملة للوثائق والأمتعة الضرورية قبل المغادرة",
+    "شرح مفصل لإجراءات الجوازات والتفتيش في مطارات الوصول",
+    "تفعيل التأمين الصحي والتأكد من استكمال التطعيمات المطلوبة",
+    "توفير أرقام الطوارئ وإرشادات شراء شريحة الاتصال والإنترنت"
+   ],
+   "highlightEn": "Zero stress for students and parents on departure day",
+   "highlightAr": "راحة واطمئنان تام للطالب وولي الأمر عند السفر"
+  },
+  {
+   "id": 9,
+   "slug": "housing-accommodation",
+   "titleEn": "Housing & Accommodation Assistance",
+   "titleAr": "تأمين السكن الطلابي والإقامة",
+   "descEn": "Securing safe, vetted on-campus dormitories or modern off-campus private apartments near university campuses with lease review.",
+   "descAr": "مساعدة الطالب في حجز السكن الجامعي الداخلي المعتمد أو شقق خاصة آمنة وقريبة من الحرم الجامعي ومراجعة عقود الإيجار.",
+   "iconName": "Home",
+   "timeline": "1 - 2 Weeks",
+   "deliverablesEn": [
+    "On-campus dormitory meal plan & room selection support",
+    "Vetted off-campus student apartment shortlisting",
+    "Lease contract terms review and guarantor guidance",
+    "Roommate matching with international student community"
+   ],
+   "deliverablesAr": [
+    "المساعدة في اختيار وحجز غرف السكن الداخلي وخطط الوجبات",
+    "ترشيح شقق طلابية مفروشة وموثوقة قريبة من الحرم الجامعي",
+    "مراجعة بنود عقد الإيجار والتأكد من شروط الضامن المالي",
+    "المساعدة في اختيار زملاء سكن مناسبين"
+   ],
+   "highlightEn": "Guaranteed safe housing secured before you board your plane",
+   "highlightAr": "ضمان سكن آمن ومريح مؤكد قبل ركوب الطائرة"
+  },
+  {
+   "id": 10,
+   "slug": "community-college-transfer",
+   "titleEn": "2+2 Community College Transfer Pathways",
+   "titleAr": "مسار كليات المجتمع 2+2 والتحويل للجامعات",
+   "descEn": "High-value, cost-smart pathway: study 2 years at an accredited community college, then transfer seamlessly to top Tier-1 US universities.",
+   "descAr": "المسار الأكاديمي الأكثر توفيراً: دراسة أول سنتين بكلية مجتمع معتمدة ثم التحويل المضمون للسنة الثالثة بكبرى الجامعات الأمريكية.",
+   "iconName": "TrendingUp",
+   "timeline": "Flexible Intake",
+   "deliverablesEn": [
+    "Enrollment in top colleges (Seattle Colleges, Santa Monica, etc.)",
+    "Guaranteed Transfer Admission (TAG) contract verification",
+    "Save up to $60,000 in tuition during first two years",
+    "Academic transfer advising for Junior year entry"
+   ],
+   "deliverablesAr": [
+    "التسجيل في أفضل كليات المجتمع المعتمدة في واشنطن وكاليفورنيا",
+    "تثبيت اتفاقيات التحويل المضمون (TAG) للجامعات المستهدفة",
+    "توفير يصل إلى 60,000 دولار من إجمالي الرسوم الدراسية",
+    "متابعة مستمرة لضمان معادلة كافة الساعات الأكاديمية بنجاح"
+   ],
+   "highlightEn": "Save $60k and graduate with a prestigious University degree",
+   "highlightAr": "توفير 60 ألف دولار والتخرج بنفس الشهادة المرموقة"
+  },
+  {
+   "id": 11,
+   "slug": "test-prep-guidance",
+   "titleEn": "Standardized Test Prep & Waiver Guidance",
+   "titleAr": "استشارات اختبارات اللغة والقبول (IELTS/TOEFL/SAT/GRE)",
+   "descEn": "Diagnostic practice, study plans, and identifying Test-Optional universities to waive SAT/ACT or GRE/GMAT requirements.",
+   "descAr": "تحديد المستوى وخطط المذاكرة لاختبارات الآيلتس والتوفل، مع تحديد الجامعات التي تعفي الطلاب من اختبارات SAT و GRE.",
+   "iconName": "BookOpen",
+   "timeline": "Flexible",
+   "deliverablesEn": [
+    "IELTS, TOEFL, Duolingo English Test (DET) comparison & target score mapping",
+    "SAT/ACT Test-Optional university targeting",
+    "GRE/GMAT waiver eligibility evaluation for Master/MBA applicants",
+    "Free practice resources, diagnostic mocks, and scheduling support"
+   ],
+   "deliverablesAr": [
+    "مقارنة بين اختبارات IELTS و TOEFL و Duolingo وتحديد الخيار الأنسب",
+    "استهداف الجامعات التي تعفي المتقدمين من اختبار SAT",
+    "تقييم إمكانية الحصول على إعفاء من اختبارات GRE/GMAT للدراسات العليا",
+    "توفير نماذج تدريبية ومصادر دراسية مجانية"
+   ],
+   "highlightEn": "Target universities that waive expensive entrance exams",
+   "highlightAr": "استهداف جامعات تمنح إعفاءات من اختبارات القبول المعقدة"
+  },
+  {
+   "id": 12,
+   "slug": "post-arrival-support",
+   "titleEn": "Post-Arrival & Airport Pickup Support",
+   "titleAr": "خدمات ما بعد الوصول والاستقبال بالمطار",
+   "descEn": "Welcoming students upon arrival, local bank account setup, Social Security Number (SSN) guidance for on-campus jobs, and university check-in.",
+   "descAr": "استقبال الطالب في مطار الوصول، والمساعدة في فتح الحساب البنكي الأمريكي، واستخراج رقم الضمان الاجتماعي للعمل بالحرم الجامعي.",
+   "iconName": "Users",
+   "timeline": "First 30 Days in USA",
+   "deliverablesEn": [
+    "Airport greeting and direct transit to student accommodation",
+    "Assistance opening a US checking account (Chase, Bank of America)",
+    "Campus orientation check-in and international student office registration",
+    "On-campus employment & SSN application guidance"
+   ],
+   "deliverablesAr": [
+    "ترتيب الاستقبال من المطار والتوصيل المباشر لمقر السكن",
+    "المساعدة في فتح حساب بنكي رسمي لدى كبرى البنوك الأمريكية",
+    "مرافقة الطالب للتسجيل في مكتب الطلاب الدوليين بالجامعة",
+    "إرشادات التقديم على وظائف الحرم الجامعي واستخراج رقم SSN"
+   ],
+   "highlightEn": "Ongoing peace of mind throughout your first semester",
+   "highlightAr": "دعم ومتابعة مستمرة خلال الفصل الدراسي الأول"
+  }
+ ]
+}

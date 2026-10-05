@@ -1,0 +1,3 @@
+<ul class="reasons">
+  <% m.reasons.forEach(function (r) { %><li><span class="<%= r.tone === 'ok' ? 'ok' : r.tone === 'bad' ? 'bad' : r.tone === 'warn' ? 'warn' : 'subtle' %>"><%- icon(r.tone === 'ok' ? 'check' : r.tone === 'bad' ? 'x' : r.tone === 'warn' ? 'alert-triangle' : 'info', 'sm') %></span><span><%= t('match.r_' + r.key, Object.assign({}, r.vars, { cost: r.vars && r.vars.cost ? fmt.money(r.vars.cost, 'USD') : '', month: r.vars && r.vars.month ? ref.month('2026-' + String(r.vars.month).padStart(2, '0')).split(' ')[0] : '', months: r.vars && r.vars.months ? String(r.vars.months).split(',').map(function (x) { return ref.month('2026-' + String(x).padStart(2, '0')).split(' ')[0]; }).join(', ') : '' })) %></span></li><% }) %>
+</ul>

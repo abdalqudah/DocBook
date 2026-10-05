@@ -114,7 +114,11 @@
     "leads": "Leads",
     "students": "Students",
     "tasks": "Tasks",
-    "employees": "Employees"
+    "employees": "Employees",
+    "programs": "Programs",
+    "universities": "Universities",
+    "scholarships": "Scholarships",
+    "destinations": "Destinations"
   },
   "quick": {},
   "palette": {
@@ -125,7 +129,8 @@
     "navigate": "navigate",
     "open_item": "open",
     "pages": "Pages",
-    "actions": "Actions"
+    "actions": "Actions",
+    "catalog": "Catalogue"
   },
   "staff": {
     "workspace": "Workspace",

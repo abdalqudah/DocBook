@@ -1,0 +1,5 @@
+<% var on = state && state.saved && state.saved[type].indexOf(id) >= 0; %>
+<form method="post" action="/shortlist/toggle" class="inline-toggle" data-toggle-form="shortlist">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="type" value="<%= type %>"><input type="hidden" name="id" value="<%= id %>">
+  <button type="submit" class="icon-toggle" aria-pressed="<%= on ? 'true' : 'false' %>" aria-label="<%= on ? t('shortlist.remove') : t('shortlist.save') %>" title="<%= on ? t('shortlist.remove') : t('shortlist.save') %>" data-label-on="<%= t('shortlist.remove') %>" data-label-off="<%= t('shortlist.save') %>"><%- icon(on ? 'bookmark-check' : 'bookmark') %></button>
+</form>

@@ -1,0 +1,47 @@
+<% var shareUrl = token ? appUrl + '/compare/' + token : null; %>
+<section class="section tight">
+  <div class="container">
+    <div class="spread mb4">
+      <div><h1 class="mb0"><%= t('compare.title') %></h1><p class="muted mb0"><%= t('compare.lead') %></p></div>
+      <% if (programs.length) { %>
+      <div class="cluster compare-actions">
+        <% if (!token) { %><form method="post" action="/compare/save"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit"><%- icon('link') %><%= t('compare.save_link') %></button></form><% } else { %>
+          <button class="btn" type="button" data-copy="<%= shareUrl %>" data-copied="<%= t('common.copied') %>"><%- icon('copy') %><%= t('common.copy_link') %></button>
+          <a class="btn" href="mailto:?subject=<%= encodeURIComponent(t('compare.title')) %>&body=<%= encodeURIComponent(shareUrl) %>"><%- icon('mail') %><%= t('common.email') %></a>
+          <a class="btn" href="https://wa.me/?text=<%= encodeURIComponent(t('compare.title') + ': ' + shareUrl) %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a>
+        <% } %>
+        <button class="btn" type="button" data-print><%- icon('printer') %><%= t('compare.print_pdf') %></button>
+      </div>
+      <% } %>
+    </div>
+    <% if (!programs.length) { %>
+      <div class="card"><%- include('../../partials/empty', { title: t('compare.empty'), text: t('compare.empty_text'), href: '/programs', cta: t('shortlist.find_programs'), ctaIcon: 'search', emptyIcon: 'scale' }) %></div>
+    <% } else { %>
+    <div class="table-wrap"><table class="table compare-table">
+      <thead><tr><th scope="col"><span class="sr-only"><%= t('compare.criterion') %></span></th><% programs.forEach(function (p) { %><th scope="col"><a href="/programs/<%= p.slug %>" style="font-size:.98rem;color:var(--text)"><%= L(p, 'name') %></a><div class="small subtle" style="font-weight:500"><%= L(p, 'university') %></div>
+        <% if (!token) { %><form method="post" action="/compare/toggle" class="mt2 no-print"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="id" value="<%= p.id %>"><button class="linklike small" type="submit"><%= t('common.remove') %></button></form><% } %></th><% }) %></tr></thead>
+      <tbody>
+        <% var rows = [
+          ['compare.r_country', function (p) { return ref.flag(p.country_code) + ' ' + L(p, 'destination'); }],
+          ['common.city', function (p) { return L(p, 'city'); }],
+          ['unis.ranking_world', function (p) { return p.ranking_world ? '#' + p.ranking_world : '—'; }],
+          ['finder.degree', function (p) { return t('ref.degree.' + p.degree_level); }],
+          ['finder.tuition', function (p) { return p.tuition_fee ? fmt.money(p.tuition_fee, p.currency) + t('common.per_year') : '—'; }],
+          ['compare.r_living', function (p) { return p.living_year ? '≈ ' + fmt.money(p.living_year, p.dest_currency) + t('common.per_year') : '—'; }],
+          ['finder.app_fee', function (p) { return p.application_fee === 0 ? t('finder.no_fee') : (p.application_fee ? fmt.money(p.application_fee, p.currency) : '—'); }],
+          ['finder.duration', function (p) { return p.duration_months ? t('finder.months', { n: p.duration_months }) : '—'; }],
+          ['finder.intakes', function (p) { return (p.intakes || []).map(function (m) { return ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0]; }).join(', ') || '—'; }],
+          ['finder.deadline', function (p) { return p.next_deadline ? fmt.date(p.next_deadline) : '—'; }],
+          ['finder.english', function (p) { return [p.min_ielts ? 'IELTS ' + p.min_ielts : null, p.min_toefl ? 'TOEFL ' + p.min_toefl : null, p.min_pte ? 'PTE ' + p.min_pte : null].filter(Boolean).join(' · ') || '—'; }],
+          ['program.academic', function (p) { return p.min_gpa_pct ? t('program.min_grade', { pct: Math.round(p.min_gpa_pct) }) : (L(p, 'academic') ? L(p, 'academic').slice(0, 140) : '—'); }],
+          ['nav.scholarships', function (p) { return p.scholarships.length ? p.scholarships.map(function (s) { return L(s, 'name'); }).join(', ') : (p.scholarships_available ? t('common.yes') : '—'); }],
+          ['compare.r_work', function (p) { return p.work_after_study ? t('common.yes') : '—'; }],
+          ['compare.r_internship', function (p) { return t('catalog.internship.' + p.internship); }],
+        ]; %>
+        <% rows.forEach(function (r) { %><tr><th scope="row"><%= t(r[0]) %></th><% programs.forEach(function (p) { %><td><%= r[1](p) %></td><% }) %></tr><% }) %>
+      </tbody>
+    </table></div>
+    <p class="disclaimer mt4"><%- icon('info', 'sm') %><span><%= t('compare.disclaimer') %></span></p>
+    <% } %>
+  </div>
+</section>

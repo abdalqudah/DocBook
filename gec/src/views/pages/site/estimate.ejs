@@ -1,0 +1,16 @@
+<% var r = e.result; %>
+<section class="section tight">
+  <div class="container">
+    <div class="spread mb4"><div><h1 class="mb0"><%= e.title || t('calc.estimate') %></h1><p class="muted mb0"><%= t('calc.prepared_on', { date: fmt.date(e.created_at) }) %></p></div><button class="btn no-print" type="button" data-print><%- icon('printer') %><%= t('compare.print_pdf') %></button></div>
+    <% if (e.note) { %><div class="alert mb4"><%- icon('sticky-note') %><p><%= e.note %></p></div><% } %>
+    <div class="table-wrap"><table class="table compare-table">
+      <thead><tr><th scope="col"><%= t('calc.per_year_in', { c: r.currency }) %></th><% r.rows.forEach(function (x) { %><th scope="col"><%= ref.flag(x.country_code) %> <%= L(x, 'name') %></th><% }) %></tr></thead>
+      <tbody>
+        <% ['tuition','accommodation','food','transport','insurance','visa','flights','other'].forEach(function (k) { %><tr><th scope="row"><%= t('calc.item_' + k) %></th><% r.rows.forEach(function (x) { %><td class="num"><%= fmt.money(x.items[k], r.currency) %></td><% }) %></tr><% }) %>
+        <tr><th scope="row"><%= t('calc.net_year') %></th><% r.rows.forEach(function (x) { %><td class="num"><strong><%= fmt.money(x.net, r.currency) %></strong></td><% }) %></tr>
+        <% if (r.years > 1) { %><tr><th scope="row"><%= t('calc.total_years', { n: r.years }) %></th><% r.rows.forEach(function (x) { %><td class="num"><strong><%= fmt.money(x.total, r.currency) %></strong></td><% }) %></tr><% } %>
+      </tbody>
+    </table></div>
+    <p class="disclaimer mt4"><%- icon('info', 'sm') %><span><%= t('calc.disclaimer') %></span></p>
+  </div>
+</section>

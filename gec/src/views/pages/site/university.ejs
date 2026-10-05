@@ -1,0 +1,46 @@
+<% var name = L(u, 'name'); var intakes = (u.intakes || []).map(function (m) { return ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0]; }); %>
+<section class="detail-hero">
+  <% if (u.cover_image) { %><img class="cover" src="<%= u.cover_image %>" alt=""><% } %>
+  <div class="container">
+    <nav class="breadcrumbs" style="color:rgb(255 255 255 / .8)"><a href="/universities" style="color:#fff"><%= t('unis.title') %></a><%- icon('chevron-right') %><span><%= name %></span></nav>
+    <div class="cluster"><% if (u.institution_type) { %><span class="chip"><%= t('catalog.type.' + u.institution_type) %></span><% } %><% if (u.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></div>
+    <h1><%= name %></h1>
+    <p><%= ref.flag(u.country_code) %> <%= [L(u, 'city'), u.state, L(u, 'destination')].filter(Boolean).join(', ') %></p>
+  </div>
+</section>
+<section class="section tight">
+  <div class="container detail-grid">
+    <div class="stack" style="--gap:24px;min-width:0">
+      <div class="fact-strip">
+        <div><div class="k"><%= t('unis.ranking_world') %></div><div class="v"><%= u.ranking_world ? '#' + u.ranking_world : '—' %></div></div>
+        <div><div class="k"><%= t('unis.ranking_national') %></div><div class="v"><%= u.ranking_national ? '#' + u.ranking_national : '—' %></div></div>
+        <div><div class="k"><%= t('finder.tuition') %></div><div class="v"><%= u.tuition_min ? fmt.money(u.tuition_min, u.currency) + (u.tuition_max ? ' – ' + fmt.money(u.tuition_max, u.currency) : '') : '—' %></div></div>
+        <div><div class="k"><%= t('finder.app_fee') %></div><div class="v"><%= u.application_fee ? fmt.money(u.application_fee, u.currency) : '—' %></div></div>
+        <div><div class="k"><%= t('finder.intakes') %></div><div class="v"><%= intakes.join(', ') || '—' %></div></div>
+        <div><div class="k"><%= t('finder.english') %></div><div class="v"><%= [u.min_ielts ? 'IELTS ' + u.min_ielts : null, u.min_toefl ? 'TOEFL ' + u.min_toefl : null].filter(Boolean).join(' · ') || '—' %></div></div>
+      </div>
+      <% if (u.ranking_source) { %><p class="small subtle" style="margin-top:-12px"><%= t('unis.ranking_source', { source: u.ranking_source }) %></p><% } %>
+      <% if (L(u, 'description')) { %><section><h2><%= t('unis.about') %></h2><div class="prose"><%- md(L(u, 'description')) %></div></section><% } %>
+      <section><h2><%= t('unis.programs', { n: programs.length }) %></h2>
+        <% if (!programs.length) { %><p class="muted"><%= t('unis.no_programs') %></p><% } else { %>
+        <div class="grid" style="--min:280px"><% programs.forEach(function (p) { %><%- include('../../partials/program-card', { p: p }) %><% }) %></div><% } %>
+      </section>
+      <% if (L(u, 'admission') || u.documents_required.length || L(u, 'deadlines')) { %>
+      <section><h2><%= t('unis.admission') %></h2>
+        <% if (L(u, 'admission')) { %><div class="prose"><%- md(L(u, 'admission')) %></div><% } %>
+        <% if (L(u, 'deadlines')) { %><p><strong><%= t('unis.deadlines') %>:</strong> <%= L(u, 'deadlines') %></p><% } %>
+        <% if (u.documents_required.length) { %><ul class="reasons"><% u.documents_required.forEach(function (d) { %><li><span class="subtle"><%- icon('file-text', 'sm') %></span><span><%= d %></span></li><% }) %></ul><% } %>
+      </section>
+      <% } %>
+      <% if (L(u, 'campus') || L(u, 'accommodation')) { %><section class="grid-2"><% if (L(u, 'campus')) { %><div class="card"><h3><%= t('unis.campus') %></h3><div class="prose small"><%- md(L(u, 'campus')) %></div></div><% } %><% if (L(u, 'accommodation')) { %><div class="card"><h3><%= t('unis.accommodation') %></h3><div class="prose small"><%- md(L(u, 'accommodation')) %></div></div><% } %></section><% } %>
+      <% if (scholarships.length) { %><section><h2><%= t('program.scholarships') %></h2><div class="grid" style="--min:260px"><% scholarships.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %></div></section><% } %>
+      <p class="disclaimer"><%- icon('info', 'sm') %><span><%= t('program.verify_note') %><% if (u.website) { %> <a href="<%= u.website %>" target="_blank" rel="noopener"><%= t('unis.website') %></a><% } %></span></p>
+    </div>
+    <aside><div class="card lift sticky-card stack">
+      <div class="spread"><h2 style="font-size:1.05rem;margin:0"><%= t('unis.interested') %></h2><%- include('../../partials/save-toggle', { type: 'university', id: u.id }) %></div>
+      <p class="small muted mb0"><%= t('unis.interested_text') %></p>
+      <a class="btn primary block" href="/book?about=<%= encodeURIComponent(u.name_en) %>&destination=<%= u.destination_slug || '' %>"><%= t('program.talk_to_counsellor') %></a>
+      <a class="btn ghost block" href="/programs?university=<%= u.id %>"><%= t('unis.all_programs') %></a>
+    </div></aside>
+  </div>
+</section>

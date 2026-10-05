@@ -1,0 +1,15 @@
+<section class="section tight">
+  <div class="container">
+    <div class="section-head"><h1><%= t('schol.title') %></h1><p><%= t('schol.lead') %></p></div>
+    <form class="toolbar" method="get" action="/scholarships">
+      <select name="destination" data-autosubmit aria-label="<%= t('finder.destination') %>"><option value=""><%= t('leads.any_destination') %></option><% dests.forEach(function (d) { %><option value="<%= d.slug %>" <%= query.destination === d.slug ? 'selected' : '' %>><%= L(d, 'name') %></option><% }) %></select>
+      <select name="degree" data-autosubmit aria-label="<%= t('finder.degree') %>"><option value=""><%= t('schol.any_degree') %></option><% ref.DEGREES.forEach(function (d) { %><option value="<%= d %>" <%= query.degree === d ? 'selected' : '' %>><%= t('ref.degree.' + d) %></option><% }) %></select>
+      <select name="nationality" data-autosubmit aria-label="<%= t('people.nationality') %>"><option value=""><%= t('schol.any_nationality') %></option><% ref.countries().forEach(function (c) { %><option value="<%= c.value %>" <%= query.nationality === c.value ? 'selected' : '' %>><%= c.label %></option><% }) %></select>
+      <label class="check small"><input type="checkbox" name="open" value="1" <%= query.open === '1' ? 'checked' : '' %> data-autosubmit><span><%= t('schol.open_only') %></span></label>
+    </form>
+    <% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('schol.none'), text: t('schol.none_text'), emptyIcon: 'award', href: '/book', cta: t('finder.ask_counsellor'), ctaIcon: 'message-circle' }) %></div><% } else { %>
+    <div class="grid" style="--min:300px"><% rows.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %></div>
+    <% } %>
+    <p class="disclaimer mt6"><%- icon('info', 'sm') %><span><%= t('schol.disclaimer') %></span></p>
+  </div>
+</section>

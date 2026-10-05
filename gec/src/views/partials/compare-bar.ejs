@@ -1,0 +1,4 @@
+<% var n = state && state.comparing ? state.comparing.length : 0; %>
+<div class="compare-bar" data-compare-bar <%= n ? '' : 'hidden' %>>
+  <div class="container spread"><span><%- icon('scale') %> <%= t('compare.selected') %>: <strong data-compare-count><%= n %></strong> / 4</span><a class="btn primary sm" href="/compare"><%= t('compare.open') %></a></div>
+</div>

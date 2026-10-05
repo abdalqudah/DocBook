@@ -1,0 +1,69 @@
+<% var f = filters; var degSel = applied.degree, fieldSel = applied.field, destSel = applied.dest; %>
+<section class="section tight" style="padding-bottom:0">
+  <div class="container">
+    <h1 class="mb2"><%= t('finder.title') %></h1>
+    <form action="/programs" method="get" role="search" class="hero-search" style="max-width:none;margin:0">
+      <div class="searchbox"><%- icon('search', 'lg') %><label class="sr-only" for="fq"><%= t('home.search_label') %></label><input id="fq" type="search" name="q" value="<%= f.q %>" placeholder="<%= t('home.search_ph') %>" data-suggest><button class="btn primary" type="submit"><%= t('common.search') %></button></div>
+    </form>
+    <% if (parsed && (parsed.degree || parsed.field || parsed.destination)) { %>
+      <p class="small muted mt2"><%- icon('sparkles', 'sm') %> <%= t('finder.understood') %>
+        <% if (parsed.degree) { %><span class="chip brand"><%= t('ref.degree.' + parsed.degree) %></span><% } %>
+        <% if (parsed.field) { %><span class="chip brand"><%= t('ref.field.' + parsed.field) %></span><% } %>
+        <% if (parsed.destination) { var dd = dests.find(function (x) { return x.slug === parsed.destination; }); %><span class="chip brand"><%= dd ? L(dd, 'name') : parsed.destination %></span><% } %>
+      </p>
+    <% } %>
+  </div>
+</section>
+<section class="section tight">
+  <div class="container finder">
+    <aside class="filters" data-filters aria-label="<%= t('finder.filters') %>">
+      <form method="get" action="/programs" id="filters-form">
+        <input type="hidden" name="q" value="<%= f.q %>">
+        <div class="spread mb4"><h2 style="font-size:1rem;margin:0"><%= t('finder.filters') %></h2><a class="small" href="/programs<%= f.q ? '?q=' + encodeURIComponent(f.q) : '' %>"><%= t('common.clear') %></a></div>
+        <div class="filters-body">
+          <fieldset class="field"><legend class="label"><%= t('finder.degree') %></legend><div class="stack" style="--gap:6px">
+            <% ref.DEGREES.forEach(function (d) { %><label class="check"><input type="checkbox" name="degree" value="<%= d %>" <%= degSel.indexOf(d) >= 0 ? 'checked' : '' %>><span><%= t('ref.degree.' + d) %> <span class="subtle small">(<%= facets.degree[d] || 0 %>)</span></span></label><% }) %>
+          </div></fieldset>
+          <fieldset class="field"><legend class="label"><%= t('finder.destination') %></legend><div class="stack" style="--gap:6px">
+            <% dests.forEach(function (d) { %><label class="check"><input type="checkbox" name="destination" value="<%= d.slug %>" <%= destSel.indexOf(d.slug) >= 0 ? 'checked' : '' %>><span><%= ref.flag(d.country_code) %> <%= L(d, 'name') %> <span class="subtle small">(<%= facets.destination[d.slug] || 0 %>)</span></span></label><% }) %>
+          </div></fieldset>
+          <div class="field"><label for="ff"><%= t('finder.field') %></label><select id="ff" name="field"><option value=""><%= t('common.any') %></option><% ref.FIELDS.forEach(function (x) { %><option value="<%= x %>" <%= fieldSel.indexOf(x) >= 0 ? 'selected' : '' %>><%= t('ref.field.' + x) %></option><% }) %></select></div>
+          <div class="field"><label for="fu"><%= t('catalog.university') %></label><select id="fu" name="university"><option value=""><%= t('common.any') %></option><% unis.forEach(function (u) { %><option value="<%= u.id %>" <%= f.university === u.id ? 'selected' : '' %>><%= L(u, 'name') %></option><% }) %></select></div>
+          <div class="field"><label for="fc"><%= t('common.city') %></label><input id="fc" name="city" value="<%= f.city %>"></div>
+          <div class="field"><label for="ft"><%= t('finder.max_tuition') %></label><input id="ft" type="number" name="max_tuition" min="0" step="1000" value="<%= f.max_tuition || '' %>" placeholder="30000"><span class="hint"><%= t('finder.usd_note') %></span></div>
+          <div class="field"><label for="fi"><%= t('finder.intake_month') %></label><select id="fi" name="intake"><option value=""><%= t('common.any') %></option><% for (var m = 1; m <= 12; m++) { %><option value="<%= m %>" <%= f.intake.indexOf(m) >= 0 ? 'selected' : '' %>><%= ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0] %></option><% } %></select></div>
+          <div class="field"><label for="fd"><%= t('finder.duration') %></label><select id="fd" name="duration"><option value=""><%= t('common.any') %></option><% ['short','mid','long'].forEach(function (x) { %><option value="<%= x %>" <%= f.duration === x ? 'selected' : '' %>><%= t('finder.dur_' + x) %></option><% }) %></select></div>
+          <div class="field"><label for="fm"><%= t('finder.mode') %></label><select id="fm" name="mode"><option value=""><%= t('common.any') %></option><% ref.STUDY_MODES.forEach(function (x) { %><option value="<%= x %>" <%= f.mode.indexOf(x) >= 0 ? 'selected' : '' %>><%= t('ref.mode.' + x) %></option><% }) %></select></div>
+          <div class="field"><span class="label"><%= t('finder.my_english') %></span>
+            <div class="form-grid three"><input type="number" name="ielts" step="0.5" min="0" max="9" value="<%= f.ielts || '' %>" placeholder="IELTS" aria-label="IELTS"><input type="number" name="toefl" min="0" max="120" value="<%= f.toefl || '' %>" placeholder="TOEFL" aria-label="TOEFL"><input type="number" name="pte" min="0" max="90" value="<%= f.pte || '' %>" placeholder="PTE" aria-label="PTE"></div>
+            <span class="hint"><%= t('finder.english_hint') %></span></div>
+          <div class="field"><label for="fa"><%= t('finder.app_fee') %></label><select id="fa" name="max_app_fee"><option value=""><%= t('common.any') %></option><option value="0" <%= f.max_app_fee === 0 ? 'selected' : '' %>><%= t('finder.no_fee') %></option><option value="50" <%= f.max_app_fee === 50 ? 'selected' : '' %>>≤ 50</option><option value="100" <%= f.max_app_fee === 100 ? 'selected' : '' %>>≤ 100</option></select></div>
+          <div class="stack" style="--gap:8px">
+            <label class="check"><input type="checkbox" name="scholarship" value="1" <%= f.scholarship ? 'checked' : '' %>><span><%= t('finder.with_scholarships') %></span></label>
+            <label class="check"><input type="checkbox" name="internship" value="1" <%= f.internship ? 'checked' : '' %>><span><%= t('finder.with_internship') %></span></label>
+            <label class="check"><input type="checkbox" name="work" value="1" <%= f.work ? 'checked' : '' %>><span><%= t('finder.with_work') %></span></label>
+          </div>
+          <button class="btn primary block mt4" type="submit"><%= t('finder.apply') %></button>
+        </div>
+      </form>
+    </aside>
+    <div style="min-width:0">
+      <div class="result-bar">
+        <div><strong><%= t('finder.results', { n: fmt.number(total) }) %></strong></div>
+        <div class="cluster">
+          <button type="button" class="btn sm filters-toggle" data-filters-toggle aria-expanded="false"><%- icon('sliders-horizontal') %><%= t('finder.filters') %></button>
+          <form method="get" action="/programs"><% Object.keys(query).filter(function (k) { return k !== 'sort' && k !== 'page'; }).forEach(function (k) { [].concat(query[k]).forEach(function (v) { %><input type="hidden" name="<%= k %>" value="<%= v %>"><% }) }) %>
+            <label class="sr-only" for="fs"><%= t('finder.sort') %></label><select id="fs" name="sort" data-autosubmit style="width:auto;min-height:34px;font-size:.85rem;border-radius:999px"><% ['relevance','tuition_asc','tuition_desc','ranking','deadline'].forEach(function (s) { %><option value="<%= s %>" <%= f.sort === s ? 'selected' : '' %>><%= t('finder.sort_' + s) %></option><% }) %></select></form>
+        </div>
+      </div>
+      <% if (!rows.length) { %>
+        <div class="card"><%- include('../../partials/empty', { title: t('finder.none'), text: t('finder.none_text'), href: '/book?about=' + encodeURIComponent(f.q || ''), cta: t('finder.ask_counsellor'), ctaIcon: 'message-circle', emptyIcon: 'search' }) %></div>
+      <% } else { %>
+      <div class="grid" style="--min:300px"><% rows.forEach(function (p) { %><%- include('../../partials/program-card', { p: p }) %><% }) %></div>
+      <%- include('../../partials/pager', { meta: meta }) %>
+      <% } %>
+      <p class="disclaimer mt6"><%- icon('info', 'sm') %><span><%= t('finder.disclaimer') %></span></p>
+    </div>
+  </div>
+</section>
+<%- include('../../partials/compare-bar') %>

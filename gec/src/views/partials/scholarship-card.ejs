@@ -1,0 +1,16 @@
+<article class="pcard">
+  <div class="pcard-top">
+    <span class="pcard-logo" style="background:var(--ok-soft);color:var(--ok)"><%- icon('award') %></span>
+    <div class="grow" style="min-width:0">
+      <h3><a href="/scholarships/<%= s.slug %>"><%= L(s, 'name') %></a></h3>
+      <div class="pcard-sub"><%= L(s, 'provider') || L(s, 'university') || L(s, 'destination') || '' %></div>
+    </div>
+    <% if (s.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %>
+  </div>
+  <dl class="facts">
+    <div><dt><%= t('schol.amount') %></dt><dd><%= s.amount_type === 'full' ? t('catalog.amount_type.full') : s.amount_type === 'percentage' ? (s.amount_min || '') + (s.amount_max ? '–' + s.amount_max : '') + '%' : (s.amount_min || s.amount_max ? fmt.money(s.amount_max || s.amount_min, s.currency) : t('catalog.amount_type.varies')) %></dd></div>
+    <div><dt><%= t('finder.deadline') %></dt><dd><%= s.deadline ? fmt.date(s.deadline, { day: 'numeric', month: 'short', year: 'numeric' }) : (L(s, 'deadline_note') || s.deadline_note || '—') %></dd></div>
+  </dl>
+  <% if (L(s, 'coverage')) { %><p class="small muted mb0 clamp-2"><%= L(s, 'coverage') %></p><% } %>
+  <div class="pcard-foot"><a class="btn sm" href="/scholarships/<%= s.slug %>"><%= t('schol.check') %></a><span class="grow"></span><%- include('save-toggle', { type: 'scholarship', id: s.id }) %></div>
+</article>

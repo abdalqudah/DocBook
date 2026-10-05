@@ -70,3 +70,39 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   @mentions, employee privilege escalation + disable, CSV export. Total suite: 26 passing.
 * **Known limitations:** Kanban drag-and-drop uses the HTML5 API (desktop); on phones the stage is changed from the
   lead page. @mention notifications are emitted as events and delivered by the notification centre (phase 8).
+
+---
+
+## Phase 3 — Universities, programs, scholarships, Study Finder, matching, compare, shortlist
+
+### Plan
+* **Exists:** GEC SPA pages (Universities, Programs, Scholarships, Destinations, Study in USA) over 6 hard-coded
+  universities / 6 subject "programs" / 6 scholarships; a client-side compare (max 3, broken initial ids), an
+  in-memory shortlist, a USA-only cost calculator.
+* **Reuse:** all that content (seeded as clearly-flagged demo data), the US-states overview (now regions of the USA
+  destination), compare / shortlist / calculator concepts, the Cmd+K-style search box.
+* **Change:** programs become real rows linked to universities; server-side search with filters, facets and
+  pagination; natural-language query parsing in English and Arabic; explainable matching; durable shortlist
+  (session → student); shareable comparisons; multi-country, multi-currency calculator with saved estimates.
+* **Database:** `currency_rates`, `destinations`, `universities`, `programs`, `scholarships`, `shortlist_items`,
+  `comparisons`, `cost_estimates` (+ FULLTEXT indexes).
+* **Routes (public):** `/programs[/:slug]`, `/universities[/:slug]`, `/scholarships[/:slug]` (eligibility check),
+  `/study[/:slug]`, `/search`, `/compare[/:token]`, `/shortlist`, `/cost-calculator`, `/estimate/:token`,
+  `/api/suggest`. **Staff:** `/staff/{destinations,universities,programs,scholarships}` (CRUD, CSV import/export),
+  `/staff/currencies`, student tabs *Matches* and *Shortlist*, personal estimates.
+* **Security:** commission and internal notes are `internal` fields (permission `catalog.internal`), stripped from
+  public queries and CSV exports for other roles; all filter values whitelisted; Markdown rendered after escaping
+  (no HTML, safe link protocols); share links use unguessable tokens; imports validated row by row.
+
+### Report
+* **Files:** `src/core/{resource,markdown}.js` (declarative admin CRUD), `src/modules/catalog/*` (finder, matching,
+  shortlist, compare, calculator, money, admin, site.web, staff.web, reference), views under `pages/site/*` and
+  `pages/staff/{resource,catalog}/*`, partials (program / scholarship cards, toggles, match chip + reasons, compare
+  bar), `public/js/catalog.js`, `src/db/seeds/{demo-catalog.js,data/gec-original.json}`.
+* **Migration:** `20261005000300_phase3_catalog.js`.
+* **Tests:** `test/phase3.test.js` (6) — query parsing (EN/AR) and filters incl. injection attempts, structured data
+  and no internal data on public pages/APIs, anonymous shortlist/compare + share link + adoption on sign-in,
+  matching categories (excellent / not eligible / missing / unpublished requirements), admin RBAC + tuition
+  normalisation + CSV export column hiding + CSV upsert with bad rows, calculator + e-mailed estimate. Suite: 32.
+* **Known limitations:** demo catalogue figures are samples (flagged); exchange rates are maintained by hand;
+  "Save as PDF" uses the browser's print dialog (print stylesheet) rather than server-side PDF generation.

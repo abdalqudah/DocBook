@@ -1,0 +1,32 @@
+<% var intakes = (p.intakes || []).map(function (m) { return ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0]; }); %>
+<article class="pcard">
+  <div class="pcard-top">
+    <span class="pcard-logo"><% if (p.logo) { %><img src="<%= p.logo %>" alt="" loading="lazy" width="44" height="44"><% } else { %><%= (L(p, 'university') || '?').charAt(0) %><% } %></span>
+    <div class="grow" style="min-width:0">
+      <h3><a href="/programs/<%= p.slug %>"><%= L(p, 'name') %></a></h3>
+      <div class="pcard-sub truncate"><a href="/universities/<%= p.university_slug %>" style="color:inherit"><%= L(p, 'university') %></a> · <%= ref.flag(p.country_code) %> <%= L(p, 'city') %></div>
+    </div>
+    <% if (p.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %>
+  </div>
+  <dl class="facts">
+    <div><dt><%= t('finder.degree') %></dt><dd><%= t('ref.degree.' + p.degree_level) %></dd></div>
+    <div><dt><%= t('finder.tuition') %></dt><dd><%= p.tuition_fee ? fmt.money(p.tuition_fee, p.currency) + t('common.per_year') : t('finder.ask') %></dd></div>
+    <div><dt><%= t('finder.duration') %></dt><dd><%= p.duration_months ? t('finder.months', { n: p.duration_months }) : '—' %></dd></div>
+    <div><dt><%= t('finder.intakes') %></dt><dd><%= intakes.join(', ') || '—' %></dd></div>
+    <div><dt><%= t('finder.english') %></dt><dd><%= p.min_ielts ? 'IELTS ' + p.min_ielts : (p.min_toefl ? 'TOEFL ' + p.min_toefl : '—') %></dd></div>
+    <div><dt><%= t('finder.deadline') %></dt><dd><%= p.next_deadline ? fmt.date(p.next_deadline, { day: 'numeric', month: 'short', year: 'numeric' }) : '—' %></dd></div>
+  </dl>
+  <div class="cluster" style="--gap:6px">
+    <% if (p.scholarships_available) { %><span class="chip ok"><%- icon('award') %><%= t('finder.scholarships') %></span><% } %>
+    <% if (p.work_after_study) { %><span class="chip info"><%- icon('briefcase') %><%= t('finder.work_after') %></span><% } %>
+    <% if (p.internship && p.internship !== 'none') { %><span class="chip"><%= t('catalog.internship.' + p.internship) %></span><% } %>
+    <% if (p.study_mode !== 'on_campus') { %><span class="chip"><%= t('ref.mode.' + p.study_mode) %></span><% } %>
+  </div>
+  <% if (typeof match !== 'undefined' && match) { %><div><%- include('match-chip', { m: match }) %></div><% } %>
+  <div class="pcard-foot">
+    <a class="btn sm primary" href="/programs/<%= p.slug %>"><%= t('finder.view_program') %></a>
+    <span class="grow"></span>
+    <%- include('compare-toggle', { id: p.id }) %>
+    <%- include('save-toggle', { type: 'program', id: p.id }) %>
+  </div>
+</article>

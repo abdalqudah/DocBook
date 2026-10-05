@@ -1,0 +1,13 @@
+<section class="section tight">
+  <div class="container">
+    <div class="section-head"><h1><%= t('dest.title') %></h1><p><%= t('dest.lead') %></p></div>
+    <div class="grid" style="--min:260px">
+      <% dests.forEach(function (d) { %>
+      <a class="dest-card" href="/study/<%= d.slug %>">
+        <% if (d.hero_image) { %><img src="<%= d.hero_image %>" alt="" loading="lazy" width="400" height="300"><% } %>
+        <div class="dest-overlay"><span class="dest-flag" aria-hidden="true"><%= ref.flag(d.country_code) %></span><h3><%= L(d, 'name') %></h3><p><%= L(d, 'tagline') %></p></div>
+      </a>
+      <% }) %>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,22 @@
+<div class="alert mb4"><%- icon('info') %><p><%= t('match.staff_note') %></p></div>
+<% if (!matches.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: t('match.none'), text: t('match.none_text'), emptyIcon: 'target', href: '?tab=profile', cta: t('match.complete_profile'), ctaIcon: 'user' }) %></div>
+<% } else { %>
+<div class="stack">
+  <% matches.forEach(function (x) { var p = x.program, m = x.match; var on = saved.program.indexOf(p.id) >= 0; %>
+  <section class="card">
+    <div class="spread" style="align-items:flex-start">
+      <div class="grow">
+        <a class="li-title" style="white-space:normal" href="/programs/<%= p.slug %>" target="_blank" rel="noopener"><%= L(p, 'name') %></a>
+        <div class="li-sub" style="white-space:normal"><%= L(p, 'university') %> · <%= L(p, 'city') %>, <%= L(p, 'destination') %> · <%= t('ref.degree.' + p.degree_level) %><% if (p.tuition_fee) { %> · <%= fmt.money(p.tuition_fee, p.currency) %><%= t('common.per_year') %><% } %></div>
+      </div>
+      <div class="cluster"><%- include('../../../partials/match-chip', { m: m }) %>
+        <% if (can('students.manage')) { %><form method="post" action="/staff/students/<%= s.id %>/shortlist"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="type" value="program"><input type="hidden" name="item_id" value="<%= p.id %>"><input type="hidden" name="name" value="<%= p.name_en %>"><input type="hidden" name="back" value="matches"><input type="hidden" name="on" value="<%= on ? '0' : '1' %>"><button class="btn sm <%= on ? 'tonal' : '' %>" type="submit"><%- icon(on ? 'bookmark-check' : 'bookmark') %><%= on ? t('shortlist.saved') : t('shortlist.save') %></button></form><% } %>
+      </div>
+    </div>
+    <%- include('../../../partials/match-reasons', { m: m }) %>
+  </section>
+  <% }) %>
+</div>
+<p class="disclaimer mt4"><%- icon('info', 'sm') %><span><%= t('match.disclaimer') %></span></p>
+<% } %>

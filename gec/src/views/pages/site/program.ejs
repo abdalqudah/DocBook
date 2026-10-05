@@ -1,0 +1,71 @@
+<% var intakes = (p.intakes || []).map(function (m) { return ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0]; }); var name = L(p, 'name'); %>
+<section class="section tight" style="padding-bottom:12px">
+  <div class="container">
+    <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/programs"><%= t('finder.title') %></a><%- icon('chevron-right') %><a href="/universities/<%= p.university_slug %>"><%= L(p, 'university') %></a><%- icon('chevron-right') %><span><%= name %></span></nav>
+    <div class="spread" style="align-items:flex-start">
+      <div class="row top grow" style="min-width:0">
+        <span class="pcard-logo" style="width:56px;height:56px"><% if (p.logo) { %><img src="<%= p.logo %>" alt="" width="56" height="56"><% } else { %><%= L(p, 'university').charAt(0) %><% } %></span>
+        <div style="min-width:0">
+          <h1 style="margin:0"><%= name %> <% if (p.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1>
+          <p class="muted mb0"><a href="/universities/<%= p.university_slug %>"><%= L(p, 'university') %></a> · <%= ref.flag(p.country_code) %> <%= L(p, 'city') %>, <a href="/study/<%= p.destination_slug %>"><%= L(p, 'destination') %></a></p>
+        </div>
+      </div>
+      <div class="cluster"><%- include('../../partials/compare-toggle', { id: p.id }) %><%- include('../../partials/save-toggle', { type: 'program', id: p.id }) %></div>
+    </div>
+  </div>
+</section>
+<section class="section tight">
+  <div class="container detail-grid">
+    <div class="stack" style="--gap:24px;min-width:0">
+      <div class="fact-strip">
+        <div><div class="k"><%= t('finder.degree') %></div><div class="v"><%= t('ref.degree.' + p.degree_level) %></div></div>
+        <div><div class="k"><%= t('finder.field') %></div><div class="v"><%= t('ref.field.' + p.field) %></div></div>
+        <div><div class="k"><%= t('finder.duration') %></div><div class="v"><%= p.duration_months ? t('finder.months', { n: p.duration_months }) : '—' %></div></div>
+        <div><div class="k"><%= t('finder.tuition') %></div><div class="v"><%= p.tuition_fee ? fmt.money(p.tuition_fee, p.currency) + t('common.per_year') : t('finder.ask') %></div></div>
+        <div><div class="k"><%= t('finder.app_fee') %></div><div class="v"><%= p.application_fee === 0 ? t('finder.no_fee') : (p.application_fee ? fmt.money(p.application_fee, p.currency) : '—') %></div></div>
+        <div><div class="k"><%= t('finder.intakes') %></div><div class="v"><%= intakes.join(', ') || '—' %></div></div>
+        <div><div class="k"><%= t('finder.deadline') %></div><div class="v"><%= p.next_deadline ? fmt.date(p.next_deadline) : (p.deadline_note || '—') %></div></div>
+        <div><div class="k"><%= t('finder.mode') %></div><div class="v"><%= t('ref.mode.' + p.study_mode) %></div></div>
+      </div>
+      <% if (match) { %>
+      <section class="card" aria-labelledby="match-h"><div class="card-head"><h2 id="match-h"><%= t('match.your_match') %></h2><%- include('../../partials/match-chip', { m: match }) %></div><%- include('../../partials/match-reasons', { m: match }) %><p class="disclaimer mt4 mb0"><%- icon('info', 'sm') %><span><%= t('match.disclaimer') %></span></p></section>
+      <% } %>
+      <% if (L(p, 'description')) { %><section><h2><%= t('program.about') %></h2><div class="prose"><%- md(L(p, 'description')) %></div></section><% } %>
+      <section>
+        <h2><%= t('program.requirements') %></h2>
+        <div class="grid-2">
+          <div class="card"><h3><%- icon('graduation-cap') %> <%= t('program.academic') %></h3>
+            <% if (p.min_gpa_pct) { %><p class="mb2"><%= t('program.min_grade', { pct: Math.round(p.min_gpa_pct) }) %></p><% } %>
+            <% if (L(p, 'academic')) { %><div class="prose small"><%- md(L(p, 'academic')) %></div><% } else if (!p.min_gpa_pct) { %><p class="muted small mb0"><%= t('program.not_published') %></p><% } %>
+          </div>
+          <div class="card"><h3><%- icon('languages') %> <%= t('program.english') %></h3>
+            <% var eng = [p.min_ielts ? 'IELTS ' + p.min_ielts + (p.min_ielts_band ? ' (' + t('program.no_band_below', { band: p.min_ielts_band }) + ')' : '') : null, p.min_toefl ? 'TOEFL iBT ' + p.min_toefl : null, p.min_pte ? 'PTE ' + p.min_pte : null, p.min_duolingo ? 'Duolingo ' + p.min_duolingo : null].filter(Boolean); %>
+            <% if (eng.length) { %><ul class="reasons"><% eng.forEach(function (e) { %><li><span class="ok"><%- icon('check', 'sm') %></span><span><%= e %></span></li><% }) %></ul><% } else { %><p class="muted small mb0"><%= t('program.not_published') %></p><% } %>
+          </div>
+        </div>
+        <% if (p.documents_required.length) { %><div class="card mt4"><h3><%- icon('files') %> <%= t('program.documents') %></h3><ul class="reasons"><% p.documents_required.forEach(function (d) { %><li><span class="subtle"><%- icon('file-text', 'sm') %></span><span><%= d %></span></li><% }) %></ul></div><% } %>
+      </section>
+      <section><h2><%= t('program.after') %></h2>
+        <div class="cluster">
+          <span class="chip <%= p.work_after_study ? 'ok' : '' %>"><%- icon('briefcase') %><%= p.work_after_study ? t('finder.work_after') : t('program.work_not_listed') %></span>
+          <% if (p.internship !== 'none') { %><span class="chip info"><%= t('catalog.internship.' + p.internship) %></span><% } %>
+          <% if (p.scholarships_available) { %><span class="chip ok"><%- icon('award') %><%= t('finder.scholarships') %></span><% } %>
+        </div>
+        <% if (p.work_after_study_note) { %><p class="small muted mt2"><%= p.work_after_study_note %></p><% } %>
+      </section>
+      <% if (scholarships.length) { %><section><h2><%= t('program.scholarships') %></h2><div class="grid" style="--min:260px"><% scholarships.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %></div></section><% } %>
+      <% if (similar.length) { %><section><h2><%= t('program.similar') %></h2><div class="grid" style="--min:280px"><% similar.forEach(function (x) { %><%- include('../../partials/program-card', { p: x }) %><% }) %></div></section><% } %>
+      <p class="disclaimer"><%- icon('info', 'sm') %><span><%= t('program.verify_note') %><% if (p.program_url) { %> <a href="<%= p.program_url %>" target="_blank" rel="noopener"><%= t('program.official_page') %></a><% } %></span></p>
+    </div>
+    <aside>
+      <div class="card lift sticky-card stack">
+        <h2 style="font-size:1.05rem;margin:0"><%= t('program.next_step') %></h2>
+        <p class="small muted mb0"><%= t('program.next_step_text') %></p>
+        <a class="btn primary block" href="/book?about=<%= encodeURIComponent(p.name_en + ' — ' + p.university_en) %>&degree=<%= p.degree_level %>&destination=<%= p.destination_slug %>"><%= t('program.talk_to_counsellor') %></a>
+        <% if (company.whatsapp) { %><a class="btn block" href="/go/whatsapp?from=<%= encodeURIComponent('/programs/' + p.slug) %>&text=<%= encodeURIComponent(t('program.whatsapp_text', { name: p.name_en, uni: p.university_en })) %>"><%- icon('message-circle') %>WhatsApp</a><% } %>
+        <a class="btn ghost block" href="/cost-calculator?d=<%= p.destination_slug %>"><%- icon('calculator') %><%= t('site.nav.calculator') %></a>
+      </div>
+    </aside>
+  </div>
+</section>
+<%- include('../../partials/compare-bar') %>

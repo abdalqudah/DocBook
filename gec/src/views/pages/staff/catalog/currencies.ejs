@@ -1,0 +1,10 @@
+<nav class="breadcrumbs"><a href="/staff/settings"><%= t('nav.settings') %></a><%- icon('chevron-right') %><span><%= t('settings.currencies') %></span></nav>
+<div class="page-head"><div><h1><%= t('settings.currencies') %></h1><p class="lead"><%= t('catalog.rates_lead') %></p></div></div>
+<form method="post" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="table-wrap"><table class="table"><thead><tr><th><%= t('catalog.currency') %></th><th><%= t('catalog.per_usd') %></th><th><%= t('common.updated') %></th></tr></thead><tbody>
+    <% rates.forEach(function (r) { %><tr><td><strong><%= r.code %></strong></td><td><input name="rate_<%= r.code %>" type="number" step="any" min="0" value="<%= Number(r.per_usd) %>" <%= r.code === 'USD' ? 'readonly' : '' %> aria-label="<%= r.code %>" style="max-width:160px"></td><td class="small subtle"><%= fmt.date(r.updated_at) %></td></tr><% }) %>
+    <tr><td><input name="new_code" maxlength="3" placeholder="EUR" aria-label="<%= t('catalog.new_currency') %>" style="max-width:90px;text-transform:uppercase"></td><td><input name="new_rate" type="number" step="any" min="0" placeholder="0.92" aria-label="<%= t('catalog.per_usd') %>" style="max-width:160px"></td><td></td></tr>
+  </tbody></table></div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

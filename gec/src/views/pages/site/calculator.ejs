@@ -1,0 +1,31 @@
+<section class="section tight">
+  <div class="container">
+    <div class="section-head"><h1><%= t('calc.title') %></h1><p><%= t('calc.lead') %></p></div>
+    <div class="detail-grid" style="grid-template-columns:minmax(0,1fr)">
+      <form method="get" action="/cost-calculator" class="card stack">
+        <%- include('../../partials/field', { name: 'd', label: t('calc.destinations') + ' (' + t('calc.up_to_3') + ')', type: 'checks', value: input.destinations, options: dests.map(function (d) { return { value: d.slug, label: ref.flag(d.country_code) + ' ' + L(d, 'name') }; }) }) %>
+        <div class="form-grid three">
+          <%- include('../../partials/field', { name: 'housing', label: t('calc.housing'), type: 'select', value: input.housing, required: true, options: ['shared','campus','private','homestay'].map(function (h) { return { value: h, label: t('calc.housing_' + h) }; }) }) %>
+          <%- include('../../partials/field', { name: 'scholarship', label: t('calc.scholarship_in', { c: result.currency }), type: 'number', value: input.scholarship, attrs: 'min="0" step="500"' }) %>
+          <%- include('../../partials/field', { name: 'years', label: t('calc.years'), type: 'number', value: result.years, attrs: 'min="1" max="6"' }) %>
+          <%- include('../../partials/field', { name: 'currency', label: t('calc.show_in'), type: 'select', value: result.currency, required: true, options: currencies.map(function (c) { return { value: c, label: c }; }) }) %>
+        </div>
+        <div class="form-actions" style="padding-top:0"><button class="btn primary" type="submit"><%- icon('calculator') %><%= t('calc.calculate') %></button></div>
+      </form>
+    </div>
+    <% if (result.rows.length) { %>
+    <div class="table-wrap mt6"><table class="table compare-table">
+      <thead><tr><th scope="col"><%= t('calc.per_year_in', { c: result.currency }) %></th><% result.rows.forEach(function (r) { %><th scope="col"><%= ref.flag(r.country_code) %> <%= L(r, 'name') %></th><% }) %></tr></thead>
+      <tbody>
+        <% ['tuition','accommodation','food','transport','insurance','visa','flights','other'].forEach(function (k) { %><tr><th scope="row"><%= t('calc.item_' + k) %></th><% result.rows.forEach(function (r) { %><td class="num"><%= fmt.money(r.items[k], result.currency) %></td><% }) %></tr><% }) %>
+        <tr><th scope="row"><%= t('calc.gross') %></th><% result.rows.forEach(function (r) { %><td class="num"><strong><%= fmt.money(r.gross, result.currency) %></strong></td><% }) %></tr>
+        <% if (result.rows[0].scholarship) { %><tr><th scope="row"><%= t('calc.scholarship') %></th><% result.rows.forEach(function (r) { %><td class="num" style="color:var(--ok)">− <%= fmt.money(r.scholarship, result.currency) %></td><% }) %></tr><% } %>
+        <tr><th scope="row"><%= t('calc.net_year') %></th><% result.rows.forEach(function (r) { %><td class="num"><strong style="font-size:1.1rem"><%= fmt.money(r.net, result.currency) %></strong></td><% }) %></tr>
+        <% if (result.years > 1) { %><tr><th scope="row"><%= t('calc.total_years', { n: result.years }) %></th><% result.rows.forEach(function (r) { %><td class="num"><strong><%= fmt.money(r.total, result.currency) %></strong></td><% }) %></tr><% } %>
+      </tbody>
+    </table></div>
+    <% } %>
+    <p class="disclaimer mt4"><%- icon('info', 'sm') %><span><%= t('calc.disclaimer') %></span></p>
+    <div class="cta-band mt6"><div><h2><%= t('calc.cta_title') %></h2><p><%= t('calc.cta_text') %></p></div><a class="btn primary lg" href="/book?about=<%= encodeURIComponent(t('calc.title')) %>"><%= t('site.book_consultation') %></a></div>
+  </div>
+</section>

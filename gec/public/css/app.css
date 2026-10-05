@@ -447,3 +447,5 @@ kbd { font-family: inherit; font-size: .74rem; background: var(--surface-2); bor
   body { background: #fff; }
   .card { border: 0; padding: 0; }
 }
+fieldset.card > legend { float: inline-start; width: 100%; padding: 0; margin: 0 0 14px; font-size: 1.02rem; font-weight: 700; }
+fieldset.card > legend + * { clear: both; }

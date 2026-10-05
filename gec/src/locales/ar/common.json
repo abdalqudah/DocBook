@@ -114,7 +114,11 @@
     "leads": "العملاء المحتملون",
     "students": "الطلاب",
     "tasks": "المهام",
-    "employees": "الموظفون"
+    "employees": "الموظفون",
+    "programs": "البرامج",
+    "universities": "الجامعات",
+    "scholarships": "المنح الدراسية",
+    "destinations": "الوجهات"
   },
   "quick": {},
   "palette": {
@@ -125,7 +129,8 @@
     "navigate": "للتنقل",
     "open_item": "للفتح",
     "pages": "الصفحات",
-    "actions": "الإجراءات"
+    "actions": "الإجراءات",
+    "catalog": "الدليل"
   },
   "staff": {
     "workspace": "مساحة العمل",

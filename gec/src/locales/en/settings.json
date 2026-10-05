@@ -52,7 +52,9 @@
     "branches": "Branches",
     "branches_desc": "Offices, their managers and time zones.",
     "users": "Users",
-    "users_desc": "Employees, their roles and access."
+    "users_desc": "Employees, their roles and access.",
+    "currencies": "Currencies",
+    "currencies_desc": "Exchange rates used to compare tuition and budgets."
   },
   "roles": {
     "lead": "Built-in roles follow GEC's standard responsibilities. Create custom roles for anything else.",
