@@ -315,6 +315,8 @@ dialog.drawer .dialog-body { flex: 1; }
 .chart-tip { position: absolute; top: 0; pointer-events: none; transform: translate(-50%, -110%); background: var(--secondary); color: var(--secondary-ink); padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; white-space: nowrap; display: flex; flex-direction: column; box-shadow: var(--shadow); z-index: 5; }
 .chart-tip strong { font-size: 13px; }
 .chart-tip[hidden] { display: none; }
+/* Anything marked hidden stays hidden, whatever its own display (an .alert or .btn toggled by a script). */
+[hidden] { display: none !important; }
 @media (max-width: 600px) { .ch-xl-alt { display: none; } }
 .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--text-muted); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: 6px; vertical-align: -1px; }
