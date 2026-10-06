@@ -4,6 +4,8 @@ const path = require('path');
 const pkg = require('../../../package.json');
 
 let cached;
+// build-info.json is written into release zips (scripts/release.js): commit and date of that build.
+const buildInfo = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'build-info.json'), 'utf8')); } catch { return {}; } })();
 function fromGit() {
   let dir = path.join(__dirname, '..', '..', '..');
   for (let i = 0; i < 4; i += 1) {
@@ -23,9 +25,9 @@ function fromGit() {
   return null;
 }
 function commit() {
-  if (cached === undefined) cached = (process.env.APP_COMMIT && /^[0-9a-f]{7,40}$/.test(process.env.APP_COMMIT) ? process.env.APP_COMMIT : null) || (() => { try { return fromGit(); } catch { return null; } })();
+  if (cached === undefined) cached = (process.env.APP_COMMIT && /^[0-9a-f]{7,40}$/.test(process.env.APP_COMMIT) ? process.env.APP_COMMIT : null) || (/^[0-9a-f]{7,40}$/.test(buildInfo.commit || '') ? buildInfo.commit : null) || (() => { try { return fromGit(); } catch { return null; } })();
   return cached;
 }
-const version = () => ({ version: pkg.version, commit: commit(), short: commit() ? commit().slice(0, 7) : null });
+const version = () => ({ version: pkg.version, commit: commit(), short: commit() ? commit().slice(0, 7) : null, builtAt: buildInfo.built_at || null });
 
 module.exports = { version, commit };

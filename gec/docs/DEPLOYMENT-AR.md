@@ -27,31 +27,31 @@ hPanel ← **Databases ← Management** ← أنشئ قاعدة بيانات و�
 من **File Manager** أنشئ مجلداً في جذر الحساب: `/home/u213859182/gec-storage`
 (رقم الحساب هو اسم مستخدم FTP عندك). سنضعه في المتغير `STORAGE_DIR`.
 
-### 0.3 GitHub وفرع النشر
-1. على GitHub: ادمج آخر التحديثات في الفرع **main**.
-2. أنشئ فرعاً اسمه **production** من main (Branches ← New branch). هذا ما سيعمل على الموقع.
-3. أنشئ رمز GitHub للتحديث: GitHub ← Settings ← Developer settings ← **Fine-grained tokens** ← Generate:
-   المستودع: هذا المستودع فقط، الصلاحية: **Contents: Read and write**، مدة صلاحية سنة.
+### 0.3 ملف المنصة
+ستستلم ملفاً واحداً: **`gec-hostinger.zip`** (ملفات المنصة جاهزة، و `package.json` في أعلى الملف). لا تفكّ ضغطه.
+(لمن يبني من الكود: `./scripts/release.sh` يُنتج هذا الملف.)
 
 ### 0.4 إنشاء التطبيق في hPanel
-hPanel ← **Websites ← Add website ← Node.js Web App** (أو من الموقع الحالي ← Node.js):
+hPanel ← **Websites ← Add website ← Node.js Web App** (أو من الموقع الحالي ← Node.js) ← **Upload your website files**:
 | الحقل | القيمة |
 | --- | --- |
-| المصدر | **GitHub** ← اختر المستودع والفرع **production** |
+| الملف | ارفع `gec-hostinger.zip` |
 | Framework | **Express** |
 | Node.js version | **22.x** |
-| Root directory | `gec` (مجلد المنصة داخل المستودع) |
 | Entry file | `app.js` |
+| Root directory | فارغ (الملفات في أعلى الأرشيف) |
 | Build command / Output directory | فارغ |
 | Package manager | npm |
 
 ### 0.5 متغيرات البيئة
-في إعدادات التطبيق ← **Environment variables** ← **Import .env** والصق (عدّل القيم بين < >):
+في إعدادات التطبيق ← **Environment variables** ← **Import .env** وارفع ملف `hostinger.env` الذي أرسلناه (بعد تعبئة
+كلمة مرور القاعدة وكلمة مرور المدير)، أو الصق (عدّل القيم بين < >):
 ```env
 NODE_ENV=production
 APP_URL=https://<دومينك أو العنوان المؤقت xxx.hostingersite.com>
 TRUST_PROXY=true
 AUTO_MIGRATE=true
+DEFAULT_LOCALE=ar
 SESSION_SECRET=<نص عشوائي طويل>
 APP_KEY=<نص عشوائي طويل آخر — لا تغيّره بعد الإطلاق>
 DB_HOST=<Host من صفحة قواعد البيانات، غالباً localhost>
@@ -63,14 +63,9 @@ STORAGE_DIR=/home/u213859182/gec-storage
 ADMIN_EMAIL=<بريدك>
 ADMIN_PASSWORD=<كلمة مرور قوية مؤقتة>
 ADMIN_NAME=<اسمك>
-DEFAULT_LOCALE=ar
-UPDATE_MODE=github
-GITHUB_REPO=<المالك/اسم-المستودع>
-GITHUB_TOKEN=<رمز GitHub من الخطوة 0.3>
-UPDATE_SOURCE_BRANCH=main
-UPDATE_DEPLOY_BRANCH=production
+UPDATE_MODE=upload
 ```
-ثم **Deploy**. عند أول تشغيل تُنشأ الجداول وحساب المدير تلقائياً. افتح `APP_URL/staff/login`.
+ثم **Deploy**. عند أول تشغيل تُنشأ الجداول وحساب المدير تلقائياً. افتح `APP_URL/staff/login` وغيّر كلمة المرور.
 
 ### 0.6 الدومين و HTTPS
 hPanel ← الموقع ← **Connect domain**: اربط دومينك (إن كان من Hostinger يُضبط DNS تلقائياً؛ وإلا ضع سجلات
@@ -81,14 +76,17 @@ hPanel ← الموقع ← **Connect domain**: اربط دومينك (إن كا
 **الإعدادات ← البريد الإلكتروني**: الخادم `smtp.hostinger.com`، المنفذ `465` (SSL)، المستخدم = عنوان البريد
 كاملاً، وكلمة مروره. Hostinger تضيف SPF و DKIM تلقائياً للدومينات المربوطة لديها؛ أضف DMARC (القسم 5).
 
-### 0.8 التحديثات بزر واحد
-في المنصة: **النظام ← تحديث النظام** (لمدير النظام الأعلى). عندما تصل تحديثات إلى main تظهر هنا بأسمائها،
-وزر **«تحديث النظام الآن»** ينقل فرع production إليها، فتعيد Hostinger البناء تلقائياً (2–5 دقائق) والصفحة
-تُظهر متى أصبح الإصدار الجديد يعمل. وزر **«العودة للإصدار السابق»** يرجع خطوة إن ظهرت مشكلة.
-النسخ الاحتياطي: Hostinger تأخذ نسخة يومية (hPanel ← Backups)؛ خذ نسخة يدوية قبل التحديثات الكبيرة.
+### 0.8 تثبيت إصدار جديد
+عندما يصلك ملف `gec-hostinger.zip` جديد: خذ نسخة احتياطية من hPanel ← Backups، ثم hPanel ← تطبيق Node.js ←
+**Deployments** ← ارفع الملف الجديد ← **Deploy**. أبقِ متغيرات البيئة كما هي. تحديثات قاعدة البيانات تتم تلقائياً،
+والملفات المرفوعة محفوظة في `STORAGE_DIR` فلا تُحذف. صفحة **النظام ← تحديث النظام** في المنصة تعرض رقم الإصدار
+وتاريخ بنائه لتتأكد أن الجديد يعمل.
+
+> اختياري لاحقاً: يمكن ربط GitHub بدل الرفع اليدوي فيصبح التحديث زراً واحداً داخل المنصة
+> (`UPDATE_MODE=github`، انظر docs/PHASES.md — المرحلة 18).
 
 ### 0.9 ملاحظات
-- لا تعدّل ملفات التطبيق من File Manager — أي نشر يستبدلها. كل التعديلات عبر GitHub أو من لوحة التحكم.
+- لا تعدّل ملفات التطبيق من File Manager — أي نشر يستبدلها. كل التعديلات من لوحة التحكم أو بإصدار zip جديد.
 - السجلات (Logs) والأخطاء: إعدادات التطبيق في hPanel ← Logs.
 - الأقسام 2–3 (الخادم و Docker و Caddy) و 14 (backup.sh) خاصة بالـ VPS ويمكن تجاوزها؛ أكمل من القسم 5.
 

@@ -81,3 +81,16 @@ test('GitHub mode: rollback moves production back; bad token says so; non-super-
   const o = await staffAgent(await makeStaff({ role: 'admin' }));
   assert.equal((await form(o, '/staff/system/update/rollback')).status, 403);
 });
+
+test('upload mode (Hostinger without GitHub): shows the version and how to upload a new zip; buttons refused', async () => {
+  Object.assign(config.updates, { mode: 'upload' });
+  const a = await staffAgent(superAdmin);
+  const page = await a.get('/staff/system/update?lang=ar');
+  assert.equal(page.status, 200);
+  assert.match(page.text, /كيف تثبّت إصداراً جديداً/);
+  assert.doesNotMatch(page.text, /install-updater/);
+  calls = [];
+  await form(a, '/staff/system/update/update');
+  assert.equal(calls.length, 0, 'GitHub never called');
+  Object.assign(config.updates, { mode: 'github' });
+});

@@ -39,7 +39,8 @@
       "UP_TO_DATE": "There is nothing to install: the system is up to date.",
       "VALIDATION_FAILED": "Unknown action.",
       "DIVERGED": "The deploy branch has its own changes — merge them into the source branch first.",
-      "NOTHING_TO_ROLL_BACK": "There is no previous version to return to."
+      "NOTHING_TO_ROLL_BACK": "There is no previous version to return to.",
+      "UPLOAD_MODE": "On this hosting, new versions are uploaded in hPanel."
     },
     "gh_setup_title": "Connect updates through GitHub (once)",
     "gh_setup_text": "On managed hosting (Hostinger Web Apps) the host rebuilds the site whenever the deploy branch changes. Create a fine-grained GitHub token with access to this repository only and the permission Contents: Read and write, then add these environment variables in hPanel → your web app → Settings → Environment variables, and redeploy:",
@@ -59,6 +60,15 @@
     "checked": "Checked GitHub for updates.",
     "rollback": "Roll back to the previous version",
     "rollback_confirm": "Return the site to version {commit}? Database changes made by the newer version stay.",
-    "diverged": "The deploy branch has its own changes — merge them into the source branch first."
+    "diverged": "The deploy branch has its own changes — merge them into the source branch first.",
+    "up_title": "How to install a new version",
+    "up_built": "This version was built on {date}.",
+    "up_lead": "This site is installed by uploading files in the Hostinger panel (no GitHub). When you receive a new version (a gec-hostinger.zip file):",
+    "up_step1": "Take a backup first: hPanel → Websites → your site → Backups (database and files).",
+    "up_step2": "hPanel → your Node.js web app → Deployments (or Settings) → upload the new zip and press Deploy.",
+    "up_step3": "Keep the same environment variables — do not change APP_KEY. Hostinger installs and restarts the app (2–5 minutes); database updates run by themselves.",
+    "up_step4": "Open this page again: the version and build date above show the new version.",
+    "up_open": "Open hPanel",
+    "up_safe": "Uploaded documents and images are stored outside the app folder (STORAGE_DIR), so a new upload never deletes them."
   }
 }

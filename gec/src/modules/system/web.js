@@ -10,10 +10,14 @@ const config = require('../../config');
 const updates = require('./updates');
 const github = require('./github');
 
-const provider = () => (config.updates.mode === 'github' ? 'github' : 'server');
-const statusOf = async () => (provider() === 'github' ? github.status() : { ...updates.status(), mode: updates.status().mode || 'server' });
+const provider = () => config.updates.mode;
+const statusOf = async () => {
+  if (provider() === 'github') return github.status();
+  if (provider() === 'upload') return { mode: 'upload', connected: false, pending: [], state: 'idle', run: null, queued: null };
+  return { ...updates.status(), mode: updates.status().mode || 'server' };
+};
 
-nav.add('system', { key: 'system_update', href: '/staff/system/update', icon: 'refresh-cw', perms: ['system.update'], badge: async () => { if (provider() === 'github') return github.cachedPending(); const s = updates.status(); return s.connected ? s.pending.length : 0; } });
+nav.add('system', { key: 'system_update', href: '/staff/system/update', icon: 'refresh-cw', perms: ['system.update'], badge: async () => { if (provider() === 'github') return github.cachedPending(); if (provider() === 'upload') return 0; const s = updates.status(); return s.connected ? s.pending.length : 0; } });
 
 const router = express.Router();
 
@@ -33,6 +37,8 @@ router.post('/system/update/:action(check|update|rollback)', can('system.update'
       if (req.params.action === 'update') await github.update(req.ctx, by);
       else if (req.params.action === 'rollback') await github.rollback(req.ctx, by);
       else await github.status({ fresh: true });
+    } else if (provider() === 'upload') {
+      throw new AppError('UPLOAD_MODE', 'Updates are uploaded in the hosting panel.', 409);
     } else if (req.params.action === 'rollback') {
       throw new AppError('VALIDATION_FAILED', 'Rollback is automatic on a server install.', 422);
     } else await updates.request(req.ctx, req.params.action, by);

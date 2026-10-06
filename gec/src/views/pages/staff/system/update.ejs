@@ -8,7 +8,7 @@
       <div class="upd-version"><strong dir="ltr">v<%= s.app.version %></strong><% var shown = s.app.short || (s.serverCommit ? String(s.serverCommit).slice(0, 7) : ''); if (shown) { %> <code dir="ltr"><%= shown %></code><% } %></div>
       <% if (gh && s.deployedSubject) { %><div class="small muted"><%= s.deployedSubject %></div><% } %>
     </div>
-    <span class="chip <%= s.connected ? 'ok' : 'warn' %>"><%- icon(s.connected ? 'plug-zap' : 'plug') %><%= s.connected ? t('sysupdate.connected') : t('sysupdate.not_connected') %></span>
+    <% if (provider !== 'upload') { %><span class="chip <%= s.connected ? 'ok' : 'warn' %>"><%- icon(s.connected ? 'plug-zap' : 'plug') %><%= s.connected ? t('sysupdate.connected') : t('sysupdate.not_connected') %></span><% } %>
   </div>
   <% if (s.connected) { %>
   <dl class="kv mt4">
@@ -18,7 +18,16 @@
   <% } %>
 </section>
 
-<% if (!s.connected && gh) { %>
+<% if (provider === 'upload') { %>
+<section class="card mb4">
+  <h2><%= t('sysupdate.up_title') %></h2>
+  <% if (s.app.builtAt) { %><p class="small muted"><%= t('sysupdate.up_built', { date: fmt.dateTime(s.app.builtAt) }) %></p><% } %>
+  <p class="small muted"><%= t('sysupdate.up_lead') %></p>
+  <ol class="steps-list small"><li><%= t('sysupdate.up_step1') %></li><li><%= t('sysupdate.up_step2') %></li><li><%= t('sysupdate.up_step3') %></li><li><%= t('sysupdate.up_step4') %></li></ol>
+  <div class="cluster mt4"><a class="btn primary" href="https://hpanel.hostinger.com" target="_blank" rel="noopener"><%- icon('external-link') %><%= t('sysupdate.up_open') %></a></div>
+  <p class="small muted mt4 mb0"><%= t('sysupdate.up_safe') %></p>
+</section>
+<% } else if (!s.connected && gh) { %>
 <section class="card mb4">
   <h2><%= t('sysupdate.gh_setup_title') %></h2>
   <% if (s.configured && s.checkError) { %><div class="alert bad mb2" role="alert"><%- icon('alert-triangle') %><p class="mb0"><%= t('sysupdate.gh_error.' + (['token', 'not_found'].indexOf(s.checkError) >= 0 ? s.checkError : 'other')) %></p></div><% } %>
