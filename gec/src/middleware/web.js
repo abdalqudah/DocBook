@@ -93,7 +93,7 @@ async function locals(req, res, next) {
         DEGREES: ref.DEGREES, FIELDS: ref.FIELDS, EDUCATION_LEVELS: ref.EDUCATION_LEVELS, BUDGETS: ref.BUDGETS, STUDY_MODES: ref.STUDY_MODES,
         intakes: ref.intakeOptions,
       },
-      site: { nav: siteNav.LINKS, features: siteFeatures, footer: siteFooter.columns() },
+      site: await (async () => { const c = await require('../modules/cms/nav').load(); return { nav: c.header || siteNav.LINKS, features: siteFeatures, footer: c.footer || siteFooter.columns() }; })(), // eslint-disable-line global-require
     });
     if (req.session) req.session.flash = [];
     next();

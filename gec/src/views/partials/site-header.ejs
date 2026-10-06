@@ -4,9 +4,14 @@
     <a class="brand-link" href="/" aria-label="<%= branding.legal_name %> — <%= t('site.home') %>"><%- include('logo', { height: 38 }) %></a>
     <nav class="main-nav" id="main-nav" aria-label="<%= t('site.main_navigation') %>" data-main-nav>
       <ul>
-        <% links.forEach(function (l) { var cur = path === l.href || (l.href !== '/' && path.indexOf(l.href + '/') === 0); %>
-        <li><a href="<%= l.href %>" <%- cur ? 'aria-current="page"' : '' %>><%= l.label ? (locale === 'ar' ? l.label.ar : l.label.en) : t('site.nav.' + l.key) %></a></li>
+        <% var isCur = function (l) { return path === l.href || (l.href !== '/' && path.indexOf(l.href + '/') === 0); };
+           var text = function (l) { return l.label ? (locale === 'ar' ? l.label.ar : l.label.en) : t('site.nav.' + l.key); };
+           var more = links.filter(function (l) { return l.more; }); %>
+        <% links.forEach(function (l) { %>
+        <li class="<%= l.more ? 'nav-secondary' : '' %>"><a href="<%= l.href %>" <%- isCur(l) ? 'aria-current="page"' : '' %>><%= text(l) %></a></li>
         <% }) %>
+        <% if (more.length) { %><li class="nav-more"><details data-dropdown><summary class="<%= more.some(isCur) ? 'on' : '' %>"><%= t('common.more') %><%- icon('chevron-down', 'sm') %></summary>
+          <ul class="nav-more-menu"><% more.forEach(function (l) { %><li><a href="<%= l.href %>" <%- isCur(l) ? 'aria-current="page"' : '' %>><%= text(l) %></a></li><% }) %></ul></details></li><% } %>
       </ul>
       <div class="nav-mobile-extra">
         <a class="btn block" href="<%= currentUser && currentUser.kind === 'student' ? '/portal' : '/login' %>"><%- icon('user') %><%= currentUser && currentUser.kind === 'student' ? t('site.my_portal') : t('auth.sign_in') %></a>

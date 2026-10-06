@@ -8,5 +8,20 @@
   <h2><%= t('privacy.retention_h') %></h2><p><%= t('privacy.retention', { months: retention }) %></p>
   <h2><%= t('privacy.rights_h') %></h2><p><%= t('privacy.rights') %></p>
   <h2><%= t('privacy.contact_h') %></h2><p><%= t('privacy.contact') %> <% if (company.email) { %><a href="mailto:<%= company.email %>"><%= company.email %></a><% } %></p>
+  <h2 id="request"><%= t('privacy.form_h') %></h2>
+  <% if (query.sent === '1') { %><div class="alert ok"><%- icon('check-circle-2') %><p><%= t('privacy.request_received') %></p></div><% } else { %>
+  <p><%= t('privacy.form_lead') %></p>
+  <form method="post" action="/privacy/request" class="form-card stack" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+    <div class="form-grid two">
+      <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, attrs: 'autocomplete="name"' }) %>
+      <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, attrs: 'autocomplete="email"', hint: t('privacy.email_hint') }) %>
+    </div>
+    <%- include('../../partials/field', { name: 'type', label: t('privacy.request_type'), type: 'select', required: true, value: 'export', options: ['export','delete','correct','other'].map(function (x) { return { value: x, label: t('privacy.type_' + x) }; }) }) %>
+    <%- include('../../partials/field', { name: 'details', label: t('privacy.details'), type: 'textarea', rows: 3 }) %>
+    <div class="form-actions"><button class="btn primary" type="submit"><%= t('privacy.send_request') %></button></div>
+  </form>
+  <p class="small subtle"><%= t('privacy.identity_note') %></p><% } %>
   <p class="small subtle"><%= t('privacy.review_note') %></p>
 </div></section>

@@ -1,0 +1,17 @@
+<% var del = locale === 'ar' && s.deliverables_ar.length ? s.deliverables_ar : s.deliverables_en; %>
+<section class="section">
+  <div class="container detail-grid">
+    <div class="stack" style="--gap:20px;min-width:0">
+      <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/services"><%= t('cms.services_title') %></a><%- icon('chevron-right') %><span><%= L(s, 'title') %></span></nav>
+      <div class="row"><span class="queue-icon brand"><%- icon(s.icon || 'sparkles') %></span><h1 class="mb0"><%= L(s, 'title') %></h1></div>
+      <div class="prose"><%- md(L(s, 'description')) %></div>
+      <% if (del.length) { %><section class="card"><h2 style="font-size:1.05rem"><%= t('cms.what_you_get') %></h2><ul class="reasons"><% del.forEach(function (d) { %><li class="ok"><%- icon('check', 'sm') %><span style="color:var(--text)"><%= d %></span></li><% }) %></ul></section><% } %>
+      <% if (L(s, 'highlight')) { %><p class="disclaimer"><%- icon('sparkles', 'sm') %><span><%= L(s, 'highlight') %></span></p><% } %>
+    </div>
+    <aside><div class="card sticky-card stack">
+      <% if (L(s, 'timeline')) { %><div><div class="small muted"><%= t('cms.typical_timeline') %></div><strong><%= L(s, 'timeline') %></strong></div><% } %>
+      <a class="btn primary block" href="/book?about=<%= encodeURIComponent(L(s, 'title')) %>"><%= t('site.book_consultation') %></a>
+      <% if (others.length) { %><div class="divider-list small"><% others.forEach(function (o) { %><a class="list-item" href="/services/<%= o.slug %>"><%= L(o, 'title') %></a><% }) %></div><% } %>
+    </div></aside>
+  </div>
+</section>

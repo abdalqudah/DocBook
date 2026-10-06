@@ -3,7 +3,7 @@
 // Used for the catalogue (universities, programs, scholarships, destinations) and website content.
 //
 //   resource({ key, table, entity, perms: { view, manage, import? }, nameField, sections: [{ key, fields: [...] }],
-//              list: { columns, search, filters, defaultSort }, slugFrom, beforeSave, afterSave, publicUrl, csv })
+//              list: { columns, search, filters, defaultSort }, slugFrom, beforeSave, validateRow, afterSave, publicUrl, csv })
 //   field: { name, type, label?, required?, bilingual?, options?, min?, max?, step?, hint?, internal?, span?, rows? }
 //   types: text, textarea, markdown, number, money, int, select, checks, bool, date, list (one per line), url, slug, image, json
 const express = require('express');
@@ -32,7 +32,7 @@ function zodFor(f) {
   const max = f.max;
   switch (f.type) {
     case 'number': case 'money': return z.preprocess((v) => (blank(v) === undefined ? null : Number(String(v).replace(/,/g, ''))), z.number({ invalid_type_error: 'Enter a number.' }).finite().min(f.min ?? 0, 'Too small.').max(max ?? 1e12, 'Too large.').nullable());
-    case 'int': return z.preprocess((v) => (blank(v) === undefined ? null : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a whole number.').min(f.min ?? 0, 'Too small.').max(max ?? 2147483647, 'Too large.').nullable());
+    case 'int': return z.preprocess((v) => (blank(v) === undefined ? (f.name === 'position' ? 0 : f.default ?? null) : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a whole number.').min(f.min ?? 0, 'Too small.').max(max ?? 2147483647, 'Too large.').nullable());
     case 'bool': return z.preprocess((raw) => { const v = Array.isArray(raw) ? raw[raw.length - 1] : raw; return v === true || v === '1' || v === 'on' || v === 1 || v === 'true' || v === 'yes'; }, z.boolean());
     case 'date': return z.preprocess((v) => (blank(v) === undefined ? null : v), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').nullable());
     case 'datetime': return z.preprocess((v) => (blank(v) === undefined ? null : v), z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Enter a valid date and time.').nullable());
@@ -212,6 +212,8 @@ function resource(def) {
     try {
       const data = validate(schema(canInternal(req)), req.body);
       const row = await toRow(data, existing, res.locals.fmt.tz);
+      const rowErrors = def.validateRow ? def.validateRow({ ...(existing || {}), ...row }, existing) : null;
+      if (rowErrors) throw E.validation(rowErrors);
       let id;
       if (isNew) {
         [id] = await knex(def.table).insert(row);

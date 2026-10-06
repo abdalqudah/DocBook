@@ -1,0 +1,12 @@
+<article class="section">
+  <div class="container" style="max-width:780px">
+    <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/resources"><%= t('cms.resources_title') %></a><%- icon('chevron-right') %><a href="/resources?category=<%= a.category %>"><%= t('cms.category.' + a.category) %></a></nav>
+    <h1><%= L(a, 'title') %></h1>
+    <p class="small muted"><%= (author && author.name) || a.author_name || branding.legal_name %><%= a.published_at ? ' · ' + fmt.date(a.published_at) : '' %><%= a.read_minutes ? ' · ' + t('cms.read_min', { n: a.read_minutes }) : '' %></p>
+    <% if (a.image) { %><img src="<%= a.image %>" alt="" width="780" height="439" style="width:100%;height:auto;border-radius:var(--r-lg);margin:12px 0 24px"><% } %>
+    <div class="prose"><%- md(L(a, 'body')) %></div>
+    <% if (tags.length) { %><div class="cluster mt6"><% tags.forEach(function (tg) { %><span class="chip"><%= tg %></span><% }) %></div><% } %>
+    <div class="cta-band mt8"><div><h2><%= t('home.cta_title') %></h2><p><%= t('home.cta_text') %></p></div><a class="btn primary lg" href="/book?about=<%= encodeURIComponent(L(a, 'title')) %>"><%= t('site.book_consultation') %></a></div>
+    <% if (related.length) { %><h2 class="mt8"><%= t('cms.related') %></h2><div class="grid-3"><% related.forEach(function (r) { %><%- include('../../partials/article-card', { a: r }) %><% }) %></div><% } %>
+  </div>
+</article>

@@ -19,4 +19,9 @@
     <%- include('../../partials/field', { name: 'password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
   </div><div class="form-actions"><button class="btn" type="submit"><%= t('auth.change_password') %></button></div></form>
 <section class="card stack"><h2 class="section-title"><%= t('portal.your_data') %></h2><p class="small muted mb0"><%= t('portal.your_data_text') %></p>
-  <div class="cluster"><a class="btn" href="/portal/settings/export"><%- icon('download') %><%= t('portal.export') %></a><a class="btn ghost" href="/portal/messages"><%= t('portal.ask_deletion') %></a></div></section>
+  <div class="cluster"><a class="btn" href="/portal/settings/export"><%- icon('download') %><%= t('portal.export') %></a></div>
+  <details><summary><%= t('portal.ask_deletion') %></summary>
+    <form method="post" action="/portal/settings/delete-request" class="stack mt2" data-confirm="<%= t('privacy.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <p class="small muted mb0"><%= t('privacy.delete_explain') %></p>
+      <%- include('../../partials/field', { name: 'details', label: t('privacy.details'), type: 'textarea', rows: 2 }) %>
+      <div class="form-actions"><button class="btn danger-ghost" type="submit"><%= t('privacy.send_delete') %></button></div></form></details></section>

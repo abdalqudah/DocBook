@@ -136,7 +136,15 @@
     "analytics": "التحليلات",
     "performance": "أداء الفريق",
     "campaigns": "الحملات",
-    "automations": "الأتمتة"
+    "automations": "الأتمتة",
+    "pages": "الصفحات",
+    "articles": "المقالات",
+    "services_cms": "الخدمات",
+    "faqs": "الأسئلة الشائعة",
+    "testimonials": "آراء الطلاب",
+    "navigation": "القوائم",
+    "home_page": "الصفحة الرئيسية",
+    "privacy_requests": "طلبات الخصوصية"
   },
   "quick": {},
   "palette": {

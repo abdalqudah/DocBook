@@ -262,6 +262,13 @@ router.get('/settings/export', ah(async (req, res) => {
   res.send(JSON.stringify(data, null, 2));
 }));
 
+router.post('/settings/delete-request', ah(async (req, res) => {
+  const svc = require('../privacy/service'); // eslint-disable-line global-require
+  await svc.createRequest({ userId: req.user.id, ip: req.ip }, { type: 'delete', email: req.student.email, name: [req.student.first_name, req.student.last_name].filter(Boolean).join(' '), details: String(req.body.details || '').slice(0, 2000), studentId: req.student.id, userId: req.user.id, verified: true });
+  flash(req, 'ok', req.t('privacy.request_received'));
+  res.redirect('/portal/settings');
+}));
+
 router.get('/advisor', ah(async (req, res) => {
   res.page('pages/portal/advisor', { layout: 'portal', pageScripts: ['/js/advisor.js'], title: req.t('advisor.title'), aiConnected: !!(await require('../ai/provider').currentConfig()) }); // eslint-disable-line global-require
 }));

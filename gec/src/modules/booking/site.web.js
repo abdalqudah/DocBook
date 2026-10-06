@@ -18,7 +18,7 @@ const appointments = require('./appointments.service');
 const courses = require('./courses.service');
 const eventsSvc = require('./events.service');
 
-nav.add({ key: 'events', href: '/events', order: 50 });
+nav.add({ key: 'events', href: '/events', order: 50, more: true });
 footer.add('students', { href: '/courses', label: 'site.nav.courses' });
 footer.add('company', { href: '/events', label: 'site.nav.events' });
 

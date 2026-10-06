@@ -11,7 +11,7 @@ const provider = require('../ai/provider');
 
 const nav = require('../site/nav');
 
-nav.add({ key: 'advisor', href: '/advisor', order: 45 });
+nav.add({ key: 'advisor', href: '/advisor', order: 45, more: true });
 const router = express.Router();
 
 router.get('/register', (req, res) => {

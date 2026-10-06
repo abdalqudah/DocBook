@@ -1,0 +1,8 @@
+<section class="section">
+  <div class="container">
+    <div class="section-head"><span class="eyebrow"><%- icon('newspaper') %><%= t('cms.resources_eyebrow') %></span><h1><%= t('cms.resources_title') %></h1><p><%= t('cms.resources_lead') %></p></div>
+    <nav class="cluster mb6" aria-label="<%= t('cms.categories') %>"><a class="filter-chip <%= !cat ? 'on' : '' %>" href="/resources"><%= t('common.all') %></a><% categories.forEach(function (c) { %><a class="filter-chip <%= cat === c ? 'on' : '' %>" href="/resources?category=<%= c %>"><%= t('cms.category.' + c) %></a><% }) %></nav>
+    <% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('cms.no_articles'), text: t('cms.no_articles_text'), emptyIcon: 'newspaper' }) %></div>
+    <% } else { %><div class="grid-3"><% rows.forEach(function (a) { %><%- include('../../partials/article-card', { a: a }) %><% }) %></div><%- include('../../partials/pager', { meta: meta }) %><% } %>
+  </div>
+</section>

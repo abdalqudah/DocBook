@@ -136,7 +136,15 @@
     "analytics": "Analytics",
     "performance": "Team performance",
     "campaigns": "Campaigns",
-    "automations": "Automations"
+    "automations": "Automations",
+    "pages": "Pages",
+    "articles": "Articles",
+    "services_cms": "Services",
+    "faqs": "FAQ",
+    "testimonials": "Testimonials",
+    "navigation": "Navigation",
+    "home_page": "Home page",
+    "privacy_requests": "Privacy requests"
   },
   "quick": {},
   "palette": {

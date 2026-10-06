@@ -5,7 +5,7 @@
     <div class="grid-3">
       <% rows.forEach(function (c) { %>
       <a class="card stack" href="/courses/<%= c.slug %>" style="text-decoration:none;color:inherit">
-        <% if (c.image) { %><img src="<%= c.image %>" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r-md)"><% } %>
+        <% if (c.image) { %><img src="<%= c.image %>" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r)"><% } %>
         <div class="spread"><h2 class="mb0" style="font-size:1.1rem"><%= L(c, 'name') %></h2><% if (c.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></div>
         <div class="cluster small muted"><span><%- icon('calendar', 'sm') %> <%= c.start_date ? fmt.date(c.start_date) : t('courses.rolling') %></span><span><%- icon(c.mode === 'online' ? 'video' : 'map-pin', 'sm') %> <%= t('courses.mode_' + c.mode) %></span></div>
         <div class="spread"><strong><%= c.price ? fmt.money(c.price, c.currency) : t('booking.free') %></strong><span class="chip <%= c.registration_open ? 'ok' : '' %>"><%= c.registration_open ? t('courses.open') : t('courses.closed') %></span></div>

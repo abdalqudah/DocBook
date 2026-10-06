@@ -1,7 +1,8 @@
 <section class="hero">
   <div class="container hero-inner">
-    <h1><%= t('home.title') %></h1>
-    <p class="lead"><%= t('home.lead') %></p>
+<% var hc = typeof homeCms !== 'undefined' ? homeCms : { hero: {}, services: [], testimonials: [], articles: [] }; var hv = function (k, fb) { return hc.hero[k + '_' + locale] || t(fb); }; %>
+    <h1><%= hv('hero_title', 'home.title') %></h1>
+    <p class="lead"><%= hv('hero_lead', 'home.lead') %></p>
     <form class="hero-search" action="/programs" method="get" role="search">
       <div class="searchbox">
         <%- icon('search', 'lg') %>
@@ -70,10 +71,37 @@
 </section>
 <% } %>
 
+<% if (hc.services.length) { %>
+<section class="section">
+  <div class="container">
+    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('cms.services_title') %></h2><p><%= t('cms.services_lead') %></p></div><a class="btn ghost" href="/services"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="grid-3"><% hc.services.forEach(function (sv) { %><a class="card row top" href="/services/<%= sv.slug %>" style="text-decoration:none;color:inherit"><span class="queue-icon brand"><%- icon(sv.icon || 'sparkles') %></span><div><strong><%= L(sv, 'title') %></strong><% if (L(sv, 'timeline')) { %><div class="small subtle"><%= L(sv, 'timeline') %></div><% } %></div></a><% }) %></div>
+  </div>
+</section>
+<% } %>
+
+<% if (hc.testimonials.length) { %>
+<section class="section alt">
+  <div class="container">
+    <div class="section-head center"><h2><%= t('cms.testimonials_title') %></h2></div>
+    <div class="grid-3"><% hc.testimonials.forEach(function (q) { %><figure class="card quote"><blockquote class="mb4">“<%= L(q, 'quote') %>”</blockquote><figcaption class="row"><span class="avatar"><%= initials(L(q, 'name')) %></span><div><strong><%= L(q, 'name') %></strong><div class="small muted"><%= [L(q, 'program'), L(q, 'university'), q.year].filter(Boolean).join(' · ') %></div></div></figcaption></figure><% }) %></div>
+  </div>
+</section>
+<% } %>
+
+<% if (hc.articles.length) { %>
+<section class="section">
+  <div class="container">
+    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('cms.resources_title') %></h2><p><%= t('cms.resources_lead') %></p></div><a class="btn ghost" href="/resources"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="grid-3"><% hc.articles.forEach(function (a) { %><%- include('../../partials/article-card', { a: a }) %><% }) %></div>
+  </div>
+</section>
+<% } %>
+
 <section class="section">
   <div class="container">
     <div class="cta-band">
-      <div><h2><%= t('home.cta_title') %></h2><p><%= t('home.cta_text') %></p></div>
+      <div><h2><%= hv('cta_title', 'home.cta_title') %></h2><p><%= hv('cta_text', 'home.cta_text') %></p></div>
       <div class="cluster"><a class="btn primary lg" href="/book"><%= t('site.book_consultation') %></a><% if (company.whatsapp) { %><a class="btn lg" href="/go/whatsapp?from=home-cta" style="--b-bg:transparent;--b-fg:#fff;--b-line:rgb(255 255 255 / .4)"><%- icon('message-circle') %>WhatsApp</a><% } %></div>
     </div>
   </div>

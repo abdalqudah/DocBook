@@ -1,0 +1,9 @@
+<section class="section">
+  <div class="container" style="max-width:860px">
+    <div class="section-head"><h1><%= L(p, 'title') %></h1><% if (L(p, 'lead')) { %><p><%= L(p, 'lead') %></p><% } %></div>
+    <% if (p.hero_image) { %><img src="<%= p.hero_image %>" alt="" width="860" height="400" style="width:100%;height:auto;max-height:400px;object-fit:cover;border-radius:var(--r-lg);margin-bottom:24px"><% } %>
+    <div class="prose"><%- md(L(p, 'body')) %></div>
+    <% if (faqs.length) { %><h2 class="mt8"><%= t('cms.faq_title') %></h2><div class="faq"><% faqs.forEach(function (f) { %><details class="card"><summary><strong><%= L(f, 'question') %></strong></summary><div class="prose mt2"><%- md(L(f, 'answer')) %></div></details><% }) %></div><% } %>
+    <% if (p.show_cta) { %><div class="cta-band mt8"><div><h2><%= t('home.cta_title') %></h2><p><%= t('home.cta_text') %></p></div><a class="btn primary lg" href="/book?about=<%= encodeURIComponent(L(p, 'title')) %>"><%= t('site.book_consultation') %></a></div><% } %>
+  </div>
+</section>

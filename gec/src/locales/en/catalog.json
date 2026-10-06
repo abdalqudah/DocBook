@@ -381,7 +381,9 @@
       "where": "Where",
       "agreement": "Agreement",
       "commission": "Commission",
-      "contact": "Contact"
+      "contact": "Contact",
+      "content": "Content",
+      "author": "Author"
     },
     "fields": {
       "name": "Name",
@@ -497,7 +499,37 @@
       "commission_rate": "Rate / amount",
       "payment_terms_days": "Payment terms (days)",
       "contact_name": "Contact name",
-      "notes": "Notes"
+      "notes": "Notes",
+      "lead": "Introduction",
+      "body": "Body",
+      "show_cta": "Show booking call-to-action",
+      "is_published": "Published",
+      "category": "Category",
+      "excerpt": "Summary",
+      "tags": "Tags",
+      "author_id": "Author (team member)",
+      "author_name": "Author name",
+      "read_minutes": "Reading time (minutes)",
+      "published_at": "Publishing date",
+      "og_image": "Social sharing image",
+      "question": "Question",
+      "answer": "Answer",
+      "topic": "Page topic",
+      "quote": "Quote",
+      "country": "Country",
+      "university": "University",
+      "program": "Program",
+      "year": "Year",
+      "destination": "Destination code",
+      "avatar": "Photo",
+      "consent_on_file": "Consent to publish on file",
+      "timeline": "Timeline",
+      "deliverables": "Deliverables",
+      "highlight": "Highlight",
+      "icon": "Icon",
+      "label": "Label",
+      "href": "Link",
+      "group": "Footer column"
     },
     "destinations": {
       "plural": "Destinations",
@@ -561,6 +593,54 @@
       "lead": "Agreements with universities and their commission terms. Visible to finance and administrators only.",
       "empty": "No agreements",
       "empty_text": "Add an agreement to track commissions.",
+      "related": "Related"
+    },
+    "pages": {
+      "plural": "Pages",
+      "new": "New page",
+      "lead": "Editable website pages such as About us and Visa guidance.",
+      "empty": "No pages yet",
+      "empty_text": "Create a page; it is served at its own address.",
+      "related": "Related"
+    },
+    "articles": {
+      "plural": "Articles",
+      "new": "New article",
+      "lead": "Guides for the resource centre. Unpublished or future-dated articles stay hidden.",
+      "empty": "No articles yet",
+      "empty_text": "Write the first guide for students.",
+      "related": "Related"
+    },
+    "faqs": {
+      "plural": "FAQ",
+      "new": "New question",
+      "lead": "Questions shown on the FAQ page (and on pages with the same topic).",
+      "empty": "No questions yet",
+      "empty_text": "Add the questions students ask most.",
+      "related": "Related"
+    },
+    "testimonials": {
+      "plural": "Testimonials",
+      "new": "New testimonial",
+      "lead": "Only testimonials with consent on file can be published.",
+      "empty": "No testimonials yet",
+      "empty_text": "Add a testimonial once the student agreed in writing.",
+      "related": "Related"
+    },
+    "services": {
+      "plural": "Services",
+      "new": "New service",
+      "lead": "Services shown on the website and the home page.",
+      "empty": "No services yet",
+      "empty_text": "Describe what you offer students.",
+      "related": "Related"
+    },
+    "navigation": {
+      "plural": "Navigation",
+      "new": "New link",
+      "lead": "Optional custom links for the header and footer. When none are active, the built-in menu is used.",
+      "empty": "Using the built-in menu",
+      "empty_text": "Add links to replace the default header or footer menu.",
       "related": "Related"
     }
   }

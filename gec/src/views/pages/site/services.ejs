@@ -1,0 +1,11 @@
+<section class="section">
+  <div class="container">
+    <div class="section-head"><span class="eyebrow"><%- icon('briefcase') %><%= t('cms.services_eyebrow') %></span><h1><%= t('cms.services_title') %></h1><p><%= t('cms.services_lead') %></p></div>
+    <% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('cms.no_services'), emptyIcon: 'briefcase' }) %></div><% } else { %>
+    <div class="grid-3"><% rows.forEach(function (s) { %><a class="card stack" href="/services/<%= s.slug %>" style="text-decoration:none;color:inherit">
+      <span class="queue-icon brand"><%- icon(s.icon || 'sparkles') %></span><h2 class="mb0" style="font-size:1.1rem"><%= L(s, 'title') %></h2>
+      <p class="small muted mb0 clamp-3"><%= (L(s, 'description') || '').replace(/[#*_>\[\]()]/g, '').slice(0, 220) %></p>
+      <% if (L(s, 'timeline')) { %><span class="small subtle"><%- icon('clock', 'sm') %> <%= L(s, 'timeline') %></span><% } %></a><% }) %></div><% } %>
+    <div class="cta-band mt8"><div><h2><%= t('home.cta_title') %></h2><p><%= t('home.cta_text') %></p></div><a class="btn primary lg" href="/book"><%= t('site.book_consultation') %></a></div>
+  </div>
+</section>

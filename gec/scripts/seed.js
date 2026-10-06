@@ -4,7 +4,7 @@ const knex = require('../src/db/knex');
 const { migrateLatest } = require('../src/db/migrate');
 const bootstrap = require('../src/modules/bootstrap');
 
-const SEEDS = ['demo-crm', 'demo-catalog', 'demo-engagement'];
+const SEEDS = ['demo-crm', 'demo-catalog', 'demo-engagement', 'demo-cms'];
 
 (async () => {
   await migrateLatest();

@@ -1,0 +1,30 @@
+<nav class="breadcrumbs"><a href="/staff/privacy"><%= t('nav.privacy_requests') %></a><%- icon('chevron-right') %><span><%= r.ref %></span></nav>
+<div class="page-head"><div><h1><%= t('privacy.type_' + r.type) %></h1><p class="lead"><%= r.name || '' %> · <%= r.email || '' %> · <%= fmt.dateTime(r.created_at) %></p></div><span class="chip <%= r.identity_verified ? 'ok' : 'warn' %>"><%= r.identity_verified ? t('privacy.verified') : t('privacy.unverified') %></span></div>
+<% if (r.details) { %><section class="card mb4"><p class="mb0" style="white-space:pre-wrap"><%= r.details %></p></section><% } %>
+<div class="alert info mb4"><%- icon('info') %><p><%= t('privacy.deadline_note') %></p></div>
+<form method="post" class="card stack mb4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <h2 class="section-title"><%= t('privacy.step_link') %></h2>
+  <% if (student) { %><p class="mb0"><a href="/staff/students/<%= student.id %>"><%= student.ref %> — <%= fullName(student) %></a><%= student.anonymized_at ? ' (' + t('privacy.already_anonymized') + ')' : '' %></p>
+  <% } else if (matches.length || leadMatches.length) { %>
+    <% matches.forEach(function (m) { %><label class="check"><input type="radio" name="student_id" value="<%= m.id %>"><span><%= m.ref %> — <%= fullName(m) %> (<%= t('merge.kind_student') %>)</span></label><% }) %>
+    <% leadMatches.forEach(function (m) { %><label class="check"><input type="radio" name="lead_id" value="<%= m.id %>"><span><%= m.ref %> — <%= fullName(m) %> (<%= t('merge.kind_lead') %>)</span></label><% }) %>
+  <% } else { %><p class="muted mb0"><%= t('privacy.no_match') %></p><% } %>
+  <h2 class="section-title mt4"><%= t('privacy.step_verify') %></h2>
+  <label class="check"><input type="checkbox" name="identity_verified" value="1" <%= r.identity_verified ? 'checked disabled' : '' %>><span><%= t('privacy.verify_label') %></span></label>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'status', label: t('common.status'), type: 'select', value: r.status, options: ['open','verifying','done','rejected'].map(function (s) { return { value: s, label: t('privacy.st_' + s) }; }) }) %>
+    <%- include('../../../partials/field', { name: 'resolution', label: t('privacy.resolution'), value: r.resolution }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<% if (r.status !== 'done') { %>
+<section class="card stack"><h2 class="section-title"><%= t('privacy.step_act') %></h2>
+  <% if (!r.identity_verified) { %><p class="muted mb0"><%= t('privacy.verify_first') %></p><% } else { %>
+  <% if (r.student_id) { %><a class="btn" href="/staff/privacy/<%= r.id %>/export"><%- icon('download') %><%= t('privacy.download_export') %></a><% } %>
+  <% if (r.type === 'delete' && (r.student_id || r.lead_id)) { %>
+  <form method="post" action="/staff/privacy/<%= r.id %>/anonymize" class="stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <p class="small"><%= t('privacy.anonymize_explain') %></p>
+    <%- include('../../../partials/field', { name: 'confirm', label: t('privacy.type_delete_confirm'), required: true, attrs: 'autocomplete="off"' }) %>
+    <div class="form-actions"><button class="btn danger-ghost" type="submit"><%- icon('trash-2') %><%= t('privacy.anonymize') %></button></div></form><% } %>
+  <% } %></section>
+<% } %>

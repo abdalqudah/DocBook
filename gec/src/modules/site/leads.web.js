@@ -11,7 +11,7 @@ const features = require('./features');
 const footer = require('./footer');
 
 features.enable('book');
-nav.add({ key: 'contact', href: '/contact', order: 90 });
+nav.add({ key: 'contact', href: '/contact', order: 90, more: true });
 footer.add('company', { href: '/contact', label: 'site.nav.contact' });
 footer.add('students', { href: '/book', label: 'site.book_consultation' });
 

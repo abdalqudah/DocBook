@@ -1,0 +1,9 @@
+<section class="section">
+  <div class="container" style="max-width:820px">
+    <div class="section-head"><span class="eyebrow"><%- icon('circle-help') %><%= t('cms.faq_eyebrow') %></span><h1><%= t('cms.faq_title') %></h1><p><%= t('cms.faq_lead') %></p></div>
+    <% if (!groups.length) { %><div class="card"><%- include('../../partials/empty', { title: t('cms.no_faq'), emptyIcon: 'circle-help' }) %></div><% } %>
+    <% groups.forEach(function (g) { %><h2 style="font-size:1.1rem" class="mt6"><%= g.name %></h2>
+      <div class="faq"><% g.items.forEach(function (f) { %><details class="card"><summary><strong><%= L(f, 'question') %></strong></summary><div class="prose mt2"><%- md(L(f, 'answer')) %></div></details><% }) %></div><% }) %>
+    <div class="cta-band mt8"><div><h2><%= t('cms.faq_more') %></h2><p><%= t('home.cta_text') %></p></div><a class="btn primary lg" href="/contact"><%= t('site.nav.contact') %></a></div>
+  </div>
+</section>

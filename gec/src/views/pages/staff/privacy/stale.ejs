@@ -1,0 +1,6 @@
+<nav class="breadcrumbs"><a href="/staff/privacy"><%= t('nav.privacy_requests') %></a><%- icon('chevron-right') %><span><%= t('privacy.stale_title') %></span></nav>
+<div class="page-head"><div><h1><%= t('privacy.stale_title') %></h1><p class="lead"><%= t('privacy.stale_lead', { months: months }) %></p></div></div>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('privacy.stale_none'), emptyIcon: 'shield-check', compact: true }) %></div>
+<% } else { %><form method="post" class="stack" data-confirm="<%= t('privacy.stale_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="card"><div class="divider-list"><% rows.forEach(function (l) { %><label class="list-item check"><input type="checkbox" name="lead_id" value="<%= l.id %>" checked><span class="num small"><%= l.ref %></span><span class="li-body"><span class="li-title"><%= fullName(l) %></span><span class="li-sub"><%= t('leads.status_' + l.status) %> · <%= fmt.date(l.last_activity_at || l.created_at) %></span></span></label><% }) %></div></div>
+  <div class="form-actions"><button class="btn danger-ghost" type="submit"><%= t('privacy.anonymize_selected') %></button></div></form><% } %>

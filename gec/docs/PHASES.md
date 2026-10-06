@@ -321,3 +321,53 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   notifications refresh on page load (no push / websockets); the advisor keeps the last few turns of text per
   session (tool results are not replayed across turns); "Ask to delete my data" opens a message to GEC — the staff
   deletion workflow comes in phase 9.
+
+## Phase 9 — Website CMS, SEO, resources, privacy
+
+### Plan
+* **Exists / reused:** the public site layout, `resource()` CRUD (now with a `validateRow` hook), the escaping
+  Markdown renderer, settings store, audit log, notifications, lead/student records, the original site's content.
+* **Changes:** Website group in the staff menu (pages, articles, services, FAQ, testimonials, navigation, home-page
+  texts); public `/resources`, `/resources/:slug`, `/services`, `/services/:slug`, `/faq`, editable pages at their
+  own address (`/about`, `/visa`, …); `sitemap.xml` with hreflang alternates, `robots.txt`; structured data (Article,
+  Service, FAQPage); privacy request form, staff privacy queue, data export, anonymisation, retention job.
+* **Database:** `pages`, `articles`, `faqs`, `testimonials`, `services`, `nav_items`, `privacy_requests`,
+  `students/leads.anonymized_at`.
+* **Security / honesty:** content is Markdown rendered with everything escaped (no raw HTML, only http(s)/mailto/tel/
+  site links); page addresses that belong to the application are reserved; custom navigation links must be site
+  paths or https URLs; a testimonial can only be published with consent on file; unverifiable claims from the
+  original site (approval rates, amounts "secured", "guaranteed" outcomes) were not imported; the Visa page and
+  articles say they are general guidance and to confirm with official sources; privacy actions need verified
+  identity and a typed confirmation, and are audited; `privacy.manage` is not part of the Admin role.
+
+### Report
+* **Files:** `src/modules/cms/{admin,nav,site.web,web}.js`, `src/modules/privacy/{service,web,site.web}.js`,
+  `pages/site/{resources,article,services,service,faq,page}.ejs`, `partials/article-card.ejs`,
+  `pages/staff/cms/home.ejs`, `pages/staff/privacy/{index,request,stale}.ejs`, `src/locales/*/cms.json`;
+  home page shows published services, consented testimonials and the latest articles, with editable hero / CTA
+  texts (empty fields fall back to the built-in text in that language); the header keeps the main links and moves
+  AI advisor, Events and Contact under "More" on desktop (all links remain in the mobile menu).
+* **Seed:** `src/db/seeds/demo-cms.js` (`npm run seed`): the original GEC services (12), guides (5), FAQs (7),
+  testimonials (4, unpublished — no consent record) and About / Visa pages; all `is_demo`, removed by
+  `npm run seed -- --remove`.
+* **Migration:** `20261005000900_phase9_cms.js`.
+* **Routes:** public — `/resources[/:slug]`, `/services[/:slug]`, `/faq`, `/:slug` (CMS pages, mounted last),
+  `/sitemap.xml`, `/robots.txt`, `POST /privacy/request`; portal — `POST /portal/settings/delete-request`; staff —
+  `/staff/{pages,articles,services,faqs,testimonials,navigation}`, `/staff/website/home`,
+  `/staff/privacy[/:id[/export|/anonymize]]`, `/staff/privacy/stale`.
+* **Privacy:** a request from the website is unverified until staff confirm the requester; a signed-in student's
+  request is verified. Export = complete JSON of the student and their leads, applications, documents (metadata),
+  appointments, messages, shortlist, invoices and payments (no passport secrets, no internal notes). Anonymise =
+  identity removed everywhere (profile, leads, messages, notes, files, registrations, website history, portal
+  account disabled and signed out); invoices and payments keep amounts with the payer name removed. The daily
+  retention job deletes website history older than the retention period; inactive leads past it can be
+  anonymised in bulk.
+* **Fix:** an empty "position" field no longer fails saving (resource ints default to 0 for position).
+* **Tests:** `test/phase9.test.js` (5): public pages and JSON-LD, unpublished / scheduled content hidden, no
+  imported claims; sitemap / robots; staff page creation, reserved slugs, XSS escaping, testimonial consent rule,
+  navigation override and unsafe links, home texts with per-language fallback, permissions, audit; privacy request
+  → verification → export → typed-confirmation anonymisation (sign-in disabled, invoice amounts kept), retention,
+  bulk stale leads; portal deletion request. Suite: 67.
+* **Known limitations:** no WYSIWYG editor (Markdown with a hint); images are referenced by URL or uploaded per
+  field — there is no shared media library; scheduled articles appear at their date without a notification; legal
+  retention periods for financial records are a business decision and are not enforced automatically.

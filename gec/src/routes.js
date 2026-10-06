@@ -12,8 +12,11 @@ router.use('/', tracking.router);
 router.use('/', require('./modules/growth/site.web'));
 router.use('/', require('./modules/portal/public.web'));
 router.use('/', require('./modules/site/leads.web'));
+router.use(require('./modules/cms/site.web').homeLocals);
 router.use('/', require('./modules/catalog/site.web'));
 router.use('/', require('./modules/booking/site.web'));
 router.use('/', require('./modules/finance/site.web'));
+router.use('/', require('./modules/privacy/site.web'));
 router.use('/', require('./modules/site/web'));
+router.use('/', require('./modules/cms/site.web').router); // CMS pages last: real routes always win
 module.exports = router;

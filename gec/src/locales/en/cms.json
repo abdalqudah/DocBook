@@ -1,0 +1,53 @@
+{
+  "cms": {
+    "resources_eyebrow": "Resource centre",
+    "resources_title": "Guides & articles",
+    "resources_lead": "Practical guides on choosing a program, applications, scholarships, visas and student life.",
+    "categories": "Categories",
+    "category": {
+      "study_abroad": "Study abroad",
+      "visa": "Visas",
+      "scholarships": "Scholarships",
+      "universities": "Universities",
+      "ielts": "English tests",
+      "student_life": "Student life",
+      "application_tips": "Application tips"
+    },
+    "no_articles": "No articles yet",
+    "no_articles_text": "New guides will appear here once our team publishes them.",
+    "read_min": "{n} min read",
+    "related": "Related articles",
+    "services_eyebrow": "What we do",
+    "services_title": "Our services",
+    "services_lead": "From choosing a program to arriving on campus — support at every step.",
+    "no_services": "No services published yet",
+    "what_you_get": "What you get",
+    "typical_timeline": "Typical timeline",
+    "faq_eyebrow": "Questions",
+    "faq_title": "Frequently asked questions",
+    "faq_lead": "Quick answers to what students and parents ask us most.",
+    "faq_more": "Still have a question?",
+    "no_faq": "No questions published yet",
+    "general": "General",
+    "testimonials_title": "Students who studied with us",
+    "hero_title": "Hero headline",
+    "hero_lead": "Hero text",
+    "cta_title": "Call-to-action headline",
+    "cta_text": "Call-to-action text",
+    "default_text": "Leave empty to use the default text",
+    "home_lead": "Edit the main texts of the home page. Services, testimonials and articles appear automatically when published.",
+    "home_hint": "Empty fields fall back to the built-in text in that language.",
+    "page_slug_hint": "The page address, e.g. about → /about. Some addresses are reserved by the site.",
+    "author_hint": "Used when the author is not a team member.",
+    "published_hint": "Publishing date. A future date schedules the article.",
+    "topic_hint": "Optional: show this question on a page with this address (e.g. visa).",
+    "consent_hint": "Tick only when the person’s written consent to publish is on file.",
+    "icon_hint": "Icon name, e.g. graduation-cap, file-check, plane, wallet.",
+    "href_hint": "A site path like /programs or a full https:// address.",
+    "group_hint": "Footer column (footer links only).",
+    "location": {
+      "header": "Header",
+      "footer": "Footer"
+    }
+  }
+}

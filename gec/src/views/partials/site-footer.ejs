@@ -13,7 +13,7 @@
       <% } %>
     </div>
     <% site.footer.forEach(function (col) { %>
-    <div><h2 class="footer-h"><%= t('site.footer.' + col.key) %></h2><ul class="footer-links"><% col.links.forEach(function (l) { %><li><a href="<%= l.href %>"><%= t(l.label) %></a></li><% }) %></ul></div>
+    <div><h2 class="footer-h"><%= t('site.footer.' + col.key) %></h2><ul class="footer-links"><% col.links.forEach(function (l) { %><li><a href="<%= l.href %>"><%= typeof l.label === 'object' ? (locale === 'ar' ? l.label.ar : l.label.en) : t(l.label) %></a></li><% }) %></ul></div>
     <% }) %>
   </div>
   <div class="container footer-bottom">

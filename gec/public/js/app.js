@@ -68,10 +68,10 @@
 
   // ---- Close <details class="menu"> when clicking elsewhere or pressing Escape
   doc.addEventListener('click', function (e) {
-    doc.querySelectorAll('details.menu[open]').forEach(function (m) { if (!m.contains(e.target)) m.removeAttribute('open'); });
+    doc.querySelectorAll('details.menu[open], details[data-dropdown][open]').forEach(function (m) { if (!m.contains(e.target)) m.removeAttribute('open'); });
   });
   doc.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') doc.querySelectorAll('details.menu[open]').forEach(function (m) { m.removeAttribute('open'); var s = m.querySelector('summary'); if (s) s.focus(); });
+    if (e.key === 'Escape') doc.querySelectorAll('details.menu[open], details[data-dropdown][open]').forEach(function (m) { m.removeAttribute('open'); var s = m.querySelector('summary'); if (s) s.focus(); });
   });
 
   // ---- Chip checkboxes
