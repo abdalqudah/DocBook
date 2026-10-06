@@ -72,7 +72,13 @@
     "tone_ok": "Success",
     "tone_bad": "Red",
     "appointment_types": "Appointment types",
-    "appointment_types_desc": "Consultation types, duration, buffers and who can be booked."
+    "appointment_types_desc": "Consultation types, duration, buffers and who can be booked.",
+    "email": "E-mail",
+    "email_desc": "The mailbox GEC sends from: SMTP, Google Workspace or Microsoft 365.",
+    "sms": "SMS",
+    "sms_desc": "Text messages through Twilio.",
+    "whatsapp": "WhatsApp",
+    "whatsapp_desc": "WhatsApp Business Cloud API for sending and receiving messages."
   },
   "roles": {
     "lead": "Built-in roles follow GEC's standard responsibilities. Create custom roles for anything else.",

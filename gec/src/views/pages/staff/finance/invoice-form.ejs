@@ -1,0 +1,40 @@
+<% var src = Object.keys(old).length ? old : null; var items = src ? [].concat(src.item_description || []).map(function (d, k) { return { description: d, quantity: [].concat(src.item_quantity || [])[k], unit_price: [].concat(src.item_unit_price || [])[k] }; }) : (invoice ? invoice.items : []); while (items.length < 3) items.push({ description: '', quantity: 1, unit_price: '' }); %>
+<nav class="breadcrumbs"><a href="/staff/invoices"><%= t('nav.invoices') %></a><%- icon('chevron-right') %><span><%= invoice ? invoice.number : t('finance.new_invoice') %></span></nav>
+<div class="page-head"><h1><%= invoice ? t('finance.edit_draft', { number: invoice.number }) : t('finance.new_invoice') %></h1></div>
+<% if (!who) { %>
+  <form method="get" class="card stack"><p class="mb0"><%= t('finance.pick_person') %></p>
+    <div class="cluster"><input name="student_id" inputmode="numeric" placeholder="<%= t('finance.student_id') %>" aria-label="<%= t('finance.student_id') %>" style="width:auto"><button class="btn" type="submit"><%= t('common.continue') %></button></div>
+    <p class="small subtle mb0"><%= t('finance.pick_person_hint') %></p></form>
+<% } else { %>
+<form method="post" action="<%= invoice ? '/staff/invoices/' + invoice.id : '/staff/invoices' %>" class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (!invoice) { %><% if (studentId) { %><input type="hidden" name="student_id" value="<%= studentId %>"><% } else { %><input type="hidden" name="lead_id" value="<%= leadId %>"><% } %><% } %>
+  <section class="card stack">
+    <div class="row"><span class="avatar sm"><%= initials(who.name) %></span><strong><%= who.name %></strong><span class="small muted"><%= who.email || '' %></span></div>
+    <div class="form-grid three">
+      <%- include('../../../partials/field', { name: 'currency', label: t('finance.doc_currency'), type: 'select', required: true, value: invoice ? invoice.currency : defaultCurrency, options: currencies.map(function (c) { return { value: c, label: c }; }) }) %>
+      <%- include('../../../partials/field', { name: 'locale', label: t('finance.doc_language'), type: 'select', required: true, value: invoice ? invoice.locale : (who.locale === 'ar' ? 'ar' : 'en'), options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }] }) %>
+      <%- include('../../../partials/field', { name: 'due_date', label: t('finance.due'), type: 'date', value: invoice && invoice.due_date ? fmt.dateInput(invoice.due_date) : '', hint: t('finance.due_hint') }) %>
+    </div>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'bill_to_name', label: t('finance.bill_to'), value: invoice ? invoice.bill_to_name : who.name }) %>
+      <%- include('../../../partials/field', { name: 'bill_to_email', label: t('common.email'), type: 'email', value: invoice ? invoice.bill_to_email : who.email }) %>
+    </div>
+    <%- include('../../../partials/field', { name: 'bill_to_address', label: t('finance.address'), type: 'textarea', rows: 2, value: invoice ? invoice.bill_to_address : '' }) %>
+  </section>
+  <section class="card stack">
+    <h2 class="section-title"><%= t('finance.lines') %></h2>
+    <% if (errors.items) { %><p class="error-text"><%= errors.items %></p><% } %>
+    <div class="stack" style="--gap:8px" data-lines>
+      <% items.forEach(function (it, k) { %><div class="line-row"><input name="item_description" value="<%= it.description %>" placeholder="<%= t('finance.doc_line_ph') %>" aria-label="<%= t('finance.description') %>" maxlength="255"><input name="item_quantity" type="number" step="0.5" min="0.5" value="<%= it.quantity || 1 %>" aria-label="<%= t('finance.qty') %>"><input name="item_unit_price" type="number" step="0.01" min="0" value="<%= it.unit_price %>" placeholder="0.00" aria-label="<%= t('finance.unit_price') %>"></div><% }) %>
+    </div>
+    <button type="button" class="btn sm ghost" data-add-line><%- icon('plus') %><%= t('finance.add_line') %></button>
+    <div class="form-grid three">
+      <%- include('../../../partials/field', { name: 'discount', label: t('finance.discount'), type: 'number', value: invoice ? Number(invoice.discount) || '' : '', attrs: 'step="0.01" min="0"' }) %>
+      <%- include('../../../partials/field', { name: 'tax_rate', label: t('finance.tax_rate'), type: 'number', value: invoice ? Number(invoice.tax_rate) || '' : '', attrs: 'step="0.01" min="0" max="100"' }) %>
+    </div>
+    <%- include('../../../partials/field', { name: 'notes', label: t('finance.notes'), type: 'textarea', rows: 3, value: invoice ? invoice.notes : '', hint: t('finance.notes_hint') }) %>
+  </section>
+  <div class="form-actions"><button class="btn" type="submit"><%= t('finance.save_draft') %></button><button class="btn primary" type="submit" name="issue" value="1"><%= t('finance.save_issue') %></button></div>
+</form>
+<% } %>

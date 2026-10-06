@@ -286,6 +286,7 @@ a.stat:hover { border-color: var(--line-strong); box-shadow: var(--shadow-1); }
 /* ---------- Alerts / flash / empty ---------- */
 .alert { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r); background: var(--info-soft); color: var(--text); font-size: .92rem; }
 .alert .icon { color: var(--info); margin-top: 2px; }
+.alert.info { background: var(--brand-softer); } .alert.info .icon { color: var(--brand); }
 .alert.ok { background: var(--ok-soft); } .alert.ok .icon { color: var(--ok); }
 .alert.warn { background: var(--warn-soft); } .alert.warn .icon { color: var(--warn); }
 .alert.error, .alert.bad { background: var(--bad-soft); } .alert.error .icon, .alert.bad .icon { color: var(--bad); }
@@ -449,3 +450,16 @@ kbd { font-family: inherit; font-size: .74rem; background: var(--surface-2); bor
 }
 fieldset.card > legend { float: inline-start; width: 100%; padding: 0; margin: 0 0 14px; font-size: 1.02rem; font-weight: 700; }
 fieldset.card > legend + * { clear: both; }
+
+/* Invoices */
+.line-row { display: grid; grid-template-columns: 1fr 90px 130px; gap: 8px; }
+@media (max-width: 560px) { .line-row { grid-template-columns: 1fr 70px 100px; } }
+.invoice-totals { max-width: 360px; margin-inline-start: auto; }
+.invoice-totals dd { text-align: end; }
+.invoice-doc { padding: 32px; }
+@media print {
+  .sidebar, .topbar, .no-print, .toasts, .site-header, .site-footer, .cookie-bar, .wa-fab, .sidebar-backdrop, .portal-bottom-nav { display: none !important; }
+  .shell { display: block; } .content { padding: 0; max-width: none; }
+  .invoice-doc { border: 0; box-shadow: none; padding: 0; }
+  body { background: #fff; }
+}

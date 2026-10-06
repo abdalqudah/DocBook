@@ -1,0 +1,27 @@
+<nav class="breadcrumbs"><a href="/staff/templates"><%= t('nav.templates') %></a><%- icon('chevron-right') %><span><%= name %></span></nav>
+<div class="page-head"><div><h1><%= name %></h1><p class="lead" dir="ltr" style="text-align:start"><%= key %></p></div></div>
+<nav class="tabs mb4"><% ['email','whatsapp','sms'].forEach(function (c) { %><a href="?channel=<%= c %>" <%- channel === c ? 'aria-current="page"' : '' %>><%= t('channels.' + c) %></a><% }) %></nav>
+<% if (channel !== 'email') { %><p class="small muted"><%= t('templates.channel_hint') %></p><% } %>
+<form method="post" class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="channel" value="<%= channel %>">
+  <% if (isCustom) { %><div class="card"><%- include('../../../partials/field', { name: 'name', label: t('common.name'), value: name, required: true }) %></div><% } %>
+  <div class="grid-2">
+    <% ['en','ar'].forEach(function (l) { var x = loc[l]; %>
+    <section class="card stack" lang="<%= l %>" dir="<%= l === 'ar' ? 'rtl' : 'ltr' %>">
+      <div class="spread"><h2 class="mb0" style="font-size:1rem"><%= l === 'ar' ? 'العربية' : 'English' %></h2><span class="chip <%= x.custom ? 'brand' : '' %>"><%= x.custom ? t('templates.edited') : t('templates.default') %></span></div>
+      <% if (channel === 'email') { %><%- include('../../../partials/field', { name: 'subject_' + l, label: t('comms.subject'), value: x.subject }) %><% } %>
+      <%- include('../../../partials/field', { name: 'body_' + l, label: t('comms.message'), type: 'textarea', rows: 10, value: x.body }) %>
+      <% if (channel === 'email') { %><%- include('../../../partials/field', { name: 'cta_' + l, label: t('templates.button'), value: x.cta, hint: t('templates.button_hint') }) %><% } %>
+    </section>
+    <% }) %>
+  </div>
+  <section class="card"><h2 class="section-title"><%= t('templates.variables') %></h2><p class="small muted"><%= t('templates.variables_hint') %></p>
+    <div class="cluster"><% variables.forEach(function (v) { %><button type="button" class="chip" data-copy="{{<%= v %>}}" dir="ltr">{{<%= v %>}}</button><% }) %></div></section>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<form method="post" action="/staff/templates/<%= key %>/reset" class="mt4" data-confirm="<%= t('templates.reset_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="channel" value="<%= channel %>"><button class="btn danger-ghost" type="submit"><%= isCustom ? t('common.delete') : t('templates.reset') %></button></form>
+<% if (channel === 'email' && (!isCustom || loc.en.custom || loc.ar.custom)) { %>
+<section class="card mt4"><div class="card-head"><h2><%= t('templates.preview') %></h2><div class="seg"><a href="#pv-en" data-preview="en"><%= 'English' %></a><a href="#pv-ar" data-preview="ar">العربية</a></div></div>
+  <div class="grid-2"><iframe title="English preview" src="/staff/templates/<%= key %>/preview?locale=en" style="width:100%;height:520px;border:1px solid var(--line);border-radius:var(--r-md);background:#fff" loading="lazy"></iframe><iframe title="معاينة عربية" src="/staff/templates/<%= key %>/preview?locale=ar" style="width:100%;height:520px;border:1px solid var(--line);border-radius:var(--r-md);background:#fff" loading="lazy"></iframe></div>
+  <p class="small subtle mt2 mb0"><%= t('templates.preview_hint') %></p></section>
+<% } %>

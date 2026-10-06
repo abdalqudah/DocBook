@@ -10,6 +10,8 @@ const email = require('../src/modules/comms/email');
 let app;
 const outbox = [];
 email.useTestOutbox(outbox);
+require('../src/modules/comms/sms').useTestOutbox(outbox);
+require('../src/modules/comms/whatsapp').useTestOutbox(outbox);
 
 async function resetDb() {
   await knex.raw('SET FOREIGN_KEY_CHECKS = 0');

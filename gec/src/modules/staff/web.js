@@ -7,12 +7,12 @@ const registry = require('./registry');
 
 const router = express.Router();
 router.use(requireStaff);
-router.use((req, res, next) => {
-  res.locals.nav = nav.forStaff(req);
+router.use(ah(async (req, res, next) => {
+  res.locals.nav = nav.forStaff(req, req.method === 'GET' && !req.path.startsWith('/api/') ? await nav.counts(req) : {});
   res.locals.quickNew = registry.actionsFor(req);
   res.locals.sidebarMini = req.cookies && req.cookies.gec_sb === 'mini';
   next();
-});
+}));
 
 router.get('/', can('dashboard.view'), ah(require('./dashboard').page));
 
@@ -33,12 +33,14 @@ router.get('/api/palette', ah(async (req, res) => {
 }));
 
 router.use('/account', require('./account.web'));
+router.use('/', require('../comms/web')); // before CRM: adds the composer to lead / student pages
 router.use('/', require('../crm/web'));
 router.use('/', require('../team/web'));
 router.use('/', require('../catalog/admin').router);
 router.use('/', require('../catalog/staff.web'));
 router.use('/', require('../admissions/web'));
 router.use('/', require('../booking/web'));
+router.use('/', require('../finance/web'));
 router.use('/settings', require('../settings/web'));
 router.use('/settings/pipeline', require('../settings/pipelines.web'));
 router.use('/roles', require('../rbac/web'));

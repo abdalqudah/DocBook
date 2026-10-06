@@ -1,0 +1,20 @@
+<div class="page-head"><div><h1><%= t('nav.payments') %></h1><p class="lead"><%= t('finance.payments_lead') %></p></div><a class="btn" href="<%= qs({ format: 'csv', page: null }) %>"><%- icon('download') %><%= t('common.export') %></a></div>
+<form class="toolbar" method="get">
+  <label class="small muted" for="from"><%= t('finance.from') %></label><input id="from" type="date" name="from" value="<%= query.from || '' %>" style="width:auto">
+  <label class="small muted" for="to"><%= t('finance.to') %></label><input id="to" type="date" name="to" value="<%= query.to || '' %>" style="width:auto">
+  <select name="method" aria-label="<%= t('finance.method_label') %>" style="width:auto"><option value=""><%= t('finance.any_method') %></option><% methods.forEach(function (m) { %><option value="<%= m %>" <%= query.method === m ? 'selected' : '' %>><%= t('finance.method.' + m) %></option><% }) %></select>
+  <button class="btn" type="submit"><%= t('common.apply') %></button>
+</form>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('finance.no_payments'), text: t('finance.no_payments_text'), emptyIcon: 'banknote', compact: true }) %></div><% } else { %>
+<div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('finance.receipt') %></th><th><%= t('finance.payer') %></th><th><%= t('finance.invoice') %></th><th class="text-end"><%= t('finance.amount') %></th><th><%= t('finance.method_label') %></th><th><%= t('finance.received_on') %></th></tr></thead><tbody>
+<% rows.forEach(function (p) { %><tr>
+  <td class="primary"><span class="num"><strong><%= p.receipt_no %></strong></span><% if (p.status === 'refunded') { %> <span class="chip bad"><%= t('finance.pstatus.refunded') %></span><% } %></td>
+  <td data-label="<%= t('finance.payer') %>"><% if (p.student_id) { %><a href="/staff/students/<%= p.student_id %>"><%= p.payer %></a><% } else if (p.lead_id) { %><a href="/staff/leads/<%= p.lead_id %>"><%= p.payer %></a><% } else { %>—<% } %></td>
+  <td data-label="<%= t('finance.invoice') %>"><% if (p.invoice_id) { %><a href="/staff/invoices/<%= p.invoice_id %>" class="num"><%= p.number %></a><% } else { %>—<% } %></td>
+  <td data-label="<%= t('finance.amount') %>" class="text-end num"><%= fmt.money(p.amount, p.currency) %></td>
+  <td data-label="<%= t('finance.method_label') %>"><%= t('finance.method.' + p.method) %><%= p.reference ? ' · ' + p.reference : '' %></td>
+  <td data-label="<%= t('finance.received_on') %>"><%= fmt.date(p.received_on) %></td>
+</tr><% }) %>
+</tbody></table></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>

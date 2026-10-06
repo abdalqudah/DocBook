@@ -125,3 +125,44 @@
     form.querySelectorAll('label.slot').forEach(function (l) { l.classList.toggle('on', l.contains(r)); });
   });
 }());
+
+// Message composer: channel switch (address, subject, "not connected" warning) and template fill-in.
+(function () {
+  var form = document.querySelector('[data-compose]');
+  if (!form) return;
+  function current() { return form.querySelector('input[name="channel"]:checked'); }
+  function update() {
+    var r = current(); var c = r.value;
+    form.querySelectorAll('[data-for]').forEach(function (el) { el.hidden = el.getAttribute('data-for') !== c; });
+    form.querySelectorAll('[data-show-for]').forEach(function (el) { el.hidden = el.getAttribute('data-show-for') !== c; });
+    var connected = r.getAttribute('data-connected') === '1'; var hasAddr = r.getAttribute('data-has-address') === '1';
+    var warn = form.querySelector('[data-compose-warn]');
+    warn.hidden = connected && hasAddr;
+    warn.querySelector('[data-msg="not_connected"]').hidden = !hasAddr || connected;
+    warn.querySelector('[data-msg="no_address"]').hidden = hasAddr;
+    form.querySelector('[data-compose-send]').disabled = !(connected && hasAddr);
+    var wa = form.querySelector('[data-wa-link]'); if (wa) wa.disabled = !hasAddr;
+  }
+  form.addEventListener('change', function (e) {
+    if (e.target.name === 'channel') update();
+    if (e.target.matches('[data-compose-template]') && e.target.value) {
+      var url = form.getAttribute('data-render') + '&key=' + encodeURIComponent(e.target.value) + '&channel=' + current().value;
+      fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) {
+        var d = j.data || j; if (!d || d.body === undefined) return;
+        if (d.subject !== undefined) form.querySelector('[name="subject"]').value = d.subject || '';
+        form.querySelector('[name="body"]').value = d.body || '';
+      }).catch(function () { if (window.GEC && GEC.toast) GEC.toast('Could not load the template', 'error'); });
+    }
+  });
+  update();
+}());
+
+// Invoice lines: add another empty line.
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-add-line]');
+  if (!b) return;
+  var box = b.parentNode.querySelector('[data-lines]');
+  var row = box.lastElementChild.cloneNode(true);
+  row.querySelectorAll('input').forEach(function (i) { i.value = i.name === 'item_quantity' ? '1' : ''; });
+  box.appendChild(row); row.querySelector('input').focus();
+});

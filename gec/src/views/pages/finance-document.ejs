@@ -1,0 +1,7 @@
+<section class="section">
+  <div class="container" style="max-width:860px">
+    <div class="cluster mb4 no-print" style="justify-content:flex-end"><button class="btn" type="button" data-print><%- icon('printer') %><%= t('finance.print_pdf') %></button></div>
+    <%- include('../partials/invoice-doc') %>
+    <% if (['issued','partially_paid'].indexOf(i.status) >= 0) { %><div class="card flat mt4 no-print"><p class="mb0"><%= t('finance.how_to_pay') %> <a href="/contact"><%= t('site.nav.contact') %></a></p></div><% } %>
+  </div>
+</section>

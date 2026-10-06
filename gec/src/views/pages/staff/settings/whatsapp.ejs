@@ -1,0 +1,19 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.whatsapp') %></h1><p class="lead"><%= t('settings.whatsapp_desc') %></p></div><span class="chip <%= connected ? 'ok' : 'warn' %>"><%- icon(connected ? 'check' : 'plug-zap') %><%= connected ? t('comms.connected') : t('comms.not_connected') %></span></div>
+<div class="alert info mb4"><%- icon('info') %><p><%= t('integrations.whatsapp_manual') %></p></div>
+<form method="post" class="card stack" autocomplete="off">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'enabled', label: t('integrations.enabled'), type: 'checkbox', value: s.enabled }) %>
+  <p class="small muted mb0"><%= t('integrations.whatsapp_help') %></p>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'phone_number_id', label: 'Phone number ID', value: s.phone_number_id, attrs: 'dir="ltr" inputmode="numeric"' }) %>
+    <%- include('../../../partials/field', { name: 'business_account_id', label: 'WhatsApp Business Account ID', value: s.business_account_id, attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'access_token', label: t('integrations.access_token'), type: 'password', placeholder: hasToken ? t('integrations.saved_secret') : '', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('integrations.password_hint') }) %>
+    <%- include('../../../partials/field', { name: 'app_secret', label: t('integrations.app_secret'), type: 'password', placeholder: hasSecret ? t('integrations.saved_secret') : '', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('integrations.app_secret_hint') }) %>
+    <%- include('../../../partials/field', { name: 'display_number', label: t('integrations.display_number'), value: s.display_number, placeholder: '+962…', attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'default_country_code', label: t('integrations.country_code'), value: s.default_country_code, placeholder: '962', attrs: 'dir="ltr" inputmode="numeric"', hint: t('integrations.country_code_hint') }) %>
+  </div>
+  <div class="card flat small"><strong><%= t('integrations.webhooks') %></strong><p class="mb2"><%= t('integrations.meta_webhook') %></p><div><%= t('integrations.callback_url') %>: <code dir="ltr"><%= hook %></code></div><% if (s.verify_token) { %><div><%= t('integrations.verify_token') %>: <code dir="ltr"><%= s.verify_token %></code></div><% } else { %><div class="muted"><%= t('integrations.verify_after_save') %></div><% } %></div>
+  <p class="small subtle mb0"><%- icon('lock', 'sm') %> <%= t('integrations.encrypted') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

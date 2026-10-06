@@ -124,7 +124,14 @@
     "visa": "Visa cases",
     "appointments": "Appointments",
     "courses": "Courses",
-    "events": "Events"
+    "events": "Events",
+    "messages": "Messages",
+    "templates": "Templates",
+    "finance": "Finance overview",
+    "invoices": "Invoices",
+    "payments": "Payments",
+    "partners": "University partners",
+    "commissions": "Commissions"
   },
   "quick": {},
   "palette": {
@@ -206,6 +213,9 @@
     "NOT_RESCHEDULABLE": "This appointment can no longer be changed.",
     "REGISTRATION_CLOSED": "Registration is closed.",
     "NOT_CANCELLABLE": "This can no longer be cancelled online. Please contact us.",
-    "TICKET_CANCELLED": "This ticket was cancelled."
+    "TICKET_CANCELLED": "This ticket was cancelled.",
+    "NOT_DRAFT": "Only draft invoices can be edited.",
+    "HAS_PAYMENTS": "Refund the payments before voiding this invoice.",
+    "NOT_PAYABLE": "Issue the invoice before recording a payment."
   }
 }

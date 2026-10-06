@@ -1,0 +1,22 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.email') %></h1><p class="lead"><%= t('settings.email_desc') %></p></div><span class="chip <%= connected ? 'ok' : 'warn' %>"><%- icon(connected ? 'check' : 'plug-zap') %><%= connected ? t('comms.connected') : t('comms.not_connected') %></span></div>
+<% if (fromEnv) { %><div class="alert info mb4"><%- icon('info') %><p><%= t('integrations.email_from_env') %></p></div><% } %>
+<form method="post" class="card stack" autocomplete="off">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'enabled', label: t('integrations.enabled'), type: 'checkbox', value: s.enabled }) %>
+  <%- include('../../../partials/field', { name: 'provider', label: t('integrations.provider'), type: 'select', value: s.provider || 'smtp', required: true, options: [{ value: 'smtp', label: t('integrations.smtp') }, { value: 'google', label: 'Google Workspace / Gmail' }, { value: 'microsoft', label: 'Microsoft 365 / Outlook' }], hint: t('integrations.provider_hint') }) %>
+  <div class="form-grid three">
+    <%- include('../../../partials/field', { name: 'host', label: t('integrations.host'), value: s.host, placeholder: 'smtp.example.com', attrs: 'dir="ltr"', hint: t('integrations.host_hint') }) %>
+    <%- include('../../../partials/field', { name: 'port', label: t('integrations.port'), type: 'number', value: s.port, placeholder: '465', attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'encryption', label: t('integrations.encryption'), type: 'select', value: s.encryption || 'ssl', options: [{ value: 'ssl', label: 'SSL/TLS (465)' }, { value: 'starttls', label: 'STARTTLS (587)' }, { value: 'none', label: t('integrations.none') }] }) %>
+  </div>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'username', label: t('integrations.username'), value: s.username, attrs: 'dir="ltr" autocomplete="off"' }) %>
+    <%- include('../../../partials/field', { name: 'password', label: t('integrations.password'), type: 'password', placeholder: hasPassword ? t('integrations.saved_secret') : '', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('integrations.password_hint') }) %>
+    <%- include('../../../partials/field', { name: 'from_email', label: t('integrations.from_email'), type: 'email', value: s.from_email, attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'from_name', label: t('integrations.from_name'), value: s.from_name, placeholder: 'GEC' }) %>
+  </div>
+  <p class="small subtle mb0"><%- icon('lock', 'sm') %> <%= t('integrations.encrypted') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<form method="post" action="/staff/settings/email/test" class="card cluster mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><p class="grow mb0"><%= t('integrations.test_help', { to: currentUser.email }) %></p><button class="btn" type="submit" <%= connected ? '' : 'disabled' %>><%- icon('send') %><%= t('integrations.send_test') %></button></form>

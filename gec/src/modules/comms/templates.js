@@ -33,6 +33,8 @@ const DEFAULTS = {
     'شكراً لحضورك {{event_name}}', 'مرحباً {{student_name}}،\n\nشكراً لحضورك {{event_name}}. إذا رغبت باستشارة شخصية، احجز استشارة مجانية مع أحد المستشارين.', 'Book a consultation', 'احجز استشارة'),
   payment_confirmation: D('Payment received — {{amount}}', 'Hello {{student_name}},\n\nWe received your payment of {{amount}} for {{service_name}}. Receipt number: {{invoice_number}}.',
     'تم استلام الدفعة — {{amount}}', 'مرحباً {{student_name}}،\n\nاستلمنا دفعتك بقيمة {{amount}} مقابل {{service_name}}. رقم الإيصال: {{invoice_number}}.', 'View receipt', 'عرض الإيصال'),
+  invoice_issued: D('Invoice {{invoice_number}} from {{company_name}}', 'Hello {{student_name}},\n\nPlease find invoice {{invoice_number}} for {{amount}}, due on {{due_date}}.\n\nYou can view, print or save it as PDF from the link below.',
+    'الفاتورة {{invoice_number}} من {{company_name}}', 'مرحباً {{student_name}}،\n\nمرفق الفاتورة رقم {{invoice_number}} بقيمة {{amount}}، تاريخ الاستحقاق {{due_date}}.\n\nيمكنك عرضها أو طباعتها أو حفظها بصيغة PDF من الرابط أدناه.', 'View invoice', 'عرض الفاتورة'),
   portal_invite: D('Your {{company_name}} student portal', 'Hello {{student_name}},\n\n{{counsellor_name}} created your student portal. Set your password to follow your applications, upload documents and book appointments.',
     'بوابة الطالب في {{company_name}}', 'مرحباً {{student_name}}،\n\nأنشأ {{counsellor_name}} بوابتك الطلابية. عيّن كلمة المرور لمتابعة طلباتك ورفع المستندات وحجز المواعيد.', 'Set my password', 'تعيين كلمة المرور'),
 };
@@ -61,6 +63,6 @@ async function render(key, locale, vars, channel = 'email') {
 
 const VARIABLES = ['student_name', 'counsellor_name', 'company_name', 'university_name', 'program_name', 'application_status', 'offer_type', 'appointment_type', 'appointment_date',
   'appointment_place', 'document_name', 'due_text', 'reason', 'note', 'visa_status', 'visa_country', 'course_name', 'course_dates', 'registration_status', 'payment_text', 'event_name', 'event_date',
-  'event_place', 'amount', 'service_name', 'invoice_number', 'link'];
+  'event_place', 'amount', 'service_name', 'invoice_number', 'due_date', 'link'];
 
 module.exports = { DEFAULTS, VARIABLES, get, render, fill, resetCache: () => { tableKnown = null; } };

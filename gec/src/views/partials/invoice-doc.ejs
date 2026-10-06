@@ -1,0 +1,30 @@
+<%# The invoice document in its own language (dt / dmoney / ddate from finance/doc.js). Printable. %>
+<% var balance = Number(i.total) - Number(i.paid); %>
+<article class="card invoice-doc" lang="<%= dloc %>" dir="<%= dloc === 'ar' ? 'rtl' : 'ltr' %>">
+  <header class="spread" style="align-items:flex-start">
+    <div><img src="/brand/logo-horizontal.png" alt="<%= branding.legal_name %>" style="height:44px;width:auto"><div class="small muted mt2"><%= branding.legal_name %><br><%= dloc === 'ar' ? company.address_ar : company.address_en %><br><span dir="ltr"><%= company.phone %></span> · <%= company.email %></div></div>
+    <div class="text-end"><h1 style="font-size:1.6rem;margin:0"><%= i.status === 'paid' ? dt('finance.doc.receipt') : dt('finance.doc.invoice') %></h1><div class="num" style="font-weight:700"><%= i.number %></div>
+      <span class="chip <%= i.status === 'paid' ? 'ok' : i.status === 'void' ? 'bad' : 'brand' %>"><%= dt('finance.status.' + i.status) %></span></div>
+  </header>
+  <div class="grid-2 mt6">
+    <div><div class="small muted"><%= dt('finance.doc.bill_to') %></div><strong><%= i.bill_to_name %></strong><div class="small"><%= i.bill_to_email || '' %><% if (i.bill_to_address) { %><br><%= i.bill_to_address %><% } %></div></div>
+    <dl class="kv small" style="margin:0"><dt><%= dt('finance.doc.issue_date') %></dt><dd><%= ddate(i.issue_date) %></dd><dt><%= dt('finance.doc.due_date') %></dt><dd><%= ddate(i.due_date) %></dd><dt><%= dt('finance.doc.currency') %></dt><dd><%= i.currency %></dd></dl>
+  </div>
+  <div class="table-wrap mt6"><table class="table"><thead><tr><th><%= dt('finance.doc.description') %></th><th class="text-end"><%= dt('finance.doc.qty') %></th><th class="text-end"><%= dt('finance.doc.unit_price') %></th><th class="text-end"><%= dt('finance.doc.amount') %></th></tr></thead><tbody>
+    <% i.items.forEach(function (it) { %><tr><td><%= it.description %></td><td class="text-end num"><%= Number(it.quantity) %></td><td class="text-end num"><%= dmoney(it.unit_price) %></td><td class="text-end num"><%= dmoney(it.amount) %></td></tr><% }) %>
+  </tbody></table></div>
+  <dl class="kv invoice-totals mt4">
+    <dt><%= dt('finance.doc.subtotal') %></dt><dd class="num"><%= dmoney(i.subtotal) %></dd>
+    <% if (Number(i.discount)) { %><dt><%= dt('finance.doc.discount') %></dt><dd class="num">−<%= dmoney(i.discount) %></dd><% } %>
+    <% if (Number(i.tax)) { %><dt><%= dt('finance.doc.tax', { rate: Number(i.tax_rate) }) %></dt><dd class="num"><%= dmoney(i.tax) %></dd><% } %>
+    <dt><strong><%= dt('finance.doc.total') %></strong></dt><dd class="num"><strong><%= dmoney(i.total) %></strong></dd>
+    <% if (Number(i.paid)) { %><dt><%= dt('finance.doc.paid') %></dt><dd class="num"><%= dmoney(i.paid) %></dd><dt><strong><%= dt('finance.doc.balance') %></strong></dt><dd class="num"><strong><%= dmoney(balance) %></strong></dd><% } %>
+  </dl>
+  <% var paid = (i.payments || []).filter(function (p) { return p.status === 'received'; }); if (paid.length) { %>
+  <h2 class="section-title mt6"><%= dt('finance.doc.payments') %></h2>
+  <div class="divider-list small"><% paid.forEach(function (p) { %><div class="list-item"><span class="num"><%= p.receipt_no %></span><div class="li-body"><%= ddate(p.received_on) %> · <%= dt('finance.method.' + p.method) %></div><span class="num"><%= dmoney(p.amount) %></span></div><% }) %></div>
+  <% } %>
+  <% if (i.notes) { %><p class="small mt6" style="white-space:pre-wrap"><%= i.notes %></p><% } %>
+  <% if (i.status === 'void') { %><p class="alert bad mt4"><%= dt('finance.doc.void_note') %></p><% } %>
+  <p class="small subtle mt6 mb0"><%= dt('finance.doc.footer') %></p>
+</article>

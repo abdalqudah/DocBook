@@ -378,7 +378,10 @@
       "delivery": "Delivery",
       "seats": "Seats & registration",
       "when": "When",
-      "where": "Where"
+      "where": "Where",
+      "agreement": "Agreement",
+      "commission": "Commission",
+      "contact": "Contact"
     },
     "fields": {
       "name": "Name",
@@ -485,7 +488,16 @@
       "starts_at": "Starts",
       "ends_at": "Ends",
       "is_virtual": "Online event",
-      "meeting_url": "Meeting link"
+      "meeting_url": "Meeting link",
+      "status": "Status",
+      "agreement_ref": "Agreement reference",
+      "starts_on": "Starts",
+      "ends_on": "Ends",
+      "commission_type": "Commission type",
+      "commission_rate": "Rate / amount",
+      "payment_terms_days": "Payment terms (days)",
+      "contact_name": "Contact name",
+      "notes": "Notes"
     },
     "destinations": {
       "plural": "Destinations",
@@ -541,6 +553,14 @@
       "lead": "Fairs, webinars and open days with registration and QR check-in.",
       "empty": "No events",
       "empty_text": "Add an event to open registration.",
+      "related": "Related"
+    },
+    "partners": {
+      "plural": "University partners",
+      "new": "New agreement",
+      "lead": "Agreements with universities and their commission terms. Visible to finance and administrators only.",
+      "empty": "No agreements",
+      "empty_text": "Add an agreement to track commissions.",
       "related": "Related"
     }
   }

@@ -1,0 +1,30 @@
+<% var who = fullName({ first_name: m.student_first || m.lead_first, last_name: m.student_last || m.lead_last }); var href = m.student_id ? '/staff/students/' + m.student_id : (m.lead_id ? '/staff/leads/' + m.lead_id : null); %>
+<nav class="breadcrumbs"><a href="/staff/messages"><%= t('nav.messages') %></a><%- icon('chevron-right') %><span><%= who %></span></nav>
+<div class="page-head"><div><h1><%= m.subject || t('channels.' + m.channel) %></h1>
+  <p class="lead"><%= m.direction === 'in' ? t('comms.from_name', { name: who }) : t('comms.to_name', { name: who }) %> · <%= t('channels.' + m.channel) %> · <%= fmt.dateTime(m.created_at) %></p></div>
+  <% if (href) { %><a class="btn" href="<%= href %>"><%- icon('user') %><%= t('comms.open_record') %></a><% } %></div>
+<section class="card mb4">
+  <dl class="kv mb4">
+    <dt><%= m.direction === 'in' ? t('comms.from') : t('comms.to') %></dt><dd dir="ltr" style="text-align:start"><%= m.direction === 'in' ? m.from_address : m.to_address %></dd>
+    <dt><%= t('common.status') %></dt><dd><span class="chip <%= ['failed','not_configured'].indexOf(m.status) >= 0 ? 'bad' : 'ok' %>"><%= t('comms.st_' + m.status) %></span><%= m.error ? ' — ' + m.error : '' %></dd>
+    <% if (m.sender_name) { %><dt><%= t('comms.sent_by') %></dt><dd><%= m.sender_name %></dd><% } %>
+    <% if (m.template_key) { %><dt><%= t('comms.template') %></dt><dd><%= m.template_key.indexOf('custom_') === 0 ? m.template_key : t('templates.names.' + m.template_key) %></dd><% } %>
+  </dl>
+  <div class="prose" style="white-space:pre-wrap"><%= m.body || '' %></div>
+</section>
+<% if (m.direction === 'in' && can('comms.send') && (m.lead_id || m.student_id)) { %>
+<form method="post" action="/staff/messages/send" class="card stack">
+  <h2 class="section-title"><%= t('comms.reply') %></h2>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="channel" value="<%= m.channel %>">
+  <% if (m.student_id) { %><input type="hidden" name="student_id" value="<%= m.student_id %>"><% } else { %><input type="hidden" name="lead_id" value="<%= m.lead_id %>"><% } %>
+  <% if (m.channel === 'email') { %><%- include('../../../partials/field', { name: 'subject', label: t('comms.subject'), value: m.subject ? (/^re:/i.test(m.subject) ? m.subject : 'Re: ' + m.subject) : '' }) %><% } %>
+  <%- include('../../../partials/field', { name: 'body', label: t('comms.message'), type: 'textarea', rows: 4, required: true }) %>
+  <% if (!status[m.channel]) { %><p class="small muted mb0"><%- icon('plug-zap', 'sm') %> <%= t('comms.channel_not_connected') %></p><% } %>
+  <div class="form-actions"><button class="btn primary" type="submit" <%= status[m.channel] ? '' : 'disabled' %>><%- icon('send') %><%= t('comms.send') %></button></div>
+</form>
+<% } %>
+<% if (thread.length > 1) { %>
+<section class="card mt4"><div class="card-head"><h2><%= t('comms.conversation') %></h2></div><div class="divider-list">
+  <% thread.forEach(function (x) { %><a class="list-item" href="/staff/messages/<%= x.id %>" <%- x.id === m.id ? 'aria-current="true" style="background:var(--surface-2)"' : '' %>><span class="queue-icon <%= x.direction === 'in' ? 'brand' : '' %>"><%- icon(x.direction === 'in' ? 'arrow-down-left' : 'arrow-up-right') %></span><div class="li-body"><div class="li-title"><%= x.subject || t('channels.' + x.channel) %></div><div class="li-sub"><%= String(x.body || '').replace(/\s+/g, ' ').slice(0, 100) %></div></div><span class="small subtle nowrap"><%= fmt.relative(x.created_at) %></span></a><% }) %>
+</div></section>
+<% } %>

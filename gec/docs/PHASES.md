@@ -182,3 +182,51 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
 * **Known limitations:** meeting links are entered by staff (Google Meet / Teams auto-creation arrives with the
   calendar integrations in Settings → Integrations); course payment status is recorded manually until the finance
   module (phase 6) issues invoices; the scheduler offers 30-minute steps for types of 30 minutes or longer.
+
+---
+
+## Phase 6 — Communication centre and finance
+
+### Plan
+* **Exists:** e-mail adapters (SMTP / Google / Microsoft) and built-in bilingual templates (phase 5), timeline
+  entries for messages, "log a contact" for calls made outside the system. Nothing for SMS, WhatsApp, invoices or
+  partners (the original site only had a WhatsApp click-to-chat button).
+* **Reuse:** settings with encrypted secrets, the `/hooks` raw-body router (CSRF-exempt, signature-verified), data
+  scopes, resource CRUD, the attention queue / KPI / student-tab registries, notify + templates.
+* **Change:** one message service for every channel (provider adapters: SMTP, Twilio SMS, WhatsApp Cloud API)
+  that logs every message and puts it on the timeline; inbound webhooks matched to the person (unknown senders become
+  leads); communication centre (inbox / sent / filters / unread badge); composer on lead and student pages with
+  templates; WhatsApp click-to-chat logged as "sent from phone"; template editor (EN/AR, per channel, preview,
+  reset, custom templates); Settings → E-mail / SMS / WhatsApp with "connected / not connected" status and a test
+  e-mail. Finance: invoices (draft → issued → partly paid → paid, void), payments with receipts and refunds,
+  printable bilingual invoice with a private payer link, finance overview per currency, overdue invoices in the
+  attention queue, student Finance tab, university partner agreements and commissions created when an application
+  at a partner university reaches "Enrolled".
+* **Database:** `message_templates`, `messages`, `counters`, `invoices`, `invoice_items`, `payments`, `partners`,
+  `commissions`.
+* **Routes:** `/staff/messages[/:id|/send|/render|/whatsapp-link]`, `/staff/templates[/:key[/reset|/preview]]`,
+  `/staff/settings/{email[/test],sms,whatsapp}`, `/hooks/whatsapp`, `/hooks/sms/twilio[/status]`,
+  `/staff/finance`, `/staff/invoices[/new|/:id[/issue|/void|/send|/payments]]`, `/staff/payments[/:id/refund]`,
+  `/staff/partners`, `/staff/commissions[/:id]`, `/staff/applications/:id/commission`, public `/invoices/:token`.
+* **Security:** credentials encrypted (AES-256-GCM), never rendered back and redacted from the audit log; webhooks
+  rejected without a valid Meta `X-Hub-Signature-256` / Twilio signature, retries de-duplicated; messages follow the
+  person's data scope; finance requires `finance.*`, partners and commissions `partners.*` (counsellors see neither);
+  totals computed server-side in cents; gap-free numbering under a row lock; overpayments, payments on drafts and
+  voiding paid invoices are refused; the e-mail preview is served with its own restrictive CSP.
+
+### Report
+* **Files:** `src/modules/comms/{phone,sms,whatsapp,channels,comms.service,hooks,web}.js` (templates / notify
+  extended), `src/modules/finance/{money,counters,invoices.service,partners,handlers,doc,web,site.web}.js`, views
+  `pages/staff/comms/*`, `pages/staff/finance/*`, `pages/staff/settings/{email,sms,whatsapp}.ejs`,
+  `partials/{compose-dialog,invoice-doc}.ejs`, `pages/finance-document.ejs`, `src/locales/*/finance.json`.
+* **Migration:** `20261005000600_phase6_comms_finance.js`.
+* **Tests:** `test/phase6.test.js` (6): not-connected channels send nothing and say so; e-mail logged + timeline;
+  composer template variables; scope isolation; SMS credentials encrypted (settings + audit) and number
+  normalisation; WhatsApp click-to-chat logging; webhook verification (GET challenge, forged signature refused,
+  unknown sender → lead, retry de-dup, read marking, Twilio signature); template override/reset; invoice totals,
+  numbering, issue/pay/overpay/refund/void rules, receipt e-mail, public link (not for drafts), CSV; partner
+  agreement → commission on enrolment, permissions. Suite: 50.
+* **Known limitations:** WhatsApp messages outside Meta's 24-hour window need an approved Meta template (the API
+  error is shown; click-to-chat always works); online card payments are not collected in-app (payments are recorded
+  by staff; a payment-gateway adapter can post to `/hooks` later); invoice PDFs come from the browser's
+  print-to-PDF; e-mail replies are not fetched from the mailbox (inbound e-mail needs an IMAP / Graph adapter).

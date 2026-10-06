@@ -4,7 +4,8 @@
     "student": "Student",
     "task": "Task",
     "application": "Application",
-    "appointment": "Appointment"
+    "appointment": "Appointment",
+    "invoice": "Invoice"
   },
   "attention": {
     "lead_new": "New lead: {name}",
@@ -15,7 +16,9 @@
     "days_in_stage": "{n} days in this stage",
     "doc_review": "Review {doc} from {name}",
     "visa_appointment": "Visa appointment: {name}",
-    "appointment_today": "{type} with {name}"
+    "appointment_today": "{type} with {name}",
+    "invoice_overdue": "Overdue invoice {number} — {name}",
+    "message_in": "{channel} from {name}"
   },
   "kpi": {
     "new_leads": "New leads",
@@ -23,7 +26,8 @@
     "active_students": "Active students",
     "applications_submitted": "Applications submitted",
     "offers": "Offers received",
-    "consultations": "Consultations this month"
+    "consultations": "Consultations this month",
+    "collected": "Collected this month"
   },
   "sources": {
     "contact_form": "Contact form",
@@ -201,7 +205,11 @@
     "certificate_issued": "Certificate issued: {no}",
     "event_registered": "Registered for event: {event}",
     "event_attended": "Attended event: {event}",
-    "not_sent": "not sent"
+    "not_sent": "not sent",
+    "invoice_issued": "Invoice {number} issued",
+    "payment_received": "Payment received: {amount_text}",
+    "payment_refunded": "Payment refunded: {amount_text}",
+    "from_phone": "sent from phone"
   },
   "leads": {
     "new": "New lead",
@@ -366,7 +374,8 @@
     "f_pref_degree": "Degree",
     "f_pref_fields": "Field",
     "f_budget_usd": "Budget",
-    "f_pref_intake": "Intake"
+    "f_pref_intake": "Intake",
+    "tab_finance": "Finance"
   },
   "notes": {
     "add": "Add note",

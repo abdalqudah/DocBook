@@ -1,0 +1,19 @@
+<div class="page-head"><div><h1><%= t('nav.invoices') %></h1><p class="lead"><%= t('finance.invoices_lead') %></p></div><% if (can('finance.manage')) { %><a class="btn primary" href="/staff/invoices/new"><%- icon('plus') %><%= t('finance.new_invoice') %></a><% } %></div>
+<form class="toolbar" method="get">
+  <div class="searchbox grow"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('finance.search_ph') %>" aria-label="<%= t('common.search') %>"></div>
+  <select name="status" data-autosubmit aria-label="<%= t('common.status') %>" style="width:auto"><option value=""><%= t('finance.any_status') %></option><% statuses.forEach(function (s) { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('finance.status.' + s) %></option><% }) %></select>
+  <label class="check"><input type="checkbox" name="overdue" value="1" <%= query.overdue === '1' ? 'checked' : '' %> data-autosubmit><span><%= t('finance.overdue') %></span></label>
+</form>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('finance.no_invoices'), text: t('finance.no_invoices_text'), href: can('finance.manage') ? '/staff/invoices/new' : null, cta: t('finance.new_invoice'), emptyIcon: 'receipt' }) %></div><% } else { %>
+<div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('finance.number') %></th><th><%= t('finance.bill_to') %></th><th><%= t('common.status') %></th><th class="text-end"><%= t('finance.total') %></th><th class="text-end"><%= t('finance.balance') %></th><th><%= t('finance.due') %></th></tr></thead><tbody>
+<% rows.forEach(function (r) { var od = ['issued','partially_paid'].indexOf(r.status) >= 0 && r.due_date && fmt.dateInput(r.due_date) < fmt.dateInput(new Date()); %><tr>
+  <td class="primary"><a href="/staff/invoices/<%= r.id %>"><strong class="num"><%= r.number %></strong></a><% if (r.is_demo) { %> <span class="chip demo"><%= t('common.demo') %></span><% } %></td>
+  <td data-label="<%= t('finance.bill_to') %>"><%= r.bill_to_name %></td>
+  <td data-label="<%= t('common.status') %>"><span class="chip <%= r.status === 'paid' ? 'ok' : r.status === 'void' ? 'bad' : od ? 'bad' : r.status === 'draft' ? '' : 'brand' %>"><%= od ? t('finance.overdue') : t('finance.status.' + r.status) %></span></td>
+  <td data-label="<%= t('finance.total') %>" class="text-end num"><%= fmt.money(r.total, r.currency) %></td>
+  <td data-label="<%= t('finance.balance') %>" class="text-end num"><%= r.status === 'void' ? '—' : fmt.money(Number(r.total) - Number(r.paid), r.currency) %></td>
+  <td data-label="<%= t('finance.due') %>"><%= r.due_date ? fmt.date(r.due_date) : '—' %></td>
+</tr><% }) %>
+</tbody></table></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>

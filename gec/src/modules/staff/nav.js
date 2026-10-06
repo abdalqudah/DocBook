@@ -29,4 +29,12 @@ function forStaff(req, counts = {}) {
   })).filter((g) => g.items.length);
 }
 
-module.exports = { NAV, add, forStaff };
+/** Badge numbers for links that declare `badge: async (req) => n` (only links the employee can see). */
+async function counts(req) {
+  const out = {};
+  const items = NAV.flatMap((g) => g.items).filter((i) => i.badge && i.perms.some((p) => req.can(p)));
+  await Promise.all(items.map(async (i) => { try { out[i.key] = await i.badge(req); } catch { out[i.key] = 0; } }));
+  return out;
+}
+
+module.exports = { NAV, add, forStaff, counts };

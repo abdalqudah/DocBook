@@ -1,0 +1,31 @@
+<% var balance = Number(i.total) - Number(i.paid); var payable = ['issued','partially_paid'].indexOf(i.status) >= 0; %>
+<nav class="breadcrumbs no-print"><a href="/staff/invoices"><%= t('nav.invoices') %></a><%- icon('chevron-right') %><span><%= i.number %></span></nav>
+<div class="page-head no-print"><div><h1><%= i.number %></h1><p class="lead"><% if (i.student_id) { %><a href="/staff/students/<%= i.student_id %>"><%= i.bill_to_name %></a><% } else if (i.lead_id) { %><a href="/staff/leads/<%= i.lead_id %>"><%= i.bill_to_name %></a><% } else { %><%= i.bill_to_name %><% } %></p></div>
+  <div class="cluster">
+    <button class="btn" type="button" data-print><%- icon('printer') %><%= t('finance.print_pdf') %></button>
+    <% if (can('finance.manage') && i.status === 'draft') { %><a class="btn" href="?edit=1"><%- icon('pencil') %><%= t('common.edit') %></a><form method="post" action="/staff/invoices/<%= i.id %>/issue"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn primary" type="submit"><%= t('finance.issue') %></button></form><% } %>
+    <% if (can('finance.manage') && i.status !== 'draft' && i.status !== 'void') { %><form method="post" action="/staff/invoices/<%= i.id %>/send"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit" <%= i.bill_to_email ? '' : 'disabled' %>><%- icon('send') %><%= t('finance.email_invoice') %></button></form><button class="btn ghost" type="button" data-copy="<%= publicUrl %>"><%- icon('link') %><%= t('finance.copy_link') %></button><% } %>
+  </div></div>
+<% if (can('finance.manage') && payable) { %>
+<form method="post" action="/staff/invoices/<%= i.id %>/payments" class="card stack mb4 no-print">
+  <h2 class="section-title"><%= t('finance.record_payment') %></h2>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid three">
+    <%- include('../../../partials/field', { name: 'amount', label: t('finance.amount') + ' (' + i.currency + ')', type: 'number', value: balance.toFixed(2), required: true, attrs: 'step="0.01" min="0.01" max="' + balance.toFixed(2) + '"' }) %>
+    <%- include('../../../partials/field', { name: 'method', label: t('finance.method_label'), type: 'select', required: true, value: 'bank_transfer', options: methods.map(function (m) { return { value: m, label: t('finance.method.' + m) }; }) }) %>
+    <%- include('../../../partials/field', { name: 'received_on', label: t('finance.received_on'), type: 'date', value: fmt.dateInput(new Date()) }) %>
+  </div>
+  <%- include('../../../partials/field', { name: 'reference', label: t('finance.reference'), hint: t('finance.reference_hint') }) %>
+  <div class="form-actions"><button class="btn primary" type="submit"><%- icon('banknote') %><%= t('finance.record_payment') %></button></div>
+</form>
+<% } %>
+<%- include('../../../partials/invoice-doc') %>
+<% if (i.payments.length) { %>
+<section class="card mt4 no-print"><div class="card-head"><h2><%= t('nav.payments') %></h2></div><div class="divider-list">
+  <% i.payments.forEach(function (p) { %><div class="list-item"><span class="num"><%= p.receipt_no %></span><div class="li-body"><div class="li-title"><%= fmt.money(p.amount, p.currency) %> · <%= t('finance.method.' + p.method) %><%= p.reference ? ' · ' + p.reference : '' %></div><div class="li-sub"><%= fmt.date(p.received_on) %> · <%= p.received_by_name || '' %><%= p.status === 'refunded' ? ' · ' + t('finance.refunded_reason', { reason: p.refund_reason }) : '' %></div></div>
+    <% if (p.status === 'refunded') { %><span class="chip bad"><%= t('finance.pstatus.refunded') %></span><% } else if (can('finance.manage')) { %><details class="menu"><summary class="btn sm ghost"><%= t('finance.refund') %></summary><form method="post" action="/staff/payments/<%= p.id %>/refund" class="menu-panel stack" style="min-width:260px"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input name="reason" required placeholder="<%= t('finance.refund_reason') %>" aria-label="<%= t('finance.refund_reason') %>"><button class="btn sm danger-ghost" type="submit"><%= t('finance.refund') %></button></form></details><% } %></div><% }) %>
+</div></section>
+<% } %>
+<% if (can('finance.manage') && i.status !== 'void' && !Number(i.paid)) { %>
+<details class="card mt4 no-print"><summary><strong><%= t('finance.void') %></strong></summary><form method="post" action="/staff/invoices/<%= i.id %>/void" class="cluster mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input name="reason" required placeholder="<%= t('finance.void_reason') %>" aria-label="<%= t('finance.void_reason') %>" style="flex:1"><button class="btn danger-ghost" type="submit"><%= t('finance.void') %></button></form></details>
+<% } %>

@@ -15,7 +15,7 @@
     </div>
   </div>
   <div class="cluster">
-    <% if (s.phone || s.whatsapp) { %><a class="btn" href="https://wa.me/<%= (s.whatsapp || s.phone).replace(/\D/g, '') %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %>
+    <% if (typeof compose !== 'undefined') { %><button class="btn tonal" type="button" data-dialog-open="compose-dialog"><%- icon('send') %><%= t('comms.message_btn') %></button><% } else if (s.phone || s.whatsapp) { %><a class="btn" href="https://wa.me/<%= (s.whatsapp || s.phone).replace(/\D/g, '') %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %>
     <% if (s.email) { %><a class="btn" href="mailto:<%= s.email %>"><%- icon('mail') %><%= t('common.email') %></a><% } %>
     <% if (editable) { %><button class="btn tonal" type="button" data-dialog-open="contact-dialog"><%- icon('notebook-pen') %><%= t('leads.log_contact') %></button><% } %>
     <% if (typeof studentActions !== 'undefined') { studentActions.forEach(function (a) { %><a class="btn primary" href="<%= a.href %>"><%- icon(a.icon) %><%= a.label %></a><% }) } %>
@@ -115,6 +115,7 @@
 <form method="post" action="/staff/students/<%= s.id %>/delete" data-confirm="<%= t('students.delete_confirm') %>" class="mt8"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost sm" type="submit"><%- icon('trash-2') %><%= t('students.delete') %></button></form>
 <% } %>
 <% if (editable) { %>
+<% if (typeof compose !== 'undefined') { %><%- include('../../../partials/compose-dialog', { leadId: null, studentId: s.id, person: s }) %><% } %>
 <%- include('../../../partials/contact-dialog', { action: '/staff/students/' + s.id + '/contact', followUp: false }) %>
 <%- include('../../../partials/task-dialog', { action: '/staff/students/' + s.id + '/tasks', assignees: counsellors, defaultAssignee: s.counsellor_id || staff.employee.id }) %>
 <% } %>

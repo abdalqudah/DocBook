@@ -1,0 +1,25 @@
+<%# include('partials/compose-dialog', { leadId, studentId, person }) — send an e-mail / SMS / WhatsApp from a record %>
+<% var ch = compose.channels; var addr = { email: person.email, sms: person.phone, whatsapp: person.whatsapp || person.phone }; %>
+<dialog class="dialog wide" id="compose-dialog" aria-labelledby="compose-h">
+  <form method="post" action="/staff/messages/send" data-compose data-render="/staff/messages/render?<%= leadId ? 'lead_id=' + leadId : 'student_id=' + studentId %>">
+    <div class="dialog-head"><h2 id="compose-h"><%= t('comms.new_message') %></h2><button type="button" class="btn ghost icon-only" data-dialog-close aria-label="<%= t('common.close') %>"><%- icon('x') %></button></div>
+    <div class="dialog-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (leadId) { %><input type="hidden" name="lead_id" value="<%= leadId %>"><% } %><% if (studentId) { %><input type="hidden" name="student_id" value="<%= studentId %>"><% } %>
+      <fieldset><legend class="label"><%= t('leads.channel') %></legend>
+        <div class="seg"><% ['email','whatsapp','sms'].forEach(function (c, i) { %><label><input type="radio" name="channel" value="<%= c %>" <%= i === 0 ? 'checked' : '' %> data-connected="<%= ch[c] ? '1' : '0' %>" data-has-address="<%= addr[c] ? '1' : '0' %>"><span><%= t('channels.' + c) %></span></label><% }) %></div>
+      </fieldset>
+      <p class="small muted mb0" data-compose-to><% ['email','whatsapp','sms'].forEach(function (c) { %><span data-for="<%= c %>" <%= c !== 'email' ? 'hidden' : '' %>><%= t('comms.to') %>: <strong dir="ltr"><%= addr[c] || '—' %></strong><% if (!ch[c]) { %> · <span class="chip warn"><%= t('comms.not_connected') %></span><% } %></span><% }) %></p>
+      <div class="alert warn" data-compose-warn hidden><%- icon('plug-zap') %><p><span data-msg="not_connected"><%= t('comms.channel_not_connected') %><% if (can('integrations.manage')) { %> <a href="/staff/settings"><%= t('comms.connect_in_settings') %></a><% } %></span><span data-msg="no_address" hidden><%= t('comms.no_address') %></span></p></div>
+      <%- include('field', { name: 'template_key', label: t('comms.template'), type: 'select', placeholder: t('comms.no_template'), options: compose.templates, attrs: 'data-compose-template' }) %>
+      <div data-show-for="email"><%- include('field', { name: 'subject', label: t('comms.subject'), attrs: 'maxlength="255"' }) %></div>
+      <%- include('field', { name: 'body', label: t('comms.message'), type: 'textarea', rows: 7, required: true, attrs: 'maxlength="5000"' }) %>
+      <p class="small subtle mb0" data-show-for="whatsapp"><%= t('comms.whatsapp_window') %></p>
+    </div>
+    <div class="dialog-foot">
+      <button type="submit" class="btn" formaction="/staff/messages/whatsapp-link" formtarget="_blank" data-show-for="whatsapp" data-wa-link><%- icon('external-link') %><%= t('comms.open_whatsapp') %></button>
+      <button type="button" class="btn ghost" data-dialog-close><%= t('common.cancel') %></button>
+      <button class="btn primary" type="submit" data-compose-send><%- icon('send') %><%= t('comms.send') %></button>
+    </div>
+  </form>
+</dialog>

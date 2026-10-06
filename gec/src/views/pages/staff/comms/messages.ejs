@@ -1,0 +1,33 @@
+<div class="page-head">
+  <div><h1><%= t('nav.messages') %></h1><p class="lead"><%= t('comms.lead') %></p></div>
+  <div class="cluster"><% ['email','whatsapp','sms'].forEach(function (c) { %><span class="chip <%= status[c] ? 'ok' : 'warn' %>" title="<%= status[c] ? t('comms.connected') : t('comms.not_connected') %>"><%- icon(status[c] ? 'check' : 'plug-zap') %><%= t('channels.' + c) %></span><% }) %></div>
+</div>
+<nav class="tabs mb4" aria-label="<%= t('nav.messages') %>">
+  <a href="<%= qs({ box: null, page: null }) %>" <%- box === 'inbox' ? 'aria-current="page"' : '' %>><%- icon('inbox') %><%= t('comms.inbox') %><% if (unread) { %> <span class="badge-n"><%= unread %></span><% } %></a>
+  <a href="<%= qs({ box: 'sent', page: null }) %>" <%- box === 'sent' ? 'aria-current="page"' : '' %>><%- icon('send') %><%= t('comms.sent_box') %></a>
+  <a href="<%= qs({ box: 'all', page: null }) %>" <%- box === 'all' ? 'aria-current="page"' : '' %>><%- icon('list') %><%= t('comms.all') %></a>
+</nav>
+<form class="toolbar" method="get">
+  <input type="hidden" name="box" value="<%= box %>">
+  <div class="searchbox grow"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('comms.search_ph') %>" aria-label="<%= t('common.search') %>"></div>
+  <select name="channel" data-autosubmit aria-label="<%= t('leads.channel') %>" style="width:auto"><option value=""><%= t('comms.all_channels') %></option><% ['email','whatsapp','sms'].forEach(function (c) { %><option value="<%= c %>" <%= query.channel === c ? 'selected' : '' %>><%= t('channels.' + c) %></option><% }) %></select>
+  <select name="status" data-autosubmit aria-label="<%= t('common.status') %>" style="width:auto"><option value=""><%= t('comms.any_status') %></option><% ['unread','failed','not_configured'].forEach(function (s) { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('comms.status_' + s) %></option><% }) %></select>
+</form>
+<% if (!rows.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: box === 'inbox' ? t('comms.inbox_empty') : t('comms.none'), text: box === 'inbox' ? t('comms.inbox_empty_text') : t('comms.none_text'), emptyIcon: 'inbox', compact: true }) %></div>
+<% } else { %>
+<div class="card"><div class="divider-list">
+  <% rows.forEach(function (m) { var who = fullName({ first_name: m.student_first || m.lead_first, last_name: m.student_last || m.lead_last }); var unreadRow = m.direction === 'in' && !m.read_at; %>
+  <a class="list-item" href="/staff/messages/<%= m.id %>" <%- unreadRow ? 'style="font-weight:600"' : '' %>>
+    <span class="queue-icon <%= m.direction === 'in' ? 'brand' : '' %>"><%- icon(m.channel === 'email' ? 'mail' : (m.channel === 'sms' ? 'message-square' : 'message-circle')) %></span>
+    <div class="li-body">
+      <div class="li-title"><%= m.direction === 'in' ? who : t('comms.to_name', { name: who }) %><% if (unreadRow) { %> <span class="dot brand" aria-label="<%= t('comms.unread') %>"></span><% } %></div>
+      <div class="li-sub"><%= m.subject ? m.subject + ' — ' : '' %><%= String(m.body || '').replace(/\s+/g, ' ').slice(0, 120) %></div>
+    </div>
+    <div class="text-end small nowrap"><div class="subtle"><%= fmt.relative(m.created_at) %></div>
+      <% if (m.status === 'failed' || m.status === 'not_configured') { %><span class="chip bad"><%= t('comms.st_' + m.status) %></span><% } else if (m.status === 'manual') { %><span class="chip"><%= t('comms.st_manual') %></span><% } else if (m.automated) { %><span class="chip"><%= t('comms.automated') %></span><% } %></div>
+  </a>
+  <% }) %>
+</div></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>

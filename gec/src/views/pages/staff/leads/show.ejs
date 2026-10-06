@@ -14,7 +14,7 @@
     </div>
   </div>
   <div class="cluster">
-    <% if (lead.phone || lead.whatsapp) { %><a class="btn" href="https://wa.me/<%= (lead.whatsapp || lead.phone).replace(/\D/g, '') %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %>
+    <% if (typeof compose !== 'undefined') { %><button class="btn tonal" type="button" data-dialog-open="compose-dialog"><%- icon('send') %><%= t('comms.message_btn') %></button><% } else if (lead.phone || lead.whatsapp) { %><a class="btn" href="https://wa.me/<%= (lead.whatsapp || lead.phone).replace(/\D/g, '') %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %>
     <% if (lead.phone) { %><a class="btn" href="tel:<%= lead.phone.replace(/[^+\d]/g, '') %>"><%- icon('phone') %><%= t('leads.call') %></a><% } %>
     <% if (editable) { %><button class="btn tonal" type="button" data-dialog-open="contact-dialog"><%- icon('notebook-pen') %><%= t('leads.log_contact') %></button><% } %>
     <% if (student) { %><a class="btn primary" href="/staff/students/<%= student.id %>"><%- icon('graduation-cap') %><%= t('leads.open_student') %></a><% } else if (can('students.manage') && lead.status !== 'lost') { %>
@@ -121,6 +121,7 @@
   </aside>
 </div>
 <% if (editable) { %>
+<% if (typeof compose !== 'undefined') { %><%- include('../../../partials/compose-dialog', { leadId: lead.id, studentId: null, person: lead }) %><% } %>
 <%- include('../../../partials/contact-dialog', { action: '/staff/leads/' + lead.id + '/contact' }) %>
 <%- include('../../../partials/task-dialog', { action: '/staff/leads/' + lead.id + '/tasks', assignees: counsellors, defaultAssignee: lead.counsellor_id || staff.employee.id }) %>
 <% } %>

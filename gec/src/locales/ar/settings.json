@@ -72,7 +72,13 @@
     "tone_ok": "نجاح",
     "tone_bad": "أحمر",
     "appointment_types": "أنواع المواعيد",
-    "appointment_types_desc": "أنواع الاستشارات ومدتها والفواصل ومن يمكن حجزه."
+    "appointment_types_desc": "أنواع الاستشارات ومدتها والفواصل ومن يمكن حجزه.",
+    "email": "البريد الإلكتروني",
+    "email_desc": "صندوق البريد الذي ترسل منه GEC: SMTP أو Google Workspace أو Microsoft 365.",
+    "sms": "الرسائل النصية",
+    "sms_desc": "الرسائل النصية عبر Twilio.",
+    "whatsapp": "واتساب",
+    "whatsapp_desc": "WhatsApp Business Cloud API لإرسال الرسائل واستقبالها."
   },
   "roles": {
     "lead": "الأدوار المدمجة تتبع المسؤوليات المعتادة في GEC. أنشئ أدواراً مخصصة لأي احتياج آخر.",

@@ -1,0 +1,16 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.sms') %></h1><p class="lead"><%= t('settings.sms_desc') %></p></div><span class="chip <%= connected ? 'ok' : 'warn' %>"><%- icon(connected ? 'check' : 'plug-zap') %><%= connected ? t('comms.connected') : t('comms.not_connected') %></span></div>
+<form method="post" class="card stack" autocomplete="off">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'enabled', label: t('integrations.enabled'), type: 'checkbox', value: s.enabled }) %>
+  <p class="small muted mb0"><%= t('integrations.twilio_help') %></p>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'account_sid', label: 'Account SID', value: s.account_sid, placeholder: 'AC…', attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'auth_token', label: 'Auth token', type: 'password', placeholder: hasToken ? t('integrations.saved_secret') : '', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('integrations.password_hint') }) %>
+    <%- include('../../../partials/field', { name: 'from_number', label: t('integrations.from_number'), value: s.from_number, placeholder: '+1…', attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'default_country_code', label: t('integrations.country_code'), value: s.default_country_code, placeholder: '962', attrs: 'dir="ltr" inputmode="numeric"', hint: t('integrations.country_code_hint') }) %>
+  </div>
+  <div class="card flat small"><strong><%= t('integrations.webhooks') %></strong><p class="mb2"><%= t('integrations.twilio_webhooks') %></p><code dir="ltr"><%= hooks.inbound %></code><br><code dir="ltr"><%= hooks.status %></code></div>
+  <p class="small subtle mb0"><%- icon('lock', 'sm') %> <%= t('integrations.encrypted') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

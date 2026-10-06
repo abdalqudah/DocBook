@@ -4,7 +4,8 @@
     "student": "طالب",
     "task": "مهمة",
     "application": "طلب التحاق",
-    "appointment": "موعد"
+    "appointment": "موعد",
+    "invoice": "فاتورة"
   },
   "attention": {
     "lead_new": "عميل جديد: {name}",
@@ -15,7 +16,9 @@
     "days_in_stage": "{n} يوماً في هذه المرحلة",
     "doc_review": "مراجعة {doc} من {name}",
     "visa_appointment": "موعد تأشيرة: {name}",
-    "appointment_today": "{type} مع {name}"
+    "appointment_today": "{type} مع {name}",
+    "invoice_overdue": "فاتورة متأخرة {number} — {name}",
+    "message_in": "{channel} من {name}"
   },
   "kpi": {
     "new_leads": "عملاء جدد",
@@ -23,7 +26,8 @@
     "active_students": "طلاب نشطون",
     "applications_submitted": "طلبات مقدّمة",
     "offers": "قبولات مستلمة",
-    "consultations": "استشارات هذا الشهر"
+    "consultations": "استشارات هذا الشهر",
+    "collected": "المحصّل هذا الشهر"
   },
   "sources": {
     "contact_form": "نموذج التواصل",
@@ -201,7 +205,11 @@
     "certificate_issued": "صدرت الشهادة: {no}",
     "event_registered": "سجّل في فعالية: {event}",
     "event_attended": "حضر فعالية: {event}",
-    "not_sent": "لم يُرسل"
+    "not_sent": "لم يُرسل",
+    "invoice_issued": "صدرت الفاتورة {number}",
+    "payment_received": "استُلمت دفعة: {amount_text}",
+    "payment_refunded": "استُردت دفعة: {amount_text}",
+    "from_phone": "من الهاتف"
   },
   "leads": {
     "new": "عميل محتمل جديد",
@@ -366,7 +374,8 @@
     "f_pref_degree": "الدرجة",
     "f_pref_fields": "المجال",
     "f_budget_usd": "الميزانية",
-    "f_pref_intake": "موعد البدء"
+    "f_pref_intake": "موعد البدء",
+    "tab_finance": "المالية"
   },
   "notes": {
     "add": "إضافة ملاحظة",

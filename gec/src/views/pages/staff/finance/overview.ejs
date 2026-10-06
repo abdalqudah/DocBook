@@ -1,0 +1,14 @@
+<% function list(rows) { return rows.length ? rows.map(function (r) { return fmt.money(r.v, r.currency); }).join(' · ') : fmt.money(0, 'USD'); } %>
+<div class="page-head"><div><h1><%= t('nav.finance') %></h1><p class="lead"><%= t('finance.overview_lead') %></p></div>
+  <form method="get" class="cluster"><input type="date" name="from" value="<%= from %>" aria-label="<%= t('finance.from') %>" style="width:auto"><input type="date" name="to" value="<%= to %>" aria-label="<%= t('finance.to') %>" style="width:auto"><button class="btn" type="submit"><%= t('common.apply') %></button></form></div>
+<div class="stats mb6">
+  <a class="stat" href="/staff/invoices"><div class="stat-label"><%= t('finance.invoiced') %></div><div class="stat-value"><%= list(sum.invoiced) %></div></a>
+  <a class="stat" href="/staff/payments?from=<%= from %>&to=<%= to %>"><div class="stat-label"><%= t('finance.collected') %></div><div class="stat-value"><%= list(sum.collected) %></div></a>
+  <a class="stat" href="/staff/invoices?status=issued"><div class="stat-label"><%= t('finance.outstanding') %></div><div class="stat-value"><%= list(sum.outstanding) %></div></a>
+  <a class="stat" href="/staff/invoices?overdue=1"><div class="stat-label"><%= t('finance.overdue') %></div><div class="stat-value"><%= list(sum.overdue) %></div></a>
+  <% if (commissions) { %><a class="stat" href="/staff/commissions"><div class="stat-label"><%= t('finance.commissions_open') %></div><div class="stat-value"><%= list(commissions) %></div></a><% } %>
+</div>
+<p class="small subtle"><%= t('finance.per_currency') %></p>
+<section class="card"><div class="card-head"><h2><%= t('finance.recent_payments') %></h2><a class="btn sm ghost" href="/staff/payments"><%= t('common.see_all') %></a></div>
+  <% if (!recent.length) { %><p class="muted mb0"><%= t('finance.no_payments') %></p><% } else { %><div class="divider-list"><% recent.forEach(function (p) { %><div class="list-item"><span class="num small"><%= p.receipt_no %></span><div class="li-body"><div class="li-title"><%= p.payer %></div><div class="li-sub"><%= fmt.date(p.received_on) %> · <%= t('finance.method.' + p.method) %></div></div><span class="num"><%= fmt.money(p.amount, p.currency) %></span></div><% }) %></div><% } %>
+</section>
