@@ -6,7 +6,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT=$(realpath -m "${1:-gec-hostinger.zip}")
 TMP=$(mktemp -d)
-git archive HEAD:"$(git rev-parse --show-prefix | sed 's#/$##')" | tar -x -C "$TMP"
+PREFIX=$(git rev-parse --show-prefix | sed 's#/$##')
+git -C "$(git rev-parse --show-toplevel)" archive "HEAD${PREFIX:+:$PREFIX}" | tar -x -C "$TMP" # from the repo root: in a subfolder git archive filters paths
 rm -rf "$TMP/test" "$TMP/.env" "$TMP/runtime"
 printf '{"commit":"%s","built_at":"%s"}\n' "$(git rev-parse HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$TMP/build-info.json"
 rm -f "$OUT"
