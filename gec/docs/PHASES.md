@@ -548,3 +548,23 @@ sets its margin.
 * **Tests:** `test/phase14.test.js` (4): request → approval → invitation → sign-in; submission held until approved,
   program margin overrides the agreement; diff, change requests (note required), isolation between universities
   and portals; partial profile edits, team invites, disabling accounts.
+
+## Phase 15 — SEO, GEO and AEO (search engines and AI assistants)
+
+* **Settings → SEO & AI search:** default description (AR/EN), sharing image, Google / Bing / Yandex verification
+  codes (paste the code or the whole meta tag), AI crawler policy, `/llms.txt` on/off with its introduction, and
+  extra robots.txt rules (only valid directives are kept).
+* **robots.txt** is generated: private areas (staff, portal, partner, tokens) closed for every crawler; AI answer
+  engines (OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-SearchBot, …) allowed by default so they can cite
+  GEC; model-training crawlers (GPTBot, ClaudeBot, Google-Extended, CCBot, …) blocked by default — both switchable.
+* **/llms.txt** (and `?lang=ar`): a Markdown summary — who GEC is, contact, key pages, destinations, services,
+  universities, programs with fees, scholarships with deadlines, guides and FAQs — built from live content only.
+* **Structured data:** EducationalOrganization (with social profiles) + WebSite with site search on the home page;
+  BreadcrumbList on every detail page; existing Course/University/Event/Article/Service/FAQPage kept. Every page
+  gets `og:url`, an absolute sharing image, `x-default` hreflang and a robots directive allowing large previews.
+* **Website → SEO audit:** a visibility score; site checks (description, sharing image, verification, AI access,
+  llms.txt, number of FAQs, HTTPS); content checks per type (missing Arabic titles, missing descriptions, long or
+  duplicate titles, universities still on generated pictures, images without alt text) with links to fix each;
+  a GEO checklist and links to Search Console, Bing Webmaster Tools, Rich Results Test and PageSpeed Insights.
+* **Files:** `src/modules/seo/{service,web,site.web}.js`, `pages/staff/settings/seo.ejs`, `pages/staff/seo/audit.ejs`,
+  `locales/*/seo.json`. **Tests:** `test/phase15.test.js` (4).

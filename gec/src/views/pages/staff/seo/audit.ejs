@@ -1,0 +1,39 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('seo.audit_lead') %></p></div><a class="btn" href="/staff/settings/seo"><%- icon('settings') %><%= t('settings.seo') %></a></div>
+<div class="grid-2 mb4">
+  <section class="card row top">
+    <span class="ring" style="--p:<%= a.score %>" role="img" aria-label="<%= t('seo.score') %>: <%= a.score %>/100"><strong><%= a.score %></strong></span>
+    <div class="grow"><h2 style="margin:0 0 4px"><%= t('seo.score') %></h2><p class="small muted mb0"><%= t(a.score >= 85 ? 'seo.score_good' : a.score >= 60 ? 'seo.score_ok' : 'seo.score_low') %></p></div>
+  </section>
+  <section class="card">
+    <h2><%= t('seo.tools') %></h2>
+    <ul class="small link-list" style="margin:0;padding-inline-start:1.1em;display:grid;gap:4px">
+      <li><a href="https://search.google.com/search-console" target="_blank" rel="noopener">Google Search Console</a> — <%= t('seo.tool_gsc') %></li>
+      <li><a href="https://www.bing.com/webmasters" target="_blank" rel="noopener">Bing Webmaster Tools</a> — <%= t('seo.tool_bing') %></li>
+      <li><a href="https://search.google.com/test/rich-results?url=<%= encodeURIComponent(appUrl + '/') %>" target="_blank" rel="noopener">Rich Results Test</a> — <%= t('seo.tool_rich') %></li>
+      <li><a href="https://pagespeed.web.dev/analysis?url=<%= encodeURIComponent(appUrl + '/') %>" target="_blank" rel="noopener">PageSpeed Insights</a> — <%= t('seo.tool_speed') %></li>
+    </ul>
+  </section>
+</div>
+
+<section class="card mb4">
+  <h2><%= t('seo.site_checks') %></h2>
+  <% if (!a.site.length) { %><p class="mb0"><span class="chip ok"><%- icon('check', 'sm') %><%= t('seo.all_good') %></span></p>
+  <% } else { %><div class="divider-list"><% a.site.forEach(function (i) { %><div class="list-item"><span class="chip <%= i.level === 'bad' ? 'danger' : i.level === 'warn' ? 'warn' : '' %>"><%= t('seo.level.' + i.level) %></span><div class="li-body"><div class="li-title"><%= t('seo.check.' + i.key + '_t', i.vars || {}) %></div><div class="li-sub"><%= t('seo.check.' + i.key + '_d', i.vars || {}) %></div></div></div><% }) %></div><% } %>
+</section>
+
+<section class="card mb4">
+  <h2><%= t('seo.content_checks') %></h2>
+  <% if (!a.issues.length) { %><p class="mb0"><span class="chip ok"><%- icon('check', 'sm') %><%= t('seo.all_good') %></span></p>
+  <% } else { a.issues.forEach(function (i) { %>
+  <details class="audit-item">
+    <summary><span class="chip <%= i.level === 'warn' ? 'warn' : '' %>"><%= t('seo.level.' + i.level) %></span> <strong><%= t('seo.issue.' + i.key, { n: i.count }) %></strong> <span class="muted">· <%= t('nav.' + (i.table === 'services' ? 'services_cms' : i.table)) %></span></summary>
+    <ul class="small"><% i.items.forEach(function (x) { %><li><a href="<%= x.href %>"><%= x.title %></a></li><% }) %><% if (i.count > i.items.length) { %><li class="muted"><%= t('seo.and_more', { n: i.count - i.items.length }) %></li><% } %></ul>
+  </details>
+  <% }) } %>
+</section>
+
+<section class="card">
+  <h2><%= t('seo.geo_title') %></h2>
+  <p class="small muted"><%= t('seo.geo_lead') %></p>
+  <ol class="steps-list small"><li><%= t('seo.geo_1') %></li><li><%= t('seo.geo_2', { n: a.faqCount }) %></li><li><%= t('seo.geo_3') %></li><li><%= t('seo.geo_4') %></li><li><%= t('seo.geo_5') %></li></ol>
+</section>

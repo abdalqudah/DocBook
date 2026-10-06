@@ -74,10 +74,16 @@ router.get('/', ah(async (req, res) => {
   res.page('pages/site/home', {
     layout: 'public', heroPage: true, dests, featured: featured.map(finder.shape), scholarships, state: await stateOf(req),
     stats: { programs: Number(counts[0][0].n), universities: Number(counts[1][0].n), destinations: dests.length },
-    seo: seoOf(req, res, null, { title: res.locals.branding.legal_name, description: req.t('site.hero_lead'), path: '/', jsonld: {
-      '@context': 'https://schema.org', '@type': 'EducationalOrganization', name: res.locals.branding.legal_name, url: res.locals.appUrl,
+    seo: seoOf(req, res, null, { title: res.locals.branding.legal_name, description: req.t('site.hero_lead'), path: '/', jsonld: [{
+      '@context': 'https://schema.org', '@type': 'EducationalOrganization', '@id': abs(res, '/#organization'), name: res.locals.branding.legal_name, alternateName: res.locals.branding.name, url: res.locals.appUrl,
       logo: abs(res, '/brand/logo-horizontal.png'), email: res.locals.company.email || undefined, telephone: res.locals.company.phone || undefined,
-    } }),
+      description: req.t('site.hero_lead'), address: L(req, res.locals.company, 'address') || undefined,
+      sameAs: Object.values(res.locals.company.social || {}).filter((u) => /^https:\/\//.test(u || '')),
+      areaServed: 'Middle East', knowsAbout: ['Study abroad', 'University admissions', 'Student visas', 'Scholarships'],
+    }, {
+      '@context': 'https://schema.org', '@type': 'WebSite', name: res.locals.branding.legal_name, url: res.locals.appUrl, inLanguage: ['ar', 'en'], publisher: { '@id': abs(res, '/#organization') },
+      potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${abs(res, '/programs')}?q={search_term_string}` }, 'query-input': 'required name=search_term_string' },
+    }] }),
   });
 }));
 

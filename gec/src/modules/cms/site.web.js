@@ -95,14 +95,7 @@ router.get('/faq', ah(async (req, res) => {
 }));
 
 // ------------------------------------------------------------------ SEO files
-router.get('/robots.txt', (req, res) => {
-  res.type('text/plain').send([
-    'User-agent: *', 'Disallow: /staff', 'Disallow: /portal', 'Disallow: /api/', 'Disallow: /hooks/', 'Disallow: /appointments/', 'Disallow: /tickets/', 'Disallow: /invoices/',
-    'Disallow: /courses/registration/', 'Disallow: /estimate/', 'Disallow: /compare/s/', 'Disallow: /u/', 'Disallow: /c/', 'Disallow: /t/', 'Disallow: /verify/', 'Disallow: /reset/', 'Disallow: /search',
-    `Sitemap: ${abs('/sitemap.xml')}`, '',
-  ].join('\n'));
-});
-
+// robots.txt and llms.txt: src/modules/seo/site.web.js (AI-crawler policy from Settings → SEO & AI search)
 router.get('/sitemap.xml', ah(async (req, res) => {
   const now = new Date();
   const urls = [{ loc: '/', pri: '1.0' }, { loc: '/programs', pri: '0.9' }, { loc: '/universities' }, { loc: '/scholarships' }, { loc: '/study' }, { loc: '/calculator' }, { loc: '/book' }, { loc: '/contact' },

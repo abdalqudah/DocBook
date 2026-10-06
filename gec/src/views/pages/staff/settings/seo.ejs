@@ -1,0 +1,41 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.seo') %></h1><p class="lead"><%= t('settings.seo_desc') %></p></div><a class="btn" href="/staff/seo"><%- icon('gauge') %><%= t('nav.seo_audit') %></a></div>
+<form method="post" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <fieldset class="card"><legend><%= t('seo.defaults') %></legend>
+    <p class="small muted"><%= t('seo.defaults_hint') %></p>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'description_en', label: t('seo.description') + ' (English)', type: 'textarea', rows: 3, value: s.description_en, attrs: 'maxlength="300"', hint: t('seo.description_hint') }) %>
+      <%- include('../../../partials/field', { name: 'description_ar', label: t('seo.description') + ' (العربية)', type: 'textarea', rows: 3, value: s.description_ar, attrs: 'maxlength="300" dir="rtl"' }) %>
+    </div>
+    <%- include('../../../partials/field', { name: 'og_image', label: t('seo.og_image'), type: 'url', value: s.og_image, hint: t('seo.og_image_hint'), attrs: 'dir="ltr" placeholder="https://"' }) %>
+    <div class="cluster" style="margin-top:-6px"><% if (s.og_image) { %><img src="<%= s.og_image %>" alt="" data-media-preview="#f_og_image" style="max-height:80px;border-radius:8px"><% } %><button type="button" class="btn sm ghost" data-media-pick="#f_og_image"><%- icon('image') %><%= t('media.choose') %></button></div>
+  </fieldset>
+
+  <fieldset class="card"><legend><%= t('seo.verification') %></legend>
+    <p class="small muted"><%= t('seo.verification_hint') %></p>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'google_verification', label: 'Google Search Console', value: s.google_verification, attrs: 'dir="ltr" spellcheck="false"', hint: t('seo.google_hint') }) %>
+      <%- include('../../../partials/field', { name: 'bing_verification', label: 'Bing Webmaster Tools', value: s.bing_verification, attrs: 'dir="ltr" spellcheck="false"', hint: t('seo.bing_hint') }) %>
+      <%- include('../../../partials/field', { name: 'yandex_verification', label: 'Yandex Webmaster', value: s.yandex_verification, attrs: 'dir="ltr" spellcheck="false"' }) %>
+    </div>
+    <p class="small mb0"><%= t('seo.sitemap_is') %> <a href="/sitemap.xml" target="_blank" rel="noopener" dir="ltr"><%= appUrl %>/sitemap.xml</a></p>
+  </fieldset>
+
+  <fieldset class="card"><legend><%= t('seo.ai') %></legend>
+    <p class="small muted"><%= t('seo.ai_hint') %></p>
+    <%- include('../../../partials/field', { name: 'ai_answers', label: t('seo.ai_answers'), type: 'checkbox', value: s.ai_answers, hint: answerBots.join(', ') }) %>
+    <%- include('../../../partials/field', { name: 'ai_training', label: t('seo.ai_training'), type: 'checkbox', value: s.ai_training, hint: trainingBots.join(', ') }) %>
+    <%- include('../../../partials/field', { name: 'llms_enabled', label: t('seo.llms_enabled'), type: 'checkbox', value: s.llms_enabled, hint: t('seo.llms_hint') }) %>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'llms_intro_en', label: t('seo.llms_intro') + ' (English)', type: 'textarea', rows: 3, value: s.llms_intro_en }) %>
+      <%- include('../../../partials/field', { name: 'llms_intro_ar', label: t('seo.llms_intro') + ' (العربية)', type: 'textarea', rows: 3, value: s.llms_intro_ar, attrs: 'dir="rtl"' }) %>
+    </div>
+    <p class="small mb0"><a href="/llms.txt" target="_blank" rel="noopener" dir="ltr">/llms.txt</a> · <a href="/llms.txt?lang=ar" target="_blank" rel="noopener" dir="ltr">/llms.txt?lang=ar</a> · <a href="/robots.txt" target="_blank" rel="noopener" dir="ltr">/robots.txt</a></p>
+  </fieldset>
+
+  <fieldset class="card"><legend><%= t('seo.advanced') %></legend>
+    <%- include('../../../partials/field', { name: 'robots_extra', label: t('seo.robots_extra'), type: 'textarea', rows: 4, value: s.robots_extra, hint: t('seo.robots_extra_hint'), attrs: 'dir="ltr" spellcheck="false" style="font-family:ui-monospace,monospace;font-size:.85rem"' }) %>
+  </fieldset>
+  <div class="form-actions sticky"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

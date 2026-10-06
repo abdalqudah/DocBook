@@ -3,19 +3,28 @@
 <head>
 <%- include('../partials/head') %>
 <link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
-<% var s = seo || {}; var pageTitle = s.title || (typeof title !== 'undefined' && title) || branding.legal_name; %>
+<% var s = seo || {}; var ss = typeof seoSite !== 'undefined' && seoSite ? seoSite : {}; var pageTitle = s.title || (typeof title !== 'undefined' && title) || branding.legal_name;
+   var desc = s.description || (locale === 'ar' ? ss.description_ar || ss.description_en : ss.description_en || ss.description_ar) || '';
+   var absu = function (u) { return u && u.charAt(0) === '/' && u.charAt(1) !== '/' ? appUrl + u : u; };
+   var ogImg = absu(s.image || ss.og_image || ''); %>
 <title><%= pageTitle === branding.legal_name ? pageTitle : pageTitle + ' · ' + branding.name %></title>
-<% if (s.description) { %><meta name="description" content="<%= s.description %>"><% } %>
+<% if (desc) { %><meta name="description" content="<%= desc %>"><% } %>
 <% if (s.canonical) { %><link rel="canonical" href="<%= s.canonical %>"><% } %>
-<% if (s.alternates) { s.alternates.forEach(function (a) { %><link rel="alternate" hreflang="<%= a.lang %>" href="<%= a.href %>"><% }) } %>
+<% if (s.alternates) { s.alternates.forEach(function (a) { %><link rel="alternate" hreflang="<%= a.lang %>" href="<%= a.href %>"><% }) %><link rel="alternate" hreflang="x-default" href="<%= s.canonical %>"><% } %>
 <meta property="og:site_name" content="<%= branding.legal_name %>">
 <meta property="og:title" content="<%= pageTitle %>">
-<% if (s.description) { %><meta property="og:description" content="<%= s.description %>"><% } %>
+<% if (desc) { %><meta property="og:description" content="<%= desc %>"><% } %>
 <meta property="og:type" content="<%= s.ogType || 'website' %>">
-<% if (s.image) { %><meta property="og:image" content="<%= s.image %>"><meta name="twitter:card" content="summary_large_image"><% } %>
+<% if (s.canonical) { %><meta property="og:url" content="<%= s.canonical %>"><% } %>
+<% if (ogImg) { %><meta property="og:image" content="<%= ogImg %>"><meta name="twitter:card" content="summary_large_image"><% } else { %><meta name="twitter:card" content="summary"><% } %>
 <meta property="og:locale" content="<%= locale === 'ar' ? 'ar_AR' : 'en_US' %>">
-<% if (s.noindex) { %><meta name="robots" content="noindex"><% } %>
+<% if (ss.google_verification) { %><meta name="google-site-verification" content="<%= ss.google_verification %>"><% } %>
+<% if (ss.bing_verification) { %><meta name="msvalidate.01" content="<%= ss.bing_verification %>"><% } %>
+<% if (ss.yandex_verification) { %><meta name="yandex-verification" content="<%= ss.yandex_verification %>"><% } %>
+<% if (ss.llms_enabled !== false) { %><link rel="alternate" type="text/markdown" title="llms.txt" href="/llms.txt"><% } %>
+<% if (s.noindex) { %><meta name="robots" content="noindex"><% } else { %><meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1"><% } %>
 <% if (s.jsonld) { [].concat(s.jsonld).forEach(function (j) { %><script type="application/ld+json"><%- json(j) %></script><% }) } %>
+<% if (s.canonical && typeof crumbsLd === 'function') { var bc = crumbsLd(s.canonical, pageTitle); if (bc) { %><script type="application/ld+json"><%- json(bc) %></script><% } } %>
 </head>
 <body class="site<%= typeof heroPage !== 'undefined' && heroPage ? ' has-hero' : '' %>" data-csrf="<%= csrfToken %>" data-locale="<%= locale %>">
 <a class="skip-link" href="#main"><%= t('common.skip_to_content') %></a>

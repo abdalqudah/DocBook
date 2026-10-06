@@ -32,6 +32,14 @@ const DEFAULTS = {
   privacy: { cookie_banner: true, analytics_requires_consent: true, retention_months: 36, policy_url: '/privacy' },
   leads: { assignment: 'round_robin', first_response_hours: 24 }, // round_robin | rules | manual
   appointments: { min_notice_hours: 12, max_days_ahead: 60, reminder_hours: 24 },
+  seo: {
+    description_en: '', description_ar: '', og_image: '', keywords_en: '', keywords_ar: '',
+    google_verification: '', bing_verification: '', yandex_verification: '',
+    ai_answers: true, // AI search / answer engines (ChatGPT search, Perplexity, Claude, Copilot) may read the site
+    ai_training: false, // model-training crawlers (GPTBot, ClaudeBot, Google-Extended, CCBot …)
+    llms_enabled: true, llms_intro_en: '', llms_intro_ar: '',
+    robots_extra: '',
+  },
 };
 
 const cache = new Map();

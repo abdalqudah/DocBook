@@ -104,3 +104,8 @@
 .img-preview.logo { aspect-ratio: 1; max-width: 140px; background-size: contain; background-repeat: no-repeat; background-color: var(--surface-2); }
 .steps-list { margin: 0; padding-inline-start: 1.2em; display: grid; gap: 6px; }
 .partner-hero { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.audit-item { border-top: 1px solid var(--line); padding: 10px 0; }
+.audit-item:first-of-type { border-top: 0; }
+.audit-item summary { cursor: pointer; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.audit-item ul { margin: 8px 0 0; padding-inline-start: 1.2em; }
+.link-list a, .audit-item li a { text-decoration: underline; text-underline-offset: 2px; }
