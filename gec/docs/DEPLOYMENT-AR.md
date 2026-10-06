@@ -9,6 +9,91 @@
 
 ---
 
+## 0. التركيب على Hostinger Business / Cloud (Node.js Web Apps) — بدون VPS
+
+إذا كانت خطتك تدعم **Node.js Web Apps** (تظهر في تفاصيل الخطة: *Supported backend frameworks: Express*) فهي
+تكفي لموقع واحد على دومين واحد: Hostinger تثبّت المكتبات وتشغّل التطبيق وتبقيه يعمل، وتعطي HTTPS مجاناً،
+وقاعدة MySQL، وبريداً للنطاق، ونسخاً احتياطية يومية. لا تحتاج Docker ولا Caddy ولا VPS.
+
+**مثال خطة مناسبة:** Frankfurt (ألمانيا)، 2 معالج، 3GB رام، 50GB — ممتازة لطلاب الأردن والخليج.
+
+### 0.1 قاعدة البيانات
+hPanel ← **Databases ← Management** ← أنشئ قاعدة بيانات ومستخدماً:
+- الاسم مثل `u213859182_gec`، والمستخدم `u213859182_gec`، وكلمة مرور قوية.
+- انسخ **اسم الخادم (Host)** كما يظهر في الصفحة (غالباً `localhost`)، والاسم، والمستخدم، وكلمة المرور.
+
+### 0.2 مجلد الملفات المرفوعة (مهم)
+كل نشر جديد يستبدل ملفات التطبيق، لذلك يجب أن تُحفظ مستندات الطلاب والصور **خارج** مجلد التطبيق.
+من **File Manager** أنشئ مجلداً في جذر الحساب: `/home/u213859182/gec-storage`
+(رقم الحساب هو اسم مستخدم FTP عندك). سنضعه في المتغير `STORAGE_DIR`.
+
+### 0.3 GitHub وفرع النشر
+1. على GitHub: ادمج آخر التحديثات في الفرع **main**.
+2. أنشئ فرعاً اسمه **production** من main (Branches ← New branch). هذا ما سيعمل على الموقع.
+3. أنشئ رمز GitHub للتحديث: GitHub ← Settings ← Developer settings ← **Fine-grained tokens** ← Generate:
+   المستودع: هذا المستودع فقط، الصلاحية: **Contents: Read and write**، مدة صلاحية سنة.
+
+### 0.4 إنشاء التطبيق في hPanel
+hPanel ← **Websites ← Add website ← Node.js Web App** (أو من الموقع الحالي ← Node.js):
+| الحقل | القيمة |
+| --- | --- |
+| المصدر | **GitHub** ← اختر المستودع والفرع **production** |
+| Framework | **Express** |
+| Node.js version | **22.x** |
+| Root directory | `gec` (مجلد المنصة داخل المستودع) |
+| Entry file | `app.js` |
+| Build command / Output directory | فارغ |
+| Package manager | npm |
+
+### 0.5 متغيرات البيئة
+في إعدادات التطبيق ← **Environment variables** ← **Import .env** والصق (عدّل القيم بين < >):
+```env
+NODE_ENV=production
+APP_URL=https://<دومينك أو العنوان المؤقت xxx.hostingersite.com>
+TRUST_PROXY=true
+AUTO_MIGRATE=true
+SESSION_SECRET=<نص عشوائي طويل>
+APP_KEY=<نص عشوائي طويل آخر — لا تغيّره بعد الإطلاق>
+DB_HOST=<Host من صفحة قواعد البيانات، غالباً localhost>
+DB_PORT=3306
+DB_NAME=u213859182_gec
+DB_USER=u213859182_gec
+DB_PASSWORD=<كلمة مرور القاعدة>
+STORAGE_DIR=/home/u213859182/gec-storage
+ADMIN_EMAIL=<بريدك>
+ADMIN_PASSWORD=<كلمة مرور قوية مؤقتة>
+ADMIN_NAME=<اسمك>
+DEFAULT_LOCALE=ar
+UPDATE_MODE=github
+GITHUB_REPO=<المالك/اسم-المستودع>
+GITHUB_TOKEN=<رمز GitHub من الخطوة 0.3>
+UPDATE_SOURCE_BRANCH=main
+UPDATE_DEPLOY_BRANCH=production
+```
+ثم **Deploy**. عند أول تشغيل تُنشأ الجداول وحساب المدير تلقائياً. افتح `APP_URL/staff/login`.
+
+### 0.6 الدومين و HTTPS
+hPanel ← الموقع ← **Connect domain**: اربط دومينك (إن كان من Hostinger يُضبط DNS تلقائياً؛ وإلا ضع سجلات
+`A` التي يعرضها hPanel). شهادة SSL مجانية تُفعّل تلقائياً. بعد الربط **غيّر `APP_URL`** إلى `https://دومينك` وأعد النشر.
+
+### 0.7 البريد الإلكتروني
+الخطة تتضمن بريداً للنطاق: hPanel ← **Emails** ← أنشئ `no-reply@دومينك` و `info@دومينك`. ثم في المنصة
+**الإعدادات ← البريد الإلكتروني**: الخادم `smtp.hostinger.com`، المنفذ `465` (SSL)، المستخدم = عنوان البريد
+كاملاً، وكلمة مروره. Hostinger تضيف SPF و DKIM تلقائياً للدومينات المربوطة لديها؛ أضف DMARC (القسم 5).
+
+### 0.8 التحديثات بزر واحد
+في المنصة: **النظام ← تحديث النظام** (لمدير النظام الأعلى). عندما تصل تحديثات إلى main تظهر هنا بأسمائها،
+وزر **«تحديث النظام الآن»** ينقل فرع production إليها، فتعيد Hostinger البناء تلقائياً (2–5 دقائق) والصفحة
+تُظهر متى أصبح الإصدار الجديد يعمل. وزر **«العودة للإصدار السابق»** يرجع خطوة إن ظهرت مشكلة.
+النسخ الاحتياطي: Hostinger تأخذ نسخة يومية (hPanel ← Backups)؛ خذ نسخة يدوية قبل التحديثات الكبيرة.
+
+### 0.9 ملاحظات
+- لا تعدّل ملفات التطبيق من File Manager — أي نشر يستبدلها. كل التعديلات عبر GitHub أو من لوحة التحكم.
+- السجلات (Logs) والأخطاء: إعدادات التطبيق في hPanel ← Logs.
+- الأقسام 2–3 (الخادم و Docker و Caddy) و 14 (backup.sh) خاصة بالـ VPS ويمكن تجاوزها؛ أكمل من القسم 5.
+
+---
+
 ## 1. ما الذي تحتاجه بالضبط (ملخص)
 
 | العنصر | ماذا تشتري / تجهّز | التكلفة التقريبية |
@@ -42,8 +127,9 @@
 - فعّل الدخول بمفتاح SSH، وسجّل عنوان الـ IP العام للخادم (مثال: `203.0.113.10`).
 
 ### 3.1أ على Hostinger تحديداً
-1. **نوع الخطة:** يجب أن تكون **VPS** (مثل KVM 2: معالجان، 8GB رام، 100GB NVMe). استضافة المواقع العادية
-   (Web / Cloud / WordPress Hosting) **لا تصلح** لأنها لا تشغّل Node.js وقاعدة MariaDB و Docker.
+> هذا القسم لخطط **VPS** فقط. إذا كانت خطتك **Business / Cloud** مع «Node.js Web Apps» فاتبع **القسم 0** بالأعلى ولا تحتاج VPS.
+
+1. **نوع الخطة:** VPS (مثل KVM 2: معالجان، 8GB رام، 100GB NVMe).
 2. **الموقع الجغرافي (Location):** لا تختر أمريكا الشمالية (التأخير من الأردن 140–200ms). انزل في القائمة إلى
    **Europe** واختر الأقل تأخيراً عندك — عادة **Germany (Frankfurt)** أو **France (Paris)** أو **Netherlands**
    أو **Lithuania** (حوالي 50–80ms من عمّان). كلها مناسبة لطلاب الأردن والخليج.

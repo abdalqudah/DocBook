@@ -621,3 +621,9 @@ sets its margin.
 * **Files:** `src/modules/system/{version,updates,web}.js`, `pages/staff/system/update.ejs`, `public/js/updates.js`,
   `deploy/{updater.py,install-updater.sh,gec-updater.service,gec-updater.timer,gec-updater.path}`, Dockerfile build
   arg, compose volume `./runtime`. **Tests:** `test/phase18.test.js` (2) plus updater runs against a scratch Git repo.
+* **Managed hosting (Hostinger Web Apps) mode:** `UPDATE_MODE=github` with `GITHUB_REPO`, a fine-grained
+  `GITHUB_TOKEN` (Contents: read/write) and two branches. The page lists commits on `UPDATE_SOURCE_BRANCH` (main) not
+  yet on `UPDATE_DEPLOY_BRANCH` (production); **Update** fast-forwards production through the GitHub API
+  (`force: false`), the host rebuilds on the push, and the run is marked live when the new process starts;
+  **Roll back** moves production back to the previous commit. GitHub is asked at most once a minute and the menu
+  badge never waits for it. Arabic guide section 0 covers the Hostinger setup. Tests: `test/phase18b.test.js` (2).

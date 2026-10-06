@@ -45,6 +45,15 @@ module.exports = {
   storageDir: process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.join(root, 'storage'),
   // Shared with the server-side updater (deploy/updater.py): status written by it, update requests written by the app.
   updaterDir: process.env.UPDATER_DIR ? path.resolve(process.env.UPDATER_DIR) : path.join(root, 'runtime'),
+  // How "System update" installs new versions: 'server' (deploy/updater.py on a VPS) or 'github' (managed hosting
+  // such as Hostinger that redeploys a branch on every push: the button fast-forwards that branch).
+  updates: {
+    mode: process.env.UPDATE_MODE === 'github' ? 'github' : 'server',
+    repo: /^[\w.-]+\/[\w.-]+$/.test(process.env.GITHUB_REPO || '') ? process.env.GITHUB_REPO : null,
+    token: process.env.GITHUB_TOKEN || null,
+    sourceBranch: process.env.UPDATE_SOURCE_BRANCH || 'main',
+    deployBranch: process.env.UPDATE_DEPLOY_BRANCH || 'production',
+  },
   db: {
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT || 3306),

@@ -24,13 +24,41 @@
     "restarting": "Restarting…",
     "started": "Update requested. Progress appears below; the page refreshes when it finishes.",
     "check_started": "Checking for updates…",
-    "state": { "queued": "Waiting for the updater", "running": "Updating…", "done": "Completed", "failed": "Failed", "rolled_back": "Rolled back", "idle": "" },
+    "state": {
+      "queued": "Waiting for the updater",
+      "running": "Updating…",
+      "done": "Completed",
+      "failed": "Failed",
+      "rolled_back": "Rolled back",
+      "idle": ""
+    },
     "err": {
-      "NOT_CONFIGURED": "The server updater is not connected yet.",
+      "NOT_CONFIGURED": "Updates are not connected yet.",
       "UPDATE_RUNNING": "An update is already running.",
       "UPDATE_QUEUED": "A request is already waiting for the updater.",
       "UP_TO_DATE": "There is nothing to install: the system is up to date.",
-      "VALIDATION_FAILED": "Unknown action."
-    }
+      "VALIDATION_FAILED": "Unknown action.",
+      "DIVERGED": "The deploy branch has its own changes — merge them into the source branch first.",
+      "NOTHING_TO_ROLL_BACK": "There is no previous version to return to."
+    },
+    "gh_setup_title": "Connect updates through GitHub (once)",
+    "gh_setup_text": "On managed hosting (Hostinger Web Apps) the host rebuilds the site whenever the deploy branch changes. Create a fine-grained GitHub token with access to this repository only and the permission Contents: Read and write, then add these environment variables in hPanel → your web app → Settings → Environment variables, and redeploy:",
+    "gh_setup_note": "Point the hosting deployment at the deploy branch (production). New versions arrive on the source branch (main); the button moves production up to main.",
+    "gh_error": {
+      "token": "GitHub refused the token. Check that it has not expired and has Contents: Read and write on this repository.",
+      "not_found": "Repository or branch not found. Check GITHUB_REPO and that both branches exist.",
+      "other": "GitHub could not be reached. Try again in a minute."
+    },
+    "gh_step1": "The {branch} branch on GitHub moves to the new version (never a force push).",
+    "gh_step2": "Hostinger detects the change, installs and rebuilds the site (usually 2–5 minutes).",
+    "gh_step3": "The new version starts; this page shows it once it is running.",
+    "gh_step4": "If something is wrong, “Roll back” returns to the previous version the same way. Hostinger also keeps daily backups.",
+    "gh_wait": "Hostinger is rebuilding the site. This page refreshes by itself when the new version is running (usually 2–5 minutes).",
+    "started_github": "Update sent to GitHub. Hostinger is rebuilding the site — this page refreshes when it is live.",
+    "rollback_started": "Rolling back to the previous version…",
+    "checked": "Checked GitHub for updates.",
+    "rollback": "Roll back to the previous version",
+    "rollback_confirm": "Return the site to version {commit}? Database changes made by the newer version stay.",
+    "diverged": "The deploy branch has its own changes — merge them into the source branch first."
   }
 }

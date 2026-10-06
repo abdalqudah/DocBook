@@ -1,23 +1,36 @@
-<% var live = s.queued || s.state === 'running'; var stateCls = { done: 'ok', running: 'brand', failed: 'danger', rolled_back: 'warn' }[s.state] || ''; %>
+<% var gh = provider === 'github'; var live = s.queued || s.state === 'running'; var stateCls = { done: 'ok', running: 'brand', failed: 'danger', rolled_back: 'warn' }[s.state] || ''; %>
 <div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('sysupdate.lead') %></p></div></div>
 
 <section class="card mb4">
   <div class="spread wrap-gap">
     <div>
       <div class="small muted"><%= t('sysupdate.running_version') %></div>
-      <div class="upd-version"><strong dir="ltr">v<%= s.app.version %></strong><% if (s.app.short) { %> <code dir="ltr"><%= s.app.short %></code><% } %></div>
+      <div class="upd-version"><strong dir="ltr">v<%= s.app.version %></strong><% var shown = s.app.short || (s.serverCommit ? String(s.serverCommit).slice(0, 7) : ''); if (shown) { %> <code dir="ltr"><%= shown %></code><% } %></div>
+      <% if (gh && s.deployedSubject) { %><div class="small muted"><%= s.deployedSubject %></div><% } %>
     </div>
     <span class="chip <%= s.connected ? 'ok' : 'warn' %>"><%- icon(s.connected ? 'plug-zap' : 'plug') %><%= s.connected ? t('sysupdate.connected') : t('sysupdate.not_connected') %></span>
   </div>
   <% if (s.connected) { %>
   <dl class="kv mt4">
-    <dt><%= t('sysupdate.branch') %></dt><dd dir="ltr" style="text-align:start"><%= s.branch %> · <%= s.mode %></dd>
+    <dt><%= t('sysupdate.branch') %></dt><dd dir="ltr" style="text-align:start"><%= gh ? s.repo + ' · ' + s.source + ' → ' + s.branch : s.branch + ' · ' + s.mode %></dd>
     <dt><%= t('sysupdate.last_check') %></dt><dd><%= s.checkedAt ? fmt.relative(s.checkedAt) : '—' %><% if (s.checkError) { %> · <span class="chip danger"><%= t('sysupdate.check_failed') %></span><% } %></dd>
   </dl>
   <% } %>
 </section>
 
-<% if (!s.connected) { %>
+<% if (!s.connected && gh) { %>
+<section class="card mb4">
+  <h2><%= t('sysupdate.gh_setup_title') %></h2>
+  <% if (s.configured && s.checkError) { %><div class="alert bad mb2" role="alert"><%- icon('alert-triangle') %><p class="mb0"><%= t('sysupdate.gh_error.' + (['token', 'not_found'].indexOf(s.checkError) >= 0 ? s.checkError : 'other')) %></p></div><% } %>
+  <p class="small muted"><%= t('sysupdate.gh_setup_text') %></p>
+  <pre class="upd-cmd" dir="ltr">UPDATE_MODE=github
+GITHUB_REPO=<%= cfg.repo || 'owner/repository' %>
+GITHUB_TOKEN=github_pat_…
+UPDATE_SOURCE_BRANCH=<%= cfg.sourceBranch %>
+UPDATE_DEPLOY_BRANCH=<%= cfg.deployBranch %></pre>
+  <p class="small muted mb0"><%= t('sysupdate.gh_setup_note') %></p>
+</section>
+<% } else if (!s.connected) { %>
 <section class="card mb4">
   <h2><%= t('sysupdate.setup_title') %></h2>
   <p class="small muted"><%= t('sysupdate.setup_text') %></p>
@@ -41,7 +54,12 @@ sudo ./deploy/install-updater.sh</pre>
     <% } %>
     <form method="post" action="/staff/system/update/check"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit" <%= live ? 'disabled' : '' %>><%- icon('search') %><%= t('sysupdate.check_now') %></button></form>
   </div>
+  <% if (s.diverged) { %><p class="small mt2"><span class="chip warn"><%= t('sysupdate.diverged') %></span></p><% } %>
+  <% if (gh) { %>
+  <ol class="steps-list small mt4"><li><%= t('sysupdate.gh_step1', { branch: s.branch }) %></li><li><%= t('sysupdate.gh_step2') %></li><li><%= t('sysupdate.gh_step3') %></li><li><%= t('sysupdate.gh_step4') %></li></ol>
+  <% } else { %>
   <ol class="steps-list small mt4"><li><%= t('sysupdate.step1') %></li><li><%= t('sysupdate.step2') %></li><li><%= t('sysupdate.step3') %></li><li><%= t('sysupdate.step4') %></li></ol>
+  <% } %>
 </section>
 
 <% if (s.run || live) { %>
@@ -49,7 +67,11 @@ sudo ./deploy/install-updater.sh</pre>
   <h2><%= t('sysupdate.last_run') %></h2>
   <% if (s.run) { %><p class="small muted"><%= s.run.requested_by || '' %> · <%= s.run.started_at ? fmt.dateTime(s.run.started_at) : '' %><% if (s.run.from && s.run.to) { %> · <span dir="ltr"><%= String(s.run.from).slice(0, 7) %> → <%= String(s.run.to).slice(0, 7) %></span><% } %></p><% } %>
   <% if (s.run && s.run.message && !live) { %><div class="alert <%= s.state === 'done' ? 'ok' : s.state === 'rolled_back' ? 'warn' : 'bad' %> mb2" role="status"><%- icon(s.state === 'done' ? 'check-circle-2' : 'alert-triangle') %><p class="mb0"><%= s.run.message %></p></div><% } %>
-  <pre class="upd-log" dir="ltr" aria-live="polite" data-update-log><%= s.run ? s.run.log.join('\n') : '' %></pre>
+  <% if (live && gh) { %><p class="small" role="status"><%= t('sysupdate.gh_wait') %></p><% } %>
+  <pre class="upd-log" dir="ltr" aria-live="polite" data-update-log><%= s.run ? (s.run.log || []).join('\n') : '' %></pre>
+  <% if (gh && s.run && s.run.action === 'update' && s.run.from && !live) { %>
+  <form method="post" action="/staff/system/update/rollback" class="mt4" data-confirm="<%= t('sysupdate.rollback_confirm', { commit: String(s.run.from).slice(0, 7) }) %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit"><%- icon('rotate-ccw') %><%= t('sysupdate.rollback') %></button></form>
+  <% } %>
 </section>
 <% } %>
 <% } %>
