@@ -193,7 +193,8 @@ router.post('/messages', ah(async (req, res) => {
 router.get('/payments', ah(async (req, res) => {
   const invoices = await knex('invoices').where({ student_id: req.student.id }).whereNot('status', 'draft').orderBy('id', 'desc');
   const payments = await knex('payments').where({ student_id: req.student.id }).orderBy('received_on', 'desc');
-  res.page('pages/portal/payments', { layout: 'portal', title: req.t('portal.payments'), invoices, payments });
+  const payOnline = !!(await require('../finance/online').currentConfig()); // eslint-disable-line global-require
+  res.page('pages/portal/payments', { layout: 'portal', title: req.t('portal.payments'), invoices, payments, payOnline });
 }));
 
 // ------------------------------------------------------------------ Notifications & settings

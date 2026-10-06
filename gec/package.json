@@ -1,7 +1,7 @@
 {
   "name": "gec-platform",
   "version": "0.1.0",
-  "description": "GEC — Global Education Consultants: study-abroad platform, student portal, admissions ATS and CRM",
+  "description": "GEC \u2014 Global Education Consultants: study-abroad platform, student portal, admissions ATS and CRM",
   "main": "app.js",
   "private": true,
   "license": "UNLICENSED",
@@ -11,7 +11,8 @@
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
     "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
-    "check": "node scripts/check.js"
+    "check": "node scripts/check.js",
+    "images:import": "node scripts/import-images.js"
   },
   "engines": {
     "node": ">=20"

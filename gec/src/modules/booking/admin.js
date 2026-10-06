@@ -5,6 +5,7 @@ const ref = require('../catalog/reference');
 const money = require('../catalog/money');
 
 const employeesOptions = async () => (await knex('employees as e').join('users as u', 'u.id', 'e.user_id').where('u.status', 'active').orderBy('u.name').select('e.id', 'u.name')).map((e) => ({ value: String(e.id), label: e.name }));
+const branchOptions = async () => (await knex('branches').where({ is_active: true }).orderBy('name').select('id', 'name')).map((b) => ({ value: String(b.id), label: b.name }));
 const currencyOptions = async () => (await money.codes()).map((c) => ({ value: c, label: c }));
 const L = (req, row, f) => (req.locale === 'ar' && row[`${f}_ar`]) || row[`${f}_en`];
 const seoFields = [{ name: 'seo_title', type: 'text', bilingual: true, max: 160 }, { name: 'seo_description', type: 'textarea', bilingual: true, max: 300, rows: 2 }];
@@ -43,7 +44,7 @@ const courses = resource({
       { key: 'seats', label: 'booking.seats', render: (r) => `${r.seats}${r.capacity ? ` / ${r.capacity}` : ''}` }, { key: 'price', label: 'resources.fields.price', render: (r) => (r.price ? `${r.price} ${r.currency}` : '—') }, { key: 'is_active', label: 'common.status', type: 'bool' }] },
   sections: [
     { key: 'basics', fields: [{ name: 'name', type: 'text', bilingual: true, required: true, max: 190 }, { name: 'slug', type: 'slug', hint: 'catalog.slug_hint' }, { name: 'description', type: 'markdown', bilingual: true, rows: 5 }, { name: 'image', type: 'image' }] },
-    { key: 'delivery', fields: [{ name: 'instructor_id', type: 'select', options: employeesOptions }, { name: 'instructor_name', type: 'text' }, { name: 'mode', type: 'select', required: true, options: ['online', 'in_person', 'blended'], optionLabel: 'booking.course_mode' }, { name: 'location', type: 'text' }] },
+    { key: 'delivery', fields: [{ name: 'instructor_id', type: 'select', options: employeesOptions }, { name: 'branch_id', type: 'select', options: branchOptions, hint: 'booking.branch_hint' }, { name: 'instructor_name', type: 'text' }, { name: 'mode', type: 'select', required: true, options: ['online', 'in_person', 'blended'], optionLabel: 'booking.course_mode' }, { name: 'location', type: 'text' }] },
     { key: 'dates', fields: [{ name: 'start_date', type: 'date' }, { name: 'end_date', type: 'date' }, { name: 'schedule', type: 'text', bilingual: true }] },
     { key: 'seats', fields: [{ name: 'capacity', type: 'int' }, { name: 'price', type: 'int' }, { name: 'currency', type: 'select', required: true, options: currencyOptions }, { name: 'cancellable', type: 'bool' }, { name: 'certificate', type: 'bool' }] },
     { key: 'visibility', fields: [{ name: 'registration_open', type: 'bool' }, { name: 'is_active', type: 'bool' }] },
@@ -65,9 +66,22 @@ const events = resource({
     { key: 'when', fields: [{ name: 'starts_at', type: 'datetime', required: true }, { name: 'ends_at', type: 'datetime' }] },
     { key: 'where', fields: [{ name: 'is_virtual', type: 'bool' }, { name: 'location', type: 'text', bilingual: true }, { name: 'meeting_url', type: 'url', hint: 'booking.meeting_hint' }] },
     { key: 'seats', fields: [{ name: 'capacity', type: 'int' }, { name: 'registration_open', type: 'bool' }, { name: 'is_active', type: 'bool' }] },
+    { key: 'ownership', fields: [{ name: 'organizer_id', type: 'select', options: employeesOptions, hint: 'booking.organizer_hint' }, { name: 'branch_id', type: 'select', options: branchOptions, hint: 'booking.branch_hint' }] },
     { key: 'seo', fields: seoFields },
   ],
   related: async (row) => [{ href: `/staff/events/${row.id}/registrations`, title: 'registrations', sub: null }],
 });
 
-module.exports = { appointmentTypes, courses, events, employeesOptions, ref };
+/**
+ * May this staff member see the registrants of a course / event? Everyone with "all" data scope; the course's
+ * instructor or the event's organiser; and branch-scoped staff for courses / events of their own branch.
+ */
+function canSeeRegistrants(staff, row, ownerField) {
+  const e = staff && staff.employee;
+  if (!e || !row) return false;
+  if (e.dataScope === 'all') return true;
+  if (row[ownerField] && row[ownerField] === e.id) return true;
+  return e.dataScope === 'branch' && !!row.branch_id && row.branch_id === e.branchId;
+}
+
+module.exports = { appointmentTypes, courses, events, employeesOptions, branchOptions, canSeeRegistrants, ref };

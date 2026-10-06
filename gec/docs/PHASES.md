@@ -428,3 +428,46 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   are referenced by URL and should be replaced with GEC's own images through the CMS; Google / Microsoft sign-in,
   calendar sync and online card payments remain prepared but not enabled; the AI advisor needs an Anthropic API
   key to answer in conversation (without it, it runs as an honest database search).
+
+## Phase 11 — Closing the remaining gaps
+
+### Plan
+* **Exists / reused:** resource CRUD, uploads (content-checked storage), settings with encrypted secrets, the
+  provider-webhook router, invoices and payments, notifications, audit log.
+* **Changes:** ownership for events and courses so registrants follow data scope; a media library with alt texts and
+  an image picker; an importer for images still loaded from other sites; card payments through Stripe Checkout.
+* **Database:** `events.branch_id`, `events.organizer_id`, `courses.branch_id`, `media.alt_en/alt_ar/source_url/
+  width/height`, `payment_sessions` (migration `20261006001100_phase11_gaps.js`).
+* **Security:** registrant lists and CSVs limited by role; media uploads accept images only (checked by content),
+  usage-checked before deletion; Stripe keys encrypted and checked with Stripe when saved; webhooks verified
+  (HMAC-SHA256, 5-minute tolerance); payments recorded only from the webhook and claimed atomically, so retries
+  cannot double-record; CSP `form-action` allows only Stripe's checkout as an extra destination.
+
+### Report
+* **Event / course registrants:** visible to company-wide roles, to the event's organiser or course's instructor,
+  and to branch staff for events / courses of their branch. Company-wide events (no branch) are no longer visible to
+  every branch manager. Forms gain "Organiser" and "Branch".
+* **Media library** (Website → Media library): upload PNG / JPG / WebP / GIF up to 8 MB with English and Arabic
+  descriptions; dimensions read from the file; search; "used in" list; deleting is refused while an image is used;
+  every image field in the workspace has "Choose from library".
+* **Image import:** finds every content image still loaded from another site (destinations, universities, events,
+  courses, articles, pages, services, testimonials), downloads each address once over https (8 MB cap, image types
+  only), stores it in the library and repoints the content; failures are listed and leave content unchanged. From the
+  library page or `npm run images:import`. (It could not run in this development sandbox, which has no access to the
+  image host; it is covered by tests with a simulated image server.)
+* **Card payments:** Settings → Online payments (secret key, webhook signing secret, live / test mode shown). Issued
+  invoices get "Pay by card" on their private page and in the student portal → Stripe Checkout for the open balance
+  (zero- and three-decimal currencies such as JPY and JOD converted correctly). Returning from Stripe only shows a
+  message; the payment is recorded (method "online", reference = Stripe payment id, receipt e-mailed as usual) when the
+  signed `checkout.session.completed` webhook arrives. A retried webhook is ignored; a checkout paid after the
+  balance was already settled is not recorded but flagged to finance (notification + audit) to reconcile or refund.
+* **Files:** `src/modules/cms/media.service.js`, `src/modules/finance/{online,hooks}.js`, `scripts/import-images.js`,
+  `pages/staff/cms/{media,media-item}.ejs`, `pages/staff/settings/payments.ejs`; updates to booking admin / web,
+  CMS web, finance web / site, invoice page, portal payments, resource form, staff JS / CSS, app CSP.
+* **Tests:** `test/phase11.test.js` (4): registrant ownership; media upload / picker / usage / permissions;
+  import (deduplication, repointing, failures); Stripe (not connected, encrypted keys, checkout parameters, redirect
+  does not mark paid, bad / stale signatures refused, recorded once, overpayment flagged, currency units).
+  Suite: 79, all passing. No accessibility violations on the new pages (EN / AR).
+* **Known limitations:** Stripe refunds are still recorded manually in the workspace (the refund itself is made in
+  Stripe); Google / Microsoft sign-in and calendar sync remain prepared but not enabled; the image importer needs
+  internet access on the server.

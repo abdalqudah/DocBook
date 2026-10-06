@@ -29,7 +29,7 @@
            else if (f.type === 'datetime') { %><%- include('../../../partials/field', Object.assign(common, { type: 'datetime-local', value: val ? (typeof val === 'string' && val.indexOf('T') > 0 && val.length === 16 ? val : fmt.dateTimeInput(val)) : '' })) %><% }
            else if (f.type === 'date') { %><%- include('../../../partials/field', Object.assign(common, { type: 'date', value: val ? fmt.dateInput(val) : '' })) %><% }
            else if (f.type === 'int' || f.type === 'number' || f.type === 'money') { %><%- include('../../../partials/field', Object.assign(common, { type: 'number', value: val })) %><% }
-           else if (f.type === 'url' || f.type === 'image') { %><%- include('../../../partials/field', Object.assign(common, { type: 'url', value: val, attrs: 'dir="ltr" placeholder="https://"' })) %><% if (f.type === 'image' && val) { %><img src="<%= val %>" alt="" style="max-height:80px;border-radius:8px;margin-top:-6px"><% } %><% }
+           else if (f.type === 'url' || f.type === 'image') { %><%- include('../../../partials/field', Object.assign(common, { type: 'url', value: val, attrs: 'dir="ltr" placeholder="https://"' })) %><% if (f.type === 'image') { var pid = 'f_' + n.replace(/[^a-zA-Z0-9_]/g, '_'); %><div class="cluster" style="margin-top:-6px"><% if (val) { %><img src="<%= val %>" alt="" data-media-preview="#<%= pid %>" style="max-height:80px;border-radius:8px"><% } %><button type="button" class="btn sm ghost" data-media-pick="#<%= pid %>"><%- icon('image') %><%= t('media.choose') %></button></div><% } %><% }
            else { %><%- include('../../../partials/field', Object.assign(common, { type: 'text', value: val })) %><% }
          });
        }); %>
@@ -44,3 +44,9 @@
 </section>
 <% } %>
 <% if (row.id && canManage) { %><form method="post" action="<%= base %>/<%= row.id %>/delete" data-confirm="<%= t('resources.delete_confirm') %>" class="mt6"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost sm" type="submit"><%- icon('trash-2') %><%= t('common.delete') %></button></form><% } %>
+
+<dialog class="dialog wide" id="media-picker" aria-labelledby="media-picker-title" data-empty="<%= t('media.empty') %>">
+  <div class="dialog-head"><h2 id="media-picker-title"><%= t('media.choose') %></h2><button type="button" class="btn ghost icon-only" data-dialog-close aria-label="<%= t('common.close') %>"><%- icon('x') %></button></div>
+  <div class="dialog-body stack"><input type="search" data-media-search placeholder="<%= t('common.search') %>" aria-label="<%= t('common.search') %>"><div class="media-grid" data-media-results></div>
+  <p class="small muted mb0"><a href="/staff/media" target="_blank" rel="noopener"><%= t('media.open_library') %></a></p></div>
+</dialog>

@@ -1,0 +1,19 @@
+<nav class="breadcrumbs"><a href="/staff/media"><%= t('nav.media') %></a><%- icon('chevron-right') %><span><%= m.original_name %></span></nav>
+<div class="page-head"><div><h1 class="truncate"><%= m.original_name || ('#' + m.id) %></h1><p class="lead"><%= m.width && m.height ? m.width + ' × ' + m.height + ' · ' : '' %><%= Math.round(m.size / 1024) %> KB · <%= m.mime %></p></div></div>
+<section class="card stack">
+  <img src="<%= m.url %>" alt="<%= L(m, 'alt') || '' %>" style="max-width:100%;max-height:420px;object-fit:contain;border-radius:var(--r);background:var(--surface-2)">
+  <div class="cluster"><code dir="ltr"><%= m.url %></code><button type="button" class="btn sm" data-copy="<%= m.url %>" data-copied="<%= t('common.copied') %>"><%- icon('copy') %><%= t('media.copy_url') %></button></div>
+  <% if (m.source_url) { %><p class="small muted mb0"><%= t('media.source') %>: <span dir="ltr" style="overflow-wrap:anywhere"><%= m.source_url %></span></p><% } %>
+</section>
+<form method="post" class="card stack mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <h2 class="mb0" style="font-size:1rem"><%= t('media.alt_title') %></h2>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'alt_en', label: t('media.alt_en'), value: m.alt_en, hint: t('media.alt_hint') }) %>
+    <%- include('../../../partials/field', { name: 'alt_ar', label: t('media.alt_ar'), value: m.alt_ar, attrs: 'dir="rtl" lang="ar"' }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<section class="card mt4"><div class="card-head"><h2><%= t('media.used_in') %> <span class="count"><%= used.length %></span></h2></div>
+  <% if (!used.length) { %><p class="muted mb0"><%= t('media.unused') %></p><% } else { %><ul class="mb0"><% used.forEach(function (u) { %><li><%= t('media.table.' + u.table) %><%= u.id ? ' #' + u.id : '' %></li><% }) %></ul><% } %>
+</section>
+<% if (!used.length) { %><form method="post" action="/staff/media/<%= m.id %>/delete" data-confirm="<%= t('media.delete_confirm') %>" class="mt6"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost sm" type="submit"><%- icon('trash-2') %><%= t('common.delete') %></button></form><% } %>

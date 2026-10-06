@@ -29,7 +29,7 @@ function errorHandler(err, req, res, next) {
 
   if (wantsJson(req)) return res.status(status).json({ ok: false, error: { code, message, ...(details ? { details } : {}) } });
   if (code === 'UNAUTHENTICATED') return res.redirect(req.originalUrl.startsWith('/staff') ? '/staff/login' : '/login');
-  const BACK = ['CSRF_TOKEN_INVALID', 'VALIDATION_FAILED', 'UPLOAD_TYPE', 'UPLOAD_MISSING', 'UPLOAD_FAILED', 'APPLICATION_EXISTS', 'SYSTEM_ROLE', 'ROLE_IN_USE', 'NOT_CONFIGURED', 'NOT_DRAFT', 'HAS_PAYMENTS', 'NOT_PAYABLE', 'NOT_RESCHEDULABLE', 'TICKET_CANCELLED'];
+  const BACK = ['CSRF_TOKEN_INVALID', 'VALIDATION_FAILED', 'UPLOAD_TYPE', 'UPLOAD_MISSING', 'UPLOAD_FAILED', 'APPLICATION_EXISTS', 'SYSTEM_ROLE', 'ROLE_IN_USE', 'NOT_CONFIGURED', 'NOT_DRAFT', 'HAS_PAYMENTS', 'NOT_PAYABLE', 'NOT_RESCHEDULABLE', 'TICKET_CANCELLED', 'MEDIA_IN_USE', 'PAYMENTS_NOT_CONNECTED'];
   if (BACK.includes(code) && req.session && req.method !== 'GET') {
     // A form error goes back to the form with the message (forms that render their own errors catch them first).
     req.session.flash = [...(req.session.flash || []), { type: 'error', message: code === 'VALIDATION_FAILED' && details ? `${message} ${Object.values(details).join(' · ')}` : message }];

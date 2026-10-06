@@ -161,11 +161,11 @@ router.post('/appointments/:id/reschedule', can('appointments.manage'), ah(async
 }));
 
 // ------------------------------------------------------------- Courses: registrations, sessions, attendance, certificates
-/** The course, if this staff member may manage it: instructors ("own" data scope) only their own courses. */
+/** The course, if this staff member may see its registrants (see admin.canSeeRegistrants). */
 async function courseFor(req, id) {
   const course = await knex('courses').where({ id }).first();
   if (!course) throw E.notFound();
-  if (req.staff.employee.dataScope === 'own' && course.instructor_id !== req.staff.employee.id) throw E.notFound();
+  if (!admin.canSeeRegistrants(req.staff, course, 'instructor_id')) throw E.notFound();
   return course;
 }
 
@@ -213,7 +213,7 @@ router.post('/courses/registrations/:rid', can('courses.manage'), ah(async (req,
 // ------------------------------------------------------------- Events: registrations and check-in
 router.get('/events/:id/registrations', can('events.manage'), ah(async (req, res) => {
   const ev = await knex('events').where({ id: idParam(req.params.id) }).first();
-  if (!ev) throw E.notFound();
+  if (!ev || !admin.canSeeRegistrants(req.staff, ev, 'organizer_id')) throw E.notFound();
   const regs = await knex('event_registrations').where({ event_id: ev.id }).orderBy('created_at');
   if (req.query.format === 'csv') {
     res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="event-${ev.slug}.csv"` });

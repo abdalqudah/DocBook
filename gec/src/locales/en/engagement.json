@@ -140,7 +140,9 @@
     "ticket_not_found": "Ticket not found.",
     "ticket_code": "Ticket code",
     "ticket_code_ph": "Scan the QR code or paste the ticket link",
-    "all_registrations": "All registrations"
+    "all_registrations": "All registrations",
+    "branch_hint": "Branch staff (e.g. the branch manager) can see the registrants. Leave empty for a company-wide course or event — then only the instructor / organiser and company-wide roles see them.",
+    "organizer_hint": "The organiser always sees and manages the registrants."
   },
   "courses": {
     "eyebrow": "Courses",

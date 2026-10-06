@@ -383,7 +383,8 @@
       "commission": "Commission",
       "contact": "Contact",
       "content": "Content",
-      "author": "Author"
+      "author": "Author",
+      "ownership": "Ownership"
     },
     "fields": {
       "name": "Name",
@@ -529,7 +530,9 @@
       "icon": "Icon",
       "label": "Label",
       "href": "Link",
-      "group": "Footer column"
+      "group": "Footer column",
+      "organizer_id": "Organiser",
+      "branch_id": "Branch"
     },
     "destinations": {
       "plural": "Destinations",

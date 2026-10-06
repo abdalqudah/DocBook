@@ -30,7 +30,7 @@ function createApp() {
         imgSrc: ["'self'", 'data:', 'https:'], // university / CMS images may live on an image CDN
         fontSrc: ["'self'"],
         connectSrc: ["'self'"],
-        formAction: ["'self'"],
+        formAction: ["'self'", 'https://checkout.stripe.com'], // "Pay by card" continues on Stripe's hosted checkout
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],

@@ -183,3 +183,31 @@ document.addEventListener('click', function (e) {
     box.appendChild(row); sync(row);
   });
 }());
+
+// Media picker: <button data-media-pick="#input"> opens the library and fills the image address.
+(function () {
+  var dlg = document.getElementById('media-picker');
+  if (!dlg) return;
+  var target = null; var timer;
+  var box = dlg.querySelector('[data-media-results]'); var search = dlg.querySelector('[data-media-search]');
+  function load() {
+    fetch('/staff/media/picker.json?q=' + encodeURIComponent(search.value || ''), { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); }).then(function (j) {
+        var rows = j.data || [];
+        box.innerHTML = rows.length ? rows.map(function (m) { return '<button type="button" class="media-tile" data-url="' + GEC.esc(m.url) + '"><img src="' + GEC.esc(m.url) + '" alt="' + GEC.esc(m.alt) + '" loading="lazy"><span class="small truncate">' + GEC.esc(m.name || '') + '</span></button>'; }).join('')
+          : '<p class="muted">' + GEC.esc(dlg.getAttribute('data-empty')) + '</p>';
+      }).catch(function () { box.innerHTML = ''; });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-media-pick]');
+    if (b) { target = document.querySelector(b.getAttribute('data-media-pick')); dlg.showModal(); load(); search.focus(); return; }
+    var tile = e.target.closest('#media-picker [data-url]');
+    if (tile && target) {
+      target.value = tile.getAttribute('data-url');
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      var prev = document.querySelector('[data-media-preview="#' + target.id + '"]'); if (prev) prev.src = target.value;
+      dlg.close(); target.focus();
+    }
+  });
+  search.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(load, 200); });
+}());

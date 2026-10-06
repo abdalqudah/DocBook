@@ -1,0 +1,23 @@
+<div class="page-head"><div><h1><%= t('nav.media') %></h1><p class="lead"><%= t('media.lead') %></p></div></div>
+<% if (external.length) { %>
+<section class="alert warn mb4"><%- icon('alert-triangle') %><div class="grow"><p class="mb2"><strong><%= t('media.external_title', { n: external.length }) %></strong> <%= t('media.external_text') %></p>
+  <form method="post" action="/staff/media/import" data-confirm="<%= t('media.import_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm" type="submit"><%- icon('download') %><%= t('media.import_btn') %></button></form></div></section>
+<% } %>
+<div class="grid-2 mb4" style="align-items:start">
+  <form method="post" action="/staff/media" enctype="multipart/form-data" class="card stack">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <h2 class="mb0" style="font-size:1rem"><%= t('media.upload') %></h2>
+    <%- include('../../../partials/field', { name: 'file', label: t('media.file'), type: 'file', required: true, attrs: 'accept="image/png,image/jpeg,image/webp,image/gif"', hint: t('media.file_hint') }) %>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'alt_en', label: t('media.alt_en'), hint: t('media.alt_hint') }) %>
+      <%- include('../../../partials/field', { name: 'alt_ar', label: t('media.alt_ar'), attrs: 'dir="rtl" lang="ar"' }) %>
+    </div>
+    <div class="form-actions"><button class="btn primary" type="submit"><%- icon('upload') %><%= t('media.upload') %></button></div>
+  </form>
+  <form method="get" class="card stack"><%- include('../../../partials/field', { name: 'q', label: t('common.search'), value: query.q || '' }) %><div class="form-actions"><button class="btn" type="submit"><%- icon('search') %><%= t('common.search') %></button></div></form>
+</div>
+<% if (!lib.rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('media.empty'), text: t('media.empty_text'), emptyIcon: 'image' }) %></div>
+<% } else { %>
+<div class="media-grid"><% lib.rows.forEach(function (m) { %><a class="media-tile" href="/staff/media/<%= m.id %>"><img src="<%= m.url %>" alt="<%= L(m, 'alt') || '' %>" loading="lazy"><span class="small truncate"><%= m.original_name %></span><% if (!m.alt_en) { %><span class="chip warn"><%= t('media.no_alt') %></span><% } %></a><% }) %></div>
+<%- include('../../../partials/pager', { meta: meta }) %>
+<% } %>

@@ -22,6 +22,11 @@ const inv = require('./invoices.service');
 const { docHelpers } = require('./doc');
 const partners = require('./partners');
 require('./handlers');
+require('./hooks');
+const online = require('./online');
+const secrets = require('../../core/secrets');
+const { bool } = require('../../core/validate');
+require('../settings/web').addSection({ key: 'payments', icon: 'credit-card', href: '/staff/settings/payments', perms: ['integrations.manage'] }, { after: 'whatsapp' });
 
 nav.add('finance', { key: 'finance', href: '/staff/finance', icon: 'wallet', perms: ['finance.view'], exact: true });
 nav.add('finance', { key: 'invoices', href: '/staff/invoices', icon: 'receipt', perms: ['finance.view'] });
@@ -207,5 +212,21 @@ router.post('/applications/:id/commission', can('partners.manage'), ah(async (re
 }));
 
 router.use('/partners', partners.partners.router);
+
+// ------------------------------------------------------------------ Settings → Payments (Stripe)
+router.get('/settings/payments', can('integrations.manage'), ah(async (req, res) => {
+  const s = (await settings.get('integration.stripe')) || {};
+  res.page('pages/staff/settings/payments', { layout: 'staff', narrow: true, title: req.t('settings.payments'), s, connected: !!(await online.currentConfig()), hasKey: !!s.secret_key_enc, hasHook: !!s.webhook_secret_enc, hook: `${config.appUrl}/hooks/stripe` });
+}));
+router.post('/settings/payments', can('integrations.manage'), ah(async (req, res) => {
+  const d = validate(z.object({ enabled: bool(), secret_key: z.preprocess((v) => (v === '' ? undefined : v), z.string().trim().regex(/^(sk|rk)_(test|live)_[A-Za-z0-9]{10,}$/, 'Paste the secret key (sk_live_… or sk_test_…).').optional()), webhook_secret: z.preprocess((v) => (v === '' ? undefined : v), z.string().trim().regex(/^whsec_[A-Za-z0-9+/=]{10,}$/, 'Paste the signing secret (whsec_…).').optional()) }), req.body);
+  const cur = (await settings.get('integration.stripe')) || {};
+  if (d.enabled && !(d.secret_key || cur.secret_key_enc)) throw E.validation({ secret_key: 'A secret key is required to connect.' });
+  if (d.enabled && !(d.webhook_secret || cur.webhook_secret_enc)) throw E.validation({ webhook_secret: 'The webhook signing secret is required, otherwise payments cannot be confirmed.' });
+  if (d.secret_key) await online.test(d.secret_key).catch((e) => { throw E.validation({ secret_key: `Stripe refused this key: ${e.message}` }); });
+  await settings.set(req.ctx, 'integration.stripe', { enabled: d.enabled, secret_key_enc: d.secret_key ? secrets.encrypt(d.secret_key) : cur.secret_key_enc || null, webhook_secret_enc: d.webhook_secret ? secrets.encrypt(d.webhook_secret) : cur.webhook_secret_enc || null, mode: d.secret_key ? (/_live_/.test(d.secret_key) ? 'live' : 'test') : cur.mode || null });
+  flash(req, 'ok', req.t('common.saved'));
+  res.redirect('/staff/settings/payments');
+}));
 
 module.exports = router;

@@ -79,7 +79,22 @@ with an explanation.
 | SMS (Twilio) | Settings → SMS | Delivery status via `/hooks/sms/twilio/status`, replies via `/hooks/sms/twilio`. |
 | WhatsApp (Meta Cloud API) | Settings → WhatsApp | Webhook `/hooks/whatsapp` (verify token + app-secret signature). Without it, staff can still open a `wa.me` link, logged as a manual message. |
 | AI advisor (Anthropic) | Settings → AI | Uses the official SDK; answers only from the platform's own catalogue through read-only tools. Without a key the advisor runs as a database search and says so. |
-| Google / Microsoft sign-in, calendar sync, payment gateway | — | Adapters prepared, not enabled. |
+| Card payments (Stripe Checkout) | Settings → Online payments | Secret key + webhook signing secret; webhook `/hooks/stripe`. Invoices then show "Pay by card"; payments are recorded only from Stripe's signed webhook, once per checkout. Card details never reach this server. |
+| Google / Microsoft sign-in, calendar sync | — | Adapters prepared, not enabled. |
+
+## Website images
+
+Images are managed in **Website → Media library** (uploaded once, checked by content, with English/Arabic
+descriptions; every image field in the workspace has "Choose from library"). The demo content still points at the
+original site's stock photos on another host. On a server with internet access, copy them into the library once —
+from the library page ("Copy into the library") or with:
+
+```bash
+npm run images:import
+```
+
+Each address is downloaded once, the content is repointed to the copy, and anything that fails (not reachable, not an
+image, over 8 MB) is listed and left unchanged. Check you have the right to use each image.
 
 ## Background jobs
 

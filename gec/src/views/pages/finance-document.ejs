@@ -1,6 +1,11 @@
 <section class="section">
   <div class="container" style="max-width:860px">
     <div class="cluster mb4 no-print" style="justify-content:flex-end"><button class="btn" type="button" data-print><%- icon('printer') %><%= t('finance.print_pdf') %></button></div>
+    <% var payOnline = typeof canPayOnline !== 'undefined' && canPayOnline; var q = typeof query !== 'undefined' ? query : {}; %>
+    <% if (q.paid === '1') { %><div class="alert ok mb4 no-print" role="status"><%- icon('check-circle-2') %><p><%= t('finance.online_thanks') %></p></div><% } %>
+    <% if (q.cancelled === '1') { %><div class="alert info mb4 no-print"><%- icon('info') %><p><%= t('finance.online_cancelled') %></p></div><% } %>
+    <% if (payOnline && q.paid !== '1') { %><div class="card mb4 no-print spread" style="flex-wrap:wrap;gap:12px"><div><strong><%= t('finance.balance_due') %>: <%= dmoney(balance) %></strong><div class="small muted"><%= t('finance.online_note') %></div></div>
+      <form method="post" action="/invoices/<%= i.public_token %>/pay"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn primary" type="submit"><%- icon('credit-card') %><%= t('finance.pay_card') %></button></form></div><% } %>
     <%- include('../partials/invoice-doc') %>
     <% if (['issued','partially_paid'].indexOf(i.status) >= 0) { %><div class="card flat mt4 no-print"><p class="mb0"><%= t('finance.how_to_pay') %> <a href="/contact"><%= t('site.nav.contact') %></a></p></div><% } %>
   </div>

@@ -1,0 +1,12 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.payments') %></h1><p class="lead"><%= t('settings.payments_desc') %></p></div><span class="chip <%= connected ? 'ok' : 'warn' %>"><%- icon(connected ? 'check' : 'plug-zap') %><%= connected ? t('comms.connected') : t('comms.not_connected') %><%= connected && s.mode === 'test' ? ' · ' + t('payments.test_mode') : '' %></span></div>
+<div class="alert info mb4"><%- icon('info') %><p><%= t('payments.how') %></p></div>
+<form method="post" class="card stack" autocomplete="off">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'enabled', label: t('payments.enable'), type: 'checkbox', value: s.enabled }) %>
+  <%- include('../../../partials/field', { name: 'secret_key', label: t('payments.secret_key'), type: 'password', placeholder: hasKey ? t('integrations.saved_secret') : 'sk_live_…', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('payments.secret_key_hint') }) %>
+  <%- include('../../../partials/field', { name: 'webhook_secret', label: t('payments.webhook_secret'), type: 'password', placeholder: hasHook ? t('integrations.saved_secret') : 'whsec_…', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('payments.webhook_secret_hint') }) %>
+  <div class="card flat small"><strong><%= t('integrations.webhooks') %></strong><p class="mb2"><%= t('payments.webhook_help') %></p><div><%= t('integrations.callback_url') %>: <code dir="ltr"><%= hook %></code></div><div><%= t('payments.events') %>: <code dir="ltr">checkout.session.completed, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed, checkout.session.expired</code></div></div>
+  <p class="small subtle mb0"><%- icon('lock', 'sm') %> <%= t('integrations.encrypted') %> <%= t('payments.no_cards') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

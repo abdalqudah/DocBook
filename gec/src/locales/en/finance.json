@@ -269,6 +269,24 @@
       "payments": "Payments received",
       "void_note": "This invoice was cancelled and is not payable.",
       "footer": "Thank you for choosing Global Education Consultants."
-    }
+    },
+    "online_thanks": "Thank you — your payment is being confirmed by the card processor. The invoice updates automatically within a minute; a receipt is e-mailed when it does.",
+    "online_cancelled": "The card payment was cancelled. Nothing was charged.",
+    "online_note": "You will pay on Stripe’s secure page. GEC never sees your card details.",
+    "pay_card": "Pay by card",
+    "balance_due": "Balance due",
+    "online_review": "An online payment of {amount} {currency} needs review (the invoice was already settled)."
+  },
+  "payments": {
+    "test_mode": "test mode",
+    "how": "Create a Stripe account, paste the secret key and the webhook signing secret below, then add the webhook address in Stripe → Developers → Webhooks. Invoices then show a “Pay by card” button; the payment is recorded automatically when Stripe confirms it.",
+    "enable": "Accept card payments on invoices",
+    "secret_key": "Secret key",
+    "secret_key_hint": "Stripe → Developers → API keys. A restricted key needs write access to Checkout Sessions. Checked with Stripe when saved.",
+    "webhook_secret": "Webhook signing secret",
+    "webhook_secret_hint": "Shown in Stripe after you add the webhook endpoint (starts with whsec_).",
+    "webhook_help": "Add this endpoint in Stripe and select the events below.",
+    "events": "Events",
+    "no_cards": "Card details are entered on Stripe’s page and never reach this server."
   }
 }

@@ -383,7 +383,8 @@
       "commission": "العمولة",
       "contact": "جهة الاتصال",
       "content": "المحتوى",
-      "author": "الكاتب"
+      "author": "الكاتب",
+      "ownership": "المسؤولية"
     },
     "fields": {
       "name": "الاسم",
@@ -529,7 +530,9 @@
       "icon": "الأيقونة",
       "label": "النص",
       "href": "الرابط",
-      "group": "عمود التذييل"
+      "group": "عمود التذييل",
+      "organizer_id": "المنظِّم",
+      "branch_id": "الفرع"
     },
     "destinations": {
       "plural": "الوجهات",

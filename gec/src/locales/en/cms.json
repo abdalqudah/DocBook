@@ -49,5 +49,42 @@
       "header": "Header",
       "footer": "Footer"
     }
+  },
+  "media": {
+    "lead": "Images for the website, uploaded once and used anywhere. Every image is checked by content and served from this site.",
+    "upload": "Upload image",
+    "file": "Image",
+    "file_hint": "PNG, JPG, WebP or GIF, up to 8 MB.",
+    "alt_en": "Description (English)",
+    "alt_ar": "Description (Arabic)",
+    "alt_hint": "What the image shows, for people using screen readers. Leave empty only for decorative images.",
+    "alt_title": "Image description",
+    "no_alt": "No description",
+    "empty": "No images yet",
+    "empty_text": "Upload an image to use it on pages, articles, universities and events.",
+    "uploaded": "Image uploaded.",
+    "copy_url": "Copy address",
+    "source": "Imported from",
+    "used_in": "Used in",
+    "unused": "Not used anywhere — it can be deleted.",
+    "delete_confirm": "Delete this image permanently?",
+    "choose": "Choose from library",
+    "open_library": "Open the media library in a new tab to upload images",
+    "external_title": "{n} images are still loaded from other websites.",
+    "external_text": "Copy them into the library so the site no longer depends on those sites and visitors' browsers don't contact them. Check that you have the right to use each image.",
+    "import_btn": "Copy into the library",
+    "import_confirm": "Download these images and use the copies on the site?",
+    "import_result": "{imported} images copied, {rows} records updated, {failed} failed.",
+    "table": {
+      "destinations": "Destination",
+      "universities": "University",
+      "events": "Event",
+      "courses": "Course",
+      "articles": "Article",
+      "pages": "Page",
+      "services": "Service",
+      "testimonials": "Testimonial",
+      "settings": "Branding"
+    }
   }
 }
