@@ -90,8 +90,10 @@ async function locals(req, res, next) {
       activityText: (a) => activityText(a, t, locale),
       fullName: (p) => [p && p.first_name, p && p.last_name].filter(Boolean).join(' ') || '—',
       // Photo with an illustrated cover underneath (shows when there is no photo or it cannot load).
-      cover: (img, key) => { const safe = (u) => String(u || '').replace(/["'()\\\s]/g, encodeURIComponent); const art = `url('/img/covers/${COVER_KEYS.includes(key) ? key : 'campus'}.svg')`; return `background-image:${img && /^(https?:\/\/|\/)/.test(img) ? `url('${safe(img)}'),` : ''}${art}`; },
+      cover: (img, key) => { const safe = (u) => String(u || '').replace(/["'()\\\s]/g, encodeURIComponent); const art = `url('${/^\/(art|img)\/[a-z0-9/._-]+\.svg$/.test(String(key)) ? key : `/img/covers/${COVER_KEYS.includes(key) ? key : 'campus'}.svg`}')`; return `background-image:${img && /^(https?:\/\/|\/)/.test(img) ? `url('${safe(img)}'),` : ''}${art}`; },
       coverKey,
+      // Country flag as an image (emoji flags do not show on Windows). Decorative unless a label is given.
+      flagImg: (code, label = '') => (code && /^[A-Za-z]{2}$/.test(code) ? `<img class="flag" src="/flags/${String(code).toLowerCase()}.svg" width="20" height="15" alt="${label ? String(label).replace(/[&<>"]/g, '') : ''}"${label ? '' : ' aria-hidden="true"'} loading="lazy">` : ''),
       ref: {
         country: (c) => ref.countryName(c, locale),
         flag: ref.flag,

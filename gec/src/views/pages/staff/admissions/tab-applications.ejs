@@ -15,7 +15,7 @@
 <% } %>
 <% if (visaCases.length || can('visa.manage')) { %>
 <h2 class="mt8" style="font-size:1.1rem"><%= t('nav.visa') %></h2>
-<% if (visaCases.length) { %><div class="grid" style="--min:280px"><% visaCases.forEach(function (v) { %><a class="card" href="/staff/visa/<%= v.id %>"><div class="spread"><span class="chip <%= v.stage === 'approved' ? 'ok' : v.stage === 'refused' ? 'bad' : 'brand' %>"><%= t('visa.stage_' + v.stage) %></span><span class="small subtle"><%= v.ref %></span></div><h3 class="mt2 mb0" style="font-size:1rem"><%= ref.flag(v.country_code) %> <%= ref.country(v.country_code) %></h3><p class="small muted mb0"><%= v.visa_type || '' %></p></a><% }) %></div><% } %>
+<% if (visaCases.length) { %><div class="grid" style="--min:280px"><% visaCases.forEach(function (v) { %><a class="card" href="/staff/visa/<%= v.id %>"><div class="spread"><span class="chip <%= v.stage === 'approved' ? 'ok' : v.stage === 'refused' ? 'bad' : 'brand' %>"><%= t('visa.stage_' + v.stage) %></span><span class="small subtle"><%= v.ref %></span></div><h3 class="mt2 mb0" style="font-size:1rem"><%- flagImg(v.country_code) %> <%= ref.country(v.country_code) %></h3><p class="small muted mb0"><%= v.visa_type || '' %></p></a><% }) %></div><% } %>
 <% if (can('visa.manage')) { %>
 <form method="post" action="/staff/students/<%= s.id %>/visa" class="card cluster mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <select name="country_code" required aria-label="<%= t('common.country') %>" style="width:auto"><% ref.countries().forEach(function (c) { %><option value="<%= c.value %>"><%= c.label %></option><% }) %></select>

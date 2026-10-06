@@ -77,7 +77,7 @@
         <dt><%= t('common.email') %></dt><dd><% if (lead.email) { %><a href="mailto:<%= lead.email %>"><%= lead.email %></a><% } else { %>—<% } %></dd>
         <dt><%= t('common.phone') %></dt><dd dir="ltr" style="text-align:start"><%= lead.phone || '—' %></dd>
         <% if (lead.whatsapp) { %><dt>WhatsApp</dt><dd dir="ltr" style="text-align:start"><%= lead.whatsapp %></dd><% } %>
-        <dt><%= t('people.residence') %></dt><dd><%= lead.residence_country ? ref.flag(lead.residence_country) + ' ' + ref.country(lead.residence_country) : '—' %><%= lead.city ? ', ' + lead.city : '' %></dd>
+        <dt><%= t('people.residence') %></dt><dd><%- lead.residence_country ? flagImg(lead.residence_country) + ' ' : '' %><%= lead.residence_country ? ref.country(lead.residence_country) : '—' %><%= lead.city ? ', ' + lead.city : '' %></dd>
         <dt><%= t('people.nationality') %></dt><dd><%= lead.nationality ? ref.country(lead.nationality) : '—' %></dd>
         <dt><%= t('leads.consent') %></dt><dd><%= lead.consent_marketing ? t('leads.consent_marketing_yes') : t('leads.consent_marketing_no') %><%= lead.unsubscribed_at ? ' · ' + t('leads.unsubscribed') : '' %></dd>
       </dl>

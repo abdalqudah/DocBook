@@ -8,7 +8,7 @@
   <thead><tr><th><%= t('nav.students') %></th><th><%= t('common.country') %></th><th><%= t('leads.stage') %></th><th><%= t('visa.next_date') %></th><th><%= t('visa.officer') %></th></tr></thead>
   <tbody><% rows.forEach(function (v) { var next = v.interview_at || v.biometrics_at; %><tr>
     <td class="primary"><a class="row-link" href="/staff/visa/<%= v.id %>"><%= fullName(v) %></a><div class="small subtle"><%= v.ref %><%= v.application_ref ? ' · ' + v.application_ref : '' %></div></td>
-    <td data-label="<%= t('common.country') %>"><%= ref.flag(v.country_code) %> <%= ref.country(v.country_code) %><div class="small subtle"><%= v.visa_type || '' %></div></td>
+    <td data-label="<%= t('common.country') %>"><%- flagImg(v.country_code) %> <%= ref.country(v.country_code) %><div class="small subtle"><%= v.visa_type || '' %></div></td>
     <td data-label="<%= t('leads.stage') %>"><span class="chip <%= v.stage === 'approved' ? 'ok' : v.stage === 'refused' ? 'bad' : 'brand' %>"><%= t('visa.stage_' + v.stage) %></span></td>
     <td data-label="<%= t('visa.next_date') %>" class="small"><%= next ? fmt.dateTime(next) : (v.travel_date ? t('visa.travel') + ': ' + fmt.date(v.travel_date) : '—') %></td>
     <td data-label="<%= t('visa.officer') %>"><%= v.officer_name || '—' %></td>

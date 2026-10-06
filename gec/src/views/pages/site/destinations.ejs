@@ -5,7 +5,7 @@
       <% dests.forEach(function (d, i) { %>
       <a class="dest-tile <%= i === 0 ? 'big' : '' %>" href="/study/<%= d.slug %>">
         <span class="tile-bg" style="<%= cover(d.hero_image, coverKey(d.slug)) %>"></span><span class="tile-shade"></span>
-        <span class="tile-body"><span class="tile-flag" aria-hidden="true"><%= ref.flag(d.country_code) %></span><span class="tile-title"><%= L(d, 'name') %></span><span class="tile-text"><%= L(d, 'tagline') %></span><span class="tile-go"><%= t('home.explore') %><%- icon('arrow-right', 'flip-rtl') %></span></span>
+        <span class="tile-body"><span class="tile-flag" aria-hidden="true"><%- flagImg(d.country_code) %></span><span class="tile-title"><%= L(d, 'name') %></span><span class="tile-text"><%= L(d, 'tagline') %></span><span class="tile-go"><%= t('home.explore') %><%- icon('arrow-right', 'flip-rtl') %></span></span>
       </a>
       <% }) %>
     </div>

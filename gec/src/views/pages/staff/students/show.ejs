@@ -7,7 +7,7 @@
       <h1><%= fullName(s) %> <% if (s.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1>
       <div class="cluster mt2 small muted">
         <span><%= s.ref %></span>
-        <% if (s.nationality) { %><span><%= ref.flag(s.nationality) %> <%= ref.country(s.nationality) %></span><% } %>
+        <% if (s.nationality) { %><span><%- flagImg(s.nationality) %> <%= ref.country(s.nationality) %></span><% } %>
         <span><%= counsellor ? t('students.counsellor_is', { name: counsellor.name }) : t('common.unassigned') %></span>
         <% if (s.user_id) { %><span class="chip ok"><%- icon('user-check') %><%= t('students.has_portal') %></span><% } %>
         <% if (s.status !== 'active') { %><span class="chip"><%= t('students.status_' + s.status) %></span><% } %>

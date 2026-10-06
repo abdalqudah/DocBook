@@ -1,7 +1,7 @@
 <% var editable = can('visa.manage'); var idx = stagesList.indexOf(v.stage); var main = ['preparing','documents_pending','ready','submitted','biometrics','interview','processing', v.stage === 'refused' ? 'refused' : 'approved']; var mIdx = main.indexOf(v.stage); %>
 <nav class="breadcrumbs"><a href="/staff/visa"><%= t('nav.visa') %></a><%- icon('chevron-right') %><span><%= v.ref %></span></nav>
 <div class="page-head"><div>
-  <h1><%= ref.flag(v.country_code) %> <%= ref.country(v.country_code) %> — <%= v.visa_type || t('visa.case') %></h1>
+  <h1><%- flagImg(v.country_code) %> <%= ref.country(v.country_code) %> — <%= v.visa_type || t('visa.case') %></h1>
   <p class="lead"><a href="/staff/students/<%= v.student_id %>?tab=applications"><%= fullName(v) %></a><%= v.application_ref ? ' · ' : '' %><% if (v.application_ref) { %><a href="/staff/applications/<%= v.application_id %>"><%= v.application_ref %></a> — <%= v.program_name %><% } %></p>
 </div><span class="chip <%= v.stage === 'approved' ? 'ok' : v.stage === 'refused' ? 'bad' : 'brand' %>"><%= t('visa.stage_' + v.stage) %></span></div>
 <div class="alert warn mb4"><%- icon('info') %><p><%= t('visa.not_legal_advice') %></p></div>

@@ -470,3 +470,6 @@ fieldset.card > legend + * { clear: both; }
 .advisor-log { display: flex; flex-direction: column; gap: 14px; }
 .advisor-log .q { align-self: flex-end; background: var(--brand-soft); padding: 10px 14px; border-radius: 16px; max-width: 80%; }
 .advisor-log .a { align-self: stretch; }
+/* Country flags (/flags/<code>.svg) */
+img.flag { display: inline-block; width: 1.25em; height: auto; aspect-ratio: 4 / 3; vertical-align: -0.15em; border-radius: 2px; box-shadow: 0 0 0 1px rgb(0 0 0 / .08); object-fit: cover; }
+.tile-flag img.flag, .dest-flag img.flag { width: 36px; border-radius: 4px; box-shadow: 0 2px 8px rgb(0 0 0 / .3); }

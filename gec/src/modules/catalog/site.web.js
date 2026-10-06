@@ -50,6 +50,19 @@ async function destinationsList() {
   return knex('destinations').where({ is_active: true }).orderBy('position');
 }
 
+// ------------------------------------------------------------------ Generated university art (until a photo / logo is uploaded)
+const art = require('./art');
+async function artFor(req, res, kind) {
+  const slug = String(req.params.slug || '');
+  if (!/^[a-z0-9-]{1,140}$/.test(slug)) return res.status(404).end();
+  const u = await knex('universities').where({ slug }).first('slug', 'name_en', 'country_code');
+  if (!u) return res.status(404).end();
+  res.set({ 'Content-Type': 'image/svg+xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
+  return res.send(kind === 'cover' ? art.campusCover(u.slug, u.country_code) : art.crest(u.slug, u.name_en, u.country_code));
+}
+router.get('/art/uni/:slug.svg', ah((req, res) => artFor(req, res, 'cover')));
+router.get('/art/crest/:slug.svg', ah((req, res) => artFor(req, res, 'crest')));
+
 // ------------------------------------------------------------------ Home
 router.get('/', ah(async (req, res) => {
   const [dests, featured, scholarships, counts] = await Promise.all([

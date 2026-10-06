@@ -1,7 +1,7 @@
 {
   "name": "gec-platform",
   "version": "0.1.0",
-  "description": "GEC \u2014 Global Education Consultants: study-abroad platform, student portal, admissions ATS and CRM",
+  "description": "GEC — Global Education Consultants: study-abroad platform, student portal, admissions ATS and CRM",
   "main": "app.js",
   "private": true,
   "license": "UNLICENSED",
@@ -40,6 +40,7 @@
     "@fontsource/ibm-plex-sans-arabic": "^5.3.0",
     "@fontsource/plus-jakarta-sans": "^5.3.0",
     "@fontsource/source-serif-4": "^5.3.0",
+    "flag-icons": "^7.5.0",
     "lucide-static": "^1.52.0",
     "supertest": "^7.3.1"
   }

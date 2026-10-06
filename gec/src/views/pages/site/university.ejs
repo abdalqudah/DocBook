@@ -1,11 +1,11 @@
 <% var name = L(u, 'name'); var intakes = (u.intakes || []).map(function (m) { return ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0]; }); %>
 <section class="detail-hero">
-  <span class="cover-bg" style="<%= cover(u.cover_image, coverKey(u.country_code)) %>"></span>
+  <span class="cover-bg" style="<%= cover(u.cover_image, '/art/uni/' + u.slug + '.svg') %>"></span>
   <div class="container">
     <nav class="breadcrumbs" style="color:rgb(255 255 255 / .8)"><a href="/universities" style="color:#fff"><%= t('unis.title') %></a><%- icon('chevron-right') %><span><%= name %></span></nav>
     <div class="cluster"><% if (u.institution_type) { %><span class="chip"><%= t('catalog.type.' + u.institution_type) %></span><% } %><% if (u.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></div>
-    <h1><%= name %></h1>
-    <p><%= ref.flag(u.country_code) %> <%= [L(u, 'city'), u.state, L(u, 'destination')].filter(Boolean).join(', ') %></p>
+    <div class="row" style="gap:14px"><span class="uni-crest" style="background-image:url('/art/crest/<%= u.slug %>.svg')"><% if (u.logo) { %><span class="logo-layer" style="background-image:url('<%= String(u.logo).replace(/["'()\\s]/g, encodeURIComponent) %>')"></span><% } %></span><h1><%= name %></h1></div>
+    <p><%- flagImg(u.country_code) %> <%= [L(u, 'city'), u.state, L(u, 'destination')].filter(Boolean).join(', ') %></p>
   </div>
 </section>
 <section class="section tight">

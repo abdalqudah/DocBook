@@ -13,7 +13,7 @@ const limits = require('../../middleware/limits');
 const COOKIE = 'gec_vid';
 const UTM = ['source', 'medium', 'campaign', 'term', 'content'];
 const BOT = /bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit|whatsapp|curl|wget|python|axios|node-fetch/i;
-const SKIP = /^\/(staff|api|hooks|t|media|icons|css|js|fonts|brand|theme\.css|healthz|favicon)/;
+const SKIP = /^\/(staff|api|hooks|t|media|icons|css|js|fonts|brand|img|art|flags|theme\.css|healthz|favicon)/;
 const BEACON_NAMES = new Set(['consent_granted', 'book_click', 'whatsapp_click', 'phone_click', 'email_click', 'compare_open', 'share', 'print', 'outbound', 'video_play', 'cta_click']);
 
 const consented = (req) => req.cookies && req.cookies.gec_consent === 'all' && req.get('sec-gpc') !== '1' && req.get('dnt') !== '1';

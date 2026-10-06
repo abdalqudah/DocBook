@@ -7,7 +7,7 @@
         <span class="pcard-logo" style="width:56px;height:56px"><% if (p.logo) { %><img src="<%= p.logo %>" alt="" width="56" height="56"><% } else { %><%= L(p, 'university').charAt(0) %><% } %></span>
         <div style="min-width:0">
           <h1 style="margin:0"><%= name %> <% if (p.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1>
-          <p class="muted mb0"><a href="/universities/<%= p.university_slug %>"><%= L(p, 'university') %></a> · <%= ref.flag(p.country_code) %> <%= L(p, 'city') %>, <a href="/study/<%= p.destination_slug %>"><%= L(p, 'destination') %></a></p>
+          <p class="muted mb0"><a href="/universities/<%= p.university_slug %>"><%= L(p, 'university') %></a> · <%- flagImg(p.country_code) %> <%= L(p, 'city') %>, <a href="/study/<%= p.destination_slug %>"><%= L(p, 'destination') %></a></p>
         </div>
       </div>
       <div class="cluster"><%- include('../../partials/compare-toggle', { id: p.id }) %><%- include('../../partials/save-toggle', { type: 'program', id: p.id }) %></div>
