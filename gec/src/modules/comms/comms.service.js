@@ -32,12 +32,12 @@ async function record({ channel, direction = 'out', status, leadId, studentId, t
  * Sends a message. channel: email | sms | whatsapp. For e-mail, `html` is optional (the branded layout is applied
  * to `body` otherwise). Returns { sent, reason?, id }.
  */
-async function send({ channel = 'email', to, subject = null, body, html = null, attachments = null, replyTo = null, leadId = null, studentId = null, templateKey = null, automated = false, actorId = null, locale = 'en' }) {
+async function send({ channel = 'email', to, subject = null, body, html = null, attachments = null, replyTo = null, headers = null, leadId = null, studentId = null, templateKey = null, automated = false, actorId = null, locale = 'en' }) {
   if (!PROVIDERS[channel]) throw new Error(`Unknown channel ${channel}`);
   let r;
   if (channel === 'email') {
     const htmlBody = html || await email.layout({ locale, title: subject, body });
-    r = await email.send({ to, subject, html: htmlBody, text: body, attachments, replyTo });
+    r = await email.send({ to, subject, html: htmlBody, text: body, attachments, replyTo, headers });
   } else {
     r = await PROVIDERS[channel].send({ to, body });
   }

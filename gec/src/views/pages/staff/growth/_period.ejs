@@ -1,0 +1,5 @@
+<form method="get" class="cluster">
+  <div class="seg"><% [7, 30, 90, 365].forEach(function (d) { %><a href="?days=<%= d %>" <%- p.days === d ? 'class="on"' : '' %>><%= t('analytics.days', { n: d }) %></a><% }) %></div>
+  <input type="date" name="from" value="<%= p.from %>" aria-label="<%= t('finance.from') %>" style="width:auto"><input type="date" name="to" value="<%= p.to %>" aria-label="<%= t('finance.to') %>" style="width:auto">
+  <button class="btn" type="submit"><%= t('common.apply') %></button>
+</form>

@@ -209,7 +209,9 @@
     "invoice_issued": "Invoice {number} issued",
     "payment_received": "Payment received: {amount_text}",
     "payment_refunded": "Payment refunded: {amount_text}",
-    "from_phone": "sent from phone"
+    "from_phone": "sent from phone",
+    "unsubscribed": "Unsubscribed from marketing",
+    "automation_note": "Note from automation “{rule}”"
   },
   "leads": {
     "new": "New lead",

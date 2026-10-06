@@ -1,0 +1,19 @@
+<%# Score explanation, manual temperature and website activity (consenting visitors only) for a lead. %>
+<% var si = scoreInfo; var webName = function (e) { return e.program || e.university || e.path || ''; }; %>
+<section class="card">
+  <div class="card-head"><h2><%= t('scoring.why') %></h2><span class="chip <%= lead.temperature %>"><%= t('leads.temp_' + lead.temperature) %> · <%= lead.score %></span></div>
+  <% if (!si.reasons.length) { %><p class="small muted mb0"><%= t('scoring.no_reasons') %></p><% } else { %>
+  <ul class="reasons small"><% si.reasons.forEach(function (r) { %><li class="<%= r.points < 0 ? 'bad' : 'ok' %>"><span class="num"><%= r.points > 0 ? '+' : '' %><%= r.points %></span> <%= t('scoring.rule.' + r.key) %></li><% }) %></ul><% } %>
+  <% if (can('leads.manage')) { %>
+  <form method="post" action="/staff/leads/<%= lead.id %>/temperature" class="cluster mt2"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label class="small subtle" for="temp-set"><%= t('scoring.set_temperature') %></label>
+    <select id="temp-set" name="temperature" data-autosubmit style="width:auto;min-height:32px"><option value="auto" <%= si.manual ? '' : 'selected' %>><%= t('scoring.automatic') %></option><% ['cold','warm','hot'].forEach(function (x) { %><option value="<%= x %>" <%= si.manual && lead.temperature === x ? 'selected' : '' %>><%= t('leads.temp_' + x) %></option><% }) %></select>
+  </form><% } %>
+</section>
+<section class="card">
+  <div class="card-head"><h2><%= t('scoring.web_activity') %></h2></div>
+  <% if (!si.visits) { %><p class="small muted mb0"><%= t('scoring.no_web') %></p><% } else { %>
+  <p class="small muted"><%= t('scoring.visits_summary', { pages: Number(si.visits.pageviews || 0), first: fmt.date(si.visits.first_seen), last: fmt.relative(si.visits.last_seen) }) %></p>
+  <div class="divider-list small"><% si.web.slice(0, 15).forEach(function (e) { %><div class="list-item"><span class="subtle nowrap"><%= fmt.relative(e.created_at) %></span><div class="li-body truncate"><%= t('scoring.ev.' + e.name) !== 'scoring.ev.' + e.name ? t('scoring.ev.' + e.name) : e.name %> <span class="subtle" dir="auto"><%= webName(e) %></span></div></div><% }) %></div>
+  <% } %>
+</section>

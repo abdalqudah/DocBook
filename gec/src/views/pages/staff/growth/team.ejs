@@ -1,0 +1,15 @@
+<div class="page-head"><div><h1><%= t('nav.performance') %></h1><p class="lead"><%= t('analytics.team_lead', { h: team.hours }) %></p></div><%- include('_period') %></div>
+<% if (!team.rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('analytics.no_data'), emptyIcon: 'trophy', compact: true }) %></div><% } else { %>
+<div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.assigned_to') %></th><th class="text-end"><%= t('analytics.leads') %></th><th class="text-end"><%= t('analytics.contacted') %></th><th class="text-end"><%= t('analytics.in_time') %></th><th class="text-end"><%= t('analytics.avg_response') %></th><th class="text-end"><%= t('analytics.students') %></th><th class="text-end"><%= t('analytics.applications') %></th><th class="text-end"><%= t('analytics.enrolled') %></th></tr></thead><tbody>
+<% team.rows.forEach(function (r) { %><tr>
+  <td class="primary"><strong><%= r.name || t('common.unassigned') %></strong></td>
+  <td data-label="<%= t('analytics.leads') %>" class="text-end num"><%= r.leads %></td>
+  <td data-label="<%= t('analytics.contacted') %>" class="text-end num"><%= r.contacted %></td>
+  <td data-label="<%= t('analytics.in_time') %>" class="text-end num"><%= r.leads ? fmt.pct(r.in_time / r.leads, 0) : '—' %></td>
+  <td data-label="<%= t('analytics.avg_response') %>" class="text-end num"><%= r.response_min === null ? '—' : (r.response_min < 120 ? t('analytics.minutes', { n: r.response_min }) : t('analytics.hours', { n: Math.round(r.response_min / 60) })) %></td>
+  <td data-label="<%= t('analytics.students') %>" class="text-end num"><%= r.students %><span class="small subtle"> (<%= r.leads ? fmt.pct(r.students / r.leads, 0) : '—' %>)</span></td>
+  <td data-label="<%= t('analytics.applications') %>" class="text-end num"><%= r.applications %></td>
+  <td data-label="<%= t('analytics.enrolled') %>" class="text-end num"><%= r.enrolled %></td>
+</tr><% }) %>
+</tbody></table></div>
+<% } %>

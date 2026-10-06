@@ -1,0 +1,62 @@
+<% var draft = c.status === 'draft'; var has = function (list, v) { return (list || []).map(String).indexOf(String(v)) >= 0; }; %>
+<nav class="breadcrumbs"><a href="/staff/campaigns"><%= t('nav.campaigns') %></a><%- icon('chevron-right') %><span><%= c.id ? c.name : t('campaigns.new') %></span></nav>
+<div class="page-head"><div><h1><%= c.id ? c.name : t('campaigns.new') %></h1><% if (c.id) { %><span class="chip <%= c.status === 'sent' ? 'ok' : c.status === 'draft' ? '' : 'brand' %>"><%= t('campaigns.status_' + c.status) %></span><% } %></div></div>
+<% if (stats) { %>
+<div class="stats mb6">
+  <div class="stat"><div class="stat-label"><%= t('campaigns.recipients') %></div><div class="stat-value"><%= stats.total %></div><div class="stat-note"><%= t('campaigns.queued_n', { n: stats.queued }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('campaigns.sent') %></div><div class="stat-value"><%= stats.sent %></div><div class="stat-note"><%= t('campaigns.failed_n', { n: stats.failed }) %> · <%= t('campaigns.skipped_n', { n: stats.skipped }) %></div></div>
+  <% if (c.channel === 'email') { %><div class="stat"><div class="stat-label"><%= t('campaigns.opened') %></div><div class="stat-value"><%= stats.opened %></div><div class="stat-note"><%= t('campaigns.opens_note') %></div></div><% } %>
+  <div class="stat"><div class="stat-label"><%= t('campaigns.clicked') %></div><div class="stat-value"><%= stats.clicked %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('campaigns.replied') %></div><div class="stat-value"><%= stats.replied %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('campaigns.converted') %></div><div class="stat-value"><%= stats.converted %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('campaigns.unsubscribed') %></div><div class="stat-value"><%= stats.unsubscribed %></div></div>
+</div>
+<% if (['scheduled','sending'].indexOf(c.status) >= 0) { %><form method="post" action="/staff/campaigns/<%= c.id %>/cancel" data-confirm="<%= t('campaigns.cancel_confirm') %>" class="mb4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost" type="submit"><%= t('campaigns.cancel') %></button><% if (c.scheduled_at && c.status === 'scheduled') { %> <span class="small muted"><%= t('campaigns.scheduled_for', { when: fmt.dateTime(c.scheduled_at) }) %></span><% } %></form><% } %>
+<% } %>
+<form method="post" action="<%= c.id ? '/staff/campaigns/' + c.id : '/staff/campaigns' %>" class="stack">
+  <fieldset class="stack" <%= draft ? '' : 'disabled' %> style="border:0;padding:0;margin:0">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="card stack">
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'name', label: t('common.name'), value: c.name, required: true }) %>
+      <%- include('../../../partials/field', { name: 'channel', label: t('leads.channel'), type: 'select', required: true, value: c.channel, options: ['email','whatsapp','sms'].map(function (x) { return { value: x, label: t('channels.' + x) }; }) }) %>
+    </div>
+  </section>
+  <section class="card stack"><h2 class="section-title"><%= t('campaigns.audience') %></h2>
+    <p class="small muted mb0"><%- icon('shield-check', 'sm') %> <%= t('campaigns.consent_rule') %></p>
+    <div class="seg"><label><input type="radio" name="audience" value="leads" <%= seg.audience !== 'students' ? 'checked' : '' %>><span><%= t('nav.leads') %></span></label><label><input type="radio" name="audience" value="students" <%= seg.audience === 'students' ? 'checked' : '' %>><span><%= t('nav.students') %></span></label></div>
+    <%- include('../../../partials/field', { name: 'stages', label: t('campaigns.lead_stages'), type: 'checks', value: (seg.stages || []).map(String), options: stageList.map(function (s) { return { value: String(s.id), label: L(s, 'name') }; }), hint: t('campaigns.leads_only') }) %>
+    <%- include('../../../partials/field', { name: 'temperatures', label: t('leads.temperature'), type: 'checks', value: seg.temperatures || [], options: ['hot','warm','cold'].map(function (x) { return { value: x, label: t('leads.temp_' + x) }; }) }) %>
+    <%- include('../../../partials/field', { name: 'sources', label: t('leads.source'), type: 'checks', value: seg.sources || [], options: sourceList.map(function (s) { return { value: s.key, label: L(s, 'name') }; }) }) %>
+    <%- include('../../../partials/field', { name: 'countries', label: t('campaigns.country_interest'), type: 'checks', value: seg.countries || [], options: destinations }) %>
+    <%- include('../../../partials/field', { name: 'journey', label: t('campaigns.journey'), type: 'checks', value: seg.journey || [], options: ['profile','counselling','program_selection','documents','application','offer','visa','pre_departure','enrolled'].map(function (j) { return { value: j, label: t('journey.' + j) }; }), hint: t('campaigns.students_only') }) %>
+    <div class="form-grid three">
+      <%- include('../../../partials/field', { name: 'degree', label: t('leads.degree'), type: 'select', value: seg.degree, options: ref.DEGREES.map(function (d) { return { value: d, label: t('ref.degree.' + d) }; }) }) %>
+      <%- include('../../../partials/field', { name: 'intake', label: t('leads.intake'), type: 'select', value: seg.intake, options: ref.intakes(24).map(function (m) { return { value: m, label: ref.month(m) }; }) }) %>
+      <%- include('../../../partials/field', { name: 'counsellor_id', label: t('common.assigned_to'), type: 'select', value: seg.counsellor_id, options: counsellors.map(function (e) { return { value: e.id, label: e.name }; }) }) %>
+      <%- include('../../../partials/field', { name: 'min_score', label: t('campaigns.min_score'), type: 'number', value: seg.min_score, attrs: 'min="0" max="100"' }) %>
+    </div>
+    <% if (preview) { %><div class="card flat"><strong><%= t('campaigns.audience_count', { n: preview.count }) %></strong><% if (preview.sample.length) { %><div class="small muted mt2"><%= preview.sample.map(function (x) { return fullName(x); }).join(', ') %><%= preview.count > preview.sample.length ? '…' : '' %></div><% } %><p class="small subtle mb0 mt2"><%= t('campaigns.save_to_refresh') %></p></div><% } %>
+  </section>
+  <section class="card stack"><h2 class="section-title"><%= t('campaigns.message') %></h2>
+    <p class="small muted mb0"><%= t('campaigns.vars_hint') %></p>
+    <div class="grid-2">
+      <% ['en','ar'].forEach(function (l) { %><div class="stack" dir="<%= l === 'ar' ? 'rtl' : 'ltr' %>" lang="<%= l %>">
+        <strong><%= l === 'ar' ? 'العربية' : 'English' %></strong>
+        <%- include('../../../partials/field', { name: 'subject_' + l, label: t('comms.subject') + ' (' + t('channels.email') + ')', value: c['subject_' + l] }) %>
+        <%- include('../../../partials/field', { name: 'body_' + l, label: t('comms.message'), type: 'textarea', rows: 8, value: c['body_' + l] }) %>
+        <%- include('../../../partials/field', { name: 'cta_' + l, label: t('templates.button'), value: c['cta_' + l] }) %>
+      </div><% }) %>
+    </div>
+    <%- include('../../../partials/field', { name: 'cta_url', label: t('campaigns.cta_url'), value: c.cta_url, attrs: 'dir="ltr" placeholder="/events or https://…"', hint: t('campaigns.cta_hint') }) %>
+    <p class="small subtle mb0"><%= t('campaigns.unsub_auto') %></p>
+  </section>
+  <% if (draft) { %><div class="form-actions"><button class="btn primary" type="submit"><%= t('campaigns.save_preview') %></button></div><% } %>
+  </fieldset>
+</form>
+<% if (c.id && draft) { %>
+<form method="post" action="/staff/campaigns/<%= c.id %>/launch" class="card cluster mt4" data-confirm="<%= t('campaigns.launch_confirm', { n: preview ? preview.count : 0 }) %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><div class="grow"><strong><%= t('campaigns.launch') %></strong><p class="small muted mb0"><%= t('campaigns.launch_help') %></p></div>
+  <input type="datetime-local" name="scheduled_at" aria-label="<%= t('campaigns.schedule') %>" style="width:auto"><button class="btn primary" type="submit" <%= preview && preview.count ? '' : 'disabled' %>><%- icon('send') %><%= t('campaigns.launch_btn') %></button>
+</form>
+<% } %>

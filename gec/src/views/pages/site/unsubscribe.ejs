@@ -1,0 +1,10 @@
+<section class="section">
+  <div class="container" style="max-width:560px">
+    <div class="card stack text-center">
+      <% if (!r) { %><h1 style="font-size:1.4rem"><%= t('unsub.not_found') %></h1><p class="muted mb0"><%= t('unsub.not_found_text') %></p>
+      <% } else if (done) { %><%- icon('mail-x', 'lg') %><h1 style="font-size:1.4rem"><%= t('unsub.done') %></h1><p class="muted mb0"><%= t('unsub.done_text') %></p>
+      <% } else { %><%- icon('mail-x', 'lg') %><h1 style="font-size:1.4rem"><%= t('unsub.title') %></h1><p class="muted"><%= t('unsub.text') %></p>
+        <form method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn primary" type="submit"><%= t('unsub.confirm') %></button></form><% } %>
+    </div>
+  </div>
+</section>

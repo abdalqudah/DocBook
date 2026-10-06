@@ -1,0 +1,19 @@
+<%- include('../settings/_back') %>
+<div class="page-head"><div><h1><%= t('settings.scoring') %></h1><p class="lead"><%= t('settings.scoring_desc') %></p></div></div>
+<form method="post" class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="card"><h2 class="section-title"><%= t('scoring.thresholds') %></h2>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'warm', label: t('scoring.warm_from'), type: 'number', value: cfg.warm, attrs: 'min="1" max="99"' }) %>
+      <%- include('../../../partials/field', { name: 'hot', label: t('scoring.hot_from'), type: 'number', value: cfg.hot, attrs: 'min="2" max="100"' }) %>
+    </div><p class="small subtle mb0"><%= t('scoring.scale') %></p></section>
+  <% ['profile','source','engagement','website','decay'].forEach(function (g) { %>
+  <section class="card"><h2 class="section-title"><%= t('scoring.group_' + g) %></h2><div class="divider-list">
+    <% Object.keys(rules).filter(function (k) { return rules[k].group === g; }).forEach(function (k) { var c = cfg.rules[k]; %>
+    <div class="list-item"><label class="check grow"><input type="hidden" name="enabled_<%= k %>" value="0"><input type="checkbox" name="enabled_<%= k %>" value="1" <%= c.enabled ? 'checked' : '' %>><span><%= t('scoring.rule.' + k) %></span></label>
+      <input type="number" name="points_<%= k %>" value="<%= c.points %>" min="-50" max="50" aria-label="<%= t('scoring.points') %>: <%= t('scoring.rule.' + k) %>" style="width:90px"></div>
+    <% }) %></div></section>
+  <% }) %>
+  <p class="small muted"><%= t('scoring.privacy') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('scoring.save_recalc') %></button></div>
+</form>

@@ -34,6 +34,7 @@ router.get('/api/palette', ah(async (req, res) => {
 
 router.use('/account', require('./account.web'));
 router.use('/', require('../comms/web')); // before CRM: adds the composer to lead / student pages
+router.use('/', require('../growth/web')); // before CRM: adds score reasons and website activity to lead pages
 router.use('/', require('../crm/web'));
 router.use('/', require('../team/web'));
 router.use('/', require('../catalog/admin').router);

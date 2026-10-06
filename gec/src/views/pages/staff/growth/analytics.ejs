@@ -1,0 +1,28 @@
+<% var max = Math.max.apply(null, overview.funnel.map(function (f) { return f[1]; }).concat([1])); var dmax = Math.max.apply(null, daily.map(function (d) { return d.n; }).concat([1])); %>
+<div class="page-head"><div><h1><%= t('nav.analytics') %></h1><p class="lead"><%= t('analytics.lead') %></p></div><%- include('_period') %></div>
+<div class="stats mb6">
+  <div class="stat"><div class="stat-label"><%- icon('users') %><%= t('analytics.visitors') %></div><div class="stat-value"><%= fmt.number(overview.visitors) %></div><div class="stat-note"><%= t('analytics.consenting_only') %></div></div>
+  <div class="stat"><div class="stat-label"><%- icon('eye') %><%= t('analytics.pageviews') %></div><div class="stat-value"><%= fmt.number(overview.pageviews) %></div></div>
+  <a class="stat" href="/staff/leads"><div class="stat-label"><%- icon('user-plus') %><%= t('analytics.leads') %></div><div class="stat-value"><%= fmt.number(overview.leads) %></div></a>
+  <div class="stat"><div class="stat-label"><%- icon('mouse-pointer-click') %><%= t('analytics.conversion') %></div><div class="stat-value"><%= overview.conversion === null ? '—' : fmt.pct(overview.conversion, 1) %></div><div class="stat-note"><%= t('analytics.conversion_note') %></div></div>
+</div>
+<div class="grid-2 mb6">
+  <section class="card"><div class="card-head"><h2><%= t('analytics.funnel') %></h2></div><p class="small muted"><%= t('analytics.funnel_note') %></p>
+    <div class="funnel"><% overview.funnel.forEach(function (f, i) { var prev = i ? overview.funnel[0][1] : null; %><div class="funnel-step"><span><%= t('analytics.f_' + f[0]) %></span><div class="bar-track"><span style="width:<%= Math.round(f[1] / max * 100) %>%"></span></div><span class="num text-end"><strong><%= fmt.number(f[1]) %></strong><% if (prev) { %> <span class="small subtle"><%= fmt.pct(f[1] / prev, 0) %></span><% } %></span></div><% }) %></div></section>
+  <section class="card"><div class="card-head"><h2><%= t('analytics.leads_per_day') %></h2></div>
+    <div class="spark" role="img" aria-label="<%= t('analytics.leads_per_day') %>"><% daily.forEach(function (d) { %><span style="height:<%= Math.max(3, Math.round(d.n / dmax * 100)) %>%" title="<%= d.day %>: <%= d.n %>"></span><% }) %></div>
+    <div class="spread small subtle mt2"><span><%= fmt.date(p.from) %></span><span><%= fmt.date(p.to) %></span></div></section>
+</div>
+<div class="grid-2 mb6">
+  <% [['first', first], ['latest', latest]].forEach(function (x) { var smax = Math.max.apply(null, x[1].map(function (s) { return Number(s.leads); }).concat([1])); %>
+  <section class="card"><div class="card-head"><h2><%= t('analytics.sources_' + x[0]) %></h2><% if (x[0] === 'first') { %><a class="btn sm ghost" href="<%= qs({ format: 'csv' }) %>"><%- icon('download') %>CSV</a><% } %></div>
+    <% if (!x[1].length) { %><p class="muted mb0"><%= t('analytics.no_data') %></p><% } else { %><div class="bars"><% x[1].forEach(function (s) { %><div class="bar-row"><span class="truncate"><%= s.source ? t('sources.' + s.source) : t('analytics.unknown') %></span><div class="bar-track"><span style="width:<%= Math.round(Number(s.leads) / smax * 100) %>%"></span></div><span class="num small"><%= s.leads %> · <%= t('analytics.n_students', { n: Number(s.students) }) %></span></div><% }) %></div><% } %>
+  </section>
+  <% }) %>
+</div>
+<div class="grid-3">
+  <section class="card"><div class="card-head"><h2><%= t('analytics.campaigns') %></h2></div><% if (!camp.length) { %><p class="muted small mb0"><%= t('analytics.no_utm') %></p><% } else { %><div class="divider-list small"><% camp.forEach(function (c) { %><div class="list-item"><div class="li-body"><div class="li-title"><%= c.utm_campaign %></div><div class="li-sub"><%= [c.utm_source, c.utm_medium].filter(Boolean).join(' / ') %></div></div><span class="num"><%= c.leads %></span></div><% }) %></div><% } %></section>
+  <section class="card"><div class="card-head"><h2><%= t('analytics.landing') %></h2></div><% if (!landing.length) { %><p class="muted small mb0"><%= t('analytics.no_data') %></p><% } else { %><div class="divider-list small"><% landing.forEach(function (l) { %><div class="list-item"><div class="li-body truncate" dir="ltr" style="text-align:start"><%= l.page %></div><span class="num"><%= l.leads %></span></div><% }) %></div><% } %></section>
+  <section class="card"><div class="card-head"><h2><%= t('analytics.programs') %></h2></div><% if (!programs.length) { %><p class="muted small mb0"><%= t('analytics.no_data') %></p><% } else { %><div class="divider-list small"><% programs.forEach(function (pr) { %><a class="list-item" href="/programs/<%= pr.slug %>" target="_blank"><div class="li-body truncate"><%= L(pr, 'name') %></div><span class="num"><%= pr.views %></span></a><% }) %></div><% } %></section>
+</div>
+<p class="disclaimer mt6"><%- icon('shield-check', 'sm') %><span><%= t('analytics.privacy_note') %></span></p>

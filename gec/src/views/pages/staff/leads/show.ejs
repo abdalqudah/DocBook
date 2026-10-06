@@ -70,6 +70,7 @@
   </div>
 
   <aside class="stack">
+    <% if (typeof scoreInfo !== 'undefined') { %><%- include('../../../partials/lead-score') %><% } %>
     <section class="card">
       <h2 class="section-title"><%= t('leads.contact') %></h2>
       <dl class="kv">

@@ -46,13 +46,13 @@ let testOutbox = null;
 const useTestOutbox = (box) => { testOutbox = box; };
 
 /** Sends one e-mail. Resolves { sent: true, messageId } or { sent: false, reason }. Never throws for "not configured". */
-async function send({ to, subject, html, text, replyTo, attachments, fromName }) {
-  if (testOutbox) { testOutbox.push({ to, subject, html, text, replyTo, attachments }); return { sent: true, messageId: `test-${testOutbox.length}` }; }
+async function send({ to, subject, html, text, replyTo, attachments, fromName, headers }) {
+  if (testOutbox) { testOutbox.push({ to, subject, html, text, replyTo, attachments, headers }); return { sent: true, messageId: `test-${testOutbox.length}` }; }
   const c = await currentConfig();
   if (!c || !c.host || !c.fromEmail) return { sent: false, reason: 'not_configured' };
   const info = await transportFor(c).sendMail({
     from: { name: String(fromName || c.fromName).replace(/[\r\n<>"]/g, ' ').slice(0, 120), address: c.fromEmail },
-    to, subject: String(subject).replace(/[\r\n]+/g, ' '), html, text, replyTo, attachments,
+    to, subject: String(subject).replace(/[\r\n]+/g, ' '), html, text, replyTo, attachments, headers,
   });
   return { sent: true, messageId: info.messageId };
 }

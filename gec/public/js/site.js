@@ -100,3 +100,29 @@
     document.addEventListener('click', function (e) { if (!box.contains(e.target) && e.target !== input) { box.hidden = true; } });
   });
 }());
+
+// First-party event beacon (only after "Accept all"; the server also checks consent and Global Privacy Control).
+(function () {
+  'use strict';
+  var GEC = window.GEC = window.GEC || {};
+  GEC.track = function (name) {
+    if (!GEC.consent || GEC.consent() !== 'all') return;
+    try {
+      fetch('/t/e', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': GEC.csrf || document.body.getAttribute('data-csrf') || '' }, body: JSON.stringify({ name: name, path: location.pathname }), credentials: 'same-origin', keepalive: true }).catch(function () {});
+    } catch (e) { /* ignore */ }
+  };
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a, button'); if (!a) return;
+    var name = a.getAttribute('data-track');
+    var href = a.getAttribute('href') || '';
+    if (/^\/go\//.test(href)) return; // counted on the server
+    if (!name) {
+      if (/^tel:/.test(href)) name = 'phone_click';
+      else if (/^mailto:/.test(href)) name = 'email_click';
+      else if (/wa\.me|whatsapp/.test(href)) name = 'whatsapp_click';
+      else if (/^\/book/.test(href)) name = 'book_click';
+      else if (/^https?:/.test(href) && href.indexOf(location.host) < 0) name = 'outbound';
+    }
+    if (name) GEC.track(name);
+  });
+}());

@@ -1,0 +1,13 @@
+<div class="page-head"><div><h1><%= t('nav.campaigns') %></h1><p class="lead"><%= t('campaigns.lead') %></p></div><a class="btn primary" href="/staff/campaigns/new"><%- icon('plus') %><%= t('campaigns.new') %></a></div>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('campaigns.none'), text: t('campaigns.none_text'), href: '/staff/campaigns/new', cta: t('campaigns.new'), emptyIcon: 'megaphone' }) %></div><% } else { %>
+<div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.name') %></th><th><%= t('leads.channel') %></th><th><%= t('common.status') %></th><th class="text-end"><%= t('campaigns.sent') %></th><th class="text-end"><%= t('campaigns.opened') %></th><th class="text-end"><%= t('campaigns.clicked') %></th></tr></thead><tbody>
+<% rows.forEach(function (c) { var s = c.stats; %><tr>
+  <td class="primary"><a href="/staff/campaigns/<%= c.id %>"><strong><%= c.name %></strong></a><div class="small subtle"><%= fmt.date(c.created_at) %></div></td>
+  <td data-label="<%= t('leads.channel') %>"><%= t('channels.' + c.channel) %></td>
+  <td data-label="<%= t('common.status') %>"><span class="chip <%= c.status === 'sent' ? 'ok' : c.status === 'cancelled' ? 'bad' : c.status === 'draft' ? '' : 'brand' %>"><%= t('campaigns.status_' + c.status) %></span></td>
+  <td data-label="<%= t('campaigns.sent') %>" class="text-end num"><%= s ? s.sent + ' / ' + s.total : '—' %></td>
+  <td data-label="<%= t('campaigns.opened') %>" class="text-end num"><%= s && c.channel === 'email' ? s.opened : '—' %></td>
+  <td data-label="<%= t('campaigns.clicked') %>" class="text-end num"><%= s ? s.clicked : '—' %></td>
+</tr><% }) %>
+</tbody></table></div>
+<% } %>

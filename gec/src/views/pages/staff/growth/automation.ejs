@@ -1,0 +1,53 @@
+<% var conds = conditions.length ? conditions : [{ field: '', op: 'eq', value: '' }]; var acts = actions.length ? actions : [{ type: '' }]; %>
+<nav class="breadcrumbs"><a href="/staff/automations"><%= t('nav.automations') %></a><%- icon('chevron-right') %><span><%= a.id ? a.name : t('automations.new') %></span></nav>
+<div class="page-head"><div><h1><%= a.id ? a.name : t('automations.new') %></h1><% if (a.id) { %><span class="chip <%= a.is_active ? 'ok' : '' %>"><%= a.is_active ? t('automations.on') : t('automations.off') %></span><% } %></div>
+  <% if (a.id) { %><form method="post" action="/staff/automations/<%= a.id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn <%= a.is_active ? '' : 'primary' %>" type="submit"><%- icon('power') %><%= a.is_active ? t('automations.disable') : t('automations.enable') %></button></form><% } %></div>
+<form method="post" action="<%= a.id ? '/staff/automations/' + a.id : '/staff/automations' %>" class="stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="card stack">
+    <%- include('../../../partials/field', { name: 'name', label: t('common.name'), value: a.name, required: true, placeholder: t('automations.name_ph') }) %>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'trigger', label: t('automations.when'), type: 'select', required: true, value: a.trigger, options: triggers.map(function (x) { return { value: x, label: t('automations.trigger.' + x.replace(/\./g, '_')) }; }) }) %>
+      <%- include('../../../partials/field', { name: 'delay_hours', label: t('automations.delay'), type: 'number', value: a.delay_hours || '', attrs: 'min="0" max="2160"', hint: t('automations.delay_hint') }) %>
+    </div>
+  </section>
+  <section class="card stack"><h2 class="section-title"><%= t('automations.if') %></h2><p class="small muted mb0"><%= t('automations.if_hint') %></p>
+    <div class="stack" style="--gap:8px" data-rows>
+      <% conds.forEach(function (c) { %><div class="cluster rule-row">
+        <select name="c_field" aria-label="<%= t('automations.field') %>" style="width:auto"><option value=""><%= t('automations.no_condition') %></option><% fields.forEach(function (f) { %><option value="<%= f %>" <%= c.field === f ? 'selected' : '' %>><%= t('automations.field_' + f) %></option><% }) %></select>
+        <select name="c_op" aria-label="<%= t('automations.op') %>" style="width:auto"><option value="eq" <%= c.op !== 'neq' ? 'selected' : '' %>><%= t('automations.op_eq') %></option><option value="neq" <%= c.op === 'neq' ? 'selected' : '' %>><%= t('automations.op_neq') %></option></select>
+        <input name="c_value" value="<%= c.value %>" placeholder="<%= t('automations.value_ph') %>" aria-label="<%= t('automations.value') %>" dir="ltr" style="flex:1;min-width:160px">
+      </div><% }) %>
+    </div>
+    <button type="button" class="btn sm ghost" data-add-row><%- icon('plus') %><%= t('automations.add_condition') %></button>
+    <details class="small"><summary><%= t('automations.values_help') %></summary><p class="muted"><%= t('automations.values_text') %></p><p class="muted" dir="ltr" style="text-align:start"><%= stageList.map(function (s) { return s.key; }).join(', ') %></p></details>
+  </section>
+  <section class="card stack"><h2 class="section-title"><%= t('automations.then') %></h2>
+    <% if (errors.actions) { %><p class="error-text"><%= errors.actions %></p><% } %>
+    <div class="stack" data-rows>
+      <% acts.forEach(function (x) { %><div class="card flat stack rule-row" style="--gap:8px">
+        <select name="a_type" aria-label="<%= t('automations.action') %>" data-action-type><option value=""><%= t('automations.no_action') %></option><% actionTypes.forEach(function (ty) { %><option value="<%= ty %>" <%= x.type === ty ? 'selected' : '' %>><%= t('automations.action_' + ty) %></option><% }) %></select>
+        <div class="form-grid two">
+          <label class="small" data-for-action="send_template"><%= t('comms.template') %><select name="a_template"><option value=""></option><% templateKeys.forEach(function (k) { %><option value="<%= k %>" <%= x.template === k ? 'selected' : '' %>><%= k.indexOf('custom_') === 0 ? k : t('templates.names.' + k) %></option><% }) %></select></label>
+          <label class="small" data-for-action="send_template"><%= t('leads.channel') %><select name="a_channel"><% ['email','whatsapp','sms'].forEach(function (ch) { %><option value="<%= ch %>" <%= x.channel === ch ? 'selected' : '' %>><%= t('channels.' + ch) %></option><% }) %></select></label>
+          <label class="small" data-for-action="create_task"><%= t('tasks.title') %><input name="a_title" value="<%= x.title || '' %>"></label>
+          <label class="small" data-for-action="create_task"><%= t('automations.due_in_hours') %><input name="a_due_hours" type="number" min="1" max="2160" value="<%= x.due_hours || 24 %>"></label>
+          <label class="small" data-for-action="create_task assign"><%= t('automations.assign_to') %><select name="a_assign"><option value="counsellor" <%= x.assign === 'counsellor' ? 'selected' : '' %>><%= t('automations.their_counsellor') %></option><% employees.forEach(function (e) { %><option value="<%= e.id %>" <%= String(x.assign) === String(e.id) ? 'selected' : '' %>><%= e.name %></option><% }) %></select></label>
+          <label class="small" data-for-action="create_task"><%= t('tasks.priority') %><select name="a_priority"><% ['normal','high','urgent','low'].forEach(function (pr) { %><option value="<%= pr %>" <%= x.priority === pr ? 'selected' : '' %>><%= t('tasks.priority_' + pr) %></option><% }) %></select></label>
+          <label class="small" data-for-action="assign"><%= t('automations.assign_employee') %><select name="a_employee_id"><option value=""><%= t('automations.round_robin') %></option><% employees.forEach(function (e) { %><option value="<%= e.id %>" <%= String(x.employee_id) === String(e.id) ? 'selected' : '' %>><%= e.name %></option><% }) %></select></label>
+          <label class="small" data-for-action="move_lead_stage"><%= t('leads.stage') %><select name="a_stage_key"><option value=""></option><% stageList.forEach(function (s) { %><option value="<%= s.key %>" <%= x.stage_key === s.key ? 'selected' : '' %>><%= L(s, 'name') %></option><% }) %></select></label>
+          <label class="small span-all" data-for-action="add_note email_counsellor"><%= t('automations.text') %><textarea name="a_text" rows="2"><%= x.text || '' %></textarea></label>
+        </div>
+      </div><% }) %>
+    </div>
+    <button type="button" class="btn sm ghost" data-add-row><%- icon('plus') %><%= t('automations.add_action') %></button>
+  </section>
+  <p class="small muted"><%- icon('info', 'sm') %> <%= t('automations.safety') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<% if (a.id) { %>
+<section class="card mt4"><div class="card-head"><h2><%= t('automations.history') %></h2></div>
+  <% if (!runs.length) { %><p class="muted mb0"><%= t('automations.no_runs') %></p><% } else { %><div class="divider-list small"><% runs.forEach(function (r) { %><div class="list-item"><span class="chip <%= r.status === 'failed' ? 'bad' : r.status === 'done' ? 'ok' : '' %>"><%= t('automations.run_' + r.status) %></span><div class="li-body"><div class="li-title"><% if (r.entity_type === 'lead') { %><a href="/staff/leads/<%= r.entity_id %>"><%= t('merge.kind_lead') %> #<%= r.entity_id %></a><% } else if (r.entity_type === 'student') { %><a href="/staff/students/<%= r.entity_id %>"><%= t('merge.kind_student') %> #<%= r.entity_id %></a><% } %></div><div class="li-sub"><%= r.detail %></div></div><span class="subtle nowrap"><%= fmt.relative(r.created_at) %></span></div><% }) %></div><% } %>
+</section>
+<form method="post" action="/staff/automations/<%= a.id %>/delete" class="mt4" data-confirm="<%= t('automations.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost" type="submit"><%= t('common.delete') %></button></form>
+<% } %>

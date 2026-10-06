@@ -230,3 +230,47 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   error is shown; click-to-chat always works); online card payments are not collected in-app (payments are recorded
   by staff; a payment-gateway adapter can post to `/hooks` later); invoice PDFs come from the browser's
   print-to-PDF; e-mail replies are not fetched from the mailbox (inbound e-mail needs an IMAP / Graph adapter).
+
+---
+
+## Phase 7 — Website tracking, lead scoring, analytics, campaigns, automations
+
+### Plan
+* **Exists:** cookie banner storing the visitor's choice (`gec_consent`) and posting to `/t/consent` (route missing
+  until now); leads with first/latest-touch UTM columns, `visitor_id`, `score`, `temperature`; server-side
+  `site.view` / `site.search` / `site.calculator` / `site.lead_captured` events; the message service (phase 6).
+* **Reuse:** domain events, lead capture (`originOf` already reads `req.visitor`), the message service for campaign
+  sends, templates, tasks, assignment, the jobs runner, settings, data scopes.
+* **Change:** first-party, consent-based tracking (server-side page views, no script required; a small beacon for
+  clicks); visitor → lead merge on enquiry; transparent, editable lead scoring with reasons and manual override;
+  analytics (traffic, funnel, first/latest-touch attribution, UTM campaigns, landing pages, programs viewed, daily
+  leads) and team performance; campaigns with segments, consent enforcement, batching, open/click tracking and
+  unsubscribe; automation rules engine (event and time-based triggers, conditions, six action types).
+* **Database:** `visitors`, `tracking_events`, `leads.score_reasons / temperature_manual / score_updated_at`,
+  `campaigns`, `campaign_recipients`, `automations`, `automation_runs`.
+* **Routes:** `/t/e`, `/t/consent`, `/c/o/:token.gif`, `/c/c/:token`, `/u/:token` (GET/POST, RFC 8058 one-click);
+  staff `/staff/analytics[/team]`, `/staff/settings/scoring`, `/staff/leads/:id/temperature`,
+  `/staff/campaigns[/new|/:id[/launch|/cancel]]`, `/staff/automations[/new|/:id[/toggle|/delete]]`.
+* **Security / privacy:** tracking only with "Accept all", never with Global Privacy Control / Do Not Track, never
+  for bots; one random first-party cookie, no IP stored, user agent reduced to a device class, no fingerprinting;
+  withdrawing consent deletes the visitor's history; campaigns can only reach people with marketing consent who have
+  not unsubscribed (re-checked at send time); the tracked button redirects only to the campaign's own URL (no open
+  redirect); unsubscribe applies to every record with that address; rules start disabled, cannot loop (depth guard)
+  and time-based rules run once per record (unique key); permissions: `analytics.view`, `reports.team`,
+  `campaigns.manage`, `automations.manage`, `settings.manage`.
+
+### Report
+* **Files:** `src/modules/growth/{tracking,scoring,analytics.service,campaigns.service,automations.service,web,site.web}.js`,
+  views `pages/staff/growth/*`, `partials/lead-score.ejs`, `pages/site/unsubscribe.ejs`, `src/locales/*/growth.json`;
+  e-mail adapter accepts headers (List-Unsubscribe); beacon in `public/js/site.js`; rule builder in `staff.js`.
+* **Migration:** `20261005000700_phase7_growth.js`.
+* **Tests:** `test/phase7.test.js` (5): no tracking without consent / with GPC / for bots; visitor, page views and
+  program views recorded; enquiry linked to the visit with first-touch UTM; beacon allow-list; website activity on
+  the lead; consent withdrawal deletes history; scoring reasons, settings-driven recalculation, manual override;
+  campaign audience (consent + segment), send, open pixel, safe click redirect with UTM, one-click unsubscribe
+  without CSRF, permanent exclusion, permissions; automations off by default, conditions, task / note / e-mail
+  actions, run log, once-per-record timed rules, permissions; analytics funnel, sources, CSV, team permissions.
+  Suite: 55.
+* **Known limitations:** country of visitors is not recorded (no IP geolocation by design); session duration is
+  approximated by first / last seen; SMS / WhatsApp campaign delivery receipts depend on the provider webhooks; Meta
+  Pixel / Google Analytics are not embedded (adapters can be added in Integrations, gated by the same consent).

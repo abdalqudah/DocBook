@@ -1,0 +1,10 @@
+<div class="page-head"><div><h1><%= t('nav.automations') %></h1><p class="lead"><%= t('automations.lead') %></p></div><a class="btn primary" href="/staff/automations/new"><%- icon('plus') %><%= t('automations.new') %></a></div>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('automations.none'), text: t('automations.none_text'), href: '/staff/automations/new', cta: t('automations.new'), emptyIcon: 'workflow' }) %></div><% } else { %>
+<div class="card"><div class="divider-list">
+<% rows.forEach(function (a) { %><div class="list-item">
+  <span class="queue-icon <%= a.is_active ? 'brand' : '' %>"><%- icon('zap') %></span>
+  <a class="li-body" href="/staff/automations/<%= a.id %>"><div class="li-title"><%= a.name %></div><div class="li-sub"><%= t('automations.when') %> <%= t('automations.trigger.' + a.trigger.replace(/\./g, '_')) %><%= a.delay_hours ? ' · ' + t('automations.after_hours', { n: a.delay_hours }) : '' %> · <%= t('automations.runs', { n: a.run_count }) %></div></a>
+  <form method="post" action="/staff/automations/<%= a.id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="back" value="list"><button class="btn sm <%= a.is_active ? 'tonal' : '' %>" type="submit" aria-pressed="<%= a.is_active ? 'true' : 'false' %>"><%- icon('power') %><%= a.is_active ? t('automations.on') : t('automations.off') %></button></form>
+</div><% }) %>
+</div></div>
+<% } %>

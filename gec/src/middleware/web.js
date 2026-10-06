@@ -114,6 +114,7 @@ const tokenValid = (req, sent) => Boolean(req.session?.csrf && sent && safeEqual
 function csrf(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   if (req.path.startsWith('/hooks/')) return next(); // provider webhooks: verified by signature in their module
+  if (/^\/u\/[A-Za-z0-9_-]{20,40}$/.test(req.path)) return next(); // one-click unsubscribe from mail apps: the private token is the proof
   if (req.is('multipart/form-data')) {
     if (MULTIPART_ROUTES.some((re) => re.test(req.path))) { req.csrfDeferred = true; return next(); }
     return next(E.csrf());

@@ -166,3 +166,20 @@ document.addEventListener('click', function (e) {
   row.querySelectorAll('input').forEach(function (i) { i.value = i.name === 'item_quantity' ? '1' : ''; });
   box.appendChild(row); row.querySelector('input').focus();
 });
+
+// Rule builder: add another condition / action row; show only the fields of the chosen action.
+(function () {
+  function sync(row) {
+    var sel = row.querySelector('[data-action-type]'); if (!sel) return;
+    row.querySelectorAll('[data-for-action]').forEach(function (el) { el.hidden = el.getAttribute('data-for-action').split(' ').indexOf(sel.value) < 0; });
+  }
+  document.querySelectorAll('.rule-row').forEach(sync);
+  document.addEventListener('change', function (e) { if (e.target.matches('[data-action-type]')) sync(e.target.closest('.rule-row')); });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-add-row]'); if (!b) return;
+    var box = b.parentNode.querySelector('[data-rows]'); var row = box.lastElementChild.cloneNode(true);
+    row.querySelectorAll('input, textarea').forEach(function (i) { if (i.type !== 'number') i.value = ''; });
+    row.querySelectorAll('select').forEach(function (s) { s.selectedIndex = 0; });
+    box.appendChild(row); sync(row);
+  });
+}());

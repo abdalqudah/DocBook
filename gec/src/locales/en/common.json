@@ -131,7 +131,11 @@
     "invoices": "Invoices",
     "payments": "Payments",
     "partners": "University partners",
-    "commissions": "Commissions"
+    "commissions": "Commissions",
+    "analytics": "Analytics",
+    "performance": "Team performance",
+    "campaigns": "Campaigns",
+    "automations": "Automations"
   },
   "quick": {},
   "palette": {

@@ -209,7 +209,9 @@
     "invoice_issued": "صدرت الفاتورة {number}",
     "payment_received": "استُلمت دفعة: {amount_text}",
     "payment_refunded": "استُردت دفعة: {amount_text}",
-    "from_phone": "من الهاتف"
+    "from_phone": "من الهاتف",
+    "unsubscribed": "ألغى الاشتراك في الرسائل التسويقية",
+    "automation_note": "ملاحظة من القاعدة «{rule}»"
   },
   "leads": {
     "new": "عميل محتمل جديد",

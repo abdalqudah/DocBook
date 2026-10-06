@@ -78,7 +78,9 @@
     "sms": "الرسائل النصية",
     "sms_desc": "الرسائل النصية عبر Twilio.",
     "whatsapp": "واتساب",
-    "whatsapp_desc": "WhatsApp Business Cloud API لإرسال الرسائل واستقبالها."
+    "whatsapp_desc": "WhatsApp Business Cloud API لإرسال الرسائل واستقبالها.",
+    "scoring": "تقييم العملاء",
+    "scoring_desc": "نقاط كل مؤشر وحدود بارد / دافئ / ساخن."
   },
   "roles": {
     "lead": "الأدوار المدمجة تتبع المسؤوليات المعتادة في GEC. أنشئ أدواراً مخصصة لأي احتياج آخر.",

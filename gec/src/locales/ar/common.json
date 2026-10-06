@@ -131,7 +131,11 @@
     "invoices": "الفواتير",
     "payments": "الدفعات",
     "partners": "الجامعات الشريكة",
-    "commissions": "العمولات"
+    "commissions": "العمولات",
+    "analytics": "التحليلات",
+    "performance": "أداء الفريق",
+    "campaigns": "الحملات",
+    "automations": "الأتمتة"
   },
   "quick": {},
   "palette": {

@@ -78,7 +78,9 @@
     "sms": "SMS",
     "sms_desc": "Text messages through Twilio.",
     "whatsapp": "WhatsApp",
-    "whatsapp_desc": "WhatsApp Business Cloud API for sending and receiving messages."
+    "whatsapp_desc": "WhatsApp Business Cloud API for sending and receiving messages.",
+    "scoring": "Lead scoring",
+    "scoring_desc": "Points for each signal and the Cold / Warm / Hot thresholds."
   },
   "roles": {
     "lead": "Built-in roles follow GEC's standard responsibilities. Create custom roles for anything else.",
