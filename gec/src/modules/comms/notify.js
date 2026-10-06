@@ -1,0 +1,29 @@
+// Sends a templated message to a person (lead, student or registrant) over e-mail, and records it on their timeline.
+// Phase 6 routes SMS / WhatsApp through the same call and logs every message in the communications table.
+const knex = require('../../db/knex');
+const email = require('./email');
+const templates = require('./templates');
+const settings = require('../settings/settings.service');
+
+/**
+ * to: { email, name, locale, leadId, studentId }; vars: template variables; link: button target.
+ * Returns { sent, reason }. Never throws for delivery problems (they are logged).
+ */
+async function sendTemplate(key, to, vars = {}, { link = null, attachments = null } = {}) {
+  if (!to || !to.email) return { sent: false, reason: 'no_address' };
+  const locale = to.locale === 'ar' ? 'ar' : 'en';
+  const branding = await settings.get('branding');
+  const all = { company_name: branding.legal_name, student_name: to.name || '', ...vars };
+  const msg = await templates.render(key, locale, all);
+  if (!msg) return { sent: false, reason: 'no_template' };
+  try {
+    const html = await email.layout({ locale, title: msg.subject, body: msg.body, cta: link ? msg.cta : null, href: link });
+    const comms = require('./comms.service'); // eslint-disable-line global-require
+    return await comms.deliverEmail({ to: to.email, subject: msg.subject, html, text: msg.body, attachments, leadId: to.leadId || null, studentId: to.studentId || null, templateKey: key, automated: true });
+  } catch (e) {
+    console.error(`[notify] ${key}:`, e.message); // eslint-disable-line no-console
+    return { sent: false, reason: 'error' };
+  }
+}
+
+module.exports = { sendTemplate };

@@ -5,6 +5,7 @@
       <span class="eyebrow"><%- icon('sparkles') %><%= t('book.eyebrow') %></span>
       <h1><%= t('book.title') %></h1>
       <p><%= t('book.lead') %></p>
+      <% if (typeof canSchedule !== 'undefined' && canSchedule) { %><p><a class="btn tonal" href="/book/schedule"><%- icon('calendar-clock') %><%= t('book.pick_time') %></a></p><% } %>
     </div>
     <form method="post" action="/book" class="form-card" data-stepper data-start="<%= st %>" novalidate>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">

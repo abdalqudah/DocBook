@@ -3,7 +3,8 @@
     "lead": "عميل محتمل",
     "student": "طالب",
     "task": "مهمة",
-    "application": "طلب التحاق"
+    "application": "طلب التحاق",
+    "appointment": "موعد"
   },
   "attention": {
     "lead_new": "عميل جديد: {name}",
@@ -13,14 +14,16 @@
     "stuck": "متوقف: {name} في {stage}",
     "days_in_stage": "{n} يوماً في هذه المرحلة",
     "doc_review": "مراجعة {doc} من {name}",
-    "visa_appointment": "موعد تأشيرة: {name}"
+    "visa_appointment": "موعد تأشيرة: {name}",
+    "appointment_today": "{type} مع {name}"
   },
   "kpi": {
     "new_leads": "عملاء جدد",
     "hot_leads": "عملاء مهتمون جداً",
     "active_students": "طلاب نشطون",
     "applications_submitted": "طلبات مقدّمة",
-    "offers": "قبولات مستلمة"
+    "offers": "قبولات مستلمة",
+    "consultations": "استشارات هذا الشهر"
   },
   "sources": {
     "contact_form": "نموذج التواصل",
@@ -187,7 +190,18 @@
     "visa_biometrics_at": "حُدد موعد البصمات",
     "visa_interview_at": "حُدد موعد مقابلة التأشيرة",
     "shortlist_added": "أُضيف إلى القائمة المختصرة: {name}",
-    "estimate_created": "أُعد تقدير للتكاليف"
+    "estimate_created": "أُعد تقدير للتكاليف",
+    "appointment_booked": "حجز: {type}",
+    "appointment_confirmed": "تأكيد الموعد: {type}",
+    "appointment_completed": "عُقدت الاستشارة: {type}",
+    "appointment_cancelled": "أُلغي الموعد: {type}",
+    "appointment_no_show": "لم يحضر: {type}",
+    "appointment_rescheduled": "تغيير الموعد: {type}",
+    "course_registered": "سجّل في دورة: {course}",
+    "certificate_issued": "صدرت الشهادة: {no}",
+    "event_registered": "سجّل في فعالية: {event}",
+    "event_attended": "حضر فعالية: {event}",
+    "not_sent": "لم يُرسل"
   },
   "leads": {
     "new": "عميل محتمل جديد",
@@ -499,7 +513,8 @@
     "interested_in": "مهتم بـ",
     "thanks_title": "شكراً لك — استلمنا طلبك",
     "thanks_text": "سيتواصل معك أحد مستشاري GEC قريباً. إذا رغبت بالتحدث الآن فراسلنا عبر واتساب.",
-    "whatsapp_now": "تحدث عبر واتساب الآن"
+    "whatsapp_now": "تحدث عبر واتساب الآن",
+    "pick_time": "أو اختر موعداً مع مستشار الآن"
   },
   "contact": {
     "title": "تواصل معنا",

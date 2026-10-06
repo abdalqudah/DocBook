@@ -1,0 +1,35 @@
+<% var open = ['scheduled','confirmed'].indexOf(a.status) >= 0 && new Date(a.start_at) > new Date(); %>
+<section class="section">
+  <div class="container" style="max-width:720px">
+    <% if (booked) { %><div class="alert ok mb4"><%- icon('check-circle-2') %><p><strong><%= t('booking.booked_title') %></strong> <%= t('booking.booked_text') %></p></div><% } %>
+    <h1><%= t('booking.your_booking') %></h1>
+    <section class="card mb4">
+      <div class="spread mb4"><h2 class="mb0" style="font-size:1.15rem"><%= locale === 'ar' && a.type_ar ? a.type_ar : a.type_en %></h2><span class="chip <%= a.status === 'cancelled' ? 'bad' : a.status === 'completed' ? 'ok' : 'brand' %>"><%= t('booking.status_' + a.status) %></span></div>
+      <dl class="kv">
+        <dt><%= t('common.date') %></dt><dd><%= fmt.date(a.start_at, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></dd>
+        <dt><%= t('booking.time') %></dt><dd><%= fmt.time(a.start_at) %>–<%= fmt.time(a.end_at) %> (<%= fmt.tz %>)</dd>
+        <dt><%= t('booking.counsellor') %></dt><dd><%= a.employee_name || '—' %></dd>
+        <dt><%= t('booking.mode') %></dt><dd><%= t('booking.mode_' + a.mode) %><%= a.mode === 'in_person' && (a.location || a.location_text) ? ' · ' + (a.location || a.location_text) : '' %></dd>
+        <% if (a.mode === 'online') { %><dt><%= t('booking.meeting_link') %></dt><dd><% if (a.meeting_url && open) { %><a href="<%= a.meeting_url %>" rel="noopener" target="_blank" dir="ltr"><%= a.meeting_url %></a><% } else { %><span class="muted"><%= t('booking.link_later') %></span><% } %></dd><% } %>
+        <dt><%= t('booking.reference') %></dt><dd class="num"><%= a.ref %></dd>
+      </dl>
+      <% if (open) { %><div class="cluster mt4"><a class="btn" href="/appointments/<%= token %>/calendar.ics"><%- icon('calendar-plus') %><%= t('booking.add_calendar') %></a><a class="btn" href="?reschedule=1"><%- icon('calendar-clock') %><%= t('booking.reschedule') %></a></div><% } %>
+    </section>
+    <% if (resched) { var free = resched.slots; %>
+    <section class="card mb4"><div class="spread mb4"><h2 class="mb0" style="font-size:1rem"><%= t('booking.pick_new_time') %></h2><a class="btn sm" href="?reschedule=1&from=<%= resched.next %>"><%= t('booking.next_week') %><%- icon('chevron-right', 'flip-rtl') %></a></div>
+      <% if (!free.length) { %><p class="muted mb0"><%= t('booking.no_slots_week') %></p><% } else { %>
+      <form method="post" action="/appointments/<%= token %>/reschedule" class="stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% var lastDay = ''; free.forEach(function (s) { var d = fmt.date(s.start, { weekday: 'short', day: 'numeric', month: 'short' }); if (d !== lastDay) { if (lastDay) { %></div><% } lastDay = d; %><strong class="small"><%= d %></strong><div class="cluster"><% } %><button class="filter-chip" type="submit" name="start" value="<%= s.start.toISOString() %>"><%= fmt.time(s.start) %></button><% }); if (lastDay) { %></div><% } %>
+      </form><% } %>
+    </section>
+    <% } %>
+    <% if (open) { %>
+    <details class="card"><summary><strong><%= t('booking.cancel') %></strong></summary>
+      <form method="post" action="/appointments/<%= token %>/cancel" class="stack mt4" data-confirm="<%= t('booking.cancel_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/field', { name: 'reason', label: t('booking.cancel_reason'), type: 'textarea', rows: 2 }) %>
+        <div class="form-actions"><button class="btn danger-ghost" type="submit"><%= t('booking.cancel_booking') %></button></div></form>
+    </details>
+    <% } %>
+    <p class="disclaimer mt4"><%- icon('lock', 'sm') %><span><%= t('booking.private_link') %></span></p>
+  </div>
+</section>

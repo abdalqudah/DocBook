@@ -1,0 +1,19 @@
+<section class="section">
+  <div class="container" style="max-width:900px">
+    <div class="section-head center"><span class="eyebrow"><%- icon('calendar-check') %><%= t('booking.eyebrow') %></span><h1><%= t('booking.pick_service') %></h1><p><%= t('booking.pick_service_lead') %></p></div>
+    <% if (!types.length) { %>
+      <div class="card"><%- include('../../partials/empty', { title: t('booking.no_public_types'), text: t('booking.no_public_types_text'), href: '/book', cta: t('booking.request_instead'), emptyIcon: 'calendar-days' }) %></div>
+    <% } else { %>
+    <div class="grid-2">
+      <% types.forEach(function (x) { %>
+      <a class="card stack" href="/book/schedule/<%= x.slug %>" style="text-decoration:none;color:inherit">
+        <div class="spread"><h2 class="mb0" style="font-size:1.15rem"><%= L(x, 'name') %></h2><% if (x.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></div>
+        <% if (L(x, 'description')) { %><p class="muted mb0 clamp-3"><%= L(x, 'description') %></p><% } %>
+        <div class="cluster small muted"><span><%- icon('clock', 'sm') %> <%= t('booking.minutes', { n: x.duration_min }) %></span><span><%- icon(x.location_mode === 'in_person' ? 'map-pin' : 'video', 'sm') %> <%= t('booking.mode_' + x.location_mode) %></span><span><%- icon('tag', 'sm') %> <%= x.price ? fmt.money(x.price, x.currency || 'USD') : t('booking.free') %></span></div>
+      </a>
+      <% }) %>
+    </div>
+    <% } %>
+    <p class="text-center mt6 muted"><%= t('booking.prefer_callback') %> <a href="/book"><%= t('booking.request_instead') %></a></p>
+  </div>
+</section>

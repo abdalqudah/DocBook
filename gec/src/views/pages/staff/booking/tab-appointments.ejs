@@ -1,0 +1,4 @@
+<div class="spread mb4"><h2 class="mb0" style="font-size:1.1rem"><%= t('students.tab_appointments') %></h2><% if (can('appointments.manage')) { %><a class="btn primary sm" href="/staff/appointments/new?student_id=<%= s.id %>"><%- icon('plus') %><%= t('booking.new_appointment') %></a><% } %></div>
+<% if (!list.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('booking.none_student'), emptyIcon: 'calendar-days', compact: true }) %></div><% } else { %>
+<div class="card"><div class="divider-list"><% list.forEach(function (a) { %><a class="list-item" href="/staff/appointments/<%= a.id %>"><span class="nowrap" style="min-width:150px"><%= fmt.dateTime(a.start_at) %></span><div class="li-body"><div class="li-title"><%= locale === 'ar' && a.type_ar ? a.type_ar : a.type_en %></div><div class="li-sub"><%= a.employee_name || '' %></div></div><span class="chip"><%= t('booking.status_' + a.status) %></span></a><% }) %></div></div>
+<% } %>

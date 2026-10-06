@@ -1,0 +1,17 @@
+<nav class="breadcrumbs"><a href="/staff/appointments"><%= t('nav.appointments') %></a><%- icon('chevron-right') %><span><%= t('booking.availability') %></span></nav>
+<div class="page-head"><div><h1><%= t('booking.availability') %> — <%= emp.name %></h1><p class="lead"><%= t('booking.availability_lead', { tz: emp.timezone || 'UTC' }) %></p></div>
+  <% if (employeesList.length) { %><form method="get"><select name="employee" data-autosubmit aria-label="<%= t('nav.employees') %>" style="width:auto"><% employeesList.forEach(function (e) { %><option value="<%= e.value %>" <%= String(emp.id) === e.value ? 'selected' : '' %>><%= e.label %></option><% }) %></select></form><% } %></div>
+<% if (!typesFor.length) { %><div class="alert warn mb4"><%- icon('alert-triangle') %><p><%= t('booking.no_types_for_employee') %></p></div><% } else { %><p class="small muted"><%= t('booking.takes') %>: <%= typesFor.map(function (x) { return L(x, 'name'); }).join(', ') %></p><% } %>
+<form method="post" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="employee" value="<%= emp.id %>">
+  <% [0,1,2,3,4,5,6].forEach(function (wd) { var rows = hours.filter(function (h) { return h.weekday === wd; }); if (!rows.length) rows = [{ start_time: '', end_time: '' }]; rows.push({ start_time: '', end_time: '' }); %>
+  <div class="row top" style="flex-wrap:wrap"><strong style="min-width:110px;padding-top:10px"><%= fmt.date('2026-10-' + String(4 + wd).padStart(2, '0') + 'T12:00:00Z', { weekday: 'long' }) %></strong>
+    <div class="stack grow" style="--gap:6px"><% rows.forEach(function (h) { %><div class="cluster"><input type="time" name="start_<%= wd %>" value="<%= h.start_time %>" aria-label="<%= t('booking.from') %>" style="width:auto"> – <input type="time" name="end_<%= wd %>" value="<%= h.end_time %>" aria-label="<%= t('booking.to') %>" style="width:auto"></div><% }) %></div></div>
+  <% }) %>
+  <p class="small subtle"><%= t('booking.hours_hint') %></p>
+  <h2 class="section-title mt4"><%= t('booking.time_off') %></h2>
+  <% if (exceptions.length) { %><div class="divider-list"><% exceptions.forEach(function (x) { %><label class="list-item check"><input type="checkbox" name="remove_exception" value="<%= x.id %>"><span><%= fmt.date(x.date) %> — <%= x.is_off ? t('booking.day_off') : x.start_time + '–' + x.end_time %><%= x.note ? ' · ' + x.note : '' %> <span class="small subtle">(<%= t('booking.tick_to_remove') %>)</span></span></label><% }) %></div><% } %>
+  <div class="cluster"><input type="date" name="off_date" aria-label="<%= t('common.date') %>" style="width:auto"><input type="time" name="off_start" aria-label="<%= t('booking.from') %>" style="width:auto"><input type="time" name="off_end" aria-label="<%= t('booking.to') %>" style="width:auto"><input name="off_note" placeholder="<%= t('common.notes') %>" aria-label="<%= t('common.notes') %>" style="width:auto;flex:1"></div>
+  <p class="small subtle"><%= t('booking.time_off_hint') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>

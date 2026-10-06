@@ -1,0 +1,31 @@
+<section class="section">
+  <div class="container" style="max-width:1000px">
+    <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/book/schedule"><%= t('booking.pick_service') %></a><%- icon('chevron-right') %><span><%= L(type, 'name') %></span></nav>
+    <div class="spread mb4" style="align-items:flex-start">
+      <div><h1 class="mb2"><%= L(type, 'name') %> <% if (type.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1>
+        <div class="cluster small muted"><span><%- icon('clock', 'sm') %> <%= t('booking.minutes', { n: type.duration_min }) %></span><span><%- icon(type.location_mode === 'in_person' ? 'map-pin' : 'video', 'sm') %> <%= t('booking.mode_' + type.location_mode) %></span><span><%- icon('tag', 'sm') %> <%= type.price ? fmt.money(type.price, type.currency || 'USD') : t('booking.free') %></span><span><%- icon('globe', 'sm') %> <%= t('booking.times_in', { tz: fmt.tz }) %></span></div></div>
+    </div>
+    <% if (L(type, 'description')) { %><p class="muted"><%= L(type, 'description') %></p><% } %>
+    <% if (staff.length > 1) { %>
+    <form method="get" class="cluster mb4"><input type="hidden" name="from" value="<%= from %>"><label for="with" class="small muted"><%= t('booking.with') %></label>
+      <select id="with" name="with" data-autosubmit style="width:auto"><option value=""><%= t('booking.anyone_available') %></option><% staff.forEach(function (s) { %><option value="<%= s.id %>" <%= employeeId === s.id ? 'selected' : '' %>><%= s.name %><%= s.job_title ? ' — ' + s.job_title : '' %></option><% }) %></select></form>
+    <% } %>
+    <div class="spread mb2"><strong><%= fmt.date(days[0].date + 'T12:00:00Z', { day: 'numeric', month: 'long' }) %> – <%= fmt.date(days[days.length - 1].date + 'T12:00:00Z', { day: 'numeric', month: 'long' }) %></strong>
+      <div class="cluster"><% if (prev) { %><a class="btn sm" href="?from=<%= prev %><%= employeeId ? '&with=' + employeeId : '' %>" aria-label="<%= t('common.previous') %>"><%- icon('chevron-left', 'flip-rtl') %></a><% } %><a class="btn sm" href="?from=<%= next %><%= employeeId ? '&with=' + employeeId : '' %>" aria-label="<%= t('common.next') %>"><%- icon('chevron-right', 'flip-rtl') %></a></div></div>
+    <% var any = days.some(function (d) { return d.slots.length; }); %>
+    <% if (!staff.length || !any) { %>
+      <div class="card"><%- include('../../partials/empty', { title: t('booking.no_slots_week'), text: t('booking.no_slots_week_text'), href: '?from=' + next + (employeeId ? '&with=' + employeeId : ''), cta: t('booking.next_week'), emptyIcon: 'calendar-x' }) %></div>
+    <% } else { %>
+    <div class="week-grid">
+      <% days.forEach(function (d) { %>
+      <section class="card day-col" aria-label="<%= fmt.date(d.date + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' }) %>">
+        <h2 class="day-head"><span><%= fmt.date(d.date + 'T12:00:00Z', { weekday: 'short' }) %></span><strong><%= fmt.date(d.date + 'T12:00:00Z', { day: 'numeric', month: 'short' }) %></strong></h2>
+        <% if (!d.slots.length) { %><p class="small subtle text-center mb0">—</p><% } %>
+        <div class="stack" style="--gap:6px"><% d.slots.forEach(function (s) { %><a class="btn sm block slot-btn" href="/book/schedule/<%= type.slug %>/confirm?start=<%= encodeURIComponent(s.start.toISOString()) %>&with=<%= s.employeeId %>"><%= fmt.time(s.start) %></a><% }) %></div>
+      </section>
+      <% }) %>
+    </div>
+    <% } %>
+    <p class="disclaimer mt4"><%- icon('shield-check', 'sm') %><span><%= t('booking.free_cancel') %></span></p>
+  </div>
+</section>

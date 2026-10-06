@@ -1,0 +1,35 @@
+<nav class="breadcrumbs"><a href="/staff/appointments"><%= t('nav.appointments') %></a><%- icon('chevron-right') %><span><%= t('booking.new_appointment') %></span></nav>
+<div class="page-head"><h1><%= t('booking.new_appointment') %></h1></div>
+<% if (!types.length) { %>
+  <div class="card"><%- include('../../../partials/empty', { title: t('booking.no_types'), text: t('booking.no_types_text'), href: can('settings.manage') ? '/staff/appointment-types/new' : null, cta: t('resources.appointment-types.new'), emptyIcon: 'calendar-days' }) %></div>
+<% } else { %>
+<form method="get" class="card stack">
+  <% if (lead) { %><input type="hidden" name="lead_id" value="<%= lead.id %>"><div class="row"><span class="avatar sm"><%= initials(fullName(lead)) %></span><strong><%= fullName(lead) %></strong> <span class="chip"><%= t('merge.kind_lead') %></span></div><% } %>
+  <% if (student) { %><input type="hidden" name="student_id" value="<%= student.id %>"><div class="row"><span class="avatar sm"><%= initials(fullName(student)) %></span><strong><%= fullName(student) %></strong> <span class="chip"><%= t('merge.kind_student') %></span></div><% } %>
+  <div class="form-grid three">
+    <%- include('../../../partials/field', { name: 'type', label: t('booking.service'), type: 'select', value: type ? type.id : '', required: true, options: types.map(function (x) { return { value: x.id, label: L(x, 'name') + ' · ' + x.duration_min + ' min' }; }), attrs: 'data-autosubmit' }) %>
+    <%- include('../../../partials/field', { name: 'employee', label: t('booking.with'), type: 'select', value: query.employee, placeholder: t('booking.anyone_available'), options: staffList.map(function (e) { return { value: e.id, label: e.name }; }), attrs: 'data-autosubmit' }) %>
+    <%- include('../../../partials/field', { name: 'date', label: t('common.date'), type: 'date', value: date, attrs: 'data-autosubmit' }) %>
+  </div>
+</form>
+<section class="card mt4">
+  <div class="spread mb4"><h2 class="mb0" style="font-size:1rem"><%= fmt.date(date + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' }) %></h2>
+    <div class="cluster"><a class="btn sm" href="<%= qs({ date: prevDay }) %>"><%- icon('chevron-left', 'flip-rtl') %></a><a class="btn sm" href="<%= qs({ date: nextDay }) %>"><%- icon('chevron-right', 'flip-rtl') %></a></div></div>
+  <% if (!staffList.length) { %><p class="muted"><%= t('booking.no_staff_for_type') %></p><% } else if (!slots.length) { %><p class="muted"><%= t('booking.no_slots_day') %></p><% } else { %>
+  <form method="post" action="/staff/appointments" class="stack">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="type_id" value="<%= type.id %>">
+    <% if (lead) { %><input type="hidden" name="lead_id" value="<%= lead.id %>"><% } %><% if (student) { %><input type="hidden" name="student_id" value="<%= student.id %>"><% } %>
+    <div class="cluster slot-grid" role="radiogroup" aria-label="<%= t('booking.time') %>">
+      <% slots.forEach(function (s, i) { %><label class="filter-chip slot"><input type="radio" class="sr-only" name="slot" value="<%= s.start.toISOString() %>|<%= s.employeeId %>" required data-slot><span><%= fmt.time(s.start) %> · <%= s.employeeName.split(' ')[0] %></span></label><% }) %>
+    </div>
+    <input type="hidden" name="start" data-slot-start><input type="hidden" name="employee_id" data-slot-employee>
+    <div class="form-grid two">
+      <%- include('../../../partials/field', { name: 'mode', label: t('booking.mode'), type: 'select', value: type.location_mode === 'in_person' ? 'in_person' : 'online', required: true, options: (type.location_mode === 'both' ? ['online','in_person'] : [type.location_mode]).map(function (m) { return { value: m, label: t('booking.mode_' + m) }; }) }) %>
+      <%- include('../../../partials/field', { name: 'meeting_url', label: t('booking.meeting_url'), type: 'url', placeholder: 'https://meet.google.com/…', attrs: 'dir="ltr"' }) %>
+    </div>
+    <%- include('../../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', rows: 2 }) %>
+    <div class="form-actions"><button class="btn primary" type="submit"><%= t('booking.book') %></button></div>
+  </form>
+  <% } %>
+</section>
+<% } %>

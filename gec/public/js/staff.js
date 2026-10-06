@@ -113,3 +113,15 @@
     }).catch(function (err) { window.GEC.toast(err.message, 'error'); });
   });
 }());
+
+// Slot picker: a radio carries "start|employee"; copy into the hidden fields the server expects.
+(function () {
+  document.addEventListener('change', function (e) {
+    var r = e.target.closest('[data-slot]');
+    if (!r) return;
+    var form = r.form; var parts = r.value.split('|');
+    form.querySelector('[data-slot-start]').value = parts[0];
+    form.querySelector('[data-slot-employee]').value = parts[1];
+    form.querySelectorAll('label.slot').forEach(function (l) { l.classList.toggle('on', l.contains(r)); });
+  });
+}());

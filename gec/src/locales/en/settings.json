@@ -70,7 +70,9 @@
     "tone_brand": "Green",
     "tone_warn": "Amber",
     "tone_ok": "Success",
-    "tone_bad": "Red"
+    "tone_bad": "Red",
+    "appointment_types": "Appointment types",
+    "appointment_types_desc": "Consultation types, duration, buffers and who can be booked."
   },
   "roles": {
     "lead": "Built-in roles follow GEC's standard responsibilities. Create custom roles for anything else.",

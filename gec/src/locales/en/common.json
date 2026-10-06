@@ -121,7 +121,10 @@
     "destinations": "Destinations",
     "applications": "Applications",
     "documents": "Documents",
-    "visa": "Visa cases"
+    "visa": "Visa cases",
+    "appointments": "Appointments",
+    "courses": "Courses",
+    "events": "Events"
   },
   "quick": {},
   "palette": {
@@ -196,6 +199,13 @@
     "not_found_title": "Page not found",
     "forbidden_title": "Access denied",
     "generic_title": "Something went wrong",
-    "APPLICATION_EXISTS": "This student already has an open application for this program and intake."
+    "APPLICATION_EXISTS": "This student already has an open application for this program and intake.",
+    "SLOT_TAKEN": "Sorry — someone just booked that time. Please choose another.",
+    "SLOT_BUSY": "That time is no longer free. Please choose another.",
+    "SLOT_TOO_SOON": "This time is too soon. Please choose a later time.",
+    "NOT_RESCHEDULABLE": "This appointment can no longer be changed.",
+    "REGISTRATION_CLOSED": "Registration is closed.",
+    "NOT_CANCELLABLE": "This can no longer be cancelled online. Please contact us.",
+    "TICKET_CANCELLED": "This ticket was cancelled."
   }
 }

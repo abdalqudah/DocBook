@@ -7,5 +7,6 @@ router.use('/', require('./modules/auth/web'));
 router.use('/staff', require('./modules/staff/web'));
 router.use('/', require('./modules/site/leads.web'));
 router.use('/', require('./modules/catalog/site.web'));
+router.use('/', require('./modules/booking/site.web'));
 router.use('/', require('./modules/site/web'));
 module.exports = router;

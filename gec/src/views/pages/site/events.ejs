@@ -1,0 +1,19 @@
+<section class="section">
+  <div class="container">
+    <div class="section-head"><span class="eyebrow"><%- icon('ticket') %><%= t('events.eyebrow') %></span><h1><%= t('events.title') %></h1><p><%= t('events.lead') %></p></div>
+    <% if (!upcoming.length) { %><div class="card mb6"><%- include('../../partials/empty', { title: t('events.none'), text: t('events.none_text'), href: '/book', cta: t('site.book_consultation'), emptyIcon: 'calendar-x' }) %></div><% } else { %>
+    <div class="grid-3 mb6">
+      <% upcoming.forEach(function (ev) { %>
+      <a class="card stack" href="/events/<%= ev.slug %>" style="text-decoration:none;color:inherit">
+        <% if (ev.image) { %><img src="<%= ev.image %>" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r-md)"><% } %>
+        <div class="cluster"><span class="chip brand"><%= t('events.type_' + ev.type) %></span><% if (ev.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></div>
+        <h2 class="mb0" style="font-size:1.1rem"><%= L(ev, 'title') %></h2>
+        <div class="small muted"><%- icon('calendar', 'sm') %> <%= fmt.dateTime(ev.starts_at) %></div>
+        <div class="small muted"><%- icon(ev.is_virtual ? 'video' : 'map-pin', 'sm') %> <%= ev.is_virtual ? t('events.online') : (L(ev, 'location') || '—') %></div>
+      </a>
+      <% }) %>
+    </div>
+    <% } %>
+    <% if (past.length) { %><h2><%= t('events.past') %></h2><div class="card"><div class="divider-list"><% past.forEach(function (ev) { %><a class="list-item" href="/events/<%= ev.slug %>"><span class="nowrap small muted"><%= fmt.date(ev.starts_at) %></span><div class="li-body"><div class="li-title"><%= L(ev, 'title') %></div></div></a><% }) %></div></div><% } %>
+  </div>
+</section>

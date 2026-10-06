@@ -20,11 +20,14 @@ function activityText(a, t, locale) {
     case 'task': return kind === 'task_completed' ? t('activity.task_completed', { title: m.title || '' }) : t('activity.task_created', { title: m.title || '' });
     case 'call': case 'whatsapp': case 'email': case 'sms': case 'meeting':
       if (kind === 'contact') return t(`activity.contact_${a.type}`, { outcome: t(`outcomes.${m.outcome || 'reached'}`) });
+      if (a.title === 'message') return t(`activity.msg_${m.direction || 'out'}_${a.type}`, { subject: m.subject || '' }) + (m.sent === false ? ` — ${t('activity.not_sent')}` : '');
       return a.title.includes(':') ? t(`activity.msg_${m.direction || 'out'}_${a.type}`, { subject: m.subject || '' }) : a.title;
     case 'visa':
       if (a.title === 'visa_stage') return t('activity.visa_stage', { to: t(`visa.stage_${m.to}`) });
       if (a.title === 'visa_created') return t('activity.visa_created', { country: require('../catalog/reference').countryName(m.country, locale) }); // eslint-disable-line global-require
       return t(`activity.${a.title}`, m);
+    case 'appointment': case 'course': case 'event':
+      return t(`activity.${a.title}`, { ...m, type: L(m.type_en, m.type_ar) || '', course: L(m.course_en, m.course_ar) || '', event: L(m.event_en, m.event_ar) || '' });
     default:
       return t(`activity.${a.title}`, m) !== `activity.${a.title}` ? t(`activity.${a.title}`, m) : a.title;
   }

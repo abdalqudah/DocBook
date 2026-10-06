@@ -1,0 +1,39 @@
+<% var full = c.capacity && seats >= c.capacity; %>
+<section class="section">
+  <div class="container detail-grid">
+    <div class="stack" style="--gap:20px;min-width:0">
+      <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/courses"><%= t('courses.title') %></a><%- icon('chevron-right') %><span><%= L(c, 'name') %></span></nav>
+      <h1 class="mb0"><%= L(c, 'name') %> <% if (c.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1>
+      <div class="fact-strip">
+        <div><div class="k"><%= t('courses.starts') %></div><div class="v"><%= c.start_date ? fmt.date(c.start_date) : t('courses.rolling') %></div></div>
+        <% if (c.end_date) { %><div><div class="k"><%= t('courses.ends') %></div><div class="v"><%= fmt.date(c.end_date) %></div></div><% } %>
+        <div><div class="k"><%= t('booking.mode') %></div><div class="v"><%= t('courses.mode_' + c.mode) %></div></div>
+        <% if (L(c, 'schedule')) { %><div><div class="k"><%= t('courses.schedule') %></div><div class="v"><%= L(c, 'schedule') %></div></div><% } %>
+        <% if (c.instructor_name) { %><div><div class="k"><%= t('courses.instructor') %></div><div class="v"><%= c.instructor_name %></div></div><% } %>
+        <div><div class="k"><%= t('courses.fee') %></div><div class="v"><%= c.price ? fmt.money(c.price, c.currency) : t('booking.free') %></div></div>
+        <% if (c.capacity) { %><div><div class="k"><%= t('courses.seats') %></div><div class="v"><%= t('courses.seats_left', { n: Math.max(0, c.capacity - seats) }) %></div></div><% } %>
+        <% if (c.certificate) { %><div><div class="k"><%= t('courses.certificate') %></div><div class="v"><%= t('common.yes') %></div></div><% } %>
+      </div>
+      <% if (L(c, 'description')) { %><div class="prose"><%- md(L(c, 'description')) %></div><% } %>
+      <% if (sessions.length) { %><section><h2><%= t('booking.sessions') %></h2><div class="card"><div class="divider-list"><% sessions.forEach(function (s) { %><div class="list-item"><span class="nowrap"><%= fmt.dateTime(s.starts_at) %></span><div class="li-body"><%= s.topic || '' %></div></div><% }) %></div></div></section><% } %>
+    </div>
+    <aside>
+      <div class="card sticky-card stack" id="register">
+        <h2 style="font-size:1.1rem" class="mb0"><%= t('courses.register') %></h2>
+        <% if (!c.registration_open) { %><p class="muted mb0"><%= t('errors.REGISTRATION_CLOSED') %></p><% } else { %>
+        <% if (full) { %><div class="alert warn"><%- icon('info') %><p><%= t('courses.full_waitlist') %></p></div><% } %>
+        <form method="post" action="/courses/<%= c.slug %>" class="stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+          <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, attrs: 'autocomplete="name"' }) %>
+          <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', attrs: 'autocomplete="email"' }) %>
+          <%- include('../../partials/field', { name: 'phone', label: t('book.phone_whatsapp'), type: 'tel', attrs: 'autocomplete="tel" dir="ltr"' }) %>
+          <label class="check <%= errors.consent_contact ? 'has-error' : '' %>"><input type="checkbox" name="consent_contact" value="1" required <%= old.consent_contact ? 'checked' : '' %>><span class="small"><%= t('book.consent_contact') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+          <% if (errors.consent_contact) { %><span class="error-text"><%= t('book.consent_required') %></span><% } %>
+          <button class="btn primary block" type="submit"><%= full ? t('courses.join_waitlist') : t('courses.register') %></button>
+        </form>
+        <% } %>
+      </div>
+    </aside>
+  </div>
+</section>

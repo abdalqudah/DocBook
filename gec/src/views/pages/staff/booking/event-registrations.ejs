@@ -1,0 +1,11 @@
+<nav class="breadcrumbs"><a href="/staff/events"><%= t('nav.events') %></a><%- icon('chevron-right') %><a href="/staff/events/<%= ev.id %>"><%= L(ev, 'title') %></a><%- icon('chevron-right') %><span><%= t('booking.open_registrations') %></span></nav>
+<div class="page-head"><div><h1><%= L(ev, 'title') %></h1><p class="lead"><%= fmt.dateTime(ev.starts_at) %> · <%= regs.filter(function (r) { return r.status === 'registered' || r.status === 'attended'; }).length %><%= ev.capacity ? ' / ' + ev.capacity : '' %> · <%= regs.filter(function (r) { return r.status === 'attended'; }).length %> <%= t('booking.checked_in') %></p></div><a class="btn" href="?format=csv"><%- icon('download') %><%= t('common.export') %></a></div>
+<form method="post" action="/staff/events/checkin" class="card cluster mb4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><%- icon('qr-code') %><label class="sr-only" for="code"><%= t('booking.ticket_code') %></label><input id="code" name="code" placeholder="<%= t('booking.ticket_code_ph') %>" style="flex:1" autocomplete="off"><button class="btn primary" type="submit"><%= t('booking.check_in') %></button></form>
+<div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.name') %></th><th><%= t('common.status') %></th><th><%= t('booking.checked_in') %></th><th></th></tr></thead><tbody>
+<% regs.forEach(function (r) { %><tr>
+  <td class="primary"><strong><%= r.name %></strong><div class="small subtle"><%= [r.email, r.phone].filter(Boolean).join(' · ') %></div></td>
+  <td data-label="<%= t('common.status') %>"><span class="chip <%= r.status === 'attended' ? 'ok' : r.status === 'cancelled' ? 'bad' : r.status === 'waitlist' ? 'warn' : '' %>"><%= t('booking.ev_' + r.status) %></span></td>
+  <td data-label="<%= t('booking.checked_in') %>" class="small"><%= r.checked_in_at ? fmt.dateTime(r.checked_in_at) : '—' %></td>
+  <td class="actions"><% if (r.status === 'registered') { %><form method="post" action="/staff/events/checkin/<%= r.ticket_token %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm" type="submit"><%- icon('check') %><%= t('booking.check_in') %></button></form><% } %></td>
+</tr><% }) %>
+</tbody></table></div>

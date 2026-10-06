@@ -1,0 +1,37 @@
+<% var who = a.student_first ? [a.student_first, a.student_last].filter(Boolean).join(' ') : (a.lead_first ? [a.lead_first, a.lead_last].filter(Boolean).join(' ') : (a.contact_name || '—')); var open = ['scheduled','confirmed'].indexOf(a.status) >= 0; %>
+<nav class="breadcrumbs"><a href="/staff/appointments"><%= t('nav.appointments') %></a><%- icon('chevron-right') %><span><%= a.ref %></span></nav>
+<div class="page-head"><div><h1><%= locale === 'ar' && a.type_ar ? a.type_ar : a.type_en %></h1><p class="lead"><%= fmt.date(a.start_at, { weekday: 'long', day: 'numeric', month: 'long' }) %> · <%= fmt.time(a.start_at) %>–<%= fmt.time(a.end_at) %> (<%= fmt.tz %>)</p></div><span class="chip <%= a.status === 'completed' ? 'ok' : a.status === 'no_show' || a.status === 'cancelled' ? 'bad' : 'brand' %>"><%= t('booking.status_' + a.status) %></span></div>
+<section class="card mb4">
+  <dl class="kv">
+    <dt><%= t('booking.with_whom') %></dt><dd><% if (a.student_id) { %><a href="/staff/students/<%= a.student_id %>"><%= who %></a><% } else if (a.lead_id) { %><a href="/staff/leads/<%= a.lead_id %>"><%= who %></a><% } else { %><%= who %><% } %></dd>
+    <% if (a.contact_email || a.contact_phone) { %><dt><%= t('leads.contact') %></dt><dd><%= [a.contact_email, a.contact_phone].filter(Boolean).join(' · ') %></dd><% } %>
+    <dt><%= t('booking.counsellor') %></dt><dd><%= a.employee_name || '—' %></dd>
+    <dt><%= t('booking.mode') %></dt><dd><%= t('booking.mode_' + a.mode) %><%= a.location ? ' · ' + a.location : '' %></dd>
+    <dt><%= t('booking.booked_via') %></dt><dd><%= t('booking.via_' + a.booked_via) %> · <%= fmt.dateTime(a.created_at) %></dd>
+    <% if (a.reminder_sent_at) { %><dt><%= t('booking.reminder') %></dt><dd><%= fmt.dateTime(a.reminder_sent_at) %></dd><% } %>
+    <% if (a.cancel_reason) { %><dt><%= t('booking.cancel_reason') %></dt><dd><%= a.cancel_reason %></dd><% } %>
+  </dl>
+</section>
+<% if (can('appointments.manage')) { %>
+<% if (open) { %>
+<section class="card mb4"><div class="cluster">
+  <% ['confirmed','completed','no_show'].forEach(function (s) { if (s === a.status) return; %><form method="post" action="/staff/appointments/<%= a.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= s %>"><button class="btn <%= s === 'completed' ? 'primary' : '' %>" type="submit"><%= t('booking.mark_' + s) %></button></form><% }) %>
+  <a class="btn" href="?reschedule=1"><%- icon('calendar-clock') %><%= t('booking.reschedule') %></a>
+  <form method="post" action="/staff/appointments/<%= a.id %>/status" data-confirm="<%= t('booking.cancel_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="cancelled"><button class="btn danger-ghost" type="submit"><%= t('booking.cancel') %></button></form>
+</div></section>
+<% } %>
+<% if (resched) { %>
+<section class="card mb4"><div class="spread mb4"><h2 class="mb0" style="font-size:1rem"><%= t('booking.pick_new_time') %></h2><form method="get" class="cluster"><input type="hidden" name="reschedule" value="1"><input type="date" name="date" value="<%= date %>" data-autosubmit aria-label="<%= t('common.date') %>" style="width:auto"></form></div>
+  <% var free = resched.slots.filter(function (s) { return s.start > new Date(); }); if (!free.length) { %><p class="muted"><%= t('booking.no_slots_day') %></p><% } else { %>
+  <form method="post" action="/staff/appointments/<%= a.id %>/reschedule" class="cluster"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% free.forEach(function (s) { %><button class="filter-chip" type="submit" name="start" value="<%= s.start.toISOString() %>"><%= fmt.time(s.start) %></button><% }) %></form><% } %>
+</section>
+<% } %>
+<form method="post" action="/staff/appointments/<%= a.id %>" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'meeting_url', label: t('booking.meeting_url'), type: 'url', value: a.meeting_url, hint: t('booking.meeting_url_hint'), attrs: 'dir="ltr"' }) %>
+  <%- include('../../../partials/field', { name: 'location', label: t('booking.location'), value: a.location }) %>
+  <%- include('../../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', rows: 3, value: a.notes }) %>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<% } %>

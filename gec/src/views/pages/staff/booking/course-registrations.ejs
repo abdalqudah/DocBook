@@ -1,0 +1,24 @@
+<nav class="breadcrumbs"><a href="/staff/courses"><%= t('nav.courses') %></a><%- icon('chevron-right') %><a href="/staff/courses/<%= course.id %>"><%= L(course, 'name') %></a><%- icon('chevron-right') %><span><%= t('booking.open_registrations') %></span></nav>
+<div class="page-head"><div><h1><%= L(course, 'name') %></h1><p class="lead"><%= t('booking.seats_used', { n: seats, cap: course.capacity || '∞' }) %></p></div><a class="btn" href="?format=csv"><%- icon('download') %><%= t('common.export') %></a></div>
+<section class="card mb4">
+  <div class="card-head"><h2><%= t('booking.registrations') %> <span class="count"><%= regs.length %></span></h2></div>
+  <% if (!regs.length) { %><p class="muted"><%= t('booking.no_registrations') %></p><% } else { %>
+  <div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.name') %></th><th><%= t('common.status') %></th><th><%= t('booking.payment') %></th><th><%= t('courses.certificate') %></th></tr></thead><tbody>
+    <% regs.forEach(function (r) { %><tr>
+      <td class="primary"><strong><%= r.name %></strong><div class="small subtle"><%= [r.email, r.phone].filter(Boolean).join(' · ') %></div></td>
+      <td data-label="<%= t('common.status') %>"><form method="post" action="/staff/courses/registrations/<%= r.id %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><select name="status" data-autosubmit aria-label="<%= t('common.status') %>" style="width:auto;min-height:32px"><% ['pending','confirmed','waitlist','cancelled','completed'].forEach(function (s) { %><option value="<%= s %>" <%= r.status === s ? 'selected' : '' %>><%= t('booking.reg_' + s) %></option><% }) %></select></form></td>
+      <td data-label="<%= t('booking.payment') %>"><form method="post" action="/staff/courses/registrations/<%= r.id %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><select name="payment_status" data-autosubmit aria-label="<%= t('booking.payment') %>" style="width:auto;min-height:32px"><% ['unpaid','paid','refunded','free'].forEach(function (s) { %><option value="<%= s %>" <%= r.payment_status === s ? 'selected' : '' %>><%= t('booking.pay_' + s) %></option><% }) %></select></form><% if (r.amount) { %><div class="small subtle"><%= fmt.money(r.amount, r.currency) %></div><% } %></td>
+      <td data-label="<%= t('courses.certificate') %>"><% if (r.certificate_no) { %><a href="/certificates/<%= r.certificate_no %>" target="_blank"><%= r.certificate_no %></a><% } else if (course.certificate && ['confirmed','completed'].indexOf(r.status) >= 0) { %><form method="post" action="/staff/courses/registrations/<%= r.id %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="certificate" value="1"><button class="btn sm" type="submit"><%- icon('award') %><%= t('booking.issue_certificate') %></button></form><% } else { %>—<% } %></td>
+    </tr><% }) %>
+  </tbody></table></div><% } %>
+</section>
+<section class="card">
+  <div class="card-head"><h2><%= t('booking.sessions') %></h2></div>
+  <% sessions.forEach(function (s) { var present = att.filter(function (x) { return x.session_id === s.id && x.present; }).map(function (x) { return x.registration_id; }); %>
+  <details class="card flat mb2"><summary><strong><%= fmt.dateTime(s.starts_at) %></strong><%= s.topic ? ' — ' + s.topic : '' %> · <%= present.length %> ✓</summary>
+    <form method="post" action="/staff/courses/sessions/<%= s.id %>/attendance" class="stack mt2" style="--gap:6px"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% regs.filter(function (r) { return ['confirmed','completed'].indexOf(r.status) >= 0; }).forEach(function (r) { %><label class="check"><input type="checkbox" name="present" value="<%= r.id %>" <%= present.indexOf(r.id) >= 0 ? 'checked' : '' %>><span><%= r.name %></span></label><% }) %>
+      <button class="btn sm primary" type="submit"><%= t('booking.save_attendance') %></button></form></details>
+  <% }) %>
+  <form method="post" action="/staff/courses/<%= course.id %>/sessions" class="cluster mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="datetime-local" name="starts_at" required aria-label="<%= t('booking.session_time') %>" style="width:auto"><input name="topic" placeholder="<%= t('booking.topic') %>" aria-label="<%= t('booking.topic') %>" style="width:auto;flex:1"><button class="btn sm" type="submit"><%- icon('plus') %><%= t('booking.add_session') %></button></form>
+</section>

@@ -35,6 +35,7 @@ function zodFor(f) {
     case 'int': return z.preprocess((v) => (blank(v) === undefined ? null : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a whole number.').min(f.min ?? 0, 'Too small.').max(max ?? 2147483647, 'Too large.').nullable());
     case 'bool': return z.preprocess((raw) => { const v = Array.isArray(raw) ? raw[raw.length - 1] : raw; return v === true || v === '1' || v === 'on' || v === 1 || v === 'true' || v === 'yes'; }, z.boolean());
     case 'date': return z.preprocess((v) => (blank(v) === undefined ? null : v), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.').nullable());
+    case 'datetime': return z.preprocess((v) => (blank(v) === undefined ? null : v), z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Enter a valid date and time.').nullable());
     case 'select': return z.preprocess((v) => (blank(v) === undefined ? null : v), z.string().max(120).nullable());
     case 'checks': return z.preprocess((v) => (v === undefined || v === null || v === '' ? [] : [].concat(v).map(String).filter(Boolean)), z.array(z.string().max(120)).max(200));
     case 'list': return z.preprocess((v) => (Array.isArray(v) ? v : String(v || '').split(/\r?\n/)).map((s) => String(s).trim()).filter(Boolean), z.array(z.string().max(500)).max(100));
@@ -73,8 +74,10 @@ function resource(def) {
   }
 
   /** Form values → database row (JSON columns stringified, slug filled). */
-  async function toRow(data, existing) {
+  async function toRow(data, existing, tz = 'UTC') {
     const row = { ...data };
+    fields.filter((f) => f.type === 'datetime' && row[f.name]).forEach((f) => { row[f.name] = require('./format').zonedToUtc(row[f.name], tz); }); // eslint-disable-line global-require
+    fields.filter((f) => f.virtual).forEach((f) => { delete row[f.name]; });
     fields.filter((f) => JSON_TYPES.has(f.type) && f.name in row).forEach((f) => { row[f.name] = row[f.name] === null ? null : JSON.stringify(row[f.name]); });
     if (def.slugFrom && fields.some((f) => f.name === 'slug')) {
       let base = row.slug || (existing && existing.slug) || slugify(row[def.slugFrom]) || `${def.key}-${Date.now().toString(36)}`;
@@ -199,6 +202,7 @@ function resource(def) {
   router.get('/:id', can(perms.view), ah(async (req, res) => {
     const row = parseRow(await knex(def.table).where({ id: idParam(req.params.id) }).first());
     if (!row) throw E.notFound();
+    if (def.loadVirtual) Object.assign(row, await def.loadVirtual(row));
     return form(req, res, row);
   }));
 
@@ -207,7 +211,7 @@ function resource(def) {
     if (!isNew && !existing) throw E.notFound();
     try {
       const data = validate(schema(canInternal(req)), req.body);
-      const row = await toRow(data, existing);
+      const row = await toRow(data, existing, res.locals.fmt.tz);
       let id;
       if (isNew) {
         [id] = await knex(def.table).insert(row);
@@ -220,7 +224,7 @@ function resource(def) {
           await audit.record(req.ctx, `${def.entity}.updated`, { entityType: def.entity, entityId: id, oldValues: d.oldValues, newValues: d.newValues });
         }
       }
-      if (def.afterSave) await def.afterSave(id, req);
+      if (def.afterSave) await def.afterSave(id, req, data);
       flash(req, 'ok', req.t('common.saved'));
       return res.redirect(`${base}/${id}`);
     } catch (e) {

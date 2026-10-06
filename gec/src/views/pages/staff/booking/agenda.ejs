@@ -1,0 +1,29 @@
+<div class="page-head">
+  <div><h1><%= t('nav.appointments') %></h1><p class="lead"><%= t('booking.agenda_lead') %></p></div>
+  <div class="cluster"><a class="btn" href="/staff/appointments/availability"><%- icon('calendar-clock') %><%= t('booking.my_availability') %></a><% if (can('appointments.manage')) { %><a class="btn primary" href="/staff/appointments/new"><%- icon('plus') %><%= t('booking.new_appointment') %></a><% } %></div>
+</div>
+<form class="toolbar" method="get">
+  <a class="btn sm" href="<%= qs({ date: prev }) %>" aria-label="<%= t('common.previous') %>"><%- icon('chevron-left', 'flip-rtl') %></a>
+  <input type="date" name="date" value="<%= day %>" data-autosubmit aria-label="<%= t('common.date') %>" style="width:auto">
+  <a class="btn sm" href="<%= qs({ date: next }) %>" aria-label="<%= t('common.next') %>"><%- icon('chevron-right', 'flip-rtl') %></a>
+  <div class="seg"><a href="<%= qs({ range: 'day' }) %>" <%- days === 1 ? 'class="on"' : '' %>><%= t('booking.day') %></a><a href="<%= qs({ range: null }) %>" <%- days === 7 ? 'class="on"' : '' %>><%= t('booking.week') %></a></div>
+  <% if (staff.employee.dataScope !== 'own') { %><select name="employee" data-autosubmit aria-label="<%= t('common.assigned_to') %>"><option value=""><%= t('leads.anyone') %></option><% employeesList.forEach(function (e) { %><option value="<%= e.value %>" <%= String(query.employee) === e.value ? 'selected' : '' %>><%= e.label %></option><% }) %></select><% } %>
+  <select name="status" data-autosubmit aria-label="<%= t('common.status') %>"><option value=""><%= t('booking.active') %></option><% statuses.forEach(function (s) { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('booking.status_' + s) %></option><% }) %></select>
+</form>
+<% if (!groups.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('booking.none'), text: t('booking.none_text'), emptyIcon: 'calendar-days', compact: true }) %></div><% } %>
+<div class="stack">
+<% groups.forEach(function (g) { %>
+  <section class="card">
+    <h2 class="section-title"><%= fmt.date(g.day + 'T12:00:00Z', { weekday: 'long', day: 'numeric', month: 'long' }) %></h2>
+    <div class="divider-list">
+      <% g.items.forEach(function (a) { var who = a.student_first ? [a.student_first, a.student_last].filter(Boolean).join(' ') : (a.lead_first ? [a.lead_first, a.lead_last].filter(Boolean).join(' ') : (a.contact_name || '—')); %>
+      <a class="list-item" href="/staff/appointments/<%= a.id %>">
+        <span class="nowrap num" style="min-width:64px;font-weight:700"><%= fmt.time(a.start_at) %></span>
+        <div class="li-body"><div class="li-title"><%= who %></div><div class="li-sub"><%= locale === 'ar' && a.type_ar ? a.type_ar : a.type_en %> · <%= a.employee_name || '' %> · <%= t('booking.mode_' + a.mode) %></div></div>
+        <span class="chip <%= a.status === 'completed' ? 'ok' : a.status === 'no_show' || a.status === 'cancelled' ? 'bad' : a.status === 'confirmed' ? 'brand' : '' %>"><%= t('booking.status_' + a.status) %></span>
+      </a>
+      <% }) %>
+    </div>
+  </section>
+<% }) %>
+</div>

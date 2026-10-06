@@ -1,0 +1,19 @@
+<section class="section">
+  <div class="container" style="max-width:720px">
+    <% if (!c) { %>
+      <div class="card"><%- include('../../partials/empty', { title: t('courses.cert_not_found'), text: t('courses.cert_not_found_text', { no: no }), emptyIcon: 'shield-x' }) %></div>
+    <% } else { %>
+    <article class="card certificate stack text-center">
+      <img class="logo-img" src="/brand/logo-h.webp" alt="<%= branding.legal_name || 'GEC' %>" style="height:48px;align-self:center">
+      <span class="chip ok" style="align-self:center"><%- icon('shield-check', 'sm') %> <%= t('courses.cert_verified') %></span>
+      <p class="muted mb0"><%= t('courses.cert_certifies') %></p>
+      <h1 class="serif" style="font-size:2rem" class="mb0"><%= c.name %></h1>
+      <p class="mb0"><%= t('courses.cert_completed') %></p>
+      <h2 style="font-size:1.25rem"><%= L(c, 'name') %></h2>
+      <p class="small muted mb0"><%= c.start_date ? fmt.date(c.start_date) : '' %><%= c.end_date ? ' – ' + fmt.date(c.end_date) : '' %><%= c.instructor_name ? ' · ' + c.instructor_name : '' %></p>
+      <p class="small subtle mb0"><%= t('courses.cert_no') %> <span class="num"><%= c.certificate_no %></span> · <%= t('courses.cert_issued') %> <%= fmt.date(c.certificate_issued_at) %></p>
+      <div><button class="btn" type="button" data-print><%- icon('printer') %><%= t('common.print') %></button></div>
+    </article>
+    <% } %>
+  </div>
+</section>

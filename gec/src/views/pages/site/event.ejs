@@ -1,0 +1,37 @@
+<% var isPast = new Date(ev.ends_at || ev.starts_at) < new Date(); var full = ev.capacity && seats >= ev.capacity; var sp = (locale === 'ar' && ev.speakers_ar && ev.speakers_ar.length) ? ev.speakers_ar : (ev.speakers_en || []); %>
+<section class="section">
+  <div class="container detail-grid">
+    <div class="stack" style="--gap:20px;min-width:0">
+      <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/events"><%= t('events.title') %></a><%- icon('chevron-right') %><span><%= L(ev, 'title') %></span></nav>
+      <div class="cluster"><span class="chip brand"><%= t('events.type_' + ev.type) %></span><% if (ev.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></div>
+      <h1 class="mb0"><%= L(ev, 'title') %></h1>
+      <% if (ev.image) { %><img src="<%= ev.image %>" alt="" style="width:100%;max-height:380px;object-fit:cover;border-radius:var(--r-lg)"><% } %>
+      <div class="fact-strip">
+        <div><div class="k"><%= t('common.date') %></div><div class="v"><%= fmt.date(ev.starts_at, { weekday: 'long', day: 'numeric', month: 'long' }) %></div></div>
+        <div><div class="k"><%= t('booking.time') %></div><div class="v"><%= fmt.time(ev.starts_at) %><%= ev.ends_at ? '–' + fmt.time(ev.ends_at) : '' %> (<%= fmt.tz %>)</div></div>
+        <div><div class="k"><%= t('events.where') %></div><div class="v"><%= ev.is_virtual ? t('events.online') : (L(ev, 'location') || '—') %></div></div>
+        <% if (ev.capacity) { %><div><div class="k"><%= t('courses.seats') %></div><div class="v"><%= t('courses.seats_left', { n: Math.max(0, ev.capacity - seats) }) %></div></div><% } %>
+      </div>
+      <% if (L(ev, 'description')) { %><div class="prose"><%- md(L(ev, 'description')) %></div><% } %>
+      <% if (sp.length) { %><section><h2><%= t('events.speakers') %></h2><div class="grid-2"><% sp.forEach(function (s) { var parts = typeof s === 'string' ? s.split(/\s+[—–-]\s+/) : [s.name, s.role]; %><div class="card row"><span class="avatar"><%= initials(parts[0] || '') %></span><div><strong><%= parts[0] %></strong><div class="small muted"><%= parts.slice(1).join(' — ') %></div></div></div><% }) %></div></section><% } %>
+    </div>
+    <aside>
+      <div class="card sticky-card stack" id="register">
+        <h2 style="font-size:1.1rem" class="mb0"><%= t('events.register') %></h2>
+        <% if (isPast) { %><p class="muted mb0"><%= t('events.ended') %></p><% } else if (!ev.registration_open) { %><p class="muted mb0"><%= t('errors.REGISTRATION_CLOSED') %></p><% } else { %>
+        <% if (full) { %><div class="alert warn"><%- icon('info') %><p><%= t('courses.full_waitlist') %></p></div><% } %>
+        <form method="post" action="/events/<%= ev.slug %>" class="stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+          <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, attrs: 'autocomplete="name"' }) %>
+          <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', attrs: 'autocomplete="email"' }) %>
+          <%- include('../../partials/field', { name: 'phone', label: t('book.phone_whatsapp'), type: 'tel', attrs: 'autocomplete="tel" dir="ltr"' }) %>
+          <label class="check <%= errors.consent_contact ? 'has-error' : '' %>"><input type="checkbox" name="consent_contact" value="1" required <%= old.consent_contact ? 'checked' : '' %>><span class="small"><%= t('book.consent_contact') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+          <% if (errors.consent_contact) { %><span class="error-text"><%= t('book.consent_required') %></span><% } %>
+          <button class="btn primary block" type="submit"><%= full ? t('courses.join_waitlist') : t('events.get_ticket') %></button>
+        </form>
+        <% } %>
+      </div>
+    </aside>
+  </div>
+</section>

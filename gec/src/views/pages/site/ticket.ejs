@@ -1,0 +1,22 @@
+<section class="section">
+  <div class="container" style="max-width:560px">
+    <% if (isNew) { %><div class="alert ok mb4"><%- icon('check-circle-2') %><p><strong><%= r.status === 'waitlist' ? t('courses.waitlisted') : t('events.registered') %></strong> <%= t('events.registered_text') %></p></div><% } %>
+    <article class="card stack text-center ticket">
+      <span class="chip <%= r.status === 'cancelled' ? 'bad' : r.status === 'waitlist' ? 'warn' : r.status === 'attended' ? 'ok' : 'brand' %>" style="align-self:center"><%= t('booking.ev_' + r.status) %></span>
+      <h1 style="font-size:1.4rem" class="mb0"><%= L(r, 'title') %></h1>
+      <p class="muted mb0"><%= fmt.date(r.starts_at, { weekday: 'long', day: 'numeric', month: 'long' }) %> · <%= fmt.time(r.starts_at) %> (<%= fmt.tz %>)</p>
+      <p class="muted mb0"><%- icon(r.is_virtual ? 'video' : 'map-pin', 'sm') %> <%= r.is_virtual ? t('events.online') : (L(r, 'location') || '—') %></p>
+      <% if (r.status === 'registered') { %>
+        <img src="<%= qr %>" alt="<%= t('events.qr_alt') %>" width="220" height="220" style="align-self:center;background:#fff;border-radius:12px;padding:8px">
+        <p class="small subtle mb0"><%= t('events.show_qr') %></p>
+        <% if (r.is_virtual && r.meeting_url) { %><a class="btn primary" href="<%= r.meeting_url %>" target="_blank" rel="noopener"><%- icon('video') %><%= t('events.join_online') %></a><% } %>
+      <% } %>
+      <strong style="font-size:1.1rem"><%= r.name %></strong>
+      <div class="cluster" style="justify-content:center"><button class="btn" type="button" data-print><%- icon('printer') %><%= t('common.print') %></button></div>
+    </article>
+    <% if (['registered','waitlist'].indexOf(r.status) >= 0 && new Date(r.starts_at) > new Date()) { %>
+    <form method="post" action="/tickets/<%= r.ticket_token %>/cancel" class="mt4 text-center" data-confirm="<%= t('events.cancel_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost" type="submit"><%= t('events.cancel_ticket') %></button></form>
+    <% } %>
+    <p class="disclaimer mt4"><%- icon('lock', 'sm') %><span><%= t('booking.private_link') %></span></p>
+  </div>
+</section>

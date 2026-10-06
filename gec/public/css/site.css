@@ -165,3 +165,12 @@ body:has(.compare-bar:not([hidden])) .wa-fab { inset-block-end: 76px; }
 .compare-table td { vertical-align: top; min-width: 200px; }
 .compare-table thead th { vertical-align: bottom; }
 @media print { .compare-actions, .compare-bar { display: none !important; } .table-wrap { overflow: visible; border: 0; } }
+
+/* Scheduler: seven day columns that scroll sideways on phones. */
+.week-grid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(120px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
+.week-grid .day-col { padding: 12px; scroll-snap-align: start; }
+.day-head { display: flex; flex-direction: column; align-items: center; font-size: .85rem; font-weight: 500; color: var(--text-3); margin: 0 0 10px; }
+.day-head strong { color: var(--text); font-size: 1rem; }
+.slot-btn { justify-content: center; font-variant-numeric: tabular-nums; }
+.certificate { padding: 48px 32px; border-width: 2px; }
+@media print { .site-header, .site-footer, .cookie-bar, .wa-fab, .disclaimer, form, [data-print] { display: none !important; } .ticket, .certificate { box-shadow: none; } }

@@ -1,0 +1,11 @@
+<div class="page-head"><h1><%= t('booking.check_in') %></h1></div>
+<% if (!r) { %><div class="alert bad"><%- icon('circle-x') %><p><%= t('booking.ticket_not_found') %></p></div><% } else { %>
+<section class="card stack text-center">
+  <% if (done === 'ok') { %><div class="alert ok"><%- icon('check-circle-2') %><p><strong><%= t('booking.checked_in_ok') %></strong></p></div><% } else if (done === 'already') { %><div class="alert warn"><%- icon('alert-triangle') %><p><%= t('booking.already_checked_in', { time: fmt.dateTime(r.checked_in_at) }) %></p></div><% } %>
+  <h2 style="font-size:1.4rem"><%= r.name %></h2>
+  <p class="muted"><%= L(r, 'title') %> · <%= fmt.dateTime(r.starts_at) %></p>
+  <p><span class="chip <%= r.status === 'attended' ? 'ok' : r.status === 'cancelled' ? 'bad' : '' %>"><%= t('booking.ev_' + r.status) %></span></p>
+  <% if (!done && r.status === 'registered') { %><form method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn primary lg block" type="submit"><%- icon('check') %><%= t('booking.check_in') %></button></form><% } %>
+  <a class="btn ghost" href="/staff/events/<%= r.event_id %>/registrations"><%= t('booking.all_registrations') %></a>
+</section>
+<% } %>

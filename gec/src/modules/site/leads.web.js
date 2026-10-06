@@ -1,5 +1,6 @@
 // Public lead forms: free consultation request (/book) and contact (/contact). Every submission becomes a CRM lead.
 const express = require('express');
+const knex = require('../../db/knex');
 const limits = require('../../middleware/limits');
 const { ah } = require('../../core/http');
 const { validate, z, reqStr, str, optEmail, phone, list, oneOf } = require('../../core/validate');
@@ -36,6 +37,7 @@ async function bookPage(req, res, extra = {}) {
     seo: { title: req.t('book.title'), description: req.t('book.lead'), canonical: `${res.locals.appUrl}/book` },
     destinations: await ref.destinationOptions(req.locale), old: { ...prefill, ...(extra.old || {}) }, errors: extra.errors || {},
     utm: Object.fromEntries(capture.UTM.map((k) => [k, req.query[`utm_${k}`] || ''])), about: req.query.about || '', ...extra,
+    canSchedule: await knex.schema.hasTable('appointment_types') && !!(await knex('appointment_types as t').where({ 't.is_active': true, 't.is_public': true }).whereExists(knex('appointment_type_staff').whereRaw('type_id = t.id')).first('t.id')),
   });
 }
 
@@ -64,7 +66,7 @@ const contactSchema = z.object({
 }).refine((d) => d.email || d.phone, { message: 'Enter an email or a phone number.', path: ['email'] });
 
 async function contactPage(req, res, extra = {}) {
-  const knex = require('../../db/knex'); // eslint-disable-line global-require
+
   const offices = await knex('branches').where({ is_active: true }).orderBy('id');
   res.page('pages/site/contact', { layout: 'public', title: req.t('contact.title'), seo: { title: req.t('contact.title'), description: req.t('contact.lead'), canonical: `${res.locals.appUrl}/contact` }, offices, old: extra.old || {}, errors: extra.errors || {}, sent: extra.sent || false });
 }

@@ -26,6 +26,7 @@
            else if (f.type === 'markdown' || f.type === 'textarea') { %><%- include('../../../partials/field', Object.assign(common, { type: 'textarea', rows: f.rows || 4, value: val, hint: f.type === 'markdown' ? (common.hint || t('resources.markdown_hint')) : common.hint })) %><% }
            else if (f.type === 'list') { %><%- include('../../../partials/field', Object.assign(common, { type: 'textarea', rows: f.rows || 4, value: Array.isArray(val) ? val.join('\n') : (val || '') })) %><% }
            else if (f.type === 'json') { %><%- include('../../../partials/field', Object.assign(common, { type: 'textarea', rows: f.rows || 4, value: val && typeof val === 'object' ? JSON.stringify(val, null, 2) : (val || ''), attrs: 'dir="ltr" spellcheck="false" style="font-family:ui-monospace,monospace;font-size:.85rem"' })) %><% }
+           else if (f.type === 'datetime') { %><%- include('../../../partials/field', Object.assign(common, { type: 'datetime-local', value: val ? (typeof val === 'string' && val.indexOf('T') > 0 && val.length === 16 ? val : fmt.dateTimeInput(val)) : '' })) %><% }
            else if (f.type === 'date') { %><%- include('../../../partials/field', Object.assign(common, { type: 'date', value: val ? fmt.dateInput(val) : '' })) %><% }
            else if (f.type === 'int' || f.type === 'number' || f.type === 'money') { %><%- include('../../../partials/field', Object.assign(common, { type: 'number', value: val })) %><% }
            else if (f.type === 'url' || f.type === 'image') { %><%- include('../../../partials/field', Object.assign(common, { type: 'url', value: val, attrs: 'dir="ltr" placeholder="https://"' })) %><% if (f.type === 'image' && val) { %><img src="<%= val %>" alt="" style="max-height:80px;border-radius:8px;margin-top:-6px"><% } %><% }
@@ -39,7 +40,7 @@
 </form>
 <% if (related && related.length) { %>
 <section class="card mt4"><div class="card-head"><h2><%= t('resources.' + def.key + '.related') %> <span class="count"><%= related.length %></span></h2><% if (canManage && def.key === 'universities') { %><a class="btn sm tonal" href="/staff/programs/new?university_id=<%= row.id %>"><%- icon('plus') %><%= t('resources.programs.new') %></a><% } %></div>
-  <div class="divider-list"><% related.forEach(function (r) { %><a class="list-item" href="<%= r.href %>"><div class="li-body"><div class="li-title"><%= r.title %></div><div class="li-sub"><%= r.sub ? t('ref.degree.' + r.sub) : '' %></div></div><% if (r.off) { %><span class="chip"><%= t('common.disabled') %></span><% } %></a><% }) %></div>
+  <div class="divider-list"><% related.forEach(function (r) { %><a class="list-item" href="<%= r.href %>"><div class="li-body"><div class="li-title"><%= r.title === 'registrations' ? t('booking.open_registrations') : r.title %></div><div class="li-sub"><%= r.sub ? t('ref.degree.' + r.sub) : '' %></div></div><% if (r.off) { %><span class="chip"><%= t('common.disabled') %></span><% } %></a><% }) %></div>
 </section>
 <% } %>
 <% if (row.id && canManage) { %><form method="post" action="<%= base %>/<%= row.id %>/delete" data-confirm="<%= t('resources.delete_confirm') %>" class="mt6"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost sm" type="submit"><%- icon('trash-2') %><%= t('common.delete') %></button></form><% } %>

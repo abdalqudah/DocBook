@@ -1,0 +1,22 @@
+<section class="section">
+  <div class="container" style="max-width:640px">
+    <% if (query.new === '1') { %><div class="alert ok mb4"><%- icon('check-circle-2') %><p><strong><%= r.status === 'waitlist' ? t('courses.waitlisted') : t('courses.registered') %></strong> <%= t('courses.registered_text') %></p></div><% } %>
+    <h1><%= L(r, 'name') %></h1>
+    <section class="card">
+      <dl class="kv">
+        <dt><%= t('common.name') %></dt><dd><%= r.name %></dd>
+        <dt><%= t('common.status') %></dt><dd><span class="chip <%= r.status === 'cancelled' ? 'bad' : r.status === 'waitlist' ? 'warn' : 'ok' %>"><%= t('booking.reg_' + r.status) %></span></dd>
+        <dt><%= t('courses.starts') %></dt><dd><%= r.start_date ? fmt.date(r.start_date) : t('courses.rolling') %></dd>
+        <dt><%= t('booking.mode') %></dt><dd><%= t('courses.mode_' + r.mode) %><%= r.location ? ' · ' + r.location : '' %></dd>
+        <dt><%= t('booking.payment') %></dt><dd><%= t('booking.pay_' + r.payment_status) %><%= r.amount ? ' · ' + fmt.money(r.amount, r.currency) : '' %></dd>
+        <dt><%= t('booking.reference') %></dt><dd class="num"><%= r.ref %></dd>
+        <% if (r.certificate_no) { %><dt><%= t('courses.certificate') %></dt><dd><a href="/certificates/<%= r.certificate_no %>"><%= r.certificate_no %></a></dd><% } %>
+      </dl>
+      <% if (r.payment_status === 'unpaid' && r.amount) { %><p class="small muted mt4 mb0"><%= t('courses.payment_note') %></p><% } %>
+    </section>
+    <% if (r.cancellable && ['pending','confirmed','waitlist'].indexOf(r.status) >= 0) { %>
+    <form method="post" action="/courses/registration/<%= token %>/cancel" class="mt4" data-confirm="<%= t('courses.cancel_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger-ghost" type="submit"><%= t('courses.cancel_registration') %></button></form>
+    <% } %>
+    <p class="disclaimer mt4"><%- icon('lock', 'sm') %><span><%= t('booking.private_link') %></span></p>
+  </div>
+</section>

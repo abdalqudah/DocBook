@@ -139,3 +139,46 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   and journey, permission denial; expiry job; pipeline settings. Suite: 38.
 * **Known limitations:** document previews open the original file (no in-browser PDF annotation); the lead pipeline
   follows applications forward only (never backwards) by design.
+
+---
+
+## Phase 5 — Appointments, courses, events
+
+### Plan
+* **Exists:** the original site's "Book a consultation" form (phase 2 turned it into lead capture) and three static
+  events in the SPA data. No scheduling, courses or tickets.
+* **Reuse:** lead capture (`site/capture`) so every booking / registration creates or updates a lead with source and
+  consent; the timeline; e-mail templates + outbox; resource CRUD; data scopes; the attention queue and KPI registries.
+* **Change:** Calendly-style scheduler (types, counsellors per type, weekly hours in the branch time zone, time off,
+  buffers, minimum notice, booking window), public booking with a private manage link (reschedule / cancel / .ics),
+  staff agenda and booking for a lead or student, reminders job; courses with sessions, seats, waiting list,
+  payment status, attendance and verifiable certificates; events with registration, waiting list, QR tickets and
+  door check-in; follow-up e-mails.
+* **Database:** `appointment_types`, `appointment_type_staff`, `availability`, `availability_exceptions`,
+  `appointments`, `courses`, `course_sessions`, `course_registrations`, `course_attendance`, `events`,
+  `event_registrations`.
+* **Routes (public):** `/book/schedule[/:slug[/confirm]]`, `/appointments/:token[/calendar.ics|/cancel|/reschedule]`,
+  `/courses[/:slug]`, `/courses/registration/:token[/cancel]`, `/events[/:slug]`, `/tickets/:token[/cancel]`,
+  `/certificates/:no`. **Staff:** `/staff/appointments[/new|/availability|/:id[/status|/reschedule]]`,
+  `/staff/appointment-types`, `/staff/courses[/:id/registrations|/:id/sessions|/registrations/:rid|/sessions/:sid/attendance]`,
+  `/staff/events[/:id/registrations|/checkin[/:token]]`.
+* **Security:** no double booking — each booking re-checks the slot inside a transaction holding a per-counsellor
+  MySQL named lock; website bookings must match published availability (a crafted time is refused); manage links
+  are 32-character random tokens, rate-limited, and rotate on reschedule; the online meeting link is never on public
+  event pages (ticket holders only); check-in requires `events.manage`; appointments follow the owner / branch scope.
+
+### Report
+* **Files:** `src/modules/booking/*` (scheduling, appointments / courses / events services, handlers + jobs, admin
+  resources, staff web, public web), `src/modules/comms/{templates,notify,comms.service}.js`, views
+  `pages/staff/booking/*`, `pages/site/{schedule*,appointment,course*,event*,ticket,certificate}.ejs`,
+  `src/locales/*/engagement.json`, seed `src/db/seeds/demo-engagement.js` (GEC's three original events, two demo
+  consultation types with hours for the demo counsellors, two sample courses — all flagged demo).
+* **Migration:** `20261005000500_phase5_engagement.js`.
+* **Tests:** `test/phase5.test.js` (6): slot engine (notice, time off, buffer), concurrent booking (exactly one
+  wins), public booking → lead + appointment + stage `counselling_booked` + confirmation e-mail + 409 without a
+  stray lead + .ics + reschedule (old link dies) + cancel; staff scope and status; course capacity / waiting list
+  promotion / attendance / certificate verification / CSV; event QR ticket, private meeting link, check-in
+  permission and idempotency. Suite: 44.
+* **Known limitations:** meeting links are entered by staff (Google Meet / Teams auto-creation arrives with the
+  calendar integrations in Settings → Integrations); course payment status is recorded manually until the finance
+  module (phase 6) issues invoices; the scheduler offers 30-minute steps for types of 30 minutes or longer.

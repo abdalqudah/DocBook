@@ -1,0 +1,26 @@
+<section class="section">
+  <div class="container" style="max-width:720px">
+    <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/book/schedule/<%= type.slug %>"><%= L(type, 'name') %></a><%- icon('chevron-right') %><span><%= t('booking.confirm_title') %></span></nav>
+    <h1><%= t('booking.confirm_title') %></h1>
+    <% if (typeof taken !== 'undefined' && taken) { %><div class="alert bad mb4"><%- icon('circle-x') %><p><%= t('errors.SLOT_TAKEN') %> <a href="/book/schedule/<%= type.slug %>"><%= t('booking.pick_another') %></a></p></div><% } %>
+    <div class="card flat mb4 row"><%- icon('calendar-check', 'lg') %><div><strong><%= fmt.date(start, { weekday: 'long', day: 'numeric', month: 'long' }) %> · <%= fmt.time(start) %></strong><div class="small muted"><%= L(type, 'name') %> · <%= t('booking.minutes', { n: type.duration_min }) %> · <%= t('booking.with') %> <%= emp.name %> · <%= fmt.tz %></div></div></div>
+    <form method="post" action="/book/schedule/<%= type.slug %>/confirm" class="form-card stack" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="start" value="<%= start.toISOString() %>"><input type="hidden" name="with" value="<%= emp.id %>">
+      <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <div class="form-grid two">
+        <%- include('../../partials/field', { name: 'first_name', label: t('people.first_name'), required: true, attrs: 'autocomplete="given-name"' }) %>
+        <%- include('../../partials/field', { name: 'last_name', label: t('people.last_name'), attrs: 'autocomplete="family-name"' }) %>
+        <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', attrs: 'autocomplete="email"' }) %>
+        <%- include('../../partials/field', { name: 'phone', label: t('book.phone_whatsapp'), type: 'tel', attrs: 'autocomplete="tel" dir="ltr"' }) %>
+      </div>
+      <% if (type.location_mode === 'both') { %><%- include('../../partials/field', { name: 'mode', label: t('booking.mode'), type: 'select', value: 'online', required: true, options: ['online','in_person'].map(function (m) { return { value: m, label: t('booking.mode_' + m) }; }) }) %><% } else { %><input type="hidden" name="mode" value="<%= type.location_mode %>"><% } %>
+      <%- include('../../partials/field', { name: 'notes', label: t('booking.notes_for_us'), type: 'textarea', rows: 3, placeholder: t('book.message_ph') }) %>
+      <div class="consent-box">
+        <label class="check <%= errors.consent_contact ? 'has-error' : '' %>"><input type="checkbox" name="consent_contact" value="1" required <%= old.consent_contact ? 'checked' : '' %>><span><%= t('book.consent_contact') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+        <% if (errors.consent_contact) { %><span class="error-text"><%= t('book.consent_required') %></span><% } %>
+        <label class="check"><input type="checkbox" name="consent_marketing" value="1" <%= old.consent_marketing ? 'checked' : '' %>><span><%= t('book.consent_marketing') %></span></label>
+      </div>
+      <div class="form-actions"><a class="btn ghost" href="/book/schedule/<%= type.slug %>"><%= t('common.back') %></a><button class="btn primary lg" type="submit"><%= t('booking.confirm_booking') %></button></div>
+    </form>
+  </div>
+</section>
