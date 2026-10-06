@@ -18,7 +18,7 @@ function activityText(a, t, locale) {
     case 'merged': return t('activity.merged', { ref: m.from_ref || '' });
     case 'note': return t('activity.note');
     case 'task': return kind === 'task_completed' ? t('activity.task_completed', { title: m.title || '' }) : t('activity.task_created', { title: m.title || '' });
-    case 'call': case 'whatsapp': case 'email': case 'sms': case 'meeting':
+    case 'call': case 'whatsapp': case 'email': case 'sms': case 'meeting': case 'portal':
       if (kind === 'contact') return t(`activity.contact_${a.type}`, { outcome: t(`outcomes.${m.outcome || 'reached'}`) });
       if (a.title === 'message') return t(`activity.msg_${m.direction || 'out'}_${a.type}`, { subject: m.subject || '' }) + (m.sent === false ? ` — ${t('activity.not_sent')}` : '') + (m.manual ? ` — ${t('activity.from_phone')}` : '');
       return a.title.includes(':') ? t(`activity.msg_${m.direction || 'out'}_${a.type}`, { subject: m.subject || '' }) : a.title;

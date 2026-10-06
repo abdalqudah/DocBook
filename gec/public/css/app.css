@@ -463,3 +463,8 @@ fieldset.card > legend + * { clear: both; }
   .invoice-doc { border: 0; box-shadow: none; padding: 0; }
   body { background: #fff; }
 }
+
+/* AI advisor (public site and portal) */
+.advisor-log { display: flex; flex-direction: column; gap: 14px; }
+.advisor-log .q { align-self: flex-end; background: var(--brand-soft); padding: 10px 14px; border-radius: 16px; max-width: 80%; }
+.advisor-log .a { align-self: stretch; }

@@ -1,0 +1,19 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.ai') %></h1><p class="lead"><%= t('settings.ai_desc') %></p></div><span class="chip <%= connected ? 'ok' : 'warn' %>"><%- icon(connected ? 'check' : 'plug-zap') %><%= connected ? t('comms.connected') : t('comms.not_connected') %></span></div>
+<div class="alert info mb4"><%- icon('shield-check') %><p><%= t('ai.how_it_works') %></p></div>
+<form method="post" class="card stack" autocomplete="off">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'enabled', label: t('integrations.enabled'), type: 'checkbox', value: s.enabled }) %>
+  <div class="form-grid two">
+    <div class="field"><label><%= t('integrations.provider') %></label><input value="Anthropic Claude" disabled></div>
+    <%- include('../../../partials/field', { name: 'api_key', label: t('ai.api_key'), type: 'password', placeholder: hasKey ? t('integrations.saved_secret') : 'sk-ant-…', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('integrations.password_hint') }) %>
+    <%- include('../../../partials/field', { name: 'model', label: t('ai.model'), type: 'select', required: true, value: s.model || models[0], options: models.map(function (m) { return { value: m, label: m }; }), hint: t('ai.model_hint') }) %>
+    <%- include('../../../partials/field', { name: 'effort', label: t('ai.effort'), type: 'select', required: true, value: s.effort || 'medium', options: ['low','medium','high'].map(function (e) { return { value: e, label: t('ai.effort_' + e) }; }) }) %>
+  </div>
+  <p class="small subtle mb0"><%- icon('lock', 'sm') %> <%= t('integrations.encrypted') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<form method="post" action="/staff/settings/ai/test" class="card cluster mt4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><p class="grow mb0"><%= t('ai.test_help') %></p><button class="btn" type="submit" <%= connected ? '' : 'disabled' %>><%- icon('sparkles') %><%= t('ai.test') %></button></form>
+<section class="card mt4"><div class="card-head"><h2><%= t('ai.recent') %></h2><span class="small muted"><%= t('ai.usage', { n: usage.n, ai: usage.ai }) %></span></div>
+  <% if (!recent.length) { %><p class="muted mb0"><%= t('ai.no_questions') %></p><% } else { %><div class="divider-list small"><% recent.forEach(function (r) { %><div class="list-item"><span class="chip <%= r.mode === 'ai' ? 'brand' : '' %>"><%= r.mode === 'ai' ? 'AI' : t('ai.search') %></span><div class="li-body"><div class="li-title truncate"><%= r.question %></div><div class="li-sub"><%= r.error ? r.error : (r.model || '') %></div></div><span class="subtle nowrap"><%= fmt.relative(r.created_at) %></span></div><% }) %></div><% } %>
+  <p class="small subtle mt2 mb0"><%= t('ai.log_note') %></p></section>

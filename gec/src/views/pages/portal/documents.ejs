@@ -1,0 +1,23 @@
+<div class="page-head"><div><h1><%= t('portal.nav.documents') %></h1><p class="lead"><%= t('portal.documents_lead') %></p></div></div>
+<% if (!list.length) { %><div class="card"><%- include('../../partials/empty', { title: t('portal.docs_none'), text: t('portal.docs_none_text'), emptyIcon: 'files' }) %></div><% } else { %>
+<section class="card mb4"><div class="progress" role="progressbar" aria-valuenow="<%= sum.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= sum.percent %>%"></span></div>
+  <p class="small muted mt2 mb0"><%= t('portal.docs_summary', { approved: sum.approved, total: sum.total, missing: sum.missing, review: sum.review }) %></p></section>
+<div class="stack">
+<% list.forEach(function (d) { var open = ['missing','rejected','expired'].indexOf(d.status) >= 0; %>
+  <section class="card">
+    <div class="spread"><div><strong><%= locale === 'ar' && d.type_ar ? d.type_ar : d.type_en %><%= d.title ? ' — ' + d.title : '' %></strong><% if (d.due_date) { %><div class="small muted"><%= t('portal.due', { date: fmt.date(d.due_date) }) %></div><% } %></div>
+      <span class="chip <%= d.status === 'approved' ? 'ok' : d.status === 'rejected' || d.status === 'expired' ? 'bad' : d.status === 'missing' ? 'warn' : 'brand' %>"><%= t('documents.status_' + d.status) %></span></div>
+    <% if (d.status === 'rejected' && d.rejection_reason) { %><div class="alert bad mt2"><%- icon('circle-x') %><p><%= t('portal.rejected_because', { reason: d.rejection_reason }) %></p></div><% } %>
+    <% if (d.media_id) { %><p class="small mt2 mb0"><a href="/portal/documents/<%= d.id %>/file" target="_blank"><%- icon('file', 'sm') %> <%= d.original_name || t('portal.view_file') %></a> · <%= fmt.date(d.uploaded_at) %></p><% } %>
+    <% if (d.status !== 'approved') { %>
+    <form method="post" action="/portal/documents/upload" enctype="multipart/form-data" class="cluster mt2">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="document_id" value="<%= d.id %>">
+      <label class="sr-only" for="f<%= d.id %>"><%= t('portal.choose_file') %></label><input id="f<%= d.id %>" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" required style="flex:1;min-width:200px">
+      <% if (d.has_expiry) { %><label class="small cluster" style="gap:6px"><span><%= t('documents.expiry') %></span><input type="date" name="expiry_date" style="width:auto"></label><% } %>
+      <button class="btn <%= open ? 'primary' : '' %>" type="submit"><%- icon('upload') %><%= d.media_id ? t('portal.replace') : t('portal.upload') %></button>
+    </form><% } %>
+  </section>
+<% }) %>
+</div>
+<p class="small subtle mt4"><%- icon('lock', 'sm') %> <%= t('portal.upload_note') %></p>
+<% } %>

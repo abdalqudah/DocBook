@@ -33,16 +33,18 @@ async function record({ channel, direction = 'out', status, leadId, studentId, t
  * to `body` otherwise). Returns { sent, reason?, id }.
  */
 async function send({ channel = 'email', to, subject = null, body, html = null, attachments = null, replyTo = null, headers = null, leadId = null, studentId = null, templateKey = null, automated = false, actorId = null, locale = 'en' }) {
-  if (!PROVIDERS[channel]) throw new Error(`Unknown channel ${channel}`);
+  if (!PROVIDERS[channel] && channel !== 'portal') throw new Error(`Unknown channel ${channel}`);
   let r;
-  if (channel === 'email') {
+  if (channel === 'portal') {
+    r = { sent: true, to: 'portal' }; // stored and shown in the student's portal inbox (with a notification)
+  } else if (channel === 'email') {
     const htmlBody = html || await email.layout({ locale, title: subject, body });
     r = await email.send({ to, subject, html: htmlBody, text: body, attachments, replyTo, headers });
   } else {
     r = await PROVIDERS[channel].send({ to, body });
   }
   const status = r.sent ? 'sent' : (r.reason === 'not_configured' ? 'not_configured' : 'failed');
-  const id = await record({ channel, status, leadId, studentId, to: r.to || to, subject, body, templateKey, automated, provider: channel === 'email' ? 'smtp' : (channel === 'sms' ? 'twilio' : 'whatsapp_cloud'), providerMessageId: r.messageId, error: r.sent ? null : r.reason, actorId });
+  const id = await record({ channel, status, leadId, studentId, to: r.to || to, subject, body, templateKey, automated, provider: { email: 'smtp', sms: 'twilio', whatsapp: 'whatsapp_cloud', portal: 'portal' }[channel], providerMessageId: r.messageId, error: r.sent ? null : r.reason, actorId });
   await events.emit('message.sent', { id, channel, status, leadId, studentId });
   return { sent: !!r.sent, reason: r.reason || null, id };
 }
@@ -77,6 +79,14 @@ async function receive({ channel, from, name = null, body, providerMessageId = n
   return id;
 }
 
+/** A student writes to GEC from the portal. */
+async function fromStudent(studentId, body, userId) {
+  const lead = await knex('leads').where({ student_id: studentId }).orderBy('id', 'desc').first('id');
+  const id = await record({ channel: 'portal', direction: 'in', status: 'received', studentId, leadId: lead ? lead.id : null, from: 'portal', body, provider: 'portal', actorId: userId });
+  await events.emit('message.received', { id, channel: 'portal', leadId: lead ? lead.id : null, studentId });
+  return id;
+}
+
 /** Delivery receipts (delivered / read / failed) from providers. */
 async function updateStatus(providerMessageId, status, error = null) {
   if (!providerMessageId || !['delivered', 'read', 'failed', 'sent'].includes(status)) return;
@@ -100,4 +110,4 @@ async function unreadCount(staff) {
   return Number(n);
 }
 
-module.exports = { send, deliverEmail, logManual, receive, updateStatus, base, COLS, unreadCount, record };
+module.exports = { send, deliverEmail, logManual, receive, fromStudent, updateStatus, base, COLS, unreadCount, record };

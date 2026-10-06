@@ -1,0 +1,6 @@
+<div class="text-center stack">
+  <%- icon(sent ? 'mail-check' : 'mail-x', 'lg') %>
+  <h1><%= sent ? t('portal.check_email') : t('portal.email_not_sent') %></h1>
+  <p class="muted"><%= sent ? t('portal.check_email_text', { email: typeof address !== 'undefined' ? address : '' }) : t('portal.email_not_sent_text') %></p>
+  <a class="btn" href="/login"><%= t('auth.sign_in') %></a>
+</div>

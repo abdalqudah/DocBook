@@ -1,0 +1,6 @@
+<div class="page-head"><div><h1><%= t('portal.nav.programs') %></h1><p class="lead"><%= t('portal.programs_lead') %></p></div><a class="btn" href="/programs"><%- icon('search') %><%= t('portal.study_finder') %></a></div>
+<% if (welcome) { %><div class="alert ok mb4"><%- icon('sparkles') %><p><%= t('portal.matches_ready') %></p></div><% } %>
+<% if (c.percent < 60) { %><div class="alert warn mb4"><%- icon('info') %><p><%= t('portal.complete_for_matches', { n: c.percent }) %> <a href="/portal/profile"><%= t('match.complete_profile') %></a></p></div><% } %>
+<% if (!recs.length) { %><div class="card"><%- include('../../partials/empty', { title: t('match.none'), text: t('portal.no_matches_text'), href: '/portal/profile/goals', cta: t('portal.set_goals'), emptyIcon: 'search' }) %></div>
+<% } else { %><div class="grid-3"><% recs.forEach(function (r) { %><%- include('../../partials/program-card', { p: r.program, match: r.match }) %><% }) %></div><% } %>
+<p class="disclaimer mt4"><%- icon('info', 'sm') %><span><%= t('match.disclaimer') %></span></p>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>">
+<head>
+<%- include('../partials/head') %>
+<link rel="stylesheet" href="/css/staff.css?v=<%= assetV %>">
+<link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
+<title><%= typeof title !== 'undefined' && title ? title + ' · ' : '' %><%= branding.name %></title>
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body class="portal" data-csrf="<%= csrfToken %>" data-locale="<%= locale %>">
+<a class="skip-link" href="#main"><%= t('common.skip_to_content') %></a>
+<div class="shell" data-shell>
+  <aside class="sidebar" id="sidebar" aria-label="<%= t('portal.navigation') %>" data-sidebar>
+    <div class="sb-brand"><a href="/portal" aria-label="<%= branding.name %>"><%- include('../partials/logo', { height: 32 }) %></a></div>
+    <nav class="sb-nav">
+      <% (typeof portalNav !== 'undefined' ? portalNav : []).forEach(function (i) { %>
+      <a class="sb-link" href="<%= i.href %>" <%- i.current ? 'aria-current="page"' : '' %>><%- icon(i.icon) %><span><%= t('portal.nav.' + i.key) %></span><% if (i.count) { %><span class="badge-n"><%= i.count %></span><% } %></a>
+      <% }) %>
+      <hr style="border:0;border-top:1px solid var(--line);margin:12px 8px">
+      <a class="sb-link" href="/portal/advisor" <%- typeof title !== 'undefined' && title === t('advisor.title') ? 'aria-current="page"' : '' %>><%- icon('sparkles') %><span><%= t('advisor.short') %></span></a>
+      <a class="sb-link" href="/programs"><%- icon('graduation-cap') %><span><%= t('portal.study_finder') %></span></a>
+    </nav>
+    <div class="sb-foot"><a class="sb-link" href="/"><%- icon('globe') %><span><%= t('staff.view_website') %></span></a></div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="btn ghost icon-only menu-toggle" data-sidebar-toggle aria-controls="sidebar" aria-expanded="false" aria-label="<%= t('staff.open_menu') %>"><%- icon('menu') %></button>
+      <a class="global-search" href="/programs" style="text-decoration:none"><%- icon('search') %><span class="label-text"><%= t('home.search_ph') %></span></a>
+      <span class="spacer"></span>
+      <a class="btn ghost icon-only tb-btn" href="/portal/notifications" aria-label="<%= t('nav.notifications') %>"><%- icon('bell') %><% if (typeof unreadNotifications !== 'undefined' && unreadNotifications) { %><span class="badge-n"><%= unreadNotifications > 9 ? '9+' : unreadNotifications %></span><% } %></a>
+      <details class="menu">
+        <summary class="user-chip" aria-label="<%= t('staff.account_menu') %>"><span class="avatar sm"><%= initials(currentUser.name) %></span></summary>
+        <div class="menu-panel">
+          <div class="user-menu-head"><div class="li-title"><%= currentUser.name %></div><div class="li-sub"><%= currentUser.email %></div></div>
+          <a href="/portal/profile"><%- icon('user') %><%= t('portal.profile') %></a>
+          <a href="/portal/payments"><%- icon('receipt') %><%= t('portal.payments') %></a>
+          <a href="/portal/settings"><%- icon('settings') %><%= t('portal.settings') %></a>
+          <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><%= locale === 'ar' ? 'English' : 'العربية' %></a>
+          <button type="button" data-theme-cycle><%- icon('moon') %><%= t('common.toggle_theme') %></button>
+          <hr>
+          <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('log-out') %><%= t('auth.sign_out') %></button></form>
+        </div>
+      </details>
+    </header>
+    <main id="main" class="content <%= typeof narrow !== 'undefined' && narrow ? 'narrow' : '' %>" tabindex="-1" style="max-width:1100px">
+      <%- body %>
+    </main>
+  </div>
+</div>
+<nav class="portal-bottom-nav" aria-label="<%= t('portal.navigation') %>">
+  <% (typeof portalNav !== 'undefined' ? portalNav : []).filter(function (i) { return i.bottom; }).forEach(function (i) { %>
+  <a href="<%= i.href %>" <%- i.current ? 'aria-current="page"' : '' %>><span class="pill"><%- icon(i.icon) %></span><%= t('portal.nav.' + i.key) %><% if (i.count) { %><span class="sr-only"> (<%= i.count %>)</span><% } %></a>
+  <% }) %>
+</nav>
+<%- include('../partials/flash') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<script src="/js/staff.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (s) { %><script src="<%= s %>?v=<%= assetV %>" defer></script><% }) %>
+</body>
+</html>

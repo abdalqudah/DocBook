@@ -1,0 +1,15 @@
+<% var main = stagesAll.filter(function (s) { return ['lead','profile_started','profile_complete','counselling','closed','visa_refused'].indexOf(s.key) < 0; }); var cur = main.findIndex(function (s) { return s.key === a.stage_key; }); %>
+<nav class="breadcrumbs"><a href="/portal/applications"><%= t('portal.nav.applications') %></a><%- icon('chevron-right') %><span><%= a.ref %></span></nav>
+<div class="page-head"><div><h1><%= a.program_name || a.ref %></h1><p class="lead"><%= a.university_name || '' %><%= a.intake ? ' · ' + ref.month(a.intake) : '' %></p></div><span class="chip brand"><%= locale === 'ar' && a.stage_ar ? a.stage_ar : a.stage_en %></span></div>
+<section class="card mb4"><ol class="vsteps">
+  <% main.forEach(function (s, i) { var h = hist.find(function (x) { return x.to_stage_id === s.id; }); %><li class="<%= i < cur ? 'done' : i === cur ? 'current' : '' %>" <%- i === cur ? 'aria-current="step"' : '' %>><strong><%= L(s, 'name') %></strong><% if (h) { %> <span class="small subtle"><%= fmt.date(h.changed_at) %></span><% } %></li><% }) %>
+</ol></section>
+<div class="grid-2">
+  <section class="card"><div class="card-head"><h2><%= t('portal.what_next') %></h2></div>
+    <% if (a.next_action) { %><p class="mb2"><strong><%= a.next_action %></strong></p><% if (a.next_action_due) { %><p class="small muted mb0"><%= t('portal.due', { date: fmt.date(a.next_action_due) }) %></p><% } %><% } else { %><p class="muted mb0"><%= t('portal.no_action') %></p><% } %>
+    <% if (a.deadline) { %><p class="small mt2 mb0"><%- icon('calendar', 'sm') %> <%= t('portal.app_deadline', { date: fmt.date(a.deadline) }) %></p><% } %></section>
+  <section class="card"><div class="card-head"><h2><%= t('portal.nav.documents') %></h2><a class="btn sm ghost" href="/portal/documents"><%= t('common.see_all') %></a></div>
+    <div class="divider-list small"><% docs.slice(0, 8).forEach(function (d) { %><div class="list-item"><div class="li-body"><%= locale === 'ar' && d.type_ar ? d.type_ar : d.type_en %></div><span class="chip <%= d.status === 'approved' ? 'ok' : d.status === 'rejected' || d.status === 'expired' ? 'bad' : d.status === 'missing' ? 'warn' : 'brand' %>"><%= t('documents.status_' + d.status) %></span></div><% }) %></div></section>
+</div>
+<% if (shared.length) { %><section class="card mt4"><div class="card-head"><h2><%= t('portal.updates') %></h2></div><div class="divider-list small"><% shared.forEach(function (x) { %><div class="list-item"><span class="subtle nowrap"><%= fmt.date(x.occurred_at) %></span><div class="li-body"><%= activityText(x) %></div></div><% }) %></div></section><% } %>
+<p class="disclaimer mt4"><%- icon('info', 'sm') %><span><%= t('portal.admission_note') %></span></p>

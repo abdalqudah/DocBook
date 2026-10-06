@@ -15,5 +15,6 @@ module.exports = {
   register: make(60 * 60_000, 10),
   publicForm: make(10 * 60_000, 12), // consultation / contact / event forms
   tracking: make(60_000, 120),
+  advisor: make(10 * 60_000, 30), // AI advisor questions
   api: make(60_000, 300),
 };

@@ -5,7 +5,7 @@ const whatsapp = require('./whatsapp');
 
 async function status() {
   const [e, s, w] = await Promise.all([email.currentConfig(), sms.currentConfig(), whatsapp.currentConfig()]);
-  return { email: !!(e && e.host && e.fromEmail), sms: !!s, whatsapp: !!w };
+  return { email: !!(e && e.host && e.fromEmail), sms: !!s, whatsapp: !!w, portal: true };
 }
 
 module.exports = { status, CHANNELS: ['email', 'sms', 'whatsapp'] };

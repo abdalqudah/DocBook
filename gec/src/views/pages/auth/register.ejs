@@ -1,0 +1,18 @@
+<h1><%= t('portal.register_title') %></h1>
+<p class="muted"><%= t('portal.register_lead') %></p>
+<form method="post" action="/register" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+  <div class="form-grid two">
+    <%- include('../../partials/field', { name: 'first_name', label: t('people.first_name'), required: true, attrs: 'autocomplete="given-name"' }) %>
+    <%- include('../../partials/field', { name: 'last_name', label: t('people.last_name'), attrs: 'autocomplete="family-name"' }) %>
+  </div>
+  <%- include('../../partials/field', { name: 'email', label: t('auth.email'), type: 'email', required: true, attrs: 'autocomplete="email"' }) %>
+  <%- include('../../partials/field', { name: 'password', label: t('auth.password'), type: 'password', required: true, attrs: 'autocomplete="new-password" minlength="10"', hint: t('auth.password_rule') }) %>
+  <%- include('../../partials/field', { name: 'password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
+  <label class="check <%= errors.terms ? 'has-error' : '' %>"><input type="checkbox" name="terms" value="1" required <%= old.terms ? 'checked' : '' %>><span class="small"><%= t('portal.terms') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+  <% if (errors.terms) { %><span class="error-text"><%= t('book.consent_required') %></span><% } %>
+  <label class="check"><input type="checkbox" name="consent_marketing" value="1" <%= old.consent_marketing ? 'checked' : '' %>><span class="small"><%= t('book.consent_marketing') %></span></label>
+  <button class="btn primary block lg" type="submit"><%= t('auth.create_account') %></button>
+</form>
+<p class="auth-foot"><%= t('portal.have_account') %> <a href="/login"><%= t('auth.sign_in') %></a></p>

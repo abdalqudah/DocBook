@@ -31,6 +31,7 @@ function doLogin(portal) {
     try {
       const user = await auth.authenticate({ email: req.body.email, password: req.body.password, portal, ip: req.ip });
       await auth.startSession(req, user);
+      if (portal === 'student') await require('../portal/account').afterSignIn(req, user); // eslint-disable-line global-require
       const to = req.session.returnTo;
       delete req.session.returnTo;
       if (portal === 'staff' && user.must_change_password) return res.redirect('/staff/password');

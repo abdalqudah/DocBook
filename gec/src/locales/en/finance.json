@@ -51,7 +51,9 @@
     "no_address_whatsapp": "This person has no WhatsApp or phone number.",
     "subject_required": "An e-mail needs a subject.",
     "open_whatsapp": "Open in WhatsApp",
-    "whatsapp_window": "WhatsApp only delivers free text within 24 hours of the person’s last message. “Open in WhatsApp” sends it from your own phone and records it here."
+    "whatsapp_window": "WhatsApp only delivers free text within 24 hours of the person’s last message. “Open in WhatsApp” sends it from your own phone and records it here.",
+    "no_address_portal": "Only students with a portal account can receive portal messages.",
+    "portal_inbox": "Student portal inbox"
   },
   "templates": {
     "lead": "Messages sent automatically and from the composer, in English and Arabic, per channel. Edits replace the built-in text; reset to go back.",
@@ -86,7 +88,8 @@
       "event_follow_up": "Event follow-up",
       "payment_confirmation": "Payment confirmation",
       "invoice_issued": "Invoice",
-      "portal_invite": "Portal invitation"
+      "portal_invite": "Portal invitation",
+      "new_message": "New portal message"
     }
   },
   "integrations": {

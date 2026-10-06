@@ -18,10 +18,12 @@
     <% if (typeof compose !== 'undefined') { %><button class="btn tonal" type="button" data-dialog-open="compose-dialog"><%- icon('send') %><%= t('comms.message_btn') %></button><% } else if (s.phone || s.whatsapp) { %><a class="btn" href="https://wa.me/<%= (s.whatsapp || s.phone).replace(/\D/g, '') %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %>
     <% if (s.email) { %><a class="btn" href="mailto:<%= s.email %>"><%- icon('mail') %><%= t('common.email') %></a><% } %>
     <% if (editable) { %><button class="btn tonal" type="button" data-dialog-open="contact-dialog"><%- icon('notebook-pen') %><%= t('leads.log_contact') %></button><% } %>
+    <% if (typeof portalState !== 'undefined' && portalState !== 'active' && editable) { %><form method="post" action="/staff/students/<%= s.id %>/invite"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit" <%= s.email ? '' : 'disabled title="' + t('portal.need_email') + '"' %>><%- icon('user-plus') %><%= portalState === 'invited' ? t('portal.reinvite') : t('portal.invite') %></button></form><% } %>
     <% if (typeof studentActions !== 'undefined') { studentActions.forEach(function (a) { %><a class="btn primary" href="<%= a.href %>"><%- icon(a.icon) %><%= a.label %></a><% }) } %>
   </div>
 </div>
 
+<% if (typeof inviteLink !== 'undefined' && inviteLink) { %><div class="alert warn mb4"><%- icon('link') %><div class="grow"><p class="mb2"><%= t('portal.invite_copy') %></p><div class="cluster"><code dir="ltr" class="truncate" style="max-width:100%"><%= inviteLink %></code><button type="button" class="btn sm" data-copy="<%= inviteLink %>"><%- icon('copy') %><%= t('common.copy') %></button></div></div></div><% } %>
 <section class="card mb4" aria-label="<%= t('students.journey') %>">
   <div class="spread mb4"><h2 class="section-title mb0"><%= t('students.journey') %></h2>
     <% if (editable) { %><form method="post" action="/staff/students/<%= s.id %>/journey" class="cluster"><input type="hidden" name="_csrf" value="<%= csrfToken %>">

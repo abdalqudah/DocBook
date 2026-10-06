@@ -32,6 +32,7 @@ router.get('/api/palette', ah(async (req, res) => {
   ok(res, { groups: [...groups, { key: 'pages', label: t('palette.pages'), items: pages }, { key: 'actions', label: t('palette.actions'), items: acts.slice(0, q ? 6 : 8) }] });
 }));
 
+router.use('/', require('../portal/staff.web')); // notifications inbox, portal invites, AI settings
 router.use('/account', require('./account.web'));
 router.use('/', require('../comms/web')); // before CRM: adds the composer to lead / student pages
 router.use('/', require('../growth/web')); // before CRM: adds score reasons and website activity to lead pages

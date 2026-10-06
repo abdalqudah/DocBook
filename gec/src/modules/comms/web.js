@@ -39,6 +39,7 @@ registry.addAttention(async (req) => {
 
 const router = express.Router();
 const CH = ['email', 'sms', 'whatsapp'];
+const CH_ALL = [...CH, 'portal'];
 
 /** Template variables for a person (lead or student). */
 async function varsFor(lead, student) {
@@ -56,7 +57,7 @@ async function personFor(req, body) {
   const lead = leadId ? await leads.get(req.staff, leadId) : null;
   return { lead, student, p: student || lead };
 }
-const addressFor = (p, channel) => (channel === 'email' ? p.email : (channel === 'whatsapp' ? p.whatsapp || p.phone : p.phone));
+const addressFor = (p, channel) => (channel === 'portal' ? (p.user_id ? 'portal' : null) : channel === 'email' ? p.email : (channel === 'whatsapp' ? p.whatsapp || p.phone : p.phone));
 
 /** Template choices for the composer: built-in keys plus custom templates. */
 async function templateOptions(req) {
@@ -76,7 +77,7 @@ router.get('/messages', can('comms.view'), ah(async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const q = comms.base(req.staff);
   if (box === 'inbox') q.where('m.direction', 'in'); else if (box === 'sent') q.where('m.direction', 'out');
-  if (CH.includes(req.query.channel)) q.where('m.channel', req.query.channel);
+  if (CH_ALL.includes(req.query.channel)) q.where('m.channel', req.query.channel);
   if (['failed', 'not_configured', 'unread'].includes(req.query.status)) { if (req.query.status === 'unread') q.whereNull('m.read_at').where('m.direction', 'in'); else q.where('m.status', req.query.status); }
   const s = String(req.query.q || '').trim().slice(0, 100);
   if (s) q.where((w) => w.where('m.subject', 'like', `%${s}%`).orWhere('m.body', 'like', `%${s}%`).orWhere('m.to_address', 'like', `%${s}%`).orWhere('m.from_address', 'like', `%${s}%`).orWhere('l.first_name', 'like', `%${s}%`).orWhere('s.first_name', 'like', `%${s}%`));
@@ -96,10 +97,11 @@ router.get('/messages/render', can('comms.send'), ah(async (req, res) => {
 }));
 
 router.post('/messages/send', can('comms.send'), ah(async (req, res) => {
-  const d = validate(z.object({ channel: z.enum(['email', 'sms', 'whatsapp']), subject: str(255), body: reqStr(5000), template_key: str(60) }), req.body);
+  const d = validate(z.object({ channel: z.enum(['email', 'sms', 'whatsapp', 'portal']), subject: str(255), body: reqStr(5000), template_key: str(60) }), req.body);
   const { lead, student, p } = await personFor(req, req.body);
   const to = addressFor(p, d.channel);
   const back = student ? `/staff/students/${student.id}` : `/staff/leads/${lead.id}`;
+  if (d.channel === 'portal' && !student) { flash(req, 'error', req.t('comms.no_address_portal')); return res.redirect(back); }
   if (!to) { flash(req, 'error', req.t(`comms.no_address_${d.channel}`)); return res.redirect(back); }
   if (d.channel === 'email' && !d.subject) { flash(req, 'error', req.t('comms.subject_required')); return res.redirect(back); }
   const r = await comms.send({ channel: d.channel, to, subject: d.subject || null, body: d.body, leadId: lead ? lead.id : (student ? null : null), studentId: student ? student.id : null, templateKey: d.template_key || null, actorId: req.user.id, locale: p.preferred_locale === 'ar' ? 'ar' : 'en' });

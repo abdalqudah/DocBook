@@ -10,7 +10,7 @@
 <form class="toolbar" method="get">
   <input type="hidden" name="box" value="<%= box %>">
   <div class="searchbox grow"><%- icon('search') %><input type="search" name="q" value="<%= query.q || '' %>" placeholder="<%= t('comms.search_ph') %>" aria-label="<%= t('common.search') %>"></div>
-  <select name="channel" data-autosubmit aria-label="<%= t('leads.channel') %>" style="width:auto"><option value=""><%= t('comms.all_channels') %></option><% ['email','whatsapp','sms'].forEach(function (c) { %><option value="<%= c %>" <%= query.channel === c ? 'selected' : '' %>><%= t('channels.' + c) %></option><% }) %></select>
+  <select name="channel" data-autosubmit aria-label="<%= t('leads.channel') %>" style="width:auto"><option value=""><%= t('comms.all_channels') %></option><% ['email','whatsapp','sms','portal'].forEach(function (c) { %><option value="<%= c %>" <%= query.channel === c ? 'selected' : '' %>><%= t('channels.' + c) %></option><% }) %></select>
   <select name="status" data-autosubmit aria-label="<%= t('common.status') %>" style="width:auto"><option value=""><%= t('comms.any_status') %></option><% ['unread','failed','not_configured'].forEach(function (s) { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('comms.status_' + s) %></option><% }) %></select>
 </form>
 <% if (!rows.length) { %>

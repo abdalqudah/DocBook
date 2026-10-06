@@ -35,6 +35,11 @@ router.get('/book/schedule', ah(async (req, res) => {
   return res.page('pages/site/schedule-types', { layout: 'public', title: req.t('booking.pick_service'), types, seo: { title: req.t('booking.pick_service'), canonical: `${config.appUrl}/book/schedule` } });
 }));
 
+/** The signed-in student (portal), so their booking lands on their record. */
+async function signedInStudent(req) {
+  return req.user && req.user.kind === 'student' ? knex('students').where({ user_id: req.user.id }).first() : null;
+}
+
 async function typeBySlug(slug) {
   const t = await knex('appointment_types').where({ slug, is_active: true, is_public: true }).first();
   if (!t) throw E.notFound('Appointment type');
@@ -66,7 +71,9 @@ router.get('/book/schedule/:slug/confirm', ah(async (req, res) => {
   if (Number.isNaN(start.getTime())) return res.redirect(`/book/schedule/${type.slug}`);
   const emp = await knex('employees as e').join('users as u', 'u.id', 'e.user_id').where('e.id', Number(req.query.with)).first('e.id', 'u.name', 'e.job_title');
   if (!emp) return res.redirect(`/book/schedule/${type.slug}`);
-  return res.page('pages/site/schedule-confirm', { layout: 'public', title: req.t('booking.confirm_title'), type, start, emp, old: {}, errors: {}, seo: { noindex: true } });
+  const me = await signedInStudent(req);
+  const old = me ? { first_name: me.first_name, last_name: me.last_name, email: me.email, phone: me.phone || me.whatsapp } : {};
+  return res.page('pages/site/schedule-confirm', { layout: 'public', title: req.t('booking.confirm_title'), type, start, emp, old, errors: {}, seo: { noindex: true } });
 }));
 
 router.post('/book/schedule/:slug/confirm', limits.publicForm, ah(async (req, res) => {
@@ -82,7 +89,7 @@ router.post('/book/schedule/:slug/confirm', limits.publicForm, ah(async (req, re
     if (!free.slots.some((x) => x.start.getTime() === start.getTime())) throw E.conflict('SLOT_TAKEN', 'This time is no longer available.');
     const { lead } = await capture.submit(req, 'consultation', { first_name: d.first_name, last_name: d.last_name, email: d.email, phone: d.phone, message: d.notes, preferred_locale: req.locale, interest_type: 'general', interest_ref: type.name_en });
     const appt = await appointments.book({ userId: req.user ? req.user.id : null, ip: req.ip }, {
-      typeId: type.id, employeeId: emp.id, start, mode: req.body.mode, leadId: lead.id, studentId: lead.student_id || null, via: 'website',
+      typeId: type.id, employeeId: emp.id, start, mode: req.body.mode, leadId: lead.id, studentId: lead.student_id || ((await signedInStudent(req)) || {}).id || null, via: req.user && req.user.kind === 'student' ? 'portal' : 'website',
       contact: { name: [d.first_name, d.last_name].filter(Boolean).join(' '), email: d.email, phone: d.phone }, notes: d.notes,
     });
     return res.redirect(`/appointments/${appt.manage_token}?booked=1`);

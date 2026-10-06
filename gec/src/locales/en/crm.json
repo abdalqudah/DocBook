@@ -67,7 +67,16 @@
     "passport_hint": "Stored encrypted. Only staff who manage students can reveal it.",
     "passport_keep_hint": "Leave empty to keep the saved number.",
     "passport_expiry": "Passport expiry",
-    "reveal": "Reveal"
+    "reveal": "Reveal",
+    "city": "City",
+    "gpa": "GPA / average",
+    "gpa_scale": "Out of",
+    "graduation": "Graduation date",
+    "ielts": "IELTS overall",
+    "ielts_band": "Lowest IELTS band",
+    "institution": "School / university",
+    "major": "Major / specialisation",
+    "test_date": "Test date"
   },
   "ref": {
     "degree": {
@@ -142,7 +151,8 @@
     "whatsapp": "WhatsApp",
     "email": "E-mail",
     "sms": "SMS",
-    "meeting": "Meeting"
+    "meeting": "Meeting",
+    "portal": "Portal"
   },
   "outcomes": {
     "reached": "Reached",
@@ -211,7 +221,10 @@
     "payment_refunded": "Payment refunded: {amount_text}",
     "from_phone": "sent from phone",
     "unsubscribed": "Unsubscribed from marketing",
-    "automation_note": "Note from automation “{rule}”"
+    "automation_note": "Note from automation “{rule}”",
+    "portal_joined": "Started using the student portal",
+    "msg_out_portal": "Portal message sent",
+    "msg_in_portal": "Portal message received"
   },
   "leads": {
     "new": "New lead",

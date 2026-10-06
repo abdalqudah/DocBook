@@ -67,7 +67,16 @@
     "passport_hint": "يُحفظ مشفّراً، ولا يظهر إلا لمن يدير ملفات الطلاب.",
     "passport_keep_hint": "اتركه فارغاً للإبقاء على الرقم المحفوظ.",
     "passport_expiry": "انتهاء جواز السفر",
-    "reveal": "إظهار"
+    "reveal": "إظهار",
+    "city": "المدينة",
+    "gpa": "المعدل",
+    "gpa_scale": "من أصل",
+    "graduation": "تاريخ التخرج",
+    "ielts": "آيلتس (الكلي)",
+    "ielts_band": "أدنى درجة في الآيلتس",
+    "institution": "المدرسة / الجامعة",
+    "major": "التخصص",
+    "test_date": "تاريخ الاختبار"
   },
   "ref": {
     "degree": {
@@ -142,7 +151,8 @@
     "whatsapp": "واتساب",
     "email": "بريد إلكتروني",
     "sms": "رسالة نصية",
-    "meeting": "اجتماع"
+    "meeting": "اجتماع",
+    "portal": "البوابة"
   },
   "outcomes": {
     "reached": "تم التواصل",
@@ -211,7 +221,10 @@
     "payment_refunded": "استُردت دفعة: {amount_text}",
     "from_phone": "من الهاتف",
     "unsubscribed": "ألغى الاشتراك في الرسائل التسويقية",
-    "automation_note": "ملاحظة من القاعدة «{rule}»"
+    "automation_note": "ملاحظة من القاعدة «{rule}»",
+    "portal_joined": "بدأ استخدام بوابة الطالب",
+    "msg_out_portal": "أُرسلت رسالة عبر البوابة",
+    "msg_in_portal": "وصلت رسالة عبر البوابة"
   },
   "leads": {
     "new": "عميل محتمل جديد",

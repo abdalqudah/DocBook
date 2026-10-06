@@ -1,0 +1,8 @@
+<div class="page-head"><div><h1><%= t('portal.nav.applications') %></h1><p class="lead"><%= t('portal.applications_lead') %></p></div></div>
+<% if (!list.length) { %><div class="card"><%- include('../../partials/empty', { title: t('portal.apps_none'), text: t('portal.apps_none_text'), href: '/portal/programs', cta: t('portal.find_programs'), emptyIcon: 'kanban' }) %></div>
+<% } else { %><div class="stack"><% list.forEach(function (a) { %>
+  <a class="card list-item" href="/portal/applications/<%= a.id %>" style="text-decoration:none;color:inherit">
+    <div class="li-body"><div class="li-title"><%= a.program_name || a.ref %></div><div class="li-sub"><%= a.university_name || '' %><%= a.intake ? ' · ' + ref.month(a.intake) : '' %></div>
+      <% if (a.next_action) { %><div class="small mt2"><%- icon('arrow-right', 'sm flip-rtl') %> <%= a.next_action %><%= a.next_action_due ? ' · ' + fmt.date(a.next_action_due) : '' %></div><% } %></div>
+    <span class="chip brand"><%= locale === 'ar' && a.stage_ar ? a.stage_ar : a.stage_en %></span>
+  </a><% }) %></div><% } %>

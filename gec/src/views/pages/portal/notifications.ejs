@@ -1,0 +1,8 @@
+<div class="page-head"><div><h1><%= t('nav.notifications') %></h1></div><% if (list.some(function (n) { return !n.read_at; })) { %><form method="post" action="<%= typeof notifBase !== 'undefined' ? notifBase : '/portal/notifications' %>/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit"><%- icon('check-check') %><%= t('notify.mark_all') %></button></form><% } %></div>
+<% if (!list.length) { %><div class="card"><%- include('../../partials/empty', { title: t('notify.none'), text: t('notify.none_text'), emptyIcon: 'bell', compact: true }) %></div>
+<% } else { %><div class="card"><div class="divider-list"><% list.forEach(function (n) { %>
+  <form method="post" action="<%= typeof notifBase !== 'undefined' ? notifBase : '/portal/notifications' %>/read" class="list-item" <%- n.read_at ? '' : 'style="font-weight:600"' %>><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="id" value="<%= n.id %>">
+    <span class="queue-icon <%= n.read_at ? '' : 'brand' %>"><%- icon({ applications: 'kanban', documents: 'files', appointments: 'calendar-check', visa: 'plane', payments: 'receipt', messages: 'message-circle', events: 'ticket', tasks: 'check-square', mentions: 'at-sign', leads: 'user-plus' }[n.category] || 'bell') %></span>
+    <button type="submit" class="linklike li-body" style="text-align:start"><span class="li-title"><%= locale === 'ar' && n.title_ar ? n.title_ar : n.title_en %></span><% if (n.body) { %><span class="li-sub"><%= n.body %></span><% } %></button>
+    <span class="small subtle nowrap"><%= fmt.relative(n.created_at) %></span></form>
+<% }) %></div></div><% } %>

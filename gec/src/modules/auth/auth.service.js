@@ -35,6 +35,7 @@ async function authenticate({ email, password, portal, ip }) {
     throw E.invalidCredentials();
   }
   if (user.status === 'disabled') throw E.disabled();
+  if (user.kind === 'student' && !user.email_verified_at) throw new AppError('EMAIL_NOT_VERIFIED', 'Confirm your e-mail address first: open the link we sent you.', 403);
   await knex('users').where({ id: user.id }).update({ failed_logins: 0, locked_until: null, last_login_at: new Date(), status: user.status === 'invited' ? 'active' : user.status });
   await audit.record({ userId: user.id, ip }, 'auth.login', { entityType: 'user', entityId: user.id, newValues: { portal } });
   return user;
@@ -45,6 +46,7 @@ function startSession(req, user) {
   return new Promise((resolve, reject) => {
     const returnTo = req.session.returnTo;
     const visitorId = req.session.visitorId;
+    const shortlistKey = req.session.shortlistKey; // a visitor's saved programs follow them into their account
     req.session.regenerate((err) => {
       if (err) return reject(err);
       Object.assign(req.session, {
@@ -52,6 +54,7 @@ function startSession(req, user) {
         kind: user.kind,
         returnTo,
         visitorId,
+        shortlistKey,
         ua: String(req.get('user-agent') || '').slice(0, 200),
         ip: req.ip,
         since: new Date().toISOString(),

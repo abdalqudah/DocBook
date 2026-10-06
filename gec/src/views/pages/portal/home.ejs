@@ -1,0 +1,51 @@
+<% var stageIdx = journey.indexOf(student.journey_stage); %>
+<div class="page-head"><div><h1><%= t('portal.hello', { name: student.first_name }) %></h1><p class="lead"><%= t('portal.your_journey') %></p></div></div>
+
+<section class="card mb4 next-action">
+  <div class="row top"><span class="ring" style="--p:<%= j.score %>" role="img" aria-label="<%= t('portal.journey_score', { n: j.score }) %>"><strong><%= j.score %>%</strong></span>
+    <div class="grow"><div class="small muted"><%= t('portal.next_step') %></div><h2 style="font-size:1.2rem;margin:2px 0 8px"><%= t('portal.next.' + next.key, next.vars || {}) %></h2>
+      <a class="btn primary" href="<%= next.href %>"><%= t('portal.next_cta.' + next.key) %><%- icon('arrow-right', 'flip-rtl') %></a></div></div>
+  <div class="cluster small mt4"><% j.parts.forEach(function (p) { %><span class="chip <%= p.value >= 100 ? 'ok' : p.value > 0 ? 'brand' : '' %>"><%- icon(p.value >= 100 ? 'check' : 'circle-dashed', 'sm') %><%= t('portal.part.' + p.key) %> <%= p.value >= 100 ? '' : p.value + '%' %></span><% }) %></div>
+</section>
+
+<section class="card mb4" aria-label="<%= t('portal.your_journey') %>">
+  <ol class="journey"><% journey.forEach(function (k, i) { %><li class="<%= i < stageIdx ? 'done' : i === stageIdx ? 'current' : '' %>" <%- i === stageIdx ? 'aria-current="step"' : '' %>><span class="step-dot"><% if (i < stageIdx) { %><%- icon('check') %><% } %></span><span><%= t('journey.' + k) %></span></li><% }) %></ol>
+</section>
+
+<div class="grid-2 mb4">
+  <section class="card">
+    <div class="card-head"><h2><%= t('portal.upcoming') %></h2><a class="btn sm ghost" href="/portal/appointments"><%= t('common.see_all') %></a></div>
+    <% if (upcoming) { %><div class="row top"><span class="queue-icon brand"><%- icon('calendar-check') %></span><div><strong><%= locale === 'ar' && upcoming.name_ar ? upcoming.name_ar : upcoming.name_en %></strong><div class="small muted"><%= fmt.dateTime(upcoming.start_at) %> · <%= upcoming.counsellor || '' %></div><% if (upcoming.manage_token) { %><a class="small" href="/appointments/<%= upcoming.manage_token %>"><%= t('portal.manage_booking') %></a><% } %></div></div>
+    <% } else { %><p class="muted mb2"><%= t('portal.no_upcoming') %></p><a class="btn sm" href="/book/schedule"><%- icon('calendar-plus') %><%= t('booking.pick_service') %></a><% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2><%= t('portal.your_counsellor') %></h2></div>
+    <% if (counsellor) { %><div class="row"><span class="avatar lg"><%= initials(counsellor.name) %></span><div><strong><%= counsellor.name %></strong><div class="small muted"><%= counsellor.job_title || '' %></div><a class="btn sm mt2" href="/portal/messages"><%- icon('message-circle') %><%= t('portal.send_message') %></a></div></div>
+    <% } else { %><p class="muted mb0"><%= t('portal.counsellor_soon') %></p><% } %>
+  </section>
+</div>
+
+<div class="grid-2 mb4">
+  <section class="card">
+    <div class="card-head"><h2><%= t('portal.nav.documents') %></h2><a class="btn sm ghost" href="/portal/documents"><%= t('common.see_all') %></a></div>
+    <% if (!j.docs.total) { %><p class="muted mb0"><%= t('portal.docs_none') %></p><% } else { %>
+    <div class="progress" role="progressbar" aria-valuenow="<%= j.docs.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= j.docs.percent %>%"></span></div>
+    <p class="small muted mt2 mb0"><%= t('portal.docs_summary', { approved: j.docs.approved, total: j.docs.total, missing: j.docs.missing, review: j.docs.review }) %></p><% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2><%= t('portal.nav.applications') %></h2><a class="btn sm ghost" href="/portal/applications"><%= t('common.see_all') %></a></div>
+    <% if (!j.apps.length) { %><p class="muted mb2"><%= t('portal.apps_none') %></p><a class="btn sm" href="/portal/programs"><%= t('portal.find_programs') %></a>
+    <% } else { %><div class="divider-list"><% j.apps.slice(0, 3).forEach(function (a) { %><a class="list-item" href="/portal/applications/<%= a.id %>"><div class="li-body"><div class="li-title"><%= a.program_name || a.ref %></div><div class="li-sub"><%= a.university_name || '' %></div></div><span class="chip brand"><%= locale === 'ar' && a.stage_ar ? a.stage_ar : a.stage_en %></span></a><% }) %></div><% } %>
+  </section>
+</div>
+
+<% if (msgs.length) { %>
+<section class="card mb4"><div class="card-head"><h2><%= t('portal.nav.messages') %></h2><a class="btn sm ghost" href="/portal/messages"><%= t('common.see_all') %></a></div>
+  <div class="divider-list"><% msgs.forEach(function (m) { %><a class="list-item" href="/portal/messages"><span class="queue-icon <%= m.direction === 'out' ? 'brand' : '' %>"><%- icon(m.direction === 'out' ? 'arrow-down-left' : 'arrow-up-right') %></span><div class="li-body"><div class="li-sub"><%= String(m.body || '').slice(0, 120) %></div></div><span class="small subtle"><%= fmt.relative(m.created_at) %></span></a><% }) %></div></section>
+<% } %>
+
+<% if (recs.length) { %>
+<section class="mb4"><div class="spread mb2"><h2 style="font-size:1.1rem" class="mb0"><%= t('portal.recommended') %></h2><a class="btn sm ghost" href="/portal/programs"><%= t('common.see_all') %></a></div>
+  <div class="grid-3"><% recs.forEach(function (r) { %><%- include('../../partials/program-card', { p: r.program, match: r.match }) %><% }) %></div>
+  <p class="disclaimer mt2"><%- icon('info', 'sm') %><span><%= t('match.disclaimer') %></span></p></section>
+<% } %>

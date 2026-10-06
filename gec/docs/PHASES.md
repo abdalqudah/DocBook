@@ -274,3 +274,50 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
 * **Known limitations:** country of visitors is not recorded (no IP geolocation by design); session duration is
   approximated by first / last seen; SMS / WhatsApp campaign delivery receipts depend on the provider webhooks; Meta
   Pixel / Google Analytics are not embedded (adapters can be added in Integrations, gated by the same consent).
+
+---
+
+## Phase 8 — Student portal, notifications, AI study advisor
+
+### Plan
+* **Exists:** student sign-in / reset (phase 1), the student record and profile sections, matching, shortlist (with
+  anonymous adoption), applications, documents (student upload supported in the service), appointments, invoices,
+  the message log, bilingual templates (including `portal_invite`). No portal pages, no notifications, no advisor.
+* **Reuse:** students / documents / applications / matching / shortlist / booking / finance services, the message
+  service (new "portal" channel), templates, the staff shell CSS (sidebar + bottom navigation), activity timeline
+  (`is_shareable` entries are what students see).
+* **Change:** `/portal` with Home (journey timeline, journey score, one next step, appointment, counsellor, documents,
+  applications, messages, recommendations), step-by-step profile with autosave, matches, shortlist, applications
+  with stage timeline, documents (upload / replace), appointments, messages, payments, notifications, settings
+  (notification preferences per category and channel, language, password, data export). Self sign-up with e-mail
+  confirmation, staff invitations, notification centre for students and staff, AI study advisor.
+* **Database:** `email_verifications`, `notifications`, `users.notification_prefs`, `messages.channel` + `portal`,
+  `advisor_logs`.
+* **Routes:** `/register`, `/verify/:token`, `/advisor`, `/advisor/ask`, `/portal/*` (14 pages),
+  `/staff/students/:id/invite`, `/staff/notifications[/read]`, `/staff/settings/ai[/test]`.
+* **Security:** unconfirmed student accounts cannot sign in, and are linked to existing CRM records only after the
+  address is confirmed (no takeover by registering someone else's e-mail); sign-up never reveals whether an address
+  exists; every portal query is bound to the signed-in student's id (other students' applications and files are
+  404); the sign-in e-mail can't be changed from the portal; internal notes never reach the portal; uploads checked
+  by content; the AI provider key is encrypted; the advisor only has read-only database tools, its output is
+  rendered through the escaping Markdown renderer, refusals are handled, questions are rate-limited and logged.
+
+### Report
+* **Files:** `src/modules/portal/{account,web,public.web,staff.web}.js`, `src/modules/notifications/{service,handlers}.js`,
+  `src/modules/ai/{tools,provider,advisor.service}.js` (official `@anthropic-ai/sdk`, default model
+  `claude-opus-5-5`, server-side refusal fallback on supported models), `layouts/portal.ejs`, `pages/portal/*`,
+  `pages/auth/{register,register-sent,verify-failed}.ejs`, `pages/site/advisor.ejs`, `partials/advisor-chat.ejs`,
+  `pages/staff/{notifications,settings/ai}.ejs`, `public/js/advisor.js`, `src/locales/*/portal.json`.
+  Auth: unverified students blocked; the visitor's shortlist key survives sign-in. Booking: a signed-in student's
+  booking lands on their record (`booked_via = portal`).
+* **Migration:** `20261005000800_phase8_portal.js`.
+* **Tests:** `test/phase8.test.js` (7): sign-up confirmation, lead → student conversion without duplicates,
+  shortlist adoption, one-time link, no account enumeration; privacy between students, profile save, e-mail lock,
+  data export without secrets; upload → counsellor notification, rejection e-mail + in-app, preferences respected;
+  portal messages both ways with notifications; staff invitation flow; advisor search mode (over-budget flagged)
+  and tool-using AI mode with a scripted provider (tool use, escaping, logging, refusal); staff task notifications.
+  Suite: 62.
+* **Known limitations:** Google / Microsoft sign-in remain prepared (columns, adapters) but not enabled; in-app
+  notifications refresh on page load (no push / websockets); the advisor keeps the last few turns of text per
+  session (tool results are not replayed across turns); "Ask to delete my data" opens a message to GEC — the staff
+  deletion workflow comes in phase 9.

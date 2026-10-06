@@ -70,3 +70,14 @@
 .auth-card h1 { font-size: 1.45rem; }
 .auth-foot { margin-top: 18px; font-size: .88rem; color: var(--text-3); text-align: center; }
 .auth-switch { display: flex; justify-content: center; gap: 14px; margin-top: 16px; font-size: .85rem; }
+
+/* Student portal */
+.portal .stepper-bar { display: flex; gap: 6px; }
+.portal .stepper-bar span { flex: 1; height: 5px; border-radius: 99px; background: var(--surface-3); }
+.portal .stepper-bar span.on { background: var(--brand); }
+.next-action .ring { flex: none; }
+.thread { display: flex; flex-direction: column; gap: 10px; }
+.bubble { max-width: min(80%, 560px); padding: 10px 14px; border-radius: 16px; background: var(--surface-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble.mine { align-self: flex-end; background: var(--brand-soft); border-end-end-radius: 4px; }
+.bubble.theirs { align-self: flex-start; border-end-start-radius: 4px; }
+.bubble .meta { display: block; font-size: .75rem; color: var(--text-3); margin-top: 4px; white-space: normal; }

@@ -1,0 +1,65 @@
+<% var idx = steps.indexOf(step); var isLast = idx === steps.length - 1; var arr = function (v) { return Array.isArray(v) ? v : []; }; %>
+<nav class="breadcrumbs"><a href="/portal/profile"><%= t('portal.profile') %></a><%- icon('chevron-right') %><span><%= t('portal.step_' + step) %></span></nav>
+<% if (query.welcome === '1') { %><div class="alert ok mb4"><%- icon('party-popper') %><p><strong><%= t('portal.welcome_title') %></strong> <%= t('portal.welcome_text') %></p></div><% } %>
+<div class="stepper-bar mb4" aria-hidden="true"><% steps.forEach(function (s, i) { %><span class="<%= i <= idx ? 'on' : '' %>"></span><% }) %></div>
+<p class="small muted mb2"><%= t('portal.step_of', { n: idx + 1, total: steps.length }) %></p>
+<h1><%= t('portal.step_' + step) %></h1>
+<p class="lead"><%= t('portal.step_' + step + '_hint') %></p>
+<form method="post" class="card stack" data-autosave="portal-<%= step %>-<%= s.id %>" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (step === 'personal') { %>
+    <div class="form-grid two">
+      <%- include('../../partials/field', { name: 'first_name', label: t('people.first_name'), value: s.first_name, required: true }) %>
+      <%- include('../../partials/field', { name: 'last_name', label: t('people.last_name'), value: s.last_name }) %>
+      <%- include('../../partials/field', { name: 'phone', label: t('book.phone_whatsapp'), type: 'tel', value: s.phone, attrs: 'dir="ltr" autocomplete="tel"' }) %>
+      <%- include('../../partials/field', { name: 'whatsapp', label: 'WhatsApp', type: 'tel', value: s.whatsapp, attrs: 'dir="ltr"' }) %>
+      <%- include('../../partials/field', { name: 'nationality', label: t('people.nationality'), type: 'select', value: s.nationality, options: ref.countries() }) %>
+      <%- include('../../partials/field', { name: 'residence_country', label: t('people.residence'), type: 'select', value: s.residence_country, options: ref.countries() }) %>
+      <%- include('../../partials/field', { name: 'city', label: t('people.city'), value: s.city }) %>
+      <%- include('../../partials/field', { name: 'date_of_birth', label: t('people.dob'), type: 'date', value: s.date_of_birth ? fmt.dateInput(s.date_of_birth) : '' }) %>
+      <%- include('../../partials/field', { name: 'gender', label: t('people.gender'), type: 'select', value: s.gender, options: ['female','male','other','undisclosed'].map(function (g) { return { value: g, label: t('people.gender_' + g) }; }) }) %>
+      <%- include('../../partials/field', { name: 'passport', label: t('people.passport'), placeholder: s.passport_last4 ? '••••' + s.passport_last4 : '', hint: t('portal.passport_hint'), attrs: 'dir="ltr" autocomplete="off"' }) %>
+      <%- include('../../partials/field', { name: 'passport_expiry', label: t('people.passport_expiry'), type: 'date', value: s.passport_expiry ? fmt.dateInput(s.passport_expiry) : '' }) %>
+      <%- include('../../partials/field', { name: 'preferred_locale', label: t('people.preferred_language'), type: 'select', value: s.preferred_locale, options: [{ value: 'en', label: 'English' }, { value: 'ar', label: 'العربية' }] }) %>
+    </div>
+  <% } else if (step === 'academic') { %>
+    <div class="form-grid two">
+      <%- include('../../partials/field', { name: 'education_level', label: t('book.current_education'), type: 'select', value: s.education_level, options: ref.EDUCATION_LEVELS.map(function (e) { return { value: e, label: t('ref.education.' + e) }; }) }) %>
+      <%- include('../../partials/field', { name: 'institution', label: t('people.institution'), value: s.institution }) %>
+      <%- include('../../partials/field', { name: 'major', label: t('people.major'), value: s.major }) %>
+      <%- include('../../partials/field', { name: 'graduation_date', label: t('people.graduation'), type: 'date', value: s.graduation_date ? fmt.dateInput(s.graduation_date) : '' }) %>
+      <%- include('../../partials/field', { name: 'gpa', label: t('people.gpa'), type: 'number', value: s.gpa, attrs: 'step="0.01" min="0"' }) %>
+      <%- include('../../partials/field', { name: 'gpa_scale', label: t('people.gpa_scale'), type: 'number', value: s.gpa_scale, attrs: 'step="0.01" min="1"', hint: t('portal.gpa_scale_hint') }) %>
+    </div>
+  <% } else if (step === 'english') { %>
+    <p class="small muted mb0"><%= t('portal.english_hint') %></p>
+    <div class="form-grid two">
+      <%- include('../../partials/field', { name: 'ielts_overall', label: t('people.ielts'), type: 'number', value: s.ielts_overall, attrs: 'step="0.5" min="0" max="9"' }) %>
+      <%- include('../../partials/field', { name: 'ielts_min_band', label: t('people.ielts_band'), type: 'number', value: s.ielts_min_band, attrs: 'step="0.5" min="0" max="9"' }) %>
+      <%- include('../../partials/field', { name: 'toefl', label: 'TOEFL iBT', type: 'number', value: s.toefl, attrs: 'min="0" max="120"' }) %>
+      <%- include('../../partials/field', { name: 'pte', label: 'PTE', type: 'number', value: s.pte, attrs: 'min="10" max="90"' }) %>
+      <%- include('../../partials/field', { name: 'duolingo', label: 'Duolingo', type: 'number', value: s.duolingo, attrs: 'min="10" max="160"' }) %>
+      <%- include('../../partials/field', { name: 'english_test_date', label: t('people.test_date'), type: 'date', value: s.english_test_date ? fmt.dateInput(s.english_test_date) : '' }) %>
+    </div>
+  <% } else if (step === 'goals') { %>
+    <%- include('../../partials/field', { name: 'pref_countries', label: t('book.where'), type: 'checks', value: arr(s.pref_countries), options: destinations }) %>
+    <%- include('../../partials/field', { name: 'pref_fields', label: t('portal.fields'), type: 'checks', value: arr(s.pref_fields), options: ref.FIELDS.map(function (f) { return { value: f, label: t('ref.field.' + f) }; }) }) %>
+    <div class="form-grid two">
+      <%- include('../../partials/field', { name: 'pref_degree', label: t('leads.degree'), type: 'select', value: s.pref_degree, options: ref.DEGREES.map(function (d) { return { value: d, label: t('ref.degree.' + d) }; }) }) %>
+      <%- include('../../partials/field', { name: 'pref_intake', label: t('leads.intake'), type: 'select', value: s.pref_intake, options: ref.intakes(24).map(function (m) { return { value: m, label: ref.month(m) }; }) }) %>
+      <%- include('../../partials/field', { name: 'budget_usd', label: t('portal.budget_usd'), type: 'number', value: s.budget_usd, attrs: 'min="0" step="500"', hint: t('portal.budget_hint') }) %>
+    </div>
+    <%- include('../../partials/field', { name: 'work_after_study', label: t('portal.work_after'), type: 'checkbox', value: s.work_after_study }) %>
+  <% } else { %>
+    <%- include('../../partials/field', { name: 'visa_refused', label: t('portal.visa_refused'), type: 'checkbox', value: s.visa_refused }) %>
+    <%- include('../../partials/field', { name: 'visa_history', label: t('portal.visa_history'), type: 'textarea', rows: 3, value: s.visa_history }) %>
+    <%- include('../../partials/field', { name: 'work_experience_years', label: t('portal.work_years'), type: 'number', value: s.work_experience_years, attrs: 'min="0" max="60" step="0.5"' }) %>
+    <%- include('../../partials/field', { name: 'profile_notes', label: t('portal.anything_else'), type: 'textarea', rows: 3, value: s.profile_notes }) %>
+  <% } %>
+  <div class="form-actions">
+    <% if (idx > 0) { %><a class="btn ghost" href="/portal/profile/<%= steps[idx - 1] %>"><%- icon('arrow-left', 'flip-rtl') %><%= t('common.back') %></a><% } %>
+    <% if (!isLast) { %><button class="btn" type="submit" name="finish" value="1"><%= t('portal.save_finish_later') %></button><% } %>
+    <button class="btn primary" type="submit"><%= isLast ? t('portal.see_matches') : t('portal.save_continue') %></button>
+  </div>
+</form>
+<p class="small subtle mt2"><%- icon('lock', 'sm') %> <%= t('portal.privacy_note') %></p>

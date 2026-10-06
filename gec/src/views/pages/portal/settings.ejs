@@ -1,0 +1,22 @@
+<div class="page-head"><div><h1><%= t('portal.settings') %></h1></div></div>
+<form method="post" action="/portal/settings/notifications" class="card stack mb4">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <h2 class="section-title"><%= t('portal.notification_prefs') %></h2>
+  <p class="small muted mb0"><%= t('portal.notification_prefs_lead') %></p>
+  <div class="table-wrap"><table class="table"><thead><tr><th><%= t('portal.about') %></th><th class="text-center"><%= t('channels.email') %></th><th class="text-center"><%= t('channels.sms') %></th><th class="text-center"><%= t('channels.whatsapp') %></th></tr></thead><tbody>
+    <% categories.forEach(function (c) { %><tr><td><%= t('portal.cat.' + c) %></td><% ['email','sms','whatsapp'].forEach(function (ch) { %><td class="text-center"><input type="checkbox" name="<%= c %>_<%= ch %>" value="1" <%= prefs.categories[c][ch] ? 'checked' : '' %> <%= channels[ch] || ch === 'email' ? '' : 'disabled' %> aria-label="<%= t('portal.cat.' + c) %> — <%= t('channels.' + ch) %>"></td><% }) %></tr><% }) %>
+  </tbody></table></div>
+  <p class="small subtle mb0"><%= t('portal.inapp_always') %><% if (!channels.sms || !channels.whatsapp) { %> <%= t('portal.channel_unavailable') %><% } %></p>
+  <label class="check"><input type="checkbox" name="marketing" value="1" <%= s.consent_marketing ? 'checked' : '' %>><span><%= t('book.consent_marketing') %></span></label>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<form method="post" action="/portal/settings/language" class="card cluster mb4"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label for="lang" class="grow"><strong><%= t('people.preferred_language') %></strong></label>
+  <select id="lang" name="locale" style="width:auto"><option value="en" <%= s.preferred_locale !== 'ar' ? 'selected' : '' %>>English</option><option value="ar" <%= s.preferred_locale === 'ar' ? 'selected' : '' %>>العربية</option></select><button class="btn" type="submit"><%= t('common.save') %></button></form>
+<form method="post" action="/portal/settings/password" class="card stack mb4" autocomplete="off"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><h2 class="section-title"><%= t('auth.change_password') %></h2>
+  <div class="form-grid three">
+    <%- include('../../partials/field', { name: 'current_password', label: t('auth.current_password'), type: 'password', required: true, attrs: 'autocomplete="current-password"' }) %>
+    <%- include('../../partials/field', { name: 'password', label: t('auth.new_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
+    <%- include('../../partials/field', { name: 'password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
+  </div><div class="form-actions"><button class="btn" type="submit"><%= t('auth.change_password') %></button></div></form>
+<section class="card stack"><h2 class="section-title"><%= t('portal.your_data') %></h2><p class="small muted mb0"><%= t('portal.your_data_text') %></p>
+  <div class="cluster"><a class="btn" href="/portal/settings/export"><%- icon('download') %><%= t('portal.export') %></a><a class="btn ghost" href="/portal/messages"><%= t('portal.ask_deletion') %></a></div></section>

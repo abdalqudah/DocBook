@@ -1,0 +1,8 @@
+<div class="page-head"><div><h1><%= t('portal.nav.shortlist') %></h1><p class="lead"><%= t('portal.shortlist_lead') %></p></div><a class="btn" href="/shortlist"><%- icon('external-link') %><%= t('portal.open_full_shortlist') %></a></div>
+<% var all = [].concat(items.programs || [], items.universities || [], items.scholarships || []); %>
+<% if (!all.length) { %><div class="card"><%- include('../../partials/empty', { title: t('shortlist.empty'), text: t('shortlist.empty_text'), href: '/programs', cta: t('portal.find_programs'), emptyIcon: 'bookmark' }) %></div>
+<% } else { %>
+<% if ((items.programs || []).length) { %><h2 style="font-size:1rem"><%= t('nav.programs') %></h2><div class="grid-3 mb6"><% items.programs.forEach(function (p) { %><%- include('../../partials/program-card', { p: p }) %><% }) %></div><% } %>
+<% if ((items.universities || []).length) { %><h2 style="font-size:1rem"><%= t('nav.universities') %></h2><div class="card mb6"><div class="divider-list"><% items.universities.forEach(function (u) { %><a class="list-item" href="/universities/<%= u.slug %>"><div class="li-body"><div class="li-title"><%= L(u, 'name') %></div><div class="li-sub"><%= L(u, 'city') %></div></div></a><% }) %></div></div><% } %>
+<% if ((items.scholarships || []).length) { %><h2 style="font-size:1rem"><%= t('nav.scholarships') %></h2><div class="card"><div class="divider-list"><% items.scholarships.forEach(function (s) { %><a class="list-item" href="/scholarships/<%= s.slug %>"><div class="li-body"><div class="li-title"><%= L(s, 'name') %></div></div></a><% }) %></div></div><% } %>
+<% } %>

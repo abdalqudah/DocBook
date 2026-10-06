@@ -1,0 +1,16 @@
+<%# The advisor conversation (public page and portal). Needs JavaScript; without it a link to the Study Finder is shown. %>
+<noscript><div class="alert warn mb4"><p><%= t('advisor.no_js') %> <a href="/programs"><%= t('portal.study_finder') %></a></p></div></noscript>
+<% if (!aiConnected) { %><div class="alert info mb4"><%- icon('info') %><p><%= t('advisor.search_mode') %></p></div><% } %>
+<section class="card stack" data-advisor>
+  <div class="advisor-log" data-advisor-log aria-live="polite">
+    <div class="a"><p class="mb2"><%= t('advisor.hello') %></p><div class="cluster"><% ['example1','example2','example3'].forEach(function (k) { %><button type="button" class="filter-chip" data-advisor-example><%= t('advisor.' + k) %></button><% }) %></div></div>
+  </div>
+  <form method="post" action="/advisor/ask" class="cluster" data-advisor-form>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label class="sr-only" for="advisor-q"><%= t('advisor.ask') %></label>
+    <input id="advisor-q" name="question" maxlength="1000" required placeholder="<%= t('advisor.placeholder') %>" style="flex:1;min-width:220px" autocomplete="off">
+    <button class="btn primary" type="submit"><%- icon('send') %><%= t('advisor.ask') %></button>
+  </form>
+  <p class="small subtle mb0"><%- icon('shield-check', 'sm') %> <%= t('advisor.disclaimer') %></p>
+  <template data-advisor-strings data-thinking="<%= t('advisor.thinking') %>" data-error="<%= t('advisor.error') %>" data-search-intro="<%= t('advisor.search_intro') %>" data-over-budget="<%= t('advisor.over_budget') %>" data-none="<%= t('advisor.none') %>" data-ai-error="<%= t('advisor.ai_error') %>" data-book="<%= t('site.book_consultation') %>" data-cat-excellent="<%= t('match.cat_excellent') %>" data-cat-good="<%= t('match.cat_good') %>" data-cat-possible="<%= t('match.cat_possible') %>" data-cat-missing="<%= t('match.cat_missing') %>" data-cat-not_eligible="<%= t('match.cat_not_eligible') %>" data-demo="<%= t('common.demo') %>" data-per-year="<%= t('common.per_year') %>"></template>
+</section>

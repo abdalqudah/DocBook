@@ -1,0 +1,10 @@
+<div class="page-head"><div><h1><%= t('portal.nav.messages') %></h1><p class="lead"><%= counsellor ? t('portal.messages_with', { name: counsellor.name }) : t('portal.messages_lead') %></p></div></div>
+<section class="card mb4">
+  <% if (!thread.length) { %><%- include('../../partials/empty', { title: t('portal.no_messages'), text: t('portal.no_messages_text'), emptyIcon: 'message-circle', compact: true }) %>
+  <% } else { %><div class="thread" aria-live="polite"><% thread.forEach(function (m, i) { %><div class="bubble <%= m.direction === 'in' ? 'mine' : 'theirs' %>" <%- i === thread.length - 1 ? 'id="latest"' : '' %>><%= m.body %><span class="meta"><%= m.direction === 'in' ? t('portal.you') : (m.sender_name || 'GEC') %> · <%= fmt.dateTime(m.created_at) %></span></div><% }) %></div><% } %>
+</section>
+<form method="post" action="/portal/messages" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/field', { name: 'body', label: t('portal.write_message'), type: 'textarea', rows: 3, required: true, attrs: 'maxlength="4000"' }) %>
+  <div class="form-actions"><button class="btn primary" type="submit"><%- icon('send') %><%= t('comms.send') %></button></div>
+</form>
