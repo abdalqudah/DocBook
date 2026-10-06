@@ -147,7 +147,10 @@
     "home_page": "الصفحة الرئيسية",
     "privacy_requests": "طلبات الخصوصية",
     "media": "مكتبة الوسائط",
-    "slides": "شرائح الرئيسية"
+    "slides": "شرائح الرئيسية",
+    "partner_requests": "طلبات الشراكة",
+    "partner_submissions": "مراجعة محتوى الشركاء",
+    "partner_accounts": "حسابات الشركاء"
   },
   "quick": {},
   "palette": {

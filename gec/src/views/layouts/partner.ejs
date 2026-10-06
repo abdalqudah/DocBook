@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>">
+<head>
+<%- include('../partials/head') %>
+<link rel="stylesheet" href="/css/staff.css?v=<%= assetV %>">
+<link rel="stylesheet" href="/css/site.css?v=<%= assetV %>">
+<title><%= typeof title !== 'undefined' && title ? title + ' · ' : '' %><%= t('partnerp.portal_name') %> · <%= branding.name %></title>
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body class="portal partner" data-csrf="<%= csrfToken %>" data-locale="<%= locale %>">
+<a class="skip-link" href="#main"><%= t('common.skip_to_content') %></a>
+<div class="shell" data-shell>
+  <aside class="sidebar" id="sidebar" aria-label="<%= t('partnerp.portal_name') %>" data-sidebar>
+    <div class="sb-brand"><a href="/partner" aria-label="<%= branding.name %>"><%- include('../partials/logo', { height: 32 }) %></a></div>
+    <div class="partner-uni"><span class="uni-crest sm" style="background-image:url('/art/crest/<%= uni.slug %>.svg')"><% if (uni.logo) { %><span class="logo-layer" style="background-image:url('<%= String(uni.logo).replace(/["'()\s]/g, encodeURIComponent) %>')"></span><% } %></span><div><strong><%= L(uni, 'name') %></strong><div class="small muted"><%= t('partnerp.portal_name') %></div></div></div>
+    <nav class="sb-nav">
+      <% partnerNav.forEach(function (i) { %>
+      <a class="sb-link" href="<%= i.href %>" <%- i.current ? 'aria-current="page"' : '' %>><%- icon(i.icon) %><span><%= t('partnerp.nav.' + i.key) %></span><% if (i.count) { %><span class="badge-n"><%= i.count %></span><% } %></a>
+      <% }) %>
+    </nav>
+    <div class="sb-foot"><a class="sb-link" href="/universities/<%= uni.slug %>" target="_blank" rel="noopener"><%- icon('globe') %><span><%= t('partnerp.view_public') %></span></a></div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="btn ghost icon-only menu-toggle" data-sidebar-toggle aria-controls="sidebar" aria-expanded="false" aria-label="<%= t('staff.open_menu') %>"><%- icon('menu') %></button>
+      <span class="spacer"></span>
+      <a class="btn ghost sm" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>" aria-label="<%= locale === 'ar' ? 'EN · English' : 'ع · العربية' %>"><%- icon('languages') %><span><%= locale === 'ar' ? 'EN' : 'ع' %></span></a>
+      <details class="menu">
+        <summary class="user-chip" aria-label="<%= initials(currentUser.name) %> · <%= currentUser.name %> — <%= t('staff.account_menu') %>"><span class="avatar sm"><%= initials(currentUser.name) %></span></summary>
+        <div class="menu-panel">
+          <div class="user-menu-head"><div class="li-title"><%= currentUser.name %></div><div class="li-sub"><%= currentUser.email %></div></div>
+          <button type="button" data-theme-cycle><%- icon('moon') %><%= t('common.toggle_theme') %></button>
+          <hr>
+          <form method="post" action="/partner/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit"><%- icon('log-out') %><%= t('auth.sign_out') %></button></form>
+        </div>
+      </details>
+    </header>
+    <main id="main" class="content <%= typeof narrow !== 'undefined' && narrow ? 'narrow' : '' %>" tabindex="-1" style="max-width:1100px">
+      <%- body %>
+    </main>
+  </div>
+</div>
+<%- include('../partials/flash') %>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<script src="/js/staff.js?v=<%= assetV %>" defer></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<div class="page-head"><div><h1><%= t('partnerp.welcome', { name: currentUser.name.split(' ')[0] }) %></h1><p class="lead"><%= t('partnerp.dash_lead') %></p></div>
+  <div class="cluster"><a class="btn primary" href="/partner/programs/new"><%- icon('plus') %><%= t('partnerp.new_program') %></a><a class="btn" href="/partner/scholarships/new"><%- icon('award') %><%= t('partnerp.new_scholarship') %></a></div></div>
+
+<div class="stats mb4">
+  <a class="stat" href="/partner/programs"><div class="stat-label"><%= t('partnerp.live_programs') %></div><div class="stat-value"><%= stats.programs %></div></a>
+  <a class="stat" href="/partner/scholarships"><div class="stat-label"><%= t('partnerp.live_scholarships') %></div><div class="stat-value"><%= stats.scholarships %></div></a>
+  <a class="stat" href="/partner/submissions"><div class="stat-label"><%= t('partnerp.in_review') %></div><div class="stat-value"><%= stats.pending %></div></a>
+  <a class="stat" href="/partner/applications"><div class="stat-label"><%= t('partnerp.nav.applications') %></div><div class="stat-value"><%= apps.reduce(function (a, r) { return a + Number(r.n); }, 0) %></div></a>
+</div>
+
+<div class="grid-2 mb4">
+  <section class="card">
+    <div class="card-head"><h2><%= t('partnerp.recent_submissions') %></h2><a class="btn sm ghost" href="/partner/submissions"><%= t('common.see_all') %></a></div>
+    <% if (!subs.length) { %><p class="muted mb0"><%= t('partnerp.no_submissions') %></p>
+    <% } else { %><div class="divider-list"><% subs.forEach(function (s) { %><div class="list-item"><div class="li-body"><div class="li-title"><%= s.data.name_en || t('partnerp.entity.university') %></div><div class="li-sub"><%= t('partnerp.entity.' + s.entity) %> · <%= fmt.relative(s.updated_at) %></div></div><%- include('_status', { s: s.status }) %></div><% }) %></div><% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2><%= t('partnerp.agreement') %></h2></div>
+    <% if (agreement) { %>
+      <p class="mb2"><%= t('partnerp.agreement_rate') %>: <strong dir="ltr"><%= agreement.commission_type === 'percent' ? Number(agreement.commission_rate) + '%' : fmt.money(agreement.commission_rate, agreement.currency || 'USD') %></strong></p>
+      <p class="small muted mb0"><%= t('partnerp.agreement_hint') %></p>
+    <% } else { %><p class="muted mb0"><%= t('partnerp.agreement_none') %></p><% } %>
+  </section>
+</div>
+
+<section class="card mb4">
+  <div class="card-head"><h2><%= t('partnerp.pipeline') %></h2><a class="btn sm ghost" href="/partner/applications"><%= t('common.see_all') %></a></div>
+  <% if (!apps.length) { %><p class="muted mb0"><%= t('partnerp.no_applications') %></p>
+  <% } else { %><div class="cluster"><% apps.forEach(function (a) { %><span class="chip"><%= L(a, 'name') %> · <strong><%= a.n %></strong></span><% }) %></div><% } %>
+</section>
+
+<section class="card">
+  <h2><%= t('partnerp.how_title') %></h2>
+  <ol class="steps-list small"><li><%= t('partnerp.how_1') %></li><li><%= t('partnerp.how_2') %></li><li><%= t('partnerp.how_3') %></li></ol>
+</section>

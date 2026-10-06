@@ -1,0 +1,70 @@
+<section class="schol-band uni-band">
+  <span class="band-bg" style="<%= cover(null, 'campus') %>"></span><span class="band-shade"></span>
+  <div class="container">
+    <div class="band-copy" style="max-width:720px">
+      <span class="eyebrow light"><%- icon('handshake', 'sm') %><%= t('partnerp.public_eyebrow') %></span>
+      <h1 class="band-title"><%= t('partnerp.public_title') %></h1>
+      <p><%= t('partnerp.public_lead') %></p>
+      <div class="cluster"><a class="btn gold lg" href="#apply"><%= t('partnerp.apply_cta') %><%- icon('arrow-right', 'flip-rtl') %></a><a class="btn glass lg" href="/partner/login"><%- icon('log-in') %><%= t('partnerp.already_partner') %></a></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head"><h2><%= t('partnerp.why_title') %></h2><p><%= t('partnerp.why_lead') %></p></div>
+    <div class="service-grid">
+      <% [['users', 'reach'], ['layout-dashboard', 'portal'], ['shield-check', 'quality'], ['line-chart', 'insight']].forEach(function (b, i) { %>
+      <div class="service-tile tone-<%= i %>"><span class="st-icon"><%- icon(b[0]) %></span><strong><%= t('partnerp.why.' + b[1] + '_t') %></strong><span class="small muted"><%= t('partnerp.why.' + b[1] + '_d') %></span></div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<section class="section tight">
+  <div class="container">
+    <div class="section-head"><h2><%= t('partnerp.steps_title') %></h2></div>
+    <ol class="steps">
+      <li><h3><%= t('partnerp.step1_t') %></h3><p><%= t('partnerp.step1_d') %></p></li>
+      <li><h3><%= t('partnerp.step2_t') %></h3><p><%= t('partnerp.step2_d') %></p></li>
+      <li><h3><%= t('partnerp.step3_t') %></h3><p><%= t('partnerp.step3_d') %></p></li>
+      <li><h3><%= t('partnerp.step4_t') %></h3><p><%= t('partnerp.step4_d') %></p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="apply">
+  <div class="container">
+    <div class="split wide-side">
+      <div>
+        <h2><%= t('partnerp.form_title') %></h2>
+        <% if (sent) { %>
+          <div class="alert ok" role="status"><%- icon('check-circle-2') %><p><%= t('partnerp.form_sent') %></p></div>
+        <% } else { %>
+        <form method="post" action="/for-universities#apply" class="form-card stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="sr-only" aria-hidden="true"><label>Company URL <input type="text" name="company_url" tabindex="-1" autocomplete="off"></label></div>
+          <div class="form-grid two">
+            <%- include('../../partials/field', { name: 'university_name', label: t('partnerp.f_university'), required: true, attrs: 'autocomplete="organization"' }) %>
+            <%- include('../../partials/field', { name: 'country_code', label: t('common.country'), type: 'select', options: countries }) %>
+            <%- include('../../partials/field', { name: 'city', label: t('common.city') }) %>
+            <%- include('../../partials/field', { name: 'website', label: t('resources.fields.website'), type: 'url', attrs: 'dir="ltr" placeholder="https://" autocomplete="url"' }) %>
+            <%- include('../../partials/field', { name: 'contact_name', label: t('partnerp.f_contact'), required: true, attrs: 'autocomplete="name"' }) %>
+            <%- include('../../partials/field', { name: 'job_title', label: t('partnerp.job_title'), attrs: 'autocomplete="organization-title"' }) %>
+            <%- include('../../partials/field', { name: 'email', label: t('partnerp.f_email'), type: 'email', required: true, attrs: 'dir="ltr" autocomplete="email"' }) %>
+            <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', attrs: 'dir="ltr" autocomplete="tel"' }) %>
+          </div>
+          <%- include('../../partials/field', { name: 'message', label: t('partnerp.f_message'), type: 'textarea', rows: 4 }) %>
+          <label class="check <%= errors.consent ? 'has-error' : '' %>"><input type="checkbox" name="consent" value="1" required><span><%= t('book.consent_contact') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+          <% if (errors.consent) { %><span class="error-text"><%= t('book.consent_required') %></span><% } %>
+          <div class="form-actions"><button class="btn primary lg" type="submit"><%= t('partnerp.send_request') %></button></div>
+        </form>
+        <% } %>
+      </div>
+      <aside class="stack">
+        <div class="card"><h3><%= t('partnerp.margin_title') %></h3><p class="small muted mb0"><%= t('partnerp.margin_text') %></p></div>
+        <div class="card"><h3><%= t('partnerp.review_title') %></h3><p class="small muted mb0"><%= t('partnerp.review_text') %></p></div>
+      </aside>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,34 @@
+<%
+  var months = [1,2,3,4,5,6,7,8,9,10,11,12].map(function (m) { return { value: m, label: new Intl.DateTimeFormat(locale === 'ar' ? 'ar-u-nu-latn' : 'en-GB', { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, m - 1, 1))) }; });
+  var specs = [
+    { key: 'basics', fields: [{ name: 'name_ar', attrs: 'dir="rtl"' }, { name: 'website', type: 'url', attrs: 'dir="ltr" placeholder="https://"' }, { name: 'description', bi: true, type: 'textarea', rows: 6 }] },
+    { key: 'admission', fields: [{ name: 'admission', bi: true, type: 'textarea', rows: 4 }, { name: 'deadlines', bi: true }, { name: 'intakes', type: 'checks', opts: months }, { name: 'min_ielts', type: 'number', attrs: 'min="0" max="9" step="0.5"' }, { name: 'min_toefl', type: 'number', attrs: 'min="0" max="120"' }] },
+    { key: 'fees', fields: [{ name: 'tuition_min', type: 'number', attrs: 'min="0"' }, { name: 'tuition_max', type: 'number', attrs: 'min="0"' }, { name: 'application_fee', type: 'number', attrs: 'min="0"' }] },
+    { key: 'campus', fields: [{ name: 'campus', bi: true, type: 'textarea', rows: 3 }, { name: 'accommodation', bi: true, type: 'textarea', rows: 3 }, { name: 'contact_email', type: 'email', attrs: 'dir="ltr"' }, { name: 'contact_phone', type: 'tel', attrs: 'dir="ltr"' }] },
+  ];
+  var img = function (v, fallback) { return v ? cover(v, fallback) : cover(null, fallback); };
+%>
+<div class="page-head"><div><h1><%= L(row, 'name') %></h1><p class="lead"><%= t('partnerp.profile_lead') %></p></div><a class="btn ghost" href="/universities/<%= uni.slug %>" target="_blank" rel="noopener"><%- icon('external-link') %><%= t('partnerp.view_public') %></a></div>
+<% if (open) { %><div class="alert <%= open.status === 'changes_requested' ? 'warn' : 'info' %> mb4" role="status"><%- icon('clock') %><div><p class="mb0"><strong><%= t('partnerp.status.' + open.status) %></strong> — <%= t('partnerp.open_hint') %></p><% if (open.review_note) { %><p class="mb0 small"><%= t('partnerp.reviewer_note') %>: <%= open.review_note %></p><% } %></div></div><% } %>
+
+<section class="card mb4">
+  <h2><%= t('partnerp.images') %></h2>
+  <p class="small muted"><%= t('partnerp.images_hint') %></p>
+  <div class="grid-2">
+    <% [['logo', 'logo', '/art/crest/' + uni.slug + '.svg'], ['cover', 'cover_image', '/art/uni/' + uni.slug + '.svg']].forEach(function (k) { %>
+    <form method="post" action="/partner/profile/image" enctype="multipart/form-data" class="stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="kind" value="<%= k[0] %>">
+      <div class="img-preview <%= k[0] %>" style="<%= img(row[k[1]], k[2]) %>" role="img" aria-label="<%= t('partnerp.img_' + k[0]) %>"></div>
+      <label for="up_<%= k[0] %>"><%= t('partnerp.img_' + k[0]) %></label>
+      <input id="up_<%= k[0] %>" type="file" name="file" accept="image/png,image/jpeg,image/webp" required>
+      <button class="btn sm" type="submit"><%- icon('upload') %><%= t('partnerp.upload') %></button>
+    </form>
+    <% }) %>
+  </div>
+</section>
+
+<form method="post" action="/partner/profile" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('_fields', { specs: specs, row: row }) %>
+  <div class="form-actions sticky"><button class="btn primary" type="submit"><%- icon('send') %><%= t('partnerp.submit_review') %></button></div>
+</form>

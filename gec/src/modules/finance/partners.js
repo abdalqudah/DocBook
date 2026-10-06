@@ -34,13 +34,17 @@ async function expectFor(application, ctx = { userId: null }) {
   const p = await knex('partners').where({ university_id: application.university_id, status: 'active' })
     .where((w) => w.whereNull('starts_on').orWhere('starts_on', '<=', today)).where((w) => w.whereNull('ends_on').orWhere('ends_on', '>=', today)).orderBy('id', 'desc').first();
   if (!p) return null;
+  // A program can override the partnership's rate (GEC's margin on that program).
+  const prog = application.program_id ? await knex('programs').where({ id: application.program_id }).first('commission_type', 'commission_rate') : null;
+  const rule = prog && ['percent', 'fixed'].includes(prog.commission_type) && prog.commission_rate !== null
+    ? { commission_type: prog.commission_type, commission_rate: prog.commission_rate, currency: p.currency, source: 'program' } : { ...p, source: 'partner' };
   let amount; let currency; let basis;
-  if (p.commission_type === 'percent') {
+  if (rule.commission_type === 'percent') {
     if (!application.tuition_fee) return null; // nothing to base it on: finance adds it by hand
     currency = application.currency || p.currency || 'USD';
-    amount = fin.fromCents(Math.round((fin.cents(application.tuition_fee) * Number(p.commission_rate)) / 100));
-    basis = `${Number(p.commission_rate)}% × ${application.tuition_fee} ${currency}`;
-  } else { amount = Number(p.commission_rate); currency = p.currency || 'USD'; basis = 'fixed'; }
+    amount = fin.fromCents(Math.round((fin.cents(application.tuition_fee) * Number(rule.commission_rate)) / 100));
+    basis = `${Number(rule.commission_rate)}% × ${application.tuition_fee} ${currency}${rule.source === 'program' ? ' (program rate)' : ''}`;
+  } else { amount = Number(rule.commission_rate); currency = p.currency || 'USD'; basis = rule.source === 'program' ? 'fixed (program rate)' : 'fixed'; }
   const due = p.payment_terms_days ? new Date(Date.now() + p.payment_terms_days * 86400_000).toISOString().slice(0, 10) : null;
   const [id] = await knex('commissions').insert({ partner_id: p.id, university_id: application.university_id, application_id: application.id, student_id: application.student_id, expected_amount: amount, currency, status: 'expected', due_on: due, basis });
   await audit.record(ctx, 'commission.expected', { entityType: 'commission', entityId: id, newValues: { amount, currency, application_id: application.id } });

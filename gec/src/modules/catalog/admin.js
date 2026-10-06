@@ -103,11 +103,13 @@ async function normaliseProgram(row) {
   if (row.intakes) row.intakes = JSON.stringify(intList(JSON.parse(row.intakes)));
   if (row.tuition_fee !== undefined) row.tuition_usd = row.tuition_fee === null ? null : await money.toUsd(row.tuition_fee, row.currency || 'USD');
   if (row.university_id) row.university_id = Number(row.university_id);
+  if (row.commission_type === null || row.commission_type === '') row.commission_type = 'inherit';
+  if (row.commission_type === 'inherit') row.commission_rate = null;
   return row;
 }
 const programs = resource({
   key: 'programs', table: 'programs', entity: 'program', nameField: 'name_en', slugFrom: 'name_en',
-  publicUrl: (r) => `/programs/${r.slug}`, defaults: { is_active: true, currency: 'USD', study_mode: 'on_campus', internship: 'none' },
+  publicUrl: (r) => `/programs/${r.slug}`, defaults: { is_active: true, currency: 'USD', study_mode: 'on_campus', internship: 'none', commission_type: 'inherit' },
   list: {
     search: ['name_en', 'name_ar', 'faculty'], defaultSort: ['name_en', 'asc'],
     select: (q) => q.join('universities as u', 'u.id', 'programs.university_id').select('programs.*', 'u.name_en as university_en', 'u.name_ar as university_ar', 'u.slug as university_slug'),
@@ -133,7 +135,7 @@ const programs = resource({
       { name: 'min_ielts', type: 'number', max: 9 }, { name: 'min_ielts_band', type: 'number', max: 9 }, { name: 'min_toefl', type: 'int', max: 120 }, { name: 'min_pte', type: 'int', max: 90 },
       { name: 'min_duolingo', type: 'int', max: 160 }, { name: 'documents_required', type: 'list', hint: 'catalog.one_per_line' }] },
     { key: 'outcomes', fields: [{ name: 'internship', type: 'select', required: true, options: ['none', 'optional', 'included', 'coop'], optionLabel: 'catalog.internship' }, { name: 'work_after_study', type: 'bool' }, { name: 'work_after_study_note', type: 'text' }] },
-    { key: 'internal', internal: true, fields: [{ name: 'internal_notes', type: 'textarea', internal: true, rows: 4 }] },
+    { key: 'internal', internal: true, fields: [{ name: 'commission_type', type: 'select', internal: true, options: ['inherit', 'percent', 'fixed'], optionLabel: 'partnerp.commission_type', hint: 'partnerp.commission_hint' }, { name: 'commission_rate', type: 'number', internal: true, min: 0, max: 100000 }, { name: 'internal_notes', type: 'textarea', internal: true, rows: 4 }] },
     { key: 'visibility', fields: [{ name: 'is_active', type: 'bool' }] },
     { key: 'seo', fields: seoFields },
   ],

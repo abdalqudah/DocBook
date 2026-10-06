@@ -6,7 +6,7 @@ const config = require('../../config');
 const { translator } = require('../../core/i18n');
 
 const CATEGORIES = ['applications', 'documents', 'appointments', 'visa', 'payments', 'messages', 'events'];
-const STAFF_CATEGORIES = ['tasks', 'mentions', 'leads', 'messages', 'documents', 'appointments'];
+const STAFF_CATEGORIES = ['tasks', 'mentions', 'leads', 'messages', 'documents', 'appointments', 'partners'];
 const EXTERNAL = ['email', 'sms', 'whatsapp'];
 const DEFAULT = { email: true, sms: false, whatsapp: false };
 

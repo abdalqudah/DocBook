@@ -1,0 +1,11 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('partnerp.apps_lead') %></p></div></div>
+<% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('partnerp.no_applications'), emptyIcon: 'file-check', compact: true }) %></div>
+<% } else { %><div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('partnerp.applicant') %></th><th><%= t('partnerp.program') %></th><th><%= t('partnerp.intake') %></th><th><%= t('common.status') %></th><th><%= t('partnerp.updated') %></th></tr></thead><tbody>
+<% rows.forEach(function (a) { %><tr>
+  <td class="primary"><%= a.first_name %> <%= (a.last_name || '').slice(0, 1) %>.<div class="small subtle"><%= a.ref %><% if (a.nationality) { %> · <%- flagImg(a.nationality) %><% } %></div></td>
+  <td data-label="<%= t('partnerp.program') %>"><%= a.program_name || '—' %></td>
+  <td data-label="<%= t('partnerp.intake') %>"><%= a.intake ? ref.month(a.intake) : '—' %></td>
+  <td data-label="<%= t('common.status') %>"><span class="chip"><%= locale === 'ar' && a.stage_ar ? a.stage_ar : a.stage_en %></span></td>
+  <td data-label="<%= t('partnerp.updated') %>" class="small"><%= fmt.relative(a.updated_at) %></td>
+</tr><% }) %></tbody></table></div>
+<p class="small subtle mt2"><%= t('partnerp.apps_privacy') %></p><% } %>

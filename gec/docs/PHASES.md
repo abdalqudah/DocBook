@@ -506,3 +506,45 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
   redirect URIs shown in the settings page, and paste the client ID and secret.
 * **Known limitations:** calendar sync is not built; staff who sign in only with Google / Microsoft still need an
   administrator to create their account first (by design).
+
+## Phase 13 — Website redesign, flags and university artwork
+
+* Home page rebuilt: hero slider (managed in **Website → Home slider**), search dock, destination bento,
+  journey steps, featured-program rail, scholarship band, services, events, testimonials, articles.
+* Illustrated covers (`public/img/covers/*.svg`, `scripts/build-covers.js`) sit under every photo, so a missing or
+  blocked photo never leaves an empty box.
+* Country flags as SVG images (`public/flags/`, from the MIT-licensed `flag-icons` package via
+  `scripts/build-flags.js`): emoji flags do not render on Windows.
+* Every university gets a generated campus picture and crest (`/art/uni/<slug>.svg`, `/art/crest/<slug>.svg`,
+  tinted by country) until real photos and logos are uploaded. Replace them any time from the university record or
+  the media library.
+* **Tests:** `test/phase13.test.js`.
+
+## Phase 14 — University partner portal
+
+University staff can sign in to their own portal and publish for their university; GEC keeps editorial control and
+sets its margin.
+
+* **Two ways in.** (1) A university asks to join from the public **For universities** page
+  (`/for-universities`, honeypot + rate limit); partnerships staff see it in **Finance → Partnership requests**,
+  link it to an existing university or create one (hidden until published), set GEC's commission (percent of
+  first-year tuition or a fixed amount per enrolled student) and approve — the contact receives an e-mail to set a
+  password. (2) Staff invite university users directly from **Finance → Partner accounts**.
+* **Partner portal** (`/partner`, separate sign-in and password reset, accounts of kind `partner`): dashboard
+  (live programs/scholarships, items in review, agreement rate, applications by stage), programs and scholarships
+  (add / edit), university profile (texts, intakes, fees, logo and campus photo upload), submissions with GEC's
+  notes, applications GEC has submitted (name initial only), team (owners invite editors).
+* **Review before publishing.** Nothing a partner writes reaches the site directly: each change is a submission
+  in **Admissions → Partner submissions** with a field-by-field before/after table. Reviewers approve and publish,
+  ask for changes, or decline (a note is required and e-mailed to the university). Only fields the form sent are
+  changed. Partners can only touch their own university's records.
+* **GEC margin per program.** Programs carry `commission_type` (inherit / percent / fixed) and `commission_rate`,
+  editable in the program's internal section or while approving a submission; the expected commission on
+  enrolment uses the program rate before the university agreement.
+* **Permissions:** `partners.manage` (requests, accounts), `catalog.manage` (submissions).
+* **Files:** `src/modules/partnerhub/{service,portal.web,staff.web,public.web,mail}.js`, `layouts/partner.ejs`,
+  `pages/partner/*`, `pages/staff/partners/*`, `pages/site/for-universities.ejs`, `locales/*/partners.json`,
+  migration `20261006001400_phase14_partners_portal.js`.
+* **Tests:** `test/phase14.test.js` (4): request → approval → invitation → sign-in; submission held until approved,
+  program margin overrides the agreement; diff, change requests (note required), isolation between universities
+  and portals; partial profile edits, team invites, disabling accounts.

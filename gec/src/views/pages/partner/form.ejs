@@ -1,0 +1,31 @@
+<%
+  var o = function (list, key) { return list.map(function (x) { return { value: x, label: t(key + '.' + x) }; }); };
+  var months = [1,2,3,4,5,6,7,8,9,10,11,12].map(function (m) { return { value: m, label: new Intl.DateTimeFormat(locale === 'ar' ? 'ar-u-nu-latn' : 'en-GB', { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, m - 1, 1))) }; });
+  var cur = currencies.map(function (c) { return { value: c, label: c }; });
+  var specs = entity === 'program' ? [
+    { key: 'basics', fields: [{ name: 'name', bi: true, req: true }, { name: 'degree_level', type: 'select', opts: o(refs.DEGREES, 'ref.degree'), req: true }, { name: 'field', type: 'select', opts: o(refs.FIELDS, 'ref.field'), req: true },
+      { name: 'faculty' }, { name: 'duration_months', type: 'number', attrs: 'min="1" max="120"' }, { name: 'study_mode', type: 'select', opts: o(refs.STUDY_MODES, 'ref.mode'), req: true }, { name: 'program_url', type: 'url', attrs: 'dir="ltr" placeholder="https://"' },
+      { name: 'description', bi: true, type: 'textarea', rows: 5 }] },
+    { key: 'fees', fields: [{ name: 'currency', type: 'select', opts: cur }, { name: 'tuition_fee', type: 'number', hint: 'catalog.per_year', attrs: 'min="0"' }, { name: 'application_fee', type: 'number', attrs: 'min="0"' }, { name: 'scholarships_available', type: 'checkbox' }] },
+    { key: 'dates', fields: [{ name: 'intakes', type: 'checks', opts: months }, { name: 'next_deadline', type: 'date' }, { name: 'deadline_note' }] },
+    { key: 'requirements', fields: [{ name: 'min_gpa_pct', type: 'number', hint: 'catalog.gpa_pct_hint', attrs: 'min="0" max="100" step="any"' }, { name: 'academic', bi: true, type: 'textarea', rows: 3 },
+      { name: 'min_ielts', type: 'number', attrs: 'min="0" max="9" step="0.5"' }, { name: 'min_toefl', type: 'number', attrs: 'min="0" max="120"' }, { name: 'min_pte', type: 'number', attrs: 'min="0" max="90"' }, { name: 'min_duolingo', type: 'number', attrs: 'min="0" max="160"' },
+      { name: 'documents_required', type: 'list' }] },
+    { key: 'outcomes', fields: [{ name: 'internship', type: 'select', opts: o(['none', 'optional', 'included', 'coop'], 'catalog.internship'), req: true }, { name: 'work_after_study', type: 'checkbox' }, { name: 'work_after_study_note' }] },
+    { key: 'visibility', fields: [{ name: 'is_active', type: 'checkbox' }] },
+  ] : [
+    { key: 'basics', fields: [{ name: 'name', bi: true, req: true }, { name: 'provider', bi: true }, { name: 'description', bi: true, type: 'textarea', rows: 4 }, { name: 'source_url', type: 'url', attrs: 'dir="ltr" placeholder="https://"' }] },
+    { key: 'award', fields: [{ name: 'amount_type', type: 'select', opts: o(['fixed', 'percentage', 'full', 'varies'], 'catalog.amount_type'), req: true }, { name: 'amount_min', type: 'number', attrs: 'min="0"' }, { name: 'amount_max', type: 'number', attrs: 'min="0"' }, { name: 'currency', type: 'select', opts: cur }, { name: 'coverage', bi: true }] },
+    { key: 'eligibility', fields: [{ name: 'eligibility', bi: true, type: 'list' }, { name: 'degree_levels', type: 'checks', opts: o(refs.DEGREES, 'ref.degree') }, { name: 'min_gpa_pct', type: 'number', attrs: 'min="0" max="100" step="any"' }, { name: 'min_ielts', type: 'number', attrs: 'min="0" max="9" step="0.5"' }] },
+    { key: 'dates', fields: [{ name: 'deadline', type: 'date' }, { name: 'deadline_note' }] },
+    { key: 'visibility', fields: [{ name: 'is_active', type: 'checkbox' }] },
+  ];
+%>
+<nav class="breadcrumbs"><a href="/partner/<%= plural %>"><%= t('partnerp.nav.' + plural) %></a><%- icon('chevron-right') %><span><%= title %></span></nav>
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('partnerp.form_lead') %></p></div></div>
+<% if (open) { %><div class="alert <%= open.status === 'changes_requested' ? 'warn' : 'info' %> mb4" role="status"><%- icon(open.status === 'changes_requested' ? 'alert-triangle' : 'clock') %><div><p class="mb0"><strong><%= t('partnerp.status.' + open.status) %></strong> — <%= t('partnerp.open_hint') %></p><% if (open.review_note) { %><p class="mb0 small"><%= t('partnerp.reviewer_note') %>: <%= open.review_note %></p><% } %></div></div><% } %>
+<form method="post" action="/partner/<%= plural %><%= id ? '/' + id : '' %>" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('_fields', { specs: specs, row: row }) %>
+  <div class="form-actions sticky"><button class="btn primary" type="submit"><%- icon('send') %><%= t('partnerp.submit_review') %></button><a class="btn ghost" href="/partner/<%= plural %>"><%= t('common.cancel') %></a></div>
+</form>

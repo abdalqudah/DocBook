@@ -1,0 +1,23 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('partnerp.accounts_lead') %></p></div><a class="btn ghost" href="/partner/login" target="_blank" rel="noopener"><%- icon('external-link') %><%= t('partnerp.portal_link') %></a></div>
+<% if (!rows.length) { %><div class="card mb4"><%- include('../../../partials/empty', { title: t('partnerp.no_accounts'), emptyIcon: 'user-cog', compact: true }) %></div>
+<% } else { %><div class="table-wrap mb4"><table class="table responsive"><thead><tr><th><%= t('common.name') %></th><th><%= t('partnerp.university') %></th><th><%= t('partnerp.role') %></th><th><%= t('partnerp.last_login') %></th><th></th></tr></thead><tbody>
+<% rows.forEach(function (m) { %><tr>
+  <td class="primary"><%= m.name %><div class="small subtle"><%= m.email %><%= m.job_title ? ' · ' + m.job_title : '' %></div></td>
+  <td data-label="<%= t('partnerp.university') %>"><a href="/staff/universities/<%= m.university_id %>"><%= L({ name_en: m.uni_en, name_ar: m.uni_ar }, 'name') %></a></td>
+  <td data-label="<%= t('partnerp.role') %>"><span class="chip"><%= t('partnerp.roles.' + m.role) %></span><% if (m.status === 'disabled') { %> <span class="chip danger"><%= t('common.disabled') %></span><% } %></td>
+  <td data-label="<%= t('partnerp.last_login') %>" class="small"><%= m.last_login_at ? fmt.relative(m.last_login_at) : t('partnerp.never') %></td>
+  <td class="text-end"><form method="post" action="/staff/partner-accounts/<%= m.user_id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm ghost" type="submit"><%= m.status === 'disabled' ? t('partnerp.enable') : t('partnerp.disable') %></button></form></td>
+</tr><% }) %></tbody></table></div><% } %>
+<form method="post" action="/staff/partner-accounts" class="card stack" novalidate>
+  <h2><%= t('partnerp.invite_title') %></h2>
+  <p class="small muted"><%= t('partnerp.invite_hint') %></p>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'university_id', label: t('partnerp.university'), type: 'select', required: true, options: universities.map(function (u) { return { value: u.id, label: u.name_en }; }) }) %>
+    <%- include('../../../partials/field', { name: 'role', label: t('partnerp.role'), type: 'select', required: true, value: 'editor', options: [{ value: 'owner', label: t('partnerp.roles.owner') }, { value: 'editor', label: t('partnerp.roles.editor') }] }) %>
+    <%- include('../../../partials/field', { name: 'name', label: t('common.name'), required: true }) %>
+    <%- include('../../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'job_title', label: t('partnerp.job_title') }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%- icon('mail') %><%= t('partnerp.send_invite') %></button></div>
+</form>

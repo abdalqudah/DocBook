@@ -1,0 +1,23 @@
+<nav class="breadcrumbs"><a href="/staff/partner-submissions"><%= t('nav.partner_submissions') %></a><%- icon('chevron-right') %><span><%= sub.data.name_en || L({ name_en: sub.uni_en, name_ar: sub.uni_ar }, 'name') %></span></nav>
+<div class="page-head"><div><h1><%= sub.data.name_en || L({ name_en: sub.uni_en, name_ar: sub.uni_ar }, 'name') %></h1>
+  <p class="lead"><%= t('partnerp.entity.' + sub.entity) %> · <%= sub.entity_id ? t('partnerp.change') : t('partnerp.new_item') %> · <%= L({ name_en: sub.uni_en, name_ar: sub.uni_ar }, 'name') %> · <%= sub.by_name || '' %> <% if (sub.by_email) { %>(<%= sub.by_email %>)<% } %> · <%= fmt.dateTime(sub.updated_at) %></p></div>
+  <span class="chip"><%= t('partnerp.status.' + sub.status) %></span></div>
+<p class="small muted"><%= t('partnerp.diff_hint') %></p>
+<% var ENUMS = { degree_level: 'ref.degree', field: 'ref.field', study_mode: 'ref.mode', internship: 'catalog.internship', amount_type: 'catalog.amount_type' }; var show = function (f, v) { return v && ENUMS[f] ? t(ENUMS[f] + '.' + v) : (v || '—'); }; %>
+<div class="table-wrap mb4"><table class="table diff-table"><thead><tr><th scope="col"><%= t('partnerp.field') %></th><% if (sub.entity_id) { %><th scope="col"><%= t('partnerp.before') %></th><% } %><th scope="col"><%= sub.entity_id ? t('partnerp.after') : t('partnerp.value') %></th></tr></thead><tbody>
+<% rows.filter(function (r) { return r.changed || sub.entity_id; }).forEach(function (r) { %><tr class="<%= r.changed && sub.entity_id ? 'changed' : '' %>"><th scope="row" class="small"><%= t('resources.fields.' + r.field.replace(/_(en|ar)$/, '')) %><%= /_ar$/.test(r.field) ? ' (ع)' : /_en$/.test(r.field) && r.field !== 'name_en' ? ' (EN)' : '' %><% if (r.changed && sub.entity_id) { %> <span class="sr-only"><%= t('partnerp.changed') %></span><% } %></th><% if (sub.entity_id) { %><td class="small" <%- /_ar$/.test(r.field) ? 'dir="rtl"' : '' %>><%= show(r.field, r.before) %></td><% } %><td class="small" <%- /_ar$/.test(r.field) ? 'dir="rtl"' : '' %>><%= show(r.field, r.after) %></td></tr><% }) %>
+</tbody></table></div>
+<% if (['pending', 'changes_requested'].indexOf(sub.status) >= 0) { %>
+<form method="post" action="/staff/partner-submissions/<%= sub.id %>" class="card stack" novalidate>
+  <h2><%= t('partnerp.decision') %></h2>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (sub.entity === 'program') { %>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'commission_type', label: t('partnerp.program_margin'), type: 'select', required: true, value: commission ? commission.commission_type : 'inherit', options: ['inherit', 'percent', 'fixed'].map(function (k) { return { value: k, label: t('partnerp.commission_type.' + k) }; }), hint: t('partnerp.commission_hint') }) %>
+    <%- include('../../../partials/field', { name: 'commission_rate', label: t('resources.fields.commission_rate'), type: 'number', value: commission ? commission.commission_rate : '', attrs: 'min="0" step="any"' }) %>
+  </div>
+  <% } %>
+  <%- include('../../../partials/field', { name: 'review_note', label: t('partnerp.note_to_partner'), type: 'textarea', rows: 3, hint: t('partnerp.note_hint') }) %>
+  <div class="form-actions"><button class="btn primary" name="action" value="approve" type="submit"><%- icon('check') %><%= t('partnerp.approve_publish') %></button><button class="btn" name="action" value="changes_requested" type="submit"><%- icon('pencil') %><%= t('partnerp.ask_changes') %></button><button class="btn danger" name="action" value="rejected" type="submit"><%- icon('x') %><%= t('partnerp.reject_btn') %></button></div>
+</form>
+<% } else if (sub.review_note) { %><div class="card"><strong><%= t('partnerp.reviewer_note') %>:</strong> <%= sub.review_note %></div><% } %>

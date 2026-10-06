@@ -93,3 +93,14 @@
 .sso-or::before, .sso-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
 .sso-btn { justify-content: center; gap: 10px; }
 .sso-btn img { flex: none; }
+/* University partner portal */
+.partner-uni { display: flex; gap: 10px; align-items: center; margin: 0 10px 12px; padding: 10px; border-radius: var(--r); background: var(--surface-2); }
+.partner-uni > div { min-width: 0; }
+.partner-uni strong { display: block; font-size: .9rem; line-height: 1.25; }
+.uni-crest.sm { width: 40px; height: 40px; border-radius: 10px; border-width: 2px; box-shadow: none; }
+.diff-table td { vertical-align: top; overflow-wrap: anywhere; }
+.diff-table tr.changed td { background: color-mix(in srgb, var(--gold) 14%, var(--surface)); }
+.img-preview { border-radius: var(--r-lg); border: 1px solid var(--line); background-size: cover; background-position: center; aspect-ratio: 16 / 9; }
+.img-preview.logo { aspect-ratio: 1; max-width: 140px; background-size: contain; background-repeat: no-repeat; background-color: var(--surface-2); }
+.steps-list { margin: 0; padding-inline-start: 1.2em; display: grid; gap: 6px; }
+.partner-hero { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }

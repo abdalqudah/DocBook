@@ -18,6 +18,7 @@ const router = express.Router();
 const PORTALS = {
   student: { base: '', login: '/login', home: '/portal', view: 'student' },
   staff: { base: '/staff', login: '/staff/login', home: '/staff', view: 'staff' },
+  partner: { base: '/partner', login: '/partner/login', home: '/partner', view: 'partner' },
 };
 
 const sso = require('./sso');
@@ -172,6 +173,15 @@ router.get('/staff/reset/:token', resetPage('staff'));
 router.post('/staff/reset/:token', limits.reset, doReset('staff'));
 
 // First sign-in with a temporary password: choose a new one.
+// ---- University partners
+router.get('/partner/login', loginPage('partner'));
+router.post('/partner/login', limits.login, doLogin('partner'));
+router.post('/partner/logout', logout('partner'));
+router.get('/partner/forgot', forgotPage('partner'));
+router.post('/partner/forgot', limits.reset, doForgot('partner'));
+router.get('/partner/reset/:token', resetPage('partner'));
+router.post('/partner/reset/:token', limits.reset, doReset('partner'));
+
 router.get('/staff/password', requireStaff, (req, res) => res.page('pages/auth/new-password', { layout: 'auth', title: req.t('auth.new_password_title') }));
 router.post('/staff/password', requireStaff, ah(async (req, res) => {
   try {

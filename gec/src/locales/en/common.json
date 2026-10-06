@@ -147,7 +147,10 @@
     "home_page": "Home page",
     "privacy_requests": "Privacy requests",
     "media": "Media library",
-    "slides": "Home slider"
+    "slides": "Home slider",
+    "partner_requests": "Partnership requests",
+    "partner_submissions": "Partner submissions",
+    "partner_accounts": "Partner accounts"
   },
   "quick": {},
   "palette": {

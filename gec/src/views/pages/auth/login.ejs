@@ -1,10 +1,10 @@
-<h1><%= portal === 'staff' ? t('auth.staff_sign_in') : t('auth.student_sign_in') %></h1>
-<p class="muted"><%= portal === 'staff' ? t('auth.staff_sign_in_lead') : t('auth.student_sign_in_lead') %></p>
+<h1><%= portal === 'staff' ? t('auth.staff_sign_in') : portal === 'partner' ? t('partnerp.sign_in') : t('auth.student_sign_in') %></h1>
+<p class="muted"><%= portal === 'staff' ? t('auth.staff_sign_in_lead') : portal === 'partner' ? t('partnerp.sign_in_lead') : t('auth.student_sign_in_lead') %></p>
 <% if (typeof formError !== 'undefined' && formError) { %><div class="alert error mb4" role="alert"><%- icon('alert-circle') %><p><%= formError %></p></div><% } %>
-<form method="post" action="<%= portal === 'staff' ? '/staff/login' : '/login' %>" class="stack" novalidate>
+<form method="post" action="<%= (portal === 'staff' ? '/staff' : portal === 'partner' ? '/partner' : '') + '/login' %>" class="stack" novalidate>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="field"><label for="email"><%= t('auth.email') %></label><input id="email" type="email" name="email" value="<%= emailValue %>" autocomplete="username" required autofocus></div>
-  <div class="field"><div class="spread"><label for="password"><%= t('auth.password') %></label><a class="small" href="<%= portal === 'staff' ? '/staff/forgot' : '/forgot' %>"><%= t('auth.forgot_link') %></a></div><input id="password" type="password" name="password" autocomplete="current-password" required></div>
+  <div class="field"><div class="spread"><label for="password"><%= t('auth.password') %></label><a class="small" href="<%= (portal === 'staff' ? '/staff' : portal === 'partner' ? '/partner' : '') + '/forgot' %>"><%= t('auth.forgot_link') %></a></div><input id="password" type="password" name="password" autocomplete="current-password" required></div>
   <button class="btn primary block lg" type="submit"><%= t('auth.sign_in') %></button>
 </form>
 <%- include('../../partials/sso-buttons', { ssoList: typeof sso !== 'undefined' ? sso : [], portal: portal }) %>
@@ -14,4 +14,5 @@
 <div class="auth-switch">
   <a href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%= locale === 'ar' ? 'English' : 'العربية' %></a>
   <% if (portal === 'student') { %><a href="/staff/login"><%= t('auth.staff_link') %></a><% } else { %><a href="/login"><%= t('auth.student_link') %></a><% } %>
+  <% if (portal !== 'partner') { %><a href="/partner/login"><%= t('partnerp.login_link') %></a><% } %>
 </div>

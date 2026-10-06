@@ -40,6 +40,7 @@ router.use('/', require('../crm/web'));
 router.use('/', require('../team/web'));
 router.use('/', require('../catalog/admin').router);
 router.use('/', require('../catalog/staff.web'));
+router.use('/', require('../partnerhub/staff.web'));
 router.use('/', require('../admissions/web'));
 router.use('/', require('../booking/web'));
 router.use('/', require('../finance/web'));

@@ -1,0 +1,16 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('partnerp.team_lead') %></p></div></div>
+<div class="table-wrap mb4"><table class="table responsive"><thead><tr><th><%= t('common.name') %></th><th><%= t('partnerp.role') %></th><th><%= t('partnerp.last_login') %></th></tr></thead><tbody>
+<% rows.forEach(function (m) { %><tr><td class="primary"><%= m.name %><div class="small subtle"><%= m.email %><%= m.job_title ? ' · ' + m.job_title : '' %></div></td><td data-label="<%= t('partnerp.role') %>"><span class="chip"><%= t('partnerp.roles.' + m.role) %></span><% if (m.status === 'disabled') { %> <span class="chip"><%= t('common.disabled') %></span><% } %></td><td data-label="<%= t('partnerp.last_login') %>" class="small"><%= m.last_login_at ? fmt.relative(m.last_login_at) : '—' %></td></tr><% }) %>
+</tbody></table></div>
+<% if (isOwner) { %>
+<form method="post" action="/partner/team" class="card stack" novalidate>
+  <h2><%= t('partnerp.invite_colleague') %></h2>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="form-grid two">
+    <%- include('../../partials/field', { name: 'name', label: t('common.name'), required: true, attrs: 'autocomplete="off"' }) %>
+    <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, attrs: 'dir="ltr" autocomplete="off"' }) %>
+    <%- include('../../partials/field', { name: 'job_title', label: t('partnerp.job_title') }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%- icon('mail') %><%= t('partnerp.send_invite') %></button></div>
+</form>
+<% } %>

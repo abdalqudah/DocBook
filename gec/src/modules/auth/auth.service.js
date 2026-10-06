@@ -77,7 +77,7 @@ async function createReset(email, portal) {
   if (Number(n) >= 5) return null;
   const token = randomToken(32);
   await knex('password_resets').insert({ user_id: user.id, token_hash: sha256(token), expires_at: new Date(Date.now() + RESET_MINUTES * 60000) });
-  return { user, token, link: `${config.appUrl}/${portal === 'staff' ? 'staff/' : ''}reset/${token}` };
+  return { user, token, link: `${config.appUrl}/${portal === 'staff' ? 'staff/' : portal === 'partner' ? 'partner/' : ''}reset/${token}` };
 }
 
 async function findReset(token) {

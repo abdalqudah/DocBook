@@ -1,0 +1,14 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('partnerp.list_lead') %></p></div><a class="btn primary" href="/partner/<%= plural %>/new"><%- icon('plus') %><%= t('partnerp.new_' + entity) %></a></div>
+<% if (fresh.length) { %>
+<section class="card mb4"><div class="card-head"><h2><%= t('partnerp.new_in_review') %></h2></div><div class="divider-list"><% fresh.forEach(function (s) { %><div class="list-item"><div class="li-body"><div class="li-title"><%= s.data.name_en %></div><div class="li-sub"><%= fmt.relative(s.updated_at) %><%= s.review_note ? ' · ' + s.review_note : '' %></div></div><%- include('_status', { s: s.status }) %></div><% }) %></div></section>
+<% } %>
+<% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('partnerp.empty_' + entity), emptyIcon: entity === 'program' ? 'graduation-cap' : 'award', compact: true }) %></div>
+<% } else { %>
+<div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.name') %></th><th><%= t('partnerp.on_site') %></th><th><%= t('partnerp.review') %></th><th></th></tr></thead><tbody>
+<% rows.forEach(function (r) { %><tr>
+  <td class="primary"><a href="/partner/<%= plural %>/<%= r.id %>"><%= L(r, 'name') %></a><div class="small subtle"><%= entity === 'program' ? t('ref.degree.' + r.degree_level) : (r.deadline ? fmt.date(r.deadline) : '') %></div></td>
+  <td data-label="<%= t('partnerp.on_site') %>"><span class="chip <%= r.is_active ? 'ok' : '' %>"><%= r.is_active ? t('partnerp.live') : t('partnerp.hidden') %></span></td>
+  <td data-label="<%= t('partnerp.review') %>"><% if (pendingFor[r.id]) { %><%- include('_status', { s: pendingFor[r.id] }) %><% } else { %>—<% } %></td>
+  <td class="text-end"><a class="btn sm ghost" href="/partner/<%= plural %>/<%= r.id %>"><%- icon('pencil') %><%= t('partnerp.edit') %></a></td>
+</tr><% }) %></tbody></table></div>
+<% } %>

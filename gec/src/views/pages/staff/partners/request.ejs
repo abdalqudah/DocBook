@@ -1,0 +1,33 @@
+<nav class="breadcrumbs"><a href="/staff/partner-requests"><%= t('nav.partner_requests') %></a><%- icon('chevron-right') %><span><%= a.ref %></span></nav>
+<div class="page-head"><div><h1><%- flagImg(a.country_code) %> <%= a.university_name %></h1><p class="lead"><%= t('partnerp.req_status.' + a.status) %> · <%= fmt.dateTime(a.created_at) %></p></div></div>
+<section class="card mb4">
+  <dl class="kv mb2">
+    <dt><%= t('partnerp.contact') %></dt><dd><%= a.contact_name %><%= a.job_title ? ' — ' + a.job_title : '' %></dd>
+    <dt><%= t('common.email') %></dt><dd><a href="mailto:<%= a.email %>"><%= a.email %></a></dd>
+    <% if (a.phone) { %><dt><%= t('common.phone') %></dt><dd dir="ltr"><%= a.phone %></dd><% } %>
+    <dt><%= t('common.country') %></dt><dd><%= a.country_code ? ref.country(a.country_code) : '—' %><%= a.city ? ', ' + a.city : '' %></dd>
+    <% if (a.website) { %><dt><%= t('resources.fields.website') %></dt><dd><a href="<%= a.website %>" target="_blank" rel="noopener nofollow" dir="ltr"><%= a.website %></a></dd><% } %>
+    <% if (a.message) { %><dt><%= t('contact.message') %></dt><dd style="white-space:pre-line"><%= a.message %></dd><% } %>
+    <% if (a.review_note) { %><dt><%= t('partnerp.reviewer_note') %></dt><dd><%= a.review_note %></dd><% } %>
+  </dl>
+  <% if (a.university_id) { %><a class="btn sm" href="/staff/universities/<%= a.university_id %>"><%- icon('building-2') %><%= t('partnerp.open_university') %></a><% } %>
+</section>
+<% if (a.status === 'new') { %>
+<form method="post" action="/staff/partner-requests/<%= a.id %>/approve" class="card stack mb4" novalidate>
+  <h2><%= t('partnerp.approve_title') %></h2>
+  <p class="small muted"><%= t('partnerp.approve_hint') %></p>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'university_id', label: t('partnerp.link_university'), type: 'select', required: true, value: guess ? guess.id : 'new', options: [{ value: 'new', label: t('partnerp.create_university', { name: a.university_name }) }].concat(universities.map(function (u) { return { value: u.id, label: u.name_en + (u.country_code ? ' (' + u.country_code + ')' : '') }; })) }) %>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'commission_type', label: t('partnerp.gec_margin_type'), type: 'select', required: true, value: 'percent', options: [{ value: 'percent', label: t('partnerp.commission_type.percent') }, { value: 'fixed', label: t('partnerp.commission_type.fixed') }] }) %>
+    <%- include('../../../partials/field', { name: 'commission_rate', label: t('partnerp.gec_margin'), type: 'number', required: true, value: '', hint: t('partnerp.gec_margin_hint'), attrs: 'min="0" step="any"' }) %>
+    <%- include('../../../partials/field', { name: 'currency', label: t('resources.fields.currency'), value: '', hint: t('partnerp.currency_hint'), attrs: 'maxlength="3" dir="ltr" placeholder="USD"' }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%- icon('check') %><%= t('partnerp.approve_btn') %></button></div>
+</form>
+<form method="post" action="/staff/partner-requests/<%= a.id %>/reject" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../../partials/field', { name: 'review_note', label: t('partnerp.reject_reason'), type: 'textarea', rows: 2 }) %>
+  <div class="form-actions"><button class="btn danger" type="submit"><%- icon('x') %><%= t('partnerp.reject_btn') %></button></div>
+</form>
+<% } %>

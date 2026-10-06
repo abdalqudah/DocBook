@@ -449,3 +449,7 @@ body.nav-open.has-hero .site-header .header-actions .btn.ghost { color: var(--te
 body.site:not(.has-hero) main > section:first-child { background: radial-gradient(1100px 360px at 85% -140px, var(--brand-soft), transparent 70%), radial-gradient(700px 260px at 8% -90px, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%); }
 body.site:not(.has-hero) main > section:first-child .section-head h1 { font-size: clamp(1.9rem, 1.3rem + 2vw, 2.8rem); letter-spacing: -.02em; }
 .uni-crest { position: relative; flex: none; width: 64px; height: 64px; border-radius: 16px; background-size: cover; background-position: center; background-color: var(--surface); border: 3px solid rgb(255 255 255 / .85); box-shadow: 0 8px 20px -8px rgb(0 0 0 / .5); overflow: hidden; }
+
+/* ---------- For universities ---------- */
+.uni-band .band-title { color: #fff; font-size: clamp(2rem, 1.4rem + 2.4vw, 3.2rem); line-height: 1.1; margin: 0; text-wrap: balance; }
+.uni-band { padding: clamp(72px, 9vw, 128px) 0; }

@@ -1,0 +1,28 @@
+<%#
+  Renders sections of partner-editable fields. specs: [{ key, fields: [{ name, type, bi?, opts?, rows?, hint?, req? }] }]
+-%>
+<% var val = function (n) { return old && Object.prototype.hasOwnProperty.call(old, n) ? old[n] : row[n]; };
+specs.forEach(function (sec) { %>
+<fieldset class="card">
+  <legend><%= t(sec.label || ('resources.sections.' + sec.key)) %></legend>
+  <div class="form-grid two">
+  <% sec.fields.forEach(function (f) {
+       var names = f.bi ? [f.name + '_en', f.name + '_ar'] : [f.name];
+       names.forEach(function (n, i) {
+         var lang = f.bi ? (i ? 'ar' : 'en') : null;
+         var label = t('resources.fields.' + f.name) + (lang ? (lang === 'ar' ? ' (العربية)' : ' (English)') : '');
+         var v = val(n);
+         var wide = (f.type === 'textarea' || f.type === 'list' || f.type === 'checks') && !f.bi;
+         var c = { name: n, label: label, required: f.req && lang !== 'ar', hint: f.hint ? t(f.hint) : '', cls: wide ? 'span-all' : '', attrs: (lang === 'ar' ? 'dir="rtl" ' : '') + (f.attrs || '') };
+         if (f.type === 'checkbox') { %><%- include('../../partials/field', Object.assign(c, { type: 'checkbox', value: v === undefined ? false : v })) %><% }
+         else if (f.type === 'select') { %><%- include('../../partials/field', Object.assign(c, { type: 'select', value: v === null || v === undefined ? '' : String(v), options: f.opts })) %><% }
+         else if (f.type === 'checks') { %><%- include('../../partials/field', Object.assign(c, { type: 'checks', value: [].concat(v || []).map(String), options: f.opts })) %><% }
+         else if (f.type === 'textarea') { %><%- include('../../partials/field', Object.assign(c, { type: 'textarea', rows: f.rows || 4, value: v })) %><% }
+         else if (f.type === 'list') { %><%- include('../../partials/field', Object.assign(c, { type: 'textarea', rows: f.rows || 4, value: Array.isArray(v) ? v.join('\n') : (v || ''), hint: t('catalog.one_per_line') })) %><% }
+         else if (f.type === 'date') { %><%- include('../../partials/field', Object.assign(c, { type: 'date', value: v ? fmt.dateInput(v) : '' })) %><% }
+         else { %><%- include('../../partials/field', Object.assign(c, { type: f.type || 'text', value: v })) %><% }
+       });
+     }); %>
+  </div>
+</fieldset>
+<% }); %>

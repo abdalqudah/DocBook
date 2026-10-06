@@ -1,7 +1,7 @@
 <h1><%= t('auth.reset_title') %></h1>
 <% if (!valid) { %>
   <div class="alert error" role="alert"><%- icon('alert-circle') %><p><%= t('errors.RESET_INVALID') %></p></div>
-  <p class="auth-foot"><a href="<%= portal === 'staff' ? '/staff/forgot' : '/forgot' %>"><%= t('auth.request_new_link') %></a></p>
+  <p class="auth-foot"><a href="<%= (portal === 'staff' ? '/staff' : portal === 'partner' ? '/partner' : '') + '/forgot' %>"><%= t('auth.request_new_link') %></a></p>
 <% } else { %>
   <form method="post" class="stack" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">

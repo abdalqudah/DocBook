@@ -97,6 +97,12 @@ npm run images:import
 Each address is downloaded once, the content is repointed to the copy, and anything that fails (not reachable, not an
 image, over 8 MB) is listed and left unchanged. Check you have the right to use each image.
 
+## University partners
+
+Universities can publish their own programs, scholarships and profile through the partner portal at `/partner`.
+They apply on `/for-universities` (or staff invite them from **Finance → Partner accounts**); GEC approves each
+request, sets its commission, and reviews every change in **Admissions → Partner submissions** before it goes live.
+
 ## Background jobs
 
 Run inside the app process (one minute to one day intervals): appointment and event reminders, campaign sending,

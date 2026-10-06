@@ -1,0 +1,10 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('partnerp.subs_lead') %></p></div></div>
+<% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('partnerp.no_submissions'), emptyIcon: 'inbox', compact: true }) %></div>
+<% } else { %><div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.name') %></th><th><%= t('partnerp.type') %></th><th><%= t('common.status') %></th><th><%= t('partnerp.reviewer_note') %></th><th><%= t('partnerp.updated') %></th></tr></thead><tbody>
+<% rows.forEach(function (s) { var href = s.entity === 'university' ? '/partner/profile' : '/partner/' + s.entity + 's' + (s.entity_id ? '/' + s.entity_id : (s.published_id ? '/' + s.published_id : '/new')); %><tr>
+  <td class="primary"><% if (s.status === 'approved' || s.entity_id || s.entity === 'university') { %><a href="<%= href %>"><%= s.data.name_en || t('partnerp.entity.university') %></a><% } else { %><%= s.data.name_en %><% } %></td>
+  <td data-label="<%= t('partnerp.type') %>"><%= t('partnerp.entity.' + s.entity) %> · <%= s.entity_id ? t('partnerp.change') : t('partnerp.new_item') %></td>
+  <td data-label="<%= t('common.status') %>"><%- include('_status', { s: s.status }) %></td>
+  <td data-label="<%= t('partnerp.reviewer_note') %>" class="small"><%= s.review_note || '—' %></td>
+  <td data-label="<%= t('partnerp.updated') %>" class="small"><%= fmt.relative(s.updated_at) %></td>
+</tr><% }) %></tbody></table></div><% } %>
