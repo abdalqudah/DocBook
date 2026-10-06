@@ -43,7 +43,7 @@ test('destination and university pages use cover art; logos fall back to initial
   const d = await a.get('/study/uk?lang=en');
   assert.match(d.text, /class="site has-hero"/); assert.match(d.text, /\/img\/covers\/uk\.svg/);
   const u = await a.get('/universities/university-of-manchester-demo?lang=en');
-  assert.match(u.text, /\/img\/covers\/uk\.svg/);
+  assert.match(u.text, /\/art\/uni\/university-of-manchester-demo\.svg/); assert.match(u.text, /\/art\/crest\/university-of-manchester-demo\.svg/);
   const list = await a.get('/programs?lang=en');
   assert.match(list.text, /class="pcard has-cover"/);
   assert.doesNotMatch(list.text, /<img src="https:\/\/images\.unsplash/, 'no broken <img> for remote logos');
