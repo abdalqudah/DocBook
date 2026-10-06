@@ -30,6 +30,7 @@ function createApp() {
         imgSrc: ["'self'", 'data:', 'https:'], // university / CMS images may live on an image CDN
         fontSrc: ["'self'"],
         connectSrc: ["'self'"],
+        frameSrc: ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'], // video blocks in the page builder
         formAction: ["'self'", 'https://checkout.stripe.com'], // "Pay by card" continues on Stripe's hosted checkout
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],

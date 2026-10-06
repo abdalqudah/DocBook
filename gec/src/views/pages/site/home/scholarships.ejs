@@ -1,0 +1,9 @@
+<% if (scholarships.length) { %>
+<section class="schol-band">
+  <span class="band-bg" style="<%= cover(null, 'scholarship') %>"></span><span class="band-shade"></span>
+  <div class="container band-inner">
+    <div class="band-copy"><span class="eyebrow light"><%- icon('award', 'sm') %><%= t('home.schol_eyebrow') %></span><h2><%= T('title', 'home.schol_title') %></h2><p><%= T('lead', 'home.schol_lead') %></p><a class="btn gold lg" href="/scholarships"><%= t('home.s2_cta') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="band-cards"><% scholarships.forEach(function (s) { %><%- include('../../../partials/scholarship-card', { s: s }) %><% }) %></div>
+  </div>
+</section>
+<% } %>

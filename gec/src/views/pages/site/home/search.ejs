@@ -1,0 +1,26 @@
+<section class="search-dock">
+  <div class="container">
+    <div class="search-card">
+      <form class="hero-search" action="/programs" method="get" role="search">
+        <div class="searchbox">
+          <%- icon('search', 'lg') %>
+          <label class="sr-only" for="hero-q"><%= t('home.search_label') %></label>
+          <input id="hero-q" type="search" name="q" placeholder="<%= t('home.search_ph') %>" data-suggest autocomplete="off">
+          <button class="btn primary" type="submit"><%= t('common.search') %></button>
+        </div>
+      </form>
+      <div class="hero-chips">
+        <span class="small muted"><%= t('home.popular') %></span>
+        <% [['master','data_science'],['bachelor','computer_science'],['master','business'],['bachelor','engineering'],['language','english']].forEach(function (c) { %>
+        <a class="filter-chip" href="/programs?degree=<%= c[0] %>&field=<%= c[1] %>"><%= t('ref.degree.' + c[0]) %> · <%= t('ref.field.' + c[1]) %></a>
+        <% }) %>
+      </div>
+      <dl class="stat-row">
+        <div><dt><%= t('home.stat_programs_label') %></dt><dd><%= fmt.number(stats.programs) %></dd></div>
+        <div><dt><%= t('home.stat_unis_label') %></dt><dd><%= fmt.number(stats.universities) %></dd></div>
+        <div><dt><%= t('home.stat_dests_label') %></dt><dd><%= stats.destinations %></dd></div>
+        <div><dt><%= t('home.stat_consult_label') %></dt><dd><%= t('home.stat_consult_value') %></dd></div>
+      </dl>
+    </div>
+  </div>
+</section>

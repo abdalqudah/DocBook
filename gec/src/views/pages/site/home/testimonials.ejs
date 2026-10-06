@@ -1,0 +1,8 @@
+<% if (hc.testimonials.length) { %>
+<section class="section">
+  <div class="container">
+    <div class="section-head center"><span class="eyebrow"><%- icon('quote', 'sm') %><%= t('home.voices_eyebrow') %></span><h2><%= T('title', 'cms.testimonials_title') %></h2></div>
+    <div class="grid-3"><% hc.testimonials.forEach(function (q) { %><figure class="quote-card"><%- icon('quote', 'lg') %><blockquote><%= L(q, 'quote') %></blockquote><figcaption class="row"><span class="avatar"><%= initials(L(q, 'name')) %></span><div><strong><%= L(q, 'name') %></strong><div class="small muted"><%= [L(q, 'program'), L(q, 'university')].filter(Boolean).join(' · ') %></div></div></figcaption></figure><% }) %></div>
+  </div>
+</section>
+<% } %>

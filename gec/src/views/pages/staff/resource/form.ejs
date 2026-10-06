@@ -2,7 +2,9 @@
 <nav class="breadcrumbs"><a href="<%= base %>"><%= t('resources.' + def.key + '.plural') %></a><%- icon('chevron-right') %><span><%= title %></span></nav>
 <div class="page-head">
   <div><h1><%= title %> <% if (row.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></h1></div>
+  <% if (typeof formActions !== 'undefined' && formActions.length) { %><span class="cluster"><% formActions.forEach(function (a) { %><a class="btn <%= a.primary ? 'primary' : '' %>" href="<%= a.href %>"><%- icon(a.icon) %><%= t(a.label) %></a><% }) %><% } %>
   <% if (publicUrl) { %><a class="btn ghost" href="<%= publicUrl %>" target="_blank" rel="noopener"><%- icon('external-link') %><%= t('resources.view_on_site') %></a><% } %>
+  <% if (typeof formActions !== 'undefined' && formActions.length) { %></span><% } %>
 </div>
 <form method="post" action="<%= base %><%= row.id ? '/' + row.id : '' %>" class="stack" novalidate>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">

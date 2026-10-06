@@ -9,10 +9,11 @@ const seo = [{ name: 'seo_title', type: 'text', bilingual: true, max: 160 }, { n
 const perms = { view: 'cms.manage', manage: 'cms.manage' };
 const employees = async () => (await knex('employees as e').join('users as u', 'u.id', 'e.user_id').where('u.status', 'active').orderBy('u.name').select('e.id', 'u.name')).map((e) => ({ value: String(e.id), label: e.name }));
 const CATEGORIES = ['study_abroad', 'visa', 'scholarships', 'universities', 'ielts', 'student_life', 'application_tips'];
-const RESERVED = /^(staff|portal|api|hooks|t|c|u|media|css|js|fonts|brand|icons|programs|universities|scholarships|study|events|courses|book|appointments|tickets|invoices|certificates|login|logout|register|verify|reset|forgot|advisor|resources|services|faq|privacy|contact|search|compare|shortlist|calculator|estimate|sitemap\.xml|robots\.txt)$/;
+const RESERVED = /^(staff|portal|api|hooks|t|c|u|media|css|js|fonts|brand|icons|programs|universities|scholarships|study|events|courses|book|appointments|tickets|invoices|certificates|login|logout|register|verify|reset|forgot|advisor|resources|services|faq|privacy|contact|search|compare|shortlist|calculator|estimate|sitemap\.xml|robots\.txt|llms\.txt|llms-full\.txt|partner|for-universities|newsletter|art|flags|img|go|auth|hooks)$/;
 
 const pages = resource({
-  key: 'pages', table: 'pages', entity: 'page', nameField: 'title_en', slugFrom: 'title_en', perms, publicUrl: (r) => `/${r.slug}`, defaults: { is_published: true, show_cta: true },
+  key: 'pages', table: 'pages', entity: 'page', nameField: 'title_en', slugFrom: 'title_en', perms, publicUrl: (r) => `/${r.slug}`,
+  formActions: (r) => [{ href: `/staff/pages/${r.id}/builder`, icon: 'layout-template', label: 'blocks.open_builder', primary: true }], defaults: { is_published: true, show_cta: true },
   list: { search: ['title_en', 'title_ar', 'slug'], defaultSort: ['title_en', 'asc'], columns: [{ key: 'title', label: 'common.name', render: (r, req) => L(req, r, 'title') }, { key: 'slug', label: 'resources.fields.slug', render: (r) => `/${r.slug}` }, { key: 'is_published', label: 'resources.fields.is_published', type: 'bool' }, { key: 'updated_at', label: 'common.updated', type: 'date' }] },
   sections: [
     { key: 'basics', fields: [{ name: 'title', type: 'text', bilingual: true, required: true, max: 190 }, { name: 'slug', type: 'slug', hint: 'cms.page_slug_hint' }, { name: 'lead', type: 'textarea', bilingual: true, rows: 2, max: 400 }, { name: 'hero_image', type: 'image' }] },

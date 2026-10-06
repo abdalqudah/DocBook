@@ -1,0 +1,32 @@
+<section class="section">
+  <div class="container showcase">
+    <div class="showcase-copy">
+      <span class="eyebrow"><%- icon('layout-dashboard', 'sm') %><%= t('home.portal_eyebrow') %></span>
+      <h2><%= T('title', 'home.portal_title') %></h2>
+      <p class="lead"><%= T('lead', 'home.portal_lead') %></p>
+      <ul class="ticks">
+        <% ['p1','p2','p3','p4'].forEach(function (k) { %><li><%- icon('circle-check') %><span><%= t('home.portal_' + k) %></span></li><% }) %>
+      </ul>
+      <div class="cluster"><a class="btn primary lg" href="/register"><%= t('home.s4_cta') %></a><a class="btn lg" href="/login"><%= t('auth.sign_in') %></a></div>
+    </div>
+    <div class="showcase-art" aria-hidden="true">
+      <div class="mock mock-main">
+        <div class="mock-head"><span class="avatar sm">LN</span><div><strong><%= t('home.mock_hello') %></strong><div class="small muted"><%= t('home.mock_sub') %></div></div><span class="chip"><%= t('home.mock_example') %></span></div>
+        <div class="mock-journey">
+          <% ['profile','counselling','application','visa','departure'].forEach(function (k, i) { %><div class="mj <%= i < 2 ? 'done' : i === 2 ? 'now' : '' %>"><span><%- i < 2 ? icon('check', 'sm') : (i + 1) %></span><small><%= t('home.mj_' + k) %></small></div><% }) %>
+        </div>
+        <div class="mock-app"><span class="mock-cover" style="<%= cover(null, 'uk') %>"></span><div><strong><%= t('home.mock_program') %></strong><div class="small muted"><%= t('home.mock_uni') %></div></div><span class="chip ok"><%= t('home.mock_offer') %></span></div>
+      </div>
+      <div class="mock mock-float mock-docs">
+        <strong class="small"><%- icon('file-check', 'sm') %> <%= t('home.mock_docs') %></strong>
+        <div class="md ok"><%- icon('check', 'sm') %><%= t('home.mock_passport') %></div>
+        <div class="md ok"><%- icon('check', 'sm') %><%= t('home.mock_transcript') %></div>
+        <div class="md wait"><%- icon('clock', 'sm') %><%= t('home.mock_ielts') %></div>
+      </div>
+      <div class="mock mock-float mock-meet">
+        <span class="mm-date"><b>14</b><small><%= t('home.mock_month') %></small></span>
+        <div><strong class="small"><%= t('home.mock_meeting') %></strong><div class="small muted">10:30 · Zoom</div></div>
+      </div>
+    </div>
+  </div>
+</section>

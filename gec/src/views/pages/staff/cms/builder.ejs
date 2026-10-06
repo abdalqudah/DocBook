@@ -1,0 +1,58 @@
+<nav class="breadcrumbs"><a href="/staff/pages"><%= t('nav.pages') %></a><%- icon('chevron-right') %><a href="/staff/pages/<%= p.id %>"><%= p.title_en %></a><%- icon('chevron-right') %><span><%= t('blocks.builder') %></span></nav>
+<div class="page-head">
+  <div><h1><%= t('blocks.builder') %></h1><p class="lead"><%= t('blocks.lead') %></p></div>
+  <div class="cluster"><a class="btn" href="/staff/pages/<%= p.id %>/preview" target="_blank" rel="noopener"><%- icon('eye') %><%= t('blocks.preview') %></a><a class="btn ghost" href="/staff/pages/<%= p.id %>"><%- icon('settings') %><%= t('blocks.page_settings') %></a></div>
+</div>
+<% if (Object.keys(errors).length) { %><div class="alert bad mb4" role="alert"><%- icon('alert-triangle') %><p class="mb0"><%= t('blocks.fix_errors') %></p></div><% } %>
+<form method="post" action="/staff/pages/<%= p.id %>/builder" class="stack builder" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <button type="submit" name="op" value="" class="sr-only" tabindex="-1" aria-hidden="true"><%= t('common.save') %></button><%# Enter in a field saves; it never moves or removes a block %>
+  <% if (!list.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('blocks.empty'), text: t('blocks.empty_text'), emptyIcon: 'layout-template', compact: true }) %></div><% } %>
+  <% list.forEach(function (b, i) { var def = types[b.type]; %>
+  <fieldset class="card block-card <%= b.hidden ? 'is-hidden' : '' %> <%= focus === i ? 'is-focus' : '' %>" id="b-<%= i %>">
+    <legend class="block-head">
+      <span class="block-type"><%- icon(def.icon) %><span><%= i + 1 %>. <%= t('blocks.type.' + b.type) %></span><% if (b.hidden) { %><span class="chip"><%= t('blocks.hidden') %></span><% } %></span>
+    </legend>
+    <div class="block-tools cluster">
+      <button class="btn sm ghost icon-only" type="submit" name="op" value="up:<%= i %>" <%= i === 0 ? 'disabled' : '' %> aria-label="<%= t('blocks.move_up') %> <%= i + 1 %>" title="<%= t('blocks.move_up') %>"><%- icon('arrow-up') %></button>
+      <button class="btn sm ghost icon-only" type="submit" name="op" value="down:<%= i %>" <%= i === list.length - 1 ? 'disabled' : '' %> aria-label="<%= t('blocks.move_down') %> <%= i + 1 %>" title="<%= t('blocks.move_down') %>"><%- icon('arrow-down') %></button>
+      <button class="btn sm ghost icon-only" type="submit" name="op" value="duplicate:<%= i %>" aria-label="<%= t('blocks.duplicate') %> <%= i + 1 %>" title="<%= t('blocks.duplicate') %>"><%- icon('copy') %></button>
+      <button class="btn sm ghost icon-only" type="submit" name="op" value="remove:<%= i %>" data-confirm="<%= t('blocks.remove_confirm') %>" aria-label="<%= t('blocks.remove') %> <%= i + 1 %>" title="<%= t('blocks.remove') %>"><%- icon('trash-2') %></button>
+    </div>
+    <input type="hidden" name="b[<%= i %>][type]" value="<%= b.type %>">
+    <div class="form-grid two">
+    <% def.fields.forEach(function (f) {
+         var name = f[0], kind = f[1], bi = f[2];
+         (bi ? ['en', 'ar'] : [null]).forEach(function (lang) {
+           var key = lang ? name + '_' + lang : name;
+           var fid = 'b' + i + '_' + key;
+           var label = t('blocks.field.' + name) + (lang ? (lang === 'ar' ? ' (العربية)' : ' (English)') : '');
+           var err = errors[i + '.' + key];
+           var val = b[key] === undefined || b[key] === null ? '' : b[key];
+           var dirA = lang === 'ar' ? 'dir="rtl"' : (kind === 'href' || kind === 'img' || name === 'url' || name === 'images' ? 'dir="ltr"' : '');
+           var wide = (kind === 'md' || kind === 'lines') && !bi;
+    %>
+      <div class="field <%= err ? 'has-error' : '' %> <%= wide ? 'span-all' : '' %>">
+        <label for="<%= fid %>"><%= label %></label>
+        <% if (kind === 'ta' || kind === 'md' || kind === 'lines') { %>
+          <textarea id="<%= fid %>" name="b[<%= i %>][<%= key %>]" rows="<%= kind === 'md' ? 7 : kind === 'lines' ? 5 : 3 %>" <%- dirA %> <%= err ? 'aria-invalid=true' : '' %> aria-describedby="<%= fid %>_h"><%= val %></textarea>
+          <span class="hint" id="<%= fid %>_h"><%= kind === 'md' ? t('resources.markdown_hint') : kind === 'lines' ? t('blocks.lines.' + b.type + '_' + name) : '' %></span>
+        <% } else if (kind === 'sel') { %>
+          <select id="<%= fid %>" name="b[<%= i %>][<%= key %>]"><% optionsOf(f).forEach(function (o) { %><option value="<%= o %>" <%= String(val) === String(o) ? 'selected' : '' %>><%= labelOf(name, o) %></option><% }) %></select>
+        <% } else { %>
+          <input id="<%= fid %>" type="<%= kind === 'int' ? 'number' : 'text' %>" name="b[<%= i %>][<%= key %>]" value="<%= val %>" <%- dirA %> <%- kind === 'int' ? 'min="1" max="12"' : '' %> <%= err ? 'aria-invalid=true' : '' %> <% if (kind === 'img' || kind === 'href' || name === 'url') { %>placeholder="<%= kind === 'img' ? 'https:// or /media/…' : name === 'url' ? 'https://youtu.be/…' : '/contact' %>"<% } %>>
+          <% if (kind === 'img') { %><div class="cluster mt2"><% if (val) { %><img src="<%= val %>" alt="" data-media-preview="#<%= fid %>" style="max-height:64px;border-radius:8px"><% } %><button type="button" class="btn sm ghost" data-media-pick="#<%= fid %>"><%- icon('image') %><%= t('media.choose') %></button></div><% } %>
+        <% } %>
+        <% if (err) { %><span class="error-text"><%= err %></span><% } %>
+      </div>
+    <% }); }); %>
+    </div>
+    <label class="check mt2"><input type="checkbox" name="b[<%= i %>][hidden]" value="1" <%= b.hidden ? 'checked' : '' %>><span><%= t('blocks.hide') %></span></label>
+  </fieldset>
+  <% }) %>
+  <section class="card">
+    <h2 class="section-title"><%= t('blocks.add') %></h2>
+    <div class="add-grid"><% Object.keys(types).forEach(function (k) { %><button class="add-tile" type="submit" name="op" value="add:<%= k %>"><%- icon(types[k].icon) %><strong><%= t('blocks.type.' + k) %></strong><span class="small muted"><%= t('blocks.desc.' + k) %></span></button><% }) %></div>
+  </section>
+  <div class="form-actions sticky"><button class="btn primary" type="submit" name="op" value=""><%= t('common.save') %></button><a class="btn ghost" href="/staff/pages/<%= p.id %>/preview" target="_blank" rel="noopener"><%= t('blocks.preview') %></a></div>
+</form>

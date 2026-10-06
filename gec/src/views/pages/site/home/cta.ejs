@@ -1,0 +1,9 @@
+<section class="section">
+  <div class="container">
+    <div class="cta-hero">
+      <span class="band-bg" style="<%= cover(null, 'campus') %>"></span><span class="band-shade"></span>
+      <div class="cta-copy"><h2><%= (T('title') || hv('cta_title', 'home.cta_title')) %></h2><p><%= (T('lead') || hv('cta_text', 'home.cta_text')) %></p></div>
+      <div class="cluster"><a class="btn gold lg" href="/book"><%= t('site.book_consultation') %></a><% if (company.whatsapp) { %><a class="btn glass lg" href="https://wa.me/<%= company.whatsapp %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %></div>
+    </div>
+  </div>
+</section>

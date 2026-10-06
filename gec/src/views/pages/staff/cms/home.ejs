@@ -11,3 +11,39 @@
   <p class="small subtle mb0"><%= t('cms.home_hint') %></p>
   <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
 </form>
+
+<form method="post" action="/staff/website/home/sections" class="stack mt6" id="sections" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <button type="submit" name="op" value="" class="sr-only" tabindex="-1" aria-hidden="true"><%= t('common.save') %></button>
+  <div><h2><%= t('home_sections.title') %></h2><p class="small muted mb0"><%= t('home_sections.lead') %></p></div>
+  <% sections.forEach(function (s, i) { var pg = s.page ? pages.find(function (x) { return x.id === s.page; }) : null; %>
+  <fieldset class="card block-card <%= s.visible ? '' : 'is-hidden' %>" id="sec-<%= i %>">
+    <legend class="block-head"><span class="block-type"><%- icon(s.page ? 'layout-template' : 'panel-top') %><span><%= i + 1 %>. <%= s.page ? t('home_sections.page_blocks', { name: pg ? pg.title_en : '#' + s.page }) : t('home_sections.key.' + s.key) %></span><% if (!s.visible) { %><span class="chip"><%= t('blocks.hidden') %></span><% } %></span></legend>
+    <div class="block-tools cluster">
+      <button class="btn sm ghost icon-only" type="submit" name="op" value="up:<%= i %>" <%= i === 0 ? 'disabled' : '' %> aria-label="<%= t('blocks.move_up') %> <%= i + 1 %>" title="<%= t('blocks.move_up') %>"><%- icon('arrow-up') %></button>
+      <button class="btn sm ghost icon-only" type="submit" name="op" value="down:<%= i %>" <%= i === sections.length - 1 ? 'disabled' : '' %> aria-label="<%= t('blocks.move_down') %> <%= i + 1 %>" title="<%= t('blocks.move_down') %>"><%- icon('arrow-down') %></button>
+      <% if (s.page) { %><a class="btn sm ghost icon-only" href="/staff/pages/<%= s.page %>/builder" aria-label="<%= t('blocks.open_builder') %>" title="<%= t('blocks.open_builder') %>"><%- icon('pencil') %></a><button class="btn sm ghost icon-only" type="submit" name="op" value="remove:<%= i %>" aria-label="<%= t('blocks.remove') %> <%= i + 1 %>" title="<%= t('blocks.remove') %>"><%- icon('trash-2') %></button><% } %>
+    </div>
+    <input type="hidden" name="s[<%= i %>][key]" value="<%= s.key %>">
+    <label class="check"><input type="hidden" name="s[<%= i %>][visible]" value="0"><input type="checkbox" name="s[<%= i %>][visible]" value="1" <%= s.visible ? 'checked' : '' %>><span><%= t('home_sections.show') %></span></label>
+    <% if (!s.page && noTitle.indexOf(s.key) < 0) { %>
+    <div class="form-grid two mt2">
+      <% [['title_en', 'ltr'], ['title_ar', 'rtl'], ['lead_en', 'ltr'], ['lead_ar', 'rtl']].forEach(function (f) { var fid = 's' + i + '_' + f[0]; %>
+      <div class="field"><label for="<%= fid %>"><%= t('home_sections.' + f[0].split('_')[0] + '_f') %> (<%= f[1] === 'rtl' ? 'العربية' : 'English' %>)</label><input id="<%= fid %>" name="s[<%= i %>][<%= f[0] %>]" value="<%= s[f[0]] || '' %>" dir="<%= f[1] %>" placeholder="<%= t('cms.default_text') %>"></div>
+      <% }) %>
+    </div>
+    <% } else if (s.page && pg && !pg.is_published) { %><p class="small mb0"><span class="chip warn"><%= t("home_sections.page_unpublished") %></span></p><% } %>
+  </fieldset>
+  <% }) %>
+  <section class="card">
+    <h3 class="section-title"><%= t('home_sections.add_title') %></h3>
+    <p class="small muted"><%= t('home_sections.add_hint') %></p>
+    <div class="cluster">
+      <label class="sr-only" for="add_page"><%= t('home_sections.choose_page') %></label>
+      <select id="add_page" name="add_page"><option value=""><%= t('home_sections.choose_page') %></option><% pages.forEach(function (p) { %><option value="<%= p.id %>"><%= p.title_en %><%= p.is_published ? '' : ' (' + t('home_sections.draft') + ')' %></option><% }) %></select>
+      <button class="btn" type="submit" name="op" value="add_page"><%- icon('plus') %><%= t('home_sections.add_btn') %></button>
+      <a class="btn ghost" href="/staff/pages/new"><%= t('home_sections.new_page') %></a>
+    </div>
+  </section>
+  <div class="form-actions sticky"><button class="btn primary" type="submit" name="op" value=""><%= t('common.save') %></button><a class="btn ghost" href="/" target="_blank" rel="noopener"><%= t('resources.view_on_site') %></a></div>
+</form>

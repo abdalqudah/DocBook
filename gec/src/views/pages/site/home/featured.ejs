@@ -1,0 +1,11 @@
+<% if (featured.length) { %>
+<section class="section alt">
+  <div class="container">
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('graduation-cap', 'sm') %><%= t('home.featured_eyebrow') %></span><h2><%= T('title', 'home.featured_title') %></h2><p><%= T('lead', 'home.featured_lead') %></p></div>
+      <a class="btn ghost" href="/programs"><%= t('home.explore_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="rail" tabindex="0" aria-label="<%= T('title', 'home.featured_title') %>"><% featured.forEach(function (p) { %><div class="rail-item"><%- include('../../../partials/program-card', { p: p }) %></div><% }) %></div>
+  </div>
+</section>
+<% } %>

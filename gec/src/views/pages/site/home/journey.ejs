@@ -1,0 +1,10 @@
+<section class="section journey-band">
+  <div class="container">
+    <div class="section-head center"><span class="eyebrow"><%- icon('route', 'sm') %><%= t('home.how_eyebrow') %></span><h2><%= T('title', 'home.how_title') %></h2><p><%= T('lead', 'home.how_lead') %></p></div>
+    <ol class="journey-steps">
+      <% [['search','search'],['consult','message-circle'],['apply','file-check'],['visa','plane']].forEach(function (k, i) { %>
+      <li><span class="js-icon"><%- icon(k[1]) %></span><span class="js-num"><%= i + 1 %></span><h3><%= t('home.step_' + k[0]) %></h3><p><%= t('home.step_' + k[0] + '_text') %></p></li>
+      <% }) %>
+    </ol>
+  </div>
+</section>

@@ -109,3 +109,15 @@
 .audit-item summary { cursor: pointer; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .audit-item ul { margin: 8px 0 0; padding-inline-start: 1.2em; }
 .link-list a, .audit-item li a { text-decoration: underline; text-underline-offset: 2px; }
+.builder .block-card { position: relative; }
+.builder .block-card.is-hidden { opacity: .7; border-style: dashed; }
+.builder .block-card.is-focus { box-shadow: 0 0 0 2px var(--brand); }
+.block-head { width: 100%; }
+.block-type { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.block-tools { position: absolute; inset-inline-end: 14px; top: 10px; gap: 2px; }
+.add-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.add-tile { display: grid; gap: 4px; justify-items: start; text-align: start; padding: 14px; border: 1px dashed var(--line-strong, var(--line)); border-radius: var(--r-lg); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
+.add-tile:hover, .add-tile:focus-visible { border-color: var(--brand); background: var(--brand-softer); }
+.add-tile .icon { color: var(--brand); }
+@media (max-width: 640px) { .block-tools { position: static; margin-bottom: 8px; } }
+.block-card > .form-grid, .block-card > .check { clear: both; }

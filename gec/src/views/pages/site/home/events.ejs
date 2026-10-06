@@ -1,0 +1,15 @@
+<% if (hc.events && hc.events.length) { %>
+<section class="section alt">
+  <div class="container">
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('calendar-days', 'sm') %><%= t('home.events_eyebrow') %></span><h2><%= T('title', 'home.events_title') %></h2></div>
+      <a class="btn ghost" href="/events"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="grid-3"><% hc.events.forEach(function (ev) { var d = new Date(ev.starts_at); %>
+      <a class="event-tile" href="/events/<%= ev.slug %>">
+        <span class="et-cover" style="<%= cover(ev.image, 'campus') %>"><span class="et-date"><b><%= fmt.date(d, { day: 'numeric' }) %></b><small><%= fmt.date(d, { month: 'short' }) %></small></span></span>
+        <span class="et-body"><span class="chip brand"><%= t('booking.event_type.' + ev.type) %></span><strong><%= L(ev, 'title') %></strong><span class="small muted"><%- icon(ev.is_virtual ? 'monitor' : 'map-pin', 'sm') %> <%= ev.is_virtual ? t('home.online') : (L(ev, 'location') || '') %></span></span>
+      </a><% }) %></div>
+  </div>
+</section>
+<% } %>

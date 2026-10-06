@@ -6,6 +6,7 @@ const { ah, idParam } = require('../../core/http');
 const uploads = require('../../core/uploads');
 const media = require('./media.service');
 const { validate, z, str } = require('../../core/validate');
+const knex = require('../../db/knex');
 const settings = require('../settings/settings.service');
 const nav = require('../staff/nav');
 const admin = require('./admin');
@@ -20,10 +21,32 @@ nav.add('website', { key: 'navigation', href: '/staff/navigation', icon: 'menu',
 nav.add('website', { key: 'media', href: '/staff/media', icon: 'image', perms: ['cms.manage'] });
 nav.add('website', { key: 'home_page', href: '/staff/website/home', icon: 'house', perms: ['cms.manage'] });
 
+const homeLayout = require('./home.layout');
+
 const router = express.Router();
 
 router.get('/website/home', can('cms.manage'), ah(async (req, res) => {
-  res.page('pages/staff/cms/home', { layout: 'staff', narrow: true, title: req.t('nav.home_page'), h: (await settings.get('site_home')) || {} });
+  const pages = await knex('pages').orderBy('title_en').select('id', 'title_en', 'is_published', 'blocks');
+  res.page('pages/staff/cms/home', { layout: 'staff', narrow: true, title: req.t('nav.home_page'), h: (await settings.get('site_home')) || {}, sections: await homeLayout.load(), pages, noTitle: homeLayout.NO_TITLE });
+}));
+// Sections: order (move up / down), show / hide, own titles; sections made of a page's blocks can be added.
+router.post('/website/home/sections', can('cms.manage'), ah(async (req, res) => {
+  const raw = req.body.s ? Object.keys(req.body.s).sort((a, b) => a - b).map((k) => req.body.s[k]) : [];
+  const list = raw.map((x) => (/^page:\d+$/.test(x.key || '') ? { key: x.key, page: Number(x.key.slice(5)), visible: x.visible === '1' } : homeLayout.BUILTIN.includes(x.key) ? { ...x, visible: x.visible === '1' } : null)).filter(Boolean);
+  const m = /^(up|down|remove):(\d+)$/.exec(String(req.body.op || ''));
+  let focus = null;
+  if (m) {
+    const i = Number(m[2]);
+    if (m[1] === 'up' && i > 0 && i < list.length) { [list[i - 1], list[i]] = [list[i], list[i - 1]]; focus = i - 1; }
+    if (m[1] === 'down' && i < list.length - 1) { [list[i + 1], list[i]] = [list[i], list[i + 1]]; focus = i + 1; }
+    if (m[1] === 'remove' && list[i] && list[i].page) list.splice(i, 1);
+  }
+  if (/^\d+$/.test(req.body.add_page || '') && req.body.op === 'add_page' && await knex('pages').where({ id: Number(req.body.add_page) }).first('id')) {
+    list.push({ key: `page:${req.body.add_page}`, page: Number(req.body.add_page), visible: true }); focus = list.length - 1;
+  }
+  await homeLayout.save(req.ctx, list);
+  if (!m && req.body.op !== 'add_page') flash(req, 'ok', req.t('common.saved'));
+  res.redirect(`/staff/website/home${focus !== null ? `#sec-${focus}` : '#sections'}`);
 }));
 router.post('/website/home', can('cms.manage'), ah(async (req, res) => {
   const d = validate(z.object({ hero_title_en: str(160), hero_title_ar: str(160), hero_lead_en: str(400), hero_lead_ar: str(400), cta_title_en: str(160), cta_title_ar: str(160), cta_text_en: str(400), cta_text_ar: str(400) }), req.body);
@@ -69,6 +92,7 @@ router.post('/media/:id/delete', can('cms.manage'), ah(async (req, res) => {
 }));
 
 router.use('/slides', admin.slides.router);
+router.use('/', require('./builder.web')); // before the pages resource: /pages/:id/builder
 router.use('/pages', admin.pages.router);
 router.use('/articles', admin.articles.router);
 router.use('/faqs', admin.faqs.router);

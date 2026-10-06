@@ -7,6 +7,8 @@ const settings = require('../settings/settings.service');
 const { ah } = require('../../core/http');
 const { E } = require('../../core/errors');
 const { markdown, excerpt } = require('../../core/markdown');
+const blocks = require('./blocks');
+const { withData } = require('./blocks.data');
 const nav = require('../site/nav');
 const footer = require('../site/footer');
 const { CATEGORIES } = require('./admin');
@@ -121,7 +123,14 @@ router.get('/:slug', ah(async (req, res, next) => {
   const p = await published(knex('pages')).where({ slug: req.params.slug }).first();
   if (!p) return next();
   const faqs = await published(knex('faqs')).where({ topic: p.slug }).orderBy('position');
-  return res.page('pages/site/page', { layout: 'public', title: L(req, p, 'title'), p, faqs, md: markdown, seo: seoFor(req, p, `/${p.slug}`) });
+  const pageBlocks = await withData(blocks.parse(p.blocks));
+  // Questions from FAQ blocks and the page's FAQs, marked up for search and AI answers.
+  const qa = [...faqs.map((f) => [L(req, f, 'question'), excerpt(L(req, f, 'answer'), 1000)]),
+    ...pageBlocks.filter((b) => b.type === 'faq').flatMap((b) => blocks.rows(L(req, b, 'items')).map((r) => [r[0], r.slice(1).join(' | ')]))].filter((x) => x[0] && x[1]);
+  const seo = seoFor(req, p, `/${p.slug}`);
+  if (qa.length) seo.jsonld = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: qa.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
+  if (!seo.image) { const h = pageBlocks.find((b) => b.type === 'hero' && b.image); if (h) seo.image = h.image; }
+  return res.page('pages/site/page', { layout: 'public', title: L(req, p, 'title'), p, faqs, md: markdown, pageBlocks, heroPage: Boolean(pageBlocks[0] && pageBlocks[0].type === 'hero'), seo });
 }));
 
 module.exports = { router, homeLocals };

@@ -586,3 +586,22 @@ sets its margin.
 * **Files:** `src/modules/marketing/{newsletter,site.web,web}.js`, `pages/site/newsletter.ejs`,
   `pages/staff/marketing/*`, footer form, `locales/*/marketing.json`, migration `20261006001500_phase16_marketing.js`.
 * **Tests:** `test/phase16.test.js` (4).
+
+## Phase 17 — Website editor: home sections and page builder
+
+* **Website → Home page → Sections and order:** every home section (search and numbers, destinations, how it works,
+  student portal, featured programs, scholarships, services, events, testimonials, articles, final call to action)
+  can be shown or hidden, moved up or down, and given its own title and introduction in Arabic and English (empty
+  fields keep the default text). Sections made of a page's blocks can be added anywhere on the home page.
+* **Page builder** (Website → Pages → a page → *Page builder*): pages are built from blocks — hero banner, text
+  (Markdown), image and text, feature cards, numbers, call to action, questions and answers, live program list
+  (by country, degree, field), gallery and YouTube/Vimeo video. Each block is bilingual, can be moved, duplicated,
+  hidden or removed, and images come from the media library. It is plain HTML forms (works without JavaScript;
+  pressing Enter saves and never moves a block). Every value is validated: links must be site paths or https
+  addresses, images https or the library, videos YouTube/Vimeo (embedded privacy-enhanced, allowed in the CSP).
+* **Preview** before publishing (staff only, marked as a preview). Question blocks are published as FAQPage
+  structured data for Google and AI answers; a hero block's image becomes the sharing image.
+* The demo About page shows example blocks.
+* **Files:** `src/modules/cms/{blocks,blocks.data,builder.web,home.layout}.js`, `partials/blocks.ejs`,
+  `pages/site/home/*.ejs` (one file per home section), `pages/staff/cms/{builder,home}.ejs`, `locales/*/editor.json`,
+  migration `20261006001600_phase17_page_blocks.js`. **Tests:** `test/phase17.test.js` (3).

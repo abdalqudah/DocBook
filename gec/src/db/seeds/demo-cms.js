@@ -12,6 +12,12 @@ const FAQ_TOPIC = { Visas: 'visa', 'Work Rights': 'visa' };
 const VERIFY_EN = '> This is general guidance. Rules, fees and requirements change — always confirm with the official government and university sources before you act.';
 const VERIFY_AR = '> هذه إرشادات عامة. القواعد والرسوم والمتطلبات تتغير — تأكد دائمًا من المصادر الحكومية والجامعية الرسمية قبل اتخاذ أي إجراء.';
 
+// Example blocks for the About page (shows what the page builder can do; staff edit or remove them).
+const ABOUT_BLOCKS = [
+  { type: 'hero', eyebrow_en: 'About GEC', eyebrow_ar: 'عن GEC', title_en: 'Honest advice from the first question to your first lecture', title_ar: 'نصيحة صادقة من أول سؤال حتى أول محاضرة', text_en: 'Counselling, applications, scholarships and visas — one team, clear next steps.', text_ar: 'إرشاد وتقديم ومنح وتأشيرات — فريق واحد وخطوات واضحة.', image: '/img/covers/campus.svg', cta_label_en: 'Book a free consultation', cta_label_ar: 'احجز استشارة مجانية', cta_href: '/book', cta2_label_en: 'Find a program', cta2_label_ar: 'ابحث عن برنامج', cta2_href: '/programs' },
+  { type: 'features', title_en: 'How we help', title_ar: 'كيف نساعدك', items_en: 'compass | Choose well | Programs matched to your grades, English and budget.\nfile-check | Apply right | Complete, checked applications and documents.\naward | Fund it | Scholarships and realistic cost planning.\nplane | Arrive ready | Visa preparation and pre-departure guidance.', items_ar: 'compass | اختيار صحيح | برامج تناسب معدلك ولغتك وميزانيتك.\nfile-check | تقديم سليم | طلبات ومستندات كاملة ومدققة.\naward | تمويل الدراسة | منح وتخطيط واقعي للتكاليف.\nplane | وصول بثقة | تجهيز التأشيرة وإرشادات ما قبل السفر.' },
+  { type: 'programs', title_en: 'Programs our students are looking at', title_ar: 'برامج يبحث عنها طلابنا', limit: 6 },
+];
 const PAGES = [
   {
     slug: 'about', title_en: 'About us', title_ar: 'من نحن', show_cta: true,
@@ -61,7 +67,7 @@ async function run() {
   }
   for (const p of PAGES) {
     if (await knex('pages').where({ slug: p.slug }).first()) continue; // eslint-disable-line no-await-in-loop, no-continue
-    await knex('pages').insert({ ...p, is_published: true, is_demo: true }); // eslint-disable-line no-await-in-loop
+    await knex('pages').insert({ ...p, ...(p.slug === 'about' ? { blocks: JSON.stringify(ABOUT_BLOCKS) } : {}), is_published: true, is_demo: true }); // eslint-disable-line no-await-in-loop
     out.pages += 1;
   }
   return out;

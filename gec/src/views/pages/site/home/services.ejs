@@ -1,0 +1,11 @@
+<% if (hc.services.length) { %>
+<section class="section">
+  <div class="container">
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('briefcase', 'sm') %><%= t('cms.services_eyebrow') %></span><h2><%= T('title', 'cms.services_title') %></h2><p><%= T('lead', 'cms.services_lead') %></p></div>
+      <a class="btn ghost" href="/services"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="service-grid"><% hc.services.forEach(function (sv, i) { %><a class="service-tile tone-<%= i % 4 %>" href="/services/<%= sv.slug %>"><span class="st-icon"><%- icon(sv.icon || 'sparkles') %></span><strong><%= L(sv, 'title') %></strong><% if (L(sv, 'timeline')) { %><span class="small muted"><%- icon('clock', 'sm') %> <%= L(sv, 'timeline') %></span><% } %><span class="st-go"><%- icon('arrow-right', 'flip-rtl') %></span></a><% }) %></div>
+  </div>
+</section>
+<% } %>

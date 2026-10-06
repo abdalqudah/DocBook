@@ -72,7 +72,7 @@ router.get('/', ah(async (req, res) => {
     Promise.all([knex('programs').where({ is_active: true }).count({ n: '*' }), knex('universities').where({ is_active: true }).count({ n: '*' })]),
   ]);
   res.page('pages/site/home', {
-    layout: 'public', heroPage: true, dests, featured: featured.map(finder.shape), scholarships, state: await stateOf(req),
+    layout: 'public', heroPage: true, dests, featured: featured.map(finder.shape), scholarships, state: await stateOf(req), homeLayout: await require('../cms/home.layout').resolve(), md: require('../../core/markdown').markdown, // eslint-disable-line global-require
     stats: { programs: Number(counts[0][0].n), universities: Number(counts[1][0].n), destinations: dests.length },
     seo: seoOf(req, res, null, { title: res.locals.branding.legal_name, description: req.t('site.hero_lead'), path: '/', jsonld: [{
       '@context': 'https://schema.org', '@type': 'EducationalOrganization', '@id': abs(res, '/#organization'), name: res.locals.branding.legal_name, alternateName: res.locals.branding.name, url: res.locals.appUrl,

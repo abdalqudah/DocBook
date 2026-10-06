@@ -1,0 +1,11 @@
+<% if (hc.articles.length) { %>
+<section class="section <%= hc.testimonials.length ? 'alt' : '' %>">
+  <div class="container">
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('newspaper', 'sm') %><%= t('cms.resources_eyebrow') %></span><h2><%= T('title', 'cms.resources_title') %></h2><p><%= T('lead', 'cms.resources_lead') %></p></div>
+      <a class="btn ghost" href="/resources"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="grid-3"><% hc.articles.forEach(function (a) { %><%- include('../../../partials/article-card', { a: a }) %><% }) %></div>
+  </div>
+</section>
+<% } %>

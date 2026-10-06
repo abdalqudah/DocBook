@@ -1,0 +1,67 @@
+<%#
+  Page-builder blocks (see src/modules/cms/blocks.js). blocks: visible blocks with their data; md: Markdown renderer.
+-%>
+<%
+  var B = function (b, f) { return (locale === 'ar' ? b[f + '_ar'] || b[f + '_en'] : b[f + '_en'] || b[f + '_ar']) || ''; };
+  var lines = function (b, f) { return String(B(b, f) || '').split('\n').map(function (l) { return l.split('|').map(function (x) { return x.trim(); }); }).filter(function (p) { return p[0]; }); };
+  var embed = function (u) { var m = /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/.exec(u || ''); if (m) return 'https://www.youtube-nocookie.com/embed/' + m[1]; m = /^https:\/\/(?:www\.)?vimeo\.com\/(\d{5,12})/.exec(u || ''); return m ? 'https://player.vimeo.com/video/' + m[1] + '?dnt=1' : null; };
+  var st = typeof state !== 'undefined' ? state : null;
+%>
+<% blocks.forEach(function (b, i) { var title = B(b, 'title'); var H = (i === 0 && b.type === 'hero' && (typeof topLevel === 'undefined' || topLevel)) ? 'h1' : 'h2'; %>
+<% if (b.type === 'hero') { %>
+<section class="schol-band blk-hero">
+  <span class="band-bg" style="<%= cover(b.image, 'campus') %>"></span><span class="band-shade"></span>
+  <div class="container"><div class="band-copy" style="max-width:720px">
+    <% if (B(b, 'eyebrow')) { %><span class="eyebrow light"><%- icon('sparkles', 'sm') %><%= B(b, 'eyebrow') %></span><% } %>
+    <<%= H %> class="blk-hero-title"><%= title %></<%= H %>>
+    <% if (B(b, 'text')) { %><p><%= B(b, 'text') %></p><% } %>
+    <div class="cluster"><% if (B(b, 'cta_label') && b.cta_href) { %><a class="btn gold lg" href="<%= b.cta_href %>"><%= B(b, 'cta_label') %><%- icon('arrow-right', 'flip-rtl') %></a><% } %><% if (B(b, 'cta2_label') && b.cta2_href) { %><a class="btn glass lg" href="<%= b.cta2_href %>"><%= B(b, 'cta2_label') %></a><% } %></div>
+  </div></div>
+</section>
+<% } else if (b.type === 'text') { %>
+<section class="section tight"><div class="container" style="max-width:860px">
+  <% if (title) { %><h2><%= title %></h2><% } %><div class="prose"><%- md(B(b, 'body')) %></div>
+</div></section>
+<% } else if (b.type === 'image_text') { %>
+<section class="section tight"><div class="container blk-split <%= b.side === 'start' ? 'img-start' : '' %>">
+  <div class="stack"><% if (title) { %><h2><%= title %></h2><% } %><div class="prose"><%- md(B(b, 'body')) %></div><% if (B(b, 'cta_label') && b.cta_href) { %><div><a class="btn primary" href="<%= b.cta_href %>"><%= B(b, 'cta_label') %><%- icon('arrow-right', 'flip-rtl') %></a></div><% } %></div>
+  <div class="blk-img" style="<%= cover(b.image, 'campus') %>"></div>
+</div></section>
+<% } else if (b.type === 'features') { %>
+<section class="section tight"><div class="container">
+  <% if (title || B(b, 'lead')) { %><div class="section-head"><% if (title) { %><h2><%= title %></h2><% } %><% if (B(b, 'lead')) { %><p><%= B(b, 'lead') %></p><% } %></div><% } %>
+  <div class="service-grid"><% lines(b, 'items').forEach(function (it, j) { var hasIcon = it.length > 2; %><div class="service-tile tone-<%= j % 4 %>"><span class="st-icon"><%- icon(hasIcon ? (it[0] || 'sparkles') : 'sparkles') %></span><strong><%= hasIcon ? it[1] : it[0] %></strong><span class="small muted"><%= hasIcon ? it[2] : (it[1] || '') %></span></div><% }) %></div>
+</div></section>
+<% } else if (b.type === 'stats') { %>
+<section class="section tight"><div class="container">
+  <% if (title) { %><h2 class="center"><%= title %></h2><% } %>
+  <dl class="blk-stats"><% lines(b, 'items').forEach(function (it) { %><div><dd><%= it[0] %></dd><dt><%= it[1] || '' %></dt></div><% }) %></dl>
+</div></section>
+<% } else if (b.type === 'cta') { %>
+<section class="section tight"><div class="container"><div class="cta-hero">
+  <span class="band-bg" style="<%= cover(null, 'campus') %>"></span><span class="band-shade"></span>
+  <div class="cta-copy"><h2><%= title || t('home.cta_title') %></h2><% if (B(b, 'text')) { %><p><%= B(b, 'text') %></p><% } %></div>
+  <a class="btn gold lg" href="<%= b.cta_href || '/book' %>"><%= B(b, 'cta_label') || t('site.book_consultation') %></a>
+</div></div></section>
+<% } else if (b.type === 'faq') { %>
+<section class="section tight"><div class="container" style="max-width:860px">
+  <h2><%= title || t('cms.faq_title') %></h2>
+  <div class="faq"><% lines(b, 'items').forEach(function (it) { %><details class="card"><summary><strong><%= it[0] %></strong></summary><div class="prose mt2"><p><%= it.slice(1).join(' | ') %></p></div></details><% }) %></div>
+</div></section>
+<% } else if (b.type === 'programs' && b.programs && b.programs.length) { %>
+<section class="section tight"><div class="container">
+  <div class="section-top"><div class="section-head mb0"><h2><%= title || t('home.featured_title') %></h2></div><a class="btn ghost" href="/programs?<%= [b.country ? 'country=' + b.country : '', b.degree ? 'degree=' + b.degree : '', b.field ? 'field=' + b.field : ''].filter(Boolean).join('&') %>"><%= t('home.explore_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+  <div class="rail" tabindex="0" aria-label="<%= title || t('home.featured_title') %>"><% b.programs.forEach(function (p) { %><div class="rail-item"><%- include('program-card', { p: p, state: st }) %></div><% }) %></div>
+</div></section>
+<% } else if (b.type === 'gallery') { var imgs = String(b.images || '').split('\n').map(function (l) { return l.split('|').map(function (x) { return x.trim(); }); }).filter(function (p) { return p[0]; }); %>
+<section class="section tight"><div class="container">
+  <% if (title) { %><h2><%= title %></h2><% } %>
+  <div class="blk-gallery"><% imgs.forEach(function (im) { %><figure><img src="<%= im[0] %>" alt="<%= im[1] || '' %>" loading="lazy"><% if (im[1]) { %><figcaption class="small muted"><%= im[1] %></figcaption><% } %></figure><% }) %></div>
+</div></section>
+<% } else if (b.type === 'video' && embed(b.url)) { %>
+<section class="section tight"><div class="container" style="max-width:960px">
+  <% if (title) { %><h2><%= title %></h2><% } %>
+  <div class="blk-video"><iframe src="<%= embed(b.url) %>" title="<%= title || 'Video' %>" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+</div></section>
+<% } %>
+<% }) %>

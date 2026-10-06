@@ -155,7 +155,7 @@ function resource(def) {
     res.page('pages/staff/resource/form', {
       layout: 'staff', narrow: true, title: row.id ? (row[def.nameField] || row.name_en || `#${row.id}`) : req.t(`resources.${def.key}.new`),
       def, row, fields, opts: await options(req), base, canManage: req.can(perms.manage), canInternal: canInternal(req),
-      publicUrl: row.id && def.publicUrl ? def.publicUrl(row) : null, related: row.id && def.related ? await def.related(row, req) : [], ...extra,
+      publicUrl: row.id && def.publicUrl ? def.publicUrl(row) : null, formActions: row.id && def.formActions ? def.formActions(row) : [], related: row.id && def.related ? await def.related(row, req) : [], ...extra,
     });
   }
 
