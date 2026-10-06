@@ -111,6 +111,10 @@ does not send duplicates.
 
 ## Deployment
 
+A step-by-step go-live guide in Arabic (domain, server, DNS, HTTPS, e-mail SPF/DKIM/DMARC, WhatsApp, Stripe,
+Google/Microsoft sign-in, Search Console, backups, checklist): [docs/DEPLOYMENT-AR.md](docs/DEPLOYMENT-AR.md).
+Ready-made files: `deploy/Caddyfile` (HTTPS reverse proxy) and `deploy/backup.sh` (nightly database + files backup).
+
 ### Docker
 
 ```bash

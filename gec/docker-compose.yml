@@ -22,7 +22,7 @@ services:
     environment:
       DB_HOST: db
       STORAGE_DIR: /data/storage
-    ports: ["3000:3000"]
+    ports: ["127.0.0.1:3000:3000"] # only the reverse proxy on this server reaches the app
     volumes: [storage:/data/storage]
     depends_on:
       db: { condition: service_healthy }

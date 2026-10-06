@@ -1,0 +1,13 @@
+# Caddy reverse proxy with automatic HTTPS (Let's Encrypt). Replace the domain, then:
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+gec-example.com, www.gec-example.com {
+	# One canonical address: www → bare domain
+	@www host www.gec-example.com
+	redir @www https://gec-example.com{uri} permanent
+
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy 127.0.0.1:3000
+}
