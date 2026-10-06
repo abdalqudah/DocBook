@@ -15,6 +15,7 @@ router.use('/', require('./modules/growth/site.web'));
 router.use('/', require('./modules/portal/public.web'));
 router.use('/', require('./modules/site/leads.web'));
 router.use('/', require('./modules/partnerhub/public.web'));
+router.use('/', require('./modules/marketing/site.web'));
 router.use(require('./modules/cms/site.web').homeLocals);
 router.use('/', require('./modules/catalog/site.web'));
 router.use('/', require('./modules/booking/site.web'));

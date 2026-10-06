@@ -151,7 +151,9 @@
     "partner_requests": "Partnership requests",
     "partner_submissions": "Partner submissions",
     "partner_accounts": "Partner accounts",
-    "seo_audit": "SEO audit"
+    "seo_audit": "SEO audit",
+    "subscribers": "Newsletter subscribers",
+    "utm": "Link builder (UTM)"
   },
   "quick": {},
   "palette": {

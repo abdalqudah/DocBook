@@ -151,7 +151,9 @@
     "partner_requests": "طلبات الشراكة",
     "partner_submissions": "مراجعة محتوى الشركاء",
     "partner_accounts": "حسابات الشركاء",
-    "seo_audit": "فحص SEO"
+    "seo_audit": "فحص SEO",
+    "subscribers": "مشتركو النشرة",
+    "utm": "منشئ الروابط (UTM)"
   },
   "quick": {},
   "palette": {

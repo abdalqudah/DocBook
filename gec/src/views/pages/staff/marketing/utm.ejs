@@ -1,0 +1,25 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('utm.lead') %></p></div></div>
+<form method="post" action="/staff/utm" class="card stack mb4" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="cluster small"><span class="muted"><%= t('utm.presets') %>:</span><% presets.forEach(function (p) { %><a class="chip" href="?source=<%= p.source %>&medium=<%= p.medium %>"><%= t('utm.preset.' + p.key) %></a><% }) %></div>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'name', label: t('utm.name'), required: true, placeholder: t('utm.name_ph') }) %>
+    <%- include('../../../partials/field', { name: 'url', label: t('utm.url'), required: true, hint: t('utm.url_hint'), attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'utm_source', label: t('utm.source'), required: true, hint: t('utm.source_hint'), attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'utm_medium', label: t('utm.medium'), required: true, hint: t('utm.medium_hint'), attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'utm_campaign', label: t('utm.campaign'), required: true, hint: t('utm.campaign_hint'), attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'utm_content', label: t('utm.content'), hint: t('utm.content_hint'), attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'utm_term', label: t('utm.term'), hint: t('utm.term_hint'), attrs: 'dir="ltr"' }) %>
+  </div>
+  <div class="form-actions"><button class="btn primary" type="submit"><%- icon('link') %><%= t('utm.create') %></button></div>
+</form>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('utm.none'), emptyIcon: 'link', compact: true }) %></div>
+<% } else { %><div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('utm.name') %></th><th class="text-end"><%= t('utm.visitors') %></th><th class="text-end"><%= t('nav.leads') %></th><th class="text-end"><%= t('nav.students') %></th><th></th></tr></thead><tbody>
+<% rows.forEach(function (l) { %><tr id="utm-<%= l.id %>">
+  <td class="primary"><%= l.name %><div class="small subtle" dir="ltr" style="text-align:start;overflow-wrap:anywhere"><%= l.link %></div></td>
+  <td class="text-end num" data-label="<%= t('utm.visitors') %>"><%= l.visitors %></td>
+  <td class="text-end num" data-label="<%= t('nav.leads') %>"><%= l.leads %></td>
+  <td class="text-end num" data-label="<%= t('nav.students') %>"><%= l.students %></td>
+  <td class="text-end"><span class="cluster" style="justify-content:flex-end"><button type="button" class="btn sm" data-copy="<%= l.link %>" data-copied="<%= t('utm.copied') %>"><%- icon('copy') %><%= t('utm.copy') %></button><form method="post" action="/staff/utm/<%= l.id %>/delete" data-confirm="<%= t('utm.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm ghost" type="submit" aria-label="<%= t('common.delete') %> <%= l.name %>"><%- icon('trash-2') %></button></form></span></td>
+</tr><% }) %></tbody></table></div>
+<p class="small subtle mt2"><%= t('utm.results_hint') %></p><% } %>

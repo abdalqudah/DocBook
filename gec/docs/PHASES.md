@@ -568,3 +568,21 @@ sets its margin.
   a GEO checklist and links to Search Console, Bing Webmaster Tools, Rich Results Test and PageSpeed Insights.
 * **Files:** `src/modules/seo/{service,web,site.web}.js`, `pages/staff/settings/seo.ejs`, `pages/staff/seo/audit.ejs`,
   `locales/*/seo.json`. **Tests:** `test/phase15.test.js` (4).
+
+## Phase 16 — Marketing: newsletter, subscriber campaigns, UTM link builder
+
+* **Newsletter with double opt-in.** Sign-up in the website footer and at `/newsletter` (interests by country and
+  degree, consent text and IP stored, honeypot + rate limit). A confirmation e-mail is sent; the subscription
+  starts only when the person presses the button on the confirmation page (opening the link alone — as mail
+  scanners do — confirms nothing). Links expire after 14 days and work once; a private manage link unsubscribes.
+  Signing up again never reveals whether an address is already on the list.
+* **Campaigns to subscribers.** Campaigns gain a third audience, *Newsletter subscribers* (confirmed only, e-mail
+  only, filter by country interest and degree). Consent is re-checked when each e-mail is sent; the one-click
+  unsubscribe in every campaign e-mail removes the address from the newsletter and from leads/students alike.
+* **Communication → Newsletter subscribers:** counts by status, search, CSV export (audited), delete.
+* **Communication → Link builder (UTM):** quick-fill presets (Instagram, TikTok, WhatsApp, Google Ads, flyers …),
+  normalised values, copy button, and results per link — visitors, leads and students with the same UTM source,
+  medium and campaign.
+* **Files:** `src/modules/marketing/{newsletter,site.web,web}.js`, `pages/site/newsletter.ejs`,
+  `pages/staff/marketing/*`, footer form, `locales/*/marketing.json`, migration `20261006001500_phase16_marketing.js`.
+* **Tests:** `test/phase16.test.js` (4).

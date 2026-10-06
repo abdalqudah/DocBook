@@ -1,4 +1,15 @@
 <footer class="site-footer on-dark">
+  <div class="container nl-band">
+    <div><h2 class="footer-h nl-h"><%- icon('mail') %><%= t('newsletter.footer_title') %></h2><p class="muted mb0"><%= t('newsletter.footer_text') %></p></div>
+    <form method="post" action="/newsletter" class="nl-form" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="from" value="footer"><input type="hidden" name="consent" value="1">
+      <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <label class="sr-only" for="nl_email"><%= t('common.email') %></label>
+      <input id="nl_email" type="email" name="email" required autocomplete="email" dir="ltr" placeholder="<%= t('newsletter.placeholder') %>">
+      <button class="btn gold" type="submit"><%= t('newsletter.subscribe') %></button>
+      <p class="small muted nl-note"><%= t('newsletter.footer_consent') %> <a href="/privacy"><%= t('site.privacy') %></a></p>
+    </form>
+  </div>
   <div class="container footer-grid">
     <div class="footer-brand">
       <%- include('logo', { height: 40 }) %>

@@ -453,3 +453,17 @@ body.site:not(.has-hero) main > section:first-child .section-head h1 { font-size
 /* ---------- For universities ---------- */
 .uni-band .band-title { color: #fff; font-size: clamp(2rem, 1.4rem + 2.4vw, 3.2rem); line-height: 1.1; margin: 0; text-wrap: balance; }
 .uni-band { padding: clamp(72px, 9vw, 128px) 0; }
+
+/* ---------- Newsletter ---------- */
+.nl-band { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px 40px; align-items: center; padding-block: 36px; margin-bottom: 32px; border-bottom: 1px solid rgb(255 255 255 / .12); }
+.nl-h { display: flex; align-items: center; gap: 8px; font-size: 1.2rem; color: #fff; margin: 0 0 6px; }
+.nl-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; }
+.nl-form input[type=email] { min-height: 46px; border-radius: var(--r-pill); border: 1px solid rgb(255 255 255 / .25); background: rgb(255 255 255 / .08); color: #fff; padding: 0 18px; }
+.nl-form input[type=email]::placeholder { color: rgb(255 255 255 / .6); }
+.nl-form .btn { border-radius: var(--r-pill); min-height: 46px; }
+.nl-note { grid-column: 1 / -1; margin: 0; }
+.nl-note a { color: inherit; text-decoration: underline; }
+@media (max-width: 760px) { .nl-band { grid-template-columns: 1fr; } }
+@media (max-width: 420px) { .nl-form { grid-template-columns: 1fr; } }
+.nl-card { padding: clamp(24px, 4vw, 40px); }
+.nl-icon { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: var(--brand-softer); color: var(--brand); }

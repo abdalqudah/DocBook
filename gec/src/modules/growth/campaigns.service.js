@@ -21,7 +21,7 @@ const arr = (v) => (Array.isArray(v) ? v : (v ? [v] : [])).map(String).filter(Bo
 /** Normalises a segment from form input. */
 function segmentFrom(b) {
   return {
-    audience: b.audience === 'students' ? 'students' : 'leads',
+    audience: ['students', 'subscribers'].includes(b.audience) ? b.audience : 'leads',
     stages: arr(b.stages).filter((x) => /^\d+$/.test(x)).map(Number), temperatures: arr(b.temperatures).filter((x) => ['cold', 'warm', 'hot'].includes(x)),
     sources: arr(b.sources).map((x) => x.slice(0, 40)), countries: arr(b.countries).map((x) => x.slice(0, 40)), degree: b.degree ? String(b.degree).slice(0, 30) : null,
     journey: arr(b.journey).map((x) => x.slice(0, 30)), counsellor_id: /^\d+$/.test(String(b.counsellor_id || '')) ? Number(b.counsellor_id) : null,
@@ -31,6 +31,14 @@ function segmentFrom(b) {
 
 /** People in the segment who can receive marketing on this channel. */
 function audienceQuery(seg, channel) {
+  if (seg.audience === 'subscribers') {
+    // Newsletter: confirmed (double opt-in) subscribers, e-mail only.
+    const q = knex('newsletter_subscribers as p').where('p.status', 'confirmed');
+    if (channel !== 'email') q.whereRaw('1 = 0');
+    if (seg.countries && seg.countries.length) q.where((w) => seg.countries.forEach((c) => w.orWhereRaw('JSON_CONTAINS(p.interests, ?)', [JSON.stringify(c)])));
+    if (seg.degree) q.where('p.degree', seg.degree);
+    return q;
+  }
   const students = seg.audience === 'students';
   const t = students ? 'students as p' : 'leads as p';
   const q = knex(t).where('p.consent_marketing', true).whereNull('p.unsubscribed_at');
@@ -55,10 +63,16 @@ function audienceQuery(seg, channel) {
   return q;
 }
 
+/** The same columns for every audience (subscribers have a single name and no phone). */
+const colsOf = (seg) => (seg.audience === 'subscribers'
+  ? ['p.id', 'p.name as first_name', knex.raw("'' as last_name"), 'p.email', knex.raw('NULL as phone'), knex.raw('NULL as whatsapp'), 'p.locale as preferred_locale']
+  : ['p.id', 'p.first_name', 'p.last_name', 'p.email', 'p.phone', 'p.whatsapp', 'p.preferred_locale']);
+const KEY = { leads: 'lead_id', students: 'student_id', subscribers: 'subscriber_id' };
+
 async function preview(seg, channel) {
   const q = audienceQuery(seg, channel);
   const [{ n }] = await q.clone().count({ n: '*' });
-  const sample = await q.clone().select('p.id', 'p.first_name', 'p.last_name', 'p.email', 'p.phone').orderBy('p.id', 'desc').limit(5);
+  const sample = await q.clone().select(colsOf(seg)).orderBy('p.id', 'desc').limit(5);
   return { count: Number(n), sample };
 }
 
@@ -72,13 +86,13 @@ async function launch(ctx, id, { scheduledAt = null } = {}) {
   if (!c.body_en && !c.body_ar) throw E.validation({ body_en: 'Write the message first.' });
   if (c.channel === 'email' && !c.subject_en && !c.subject_ar) throw E.validation({ subject_en: 'Add a subject.' });
   const seg = parse(c.segment);
-  const rows = await audienceQuery(seg, c.channel).select('p.id', 'p.email', 'p.phone', 'p.whatsapp', 'p.preferred_locale');
+  const rows = await audienceQuery(seg, c.channel).select(colsOf(seg));
   const seen = new Set(); const list = [];
   for (const r of rows) {
     const address = c.channel === 'email' ? String(r.email).toLowerCase() : (c.channel === 'whatsapp' ? r.whatsapp || r.phone : r.phone);
     if (!address || seen.has(address)) continue; // eslint-disable-line no-continue
     seen.add(address);
-    list.push({ campaign_id: id, [seg.audience === 'students' ? 'student_id' : 'lead_id']: r.id, address, locale: r.preferred_locale === 'ar' ? 'ar' : 'en', token: randomToken(24) });
+    list.push({ campaign_id: id, [KEY[seg.audience] || 'lead_id']: r.id, address, locale: r.preferred_locale === 'ar' ? 'ar' : 'en', token: randomToken(24) });
   }
   if (!list.length) throw E.validation({ segment: 'Nobody in this audience can receive marketing on this channel.' });
   for (let i = 0; i < list.length; i += 500) await knex('campaign_recipients').insert(list.slice(i, i + 500)); // eslint-disable-line no-await-in-loop
@@ -105,7 +119,11 @@ function withUtm(url, c) {
 
 async function sendOne(c, r) {
   // Re-check consent at send time: someone may have unsubscribed after launch.
-  const person = r.student_id ? await knex('students').where({ id: r.student_id }).first() : await knex('leads').where({ id: r.lead_id }).first();
+  let person;
+  if (r.subscriber_id) {
+    const sub = await knex('newsletter_subscribers').where({ id: r.subscriber_id }).first();
+    person = sub && sub.status === 'confirmed' ? { first_name: sub.name || '', last_name: '', consent_marketing: true, unsubscribed_at: null } : null;
+  } else person = r.student_id ? await knex('students').where({ id: r.student_id }).first() : await knex('leads').where({ id: r.lead_id }).first();
   if (!person || !person.consent_marketing || person.unsubscribed_at) {
     await knex('campaign_recipients').where({ id: r.id }).update({ status: 'skipped', error: 'no consent' });
     return;
@@ -178,9 +196,11 @@ async function unsubscribe(token) {
   const col = r.address.includes('@') ? 'email' : 'phone_tail';
   const val = r.address.includes('@') ? r.address : people.phoneTail(r.address);
   if (val) { await knex('leads').where(col, val).update({ consent_marketing: false, unsubscribed_at: now }); await knex('students').where(col, val).update({ consent_marketing: false, unsubscribed_at: now }); }
+  if (r.subscriber_id) await require('../marketing/newsletter').unsubscribeSubscriber(r.subscriber_id); // eslint-disable-line global-require
+  await require('../marketing/newsletter').unsubscribeEmail(r.address); // eslint-disable-line global-require
   await knex('campaign_recipients').where({ id: r.id }).update({ unsubscribed_at: r.unsubscribed_at || now });
   const activity = require('../crm/activity.service'); // eslint-disable-line global-require
-  await activity.log({ leadId: r.lead_id, studentId: r.student_id }, { type: 'system', title: 'unsubscribed', meta: { channel: col === 'email' ? 'email' : 'sms' } });
+  if (r.lead_id || r.student_id) await activity.log({ leadId: r.lead_id, studentId: r.student_id }, { type: 'system', title: 'unsubscribed', meta: { channel: col === 'email' ? 'email' : 'sms' } });
   await events.emit('marketing.unsubscribed', { recipientId: r.id });
   return true;
 }

@@ -24,7 +24,8 @@
   </section>
   <section class="card stack"><h2 class="section-title"><%= t('campaigns.audience') %></h2>
     <p class="small muted mb0"><%- icon('shield-check', 'sm') %> <%= t('campaigns.consent_rule') %></p>
-    <div class="seg"><label><input type="radio" name="audience" value="leads" <%= seg.audience !== 'students' ? 'checked' : '' %>><span><%= t('nav.leads') %></span></label><label><input type="radio" name="audience" value="students" <%= seg.audience === 'students' ? 'checked' : '' %>><span><%= t('nav.students') %></span></label></div>
+    <div class="seg"><label><input type="radio" name="audience" value="leads" <%= seg.audience !== 'students' ? 'checked' : '' %>><span><%= t('nav.leads') %></span></label><label><input type="radio" name="audience" value="students" <%= seg.audience === 'students' ? 'checked' : '' %>><span><%= t('nav.students') %></span></label><label><input type="radio" name="audience" value="subscribers" <%= seg.audience === 'subscribers' ? 'checked' : '' %>><span><%= t('nav.subscribers') %></span></label></div>
+    <p class="small subtle mb0"><%= t('newsletter.audience_hint') %></p>
     <%- include('../../../partials/field', { name: 'stages', label: t('campaigns.lead_stages'), type: 'checks', value: (seg.stages || []).map(String), options: stageList.map(function (s) { return { value: String(s.id), label: L(s, 'name') }; }), hint: t('campaigns.leads_only') }) %>
     <%- include('../../../partials/field', { name: 'temperatures', label: t('leads.temperature'), type: 'checks', value: seg.temperatures || [], options: ['hot','warm','cold'].map(function (x) { return { value: x, label: t('leads.temp_' + x) }; }) }) %>
     <%- include('../../../partials/field', { name: 'sources', label: t('leads.source'), type: 'checks', value: seg.sources || [], options: sourceList.map(function (s) { return { value: s.key, label: L(s, 'name') }; }) }) %>

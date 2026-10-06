@@ -1,0 +1,23 @@
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('newsletter.staff_lead') %></p></div>
+  <div class="cluster"><a class="btn" href="/staff/subscribers/export.csv<%= qs({}) === '?' ? '' : qs({}) %>"><%- icon('download') %><%= t('newsletter.export') %></a><a class="btn primary" href="/staff/campaigns/new"><%- icon('megaphone') %><%= t('newsletter.new_campaign') %></a></div></div>
+<div class="stats mb4">
+  <a class="stat" href="?status=confirmed"><div class="stat-label"><%= t('newsletter.st.confirmed') %></div><div class="stat-value"><%= counts.confirmed %></div></a>
+  <a class="stat" href="?status=pending"><div class="stat-label"><%= t('newsletter.st.pending') %></div><div class="stat-value"><%= counts.pending %></div></a>
+  <a class="stat" href="?status=unsubscribed"><div class="stat-label"><%= t('newsletter.st.unsubscribed') %></div><div class="stat-value"><%= counts.unsubscribed %></div></a>
+</div>
+<form method="get" class="cluster mb4" role="search">
+  <label class="sr-only" for="q"><%= t('common.search') %></label><input id="q" type="search" name="q" value="<%= q.q || '' %>" placeholder="<%= t('common.search') %>">
+  <label class="sr-only" for="st"><%= t('common.status') %></label><select id="st" name="status"><option value=""><%= t('common.all') %></option><% ['confirmed','pending','unsubscribed'].forEach(function (s) { %><option value="<%= s %>" <%= q.status === s ? 'selected' : '' %>><%= t('newsletter.st.' + s) %></option><% }) %></select>
+  <button class="btn" type="submit"><%= t('common.filter') %></button>
+</form>
+<% if (!rows.length) { %><div class="card"><%- include('../../../partials/empty', { title: t('newsletter.none'), emptyIcon: 'mail', compact: true }) %></div>
+<% } else { %><div class="table-wrap"><table class="table responsive"><thead><tr><th><%= t('common.email') %></th><th><%= t('common.status') %></th><th><%= t('newsletter.interests') %></th><th><%= t('newsletter.source') %></th><th><%= t('newsletter.joined') %></th><th></th></tr></thead><tbody>
+<% rows.forEach(function (s) { var ints = typeof s.interests === 'string' ? JSON.parse(s.interests || '[]') : (s.interests || []); %><tr>
+  <td class="primary" dir="ltr" style="text-align:start"><%= s.email %><div class="small subtle"><%= s.name || '' %> · <%= s.locale.toUpperCase() %></div></td>
+  <td data-label="<%= t('common.status') %>"><span class="chip <%= s.status === 'confirmed' ? 'ok' : s.status === 'pending' ? 'warn' : '' %>"><%= t('newsletter.st.' + s.status) %></span></td>
+  <td data-label="<%= t('newsletter.interests') %>"><% ints.forEach(function (c) { %><%- flagImg(c, ref.country(c)) %> <% }) %><%= s.degree ? t('ref.degree.' + s.degree) : '' %></td>
+  <td data-label="<%= t('newsletter.source') %>" class="small"><%= s.source || '—' %><%= s.utm_campaign ? ' · ' + s.utm_campaign : '' %></td>
+  <td data-label="<%= t('newsletter.joined') %>" class="small"><%= fmt.date(s.confirmed_at || s.created_at) %></td>
+  <td class="text-end"><form method="post" action="/staff/subscribers/<%= s.id %>/delete" data-confirm="<%= t('newsletter.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm ghost" type="submit" aria-label="<%= t('common.delete') %> <%= s.email %>"><%- icon('trash-2') %></button></form></td>
+</tr><% }) %></tbody></table></div>
+<%- include('../../../partials/pager', { meta: { page: pageNo, pages: Math.ceil(total / 50), total: total } }) %><% } %>

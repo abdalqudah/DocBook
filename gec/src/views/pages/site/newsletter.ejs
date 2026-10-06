@@ -1,0 +1,39 @@
+<section class="section">
+  <div class="container" style="max-width:640px">
+    <div class="card stack nl-card">
+      <span class="st-icon nl-icon" aria-hidden="true"><%- icon(state === 'confirmed' ? 'check-circle-2' : state === 'unsubscribed' ? 'mail-x' : state === 'invalid' ? 'alert-triangle' : 'mail') %></span>
+      <% if (state === 'form') { %>
+        <h1><%= t('newsletter.title') %></h1>
+        <p class="muted"><%= t('newsletter.lead') %></p>
+        <form method="post" action="/newsletter" class="stack" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="from" value="newsletter-page">
+          <div class="sr-only" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+          <div class="form-grid two">
+            <%- include('../../partials/field', { name: 'email', label: t('common.email'), type: 'email', required: true, attrs: 'dir="ltr" autocomplete="email"' }) %>
+            <%- include('../../partials/field', { name: 'name', label: t('common.name'), attrs: 'autocomplete="given-name"' }) %>
+          </div>
+          <%- include('../../partials/field', { name: 'interests', label: t('newsletter.interests'), type: 'checks', value: [].concat(old.interests || []), options: ['GB','US','CA','AU','DE','IE','TR','MY','AE','NL'].map(function (c) { return { value: c, label: ref.country(c) }; }) }) %>
+          <%- include('../../partials/field', { name: 'degree', label: t('leads.degree'), type: 'select', value: old.degree, options: ref.DEGREES.map(function (d) { return { value: d, label: t('ref.degree.' + d) }; }) }) %>
+          <label class="check <%= errors.consent ? 'has-error' : '' %>"><input type="checkbox" name="consent" value="1" required><span><%= t('newsletter.consent') %> <a href="/privacy" target="_blank"><%= t('site.privacy') %></a></span></label>
+          <% if (errors.consent) { %><span class="error-text"><%= t('newsletter.consent_required') %></span><% } %>
+          <div class="form-actions"><button class="btn primary lg" type="submit"><%= t('newsletter.subscribe') %></button></div>
+        </form>
+      <% } else if (state === 'sent') { %>
+        <h1><%= t('newsletter.sent_title') %></h1><p class="mb0"><%= t('newsletter.sent_text') %></p>
+      <% } else if (state === 'confirm') { %>
+        <h1><%= t('newsletter.confirm_title') %></h1><p><%= t('newsletter.confirm_text') %></p>
+        <form method="post" action="/newsletter/confirm/<%= token %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn primary lg" type="submit"><%= t('newsletter.confirm_btn') %></button></form>
+      <% } else if (state === 'confirmed') { %>
+        <h1><%= t('newsletter.confirmed_title') %></h1><p><%= t('newsletter.confirmed_text') %></p>
+        <div class="cluster"><a class="btn primary" href="/programs"><%= t('home.s1_cta') %></a><a class="btn ghost" href="/newsletter/manage/<%= manage %>"><%= t('newsletter.manage') %></a></div>
+      <% } else if (state === 'manage') { %>
+        <h1><%= t('newsletter.manage_title') %></h1><p><%= t('newsletter.manage_text', { email: sub.email }) %></p>
+        <form method="post" action="/newsletter/manage/<%= token %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn danger" type="submit"><%= t('newsletter.unsubscribe') %></button></form>
+      <% } else if (state === 'unsubscribed') { %>
+        <h1><%= t('newsletter.unsub_title') %></h1><p class="mb0"><%= t('newsletter.unsub_text') %></p>
+      <% } else { %>
+        <h1><%= t('newsletter.invalid_title') %></h1><p><%= t('newsletter.invalid_text') %></p><a class="btn" href="/newsletter"><%= t('newsletter.subscribe') %></a>
+      <% } %>
+    </div>
+  </div>
+</section>
