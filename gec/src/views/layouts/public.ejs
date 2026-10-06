@@ -17,7 +17,7 @@
 <% if (s.noindex) { %><meta name="robots" content="noindex"><% } %>
 <% if (s.jsonld) { [].concat(s.jsonld).forEach(function (j) { %><script type="application/ld+json"><%- json(j) %></script><% }) } %>
 </head>
-<body class="site" data-csrf="<%= csrfToken %>" data-locale="<%= locale %>">
+<body class="site<%= typeof heroPage !== 'undefined' && heroPage ? ' has-hero' : '' %>" data-csrf="<%= csrfToken %>" data-locale="<%= locale %>">
 <a class="skip-link" href="#main"><%= t('common.skip_to_content') %></a>
 <%- include('../partials/site-header') %>
 <main id="main" tabindex="-1">

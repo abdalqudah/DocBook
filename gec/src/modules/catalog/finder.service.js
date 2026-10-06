@@ -117,7 +117,7 @@ function applyFilters(q, f, parsed) {
 
 const COLUMNS = ['p.id', 'p.slug', 'p.name_en', 'p.name_ar', 'p.degree_level', 'p.field', 'p.duration_months', 'p.currency', 'p.tuition_fee', 'p.tuition_usd', 'p.application_fee',
   'p.intakes', 'p.next_deadline', 'p.min_ielts', 'p.min_ielts_band', 'p.min_toefl', 'p.min_pte', 'p.min_duolingo', 'p.min_gpa_pct', 'p.scholarships_available', 'p.internship', 'p.study_mode',
-  'p.work_after_study', 'p.is_demo', 'u.id as university_id', 'u.slug as university_slug', 'u.name_en as university_en', 'u.name_ar as university_ar', 'u.city_en', 'u.city_ar', 'u.logo',
+  'p.work_after_study', 'p.is_demo', 'u.id as university_id', 'u.slug as university_slug', 'u.name_en as university_en', 'u.name_ar as university_ar', 'u.city_en', 'u.city_ar', 'u.logo', 'u.cover_image',
   'u.ranking_world', 'u.ranking_national', 'd.slug as destination_slug', 'd.name_en as destination_en', 'd.name_ar as destination_ar', 'd.country_code'];
 
 const parseJson = (v) => { if (Array.isArray(v)) return v; if (!v) return []; try { return JSON.parse(v); } catch { return []; } };

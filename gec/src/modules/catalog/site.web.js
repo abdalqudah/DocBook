@@ -59,7 +59,7 @@ router.get('/', ah(async (req, res) => {
     Promise.all([knex('programs').where({ is_active: true }).count({ n: '*' }), knex('universities').where({ is_active: true }).count({ n: '*' })]),
   ]);
   res.page('pages/site/home', {
-    layout: 'public', dests, featured: featured.map(finder.shape), scholarships, state: await stateOf(req),
+    layout: 'public', heroPage: true, dests, featured: featured.map(finder.shape), scholarships, state: await stateOf(req),
     stats: { programs: Number(counts[0][0].n), universities: Number(counts[1][0].n), destinations: dests.length },
     seo: seoOf(req, res, null, { title: res.locals.branding.legal_name, description: req.t('site.hero_lead'), path: '/', jsonld: {
       '@context': 'https://schema.org', '@type': 'EducationalOrganization', name: res.locals.branding.legal_name, url: res.locals.appUrl,
@@ -139,7 +139,7 @@ router.get('/universities/:slug', ah(async (req, res) => {
     knex('scholarships').where({ is_active: true, university_id: u.id }),
   ]);
   await events.emit('site.view', { req, type: 'university', id: u.id, title: u.name_en });
-  res.page('pages/site/university', {
+  res.page('pages/site/university', { heroPage: true,
     layout: 'public', u, programs: programs.map(finder.shape), scholarships, state: await stateOf(req), md: markdown, pageScripts: ['/js/catalog.js'],
     seo: seoOf(req, res, u, { title: L(req, u, 'name'), description: L(req, u, 'description'), path: `/universities/${u.slug}`, image: u.cover_image, jsonld: {
       '@context': 'https://schema.org', '@type': 'CollegeOrUniversity', name: L(req, u, 'name'), url: u.website || undefined, logo: u.logo || undefined,
@@ -215,7 +215,7 @@ router.get('/study/:slug', ah(async (req, res) => {
     knex('scholarships').where({ destination_id: d.id, is_active: true }).limit(3),
   ]);
   await events.emit('site.view', { req, type: 'destination', id: d.id, title: d.name_en });
-  res.page('pages/site/destination', {
+  res.page('pages/site/destination', { heroPage: true,
     layout: 'public', d, programs: programs.map(finder.shape), unis, scholarships, state: await stateOf(req), md: markdown, pageScripts: ['/js/catalog.js'],
     seo: seoOf(req, res, d, { title: req.t('dest.study_in', { name: L(req, d, 'name') }), description: L(req, d, 'tagline'), path: `/study/${d.slug}`, image: d.hero_image }),
   });

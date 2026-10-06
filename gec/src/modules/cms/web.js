@@ -10,6 +10,7 @@ const settings = require('../settings/settings.service');
 const nav = require('../staff/nav');
 const admin = require('./admin');
 
+nav.add('website', { key: 'slides', href: '/staff/slides', icon: 'images', perms: ['cms.manage'] });
 nav.add('website', { key: 'pages', href: '/staff/pages', icon: 'file-text', perms: ['cms.manage'] });
 nav.add('website', { key: 'articles', href: '/staff/articles', icon: 'newspaper', perms: ['cms.manage'] });
 nav.add('website', { key: 'services_cms', href: '/staff/services', icon: 'briefcase', perms: ['cms.manage'] });
@@ -67,6 +68,7 @@ router.post('/media/:id/delete', can('cms.manage'), ah(async (req, res) => {
   res.redirect('/staff/media');
 }));
 
+router.use('/slides', admin.slides.router);
 router.use('/pages', admin.pages.router);
 router.use('/articles', admin.articles.router);
 router.use('/faqs', admin.faqs.router);

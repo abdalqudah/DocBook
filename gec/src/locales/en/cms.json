@@ -48,6 +48,18 @@
     "location": {
       "header": "Header",
       "footer": "Footer"
+    },
+    "slide_image_hint": "A wide photo (at least 1600×900). Leave empty to use the illustration below.",
+    "cover": {
+      "hero": "Graduation (green)",
+      "campus": "Campus",
+      "scholarship": "Scholarships (gold)",
+      "uk": "United Kingdom",
+      "usa": "United States",
+      "canada": "Canada",
+      "australia": "Australia",
+      "germany": "Germany",
+      "ireland": "Ireland"
     }
   },
   "media": {

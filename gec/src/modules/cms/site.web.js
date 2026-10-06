@@ -34,13 +34,15 @@ const router = express.Router();
 async function homeLocals(req, res, next) {
   try {
     if (req.path === '/' && req.method === 'GET') {
-      const [home, services, testimonials, articles] = await Promise.all([
+      const [home, services, testimonials, articles, slides, events] = await Promise.all([
         settings.get('site_home'),
         published(knex('services')).orderBy('position').limit(6),
         published(knex('testimonials')).where('consent_on_file', true).orderBy('position').limit(3),
         published(knex('articles')).where('published_at', '<=', new Date()).orderBy('published_at', 'desc').limit(3),
+        knex('hero_slides').where({ is_active: true }).orderBy('position').orderBy('id').limit(6),
+        knex('events').where({ is_active: true }).where('starts_at', '>=', new Date()).orderBy('starts_at').limit(3),
       ]);
-      res.locals.homeCms = { hero: home || {}, services, testimonials, articles };
+      res.locals.homeCms = { hero: home || {}, services, testimonials, articles, slides, events };
     }
   } catch (e) { /* the home page still renders with its defaults */ }
   next();

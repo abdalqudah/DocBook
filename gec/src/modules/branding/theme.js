@@ -36,6 +36,7 @@ async function css() {
       '--bg': '#f7f9f8', '--surface': '#ffffff', '--surface-2': '#f1f4f2', '--surface-3': '#e8ede9',
       '--text': '#111a15', '--text-2': '#45524a', '--text-3': '#5b675f', '--line': '#e1e7e3', '--line-strong': '#c9d3cc',
       '--focus': mix(p, '#2563eb', 0.35),
+      '--gold': '#F2C14E', '--gold-ink': '#3a2a05', '--deep': mix(primary, '#000000', 0.45), '--deep-2': mix(primary, '#000000', 0.25), '--mint': mix(primary, '#ffffff', 0.86),
     },
     dark: {
       '--brand': lightP, '--brand-ink': '#04140b', '--brand-strong': mix(primary, '#ffffff', 0.7), '--brand-soft': mix(primary, '#0d1210', 0.6), '--brand-softer': mix(primary, '#0d1210', 0.8),
@@ -43,6 +44,7 @@ async function css() {
       '--bg': '#0d1210', '--surface': '#141b17', '--surface-2': '#1a231e', '--surface-3': '#222d27',
       '--text': '#e8ede9', '--text-2': '#b4c0b8', '--text-3': '#8b978f', '--line': '#26312b', '--line-strong': '#34413a',
       '--focus': '#8ab4f8',
+      '--gold': '#F2C14E', '--gold-ink': '#3a2a05', '--deep': mix(primary, '#000000', 0.62), '--deep-2': mix(primary, '#000000', 0.45), '--mint': mix(primary, '#0d1210', 0.7),
     },
   };
   const block = (o) => Object.entries(o).map(([k, v]) => `${k}:${v}`).join(';');

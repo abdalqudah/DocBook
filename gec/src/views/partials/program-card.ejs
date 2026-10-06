@@ -1,7 +1,8 @@
 <% var intakes = (p.intakes || []).map(function (m) { return ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0]; }); %>
-<article class="pcard">
+<article class="pcard has-cover">
+  <a class="pcard-cover" href="/programs/<%= p.slug %>" tabindex="-1" aria-hidden="true" style="<%= cover(p.cover_image, coverKey(p.country_code)) %>"></a>
   <div class="pcard-top">
-    <span class="pcard-logo"><% if (p.logo) { %><img src="<%= p.logo %>" alt="" loading="lazy" width="44" height="44"><% } else { %><%= (L(p, 'university') || '?').charAt(0) %><% } %></span>
+    <span class="pcard-logo"><%= (L(p, 'university') || '?').charAt(0) %><% if (p.logo) { %><span class="logo-layer" style="background-image:url('<%= String(p.logo).replace(/["'()\s]/g, encodeURIComponent) %>')"></span><% } %></span>
     <div class="grow" style="min-width:0">
       <h3><a href="/programs/<%= p.slug %>"><%= L(p, 'name') %></a></h3>
       <div class="pcard-sub truncate"><a href="/universities/<%= p.university_slug %>" style="color:inherit"><%= L(p, 'university') %></a> · <%= ref.flag(p.country_code) %> <%= L(p, 'city') %></div>

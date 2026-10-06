@@ -1,39 +1,94 @@
-<section class="hero">
-  <div class="container hero-inner">
-<% var hc = typeof homeCms !== 'undefined' ? homeCms : { hero: {}, services: [], testimonials: [], articles: [] }; var hv = function (k, fb) { return hc.hero[k + '_' + locale] || t(fb); }; %>
-    <h1><%= hv('hero_title', 'home.title') %></h1>
-    <p class="lead"><%= hv('hero_lead', 'home.lead') %></p>
-    <form class="hero-search" action="/programs" method="get" role="search">
-      <div class="searchbox">
-        <%- icon('search', 'lg') %>
-        <label class="sr-only" for="hero-q"><%= t('home.search_label') %></label>
-        <input id="hero-q" type="search" name="q" placeholder="<%= t('home.search_ph') %>" data-suggest autocomplete="off">
-        <button class="btn primary" type="submit"><%= t('common.search') %></button>
+<%
+  var hc = typeof homeCms !== 'undefined' ? homeCms : { hero: {}, services: [], testimonials: [], articles: [], slides: [], events: [] };
+  var hv = function (k, fb) { return hc.hero[k + '_' + locale] || t(fb); };
+  var destBy = function (slug) { return dests.find(function (d) { return d.slug === slug; }) || {}; };
+  // Slides from Website → Home slider; until there are any, four built-in ones.
+  var slides = (hc.slides && hc.slides.length) ? hc.slides.map(function (s) { return { eyebrow: L(s, 'eyebrow'), title: L(s, 'title'), text: L(s, 'text'), image: s.image, cover: s.cover, cta: L(s, 'cta_label') && s.cta_href ? { label: L(s, 'cta_label'), href: s.cta_href } : null, cta2: L(s, 'cta2_label') && s.cta2_href ? { label: L(s, 'cta2_label'), href: s.cta2_href } : null }; }) : [
+    { eyebrow: t('home.s1_eyebrow'), title: hv('hero_title', 'home.s1_title'), text: hv('hero_lead', 'home.s1_text'), image: destBy('uk').hero_image, cover: 'uk', cta: { label: t('home.s1_cta'), href: '/programs' }, cta2: { label: t('site.book_consultation'), href: '/book' } },
+    { eyebrow: t('home.s2_eyebrow'), title: t('home.s2_title'), text: t('home.s2_text'), image: null, cover: 'scholarship', cta: { label: t('home.s2_cta'), href: '/scholarships' }, cta2: { label: t('site.nav.calculator'), href: '/cost-calculator' } },
+    { eyebrow: t('home.s3_eyebrow'), title: t('home.s3_title'), text: t('home.s3_text'), image: destBy('usa').hero_image, cover: 'usa', cta: { label: t('home.s3_cta'), href: '/study/usa' }, cta2: { label: t('site.book_consultation'), href: '/book' } },
+    { eyebrow: t('home.s4_eyebrow'), title: t('home.s4_title'), text: t('home.s4_text'), image: null, cover: 'campus', cta: { label: t('home.s4_cta'), href: '/register' }, cta2: { label: t('site.nav.advisor'), href: '/advisor' } },
+  ];
+%>
+<section class="hero-slider" data-slider aria-roledescription="carousel" aria-label="<%= t('home.slider_label') %>">
+  <div class="slides">
+    <% slides.forEach(function (s, i) { %>
+    <article class="slide <%= i === 0 ? 'is-active' : '' %>" role="group" aria-roledescription="slide" aria-label="<%= (i + 1) + ' / ' + slides.length %>" <%- i === 0 ? '' : 'aria-hidden="true"' %> data-slide>
+      <div class="slide-bg" style="<%= cover(s.image, s.cover) %>"></div>
+      <div class="slide-shade"></div>
+      <div class="container slide-inner">
+        <div class="slide-copy">
+          <% if (s.eyebrow) { %><span class="slide-eyebrow"><%- icon('sparkles', 'sm') %><%= s.eyebrow %></span><% } %>
+          <% if (i === 0) { %><h1><%= s.title %></h1><% } else { %><h2 class="h1"><%= s.title %></h2><% } %>
+          <% if (s.text) { %><p><%= s.text %></p><% } %>
+          <div class="slide-ctas">
+            <% if (s.cta) { %><a class="btn gold lg" href="<%= s.cta.href %>" <%- i === 0 ? '' : 'tabindex="-1"' %>><%= s.cta.label %><%- icon('arrow-right', 'flip-rtl') %></a><% } %>
+            <% if (s.cta2) { %><a class="btn glass lg" href="<%= s.cta2.href %>" <%- i === 0 ? '' : 'tabindex="-1"' %>><%= s.cta2.label %></a><% } %>
+          </div>
+        </div>
       </div>
-    </form>
-    <div class="hero-chips">
-      <% [['master','data_science'],['bachelor','computer_science'],['master','business'],['bachelor','engineering'],['language','english']].forEach(function (c) { %>
-      <a class="filter-chip" href="/programs?degree=<%= c[0] %>&field=<%= c[1] %>"><%= t('ref.degree.' + c[0]) %> · <%= t('ref.field.' + c[1]) %></a>
-      <% }) %>
+    </article>
+    <% }) %>
+  </div>
+  <% if (slides.length > 1) { %>
+  <div class="container slider-ui">
+    <div class="slider-dots">
+      <% slides.forEach(function (s, i) { %><button type="button" class="dot <%= i === 0 ? 'on' : '' %>" data-go="<%= i %>" aria-label="<%= t('home.slide_n', { n: i + 1 }) %>" <%- i === 0 ? 'aria-current="true"' : '' %>><span></span></button><% }) %>
     </div>
-    <div class="hero-trust">
-      <span><%- icon('graduation-cap') %><%= t('home.stat_programs', { n: fmt.number(stats.programs) }) %></span>
-      <span><%- icon('building-2') %><%= t('home.stat_unis', { n: fmt.number(stats.universities) }) %></span>
-      <span><%- icon('globe') %><%= t('home.stat_dests', { n: stats.destinations }) %></span>
-      <span><%- icon('shield-check') %><%= t('home.free_advice') %></span>
+    <div class="slider-arrows">
+      <button type="button" class="round-btn" data-pause aria-label="<%= t('home.slider_pause') %>" data-label-play="<%= t('home.slider_play') %>" data-label-pause="<%= t('home.slider_pause') %>"><%- icon('pause') %></button>
+      <button type="button" class="round-btn" data-prev aria-label="<%= t('common.previous') %>"><%- icon('chevron-left', 'flip-rtl') %></button>
+      <button type="button" class="round-btn" data-next aria-label="<%= t('common.next') %>"><%- icon('chevron-right', 'flip-rtl') %></button>
+    </div>
+  </div>
+  <% } %>
+</section>
+
+<section class="search-dock">
+  <div class="container">
+    <div class="search-card">
+      <form class="hero-search" action="/programs" method="get" role="search">
+        <div class="searchbox">
+          <%- icon('search', 'lg') %>
+          <label class="sr-only" for="hero-q"><%= t('home.search_label') %></label>
+          <input id="hero-q" type="search" name="q" placeholder="<%= t('home.search_ph') %>" data-suggest autocomplete="off">
+          <button class="btn primary" type="submit"><%= t('common.search') %></button>
+        </div>
+      </form>
+      <div class="hero-chips">
+        <span class="small muted"><%= t('home.popular') %></span>
+        <% [['master','data_science'],['bachelor','computer_science'],['master','business'],['bachelor','engineering'],['language','english']].forEach(function (c) { %>
+        <a class="filter-chip" href="/programs?degree=<%= c[0] %>&field=<%= c[1] %>"><%= t('ref.degree.' + c[0]) %> · <%= t('ref.field.' + c[1]) %></a>
+        <% }) %>
+      </div>
+      <dl class="stat-row">
+        <div><dt><%= t('home.stat_programs_label') %></dt><dd><%= fmt.number(stats.programs) %></dd></div>
+        <div><dt><%= t('home.stat_unis_label') %></dt><dd><%= fmt.number(stats.universities) %></dd></div>
+        <div><dt><%= t('home.stat_dests_label') %></dt><dd><%= stats.destinations %></dd></div>
+        <div><dt><%= t('home.stat_consult_label') %></dt><dd><%= t('home.stat_consult_value') %></dd></div>
+      </dl>
     </div>
   </div>
 </section>
 
 <% if (dests.length) { %>
-<section class="section tight">
+<section class="section">
   <div class="container">
-    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('home.dest_title') %></h2><p><%= t('home.dest_lead') %></p></div><a class="btn ghost" href="/study"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
-    <div class="grid" style="--min:220px">
-      <% dests.slice(0, 8).forEach(function (d) { %>
-      <a class="dest-card" href="/study/<%= d.slug %>">
-        <% if (d.hero_image) { %><img src="<%= d.hero_image %>" alt="" loading="lazy" width="400" height="300"><% } %>
-        <div class="dest-overlay"><span class="dest-flag" aria-hidden="true"><%= ref.flag(d.country_code) %></span><h3><%= L(d, 'name') %></h3><p><%= L(d, 'tagline') %></p></div>
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('globe', 'sm') %><%= t('home.dest_eyebrow') %></span><h2><%= t('home.dest_title') %></h2><p><%= t('home.dest_lead') %></p></div>
+      <a class="btn ghost" href="/study"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="dest-bento">
+      <% dests.slice(0, 5).forEach(function (d, i) { %>
+      <a class="dest-tile <%= i === 0 ? 'big' : '' %>" href="/study/<%= d.slug %>">
+        <span class="tile-bg" style="<%= cover(d.hero_image, coverKey(d.slug)) %>"></span>
+        <span class="tile-shade"></span>
+        <span class="tile-body">
+          <span class="tile-flag" aria-hidden="true"><%= ref.flag(d.country_code) %></span>
+          <span class="tile-title"><%= L(d, 'name') %></span>
+          <span class="tile-text"><%= L(d, 'tagline') %></span>
+          <span class="tile-go"><%= t('home.explore') %><%- icon('arrow-right', 'flip-rtl') %></span>
+        </span>
       </a>
       <% }) %>
     </div>
@@ -41,32 +96,68 @@
 </section>
 <% } %>
 
-<section class="section alt">
+<section class="section journey-band">
   <div class="container">
-    <div class="section-head center"><span class="eyebrow"><%= t('home.how_eyebrow') %></span><h2><%= t('home.how_title') %></h2><p><%= t('home.how_lead') %></p></div>
-    <ol class="steps">
-      <% ['search','consult','apply','visa'].forEach(function (k) { %><li><h3><%= t('home.step_' + k) %></h3><p><%= t('home.step_' + k + '_text') %></p></li><% }) %>
+    <div class="section-head center"><span class="eyebrow"><%- icon('route', 'sm') %><%= t('home.how_eyebrow') %></span><h2><%= t('home.how_title') %></h2><p><%= t('home.how_lead') %></p></div>
+    <ol class="journey-steps">
+      <% [['search','search'],['consult','message-circle'],['apply','file-check'],['visa','plane']].forEach(function (k, i) { %>
+      <li><span class="js-icon"><%- icon(k[1]) %></span><span class="js-num"><%= i + 1 %></span><h3><%= t('home.step_' + k[0]) %></h3><p><%= t('home.step_' + k[0] + '_text') %></p></li>
+      <% }) %>
     </ol>
-    <div class="cluster mt6" style="justify-content:center"><a class="btn primary lg" href="/book"><%= t('site.book_consultation') %></a><a class="btn lg" href="/cost-calculator"><%- icon('calculator') %><%= t('site.nav.calculator') %></a></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container showcase">
+    <div class="showcase-copy">
+      <span class="eyebrow"><%- icon('layout-dashboard', 'sm') %><%= t('home.portal_eyebrow') %></span>
+      <h2><%= t('home.portal_title') %></h2>
+      <p class="lead"><%= t('home.portal_lead') %></p>
+      <ul class="ticks">
+        <% ['p1','p2','p3','p4'].forEach(function (k) { %><li><%- icon('circle-check') %><span><%= t('home.portal_' + k) %></span></li><% }) %>
+      </ul>
+      <div class="cluster"><a class="btn primary lg" href="/register"><%= t('home.s4_cta') %></a><a class="btn lg" href="/login"><%= t('auth.sign_in') %></a></div>
+    </div>
+    <div class="showcase-art" aria-hidden="true">
+      <div class="mock mock-main">
+        <div class="mock-head"><span class="avatar sm">LN</span><div><strong><%= t('home.mock_hello') %></strong><div class="small muted"><%= t('home.mock_sub') %></div></div><span class="chip"><%= t('home.mock_example') %></span></div>
+        <div class="mock-journey">
+          <% ['profile','counselling','application','visa','departure'].forEach(function (k, i) { %><div class="mj <%= i < 2 ? 'done' : i === 2 ? 'now' : '' %>"><span><%- i < 2 ? icon('check', 'sm') : (i + 1) %></span><small><%= t('home.mj_' + k) %></small></div><% }) %>
+        </div>
+        <div class="mock-app"><span class="mock-cover" style="<%= cover(null, 'uk') %>"></span><div><strong><%= t('home.mock_program') %></strong><div class="small muted"><%= t('home.mock_uni') %></div></div><span class="chip ok"><%= t('home.mock_offer') %></span></div>
+      </div>
+      <div class="mock mock-float mock-docs">
+        <strong class="small"><%- icon('file-check', 'sm') %> <%= t('home.mock_docs') %></strong>
+        <div class="md ok"><%- icon('check', 'sm') %><%= t('home.mock_passport') %></div>
+        <div class="md ok"><%- icon('check', 'sm') %><%= t('home.mock_transcript') %></div>
+        <div class="md wait"><%- icon('clock', 'sm') %><%= t('home.mock_ielts') %></div>
+      </div>
+      <div class="mock mock-float mock-meet">
+        <span class="mm-date"><b>14</b><small><%= t('home.mock_month') %></small></span>
+        <div><strong class="small"><%= t('home.mock_meeting') %></strong><div class="small muted">10:30 · Zoom</div></div>
+      </div>
+    </div>
   </div>
 </section>
 
 <% if (featured.length) { %>
-<section class="section">
+<section class="section alt">
   <div class="container">
-    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('home.featured_title') %></h2><p><%= t('home.featured_lead') %></p></div><a class="btn ghost" href="/programs"><%= t('home.explore_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
-    <div class="grid" style="--min:300px"><% featured.forEach(function (p) { %><%- include('../../partials/program-card', { p: p }) %><% }) %></div>
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('graduation-cap', 'sm') %><%= t('home.featured_eyebrow') %></span><h2><%= t('home.featured_title') %></h2><p><%= t('home.featured_lead') %></p></div>
+      <a class="btn ghost" href="/programs"><%= t('home.explore_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="rail" tabindex="0" aria-label="<%= t('home.featured_title') %>"><% featured.forEach(function (p) { %><div class="rail-item"><%- include('../../partials/program-card', { p: p }) %></div><% }) %></div>
   </div>
 </section>
 <% } %>
 
 <% if (scholarships.length) { %>
-<section class="section alt">
-  <div class="container">
-    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('home.schol_title') %></h2><p><%= t('home.schol_lead') %></p></div><a class="btn ghost" href="/scholarships"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
-    <div class="grid" style="--min:280px">
-      <% scholarships.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %>
-    </div>
+<section class="schol-band">
+  <span class="band-bg" style="<%= cover(null, 'scholarship') %>"></span><span class="band-shade"></span>
+  <div class="container band-inner">
+    <div class="band-copy"><span class="eyebrow light"><%- icon('award', 'sm') %><%= t('home.schol_eyebrow') %></span><h2><%= t('home.schol_title') %></h2><p><%= t('home.schol_lead') %></p><a class="btn gold lg" href="/scholarships"><%= t('home.s2_cta') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="band-cards"><% scholarships.forEach(function (s) { %><%- include('../../partials/scholarship-card', { s: s }) %><% }) %></div>
   </div>
 </section>
 <% } %>
@@ -74,25 +165,47 @@
 <% if (hc.services.length) { %>
 <section class="section">
   <div class="container">
-    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('cms.services_title') %></h2><p><%= t('cms.services_lead') %></p></div><a class="btn ghost" href="/services"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
-    <div class="grid-3"><% hc.services.forEach(function (sv) { %><a class="card row top" href="/services/<%= sv.slug %>" style="text-decoration:none;color:inherit"><span class="queue-icon brand"><%- icon(sv.icon || 'sparkles') %></span><div><strong><%= L(sv, 'title') %></strong><% if (L(sv, 'timeline')) { %><div class="small subtle"><%= L(sv, 'timeline') %></div><% } %></div></a><% }) %></div>
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('briefcase', 'sm') %><%= t('cms.services_eyebrow') %></span><h2><%= t('cms.services_title') %></h2><p><%= t('cms.services_lead') %></p></div>
+      <a class="btn ghost" href="/services"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="service-grid"><% hc.services.forEach(function (sv, i) { %><a class="service-tile tone-<%= i % 4 %>" href="/services/<%= sv.slug %>"><span class="st-icon"><%- icon(sv.icon || 'sparkles') %></span><strong><%= L(sv, 'title') %></strong><% if (L(sv, 'timeline')) { %><span class="small muted"><%- icon('clock', 'sm') %> <%= L(sv, 'timeline') %></span><% } %><span class="st-go"><%- icon('arrow-right', 'flip-rtl') %></span></a><% }) %></div>
+  </div>
+</section>
+<% } %>
+
+<% if (hc.events && hc.events.length) { %>
+<section class="section alt">
+  <div class="container">
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('calendar-days', 'sm') %><%= t('home.events_eyebrow') %></span><h2><%= t('home.events_title') %></h2></div>
+      <a class="btn ghost" href="/events"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
+    <div class="grid-3"><% hc.events.forEach(function (ev) { var d = new Date(ev.starts_at); %>
+      <a class="event-tile" href="/events/<%= ev.slug %>">
+        <span class="et-cover" style="<%= cover(ev.image, 'campus') %>"><span class="et-date"><b><%= fmt.date(d, { day: 'numeric' }) %></b><small><%= fmt.date(d, { month: 'short' }) %></small></span></span>
+        <span class="et-body"><span class="chip brand"><%= t('booking.event_type.' + ev.type) %></span><strong><%= L(ev, 'title') %></strong><span class="small muted"><%- icon(ev.is_virtual ? 'monitor' : 'map-pin', 'sm') %> <%= ev.is_virtual ? t('home.online') : (L(ev, 'location') || '') %></span></span>
+      </a><% }) %></div>
   </div>
 </section>
 <% } %>
 
 <% if (hc.testimonials.length) { %>
-<section class="section alt">
+<section class="section">
   <div class="container">
-    <div class="section-head center"><h2><%= t('cms.testimonials_title') %></h2></div>
-    <div class="grid-3"><% hc.testimonials.forEach(function (q) { %><figure class="card quote"><blockquote class="mb4">“<%= L(q, 'quote') %>”</blockquote><figcaption class="row"><span class="avatar"><%= initials(L(q, 'name')) %></span><div><strong><%= L(q, 'name') %></strong><div class="small muted"><%= [L(q, 'program'), L(q, 'university'), q.year].filter(Boolean).join(' · ') %></div></div></figcaption></figure><% }) %></div>
+    <div class="section-head center"><span class="eyebrow"><%- icon('quote', 'sm') %><%= t('home.voices_eyebrow') %></span><h2><%= t('cms.testimonials_title') %></h2></div>
+    <div class="grid-3"><% hc.testimonials.forEach(function (q) { %><figure class="quote-card"><%- icon('quote', 'lg') %><blockquote><%= L(q, 'quote') %></blockquote><figcaption class="row"><span class="avatar"><%= initials(L(q, 'name')) %></span><div><strong><%= L(q, 'name') %></strong><div class="small muted"><%= [L(q, 'program'), L(q, 'university')].filter(Boolean).join(' · ') %></div></div></figcaption></figure><% }) %></div>
   </div>
 </section>
 <% } %>
 
 <% if (hc.articles.length) { %>
-<section class="section">
+<section class="section <%= hc.testimonials.length ? 'alt' : '' %>">
   <div class="container">
-    <div class="spread mb4"><div class="section-head mb0"><h2><%= t('cms.resources_title') %></h2><p><%= t('cms.resources_lead') %></p></div><a class="btn ghost" href="/resources"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a></div>
+    <div class="section-top">
+      <div class="section-head mb0"><span class="eyebrow"><%- icon('newspaper', 'sm') %><%= t('cms.resources_eyebrow') %></span><h2><%= t('cms.resources_title') %></h2><p><%= t('cms.resources_lead') %></p></div>
+      <a class="btn ghost" href="/resources"><%= t('common.see_all') %><%- icon('arrow-right', 'flip-rtl') %></a>
+    </div>
     <div class="grid-3"><% hc.articles.forEach(function (a) { %><%- include('../../partials/article-card', { a: a }) %><% }) %></div>
   </div>
 </section>
@@ -100,9 +213,10 @@
 
 <section class="section">
   <div class="container">
-    <div class="cta-band">
-      <div><h2><%= hv('cta_title', 'home.cta_title') %></h2><p><%= hv('cta_text', 'home.cta_text') %></p></div>
-      <div class="cluster"><a class="btn primary lg" href="/book"><%= t('site.book_consultation') %></a><% if (company.whatsapp) { %><a class="btn lg" href="/go/whatsapp?from=home-cta" style="--b-bg:transparent;--b-fg:#fff;--b-line:rgb(255 255 255 / .4)"><%- icon('message-circle') %>WhatsApp</a><% } %></div>
+    <div class="cta-hero">
+      <span class="band-bg" style="<%= cover(null, 'campus') %>"></span><span class="band-shade"></span>
+      <div class="cta-copy"><h2><%= hv('cta_title', 'home.cta_title') %></h2><p><%= hv('cta_text', 'home.cta_text') %></p></div>
+      <div class="cluster"><a class="btn gold lg" href="/book"><%= t('site.book_consultation') %></a><% if (company.whatsapp) { %><a class="btn glass lg" href="https://wa.me/<%= company.whatsapp %>" target="_blank" rel="noopener"><%- icon('message-circle') %>WhatsApp</a><% } %></div>
     </div>
   </div>
 </section>

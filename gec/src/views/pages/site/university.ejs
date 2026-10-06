@@ -1,6 +1,6 @@
 <% var name = L(u, 'name'); var intakes = (u.intakes || []).map(function (m) { return ref.month('2026-' + String(m).padStart(2, '0')).split(' ')[0]; }); %>
 <section class="detail-hero">
-  <% if (u.cover_image) { %><img class="cover" src="<%= u.cover_image %>" alt=""><% } %>
+  <span class="cover-bg" style="<%= cover(u.cover_image, coverKey(u.country_code)) %>"></span>
   <div class="container">
     <nav class="breadcrumbs" style="color:rgb(255 255 255 / .8)"><a href="/universities" style="color:#fff"><%= t('unis.title') %></a><%- icon('chevron-right') %><span><%= name %></span></nav>
     <div class="cluster"><% if (u.institution_type) { %><span class="chip"><%= t('catalog.type.' + u.institution_type) %></span><% } %><% if (u.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></div>

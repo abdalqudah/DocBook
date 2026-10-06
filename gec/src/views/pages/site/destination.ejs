@@ -1,12 +1,12 @@
 <% var name = L(d, 'name'); var why = locale === 'ar' && d.why_ar.length ? d.why_ar : d.why_en; %>
-<section class="detail-hero" style="min-height:320px">
-  <% if (d.hero_image) { %><img class="cover" src="<%= d.hero_image %>" alt=""><% } %>
+<section class="detail-hero page-hero-tall">
+  <span class="cover-bg" style="<%= cover(d.hero_image, coverKey(d.slug)) %>"></span>
   <div class="container">
     <nav class="breadcrumbs" style="color:rgb(255 255 255 / .8)"><a href="/study" style="color:#fff"><%= t('dest.title') %></a><%- icon('chevron-right') %><span><%= name %></span></nav>
     <span class="dest-flag" style="font-size:2rem"><%= ref.flag(d.country_code) %></span>
     <h1><%= t('dest.study_in', { name: name }) %></h1>
     <p style="max-width:640px"><%= L(d, 'tagline') %></p>
-    <div class="cluster mt4"><a class="btn primary" href="/programs?destination=<%= d.slug %>"><%= t('dest.find_programs') %></a><a class="btn" href="/book?destination=<%= d.slug %>" style="--b-bg:transparent;--b-fg:#fff;--b-line:rgb(255 255 255 / .5)"><%= t('site.book_consultation') %></a></div>
+    <div class="cluster mt4"><a class="btn gold" href="/programs?destination=<%= d.slug %>"><%= t('dest.find_programs') %></a><a class="btn" href="/book?destination=<%= d.slug %>" style="--b-bg:transparent;--b-fg:#fff;--b-line:rgb(255 255 255 / .5)"><%= t('site.book_consultation') %></a></div>
   </div>
 </section>
 <section class="section tight">

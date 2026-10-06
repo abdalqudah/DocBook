@@ -75,4 +75,18 @@ const navItems = resource({
   afterSave: async () => nav.clear(),
 });
 
-module.exports = { pages, articles, faqs, testimonials, services, navItems, CATEGORIES, RESERVED };
+const COVERS = ['hero', 'campus', 'scholarship', 'uk', 'usa', 'canada', 'australia', 'germany', 'ireland'];
+const linkOk = (v) => !v || /^(\/(?!\/)|https?:\/\/)/.test(v);
+const slides = resource({
+  key: 'slides', table: 'hero_slides', entity: 'hero_slide', nameField: 'title_en', perms, defaults: { cover: 'hero', is_active: true, position: 0 },
+  list: { search: ['title_en', 'title_ar'], defaultSort: ['position', 'asc'], columns: [{ key: 'title', label: 'common.name', render: (r, req) => L(req, r, 'title') }, { key: 'position', label: 'resources.fields.position' }, { key: 'is_active', label: 'common.status', type: 'bool' }] },
+  sections: [
+    { key: 'basics', fields: [{ name: 'eyebrow', type: 'text', bilingual: true, max: 120 }, { name: 'title', type: 'text', bilingual: true, required: true, max: 190 }, { name: 'text', type: 'textarea', bilingual: true, rows: 2, max: 400 }] },
+    { key: 'image', fields: [{ name: 'image', type: 'image', hint: 'cms.slide_image_hint' }, { name: 'cover', type: 'select', required: true, options: COVERS, optionLabel: 'cms.cover' }] },
+    { key: 'buttons', fields: [{ name: 'cta_label', type: 'text', bilingual: true, max: 60 }, { name: 'cta_href', type: 'text', max: 300, hint: 'cms.href_hint' }, { name: 'cta2_label', type: 'text', bilingual: true, max: 60 }, { name: 'cta2_href', type: 'text', max: 300 }] },
+    { key: 'visibility', fields: [{ name: 'position', type: 'int' }, { name: 'is_active', type: 'bool' }] },
+  ],
+  validateRow: (row) => (!linkOk(row.cta_href) || !linkOk(row.cta2_href) ? { cta_href: 'Use a site path like /programs or a full https:// address.' } : null),
+});
+
+module.exports = { slides, COVERS, pages, articles, faqs, testimonials, services, navItems, CATEGORIES, RESERVED };

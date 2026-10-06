@@ -5,7 +5,7 @@
       <nav class="breadcrumbs" aria-label="<%= t('common.breadcrumbs') %>"><a href="/events"><%= t('events.title') %></a><%- icon('chevron-right') %><span><%= L(ev, 'title') %></span></nav>
       <div class="cluster"><span class="chip brand"><%= t('events.type_' + ev.type) %></span><% if (ev.is_demo) { %><span class="chip demo" title="<%= t('common.demo_hint') %>"><%= t('common.demo') %></span><% } %></div>
       <h1 class="mb0"><%= L(ev, 'title') %></h1>
-      <% if (ev.image) { %><img src="<%= ev.image %>" alt="" style="width:100%;max-height:380px;object-fit:cover;border-radius:var(--r-lg)"><% } %>
+      <div class="article-hero" style="<%= cover(ev.image, 'hero') %>"></div>
       <div class="fact-strip">
         <div><div class="k"><%= t('common.date') %></div><div class="v"><%= fmt.date(ev.starts_at, { weekday: 'long', day: 'numeric', month: 'long' }) %></div></div>
         <div><div class="k"><%= t('booking.time') %></div><div class="v"><%= fmt.time(ev.starts_at) %><%= ev.ends_at ? '–' + fmt.time(ev.ends_at) : '' %> (<%= fmt.tz %>)</div></div>

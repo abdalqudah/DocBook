@@ -1,4 +1,8 @@
 // View locals (translation, formatting, helpers), CSRF protection and flash messages.
+// Illustrated covers in public/img/covers (scripts/build-covers.js), by destination or country.
+const COVER_KEYS = ['uk', 'usa', 'canada', 'australia', 'germany', 'ireland', 'campus', 'hero', 'scholarship'];
+const COVER_BY_COUNTRY = { GB: 'uk', US: 'usa', CA: 'canada', AU: 'australia', DE: 'germany', IE: 'ireland' };
+const coverKey = (v) => (COVER_KEYS.includes(v) ? v : COVER_BY_COUNTRY[String(v || '').toUpperCase()] || 'campus');
 const config = require('../config');
 const fmt = require('../core/format');
 const { translator, resolveLocale, has, loc } = require('../core/i18n');
@@ -85,6 +89,9 @@ async function locals(req, res, next) {
       seo: null,
       activityText: (a) => activityText(a, t, locale),
       fullName: (p) => [p && p.first_name, p && p.last_name].filter(Boolean).join(' ') || '—',
+      // Photo with an illustrated cover underneath (shows when there is no photo or it cannot load).
+      cover: (img, key) => { const safe = (u) => String(u || '').replace(/["'()\\\s]/g, encodeURIComponent); const art = `url('/img/covers/${COVER_KEYS.includes(key) ? key : 'campus'}.svg')`; return `background-image:${img && /^(https?:\/\/|\/)/.test(img) ? `url('${safe(img)}'),` : ''}${art}`; },
+      coverKey,
       ref: {
         country: (c) => ref.countryName(c, locale),
         flag: ref.flag,

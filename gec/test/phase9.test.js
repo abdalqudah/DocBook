@@ -86,7 +86,7 @@ test('staff CMS: create & publish a page, reserved addresses refused, consent ru
   await m.post('/staff/website/home').type('form').send({ _csrf: tok, hero_title_en: 'Plan your studies abroad', hero_title_ar: '' });
   const home = await (await agent()).get('/');
   assert.match(home.text, /Plan your studies abroad/);
-  assert.match((await (await agent()).get('/?lang=ar')).text, /ماذا تود أن تدرس/, 'empty Arabic field falls back to the default text');
+  assert.match((await (await agent()).get('/?lang=ar')).text, /مستقبلك يبدأ من الجامعة المناسبة/, 'empty Arabic field falls back to the default text');
   // A counsellor cannot edit the website
   const c = await staffAgent(counsellor);
   assert.equal((await c.get('/staff/pages')).status, 403);

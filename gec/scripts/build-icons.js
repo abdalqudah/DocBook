@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ICONS = [
-  'check-check', 'quote', 'plane', 'wallet', 'stamp', 'house-plus', 'file', 'house', 'link-2-off', 'party-popper', 'circle-dashed', 'mail-check',
+  'check-check', 'images', 'pause', 'play', 'route', 'circle-check', 'arrow-down', 'quote', 'plane', 'wallet', 'stamp', 'house-plus', 'file', 'house', 'link-2-off', 'party-popper', 'circle-dashed', 'mail-check',
   'chart-line', 'trophy', 'megaphone', 'workflow', 'flame', 'mouse-pointer-click', 'eye', 'zap', 'power', 'mail-x',
   'plug-zap', 'handshake', 'arrow-down-left', 'calendar-plus', 'calendar-x', 'shield-x',
   'search', 'x', 'menu', 'chevron-down', 'chevron-up', 'chevron-left', 'chevron-right', 'arrow-left', 'arrow-right', 'arrow-up-right',

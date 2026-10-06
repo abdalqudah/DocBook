@@ -126,3 +126,70 @@
     if (name) GEC.track(name);
   });
 }());
+
+// Home hero slider: autoplay (paused on hover, focus, hidden tab or by the button), dots, arrows, swipe, keyboard.
+(function () {
+  var root = document.querySelector('[data-slider]');
+  if (!root) return;
+  document.body.classList.add('has-hero');
+  var slides = Array.prototype.slice.call(root.querySelectorAll('[data-slide]'));
+  var dots = Array.prototype.slice.call(root.querySelectorAll('[data-go]'));
+  var pauseBtn = root.querySelector('[data-pause]');
+  var MS = 6500; var idx = 0; var timer = null; var userPaused = false; var hover = false;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  root.style.setProperty('--slide-ms', MS + 'ms');
+  function show(n) {
+    idx = (n + slides.length) % slides.length;
+    slides.forEach(function (s, i) {
+      var on = i === idx; s.classList.toggle('is-active', on);
+      if (on) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true');
+      s.querySelectorAll('a').forEach(function (a) { if (on) a.removeAttribute('tabindex'); else a.setAttribute('tabindex', '-1'); });
+    });
+    dots.forEach(function (d, i) {
+      d.classList.remove('on'); d.removeAttribute('aria-current');
+      if (i === idx) { void d.offsetWidth; d.classList.add('on'); d.setAttribute('aria-current', 'true'); } // restart the progress bar
+    });
+    schedule();
+  }
+  function schedule() {
+    clearTimeout(timer);
+    var paused = userPaused || hover || document.hidden || reduce || slides.length < 2;
+    root.classList.toggle('paused', paused);
+    if (!paused) timer = setTimeout(function () { show(idx + 1); }, MS);
+  }
+  dots.forEach(function (d) { d.addEventListener('click', function () { show(Number(d.getAttribute('data-go'))); }); });
+  var prev = root.querySelector('[data-prev]'); var next = root.querySelector('[data-next]');
+  if (prev) prev.addEventListener('click', function () { show(idx - 1); });
+  if (next) next.addEventListener('click', function () { show(idx + 1); });
+  if (pauseBtn) {
+    if (reduce) userPaused = true;
+    var syncBtn = function () { pauseBtn.innerHTML = window.GEC && GEC.icon ? GEC.icon(userPaused ? 'play' : 'pause') : ''; pauseBtn.setAttribute('aria-label', pauseBtn.getAttribute(userPaused ? 'data-label-play' : 'data-label-pause')); };
+    pauseBtn.addEventListener('click', function () { userPaused = !userPaused; syncBtn(); schedule(); });
+    syncBtn();
+  }
+  root.addEventListener('mouseenter', function () { hover = true; schedule(); });
+  root.addEventListener('mouseleave', function () { hover = false; schedule(); });
+  root.addEventListener('focusin', function () { hover = true; schedule(); });
+  root.addEventListener('focusout', function () { hover = false; schedule(); });
+  document.addEventListener('visibilitychange', schedule);
+  var rtl = document.documentElement.dir === 'rtl';
+  root.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') show(idx + (rtl ? -1 : 1));
+    if (e.key === 'ArrowLeft') show(idx + (rtl ? 1 : -1));
+  });
+  var x0 = null;
+  root.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  root.addEventListener('touchend', function (e) {
+    if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 40) show(idx + ((dx < 0) !== rtl ? 1 : -1));
+  });
+  schedule();
+}());
+
+// Header turns solid once the page scrolls past the top (on pages with a hero underneath).
+(function () {
+  var h = document.querySelector('.site-header');
+  if (!h) return;
+  function onScroll() { h.classList.toggle('scrolled', window.scrollY > 40 || !document.body.classList.contains('has-hero')); }
+  window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+}());

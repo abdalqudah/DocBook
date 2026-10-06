@@ -1,5 +1,5 @@
 <a class="card stack article-card" href="/resources/<%= a.slug %>" style="text-decoration:none;color:inherit">
-  <% if (a.image) { %><img src="<%= a.image %>" alt="" loading="lazy" width="400" height="225" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r)"><% } %>
+  <span class="article-cover" style="<%= cover(a.image, { study_abroad: 'hero', visa: 'usa', scholarships: 'scholarship', universities: 'campus', ielts: 'uk', student_life: 'canada', application_tips: 'campus' }[a.category]) %>"></span>
   <div class="cluster small"><span class="chip brand"><%= t('cms.category.' + a.category) %></span><% if (a.read_minutes) { %><span class="subtle"><%= t('cms.read_min', { n: a.read_minutes }) %></span><% } %><% if (a.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %></div>
   <h2 class="mb0" style="font-size:1.05rem"><%= L(a, 'title') %></h2>
   <% if (L(a, 'excerpt')) { %><p class="small muted mb0 clamp-3"><%= L(a, 'excerpt') %></p><% } %>

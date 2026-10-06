@@ -10,9 +10,9 @@
     <% if (!rows.length) { %><div class="card"><%- include('../../partials/empty', { title: t('unis.none'), text: t('finder.none_text'), emptyIcon: 'building-2' }) %></div><% } else { %>
     <div class="grid" style="--min:300px">
       <% rows.forEach(function (u) { %>
-      <article class="pcard">
+      <article class="pcard has-cover"><a class="pcard-cover" href="/universities/<%= u.slug %>" tabindex="-1" aria-hidden="true" style="<%= cover(u.cover_image, coverKey(u.country_code)) %>"></a>
         <div class="pcard-top">
-          <span class="pcard-logo"><% if (u.logo) { %><img src="<%= u.logo %>" alt="" loading="lazy" width="44" height="44"><% } else { %><%= L(u, 'name').charAt(0) %><% } %></span>
+          <span class="pcard-logo"><%= L(u, 'name').charAt(0) %><% if (u.logo) { %><span class="logo-layer" style="background-image:url('<%= String(u.logo).replace(/["'()\s]/g, encodeURIComponent) %>')"></span><% } %></span>
           <div class="grow" style="min-width:0"><h3><a href="/universities/<%= u.slug %>"><%= L(u, 'name') %></a></h3><div class="pcard-sub"><%= ref.flag(u.country_code || u.dest_country) %> <%= [L(u, 'city'), L(u, 'destination')].filter(Boolean).join(', ') %></div></div>
           <% if (u.is_demo) { %><span class="chip demo"><%= t('common.demo') %></span><% } %>
         </div>
