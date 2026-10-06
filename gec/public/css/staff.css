@@ -121,3 +121,10 @@
 .add-tile .icon { color: var(--brand); }
 @media (max-width: 640px) { .block-tools { position: static; margin-bottom: 8px; } }
 .block-card > .form-grid, .block-card > .check { clear: both; }
+.upd-version { font-size: 1.5rem; margin-top: 2px; }
+.upd-version code { font-size: .95rem; background: var(--surface-2); padding: 2px 8px; border-radius: 6px; }
+.upd-list { list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.upd-list li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.upd-log, .upd-cmd { background: #0e1512; color: #d7e6dc; border-radius: var(--r); padding: 12px 14px; font: 12.5px/1.55 ui-monospace, monospace; max-height: 340px; overflow: auto; white-space: pre-wrap; text-align: left; margin: 0; }
+.upd-log:empty { display: none; }
+.wrap-gap { flex-wrap: wrap; gap: 12px; }

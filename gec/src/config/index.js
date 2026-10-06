@@ -43,6 +43,8 @@ module.exports = {
   locales: ['en', 'ar'],
   defaultLocale: ['en', 'ar'].includes(process.env.DEFAULT_LOCALE) ? process.env.DEFAULT_LOCALE : 'en',
   storageDir: process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.join(root, 'storage'),
+  // Shared with the server-side updater (deploy/updater.py): status written by it, update requests written by the app.
+  updaterDir: process.env.UPDATER_DIR ? path.resolve(process.env.UPDATER_DIR) : path.join(root, 'runtime'),
   db: {
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT || 3306),

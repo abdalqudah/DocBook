@@ -10,7 +10,7 @@ const GROUPS = [
   { key: 'finance', perms: ['finance.view', 'finance.manage', 'partners.view', 'partners.manage'] },
   { key: 'team', perms: ['employees.view', 'employees.manage', 'roles.manage'] },
   { key: 'website', perms: ['cms.manage', 'analytics.view'] },
-  { key: 'system', perms: ['automations.manage', 'integrations.manage', 'settings.manage', 'audit.view', 'privacy.manage'] },
+  { key: 'system', perms: ['automations.manage', 'integrations.manage', 'settings.manage', 'audit.view', 'privacy.manage', 'system.update'] },
 ];
 
 const ALL = GROUPS.flatMap((g) => g.perms);
@@ -42,7 +42,7 @@ const CRM_CORE = ['dashboard.view', 'leads.manage', 'students.manage', 'notes.vi
 // key, English / Arabic names, data scope (own = assigned to me; branch = my branch; all), permissions.
 const SYSTEM_ROLES = [
   { key: 'super_admin', name_en: 'Super Admin', name_ar: 'مدير النظام الأعلى', scope: 'all', permissions: ALL },
-  { key: 'admin', name_en: 'Admin', name_ar: 'مسؤول', scope: 'all', permissions: without('roles.manage', 'privacy.manage') },
+  { key: 'admin', name_en: 'Admin', name_ar: 'مسؤول', scope: 'all', permissions: without('roles.manage', 'privacy.manage', 'system.update') },
   { key: 'branch_manager', name_en: 'Branch Manager', name_ar: 'مدير فرع', scope: 'branch',
     permissions: [...CRM_CORE, 'reports.team', 'leads.assign', 'records.merge', 'documents.verify', 'visa.manage', 'tasks.view_all', 'employees.view', 'finance.view', 'analytics.view', 'courses.manage', 'events.manage'] },
   { key: 'admissions_manager', name_en: 'Admissions Manager', name_ar: 'مدير القبولات', scope: 'all',

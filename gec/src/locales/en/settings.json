@@ -149,6 +149,7 @@
     "integrations_manage": "Connect integrations",
     "settings_manage": "Change settings",
     "audit_view": "Read the audit log",
-    "privacy_manage": "Export and delete personal data"
+    "privacy_manage": "Export and delete personal data",
+    "system_update": "Install platform updates"
   }
 }

@@ -3,3 +3,5 @@ node_modules/
 /storage/
 *.log
 .session-secret
+runtime/
+__pycache__/

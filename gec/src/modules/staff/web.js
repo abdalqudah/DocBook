@@ -47,6 +47,7 @@ router.use('/', require('../finance/web'));
 router.use('/', require('../cms/web'));
 router.use('/', require('../seo/web'));
 router.use('/', require('../marketing/web'));
+router.use('/', require('../system/web'));
 router.use('/', require('../privacy/web'));
 router.use('/', require('../auth/settings.web'));
 router.use('/settings', require('../settings/web'));

@@ -1,0 +1,55 @@
+<% var live = s.queued || s.state === 'running'; var stateCls = { done: 'ok', running: 'brand', failed: 'danger', rolled_back: 'warn' }[s.state] || ''; %>
+<div class="page-head"><div><h1><%= title %></h1><p class="lead"><%= t('sysupdate.lead') %></p></div></div>
+
+<section class="card mb4">
+  <div class="spread wrap-gap">
+    <div>
+      <div class="small muted"><%= t('sysupdate.running_version') %></div>
+      <div class="upd-version"><strong dir="ltr">v<%= s.app.version %></strong><% if (s.app.short) { %> <code dir="ltr"><%= s.app.short %></code><% } %></div>
+    </div>
+    <span class="chip <%= s.connected ? 'ok' : 'warn' %>"><%- icon(s.connected ? 'plug-zap' : 'plug') %><%= s.connected ? t('sysupdate.connected') : t('sysupdate.not_connected') %></span>
+  </div>
+  <% if (s.connected) { %>
+  <dl class="kv mt4">
+    <dt><%= t('sysupdate.branch') %></dt><dd dir="ltr" style="text-align:start"><%= s.branch %> · <%= s.mode %></dd>
+    <dt><%= t('sysupdate.last_check') %></dt><dd><%= s.checkedAt ? fmt.relative(s.checkedAt) : '—' %><% if (s.checkError) { %> · <span class="chip danger"><%= t('sysupdate.check_failed') %></span><% } %></dd>
+  </dl>
+  <% } %>
+</section>
+
+<% if (!s.connected) { %>
+<section class="card mb4">
+  <h2><%= t('sysupdate.setup_title') %></h2>
+  <p class="small muted"><%= t('sysupdate.setup_text') %></p>
+  <pre class="upd-cmd" dir="ltr">cd /opt/gec/gec
+sudo ./deploy/install-updater.sh</pre>
+  <p class="small muted mb0"><%= t('sysupdate.setup_note') %></p>
+</section>
+<% } else { %>
+
+<section class="card mb4" data-update-live="<%= live ? '1' : '0' %>" data-status-url="/staff/system/update/status.json" data-restarting="<%= t('sysupdate.restarting') %>">
+  <div class="spread wrap-gap">
+    <h2 class="mb0"><%= s.pending.length ? t('sysupdate.available', { n: s.pending.length }) : t('sysupdate.up_to_date') %></h2>
+    <span class="chip <%= stateCls %>" data-update-state><%= live ? t('sysupdate.state.' + (s.queued ? 'queued' : 'running')) : (s.run ? t('sysupdate.state.' + s.state) : '') %></span>
+  </div>
+  <% if (s.pending.length) { %>
+  <ul class="upd-list"><% s.pending.slice(0, 12).forEach(function (c) { %><li><span><%= c.subject %></span><small class="muted"><code dir="ltr"><%= c.commit.slice(0, 7) %></code> · <%= c.date ? fmt.date(c.date) : '' %></small></li><% }) %><% if (s.pending.length > 12) { %><li class="muted small"><%= t('sysupdate.and_more', { n: s.pending.length - 12 }) %></li><% } %></ul>
+  <% } %>
+  <div class="cluster mt4">
+    <% if (s.pending.length) { %>
+    <form method="post" action="/staff/system/update/update" data-confirm="<%= t('sysupdate.confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn primary lg" type="submit" <%= live ? 'disabled' : '' %>><%- icon('refresh-cw') %><%= t('sysupdate.update_now') %></button></form>
+    <% } %>
+    <form method="post" action="/staff/system/update/check"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn" type="submit" <%= live ? 'disabled' : '' %>><%- icon('search') %><%= t('sysupdate.check_now') %></button></form>
+  </div>
+  <ol class="steps-list small mt4"><li><%= t('sysupdate.step1') %></li><li><%= t('sysupdate.step2') %></li><li><%= t('sysupdate.step3') %></li><li><%= t('sysupdate.step4') %></li></ol>
+</section>
+
+<% if (s.run || live) { %>
+<section class="card">
+  <h2><%= t('sysupdate.last_run') %></h2>
+  <% if (s.run) { %><p class="small muted"><%= s.run.requested_by || '' %> · <%= s.run.started_at ? fmt.dateTime(s.run.started_at) : '' %><% if (s.run.from && s.run.to) { %> · <span dir="ltr"><%= String(s.run.from).slice(0, 7) %> → <%= String(s.run.to).slice(0, 7) %></span><% } %></p><% } %>
+  <% if (s.run && s.run.message && !live) { %><div class="alert <%= s.state === 'done' ? 'ok' : s.state === 'rolled_back' ? 'warn' : 'bad' %> mb2" role="status"><%- icon(s.state === 'done' ? 'check-circle-2' : 'alert-triangle') %><p class="mb0"><%= s.run.message %></p></div><% } %>
+  <pre class="upd-log" dir="ltr" aria-live="polite" data-update-log><%= s.run ? s.run.log.join('\n') : '' %></pre>
+</section>
+<% } %>
+<% } %>

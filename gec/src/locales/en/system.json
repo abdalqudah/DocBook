@@ -1,0 +1,36 @@
+{
+  "sysupdate": {
+    "lead": "Install new versions of the platform with one click. The server takes a backup first and rolls back automatically if the new version does not start.",
+    "running_version": "Running version",
+    "connected": "Updater connected",
+    "not_connected": "Updater not connected",
+    "branch": "Update source",
+    "last_check": "Last checked",
+    "check_failed": "check failed",
+    "setup_title": "Connect the server updater (once)",
+    "setup_text": "For safety the website cannot change the server by itself. A small updater on the server does the work when you press the button. Ask whoever manages the server to run, in the project folder:",
+    "setup_note": "It installs a system timer that checks for updates and reports here. Requirements: the platform was installed with git clone (see the go-live guide), and python3 on the server.",
+    "available": "{n} update(s) available",
+    "up_to_date": "The system is up to date",
+    "and_more": "and {n} more",
+    "update_now": "Update the system now",
+    "check_now": "Check for updates",
+    "confirm": "Install the update now? The site may be unavailable for a minute or two while it restarts. A backup is taken first.",
+    "step1": "A backup of the database and uploaded files is taken.",
+    "step2": "The new version is downloaded and built.",
+    "step3": "The platform restarts (usually under two minutes) and its health is checked.",
+    "step4": "If the new version does not start, the previous version is restored automatically.",
+    "last_run": "Last update",
+    "restarting": "Restarting…",
+    "started": "Update requested. Progress appears below; the page refreshes when it finishes.",
+    "check_started": "Checking for updates…",
+    "state": { "queued": "Waiting for the updater", "running": "Updating…", "done": "Completed", "failed": "Failed", "rolled_back": "Rolled back", "idle": "" },
+    "err": {
+      "NOT_CONFIGURED": "The server updater is not connected yet.",
+      "UPDATE_RUNNING": "An update is already running.",
+      "UPDATE_QUEUED": "A request is already waiting for the updater.",
+      "UP_TO_DATE": "There is nothing to install: the system is up to date.",
+      "VALIDATION_FAILED": "Unknown action."
+    }
+  }
+}

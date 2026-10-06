@@ -16,14 +16,20 @@ services:
       interval: 10s
       retries: 10
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown} # set by deploy/updater.py so the page shows the running version
     restart: unless-stopped
     env_file: .env
     environment:
       DB_HOST: db
       STORAGE_DIR: /data/storage
+      UPDATER_DIR: /data/runtime
     ports: ["127.0.0.1:3000:3000"] # only the reverse proxy on this server reaches the app
-    volumes: [storage:/data/storage]
+    volumes:
+      - storage:/data/storage
+      - ./runtime:/data/runtime # shared with the server updater (deploy/updater.py): status in, update requests out
     depends_on:
       db: { condition: service_healthy }
 volumes:

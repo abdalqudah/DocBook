@@ -1,0 +1,9 @@
+[Unit]
+Description=Start the GEC updater as soon as the workspace asks for an update
+
+[Path]
+PathExists=__APP_DIR__/runtime/request.json
+Unit=gec-updater.service
+
+[Install]
+WantedBy=paths.target

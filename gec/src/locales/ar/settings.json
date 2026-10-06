@@ -149,6 +149,7 @@
     "integrations_manage": "ربط التكاملات",
     "settings_manage": "تغيير الإعدادات",
     "audit_view": "قراءة سجل التدقيق",
-    "privacy_manage": "تصدير البيانات الشخصية وحذفها"
+    "privacy_manage": "تصدير البيانات الشخصية وحذفها",
+    "system_update": "تثبيت تحديثات النظام"
   }
 }

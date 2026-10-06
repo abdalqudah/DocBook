@@ -605,3 +605,19 @@ sets its margin.
 * **Files:** `src/modules/cms/{blocks,blocks.data,builder.web,home.layout}.js`, `partials/blocks.ejs`,
   `pages/site/home/*.ejs` (one file per home section), `pages/staff/cms/{builder,home}.ejs`, `locales/*/editor.json`,
   migration `20261006001600_phase17_page_blocks.js`. **Tests:** `test/phase17.test.js` (3).
+
+## Phase 18 — System update button
+
+* **System → System update** (new permission `system.update`, Super Admin only): running version (package version +
+  Git commit), updater status, updates waiting on the branch (commit messages), **Update the system now** and
+  **Check for updates**, and the live log of the last run (polls while running, survives the restart).
+* The web app never runs commands on the server: the button writes `runtime/request.json` (audited). The server-side
+  updater `deploy/updater.py` (installed with `deploy/install-updater.sh` as a systemd timer + path unit) writes a
+  heartbeat and pending commits to `runtime/updater.json`, and on request: refuses local changes, runs
+  `deploy/backup.sh`, fast-forwards to `origin/<branch>`, rebuilds (`docker compose up -d --build` with the commit
+  baked in as `APP_COMMIT`) or restarts the systemd service, waits for `/healthz` (and the new commit in Docker),
+  and resets + redeploys the previous commit if the new version does not come up. Without a recent heartbeat the
+  page shows "not connected" and the button is refused.
+* **Files:** `src/modules/system/{version,updates,web}.js`, `pages/staff/system/update.ejs`, `public/js/updates.js`,
+  `deploy/{updater.py,install-updater.sh,gec-updater.service,gec-updater.timer,gec-updater.path}`, Dockerfile build
+  arg, compose volume `./runtime`. **Tests:** `test/phase18.test.js` (2) plus updater runs against a scratch Git repo.
