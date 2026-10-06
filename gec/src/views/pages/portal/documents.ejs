@@ -1,6 +1,6 @@
 <div class="page-head"><div><h1><%= t('portal.nav.documents') %></h1><p class="lead"><%= t('portal.documents_lead') %></p></div></div>
 <% if (!list.length) { %><div class="card"><%- include('../../partials/empty', { title: t('portal.docs_none'), text: t('portal.docs_none_text'), emptyIcon: 'files' }) %></div><% } else { %>
-<section class="card mb4"><div class="progress" role="progressbar" aria-valuenow="<%= sum.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= sum.percent %>%"></span></div>
+<section class="card mb4"><div class="progress" role="progressbar" aria-label="<%= t('portal.documents_progress') %>" aria-valuenow="<%= sum.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= sum.percent %>%"></span></div>
   <p class="small muted mt2 mb0"><%= t('portal.docs_summary', { approved: sum.approved, total: sum.total, missing: sum.missing, review: sum.review }) %></p></section>
 <div class="stack">
 <% list.forEach(function (d) { var open = ['missing','rejected','expired'].indexOf(d.status) >= 0; %>

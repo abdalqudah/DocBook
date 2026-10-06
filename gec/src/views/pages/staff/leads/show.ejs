@@ -39,9 +39,9 @@
 
     <%- include('../../../partials/dupes', { dupes: dupes, mergeAction: '/staff/leads/' + lead.id + '/merge', selfKind: 'lead' }) %>
 
-    <div class="tabs" role="tablist">
+    <nav class="tabs" aria-label="<%= t('common.sections') %>">
       <% ['timeline','details','tasks'].forEach(function (k) { %><a href="?tab=<%= k %>" <%- tab === k ? 'aria-current="page"' : '' %>><%= t('leads.tab_' + k) %><% if (k === 'tasks' && taskList.filter(function (x) { return x.status !== 'completed'; }).length) { %><span class="badge-count"><%= taskList.filter(function (x) { return x.status !== 'completed'; }).length %></span><% } %></a><% }) %>
-    </div>
+    </nav>
 
     <% if (tab === 'details') { %>
       <form method="post" action="/staff/leads/<%= lead.id %>" class="card" novalidate>

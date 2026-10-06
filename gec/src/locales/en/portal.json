@@ -156,7 +156,9 @@
     "need_email": "Add an e-mail address first",
     "invite_sent": "Invitation sent.",
     "invite_not_sent": "E-mail is not connected, so the invitation was not sent. Copy the link below and send it to the student.",
-    "invite_copy": "Invitation link (valid for 7 days):"
+    "invite_copy": "Invitation link (valid for 7 days):",
+    "documents_progress": "Documents completed",
+    "profile_progress": "Profile completed"
   },
   "notify": {
     "by_date": "by {date}",

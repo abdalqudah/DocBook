@@ -371,3 +371,60 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
 * **Known limitations:** no WYSIWYG editor (Markdown with a hint); images are referenced by URL or uploaded per
   field — there is no shared media library; scheduled articles appear at their date without a notification; legal
   retention periods for financial records are a business decision and are not enforced automatically.
+
+## Phase 10 — Security audit, end-to-end journey, accessibility, production packaging
+
+### Plan
+* **Exists / reused:** the whole platform; the test helpers; the dev server for browser checks.
+* **Changes:** an end-to-end journey test; an independent authorization review of every route, with fixes and
+  regression tests; automated WCAG 2.1 A/AA checks (axe-core) of the public site, the portal and the workspace in
+  English, Arabic, light and dark; a phone-width overflow check; production packaging and a README.
+* **Database:** no schema change.
+
+### Report
+* **End-to-end journey** (`test/journey.test.js`): an anonymous visitor (with analytics consent) searches for a
+  Master's in Data Science → opens the program and the university → uses the cost calculator → books a free
+  consultation (lead created, linked to the browsing history, confirmation e-mail, stage "counselling booked") →
+  a branch manager assigns the counsellor → the call is logged → the lead becomes a student → portal invitation and
+  password → profile steps completed → recommendations (with reasons and the "guidance, not a guarantee" note) →
+  shortlist → application with a document checklist → the student uploads every document → admissions verifies
+  them (application moves to "Documents complete") → submitted → unconditional offer (student notified, sees it in
+  the portal) → visa case opened, submitted, approved (journey "pre-departure") → invoice issued and paid (shown in
+  the portal) → pre-departure task created and completed → enrolled. It ends by checking one connected timeline,
+  the audit trail and that another counsellor cannot open the student.
+* **Security review — fixed:**
+  1. *High:* an Admin could create a password-reset link for a Super Admin (or another Admin) and use it. Reset
+     links for Admin / Super Admin accounts now require a Super Admin, nobody resets their own account there, and
+     the link is e-mailed to the employee — shown on screen only when e-mail is not connected.
+  2. *High:* applications and visa cases stayed visible to the previous counsellor after a student was reassigned.
+     Access now follows the student's current counsellor / branch, and reassignment moves the student's
+     applications, visa cases and converted leads.
+  3. *Medium:* the previous owner of a converted lead could read the student's timeline and portal messages.
+     The lead page shows the student's history only to people who may see the student, and messages belong to the
+     student's owner when there is a student.
+  4. *Medium:* duplicate checks listed matching people company-wide (including by passport number). Matches outside
+     the user's data scope now read "a matching record exists in another team" without any personal details.
+  5. *Medium:* instructors could read and change registrations of courses they don't teach. Course registrations,
+     sessions, attendance, payment status and certificates are limited to the instructor's own courses.
+  6. *Low:* staff with only "view notes" could publish a note to the student portal — now internal only; note
+     moderation is limited to records in the moderator's scope.
+  7. *Low:* a document request or task could point at another student's application — refused / dropped.
+  8. *Low:* back-redirects could produce `//host` paths — now fall back to a safe page.
+* **Checked and clean** (review notes): finance, comms composer, appointments, documents, CRM records, palette,
+  dashboards, analytics, portal routes (all bound to the signed-in student), token routes, mass assignment, unescaped
+  output, webhooks, uploads, sign-in redirects; SQL is parameterised and sort columns are whitelisted.
+* **Accessibility:** fixed muted-text contrast (now ≥ 5:1 on every surface), dark-mode call-to-action band contrast,
+  links in running text underlined, icon-only language and search links labelled, progress bars named, account
+  menu label matching its visible text, link-based tab bars no longer claim `role=tablist`, scrollable tables and
+  the journey bar keyboard-focusable. Result: no axe WCAG 2.1 A/AA violations on the checked pages (public site,
+  portal, workspace; EN/AR; light/dark). On phones (360 px) no page scrolls sideways; the header's booking button
+  moves into the menu below 400 px.
+* **Packaging:** `README.md` (setup, configuration, integrations, jobs, deployment, backups, security),
+  `Dockerfile` (non-root, health check), `docker-compose.yml` (app + MariaDB with volumes), `.dockerignore`,
+  graceful shutdown on SIGTERM, `RUN_JOBS=false` for additional instances.
+* **Tests:** `test/journey.test.js` (1), `test/security.test.js` (7). Suite: 75, all passing; `npm run check` clean.
+* **Known limitations:** event registrations are visible to everyone with "events.manage" (events are run
+  company-wide; there is no per-branch event owner yet); external images (e.g. the original site's Unsplash photos)
+  are referenced by URL and should be replaced with GEC's own images through the CMS; Google / Microsoft sign-in,
+  calendar sync and online card payments remain prepared but not enabled; the AI advisor needs an Anthropic API
+  key to answer in conversation (without it, it runs as an honest database search).

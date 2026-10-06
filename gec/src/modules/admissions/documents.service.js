@@ -49,6 +49,8 @@ async function get(id) {
 async function request(ctx, studentId, { typeKey, title = null, dueDate = null, applicationId = null, visaCaseId = null, note = null }) {
   const type = await knex('document_types').where({ key: typeKey, is_active: true }).first();
   if (!type) throw E.validation({ type_key: 'Choose a valid option.' });
+  if (applicationId && !(await knex('applications').where({ id: applicationId, student_id: studentId }).first('id'))) throw E.validation({ application_id: 'Choose an application of this student.' });
+  if (visaCaseId && !(await knex('visa_cases').where({ id: visaCaseId, student_id: studentId }).first('id'))) throw E.validation({ visa_case_id: 'Choose a visa case of this student.' });
   // Re-use an open row of the same type instead of duplicating it.
   const open = await knex('documents').where({ student_id: studentId, type_key: typeKey }).whereIn('status', OPEN).modify((q) => { if (title) q.where('title', title); }).first('id');
   const row = { requested_at: new Date(), requested_by: ctx.userId, due_date: dueDate || null, application_id: applicationId, visa_case_id: visaCaseId, notes: note || null, title: title || null };

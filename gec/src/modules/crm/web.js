@@ -4,6 +4,7 @@ const knex = require('../../db/knex');
 const { can } = require('../../middleware/auth');
 const { flash } = require('../../middleware/web');
 const { safeBack } = require('../../middleware/errors');
+const { E } = require('../../core/errors');
 const { ah, idParam } = require('../../core/http');
 const { validate } = require('../../core/validate');
 const { toCsv } = require('../../core/csv');
@@ -126,7 +127,7 @@ router.post('/leads', can('leads.manage'), ah(async (req, res) => {
   try {
     const auto = req.body.counsellor_id === 'auto';
     const data = validate(forms.leadSchema, auto ? { ...req.body, counsellor_id: '' } : req.body);
-    const dupes = await people.findDuplicates({ email: data.email, phone: data.phone || data.whatsapp });
+    const dupes = people.visibleDuplicates(req.staff, await people.findDuplicates({ email: data.email, phone: data.phone || data.whatsapp }));
     if (dupes.length && req.body.confirm_duplicate !== '1') {
       res.status(409);
       return res.page('pages/staff/leads/new', { layout: 'staff', narrow: true, title: req.t('leads.new'), ...(await pickers(req)), old: req.body, dupes });
@@ -146,10 +147,12 @@ router.post('/leads', can('leads.manage'), ah(async (req, res) => {
 }));
 
 async function leadPage(req, res, lead, extra = {}) {
+  // The student's own history (notes, documents, messages…) is shown only to people who may see that student.
+  const studentVisible = lead.student_id ? await students.get(req.staff, lead.student_id).then(() => true, () => false) : false;
   const [timeline, taskList, dupes, p, stageRow] = await Promise.all([
-    activity.timeline({ leadId: lead.id, studentId: lead.student_id }),
+    activity.timeline({ leadId: lead.id, studentId: studentVisible ? lead.student_id : null, withoutStudent: !!lead.student_id && !studentVisible }),
     tasks.forRecord({ leadId: lead.id }),
-    people.findDuplicates({ email: lead.email, phone: lead.phone || lead.whatsapp }, { leadId: lead.id, studentId: lead.student_id }),
+    people.findDuplicates({ email: lead.email, phone: lead.phone || lead.whatsapp }, { leadId: lead.id, studentId: lead.student_id }).then((d) => people.visibleDuplicates(req.staff, d)),
     pickers(req),
     knex('lead_stages').where({ id: lead.stage_id }).first(),
   ]);
@@ -269,7 +272,7 @@ router.post('/students', can('students.manage'), ah(async (req, res) => {
   try {
     const data = validate(forms.studentSections.personal, req.body);
     if (!data.email && !data.phone) throw Object.assign(new Error('x'), { code: 'VALIDATION_FAILED', details: { email: 'Enter an email or a phone number.' } });
-    const dupes = await people.findDuplicates({ email: data.email, phone: data.phone || data.whatsapp, passport: data.passport });
+    const dupes = people.visibleDuplicates(req.staff, await people.findDuplicates({ email: data.email, phone: data.phone || data.whatsapp, passport: data.passport }));
     if (dupes.length && req.body.confirm_duplicate !== '1') {
       res.status(409);
       return res.page('pages/staff/students/new', { layout: 'staff', narrow: true, title: req.t('students.new'), counsellors: await employees.options(), old: req.body, dupes });
@@ -296,7 +299,7 @@ async function studentPage(req, res, s, extra = {}) {
   const [timeline, taskList, dupes] = await Promise.all([
     activity.timeline({ studentId: s.id }, { limit: tab === 'timeline' ? 300 : 8 }),
     tasks.forRecord({ studentId: s.id }),
-    people.findDuplicates({ email: s.email, phone: s.phone || s.whatsapp }, { studentId: s.id }),
+    people.findDuplicates({ email: s.email, phone: s.phone || s.whatsapp }, { studentId: s.id }).then((d) => people.visibleDuplicates(req.staff, d)),
   ]);
   const counsellor = s.counsellor_id ? await knex('employees as e').join('users as u', 'u.id', 'e.user_id').where('e.id', s.counsellor_id).first('u.name', 'e.id', 'u.email') : null;
   const custom = tabList.find((t) => t.key === tab && t.load);
@@ -363,7 +366,8 @@ router.post('/students/:id/contact', can('students.manage'), ah(async (req, res)
 
 router.post('/students/:id/notes', can('students.manage', 'notes.view'), ah(async (req, res) => {
   const s = await students.get(req.staff, idParam(req.params.id));
-  await notes.add(req.ctx, { studentId: s.id }, { body: req.body.body, shareable: req.body.shareable === '1' });
+  // Only people who manage the student may publish a note to the student's portal; others add internal notes.
+  await notes.add(req.ctx, { studentId: s.id }, { body: req.body.body, shareable: req.body.shareable === '1' && req.can('students.manage') });
   flash(req, 'ok', req.t('notes.added'));
   res.redirect(safeBack(req, `/staff/students/${s.id}?tab=timeline`));
 }));
@@ -397,7 +401,11 @@ router.post('/students/:id/delete', can('students.delete'), ah(async (req, res) 
 }));
 
 router.post('/notes/:id/delete', can('notes.view', 'leads.manage', 'students.manage'), ah(async (req, res) => {
-  await notes.remove(req.ctx, idParam(req.params.id), { canModerate: req.can('records.merge') });
+  // Moderators may delete others' notes, but only on records within their own data scope.
+  const n = await knex('notes').where({ id: idParam(req.params.id) }).first();
+  if (!n) throw E.notFound('Note');
+  if (n.student_id) await students.get(req.staff, n.student_id); else if (n.lead_id) await leads.get(req.staff, n.lead_id);
+  await notes.remove(req.ctx, n.id, { canModerate: req.can('records.merge') });
   flash(req, 'ok', req.t('common.deleted'));
   res.redirect(safeBack(req, '/staff'));
 }));
@@ -413,6 +421,7 @@ router.post('/tasks', ah(async (req, res) => {
   const data = validate(forms.taskSchema, req.body);
   if (data.lead_id) await leads.get(req.staff, data.lead_id);
   if (data.student_id) await students.get(req.staff, data.student_id);
+  if (data.application_id) await require('../admissions/applications.service').get(req.staff, data.application_id); // eslint-disable-line global-require
   if (data.assignee_id && data.assignee_id !== req.staff.employee.id && !req.can('tasks.view_all') && !req.can('leads.assign')) data.assignee_id = req.staff.employee.id;
   await tasks.create(req.ctx, { ...data, assignee_id: data.assignee_id || req.staff.employee.id, due_at: data.due_at ? fmt.zonedToUtc(data.due_at.length === 10 ? `${data.due_at}T09:00` : data.due_at, res.locals.fmt.tz) : null });
   flash(req, 'ok', req.t('tasks.created'));

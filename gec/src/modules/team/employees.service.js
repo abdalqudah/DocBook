@@ -105,11 +105,19 @@ async function setStatus(ctx, staff, id, status) {
 }
 
 /** A fresh password link for an employee (shown to the admin when e-mail is not set up). */
-async function resetLink(ctx, id) {
+/**
+ * A password-reset link for an employee. Admin and Super Admin accounts can only be reset by a Super Admin, and
+ * nobody resets their own account here (that is what "Forgot password" is for) — otherwise the link would let a
+ * lower role take over a higher one.
+ */
+async function resetLink(ctx, staff, id) {
   const e = await get(id);
+  if (e.user_id === ctx.userId) throw E.validation({ status: 'Use “Forgot password” for your own account.' });
+  const role = await knex('roles').where({ id: e.role_id }).first();
+  if (['super_admin', 'admin'].includes(role.key) && staff.employee.roleKey !== 'super_admin') throw E.forbidden('super_admin');
   const r = await createReset(e.email, 'staff');
   await audit.record(ctx, 'employee.reset_link', { entityType: 'employee', entityId: id });
-  return r ? r.link : null;
+  return r ? { link: r.link, user: r.user } : null;
 }
 
 module.exports = { list, get, options, create, update, setStatus, resetLink, parse };

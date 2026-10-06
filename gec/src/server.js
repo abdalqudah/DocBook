@@ -13,8 +13,16 @@ async function boot() {
 async function run() {
   try {
     const app = await boot();
-    app.listen(config.port, () => console.log(`[gec] listening on ${config.port} (${config.env})`)); // eslint-disable-line no-console
-    if (!config.isTest) require('./modules/jobs').start(); // eslint-disable-line global-require
+    const server = app.listen(config.port, () => console.log(`[gec] listening on ${config.port} (${config.env})`)); // eslint-disable-line no-console
+    if (!config.isTest && config.runJobs) require('./modules/jobs').start(); // eslint-disable-line global-require
+    // Graceful shutdown (deploys, container stops): finish open requests, then close the database pool.
+    const stop = (sig) => {
+      console.log(`[gec] ${sig}: shutting down`); // eslint-disable-line no-console
+      server.close(() => knex.destroy().finally(() => process.exit(0)));
+      setTimeout(() => process.exit(1), 10_000).unref();
+    };
+    process.once('SIGTERM', () => stop('SIGTERM'));
+    process.once('SIGINT', () => stop('SIGINT'));
   } catch (e) {
     console.error('[gec] start-up failed:', e.code || '', e.message); // eslint-disable-line no-console
     process.exit(1);

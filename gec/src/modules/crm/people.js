@@ -45,13 +45,13 @@ async function findDuplicates({ email, phone, passport }, exclude = {}) {
     if (tail) w.orWhere('phone_tail', tail);
   });
   const leads = (mail || tail) ? await match(knex('leads').whereNot('status', 'merged')).modify((q) => { if (exclude.leadId) q.whereNot('id', exclude.leadId); })
-    .select('id', 'ref', 'first_name', 'last_name', 'email', 'phone', 'phone_tail', 'status', 'student_id', 'created_at').limit(10) : [];
+    .select('id', 'ref', 'first_name', 'last_name', 'email', 'phone', 'phone_tail', 'status', 'student_id', 'counsellor_id', 'branch_id', 'created_at').limit(10) : [];
   const students = await knex('students').whereNull('merged_into_id').where((w) => {
     if (mail) w.orWhere('email', mail);
     if (tail) w.orWhere('phone_tail', tail);
     if (pHash) w.orWhere('passport_hash', pHash);
   }).modify((q) => { if (exclude.studentId) q.whereNot('id', exclude.studentId); })
-    .select('id', 'ref', 'first_name', 'last_name', 'email', 'phone', 'phone_tail', 'passport_hash', 'status', 'created_at').limit(10);
+    .select('id', 'ref', 'first_name', 'last_name', 'email', 'phone', 'phone_tail', 'passport_hash', 'status', 'counsellor_id', 'branch_id', 'created_at').limit(10);
   const why = (r) => [mail && r.email === mail && 'email', tail && r.phone_tail === tail && 'phone', pHash && r.passport_hash === pHash && 'passport'].filter(Boolean);
   return [
     ...leads.filter((l) => !(exclude.studentId && l.student_id === exclude.studentId)).map((l) => ({ kind: 'lead', ...l, matched: why(l) })),
@@ -59,4 +59,13 @@ async function findDuplicates({ email, phone, passport }, exclude = {}) {
   ];
 }
 
-module.exports = { fullName, splitName, phoneTail, digits, newRef, passportHash, findDuplicates };
+/**
+ * Duplicates the staff member may know about: records outside their data scope are reduced to "a matching record
+ * exists elsewhere" (no name, contact or reference), so a duplicate check can't be used to look people up.
+ */
+function visibleDuplicates(staff, dupes) {
+  const { inScope } = require('../rbac/rbac.service'); // eslint-disable-line global-require
+  return dupes.map((d) => (inScope(staff, d, { owner: 'counsellor_id', branch: 'branch_id' }) ? d : { kind: d.kind, hidden: true, matched: d.matched }));
+}
+
+module.exports = { fullName, splitName, phoneTail, digits, newRef, passportHash, findDuplicates, visibleDuplicates };

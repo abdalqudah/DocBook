@@ -123,7 +123,7 @@ async function sendOne(c, r) {
     let html = await email.layout({ locale: L, title: subject, body, cta: cta ? pick('cta') || (L === 'ar' ? 'اعرف المزيد' : 'Learn more') : null, href: cta });
     const foot = L === 'ar' ? 'لا ترغب بهذه الرسائل؟' : 'Don’t want these e-mails?';
     const unsubLabel = L === 'ar' ? 'إلغاء الاشتراك' : 'Unsubscribe';
-    html = html.replace(/<\/body>/, `<p style="text-align:center;font:12px Arial,sans-serif;color:#6b776f">${foot} <a href="${unsub}" style="color:#6b776f">${unsubLabel}</a></p><img src="${config.appUrl}/c/o/${r.token}.gif" width="1" height="1" alt=""></body>`);
+    html = html.replace(/<\/body>/, `<p style="text-align:center;font:12px Arial,sans-serif;color:#5b675f">${foot} <a href="${unsub}" style="color:#5b675f">${unsubLabel}</a></p><img src="${config.appUrl}/c/o/${r.token}.gif" width="1" height="1" alt=""></body>`);
     res = await comms.send({ channel: 'email', to: r.address, subject, body, html, headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }, leadId: r.lead_id, studentId: r.student_id, templateKey: `campaign:${c.slug}`.slice(0, 60), automated: true, locale: L });
   } else {
     const link = c.cta_url ? `\n${config.appUrl}/c/c/${r.token}` : '';

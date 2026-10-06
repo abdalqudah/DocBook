@@ -80,7 +80,7 @@ async function layout({ locale = 'en', title, body, bodyHtml, cta, href }) {
 <div style="padding:22px 28px;border-bottom:3px solid ${primary}"><img src="${esc(logo)}" alt="${esc(b.name)}" height="40" style="height:40px;width:auto;display:block;${rtl ? 'margin-left:auto' : ''}"></div>
 <div style="padding:26px 28px">${title ? `<h1 style="font-size:19px;margin:0 0 14px;color:#111a15">${esc(title)}</h1>` : ''}<div style="line-height:1.7;font-size:15px">${content}</div>
 ${cta && href ? `<p style="margin:22px 0 0"><a href="${esc(href)}" style="display:inline-block;background:${primary};color:#ffffff;padding:11px 20px;border-radius:999px;text-decoration:none;font-weight:bold">${esc(cta)}</a></p>` : ''}</div>
-<div style="padding:16px 28px;background:#f7f9f8;color:#6b776f;font-size:12px;line-height:1.6">${esc(footer)}</div></div></body></html>`;
+<div style="padding:16px 28px;background:#f7f9f8;color:#5b675f;font-size:12px;line-height:1.6">${esc(footer)}</div></div></body></html>`;
 }
 
 module.exports = { send, verify, layout, currentConfig, useTestOutbox, PRESETS };

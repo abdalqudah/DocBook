@@ -104,8 +104,16 @@ router.post('/employees/:id/status', can('employees.manage'), ah(async (req, res
 }));
 
 router.post('/employees/:id/reset-link', can('employees.manage'), ah(async (req, res) => {
-  const link = await employees.resetLink(req.ctx, idParam(req.params.id));
-  req.session.inviteLink = link;
+  // The link goes to the employee's own inbox; it is shown here only when e-mail is not connected yet.
+  const r = await employees.resetLink(req.ctx, req.staff, idParam(req.params.id));
+  if (r) {
+    const auth = require('../auth/auth.service'); // eslint-disable-line global-require
+    const t = translator(r.user.locale || 'en');
+    const html = await emailCh.layout({ locale: r.user.locale || 'en', title: t('auth.reset_mail_subject'), body: t('auth.reset_mail_body', { minutes: auth.RESET_MINUTES }), cta: t('auth.reset_mail_cta'), href: r.link });
+    const sent = await emailCh.send({ to: r.user.email, subject: t('auth.reset_mail_subject'), html }).catch(() => ({ sent: false }));
+    if (!sent.sent) req.session.inviteLink = r.link;
+    flash(req, 'ok', sent.sent ? req.t('team.reset_sent') : req.t('team.invite_not_sent'));
+  }
   res.redirect(`/staff/employees/${req.params.id}`);
 }));
 

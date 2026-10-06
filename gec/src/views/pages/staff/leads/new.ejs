@@ -2,7 +2,7 @@
 <div class="page-head"><h1><%= t('leads.new') %></h1></div>
 <% if (typeof dupes !== 'undefined' && dupes.length) { %>
   <div class="alert warn mb4"><%- icon('alert-triangle') %><div><p><strong><%= t('merge.found_before_create') %></strong></p>
-  <ul class="mb0"><% dupes.forEach(function (d) { %><li><a href="/staff/<%= d.kind === 'lead' ? 'leads' : 'students' %>/<%= d.id %>"><%= fullName(d) %></a> — <%= t('merge.kind_' + d.kind) %> <%= d.ref %> (<%= d.matched.map(function (m) { return t('merge.by_' + m); }).join(', ') %>)</li><% }) %></ul></div></div>
+  <ul class="mb0"><% dupes.forEach(function (d) { if (d.hidden) { %><li><%= t('merge.hidden_match') %> — <%= t('merge.kind_' + d.kind) %> (<%= d.matched.map(function (m) { return t('merge.by_' + m); }).join(', ') %>)</li><% return; } %><li><a href="/staff/<%= d.kind === 'lead' ? 'leads' : 'students' %>/<%= d.id %>"><%= fullName(d) %></a> — <%= t('merge.kind_' + d.kind) %> <%= d.ref %> (<%= d.matched.map(function (m) { return t('merge.by_' + m); }).join(', ') %>)</li><% }) %></ul></div></div>
 <% } %>
 <form method="post" action="/staff/leads" class="card" data-autosave="lead-new" novalidate>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">

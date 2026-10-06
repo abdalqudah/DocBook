@@ -189,7 +189,12 @@ async function assign(ctx, staff, id, employeeId) {
   const s = await get(staff, id);
   const emp = employeeId ? await knex('employees as e').join('users as u', 'u.id', 'e.user_id').where('e.id', employeeId).where('u.status', 'active').first('e.id', 'e.branch_id', 'u.name') : null;
   if (employeeId && !emp) throw E.validation({ counsellor_id: 'Choose a valid option.' });
-  await knex('students').where({ id }).update({ counsellor_id: emp ? emp.id : null, branch_id: emp && emp.branch_id ? emp.branch_id : s.branch_id, updated_at: new Date() });
+  const owner = { counsellor_id: emp ? emp.id : null, branch_id: emp && emp.branch_id ? emp.branch_id : s.branch_id };
+  await knex('students').where({ id }).update({ ...owner, updated_at: new Date() });
+  // The student's open work moves with them (their converted leads, applications and visa cases).
+  await knex('applications').where({ student_id: id }).update(owner);
+  await knex('visa_cases').where({ student_id: id }).update(owner);
+  await knex('leads').where({ student_id: id }).update({ counsellor_id: owner.counsellor_id, ...(owner.branch_id ? { branch_id: owner.branch_id } : {}) });
   await activity.log({ studentId: id }, { type: 'assigned', title: emp ? 'assigned' : 'unassigned', meta: { to: emp ? emp.id : null, to_name: emp ? emp.name : null }, actorId: ctx.userId });
   await audit.record(ctx, 'student.assigned', { entityType: 'student', entityId: id, oldValues: { counsellor_id: s.counsellor_id }, newValues: { counsellor_id: emp ? emp.id : null } });
   if (emp) await events.emit('student.assigned', { studentId: id, employeeId: emp.id, by: ctx.userId });

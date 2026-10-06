@@ -3,7 +3,9 @@
 <section class="card" style="border-color:var(--warn)">
   <div class="card-head"><h2><%- icon('alert-triangle') %> <%= t('merge.possible_duplicates') %></h2></div>
   <div class="divider-list">
-  <% dupes.forEach(function (d) { %>
+  <% dupes.forEach(function (d) { if (d.hidden) { %>
+    <div class="list-item"><span class="avatar sm"><%- icon('lock') %></span><div class="li-body"><div class="li-title"><%= t('merge.hidden_match') %></div><div class="li-sub"><%= t('merge.kind_' + d.kind) %> · <%= t('merge.matched') %>: <%= d.matched.map(function (m) { return t('merge.by_' + m); }).join(', ') %></div></div></div>
+  <% return; } %>
     <div class="list-item" style="flex-wrap:wrap">
       <span class="avatar sm"><%= initials(fullName(d)) %></span>
       <div class="li-body"><a class="li-title" href="/staff/<%= d.kind === 'lead' ? 'leads' : 'students' %>/<%= d.id %>"><%= fullName(d) %></a>

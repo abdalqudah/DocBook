@@ -39,6 +39,7 @@ module.exports = {
   sessionSecret: sessionSecret(),
   trustProxy,
   autoMigrate: process.env.AUTO_MIGRATE !== 'false',
+  runJobs: process.env.RUN_JOBS !== 'false', // with several app instances, let exactly one run the background jobs
   locales: ['en', 'ar'],
   defaultLocale: ['en', 'ar'].includes(process.env.DEFAULT_LOCALE) ? process.env.DEFAULT_LOCALE : 'en',
   storageDir: process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.join(root, 'storage'),

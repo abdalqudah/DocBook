@@ -25,11 +25,11 @@
   <div class="main">
     <header class="topbar">
       <button type="button" class="btn ghost icon-only menu-toggle" data-sidebar-toggle aria-controls="sidebar" aria-expanded="false" aria-label="<%= t('staff.open_menu') %>"><%- icon('menu') %></button>
-      <a class="global-search" href="/programs" style="text-decoration:none"><%- icon('search') %><span class="label-text"><%= t('home.search_ph') %></span></a>
+      <a class="global-search" href="/programs" style="text-decoration:none" aria-label="<%= t('home.search_ph') %>"><%- icon('search') %><span class="label-text"><%= t('home.search_ph') %></span></a>
       <span class="spacer"></span>
       <a class="btn ghost icon-only tb-btn" href="/portal/notifications" aria-label="<%= t('nav.notifications') %>"><%- icon('bell') %><% if (typeof unreadNotifications !== 'undefined' && unreadNotifications) { %><span class="badge-n"><%= unreadNotifications > 9 ? '9+' : unreadNotifications %></span><% } %></a>
       <details class="menu">
-        <summary class="user-chip" aria-label="<%= t('staff.account_menu') %>"><span class="avatar sm"><%= initials(currentUser.name) %></span></summary>
+        <summary class="user-chip" aria-label="<%= initials(currentUser.name) %> · <%= currentUser.name %> — <%= t('staff.account_menu') %>"><span class="avatar sm"><%= initials(currentUser.name) %></span></summary>
         <div class="menu-panel">
           <div class="user-menu-head"><div class="li-title"><%= currentUser.name %></div><div class="li-sub"><%= currentUser.email %></div></div>
           <a href="/portal/profile"><%- icon('user') %><%= t('portal.profile') %></a>

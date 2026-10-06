@@ -6,7 +6,7 @@ const { wantsJson } = require('./auth');
 /** The referring page when it is on this site, else the home page (never an open redirect). */
 function safeBack(req, fallback = '/') {
   const back = req.get('referer');
-  try { if (back && new URL(back).host === req.get('host')) { const u = new URL(back); return u.pathname + u.search; } } catch { /* bad referer */ }
+  try { if (back && new URL(back).host === req.get('host')) { const u = new URL(back); if (!/^\/[/\\]/.test(u.pathname)) return u.pathname + u.search; } } catch { /* bad referer */ }
   return fallback;
 }
 

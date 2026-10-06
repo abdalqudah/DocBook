@@ -1,6 +1,6 @@
 <div class="page-head"><div><h1><%= t('portal.profile') %></h1><p class="lead"><%= t('portal.profile_lead') %></p></div></div>
 <section class="card mb4"><div class="spread"><strong><%= t('portal.profile_complete', { n: c.percent }) %></strong></div>
-  <div class="progress mt2" role="progressbar" aria-valuenow="<%= c.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= c.percent %>%"></span></div></section>
+  <div class="progress mt2" role="progressbar" aria-label="<%= t('portal.profile_progress') %>" aria-valuenow="<%= c.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= c.percent %>%"></span></div></section>
 <div class="card"><div class="divider-list">
   <% steps.forEach(function (st, i) { %><a class="list-item" href="/portal/profile/<%= st %>"><span class="queue-icon brand"><%= i + 1 %></span><div class="li-body"><div class="li-title"><%= t('portal.step_' + st) %></div><div class="li-sub"><%= t('portal.step_' + st + '_hint') %></div></div><%- icon('chevron-right', 'flip-rtl') %></a><% }) %>
 </div></div>

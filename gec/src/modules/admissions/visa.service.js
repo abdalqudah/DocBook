@@ -14,8 +14,8 @@ const APP_STAGE = { preparing: 'visa_preparation', documents_pending: 'visa_prep
 
 function base(staff) {
   // visa officers have "all" scope; counsellors see their students' cases
-  return scope(knex('visa_cases as v'), staff, { owner: 'v.counsellor_id', branch: 'v.branch_id' })
-    .join('students as s', 's.id', 'v.student_id').leftJoin('applications as a', 'a.id', 'v.application_id')
+  return scope(knex('visa_cases as v').join('students as s', 's.id', 'v.student_id'), staff, { owner: 's.counsellor_id', branch: 's.branch_id' })
+    .leftJoin('applications as a', 'a.id', 'v.application_id')
     .leftJoin('employees as oe', 'oe.id', 'v.officer_id').leftJoin('users as ou', 'ou.id', 'oe.user_id');
 }
 const COLS = ['v.*', 's.first_name', 's.last_name', 's.ref as student_ref', 'a.ref as application_ref', 'a.program_name', 'a.university_name', 'ou.name as officer_name'];

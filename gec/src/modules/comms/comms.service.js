@@ -98,9 +98,10 @@ function base(staff) {
   const q = knex('messages as m').leftJoin('leads as l', 'l.id', 'm.lead_id').leftJoin('students as s', 's.id', 'm.student_id').leftJoin('users as u', 'u.id', 'm.sent_by');
   const { dataScope, id: empId, branchId } = staff.employee;
   if (dataScope === 'all') return q;
+  // A message belongs to the student when there is one (else to the lead): whoever owns that record now sees it.
   return q.where((w) => {
-    w.where('s.counsellor_id', empId).orWhere('l.counsellor_id', empId);
-    if (dataScope === 'branch' && branchId) w.orWhere('m.branch_id', branchId);
+    w.whereRaw('COALESCE(s.counsellor_id, l.counsellor_id) = ?', [empId]);
+    if (dataScope === 'branch' && branchId) w.orWhereRaw('COALESCE(s.branch_id, l.branch_id, m.branch_id) = ?', [branchId]);
   });
 }
 const COLS = ['m.*', 'l.first_name as lead_first', 'l.last_name as lead_last', 's.first_name as student_first', 's.last_name as student_last', 'u.name as sender_name'];

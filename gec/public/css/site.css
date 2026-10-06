@@ -33,6 +33,8 @@ body.nav-open { overflow: hidden; }
   .nav-toggle { display: inline-flex; }
   .hide-mobile { display: none !important; }
 }
+.show-xs { display: none; }
+@media (max-width: 400px) { .header-actions .hide-xs { display: none; } .nav-mobile-extra .show-xs { display: flex; } }
 @media (max-width: 420px) { .header-actions .lang-switch span { display: none; } .header-row { gap: 8px; } .brand-link .logo-img { height: 32px !important; } }
 
 /* ---------- Sections ---------- */

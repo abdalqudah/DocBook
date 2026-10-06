@@ -62,6 +62,12 @@ async function get(staff, id) {
 }
 
 async function create(ctx, data) {
+  // A task can only point at an application of the same student.
+  if (data.application_id) {
+    const app = await knex('applications').where({ id: data.application_id }).first('student_id');
+    if (!app || (data.student_id && app.student_id !== Number(data.student_id))) data = { ...data, application_id: null }; // eslint-disable-line no-param-reassign
+    else if (!data.student_id) data = { ...data, student_id: app.student_id }; // eslint-disable-line no-param-reassign
+  }
   const row = {
     title: String(data.title).slice(0, 190), description: data.description || null,
     lead_id: data.lead_id || null, student_id: data.student_id || null, application_id: data.application_id || null,

@@ -37,9 +37,9 @@
 
 <%- include('../../../partials/dupes', { dupes: dupes, mergeAction: '/staff/students/' + s.id + '/merge', selfKind: 'student' }) %>
 
-<div class="tabs" role="tablist">
+<nav class="tabs" aria-label="<%= t('common.sections') %>">
   <% tabList.forEach(function (tb) { %><a href="?tab=<%= tb.key %>" <%- tab === tb.key ? 'aria-current="page"' : '' %>><%- icon(tb.icon) %><%= t('students.tab_' + tb.key) %></a><% }) %>
-</div>
+</nav>
 
 <% if (tab === 'overview') { %>
 <div class="split">

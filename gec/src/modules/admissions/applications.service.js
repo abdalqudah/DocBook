@@ -5,20 +5,19 @@ const knex = require('../../db/knex');
 const audit = require('../../core/audit');
 const events = require('../../core/events');
 const { E } = require('../../core/errors');
-const { scope, inScope } = require('../rbac/rbac.service');
+const { scope } = require('../rbac/rbac.service');
 const activity = require('../crm/activity.service');
 const people = require('../crm/people');
 const studentsSvc = require('../crm/students.service');
 const leadStages = require('../crm/stages');
 const stages = require('./stages');
 
-const SCOPE = { owner: 'a.counsellor_id', branch: 'a.branch_id' };
-const OWN = { owner: 'counsellor_id', branch: 'branch_id' };
+// Access follows the student's current counsellor / branch (the copies on the application are for reports and "mine" filters).
+const SCOPE = { owner: 's.counsellor_id', branch: 's.branch_id' };
 const PER_PAGE = 30;
 
 function base(staff) {
-  return scope(knex('applications as a'), staff, SCOPE)
-    .join('students as s', 's.id', 'a.student_id')
+  return scope(knex('applications as a').join('students as s', 's.id', 'a.student_id'), staff, SCOPE)
     .leftJoin('programs as p', 'p.id', 'a.program_id').leftJoin('universities as u', 'u.id', 'a.university_id')
     .leftJoin('application_stages as st', 'st.id', 'a.stage_id')
     .leftJoin('employees as e', 'e.id', 'a.counsellor_id').leftJoin('users as eu', 'eu.id', 'e.user_id');
@@ -164,4 +163,4 @@ async function remove(ctx, staff, id) {
   await audit.record(ctx, 'application.deleted', { entityType: 'application', entityId: id, oldValues: { ref: app.ref, student_id: app.student_id } });
 }
 
-module.exports = { list, board, get, forStudent, create, moveStage, update, history, remove, filtered, base, COLS, SCOPE, OWN, inScope };
+module.exports = { list, board, get, forStudent, create, moveStage, update, history, remove, filtered, base, COLS, SCOPE };

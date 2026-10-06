@@ -161,9 +161,16 @@ router.post('/appointments/:id/reschedule', can('appointments.manage'), ah(async
 }));
 
 // ------------------------------------------------------------- Courses: registrations, sessions, attendance, certificates
-router.get('/courses/:id/registrations', can('courses.manage'), ah(async (req, res) => {
-  const course = await knex('courses').where({ id: idParam(req.params.id) }).first();
+/** The course, if this staff member may manage it: instructors ("own" data scope) only their own courses. */
+async function courseFor(req, id) {
+  const course = await knex('courses').where({ id }).first();
   if (!course) throw E.notFound();
+  if (req.staff.employee.dataScope === 'own' && course.instructor_id !== req.staff.employee.id) throw E.notFound();
+  return course;
+}
+
+router.get('/courses/:id/registrations', can('courses.manage'), ah(async (req, res) => {
+  const course = await courseFor(req, idParam(req.params.id));
   const regs = await knex('course_registrations').where({ course_id: course.id }).orderBy('created_at');
   const sessions = await knex('course_sessions').where({ course_id: course.id }).orderBy('starts_at');
   const att = await knex('course_attendance').whereIn('session_id', sessions.map((s) => s.id));
@@ -175,21 +182,27 @@ router.get('/courses/:id/registrations', can('courses.manage'), ah(async (req, r
 }));
 
 router.post('/courses/:id/sessions', can('courses.manage'), ah(async (req, res) => {
-  const course = await knex('courses').where({ id: idParam(req.params.id) }).first();
-  if (!course || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(req.body.starts_at || '')) throw E.validation({ starts_at: 'Enter a valid date and time.' });
+  const course = await courseFor(req, idParam(req.params.id));
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(req.body.starts_at || '')) throw E.validation({ starts_at: 'Enter a valid date and time.' });
   await knex('course_sessions').insert({ course_id: course.id, starts_at: fmt.zonedToUtc(req.body.starts_at, res.locals.fmt.tz), topic: String(req.body.topic || '').slice(0, 190) || null });
   res.redirect(`/staff/courses/${course.id}/registrations`);
 }));
 
 router.post('/courses/sessions/:sid/attendance', can('courses.manage'), ah(async (req, res) => {
   const present = [].concat(req.body.present || []).map(Number).filter(Boolean);
-  await courses.saveAttendance(req.ctx, idParam(req.params.sid), present);
+  const session = await knex('course_sessions').where({ id: idParam(req.params.sid) }).first();
+  if (!session) throw E.notFound();
+  await courseFor(req, session.course_id);
+  await courses.saveAttendance(req.ctx, session.id, present);
   flash(req, 'ok', req.t('common.saved'));
   res.redirect(safeBack(req, '/staff/courses'));
 }));
 
 router.post('/courses/registrations/:rid', can('courses.manage'), ah(async (req, res) => {
   const rid = idParam(req.params.rid);
+  const reg = await knex('course_registrations').where({ id: rid }).first();
+  if (!reg) throw E.notFound();
+  await courseFor(req, reg.course_id);
   if (req.body.status) await courses.setStatus(req.ctx, rid, String(req.body.status));
   if (req.body.payment_status) await courses.setPayment(req.ctx, rid, String(req.body.payment_status));
   if (req.body.certificate === '1') await courses.issueCertificate(req.ctx, rid);

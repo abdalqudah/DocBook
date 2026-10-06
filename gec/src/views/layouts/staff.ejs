@@ -44,7 +44,7 @@
       <a class="btn ghost icon-only tb-btn" href="/staff/notifications" aria-label="<%= t('nav.notifications') %>"><%- icon('bell') %><% if (unreadNotifications) { %><span class="badge-n"><%= unreadNotifications > 9 ? '9+' : unreadNotifications %></span><% } %></a>
       <% } %>
       <details class="menu">
-        <summary class="user-chip" aria-label="<%= t('staff.account_menu') %>"><span class="avatar sm"><%= initials(currentUser.name) %></span></summary>
+        <summary class="user-chip" aria-label="<%= initials(currentUser.name) %> · <%= currentUser.name %> — <%= t('staff.account_menu') %>"><span class="avatar sm"><%= initials(currentUser.name) %></span></summary>
         <div class="menu-panel">
           <div class="user-menu-head"><div class="li-title"><%= currentUser.name %></div><div class="li-sub"><%= currentUser.email %></div><div class="li-sub"><%= staff.employee.roleName[locale] || staff.employee.roleName.en %></div></div>
           <a href="/staff/account"><%- icon('user-cog') %><%= t('staff.my_account') %></a>

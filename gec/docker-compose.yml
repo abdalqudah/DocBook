@@ -1,0 +1,31 @@
+# Local / single-server deployment: the app and MariaDB. Put a TLS-terminating reverse proxy (Caddy, nginx,
+# a cloud load balancer) in front of port 3000 and set APP_URL to the public https:// address.
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: gec
+      MARIADB_USER: gec
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes: [db:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 10
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+      STORAGE_DIR: /data/storage
+    ports: ["3000:3000"]
+    volumes: [storage:/data/storage]
+    depends_on:
+      db: { condition: service_healthy }
+volumes:
+  db:
+  storage:

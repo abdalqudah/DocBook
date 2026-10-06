@@ -462,7 +462,8 @@
     "confirm": "Merge these records? The timeline, tasks and documents move to the record you keep.",
     "done": "Records merged.",
     "found_before_create": "These records look like the same person:",
-    "create_anyway": "Create anyway"
+    "create_anyway": "Create anyway",
+    "hidden_match": "A matching record exists in another team — ask a manager before creating a duplicate."
   },
   "team": {
     "new_employee": "New employee",
@@ -508,7 +509,8 @@
     "open_tasks": "Open tasks",
     "branches_lead": "GEC offices. Employees, leads and students belong to a branch; reports filter by branch.",
     "edit_branch": "Edit branch",
-    "new_branch": "New branch"
+    "new_branch": "New branch",
+    "reset_sent": "A password-reset link was e-mailed to the employee."
   },
   "book": {
     "eyebrow": "Free · No obligation",

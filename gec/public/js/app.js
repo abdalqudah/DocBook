@@ -74,6 +74,11 @@
     if (e.key === 'Escape') doc.querySelectorAll('details.menu[open], details[data-dropdown][open]').forEach(function (m) { m.removeAttribute('open'); var s = m.querySelector('summary'); if (s) s.focus(); });
   });
 
+  // ---- Wide tables that scroll sideways can be scrolled with the keyboard (WCAG 2.1.1)
+  doc.querySelectorAll('.table-wrap, .journey').forEach(function (w) {
+    if (w.scrollWidth > w.clientWidth + 1 && !w.hasAttribute('tabindex')) { w.setAttribute('tabindex', '0'); if (!/^(OL|UL)$/.test(w.tagName)) w.setAttribute('role', 'region'); var cap = w.querySelector('caption, th'); w.setAttribute('aria-label', cap ? cap.textContent.trim() : 'Table'); }
+  });
+
   // ---- Chip checkboxes
   doc.addEventListener('change', function (e) {
     var c = e.target.closest('[data-toggle-chip]');

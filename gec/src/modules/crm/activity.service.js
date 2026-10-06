@@ -28,7 +28,7 @@ async function log(who, { type, title, body = null, meta = null, actorId = null,
 }
 
 /** Timeline for a person, newest first. A student's timeline includes the activity of the lead(s) it came from. */
-async function timeline({ leadId, studentId }, { limit = 200, types = null, shareableOnly = false } = {}) {
+async function timeline({ leadId, studentId, withoutStudent = false }, { limit = 200, types = null, shareableOnly = false } = {}) {
   const leadIds = [];
   if (leadId) leadIds.push(leadId);
   if (studentId) (await knex('leads').where({ student_id: studentId }).select('id')).forEach((l) => leadIds.push(l.id));
@@ -40,6 +40,7 @@ async function timeline({ leadId, studentId }, { limit = 200, types = null, shar
     .select('a.*', 'u.name as actor_name', 'n.body as note_body', 'n.is_shareable as note_shareable')
     .orderBy('a.occurred_at', 'desc').orderBy('a.id', 'desc').limit(limit);
   if (types && types.length) q.whereIn('a.type', types);
+  if (withoutStudent) q.whereNull('a.student_id'); // lead history only, nothing recorded on the student
   if (shareableOnly) q.where('a.is_shareable', true);
   const rows = await q;
   return rows.map((r) => {

@@ -29,7 +29,7 @@
   <section class="card">
     <div class="card-head"><h2><%= t('portal.nav.documents') %></h2><a class="btn sm ghost" href="/portal/documents"><%= t('common.see_all') %></a></div>
     <% if (!j.docs.total) { %><p class="muted mb0"><%= t('portal.docs_none') %></p><% } else { %>
-    <div class="progress" role="progressbar" aria-valuenow="<%= j.docs.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= j.docs.percent %>%"></span></div>
+    <div class="progress" role="progressbar" aria-label="<%= t('portal.documents_progress') %>" aria-valuenow="<%= j.docs.percent %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= j.docs.percent %>%"></span></div>
     <p class="small muted mt2 mb0"><%= t('portal.docs_summary', { approved: j.docs.approved, total: j.docs.total, missing: j.docs.missing, review: j.docs.review }) %></p><% } %>
   </section>
   <section class="card">

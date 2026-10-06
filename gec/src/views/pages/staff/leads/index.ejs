@@ -1,10 +1,10 @@
 <div class="page-head">
   <div><h1><%= t('nav.leads') %></h1><p class="lead"><%= t('leads.lead_text') %></p></div>
   <div class="cluster">
-    <div class="seg" role="tablist" aria-label="<%= t('leads.view') %>">
+    <nav class="seg" aria-label="<%= t('leads.view') %>">
       <a href="<%= qs({ view: 'list', page: null }) %>" <%- view === 'list' ? 'aria-current="page" class="on"' : '' %>><%- icon('list') %> <%= t('leads.view_list') %></a>
       <a href="<%= qs({ view: 'board', page: null }) %>" <%- view === 'board' ? 'aria-current="page" class="on"' : '' %>><%- icon('kanban') %> <%= t('leads.view_board') %></a>
-    </div>
+    </nav>
     <% if (can('leads.manage')) { %><a class="btn primary" href="/staff/leads/new"><%- icon('plus') %><%= t('leads.new') %></a><% } %>
   </div>
 </div>

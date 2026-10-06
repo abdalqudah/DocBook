@@ -161,7 +161,7 @@ router.post('/applications/:id', can('applications.manage'), ah(async (req, res)
 
 router.post('/applications/:id/notes', can('applications.manage', 'notes.view'), ah(async (req, res) => {
   const a = await apps.get(req.staff, idParam(req.params.id));
-  await notes.add(req.ctx, { studentId: a.student_id, applicationId: a.id }, { body: req.body.body, shareable: req.body.shareable === '1' });
+  await notes.add(req.ctx, { studentId: a.student_id, applicationId: a.id }, { body: req.body.body, shareable: req.body.shareable === '1' && req.can('applications.manage') });
   flash(req, 'ok', req.t('notes.added'));
   res.redirect(`/staff/applications/${a.id}#timeline`);
 }));
