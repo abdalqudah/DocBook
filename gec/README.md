@@ -56,7 +56,7 @@ All settings are environment variables (see `.env.example`):
 | `NODE_ENV` | `production` in production (secure cookies, no stack traces, caching). |
 | `APP_URL` | Public `https://` address — used in e-mails, links, sitemap, canonical URLs. |
 | `SESSION_SECRET` | Long random string signing session cookies. Required in production. |
-| `APP_KEY` | Encrypts stored credentials (SMTP, SMS, WhatsApp, AI keys) with AES-256-GCM. Set once; changing it makes saved credentials unreadable (re-enter them). |
+| `APP_KEY` | Encrypts stored credentials (SMTP, SMS, WhatsApp, payments, sign-in, AI keys) with AES-256-GCM. Falls back to the session secret when unset. Set once; changing it makes saved credentials unreadable (re-enter them). |
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` / `DB_SOCKET` | Database connection. Tests use `DB_NAME_TEST` (default `gec_test`) and **drop all its tables**. |
 | `AUTO_MIGRATE` | Run migrations at start-up (default `true`). |
 | `TRUST_PROXY` | Set when behind a reverse proxy / load balancer so client IPs and HTTPS are detected. |
@@ -80,7 +80,8 @@ with an explanation.
 | WhatsApp (Meta Cloud API) | Settings → WhatsApp | Webhook `/hooks/whatsapp` (verify token + app-secret signature). Without it, staff can still open a `wa.me` link, logged as a manual message. |
 | AI advisor (Anthropic) | Settings → AI | Uses the official SDK; answers only from the platform's own catalogue through read-only tools. Without a key the advisor runs as a database search and says so. |
 | Card payments (Stripe Checkout) | Settings → Online payments | Secret key + webhook signing secret; webhook `/hooks/stripe`. Invoices then show "Pay by card"; payments are recorded only from Stripe's signed webhook, once per checkout. Card details never reach this server. |
-| Google / Microsoft sign-in, calendar sync | — | Adapters prepared, not enabled. |
+| Sign in with Google / Microsoft | Settings → Sign-in with Google / Microsoft | Client ID + secret per provider; redirect URIs `/auth/google/callback`, `/auth/microsoft/callback`. Choose students, staff or both; for staff with Microsoft, set your own tenant. New accounts are created only for students; staff must already exist. |
+| Calendar sync | — | Not enabled. |
 
 ## Website images
 

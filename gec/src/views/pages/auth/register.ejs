@@ -15,4 +15,5 @@
   <label class="check"><input type="checkbox" name="consent_marketing" value="1" <%= old.consent_marketing ? 'checked' : '' %>><span class="small"><%= t('book.consent_marketing') %></span></label>
   <button class="btn primary block lg" type="submit"><%= t('auth.create_account') %></button>
 </form>
+<%- include('../../partials/sso-buttons', { ssoList: typeof sso !== 'undefined' ? sso : [], portal: 'student' }) %>
 <p class="auth-foot"><%= t('portal.have_account') %> <a href="/login"><%= t('auth.sign_in') %></a></p>

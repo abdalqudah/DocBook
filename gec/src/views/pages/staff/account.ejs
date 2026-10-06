@@ -19,6 +19,7 @@
     <div class="form-actions span-all"><button class="btn primary" type="submit"><%= t('auth.save_password') %></button><span class="small subtle"><%= t('account.password_note') %></span></div>
   </form>
 </section>
+<%- include('../../partials/sso-connections', { conn: conn }) %>
 <section class="card" id="sessions">
   <div class="card-head"><h2><%= t('account.sessions') %></h2>
     <% if (sessions.length > 1) { %><form method="post" action="/staff/account/sessions/revoke-others"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm" type="submit"><%= t('account.sign_out_others') %></button></form><% } %>

@@ -471,3 +471,38 @@ Each phase: **plan** (what exists · reuse · change · database · API · secur
 * **Known limitations:** Stripe refunds are still recorded manually in the workspace (the refund itself is made in
   Stripe); Google / Microsoft sign-in and calendar sync remain prepared but not enabled; the image importer needs
   internet access on the server.
+
+## Phase 12 — Sign in with Google and Microsoft
+
+### Plan
+* **Exists / reused:** sessions (`startSession`, regeneration), the student sign-up / linking logic, settings with
+  encrypted secrets, audit log, rate limits.
+* **Changes:** OpenID Connect sign-in for both portals; a settings page; "Continue with …" buttons on the sign-in
+  and sign-up pages; "Sign-in accounts" (connect / disconnect) in staff "My account" and portal settings.
+* **Database:** `user_identities` (user, provider, subject, e-mail; unique per provider account and per user /
+  provider) — migration `20261006001200_phase12_sso.js`.
+* **Security:** authorization-code flow with PKCE (S256), `state` bound to the browser session (10-minute
+  expiry, constant-time compare) and `nonce`; the ID token comes straight from the provider's token endpoint with
+  the client secret, and its issuer, audience, expiry and nonce are checked. Account matching:
+  a linked provider account always signs in its owner; otherwise an e-mail address is used only when the provider
+  vouches for it — Google `email_verified`, Microsoft `xms_edov` (verified domain) or a single-tenant setup — so
+  an unverified Microsoft address can't take over an account. New accounts only for students; staff are never
+  created by sign-in; student and staff accounts stay on their own sign-in pages; disabled accounts are refused.
+  Connecting needs a signed-in user and a CSRF-protected POST; the last sign-in method can't be removed. Every
+  sign-in, link, unlink and failure is audited.
+
+### Report
+* **Files:** `src/modules/auth/{sso,settings.web}.js`, routes in `src/modules/auth/web.js`
+  (`/auth/:provider/start|callback|connect|disconnect`), `partials/{sso-buttons,sso-connections}.ejs`,
+  `pages/staff/settings/sign-in.ejs`, provider marks in `public/brand/`, texts in `locales/*/auth.json`.
+* **Fix:** stored credentials can now be encrypted when neither `APP_KEY` nor `SESSION_SECRET` is set (the
+  generated session secret is used), instead of failing when integration settings were saved.
+* **Tests:** `test/phase12.test.js` (8): not configured; settings (encrypted, per-portal); new student with PKCE
+  and sign-in by account id; tampered state / nonce / audience / issuer / expiry and forged callbacks refused;
+  linking only with provider-verified addresses (unverified Google and Microsoft refused, Microsoft verified-domain
+  accepted); staff rules (existing only, never created, portals kept apart, disabled refused); connect /
+  disconnect and last-method protection; Microsoft single tenant (other directories refused). Suite: 87.
+* **To switch on:** create an OAuth client in Google Cloud and an app registration in Microsoft Entra, add the
+  redirect URIs shown in the settings page, and paste the client ID and secret.
+* **Known limitations:** calendar sync is not built; staff who sign in only with Google / Microsoft still need an
+  administrator to create their account first (by design).

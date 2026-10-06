@@ -12,7 +12,9 @@ const router = express.Router();
 
 async function render(req, res, extra = {}) {
   const sessions = await auth.sessionsOf(req.user.id);
-  res.page('pages/staff/account', { layout: 'staff', narrow: true, title: req.t('staff.my_account'), sessions, currentSid: req.sessionID, ...extra });
+  const sso = require('../auth/sso'); // eslint-disable-line global-require
+  const conn = { providers: await sso.available('staff'), identities: await sso.identitiesOf(req.user.id), hasPassword: !!(await knex('users').where({ id: req.user.id }).first('password_hash')).password_hash };
+  res.page('pages/staff/account', { layout: 'staff', narrow: true, title: req.t('staff.my_account'), sessions, currentSid: req.sessionID, conn, ...extra });
 }
 
 router.get('/', ah((req, res) => render(req, res)));

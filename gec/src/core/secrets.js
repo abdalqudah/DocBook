@@ -6,7 +6,8 @@ const crypto = require('crypto');
 let cachedKey;
 function key() {
   if (cachedKey) return cachedKey;
-  const base = process.env.APP_KEY || process.env.SESSION_SECRET || (process.env.NODE_ENV === 'test' ? 'test-only-secret' : '');
+  // Falls back to the session secret the app uses (including the one it generates into .session-secret).
+  const base = process.env.APP_KEY || process.env.SESSION_SECRET || (process.env.NODE_ENV === 'test' ? 'test-only-secret' : require('../config').sessionSecret); // eslint-disable-line global-require
   if (!base) throw new Error('APP_KEY or SESSION_SECRET is required to store credentials.');
   cachedKey = Buffer.from(crypto.hkdfSync('sha256', Buffer.from(base), Buffer.from('gec-credentials'), Buffer.from('credentials-v1'), 32));
   return cachedKey;

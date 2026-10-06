@@ -84,7 +84,9 @@
     "ai": "AI advisor",
     "ai_desc": "Connect an AI provider for the study advisor.",
     "payments": "Online payments",
-    "payments_desc": "Let students pay invoices by card through Stripe Checkout."
+    "payments_desc": "Let students pay invoices by card through Stripe Checkout.",
+    "sign_in": "Sign-in with Google / Microsoft",
+    "sign_in_desc": "Let students and staff sign in with their Google or Microsoft account."
   },
   "roles": {
     "lead": "Built-in roles follow GEC's standard responsibilities. Create custom roles for anything else.",

@@ -18,6 +18,7 @@
     <%- include('../../partials/field', { name: 'password', label: t('auth.new_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
     <%- include('../../partials/field', { name: 'password_confirm', label: t('auth.confirm_password'), type: 'password', required: true, attrs: 'autocomplete="new-password"' }) %>
   </div><div class="form-actions"><button class="btn" type="submit"><%= t('auth.change_password') %></button></div></form>
+<%- include('../../partials/sso-connections', { conn: conn }) %>
 <section class="card stack"><h2 class="section-title"><%= t('portal.your_data') %></h2><p class="small muted mb0"><%= t('portal.your_data_text') %></p>
   <div class="cluster"><a class="btn" href="/portal/settings/export"><%- icon('download') %><%= t('portal.export') %></a></div>
   <details><summary><%= t('portal.ask_deletion') %></summary>

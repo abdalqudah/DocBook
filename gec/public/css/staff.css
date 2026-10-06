@@ -87,3 +87,9 @@
 .media-tile { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); color: inherit; text-decoration: none !important; font: inherit; text-align: start; cursor: pointer; min-width: 0; }
 .media-tile:hover, .media-tile:focus-visible { border-color: var(--brand-line); box-shadow: var(--shadow-1); }
 .media-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: calc(var(--r) - 2px); background: var(--surface-2); }
+/* Sign in with Google / Microsoft */
+.sso { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.sso-or { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: .82rem; }
+.sso-or::before, .sso-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.sso-btn { justify-content: center; gap: 10px; }
+.sso-btn img { flex: none; }

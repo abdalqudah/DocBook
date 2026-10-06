@@ -1,0 +1,24 @@
+<%- include('_back') %>
+<div class="page-head"><div><h1><%= t('settings.sign_in') %></h1><p class="lead"><%= t('settings.sign_in_desc') %></p></div></div>
+<div class="alert info mb4"><%- icon('shield-check') %><p><%= t('sso.rules') %></p></div>
+<% ['google','microsoft'].forEach(function (p) { var s = providers[p]; %>
+<form method="post" class="card stack mb4" id="<%= p %>" autocomplete="off">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="provider" value="<%= p %>">
+  <div class="spread"><h2 class="mb0 row" style="font-size:1.05rem"><img src="/brand/sso-<%= p %>.svg" alt="" width="20" height="20"><%= t('sso.' + p) %></h2>
+    <span class="chip <%= s.connected ? 'ok' : 'warn' %>"><%- icon(s.connected ? 'check' : 'plug-zap') %><%= s.connected ? t('comms.connected') : t('comms.not_connected') %></span></div>
+  <p class="small muted mb0"><%= t('sso.setup_' + p) %></p>
+  <%- include('../../../partials/field', { name: 'enabled', label: t('sso.enable'), type: 'checkbox', value: s.enabled }) %>
+  <div class="cluster">
+    <%- include('../../../partials/field', { name: 'students', label: t('sso.for_students'), type: 'checkbox', value: s.students === undefined ? true : s.students }) %>
+    <%- include('../../../partials/field', { name: 'staff', label: t('sso.for_staff'), type: 'checkbox', value: s.staff }) %>
+  </div>
+  <div class="form-grid two">
+    <%- include('../../../partials/field', { name: 'client_id', label: t('sso.client_id'), value: s.client_id, attrs: 'dir="ltr"' }) %>
+    <%- include('../../../partials/field', { name: 'client_secret', label: t('sso.client_secret'), type: 'password', placeholder: s.hasSecret ? t('integrations.saved_secret') : '', attrs: 'autocomplete="new-password" dir="ltr"', hint: t('integrations.password_hint') }) %>
+    <% if (p === 'microsoft') { %><%- include('../../../partials/field', { name: 'tenant', label: t('sso.tenant'), value: s.tenant || 'common', attrs: 'dir="ltr"', hint: t('sso.tenant_hint') }) %><% } %>
+  </div>
+  <div class="card flat small"><strong><%= t('sso.redirect_uri') %></strong><div><code dir="ltr"><%= s.redirect %></code> <button type="button" class="btn sm" data-copy="<%= s.redirect %>" data-copied="<%= t('common.copied') %>"><%- icon('copy') %><%= t('common.copy') %></button></div></div>
+  <p class="small subtle mb0"><%- icon('lock', 'sm') %> <%= t('integrations.encrypted') %></p>
+  <div class="form-actions"><button class="btn primary" type="submit"><%= t('common.save') %></button></div>
+</form>
+<% }) %>

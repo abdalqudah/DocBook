@@ -14,10 +14,10 @@ const nav = require('../site/nav');
 nav.add({ key: 'advisor', href: '/advisor', order: 45, more: true });
 const router = express.Router();
 
-router.get('/register', (req, res) => {
+router.get('/register', ah(async (req, res) => {
   if (req.user && req.user.kind === 'student') return res.redirect('/portal');
-  return res.page('pages/auth/register', { layout: 'auth', title: req.t('portal.register_title'), old: { email: req.query.email || '' }, errors: {} });
-});
+  return res.page('pages/auth/register', { layout: 'auth', title: req.t('portal.register_title'), old: { email: req.query.email || '' }, errors: {}, sso: await require('../auth/sso').available('student') }); // eslint-disable-line global-require
+}));
 
 router.post('/register', limits.register, ah(async (req, res) => {
   if (capture.isBot(req)) return res.page('pages/auth/register-sent', { layout: 'auth', title: req.t('portal.check_email'), sent: true });

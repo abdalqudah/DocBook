@@ -210,7 +210,9 @@ router.post('/notifications/read', ah(async (req, res) => {
 
 router.get('/settings', ah(async (req, res) => {
   const user = await knex('users').where({ id: req.user.id }).first();
-  res.page('pages/portal/settings', { layout: 'portal', narrow: true, title: req.t('portal.settings'), prefs: notifications.prefsOf(user), categories: notifications.CATEGORIES, channels: await require('../comms/channels').status(), s: req.student, errors: {} }); // eslint-disable-line global-require
+  const sso = require('../auth/sso'); // eslint-disable-line global-require
+  const conn = { providers: await sso.available('student'), identities: await sso.identitiesOf(user.id), hasPassword: !!user.password_hash };
+  res.page('pages/portal/settings', { layout: 'portal', narrow: true, title: req.t('portal.settings'), prefs: notifications.prefsOf(user), categories: notifications.CATEGORIES, channels: await require('../comms/channels').status(), s: req.student, conn, errors: {} }); // eslint-disable-line global-require
 }));
 router.post('/settings/notifications', ah(async (req, res) => {
   const user = await knex('users').where({ id: req.user.id }).first();

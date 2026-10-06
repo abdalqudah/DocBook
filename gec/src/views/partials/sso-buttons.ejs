@@ -1,0 +1,6 @@
+<% if (ssoList && ssoList.length) { %>
+<div class="sso">
+  <div class="sso-or"><span><%= t('sso.or') %></span></div>
+  <% ssoList.forEach(function (p) { %><a class="btn block sso-btn" href="/auth/<%= p %>/start?portal=<%= portal %>"><img src="/brand/sso-<%= p %>.svg" alt="" width="18" height="18"><%= t('sso.continue_with', { provider: t('sso.' + p) }) %></a><% }) %>
+</div>
+<% } %>

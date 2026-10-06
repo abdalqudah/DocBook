@@ -7,6 +7,7 @@
   <div class="field"><div class="spread"><label for="password"><%= t('auth.password') %></label><a class="small" href="<%= portal === 'staff' ? '/staff/forgot' : '/forgot' %>"><%= t('auth.forgot_link') %></a></div><input id="password" type="password" name="password" autocomplete="current-password" required></div>
   <button class="btn primary block lg" type="submit"><%= t('auth.sign_in') %></button>
 </form>
+<%- include('../../partials/sso-buttons', { ssoList: typeof sso !== 'undefined' ? sso : [], portal: portal }) %>
 <% if (portal === 'student') { %>
 <p class="auth-foot"><%= t('auth.no_account') %> <a href="/register"><%= t('auth.create_account') %></a></p>
 <% } %>

@@ -1,0 +1,18 @@
+<%# include('partials/sso-connections', { conn: { providers: [...], identities: [...], hasPassword } }) %>
+<% if (conn && conn.providers.length) { %>
+<section class="card mb4" id="sign-in-methods">
+  <div class="card-head"><h2><%= t('sso.connected_title') %></h2></div>
+  <p class="small muted"><%= t('sso.connected_lead') %></p>
+  <div class="divider-list">
+  <% conn.providers.forEach(function (p) { var id = conn.identities.find(function (x) { return x.provider === p; }); %>
+    <div class="list-item">
+      <img src="/brand/sso-<%= p %>.svg" alt="" width="20" height="20">
+      <div class="li-body"><div class="li-title"><%= t('sso.' + p) %></div><div class="li-sub"><%= id ? (id.email || '') + (id.last_used_at ? ' · ' + t('sso.last_used', { when: fmt.relative(id.last_used_at) }) : '') : t('sso.not_connected') %></div></div>
+      <% if (id) { %><form method="post" action="/auth/<%= p %>/disconnect" data-confirm="<%= t('sso.disconnect_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm ghost" type="submit"><%= t('sso.disconnect') %></button></form>
+      <% } else { %><form method="post" action="/auth/<%= p %>/connect"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn sm" type="submit"><%= t('sso.connect') %></button></form><% } %>
+    </div>
+  <% }) %>
+  </div>
+  <% if (!conn.hasPassword) { %><p class="small subtle mb0 mt2"><%- icon('info', 'sm') %> <%= t('sso.no_password') %></p><% } %>
+</section>
+<% } %>
