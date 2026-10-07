@@ -22,6 +22,25 @@
     </div>
   </section>
 
+  <% var formOn = function (k) { return oldv ? [].concat(oldv.forms || []).indexOf(k) >= 0 : s.forms.indexOf(k) >= 0; }; var Lf = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+  <section class="panel" id="forms">
+    <div class="panel-head"><div><h2><%= t('spforms.settings_title') %></h2><div class="panel-sub"><%= t('spforms.settings_sub') %></div></div></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="forms_present" value="1">
+      <% if (s.doctorSpecialties.length) { %><p class="small muted"><%- icon('stethoscope', 'icon-sm') %> <%= t('spforms.doctor_specialties', { list: s.doctorSpecialties.map(function (k) { return t('specialties.' + k); }).join('، ') }) %></p><% } else { %><p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('spforms.set_doctor_specialty') %> <a href="/app/doctors"><%= t('nav.doctors') %></a></p><% } %>
+      <% formGroups.forEach(function (g) { %>
+      <fieldset class="sf-set">
+        <legend class="small strong"><%= t('specialties.' + g.key) %></legend>
+        <ul class="sp-modules">
+          <% g.forms.forEach(function (f) { %>
+          <li><label class="sp-module"><input type="checkbox" name="forms" value="<%= f.key %>"<%= formOn(f.key) ? ' checked' : '' %>><span class="action-icon"><%- icon(f.icon || 'clipboard-list') %></span><span class="grow"><span class="strong"><%= Lf(f.ar, f.en) %></span><span class="tiny muted" style="display:block"><%= f.specialties.map(function (k) { return t('specialties.' + k); }).join(' · ') %></span></span><% if (s.formDefaults.indexOf(f.key) >= 0) { %><span class="badge badge-neutral"><%= t('spforms.default_badge') %></span><% } %></label></li>
+          <% }) %>
+        </ul>
+      </fieldset>
+      <% }) %>
+    </div>
+  </section>
+
   <% if (modules.indexOf('pregnancy') >= 0) { %>
   <section class="panel" id="schedule">
     <div class="panel-head"><h2><%= t('pregnancy.schedule') %></h2><% if (s.customSchedule) { %><span class="badge badge-neutral"><%= t('specialty_mod.customised') %></span><% } %></div>

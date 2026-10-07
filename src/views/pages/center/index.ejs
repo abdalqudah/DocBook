@@ -69,6 +69,7 @@
         <%- include('../../partials/field', { name: 'doctor_name', label: t('center.doctor_name'), required: true, placeholder: t('center.doctor_name_ph') }) %>
         <div data-ctr-email><%- include('../../partials/field', { name: 'email', label: t('center.doctor_email'), type: 'email', required: true, attrs: 'dir="ltr"', help: t('center.doctor_email_help') }) %></div>
         <%- include('../../partials/field', { name: 'practice_name', label: t('center.practice_name'), placeholder: t('center.practice_name_ph') }) %>
+        <%- include('../../partials/field', { name: 'specialty_key', label: t('doctors.specialty_key'), type: 'select', options: specialtyOptions, placeholder: t('doctors.specialty_key_none'), help: t('center.doctor_specialty_help') }) %>
         <%- include('../../partials/field', { name: 'specialization', label: t('center.doctor_spec') }) %>
         <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', attrs: 'dir="ltr"' }) %>
         <button class="btn btn-primary" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('center.add_doctor_btn') %></button>

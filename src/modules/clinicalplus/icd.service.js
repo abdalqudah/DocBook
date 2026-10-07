@@ -83,8 +83,10 @@ function rank(entries, q, uses = new Map(), limit = 20, mine = null) {
 async function search(businessId, q, { limit = 20 } = {}) {
   if (norm(q).replace(/\s/g, '').length < 2) return [];
   const [custom, uses, biz] = await Promise.all([activeCustom(businessId), usage(businessId), knex('businesses').where({ id: businessId }).first('specialty')]);
-  const spec = biz && biz.specialty;
-  return rank([...custom.map(customEntry), ...INDEX], q, uses, limit, spec ? (code) => SPEC.belongs(spec, code) : null);
+  // The clinic's specialty and its doctors' (a centre or a multi-specialty clinic): their codes come first.
+  const docSpecs = await require('../specialty/service').doctorSpecialties(businessId).catch(() => []); // eslint-disable-line global-require
+  const specs = [...new Set([biz && biz.specialty, ...docSpecs].filter(Boolean))].filter((s, _, all) => all.length === 1 || !['general', 'multi', 'other'].includes(s));
+  return rank([...custom.map(customEntry), ...INDEX], q, uses, limit, specs.length ? (code) => specs.some((s) => SPEC.belongs(s, code)) : null);
 }
 
 /** The ready diagnosis table of a specialty: its ICD-10 codes from the bundled list, in code order. */

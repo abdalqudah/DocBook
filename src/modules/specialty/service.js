@@ -12,12 +12,15 @@ const growth = require('./growth');
 const preg = require('./pregnancy');
 
 const MODULES = ['dental', 'growth', 'pregnancy'];
-// Which modules a specialty turns on by default. General / multi-specialty / other / not set → all three.
-const BY_SPECIALTY = { dentistry: ['dental'], paediatrics: ['growth'], obgyn: ['pregnancy'] };
+const forms = require('./forms');
+const catalogue = require('./catalogue');
+// General / multi-specialty / other / not set → all three record screens.
 const ALL_BY_DEFAULT = new Set(['general', 'multi', 'other', '', null, undefined]);
-function defaultModules(specialty) {
-  if (BY_SPECIALTY[specialty]) return BY_SPECIALTY[specialty];
-  return ALL_BY_DEFAULT.has(specialty) ? MODULES : [];
+/** Record screens on by default: a broad clinic gets all three; else those of its specialty and its doctors'. */
+function defaultModules(specialty, doctorSpecialties = []) {
+  if (ALL_BY_DEFAULT.has(specialty)) return MODULES;
+  const specs = [specialty, ...doctorSpecialties].filter((k) => k && catalogue.has(k));
+  return MODULES.filter((m) => specs.some((k) => forms.moduleFor(m, k)));
 }
 
 /**
@@ -29,19 +32,32 @@ function shownModules(business, s) {
   return MODULES.filter((m) => s.defaults.includes(m) || s[m]);
 }
 
+/** Specialties of the clinic's active doctors (each doctor's records follow their own specialty). */
+const doctorSpecialties = (businessId) => cache.remember(`spec:${businessId}:docs`, async () => (await knex('doctors').where({ business_id: businessId, is_active: true }).whereNotNull('specialty_key').distinct().pluck('specialty_key')).filter((k) => catalogue.has(k)), 60_000);
+
 const parseJson = (v, d) => { try { return typeof v === 'string' ? JSON.parse(v) : (v || d); } catch { return d; } };
 const nOrNull = (v) => (v === null || v === undefined ? null : Number(v));
 
 // ---------------------------------------------------------------- settings
 async function settings(business) {
-  const row = await cache.remember(`spec:${business.id}`, async () => (await knex('specialty_settings').where({ business_id: business.id }).first()) || false, 60_000);
-  const defaults = defaultModules(business.specialty);
+  const [row, docSpecs] = await Promise.all([
+    cache.remember(`spec:${business.id}`, async () => (await knex('specialty_settings').where({ business_id: business.id }).first()) || false, 60_000),
+    doctorSpecialties(business.id),
+  ]);
+  const defaults = defaultModules(business.specialty, docSpecs);
   const on = {};
   MODULES.forEach((m) => {
     const v = row ? row[`${m}_enabled`] : null;
     on[m] = v === null || v === undefined ? defaults.includes(m) : Boolean(v);
   });
-  return { ...on, any: MODULES.some((m) => on[m]), defaults, explicit: Boolean(row), schedule: preg.normaliseSchedule(row ? row.pregnancy_schedule : null), customSchedule: Boolean(row && row.pregnancy_schedule) };
+  const formDefaults = forms.defaults(business.specialty, docSpecs);
+  const formsOn = parseJson(row && row.forms_on, []).filter((k) => forms.get(k));
+  const formsOff = parseJson(row && row.forms_off, []).filter((k) => forms.get(k));
+  const enabled = forms.KEYS.filter((k) => formsOn.includes(k) || (formDefaults.includes(k) && !formsOff.includes(k)));
+  return {
+    ...on, any: MODULES.some((m) => on[m]) || enabled.length > 0, defaults, explicit: Boolean(row), schedule: preg.normaliseSchedule(row ? row.pregnancy_schedule : null), customSchedule: Boolean(row && row.pregnancy_schedule),
+    forms: enabled, formDefaults, doctorSpecialties: docSpecs,
+  };
 }
 
 const scheduleItem = z.object({
@@ -73,6 +89,15 @@ async function saveSettings(ctx, business, input) {
     items.sort((a, b) => a.from - b.from || a.to - b.to);
     const same = JSON.stringify(items) === JSON.stringify(preg.DEFAULT_SCHEDULE.map((i) => ({ key: i.key, label: '', from: i.from, to: i.to, rhNeg: Boolean(i.rhNeg) })));
     schedule = items.length && !same ? JSON.stringify(items) : null;
+  }
+  if (input.forms_present === '1') {
+    // Stored relative to the defaults, so a form of a doctor added later still switches on by itself.
+    const chosen = new Set([].concat(input.forms || []).filter((k) => forms.get(k)));
+    const docSpecs = await doctorSpecialties(ctx.businessId);
+    const business = await knex('businesses').where({ id: ctx.businessId }).first('specialty');
+    const defs = forms.defaults(business && business.specialty, docSpecs);
+    patch.forms_on = JSON.stringify(forms.KEYS.filter((k) => chosen.has(k) && !defs.includes(k)));
+    patch.forms_off = JSON.stringify(defs.filter((k) => !chosen.has(k)));
   }
   const before = await knex('specialty_settings').where({ business_id: ctx.businessId }).first();
   // The antenatal schedule is only on the page when pregnancy follow-up is offered: otherwise keep what is stored.
@@ -398,10 +423,12 @@ async function setCheck(ctx, patient, pregId, key, done, doneOn, schedule) {
 
 // ---------------------------------------------------------------- panel summary
 /** What the visit / patient page panels show. Returns null when nothing should render. */
-async function summary(ctx, business, patient) {
+async function summary(ctx, business, patient, { doctorId = null } = {}) {
   if (!ctx.permissions.has('clinical.view') || !patient) return null;
   const s = await settings(business);
-  if (!s.any) return null;
+  const recs = require('./records.service'); // eslint-disable-line global-require
+  const latest = await recs.latest(ctx, patient.id, forms.KEYS);
+  if (!s.any && !Object.keys(latest).length) return null;
   const rel = relevance(patient, ctx.today);
   const out = { patientId: patient.id, modules: [] };
   if (s.dental && rel.dental) {
@@ -426,10 +453,17 @@ async function summary(ctx, business, patient) {
     }
     out.modules.push({ key: 'pregnancy', active: active ? { id: active.id, edd: active.edd, ga: preg.gaDaysOn(active.edd, ctx.today), overdue: due } : null });
   }
-  return out.modules.length ? out : null;
+  // Specialty forms: the visit doctor's own specialty first, then those with records, then the rest (the panel shows a few).
+  const list = await recs.formsFor(ctx, s, doctorId || ctx.doctorId);
+  const rows = list.map(({ form, mine }) => ({ key: form.key, ar: form.ar, en: form.en, icon: form.icon, mine, last: latest[form.key] || null, on: true }));
+  Object.keys(latest).filter((k) => !s.forms.includes(k)).forEach((k) => { const f = forms.get(k); if (f) rows.push({ key: k, ar: f.ar, en: f.en, icon: f.icon, mine: false, last: latest[k], on: false }); });
+  rows.sort((a, b) => (b.mine - a.mine) || (Boolean(b.last) - Boolean(a.last)));
+  out.forms = rows.slice(0, 8);
+  out.formsTotal = rows.length;
+  return out.modules.length || out.forms.length ? out : null;
 }
 
-module.exports = { shownModules,
+module.exports = { shownModules, doctorSpecialties,
   MODULES, defaultModules, settings, saveSettings, patientFor, visitFor, relevance, ageDays,
   dentalData, addDentalEntry, voidDentalEntry, addPlanItem, setPlanStatus, deletePlanItem,
   growthData, addMeasurement, deleteMeasurement,

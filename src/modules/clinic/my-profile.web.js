@@ -17,6 +17,7 @@ async function render(req, res, extra = {}) {
     title: req.t('myprofile.title'), doctor, d: doctor, services, categories: categories.filter((c) => c.is_active), photo: photos[doctor.id] || null,
     profile: require('./doctor-profile').clean(doctor.profile), // eslint-disable-line global-require
     socialKeys: require('./doctor-social').KEYS, socialOf: require('./doctor-social').read, // eslint-disable-line global-require
+    specialtyOptions: require('../specialty/catalogue').doctorOptions(req.t), // eslint-disable-line global-require
     ...extra,
   });
 }

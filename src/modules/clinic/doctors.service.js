@@ -12,10 +12,15 @@ const services = repo({ table: 'services', entity: 'service', searchable: ['name
 const bool = () => z.preprocess((v) => v === '1' || v === 'on' || v === true || v === 1, z.boolean());
 const int = (min, max) => z.preprocess((v) => (v === '' || v === undefined ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a number.').min(min, 'Too small.').max(max, 'Too large.'));
 const email = () => z.preprocess(emptyToUndefined, z.string().trim().email('Enter a valid email address.').max(190).optional());
+// The doctor's specialty from the catalogue: their specialty records follow it (a centre or a multi-specialty clinic).
+const specialtyKey = () => z.preprocess(emptyToUndefined, z.string().refine((v) => require('../specialty/catalogue').has(v), 'Choose a valid value.').optional()); // eslint-disable-line global-require
+const forgetSpecialty = (businessId) => require('../../core/cache').forgetPrefix(`spec:${businessId}`); // eslint-disable-line global-require
+// Procedure codes: the clinic's own (CPT, CDT, an insurer's list, a local code). Not shipped — they are licensed.
+const CODE_SYSTEMS = ['cpt', 'cdt', 'icd10pcs', 'hcpcs', 'insurer', 'local'];
 
 const doctorSchema = z.object({
   full_name: z.string().trim().min(1, 'Required.').max(190),
-  full_name_en: optionalString(190), specialization: optionalString(190), specialization_en: optionalString(190),
+  full_name_en: optionalString(190), specialization: optionalString(190), specialization_en: optionalString(190), specialty_key: specialtyKey(),
   bio: optionalString(5000), bio_en: optionalString(5000), education: optionalString(3000), education_en: optionalString(3000),
   phone: optionalString(40), whatsapp: optionalString(40), email: email(), license_number: optionalString(100), room: optionalString(20),
   slot_duration_minutes: int(5, 240), consultation_fee: money(), show_consultation_fee: bool(), base_salary: money(), is_active: bool(),
@@ -34,6 +39,7 @@ async function saveDoctor(ctx, id, input) {
   const d = validate(doctorSchema, input);
   const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
   if (!('room' in (input || {}))) delete row.room; // forms that do not show the room (setup, API) keep it
+  if (!('specialty_key' in (input || {}))) delete row.specialty_key; // only forms with the specialty list change it
   ['bank_name', 'iban'].forEach((k) => { if (!(k in (input || {}))) delete row[k]; }); // only the doctor form carries the bank details
   if (row.iban) row.iban = String(row.iban).replace(/[\s-]+/g, '').toUpperCase();
   // Social-media profiles (only the doctor form carries them).
@@ -67,6 +73,7 @@ async function saveDoctor(ctx, id, input) {
     id = await doctors.create(ctx, row); // eslint-disable-line no-param-reassign
   }
   if (online) await tele.applyDoctorOnline(ctx, id, online);
+  forgetSpecialty(ctx.businessId); // the clinic's specialty records follow its doctors' specialties
   // A doctor moving to another branch takes their upcoming appointments along (the visit is where the doctor is).
   if (branchMoved) {
     const today = ctx.today || scheduling.clinicNow(ctx.timezone || 'Asia/Amman').date;
@@ -109,6 +116,8 @@ const serviceSchema = z.object({
   duration_minutes: z.preprocess((v) => (v === '' || v === undefined || v === null ? undefined : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a number.').min(5, 'Too small.').max(480, 'Too large.').optional()), is_active: bool(),
   doctor_id: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
   sort_order: z.preprocess((v) => (v === '' || v === undefined ? 0 : Number(v)), z.number().int().min(0).max(9999)),
+  code: z.preprocess(emptyToUndefined, z.string().trim().max(40).regex(/^[A-Za-z0-9][A-Za-z0-9.\-/ ]*$/, 'Use letters, digits, dots and dashes only.').optional()),
+  code_system: z.preprocess(emptyToUndefined, z.enum(CODE_SYSTEMS).optional()),
 });
 
 async function saveService(ctx, id, input) {
@@ -117,6 +126,8 @@ async function saveService(ctx, id, input) {
   const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
   // "Show on the website" is only on the Services form (site_field=1); other forms leave it as it is.
   if (input && input.site_field === '1') row.show_on_site = ['1', 'on', true].includes(input.show_on_site);
+  // The procedure code is only on the Services form (code_field=1).
+  if (!(input && input.code_field === '1')) { delete row.code; delete row.code_system; } else if (!row.code) row.code_system = null;
   if (id) { await services.update(ctx, id, row); return id; }
   return services.create(ctx, row);
 }
@@ -129,7 +140,7 @@ const servicesFor = (ctx, doctorId) => knex('services').where({ business_id: ctx
 // A doctor linked to their login edits their own public profile and their own services — never another doctor's,
 // and never what the clinic decides (name, fee, hours, appointment length, active, branch, pay).
 const ownProfileSchema = z.object({
-  specialization: optionalString(190), specialization_en: optionalString(190),
+  specialization: optionalString(190), specialization_en: optionalString(190), specialty_key: specialtyKey(),
   bio: optionalString(5000), bio_en: optionalString(5000), education: optionalString(3000), education_en: optionalString(3000),
 });
 const myDoctorId = (ctx) => { if (!ctx.doctorId) throw E.forbidden(); return ctx.doctorId; };
@@ -143,7 +154,9 @@ async function saveOwnProfile(ctx, input) {
   row.social_links = Object.keys(links).length ? JSON.stringify(links) : null;
   const prof = require('./doctor-profile'); // eslint-disable-line global-require
   row.profile = prof.toStore(prof.fromForm(input || {}));
+  if (!('specialty_key' in (input || {}))) delete row.specialty_key;
   await doctors.update(ctx, id, row); // audited (doctor.updated)
+  forgetSpecialty(ctx.businessId);
   await audit.record(ctx, 'doctor.own_profile_saved', { entityType: 'doctor', entityId: id });
 }
 
@@ -170,4 +183,4 @@ async function removeOwnService(ctx, id) {
   await services.remove(ctx, id);
 }
 
-module.exports = { saveOwnProfile, ownServices, saveOwnService, removeOwnService, doctors, services, saveDoctor, saveService, listActive, daysOff, addDayOff, removeDayOff, servicesFor, parseWh };
+module.exports = { CODE_SYSTEMS, saveOwnProfile, ownServices, saveOwnService, removeOwnService, doctors, services, saveDoctor, saveService, listActive, daysOff, addDayOff, removeDayOff, servicesFor, parseWh };

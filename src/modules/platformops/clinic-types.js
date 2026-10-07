@@ -9,8 +9,7 @@ const { dictionaries } = require('../../core/i18n');
 const { E } = require('../../core/errors');
 
 const KEY = 'clinic_types';
-const BUILTIN = ['general', 'dentistry', 'dermatology', 'paediatrics', 'obgyn', 'orthopaedics', 'ophthalmology', 'ent', 'cardiology',
-  'physiotherapy', 'psychiatry', 'nutrition', 'cosmetic', 'multi', 'other'];
+const BUILTIN = require('../specialty/catalogue').KEYS;
 const MAX_CUSTOM = 60;
 let state = { hidden: [], custom: [], at: 0 };
 

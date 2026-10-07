@@ -13,8 +13,7 @@ const { translator } = require('../../core/i18n');
 const scheduling = require('../clinic/scheduling');
 
 const types = require('../platformops/clinic-types');
-const SPECIALTIES = ['general', 'dentistry', 'dermatology', 'paediatrics', 'obgyn', 'orthopaedics', 'ophthalmology', 'ent', 'cardiology',
-  'physiotherapy', 'psychiatry', 'nutrition', 'cosmetic', 'multi', 'other'];
+const SPECIALTIES = require('../specialty/catalogue').KEYS;
 const HORIZON_DAYS = 14;
 const NEXT_TTL = 5 * 60_000;
 const LIST_TTL = 60_000;

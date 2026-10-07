@@ -236,6 +236,7 @@
     "expense_for": "This expense is for",
     "expense_for_all": "All clinics (split between them)",
     "expense_for_one": "{name} only",
-    "doctor_site": "Doctor's website"
+    "doctor_site": "Doctor's website",
+    "doctor_specialty_help": "The doctor’s practice in the centre takes this specialty and gets its specialty records automatically."
   }
 }

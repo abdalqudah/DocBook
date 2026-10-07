@@ -18,6 +18,9 @@
     "bilingual_hint": "Arabic is required; English is shown when the page is in English.",
     "name_ar": "Name (Arabic)",
     "name_en": "Name (English)",
+    "specialty_key": "Medical specialty",
+    "specialty_key_none": "— Choose the specialty —",
+    "specialty_key_help": "Sets the specialty records shown for this doctor (such as the eye exam or the audiogram).",
     "specialization_ar": "Specialty (Arabic)",
     "specialization_en": "Specialty (English)",
     "bio_ar": "About (Arabic)",
@@ -131,6 +134,17 @@
     "billing_note": "The price here is shown on the website and suggested only: the bill comes from the services the doctor enters in the visit.",
     "off_site": "Hidden from the website",
     "no_fixed_time": "No fixed time",
-    "duration_help": "Leave empty for a service with no fixed time: the appointment takes the doctor's usual length."
+    "duration_help": "Leave empty for a service with no fixed time: the appointment takes the doctor's usual length.",
+    "code": "Procedure code",
+    "code_help": "The service code used by insurers or your own system (optional).",
+    "code_system": "Code system",
+    "code_systems": {
+      "cpt": "CPT",
+      "cdt": "CDT (dental)",
+      "icd10pcs": "ICD-10-PCS",
+      "hcpcs": "HCPCS",
+      "insurer": "Insurer code",
+      "local": "Internal code"
+    }
   }
 }

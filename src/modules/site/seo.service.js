@@ -356,7 +356,8 @@ function clinicLd({ clinic, doctors, base, locale, ws = null }) {
   const out = [ld];
   if (!ws) return out;
   // Website (builder) details: precise type, map position, areas, price level, services and prices, profiles, FAQ.
-  const sp = SPECIALTY_LD[clinic.specialtyKey];
+  const cat = require('../specialty/catalogue'); // eslint-disable-line global-require
+  const sp = cat.pick(clinic.specialtyKey, SPECIALTY_LD) || (cat.get(clinic.specialtyKey) && cat.get(clinic.specialtyKey).ld ? { specialty: cat.get(clinic.specialtyKey).ld } : null);
   if (sp && sp.type) ld['@type'] = ['MedicalClinic', sp.type];
   if (sp && sp.specialty) ld.medicalSpecialty = sp.specialty;
   const sd = ws.seo || {};

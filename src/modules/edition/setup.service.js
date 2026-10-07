@@ -1,5 +1,5 @@
 // First start of a single-clinic / single-centre installation (src/config/edition.js): when there is no clinic yet,
-// it is created from .env (CLINIC_NAME, CLINIC_SLUG, CLINIC_CURRENCY, CLINIC_TIMEZONE, CLINIC_CITY) and given to the
+// it is created from .env (CLINIC_NAME, CLINIC_SLUG, CLINIC_CURRENCY, CLINIC_TIMEZONE, CLINIC_CITY, CLINIC_SPECIALTY) and given to the
 // installation's own account (SUPER_ADMIN_EMAIL) as its owner. A centre gets its administration account and the
 // centre itself; the doctors' clinics are then added from the centre's pages. Never touches an existing clinic.
 const knex = require('../../db/knex');
@@ -11,7 +11,14 @@ async function ensure() {
   const k = knex.main;
   const q = k('businesses').whereNot('status', 'deleted');
   const existing = edition.center ? await q.where({ kind: 'center_admin' }).first('id') : await q.whereNot('kind', 'center_admin').whereNull('center_id').first('id');
-  if (existing) return existing.id;
+  const catalogue = require('../specialty/catalogue'); // eslint-disable-line global-require
+  const specialty = edition.setup.specialty && catalogue.has(edition.setup.specialty) ? edition.setup.specialty : null;
+  if (edition.setup.specialty && !specialty) console.warn(`[setup] CLINIC_SPECIALTY "${edition.setup.specialty}" is not a known specialty; ignored.`); // eslint-disable-line no-console
+  if (existing) {
+    // A clinic that has no specialty yet takes the one in .env (a chosen one is never changed).
+    if (specialty) await k('businesses').where({ id: existing.id }).whereNull('specialty').update({ specialty });
+    return existing.id;
+  }
   const email = config.superAdmin && config.superAdmin.email;
   const owner = email ? await k('users').where({ email }).first('id') : null;
   if (!owner) {
@@ -24,7 +31,7 @@ async function ensure() {
   const s = edition.setup;
   const name = s.name || (edition.center ? 'المركز الطبي' : 'العيادة');
   const bid = await knex.transaction(async (trx) => {
-    const id = await businesses.create(owner.id, { name, currency: s.currency, timezone: s.timezone, city: s.city, country: options.countryForZone(s.timezone) }, trx);
+    const id = await businesses.create(owner.id, { name, currency: s.currency, timezone: s.timezone, city: s.city, country: options.countryForZone(s.timezone), specialty }, trx);
     if (s.nameEn) await trx('businesses').where({ id }).update({ name_en: s.nameEn });
     if (edition.center) {
       await centers.create({ businessId: id, userId: owner.id }, { name, name_en: s.nameEn || undefined }, trx);

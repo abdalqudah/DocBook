@@ -29,5 +29,8 @@ module.exports = {
     currency: (process.env.CLINIC_CURRENCY || 'JOD').trim().toUpperCase(),
     timezone: (process.env.CLINIC_TIMEZONE || 'Asia/Amman').trim(),
     city: (process.env.CLINIC_CITY || '').trim() || null,
+    // The clinic's specialty (a key of src/modules/specialty/catalogue.js): its specialty records, diagnosis table,
+    // website template and suggested services. A centre is multi-specialty (each doctor has their own).
+    specialty: (process.env.CLINIC_SPECIALTY || '').trim().toLowerCase() || (EDITION === 'center' ? 'multi' : null),
   },
 };

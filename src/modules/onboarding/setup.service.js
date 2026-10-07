@@ -68,7 +68,7 @@ const CATALOG = {
 CATALOG.multi = [...COMMON, S('report', 'تقرير طبي', 'Medical report', 10)];
 
 /** Suggested services for a clinic specialty (general practice when the clinic has none or several). */
-const suggestions = (specialty) => CATALOG[specialty] || CATALOG.general;
+const suggestions = (specialty) => require('../specialty/catalogue').pick(specialty, CATALOG) || CATALOG.general; // eslint-disable-line global-require
 
 // ---------------------------------------------------------------- shared helpers
 const phone = () => z.preprocess(emptyToUndefined, z.string().trim().max(40).regex(/^[+0-9\s()-]{6,40}$/, 'Enter a valid phone number.').optional());

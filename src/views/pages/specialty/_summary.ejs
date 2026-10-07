@@ -14,6 +14,11 @@
     <li><a href="<%= base %>pregnancy<%= vq %>"><span class="action-icon"><%- icon('baby') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= t('pregnancy.title') %></div><div class="tiny muted"><% if (m.active) { %><span dir="ltr"><%= Math.floor(Math.max(m.active.ga, 0) / 7) %>+<%= Math.max(m.active.ga, 0) % 7 %></span> <%= t('pregnancy.weeks_short') %> · <%= t('pregnancy.edd_short') %> <%= fmt.date(m.active.edd) %><% } else { %><%= t('pregnancy.summary_none') %><% } %></div><% if (m.active && m.active.overdue) { %><div class="mt-1"><span class="badge badge-danger badge-dot"><%= t('pregnancy.summary_overdue', { n: m.active.overdue }) %></span></div><% } %></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
     <% } %>
     <% }) %>
+    <% var tone = { ok: 'badge-success', mild: 'badge-info', warn: 'badge-warning', bad: 'badge-danger' }; var Lx = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
+    <% (sp.forms || []).forEach(function (f) { var r0 = f.last && f.last.results && f.last.results[0]; %>
+    <li><a href="<%= base %>records/<%= f.key %><%= vq %>"><span class="action-icon"><%- icon(f.icon || 'clipboard-list') %></span><div class="grow" style="min-width:0"><div class="strong small"><%= Lx(f.ar, f.en) %></div><div class="tiny muted"><% if (f.last) { %><%= fmt.date(f.last.date) %><% if (r0) { %> · <span dir="ltr"><%= r0.v %><%= r0.unit ? ' ' + r0.unit : '' %></span><% } %><% } else { %><%= t('spforms.no_records') %><% } %></div><% if (r0 && r0.band && r0.level && r0.level !== 'ok') { %><div class="mt-1"><span class="badge badge-dot <%= tone[r0.level] %>"><%= Lx(r0.band.ar, r0.band.en) %></span></div><% } %></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li>
+    <% }) %>
+    <% if ((sp.formsTotal || 0) > 0) { %><li><a href="<%= base %>records<%= vq %>"><span class="action-icon"><%- icon('layout-grid') %></span><div class="grow strong small"><%= t('spforms.all_forms', { n: sp.formsTotal }) %></div><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a></li><% } %>
   </ul>
   <% if (sp.visitId && (canEdit || canGrowth)) { %>
   <div class="panel-foot"><div class="tiny muted" style="margin-bottom:8px"><%= t('specialty_mod.record_from_visit') %></div><div class="row-sm wrap">
@@ -22,6 +27,7 @@
       <% if (m.key === 'growth' && canGrowth) { %><a class="btn btn-secondary btn-sm" href="<%= base %>growth?visit=<%= sp.visitId %>&record=1"><%- icon('plus', 'icon-sm') %><%= t('child_growth.add_short') %></a><% } %>
       <% if (m.key === 'pregnancy' && canEdit) { %><a class="btn btn-secondary btn-sm" href="<%= base %>pregnancy?visit=<%= sp.visitId %>&record=1"><%- icon('plus', 'icon-sm') %><%= m.active ? t('pregnancy.add_visit_short') : t('pregnancy.start_short') %></a><% } %>
     <% }) %>
+    <% if (canEdit) { (sp.forms || []).filter(function (f) { return f.mine && f.on; }).slice(0, 4).forEach(function (f) { %><a class="btn btn-secondary btn-sm" href="<%= base %>records/<%= f.key %>/new?visit=<%= sp.visitId %>"><%- icon('plus', 'icon-sm') %><%= Lx(f.ar, f.en) %></a><% }); } %>
   </div></div>
   <% } %>
 </div>

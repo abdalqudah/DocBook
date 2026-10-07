@@ -1,0 +1,33 @@
+<%# The patient's specialty forms: every form the clinic has on (the visit doctor's specialty first) with its latest result. %>
+<% var tone = { ok: 'badge-success', mild: 'badge-info', warn: 'badge-warning', bad: 'badge-danger' }; var canEdit = can('clinical.edit'); %>
+<%- include('_rec-head', { form: null }) %>
+<% if (!list.length && !extra.length && !settings.dental && !settings.growth && !settings.pregnancy) { %>
+<div class="panel"><div class="empty-state"><%- icon('clipboard-list') %><h3><%= t('spforms.none_on') %></h3><p><%= t('spforms.none_on_help') %></p><% if (can('settings.manage')) { %><a class="btn btn-primary" href="/app/specialty/settings"><%= t('spforms.choose_forms') %></a><% } %></div></div>
+<% } else { %>
+<div class="sf-cards">
+  <% [['dental', 'smile', 'dental.title'], ['growth', 'ruler', 'child_growth.title'], ['pregnancy', 'baby', 'pregnancy.title']].filter(function (m) { return settings[m[0]]; }).forEach(function (m) { %>
+  <article class="panel sf-card">
+    <a class="sf-card-main" href="/app/patients/<%= patient.id %>/<%= m[0] %><%= visit ? '?visit=' + visit.id : '' %>"><span class="action-icon"><%- icon(m[1]) %></span><span class="grow" style="min-width:0"><span class="strong sf-card-title"><%= t(m[2]) %></span><span class="tiny muted" style="display:block"><%= t('specialty_mod.module_desc.' + m[0]) %></span></span><%- icon('chevron-right', 'icon-sm flip-rtl muted') %></a>
+  </article>
+  <% }) %>
+  <% list.concat(extra.map(function (f) { return { form: f, mine: false, off: true }; })).forEach(function (it) { var f = it.form; var last = latest[f.key]; %>
+  <article class="panel sf-card">
+    <a class="sf-card-main" href="<%= recUrl('/' + f.key) %>">
+      <span class="action-icon"><%- icon(f.icon || 'clipboard-list') %></span>
+      <span class="grow" style="min-width:0">
+        <span class="strong sf-card-title"><%= L(f.ar, f.en) %></span>
+        <% if (it.mine) { %><span class="badge badge-neutral"><%= t('spforms.doctor_specialty') %></span><% } %>
+        <% if (it.off) { %><span class="badge badge-neutral"><%= t('spforms.turned_off') %></span><% } %>
+        <span class="tiny muted" style="display:block">
+          <% if (last) { %><%= fmt.date(last.date) %> · <%= t('spforms.n_records', { n: last.count }) %><% } else { %><%= t('spforms.no_records') %><% } %>
+        </span>
+      </span>
+      <% if (last && last.results[0]) { var r0 = last.results[0]; %><span class="sf-card-value <%= r0.level ? 'is-' + r0.level : '' %>" dir="ltr"><%= r0.v %><% if (r0.unit) { %> <small><%= r0.unit %></small><% } %></span><% } %>
+    </a>
+    <% if (last && last.results[0] && last.results[0].band) { %><div class="sf-card-band"><span class="badge badge-dot <%= tone[last.results[0].level] || 'badge-neutral' %>"><%= L(last.results[0].band.ar, last.results[0].band.en) %></span></div><% } %>
+    <% if (canEdit && !it.off) { %><div class="sf-card-foot"><a class="btn btn-secondary btn-sm" href="<%= recUrl('/' + f.key + '/new') %>"><%- icon('plus', 'icon-sm') %><%= t('spforms.new_entry') %></a></div><% } %>
+  </article>
+  <% }) %>
+</div>
+<% if (can('settings.manage')) { %><p class="small muted mt-3"><%- icon('settings', 'icon-sm') %> <a href="/app/specialty/settings#forms"><%= t('spforms.manage_forms') %></a></p><% } %>
+<% } %>

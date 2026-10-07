@@ -1,0 +1,48 @@
+<%# One specialty record: entered values, computed results, who and when; printable; removable (kept, with a reason). %>
+<% var canEdit = can('clinical.edit');
+   var actions = '<a class="btn btn-secondary" href="' + recUrl('/' + form.key + '/' + record.id, 'print=1') + '" target="_blank" rel="noopener">' + icon('printer', 'icon-sm') + t('common.print') + '</a>'; %>
+<%- include('_rec-head', { actions: actions }) %>
+<div class="sp-print-head"><h1><%= L(form.ar, form.en) %></h1><div class="sp-meta"><span class="strong" dir="auto"><%= patient.full_name %></span><% if (patient.date_of_birth) { %><span><%= t('patients.dob') %>: <%= fmt.date(patient.date_of_birth) %></span><% } %><% if (patient.gender) { %><span><%= t('patients.genders.' + patient.gender) %></span><% } %><span><%= t('spforms.date') %>: <%= fmt.date(record.record_date) %></span></div></div>
+<% if (record.voided_at) { %><div class="alert alert-warning"><%- icon('triangle-alert') %><div><%= t('spforms.removed_note', { date: fmt.date(record.voided_at) }) %><% if (record.void_reason) { %> — <span dir="auto"><%= record.void_reason %></span><% } %></div></div><% } %>
+<div class="sp-grid grid-main">
+  <div class="stack">
+    <% if (record.results.length) { %>
+    <section class="panel"><div class="panel-head"><h2><%- icon('calculator', 'icon-sm') %> <%= t('spforms.results') %></h2></div><div class="panel-body"><%- include('_results', { results: record.results }) %></div></section>
+    <% } %>
+    <% sections.forEach(function (sec) { %>
+    <section class="panel">
+      <div class="panel-head"><h2><%= L(sec.title.ar, sec.title.en) %></h2></div>
+      <div class="panel-body">
+        <% sec.rows.forEach(function (row) { %>
+          <% if (row.grid) { %>
+          <div class="table-wrap"><table class="table sf-grid sf-grid-view"><thead><tr><th><%= L(row.label.ar, row.label.en) %><% if (row.unit) { %> <small class="muted" dir="ltr">(<%= row.unit %>)</small><% } %></th><% row.cols.forEach(function (c) { %><th class="num"><%= L(c.ar, c.en) %></th><% }) %></tr></thead>
+            <tbody><% row.rows.forEach(function (r) { %><tr><th scope="row"><%= L(r.label.ar, r.label.en) %></th><% r.values.forEach(function (v) { %><td class="num" dir="ltr"><%= v === null ? '—' : v %></td><% }) %></tr><% }) %></tbody></table></div>
+          <% } else if (row.sides) { %>
+          <dl class="sf-dl"><dt><%= L(row.label.ar, row.label.en) %></dt><dd class="sf-sides"><% row.sides.forEach(function (sd) { %><span><span class="muted tiny"><%= L(sd.side.ar, sd.side.en) %>:</span> <span dir="auto"><%= sd.value ? L(sd.value.ar, sd.value.en) : '—' %></span></span><% }) %></dd></dl>
+          <% } else { %>
+          <dl class="sf-dl"><dt><%= L(row.label.ar, row.label.en) %></dt><dd dir="auto"><%= L(row.value.ar, row.value.en) %></dd></dl>
+          <% } %>
+        <% }) %>
+      </div>
+    </section>
+    <% }) %>
+    <% if (form.cite) { %><p class="small muted sp-source"><%- icon('book-open', 'icon-sm') %> <span dir="ltr"><%= form.cite %></span></p><% } %>
+  </div>
+  <aside class="stack no-print">
+    <div class="panel"><div class="panel-body stack-sm small">
+      <div><span class="muted"><%= t('spforms.date') %>:</span> <%= fmt.date(record.record_date) %></div>
+      <div><span class="muted"><%= t('spforms.by') %>:</span> <%= L(record.doctor_name, record.doctor_name_en) || record.user_name || '—' %></div>
+      <div><span class="muted"><%= t('spforms.entered_at') %>:</span> <%= fmt.datetime ? fmt.datetime(record.created_at) : fmt.date(record.created_at) %></div>
+      <% if (record.appointment_id) { %><div><a href="/app/visits/<%= record.appointment_id %>"><%- icon('stethoscope', 'icon-sm') %> <%= t('spforms.open_visit') %></a></div><% } %>
+    </div></div>
+    <% if (canEdit && !record.voided_at) { %>
+    <form class="panel" method="post" action="<%= recUrl('/' + form.key + '/' + record.id + '/void') %>" data-confirm="<%= t('spforms.remove_confirm') %>" data-confirm-title="<%= t('spforms.remove') %>" data-confirm-yes="<%= t('spforms.remove') %>">
+      <div class="panel-body stack-sm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('../../partials/field', { name: 'reason', label: t('spforms.remove_reason'), attrs: 'maxlength="255"' }) %>
+        <button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('spforms.remove') %></button>
+      </div>
+    </form>
+    <% } %>
+  </aside>
+</div>

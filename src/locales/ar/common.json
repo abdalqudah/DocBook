@@ -334,7 +334,12 @@
     "This plan does not include that many branches.": "هذه الباقة لا تشمل هذا العدد من الفروع.",
     "The clinic already has more active branches. Turn some off first.": "لدى العيادة فروع مفعّلة أكثر من هذا العدد. أوقف بعضها أولاً.",
     "Choose a valid branch.": "اختر فرعاً صحيحاً.",
-    "This doctor works in another branch.": "هذا الطبيب يعمل في فرع آخر."
+    "This doctor works in another branch.": "هذا الطبيب يعمل في فرع آخر.",
+    "Use letters, digits, dots and dashes only.": "استخدم الحروف والأرقام والنقاط والشرطات فقط.",
+    "Enter at least one value.": "أدخل قيمة واحدة على الأقل.",
+    "Enter a whole number.": "أدخل رقمًا صحيحًا.",
+    "Use FDI tooth numbers (11–48, 51–85).": "استخدم ترقيم الأسنان FDI (11–48، 51–85).",
+    "The total is more than 100%.": "المجموع أكثر من 100%."
   },
   "roles": {
     "owner": "مالك العيادة",

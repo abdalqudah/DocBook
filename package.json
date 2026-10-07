@@ -1,6 +1,6 @@
 {
   "name": "docbook",
-  "version": "2.4.4",
+  "version": "2.5.0",
   "description": "DocBook — clinic booking & management: appointments, online booking and consultations, front desk, patient records, billing, payroll, supplies and staff logins",
   "main": "app.js",
   "private": true,
@@ -12,7 +12,8 @@
     "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
     "brand:check": "node scripts/brand-check.js",
     "build": "node scripts/build-dist.js",
-    "build:editions": "node scripts/build-dist.js && node scripts/build-editions.js"
+    "build:editions": "node scripts/build-dist.js && node scripts/build-editions.js",
+    "build:specialties": "node scripts/build-dist.js && SPECIALTIES=1 node scripts/build-editions.js"
   },
   "engines": {
     "node": ">=20"

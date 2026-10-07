@@ -346,5 +346,37 @@
       "This date is too far in the past for an ongoing pregnancy.": "This date is too far in the past for an ongoing pregnancy.",
       "Para cannot be more than previous pregnancies.": "Para cannot be more than previous pregnancies."
     }
+  },
+  "spforms": {
+    "title": "Specialty records",
+    "saved": "Record saved.",
+    "removed": "Record removed from the patient file (it stays in the audit trail).",
+    "none_on": "No specialty records are on",
+    "none_on_help": "Choose the records your clinic uses in the settings, or set each doctor’s specialty so their specialty’s records appear automatically.",
+    "choose_forms": "Choose records",
+    "doctor_specialty": "Doctor’s specialty",
+    "turned_off": "Off",
+    "n_records": "{n} records",
+    "no_records": "No records yet",
+    "new_entry": "New record",
+    "manage_forms": "Manage the clinic’s specialty records",
+    "date": "Date",
+    "results": "Computed results",
+    "result": "Result",
+    "by": "By",
+    "recorded": "Recorded",
+    "removed_badge": "Removed",
+    "removed_note": "This record was removed on {date}",
+    "entered_at": "Entered at",
+    "open_visit": "Open the visit",
+    "remove": "Remove record",
+    "remove_confirm": "Remove this record from the patient file? It stays in the audit trail with the reason.",
+    "remove_reason": "Reason for removal",
+    "all_forms": "All specialty records ({n})",
+    "settings_title": "Specialty records for every specialty",
+    "settings_sub": "Structured clinical forms with scientific scores and classifications. They switch on by themselves from the clinic’s and each doctor’s specialty; turn any of them on or off.",
+    "doctor_specialties": "Your doctors’ specialties: {list}",
+    "set_doctor_specialty": "Set each doctor’s specialty on the Doctors page so their specialty’s records appear automatically:",
+    "default_badge": "Automatic"
   }
 }

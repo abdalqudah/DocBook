@@ -1,0 +1,13 @@
+<%# Computed results of a specialty form. Locals: results ([{ ar, en, v, unit, band, level }]), L. %>
+<% var tone = { ok: 'badge-success', mild: 'badge-info', warn: 'badge-warning', bad: 'badge-danger' }; %>
+<% if (results && results.length) { %>
+<ul class="sf-results">
+  <% results.forEach(function (r) { %>
+  <li class="sf-result<%= r.level ? ' is-' + r.level : '' %>">
+    <span class="sf-result-label"><%= L(r.ar, r.en) %></span>
+    <span class="sf-result-value" dir="ltr"><%= r.v %><% if (r.unit) { %> <small><%= r.unit %></small><% } %></span>
+    <% if (r.band) { %><span class="badge badge-dot <%= tone[r.level] || 'badge-neutral' %>"><%= L(r.band.ar, r.band.en) %></span><% } %>
+  </li>
+  <% }) %>
+</ul>
+<% } %>

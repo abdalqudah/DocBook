@@ -28,7 +28,7 @@ const MODULES = [
   { key: 'marketplace', icon: 'package-search', nav: ['marketplace', 'rep_visits'], paths: [seg('marketplace'), seg('rep-visits')] },
   { key: 'certificates', icon: 'badge-check', nav: ['certificates'], actions: ['new_certificate'], paths: [seg('certificates')] },
   { key: 'reviews', icon: 'star', nav: ['reviews'], paths: [seg('reviews'), seg('website/reviews')] },
-  { key: 'specialty_records', icon: 'heart-pulse', feature: 'specialty_modules', paths: [seg('specialty'), /^\/patients\/\d+\/(?:dental|growth|pregnancy)(?:\/|$)/] },
+  { key: 'specialty_records', icon: 'heart-pulse', feature: 'specialty_modules', paths: [seg('specialty'), /^\/patients\/\d+\/(?:dental|growth|pregnancy|records)(?:\/|$)/] },
   { key: 'ai_assistant', icon: 'sparkles', feature: 'ai_assistant', paths: [seg('settings/ai'), /^\/visits\/\d+\/ai(?:\/|$)/, seg('finance/assistant'), seg('ai')] },
   { key: 'attendance', icon: 'clock', nav: ['attendance'], paths: [seg('attendance')] },
   { key: 'queue_screens', icon: 'monitor', paths: [seg('queue-screens')] },

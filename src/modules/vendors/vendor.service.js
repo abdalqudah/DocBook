@@ -45,7 +45,8 @@ const pnotify = require('../platformnotify/notify.service');
 const TYPES = ['rep', 'warehouse', 'company', 'events']; // events: conferences, exhibitions and medical events organisers
 const STATUSES = ['pending', 'active', 'suspended'];
 const OFFER_STATUSES = ['draft', 'published', 'archived'];
-const TARGET_SPECIALTIES = SPECIALTIES.filter((s) => s !== 'multi');
+const catalogue = require('../specialty/catalogue');
+const TARGET_SPECIALTIES = SPECIALTIES.filter((s) => s !== 'multi' && !catalogue.get(s).parent);
 const OPEN_SPECIALTIES = ['multi', 'general', 'other'];
 const IMAGE_MAX_BYTES = 1024 * 1024;
 const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
@@ -86,7 +87,7 @@ function todayFor(vendor) {
   try { return new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch { return new Date().toISOString().slice(0, 10); }
 }
 
-const scopeForClinic = (specialty) => (!specialty || OPEN_SPECIALTIES.includes(specialty) || !TARGET_SPECIALTIES.includes(specialty) ? null : specialty);
+const scopeForClinic = (raw) => { const specialty = raw && catalogue.has(raw) ? catalogue.root(raw) : raw; return (!specialty || OPEN_SPECIALTIES.includes(specialty) || !TARGET_SPECIALTIES.includes(specialty) ? null : specialty); };
 
 async function specialtiesOf(table, key, ids) {
   if (!ids.length) return {};

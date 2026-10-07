@@ -1,0 +1,66 @@
+<%# Fill a specialty form. Locals: form, patient, visit, values (prefill), old, errors, inputsOf, sides, L. %>
+<%
+  var val = function (key) { if (old && Object.keys(old).length) { var o = old['f_' + key]; return o === undefined ? '' : o; } return values[key] === undefined ? '' : values[key]; };
+  var err = function (key) { return errors['f_' + key]; };
+  var isSel = function (key, v) { var cur = val(key); return Array.isArray(cur) ? cur.map(String).indexOf(String(v)) >= 0 : String(cur) === String(v); };
+  var stepOf = function (f) { return f.step || (f.t === 'int' ? 1 : 'any'); };
+%>
+<%- include('_rec-head', {}) %>
+<form method="post" action="<%= recUrl('/' + form.key) %>" class="stack sf-form" novalidate data-sf-preview="<%= recUrl('/' + form.key + '/preview') %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (visit) { %><input type="hidden" name="visit_id" value="<%= visit.id %>"><% } %>
+  <%- include('../../partials/form-error') %>
+  <% if (errors.form) { %><div class="alert alert-danger"><%- icon('circle-alert') %><div><%= errors.form %></div></div><% } %>
+  <div class="panel"><div class="panel-body form-grid">
+    <%- include('../../partials/field', { name: 'record_date', label: t('spforms.date'), type: 'date', value: (old && old.record_date) || (visit ? String(visit.appointment_date).slice(0, 10) : today), attrs: 'max="' + today + '"' }) %>
+  </div></div>
+  <% form.sections.forEach(function (sec) { %>
+  <section class="panel">
+    <div class="panel-head"><h2><%= L(sec.ar, sec.en) %></h2></div>
+    <div class="panel-body sf-fields">
+      <% sec.fields.forEach(function (f) { %>
+        <% if (f.t === 'grid') { %>
+        <div class="sf-grid-wrap"><div class="table-wrap"><table class="table sf-grid">
+          <thead><tr><th><%= L(f.ar, f.en) %><% if (f.cell.unit) { %> <small class="muted" dir="ltr">(<%= f.cell.unit %>)</small><% } %></th><% f.cols.forEach(function (c) { %><th class="num"><%= L(c[1], c[2]) %></th><% }) %></tr></thead>
+          <tbody><% f.rows.forEach(function (r) { %><tr><th scope="row"><%= L(r[1], r[2]) %></th><% f.cols.forEach(function (c) { var key = f.k + '__' + r[0] + '__' + c[0]; %><td class="num"><input class="input sf-cell<%= err(key) ? ' is-invalid' : '' %>" name="f_<%= key %>" value="<%= val(key) %>" inputmode="decimal" aria-label="<%= L(r[1], r[2]) %> — <%= L(c[1], c[2]) %>"<% if (f.cell.min !== undefined) { %> data-min="<%= f.cell.min %>"<% } %><% if (f.cell.max !== undefined) { %> data-max="<%= f.cell.max %>"<% } %>><% if (err(key)) { %><span class="field-error"><%= err(key) %></span><% } %></td><% }) %></tr><% }) %></tbody>
+        </table></div></div>
+        <% } else { %>
+        <% var keys = f.side ? sides[f.side].map(function (sd) { return { key: f.k + '_' + sd[0], label: L(f.ar, f.en) + ' — ' + L(sd[1], sd[2]) }; }) : [{ key: f.k, label: L(f.ar, f.en) }]; %>
+        <div class="sf-field-group<%= f.side ? ' has-sides' : '' %><%= f.wide || f.t === 'area' ? ' is-wide' : '' %>">
+          <% keys.forEach(function (k) { var e = err(k.key); var id = 'sf-' + k.key; %>
+          <div class="field">
+            <% if (f.t === 'bool') { %>
+              <label class="check"><input type="checkbox" name="f_<%= k.key %>" value="1"<%= String(val(k.key)) === '1' || val(k.key) === true ? ' checked' : '' %>><span><%= k.label %></span></label>
+            <% } else if (f.t === 'multi') { %>
+              <span class="label"><%= k.label %></span>
+              <div class="sf-chips"><% f.opts.forEach(function (o) { %><label class="sf-chip"><input type="checkbox" name="f_<%= k.key %>" value="<%= o[0] %>"<%= isSel(k.key, o[0]) ? ' checked' : '' %>><span><%= L(o[1], o[2]) %></span></label><% }) %></div>
+            <% } else { %>
+              <label class="label" for="<%= id %>"><%= k.label %><% if (f.req) { %><span class="req">*</span><% } %></label>
+              <% if (f.t === 'sel') { %>
+                <select class="select<%= e ? ' is-invalid' : '' %>" id="<%= id %>" name="f_<%= k.key %>"><option value="">—</option><% f.opts.forEach(function (o) { %><option value="<%= o[0] %>"<%= isSel(k.key, o[0]) ? ' selected' : '' %>><%= L(o[1], o[2]) %></option><% }) %></select>
+              <% } else if (f.t === 'area') { %>
+                <textarea class="textarea<%= e ? ' is-invalid' : '' %>" id="<%= id %>" name="f_<%= k.key %>" rows="3" maxlength="4000"><%= val(k.key) %></textarea>
+              <% } else if (f.t === 'num' || f.t === 'int') { %>
+                <div class="input-affix"><input class="input<%= e ? ' is-invalid' : '' %>" id="<%= id %>" name="f_<%= k.key %>" value="<%= val(k.key) %>" inputmode="<%= f.t === 'int' ? 'numeric' : 'decimal' %>" dir="ltr"<% if (f.min !== undefined) { %> data-min="<%= f.min %>"<% } %><% if (f.max !== undefined) { %> data-max="<%= f.max %>"<% } %> data-step="<%= stepOf(f) %>"><% if (f.unit) { %><span class="affix" dir="ltr"><%= f.unit %></span><% } %></div>
+              <% } else if (f.t === 'date') { %>
+                <input class="input<%= e ? ' is-invalid' : '' %>" id="<%= id %>" name="f_<%= k.key %>" type="date" value="<%= val(k.key) %>">
+              <% } else { %>
+                <input class="input<%= e ? ' is-invalid' : '' %>" id="<%= id %>" name="f_<%= k.key %>" value="<%= val(k.key) %>" maxlength="500" dir="auto">
+              <% } %>
+            <% } %>
+            <% if (e) { %><span class="field-error"><%= e %></span><% } %>
+          </div>
+          <% }) %>
+        </div>
+        <% } %>
+      <% }) %>
+    </div>
+  </section>
+  <% }) %>
+  <section class="panel sf-live" data-sf-live hidden aria-live="polite">
+    <div class="panel-head"><h2><%- icon('calculator', 'icon-sm') %> <%= t('spforms.results') %></h2></div>
+    <div class="panel-body" data-sf-live-body></div>
+  </section>
+  <% if (form.cite) { %><p class="small muted sp-source"><%- icon('book-open', 'icon-sm') %> <span dir="ltr"><%= form.cite %></span></p><% } %>
+  <div class="row"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button><a class="btn btn-ghost" href="<%= recUrl('/' + form.key) %>"><%= t('common.cancel') %></a></div>
+</form>

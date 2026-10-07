@@ -32,8 +32,11 @@ function scrub(dir) {
 }
 
 const secret = () => crypto.randomBytes(48).toString('hex');
-function envFor(edition) {
+const catalogue = require('../src/modules/specialty/catalogue');
+/** .env of an edition; `spec` = a specialty of the catalogue for a clinic made for one specialty. */
+function envFor(edition, spec = null) {
   const center = edition === 'center';
+  const sp = spec ? catalogue.get(spec) : null;
   return `# ============================================================================
 # ${center ? 'المركز الطبي' : 'العيادة'} — إعدادات السيرفر. عبّئ الأسطر المعلَّمة بـ «←» ثم شغّل التطبيق.
 # ============================================================================
@@ -46,10 +49,13 @@ APP_EDITION=${edition}
 
 # ---- ${center ? 'المركز' : 'العيادة'} (تُنشأ تلقائيًا عند أول تشغيل) ----
 # ← الاسم كما يظهر في الموقع والنظام
-CLINIC_NAME=${center ? 'المركز الطبي' : 'العيادة'}
-CLINIC_NAME_EN=${center ? 'Medical Center' : 'Clinic'}
+CLINIC_NAME=${center ? 'المركز الطبي' : sp ? `عيادة ${sp.ar}` : 'العيادة'}
+CLINIC_NAME_EN=${center ? 'Medical Center' : sp ? `${sp.en} Clinic` : 'Clinic'}
 # ← رابط مختصر بالإنجليزية (حروف وأرقام وشرطة فقط)، مثل alnoor
-CLINIC_SLUG=${center ? 'center' : 'clinic'}
+CLINIC_SLUG=${center ? 'center' : sp ? sp.key.replace(/_/g, '-') : 'clinic'}
+# التخصص: يحدد السجلات التخصصية، وجدول التشخيصات (ICD-10)، وقالب الموقع والخدمات المقترحة.
+# ${center ? 'المركز متعدد التخصصات: كل طبيب يختار تخصصه عند إضافته، وتظهر له سجلات تخصصه.' : `القيم: ${catalogue.KEYS.join(' ')}`}
+CLINIC_SPECIALTY=${center ? 'multi' : sp ? sp.key : 'general'}
 CLINIC_CURRENCY=JOD
 CLINIC_TIMEZONE=Asia/Amman
 CLINIC_CITY=
@@ -95,7 +101,7 @@ function guideFor(edition) {
 ## ما الذي ستحصل عليه
 - **الدومين الرئيسي** (https://your-domain.com) يفتح موقع ${center ? 'المركز، وفيه أطباء كل العيادات والحجز مع كل طبيب' : 'العيادة مع الحجز الإلكتروني'}.
 - **/admin** يفتح لوحة الإدارة (تسجيل الدخول ثم ${center ? 'إدارة المركز: الأطباء، الاستقبال والمحاسبة المشتركة، المصاريف، الموقع' : 'إدارة العيادة: المواعيد، المرضى، المحاسبة، الموقع'}).
-${center ? '- **كل طبيب** له عيادة مستقلة وموقع خاص على /رابط-عيادته (يضيفه المركز من «الأطباء والعيادات»).\n' : ''}- **/admin/platform** إعدادات النظام العامة (البريد، الدفع…) لحساب الإدارة.
+${center ? '- **كل طبيب** له عيادة مستقلة وموقع خاص على /رابط-عيادته (يضيفه المركز من «الأطباء والعيادات»).\n- **كل التخصصات:** عند إضافة الطبيب اختر تخصصه؛ تظهر في عيادته سجلات تخصصه (العيون، السمع، القلب، الأسنان، النسائية…) وجدول تشخيصاته من ICD-10 تلقائيًا.\n' : ''}- **/admin/platform** إعدادات النظام العامة (البريد، الدفع…) لحساب الإدارة.
 
 ## الخطوات على cPanel
 1. **قاعدة البيانات:** cPanel ← MySQL Databases ← أنشئ قاعدة ومستخدمًا وأعطه **ALL PRIVILEGES** على القاعدة.
@@ -185,4 +191,72 @@ for (const [edition, file] of [['clinic', `single-clinic-${version}`], ['center'
   fs.rmSync(zip, { force: true });
   execFileSync('zip', ['-qr', zip, '.'], { cwd: out });
   console.log(`Built dist/${file}.zip`);
+}
+
+// One ready clinic per specialty (npm run build:specialties): the single-clinic build with a .env made for that
+// specialty — its name, its specialty records and diagnosis table switch on at first start — and one bundle with
+// every specialty's .env (each with its own fresh secrets) for those who already have the build.
+//   dist/specialties-<version>/clinic-<specialty>-<version>.zip     dist/clinic-env-files-<version>.zip
+if (process.env.SPECIALTIES === '1') {
+  const forms = require('../src/modules/specialty/forms');
+  const icd = require('../src/modules/clinicalplus/icd.service');
+  const base = path.join(ROOT, 'dist', `single-clinic-${version}`);
+  const outDir = path.join(ROOT, 'dist', `specialties-${version}`);
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(outDir, { recursive: true });
+  // The common part once (without .env / INSTALL.md), then each specialty adds its own two files.
+  const common = path.join(outDir, '.common.zip');
+  execFileSync('zip', ['-qr', common, '.', '-x', '.env', 'INSTALL.md'], { cwd: base });
+  const envDir = path.join(ROOT, 'dist', `clinic-env-files-${version}`);
+  fs.rmSync(envDir, { recursive: true, force: true });
+  fs.mkdirSync(envDir, { recursive: true });
+  const rows = [];
+  const tmp = path.join(outDir, '.tmp');
+  for (const sp of catalogue.LIST.filter((x) => !['multi', 'other'].includes(x.key))) {
+    const recs = forms.forSpecialty(sp.key).map((k) => forms.get(k));
+    const modules = ['dental', 'growth', 'pregnancy'].filter((m) => forms.moduleFor(m, sp.key));
+    const moduleNames = { dental: ['مخطط الأسنان', 'Dental chart'], growth: ['منحنيات النمو', 'Growth charts'], pregnancy: ['متابعة الحمل', 'Pregnancy follow-up'] };
+    const codes = icd.specialtyTable(sp.key).length;
+    const env = envFor('clinic', sp.key);
+    const list = [...modules.map((m) => moduleNames[m]), ...recs.map((f) => [f.ar, f.en])];
+    const guide = `${guideFor('clinic')}
+## تخصص هذه النسخة: ${sp.ar} (${sp.en})
+- \`CLINIC_SPECIALTY=${sp.key}\` في ملف \`.env\`: يتفعّل تلقائيًا عند أول تشغيل.
+- **السجلات التخصصية:** ${list.map(([ar]) => ar).join('، ') || '—'}.
+- **جدول التشخيصات:** ${codes} تشخيصًا من ICD-10 خاصًا بالتخصص، تظهر أولًا عند البحث، مع إمكانية إضافة أكواد خاصة.
+- يمكن تشغيل أي سجل من تخصص آخر أو إيقافه من: الإعدادات ← السجلات التخصصية.
+`;
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.mkdirSync(tmp);
+    fs.writeFileSync(path.join(tmp, '.env'), env);
+    fs.writeFileSync(path.join(tmp, 'INSTALL.md'), guide);
+    const name = `clinic-${sp.key.replace(/_/g, '-')}-${version}.zip`;
+    const zip = path.join(outDir, name);
+    fs.copyFileSync(common, zip);
+    execFileSync('zip', ['-q', zip, '.env', 'INSTALL.md'], { cwd: tmp });
+    fs.writeFileSync(path.join(envDir, `${sp.key}.env`), envFor('clinic', sp.key));
+    rows.push(`| ${sp.ar} | ${sp.en} | \`${sp.key}\` | ${name} | ${list.map(([, en]) => en).join(', ') || '—'} | ${codes} |`);
+  }
+  fs.writeFileSync(path.join(envDir, 'center.env'), envFor('center'));
+  const table = `# ملفات الإعدادات لكل تخصص — Settings files per specialty
+
+كل ملف \`.env\` هنا جاهز لعيادة بتخصص واحد (أسرار جديدة مختلفة لكل ملف). انسخ الملف المناسب إلى مجلد التطبيق باسم \`.env\`
+وعبّئ الأسطر المعلَّمة بـ «←». \`center.env\` للمركز الطبي متعدد التخصصات.
+Each \`.env\` here is ready for a one-specialty clinic (fresh secrets in each). Copy it next to app.js as \`.env\` and fill the
+lines marked «←». \`center.env\` is for the multi-specialty medical centre.
+
+| التخصص | Specialty | CLINIC_SPECIALTY | Ready package | Specialty records | ICD-10 |
+|---|---|---|---|---|---|
+${rows.join('\n')}
+`;
+  fs.writeFileSync(path.join(envDir, 'README.md'), table);
+  fs.writeFileSync(path.join(outDir, 'README.md'), table);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  fs.rmSync(common, { force: true });
+  const envZip = path.join(ROOT, 'dist', `clinic-env-files-${version}.zip`);
+  fs.rmSync(envZip, { force: true });
+  execFileSync('zip', ['-qr', envZip, '.'], { cwd: envDir });
+  const left = spawnSync('grep', ['-ril', NAME, '.'], { cwd: envDir, encoding: 'utf8' }).stdout.trim();
+  if (left) throw new Error(`env files still mention the platform's name:\n${left}`);
+  console.log(`Built dist/specialties-${version}/ (${rows.length} clinics) and dist/clinic-env-files-${version}.zip`);
 }

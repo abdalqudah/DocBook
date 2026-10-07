@@ -32,6 +32,8 @@ const doctorSchema = z.object({
   email: emailField(),
   practice_name: optionalString(160),
   specialization: optionalString(120),
+  // The doctor's specialty: their practice's specialty and the specialty records it gets.
+  specialty_key: z.preprocess((v) => (v === '' || v === null ? undefined : v), z.string().refine((v) => require('../specialty/catalogue').has(v), 'Choose a valid value.').optional()), // eslint-disable-line global-require
   phone: optionalString(40),
 });
 
@@ -68,7 +70,7 @@ async function addDoctor(ctx, input, { locale = 'ar', t = null } = {}) {
       name: d.doctor_name, email: d.email, phone: d.phone || null, password_hash: await hashPassword(crypto.randomBytes(24).toString('hex')),
       must_change_password: true, locale,
     });
-    const bid = await businesses.create(userId, { name, currency: founder.currency, timezone: founder.timezone, country: founder.country, city: founder.city, specialty: founder.specialty }, trx);
+    const bid = await businesses.create(userId, { name, currency: founder.currency, timezone: founder.timezone, country: founder.country, city: founder.city, specialty: d.specialty_key || founder.specialty }, trx);
     await trx('businesses').where({ id: bid }).update({ center_id: c.id, center_joined_at: new Date(), onboarding_completed_at: new Date(), center_share_cash: true }); // on the shared cash screen (the doctor can turn it off)
     await trx('password_resets').insert({ user_id: userId, token_hash: sha(token), created_by: ctx.userId || null, expires_at: new Date(Date.now() + 7 * 86_400_000) });
     await audit.record(ctx, 'center.doctor_added', { entityType: 'center', entityId: c.id, newValues: { doctor: d.doctor_name, email: d.email, practice: bid } }, trx);
@@ -78,6 +80,7 @@ async function addDoctor(ctx, input, { locale = 'ar', t = null } = {}) {
   // The doctor's profile in their practice, linked to their login.
   const dctx = { businessId: out.bid, userId: out.userId, permissions: await rbac.getUserPermissions(out.bid, out.userId), timezone: founder.timezone, currency: founder.currency, locale };
   await setup.addDoctor(dctx, { full_name: d.doctor_name, specialization: d.specialization || '', consultation_fee: '0', slot_duration_minutes: '30', is_me: '1' }).catch(() => null);
+  if (d.specialty_key) await knex('doctors').where({ business_id: dctx.businessId }).whereNull('specialty_key').update({ specialty_key: d.specialty_key });
   businesses.forget(out.bid);
   await require('../../db/tenant-admin').placeSafely(out.bid); // eslint-disable-line global-require -- into the centre's database when it has one
   const link = `${String(ctx.baseUrl || config.appUrl).replace(/\/+$/, '')}/reset/${token}`;
@@ -101,7 +104,7 @@ async function addOwnPractice(ctx, c, d, locale) {
   const founder = await knex('businesses').where({ id: ctx.businessId }).first('currency', 'timezone', 'country', 'city', 'specialty');
   const name = d.practice_name || (locale === 'en' ? `Dr. ${d.doctor_name.replace(/^(dr\.?|د\.)\s*/i, '')} clinic` : `عيادة ${d.doctor_name}`);
   const bid = await knex.transaction(async (trx) => {
-    const id = await businesses.create(ctx.userId, { name, currency: founder.currency, timezone: founder.timezone, country: founder.country, city: founder.city, specialty: founder.specialty }, trx);
+    const id = await businesses.create(ctx.userId, { name, currency: founder.currency, timezone: founder.timezone, country: founder.country, city: founder.city, specialty: d.specialty_key || founder.specialty }, trx);
     await trx('businesses').where({ id }).update({ center_id: c.id, center_joined_at: new Date(), onboarding_completed_at: new Date(), center_share_cash: true });
     await trx('users').where({ id: ctx.userId }).update({ last_business_id: ctx.businessId }); // still lands on the centre
     await audit.record(ctx, 'center.doctor_added', { entityType: 'center', entityId: c.id, newValues: { doctor: d.doctor_name, email: d.email, practice: id, own: true } }, trx);
@@ -109,6 +112,7 @@ async function addOwnPractice(ctx, c, d, locale) {
   });
   const dctx = { businessId: bid, userId: ctx.userId, permissions: await rbac.getUserPermissions(bid, ctx.userId), timezone: founder.timezone, currency: founder.currency, locale };
   await setup.addDoctor(dctx, { full_name: d.doctor_name, specialization: d.specialization || '', consultation_fee: '0', slot_duration_minutes: '30', is_me: '1' }).catch(() => null);
+  if (d.specialty_key) await knex('doctors').where({ business_id: dctx.businessId }).whereNull('specialty_key').update({ specialty_key: d.specialty_key });
   businesses.forget(bid);
   await require('../../db/tenant-admin').placeSafely(bid); // eslint-disable-line global-require -- into the centre's database when it has one
   return { created: true, own: true, practiceId: bid, link: null, emailed: false, email: d.email };

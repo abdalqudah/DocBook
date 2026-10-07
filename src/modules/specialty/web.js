@@ -82,7 +82,7 @@ router.get('/visits/:id(\\d+)', async (req, res, next) => {
       const a = await appts.get(req.ctx, Number(req.params.id)).catch(() => null);
       if (a && a.patient_id) {
         const patient = await svc.patientFor(req.ctx, a.patient_id).catch(() => null);
-        const sp = patient ? await svc.summary(req.ctx, req.business, patient) : null;
+        const sp = patient ? await svc.summary(req.ctx, req.business, patient, { doctorId: a.doctor_id }) : null;
         if (sp) res.locals.specialtyPanel = { ...sp, visitId: a.id, settingsLink: req.ctx.permissions.has('settings.manage') };
       }
     }
@@ -287,6 +287,97 @@ router.post('/patients/:id(\\d+)/pregnancy/:pid(\\d+)/checks', can('clinical.edi
   res.redirect(`${selfUrl(c, 'pregnancy', `p=${req.params.pid}`)}#schedule`);
 }));
 
+// ================================================================= SPECIALTY FORMS (every specialty)
+//   /app/patients/:id/records                 the patient's forms: each enabled form with its latest result
+//   /app/patients/:id/records/:form           one form's history, trends, and a new entry
+//   /app/patients/:id/records/:form/new       fill the form (from a visit with ?visit=)
+//   /app/patients/:id/records/:form/preview   POST → JSON results while typing (nothing saved)
+//   /app/patients/:id/records/:form/:rid      one record (printable); POST …/void removes it (kept, with a reason)
+const formsReg = require('./forms');
+const engine = require('./forms/engine');
+const recs = require('./records.service');
+
+async function recContext(req, { forEdit = false } = {}) {
+  const c = await context(req);
+  const form = req.params.form ? formsReg.get(req.params.form) : null;
+  if (req.params.form && !form) throw new AppError('NOT_FOUND', 'Form not found.', 404);
+  // New entries only for the forms the clinic has on; existing records stay readable when a form is turned off.
+  if (form && forEdit && !c.settings.forms.includes(form.key)) throw new AppError('NOT_FOUND', 'Form is off.', 404);
+  return { ...c, form, L: L(req) };
+}
+const recUrl = (c, tail = '', extra = '') => {
+  const q = [c.visit ? `visit=${c.visit.id}` : '', extra].filter(Boolean).join('&');
+  return `/app/patients/${c.patient.id}/records${tail}${q ? `?${q}` : ''}`;
+};
+const FORM_ASSETS = { pageScripts: ['/js/specialty.js', '/js/specialty-forms.js'], pageStyles: ['/css/specialty.css'] };
+
+router.get('/patients/:id(\\d+)/records', can('clinical.view'), wrap(async (req, res) => {
+  const c = await recContext(req);
+  const list = await recs.formsFor(req.ctx, c.settings, c.visit ? c.visit.doctor_id : req.ctx.doctorId);
+  const latest = await recs.latest(req.ctx, c.patient.id, formsReg.KEYS);
+  // Forms turned off later but holding records stay listed (read only).
+  const extraKeys = Object.keys(latest).filter((k) => !c.settings.forms.includes(k));
+  res.page('pages/specialty/records-index', {
+    title: `${req.t('spforms.title')} · ${c.patient.full_name}`, ...c, list, latest, extra: extraKeys.map((k) => formsReg.get(k)).filter(Boolean),
+    recUrl: (tail, extra) => recUrl(c, tail, extra), ...FORM_ASSETS,
+  });
+}));
+
+async function renderNew(req, res, extra = {}) {
+  const c = await recContext(req, { forEdit: true });
+  const values = extra.old ? null : recs.prefill(c.form, c.patient, c.today);
+  res.page('pages/specialty/record-form', {
+    title: `${c.L(c.form.ar, c.form.en)} · ${c.patient.full_name}`, ...c, values: values || {}, old: extra.old || {}, errors: extra.errors || {},
+    formError: extra.formError || null, inputsOf: engine.inputsOf, sides: engine.SIDES, recUrl: (tail, x) => recUrl(c, tail, x), ...FORM_ASSETS,
+  });
+}
+router.get('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})/new', can('clinical.edit'), wrap((req, res) => renderNew(req, res)));
+
+router.post('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})/preview', can('clinical.edit'), wrap(async (req, res) => {
+  const c = await recContext(req, { forEdit: true });
+  const data = {};
+  for (const inp of engine.inputsOf(c.form)) {
+    const [v] = engine.readValue(inp.f, req.body[`f_${inp.key}`]);
+    if (v !== null && v !== undefined) data[inp.key] = v;
+  }
+  const { results, level } = engine.evaluate(c.form, data, recs.patientInfo(c.patient, c.today));
+  res.json({ level, results: results.map((r) => ({ label: c.L(r.ar, r.en), value: r.v, unit: r.unit, band: r.band ? c.L(r.band.ar, r.band.en) : null, level: r.level })) });
+}));
+
+router.post('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})', can('clinical.edit'), sform(async (req, res) => {
+  const c = await recContext(req, { forEdit: true });
+  const id = await recs.create(req.ctx, c.patient, c.form, req.body, c.visit, c.today);
+  flash(req, 'success', req.t('spforms.saved'));
+  res.redirect(recUrl(c, `/${c.form.key}/${id}`));
+}, renderNew));
+
+router.get('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})', can('clinical.view'), wrap(async (req, res) => {
+  const c = await recContext(req);
+  const records = await recs.list(req.ctx, c.patient, c.form.key, { voided: true });
+  const live = records.filter((r) => !r.voided_at);
+  res.page('pages/specialty/record-list', {
+    title: `${c.L(c.form.ar, c.form.en)} · ${c.patient.full_name}`, ...c, records, trends: recs.trends(c.form, live), canNew: c.settings.forms.includes(c.form.key),
+    recUrl: (tail, x) => recUrl(c, tail, x), ...FORM_ASSETS,
+  });
+}));
+
+router.get('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})/:rid(\\d+)', can('clinical.view'), wrap(async (req, res) => {
+  const c = await recContext(req);
+  const record = await recs.get(req.ctx, c.patient, req.params.rid);
+  if (record.form_key !== c.form.key) throw new AppError('NOT_FOUND', 'Record not found.', 404);
+  res.page('pages/specialty/record', {
+    title: `${c.L(c.form.ar, c.form.en)} · ${c.patient.full_name}`, printable: true, ...c, record, sections: engine.describe(c.form, record.data),
+    recUrl: (tail, x) => recUrl(c, tail, x), ...FORM_ASSETS,
+  });
+}));
+
+router.post('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})/:rid(\\d+)/void', can('clinical.edit'), wrap(async (req, res) => {
+  const c = await recContext(req);
+  await recs.voidRecord(req.ctx, c.patient, req.params.rid, req.body.reason);
+  flash(req, 'success', req.t('spforms.removed'));
+  res.redirect(recUrl(c, `/${c.form.key}`));
+}));
+
 // ================================================================= SETTINGS
 async function renderSettings(req, res, extra = {}) {
   const s = await svc.settings(req.business);
@@ -296,6 +387,7 @@ async function renderSettings(req, res, extra = {}) {
   res.page('pages/specialty/settings', {
     title: req.t('specialty_mod.settings_title'), s, items, defaults: preg.DEFAULT_SCHEDULE, moduleIcon: MODULE_ICON, modules: svc.shownModules(req.business, s),
     dxTable: require('../clinicalplus/icd.service').specialtyTable(req.business.specialty || 'general'), // eslint-disable-line global-require
+    formGroups: require('./catalogue').LIST.map((sp) => ({ key: sp.key, forms: formsReg.FORMS.filter((f) => formsReg.homeOf(f) === sp.key) })).filter((g) => g.forms.length), // eslint-disable-line global-require
     ...ASSETS, ...extra,
   });
 }

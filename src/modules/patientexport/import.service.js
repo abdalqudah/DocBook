@@ -33,7 +33,7 @@ const TABLES = {
   patient: 'patients', appointment: 'appointments', consultation: 'consultations', diagnosis: 'consultation_diagnoses',
   prescription: 'prescriptions', order: 'medical_orders', referral: 'referrals', file: 'patient_files',
   dental: 'dental_entries', dental_plan: 'dental_plan_items', growth: 'growth_measurements', pregnancy: 'pregnancies',
-  paper_invoice: 'patient_files', paper_certificate: 'patient_files', surgery: 'surgeries',
+  paper_invoice: 'patient_files', paper_certificate: 'patient_files', surgery: 'surgeries', specialty_record: 'specialty_records',
 };
 const PATIENT_FILL = ['phone', 'email', 'date_of_birth', 'gender', 'national_id', 'insurance_number', 'allergies', 'chronic_conditions', 'notes'];
 
@@ -62,7 +62,7 @@ function readData(zip, prefix) {
   let d;
   try { d = JSON.parse(zip.read(`${prefix}data.json`).toString('utf8')); } catch { throw fail('IMPORT_BAD_FILE', 'The file is damaged.'); }
   if (!d || d.format !== 'docbook.patient-export' || Number(d.version) !== 1 || !d.patient || !d.patient.full_name) throw fail('IMPORT_BAD_FILE', 'Not a DocBook patient export.');
-  ['appointments', 'consultations', 'diagnoses', 'prescriptions', 'orders', 'referrals', 'files', 'dental', 'dental_plan', 'growth', 'pregnancies', 'papers', 'doctors', 'surgeries']
+  ['appointments', 'consultations', 'diagnoses', 'prescriptions', 'orders', 'referrals', 'files', 'dental', 'dental_plan', 'growth', 'pregnancies', 'papers', 'doctors', 'surgeries', 'specialty_records']
     .forEach((k) => { if (!Array.isArray(d[k])) d[k] = []; });
   return d;
 }
@@ -259,6 +259,9 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
     const plans = []; for (const r of d.dental_plan) plans.push({ ...r, service_id: await ownId('services', r.service_id) }); // eslint-disable-line no-restricted-syntax, no-await-in-loop
     await simple('dental_plan', plans, (r) => ({ service_id: r.service_id }));
     await simple('growth', d.growth);
+    // Specialty forms of a form this version knows (an unknown form from a newer version is left out).
+    const forms = require('../specialty/forms'); // eslint-disable-line global-require
+    await simple('specialty_record', d.specialty_records.filter((r) => r && forms.get(r.form_key) && r.data && typeof r.data === 'object'));
     await simple('pregnancy', d.pregnancies);
 
     // Surgeries: their hospital by name here; a coming one gets its time block back (the doctor's time) when that

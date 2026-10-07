@@ -47,7 +47,7 @@ async function gather(ctx, patientId) {
   const mine = (qb, col = 'doctor_id') => { if (ctx.ownDoctorId) qb.where(col, ctx.ownDoctorId); return qb; };
   const rows = (table, on, order = 'created_at') => (on ? mine(knex(table).where(w)).orderBy(order).select() : Promise.resolve([]));
 
-  const [appointments, consultations, diagnoses, prescriptions, orders, referrals, certificates, files, invoices, dental, plan, growth, pregnancies, surgeries] = await Promise.all([
+  const [appointments, consultations, diagnoses, prescriptions, orders, referrals, certificates, files, invoices, dental, plan, growth, pregnancies, surgeries, specialtyRecords] = await Promise.all([
     mine(knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id')
       .where({ 'a.business_id': ctx.businessId, 'a.patient_id': patient.id }).whereNot('a.appointment_type', 'blocked'), 'a.doctor_id')
       .orderBy([{ column: 'a.appointment_date' }, { column: 'a.appointment_time' }])
@@ -68,10 +68,11 @@ async function gather(ctx, patientId) {
     clinicalOk ? knex('growth_measurements').where(w).orderBy('created_at').select() : [],
     rows('pregnancies', clinicalOk),
     clinicalOk ? mine(knex('surgeries').where(w)).orderBy([{ column: 'surgery_date' }, { column: 'surgery_time' }]).select() : [],
+    rows('specialty_records', clinicalOk),
   ]);
   const invIds = invoices.map((i) => i.id);
   const payments = invIds.length ? await knex('invoice_payments').whereIn('invoice_id', invIds).orderBy('id').select() : [];
-  return { patient, access, clinicalOk, billingOk, appointments, consultations, diagnoses, prescriptions, orders, referrals, certificates, files, invoices, payments, dental, plan, growth, pregnancies, surgeries };
+  return { patient, access, clinicalOk, billingOk, appointments, consultations, diagnoses, prescriptions, orders, referrals, certificates, files, invoices, payments, dental, plan, growth, pregnancies, surgeries, specialtyRecords };
 }
 
 /**
@@ -138,7 +139,7 @@ async function collect(ctx, patientId, locale, add) {
     source: { instance: await instanceId(), business_id: ctx.businessId },
     clinic: { name: clinic.name, name_en: clinic.name_en || null },
     doctors: await (async () => {
-      const ids = [...new Set([d.appointments, d.consultations, d.prescriptions, d.orders, d.referrals, d.dental, d.plan, d.pregnancies, d.surgeries].flat().map((r) => r.doctor_id).filter(Boolean))];
+      const ids = [...new Set([d.appointments, d.consultations, d.prescriptions, d.orders, d.referrals, d.dental, d.plan, d.pregnancies, d.surgeries, d.specialtyRecords].flat().map((r) => r.doctor_id).filter(Boolean))];
       return ids.length ? knex('doctors').where({ business_id: ctx.businessId }).whereIn('id', ids).select('id', 'full_name', 'full_name_en') : [];
     })(),
     patient: noBlobs(d.patient), appointments: d.appointments.map(noBlobs),
@@ -148,6 +149,7 @@ async function collect(ctx, patientId, locale, add) {
     files: d.files.map((f) => ({ ...noBlobs(f), path: (index.find((x) => x.kind === 'file' && x.id === f.id) || {}).path })),
     dental: d.dental.map(noBlobs), dental_plan: d.plan.map(noBlobs), growth: d.growth.map(noBlobs), pregnancies: d.pregnancies.map(noBlobs),
     surgeries: d.surgeries.map(noBlobs),
+    specialty_records: d.specialtyRecords.map((r) => ({ ...noBlobs(r), data: parse(r.data, {}), results: parse(r.results, []) })),
     papers: index.filter((x) => x.kind !== 'file'),
     not_included: [...(d.clinicalOk ? [] : ['clinical']), ...(d.billingOk ? [] : ['billing']), ...missing],
   };

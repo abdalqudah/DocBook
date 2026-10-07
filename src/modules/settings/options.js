@@ -2,8 +2,7 @@
 // Labels for zones and countries come from Intl (localised by the runtime), specialties from auth.json → specialties.*
 const { CURRENCIES } = require('../../core/money');
 
-const SPECIALTIES = ['general', 'dentistry', 'dermatology', 'paediatrics', 'obgyn', 'orthopaedics', 'ophthalmology', 'ent', 'cardiology',
-  'physiotherapy', 'psychiatry', 'nutrition', 'cosmetic', 'multi', 'other'];
+const SPECIALTIES = require('../specialty/catalogue').KEYS;
 
 // [IANA zone, ISO country] — Middle East & North Africa first, then common zones elsewhere.
 const ZONES = [

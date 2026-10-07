@@ -11,15 +11,16 @@ const { z, validate, money } = require('../../core/validate');
 const supplies = require('../clinic/supplies.service');
 const pnotify = require('../platformnotify/notify.service');
 
-const SPECIALTIES = ['general', 'dentistry', 'dermatology', 'paediatrics', 'obgyn', 'orthopaedics', 'ophthalmology', 'ent', 'cardiology',
-  'physiotherapy', 'psychiatry', 'nutrition', 'cosmetic', 'multi', 'other'];
+const catalogue = require('../specialty/catalogue');
+// Products and offers target the broad specialties; an orthodontics clinic sees the dentistry catalog.
+const SPECIALTIES = catalogue.LIST.filter((s) => !s.parent).map((s) => s.key);
 // Clinics with one of these (or no) specialty see everything and get a specialty filter.
 const BROAD = new Set(['general', 'multi', 'other']);
 const TARGETABLE = SPECIALTIES.filter((s) => !['multi', 'other'].includes(s));
 
 /** The specialty a clinic's catalog is limited to, or null when it sees all specialties. */
 function clinicSpecialty(business) {
-  const s = business && business.specialty;
+  const s = business && business.specialty ? catalogue.root(business.specialty) : null;
   return s && SPECIALTIES.includes(s) && !BROAD.has(s) ? s : null;
 }
 

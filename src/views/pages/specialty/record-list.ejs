@@ -1,0 +1,35 @@
+<%# One form's history for the patient: trends of its measured values and every record (removed ones struck through). %>
+<% var tone = { ok: 'badge-success', mild: 'badge-info', warn: 'badge-warning', bad: 'badge-danger' }; var canEdit = can('clinical.edit');
+   var actions = canEdit && canNew ? '<a class="btn btn-primary" href="' + recUrl('/' + form.key + '/new') + '">' + icon('plus', 'icon-sm') + t('spforms.new_entry') + '</a>' : ''; %>
+<%- include('_rec-head', { actions: actions }) %>
+<% if (trends.length) { %>
+<div class="sf-trends">
+  <% trends.forEach(function (s) { var vals = s.points.map(function (p) { return p.v; }); var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals); if (hi === lo) { hi += 1; lo -= 1; } var W = 280, H = 70, n = s.points.length;
+     var pts = s.points.map(function (p, i) { return [Math.round(8 + (W - 16) * (n === 1 ? 0.5 : i / (n - 1))), Math.round(H - 8 - (H - 16) * (p.v - lo) / (hi - lo))]; }); var last = s.points[n - 1], first = s.points[0]; %>
+  <figure class="panel sf-trend">
+    <figcaption class="small strong"><%= L(s.ar, s.en) %></figcaption>
+    <svg viewBox="0 0 <%= W %> <%= H %>" class="sf-spark" role="img" aria-label="<%= L(s.ar, s.en) %>: <%= vals.join(', ') %>"><polyline fill="none" stroke="currentColor" stroke-width="2" points="<%= pts.map(function (p) { return p.join(','); }).join(' ') %>"/><% pts.forEach(function (p) { %><circle cx="<%= p[0] %>" cy="<%= p[1] %>" r="3" fill="currentColor"/><% }) %></svg>
+    <div class="tiny muted row-sm" style="justify-content:space-between"><span><%= fmt.date(first.date) %>: <b dir="ltr"><%= first.v %></b></span><span><%= fmt.date(last.date) %>: <b dir="ltr"><%= last.v %></b><% if (s.unit) { %> <span dir="ltr"><%= s.unit %></span><% } %></span></div>
+  </figure>
+  <% }) %>
+</div>
+<% } %>
+<div class="panel flush">
+  <% if (!records.length) { %>
+  <div class="empty-state"><%- icon(form.icon || 'clipboard-list') %><h3><%= t('spforms.no_records') %></h3><% if (canEdit && canNew) { %><a class="btn btn-primary" href="<%= recUrl('/' + form.key + '/new') %>"><%- icon('plus', 'icon-sm') %><%= t('spforms.new_entry') %></a><% } %></div>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('spforms.date') %></th><th><%= t('spforms.result') %></th><th><%= t('spforms.by') %></th><th class="actions"></th></tr></thead>
+    <tbody>
+      <% records.forEach(function (r) { var r0 = r.results[0]; %>
+      <tr class="<%= r.voided_at ? 'sp-void' : '' %>">
+        <td class="nowrap" data-label="<%= t('spforms.date') %>"><a href="<%= recUrl('/' + form.key + '/' + r.id) %>"><%= fmt.date(r.record_date) %></a></td>
+        <td data-label="<%= t('spforms.result') %>"><% if (r0) { %><span class="strong" dir="ltr"><%= r0.v %><% if (r0.unit) { %> <small><%= r0.unit %></small><% } %></span> <% if (r0.band) { %><span class="badge badge-dot <%= tone[r0.level] || 'badge-neutral' %>"><%= L(r0.band.ar, r0.band.en) %></span><% } %><% } else { %><span class="muted"><%= t('spforms.recorded') %></span><% } %><% if (r.voided_at) { %> <span class="badge badge-neutral"><%= t('spforms.removed_badge') %></span><% } %></td>
+        <td class="small muted" data-label="<%= t('spforms.by') %>"><%= L(r.doctor_name, r.doctor_name_en) || r.user_name || '—' %></td>
+        <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="<%= recUrl('/' + form.key + '/' + r.id) %>" aria-label="<%= t('common.view') %>"><%- icon('eye', 'icon-sm') %></a></td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</div>

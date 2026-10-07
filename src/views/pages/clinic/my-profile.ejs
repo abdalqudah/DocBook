@@ -17,6 +17,7 @@
   <% if (typeof openDialog === 'undefined') { %><%- include('../../partials/form-error') %><% } %>
   <div class="panel"><div class="panel-head"><div><h2><%= t('doctors.section_profile') %></h2><div class="panel-sub"><%= t('myprofile.manager_note') %></div></div></div>
     <div class="panel-body form-grid">
+      <%- include('../../partials/field', { name: 'specialty_key', label: t('doctors.specialty_key'), type: 'select', options: specialtyOptions, placeholder: t('doctors.specialty_key_none'), value: v('specialty_key', ''), help: t('doctors.specialty_key_help') }) %>
       <%- include('../../partials/field', { name: 'specialization', label: t('doctors.specialization_ar'), value: v('specialization'), attrs: 'dir="rtl"' }) %>
       <%- include('../../partials/field', { name: 'specialization_en', label: t('doctors.specialization_en'), value: v('specialization_en'), attrs: 'dir="ltr"' }) %>
       <%- include('../../partials/field', { name: 'bio', label: t('doctors.bio_ar'), type: 'textarea', value: v('bio'), attrs: 'dir="rtl" rows="6"' }) %>

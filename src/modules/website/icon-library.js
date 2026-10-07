@@ -51,6 +51,6 @@ const KEYS = ['general', 'dentistry', 'dermatology', 'cosmetic', 'paediatrics', 
 const ALL = [...new Set([...COMMON, ...KEYS.flatMap((k) => LIBS[k])])];
 
 /** The library to open first for a clinic specialty (unknown or multi-specialty → general). */
-const libFor = (specialty) => (LIBS[specialty] && specialty !== 'general' ? specialty : 'general');
+const libFor = (specialty) => { const k = require('../specialty/catalogue').lineage(specialty).find((x) => LIBS[x]); return k && k !== 'general' ? k : 'general'; }; // eslint-disable-line global-require
 
 module.exports = { COMMON, LIBS, KEYS, ALL, libFor };

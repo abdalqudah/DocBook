@@ -52,7 +52,7 @@ async function draft(ctx, business) {
   let r = await row(ctx.businessId);
   if (r && r.draft_version_id) { const v = await version(ctx.businessId, r.draft_version_id); if (v) return { row: r, doc: sections.sanitize(v.doc) }; }
   const pm = await knex('media_usages').where({ business_id: ctx.businessId }).whereIn('context', ['portal.cover', 'portal.gallery']).orderBy('sort_order').select('media_id', 'context');
-  const template = sections.SPECIALTY_TEMPLATE[business && business.specialty] || require('../platformops/clinic-types').template(business && business.specialty) || 'general'; // eslint-disable-line global-require
+  const template = require('../specialty/catalogue').pick(business && business.specialty, sections.SPECIALTY_TEMPLATE) || require('../platformops/clinic-types').template(business && business.specialty) || 'general'; // eslint-disable-line global-require
   const doc = sections.defaultDoc(template, { cover: (pm.find((m) => m.context === 'portal.cover') || {}).media_id || null, gallery: pm.filter((m) => m.context === 'portal.gallery').map((m) => m.media_id) });
   await knex.transaction(async (trx) => {
     const [vid] = await trx('clinic_site_versions').insert({ business_id: ctx.businessId, kind: 'draft', doc: JSON.stringify(doc), created_by: ctx.userId || null });
@@ -258,7 +258,7 @@ async function discard(ctx, business) {
   const r = await row(ctx.businessId);
   if (!r) return null;
   const live = r.live_version_id ? await version(ctx.businessId, r.live_version_id) : null;
-  const template = sections.SPECIALTY_TEMPLATE[business && business.specialty] || require('../platformops/clinic-types').template(business && business.specialty) || 'general'; // eslint-disable-line global-require
+  const template = require('../specialty/catalogue').pick(business && business.specialty, sections.SPECIALTY_TEMPLATE) || require('../platformops/clinic-types').template(business && business.specialty) || 'general'; // eslint-disable-line global-require
   const doc = live ? live.doc : sections.defaultDoc(template);
   await saveDraft(ctx, business, doc, { note: 'website.draft_discarded' });
   await knex('clinic_sites').where({ business_id: ctx.businessId }).update({ draft_updated_at: r.published_at || null });

@@ -137,7 +137,7 @@ async function bookableClinics({ q, specialty } = {}) {
     const s = `%${String(q).trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     query.andWhere((w) => w.where('b.name', 'like', s).orWhere('b.name_en', 'like', s).orWhere('b.city', 'like', s));
   }
-  if (specialty) query.andWhere('b.specialty', specialty);
+  if (specialty) query.whereIn('b.specialty', require('../specialty/catalogue').KEYS.filter((k) => require('../specialty/catalogue').lineage(k).includes(specialty))); // eslint-disable-line global-require
   const rows = await query;
   if (!rows.length) return rows;
   rows.forEach((r) => { r.mode = r.rep_visits_enabled && Number(r.has_windows) ? 'slots' : 'request'; });

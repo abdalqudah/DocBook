@@ -9,6 +9,7 @@
     <div class="panel-body form-grid">
       <%- include('../../../partials/field', { name: 'full_name', label: t('doctors.name_ar'), required: true, value: v('full_name', ''), attrs: 'dir="rtl"' }) %>
       <%- include('../../../partials/field', { name: 'full_name_en', label: t('doctors.name_en'), value: v('full_name_en', ''), attrs: 'dir="ltr"' }) %>
+      <%- include('../../../partials/field', { name: 'specialty_key', label: t('doctors.specialty_key'), type: 'select', options: specialtyOptions, placeholder: t('doctors.specialty_key_none'), value: v('specialty_key', ''), help: t('doctors.specialty_key_help') }) %>
       <%- include('../../../partials/field', { name: 'specialization', label: t('doctors.specialization_ar'), value: v('specialization', ''), attrs: 'dir="rtl"' }) %>
       <%- include('../../../partials/field', { name: 'specialization_en', label: t('doctors.specialization_en'), value: v('specialization_en', ''), attrs: 'dir="ltr"' }) %>
       <%- include('../../../partials/field', { name: 'bio', label: t('doctors.bio_ar'), type: 'textarea', value: v('bio', '') }) %>

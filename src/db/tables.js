@@ -36,7 +36,7 @@ const TENANT = [
   'partners', 'partner_sends', 'partner_transactions', 'patients', 'patient_documents', 'patient_files', 'payments', 'payment_gateways',
   'payroll_adjustments', 'payroll_payments', 'pregnancies', 'pregnancy_checks', 'prescriptions', 'profit_distributions', 'queue_screens',
   'record_access_grants', 'record_access_log', 'recurring_expenses', 'referrals', 'services', 'service_categories', 'share_links',
-  'sheet_sync_runs', 'sheet_sync_settings', 'specialty_settings', 'staff_chats', 'staff_chat_files', 'staff_chat_members', 'staff_chat_messages',
+  'sheet_sync_runs', 'sheet_sync_settings', 'specialty_records', 'specialty_settings', 'staff_chats', 'staff_chat_files', 'staff_chat_members', 'staff_chat_messages',
   'staff_employees', 'staff_mailboxes', 'staff_payroll_adjustments', 'staff_payroll_lines', 'stock_movements', 'suppliers', 'supply_items',
   'surgeries', 'telehealth_signals', 'user_presence',
 ];
