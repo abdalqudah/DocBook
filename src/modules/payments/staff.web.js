@@ -3,7 +3,7 @@
 // invoice the payment created is voided). billing.view to see, billing.manage to act.
 const express = require('express');
 const { wrap, flash, back } = require('../../routes/helpers');
-const { can } = require('../../middleware/context');
+const { can, ownerOnly } = require('../../middleware/context');
 const { AppError } = require('../../core/errors');
 const { publicBase } = require('../../middleware/web');
 const pay = require('./payments.service');
@@ -40,7 +40,7 @@ router.post('/:id(\\d+)/verify', can('billing.manage'), wrap(async (req, res) =>
   back(req, res, `/app/payments/${p.id}`);
 }));
 
-router.post('/:id(\\d+)/refund', can('billing.void'), // a refund voids the invoice: the clinic's admins only
+router.post('/:id(\\d+)/refund', can('billing.void'), ownerOnly, // a refund voids the invoice: the clinic's admins only
  wrap(async (req, res) => {
   try {
     const r = await pay.refund(req.ctx, Number(req.params.id));

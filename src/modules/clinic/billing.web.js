@@ -5,7 +5,7 @@ const exporter = require('../../core/exporter');
 const fmtCore = require('../../core/format');
 const { E } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
-const { can } = require('../../middleware/context');
+const { can, ownerOnly } = require('../../middleware/context');
 const appts = require('./appointments.service');
 const lib = require('./records.lib');
 const payParts = require('./payment-parts');
@@ -173,7 +173,7 @@ router.get('/:id(\\d+)', wrap(async (req, res) => {
   });
 }));
 
-router.post('/:id(\\d+)/void', can('billing.void'), wrap(async (req, res) => {
+router.post('/:id(\\d+)/void', can('billing.void'), ownerOnly, wrap(async (req, res) => {
   const inv = await loadInvoice(req);
   if (String(req.body.confirm_name || '').trim() !== String(inv.invoice_number)) {
     flash(req, 'error', req.t('billing.void_mismatch'));

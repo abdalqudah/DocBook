@@ -3,7 +3,7 @@
 const express = require('express');
 const knex = require('../../db/knex');
 const { wrap, form, flash } = require('../../routes/helpers');
-const { can } = require('../../middleware/context');
+const { can, ownerOnly } = require('../../middleware/context');
 const { AppError, E } = require('../../core/errors');
 const exporter = require('../../core/exporter');
 const { translateMessage } = require('../../core/i18n');
@@ -486,7 +486,7 @@ router.post('/:id(\\d+)/follow-up', can('appointments.manage'), form(async (req,
   res.redirect(`/app/appointments/${id}`);
 }, (req, res, extra) => renderShow(req, res, { ...extra, openDialog: 'followup-dialog' })));
 
-router.post('/:id(\\d+)/delete', can('appointments.manage'), wrap(async (req, res) => {
+router.post('/:id(\\d+)/delete', can('appointments.manage'), ownerOnly, wrap(async (req, res) => {
   const a = await appts.get(req.ctx, Number(req.params.id));
   try {
     await appts.remove(req.ctx, a.id);

@@ -137,6 +137,7 @@ async function withBusiness(req, res, next, businessId) {
     res.locals.membership = membership;
     res.locals.can = (p) => permissions.has(p);
     res.locals.canAny = (...ps) => ps.some((p) => permissions.has(p));
+    res.locals.isOwner = () => isOwnerCtx(req);
     res.locals.currency = business.currency;
     if (!isJson(req)) {
       res.locals.workspaces = await businesses.listForUser(req.user.id);
@@ -163,6 +164,10 @@ async function withBusiness(req, res, next, businessId) {
 }
 
 const can = (permission) => (req, res, next) => (req.ctx?.permissions.has(permission) ? next() : next(E.forbidden(permission)));
+/** The clinic's owner only (the account that owns it, the installation's platform admin, or a centre's administration):
+ * deleting an appointment and voiding an invoice or a payment. */
+const isOwnerCtx = (req) => Boolean(req.ctx && (req.ctx.roleKey === 'owner' || req.ctx.centerAdmin || (req.user && req.user.is_platform_admin)));
+const ownerOnly = (req, res, next) => (isOwnerCtx(req) ? next() : next(E.forbidden('owner')));
 const canAny = (...perms) => (req, res, next) => (perms.some((p) => req.ctx?.permissions.has(p)) ? next() : next(E.forbidden(perms.join('|'))));
 
-module.exports = { loadUser, requireAuth, resolveBusiness, can, canAny, isJson };
+module.exports = { loadUser, requireAuth, resolveBusiness, can, canAny, ownerOnly, isOwnerCtx, isJson };

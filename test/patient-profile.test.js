@@ -167,3 +167,21 @@ test('HTTP: profile on the file, important note when booking, photo, filters, st
   assert.equal(r.status, 200);
   assert.match(r.text, /name="discount_value"[^>]*value="15"/);
 });
+
+test('only the clinic owner deletes an appointment, voids an invoice or refunds a payment', async () => {
+  await staff(ctx.businessId, 'clinic_manager', `pp-mgr${tag}@t.test`);
+  const mgr = await signIn(`pp-mgr${tag}@t.test`);
+  const [aid] = await knex('appointments').insert({ business_id: ctx.businessId, patient_name: 'Owner Only', patient_phone: '0790009999', appointment_date: ctx.today, appointment_time: '11:00', duration_minutes: 30, status: 'confirmed' });
+  let r = await mgr.get(`/app/appointments/${aid}`);
+  assert.equal(r.status, 200);
+  assert.doesNotMatch(r.text, new RegExp(`/app/appointments/${aid}/delete`), 'no delete button for the manager');
+  assert.equal((await mgr.post(`/app/appointments/${aid}/delete`)).status, 403);
+  assert.equal((await mgr.post('/app/billing/1/void', { confirm_name: '1' })).status, 403);
+  assert.equal((await mgr.post('/app/payments/1/refund')).status, 403);
+  assert.ok(await knex('appointments').where({ id: aid }).first());
+  const owner = await signIn(`pp${tag}@t.test`);
+  r = await owner.get(`/app/appointments/${aid}`);
+  assert.match(r.text, new RegExp(`/app/appointments/${aid}/delete`));
+  assert.equal((await owner.post(`/app/appointments/${aid}/delete`)).status, 302);
+  assert.equal(await knex('appointments').where({ id: aid }).first(), undefined);
+});

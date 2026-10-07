@@ -43,7 +43,7 @@
     </dl></div>
     <% if (inv.appointment_id && (can('appointments.view') || can('clinical.view'))) { %><div class="panel-foot"><a class="btn btn-ghost btn-sm" href="<%= can('clinical.view') ? '/app/visits/' : '/app/appointments/' %><%= inv.appointment_id %>"><%- icon('calendar-days', 'icon-sm') %><%= t('billing.open_visit') %></a></div><% } %>
     </div>
-    <% if (can('billing.void')) { %>
+    <% if (can('billing.void') && isOwner()) { %>
     <div class="panel"><div class="panel-body stack-sm">
       <div class="strong"><%= t('billing.void') %></div>
       <p class="small muted"><%= t('billing.void_help') %></p>

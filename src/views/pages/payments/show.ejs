@@ -13,7 +13,7 @@
     <% if (canManage && ['initiated', 'failed', 'cancelled'].indexOf(p.status) !== -1 && p.provider_ref) { %>
       <form method="post" action="/app/payments/<%= p.id %>/verify"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('payments.show.verify') %></button></form>
     <% } %>
-    <% if (can('billing.void') && p.status === 'paid') { %>
+    <% if (can('billing.void') && isOwner() && p.status === 'paid') { %>
       <form method="post" action="/app/payments/<%= p.id %>/refund" data-confirm="<%= t('payments.show.refund_confirm', { amount: fmt.money(p.amount, p.currency) }) %>" data-confirm-title="<%= t('payments.show.refund') %>" data-confirm-yes="<%= t('payments.show.refund') %>" data-confirm-type="<%= t('payments.show.refund_word') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost" type="submit"><%- icon('archive-restore', 'icon-sm') %><%= t('payments.show.refund') %></button></form>
     <% } %>
   </div>
