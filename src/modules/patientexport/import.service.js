@@ -35,7 +35,8 @@ const TABLES = {
   dental: 'dental_entries', dental_plan: 'dental_plan_items', growth: 'growth_measurements', pregnancy: 'pregnancies',
   paper_invoice: 'patient_files', paper_certificate: 'patient_files', surgery: 'surgeries', specialty_record: 'specialty_records',
 };
-const PATIENT_FILL = ['phone', 'email', 'date_of_birth', 'gender', 'national_id', 'insurance_number', 'allergies', 'chronic_conditions', 'notes'];
+const PATIENT_FILL = ['phone', 'email', 'date_of_birth', 'gender', 'national_id', 'insurance_number', 'allergies', 'chronic_conditions', 'notes',
+  'name_en', 'phone2', 'address', 'city', 'area', 'nationality', 'residence', 'occupation', 'marital_status', 'blood_group', 'current_medications', 'important_note'];
 
 const dirOf = (businessId) => path.join(ROOT, String(Number(businessId)));
 const zipPath = (businessId, token) => path.join(dirOf(businessId), `${token}.zip`);
@@ -209,7 +210,10 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
       rep.patients_merged = (rep.patients_merged || 0) + 1;
     } else {
       const ins = p.insurance_name ? await trx('insurance_providers').where({ business_id: ctx.businessId, name: p.insurance_name }).first('id') : null;
-      pid = await insert('patient', p, { insurance_provider_id: ins ? ins.id : null });
+      // A file number already used here is left empty; a case manager is a member of this clinic only.
+      const fileFree = p.file_number && !(await trx('patients').where({ business_id: ctx.businessId, file_number: String(p.file_number) }).first('id'));
+      const manager = same && p.case_manager_id ? await trx('memberships').where({ business_id: ctx.businessId, user_id: p.case_manager_id }).first('user_id') : null;
+      pid = await insert('patient', p, { insurance_provider_id: ins ? ins.id : null, file_number: fileFree ? String(p.file_number) : null, case_manager_id: manager ? manager.user_id : null });
       rep.patients_new = (rep.patients_new || 0) + 1;
     }
 

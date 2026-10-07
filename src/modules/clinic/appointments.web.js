@@ -276,15 +276,20 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
 
 // Patient search for the booking form (clinic-scoped, max 8).
 router.get('/patient-lookup', can('appointments.manage'), wrap(async (req, res) => {
+  const out = (rows) => res.json({ data: rows.map((p) => ({ id: p.id, name: p.full_name, phone: p.phone || '', email: p.email || '', dob: p.date_of_birth || '', file: p.file_number || '', note: p.important_on_booking ? p.important_note || '' : '' })) });
+  const cols = ['id', 'full_name', 'phone', 'email', 'date_of_birth', 'file_number', 'important_note', 'important_on_booking'];
+  // One patient by id (the form opened with the patient already chosen): for the note shown when booking.
+  if (/^\d+$/.test(String(req.query.id || ''))) return out(await knex('patients').where({ business_id: req.ctx.businessId, id: Number(req.query.id) }).limit(1).select(cols));
   const q = String(req.query.q || '').trim().slice(0, 60);
   if (q.length < 2) return res.json({ data: [] });
   const like = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
   const digits = q.replace(/[^0-9]/g, '');
   const rows = await knex('patients').where({ business_id: req.ctx.businessId })
     .andWhere((w) => { require('./records.lib').nameMatch(w, 'full_name', q); // eslint-disable-line global-require
-      w.orWhere('phone', 'like', like); if (digits.length >= 3) w.orWhere('phone', 'like', `%${digits}%`); })
-    .orderBy('full_name').limit(8).select('id', 'full_name', 'phone', 'email', 'date_of_birth');
-  return res.json({ data: rows.map((p) => ({ id: p.id, name: p.full_name, phone: p.phone || '', email: p.email || '', dob: p.date_of_birth || '' })) });
+      w.orWhere('name_en', 'like', like).orWhere('file_number', q);
+      w.orWhere('phone', 'like', like); if (digits.length >= 3) w.orWhere('phone', 'like', `%${digits}%`).orWhere('phone2', 'like', `%${digits}%`); })
+    .orderBy('full_name').limit(8).select(cols);
+  return out(rows);
 }));
 
 // ---------------------------------------------------------------- the doctors' order (the calendar's columns)

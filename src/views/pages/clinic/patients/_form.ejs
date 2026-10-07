@@ -12,3 +12,58 @@
   <%- include(P + 'field', { name: 'chronic_conditions', label: t('patients.chronic'), type: 'textarea', cls: 'full', value: _p.chronic_conditions, placeholder: t('patients.chronic_ph') }) %>
   <%- include(P + 'field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full', value: _p.notes }) %>
 </div>
+<% if (typeof pp !== 'undefined' && pp) {
+  var _o = typeof old !== 'undefined' && old && Object.keys(old).length ? old : null;
+  var _mine = _o ? [].concat(_o.groups || []).map(Number) : pp.mine;
+  var _isEdit = Boolean(_p.id);
+  var _chk = function (name, def) { return _o ? ['1', 'on'].indexOf(String(_o[name])) >= 0 : def; };
+%>
+<input type="hidden" name="profile_form" value="1"><input type="hidden" name="groups_form" value="1"><input type="hidden" name="reminders_form" value="1">
+<details class="pp-more"<%= _isEdit ? ' open' : '' %>>
+  <summary class="strong"><%- icon('id-card', 'icon-sm') %> <%= t('pprofile.personal') %></summary>
+  <div class="form-grid mt-3">
+    <%- include(P + 'field', { name: 'file_number', label: t('pprofile.file_number'), value: _p.file_number, attrs: 'dir="ltr" maxlength="30" autocomplete="off"', help: _isEdit ? (pp.last ? t('pprofile.last_number', { n: pp.last }) : '') : t('pprofile.file_number_auto', { n: pp.last + 1 }) }) %>
+    <%- include(P + 'field', { name: 'name_en', label: t('pprofile.name_en'), value: _p.name_en, attrs: 'dir="ltr" autocomplete="off"' }) %>
+    <%- include(P + 'field', { name: 'phone2', label: t('pprofile.phone2'), type: 'tel', value: _p.phone2, attrs: 'dir="ltr" inputmode="tel" autocomplete="off"' }) %>
+    <%- include(P + 'field', { name: 'category', label: t('pprofile.category'), type: 'select', value: _p.category, placeholder: t('pprofile.categories.standard'), options: pp.choices.categories.filter(function (c) { return c.value !== 'standard'; }) }) %>
+    <%- include(P + 'field', { name: 'case_manager_id', label: t('pprofile.case_manager'), type: 'select', value: _p.case_manager_id, placeholder: '—', options: pp.managers.map(function (m) { return { value: m.id, label: m.name }; }) }) %>
+    <%- include(P + 'field', { name: 'marital_status', label: t('pprofile.marital_status'), type: 'select', value: _p.marital_status, placeholder: '—', options: pp.choices.marital }) %>
+    <%- include(P + 'field', { name: 'occupation', label: t('pprofile.occupation'), value: _p.occupation }) %>
+    <%- include(P + 'field', { name: 'nationality', label: t('pprofile.nationality'), type: 'select', value: _p.nationality, placeholder: '—', options: pp.choices.countries }) %>
+    <%- include(P + 'field', { name: 'residence', label: t('pprofile.residence'), type: 'select', value: _p.residence, placeholder: '—', options: pp.choices.countries }) %>
+    <%- include(P + 'field', { name: 'city', label: t('pprofile.city'), value: _p.city }) %>
+    <%- include(P + 'field', { name: 'area', label: t('pprofile.area'), value: _p.area }) %>
+    <%- include(P + 'field', { name: 'address', label: t('pprofile.address'), value: _p.address, cls: 'full' }) %>
+    <%- include(P + 'field', { name: 'referral_source', label: t('pprofile.referral_source'), type: 'select', value: _p.referral_source, placeholder: '—', options: pp.choices.referral }) %>
+    <%- include(P + 'field', { name: 'referral_detail', label: t('pprofile.referral_detail'), value: _p.referral_detail, help: t('pprofile.referral_detail_help') }) %>
+    <%- include(P + 'field', { name: 'discount_percent', label: t('pprofile.discount'), value: _p.discount_percent !== null && _p.discount_percent !== undefined && Number(_p.discount_percent) ? Number(_p.discount_percent) : '', suffix: '%', attrs: 'inputmode="decimal" dir="ltr"', help: t('pprofile.discount_help') }) %>
+    <div class="field full">
+      <span class="label"><%= t('pprofile.groups') %></span>
+      <div class="sf-chips pp-groups">
+        <% pp.groups.forEach(function (g) { %><label class="sf-chip"><input type="checkbox" name="groups" value="<%= g.id %>"<%= _mine.indexOf(g.id) >= 0 ? ' checked' : '' %>><span dir="auto"><%= g.name %></span></label><% }) %>
+        <input class="input pp-new-group" name="new_group" maxlength="60" placeholder="<%= t('pprofile.new_group') %>" aria-label="<%= t('pprofile.new_group') %>" value="<%= _o && _o.new_group ? _o.new_group : '' %>">
+      </div>
+      <span class="help"><%= t('pprofile.groups_help') %></span>
+    </div>
+  </div>
+</details>
+<details class="pp-more"<%= _isEdit ? ' open' : '' %>>
+  <summary class="strong"><%- icon('heart-pulse', 'icon-sm') %> <%= t('pprofile.medical') %></summary>
+  <div class="form-grid mt-3">
+    <%- include(P + 'field', { name: 'important_note', label: t('pprofile.important_note'), type: 'textarea', cls: 'full', value: _p.important_note, help: t('pprofile.important_note_help'), attrs: 'maxlength="1000"' }) %>
+    <label class="check full"><input type="checkbox" name="important_on_booking" value="1"<%= _chk('important_on_booking', Boolean(_p.important_on_booking)) ? ' checked' : '' %>><span><%= t('pprofile.important_on_booking') %></span></label>
+    <%- include(P + 'field', { name: 'current_medications', label: t('pprofile.current_medications'), type: 'textarea', cls: 'full', value: _p.current_medications, placeholder: t('pprofile.current_medications_ph') }) %>
+    <%- include(P + 'field', { name: 'blood_group', label: t('pprofile.blood_group'), type: 'select', value: _p.blood_group, placeholder: '—', options: pp.choices.blood, attrs: 'dir="ltr"' }) %>
+    <%- include(P + 'field', { name: 'smoker', label: t('pprofile.smoker'), type: 'select', value: _p.smoker, placeholder: '—', options: pp.choices.habit }) %>
+    <%- include(P + 'field', { name: 'alcohol', label: t('pprofile.alcohol'), type: 'select', value: _p.alcohol, placeholder: '—', options: pp.choices.habit }) %>
+    <div class="full pp-women" data-pp-women>
+      <div class="small strong mb-2"><%= t('pprofile.women_only') %></div>
+      <div class="form-grid">
+        <%- include(P + 'field', { name: 'pregnant', label: t('pprofile.pregnant'), type: 'select', value: _p.pregnant, placeholder: '—', options: pp.choices.pregnant }) %>
+        <%- include(P + 'field', { name: 'contraceptive', label: t('pprofile.contraceptive'), type: 'select', value: _p.contraceptive, placeholder: '—', options: pp.choices.yesNo }) %>
+      </div>
+    </div>
+    <label class="check full"><input type="checkbox" name="reminders" value="1"<%= _chk('reminders', !_p.messaging_opt_out) ? ' checked' : '' %>><span><%= t('pprofile.reminders') %></span></label>
+  </div>
+</details>
+<% } %>

@@ -48,3 +48,16 @@
     });
   });
 }());
+
+/* Patient form: the "women only" questions follow the gender field. */
+(function () {
+  'use strict';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-pp-women]'), function (box) {
+    var form = box.closest('form');
+    var g = form && form.querySelector('[name="gender"]');
+    if (!g) return;
+    function sync() { box.hidden = g.value === 'male'; }
+    g.addEventListener('change', sync);
+    sync();
+  });
+}());

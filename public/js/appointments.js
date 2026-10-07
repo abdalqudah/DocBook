@@ -166,8 +166,11 @@
       pid.value = p.id; name.value = p.name; phone.value = p.phone; if (email) email.value = p.email || '';
       $('[data-chip-name]', chip).textContent = p.name; $('[data-chip-phone]', chip).textContent = p.phone;
       var av = $('.avatar', chip); if (av) av.textContent = String(p.name || '?').trim().split(/\s+/).slice(0, 2).map(function (x) { return x[0]; }).join('').toUpperCase();
-      closeResults(); search.value = ''; showSearch(false);
+      closeResults(); search.value = ''; showSearch(false); showNote(p.note);
     }
+    var noteBox = $('[data-patient-note]', form);
+    function showNote(text) { if (!noteBox) return; $('[data-patient-note-text]', noteBox).textContent = text || ''; noteBox.classList.toggle('hidden', !text); }
+    if (pid.value && noteBox) getJson('/app/appointments/patient-lookup?id=' + encodeURIComponent(pid.value)).then(function (res) { var p = res && res.data && res.data[0]; if (p) showNote(p.note); }).catch(function () {});
     function paint() {
       if (!found.length) { results.innerHTML = '<div class="patient-empty small muted">' + esc(search.getAttribute('data-empty')) + '</div>'; }
       else {
@@ -200,7 +203,7 @@
     results.addEventListener('click', function (e) { var b = e.target.closest('[data-i]'); if (b) choose(found[Number(b.getAttribute('data-i'))]); });
     document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) closeResults(); });
     var clear = $('[data-patient-clear]', form);
-    if (clear) clear.addEventListener('click', function () { pid.value = ''; name.value = ''; phone.value = ''; if (email) email.value = ''; showSearch(true); search.focus(); });
+    if (clear) clear.addEventListener('click', function () { pid.value = ''; name.value = ''; phone.value = ''; if (email) email.value = ''; showNote(''); showSearch(true); search.focus(); });
     // Typing a different phone detaches the chosen patient (the clinic then matches by exact phone).
     phone.addEventListener('input', function () { if (pid.value) { pid.value = ''; chip.classList.add('hidden'); wrap.classList.remove('hidden'); } });
   });

@@ -1078,3 +1078,10 @@ a.pn-title:hover { color: var(--primary); }
 /* A field that cannot be changed here (e.g. Team → a member's own or shared details): visibly read-only. */
 .input:disabled, .select:disabled, .textarea:disabled { background: var(--surface-sunken); color: var(--text-subtle); cursor: not-allowed; }
 .set-send-btn { justify-content: flex-start; text-align: start; width: 100%; height: auto; padding-block: 10px; }
+
+/* The patient's important note (file, visit, booking) and photo — patient-profile.js. */
+.pp-alert { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--danger); color: var(--danger); background: var(--surface-sunken); border-radius: var(--radius, 12px); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); font-weight: var(--fw-semibold); }
+.pp-alert .icon { flex: none; margin-top: 2px; }
+@media (prefers-reduced-motion: no-preference) { .pp-alert.is-flash { animation: pp-flash 1.6s ease-in-out 3; } }
+@keyframes pp-flash { 50% { background: var(--surface); } }
+.pp-photo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex: none; border: 2px solid var(--border); }

@@ -64,8 +64,11 @@ async function panelLocals(req, apptId, extra = {}) {
     lines = (Array.isArray(old.items) ? old.items : Object.values(old.items)).map((l) => ({ name: l.name, service_id: l.service_id || null, qty: l.qty, unit_price: l.unit_price, fromDoctor: l.from_doctor === '1' }));
   }
   const inv = a.payment_status === 'paid' ? await knex('invoices').where({ business_id: ctx.businessId, appointment_id: a.id }).orderBy('id', 'desc').first('id', 'invoice_number') : null;
+  // The patient's standing discount (patient file) starts the discount field; the cashier can change it.
+  const pt = a.patient_id && a.payment_status !== 'paid' ? await knex('patients').where({ business_id: ctx.businessId, id: a.patient_id }).first('discount_percent') : null;
+  const patientDiscount = pt && Number(pt.discount_percent) > 0 ? Number(pt.discount_percent) : null;
   return {
-    bill: { a, lines, doctorLines, services, insurance, old, invoice: inv || null },
+    bill: { a, lines, doctorLines, services, insurance, old, invoice: inv || null, patientDiscount },
     ret: retOf(extra.ret || req.query.return), methods: svc.PAY_METHODS, decimals: decimalsOf(ctx.currency),
     errors: extra.errors || {}, formError: extra.formError || null,
   };

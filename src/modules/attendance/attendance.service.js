@@ -575,7 +575,7 @@ async function remove(ctx, id) {
   });
 }
 
-module.exports = {
+module.exports = { zonedToUtc,
   STEP_MS, GRACE_STEPS, TICKET_MS, OPEN_SHIFT_MS, DAY_KEYS, WEEK_ORDER, stepOf, issueToken, verifyToken, currentQr,
   settings, saveSettings, schedules, saveSchedule, removeSchedule, planner, dayStatus,
   openShift, toggle, staff, records, myMonth, totalsByPerson, board, timesheet, monthReport, feed,

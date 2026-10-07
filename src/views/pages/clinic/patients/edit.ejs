@@ -5,6 +5,17 @@
     <h1><%= t('patients.edit') %></h1>
   </div>
 </div>
+<% var _hasPhoto = typeof hasPhoto !== 'undefined' && hasPhoto; %>
+<form class="panel mb-4" method="post" action="/app/patients/<%= p.id %>/photo" enctype="multipart/form-data">
+  <div class="panel-body row wrap" style="gap:16px;align-items:center">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% if (_hasPhoto) { %><img class="pp-photo" src="/app/patients/<%= p.id %>/photo?v=<%= Date.now() %>" alt="<%= p.full_name %>"><% } else { %><span class="avatar avatar-lg"><%= initials(p.full_name) %></span><% } %>
+    <div class="grow" style="min-width:200px"><div class="strong"><%= t('pprofile.photo') %></div><div class="small muted"><%= t('pprofile.photo_help') %></div>
+      <input class="input mt-2" type="file" name="photo" accept="image/jpeg,image/png,image/webp" aria-label="<%= t('pprofile.photo') %>"></div>
+    <div class="row-sm"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('pprofile.photo_upload') %></button>
+      <% if (_hasPhoto) { %><button class="btn btn-danger-ghost btn-sm" type="submit" name="remove" value="1" formnovalidate><%- icon('trash-2', 'icon-sm') %><%= t('pprofile.photo_remove') %></button><% } %></div>
+  </div>
+</form>
 <form class="panel rec-form" method="post" action="/app/patients/<%= p.id %>/edit" novalidate>
   <div class="panel-body">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">

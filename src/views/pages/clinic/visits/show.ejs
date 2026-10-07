@@ -74,6 +74,7 @@
       <% if (a.patient_phone) { %><span dir="ltr"><%= a.patient_phone %></span><% } %>
       <% if (p.insurance_name) { %><span class="row-sm"><%- icon('shield-check', 'icon-sm') %><%= p.insurance_name %><% if (p.insurance_number) { %> <span class="muted" dir="ltr">(<%= p.insurance_number %>)</span><% } %></span><% } %>
     </p>
+    <% if (p.important_note) { %><div class="pp-alert is-flash mt-2" role="alert"><%- icon('triangle-alert') %><div class="grow"><div class="small"><%= t('pprofile.important_note') %></div><div class="rec-pre" dir="auto"><%= p.important_note %></div></div></div><% } %>
     <% if (can('clinical.view') && (p.allergies || p.chronic_conditions)) { %><%/* safety information: shown even when the record is restricted */%>
     <div class="df-flags">
       <% if (p.allergies) { %><span class="df-flag df-flag-danger" role="note"><%- icon('triangle-alert', 'icon-sm') %><strong><%= t('visits.allergies') %>:</strong> <bdi><%= p.allergies %></bdi></span><% } %>

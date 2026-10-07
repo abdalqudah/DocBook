@@ -8,10 +8,14 @@
   <div>
     <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><span dir="auto"><%= p.full_name %></span></div>
     <div class="row rec-head">
-      <span class="avatar avatar-lg"><%= initials(p.full_name) %></span>
+      <% var _pp = typeof pprofile !== 'undefined' ? pprofile : { groups: [], photo: false }; %>
+      <% if (_pp.photo) { %><img class="pp-photo" src="/app/patients/<%= p.id %>/photo" alt="<%= p.full_name %>"><% } else { %><span class="avatar avatar-lg"><%= initials(p.full_name) %></span><% } %>
       <div style="min-width:0">
-        <h1 dir="auto"><%= p.full_name %></h1>
+        <h1 dir="auto"><%= p.full_name %><% if (p.name_en) { %> <small class="muted" dir="ltr" style="font-weight:500">· <%= p.name_en %></small><% } %></h1>
         <div class="rec-meta">
+          <% if (p.file_number) { %><span class="badge badge-neutral" title="<%= t('pprofile.file_number') %>"><%- icon('id-card', 'icon-sm') %><bdi dir="ltr"><%= p.file_number %></bdi></span><% } %>
+          <% if (p.category && p.category !== 'standard') { %><span class="badge badge-warning"><%- icon('star', 'icon-sm') %><%= t('pprofile.categories.' + p.category) %></span><% } %>
+          <% _pp.groups.forEach(function (g) { %><span class="badge badge-info" dir="auto"><%= g.name %></span><% }) %>
           <% if (age !== null) { %><span><%= t('patients.years', { n: age }) %></span><% } %>
           <% if (p.gender) { %><span><%= t('patients.genders.' + p.gender) %></span><% } %>
           <% if (p.phone) { %><a class="link" href="tel:<%= p.phone.replace(/[^\d+]/g, '') %>" dir="ltr"><%- icon('phone', 'icon-sm') %><%= p.phone %></a><% } %>
@@ -36,6 +40,7 @@
   <% tabs.forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%- icon(tabIcon[k], 'icon-sm') %><%= t('patients.tab.' + k) %></a><% }) %>
 </nav>
 
+<% if (p.important_note) { %><div class="pp-alert is-flash" role="alert"><%- icon('triangle-alert') %><div class="grow"><div class="small"><%= t('pprofile.important_note') %></div><div class="rec-pre" dir="auto"><%= p.important_note %></div></div></div><% } %>
 <% if (p.allergies || p.chronic_conditions) { %>
 <div class="grid <%= p.allergies && p.chronic_conditions ? 'grid-2' : '' %> mb-4">
   <% if (p.allergies) { %><div class="alert alert-error" role="note"><%- icon('triangle-alert') %><div class="grow"><div class="alert-title"><%= t('patients.allergies') %></div><div class="rec-pre"><%= p.allergies %></div></div></div><% } %>
@@ -66,6 +71,24 @@
   </div>
   </div>
   <div class="stack">
+    <% var _fact = function (label, value) { return value ? '<div><dt>' + escapeHtml(label) + '</dt><dd dir="auto">' + escapeHtml(String(value)) + '</dd></div>' : ''; };
+       var _country = function (c) { var x = (_pp.choices && _pp.choices.countries || []).find(function (o) { return o.value === c; }); return x ? x.label : c; };
+       var _facts = [
+         _fact(t('pprofile.phone2'), p.phone2), _fact(t('pprofile.address'), [p.address, p.area, p.city].filter(Boolean).join('، ')),
+         _fact(t('pprofile.nationality'), p.nationality ? _country(p.nationality) : ''), _fact(t('pprofile.residence'), p.residence ? _country(p.residence) : ''),
+         _fact(t('pprofile.occupation'), p.occupation), _fact(t('pprofile.marital_status'), p.marital_status ? t('pprofile.marital.' + p.marital_status) : ''),
+         _fact(t('pprofile.blood_group'), p.blood_group), _fact(t('pprofile.case_manager'), _pp.manager),
+         _fact(t('pprofile.referral_source'), p.referral_source ? t('pprofile.referral.' + p.referral_source) + (p.referral_detail ? ' — ' + p.referral_detail : '') : ''),
+         _fact(t('pprofile.discount'), Number(p.discount_percent) ? fmt.number(p.discount_percent) + '%' : ''),
+         _fact(t('pprofile.current_medications'), p.current_medications),
+         _fact(t('pprofile.smoker'), p.smoker ? t('pprofile.habit.' + p.smoker) : ''), _fact(t('pprofile.alcohol'), p.alcohol ? t('pprofile.habit.' + p.alcohol) : ''),
+         _fact(t('pprofile.pregnant'), p.gender !== 'male' && p.pregnant ? t('pprofile.pregnant_opts.' + p.pregnant) : ''),
+         _fact(t('pprofile.contraceptive'), p.gender !== 'male' && p.contraceptive ? t('pprofile.yes_no.' + p.contraceptive) : ''),
+         _fact(t('pprofile.joined'), fmt.date(p.created_at)),
+         _fact(t('pprofile.updated'), p.updated_at ? fmt.date(p.updated_at) + (_pp.updatedBy ? ' — ' + _pp.updatedBy : '') : ''),
+         p.messaging_opt_out ? _fact(t('pprofile.reminders_short'), t('pprofile.reminders_off')) : ''
+       ].join(''); %>
+    <% if (_facts) { %><div class="panel"><div class="panel-head"><h2><%= t('pprofile.details') %></h2><% if (can('patients.edit')) { %><a class="btn btn-ghost btn-icon btn-sm" href="/app/patients/<%= p.id %>/edit" aria-label="<%= t('common.edit') %>"><%- icon('pencil', 'icon-sm') %></a><% } %></div><dl class="panel-body pp-facts"><%- _facts %></dl></div><% } %>
     <% if (restrictedView) { %><%- include('../../clinicalplus/_restricted', { acc: acc, patientId: p.id, returnTo: '/app/patients/' + p.id }) %><% } %>
     <% if (acc.reason === 'emergency' && acc.grant) { %><div class="alert alert-warning" role="note"><%- icon('shield-alert') %><div class="grow"><div class="alert-title"><%= t('privacy.bg_active_title') %></div><div class="small"><%= t('privacy.bg_active_text', { when: fmt.date(acc.grant.expires_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) %></div></div></div><% } %>
     <% if (upcoming.length) { %>

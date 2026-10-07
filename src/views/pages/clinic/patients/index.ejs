@@ -24,8 +24,43 @@
       <option value="created"><%= t('patients.sort_newest') %></option>
       <option value="name"<%= query.sort === 'name' ? ' selected' : '' %>><%= t('patients.sort_name') %></option>
       <option value="last"<%= query.sort === 'last' ? ' selected' : '' %>><%= t('patients.sort_last') %></option>
+      <option value="file"<%= query.sort === 'file' ? ' selected' : '' %>><%= t('pfilter.sort_file') %></option>
+      <option value="dob"<%= query.sort === 'dob' ? ' selected' : '' %>><%= t('pfilter.sort_dob') %></option>
+      <option value="visits"<%= query.sort === 'visits' ? ' selected' : '' %>><%= t('pfilter.sort_visits') %></option>
+    </select>
+    <select class="select" name="dir" aria-label="<%= t('pfilter.direction') %>">
+      <option value=""><%= t('pfilter.dir_default') %></option>
+      <option value="asc"<%= query.dir === 'asc' ? ' selected' : '' %>><%= t('pfilter.asc') %></option>
+      <option value="desc"<%= query.dir === 'desc' ? ' selected' : '' %>><%= t('pfilter.desc') %></option>
     </select>
     <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/app/patients"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+    <details class="pf-more"<%= advanced ? ' open' : '' %>>
+      <summary class="btn btn-secondary btn-sm"><%- icon('filter', 'icon-sm') %><%= t('pfilter.more') %></summary>
+      <div class="pf-grid">
+        <% var Q = function (k) { return query[k] || ''; };
+           var sel = function (name, label, opts, all) { return '<label class="field"><span class="label">' + escapeHtml(label) + '</span><select class="select" name="' + name + '"><option value="">' + escapeHtml(all || t('pfilter.all')) + '</option>' + opts.map(function (o) { return '<option value="' + escapeHtml(String(o.value)) + '"' + (String(Q(name)) === String(o.value) ? ' selected' : '') + '>' + escapeHtml(o.label) + '</option>'; }).join('') + '</select></label>'; };
+           var inp = function (name, label, type, attrs) { return '<label class="field"><span class="label">' + escapeHtml(label) + '</span><input class="input" type="' + (type || 'text') + '" name="' + name + '" value="' + escapeHtml(Q(name)) + '" ' + (attrs || '') + '></label>'; };
+           var months = []; for (var m = 1; m <= 12; m++) months.push({ value: m, label: new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(2026, m - 1, 1)) }); %>
+        <%- inp('file', t('pprofile.file_number'), 'text', 'dir="ltr"') %>
+        <%- inp('name', t('pfilter.name')) %>
+        <%- sel('gender', t('patients.gender'), [{ value: 'male', label: t('patients.genders.male') }, { value: 'female', label: t('patients.genders.female') }]) %>
+        <%- inp('mobile', t('pfilter.mobile'), 'tel', 'dir="ltr" inputmode="tel"') %>
+        <%- inp('email', t('common.email'), 'text', 'dir="ltr"') %>
+        <%- sel('group', t('pprofile.groups'), [{ value: 'none', label: t('pfilter.no_group') }].concat(fl.groups.map(function (g) { return { value: g.id, label: g.name }; }))) %>
+        <%- sel('nationality', t('pprofile.nationality'), fl.choices.countries) %>
+        <%- inp('note', t('pfilter.note')) %>
+        <%- sel('category', t('pprofile.category'), fl.choices.categories) %>
+        <%- inp('from', t('pfilter.created_from'), 'date') %>
+        <%- inp('to', t('pfilter.created_to'), 'date') %>
+        <%- inp('city', t('pfilter.city_area')) %>
+        <%- sel('month', t('pfilter.birth_month'), months) %>
+        <%- sel('manager', t('pprofile.case_manager'), fl.managers.map(function (u) { return { value: u.id, label: u.name }; })) %>
+        <%- sel('referral', t('pprofile.referral_source'), fl.choices.referral) %>
+        <%- sel('blood', t('pprofile.blood_group'), fl.choices.blood) %>
+        <%- sel('tag', t('pfilter.flags'), [{ value: 'important', label: t('pfilter.flag_important') }, { value: 'allergy', label: t('pfilter.flag_allergy') }, { value: 'discount', label: t('pfilter.flag_discount') }, { value: 'no_reminders', label: t('pfilter.flag_no_reminders') }]) %>
+        <div class="pf-actions"><button class="btn btn-primary btn-sm" type="submit"><%- icon('search', 'icon-sm') %><%= t('pfilter.apply') %></button></div>
+      </div>
+    </details>
   </form>
   <% if (!rows.length) { %>
     <% if (filtered) { %>
@@ -40,7 +75,7 @@
       <tbody>
         <% rows.forEach(function (r) { var age = ageOf(r.date_of_birth); %>
         <tr>
-          <td class="primary-cell"><a class="person" href="/app/patients/<%= r.id %>"><span class="avatar"><%= initials(r.full_name) %></span><span style="min-width:0"><span class="person-name" dir="auto"><%= r.full_name %></span><% if (r.allergies) { %> <span class="badge badge-danger" title="<%= t('patients.allergies') %>: <%= r.allergies %>"><%- icon('triangle-alert', 'icon-sm') %><%= t('patients.allergy_short') %></span><% } %><span class="person-sub" style="display:block"><span dir="ltr"><%= r.phone || '—' %></span><% if (r.national_id) { %> · <span dir="ltr"><%= r.national_id %></span><% } %></span></span></a></td>
+          <td class="primary-cell"><a class="person" href="/app/patients/<%= r.id %>"><span class="avatar"><%= initials(r.full_name) %></span><span style="min-width:0"><span class="person-name" dir="auto"><%= r.full_name %></span><% if (r.category && r.category !== 'standard') { %> <span class="badge badge-warning"><%= t('pprofile.categories.' + r.category) %></span><% } %><% if (r.important_note) { %> <span class="badge badge-danger" title="<%= r.important_note %>"><%- icon('triangle-alert', 'icon-sm') %>!</span><% } %><% if (r.allergies) { %> <span class="badge badge-danger" title="<%= t('patients.allergies') %>: <%= r.allergies %>"><%- icon('triangle-alert', 'icon-sm') %><%= t('patients.allergy_short') %></span><% } %><span class="person-sub" style="display:block"><% if (r.file_number) { %><span dir="ltr">#<%= r.file_number %></span> · <% } %><span dir="ltr"><%= r.phone || '—' %></span><% if (r.national_id) { %> · <span dir="ltr"><%= r.national_id %></span><% } %></span></span></a></td>
           <td data-label="<%= t('patients.age_gender') %>"><%= [age !== null ? t('patients.years', { n: age }) : null, r.gender ? t('patients.genders.' + r.gender) : null].filter(Boolean).join(' · ') || '—' %></td>
           <td data-label="<%= t('patients.insurance') %>"><% if (r.insurance_name) { %><span class="badge badge-info"><%= r.insurance_name %></span><% if (r.insurance_number) { %> <span class="small muted" dir="ltr"><%= r.insurance_number %></span><% } %><% } else { %><span class="muted">—</span><% } %></td>
           <td data-label="<%= t('patients.visits') %>" class="num"><%= fmt.number(r.visits) %></td>

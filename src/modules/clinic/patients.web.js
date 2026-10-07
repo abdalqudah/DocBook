@@ -28,20 +28,68 @@ function listQuery(ctx, query) {
     .where('patients.business_id', ctx.businessId);
   if (query.q && String(query.q).trim()) {
     const term = lib.likeTerm(query.q);
-    q.andWhere((w) => { ['full_name', 'phone', 'email', 'national_id', 'insurance_number'].forEach((c) => w.orWhere(`patients.${c}`, 'like', term)); lib.nameMatch(w, 'patients.full_name', query.q); });
+    q.andWhere((w) => { ['full_name', 'name_en', 'phone', 'phone2', 'email', 'national_id', 'insurance_number', 'file_number'].forEach((c) => w.orWhere(`patients.${c}`, 'like', term)); lib.nameMatch(w, 'patients.full_name', query.q); });
   }
   if (query.insurance === 'none') q.whereNull('patients.insurance_provider_id');
   else if (/^\d+$/.test(query.insurance || '')) q.where('patients.insurance_provider_id', Number(query.insurance));
+  applyFilters(q, query, ctx);
   lib.scopePatientsToDoctor(q, ctx.ownDoctorId);
   const visitScope = ctx.ownDoctorId ? knex.raw(' AND a.doctor_id = ?', [ctx.ownDoctorId]).toString() : '';
   q.select('patients.*', 'ip.name as insurance_name',
     knex.raw(`(SELECT COUNT(*) FROM appointments a WHERE a.patient_id = patients.id AND a.status = 'completed'${visitScope}) as visits`),
     knex.raw(`(SELECT MAX(a.appointment_date) FROM appointments a WHERE a.patient_id = patients.id AND a.status = 'completed'${visitScope}) as last_visit`),
     knex.raw(`(SELECT MIN(a.appointment_date) FROM appointments a WHERE a.patient_id = patients.id AND a.appointment_date >= ? AND a.status IN ('pending','confirmed') AND a.appointment_type <> 'blocked'${visitScope}) as next_visit`, [ctx.today]));
-  const sort = { name: [['patients.full_name', 'asc']], last: [[knex.raw('last_visit'), 'desc']], created: [['patients.created_at', 'desc']] }[query.sort] || [['patients.created_at', 'desc']];
-  sort.forEach(([c, d]) => q.orderBy(c, d));
+  // Sort: the chosen column, in the chosen direction (each column has its natural default).
+  const SORTS = { name: ['patients.full_name', 'asc'], last: [knex.raw('last_visit'), 'desc'], created: ['patients.created_at', 'desc'],
+    file: [knex.raw('CAST(patients.file_number AS UNSIGNED)'), 'asc'], dob: ['patients.date_of_birth', 'asc'], visits: [knex.raw('visits'), 'desc'] };
+  const [col, natural] = SORTS[query.sort] || SORTS.created;
+  q.orderBy(col, query.dir === 'asc' || query.dir === 'desc' ? query.dir : natural);
   q.orderBy('patients.id', 'desc');
   return q;
+}
+
+// The advanced filters of the patients list (all optional; each value is checked before it reaches the query).
+const FILTER_KEYS = ['file', 'name', 'gender', 'mobile', 'email', 'group', 'nationality', 'note', 'category', 'from', 'to', 'city', 'month', 'manager', 'referral', 'blood', 'tag'];
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+function applyFilters(q, f, ctx = {}) {
+  const text = (v) => String(v || '').trim().slice(0, 80);
+  const like = (v) => lib.likeTerm(v);
+  const profile = require('./patient-profile'); // eslint-disable-line global-require
+  if (text(f.file)) q.where('patients.file_number', 'like', `${text(f.file).replace(/[%_\\]/g, (m) => `\\${m}`)}%`);
+  if (text(f.name)) q.andWhere((w) => { lib.nameMatch(w, 'patients.full_name', text(f.name)); w.orWhere('patients.name_en', 'like', like(f.name)); });
+  if (['male', 'female'].includes(f.gender)) q.where('patients.gender', f.gender);
+  const digits = String(f.mobile || '').replace(/[^0-9]/g, '');
+  if (digits.length >= 3) q.andWhere((w) => w.where('patients.phone', 'like', `%${digits}%`).orWhere('patients.phone2', 'like', `%${digits}%`));
+  if (text(f.email)) q.where('patients.email', 'like', like(f.email));
+  if (/^\d+$/.test(f.group || '')) q.whereExists(function g() { this.select(knex.raw(1)).from('patient_group_members as m').whereRaw('m.patient_id = patients.id').where('m.group_id', Number(f.group)); });
+  if (f.group === 'none') q.whereNotExists(function g() { this.select(knex.raw(1)).from('patient_group_members as m').whereRaw('m.patient_id = patients.id'); });
+  if (profile.COUNTRIES.includes(f.nationality)) q.where('patients.nationality', f.nationality);
+  if (text(f.note)) q.andWhere((w) => w.where('patients.notes', 'like', like(f.note)).orWhere('patients.important_note', 'like', like(f.note)));
+  if (f.category === 'standard') q.andWhere((w) => w.whereNull('patients.category').orWhere('patients.category', 'standard'));
+  else if (profile.CATEGORIES.includes(f.category)) q.where('patients.category', f.category);
+  // Days of the clinic's calendar (created_at is stored in UTC).
+  const tz = ctx.timezone || 'Asia/Amman';
+  const { zonedToUtc } = require('../attendance/attendance.service'); // eslint-disable-line global-require
+  const dayAfter = (d) => new Date(Date.parse(`${d}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
+  if (ISO_DAY.test(f.from || '') && !Number.isNaN(Date.parse(f.from))) q.where('patients.created_at', '>=', zonedToUtc(f.from, '00:00', tz));
+  if (ISO_DAY.test(f.to || '') && !Number.isNaN(Date.parse(f.to))) q.where('patients.created_at', '<', zonedToUtc(dayAfter(f.to), '00:00', tz));
+  if (text(f.city)) q.andWhere((w) => w.where('patients.city', 'like', like(f.city)).orWhere('patients.area', 'like', like(f.city)));
+  if (/^(?:[1-9]|1[0-2])$/.test(f.month || '')) q.whereRaw('MONTH(patients.date_of_birth) = ?', [Number(f.month)]);
+  if (/^\d+$/.test(f.manager || '')) q.where('patients.case_manager_id', Number(f.manager));
+  if (profile.REFERRAL.includes(f.referral)) q.where('patients.referral_source', f.referral);
+  if (profile.BLOOD.includes(f.blood)) q.where('patients.blood_group', f.blood);
+  if (f.tag === 'important') q.whereNotNull('patients.important_note').whereNot('patients.important_note', '');
+  if (f.tag === 'allergy') q.whereNotNull('patients.allergies').whereNot('patients.allergies', '');
+  if (f.tag === 'no_reminders') q.where('patients.messaging_opt_out', true);
+  if (f.tag === 'discount') q.where('patients.discount_percent', '>', 0);
+}
+
+/** What the patient form needs for its fuller profile (choices, team, groups, last file number). */
+async function profileLocals(req, patientId = null) {
+  const profile = require('./patient-profile'); // eslint-disable-line global-require
+  const [managers, groups, mine, last] = await Promise.all([profile.managers(req.ctx.businessId), profile.groups(req.ctx.businessId),
+    patientId ? profile.groupsOf(req.ctx.businessId, patientId) : [], profile.lastFileNumber(req.ctx.businessId)]);
+  return { pp: { choices: profile.choices(req.t, req.locale), managers, groups, mine: mine.map((g) => g.id), last } };
 }
 
 async function render(req, res, extra = {}) {
@@ -49,9 +97,12 @@ async function render(req, res, extra = {}) {
     lib.paginate(listQuery(req.ctx, req.query), { page: req.query.page, perPage: 25 }),
     clinical.activeInsurance(req.ctx),
   ]);
-  const filtered = ['q', 'insurance'].some((k) => req.query[k] && req.query[k] !== 'all');
+  const filtered = ['q', 'insurance', ...FILTER_KEYS].some((k) => req.query[k] && req.query[k] !== 'all');
+  const advanced = FILTER_KEYS.some((k) => req.query[k] && req.query[k] !== 'all');
   res.page('pages/clinic/patients/index', {
-    title: req.t('patients.title'), rows, meta, insurance, filtered, ageOf: (d) => lib.ageOf(d, req.ctx.today),
+    title: req.t('patients.title'), rows, meta, insurance, filtered, advanced, ageOf: (d) => lib.ageOf(d, req.ctx.today),
+    fl: await (async () => { const profile = require('./patient-profile'); return { choices: profile.choices(req.t, req.locale), groups: await profile.groups(req.ctx.businessId), managers: await profile.managers(req.ctx.businessId) }; })(), // eslint-disable-line global-require
+    ...(req.ctx.permissions.has('patients.create') ? await profileLocals(req) : { pp: null }),
     pageScripts: PAGE_SCRIPTS, pageStyles: PAGE_STYLES, ...extra,
   });
 }
@@ -261,7 +312,12 @@ async function renderShow(req, res, extra = {}) {
   // Surgeries (Patients → Surgeries): the tab lists them all, the overview shows the coming ones.
   const surgeries = surgeriesOn ? await require('../surgeries/surgeries.service').forPatient(req.ctx, p.id) : []; // eslint-disable-line global-require
   const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => a.payment_status !== 'paid' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
+  const profile = require('./patient-profile'); // eslint-disable-line global-require
+  const [ppGroups, ppPhoto, ppPeople] = await Promise.all([profile.groupsOf(req.ctx.businessId, p.id), profile.hasPhoto(req.ctx.businessId, p.id),
+    knex('users').whereIn('id', [p.case_manager_id, p.updated_by].filter(Boolean)).select('id', 'name')]);
+  const nameOf = (uid) => (ppPeople.find((u) => u.id === uid) || {}).name || null;
   res.page('pages/clinic/patients/show', {
+    pprofile: { groups: ppGroups, photo: ppPhoto, manager: nameOf(p.case_manager_id), updatedBy: nameOf(p.updated_by), choices: profile.choices(req.t, req.locale) },
     tab, tabs, prescriptions, certificates, orderTab, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
@@ -317,7 +373,8 @@ async function renderEdit(req, res, extra = {}) {
   const insurance = await clinical.activeInsurance(req.ctx);
   // Keep a provider that was deactivated after being assigned, so saving doesn't silently drop it.
   if (p.insurance_provider_id && !insurance.some((i) => i.id === p.insurance_provider_id) && p.insurance_name) insurance.push({ id: p.insurance_provider_id, name: p.insurance_name });
-  res.page('pages/clinic/patients/edit', { title: req.t('patients.edit'), patient: p, insurance, pageScripts: PAGE_SCRIPTS, pageStyles: PAGE_STYLES, ...extra });
+  res.page('pages/clinic/patients/edit', { title: req.t('patients.edit'), patient: p, insurance, ...(await profileLocals(req, p.id)), hasPhoto: await require('./patient-profile').hasPhoto(req.ctx.businessId, p.id), // eslint-disable-line global-require
+    pageScripts: PAGE_SCRIPTS, pageStyles: PAGE_STYLES, ...extra });
 }
 router.get('/:id(\\d+)/edit', can('patients.edit'), wrap((req, res) => renderEdit(req, res)));
 router.post('/:id(\\d+)/edit', can('patients.edit'), form(async (req, res) => {
@@ -326,6 +383,32 @@ router.post('/:id(\\d+)/edit', can('patients.edit'), form(async (req, res) => {
   flash(req, 'success', req.t('common.updated'));
   res.redirect(`/app/patients/${p.id}`);
 }, renderEdit));
+
+// Patient photo: shown on the file to whoever can open it; set or removed by those who edit patients.
+const photoUpload = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 3 * 1024 * 1024 + 1, files: 1, fields: 4 } }).single('photo');
+router.get('/:id(\\d+)/photo', wrap(async (req, res) => {
+  const p = await loadPatient(req);
+  const ph = await require('./patient-profile').photoOf(req.ctx.businessId, p.id); // eslint-disable-line global-require
+  if (!ph) return res.status(404).end();
+  res.set({ 'Content-Type': ph.mime, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox" });
+  return res.end(ph.data);
+}));
+router.post('/:id(\\d+)/photo', can('patients.edit'), (req, res, next) => photoUpload(req, res, (err) => {
+  if (err) { flash(req, 'error', req.t('pprofile.photo_too_big')); return res.redirect(`/app/patients/${Number(req.params.id)}/edit`); }
+  return next();
+}), require('../../middleware/web').verifyCsrfAfterUpload, wrap(async (req, res) => {
+  const p = await loadPatient(req);
+  const profile = require('./patient-profile'); // eslint-disable-line global-require
+  try {
+    if (req.body.remove === '1') await profile.removePhoto(req.ctx, p.id);
+    else await profile.setPhoto(req.ctx, p.id, req.file);
+    flash(req, 'success', req.t('common.updated'));
+  } catch (e) {
+    if (!(e instanceof AppError)) throw e;
+    flash(req, 'error', req.t(`pprofile.photo_errors.${e.code}`));
+  }
+  res.redirect(`/app/patients/${p.id}/edit`);
+}));
 
 router.post('/:id(\\d+)/delete', can('patients.delete'), form(async (req, res) => {
   const p = await loadPatient(req);

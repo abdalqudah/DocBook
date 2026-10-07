@@ -287,7 +287,8 @@
     "BRANCH_HAS_APPOINTMENTS": "لدى هذا الفرع مواعيد قادمة. انقلها أو ألغِها أولاً.",
     "BRANCH_IN_USE": "لهذا الفرع أطباء أو مواعيد. أوقفه بدلاً من حذفه.",
     "CLINIC_NOT_EMPTY": "هذه العيادة فيها مرضى أو مواعيد أو فواتير، فلا يمكن حذفها.",
-    "CLINIC_DB_MOVING": "يجري نقل العيادة إلى قاعدة بياناتها الخاصة. حاول بعد دقيقة."
+    "CLINIC_DB_MOVING": "يجري نقل العيادة إلى قاعدة بياناتها الخاصة. حاول بعد دقيقة.",
+    "PATIENT_FILE_NUMBER_TAKEN": "رقم الملف مستخدم لمريض آخر."
   },
   "vmsg": {
     "_fallback": "قيمة غير صالحة.",
@@ -339,7 +340,9 @@
     "Enter at least one value.": "أدخل قيمة واحدة على الأقل.",
     "Enter a whole number.": "أدخل رقمًا صحيحًا.",
     "Use FDI tooth numbers (11–48, 51–85).": "استخدم ترقيم الأسنان FDI (11–48، 51–85).",
-    "The total is more than 100%.": "المجموع أكثر من 100%."
+    "The total is more than 100%.": "المجموع أكثر من 100%.",
+    "Use letters, digits and dashes only.": "استخدم الحروف والأرقام والشرطات فقط.",
+    "Another patient has this file number.": "رقم الملف مستخدم لمريض آخر."
   },
   "roles": {
     "owner": "مالك العيادة",

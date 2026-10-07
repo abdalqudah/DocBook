@@ -121,7 +121,9 @@ test('a shared receptionist of the centre lands on the shared reception', async 
 
 test('the shared reception works for any doctor\'s clinic: calendar, booking, a blocked time, a surgery', async () => {
   const r = app.agent(); await r.login(mail('r'));
-  const date = new Date(Date.parse(`${scheduling.clinicNow('Asia/Amman').date}T00:00:00Z`) + 86400000).toISOString().slice(0, 10); // tomorrow: every time still open
+  // Tomorrow (every time still open) — or the day after when tomorrow is Friday, the clinic's day off.
+  let date = new Date(Date.parse(`${scheduling.clinicNow('Asia/Amman').date}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
+  if (new Date(`${date}T00:00:00Z`).getUTCDay() === 5) date = new Date(Date.parse(`${date}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
   // The calendar opens for the centre's first clinic, with a switch to every clinic of the centre.
   let cal = await r.get('/app/appointments');
   assert.equal(cal.status, 200);

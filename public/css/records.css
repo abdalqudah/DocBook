@@ -189,3 +189,27 @@ tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
 .doc-dd .menu { min-width: 200px; }
 .rec-sched-state .vt-chip { flex: none; font-size: 11px; padding: 2px 7px; gap: 3px; }
 .rec-sched-state .vt-chip .icon { width: 12px; height: 12px; }
+
+/* Patient form: the fuller profile in folding sections; the important note on the file. */
+.pp-more { margin-top: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: var(--space-3) var(--space-4); }
+.pp-more > summary { cursor: pointer; display: flex; align-items: center; gap: 8px; list-style: none; }
+.pp-more > summary::-webkit-details-marker { display: none; }
+.pp-more > summary::after { content: "+"; margin-inline-start: auto; color: var(--text-muted); font-weight: var(--fw-bold); }
+.pp-more[open] > summary::after { content: "−"; }
+.pp-groups { align-items: center; }
+.pp-new-group { width: auto; min-width: 180px; flex: 1 1 180px; }
+.pp-women { padding: var(--space-3); border-radius: var(--radius, 12px); background: var(--surface-sunken); }
+.pp-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 16px; }
+.pp-facts dt { color: var(--text-muted); font-size: var(--fs-sm); }
+.pp-facts dd { margin: 0; }
+.sf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sf-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--pill); cursor: pointer; font-size: var(--fs-sm); }
+.sf-chip:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); }
+
+/* Patients list: advanced filters. */
+.pf-more { flex-basis: 100%; }
+.pf-more > summary { list-style: none; display: inline-flex; }
+.pf-more > summary::-webkit-details-marker { display: none; }
+.pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); align-items: end; }
+.pf-grid .field { margin: 0; }
+.pf-actions { display: flex; align-items: end; }

@@ -19,7 +19,7 @@ const time = () => z.string().trim().refine(scheduling.isTime, 'Enter a valid ti
 
 // ---------------------------------------------------------------- patients
 const patients = repo({
-  table: 'patients', entity: 'patient', searchable: ['full_name', 'phone', 'email', 'national_id', 'insurance_number'],
+  table: 'patients', entity: 'patient', searchable: ['full_name', 'name_en', 'phone', 'phone2', 'email', 'national_id', 'insurance_number', 'file_number'],
   filters: { insurance: 'insurance_provider_id' }, sortable: { name: 'full_name', created: 'created_at' }, defaultSort: ['created_at', 'desc'],
 });
 
@@ -38,8 +38,14 @@ async function savePatient(ctx, pid, input) {
     if (clash) throw new AppError('PATIENT_PHONE_TAKEN', 'Another patient already uses this phone number.', 409, { phone: 'Another patient already uses this phone number.' });
   }
   const row = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v === undefined ? null : v]));
-  if (pid) { await patients.update(ctx, pid, row); return pid; }
-  return patients.create(ctx, row);
+  const profile = require('./patient-profile'); // eslint-disable-line global-require
+  Object.assign(row, (await profile.patchOf(ctx, input, pid)) || {});
+  let id = pid;
+  if (pid) await patients.update(ctx, pid, row);
+  else id = await patients.create(ctx, row);
+  if (!pid && input && input.profile_form === '1' && !row.file_number) await profile.assignFileNumber(ctx, id);
+  await profile.setGroups(ctx, id, input);
+  return id;
 }
 
 /** DocBook rule: exact phone match within the clinic only; a blank phone always creates a new patient. */

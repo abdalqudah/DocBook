@@ -94,12 +94,12 @@
           <div class="cx-row2">
             <div class="field">
               <label class="label" for="cx-disc-<%= a.id %>"><%= t('cashx.discount_value') %></label>
-              <input class="input num<%= inv('discount_value') %>" id="cx-disc-<%= a.id %>" name="discount_value" type="number" min="0" step="any" inputmode="decimal" value="<%= pick('discount_value', '') %>" placeholder="0">
+              <input class="input num<%= inv('discount_value') %>" id="cx-disc-<%= a.id %>" name="discount_value" type="number" min="0" step="any" inputmode="decimal" value="<%= pick('discount_value', bill.patientDiscount && discType === 'percent' ? bill.patientDiscount : '') %>" placeholder="0">
               <%- err('discount_value') %>
             </div>
             <div class="field">
               <label class="label" for="cx-dreason-<%= a.id %>"><%= t('cashx.discount_reason') %></label>
-              <input class="input<%= inv('discount_reason') %>" id="cx-dreason-<%= a.id %>" name="discount_reason" maxlength="255" value="<%= old.discount_reason || '' %>" placeholder="<%= t('cashx.discount_reason_ph') %>" autocomplete="off">
+              <input class="input<%= inv('discount_reason') %>" id="cx-dreason-<%= a.id %>" name="discount_reason" maxlength="255" value="<%= old.discount_reason || (bill.patientDiscount && !Object.keys(old).length ? t('pprofile.discount_reason') : '') %>" placeholder="<%= t('cashx.discount_reason_ph') %>" autocomplete="off">
               <%- err('discount_reason') %>
             </div>
           </div>

@@ -85,6 +85,7 @@
             <% if (!appt) { %><button class="btn btn-ghost btn-sm" type="button" data-patient-clear><%= t('appointments.change') %></button><% } %>
           </div>
           <% if (!appt) { %>
+          <div class="pp-alert hidden mt-2" data-patient-note role="alert"><%- icon('triangle-alert') %><div class="grow"><div class="small"><%= t('pprofile.important_note') %></div><div class="rec-pre" dir="auto" data-patient-note-text></div></div></div>
           <div class="field patient-search hidden" data-patient-search-wrap>
             <label class="label" for="f-psearch"><%= t('appointments.find_patient') %></label>
             <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" id="f-psearch" type="search" autocomplete="off" placeholder="<%= t('appointments.find_patient_ph') %>" data-patient-search data-empty="<%= t('appointments.no_patient_match') %>" aria-controls="f-presults" aria-expanded="false"></div>
