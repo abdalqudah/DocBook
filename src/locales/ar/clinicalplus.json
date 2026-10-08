@@ -146,7 +146,9 @@
       "visit": "زيارة",
       "break_glass": "وصول طارئ",
       "summary": "ملخص الملف",
-      "export": "تصدير الملف كاملاً"
+      "export": "تصدير الملف كاملاً",
+      "legacy_file": "ملف من Clinica",
+      "legacy_records": "سجلات Clinica"
     },
     "level": {
       "full": "الملف كاملاً",

@@ -27,7 +27,18 @@ const errText = (req, e) => { const k = `legacy.err.${e.code}`; return req.t(k) 
 router.get('/', wrap(async (req, res) => {
   const [current, history, [{ n }]] = await Promise.all([svc.currentJob(req.ctx.businessId), svc.jobs(req.ctx.businessId),
     knex('legacy_patients').where({ business_id: req.ctx.businessId }).count({ n: '*' })]);
-  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), ...PAGE });
+  const promotion = await require('./promote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
+  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, ...PAGE });
+}));
+
+// Imported treatments → the patients' own files (treatment plan with the doctors) — for imports made before this
+// was part of the import, and again after the clinic adds its doctors. Runs in the background; safe to run again.
+router.post('/promote', wrap(async (req, res) => {
+  const promote = require('./promote.service'); // eslint-disable-line global-require
+  promote.promoteAll(req.ctx.businessId).then((stats) => require('../../core/audit').record(req.ctx, 'legacy.treatments_promoted', { entityType: 'business', entityId: req.ctx.businessId, newValues: stats })) // eslint-disable-line global-require
+    .catch((e) => console.error('[legacy-promote]', e.message)); // eslint-disable-line no-console
+  flash(req, 'success', req.t('legacy.promote_started'));
+  res.redirect(BASE);
 }));
 
 router.post('/jobs', wrap(async (req, res) => {

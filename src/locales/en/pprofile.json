@@ -121,5 +121,21 @@
     "dir_default": "Default order",
     "asc": "Ascending",
     "desc": "Descending"
+  },
+  "pplan": {
+    "title": "Treatment plan & treatments",
+    "sub": "{n} items · {done} done",
+    "chart": "Dental chart",
+    "date": "Date",
+    "tooth": "Tooth",
+    "procedure": "Treatment",
+    "doctor": "Doctor",
+    "price": "Price",
+    "status": "Status",
+    "st": {
+      "planned": "Planned",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    }
   }
 }

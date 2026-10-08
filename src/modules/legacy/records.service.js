@@ -40,6 +40,15 @@ async function forPatient(businessId, patientId) {
   const extraOf = new Map();
   tExtra.forEach((f) => { if (!extraOf.has(f.owner_id)) extraOf.set(f.owner_id, []); extraOf.get(f.owner_id).push(f); });
   treatments.forEach((t) => { t.extra = extraOf.get(t.id) || []; });
+  // A link of the old system shows its name; when its file was imported it opens here (authorised), not in Clinica.
+  const bySource = new Map(attachments.filter((a) => a.source_url).map((a) => [a.source_url, a]));
+  links.forEach((l) => {
+    const a = bySource.get(l.url);
+    if (a) l.attachment = a;
+    let tail = '';
+    try { tail = decodeURIComponent(new URL(l.url).pathname.split('/').pop() || ''); } catch { tail = ''; }
+    l.name = (l.label && l.label !== 'attachment' ? l.label : '') || (a && a.original_filename) || tail || l.url;
+  });
   const jobAt = new Map(jobs.map((j) => [j.id, j.completed_at || j.started_at]));
   refs.forEach((r) => { r.imported_on = r.imported_at || jobAt.get(r.import_job_id) || r.created_at; });
   return { patients: refs, treatments, clinical: [...tables.values()], attachments, links, fields };

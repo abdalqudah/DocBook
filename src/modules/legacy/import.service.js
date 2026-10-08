@@ -24,6 +24,7 @@ const { ZipReader } = require('../../core/zipread');
 const jsonstream = require('../../core/jsonstream');
 const map = require('./clinica-map');
 const files = require('./files');
+const promote = require('./promote.service');
 
 const SOURCE = 'clinica';
 const TYPE = 'legacy_clinica';
@@ -562,7 +563,11 @@ async function importPatient(job, item, index, file) {
         if (row.values.length) await insertChunks(trx, 'legacy_clinical_values', row.values.map(([field, value], i) => ({ business_id: business, record_id: rid, position: i, field: clip(field, 190), value }))); // eslint-disable-line no-await-in-loop
       }
     }
-    if (pid) await linkRows(trx, business, ref, p.id, pid, job.id, p.number);
+    if (pid) {
+      await linkRows(trx, business, ref, p.id, pid, job.id, p.number);
+      // Into the patient's own file: each treatment an item of the treatment plan, with its doctor.
+      await promote.promotePatient(trx, business, pid);
+    }
     await trx('import_items').where({ id: item.id }).update({ status: pid ? 'imported' : 'unmatched', match: outcome, target_id: pid || null, message: null, updated_at: now() });
   });
   return outcome;
@@ -838,7 +843,7 @@ async function linkPatient(ctx, legacyRef, patientId) {
   if (!p) throw E.validation({ patient_id: 'Choose a valid value.' });
   if (p.legacy_patient_id && !(p.legacy_source === SOURCE && p.legacy_patient_id === lp.legacy_patient_id)) throw fail('LEGACY_ALREADY_LINKED', 'This patient is already linked to another old file.', 409);
   if (lp.patient_id && lp.patient_id !== p.id) throw fail('LEGACY_ALREADY_LINKED', 'This old file is already linked to another patient.', 409);
-  await knex.transaction((trx) => linkRows(trx, ctx.businessId, lp.id, lp.legacy_patient_id, p.id, lp.import_job_id, lp.legacy_patient_number));
+  await knex.transaction(async (trx) => { await linkRows(trx, ctx.businessId, lp.id, lp.legacy_patient_id, p.id, lp.import_job_id, lp.legacy_patient_number); await promote.promotePatient(trx, ctx.businessId, p.id); });
   await knex('import_items').where({ business_id: ctx.businessId, kind: 'patient', legacy_patient_id: lp.legacy_patient_id }).whereIn('status', ['unmatched']).update({ status: 'imported', match: 'matched', target_id: p.id });
   await audit.record(ctx, 'legacy.patient_linked', { entityType: 'patient', entityId: p.id, newValues: { legacy_source: SOURCE, legacy_patient_id: lp.legacy_patient_id, legacy_patient_number: lp.legacy_patient_number } });
   return p.id;
@@ -852,7 +857,7 @@ async function createFromLegacy(ctx, legacyRef) {
   const phone = lp.old_mobile ? String(lp.old_mobile).replace(/[^\d+]/g, '').slice(0, 40) : null;
   if (phone && await knex('patients').where({ business_id: ctx.businessId, phone }).first('id')) throw fail('PATIENT_PHONE_TAKEN', 'Another patient already uses this phone number; link the old file to that patient instead.', 409);
   const [pid] = await knex('patients').insert({ business_id: ctx.businessId, full_name: lp.old_name || `#${lp.legacy_patient_id}`, phone, email: lp.email || null });
-  await knex.transaction((trx) => linkRows(trx, ctx.businessId, lp.id, lp.legacy_patient_id, pid, lp.import_job_id, lp.legacy_patient_number));
+  await knex.transaction(async (trx) => { await linkRows(trx, ctx.businessId, lp.id, lp.legacy_patient_id, pid, lp.import_job_id, lp.legacy_patient_number); await promote.promotePatient(trx, ctx.businessId, pid); });
   await knex('import_items').where({ business_id: ctx.businessId, kind: 'patient', legacy_patient_id: lp.legacy_patient_id }).whereIn('status', ['unmatched']).update({ status: 'imported', match: 'new', target_id: pid });
   await audit.record(ctx, 'legacy.patient_recovered', { entityType: 'patient', entityId: pid, newValues: { legacy_source: SOURCE, legacy_patient_id: lp.legacy_patient_id } });
   return pid;

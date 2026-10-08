@@ -134,6 +134,25 @@
     </div>
   </div>
 </div>
+<% if (treatmentPlan && treatmentPlan.length) { var _pst = { planned: 'badge-info', done: 'badge-success', cancelled: 'badge-neutral' }; var _done = treatmentPlan.filter(function (i) { return i.status === 'done'; }).length; %>
+<section class="panel flush mt-4" id="treatment-plan" data-treatment-plan>
+  <div class="panel-head"><div><h2><%- icon('clipboard-list', 'icon-sm') %> <%= t('pplan.title') %></h2><p class="panel-sub"><%= t('pplan.sub', { n: fmt.number(treatmentPlan.length), done: fmt.number(_done) }) %></p></div>
+    <a class="btn btn-secondary btn-sm" href="/app/patients/<%= p.id %>/dental"><%- icon('dt-tooth', 'icon-sm') %><%= t('pplan.chart') %></a></div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('pplan.date') %></th><th><%= t('pplan.tooth') %></th><th><%= t('pplan.procedure') %></th><th><%= t('pplan.doctor') %></th><th class="num"><%= t('pplan.price') %></th><th><%= t('pplan.status') %></th></tr></thead>
+    <tbody><% treatmentPlan.forEach(function (i) { %>
+      <tr>
+        <td data-label="<%= t('pplan.date') %>" class="nowrap"><%= i.done_on ? fmt.date(i.done_on) : fmt.date(i.created_at) %></td>
+        <td data-label="<%= t('pplan.tooth') %>" class="num"><%= i.tooth || '—' %></td>
+        <td data-label="<%= t('pplan.procedure') %>"><span dir="auto" class="strong"><%- lgLink(i.procedure_name) %></span><% if (i.notes) { %><div class="tiny muted rec-pre" dir="auto"><%- lgLink(i.notes) %></div><% } %></td>
+        <td data-label="<%= t('pplan.doctor') %>" dir="auto"><%= i.doctor_name || '—' %></td>
+        <td data-label="<%= t('pplan.price') %>" class="num"><%= i.price === null ? '—' : fmt.money(i.price) %></td>
+        <td data-label="<%= t('pplan.status') %>"><span class="badge badge-dot <%= _pst[i.status] || 'badge-neutral' %>"><%= t('pplan.st.' + i.status) %></span></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+</section>
+<% } %>
 <% } %>
 
 <% if (tab === 'surgeries') { var _tone = { scheduled: 'badge-info', done: 'badge-success', cancelled: 'badge-neutral' };

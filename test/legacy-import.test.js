@@ -250,6 +250,21 @@ test('import: rows, private files once per SHA-256, unmatched kept apart, reconc
   const after = await Promise.all(['legacy_patients', 'legacy_treatments', 'legacy_clinical_records', 'patient_attachments', 'patients'].map((tb) => knex(tb).count({ n: '*' }).then(([r]) => Number(r.n))));
   assert.deepEqual(after, before);
 
+  // Into the patient's own file: each treatment a treatment-plan item with its doctor (Dr A created, inactive).
+  const plan = await knex('dental_plan_items as i').leftJoin('doctors as d', 'd.id', 'i.doctor_id').where({ 'i.business_id': ctx.businessId, 'i.patient_id': p3.id }).orderBy('i.id').select('i.*', 'd.full_name as doctor_name', 'd.is_active', 'd.legacy_source');
+  assert.equal(plan.length, 2);
+  assert.equal(plan[0].procedure_name, 'حشوة'); assert.equal(plan[0].tooth, 16); assert.equal(Number(plan[0].price), 25); assert.equal(plan[0].status, 'done');
+  assert.equal(String(plan[0].done_on instanceof Date ? plan[0].done_on.toISOString() : plan[0].done_on).slice(0, 10), '2023-05-02');
+  assert.equal(plan[0].doctor_name, 'Dr A'); assert.equal(plan[0].is_active, 0); assert.equal(plan[0].legacy_source, 'clinica');
+  assert.equal(plan[1].status, 'planned'); assert.equal(plan[1].tooth, 11); assert.equal(plan[1].doctor_id, null);
+  assert.equal(Number((await knex('doctors').where({ business_id: ctx.businessId, full_name: 'Dr A' }).count({ n: '*' }))[0].n), 1, 'one doctor for all its treatments');
+  // Run again (e.g. after the clinic added "Dr. A" itself): nothing doubled.
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  await promote.promoteAll(ctx.businessId);
+  assert.equal(Number((await knex('dental_plan_items').where({ business_id: ctx.businessId, patient_id: p3.id }).count({ n: '*' }))[0].n), 2);
+  const pr = await promote.progress(ctx.businessId);
+  assert.equal(pr.done, pr.total - pr.unlinked);
+
   // A second import of the same file creates nothing: the key (clinica + old id) is already here.
   assert.equal(await svc.createFromLegacy(ctx, lp[2].id), p3.id);
 
@@ -400,6 +415,10 @@ test('HTTP: owner runs the Import Center; staff cannot; files only through the a
 
   const lp = await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_patient_id: '1001' }).first();
   const att = await knex('patient_attachments').where({ business_id: ctx.businessId, original_filename: 'xray.png' }).first();
+  r = await owner.get(`/app/patients/${lp.patient_id}?lang=en`);
+  assert.match(r.text, /data-treatment-plan/); assert.match(r.text, /حشوة/); assert.match(r.text, /Dr A/);
+  r = await owner.get(`/app/patients/${lp.patient_id}?tab=orders&lang=en`);
+  assert.match(r.text, /data-legacy-files/); assert.match(r.text, /xray\.png/);
   r = await owner.get(`/app/patients/${lp.patient_id}?tab=legacy&lang=en`);
   assert.equal(r.status, 200); assert.match(r.text, /Legacy Records/); assert.match(r.text, /xray\.png/); assert.match(r.text, /حشوة/);
   r = await owner.get(`/api/patients/${lp.patient_id}/attachments/${att.id}/download`);

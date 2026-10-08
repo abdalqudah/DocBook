@@ -321,13 +321,23 @@ async function renderShow(req, res, extra = {}) {
   if (tab === 'orders') {
     const orders = require('../orders/orders.service'); // eslint-disable-line global-require
     const [ol, rl, fl] = await Promise.all([orders.ordersForPatient(req.ctx, p.id), orders.referralsForPatient(req.ctx, p.id), orders.filesForPatient(req.ctx, p.id)]);
-    orderTab = { orders: ol, referrals: rl, files: fl };
+    // + the files brought from the previous system (Clinica), opened through the authorised download
+    orderTab = { orders: ol, referrals: rl, files: fl, legacyFiles: clinicalOk ? await require('../legacy/records.service').attachmentsOf(req.ctx.businessId, p.id) : [] }; // eslint-disable-line global-require
   }
   // Other clinics of the owner this patient is known in (shared / moved) — patienttransfer.
   const tsvc = require('../patienttransfer/transfer.service'); // eslint-disable-line global-require
   const transferLinks = await tsvc.linksOf(req.ctx.businessId, p.id);
   const movedTo = p.transferred_at ? transferLinks.find((l) => l.kind === 'moved_to') || { other_name: null } : null;
   const canTransfer = perms.has('data.manage') && (await tsvc.targets(req.ctx)).length > 0;
+  // The patient's treatment plan (done and planned, with the doctor) on the overview — including what came from Clinica.
+  const treatmentPlan = tab === 'overview' && clinicalOk ? await knex('dental_plan_items as i').leftJoin('doctors as d', 'd.id', 'i.doctor_id')
+    .where({ 'i.business_id': req.ctx.businessId, 'i.patient_id': p.id }).modify((q) => { if (req.ctx.ownDoctorId) q.where('i.doctor_id', req.ctx.ownDoctorId); })
+    .orderByRaw('COALESCE(i.done_on, DATE(i.created_at)) DESC').orderBy('i.id', 'desc').limit(500).select('i.*', 'd.full_name as doctor_name') : [];
+  // Links inside imported text show their names and open the file imported here (legacy/linkify).
+  const lk = require('../legacy/linkify'); // eslint-disable-line global-require
+  const legacyFiles = (tab === 'overview' && treatmentPlan.some((i) => /https?:\/\//.test(`${i.notes || ''}${i.procedure_name}`))) || tab === 'legacy'
+    ? await require('../legacy/records.service').attachmentsOf(req.ctx.businessId, p.id) : []; // eslint-disable-line global-require
+  const lgLink = ((find) => (v) => lk.linkify(v, find))(lk.localFinder(p.id, legacyFiles));
   const legacy = tab === 'legacy' ? await require('../legacy/records.service').forPatient(req.ctx.businessId, p.id) : null; // eslint-disable-line global-require
   if (legacy) await privacy.log(req.ctx, { patientId: p.id, what: 'legacy_records', access: privacy.levelOf(access) });
   // Surgeries (Patients → Surgeries): the tab lists them all, the overview shows the coming ones.
@@ -339,7 +349,7 @@ async function renderShow(req, res, extra = {}) {
   const nameOf = (uid) => (ppPeople.find((u) => u.id === uid) || {}).name || null;
   res.page('pages/clinic/patients/show', {
     pprofile: { groups: ppGroups, photo: ppPhoto, manager: nameOf(p.case_manager_id), updatedBy: nameOf(p.updated_by), choices: profile.choices(req.t, req.locale) },
-    tab, tabs, prescriptions, certificates, orderTab, legacy, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
+    tab, tabs, prescriptions, certificates, orderTab, legacy, treatmentPlan, lgLink, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
     timeline, invoices: tl.invoices.filter(mine),

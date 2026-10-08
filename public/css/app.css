@@ -1085,3 +1085,5 @@ a.pn-title:hover { color: var(--primary); }
 @media (prefers-reduced-motion: no-preference) { .pp-alert.is-flash { animation: pp-flash 1.6s ease-in-out 3; } }
 @keyframes pp-flash { 50% { background: var(--surface); } }
 .pp-photo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex: none; border: 2px solid var(--border); }
+.ord-legacy { border-top: 1px solid var(--border); }
+.ord-legacy-head { display: flex; align-items: center; gap: 6px; padding: 10px 16px 0; }

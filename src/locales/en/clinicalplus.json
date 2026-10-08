@@ -146,7 +146,9 @@
       "visit": "Visit",
       "break_glass": "Emergency access",
       "summary": "File summary",
-      "export": "Whole file exported"
+      "export": "Whole file exported",
+      "legacy_file": "Clinica file",
+      "legacy_records": "Clinica records"
     },
     "level": {
       "full": "Full record",

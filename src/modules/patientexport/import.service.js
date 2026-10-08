@@ -267,7 +267,7 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
     await simple('referral', d.referrals, (r) => ({ patient_name: r.patient_name || p.full_name }));
     await simple('dental', d.dental);
     const plans = []; for (const r of d.dental_plan) plans.push({ ...r, service_id: await ownId('services', r.service_id) }); // eslint-disable-line no-restricted-syntax, no-await-in-loop
-    await simple('dental_plan', plans, (r) => ({ service_id: r.service_id }));
+    await simple('dental_plan', plans, (r) => ({ service_id: r.service_id, legacy_treatment_id: null })); // the old-system link is the clinic's own (legacy/promote)
     await simple('growth', d.growth);
     // Specialty forms of a form this version knows (an unknown form from a newer version is left out).
     const forms = require('../specialty/forms'); // eslint-disable-line global-require

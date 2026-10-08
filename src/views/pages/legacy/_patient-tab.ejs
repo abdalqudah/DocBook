@@ -25,12 +25,15 @@
       <% if (o.gender) { %><dt><%= t(L + 'ov.gender') %></dt><dd dir="auto"><%= o.gender %></dd><% } %>
       <% if (o.birth_date) { %><dt><%= t(L + 'ov.birth') %></dt><dd><bdi><%= o.birth_date %></bdi></dd><% } %>
       <% if (o.email) { %><dt><%= t(L + 'ov.email') %></dt><dd dir="ltr"><%= o.email %></dd><% } %>
-      <dt><%= t(L + 'ov.urls') %></dt><dd><% if (!_urls.length) { %>—<% } else { %><ul class="lg-urls"><% _urls.forEach(function (u) { %><li><span class="small muted" dir="auto"><%= u.label || '' %></span> <span class="mono lg-url" dir="ltr"><%= u.url %></span></li><% }) %></ul><% } %></dd>
+      <dt><%= t(L + 'ov.urls') %></dt><dd><% if (!_urls.length) { %>—<% } else { %><ul class="lg-urls"><% _urls.forEach(function (u) { var _safe = /^https?:\/\//i.test(u.url); %><li>
+        <% if (u.attachment) { %><a class="link" href="<%= dl(u.attachment, u.attachment.inline) %>" target="_blank" rel="noopener" dir="auto"><%- icon(u.attachment.category === 'image' ? 'image' : 'file-text', 'icon-sm') %> <%= u.name %></a>
+        <% } else if (_safe) { %><a class="link" href="<%= u.url %>" target="_blank" rel="noopener noreferrer" dir="auto" title="<%= u.url %>"><%- icon('external-link', 'icon-sm') %> <%= u.name %></a>
+        <% } else { %><span dir="auto"><%= u.name %></span><% } %></li><% }) %></ul><% } %></dd>
       <dt><%= t(L + 'ov.imported') %></dt><dd><%= o.imported_on ? fmt.date(o.imported_on) : '—' %></dd>
     </dl>
     <% if (_f.length) { %>
     <details class="lg-more"><summary><%= t(L + 'ov.other') %> (<%= fmt.number(_f.length) %>)</summary>
-      <dl class="dl lg-dl small"><% _f.forEach(function (f) { %><dt dir="ltr"><%= f.field %></dt><dd dir="auto"><%= f.value === null ? '—' : f.value %></dd><% }) %></dl>
+      <dl class="dl lg-dl small"><% _f.forEach(function (f) { %><dt dir="ltr"><%= f.field %></dt><dd dir="auto"><%- f.value === null ? '—' : lgLink(f.value) %></dd><% }) %></dl>
     </details>
     <% } %>
   <% }) %>
@@ -48,13 +51,13 @@
       <tr>
         <td data-label="<%= t(L + 't.date') %>" class="nowrap"><bdi><%= r.treatment_on ? fmt.date(r.treatment_on) : (r.treatment_date || '—') %></bdi></td>
         <td data-label="<%= t(L + 't.tooth') %>" class="num"><%= r.tooth || '—' %></td>
-        <td data-label="<%= t(L + 't.description') %>" dir="auto"><%= r.description || '—' %><% if (r.extra && r.extra.length) { %><details class="lg-more small"><summary><%= t(L + 't.more') %></summary><dl class="dl"><% r.extra.forEach(function (f) { %><dt dir="ltr"><%= f.field %></dt><dd dir="auto"><%= f.value === null ? '—' : f.value %></dd><% }) %></dl></details><% } %></td>
+        <td data-label="<%= t(L + 't.description') %>" dir="auto"><%- r.description ? lgLink(r.description) : '—' %><% if (r.extra && r.extra.length) { %><details class="lg-more small"><summary><%= t(L + 't.more') %></summary><dl class="dl"><% r.extra.forEach(function (f) { %><dt dir="ltr"><%= f.field %></dt><dd dir="auto"><%- f.value === null ? '—' : lgLink(f.value) %></dd><% }) %></dl></details><% } %></td>
         <td data-label="<%= t(L + 't.doctor') %>" dir="auto"><%= r.doctor || '—' %></td>
         <td data-label="<%= t(L + 't.price') %>" class="num"><bdi><%= r.price_raw || (r.price !== null ? fmt.number(r.price) : '—') %></bdi></td>
         <td data-label="<%= t(L + 't.type') %>" dir="auto"><%= r.type || '—' %></td>
         <td data-label="<%= t(L + 't.status') %>"><% if (r.status) { %><span class="badge" dir="auto"><%= r.status %></span><% } else { %>—<% } %></td>
         <td data-label="<%= t(L + 't.complete') %>"><bdi><%= r.complete_date || '—' %></bdi></td>
-        <td data-label="<%= t(L + 't.note') %>" dir="auto" class="small"><%= r.note || '—' %></td>
+        <td data-label="<%= t(L + 't.note') %>" dir="auto" class="small"><%- r.note ? lgLink(r.note) : '—' %></td>
         <td data-label="<%= t(L + 't.referred') %>" dir="auto"><%= r.referred_by || '—' %></td>
       </tr>
     <% }) %>
@@ -72,7 +75,7 @@
       <h3 class="lg-ctitle" dir="ltr"><%= tb.key.replace(/_/g, ' ') %> <span class="badge"><%= fmt.number(tb.rows.length) %></span></h3>
       <div class="table-wrap"><table class="table">
         <thead><tr><% tb.columns.forEach(function (c) { %><th dir="ltr"><%= c %></th><% }) %></tr></thead>
-        <tbody><% tb.rows.forEach(function (row) { %><tr><% tb.columns.forEach(function (c) { %><td dir="auto"><%= row[c] === undefined || row[c] === null ? '' : row[c] %></td><% }) %></tr><% }) %></tbody>
+        <tbody><% tb.rows.forEach(function (row) { %><tr><% tb.columns.forEach(function (c) { %><td dir="auto"><%- row[c] === undefined || row[c] === null ? '' : lgLink(row[c]) %></td><% }) %></tr><% }) %></tbody>
       </table></div>
     </div>
   <% }) %>

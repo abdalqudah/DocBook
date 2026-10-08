@@ -132,7 +132,7 @@ async function readLegacy(from, srcPid) {
 const strip = (row, drop = []) => { const o = { ...row }; ['id', 'business_id', 'created_at', 'updated_at', ...drop].forEach((k) => { delete o[k]; }); return o; };
 
 /** Writes them in the receiving clinic (each part keyed, so a second copy adds nothing). → bytes stored */
-async function writeLegacy(to, dstPid, { legacy, attachments }) {
+async function writeLegacy(to, dstPid, { legacy, attachments }, key = null) {
   let stored = 0;
   await knex.transaction(async (trx) => {
     for (const { lp, links, fields, treatments, records } of legacy) { // eslint-disable-line no-restricted-syntax
@@ -147,7 +147,10 @@ async function writeLegacy(to, dstPid, { legacy, attachments }) {
       const keys = new Set(await trx('legacy_treatments').where({ legacy_patient_ref: ref }).pluck('row_key')); // eslint-disable-line no-await-in-loop
       for (const { t, extra } of treatments) { // eslint-disable-line no-restricted-syntax
         if (keys.has(t.row_key)) continue; // eslint-disable-line no-continue
-        const [tid] = await trx('legacy_treatments').insert({ ...strip(t, ['legacy_patient_ref', 'patient_id', 'import_job_id']), business_id: to, legacy_patient_ref: ref, patient_id: dstPid, import_job_id: null }); // eslint-disable-line no-await-in-loop
+        // Its treatment-plan item came over with the patient's file (dental_plan): the copy here is its plan item.
+        const planLink = key && t.plan_item_id ? await trx('import_links').where({ business_id: to, source_key: key, kind: 'dental_plan', src_id: t.plan_item_id }).first('new_id') : null; // eslint-disable-line no-await-in-loop
+        const [tid] = await trx('legacy_treatments').insert({ ...strip(t, ['legacy_patient_ref', 'patient_id', 'import_job_id', 'plan_item_id', 'doctor_id']), business_id: to, legacy_patient_ref: ref, patient_id: dstPid, import_job_id: null, plan_item_id: planLink ? planLink.new_id : null }); // eslint-disable-line no-await-in-loop
+        if (planLink) await trx('dental_plan_items').where({ id: planLink.new_id, business_id: to }).update({ legacy_treatment_id: tid }); // eslint-disable-line no-await-in-loop
         if (extra.length) await trx('legacy_field_values').insert(extra.map((f) => ({ ...strip(f, ['owner_id']), business_id: to, owner_id: tid }))); // eslint-disable-line no-await-in-loop
       }
       const rkeys = new Set((await trx('legacy_clinical_records').where({ legacy_patient_ref: ref }).select('table_key', 'row_key')).map((r) => `${r.table_key}\u0000${r.row_key}`)); // eslint-disable-line no-await-in-loop
@@ -243,7 +246,7 @@ async function transferOne(job, item, ctxs, rep) {
     const plan = { doctors: {} };
     for (const doc of d.doctors) plan.doctors[`${key}:${doc.id}`] = (await importer.matchDoctor(ctxs.dst, doc, false)) || job.default_doctor_id || null; // eslint-disable-line no-restricted-syntax, no-await-in-loop
     const pid = await importer.importOne(ctxs.dst, src.zip, '', plan, rep, ctxs.inst, ctxs.t);
-    rep.legacy_bytes = (rep.legacy_bytes || 0) + await writeLegacy(to, pid, src.legacy);
+    rep.legacy_bytes = (rep.legacy_bytes || 0) + await writeLegacy(to, pid, src.legacy, key);
     // Its groups (by name) and its photo (when it has none here).
     for (const name of src.groups) { // eslint-disable-line no-restricted-syntax
       await knex('patient_groups').insert({ business_id: to, name }).onConflict(['business_id', 'name']).ignore(); // eslint-disable-line no-await-in-loop

@@ -254,3 +254,25 @@ patients between them: **Patients → tick patients** (or filter, e.g. by the gr
 - Only a member who manages the data (`data.manage`, the owner) of **both** clinics can do it; it is audited in both.
 - The second clinic does not need to exist yet: once it is opened (Workspaces → New clinic, by the same owner) it
   appears as a destination.
+
+---
+
+# Clinica data in the patient's own file (2.8.0)
+
+The import no longer stops at a separate "Legacy Records" view: the data goes into the patient's file.
+
+- **Treatments → treatment plan.** Each Clinica treatment becomes an item of the patient's treatment plan
+  (`dental_plan_items`), shown on the patient's overview ("Treatment plan & treatments") and the dental chart:
+  - fields: tooth (FDI), treatment, price, and status — done with its date, planned, or cancelled;
+  - notes: the type, the note, "referred by", and a tooth written as a range (e.g. 11-21).
+- **Doctors.** Doctors are matched by name, ignoring "Dr" / "د." and spelling variants. A doctor not found is added
+  with its Clinica name (inactive: shown on the records, not offered for booking until the clinic turns it on).
+- **Files.** Clinica files appear in the patient's "Tests & files" tab ("Files from Clinica"), opening through the
+  authorised download.
+- **Links.** Links inside Clinica text show the file's name. When that file was imported, the link opens it here;
+  otherwise it opens the old address.
+- **Linking and safety.** `legacy_treatments.plan_item_id` ↔ `dental_plan_items.legacy_treatment_id` (unique), so each
+  treatment is converted once. Imports made before 2.8.0 are converted with **Import Center → "Move the treatments into
+  the patients' files"**. The same button, run again after adding the clinic's doctors, fills in the doctors.
+- **Original data.** The Legacy Records tab keeps the original Clinica data (clinical tables, every field) as the
+  auditable source.
