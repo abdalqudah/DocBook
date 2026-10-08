@@ -341,3 +341,11 @@ groups). The attachment ZIPs are imported unchanged.
   (`records.service.filesOf`).
 - The original rows (`legacy_*`) stay in the database as the import's audit trail, and the Import Center and the
   recovery list still use them.
+
+### Downloading the attachments the first extraction missed
+`scripts/clinica-attachments-fetch.js` runs in the clinic's own signed-in Clinica tab (pasted in the browser console):
+it reads each patient's Clinica pages with that session (never signs in, never changes anything), collects every
+`/system/files/…` link, skips the files of the previous manifest, downloads the rest with retries and saves
+`clinica-attachments-extra-NN-of-MM.zip` (a folder per patient id + `manifest.json`, the usual shape) and
+`clinica-attachments-discovered.csv`. A stopped run carries on (progress kept in that browser). The ZIPs go to the
+Import Center like the first ones; files already there are not added twice.
