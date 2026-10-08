@@ -8,7 +8,7 @@ const audit = require('../../core/audit');
 const exporter = require('../../core/exporter');
 const { AppError, E } = require('../../core/errors');
 const { wrap, form, flash } = require('../../routes/helpers');
-const { can, canAny } = require('../../middleware/context');
+const { can, canAny, ownerOnly } = require('../../middleware/context');
 const appts = require('./appointments.service');
 const clinical = require('./clinical.service');
 const lib = require('./records.lib');
@@ -441,7 +441,7 @@ router.post('/:id(\\d+)/photo', can('patients.edit'), (req, res, next) => photoU
   res.redirect(`/app/patients/${p.id}/edit`);
 }));
 
-router.post('/:id(\\d+)/delete', can('patients.delete'), form(async (req, res) => {
+router.post('/:id(\\d+)/delete', can('patients.delete'), ownerOnly, form(async (req, res) => {
   const p = await loadPatient(req);
   const w = { business_id: req.ctx.businessId, patient_id: p.id };
   const [[inv], [rx], [notes], [ords], [refs], [files]] = await Promise.all([

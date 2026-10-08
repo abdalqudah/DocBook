@@ -44,7 +44,7 @@
             <td class="actions">
               <% if (canManage) { %>
                 <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="expense-dialog" data-action="/app/expenses/<%= r.id %>" data-dialog-title="<%= t('expenses.edit') %>" data-fill="<%= json({ date: r.date, category: r.category, title: r.title, amount: r.amount, payment_method: r.payment_method, invoice_number: r.invoice_number, notes: r.notes }) %>"><%- icon('pencil', 'icon-sm') %></button>
-                <%- include('../../partials/delete-form', { action: '/app/expenses/' + r.id + '/delete' }) %>
+                <% if (isOwner()) { %><%- include('../../partials/delete-form', { action: '/app/expenses/' + r.id + '/delete' }) %><% } %>
               <% } %>
             </td>
           </tr>

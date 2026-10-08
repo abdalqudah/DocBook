@@ -35,7 +35,7 @@
       <div><span class="muted"><%= t('spforms.entered_at') %>:</span> <%= fmt.datetime ? fmt.datetime(record.created_at) : fmt.date(record.created_at) %></div>
       <% if (record.appointment_id) { %><div><a href="/app/visits/<%= record.appointment_id %>"><%- icon('stethoscope', 'icon-sm') %> <%= t('spforms.open_visit') %></a></div><% } %>
     </div></div>
-    <% if (canEdit && !record.voided_at) { %>
+    <% if (canEdit && !record.voided_at && isOwner()) { %>
     <form class="panel" method="post" action="<%= recUrl('/' + form.key + '/' + record.id + '/void') %>" data-confirm="<%= t('spforms.remove_confirm') %>" data-confirm-title="<%= t('spforms.remove') %>" data-confirm-yes="<%= t('spforms.remove') %>">
       <div class="panel-body stack-sm">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">

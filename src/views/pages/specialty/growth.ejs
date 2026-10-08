@@ -59,7 +59,7 @@
       <td class="num" data-label="<%= t('child_growth.length') %>"><%= m.length_cm !== null ? num(Number(m.length_cm), 1) : '—' %><% if (m.position) { %> <span class="tiny muted"><%= t('child_growth.positions.' + m.position) %></span><% } %> <%- pBadge(m.a.lhfa) %></td>
       <td class="num" data-label="<%= t('child_growth.head') %>"><%= m.head_cm !== null ? num(Number(m.head_cm), 1) : '—' %> <%- pBadge(m.a.hcfa) %></td>
       <td class="num" data-label="<%= t('child_growth.bmi') %>"><%= m.a.bfa.value ? num(m.a.bfa.value, 1) : '—' %> <%- pBadge(m.a.bfa) %></td>
-      <td class="actions no-print"><% if (canRecord) { %><%- include(P + 'delete-form', { action: '/app/patients/' + patient.id + '/growth/' + m.id + '/delete' }) %><% } %></td>
+      <td class="actions no-print"><% if (canRecord && isOwner()) { %><%- include(P + 'delete-form', { action: '/app/patients/' + patient.id + '/growth/' + m.id + '/delete' }) %><% } %></td>
     </tr><% }) %></tbody>
   </table></div>
   <div class="panel-foot tiny muted"><%= t('child_growth.pct_note') %></div>

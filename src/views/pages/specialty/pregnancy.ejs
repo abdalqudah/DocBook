@@ -51,7 +51,7 @@
           <td class="num" data-label="<%= t('pregnancy.fhr') %>"><%= v.fhr || '—' %></td>
           <td data-label="<%= t('pregnancy.exam') %>" class="small"><%= [v.presentation ? t('pregnancy.presentation') + ': ' + t('pregnancy.presentations.' + v.presentation) : null, v.oedema ? t('pregnancy.oedema') + ': ' + t('pregnancy.oedema_levels.' + v.oedema) : null].filter(Boolean).join(' · ') || '—' %></td>
           <td data-label="<%= t('pregnancy.urine') %>" class="small"><span><%= v.urine_protein || v.urine_glucose ? (t('pregnancy.protein_short') + ' ' + (v.urine_protein ? t('pregnancy.urine_levels.' + v.urine_protein) : '—') + ' · ' + t('pregnancy.glucose_short') + ' ' + (v.urine_glucose ? t('pregnancy.urine_levels.' + v.urine_glucose) : '—')) : '—' %></span></td>
-          <td class="actions no-print"><% if (canEdit) { %><%- include(P + 'delete-form', { action: '/app/patients/' + patient.id + '/pregnancy/' + current.id + '/visits/' + v.id + '/delete' }) %><% } %></td>
+          <td class="actions no-print"><% if (canEdit && isOwner()) { %><%- include(P + 'delete-form', { action: '/app/patients/' + patient.id + '/pregnancy/' + current.id + '/visits/' + v.id + '/delete' }) %><% } %></td>
         </tr><% }) %></tbody>
       </table></div><% } %>
     </section>

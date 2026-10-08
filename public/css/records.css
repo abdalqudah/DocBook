@@ -131,7 +131,10 @@ html[dir="rtl"] [dir="auto"] { text-align: right; }
 }
 
 /* Patient workspace (redesign 3.9): tabs, next/last visit glance, timeline filter chips. */
-.pt-tabs { margin-top: -4px; }
+.pt-tabs { margin-top: -4px; flex-wrap: wrap; overflow: visible; row-gap: 0; }
+/* the patient's tabs: compact, so all of them show (they wrap to a second row on a narrow screen) */
+.pt-tabs a { gap: 5px; padding: 8px 9px; font-size: 12.5px; }
+.pt-tabs a .icon-sm { width: 14px; height: 14px; }
 .pt-glance-card { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; color: var(--text); text-decoration: none; }
 .pt-glance-card:hover { border-color: var(--primary); }
 .pt-glance-card:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }

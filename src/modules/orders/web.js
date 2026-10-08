@@ -13,7 +13,7 @@ const uploads = require('../../core/uploads');
 const knex = require('../../db/knex');
 const audit = require('../../core/audit');
 const { wrap, form, flash } = require('../../routes/helpers');
-const { can, canAny } = require('../../middleware/context');
+const { can, canAny, ownerOnly } = require('../../middleware/context');
 const { verifyCsrfAfterUpload } = require('../../middleware/web');
 const { AppError } = require('../../core/errors');
 const lib = require('../clinic/records.lib');
@@ -130,7 +130,7 @@ router.get('/patients/:id(\\d+)/files/:fid(\\d+)', can('clinical.view'), wrap(as
   return res.end(f.data);
 }));
 
-router.post('/patients/:id(\\d+)/files/:fid(\\d+)/delete', canAny('clinical.edit', 'patients.edit'), wrap(async (req, res) => {
+router.post('/patients/:id(\\d+)/files/:fid(\\d+)/delete', canAny('clinical.edit', 'patients.edit'), ownerOnly, wrap(async (req, res) => {
   const pid = Number(req.params.id);
   await svc.removeFile(req.ctx, pid, Number(req.params.fid));
   flash(req, 'success', req.t('common.deleted'));

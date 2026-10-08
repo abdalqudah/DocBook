@@ -6,7 +6,7 @@
 //   GET /app/visits/:id                                → loader: res.locals.specialtyPanel for the visit page's side panel
 const express = require('express');
 const { wrap, flash } = require('../../routes/helpers');
-const { can, canAny } = require('../../middleware/context');
+const { can, canAny, ownerOnly } = require('../../middleware/context');
 const { AppError } = require('../../core/errors');
 const { translateMessage } = require('../../core/i18n');
 const appts = require('../clinic/appointments.service');
@@ -134,7 +134,7 @@ router.post('/patients/:id(\\d+)/dental/entries', can('clinical.edit'), sform(as
   res.redirect(selfUrl(c, 'dental', req.body.set ? `set=${req.body.set === 'primary' ? 'primary' : 'permanent'}` : ''));
 }, (req, res, extra) => renderDental(req, res, { ...extra, openDialog: 'dental-entry-dialog' })));
 
-router.post('/patients/:id(\\d+)/dental/entries/:eid(\\d+)/delete', can('clinical.edit'), wrap(async (req, res) => {
+router.post('/patients/:id(\\d+)/dental/entries/:eid(\\d+)/delete', can('clinical.edit'), ownerOnly, wrap(async (req, res) => {
   const c = await context(req, 'dental');
   await svc.voidDentalEntry(req.ctx, c.patient, req.params.eid);
   flash(req, 'success', req.t('dental.entry_removed'));
@@ -155,7 +155,7 @@ router.post('/patients/:id(\\d+)/dental/plan/:pid(\\d+)/status', can('clinical.e
   res.redirect(`${selfUrl(c, 'dental')}#plan`);
 }));
 
-router.post('/patients/:id(\\d+)/dental/plan/:pid(\\d+)/delete', can('clinical.edit'), wrap(async (req, res) => {
+router.post('/patients/:id(\\d+)/dental/plan/:pid(\\d+)/delete', can('clinical.edit'), ownerOnly, wrap(async (req, res) => {
   const c = await context(req, 'dental');
   await svc.deletePlanItem(req.ctx, c.patient, req.params.pid);
   flash(req, 'success', req.t('common.deleted'));
@@ -206,7 +206,7 @@ router.post('/patients/:id(\\d+)/growth', canAny('clinical.edit', 'vitals.edit')
   res.redirect(selfUrl(c, 'growth'));
 }, (req, res, extra) => renderGrowth(req, res, { ...extra, openDialog: 'growth-dialog' })));
 
-router.post('/patients/:id(\\d+)/growth/:mid(\\d+)/delete', canAny('clinical.edit', 'vitals.edit'), wrap(async (req, res) => {
+router.post('/patients/:id(\\d+)/growth/:mid(\\d+)/delete', canAny('clinical.edit', 'vitals.edit'), ownerOnly, wrap(async (req, res) => {
   const c = await context(req, 'growth');
   await svc.deleteMeasurement(req.ctx, c.patient, req.params.mid);
   flash(req, 'success', req.t('common.deleted'));
@@ -274,7 +274,7 @@ router.post('/patients/:id(\\d+)/pregnancy/:pid(\\d+)/visits', can('clinical.edi
   res.redirect(`${selfUrl(c, 'pregnancy', `p=${req.params.pid}`)}#visits`);
 }, (req, res, extra) => renderPregnancy(req, res, { ...extra, openDialog: 'anc-dialog' })));
 
-router.post('/patients/:id(\\d+)/pregnancy/:pid(\\d+)/visits/:vid(\\d+)/delete', can('clinical.edit'), wrap(async (req, res) => {
+router.post('/patients/:id(\\d+)/pregnancy/:pid(\\d+)/visits/:vid(\\d+)/delete', can('clinical.edit'), ownerOnly, wrap(async (req, res) => {
   const c = await context(req, 'pregnancy');
   await svc.deleteAntenatalVisit(req.ctx, c.patient, req.params.pid, req.params.vid);
   flash(req, 'success', req.t('common.deleted'));
@@ -371,7 +371,7 @@ router.get('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})/:rid(\\d+)', can(
   });
 }));
 
-router.post('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})/:rid(\\d+)/void', can('clinical.edit'), wrap(async (req, res) => {
+router.post('/patients/:id(\\d+)/records/:form([a-z0-9_]{2,40})/:rid(\\d+)/void', can('clinical.edit'), ownerOnly, wrap(async (req, res) => {
   const c = await recContext(req);
   await recs.voidRecord(req.ctx, c.patient, req.params.rid, req.body.reason);
   flash(req, 'success', req.t('spforms.removed'));

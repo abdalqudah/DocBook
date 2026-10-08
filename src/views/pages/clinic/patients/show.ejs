@@ -130,7 +130,7 @@
       <ul class="cp-opened-list"><% opened.forEach(function (o) { %><li><span class="small"><%= o.user_name || '—' %></span><span class="tiny muted"><%= t('privacy.what.' + o.what) %><% if (o.access !== 'full') { %> · <%= t('privacy.level.' + o.access) %><% } %> · <%= fmt.date(o.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></span></li><% }) %></ul>
       <% } %>
     </div><% } %>
-    <% if (can('patients.delete')) { %><div class="panel-foot"><form method="post" action="/app/patients/<%= p.id %>/delete" data-confirm="<%= t('patients.delete_confirm') %>" data-confirm-title="<%= t('patients.delete') %>" data-confirm-yes="<%= t('common.delete') %>" data-confirm-type="<%= p.full_name %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('patients.delete') %></button></form></div><% } %>
+    <% if (can('patients.delete') && isOwner()) { %><div class="panel-foot"><form method="post" action="/app/patients/<%= p.id %>/delete" data-confirm="<%= t('patients.delete_confirm') %>" data-confirm-title="<%= t('patients.delete') %>" data-confirm-yes="<%= t('common.delete') %>" data-confirm-type="<%= p.full_name %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('patients.delete') %></button></form></div><% } %>
     </div>
   </div>
 </div>

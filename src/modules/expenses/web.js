@@ -1,6 +1,6 @@
 const express = require('express');
 const { wrap, form, flash } = require('../../routes/helpers');
-const { can } = require('../../middleware/context');
+const { can, ownerOnly } = require('../../middleware/context');
 const exporter = require('../../core/exporter');
 const charts = require('../../core/charts');
 const fmt = require('../../core/format');
@@ -58,7 +58,7 @@ router.post('/:id(\\d+)', can('expenses.manage'), form(async (req, res) => {
   flash(req, 'success', req.t('common.updated'));
   res.redirect(backTo(req.body._return));
 }, rerender));
-router.post('/:id(\\d+)/delete', can('expenses.manage'), wrap(async (req, res) => {
+router.post('/:id(\\d+)/delete', can('expenses.manage'), ownerOnly, wrap(async (req, res) => {
   await svc.expenses.remove(req.ctx, Number(req.params.id));
   flash(req, 'success', req.t('common.deleted'));
   res.redirect(backTo(req.body._return));
@@ -93,7 +93,7 @@ router.post('/recurring/:id(\\d+)', can('expenses.manage'), form(async (req, res
   flash(req, 'success', req.t('common.updated'));
   res.redirect('/app/expenses/recurring');
 }, recurringAgain));
-router.post('/recurring/:id(\\d+)/delete', can('expenses.manage'), wrap(async (req, res) => {
+router.post('/recurring/:id(\\d+)/delete', can('expenses.manage'), ownerOnly, wrap(async (req, res) => {
   await recurring.remove(req.ctx, Number(req.params.id));
   flash(req, 'success', req.t('common.deleted'));
   res.redirect('/app/expenses/recurring');

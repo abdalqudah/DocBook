@@ -61,7 +61,7 @@
             <td class="actions">
               <% if (canManage) { %>
                 <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="recurring-dialog" data-action="/app/expenses/recurring/<%= r.id %>" data-dialog-title="<%= t('recurring.edit') %>" data-fill="<%= json({ title: r.title, category: r.category, amount: r.amount, payment_method: r.payment_method, every: r.every, next_date: r.next_date, end_date: r.end_date, mode: r.mode, notes: r.notes, is_active: !!r.is_active }) %>"><%- icon('pencil', 'icon-sm') %></button>
-                <%- include('../../partials/delete-form', { action: '/app/expenses/recurring/' + r.id + '/delete' }) %>
+                <% if (isOwner()) { %><%- include('../../partials/delete-form', { action: '/app/expenses/recurring/' + r.id + '/delete' }) %><% } %>
               <% } %>
             </td>
           </tr>

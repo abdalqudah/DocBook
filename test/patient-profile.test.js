@@ -178,6 +178,12 @@ test('only the clinic owner deletes an appointment, voids an invoice or refunds 
   assert.equal((await mgr.post(`/app/appointments/${aid}/delete`)).status, 403);
   assert.equal((await mgr.post('/app/billing/1/void', { confirm_name: '1' })).status, 403);
   assert.equal((await mgr.post('/app/payments/1/refund')).status, 403);
+  // …nor deletes a patient, a file of the patient, a dental entry or plan item, an expense
+  const [pid] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'Owner Only', phone: '0790009998' });
+  for (const p of [`/app/patients/${pid}/delete`, `/app/patients/${pid}/files/1/delete`, `/app/patients/${pid}/dental/entries/1/delete`, `/app/patients/${pid}/dental/plan/1/delete`, '/app/expenses/1/delete']) { // eslint-disable-line no-restricted-syntax
+    assert.equal((await mgr.post(p, { confirm_name: 'Owner Only' })).status, 403, p); // eslint-disable-line no-await-in-loop
+  }
+  assert.ok(await knex('patients').where({ id: pid }).first());
   assert.ok(await knex('appointments').where({ id: aid }).first());
   const owner = await signIn(`pp${tag}@t.test`);
   r = await owner.get(`/app/appointments/${aid}`);
