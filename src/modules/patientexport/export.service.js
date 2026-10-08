@@ -79,7 +79,7 @@ async function gather(ctx, patientId) {
  * Writes one patient's file through add(path, buffer) (an in-memory zip, or a folder of the whole-clinic export)
  * → { patient, access, counts, clinicalOk, billingOk }. Nothing is logged here; the callers log.
  */
-async function collect(ctx, patientId, locale, add) {
+async function collect(ctx, patientId, locale, add, { transfer = false } = {}) {
   const d = await gather(ctx, patientId);
   const t = translator(locale);
   const { paper } = require('../share/papers'); // eslint-disable-line global-require
@@ -98,7 +98,8 @@ async function collect(ctx, patientId, locale, add) {
     ...d.referrals.map((r) => ({ kind: 'referral', id: r.id, date: day(r.created_at) })),
     ...d.certificates.map((c) => ({ kind: 'certificate', id: c.id, date: day(c.created_at) })),
     ...d.invoices.map((i) => ({ kind: 'invoice', id: i.id, date: day(i.created_at) })),
-  ].filter((p) => p.id).sort((a, b) => a.date.localeCompare(b.date));
+  ].filter((p) => p.id).filter((p) => !transfer || ['invoice', 'certificate'].includes(p.kind)) // a clinic-to-clinic copy needs only the papers that are not re-created
+    .sort((a, b) => a.date.localeCompare(b.date));
   for (const p of papers) { // eslint-disable-line no-restricted-syntax
     try {
       const out = await paper(ctx, p.kind, p.id, locale); // eslint-disable-line no-await-in-loop
@@ -116,14 +117,14 @@ async function collect(ctx, patientId, locale, add) {
     index.push({ path: name, kind: 'file', date: day(f.created_at), title: f.title || f.name, category: f.category, id: f.id });
   }
 
-  // The summary PDF.
+  // The summary PDF (not for a clinic-to-clinic copy: the receiving clinic has the records themselves).
   const clinic = await docsSvc.clinicInfo(ctx.businessId);
   const today = require('../clinic/scheduling').clinicNow(clinic.timezone || 'Asia/Amman').date; // eslint-disable-line global-require -- the clinic's own day
   const doctorOf = new Map(d.appointments.map((a) => [a.doctor_id, a.doctor_name]));
   const consultBy = new Map(d.consultations.map((c) => [c.appointment_id, c]));
   const icd = require('../clinicalplus/icd.service'); // eslint-disable-line global-require
   const codesBy = d.clinicalOk ? await icd.diagnosesByAppointment(ctx.businessId, d.appointments.map((a) => a.id)) : new Map();
-  const summary = await documents.patientFile({
+  const summary = transfer ? null : await documents.patientFile({
     clinic, patient: d.patient, age: lib.ageOf(d.patient.date_of_birth, today), today, clinicalOk: d.clinicalOk, billingOk: d.billingOk,
     visits: d.appointments.map((a) => ({ ...a, consultation: consultBy.get(a.id) || null, codes: codesBy.get(a.id) || [] })),
     prescriptions: d.prescriptions.map((r) => ({ ...r, items: parse(r.items, []), visit_date: visitDate.get(r.appointment_id) || null, doctor_name: doctorOf.get(r.doctor_id) || null })),
@@ -131,7 +132,7 @@ async function collect(ctx, patientId, locale, add) {
     vitals: d.consultations.slice().reverse().map((c) => ({ at: c.created_at, v: parse(c.vital_signs, {}) })).find((x) => x.v && Object.values(x.v).some(Boolean)) || null,
     icdTitle: (r) => icd.titleOf(r, locale),
   }, locale);
-  await zip.addFile('00-summary.pdf', Buffer.from(summary));
+  if (summary) await zip.addFile('00-summary.pdf', Buffer.from(summary));
 
   // Machine-readable copy.
   const data = {

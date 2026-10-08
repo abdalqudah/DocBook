@@ -58,6 +58,7 @@
         <%- sel('referral', t('pprofile.referral_source'), fl.choices.referral) %>
         <%- sel('blood', t('pprofile.blood_group'), fl.choices.blood) %>
         <%- sel('tag', t('pfilter.flags'), [{ value: 'important', label: t('pfilter.flag_important') }, { value: 'allergy', label: t('pfilter.flag_allergy') }, { value: 'discount', label: t('pfilter.flag_discount') }, { value: 'no_reminders', label: t('pfilter.flag_no_reminders') }]) %>
+        <%- sel('moved', t('ptransfer.filter_moved'), [{ value: '1', label: t('ptransfer.filter_moved_only') }]) %>
         <div class="pf-actions"><button class="btn btn-primary btn-sm" type="submit"><%- icon('search', 'icon-sm') %><%= t('pfilter.apply') %></button></div>
       </div>
     </details>
@@ -68,13 +69,24 @@
     <% } else { %>
       <%- include(P + 'empty', { emptyIcon: 'users', emptyTitle: t('patients.empty_title'), emptyText: ctx.ownDoctorId ? t('patients.empty_doctor') : t('patients.empty_text'), emptyAction: canCreate ? '<button class="btn btn-primary btn-sm" type="button" data-open-dialog="patient-dialog" data-reset-form>' + t('patients.add') + '</button>' : '' }) %>
     <% } %>
-  <% } else { %>
+  <% } else { var _tx = transferTargets && transferTargets.length && !movedView;
+     var _qs = Object.keys(query).filter(function (k) { return k !== 'page' && typeof query[k] === 'string' && query[k] !== ''; }).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(query[k]); }).join('&'); %>
+  <% if (_tx) { %>
+  <form id="pt-select" class="pt-bar" method="get" action="/app/patients/transfer" data-transfer-select>
+    <span class="small"><%- icon('send', 'icon-sm') %> <%= t('ptransfer.bar', { clinics: transferTargets.map(function (b) { return b.name; }).join('، ') }) %></span>
+    <span class="grow"></span>
+    <span class="small muted" data-transfer-count data-text="<%= t('ptransfer.selected_n', { n: '{n}' }) %>"><%= t('ptransfer.selected_n', { n: 0 }) %></span>
+    <button class="btn btn-primary btn-sm" type="submit" data-transfer-go disabled><%= t('ptransfer.transfer_selected') %></button>
+    <a class="btn btn-secondary btn-sm" href="/app/patients/transfer?all=1<%= _qs ? '&' + _qs : '' %>"><%= t('ptransfer.transfer_all', { n: fmt.number(meta.total) }) %></a>
+  </form>
+  <% } %>
   <div class="table-wrap">
     <table class="table responsive">
-      <thead><tr><th><%= t('common.patient') %></th><th><%= t('patients.age_gender') %></th><th><%= t('patients.insurance') %></th><th class="num"><%= t('patients.visits') %></th><th><%= t('patients.last_visit') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+      <thead><tr><% if (_tx) { %><th class="pt-check"><input type="checkbox" data-transfer-all aria-label="<%= t('ptransfer.select_page') %>"></th><% } %><th><%= t('common.patient') %></th><th><%= t('patients.age_gender') %></th><th><%= t('patients.insurance') %></th><th class="num"><%= t('patients.visits') %></th><th><%= t('patients.last_visit') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
       <tbody>
         <% rows.forEach(function (r) { var age = ageOf(r.date_of_birth); %>
         <tr>
+          <% if (_tx) { %><td class="pt-check"><input type="checkbox" name="ids" value="<%= r.id %>" form="pt-select" aria-label="<%= r.full_name %>"></td><% } %>
           <td class="primary-cell"><a class="person" href="/app/patients/<%= r.id %>"><span class="avatar"><%= initials(r.full_name) %></span><span style="min-width:0"><span class="person-name" dir="auto"><%= r.full_name %></span><% if (r.category && r.category !== 'standard') { %> <span class="badge badge-warning"><%= t('pprofile.categories.' + r.category) %></span><% } %><% if (r.important_note) { %> <span class="badge badge-danger" title="<%= r.important_note %>"><%- icon('triangle-alert', 'icon-sm') %>!</span><% } %><% if (r.allergies) { %> <span class="badge badge-danger" title="<%= t('patients.allergies') %>: <%= r.allergies %>"><%- icon('triangle-alert', 'icon-sm') %><%= t('patients.allergy_short') %></span><% } %><span class="person-sub" style="display:block"><% if (r.file_number) { %><span dir="ltr">#<%= r.file_number %></span> · <% } %><span dir="ltr"><%= r.phone || '—' %></span><% if (r.national_id) { %> · <span dir="ltr"><%= r.national_id %></span><% } %></span></span></a></td>
           <td data-label="<%= t('patients.age_gender') %>"><%= [age !== null ? t('patients.years', { n: age }) : null, r.gender ? t('patients.genders.' + r.gender) : null].filter(Boolean).join(' · ') || '—' %></td>
           <td data-label="<%= t('patients.insurance') %>"><% if (r.insurance_name) { %><span class="badge badge-info"><%= r.insurance_name %></span><% if (r.insurance_number) { %> <span class="small muted" dir="ltr"><%= r.insurance_number %></span><% } %><% } else { %><span class="muted">—</span><% } %></td>

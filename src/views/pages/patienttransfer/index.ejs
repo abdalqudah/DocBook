@@ -1,0 +1,38 @@
+<% var T = 'ptransfer.'; var B = '/app/patients/transfer'; var tone = { queued: 'badge-neutral', running: 'badge-info', done: 'badge-success', done_with_issues: 'badge-warning', failed: 'badge-danger' }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t(T + 'history') %></h1>
+    <p><%= t(T + 'history_lead') %></p>
+  </div>
+</div>
+<% if (targets.length) { %>
+<section class="panel mb-4">
+  <div class="panel-head"><div><h2><%= t(T + 'shared_title') %></h2><p class="panel-sub"><%= t(T + 'shared_sub') %></p></div></div>
+  <div class="panel-body stack-sm">
+  <% targets.forEach(function (b) { var n = shared.get(b.id) || 0; %>
+    <div class="row-sm" style="justify-content:space-between;flex-wrap:wrap">
+      <span><%- icon('building-2', 'icon-sm') %> <strong><%= b.name %></strong> <span class="small muted"><%= t(T + 'shared_n', { n: fmt.number(n) }) %></span></span>
+      <% if (n) { %><form method="post" action="<%= B %>/sync"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="other" value="<%= b.id %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t(T + 'sync_all', { clinic: b.name }) %></button></form><% } %>
+    </div>
+  <% }) %>
+  </div>
+</section>
+<% } %>
+<section class="panel">
+  <% if (!list.length) { %><div class="empty compact"><span class="empty-icon"><%- icon('send') %></span><p><%= t(T + 'no_history') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th>#</th><th><%= t(T + 'col_route') %></th><th><%= t(T + 'mode') %></th><th class="num"><%= t(T + 'col_patients') %></th><th><%= t(T + 'col_status') %></th><th><%= t(T + 'col_date') %></th></tr></thead>
+    <tbody><% list.forEach(function (x) { %>
+      <tr>
+        <td><a class="link strong" href="<%= B %>/<%= x.id %>">#<%= x.id %></a></td>
+        <td data-label="<%= t(T + 'col_route') %>"><%= x.from_name %> <%- icon('arrow-right', 'icon-sm flip-rtl') %> <%= x.to_name %></td>
+        <td data-label="<%= t(T + 'mode') %>"><%= t(T + 'modes.' + x.mode) %></td>
+        <td class="num" data-label="<%= t(T + 'col_patients') %>"><%= fmt.number(x.done) %> / <%= fmt.number(x.total) %></td>
+        <td data-label="<%= t(T + 'col_status') %>"><span class="badge badge-dot <%= tone[x.status] %>"><%= t(T + 'status.' + x.status) %></span></td>
+        <td data-label="<%= t(T + 'col_date') %>"><%= fmt.date(x.created_at) %></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

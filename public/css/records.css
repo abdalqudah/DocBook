@@ -213,3 +213,20 @@ tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
 .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); align-items: end; }
 .pf-grid .field { margin: 0; }
 .pf-actions { display: flex; align-items: end; }
+
+/* Patients → move / share to another clinic (patienttransfer) */
+.pt-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+.pt-check { width: 36px; }
+.pt-check input { width: 16px; height: 16px; accent-color: var(--primary); }
+.pt-list { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow: auto; }
+.pt-list li { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+.pt-modes { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pt-mode { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.pt-mode:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); }
+.pt-mode input { margin-top: 3px; accent-color: var(--primary); }
+.pt-links { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pt-link { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 10px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface); font-size: var(--fs-xs); }
+.pt-link form { margin: 0; }
+.d-block { display: block; }
+.text-danger { color: var(--danger); }
+@media (max-width: 720px) { .pt-check { width: 28px; } }

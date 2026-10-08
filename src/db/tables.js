@@ -17,6 +17,8 @@ const PLATFORM = [
   'vendor_invoices', 'vendor_ads', 'rep_visits', 'rep_visit_slots', 'purchase_orders', 'purchase_order_items', 'purchase_receipts',
   // shown on the main site across clinics
   'reviews', 'articles',
+  // patients moved or shared between the clinics of one owner (each clinic may have its own database)
+  'patient_transfers', 'patient_transfer_items', 'patient_links',
   // migrations
   'knex_migrations', 'knex_migrations_lock',
 ];

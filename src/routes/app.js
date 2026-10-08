@@ -131,6 +131,7 @@ router.use('/', require('../modules/clinic/dashboard.web'));
 router.use('/appointments', require('../modules/clinic/appointments.web'));
 router.use('/front-desk', require('../modules/clinic/frontdesk.web'));
 router.use('/queue-screens', require('../modules/queue/web'));
+router.use('/patients/transfer', require('../modules/patienttransfer/web')); // move / share patients to another clinic of the owner
 router.use('/patients', require('../modules/clinic/patients.web'));
 router.use('/import/legacy-clinica', require('../modules/legacy/web')); // Legacy Patient Recovery & Import (Clinica)
 router.use('/surgeries', require('../modules/surgeries/web'));

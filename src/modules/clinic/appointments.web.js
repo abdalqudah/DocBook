@@ -284,7 +284,7 @@ router.get('/patient-lookup', can('appointments.manage'), wrap(async (req, res) 
   if (q.length < 2) return res.json({ data: [] });
   const like = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
   const digits = q.replace(/[^0-9]/g, '');
-  const rows = await knex('patients').where({ business_id: req.ctx.businessId })
+  const rows = await knex('patients').where({ business_id: req.ctx.businessId }).whereNull('transferred_at') // moved to another clinic: booked there
     .andWhere((w) => { require('./records.lib').nameMatch(w, 'full_name', q); // eslint-disable-line global-require
       w.orWhere('name_en', 'like', like).orWhere('file_number', q);
       w.orWhere('phone', 'like', like); if (digits.length >= 3) w.orWhere('phone', 'like', `%${digits}%`).orWhere('phone2', 'like', `%${digits}%`); })

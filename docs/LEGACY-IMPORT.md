@@ -216,3 +216,25 @@ The recovery list searches name, mobile, old id and old number.
 
 Back up `LEGACY_FILES_DIR` together with the database. With PHP or Nginx in front, raise the upload limit
 (`client_max_body_size`) to match `LEGACY_IMPORT_MAX_MB`.
+
+---
+
+# Moving / sharing patients between clinics (2.7.0)
+
+A doctor who owns more than one clinic (e.g. Khalidi and Abdali — each possibly in its own database) can move or share
+patients between them: **Patients → tick patients** (or filter, e.g. by the group "العبدلي", then "All N matching") →
+**Move / share** → choose the clinic, the mode and (optionally) the doctor there → **Start**. It runs in the background
+(`patient_transfers`, `patient_transfer_items` in the main database) and carries on after a server restart.
+
+- **Share** — the patient is a patient of both clinics (visits here or there). Both files are linked (`patient_links`);
+  either clinic can press **Update** (on the patient, or "Update from …" for all shared patients) to pull only what the
+  other added since. Copies in both directions never double (import links are written both ways).
+- **Move** — the file goes to the other clinic; here it stays as a read-only archive, hidden from the list (filter
+  "Moved to another clinic" shows them), with a banner and **Bring back**.
+- Everything is copied with the same engine as the patient export / import: details, visits, notes, diagnoses,
+  prescriptions, tests, referrals, dental chart, growth, pregnancies, surgeries, specialty forms, files, the invoice /
+  certificate PDFs (invoices are not re-created), groups, photo, and the legacy (Clinica) records and files. Upcoming
+  bookings stay where they were booked; the result lists how many.
+- Only a member who manages the data (`data.manage`, the owner) of **both** clinics can do it; it is audited in both.
+- The second clinic does not need to exist yet: once it is opened (Workspaces → New clinic, by the same owner) it
+  appears as a destination.

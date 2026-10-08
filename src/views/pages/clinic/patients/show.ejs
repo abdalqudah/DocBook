@@ -30,7 +30,7 @@
     <a class="btn btn-secondary" href="/app/patients/<%= p.id %>/summary?print=1" target="_blank" rel="noopener"><%- icon('printer', 'icon-sm') %><%= t('prints.print_file') %></a>
     <% if (canAny('clinical.view', 'data.export')) { %><form method="post" action="/app/patients/<%= p.id %>/export" data-confirm="<%= t('patient_export.confirm', { name: p.full_name }) %>" data-confirm-yes="<%= t('patient_export.confirm_yes') %>" data-confirm-tone="primary" data-no-busy><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit" title="<%= t('patient_export.hint') %>"><%- icon('download', 'icon-sm') %><%= t('patient_export.button') %></button></form><% } %>
     <% if (can('patients.edit')) { %><a class="btn btn-secondary" href="/app/patients/<%= p.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %>
-    <% if (can('appointments.manage')) { %><a class="btn btn-primary" href="/app/appointments/new?patient=<%= p.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('patients.book') %></a><% } %>
+    <% if (can('appointments.manage') && !p.transferred_at) { %><a class="btn btn-primary" href="/app/appointments/new?patient=<%= p.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('patients.book') %></a><% } %>
   </div>
 </div>
 
@@ -40,6 +40,19 @@
   <% tabs.forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%- icon(tabIcon[k], 'icon-sm') %><%= t('patients.tab.' + k) %></a><% }) %>
 </nav>
 
+<% if (movedTo) { %>
+<div class="alert alert-warning mb-4" role="note" data-transfer-moved><%- icon('archive-restore') %><div class="grow"><div class="alert-title"><%= t('ptransfer.moved_title', { clinic: movedTo.other_name || '' }) %></div><div class="small"><%= t('ptransfer.moved_text', { date: fmt.date(p.transferred_at) }) %></div></div>
+  <% if (can('data.manage')) { %><form method="post" action="/app/patients/transfer/restore/<%= p.id %>" data-confirm="<%= t('ptransfer.restore_confirm') %>" data-confirm-tone="primary"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('ptransfer.restore') %></button></form><% } %></div>
+<% } else if (transferLinks.length || canTransfer) { %>
+<div class="pt-links mb-4" data-transfer-links>
+  <% transferLinks.forEach(function (l) { %>
+  <span class="pt-link"><%- icon(l.kind === 'shared' ? 'link' : 'arrow-right', 'icon-sm flip-rtl') %><span><%= t('ptransfer.link_' + l.kind, { clinic: l.other_name }) %><% if (l.last_synced_at) { %> <span class="muted">· <%= fmt.date(l.last_synced_at) %></span><% } %></span>
+    <% if (l.kind === 'shared' && canTransfer) { %><form method="post" action="/app/patients/transfer/sync"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="other" value="<%= l.other_business_id %>"><input type="hidden" name="patient_id" value="<%= p.id %>"><button class="btn btn-ghost btn-sm" type="submit" title="<%= t('ptransfer.sync_one', { clinic: l.other_name }) %>"><%- icon('refresh-cw', 'icon-sm') %><%= t('ptransfer.sync_short') %></button></form><% } %>
+  </span>
+  <% }) %>
+  <% if (canTransfer) { %><a class="btn btn-ghost btn-sm" href="/app/patients/transfer?ids=<%= p.id %>"><%- icon('send', 'icon-sm') %><%= t('ptransfer.transfer_one') %></a><% } %>
+</div>
+<% } %>
 <% if (p.important_note) { %><div class="pp-alert is-flash" role="alert"><%- icon('triangle-alert') %><div class="grow"><div class="small"><%= t('pprofile.important_note') %></div><div class="rec-pre" dir="auto"><%= p.important_note %></div></div></div><% } %>
 <% if (p.allergies || p.chronic_conditions) { %>
 <div class="grid <%= p.allergies && p.chronic_conditions ? 'grid-2' : '' %> mb-4">

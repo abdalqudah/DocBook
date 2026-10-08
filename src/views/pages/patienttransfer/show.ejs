@@ -1,0 +1,32 @@
+<% var T = 'ptransfer.'; var B = '/app/patients/transfer'; var tone = { queued: 'badge-neutral', running: 'badge-info', done: 'badge-success', done_with_issues: 'badge-warning', failed: 'badge-danger', pending: 'badge-neutral', processing: 'badge-info' };
+   var live = ['queued', 'running'].includes(tr.status); var pct = tr.total ? Math.round((tr.done + tr.failed) * 100 / tr.total) : 0; var future = items.reduce(function (n, i) { return n + (i.future_bookings || 0); }, 0);
+   var mine = tr.to_business_id === here; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="<%= B %>"><%= t(T + 'history') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t(T + 'modes.' + tr.mode) %> #<%= tr.id %></h1>
+    <p><strong><%= fromName %></strong> <%- icon('arrow-right', 'icon-sm flip-rtl') %> <strong><%= toName %></strong> · <span class="badge badge-dot <%= tone[tr.status] %>"><%= t(T + 'status.' + tr.status) %></span></p>
+  </div>
+  <% if (['failed', 'done_with_issues'].includes(tr.status)) { %><div class="page-actions"><form method="post" action="<%= B %>/<%= tr.id %>/retry"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t(T + 'retry') %></button></form></div><% } %>
+</div>
+<div data-transfer-job data-status-url="<%= B %>/<%= tr.id %>/status" data-live="<%= live ? '1' : '' %>">
+<section class="panel mb-4"><div class="panel-body stack">
+  <div class="row-sm" style="justify-content:space-between"><strong><%= t(T + 'progress', { done: fmt.number(tr.done), total: fmt.number(tr.total) }) %></strong><span class="num strong"><%= pct %>%</span></div>
+  <span class="meter" aria-hidden="true"><span style="width:<%= pct %>%"></span></span>
+  <% if (tr.error === 'STORAGE_FULL') { %><div class="alert alert-error"><%- icon('circle-alert') %><div class="grow"><%= t(T + 'err.STORAGE_FULL') %></div></div><% } else if (tr.error) { %><div class="alert alert-error"><%- icon('circle-alert') %><div class="grow"><%= t(T + 'err.' + tr.error) !== T + 'err.' + tr.error ? t(T + 'err.' + tr.error) : tr.error %></div></div><% } %>
+  <% if (future) { %><div class="alert alert-warning"><%- icon('calendar-clock') %><div class="grow"><%= t(T + 'future_note', { n: fmt.number(future), clinic: fromName }) %></div></div><% } %>
+</div></section>
+</div>
+<section class="panel">
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('common.patient') %></th><th><%= t(T + 'col_status') %></th><th><%= t(T + 'col_bookings') %></th><th></th></tr></thead>
+    <tbody><% items.forEach(function (i) { %>
+      <tr>
+        <td dir="auto"><%= i.name %></td>
+        <td data-label="<%= t(T + 'col_status') %>"><span class="badge badge-dot <%= i.status === 'done' ? 'badge-success' : i.status === 'failed' ? 'badge-danger' : tone[i.status] %>"><%= t(T + 'istatus.' + i.status) %></span><% if (i.message) { %><div class="small text-danger"><%= i.message %></div><% } %></td>
+        <td data-label="<%= t(T + 'col_bookings') %>" class="num"><%= i.future_bookings ? fmt.number(i.future_bookings) : '—' %></td>
+        <td><% if (i.status === 'done') { if (mine && i.dst_patient_id) { %><a class="btn btn-ghost btn-sm" href="/app/patients/<%= i.dst_patient_id %>"><%= t('common.open') %></a><% } else if (!mine) { %><a class="btn btn-ghost btn-sm" href="/app/patients/<%= i.src_patient_id %>"><%= t('common.open') %></a><% } } %></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+</section>

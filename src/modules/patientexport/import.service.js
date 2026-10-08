@@ -167,7 +167,7 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
   const papers = d.papers.filter((p) => ['invoice', 'certificate'].includes(p.kind) && /-(\d+)\.pdf$/.test(p.path || ''))
     .map((p) => ({ ...p, src: Number(p.path.match(/-(\d+)\.pdf$/)[1]), buf: zip.read(prefix + p.path) })).filter((p) => p.buf);
 
-  await knex.transaction(async (trx) => {
+  return knex.transaction(async (trx) => {
     const maps = {}; Object.keys(TABLES).forEach((k) => { maps[k] = new Map(); });
     const existing = async (kind, srcId) => {
       const l = await linked(trx, ctx, key, kind, srcId);
@@ -213,7 +213,13 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
       // A file number already used here is left empty; a case manager is a member of this clinic only.
       const fileFree = p.file_number && !(await trx('patients').where({ business_id: ctx.businessId, file_number: String(p.file_number) }).first('id'));
       const manager = same && p.case_manager_id ? await trx('memberships').where({ business_id: ctx.businessId, user_id: p.case_manager_id }).first('user_id') : null;
-      pid = await insert('patient', p, { insurance_provider_id: ins ? ins.id : null, file_number: fileFree ? String(p.file_number) : null, case_manager_id: manager ? manager.user_id : null });
+      // The previous system's id (legacy import) once per clinic: kept unless another patient here has it.
+      const legacyTaken = p.legacy_patient_id && await trx('patients').where({ business_id: ctx.businessId, legacy_source: p.legacy_source || null, legacy_patient_id: p.legacy_patient_id }).first('id');
+      pid = await insert('patient', p, {
+        ...(legacyTaken ? { legacy_source: null, legacy_patient_id: null, legacy_patient_number: null, legacy_imported_at: null } : {}),
+        insurance_provider_id: ins ? ins.id : null, file_number: fileFree ? String(p.file_number) : null, case_manager_id: manager ? manager.user_id : null,
+        transferred_to_business_id: null, transferred_patient_id: null, transferred_at: null, legacy_import_job_id: null,
+      });
       rep.patients_new = (rep.patients_new || 0) + 1;
     }
 
@@ -327,6 +333,7 @@ async function importOne(ctx, zip, prefix, plan, rep, inst, t) {
         created_by: ctx.userId, created_at: pp.date ? new Date(`${pp.date}T12:00:00Z`) : new Date(),
       });
     }
+    return pid;
   });
 }
 
@@ -407,4 +414,4 @@ function list(businessId) {
 
 const settle = (businessId) => (running.get(businessId) ? running.get(businessId).promise : Promise.resolve());
 
-module.exports = { ROOT, dirOf, analyze, get, start, cancel, list, settle };
+module.exports = { ROOT, TABLES, dirOf, analyze, get, start, cancel, list, settle, importOne, matchDoctor, sourceKey, readData, link };

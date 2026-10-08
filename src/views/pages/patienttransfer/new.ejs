@@ -1,0 +1,57 @@
+<% var T = 'ptransfer.'; var B = '/app/patients/transfer'; var keep = Object.keys(query).filter(function (k) { return k !== 'to' && k !== 'mode' && k !== 'lang' && typeof query[k] === 'string'; }); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t(T + 'title') %></h1>
+    <p><%= t(T + 'lead') %></p>
+  </div>
+</div>
+<% if (!targets.length) { %>
+<section class="panel"><div class="empty"><span class="empty-icon"><%- icon('building-2') %></span><h3><%= t(T + 'no_targets') %></h3><p><%= t(T + 'no_targets_text') %></p><a class="btn btn-secondary btn-sm" href="/workspaces/new"><%- icon('plus', 'icon-sm') %><%= t(T + 'new_clinic') %></a></div></section>
+<% } else if (!patients.length) { %>
+<section class="panel"><div class="empty"><span class="empty-icon"><%- icon('users') %></span><p><%= t(T + 'none_chosen') %></p><a class="btn btn-secondary btn-sm" href="/app/patients"><%= t('patients.title') %></a></div></section>
+<% } else { %>
+<div class="grid grid-2" style="align-items:start">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t(T + 'patients_n', { n: fmt.number(patients.length) }) %></h2></div></div>
+    <ul class="pt-list">
+      <% patients.slice(0, 200).forEach(function (p) { %><li><span class="avatar"><%= initials(p.full_name) %></span><span class="grow" dir="auto"><%= p.full_name %></span><span class="small muted" dir="ltr"><%= p.file_number ? '#' + p.file_number + ' · ' : '' %><%= p.phone || '' %></span></li><% }) %>
+      <% if (patients.length > 200) { %><li class="small muted">+<%= fmt.number(patients.length - 200) %></li><% } %>
+    </ul>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t(T + 'where') %></h2></div></div>
+    <div class="panel-body stack">
+      <form class="stack" method="get" action="<%= B %>" data-transfer-pick>
+        <% keep.forEach(function (k) { %><input type="hidden" name="<%= k %>" value="<%= query[k] %>"><% }) %>
+        <input type="hidden" name="mode" value="<%= mode %>">
+        <div class="field"><label for="pt-to"><%= t(T + 'to') %></label>
+          <select class="select" id="pt-to" name="to" data-autosubmit>
+            <% if (!to) { %><option value=""><%= t(T + 'choose_clinic') %></option><% } %>
+            <% targets.forEach(function (b) { %><option value="<%= b.id %>"<%= to && to.id === b.id ? ' selected' : '' %>><%= b.name %></option><% }) %>
+          </select></div>
+        <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t(T + 'next') %></button></noscript>
+      </form>
+      <% if (to) { %>
+      <form class="stack" method="post" action="<%= B %>" data-confirm="<%= t(T + 'confirm', { n: fmt.number(patients.length), clinic: to.name }) %>" data-confirm-tone="primary">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="to" value="<%= to.id %>">
+        <% if (query.all === '1') { %><input type="hidden" name="all" value="1"><% keep.forEach(function (k) { if (k !== 'all' && k !== 'ids') { %><input type="hidden" name="<%= k %>" value="<%= query[k] %>"><% } }) %>
+        <% } else { %><input type="hidden" name="ids" value="<%= patients.map(function (p) { return p.id; }).join(',') %>"><% } %>
+        <fieldset class="pt-modes"><legend class="small strong"><%= t(T + 'mode') %></legend>
+          <label class="pt-mode"><input type="radio" name="mode" value="share"<%= mode !== 'move' ? ' checked' : '' %>><span><strong><%- icon('link', 'icon-sm') %> <%= t(T + 'share') %></strong><span class="small muted d-block"><%= t(T + 'share_text', { clinic: to.name }) %></span></span></label>
+          <label class="pt-mode"><input type="radio" name="mode" value="move"<%= mode === 'move' ? ' checked' : '' %>><span><strong><%- icon('arrow-right', 'icon-sm flip-rtl') %> <%= t(T + 'move') %></strong><span class="small muted d-block"><%= t(T + 'move_text', { clinic: to.name }) %></span></span></label>
+        </fieldset>
+        <div class="field"><label for="pt-doc"><%= t(T + 'doctor') %></label>
+          <select class="select" id="pt-doc" name="doctor_id"><option value=""><%= t(T + 'doctor_same') %></option><% doctors.forEach(function (d) { %><option value="<%= d.id %>"><%= d.full_name %></option><% }) %></select>
+          <p class="help"><%= t(T + 'doctor_help') %></p></div>
+        <ul class="small muted stack-sm" style="padding-inline-start:18px;margin:0">
+          <li><%= t(T + 'rule_all') %></li><li><%= t(T + 'rule_twice') %></li><li><%= t(T + 'rule_future') %></li><li><%= t(T + 'rule_money') %></li>
+        </ul>
+        <div class="row-sm"><button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t(T + 'start') %></button><a class="btn btn-ghost" href="/app/patients"><%= t('common.cancel') %></a></div>
+      </form>
+      <% } %>
+    </div>
+  </section>
+</div>
+<% } %>

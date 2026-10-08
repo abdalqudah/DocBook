@@ -36,6 +36,8 @@ function listQuery(ctx, query) {
       w.orWhere('patients.legacy_patient_id', raw).orWhere('patients.legacy_patient_number', raw);
     });
   }
+  // Patients moved to another clinic of the owner stay here as an archive, shown only when asked for.
+  if (query.moved === '1') q.whereNotNull('patients.transferred_at'); else q.whereNull('patients.transferred_at');
   if (query.insurance === 'none') q.whereNull('patients.insurance_provider_id');
   else if (/^\d+$/.test(query.insurance || '')) q.where('patients.insurance_provider_id', Number(query.insurance));
   applyFilters(q, query, ctx);
@@ -103,13 +105,16 @@ async function render(req, res, extra = {}) {
     lib.paginate(listQuery(req.ctx, req.query), { page: req.query.page, perPage: 25 }),
     clinical.activeInsurance(req.ctx),
   ]);
-  const filtered = ['q', 'insurance', ...FILTER_KEYS].some((k) => req.query[k] && req.query[k] !== 'all');
+  const filtered = ['q', 'insurance', 'moved', ...FILTER_KEYS].some((k) => req.query[k] && req.query[k] !== 'all');
+  // Moving / sharing patients to another clinic of the owner (patienttransfer): offered when there is one.
+  const transfer = req.ctx.permissions.has('data.manage') ? await require('../patienttransfer/transfer.service').targets(req.ctx) : []; // eslint-disable-line global-require
   const advanced = FILTER_KEYS.some((k) => req.query[k] && req.query[k] !== 'all');
   res.page('pages/clinic/patients/index', {
-    title: req.t('patients.title'), rows, meta, insurance, filtered, advanced, ageOf: (d) => lib.ageOf(d, req.ctx.today),
+    title: req.t('patients.title'), rows, meta, insurance, filtered, advanced, ageOf: (d) => lib.ageOf(d, req.ctx.today), transferTargets: transfer,
+    movedView: req.query.moved === '1',
     fl: await (async () => { const profile = require('./patient-profile'); return { choices: profile.choices(req.t, req.locale), groups: await profile.groups(req.ctx.businessId), managers: await profile.managers(req.ctx.businessId) }; })(), // eslint-disable-line global-require
     ...(req.ctx.permissions.has('patients.create') ? await profileLocals(req) : { pp: null }),
-    pageScripts: PAGE_SCRIPTS, pageStyles: PAGE_STYLES, ...extra,
+    pageScripts: transfer.length ? [...PAGE_SCRIPTS, '/js/patient-transfer.js'] : PAGE_SCRIPTS, pageStyles: PAGE_STYLES, ...extra,
   });
 }
 
@@ -318,6 +323,11 @@ async function renderShow(req, res, extra = {}) {
     const [ol, rl, fl] = await Promise.all([orders.ordersForPatient(req.ctx, p.id), orders.referralsForPatient(req.ctx, p.id), orders.filesForPatient(req.ctx, p.id)]);
     orderTab = { orders: ol, referrals: rl, files: fl };
   }
+  // Other clinics of the owner this patient is known in (shared / moved) — patienttransfer.
+  const tsvc = require('../patienttransfer/transfer.service'); // eslint-disable-line global-require
+  const transferLinks = await tsvc.linksOf(req.ctx.businessId, p.id);
+  const movedTo = p.transferred_at ? transferLinks.find((l) => l.kind === 'moved_to') || { other_name: null } : null;
+  const canTransfer = perms.has('data.manage') && (await tsvc.targets(req.ctx)).length > 0;
   const legacy = tab === 'legacy' ? await require('../legacy/records.service').forPatient(req.ctx.businessId, p.id) : null; // eslint-disable-line global-require
   if (legacy) await privacy.log(req.ctx, { patientId: p.id, what: 'legacy_records', access: privacy.levelOf(access) });
   // Surgeries (Patients → Surgeries): the tab lists them all, the overview shows the coming ones.
@@ -329,7 +339,7 @@ async function renderShow(req, res, extra = {}) {
   const nameOf = (uid) => (ppPeople.find((u) => u.id === uid) || {}).name || null;
   res.page('pages/clinic/patients/show', {
     pprofile: { groups: ppGroups, photo: ppPhoto, manager: nameOf(p.case_manager_id), updatedBy: nameOf(p.updated_by), choices: profile.choices(req.t, req.locale) },
-    tab, tabs, prescriptions, certificates, orderTab, legacy, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
+    tab, tabs, prescriptions, certificates, orderTab, legacy, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
     timeline, invoices: tl.invoices.filter(mine),
@@ -442,4 +452,5 @@ router.post('/:id(\\d+)/delete', can('patients.delete'), form(async (req, res) =
   return res.redirect(`/app/patients/${req.params.id}`);
 }));
 
+router.listQuery = listQuery; // the same search and filters for "transfer all matching" (patienttransfer)
 module.exports = router;
