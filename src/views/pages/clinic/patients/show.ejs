@@ -289,5 +289,4 @@
   <% }) %></ul><% } %>
 </div>
 <% } %>
-<% if (tab === 'legacy') { %><%- include('../../legacy/_patient-tab', { lg: legacy, p: p }) %><% } %>
 <%- include('../../teamops/_email-patient', { part: 'dialog', mailPatientId: p.id, mailTo: p.email, mailReturn: '/app/patients/' + p.id }) %>

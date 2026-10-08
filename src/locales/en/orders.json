@@ -140,6 +140,7 @@
       "FILE_TYPE": "Unsupported file type. Use PDF, JPG or PNG.",
       "tests": "Choose or type at least one test.",
       "RECORD_RESTRICTED": "This patient’s medical record is restricted."
-    }
+    },
+    "file_not_brought": "The file was not brought over (its name only)"
   }
 }

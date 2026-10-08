@@ -423,7 +423,7 @@ test('Clinica as if it was always here: English names → the Arabic doctors, ch
   const [abdali] = await knex('clinic_branches').insert({ business_id: c.businessId, name: 'العبدلي' });
   const form = [['Factor', 'Normal', 'Abnormal'], ['Plaque', 'Good', 'Poor']];
   const data = [{
-    patient_id: '9101', patient_number: '', name: 'مريض أ', mobile: '962790000001', group: 'Implant,Abdali Hospital',
+    patient_id: '9101', patient_number: '', name: 'مريض أ', mobile: '', nationality: 'Jordan', group: 'Implant,Abdali Hospital',
     treatments: [
       { date: '2024-01-10', tooth: '16', description: 'Examination \u00a0\u00a0 more...X\n   Chief Complaint\n   pain 16\n \n   View Notes', doctor: 'Faris Qudah', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-01-10', note: '', referred_by: '' },
       { date: '2024-01-10', tooth: '17', description: 'Composite Filling\n    View Notes', doctor: 'Clinic One', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-01-10', note: 'deep', referred_by: '' },
@@ -432,7 +432,7 @@ test('Clinica as if it was always here: English names → the Arabic doctors, ch
       { date: '2024-04-01', tooth: '', description: 'Follow up', doctor: 'Clinic Two', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-04-01', note: '', referred_by: '' },
     ],
     attachments: [],
-    clinical_tables: { periodontal: form, treatment_details_1: [['Select / Print', 'Date', 'Tooth', 'Description', 'Doctor'], ['', '2024-01-10', '16', 'x', 'y']] },
+    clinical_tables: { clinical_table_3: [['-', 'File Name', 'Description', 'Upload Date', 'Delete'], ['', 'old-scan.pdf', '', '2021-12-22', '']], periodontal: form, treatment_details_1: [['Select / Print', 'Date', 'Tooth', 'Description', 'Doctor'], ['', '2024-01-10', '16', 'x', 'y']] },
   }];
   const json = path.join(TMP, 'real.json'); fs.writeFileSync(json, JSON.stringify(data));
   const j = await svc.openJob(c);
@@ -449,7 +449,11 @@ test('Clinica as if it was always here: English names → the Arabic doctors, ch
   assert.equal(plan[2].doctor_id, lama, '"Lama  Ashour" (two spaces) is the same doctor');
   assert.equal(plan[4].doctor_id, lama, 'Clinic Two on a day alone → the patient\'s usual doctor');
   assert.equal(Number((await knex('doctors').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 2, 'no doctor added');
-  assert.equal(Number((await knex('legacy_clinical_records').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 0, 'empty forms and treatment copies left out');
+  assert.equal(Number((await knex('legacy_clinical_records').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 1, 'only Clinica\'s files list: empty forms and treatment copies left out');
+  assert.equal(p.nationality, 'JO', 'nationality on the patient\'s file'); assert.equal(p.phone, null, 'no mobile: created all the same');
+  // A file Clinica lists that was not brought over: in the patient's file list by name and date.
+  const listed = await require('../src/modules/legacy/records.service').filesOf(c.businessId, p.id); // eslint-disable-line global-require
+  assert.deepEqual(listed.map((f) => [f.original_filename, Boolean(f.missing), f.listed_on]), [['old-scan.pdf', true, '2021-12-22']]);
   // One visit per day and doctor: the chair's treatment joins Dr Fares' visit of 2024-01-10.
   const visits = await knex('appointments').where({ business_id: c.businessId, external_source: 'clinica' }).orderBy('appointment_date');
   assert.deepEqual(visits.map((v) => [v.appointment_date instanceof Date ? v.appointment_date.toISOString().slice(0, 10) : String(v.appointment_date).slice(0, 10), v.doctor_id]),
@@ -557,9 +561,11 @@ test('HTTP: owner runs the Import Center; staff cannot; files only through the a
   r = await owner.get(`/app/patients/${lp.patient_id}?lang=en`);
   assert.match(r.text, /data-treatment-plan/); assert.match(r.text, /حشوة/); assert.match(r.text, /Dr A/);
   r = await owner.get(`/app/patients/${lp.patient_id}?tab=orders&lang=en`);
-  assert.match(r.text, /data-legacy-files/); assert.match(r.text, /xray\.png/);
+  assert.match(r.text, /xray\.png/, 'the Clinica file is in the patient\'s own file list');
+  assert.doesNotMatch(r.text, /data-legacy-files|Files from Clinica/, 'no separate Clinica section');
+  // No "Legacy Records" tab: everything is in its place in the file.
   r = await owner.get(`/app/patients/${lp.patient_id}?tab=legacy&lang=en`);
-  assert.equal(r.status, 200); assert.match(r.text, /Legacy Records/); assert.match(r.text, /xray\.png/); assert.match(r.text, /حشوة/);
+  assert.equal(r.status, 200); assert.doesNotMatch(r.text, /Legacy Records/); assert.match(r.text, /data-treatment-plan/);
   r = await owner.get(`/api/patients/${lp.patient_id}/attachments/${att.id}/download`);
   assert.equal(r.status, 200); assert.ok(r.buf.equals(PNG)); assert.match(r.headers.get('content-disposition') || '', /attachment/);
   // Search by old id / number.

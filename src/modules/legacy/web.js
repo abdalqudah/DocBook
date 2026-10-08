@@ -179,7 +179,7 @@ router.post('/recovery/:ref(\\d+)/link', wrap(async (req, res) => {
   try {
     const pid = await svc.linkPatient(req.ctx, req.params.ref, req.body.patient_id);
     flash(req, 'success', req.t('legacy.flash_linked'));
-    return res.redirect(`/app/patients/${pid}?tab=legacy`);
+    return res.redirect(`/app/patients/${pid}`);
   } catch (e) {
     if (!(e instanceof AppError) || e.status >= 500) throw e;
     flash(req, 'error', e.code === 'VALIDATION_FAILED' ? req.t('legacy.err.PATIENT_INVALID') : errText(req, e));
@@ -190,7 +190,7 @@ router.post('/recovery/:ref(\\d+)/create', wrap(async (req, res) => {
   try {
     const pid = await svc.createFromLegacy(req.ctx, req.params.ref);
     flash(req, 'success', req.t('legacy.flash_recovered'));
-    return res.redirect(`/app/patients/${pid}?tab=legacy`);
+    return res.redirect(`/app/patients/${pid}`);
   } catch (e) {
     if (!(e instanceof AppError) || e.status >= 500) throw e;
     flash(req, 'error', errText(req, e));

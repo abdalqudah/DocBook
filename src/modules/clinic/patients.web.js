@@ -302,10 +302,8 @@ async function renderShow(req, res, extra = {}) {
   const perms = req.ctx.permissions;
   const surgeriesOn = (perms.has('clinical.view') || perms.has('appointments.manage')) && (typeof res.locals.moduleOn !== 'function' || res.locals.moduleOn('surgeries'));
   const tabs = ['overview', clinicalOk || (perms.has('clinical.view') && !access.clinical) ? 'clinical' : null, 'appointments', surgeriesOn ? 'surgeries' : null, clinicalOk ? 'prescriptions' : null,
-    clinicalOk ? 'orders' : null, perms.has('certificates.view') || clinicalOk ? 'documents' : null, perms.has('billing.view') ? 'billing' : null, 'timeline',
-    // Legacy Records: what was brought from the previous system (legacy/records.service), for those who see the record.
-    clinicalOk && (p.legacy_patient_id || await knex('legacy_patients').where({ business_id: req.ctx.businessId, patient_id: p.id }).first('id')
-      || await knex('patient_attachments').where({ business_id: req.ctx.businessId, patient_id: p.id }).first('id')) ? 'legacy' : null].filter(Boolean);
+    clinicalOk ? 'orders' : null, perms.has('certificates.view') || clinicalOk ? 'documents' : null, perms.has('billing.view') ? 'billing' : null, 'timeline'].filter(Boolean);
+  // What came from a previous system (Clinica) is in its place in the file — plan, visits, files — with no tab of its own.
   const tab = tabs.includes(req.query.tab) ? req.query.tab : 'overview';
   const byDateDesc = (a, b) => `${b.appointment_date} ${b.appointment_time}`.localeCompare(`${a.appointment_date} ${a.appointment_time}`);
   const prescriptions = clinicalOk ? timeline.flatMap((e) => (e.kind === 'visit' ? e.prescriptions.map((rx) => ({ ...rx, appt: e.appt })) : e.kind === 'prescription' ? [e.row] : [])) : [];
@@ -322,7 +320,7 @@ async function renderShow(req, res, extra = {}) {
     const orders = require('../orders/orders.service'); // eslint-disable-line global-require
     const [ol, rl, fl] = await Promise.all([orders.ordersForPatient(req.ctx, p.id), orders.referralsForPatient(req.ctx, p.id), orders.filesForPatient(req.ctx, p.id)]);
     // + the files brought from the previous system (Clinica), opened through the authorised download
-    orderTab = { orders: ol, referrals: rl, files: fl, legacyFiles: clinicalOk ? await require('../legacy/records.service').attachmentsOf(req.ctx.businessId, p.id) : [] }; // eslint-disable-line global-require
+    orderTab = { orders: ol, referrals: rl, files: fl, legacyFiles: clinicalOk ? await require('../legacy/records.service').filesOf(req.ctx.businessId, p.id) : [] }; // eslint-disable-line global-require
   }
   // Other clinics of the owner this patient is known in (shared / moved) — patienttransfer.
   const tsvc = require('../patienttransfer/transfer.service'); // eslint-disable-line global-require
@@ -335,11 +333,10 @@ async function renderShow(req, res, extra = {}) {
     .orderByRaw('COALESCE(i.done_on, DATE(i.created_at)) DESC').orderBy('i.id', 'desc').limit(500).select('i.*', 'd.full_name as doctor_name') : [];
   // Links inside imported text show their names and open the file imported here (legacy/linkify).
   const lk = require('../legacy/linkify'); // eslint-disable-line global-require
-  const legacyFiles = (tab === 'overview' && treatmentPlan.some((i) => /https?:\/\//.test(`${i.notes || ''}${i.procedure_name}`))) || tab === 'legacy'
+  const legacyFiles = tab === 'overview' && treatmentPlan.some((i) => /https?:\/\//.test(`${i.notes || ''}${i.procedure_name}`))
     ? await require('../legacy/records.service').attachmentsOf(req.ctx.businessId, p.id) : []; // eslint-disable-line global-require
   const lgLink = ((find) => (v) => lk.linkify(v, find))(lk.localFinder(p.id, legacyFiles));
-  const legacy = tab === 'legacy' ? await require('../legacy/records.service').forPatient(req.ctx.businessId, p.id) : null; // eslint-disable-line global-require
-  if (legacy) await privacy.log(req.ctx, { patientId: p.id, what: 'legacy_records', access: privacy.levelOf(access) });
+  const legacy = null;
   // Surgeries (Patients → Surgeries): the tab lists them all, the overview shows the coming ones.
   const surgeries = surgeriesOn ? await require('../surgeries/surgeries.service').forPatient(req.ctx, p.id) : []; // eslint-disable-line global-require
   const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => a.payment_status !== 'paid' && a.payment_status !== 'imported' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
@@ -354,7 +351,7 @@ async function renderShow(req, res, extra = {}) {
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
     timeline, invoices: tl.invoices.filter(mine),
     age: lib.ageOf(p.date_of_birth, today), wa: lib.waNumber(p.phone), statusTone: lib.STATUS_TONE,
-    pageScripts: tab === 'legacy' ? [...PAGE_SCRIPTS, '/js/legacy-import.js'] : PAGE_SCRIPTS, pageStyles: tab === 'legacy' ? [...SHOW_STYLES, '/css/legacy.css'] : SHOW_STYLES, ...extra,
+    pageScripts: PAGE_SCRIPTS, pageStyles: SHOW_STYLES, ...extra,
   });
 }
 router.get('/:id(\\d+)', wrap((req, res) => renderShow(req, res)));

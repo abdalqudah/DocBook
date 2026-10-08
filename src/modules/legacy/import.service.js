@@ -581,6 +581,15 @@ async function importPatient(job, item, index, file) {
 const GENDER = { male: 'male', m: 'male', 'ذكر': 'male', man: 'male', female: 'female', f: 'female', 'أنثى': 'female', 'انثى': 'female', woman: 'female' };
 /** A new patient from an old patient's record: name, phones, e-mail, gender, birth date, its old number as the file
  *  number (when free here), and the old system's id / number / import kept on the patient. */
+// A country written out ("Jordan", "الأردن") or as a code ("JO") → its code among the patient-file countries, else null.
+const COUNTRY = (() => {
+  const m = new Map();
+  const { COUNTRIES } = require('../clinic/patient-profile'); // eslint-disable-line global-require
+  ['en', 'ar'].forEach((l) => { const dn = new Intl.DisplayNames([l], { type: 'region' }); COUNTRIES.forEach((c) => { m.set(c.toLowerCase(), c); m.set(String(dn.of(c)).toLowerCase(), c); }); });
+  return m;
+})();
+const countryOf = (v) => COUNTRY.get(String(v || '').trim().toLowerCase()) || null;
+
 async function createPatient(trx, business, job, p) {
   const phone = (v) => (v ? String(v).replace(/[^\d+]/g, '').slice(0, 40) || null : null);
   const fileNo = p.number ? String(p.number).trim().slice(0, 30) : null;
@@ -589,7 +598,7 @@ async function createPatient(trx, business, job, p) {
   const [pid] = await trx('patients').insert({
     business_id: business, full_name: clip(p.name, 190) || `Clinica #${p.id}`, phone: phone(p.mobile) || phone(p.telephone), phone2: p.mobile ? phone(p.telephone) : null,
     email, gender: GENDER[String(p.gender || '').trim().toLowerCase()] || null, date_of_birth: map.isoDay(p.birth),
-    file_number: fileFree ? fileNo : null,
+    file_number: fileFree ? fileNo : null, nationality: countryOf(p.nationality),
     legacy_source: SOURCE, legacy_patient_id: p.id, legacy_patient_number: clip(p.number, 64), legacy_import_job_id: job.id, legacy_imported_at: now(),
   });
   return pid;

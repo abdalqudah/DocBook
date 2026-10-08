@@ -4,6 +4,7 @@
 const knex = require('../../db/knex');
 const lib = require('../clinic/records.lib');
 const files = require('./files');
+const map = require('./clinica-map');
 
 const SOURCE = 'clinica';
 
@@ -89,4 +90,26 @@ async function recoveryList(businessId, { q = '', status = '', page = 1 } = {}) 
 
 const legacyPatient = (businessId, ref) => knex('legacy_patients').where({ id: Number(ref) || 0, business_id: businessId }).first();
 
-module.exports = { forPatient, attachmentsOf, attachment, recoveryList, legacyPatient };
+/**
+ * The patient's files from Clinica for the patient's own file list: the imported files (with Clinica's upload date when
+ * its files table gives one), and the files Clinica lists for the patient that were not brought over (name and date only).
+ */
+async function filesOf(businessId, patientId) {
+  const atts = await attachmentsOf(businessId, patientId);
+  const refs = await knex('legacy_patients').where({ business_id: businessId, patient_id: patientId, legacy_source: SOURCE }).pluck('id');
+  if (!refs.length) return atts;
+  const recs = await knex('legacy_clinical_records').whereIn('legacy_patient_ref', refs).pluck('id');
+  const vals = recs.length ? await knex('legacy_clinical_values').whereIn('record_id', recs).whereIn('field', ['File Name', 'Upload Date', 'Description']).select('record_id', 'field', 'value') : [];
+  const rows = new Map();
+  vals.forEach((v) => { if (!rows.has(v.record_id)) rows.set(v.record_id, {}); rows.get(v.record_id)[v.field] = v.value; });
+  const listed = [...rows.values()].filter((r) => r['File Name'] && String(r['File Name']).trim());
+  const key = (n) => String(n || '').trim().toLowerCase();
+  const dateOf = new Map(listed.map((r) => [key(r['File Name']), map.isoDay(r['Upload Date'])]));
+  atts.forEach((a) => { const d = dateOf.get(key(a.original_filename)) || dateOf.get(key(a.stored_filename)); if (d) a.listed_on = d; });
+  const have = new Set(atts.flatMap((a) => [key(a.original_filename), key(a.stored_filename)]));
+  const missing = listed.filter((r) => !have.has(key(r['File Name']))).map((r) => ({ missing: true, original_filename: String(r['File Name']).trim(), description: r.Description || null, listed_on: map.isoDay(r['Upload Date']) }));
+  const when = (x) => x.listed_on || (x.uploaded_at ? new Date(x.uploaded_at).toISOString().slice(0, 10) : '');
+  return [...atts, ...missing].sort((a, b) => when(b).localeCompare(when(a)));
+}
+
+module.exports = { forPatient, attachmentsOf, filesOf, attachment, recoveryList, legacyPatient };

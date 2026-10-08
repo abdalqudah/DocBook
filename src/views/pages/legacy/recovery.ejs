@@ -31,13 +31,13 @@
         <td class="num" data-label="<%= t('legacy.col.legacy_number') %>"><%= r.legacy_patient_number || '—' %></td>
         <td data-label="<%= t('legacy.col.old_name') %>"><span dir="auto"><%= r.old_name || '—' %></span></td>
         <td data-label="<%= t('legacy.col.mobile') %>"><bdi class="num"><%= r.old_mobile || '—' %></bdi></td>
-        <td data-label="<%= t('legacy.col.patient_here') %>"><% if (r.patient_id) { %><a class="link" href="/app/patients/<%= r.patient_id %>?tab=legacy" dir="auto"><%= r.patient_name %></a><% } else { %><span class="badge badge-warning badge-dot"><%= t('legacy.unmatched') %></span><% } %></td>
+        <td data-label="<%= t('legacy.col.patient_here') %>"><% if (r.patient_id) { %><a class="link" href="/app/patients/<%= r.patient_id %>" dir="auto"><%= r.patient_name %></a><% } else { %><span class="badge badge-warning badge-dot"><%= t('legacy.unmatched') %></span><% } %></td>
         <td class="num" data-label="<%= t('legacy.col.treatments') %>"><%= fmt.number(r.treatments) %></td>
         <td class="num" data-label="<%= t('legacy.col.clinical') %>"><%= fmt.number(r.clinical) %></td>
         <td class="num" data-label="<%= t('legacy.col.files') %>"><%= fmt.number(r.files) %></td>
         <td data-label="<%= t('legacy.col.actions') %>">
           <% if (r.patient_id) { %>
-          <a class="btn btn-secondary btn-sm" href="/app/patients/<%= r.patient_id %>?tab=legacy"><%- icon('eye', 'icon-sm') %><%= t('legacy.view_patient') %></a>
+          <a class="btn btn-secondary btn-sm" href="/app/patients/<%= r.patient_id %>"><%- icon('eye', 'icon-sm') %><%= t('legacy.view_patient') %></a>
           <% } else { %>
           <div class="row-sm" style="flex-wrap:wrap">
             <form method="post" action="<%= B %>/recovery/<%= r.id %>/create" data-confirm="<%= t('legacy.recover_confirm') %>" data-confirm-tone="primary"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('legacy.recover') %></button></form>

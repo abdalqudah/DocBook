@@ -329,3 +329,15 @@ anywhere. It writes `clinica-patients-clean.json` (one spelling per doctor, clea
 a fifth of the size), `clinica-doctors.csv` (spellings → one name) and `clinica-report.md/json` (counts only: patients,
 treatments, visits, files, files listed in Clinica but not downloaded, doctors after merge, what the chairs become,
 groups). The attachment ZIPs are imported unchanged.
+
+## 2.8.5: no "Legacy Records" tab — everything in its place
+- The patient file has no Legacy Records tab any more (an old `?tab=legacy` address opens the overview). What came from
+  Clinica is where the clinic's own data is: treatments in the treatment plan, visits in the calendar and the
+  appointments tab, groups on the patient, nationality (written out, e.g. "Jordan", → its code) and phones on the
+  patient's details.
+- **Files.** Clinica's files are in the patient's one file list (Tests & files), mixed with the files added here, newest
+  first, each by its name and its date in Clinica (from Clinica's files table; else the import date). A file Clinica lists
+  for the patient that was not brought over shows by name and date, marked as not brought over
+  (`records.service.filesOf`).
+- The original rows (`legacy_*`) stay in the database as the import's audit trail, and the Import Center and the
+  recovery list still use them.

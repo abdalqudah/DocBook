@@ -20,22 +20,25 @@
   </div>
 </div>
 <div class="panel flush mt-4" id="files">
-  <div class="panel-head"><div><h2><%- icon('paperclip', 'icon-sm') %> <%= t('orders.tab_files') %></h2><p class="panel-sub"><%= t('orders.files_sub') %></p></div><span class="badge"><%= fmt.number(ot.files.length + (ot.legacyFiles ? ot.legacyFiles.length : 0)) %></span></div>
-  <% if (!ot.files.length && !(ot.legacyFiles && ot.legacyFiles.length)) { %><div class="flush-empty small muted"><%= t('orders.no_files') %></div><% } else { %>
-  <ul class="action-list"><% ot.files.forEach(function (f) { %>
+  <div class="panel-head"><div><h2><%- icon('paperclip', 'icon-sm') %> <%= t('orders.tab_files') %></h2><p class="panel-sub"><%= t('orders.files_sub') %></p></div><span class="badge"><%= fmt.number(ot.files.length + (ot.legacyFiles ? ot.legacyFiles.filter(function (a) { return !a.missing; }).length : 0)) %></span></div>
+  <% var _old = ot.legacyFiles || [];
+     var _dl = function (a, inline) { return '/api/patients/' + patient.id + '/attachments/' + a.id + '/download' + (inline ? '?inline=1' : ''); };
+     var _day = function (d) { return d ? (d instanceof Date ? d.toISOString() : String(d)).slice(0, 10) : ''; };
+     // one list, newest first: the files added here and those brought from the previous system (by their own date there)
+     var _all = ot.files.map(function (f) { return { f: f, d: _day(f.created_at) }; })
+       .concat(_old.map(function (a) { return { a: a, d: a.listed_on || _day(a.uploaded_at) }; }))
+       .sort(function (x, y) { return y.d.localeCompare(x.d); }); %>
+  <% if (!_all.length) { %><div class="flush-empty small muted"><%= t('orders.no_files') %></div><% } else { %>
+  <ul class="action-list"><% _all.forEach(function (it) { if (it.f) { var f = it.f; %>
     <li class="row"><a class="grow row" href="/app/patients/<%= patient.id %>/files/<%= f.id %>" target="_blank" rel="noopener"><span class="ord-file-thumb"><%- icon(f.mime === 'application/pdf' ? 'file-text' : 'image', 'icon-sm') %></span><span class="grow" style="min-width:0"><span class="strong"><%= f.title || f.name %></span> <span class="badge"><%= t('orders.cat.' + f.category) %></span><span class="tiny muted d-block"><bdi><%= f.name %></bdi> · <span dir="ltr"><%= kb(f.size) %></span> · <%= fmt.date(f.created_at) %><%= f.added_by ? ' · ' + f.added_by : '' %><% if (f.order_id) { %> · <%= t('orders.number') %> #<%= f.order_id %><% } %></span></span></a>
       <%- include('../../partials/wa-send', { kind: 'file', id: f.id, small: true, label: false }) %>
       <a class="btn btn-ghost btn-icon btn-sm" href="/app/patients/<%= patient.id %>/files/<%= f.id %>?download=1" aria-label="<%= t('orders.download') %>" title="<%= t('orders.download') %>"><%- icon('download', 'icon-sm') %></a>
       <% if ((can('clinical.edit') || can('patients.edit')) && isOwner()) { %><%- include('../../partials/delete-form', { action: '/app/patients/' + patient.id + '/files/' + f.id + '/delete', confirmText: t('orders.file_delete_confirm', { name: f.name }) }) %><% } %></li>
-  <% }) %></ul><% } %>
-  <% if (ot.legacyFiles && ot.legacyFiles.length) { var _dl = function (a, inline) { return '/api/patients/' + patient.id + '/attachments/' + a.id + '/download' + (inline ? '?inline=1' : ''); }; %>
-  <div class="ord-legacy" data-legacy-files>
-    <div class="small strong ord-legacy-head"><%- icon('archive-restore', 'icon-sm') %> <%= t('legacy.files_from_clinica') %> <span class="badge"><%= fmt.number(ot.legacyFiles.length) %></span></div>
-    <ul class="action-list"><% ot.legacyFiles.forEach(function (a) { %>
-      <li class="row"><a class="grow row" href="<%= _dl(a, a.inline) %>" target="_blank" rel="noopener"><span class="ord-file-thumb"><%- icon(a.category === 'image' ? 'image' : 'file-text', 'icon-sm') %></span><span class="grow" style="min-width:0"><span class="strong" dir="auto"><%= a.original_filename %></span><span class="tiny muted d-block"><span dir="ltr"><%= kb(a.file_size) %></span> · <%= fmt.date(a.uploaded_at) %> · Clinica</span></span></a>
-        <a class="btn btn-ghost btn-icon btn-sm" href="<%= _dl(a) %>" aria-label="<%= t('orders.download') %>" title="<%= t('orders.download') %>"><%- icon('download', 'icon-sm') %></a></li>
-    <% }) %></ul>
-  </div>
-  <% } %>
+  <% } else if (it.a.missing) { var m = it.a; %>
+    <li class="row muted" data-file-missing><span class="grow row"><span class="ord-file-thumb"><%- icon('file-text', 'icon-sm') %></span><span class="grow" style="min-width:0"><span class="strong" dir="auto"><%= m.original_filename %></span><span class="tiny muted d-block"><%= m.listed_on ? fmt.date(m.listed_on) + ' · ' : '' %><%= t('orders.file_not_brought') %></span></span></span></li>
+  <% } else { var a = it.a; %>
+    <li class="row"><a class="grow row" href="<%= _dl(a, a.inline) %>" target="_blank" rel="noopener"><span class="ord-file-thumb"><%- icon(a.category === 'image' ? 'image' : 'file-text', 'icon-sm') %></span><span class="grow" style="min-width:0"><span class="strong" dir="auto"><%= a.original_filename %></span><span class="tiny muted d-block"><span dir="ltr"><%= kb(a.file_size) %></span> · <%= fmt.date(a.listed_on || a.uploaded_at) %></span></span></a>
+      <a class="btn btn-ghost btn-icon btn-sm" href="<%= _dl(a) %>" aria-label="<%= t('orders.download') %>" title="<%= t('orders.download') %>"><%- icon('download', 'icon-sm') %></a></li>
+  <% } }) %></ul><% } %>
   <% if (canUpload) { %><div class="ord-upload"><%- include('_upload', { pid: patient.id, back: '/app/patients/' + patient.id + '?tab=orders#files', orders: ot.orders.filter(function (o) { return o.status !== 'cancelled'; }) }) %></div><% } %>
 </div>
