@@ -297,3 +297,35 @@ The import no longer stops at a separate "Legacy Records" view: the data goes in
 - **Imported visits** carry `external_source = 'clinica'` (one per key) and `source = 'import'`. Past visits are
   `payment_status = 'imported'`: never "unpaid" at the cash desk, and no review request is sent for them. Bookings
   still to come are ordinary bookings.
+
+## 2.8.3: the real Clinica data — one doctor per person, chairs, clean text, groups and branches
+What the real backup showed, and what the import does with it:
+- **Doctor names.** Clinica writes doctors in English; the clinic's doctors here are often in Arabic. A name now finds
+  the doctor here by its sound as well ("Faris Qudah" = "د. فارس القضاة", "Raghad  Kafina" = "Raghad Kafina" = "رغد
+  كفينة"): a consonant skeleton per word, titles ("Dr", "د.") and "Al" / "ال" left out, the same first name and (when both
+  have one) the same last name — and only when exactly one doctor here matches. Nothing is added for a name found this
+  way. The Doctors page shows one row per person, whatever the spellings.
+- **Chairs.** "Clinic One" … "Clinic Five" are written where the doctor goes. They are not doctors: such a treatment,
+  and one with no doctor, takes the patient's doctor of that day, else the patient's usual doctor, else the doctor seen
+  most with that name over the clinic's data (the choice "From the patient's visits", the default for these rows; the
+  clinic can pick a doctor instead). The name stays in the plan item's notes ("Clinica: Clinic One"). Visits are one per
+  day and doctor, so a chair's treatment joins the visit of the doctor it was given to.
+- **Descriptions.** Clinica's page text is removed from a treatment's description ("more…X", "View Notes"); its
+  details ("Chief Complaint: …", "HPI: …") go to the plan item's notes and to the visit's notes, with the treatment's own
+  note.
+- **Clinical tables.** In the backup they hold no patient data: the periodontal chart, pocket measurements, pocket
+  distribution and anesthesia tables are Clinica's empty forms (the same on every patient), and "treatment details" are
+  copies of the treatments. These are left out (`clinica-clean.clinicalRows`); Clinica's files table (file name, upload
+  date) is kept on the Legacy Records tab. There is no perio data to put on the dental chart.
+- **Groups and branches.** The patient's Clinica groups ("Implant", "Abdali Hospital"…) become patient groups. On the
+  Doctors page each group can be tied to a branch (`legacy_branch_map`): the visits of its patients are on that branch;
+  otherwise a visit is on its doctor's branch (main when the doctor has none).
+- **After the import** a last conversion pass runs when treatments are still without a doctor (the clinic-wide
+  fallback is known only once every patient is in).
+
+### Cleaning a backup beforehand (optional)
+`node scripts/clinica-clean.js <clinica-patients.json> <out-dir>` — on the clinic's own computer; nothing is sent
+anywhere. It writes `clinica-patients-clean.json` (one spelling per doctor, clean descriptions, no empty forms — about
+a fifth of the size), `clinica-doctors.csv` (spellings → one name) and `clinica-report.md/json` (counts only: patients,
+treatments, visits, files, files listed in Clinica but not downloaded, doctors after merge, what the chairs become,
+groups). The attachment ZIPs are imported unchanged.

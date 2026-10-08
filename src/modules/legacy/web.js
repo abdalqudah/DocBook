@@ -57,13 +57,15 @@ router.get('/promote/status', wrap(async (req, res) => {
 // The doctors of the Clinica data: which doctor here each name is (or a new doctor, or none), and who did the
 // treatments that have no doctor.
 router.get('/doctors', wrap(async (req, res) => {
-  const { list, doctors } = await require('./promote.service').doctorNames(req.ctx.businessId); // eslint-disable-line global-require
-  res.page('pages/legacy/doctors', { title: req.t('legacy.doc_title'), list, doctors, ...PAGE });
+  const { list, doctors, branches, groups } = await require('./promote.service').doctorNames(req.ctx.businessId); // eslint-disable-line global-require
+  res.page('pages/legacy/doctors', { title: req.t('legacy.doc_title'), list, doctors, branches, groups, ...PAGE });
 }));
 router.post('/doctors', wrap(async (req, res) => {
   const keys = [].concat(req.body.key || []);
   const entries = keys.map((k, i) => ({ key: String(k), action: [].concat(req.body.action || [])[i], doctor_id: [].concat(req.body.doctor_id || [])[i] }));
-  await require('./promote.service').saveDoctorMap(req.ctx, entries); // eslint-disable-line global-require
+  const gkeys = [].concat(req.body.group_key || []);
+  const groups = gkeys.map((k, i) => ({ key: String(k), branch_id: [].concat(req.body.group_branch || [])[i] }));
+  await require('./promote.service').saveDoctorMap(req.ctx, entries, groups); // eslint-disable-line global-require
   flash(req, 'success', req.t('legacy.doc_saved'));
   res.redirect(BASE);
 }));

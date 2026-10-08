@@ -675,7 +675,8 @@ function kick(businessId) {
   return p;
 }
 /** Resolves when the clinic's runner is idle (tests, shutdown). */
-const settle = (businessId) => runs.get(businessId) || Promise.resolve();
+// (and the conversion it started at the end, if any)
+const settle = async (businessId) => { await (runs.get(businessId) || Promise.resolve()); await promote.settle(businessId); };
 
 // Which process runs a job: this one (RUNNER) while it keeps the heartbeat fresh; a job whose runner went quiet
 // (server stopped, crashed) is taken over by the next process that looks at it.
@@ -789,6 +790,10 @@ async function reconcile(job) {
     && sys.sys_attachments === fresh.src_attachments && sys.sys_links >= fresh.src_links && Number(openErr.n) === 0;
   await knex('import_jobs').where({ id: job.id }).update({ ...sys, status: clean ? 'completed' : 'completed_with_issues', stage: null, completed_at: now(), heartbeat_at: null });
   await audit.record({ businessId: job.business_id, userId: job.created_by }, 'legacy.import_completed', { entityType: 'import_job', entityId: job.id, newValues: { ...sys, status: clean ? 'completed' : 'completed_with_issues' } });
+  // Treatments whose doctor comes from the patient's visits (a chair "Clinic One"…, or no name) fall back to the doctor
+  // seen most with that name over the whole clinic: known only now that every patient is in → one more pass.
+  const [inf] = await knex('legacy_treatments').where({ business_id: job.business_id, import_job_id: job.id }).whereNotNull('plan_item_id').whereNull('doctor_id').count({ n: '*' });
+  if (Number(inf.n)) await promote.start({ businessId: job.business_id, userId: job.created_by });
   // The uploads are no longer needed once everything is in (kept while something can still be retried).
   if (clean) {
     fs.rmSync(jobDir(job.business_id, job.id), { recursive: true, force: true });

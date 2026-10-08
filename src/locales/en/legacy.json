@@ -295,13 +295,13 @@
     "promote_no_doctor": "Treatments without a doctor",
     "promote_pick_doctors": "Choose the doctor for names not found and for treatments without a doctor →",
     "doc_title": "Doctors of the Clinica data",
-    "doc_lead": "For each doctor name in the Clinica treatments, choose the doctor here (or add a new doctor with that name). The last row is the treatments that have no doctor in Clinica.",
+    "doc_lead": "For each doctor name in the Clinica treatments, choose the doctor here (or add a new doctor with that name). Names written in English find the same doctor written in Arabic; spellings of one name are one row. A clinic number written where the doctor goes (Clinic One…) and treatments with no doctor take the patient's doctor of that day, else the patient's usual doctor.",
     "doc_empty": "No Clinica treatments yet.",
     "doc_col_name": "Name in Clinica",
     "doc_col_count": "Treatments",
     "doc_col_here": "Doctor here",
     "doc_none_name": "(no doctor in Clinica)",
-    "doc_auto": "Same name as a doctor here",
+    "doc_auto": "Same doctor as here (name matched in Arabic / English)",
     "doc_not_found": "Not found here — choose a doctor",
     "doc_opt_none": "No doctor",
     "doc_opt_leave": "Leave without a doctor",
@@ -319,6 +319,14 @@
     "purge_confirm": "Remove everything that came from Clinica? This cannot be undone.",
     "purge_type": "Type DELETE (or حذف) to confirm.",
     "purge_started": "Removing the imported data in the background — refresh in a minute.",
-    "purge_running": "Removing… refresh the page in a minute."
+    "purge_running": "Removing… refresh the page in a minute.",
+    "doc_chair": "A clinic chair, not a doctor",
+    "doc_opt_infer": "From the patient's visits (doctor of the day / usual doctor)",
+    "grp_title": "Patient groups and branches",
+    "grp_lead": "The Clinica patient groups become patient groups here. Tie a group to a branch to put the visits of its patients on that branch; otherwise a visit is on its doctor's branch.",
+    "grp_col_group": "Group in Clinica",
+    "grp_col_patients": "Patients",
+    "grp_col_branch": "Branch",
+    "grp_main_branch": "Doctor's branch (main by default)"
   }
 }

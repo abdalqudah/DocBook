@@ -6,8 +6,13 @@
 //     come. These visits are marked external_source = 'clinica' and payment 'imported': they are history, never "unpaid"
 //     at the cash desk, and no message (review request) is sent for them;
 //   • the doctor of each Clinica name is the one the clinic chose on the "Doctors" page (legacy_doctor_map: an existing
-//     doctor, a new doctor with that name, or none), else a doctor here with the same name ("Dr", "د." ignored), else
-//     none — to be chosen on that page; treatments with no doctor can get one there too.
+//     doctor, a new doctor with that name, "from the patient's visits", or none), else a doctor here with the same name
+//     ("Dr", "د." ignored; an English name finds the same doctor written in Arabic), else none. A chair written where the
+//     doctor goes ("Clinic One"…) and a treatment with no doctor take, unless chosen otherwise, the patient's doctor of
+//     that day, else the patient's usual doctor, else the doctor seen most with that name (clinica-clean.inferDoctors);
+//   • descriptions are cleaned of Clinica's page text ("more…", "View Notes"); their details ("Chief Complaint: …") go to
+//     the notes. The patient's Clinica groups become patient groups; a group can be tied to a branch (legacy_branch_map),
+//     else a visit is on its doctor's branch.
 // Everything is keyed (plan item ↔ treatment; appointment external_uid), so it runs once and can run again: a run after
 // the doctors are chosen fills / corrects the doctors of what it made (not of what a person changed since).
 // It runs as a saved job (import_jobs type legacy_promote, heartbeat), so a stopped server carries on where it was.
@@ -17,6 +22,7 @@ const tenant = require('../../db/tenant');
 const { foldText } = require('../clinic/records.lib');
 const { defaultWorkingHours, clinicNow } = require('../clinic/scheduling');
 const map = require('./clinica-map');
+const clean = require('./clinica-clean');
 
 const SOURCE = 'clinica';
 const TYPE = 'legacy_promote';
@@ -44,72 +50,145 @@ function toothOf(v) {
 }
 
 // ================================================================= doctors
-/** name → doctor id here: the clinic's choice, else the same name, else none (a 'create' choice makes the doctor once). */
-async function resolver(db, businessId) {
-  const [rows, maps] = await Promise.all([
-    db('doctors').where({ business_id: businessId }).select('id', 'full_name', 'full_name_en'),
-    db('legacy_doctor_map').where({ business_id: businessId, legacy_source: SOURCE }),
-  ]);
+/** Doctors here by name: the same name ("Dr" / "د." ignored), else the one doctor whose name (Arabic or English) sounds the same. */
+function nameIndex(rows) {
   const byName = new Map();
   rows.forEach((d) => [d.full_name, d.full_name_en].map(docKey).filter(Boolean).forEach((k) => { if (!byName.has(k)) byName.set(k, d.id); }));
+  const people = rows.map((d) => ({ id: d.id, names: [d.full_name, d.full_name_en].filter(Boolean) }));
+  return (name) => {
+    const key = docKey(name);
+    if (!key) return null;
+    if (byName.has(key)) return byName.get(key);
+    const id = clean.matchDoctor(name, people);
+    byName.set(key, id);
+    return id;
+  };
+}
+/** Whether a name stands for no doctor (a chair "Clinic One"… or nothing): its doctor is found from the patient's visits. */
+const notADoctor = (name) => !docKey(name) || clean.chairOf(name) !== null;
+
+/**
+ * name → doctor id here: the clinic's choice, else the same name, else none (a 'create' choice makes the doctor once).
+ * resolve.infers(name): the treatment's doctor is found from the patient's visits ('infer' choice; the default for a
+ * chair and for no name). resolve.usualFor(name): the doctor seen most with that name over the clinic's data.
+ */
+async function resolver(db, businessId) {
+  const [rows, maps, groups] = await Promise.all([
+    db('doctors').where({ business_id: businessId }).select('id', 'full_name', 'full_name_en', 'branch_id'),
+    db('legacy_doctor_map').where({ business_id: businessId, legacy_source: SOURCE }),
+    db('legacy_branch_map').where({ business_id: businessId, legacy_source: SOURCE }).select('group_key', 'branch_id').catch(() => []),
+  ]);
+  const byName = nameIndex(rows);
+  const branchOf = new Map(rows.map((d) => [d.id, d.branch_id || null]));
+  const groupBranch = new Map(groups.filter((g) => g.branch_id).map((g) => [g.group_key, g.branch_id]));
   const chosen = new Map(maps.map((m) => [m.name_key, m]));
-  return async (name) => {
+  const usual = new Map();
+  const resolve = async (name) => {
     const key = docKey(name);
     const m = chosen.get(key);
+    if (resolve.infers(name)) return null;
     if (m) {
       if (m.action === 'none') return null;
       if (m.action === 'doctor' && m.doctor_id) return m.doctor_id;
       if (m.action === 'create' && key) {
         const [id] = await db('doctors').insert({ business_id: businessId, full_name: String(m.name || name).trim().slice(0, 190), is_active: false, working_hours: JSON.stringify(defaultWorkingHours()), slot_duration_minutes: 30, legacy_source: SOURCE });
         await db('legacy_doctor_map').where({ id: m.id }).update({ action: 'doctor', doctor_id: id, updated_at: now() });
-        Object.assign(m, { action: 'doctor', doctor_id: id }); byName.set(key, id);
+        Object.assign(m, { action: 'doctor', doctor_id: id }); branchOf.set(id, null);
         return id;
       }
     }
-    return key ? byName.get(key) || null : null;
+    return byName(name);
   };
+  resolve.infers = (name) => { const m = chosen.get(docKey(name)); return m ? m.action === 'infer' : notADoctor(name); };
+  resolve.usualFor = async (name) => {
+    const key = docKey(name);
+    if (usual.has(key)) return usual.get(key);
+    // the doctors of the other treatments of the patients who have this name, the most frequent first
+    const raw = String(name || '').trim();
+    const pats = db('legacy_treatments').where({ business_id: businessId }).whereNotNull('patient_id')
+      .where((w) => (raw ? w.where('doctor', raw) : w.whereNull('doctor').orWhere('doctor', ''))).distinct('patient_id');
+    const counts = await db('legacy_treatments').where({ business_id: businessId }).whereIn('patient_id', pats).whereNotNull('doctor').whereNot('doctor', '')
+      .groupBy('doctor').select('doctor').count({ n: '*' });
+    const tally = new Map();
+    for (const c of counts) { // eslint-disable-line no-restricted-syntax
+      if (resolve.infers(c.doctor)) continue; // eslint-disable-line no-continue
+      const id = await resolve(c.doctor); // eslint-disable-line no-await-in-loop
+      if (id) tally.set(id, (tally.get(id) || 0) + Number(c.n));
+    }
+    const best = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
+    usual.set(key, best ? best[0] : null);
+    return usual.get(key);
+  };
+  resolve.branchFor = (groups, doctorId) => {
+    for (const g of groups) { const k = docKey(g); if (groupBranch.has(k)) return groupBranch.get(k); } // eslint-disable-line no-restricted-syntax
+    return doctorId ? branchOf.get(doctorId) || null : null;
+  };
+  return resolve;
 }
+/** The Clinica group text of a patient ("Implant,Abdali Hospital") → its groups. */
+const groupsOf = (text) => String(text || '').split(/[,|،;]/).map((g) => g.replace(/\s+/g, ' ').trim()).filter(Boolean);
 
 /** The doctor names of the clinic's Clinica data, with how many treatments / what they map to now. */
 async function doctorNames(businessId) {
   const rows = await knex('legacy_treatments').where({ business_id: businessId }).groupBy('doctor').select('doctor').count({ n: '*' });
-  const [docs, maps] = await Promise.all([
+  const [docs, maps, branches, groupRows, groupMap] = await Promise.all([
     knex('doctors').where({ business_id: businessId }).orderBy('full_name').select('id', 'full_name', 'full_name_en', 'is_active', 'legacy_source'),
     knex('legacy_doctor_map').where({ business_id: businessId, legacy_source: SOURCE }),
+    knex('clinic_branches').where({ business_id: businessId }).orderBy(['sort_order', 'id']).select('id', 'name', 'name_en', 'is_active').catch(() => []),
+    knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('old_group').whereNot('old_group', '').groupBy('old_group').select('old_group').count({ n: '*' }),
+    knex('legacy_branch_map').where({ business_id: businessId, legacy_source: SOURCE }).catch(() => []),
   ]);
-  const byName = new Map();
-  docs.forEach((d) => [d.full_name, d.full_name_en].map(docKey).filter(Boolean).forEach((k) => { if (!byName.has(k)) byName.set(k, d.id); }));
+  const byName = nameIndex(docs);
   const chosen = new Map(maps.map((m) => [m.name_key, m]));
   const agg = new Map();
   rows.forEach((r) => {
     const key = docKey(r.doctor);
-    if (!agg.has(key)) agg.set(key, { key, name: key ? String(r.doctor).trim() : '', count: 0 });
+    // spellings of one name ("Raghad  Kafina", "Raghad Kafina") are one row
+    if (!agg.has(key)) agg.set(key, { key, name: key ? clean.doctorName(r.doctor) : '', count: 0, chair: key ? clean.chairOf(r.doctor) !== null : false });
     agg.get(key).count += Number(r.n);
   });
-  const list = [...agg.values()].sort((a, b) => (!a.key) - (!b.key) || b.count - a.count).map((x) => {
+  const list = [...agg.values()].sort((a, b) => (!a.key) - (!b.key) || a.chair - b.chair || b.count - a.count).map((x) => {
     const m = chosen.get(x.key);
-    const auto = x.key ? byName.get(x.key) || null : null;
-    return { ...x, action: m ? m.action : (auto ? 'doctor' : 'none'), doctorId: m ? m.doctor_id : auto, chosen: Boolean(m), auto };
+    const auto = x.key && !x.chair ? byName(x.name) : null;
+    const action = m ? m.action : (notADoctor(x.name) ? 'infer' : (auto ? 'doctor' : 'none'));
+    return { ...x, action, doctorId: m ? m.doctor_id : auto, chosen: Boolean(m), auto };
   });
-  return { list, doctors: docs };
+  // the patient groups of the Clinica data and the branch each is on
+  const gm = new Map(groupMap.map((g) => [g.group_key, g.branch_id]));
+  const gc = new Map();
+  groupRows.forEach((r) => groupsOf(r.old_group).forEach((g) => {
+    const k = docKey(g);
+    if (!gc.has(k)) gc.set(k, { key: k, name: g, count: 0, branchId: gm.get(k) || null });
+    gc.get(k).count += Number(r.n);
+  }));
+  return { list, doctors: docs, branches, groups: [...gc.values()].sort((a, b) => b.count - a.count) };
 }
 
 /** Saves the clinic's choices ({ key, action, doctor_id }) and re-applies them (a job). */
-async function saveDoctorMap(ctx, entries) {
+async function saveDoctorMap(ctx, entries, groupEntries = []) {
   const docs = new Set((await knex('doctors').where({ business_id: ctx.businessId }).pluck('id')).map(Number));
-  const { list } = await doctorNames(ctx.businessId);
+  const { list, branches, groups } = await doctorNames(ctx.businessId);
   const names = new Map(list.map((x) => [x.key, x.name]));
   for (const e of entries) { // eslint-disable-line no-restricted-syntax
     const key = String(e.key || '');
     if (!names.has(key)) continue; // eslint-disable-line no-continue
-    let action = ['doctor', 'create', 'none'].includes(e.action) ? e.action : 'none';
+    let action = ['doctor', 'create', 'none', 'infer'].includes(e.action) ? e.action : 'none';
     const doctorId = action === 'doctor' && docs.has(Number(e.doctor_id)) ? Number(e.doctor_id) : null;
     if (action === 'doctor' && !doctorId) action = 'none';
     if (action === 'create' && !key) action = 'none';
     await knex('legacy_doctor_map').insert({ business_id: ctx.businessId, legacy_source: SOURCE, name_key: key, name: names.get(key) || null, action, doctor_id: doctorId }) // eslint-disable-line no-await-in-loop
       .onConflict(['business_id', 'legacy_source', 'name_key']).merge({ action, doctor_id: doctorId, name: names.get(key) || null, updated_at: now() });
   }
-  await require('../../core/audit').record(ctx, 'legacy.doctors_mapped', { entityType: 'business', entityId: ctx.businessId, newValues: { entries: entries.length } }); // eslint-disable-line global-require
+  const branchIds = new Set(branches.map((b) => Number(b.id)));
+  const groupNames = new Map(groups.map((g) => [g.key, g.name]));
+  for (const g of groupEntries) { // eslint-disable-line no-restricted-syntax
+    const key = String(g.key || '');
+    if (!key || !groupNames.has(key)) continue; // eslint-disable-line no-continue
+    const branchId = branchIds.has(Number(g.branch_id)) ? Number(g.branch_id) : null;
+    await knex('legacy_branch_map').insert({ business_id: ctx.businessId, legacy_source: SOURCE, group_key: key, group_name: groupNames.get(key), branch_id: branchId }) // eslint-disable-line no-await-in-loop
+      .onConflict(['business_id', 'legacy_source', 'group_key']).merge({ branch_id: branchId, group_name: groupNames.get(key), updated_at: now() });
+  }
+  await require('../../core/audit').record(ctx, 'legacy.doctors_mapped', { entityType: 'business', entityId: ctx.businessId, newValues: { entries: entries.length, groups: groupEntries.length } }); // eslint-disable-line global-require
   return start(ctx);
 }
 
@@ -168,15 +247,16 @@ async function upsertVisit(db, businessId, patient, v) {
   const uid = `clinica:${patient.legacyId}:${v.key}`.slice(0, 190);
   const row = {
     business_id: businessId, doctor_id: v.doctorId || null, patient_id: patient.id, patient_name: String(patient.name || '').slice(0, 190) || '—', patient_phone: patient.phone || null,
-    appointment_date: v.date, appointment_time: v.time || '09:00', duration_minutes: v.duration || null, status: v.status, appointment_type: 'in_person', source: 'import',
+    appointment_date: v.date, appointment_time: v.time || '09:00', duration_minutes: v.duration || null, status: v.status, appointment_type: 'in_person', source: 'import', branch_id: v.branchId || null,
     // history: 'imported' (never "unpaid" at the cash desk); a booking still to come is an ordinary booking
     payment_status: v.status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: v.notes ? String(v.notes).slice(0, 3000) : null, external_source: SOURCE, external_uid: uid, created_at: at, updated_at: at,
   };
   await db('appointments').insert(row).onConflict(['business_id', 'external_uid']).ignore();
-  const a = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'patient_id');
-  // A doctor chosen since (or the patient re-linked) is set on the visit this import made.
+  const a = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'patient_id', 'branch_id');
+  // A doctor chosen since (or the patient re-linked) is set on the visit this import made; a branch only where none is.
   const patch = {};
   if (v.doctorId && a.doctor_id !== v.doctorId && v.mayChangeDoctor(a.doctor_id)) patch.doctor_id = v.doctorId;
+  if (v.branchId && !a.branch_id) patch.branch_id = v.branchId;
   if (a.patient_id !== patient.id) patch.patient_id = patient.id;
   if (Object.keys(patch).length) await db('appointments').where({ id: a.id }).update(patch);
   return a.id;
@@ -189,16 +269,25 @@ const line = (label, v) => (v === null || v === undefined || String(v).trim() ==
 async function promotePatient(db, businessId, patientId, { resolve = null, stats = null, today = null } = {}) {
   const [patient, refs] = await Promise.all([
     db('patients').where({ id: patientId, business_id: businessId }).first('id', 'full_name', 'phone'),
-    db('legacy_patients').where({ business_id: businessId, patient_id: patientId, legacy_source: SOURCE }).select('id', 'legacy_patient_id'),
+    db('legacy_patients').where({ business_id: businessId, patient_id: patientId, legacy_source: SOURCE }).select('id', 'legacy_patient_id', 'old_group'),
   ]);
   if (!patient || !refs.length) return 0;
   const doctorOf = resolve || await resolver(db, businessId);
   const day0 = today || clinicNow('Asia/Amman').date;
   const rows = await db('legacy_treatments').where({ business_id: businessId, patient_id: patientId }).orderBy(['treatment_on', 'position', 'id']);
+  const dayOf = (t) => t.treatment_on || map.isoDay(t.treatment_date) || null;
+  // 1. The doctor of each treatment: the clinic's choice / the same name; a chair or no name → from the patient's visits.
+  for (const t of rows) t.resolved = doctorOf.infers(t.doctor) ? null : await doctorOf(t.doctor); // eslint-disable-line no-restricted-syntax, no-await-in-loop
+  const inferred = clean.inferDoctors(rows, { needs: (t) => doctorOf.infers(t.doctor), doctorOf: (t) => t.resolved, dayOf });
+  for (const t of rows) { // eslint-disable-line no-restricted-syntax
+    if (!doctorOf.infers(t.doctor)) continue; // eslint-disable-line no-continue
+    t.resolved = inferred.get(t) || (doctorOf.usualFor ? await doctorOf.usualFor(t.doctor) : null) || null; // eslint-disable-line no-await-in-loop
+    t.inferred = true;
+  }
+  // 2. Each treatment → an item of the treatment plan.
   let made = 0;
   for (const t of rows) { // eslint-disable-line no-restricted-syntax
-    const doctorId = await doctorOf(t.doctor); // eslint-disable-line no-await-in-loop
-    t.resolved = doctorId;
+    const doctorId = t.resolved;
     if (t.plan_item_id) {
       const item = await db('dental_plan_items').where({ id: t.plan_item_id, business_id: businessId }).first('id', 'doctor_id', 'patient_id'); // eslint-disable-line no-await-in-loop
       if (item) {
@@ -213,19 +302,21 @@ async function promotePatient(db, businessId, patientId, { resolve = null, stats
     }
     const status = statusOf(t);
     const tooth = toothOf(t.tooth);
-    const day = map.isoDay(t.treatment_date) || t.treatment_on || null;
+    const day = dayOf(t);
     const doneOn = status === 'done' ? (map.isoDay(t.complete_date) || day) : null;
+    const desc = clean.cleanTreatment(t.description);
     const notes = [
+      ...desc.lines,
       t.tooth && !tooth ? line('Tooth / السن', t.tooth) : null,
       line('Type / النوع', t.type), status !== 'done' && day ? line('Date / التاريخ', day) : null,
-      t.status && !['done', 'planned'].includes(String(t.status).toLowerCase()) ? line('Status / الحالة', t.status) : null,
+      t.status && !['done', 'planned', 'complete'].includes(String(t.status).toLowerCase()) ? line('Status / الحالة', t.status) : null,
       line('Note / ملاحظة', t.note), line('Referred by / محوّل من', t.referred_by),
       t.price === null && t.price_raw ? line('Price / السعر', t.price_raw) : null,
-      !doctorId && t.doctor ? line('Doctor / الطبيب', t.doctor) : null,
+      (!doctorId || t.inferred) && t.doctor ? line('Clinica', clean.doctorName(t.doctor)) : null,
     ].filter(Boolean).join('\n') || null;
     const at = day ? new Date(`${day}T12:00:00Z`) : now();
     await db('dental_plan_items').insert({ // eslint-disable-line no-await-in-loop
-      business_id: businessId, patient_id: patientId, tooth, procedure_name: String(t.description || t.type || 'Treatment').trim().slice(0, 190) || 'Treatment',
+      business_id: businessId, patient_id: patientId, tooth, procedure_name: String(desc.name || t.type || 'Treatment').trim().slice(0, 190) || 'Treatment',
       price: t.price === null || t.price === undefined ? null : t.price, status, done_on: doneOn, doctor_id: doctorId, notes, legacy_treatment_id: t.id,
       created_at: at, updated_at: at,
     }).onConflict(['legacy_treatment_id']).ignore();
@@ -235,30 +326,49 @@ async function promotePatient(db, businessId, patientId, { resolve = null, stats
     made += 1;
   }
 
-  // The old calendar: Clinica's own appointments, then one visit per day of treatments not already on it.
+  // 3. The patient's Clinica groups → patient groups.
+  const groups = [...new Set(refs.flatMap((r) => groupsOf(r.old_group)))];
+  for (const g of groups) { // eslint-disable-line no-restricted-syntax
+    const name = g.slice(0, 60);
+    await db('patient_groups').insert({ business_id: businessId, name }).onConflict(['business_id', 'name']).ignore(); // eslint-disable-line no-await-in-loop
+    const grp = await db('patient_groups').where({ business_id: businessId, name }).first('id'); // eslint-disable-line no-await-in-loop
+    if (grp) await db('patient_group_members').insert({ business_id: businessId, patient_id: patientId, group_id: grp.id }).onConflict(['patient_id', 'group_id']).ignore(); // eslint-disable-line no-await-in-loop
+  }
+  const branchFor = (doctorId) => (doctorOf.branchFor ? doctorOf.branchFor(groups, doctorId) : null);
+
+  // 4. The old calendar: Clinica's own appointments, then one visit per day and doctor of treatments not already on it.
   const legacyId = refs[0].legacy_patient_id;
   const who = { id: patientId, name: patient.full_name, phone: patient.phone, legacyId };
   const ownSet = (prev) => prev === null; // only fill a doctor that is not set
   const booked = new Set();
   let visits = 0;
   for (const a of await oldAppointments(db, refs.map((r) => r.id))) { // eslint-disable-line no-restricted-syntax, no-await-in-loop
-    const doctorId = await doctorOf(a.doctor); // eslint-disable-line no-await-in-loop
+    const doctorId = doctorOf.infers(a.doctor) ? null : await doctorOf(a.doctor); // eslint-disable-line no-await-in-loop
     const st = CANCELLED.test(a.status) ? 'cancelled' : NO_SHOW.test(a.status) ? 'no_show' : a.date < day0 ? 'completed' : 'confirmed';
-    await upsertVisit(db, businessId, who, { key: a.key, date: a.date, time: a.time, duration: a.duration, doctorId, status: st, notes: a.note, mayChangeDoctor: ownSet }); // eslint-disable-line no-await-in-loop
+    await upsertVisit(db, businessId, who, { key: a.key, date: a.date, time: a.time, duration: a.duration, doctorId, branchId: branchFor(doctorId), status: st, notes: a.note, mayChangeDoctor: ownSet }); // eslint-disable-line no-await-in-loop
     booked.add(a.date); visits += 1;
   }
   const days = new Map();
   rows.forEach((t) => {
-    const d = t.treatment_on || map.isoDay(t.treatment_date) || (statusOf(t) === 'done' ? map.isoDay(t.complete_date) : null);
+    const d = dayOf(t) || (statusOf(t) === 'done' ? map.isoDay(t.complete_date) : null);
     if (!d || booked.has(d)) return;
-    const k = `${d}|${docKey(t.doctor)}`;
-    if (!days.has(k)) days.set(k, { date: d, nameKey: docKey(t.doctor), doctorId: t.resolved, list: [] });
+    // one visit per day and doctor: a chair's treatments join the visit of the doctor they were given to
+    const who2 = t.resolved ? `d${t.resolved}` : `n${docKey(t.doctor)}`;
+    const k = `${d}|${who2}`;
+    if (!days.has(k)) days.set(k, { date: d, doctorId: t.resolved, list: [] });
     days.get(k).list.push(t);
   });
   for (const v of days.values()) { // eslint-disable-line no-restricted-syntax
-    const notes = v.list.map((t) => `${t.description || t.type || 'Treatment'}${t.tooth ? ` (${t.tooth})` : ''}`).join(' · ');
+    const names = [...new Set(v.list.map((t) => docKey(t.doctor)))];
+    // the visit's key: the Clinica name when the visit has one (as before), else its doctor here
+    const keyOf = names.length === 1 ? names[0] : `doctor:${v.doctorId || ''}`;
+    const notes = v.list.map((t) => {
+      const desc = clean.cleanTreatment(t.description);
+      const extra = [...desc.lines, String(t.note || '').trim()].filter(Boolean).join(' — ');
+      return `${desc.name || t.type || 'Treatment'}${t.tooth ? ` (${t.tooth})` : ''}${extra ? `: ${extra}` : ''}`;
+    }).join('\n');
     const id = await upsertVisit(db, businessId, who, { // eslint-disable-line no-await-in-loop
-      key: `v:${v.date}:${crypto.createHash('sha1').update(v.nameKey).digest('hex').slice(0, 10)}`, date: v.date, time: null, doctorId: v.doctorId,
+      key: `v:${v.date}:${crypto.createHash('sha1').update(keyOf).digest('hex').slice(0, 10)}`, date: v.date, time: null, doctorId: v.doctorId, branchId: branchFor(v.doctorId),
       status: v.date < day0 ? 'completed' : 'confirmed', notes, mayChangeDoctor: (prev) => prev === null || v.list.some((t) => t.doctor_id === prev),
     });
     const ids = v.list.map((t) => t.id);

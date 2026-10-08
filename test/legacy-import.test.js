@@ -416,6 +416,67 @@ test('initial migration into an empty clinic: every Clinica patient created once
   assert.equal(Number((await knex('legacy_treatments').where({ business_id: empty.businessId }).count({ n: '*' }))[0].n), 6);
 });
 
+test('Clinica as if it was always here: English names → the Arabic doctors, chairs → the doctor of the day, clean descriptions, groups and branches', async () => {
+  const c = await makeClinic(`li-real${tag}@t.test`, 'Real clinic');
+  const doc = async (full_name) => (await knex('doctors').insert({ business_id: c.businessId, full_name, is_active: true, working_hours: '{}', slot_duration_minutes: 30 }))[0];
+  const fares = await doc('د. فارس القضاة'); const lama = await doc('د. لمى عاشور');
+  const [abdali] = await knex('clinic_branches').insert({ business_id: c.businessId, name: 'العبدلي' });
+  const form = [['Factor', 'Normal', 'Abnormal'], ['Plaque', 'Good', 'Poor']];
+  const data = [{
+    patient_id: '9101', patient_number: '', name: 'مريض أ', mobile: '962790000001', group: 'Implant,Abdali Hospital',
+    treatments: [
+      { date: '2024-01-10', tooth: '16', description: 'Examination \u00a0\u00a0 more...X\n   Chief Complaint\n   pain 16\n \n   View Notes', doctor: 'Faris Qudah', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-01-10', note: '', referred_by: '' },
+      { date: '2024-01-10', tooth: '17', description: 'Composite Filling\n    View Notes', doctor: 'Clinic One', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-01-10', note: 'deep', referred_by: '' },
+      { date: '2024-03-02', tooth: 'All Teeth', description: 'scaling and polishing', doctor: 'Lama  Ashour', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-03-02', note: '', referred_by: '' },
+      { date: '2024-03-05', tooth: 'All Teeth', description: 'Follow up', doctor: 'Lama Ashour', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-03-05', note: '', referred_by: '' },
+      { date: '2024-04-01', tooth: '', description: 'Follow up', doctor: 'Clinic Two', price: '0.000', type: 'Payment', status: 'Complete', complete_date: '2024-04-01', note: '', referred_by: '' },
+    ],
+    attachments: [],
+    clinical_tables: { periodontal: form, treatment_details_1: [['Select / Print', 'Date', 'Tooth', 'Description', 'Doctor'], ['', '2024-01-10', '16', 'x', 'y']] },
+  }];
+  const json = path.join(TMP, 'real.json'); fs.writeFileSync(json, JSON.stringify(data));
+  const j = await svc.openJob(c);
+  await svc.addUpload(c, j.id, upload(json, 'clinica-patients.json'), 'patients_json');
+  await svc.settle(c.businessId);
+  await svc.start(c, j.id); await svc.settle(c.businessId);
+  const p = await knex('patients').where({ business_id: c.businessId, legacy_patient_id: '9101' }).first();
+  const plan = await knex('dental_plan_items').where({ business_id: c.businessId, patient_id: p.id }).orderBy('id');
+  assert.equal(plan.length, 5);
+  assert.equal(plan[0].doctor_id, fares, '"Faris Qudah" is "د. فارس القضاة" — no new doctor');
+  assert.equal(plan[0].procedure_name, 'Examination'); assert.match(plan[0].notes, /Chief Complaint: pain 16/);
+  assert.equal(plan[1].procedure_name, 'Composite Filling');
+  assert.equal(plan[1].doctor_id, fares, 'Clinic One → the doctor of that day'); assert.match(plan[1].notes, /Clinica: Clinic One/);
+  assert.equal(plan[2].doctor_id, lama, '"Lama  Ashour" (two spaces) is the same doctor');
+  assert.equal(plan[4].doctor_id, lama, 'Clinic Two on a day alone → the patient\'s usual doctor');
+  assert.equal(Number((await knex('doctors').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 2, 'no doctor added');
+  assert.equal(Number((await knex('legacy_clinical_records').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 0, 'empty forms and treatment copies left out');
+  // One visit per day and doctor: the chair's treatment joins Dr Fares' visit of 2024-01-10.
+  const visits = await knex('appointments').where({ business_id: c.businessId, external_source: 'clinica' }).orderBy('appointment_date');
+  assert.deepEqual(visits.map((v) => [v.appointment_date instanceof Date ? v.appointment_date.toISOString().slice(0, 10) : String(v.appointment_date).slice(0, 10), v.doctor_id]),
+    [['2024-01-10', fares], ['2024-03-02', lama], ['2024-03-05', lama], ['2024-04-01', lama]]);
+  assert.match(visits[0].notes, /Examination \(16\): Chief Complaint: pain 16/); assert.match(visits[0].notes, /Composite Filling \(17\): deep/);
+  // Clinica groups → patient groups.
+  const groups = await knex('patient_group_members as m').join('patient_groups as g', 'g.id', 'm.group_id').where({ 'm.patient_id': p.id }).orderBy('g.name').pluck('g.name');
+  assert.deepEqual(groups, ['Abdali Hospital', 'Implant']);
+  // The Doctors page: names found, chairs from the visits, the groups; tying "Abdali Hospital" to the branch moves the visits.
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  const names = await promote.doctorNames(c.businessId);
+  assert.equal(names.list.find((x) => x.name === 'Faris Qudah').doctorId, fares);
+  assert.equal(names.list.find((x) => x.name === 'Lama Ashour').count, 2, 'two spellings, one row');
+  assert.equal(names.list.find((x) => x.name === 'Clinic One').action, 'infer');
+  const g = names.groups.find((x) => x.name === 'Abdali Hospital');
+  await promote.saveDoctorMap(c, [], [{ key: g.key, branch_id: String(abdali) }]);
+  await promote.settle(c.businessId);
+  assert.ok((await knex('appointments').where({ business_id: c.businessId, external_source: 'clinica' }).pluck('branch_id')).every((b) => b === abdali));
+  // Choosing a doctor for "Clinic One" instead applies to what the import made.
+  await promote.saveDoctorMap(c, [{ key: names.list.find((x) => x.name === 'Clinic One').key, action: 'doctor', doctor_id: String(lama) }]);
+  await promote.settle(c.businessId);
+  assert.equal((await knex('dental_plan_items').where({ id: plan[1].id }).first()).doctor_id, lama);
+  const purge = require('../src/modules/legacy/purge.service'); // eslint-disable-line global-require
+  await purge.run(c);
+  assert.equal(Number((await knex('legacy_branch_map').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 0);
+});
+
 test('remove everything imported from Clinica: created patients, plans, visits, files, doctors, jobs; own data kept', async () => {
   const c = await makeClinic(`li-purge${tag}@t.test`, 'Purge clinic');
   const [mine] = await knex('patients').insert({ business_id: c.businessId, full_name: 'Hand entered', phone: '0790099999' });

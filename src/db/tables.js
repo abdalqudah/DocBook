@@ -33,7 +33,7 @@ const TENANT = [
   'clinic_site_versions', 'clinic_stamps', 'commission_rules', 'consultations', 'consultation_diagnoses', 'consultation_timers',
   'data_sync_runs', 'demo_records', 'dental_entries', 'dental_plan_items', 'doctors', 'doctor_days_off', 'doctor_emails', 'doctor_online_slots',
   'doctor_signatures', 'expenses', 'expense_categories', 'growth_measurements', 'icd_custom_codes', 'import_batches', 'import_errors', 'import_items', 'import_jobs', 'import_links', 'insurance_providers',
-  'insurance_statements', 'invoices', 'legacy_clinical_records', 'legacy_clinical_values', 'legacy_doctor_map', 'legacy_field_values', 'legacy_patient_links', 'legacy_patients', 'legacy_treatments', 'invoice_payments', 'media_usages', 'medical_orders', 'medications', 'message_dispatches', 'message_log',
+  'insurance_statements', 'invoices', 'legacy_clinical_records', 'legacy_clinical_values', 'legacy_branch_map', 'legacy_doctor_map', 'legacy_field_values', 'legacy_patient_links', 'legacy_patients', 'legacy_treatments', 'invoice_payments', 'media_usages', 'medical_orders', 'medications', 'message_dispatches', 'message_log',
   'notifications', 'notification_email_rules', 'notification_reads', 'online_consultations', 'online_consultation_files', 'order_catalog',
   'partners', 'partner_sends', 'partner_transactions', 'patients', 'patient_documents', 'patient_files', 'patient_attachments', 'patient_groups', 'patient_group_members', 'patient_photos', 'payments', 'payment_gateways',
   'payroll_adjustments', 'payroll_payments', 'pregnancies', 'pregnancy_checks', 'prescriptions', 'profit_distributions', 'queue_screens',

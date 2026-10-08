@@ -1,8 +1,10 @@
 // Reads one record of the Clinica backup into plain parts — the old patient's identity, phones, group, links, its
 // treatments, its clinical tables and its attachment links — and keeps every other field as (field, value) pairs so
-// nothing of the source is lost. Field names are matched loosely (case, spaces, dashes and underscores ignored)
+// nothing of the source is lost (clinical tables that hold no patient data — Clinica's empty forms, copies of the
+// treatments table — are left out: clinica-clean.clinicalRows). Field names are matched loosely (case, spaces, dashes and underscores ignored)
 // against the names the backup uses for each part; the patient's identity is the old id (never the name).
 const crypto = require('crypto');
+const { clinicalRows } = require('./clinica-clean');
 
 const norm = (k) => String(k).toLowerCase().replace(/[\s_\-.]+/g, '');
 const ALIASES = {
@@ -161,7 +163,9 @@ function patient(record) {
     const c = r[ck];
     const tables = c && typeof c === 'object' && !Array.isArray(c) ? Object.entries(c) : (Array.isArray(c) ? c.map((x, i) => [text(x && (x.table || x.name || x.key), 60) || `table_${i + 1}`, x && (x.rows || x.data || x)]) : []);
     for (const [key, val] of tables) {
-      const rows = tableRows(val);
+      // Clinica's empty forms, copies of the treatments table and "No … found." rows carry no patient data.
+      const rows = tableRows(clinicalRows(val));
+      if (!rows.length) continue; // eslint-disable-line no-continue
       out.clinical.push({ key: String(key).replace(/[^\p{L}\p{N}_\- ]+/gu, '').trim().slice(0, 60) || 'table', rows: rows.map((row, i) => ({ row_key: `fp:${fingerprint(row)}:${i}`.slice(0, 64), position: i, values: flatten(row) })) });
     }
   }

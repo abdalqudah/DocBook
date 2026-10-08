@@ -17,13 +17,14 @@
     <% list.forEach(function (x, i) { var v = x.action === 'doctor' && x.doctorId ? 'd:' + x.doctorId : x.action; %>
       <tr>
         <td data-label="<%= t('legacy.doc_col_name') %>"><% if (x.key) { %><strong dir="auto"><%= x.name %></strong><% } else { %><em class="muted"><%= t('legacy.doc_none_name') %></em><% } %>
-          <% if (!x.chosen && x.auto) { %><div class="tiny muted"><%= t('legacy.doc_auto') %></div><% } else if (!x.chosen && x.key) { %><div class="tiny text-danger"><%= t('legacy.doc_not_found') %></div><% } %></td>
+          <% if (x.chair) { %><div class="tiny muted"><%= t('legacy.doc_chair') %></div><% } else if (!x.chosen && x.auto) { %><div class="tiny muted"><%= t('legacy.doc_auto') %></div><% } else if (!x.chosen && x.key) { %><div class="tiny text-danger"><%= t('legacy.doc_not_found') %></div><% } %></td>
         <td data-label="<%= t('legacy.doc_col_count') %>" class="num"><%= fmt.number(x.count) %></td>
         <td data-label="<%= t('legacy.doc_col_here') %>">
           <input type="hidden" name="key" value="<%= x.key %>"><input type="hidden" name="action" value="<%= x.action %>" data-act><input type="hidden" name="doctor_id" value="<%= x.doctorId || '' %>" data-doc>
           <select class="select" data-pick aria-label="<%= x.name || t('legacy.doc_none_name') %>">
+            <option value="infer"<%= v === 'infer' ? ' selected' : '' %>><%= t('legacy.doc_opt_infer') %></option>
             <option value="none"<%= v === 'none' ? ' selected' : '' %>><%= t(x.key ? 'legacy.doc_opt_none' : 'legacy.doc_opt_leave') %></option>
-            <% if (x.key) { %><option value="create"<%= v === 'create' ? ' selected' : '' %>><%= t('legacy.doc_opt_create', { name: x.name }) %></option><% } %>
+            <% if (x.key && !x.chair) { %><option value="create"<%= v === 'create' ? ' selected' : '' %>><%= t('legacy.doc_opt_create', { name: x.name }) %></option><% } %>
             <optgroup label="<%= t('legacy.doc_opt_existing') %>">
               <% doctors.forEach(function (d) { %><option value="d:<%= d.id %>"<%= v === 'd:' + d.id ? ' selected' : '' %>><%= d.full_name %><%= d.is_active ? '' : ' (' + t('legacy.doc_inactive') + ')' %></option><% }) %>
             </optgroup>
@@ -33,6 +34,30 @@
     <% }) %>
     </tbody>
   </table></div>
+  <% if (groups && groups.length) { %>
+  <div class="panel-body">
+    <h2 class="h3" style="margin:0"><%= t('legacy.grp_title') %></h2>
+    <p class="small muted" style="margin:.25rem 0 0"><%= t('legacy.grp_lead') %></p>
+  </div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('legacy.grp_col_group') %></th><th class="num"><%= t('legacy.grp_col_patients') %></th><th><%= t('legacy.grp_col_branch') %></th></tr></thead>
+    <tbody>
+    <% groups.forEach(function (g) { %>
+      <tr>
+        <td data-label="<%= t('legacy.grp_col_group') %>"><strong dir="auto"><%= g.name %></strong></td>
+        <td data-label="<%= t('legacy.grp_col_patients') %>" class="num"><%= fmt.number(g.count) %></td>
+        <td data-label="<%= t('legacy.grp_col_branch') %>">
+          <input type="hidden" name="group_key" value="<%= g.key %>">
+          <select class="select" name="group_branch" aria-label="<%= g.name %>">
+            <option value=""><%= t('legacy.grp_main_branch') %></option>
+            <% branches.forEach(function (b) { %><option value="<%= b.id %>"<%= Number(g.branchId) === Number(b.id) ? ' selected' : '' %>><%= (locale === 'en' && b.name_en) ? b.name_en : b.name %></option><% }) %>
+          </select>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
   <div class="panel-body row-sm" style="justify-content:space-between;flex-wrap:wrap">
     <p class="small muted" style="margin:0"><%= t('legacy.doc_note') %></p>
     <button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('legacy.doc_save') %></button>
