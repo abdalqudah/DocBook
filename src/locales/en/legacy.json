@@ -87,7 +87,7 @@
     "f_failed": "Failed files",
     "errors": "Errors",
     "warnings": "Warnings",
-    "match_rule": "Matching is by the old patient id first, then the old patient number — never by name. A patient with no match stays UNMATCHED: its records are kept and can be linked later from the recovery list.",
+    "match_rule": "Matching, in this order: the old patient id, the old patient number, the file number here (= the old number or id), then the mobile number with the same first name — never by name alone. A patient with no match, or two old patients pointing at one patient, stays UNMATCHED: its records are kept and can be linked later from the recovery list.",
     "create_unmatched": "Create a patient file for each unmatched patient (never when its mobile already belongs to a patient here)",
     "start": "START IMPORT",
     "start_confirm": "Import {n} patients now? It runs in the background; you can close this page.",
@@ -245,6 +245,16 @@
     "close": "Close",
     "source": "Source",
     "uploaded": "Imported on",
-    "admin_link": "Legacy Patient Recovery (import from Clinica)"
+    "admin_link": "Legacy Patient Recovery (import from Clinica)",
+    "match_by_title": "Matched by",
+    "match_by": {
+      "legacy_id": "Old id",
+      "legacy_number": "Old number",
+      "file_number": "File number",
+      "phone": "Mobile + name",
+      "ambiguous": "Ambiguous"
+    },
+    "rematch": "Match again",
+    "flash_rematched": "Matching done again."
   }
 }

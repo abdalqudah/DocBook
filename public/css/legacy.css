@@ -74,3 +74,5 @@ dialog.dialog.lg-viewer:fullscreen { width: 100vw; height: 100vh; border-radius:
   .lg-gallery { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
   .lg-details[open] > .dl, .lg-details[open] > .lg-link { position: static; min-width: 0; margin-top: 6px; }
 }
+.lg-by { align-items: center; }
+.lg-by form { margin-inline-start: auto; }

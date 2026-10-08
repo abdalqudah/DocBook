@@ -126,26 +126,92 @@ async function removeBatch(ctx, jobId, batchId) {
   await refreshTotals(job.id);
 }
 
-// ================================================================= analysis: patients JSON
-async function legacyMaps(businessId) {
-  const rows = await knex('patients').where({ business_id: businessId }).where((w) => w.whereNotNull('legacy_patient_id').orWhereNotNull('legacy_patient_number'))
-    .select('id', 'legacy_source', 'legacy_patient_id', 'legacy_patient_number');
-  const byId = new Map(); const byNumber = new Map();
+// ================================================================= matching (old patient → a patient here)
+// In this order, the first that gives exactly one patient wins (never the name alone):
+//   legacy_id      the patient here already carries this old id (linked before)
+//   legacy_number  the patient here carries this old patient number
+//   file_number    the patient's file number here is the old patient number (or the old id) AND the first name or the
+//                  mobile agrees — the usual case when the clinic typed its patients with their old numbers
+//   phone          the same mobile number (last 9 digits) AND the same first name — only when exactly one patient here
+//                  has that mobile with that name
+// A patient here already tied to another old id is never matched by file number or mobile, and two old patients that
+// would land on the same patient are both left UNMATCHED (ambiguous) for a person to decide in the recovery list.
+const normFile = (v) => { const s = String(v === null || v === undefined ? '' : v).trim().toLowerCase(); return /^\d+$/.test(s) ? String(Number(s)) : s; };
+const normPhone = (v) => { const d = String(v || '').replace(/\D+/g, ''); return d.length >= 9 ? d.slice(-9) : null; };
+const firstName = (v) => require('../clinic/records.lib').foldText(String(v || '')).toLowerCase().replace(/[^\p{L}\p{N} ]+/gu, ' ').trim().split(/\s+/)[0] || ''; // eslint-disable-line global-require
+
+async function matchIndex(businessId) {
+  const rows = await knex('patients').where({ business_id: businessId }).whereNull('transferred_at')
+    .select('id', 'full_name', 'phone', 'phone2', 'file_number', 'legacy_source', 'legacy_patient_id', 'legacy_patient_number');
+  const ix = { byId: new Map(), byNumber: new Map(), byFile: new Map(), byPhone: new Map(), tied: new Map() };
+  const push = (m, k, v) => { if (!k) return; if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
   rows.forEach((r) => {
-    if (r.legacy_patient_id && (!r.legacy_source || r.legacy_source === SOURCE)) byId.set(String(r.legacy_patient_id), r.id);
-    if (r.legacy_patient_number) byNumber.set(String(r.legacy_patient_number), r.id);
+    if (r.legacy_patient_id && (!r.legacy_source || r.legacy_source === SOURCE)) ix.byId.set(String(r.legacy_patient_id), r.id);
+    if (r.legacy_patient_id) ix.tied.set(r.id, String(r.legacy_patient_id));
+    if (r.legacy_patient_number) push(ix.byNumber, normFile(r.legacy_patient_number), r.id);
+    const name = firstName(r.full_name);
+    if (r.file_number) push(ix.byFile, normFile(r.file_number), { id: r.id, name, phones: [r.phone, r.phone2].map(normPhone).filter(Boolean) });
+    [r.phone, r.phone2].map(normPhone).filter(Boolean).forEach((ph) => push(ix.byPhone, ph, { id: r.id, name }));
   });
   const staged = await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').select('legacy_patient_id', 'patient_id');
-  staged.forEach((r) => { if (!byId.has(r.legacy_patient_id)) byId.set(r.legacy_patient_id, r.patient_id); });
-  return { byId, byNumber };
+  staged.forEach((r) => { if (!ix.byId.has(r.legacy_patient_id)) ix.byId.set(r.legacy_patient_id, r.patient_id); ix.tied.set(r.patient_id, r.legacy_patient_id); });
+  return ix;
 }
-const matchOf = (maps, id, number) => (maps.byId.get(String(id)) || (number && maps.byNumber.get(String(number))) || null);
+
+/** The patient here for one old patient → { id, by } or null. */
+function candidate(ix, { id, number, mobile, name }) {
+  const exact = ix.byId.get(String(id));
+  if (exact) return { id: exact, by: 'legacy_id' };
+  const free = (pid) => !ix.tied.has(pid) || ix.tied.get(pid) === String(id);
+  const one = (list) => { const l = [...new Set((list || []).filter(free))]; return l.length === 1 ? l[0] : null; };
+  const n = number ? normFile(number) : null;
+  let hit = n && one(ix.byNumber.get(n));
+  if (hit) return { id: hit, by: 'legacy_number' };
+  // A file number counts only when the first name or the mobile agrees too (numbers given automatically here — 1, 2,
+  // 3… — can be the same numbers as the old system's for other people).
+  const ph = normPhone(mobile); const fn = firstName(name);
+  const agrees = (c) => (fn && c.name === fn) || (ph && c.phones.includes(ph));
+  const byFile = (k) => one((ix.byFile.get(k) || []).filter(agrees).map((c) => c.id));
+  hit = (n && byFile(n)) || byFile(normFile(id));
+  if (hit) return { id: hit, by: 'file_number' };
+  if (ph && fn) {
+    hit = one((ix.byPhone.get(ph) || []).filter((c) => c.name === fn).map((c) => c.id));
+    if (hit) return { id: hit, by: 'phone' };
+  }
+  return null;
+}
+
+/** Matches (again) every old patient of the job; two old patients on one patient → both ambiguous. */
+async function rematch(job) {
+  const ix = await matchIndex(job.business_id);
+  const items = await knex('import_items').where({ job_id: job.id, kind: 'patient' }).whereIn('status', ['pending', 'unmatched'])
+    .select('id', 'legacy_patient_id', 'legacy_patient_number', 'mobile', 'display_name');
+  const res = new Map(); const claims = new Map();
+  items.forEach((it) => {
+    const c = candidate(ix, { id: it.legacy_patient_id, number: it.legacy_patient_number, mobile: it.mobile, name: it.display_name });
+    res.set(it.id, c);
+    if (c) { if (!claims.has(c.id)) claims.set(c.id, []); claims.get(c.id).push(it); }
+  });
+  await knex('import_errors').where({ job_id: job.id, error_code: 'AMBIGUOUS_MATCH' }).del();
+  for (const [pid, list] of claims) { // eslint-disable-line no-restricted-syntax
+    if (list.length < 2) continue; // eslint-disable-line no-continue
+    for (const it of list) { // eslint-disable-line no-restricted-syntax
+      res.set(it.id, { id: null, by: 'ambiguous' });
+      await logError(job, { item: it.id, legacyId: it.legacy_patient_id, stage: 'matching', code: 'AMBIGUOUS_MATCH', level: 'warning', message: `${list.length} old patients (${list.map((x) => x.legacy_patient_id).join(', ')}) point at the same patient here (#${pid}); link them by hand.` }); // eslint-disable-line no-await-in-loop
+    }
+  }
+  await knex.transaction(async (trx) => {
+    for (const it of items) { // eslint-disable-line no-restricted-syntax
+      const c = res.get(it.id);
+      await trx('import_items').where({ id: it.id }).update({ match: c && c.id ? 'matched' : 'unmatched', match_by: c ? c.by : null, target_id: c && c.id ? c.id : null }); // eslint-disable-line no-await-in-loop
+    }
+  });
+}
 
 async function analyzePatients(job, batch) {
   await knex('import_batches').where({ id: batch.id }).update({ status: 'analyzing' });
   await knex('import_items').where({ job_id: job.id, batch_id: batch.id }).del();
   await knex('import_errors').where({ job_id: job.id, batch_id: batch.id }).del();
-  const maps = await legacyMaps(job.business_id);
   const index = {}; // old id → [[role, offset, length]] for lists outside the patient records
   const seen = new Set();
   let patients = 0; let treatments = 0; let clinical = 0; let links = 0; let bad = 0;
@@ -165,11 +231,10 @@ async function analyzePatients(job, batch) {
         seen.add(p.id);
         const nClin = p.clinical.reduce((n, tb) => n + tb.rows.length, 0);
         treatments += p.treatments.length; clinical += nClin; links += p.attachments.length;
-        const hit = matchOf(maps, p.id, p.number);
         pending.push({
           business_id: job.business_id, job_id: job.id, batch_id: batch.id, kind: 'patient', ref: p.id, legacy_patient_id: p.id, legacy_patient_number: clip(p.number, 64),
           display_name: clip(p.name, 190), src_offset: ev.offset, src_length: ev.length, source_checksum: crypto.createHash('sha256').update(ev.text).digest('hex'),
-          match: hit ? 'matched' : 'unmatched', target_id: hit, status: 'pending', treatments: p.treatments.length, clinical: nClin, links: p.attachments.length,
+          mobile: clip(p.mobile || p.telephone, 60), status: 'pending', treatments: p.treatments.length, clinical: nClin, links: p.attachments.length,
         });
         if (pending.length >= 500) await flush(); // eslint-disable-line no-await-in-loop
       } else if (['treatments', 'clinical', 'attachments'].includes(role)) {
@@ -192,6 +257,7 @@ async function analyzePatients(job, batch) {
   fs.writeFileSync(path.join(jobDir(job.business_id, job.id), 'index.json'), JSON.stringify(index), { mode: 0o600 });
   await knex('import_batches').where({ id: batch.id }).update({ status: patients ? 'valid' : 'invalid', entries: patients, valid_files: seen.size, invalid_files: bad, error: patients ? null : 'No patient records were found.' });
   await knex('import_jobs').where({ id: job.id }).update({ src_patients: seen.size, src_treatments: treatments, src_clinical: clinical, src_links: links });
+  await rematch(job);
 }
 
 // ================================================================= analysis: attachment ZIPs
@@ -308,11 +374,12 @@ async function refreshTotals(jobId) {
 }
 
 async function counts(jobId) {
-  const rows = await knex('import_items').where({ job_id: jobId }).groupBy('kind', 'status', 'match').select('kind', 'status', 'match').count({ n: '*' });
-  const c = { patient: {}, attachment: {}, match: {} };
+  const rows = await knex('import_items').where({ job_id: jobId }).groupBy('kind', 'status', 'match', 'match_by').select('kind', 'status', 'match', 'match_by').count({ n: '*' });
+  const c = { patient: {}, attachment: {}, match: {}, by: {} };
   rows.forEach((r) => {
     c[r.kind][r.status] = (c[r.kind][r.status] || 0) + Number(r.n);
     if (r.kind === 'patient' && r.match) c.match[r.match] = (c.match[r.match] || 0) + Number(r.n);
+    if (r.kind === 'patient' && r.match_by) c.by[r.match_by] = (c.by[r.match_by] || 0) + Number(r.n);
   });
   return c;
 }
@@ -339,7 +406,7 @@ async function summary(businessId, jobId) {
     job, batches,
     patientsFile: batches.find((b) => b.kind === 'patients_json' && b.status !== 'duplicate') || null,
     zips: { list: zips, detected: zipsOk.length, expected: expected || null, valid: zipsOk.filter((b) => b.status === 'valid').length, invalid: zipsOk.filter((b) => b.status === 'invalid').length, duplicates: zips.length - zipsOk.length, missing, analyzing: zipsOk.filter((b) => ['uploaded', 'analyzing'].includes(b.status)).length },
-    patients: { detected: job.src_patients, matched: c.match.matched || 0, unmatched: c.match.unmatched || 0, created: c.match.new || 0, status: p },
+    patients: { detected: job.src_patients, matched: c.match.matched || 0, unmatched: c.match.unmatched || 0, created: c.match.new || 0, status: p, by: c.by },
     treatments: job.src_treatments, clinical: job.src_clinical, links: job.src_links,
     files: {
       total: Object.values(att).reduce((a, b) => a + b, 0), valid: (att.pending || 0) + (att.processing || 0) + (att.imported || 0) + (att.duplicate || 0) + (att.failed || 0),
@@ -364,6 +431,14 @@ async function start(ctx, jobId, { createUnmatched = false } = {}) {
   if (!n) throw fail('IMPORT_NOT_READY', 'The files are still being checked.', 409);
   await audit.record(ctx, 'legacy.import_started', { entityType: 'import_job', entityId: job.id, newValues: { patients: s.patients.detected, treatments: s.treatments, attachments: s.files.total, create_unmatched: Boolean(createUnmatched) } });
   kick(ctx.businessId);
+}
+
+/** Runs the matching again (e.g. after patients were added or numbered here) — before the import starts. */
+async function rematchJob(ctx, jobId) {
+  const job = await getJob(ctx.businessId, jobId);
+  if (job.status !== 'ready') throw fail('IMPORT_NOT_READY', 'The files are still being checked.', 409);
+  await rematch(job);
+  await audit.record(ctx, 'legacy.import_rematched', { entityType: 'import_job', entityId: job.id });
 }
 
 async function cancel(ctx, jobId) {
@@ -408,9 +483,10 @@ async function importPatient(job, item, index, file) {
     // Who this patient is here: matched by the old id (else the old number), or — when asked — a new patient file.
     let pid = (await trx('patients').where({ business_id: business, legacy_source: SOURCE, legacy_patient_id: p.id }).first('id'))?.id
       || (await trx('legacy_patients').where({ business_id: business, legacy_source: SOURCE, legacy_patient_id: p.id }).whereNotNull('patient_id').first('patient_id'))?.patient_id
-      || (p.number ? (await trx('patients').where({ business_id: business, legacy_patient_number: p.number }).whereNull('legacy_patient_id').first('id'))?.id : null)
+      // else the patient chosen by the matching (file number / mobile…), if it is still free for this old id
+      || (item.target_id ? (await trx('patients').where({ id: item.target_id, business_id: business }).where((w) => w.whereNull('legacy_patient_id').orWhere({ legacy_source: SOURCE, legacy_patient_id: p.id })).first('id'))?.id : null)
       || null;
-    if (!pid && job.create_unmatched) {
+    if (!pid && job.create_unmatched && item.match_by !== 'ambiguous') {
       const phone = p.mobile ? String(p.mobile).replace(/[^\d+]/g, '').slice(0, 40) : null;
       const clash = phone ? await trx('patients').where({ business_id: business, phone }).first('id') : null;
       if (clash) {
@@ -749,6 +825,6 @@ async function resumeAll() {
 }
 
 module.exports = {
-  SOURCE, TYPE, ROOT, jobDir, openJob, getJob, currentJob, jobs, addUpload, removeBatch, summary, counts, start, cancel, resume, retryError, ignoreError,
+  SOURCE, TYPE, ROOT, jobDir, openJob, rematchJob, candidate, normPhone, normFile, getJob, currentJob, jobs, addUpload, removeBatch, summary, counts, start, cancel, resume, retryError, ignoreError,
   linkPatient, createFromLegacy, report, reconciliation, resumeAll, kick, settle, manifestEntries,
 };

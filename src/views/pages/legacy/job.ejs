@@ -110,6 +110,13 @@
       <div class="stat"><div class="stat-label"><%= t('legacy.' + c[0]) %><span class="stat-icon <%= c[3] %>"><%- icon(c[2]) %></span></div><div class="stat-value"><%= fmt.number(c[1] || 0) %></div></div>
       <% }) %>
     </div>
+    <div class="summary-strip lg-by">
+      <span class="small strong"><%= t('legacy.match_by_title') %></span>
+      <% ['legacy_id', 'legacy_number', 'file_number', 'phone', 'ambiguous'].forEach(function (k) { var n = (s.patients.by || {})[k] || 0; %>
+      <span class="chip<%= k === 'ambiguous' && n ? ' lg-warn' : '' %>"><%= t('legacy.match_by.' + k) %> <strong><%= fmt.number(n) %></strong></span>
+      <% }) %>
+      <form method="post" action="<%= J %>/rematch"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"<%= st !== 'ready' ? ' disabled' : '' %>><%- icon('refresh-cw', 'icon-sm') %><%= t('legacy.rematch') %></button></form>
+    </div>
     <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('legacy.match_rule') %></p>
     <form class="stack" method="post" action="<%= J %>/start" data-confirm="<%= t('legacy.start_confirm', { n: fmt.number(s.patients.detected) }) %>" data-confirm-yes="<%= t('legacy.start') %>" data-confirm-tone="primary">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">

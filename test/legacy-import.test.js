@@ -278,6 +278,40 @@ test('resume: a job stopped half-way (server restart) carries on from the next i
   assert.ok(!fs.existsSync(svc.jobDir(ctx.businessId, j2.id)), 'uploads removed after a clean import');
 });
 
+test('matching: file number here, mobile + first name; two old patients on one patient → both ambiguous', async () => {
+  const [byFile] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'مريض كتبه الموظف', file_number: 'N-4001' });
+  // The same number given automatically to someone else (another name, another mobile): not a match.
+  await knex('patients').insert({ business_id: ctx.businessId, full_name: 'Other person', file_number: 'N-4006', phone: '0799999999' });
+  const [byPhone] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'مريض الثاني', phone: '+962 7 8222 2201' });
+  const [both] = await knex('patients').insert({ business_id: ctx.businessId, full_name: 'مريض مشترك', file_number: 'N-4003', phone: '0782222203' });
+  // Same mobile but another first name: not a match.
+  await knex('patients').insert({ business_id: ctx.businessId, full_name: 'Someone', phone: '0782222204' });
+  const json = path.join(TMP, 'm.json');
+  fs.writeFileSync(json, JSON.stringify(backup(['4001', '4002', '4003', '4004', '4005', '4006'], '07822222')));
+  const j = await svc.openJob(ctx);
+  await svc.addUpload(ctx, j.id, upload(json, 'm.json'), 'patients_json');
+  await svc.settle(ctx.businessId);
+  const it = Object.fromEntries((await knex('import_items').where({ job_id: j.id, kind: 'patient' })).map((r) => [r.ref, r]));
+  assert.equal(it['4001'].target_id, byFile); assert.equal(it['4001'].match_by, 'file_number');
+  assert.equal(it['4002'].target_id, byPhone); assert.equal(it['4002'].match_by, 'phone');
+  assert.equal(it['4003'].match_by, 'ambiguous'); assert.equal(it['4004'].match_by, 'ambiguous'); assert.equal(it['4003'].target_id, null);
+  assert.equal(it['4005'].match, 'unmatched');
+  assert.equal(it['4006'].match, 'unmatched', 'same file number, other person');
+  const s = await svc.summary(ctx.businessId, j.id);
+  assert.equal(s.patients.matched, 2); assert.equal(s.patients.by.ambiguous, 2);
+  // A patient numbered by hand afterwards: "match again" picks it up.
+  await knex('patients').insert({ business_id: ctx.businessId, full_name: 'مريض متأخر', file_number: 'N-4005' });
+  await svc.rematchJob(ctx, j.id);
+  assert.equal((await knex('import_items').where({ job_id: j.id, ref: '4005' }).first()).match_by, 'file_number');
+  await svc.start(ctx, j.id);
+  await svc.settle(ctx.businessId);
+  const p1 = await knex('patients').where({ id: byFile }).first();
+  assert.equal(p1.legacy_patient_id, '4001'); assert.equal(p1.full_name, 'مريض كتبه الموظف', 'never renamed');
+  assert.equal((await knex('patients').where({ id: byPhone }).first()).legacy_patient_id, '4002');
+  assert.equal((await knex('patients').where({ id: both }).first()).legacy_patient_id, null, 'ambiguous: left for a person');
+  assert.equal((await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_patient_id: '4003' }).first()).patient_id, null);
+});
+
 test('HTTP: owner runs the Import Center; staff cannot; files only through the authorised download', async () => {
   await staff(ctx.businessId, 'receptionist', `li-rec${tag}@t.test`);
   await staff(ctx.businessId, 'doctor', `li-doc${tag}@t.test`);
