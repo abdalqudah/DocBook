@@ -108,6 +108,7 @@ async function start(server) {
     // Legacy Patient Recovery: imports left running by a stopped server carry on (now, and whenever a runner went quiet).
     const legacyTick = () => Promise.all([
       require('./modules/legacy/import.service').resumeAll().catch((e) => console.error('[legacy-import]', e.message)), // eslint-disable-line global-require, no-console
+      require('./modules/legacy/promote.service').resumeAll().catch((e) => console.error('[legacy-promote]', e.message)), // eslint-disable-line global-require, no-console -- Clinica data into the patients' files
       require('./modules/patienttransfer/transfer.service').resumeAll().catch((e) => console.error('[patient-transfer]', e.message)), // eslint-disable-line global-require, no-console -- moves / shares between clinics
     ]);
     setTimeout(legacyTick, 10_000).unref();

@@ -35,7 +35,8 @@
     },
     "payment_statuses": {
       "unpaid": "غير مدفوع",
-      "paid": "مدفوع"
+      "paid": "مدفوع",
+      "imported": "مستورد (Clinica)"
     },
     "unassigned": "بدون طبيب",
     "unassigned_hint": "عيّن طبيبًا من صفحة الموعد",
@@ -147,7 +148,13 @@
       "hint_view": "انقر على الموعد لفتحه.",
       "time_axis": "الوقت",
       "now": "الآن",
-      "rail_prev": "الأطباء السابقون", "rail_next": "الأطباء التاليون", "rail_label": "التنقّل بين الأطباء", "rail_count": "{from}–{to} من {n}", "move_doctor": "اسحب لتغيير مكان الطبيب", "move_failed": "تعذّر حفظ ترتيب الأطباء. حاول مرة أخرى.", "doctor_switch": "الطبيب",
+      "rail_prev": "الأطباء السابقون",
+      "rail_next": "الأطباء التاليون",
+      "rail_label": "التنقّل بين الأطباء",
+      "rail_count": "{from}–{to} من {n}",
+      "move_doctor": "نقل موعد {name} إلى الساعة {time} مع {doctor}؟",
+      "move_failed": "تعذّر حفظ ترتيب الأطباء. حاول مرة أخرى.",
+      "doctor_switch": "الطبيب",
       "sel_label": "الوقت المحدد",
       "unavailable": "هذا الوقت غير متاح",
       "sel_book": "حجز موعد",
@@ -155,7 +162,6 @@
       "sel_cancel": "إلغاء",
       "move_title": "نقل الموعد",
       "move_block_title": "نقل الوقت المحظور",
-      "move_doctor": "نقل موعد {name} إلى الساعة {time} مع {doctor}؟",
       "move_date": "نقل موعد {name} إلى {date} الساعة {time}؟",
       "move_yes": "نقل",
       "moving": "جارٍ النقل…",

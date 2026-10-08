@@ -18,13 +18,22 @@
 <div class="alert alert-info mb-4" role="note"><%- icon('shield-check') %><div class="grow small"><%= t('legacy.privacy') %></div></div>
 
 <% if (promotion.total) { var _pp = Math.round(promotion.done * 100 / promotion.total); %>
-<section class="panel mb-4">
+<section class="panel mb-4" data-promote data-status-url="<%= B %>/promote/status" data-live="<%= promotion.running ? '1' : '' %>">
   <div class="panel-head"><div><h2><%- icon('clipboard-list', 'icon-sm') %> <%= t('legacy.promote_title') %></h2><p class="panel-sub"><%= t('legacy.promote_sub') %></p></div>
-    <form method="post" action="<%= B %>/promote"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"<%= promotion.running ? ' disabled' : '' %>><%- icon('refresh-cw', 'icon-sm') %><%= t(promotion.done < promotion.total - promotion.unlinked ? 'legacy.promote_run' : 'legacy.promote_again') %></button></form></div>
+    <div class="row-sm" style="flex-wrap:wrap">
+      <a class="btn btn-secondary btn-sm" href="<%= B %>/doctors"><%- icon('stethoscope', 'icon-sm') %><%= t('legacy.doc_title') %></a>
+      <form method="post" action="<%= B %>/promote"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"<%= promotion.running ? ' disabled' : '' %>><%- icon('refresh-cw', 'icon-sm') %><%= t(promotion.done < promotion.total - promotion.unlinked ? 'legacy.promote_run' : 'legacy.promote_again') %></button></form>
+    </div></div>
   <div class="panel-body stack-sm">
-    <div class="row-sm" style="justify-content:space-between;flex-wrap:wrap"><strong><%= t('legacy.promote_progress', { done: fmt.number(promotion.done), total: fmt.number(promotion.total) }) %></strong><span class="num strong"><%= _pp %>%</span></div>
-    <span class="meter" aria-hidden="true"><span style="width:<%= _pp %>%"></span></span>
-    <p class="small muted"><% if (promotion.running) { %><%= t('legacy.promote_running') %> · <% } %><%= t('legacy.promote_doctors', { n: fmt.number(promotion.doctorsCreated) }) %><% if (promotion.unlinked) { %> · <%= t('legacy.promote_unlinked', { n: fmt.number(promotion.unlinked) }) %><% } %></p>
+    <div class="row-sm" style="justify-content:space-between;flex-wrap:wrap"><strong data-text data-tpl="<%= t('legacy.promote_progress', { done: '{done}', total: '{total}' }) %>"><%= t('legacy.promote_progress', { done: fmt.number(promotion.done), total: fmt.number(promotion.total) }) %></strong><span class="num strong" data-pct><%= _pp %>%</span></div>
+    <span class="meter" aria-hidden="true"><span data-bar style="width:<%= _pp %>%"></span></span>
+    <div class="summary-strip">
+      <span class="chip"><%- icon('calendar-days', 'icon-sm') %> <%= t('legacy.promote_visits') %> <strong data-visits><%= fmt.number(promotion.visits) %></strong></span>
+      <span class="chip<%= promotion.noDoctor ? ' lg-warn' : '' %>"><%- icon('stethoscope', 'icon-sm') %> <%= t('legacy.promote_no_doctor') %> <strong><%= fmt.number(promotion.noDoctor) %></strong></span>
+      <% if (promotion.unlinked) { %><span class="chip lg-warn"><%= t('legacy.promote_unlinked', { n: fmt.number(promotion.unlinked) }) %></span><% } %>
+    </div>
+    <% if (promotion.running) { %><p class="small muted"><%- icon('hourglass', 'icon-sm') %> <%= t('legacy.promote_running') %></p><% } %>
+    <% if (promotion.noDoctor) { %><p class="small"><a class="link" href="<%= B %>/doctors"><%= t('legacy.promote_pick_doctors') %></a></p><% } %>
   </div>
 </section>
 <% } %>

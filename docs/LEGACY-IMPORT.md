@@ -276,3 +276,24 @@ The import no longer stops at a separate "Legacy Records" view: the data goes in
   the patients' files"**. The same button, run again after adding the clinic's doctors, fills in the doctors.
 - **Original data.** The Legacy Records tab keeps the original Clinica data (clinical tables, every field) as the
   auditable source.
+
+## 2.8.1: durable conversion, chosen doctors, the old calendar
+- **Durable conversion.** The conversion is a saved job (`import_jobs` type `legacy_promote`, with a heartbeat and a
+  cursor). A stopped process — a server restart or an idle-killed worker — is carried on by the server tick or when
+  the Import Center is opened.
+- **Doctors.** A Clinica doctor name is no longer turned into a doctor automatically. On **Import Center → Doctors of
+  the Clinica data**, each name, and the treatments that have no doctor, is mapped to one of:
+  - an existing doctor;
+  - a new doctor with that name (inactive);
+  - no doctor.
+
+  The default is a doctor here with the same name. Saving re-applies the choice to the plan items and visits the
+  import made, but not to items a person changed since.
+- **Old calendar.** It fills the clinic's calendar:
+  - Clinica's own appointments, when the file has them (inside the patient record, or as a list beside the
+    patients), keep their date, time, doctor, status and note;
+  - one visit is added for each day of treatments not already on the calendar, and that day's treatments are linked
+    to it.
+- **Imported visits** carry `external_source = 'clinica'` (one per key) and `source = 'import'`. Past visits are
+  `payment_status = 'imported'`: never "unpaid" at the cash desk, and no review request is sent for them. Bookings
+  still to come are ordinary bookings.

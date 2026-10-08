@@ -34,10 +34,27 @@ router.get('/', wrap(async (req, res) => {
 // Imported treatments → the patients' own files (treatment plan with the doctors) — for imports made before this
 // was part of the import, and again after the clinic adds its doctors. Runs in the background; safe to run again.
 router.post('/promote', wrap(async (req, res) => {
-  const promote = require('./promote.service'); // eslint-disable-line global-require
-  promote.promoteAll(req.ctx.businessId).then((stats) => require('../../core/audit').record(req.ctx, 'legacy.treatments_promoted', { entityType: 'business', entityId: req.ctx.businessId, newValues: stats })) // eslint-disable-line global-require
-    .catch((e) => console.error('[legacy-promote]', e.message)); // eslint-disable-line no-console
+  await require('./promote.service').start(req.ctx); // eslint-disable-line global-require
+  await require('../../core/audit').record(req.ctx, 'legacy.promote_started', { entityType: 'business', entityId: req.ctx.businessId }); // eslint-disable-line global-require
   flash(req, 'success', req.t('legacy.promote_started'));
+  res.redirect(BASE);
+}));
+router.get('/promote/status', wrap(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(await require('./promote.service').progress(req.ctx.businessId)); // eslint-disable-line global-require
+}));
+
+// The doctors of the Clinica data: which doctor here each name is (or a new doctor, or none), and who did the
+// treatments that have no doctor.
+router.get('/doctors', wrap(async (req, res) => {
+  const { list, doctors } = await require('./promote.service').doctorNames(req.ctx.businessId); // eslint-disable-line global-require
+  res.page('pages/legacy/doctors', { title: req.t('legacy.doc_title'), list, doctors, ...PAGE });
+}));
+router.post('/doctors', wrap(async (req, res) => {
+  const keys = [].concat(req.body.key || []);
+  const entries = keys.map((k, i) => ({ key: String(k), action: [].concat(req.body.action || [])[i], doctor_id: [].concat(req.body.doctor_id || [])[i] }));
+  await require('./promote.service').saveDoctorMap(req.ctx, entries); // eslint-disable-line global-require
+  flash(req, 'success', req.t('legacy.doc_saved'));
   res.redirect(BASE);
 }));
 

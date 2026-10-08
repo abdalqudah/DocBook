@@ -185,6 +185,7 @@ function roleOf(path) {
   if (!n || ['patients', 'patient', 'records', 'data', 'items', 'rows'].includes(n)) return 'patients';
   if (ALIASES.treatments.map(norm).includes(n)) return 'treatments';
   if (ALIASES.attachments.map(norm).includes(n) || n === 'attachmentlinks') return 'attachments';
+  if (['appointments', 'appointment', 'visits', 'bookings', 'calendar', 'reservations', 'sessions'].includes(n)) return 'appointments';
   if (n.startsWith('clinical') || ['periodontal', 'pocketmeasurements', 'pocketdistribution', 'anesthesia', 'treatmentdetails1', 'treatmentdetails2'].includes(n)) return 'clinical';
   return 'other';
 }

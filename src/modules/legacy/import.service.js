@@ -249,11 +249,11 @@ async function analyzePatients(job, batch) {
           mobile: clip(p.mobile || p.telephone, 60), status: 'pending', treatments: p.treatments.length, clinical: nClin, links: p.attachments.length,
         });
         if (pending.length >= 500) await flush(); // eslint-disable-line no-await-in-loop
-      } else if (['treatments', 'clinical', 'attachments'].includes(role)) {
+      } else if (['treatments', 'clinical', 'attachments', 'appointments'].includes(role)) {
         const owner = map.ownerOf(el);
         if (!owner) { bad += 1; await logError(job, { batch: batch.id, stage: 'patients_analysis', code: 'MISSING_PATIENT_ID', message: `Record ${ev.index + 1} of "${ev.path}" has no patient id.` }); continue; } // eslint-disable-line no-await-in-loop, no-continue
         (index[owner] = index[owner] || []).push([role, ev.path, ev.offset, ev.length]);
-        if (role === 'treatments') treatments += 1; else if (role === 'clinical') clinical += 1; else links += 1;
+        if (role === 'treatments') treatments += 1; else if (role === 'clinical') clinical += 1; else if (role === 'attachments') links += 1;
       }
       if (patients % 200 === 0) await knex('import_jobs').where({ id: job.id }).update({ heartbeat_at: now() }); // eslint-disable-line no-await-in-loop
     }
@@ -505,6 +505,11 @@ async function importPatient(job, item, index, file) {
       if (!tb) { tb = { key, rows: [] }; p.clinical.push(tb); }
       const pos = tb.rows.length;
       tb.rows.push({ row_key: `fp:${crypto.createHash('sha256').update(JSON.stringify(el)).digest('hex').slice(0, 40)}:${pos}`.slice(0, 64), position: pos, values: map.flatten(el) });
+    } else if (role === 'appointments') {
+      // The old calendar (a list beside the patients): kept with the patient's record as appointments[n].field —
+      // the conversion (promote.service) puts them in the clinic's calendar.
+      const n = p.extra.filter(([k]) => /^appointments\[\d+\]/.test(k)).reduce((m, [k]) => Math.max(m, Number(/^appointments\[(\d+)\]/.exec(k)[1]) + 1), 0);
+      map.flatten(el, `appointments[${n}]`).forEach((pair) => p.extra.push(pair));
     } else if (role === 'attachments') {
       p.attachments.push({ url: map.flatten(el).find(([k]) => /url|link|href/i.test(k))?.[1] || null, name: map.flatten(el).find(([k]) => /name|title/i.test(k))?.[1] || null });
     }

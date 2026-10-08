@@ -126,3 +126,31 @@
     });
   });
 }());
+
+// Doctors of the Clinica data: one select per name → the hidden action / doctor_id fields; the conversion progress.
+(function () {
+  'use strict';
+  document.querySelectorAll('[data-legacy-doctors] [data-pick]').forEach(function (sel) {
+    var td = sel.parentNode; var act = td.querySelector('[data-act]'); var doc = td.querySelector('[data-doc]');
+    sel.addEventListener('change', function () {
+      var v = sel.value;
+      if (v.indexOf('d:') === 0) { act.value = 'doctor'; doc.value = v.slice(2); } else { act.value = v; doc.value = ''; }
+    });
+  });
+  var box = document.querySelector('[data-promote]');
+  if (box && box.getAttribute('data-live')) {
+    var url = box.getAttribute('data-status-url');
+    var tick = function () {
+      fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (s) {
+        var pct = s.total ? Math.round(s.done * 100 / s.total) : 0;
+        var bar = box.querySelector('[data-bar]'); if (bar) bar.style.width = pct + '%';
+        var p = box.querySelector('[data-pct]'); if (p) p.textContent = pct + '%';
+        var t = box.querySelector('[data-text]'); if (t) t.textContent = t.getAttribute('data-tpl').replace('{done}', s.done.toLocaleString()).replace('{total}', s.total.toLocaleString());
+        var v = box.querySelector('[data-visits]'); if (v) v.textContent = s.visits.toLocaleString();
+        if (!s.running) { window.location.reload(); return; }
+        setTimeout(tick, 3000);
+      }).catch(function () { setTimeout(tick, 6000); });
+    };
+    setTimeout(tick, 2000);
+  }
+}());

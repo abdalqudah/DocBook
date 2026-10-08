@@ -469,6 +469,7 @@ async function runClinic(cfg, now, base) {
   if (cfg.reviews_enabled) {
     const delayMs = Number(cfg.review_delay_minutes || 0) * 60_000;
     const rows = await apptQuery().where('a.business_id', clinic.id).whereNot('a.appointment_type', 'blocked').whereNotIn('a.status', ['cancelled', 'no_show'])
+      .andWhere((w) => w.whereNull('a.external_source').orWhereNot('a.external_source', 'clinica')) // the old system's history: never a review request
       .andWhere((w) => w.where('a.status', 'completed').orWhere('a.payment_status', 'paid'))
       .whereRaw('COALESCE(a.paid_at, a.updated_at) <= ?', [new Date(now - delayMs)])
       .whereRaw('COALESCE(a.paid_at, a.updated_at) >= ?', [new Date(now - delayMs - 3 * 86_400_000)])

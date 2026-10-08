@@ -35,7 +35,8 @@
     },
     "payment_statuses": {
       "unpaid": "Unpaid",
-      "paid": "Paid"
+      "paid": "Paid",
+      "imported": "Imported (Clinica)"
     },
     "unassigned": "No doctor assigned",
     "unassigned_hint": "Assign a doctor from the appointment",
@@ -147,7 +148,13 @@
       "hint_view": "Click an appointment to open it.",
       "time_axis": "Time",
       "now": "Now",
-      "rail_prev": "Previous doctors", "rail_next": "Next doctors", "rail_label": "Move between doctors", "rail_count": "{from}–{to} of {n}", "move_doctor": "Drag to move this doctor", "move_failed": "The doctors' order could not be saved. Please try again.", "doctor_switch": "Doctor",
+      "rail_prev": "Previous doctors",
+      "rail_next": "Next doctors",
+      "rail_label": "Move between doctors",
+      "rail_count": "{from}–{to} of {n}",
+      "move_doctor": "Move {name} to {time} with {doctor}?",
+      "move_failed": "The doctors' order could not be saved. Please try again.",
+      "doctor_switch": "Doctor",
       "sel_label": "Selected time",
       "unavailable": "This time is not available",
       "sel_book": "Book appointment",
@@ -155,7 +162,6 @@
       "sel_cancel": "Cancel",
       "move_title": "Move appointment",
       "move_block_title": "Move time block",
-      "move_doctor": "Move {name} to {time} with {doctor}?",
       "move_date": "Move {name} to {date} at {time}?",
       "move_yes": "Move",
       "moving": "Moving…",

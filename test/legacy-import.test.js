@@ -156,6 +156,7 @@ test('analysis → preview: matching by old id / number, ZIP checks, nothing imp
   data.patients.push({ patient_name: 'No id' }); // reported, never imported
   data.patients.push({ ...data.patients[0], patient_name: 'Dup' }); // same id twice → first kept
   data.periodontal = [{ patient_id: '1003', tooth: 21, depth: 5 }]; // a separate top-level clinical list
+  data.patients[2].appointments = [{ id: 'A1', date: '2024-01-10 10:30', doctor: 'Dr A', status: 'Attended', note: 'checkup' }, { id: 'A2', date: '2024-02-01', status: 'Cancelled' }]; // the old calendar
   fs.writeFileSync(json, JSON.stringify(data, null, 1));
 
   job = await svc.openJob(ctx);
@@ -250,20 +251,53 @@ test('import: rows, private files once per SHA-256, unmatched kept apart, reconc
   const after = await Promise.all(['legacy_patients', 'legacy_treatments', 'legacy_clinical_records', 'patient_attachments', 'patients'].map((tb) => knex(tb).count({ n: '*' }).then(([r]) => Number(r.n))));
   assert.deepEqual(after, before);
 
-  // Into the patient's own file: each treatment a treatment-plan item with its doctor (Dr A created, inactive).
-  const plan = await knex('dental_plan_items as i').leftJoin('doctors as d', 'd.id', 'i.doctor_id').where({ 'i.business_id': ctx.businessId, 'i.patient_id': p3.id }).orderBy('i.id').select('i.*', 'd.full_name as doctor_name', 'd.is_active', 'd.legacy_source');
+  // Into the patient's own file: each treatment a treatment-plan item; "Dr A" is not a doctor here → no doctor yet
+  // (its name kept in the notes) until the clinic chooses one on the Doctors page.
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  const planOf = () => knex('dental_plan_items as i').leftJoin('doctors as d', 'd.id', 'i.doctor_id').where({ 'i.business_id': ctx.businessId, 'i.patient_id': p3.id }).orderBy('i.id').select('i.*', 'd.full_name as doctor_name', 'd.is_active', 'd.legacy_source');
+  let plan = await planOf();
   assert.equal(plan.length, 2);
   assert.equal(plan[0].procedure_name, 'حشوة'); assert.equal(plan[0].tooth, 16); assert.equal(Number(plan[0].price), 25); assert.equal(plan[0].status, 'done');
   assert.equal(String(plan[0].done_on instanceof Date ? plan[0].done_on.toISOString() : plan[0].done_on).slice(0, 10), '2023-05-02');
+  assert.equal(plan[0].doctor_id, null); assert.match(plan[0].notes, /Dr A/);
+  assert.equal(plan[1].status, 'planned'); assert.equal(plan[1].tooth, 11);
+  assert.equal(Number((await knex('doctors').where({ business_id: ctx.businessId, full_name: 'Dr A' }).count({ n: '*' }))[0].n), 0, 'no doctor made without the clinic choosing');
+  // The old calendar: Clinica's appointments (time kept, cancelled kept as cancelled) + a visit for each treatment day.
+  const visits = await knex('appointments').where({ business_id: ctx.businessId, patient_id: p3.id, external_source: 'clinica' }).orderBy('appointment_date');
+  assert.deepEqual(visits.map((v) => [String(v.appointment_date instanceof Date ? v.appointment_date.toISOString() : v.appointment_date).slice(0, 10), v.status]),
+    [['2023-05-02', 'completed'], ['2023-06-01', 'completed'], ['2024-01-10', 'completed'], ['2024-02-01', 'cancelled']]);
+  assert.equal(visits[2].appointment_time, '10:30'); assert.equal(visits[2].notes, 'checkup');
+  assert.ok(visits.every((v) => v.payment_status === 'imported' && v.source === 'import'), 'history: never unpaid at the cash desk');
+  assert.ok(new Date(visits[0].updated_at) < new Date('2024-01-01'), 'dated in the past: no review request is sent for it');
+  assert.equal(plan[0].appointment_id, visits[0].id, 'the treatment is on its visit');
+  // The Doctors page: "Dr A" not found; treatments without a doctor as the last row.
+  let names = await promote.doctorNames(ctx.businessId);
+  const drA = names.list.find((x) => x.name === 'Dr A');
+  assert.equal(drA.auto, null); assert.equal(drA.action, 'none');
+  assert.equal(names.list[names.list.length - 1].key, '', 'no-doctor row last');
+  // Choose "add a new doctor" for Dr A and an existing doctor for the treatments without one.
+  const [docX] = await knex('doctors').insert({ business_id: ctx.businessId, full_name: 'د. سامي', is_active: true, working_hours: '{}', slot_duration_minutes: 30 });
+  await promote.saveDoctorMap(ctx, [{ key: drA.key, action: 'create' }, { key: '', action: 'doctor', doctor_id: String(docX) }]);
+  await promote.settle(ctx.businessId);
+  plan = await planOf();
   assert.equal(plan[0].doctor_name, 'Dr A'); assert.equal(plan[0].is_active, 0); assert.equal(plan[0].legacy_source, 'clinica');
-  assert.equal(plan[1].status, 'planned'); assert.equal(plan[1].tooth, 11); assert.equal(plan[1].doctor_id, null);
-  assert.equal(Number((await knex('doctors').where({ business_id: ctx.businessId, full_name: 'Dr A' }).count({ n: '*' }))[0].n), 1, 'one doctor for all its treatments');
-  // Run again (e.g. after the clinic added "Dr. A" itself): nothing doubled.
-  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
-  await promote.promoteAll(ctx.businessId);
-  assert.equal(Number((await knex('dental_plan_items').where({ business_id: ctx.businessId, patient_id: p3.id }).count({ n: '*' }))[0].n), 2);
+  assert.equal(plan[1].doctor_id, docX, 'treatments without a doctor → the chosen doctor');
+  assert.equal((await knex('appointments').where({ id: visits[0].id }).first()).doctor_id, plan[0].doctor_id, 'the visit follows');
+  // Mapping Dr A to an existing doctor instead moves the items it made (once, nothing doubled).
+  await promote.saveDoctorMap(ctx, [{ key: drA.key, action: 'doctor', doctor_id: String(docX) }]);
+  await promote.settle(ctx.businessId);
+  plan = await planOf();
+  assert.equal(plan.length, 2); assert.equal(plan[0].doctor_id, docX);
+  assert.equal(Number((await knex('appointments').where({ business_id: ctx.businessId, patient_id: p3.id, external_source: 'clinica' }).count({ n: '*' }))[0].n), 4);
+  names = await promote.doctorNames(ctx.businessId);
+  assert.equal(names.list.find((x) => x.name === 'Dr A').doctorId, docX);
   const pr = await promote.progress(ctx.businessId);
-  assert.equal(pr.done, pr.total - pr.unlinked);
+  assert.equal(pr.done, pr.total - pr.unlinked); assert.equal(pr.running, false);
+  // A conversion whose process stopped (server restart / idle process): opening the page carries it on.
+  const [stuck] = await knex('import_jobs').insert({ business_id: ctx.businessId, type: promote.TYPE, status: 'processing', stage: 'cursor:0', total: 3, processed: 0, runner: 'gone:1', heartbeat_at: new Date(Date.now() - 10 * 60_000) });
+  assert.equal((await promote.progress(ctx.businessId)).running, true);
+  await promote.settle(ctx.businessId);
+  assert.equal((await knex('import_jobs').where({ id: stuck }).first()).status, 'completed');
 
   // A second import of the same file creates nothing: the key (clinica + old id) is already here.
   assert.equal(await svc.createFromLegacy(ctx, lp[2].id), p3.id);
@@ -395,6 +429,10 @@ test('HTTP: owner runs the Import Center; staff cannot; files only through the a
   r = await owner.get(`/app/import/legacy-clinica/jobs/${job.id}/report.json`);
   assert.equal(JSON.parse(r.text).reconciliation.length, 5);
   assert.equal((await owner.get('/admin/import/legacy-clinica')).status, 302);
+  r = await owner.get('/app/import/legacy-clinica/doctors?lang=en');
+  assert.equal(r.status, 200); assert.match(r.text, /Dr A/); assert.match(r.text, /no doctor in Clinica/);
+  r = await owner.get('/app/import/legacy-clinica/promote/status');
+  assert.equal(typeof JSON.parse(r.text).visits, 'number');
   // The wizard over HTTP: a new import, the patients file uploaded (multipart, CSRF checked), then cancelled.
   r = await owner.post('/app/import/legacy-clinica/jobs');
   assert.equal(r.status, 302);
