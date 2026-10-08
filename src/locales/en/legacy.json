@@ -310,6 +310,15 @@
     "doc_inactive": "inactive",
     "doc_note": "Saving applies the choices to the treatment plans and calendar visits made from Clinica (not to what a person changed since).",
     "doc_save": "Save and apply",
-    "doc_saved": "Saved — the doctors are being applied in the background."
+    "doc_saved": "Saved — the doctors are being applied in the background.",
+    "purge_title": "Remove everything imported from Clinica",
+    "purge_sub": "To import again cleanly: removes the patients the import created (except any the clinic has added its own records to since), their treatment plans, calendar visits and files from Clinica, the doctors it added that nothing uses, and the import history. Patients that existed before keep their own data.",
+    "purge_doctors": "Doctors added",
+    "purge_placeholder": "Type DELETE to confirm",
+    "purge_button": "Remove the imported data",
+    "purge_confirm": "Remove everything that came from Clinica? This cannot be undone.",
+    "purge_type": "Type DELETE (or حذف) to confirm.",
+    "purge_started": "Removing the imported data in the background — refresh in a minute.",
+    "purge_running": "Removing… refresh the page in a minute."
   }
 }

@@ -62,3 +62,25 @@
   </table></div>
   <% } %>
 </section>
+
+<% if (isOwner() && (purge.patients || purge.visits || purge.plan || purge.files || purge.running)) { %>
+<section class="panel mt-6" data-legacy-purge>
+  <div class="panel-head"><div><h2><%- icon('trash-2', 'icon-sm') %> <%= t('legacy.purge_title') %></h2><p class="panel-sub"><%= t('legacy.purge_sub') %></p></div></div>
+  <div class="panel-body stack">
+    <div class="summary-strip">
+      <span class="chip"><%= t('legacy.col.patients') %> <strong><%= fmt.number(purge.patients) %></strong></span>
+      <span class="chip"><%= t('legacy.promote_visits') %> <strong><%= fmt.number(purge.visits) %></strong></span>
+      <span class="chip"><%= t('legacy.col.treatments') %> <strong><%= fmt.number(purge.plan) %></strong></span>
+      <span class="chip"><%= t('legacy.col.files') %> <strong><%= fmt.number(purge.files) %></strong></span>
+      <span class="chip"><%= t('legacy.purge_doctors') %> <strong><%= fmt.number(purge.doctors) %></strong></span>
+    </div>
+    <% if (purge.running) { %><p class="small"><%- icon('hourglass', 'icon-sm') %> <%= t('legacy.purge_running') %></p><% } else { %>
+    <form class="row-sm" style="flex-wrap:wrap" method="post" action="<%= B %>/purge" data-confirm="<%= t('legacy.purge_confirm') %>" data-confirm-tone="danger">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input class="input" name="confirm" required autocomplete="off" placeholder="<%= t('legacy.purge_placeholder') %>" aria-label="<%= t('legacy.purge_placeholder') %>" style="max-width:240px">
+      <button class="btn btn-danger" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('legacy.purge_button') %></button>
+    </form>
+    <% } %>
+  </div>
+</section>
+<% } %>

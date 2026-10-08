@@ -10,7 +10,7 @@ const knex = require('../../db/knex');
 const csv = require('../../core/csv');
 const { AppError } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
-const { can } = require('../../middleware/context');
+const { can, ownerOnly } = require('../../middleware/context');
 const { verifyCsrfAfterUpload } = require('../../middleware/web');
 const svc = require('./import.service');
 const records = require('./records.service');
@@ -28,11 +28,21 @@ router.get('/', wrap(async (req, res) => {
   const [current, history, [{ n }]] = await Promise.all([svc.currentJob(req.ctx.businessId), svc.jobs(req.ctx.businessId),
     knex('legacy_patients').where({ business_id: req.ctx.businessId }).count({ n: '*' })]);
   const promotion = await require('./promote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
-  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, ...PAGE });
+  const purge = await require('./purge.service').preview(req.ctx.businessId); // eslint-disable-line global-require
+  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, ...PAGE });
 }));
 
 // Imported treatments → the patients' own files (treatment plan with the doctors) — for imports made before this
 // was part of the import, and again after the clinic adds its doctors. Runs in the background; safe to run again.
+// Remove everything that came from Clinica (to import again cleanly) — the owner only, typed confirmation.
+router.post('/purge', ownerOnly, wrap(async (req, res) => {
+  const word = String(req.body.confirm || '').trim();
+  if (!['حذف', 'DELETE', 'delete'].includes(word)) { flash(req, 'error', req.t('legacy.purge_type')); return res.redirect(BASE); }
+  require('./purge.service').start(req.ctx); // eslint-disable-line global-require
+  flash(req, 'success', req.t('legacy.purge_started'));
+  return res.redirect(BASE);
+}));
+
 router.post('/promote', wrap(async (req, res) => {
   await require('./promote.service').start(req.ctx); // eslint-disable-line global-require
   await require('../../core/audit').record(req.ctx, 'legacy.promote_started', { entityType: 'business', entityId: req.ctx.businessId }); // eslint-disable-line global-require

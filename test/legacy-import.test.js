@@ -416,6 +416,46 @@ test('initial migration into an empty clinic: every Clinica patient created once
   assert.equal(Number((await knex('legacy_treatments').where({ business_id: empty.businessId }).count({ n: '*' }))[0].n), 6);
 });
 
+test('remove everything imported from Clinica: created patients, plans, visits, files, doctors, jobs; own data kept', async () => {
+  const c = await makeClinic(`li-purge${tag}@t.test`, 'Purge clinic');
+  const [mine] = await knex('patients').insert({ business_id: c.businessId, full_name: 'Hand entered', phone: '0790099999' });
+  const ids = ['7001', '7002'];
+  const data = backup(ids, '07966666');
+  const json = path.join(TMP, 'purge.json'); fs.writeFileSync(json, JSON.stringify(data));
+  const z = path.join(TMP, 'purge.zip');
+  await zip(z, [['manifest.json', Buffer.from(JSON.stringify(ids.map((id) => ({ patient_id: id, original_filename: `${id}.png`, saved_filename: 'a.png', zip_path: `${id}/a.png`, size: PNG.length, status: 'downloaded' }))))], ...ids.map((id) => [`${id}/a.png`, PNG])]);
+  const j = await svc.openJob(c);
+  await svc.addUpload(c, j.id, upload(json, 'p.json'), 'patients_json');
+  await svc.addUpload(c, j.id, upload(z, 'a-01-of-01.zip'), 'attachments_zip');
+  await svc.settle(c.businessId);
+  await svc.start(c, j.id); await svc.settle(c.businessId);
+  const created = await knex('patients').where({ business_id: c.businessId, legacy_source: 'clinica' }).orderBy('legacy_patient_id');
+  assert.equal(created.length, 2);
+  // The clinic adds its own visit to the second patient after the import: that patient is kept.
+  await knex('appointments').insert({ business_id: c.businessId, patient_id: created[1].id, patient_name: 'x', appointment_date: '2026-02-02', appointment_time: '10:00', status: 'completed' });
+  const purge = require('../src/modules/legacy/purge.service'); // eslint-disable-line global-require
+  const pv = await purge.preview(c.businessId);
+  assert.equal(pv.patients, 2); assert.ok(pv.visits > 0); assert.equal(pv.files, 2);
+  const rep = await purge.run(c);
+  assert.equal(rep.patients_removed, 1); assert.equal(rep.patients_kept, 1);
+  assert.equal(await knex('patients').where({ id: created[0].id }).first(), undefined);
+  const kept = await knex('patients').where({ id: created[1].id }).first();
+  assert.equal(kept.legacy_patient_id, null, 'kept, its Clinica link cleared');
+  assert.ok(await knex('patients').where({ id: mine }).first(), 'hand-entered patient untouched');
+  for (const t of ['legacy_patients', 'legacy_treatments', 'patient_attachments', 'import_jobs']) { // eslint-disable-line no-restricted-syntax
+    assert.equal(Number((await knex(t).where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 0, t); // eslint-disable-line no-await-in-loop
+  }
+  assert.equal(Number((await knex('appointments').where({ business_id: c.businessId, external_source: 'clinica' }).count({ n: '*' }))[0].n), 0);
+  assert.equal(Number((await knex('appointments').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 1, 'the clinic\'s own visit stays');
+  assert.equal(Number((await knex('dental_plan_items').where({ business_id: c.businessId }).count({ n: '*' }))[0].n), 0);
+  // And it can be imported again from scratch.
+  const j2 = await svc.openJob(c);
+  await svc.addUpload(c, j2.id, upload(json, 'p.json'), 'patients_json');
+  await svc.settle(c.businessId);
+  const s2 = await svc.summary(c.businessId, j2.id);
+  assert.equal(s2.patients.existing, 0, 'nothing left that counts as imported');
+});
+
 test('HTTP: owner runs the Import Center; staff cannot; files only through the authorised download', async () => {
   await staff(ctx.businessId, 'receptionist', `li-rec${tag}@t.test`);
   await staff(ctx.businessId, 'doctor', `li-doc${tag}@t.test`);
