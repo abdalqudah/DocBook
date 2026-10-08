@@ -110,3 +110,18 @@ test('dark mode turned off for the website (even unpublished): the site and the 
     cache.forgetPrefix('');
   }
 });
+
+test('one clinic on its own server: file storage has no limit unless CLINIC_STORAGE_MB says so', async () => {
+  const storage = require('../src/modules/storage/storage.service'); // eslint-disable-line global-require
+  const before = await knex('businesses').where({ id: clinic.id }).first('media_quota_mb');
+  await knex('businesses').where({ id: clinic.id }).update({ media_quota_mb: null });
+  try {
+    assert.deepEqual(await storage.quotaOf(clinic.id), { mb: null, source: 'server' });
+    await storage.assertRoom(clinic.id, 5 * 1024 * 1024 * 1024); // 5 GB fits
+    process.env.CLINIC_STORAGE_MB = '1000';
+    assert.deepEqual(await storage.quotaOf(clinic.id), { mb: 1000, source: 'server' });
+  } finally {
+    delete process.env.CLINIC_STORAGE_MB;
+    await knex('businesses').where({ id: clinic.id }).update({ media_quota_mb: before.media_quota_mb });
+  }
+});

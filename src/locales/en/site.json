@@ -1063,7 +1063,8 @@
     "stat_surgeries": "Surgeries booked",
     "stat_surgeries_meta": "In 30 days · {n} clinics",
     "usage_surgeries": "Surgeries",
-    "usage_surgeries_val": "{n} surgeries · {sent} sent to the hospital in 30 days"
+    "usage_surgeries_val": "{n} surgeries · {sent} sent to the hospital in 30 days",
+    "storage_source_server": "The server"
   },
   "portal": {
     "book": "Book an appointment",

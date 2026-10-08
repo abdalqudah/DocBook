@@ -2,7 +2,8 @@
 // (scans, results, X-rays), the team chat attachments, the files patients send with an online consultation, and
 // uploaded fonts.
 //   quotaOf(businessId) → { mb, source }: the size the platform admin set for this clinic (businesses.media_quota_mb),
-//     else the package's media.storage_mb (null = no limit), else DEFAULT_MB while no package applies.
+//     else (one clinic on its own server, APP_EDITION) CLINIC_STORAGE_MB or no limit, else the package's
+//     media.storage_mb (null = no limit), else DEFAULT_MB while no package applies.
 //   stats(businessId)   → { bytes, files, by: { media, patients, chat, online, fonts, legacy }, quota, quotaMb, source }
 //   assertRoom(businessId, addBytes) → throws STORAGE_FULL when the new files do not fit.
 // Files a patient sends with an online booking are counted but never refused here (the patient is not the one
@@ -26,6 +27,12 @@ async function quotaOf(businessId) {
   const b = await knex('businesses').where({ id: businessId }).first();
   if (!b) return { mb: DEFAULT_MB, source: 'default' };
   if (b.media_quota_mb !== null && b.media_quota_mb !== undefined) return { mb: Number(b.media_quota_mb), source: 'clinic' };
+  // One clinic / one centre on its own server (APP_EDITION): its disk is its own — no limit unless the installation
+  // sets one (CLINIC_STORAGE_MB in .env); there is no platform admin there to raise it.
+  if (require('../../config/edition').single) { // eslint-disable-line global-require
+    const env = Number(process.env.CLINIC_STORAGE_MB);
+    return { mb: Number.isFinite(env) && env > 0 ? Math.floor(env) : null, source: 'server' };
+  }
   const ops = require('../platformops/ops.service'); // eslint-disable-line global-require
   const features = await ops.planFeatures(b);
   if (!features) return { mb: DEFAULT_MB, source: 'default' };

@@ -1063,7 +1063,8 @@
     "stat_surgeries": "عمليات حُجزت",
     "stat_surgeries_meta": "خلال 30 يوماً · {n} عيادة",
     "usage_surgeries": "العمليات",
-    "usage_surgeries_val": "{n} عملية · {sent} أُرسلت للمستشفى خلال 30 يوماً"
+    "usage_surgeries_val": "{n} عملية · {sent} أُرسلت للمستشفى خلال 30 يوماً",
+    "storage_source_server": "السيرفر"
   },
   "portal": {
     "book": "احجز موعداً",

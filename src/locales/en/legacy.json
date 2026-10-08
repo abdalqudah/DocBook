@@ -105,7 +105,7 @@
     },
     "resume": "Resume",
     "failed_lead": "The import stopped: {error}",
-    "storage_full": "The clinic's file storage is full. Raise the storage size, then resume.",
+    "storage_full": "The clinic's file storage is full. Raise it — platform admin: Admin → Clinics → this clinic → File storage (a size in MB, or follow the package); one clinic on its own server: CLINIC_STORAGE_MB in .env (empty = no limit) — then press Resume.",
     "done_ok": "Import Complete",
     "done_issues": "Import Completed With Issues",
     "done_ok_sub": "Every patient, treatment, clinical row and file of the source is in the system.",
@@ -196,7 +196,7 @@
       "LEGACY_ALREADY_LINKED": "Already linked to another file.",
       "PATIENT_PHONE_TAKEN": "Another patient here uses this mobile number; link the old file to that patient instead.",
       "PATIENT_INVALID": "Choose a patient of this clinic.",
-      "STORAGE_FULL": "The clinic's file storage is full."
+      "STORAGE_FULL": "The clinic's file storage is full. Raise it — platform admin: Admin → Clinics → this clinic → File storage (a size in MB, or follow the package); one clinic on its own server: CLINIC_STORAGE_MB in .env (empty = no limit) — then press Resume."
     },
     "tab": {
       "overview": "Overview",
