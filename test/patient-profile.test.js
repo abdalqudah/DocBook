@@ -185,6 +185,24 @@ test('only the clinic owner deletes an appointment, voids an invoice or refunds 
   }
   assert.ok(await knex('patients').where({ id: pid }).first());
   assert.ok(await knex('appointments').where({ id: aid }).first());
+  // Unpaid visits: only the owner takes them off the list (not owed), one or all.
+  const past = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+  const [u1] = await knex('appointments').insert({ business_id: ctx.businessId, patient_name: 'Unpaid One', appointment_date: past, appointment_time: '10:00', status: 'completed', payment_status: 'unpaid', amount_due: 20 });
+  const [u2] = await knex('appointments').insert({ business_id: ctx.businessId, patient_name: 'Unpaid Two', appointment_date: past, appointment_time: '11:00', status: 'completed', payment_status: 'unpaid', amount_due: 30 });
+  r = await mgr.get('/app/billing?tab=unpaid&lang=en');
+  assert.match(r.text, /Unpaid One/); assert.doesNotMatch(r.text, /unpaid\/waive/, 'no cancel button for the manager');
+  assert.equal((await mgr.post(`/app/billing/unpaid/${u1}/waive`)).status, 403);
+  assert.equal((await mgr.post('/app/billing/unpaid/waive-all')).status, 403);
+  const own = await signIn(`pp${tag}@t.test`);
+  r = await own.get('/app/billing?tab=unpaid&lang=en');
+  assert.match(r.text, new RegExp(`/app/billing/unpaid/${u1}/waive`)); assert.match(r.text, /unpaid\/waive-all/);
+  assert.equal((await own.post(`/app/billing/unpaid/${u1}/waive`)).status, 302);
+  assert.equal((await knex('appointments').where({ id: u1 }).first()).payment_status, 'waived');
+  assert.equal((await own.post('/app/billing/unpaid/waive-all')).status, 302);
+  assert.equal((await knex('appointments').where({ id: u2 }).first()).payment_status, 'waived');
+  r = await own.get('/app/billing?tab=unpaid&lang=en');
+  assert.doesNotMatch(r.text, /Unpaid One|Unpaid Two/);
+  assert.ok(await knex('audit_logs').where({ business_id: ctx.businessId, action: 'billing.visit_waived' }).first());
   const owner = await signIn(`pp${tag}@t.test`);
   r = await owner.get(`/app/appointments/${aid}`);
   assert.match(r.text, new RegExp(`/app/appointments/${aid}/delete`));

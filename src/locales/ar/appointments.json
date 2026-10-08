@@ -36,7 +36,8 @@
     "payment_statuses": {
       "unpaid": "غير مدفوع",
       "paid": "مدفوع",
-      "imported": "مستورد (Clinica)"
+      "imported": "مستورد (Clinica)",
+      "waived": "ملغاة (بدون دفع)"
     },
     "unassigned": "بدون طبيب",
     "unassigned_hint": "عيّن طبيبًا من صفحة الموعد",

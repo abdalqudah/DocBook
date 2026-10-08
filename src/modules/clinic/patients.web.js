@@ -339,7 +339,7 @@ async function renderShow(req, res, extra = {}) {
   const legacy = null;
   // Surgeries (Patients → Surgeries): the tab lists them all, the overview shows the coming ones.
   const surgeries = surgeriesOn ? await require('../surgeries/surgeries.service').forPatient(req.ctx, p.id) : []; // eslint-disable-line global-require
-  const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => a.payment_status !== 'paid' && a.payment_status !== 'imported' && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
+  const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => !['paid', 'imported', 'waived'].includes(a.payment_status) && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
   const profile = require('./patient-profile'); // eslint-disable-line global-require
   const [ppGroups, ppPhoto, ppPeople] = await Promise.all([profile.groupsOf(req.ctx.businessId, p.id), profile.hasPhoto(req.ctx.businessId, p.id),
     knex('users').whereIn('id', [p.case_manager_id, p.updated_by].filter(Boolean)).select('id', 'name')]);

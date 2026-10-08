@@ -195,12 +195,12 @@ async function posData(req, addIds = []) {
     const tab = Number(req.query.p) || 0;
     if (tab && bids.includes(tab)) rows = rows.filter((a) => a.bid === tab);
   }
-  const open = rows.filter((a) => a.payment_status !== 'paid' && a.state !== 'missed');
+  const open = rows.filter((a) => !['paid', 'waived', 'imported'].includes(a.payment_status) && a.state !== 'missed');
   const extra = [];
   for (const id of addIds.filter((x) => !open.some((a) => a.id === x))) { // eslint-disable-line no-restricted-syntax
     try {
       const a = await svc.visit(ctx, id); // eslint-disable-line no-await-in-loop
-      if (a.payment_status !== 'paid' && a.status !== 'cancelled' && a.status !== 'no_show') extra.push({ ...a, state: svc.flowState(a) });
+      if (!['paid', 'waived', 'imported'].includes(a.payment_status) && a.status !== 'cancelled' && a.status !== 'no_show') extra.push({ ...a, state: svc.flowState(a) });
     } catch (e) { if (!(e instanceof AppError) || e.status !== 404) throw e; }
   }
   const visits = open.concat(extra).map((a) => posVisit(req, a)).sort((x, y) => (POS_RANK[x.state] ?? 4) - (POS_RANK[y.state] ?? 4)

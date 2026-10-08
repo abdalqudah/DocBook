@@ -19,7 +19,8 @@
 
 <% if (tab === 'unpaid') { %>
   <div class="panel flush">
-    <div class="panel-head"><div><h2><%= t('billing.unpaid_title') %></h2><p class="panel-sub"><%= t('billing.unpaid_lead') %></p></div><% if (rows.length) { %><div class="text-end"><div class="small muted"><%= t('billing.expected_due') %></div><div class="strong"><%= fmt.money(due) %></div></div><% } %></div>
+    <div class="panel-head"><div><h2><%= t('billing.unpaid_title') %></h2><p class="panel-sub"><%= t('billing.unpaid_lead') %></p></div><% if (rows.length) { %><div class="row-sm"><div class="text-end"><div class="small muted"><%= t('billing.expected_due') %></div><div class="strong"><%= fmt.money(due) %></div></div>
+      <% if (isOwner()) { %><form method="post" action="/app/billing/unpaid/waive-all" data-confirm="<%= t('billing.waive_all_confirm', { n: fmt.number(unpaidCount) }) %>" data-confirm-yes="<%= t('billing.waive_all') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('x', 'icon-sm') %><%= t('billing.waive_all') %></button></form><% } %></div><% } %></div>
     <% if (!rows.length) { %>
       <%- include(P + 'empty', { emptyIcon: 'circle-check', emptyTitle: t('billing.unpaid_empty'), emptyText: t('billing.unpaid_empty_text') }) %>
     <% } else { %>
@@ -32,7 +33,8 @@
           <td data-label="<%= t('common.doctor') %>"><span class="row-sm"><span class="swatch" style="<%= a.doctor_color ? 'background:' + a.doctor_color : '' %>"></span><%= a.doctor_name || '—' %></span><div class="small muted"><%= a.service_name || '' %></div></td>
           <td data-label="<%= t('common.status') %>"><span class="badge badge-<%= a.status === 'completed' ? 'success' : 'info' %>"><%= a.status === 'completed' ? t('dashboard.statuses.completed') : t('dashboard.checked_in') %></span></td>
           <td data-label="<%= t('billing.amount_due') %>" class="num strong"><%= fmt.amount(a.amount_due) %></td>
-          <td class="actions"><% if (can('billing.manage')) { %><a class="btn btn-secondary btn-sm" href="/app/cashier?visit=<%= a.id %>"><%- icon('banknote', 'icon-sm') %><%= t('billing.checkout') %></a><% } else if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments/<%= a.id %>"><%= t('billing.open_visit') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></td>
+          <td class="actions"><% if (can('billing.manage')) { %><a class="btn btn-secondary btn-sm" href="/app/cashier?visit=<%= a.id %>"><%- icon('banknote', 'icon-sm') %><%= t('billing.checkout') %></a><% } else if (can('appointments.view')) { %><a class="btn btn-ghost btn-sm" href="/app/appointments/<%= a.id %>"><%= t('billing.open_visit') %><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %>
+            <% if (isOwner()) { %><form method="post" action="/app/billing/unpaid/<%= a.id %>/waive" style="display:inline" data-confirm="<%= t('billing.waive_confirm', { name: a.patient_name }) %>" data-confirm-yes="<%= t('billing.waive') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('x', 'icon-sm') %><%= t('billing.waive') %></button></form><% } %></td>
         </tr>
       <% }) %></tbody>
     </table></div>

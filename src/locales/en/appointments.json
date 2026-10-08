@@ -36,7 +36,8 @@
     "payment_statuses": {
       "unpaid": "Unpaid",
       "paid": "Paid",
-      "imported": "Imported (Clinica)"
+      "imported": "Imported (Clinica)",
+      "waived": "Cancelled (no charge)"
     },
     "unassigned": "No doctor assigned",
     "unassigned_hint": "Assign a doctor from the appointment",

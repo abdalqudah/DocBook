@@ -161,7 +161,13 @@
     "void_mismatch": "Type the invoice number exactly to void it.",
     "voided": "Invoice #{n} was voided.",
     "insurer_share": "Insurance covers ({pct}%)",
-    "patient_share": "Patient pays"
+    "patient_share": "Patient pays",
+    "waive": "Cancel",
+    "waive_all": "Cancel all",
+    "waive_confirm": "Cancel the charge for {name}'s visit? It leaves the unpaid list and is not owed.",
+    "waive_all_confirm": "Cancel the charge for every unpaid visit ({n})? They leave the list and are not owed.",
+    "waived_one": "The visit was taken off the unpaid list.",
+    "waived_all": "{n} visits were taken off the unpaid list."
   },
   "dashboard": {
     "greet_morning": "Good morning, {name}",

@@ -173,6 +173,24 @@ router.get('/:id(\\d+)', wrap(async (req, res) => {
   });
 }));
 
+// Unpaid visits the clinic will not charge (e.g. history brought from another system): the owner takes them off the
+// list — payment_status 'waived' (not paid, not owed); audited. One visit, or every visit the list shows.
+router.post('/unpaid/:id(\\d+)/waive', can('billing.view'), ownerOnly, wrap(async (req, res) => {
+  const a = await unpaidQuery(req.ctx).where('a.id', Number(req.params.id)).first('a.id', 'a.patient_name', 'a.appointment_date', 'a.amount_due');
+  if (!a) throw E.notFound();
+  await knex('appointments').where({ id: a.id, business_id: req.ctx.businessId }).update({ payment_status: 'waived', updated_at: new Date() });
+  await require('../../core/audit').record(req.ctx, 'billing.visit_waived', { entityType: 'appointment', entityId: a.id, oldValues: { payment_status: 'unpaid', amount_due: a.amount_due }, newValues: { payment_status: 'waived' } }); // eslint-disable-line global-require
+  flash(req, 'success', req.t('billing.waived_one'));
+  res.redirect('/app/billing?tab=unpaid');
+}));
+router.post('/unpaid/waive-all', can('billing.view'), ownerOnly, wrap(async (req, res) => {
+  const ids = await unpaidQuery(req.ctx).pluck('a.id');
+  for (let i = 0; i < ids.length; i += 500) await knex('appointments').where({ business_id: req.ctx.businessId }).whereIn('id', ids.slice(i, i + 500)).update({ payment_status: 'waived', updated_at: new Date() }); // eslint-disable-line no-await-in-loop
+  await require('../../core/audit').record(req.ctx, 'billing.visits_waived', { entityType: 'business', entityId: req.ctx.businessId, newValues: { payment_status: 'waived', visits: ids.length } }); // eslint-disable-line global-require
+  flash(req, 'success', req.t('billing.waived_all', { n: ids.length }));
+  res.redirect('/app/billing?tab=unpaid');
+}));
+
 router.post('/:id(\\d+)/void', can('billing.void'), ownerOnly, wrap(async (req, res) => {
   const inv = await loadInvoice(req);
   if (String(req.body.confirm_name || '').trim() !== String(inv.invoice_number)) {

@@ -52,7 +52,6 @@ function createApp() {
     res.set({ 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' });
     res.send(theme.markSvg());
   });
-  app.get('/favicon.ico', (req, res) => res.redirect(301, brand.favicon || '/favicon.svg'));
   app.use('/', express.static(path.join(__dirname, '..', 'public'), { maxAge: config.isProd ? '7d' : 0, index: false }));
   app.use('/hooks', require('./modules/messaging/hooks.web')); // WhatsApp / SMS provider webhooks: raw body, no session or CSRF
   app.use('/pay', require('./modules/payments/hooks.web')); // card gateway callback/return (PayTabs): raw body, no session or CSRF
@@ -118,6 +117,17 @@ function createApp() {
   app.use(branding.middleware); // the platform admin's logo / icon over the built-in brand
   app.use(require('./modules/platformops/loginpage').middleware); // the sign-in page's own words, look and (one clinic) colours
   app.get('/brand/:key', (req, res, next) => Promise.resolve(branding.serve(req, res, next)).catch(next));
+  // /favicon.ico — what a browser asks for on a page with no icon of its own (a file opened from the patient's file: a
+  // PDF, an image). A clinic's own address (its domain / the one-clinic edition) was turned into its icon above; else
+  // the signed-in member's clinic icon, else the platform's. Never a permanent redirect: the answer depends on who asks.
+  app.get('/favicon.ico', (req, res, next) => Promise.resolve((async () => {
+    const id = req.user && req.user.last_business_id;
+    const f = id ? await require('./modules/businesses/business.service').faviconFile(id).catch(() => null) : null; // eslint-disable-line global-require
+    if (!f) return res.redirect(302, (res.locals.brand && res.locals.brand.favicon) || brand.favicon || '/favicon.svg');
+    res.set(require('./core/images').headers(f.mime, 'private, max-age=3600')); // eslint-disable-line global-require
+    res.set('Vary', 'Cookie');
+    return res.send(f.data);
+  })()).catch(next));
   // CSRF check; the booking-widget embed mode (frameable /<slug>/book?embed=1) uses a signed token instead of the session.
   app.use(require('./modules/discover/embed').wrapCsrf(web.csrf));
 

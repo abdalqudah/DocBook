@@ -83,6 +83,12 @@ test('clinic browser icon: platform, the clinic logo, or an uploaded icon — on
   assert.match(r.text, new RegExp(`rel="icon" href="/${slug}/favicon\\?v=c${b.favicon_version}"`));
   r = await o.get('/app?lang=en');
   assert.match(r.text, /rel="icon" href="\/app\/favicon\?v=c/);
+  // A file opened from the app (a PDF has no icon of its own): /favicon.ico is the clinic's icon for its member…
+  r = await o.get('/favicon.ico');
+  assert.equal(r.status, 200); assert.match(r.type, /image\/png/);
+  // …and the platform's for anyone else (never a permanent redirect).
+  r = await app.agent().get('/favicon.ico');
+  assert.equal(r.status, 302);
   // back to the platform icon
   r = await o.upload('/app/settings/appearance', '/app/settings/appearance/favicon', { favicon_mode: 'platform' }, {});
   r = await o.get('/app?lang=en');
