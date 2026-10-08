@@ -74,7 +74,7 @@ async function run(ctx) {
   await knex('legacy_patients').where({ business_id: b }).del();
   await knex('legacy_doctor_map').where({ business_id: b }).del();
   await knex('legacy_branch_map').where({ business_id: b }).del();
-  const jobs = await knex('import_jobs').where({ business_id: b }).whereIn('type', [svc.TYPE, 'legacy_promote']).select('id');
+  const jobs = await knex('import_jobs').where({ business_id: b }).whereIn('type', [svc.TYPE, 'legacy_promote', 'legacy_remote']).select('id');
   for (const j of jobs) fs.rmSync(svc.jobDir(b, j.id), { recursive: true, force: true }); // eslint-disable-line no-restricted-syntax
   await knex('import_jobs').where({ business_id: b }).whereIn('id', jobs.map((j) => j.id)).del(); // items, batches, errors follow (cascade)
   // 6. Doctors the import created that nothing uses now.

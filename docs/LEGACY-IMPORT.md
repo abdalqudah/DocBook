@@ -349,3 +349,21 @@ it reads each patient's Clinica pages with that session (never signs in, never c
 `clinica-attachments-extra-NN-of-MM.zip` (a folder per patient id + `manifest.json`, the usual shape) and
 `clinica-attachments-discovered.csv`. A stopped run carries on (progress kept in that browser). The ZIPs go to the
 Import Center like the first ones; files already there are not added twice.
+
+## 2.8.7: pull the files straight from Clinica (Import Center → "Pull the files straight from Clinica")
+For the attachments the first extraction did not download. The owner enters the Clinica address, user name and
+password; the server (`remote.service`):
+- signs in with Clinica's own sign-in form (any form with a password field; its hidden fields kept; cookies kept across
+  redirects), and signs in again when Clinica ends the session;
+- for each Clinica patient imported here (`legacy_patients` with a patient), reads `/dental/<id>` and
+  `/edit_patient/<id>`, collects every `/system/files/…` link on the Clinica address only (links, images, quoted
+  addresses in scripts), skips what the patient already has (same address, or same content: SHA-256), downloads the
+  rest into the patient's file (`patient_attachments`, private store) — one request at a time, retries with back-off;
+- is a saved job (`import_jobs` type `legacy_remote`: total/processed = patients, `src_links` = found, success =
+  downloaded, skipped, failed + an `import_errors` row each) with a live count on the page, Stop / Carry on, audited
+  (`legacy.remote_started|stopped|completed`);
+- never stores the password: it stays in the process's memory while the pull runs. After a restart, a stopped pull or a
+  refused sign-in the job waits ("enter the password again") and carries on from the patient it was at.
+- Only `https://` addresses on the internet (no private or local addresses). Owner only. Read-only towards Clinica.
+If Clinica asks for a code at sign-in (two-step / captcha) the pull cannot sign in; `scripts/clinica-attachments-fetch.js`
+(in the signed-in browser) remains the way.

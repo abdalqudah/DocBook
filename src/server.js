@@ -110,6 +110,7 @@ async function start(server) {
       require('./modules/legacy/import.service').resumeAll().catch((e) => console.error('[legacy-import]', e.message)), // eslint-disable-line global-require, no-console
       require('./modules/legacy/promote.service').resumeAll().catch((e) => console.error('[legacy-promote]', e.message)), // eslint-disable-line global-require, no-console -- Clinica data into the patients' files
       require('./modules/patienttransfer/transfer.service').resumeAll().catch((e) => console.error('[patient-transfer]', e.message)), // eslint-disable-line global-require, no-console -- moves / shares between clinics
+      require('./modules/legacy/remote.service').resumeAll().catch((e) => console.error('[legacy-remote]', e.message)), // eslint-disable-line global-require, no-console -- direct pull from Clinica (waits for the password after a restart)
     ]);
     setTimeout(legacyTick, 10_000).unref();
     setInterval(legacyTick, 5 * 60_000).unref();

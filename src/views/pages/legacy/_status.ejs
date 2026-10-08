@@ -1,3 +1,3 @@
-<% var _tone = { draft: 'badge-neutral', analyzing: 'badge-info', ready: 'badge-brand', processing: 'badge-info', completed: 'badge-success', completed_with_issues: 'badge-warning', failed: 'badge-danger', cancelled: 'badge-neutral',
+<% var _tone = { draft: 'badge-neutral', analyzing: 'badge-info', ready: 'badge-brand', processing: 'badge-info', completed: 'badge-success', completed_with_issues: 'badge-warning', failed: 'badge-danger', cancelled: 'badge-neutral', waiting: 'badge-warning',
      pending: 'badge-neutral', imported: 'badge-success', skipped: 'badge-neutral', duplicate: 'badge-info', unmatched: 'badge-warning', invalid: 'badge-danger', uploaded: 'badge-info', valid: 'badge-success', matched: 'badge-success', new: 'badge-brand' }; %>
 <span class="badge badge-dot <%= _tone[st] || 'badge-neutral' %>" data-legacy-status="<%= st %>"><%= t('legacy.status.' + st) %></span>

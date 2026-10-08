@@ -157,7 +157,8 @@
       "matched": "مطابق",
       "new": "جديد",
       "existing": "مستورد مسبقاً",
-      "review": "بحاجة لمراجعة"
+      "review": "بحاجة لمراجعة",
+      "waiting": "بانتظار"
     },
     "items_title": "الحالات",
     "items_patients": "المرضى",
@@ -327,6 +328,28 @@
     "grp_col_group": "المجموعة بـ Clinica",
     "grp_col_patients": "المرضى",
     "grp_col_branch": "الفرع",
-    "grp_main_branch": "فرع الطبيب (الرئيسي افتراضياً)"
+    "grp_main_branch": "فرع الطبيب (الرئيسي افتراضياً)",
+    "remote_title": "سحب الملفات مباشرة من Clinica",
+    "remote_sub": "السيرفر بيسجّل دخول بـ Clinica بحسابك، بيقرأ صفحات كل مريض انستورد، وبينزّل كل مرفق مش موجود عندك لملف مريضه. ما بيعدّل إشي بـ Clinica.",
+    "remote_address": "رابط Clinica",
+    "remote_user": "اسم المستخدم بـ Clinica",
+    "remote_pass": "كلمة السر بـ Clinica",
+    "remote_privacy": "كلمة السر ما بتنحفظ: بتضل بذاكرة السيرفر طول ما السحب شغّال وبتنمسح بعده.",
+    "remote_start": "ابدأ السحب",
+    "remote_resume": "كمّل السحب",
+    "remote_stop": "إيقاف",
+    "remote_found": "مرفقات لقاها بـ Clinica",
+    "remote_downloaded": "انزّلت جديد",
+    "remote_skipped": "موجودة من قبل",
+    "remote_failed": "فشلت",
+    "remote_errors": "الملفات اللي فشلت ({n})",
+    "remote_started": "انبلش السحب بالخلفية — فيك تسكّر الصفحة.",
+    "remote_stopped": "وقف السحب. اضغط \"كمّل السحب\" لتكمّل من وين وقف.",
+    "remote_wait": {
+      "NEEDS_SIGN_IN": "السيرفر عمل إعادة تشغيل — اكتب كلمة السر مرة ثانية ليكمّل.",
+      "LOGIN_FAILED": "Clinica طلّعتنا من الحساب أو رفضت الدخول — اكتب كلمة السر مرة ثانية.",
+      "STORAGE_FULL": "مساحة ملفات العيادة امتلت — كبّر المساحة وكمّل.",
+      "STOPPED": "السحب موقّف — اكتب كلمة السر واضغط كمّل."
+    }
   }
 }

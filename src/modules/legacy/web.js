@@ -29,7 +29,8 @@ router.get('/', wrap(async (req, res) => {
     knex('legacy_patients').where({ business_id: req.ctx.businessId }).count({ n: '*' })]);
   const promotion = await require('./promote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
   const purge = await require('./purge.service').preview(req.ctx.businessId); // eslint-disable-line global-require
-  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, ...PAGE });
+  const remote = await require('./remote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
+  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, remote, ...PAGE });
 }));
 
 // Imported treatments → the patients' own files (treatment plan with the doctors) — for imports made before this
@@ -42,6 +43,24 @@ router.post('/purge', ownerOnly, wrap(async (req, res) => {
   flash(req, 'success', req.t('legacy.purge_started'));
   return res.redirect(BASE);
 }));
+
+// Direct pull from Clinica (the files the first extraction missed): the owner signs in to Clinica here; the password
+// stays in memory while the pull runs (remote.service).
+router.post('/remote/start', ownerOnly, wrap(async (req, res) => {
+  try {
+    await require('./remote.service').start(req.ctx, { baseUrl: req.body.base_url, username: req.body.username, password: req.body.password }); // eslint-disable-line global-require
+    flash(req, 'success', req.t('legacy.remote_started'));
+  } catch (e) {
+    flash(req, 'error', e.details ? Object.values(e.details).join(' ') : errText(req, e));
+  }
+  res.redirect(`${BASE}#remote`);
+}));
+router.post('/remote/stop', ownerOnly, wrap(async (req, res) => {
+  await require('./remote.service').stop(req.ctx); // eslint-disable-line global-require
+  flash(req, 'success', req.t('legacy.remote_stopped'));
+  res.redirect(`${BASE}#remote`);
+}));
+router.get('/remote/status', ownerOnly, wrap(async (req, res) => { res.json(await require('./remote.service').progress(req.ctx.businessId) || {}); })); // eslint-disable-line global-require
 
 router.post('/promote', wrap(async (req, res) => {
   await require('./promote.service').start(req.ctx); // eslint-disable-line global-require

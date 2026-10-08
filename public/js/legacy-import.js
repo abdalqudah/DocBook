@@ -127,6 +127,24 @@
   });
 }());
 
+// Direct pull from Clinica: the counts while it runs; the page reloads when it ends.
+(function () {
+  'use strict';
+  var box = document.querySelector('[data-remote][data-live]');
+  if (!box) return;
+  var url = box.getAttribute('data-status-url');
+  var nf = function (n) { return Number(n || 0).toLocaleString(); };
+  var set = function (k, v) { var el = box.querySelector('[data-rm="' + k + '"]'); if (el) el.textContent = v; };
+  var tick = function () {
+    fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (s) {
+      if (!s || s.status !== 'processing') { window.location.reload(); return; }
+      set('patients', nf(s.patients.done) + ' / ' + nf(s.patients.total)); set('found', nf(s.found)); set('downloaded', nf(s.downloaded)); set('skipped', nf(s.skipped)); set('failed', nf(s.failed));
+      setTimeout(tick, 5000);
+    }).catch(function () { setTimeout(tick, 15000); });
+  };
+  setTimeout(tick, 5000);
+}());
+
 // Doctors of the Clinica data: one select per name → the hidden action / doctor_id fields; the conversion progress.
 (function () {
   'use strict';

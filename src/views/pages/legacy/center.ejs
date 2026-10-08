@@ -63,6 +63,39 @@
   <% } %>
 </section>
 
+<% if (isOwner() && legacyCount) { var rm = remote; var rmRun = rm && rm.status === 'processing'; %>
+<section class="panel mt-6" id="remote" data-remote<% if (rmRun) { %> data-live data-status-url="<%= B %>/remote/status"<% } %>>
+  <div class="panel-head"><div><h2><%- icon('download', 'icon-sm') %> <%= t('legacy.remote_title') %></h2><p class="panel-sub"><%= t('legacy.remote_sub') %></p></div><% if (rm) { %><%- include('_status', { st: rm.status }) %><% } %></div>
+  <div class="panel-body stack">
+    <% if (rm) { %>
+    <div class="summary-strip">
+      <span class="chip"><%= t('legacy.col.patients') %> <strong data-rm="patients"><%= fmt.number(rm.patients.done) %> / <%= fmt.number(rm.patients.total) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_found') %> <strong data-rm="found"><%= fmt.number(rm.found) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_downloaded') %> <strong data-rm="downloaded"><%= fmt.number(rm.downloaded) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_skipped') %> <strong data-rm="skipped"><%= fmt.number(rm.skipped) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_failed') %> <strong data-rm="failed"><%= fmt.number(rm.failed) %></strong></span>
+    </div>
+    <% if (!rmRun && rm.waitingFor && rm.status === 'waiting') { %><p class="small text-danger"><%- icon('circle-alert', 'icon-sm') %> <%= t('legacy.remote_wait.' + (['NEEDS_SIGN_IN', 'LOGIN_FAILED', 'STORAGE_FULL', 'STOPPED'].indexOf(rm.waitingFor) >= 0 ? rm.waitingFor : 'STOPPED')) %></p><% } %>
+    <% if (rm.errors && rm.errors.length) { %><details><summary class="small"><%= t('legacy.remote_errors', { n: fmt.number(rm.failed) }) %></summary><ul class="small"><% rm.errors.forEach(function (e) { %><li dir="auto"><bdi><%= e.legacy_patient_id %></bdi> · <%= e.error_code %><%= e.file ? ' · ' + decodeURIComponent(String(e.file).split('/').pop()) : '' %></li><% }) %></ul></details><% } %>
+    <% } %>
+    <% if (rmRun) { %>
+    <form method="post" action="<%= B %>/remote/stop"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('x', 'icon-sm') %><%= t('legacy.remote_stop') %></button></form>
+    <% } else { %>
+    <form class="stack-sm" method="post" action="<%= B %>/remote/start" autocomplete="off">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="grid grid-3">
+        <label class="field"><span class="label"><%= t('legacy.remote_address') %></span><input class="input" name="base_url" dir="ltr" required value="https://dentalbh.clinicame.net"></label>
+        <label class="field"><span class="label"><%= t('legacy.remote_user') %></span><input class="input" name="username" dir="ltr" required autocomplete="off"></label>
+        <label class="field"><span class="label"><%= t('legacy.remote_pass') %></span><input class="input" name="password" type="password" dir="ltr" required autocomplete="new-password"></label>
+      </div>
+      <p class="small muted" style="margin:0"><%- icon('lock', 'icon-sm') %> <%= t('legacy.remote_privacy') %></p>
+      <div><button class="btn btn-primary" type="submit"><%- icon('download', 'icon-sm') %><%= t(rm && rm.status === 'waiting' ? 'legacy.remote_resume' : 'legacy.remote_start') %></button></div>
+    </form>
+    <% } %>
+  </div>
+</section>
+<% } %>
+
 <% if (isOwner() && (purge.patients || purge.visits || purge.plan || purge.files || purge.running)) { %>
 <section class="panel mt-6" data-legacy-purge>
   <div class="panel-head"><div><h2><%- icon('trash-2', 'icon-sm') %> <%= t('legacy.purge_title') %></h2><p class="panel-sub"><%= t('legacy.purge_sub') %></p></div></div>

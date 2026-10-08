@@ -157,7 +157,8 @@
       "matched": "Matched",
       "new": "New",
       "existing": "Already imported",
-      "review": "Needs review"
+      "review": "Needs review",
+      "waiting": "Waiting"
     },
     "items_title": "Statuses",
     "items_patients": "Patients",
@@ -327,6 +328,28 @@
     "grp_col_group": "Group in Clinica",
     "grp_col_patients": "Patients",
     "grp_col_branch": "Branch",
-    "grp_main_branch": "Doctor's branch (main by default)"
+    "grp_main_branch": "Doctor's branch (main by default)",
+    "remote_title": "Pull the files straight from Clinica",
+    "remote_sub": "The server signs in to Clinica with your account, reads the page of each imported patient and downloads every attachment not here yet into the patient's file. Nothing is changed in Clinica.",
+    "remote_address": "Clinica address",
+    "remote_user": "Clinica user name",
+    "remote_pass": "Clinica password",
+    "remote_privacy": "The password is not saved: it stays in the server's memory while the pull runs and is dropped after.",
+    "remote_start": "Start the pull",
+    "remote_resume": "Carry on",
+    "remote_stop": "Stop",
+    "remote_found": "Attachments found in Clinica",
+    "remote_downloaded": "Downloaded now",
+    "remote_skipped": "Already here",
+    "remote_failed": "Failed",
+    "remote_errors": "Files that failed ({n})",
+    "remote_started": "The pull runs in the background — you can close the page.",
+    "remote_stopped": "The pull stopped. Press \"Carry on\" to continue where it was.",
+    "remote_wait": {
+      "NEEDS_SIGN_IN": "The server restarted — enter the password again to carry on.",
+      "LOGIN_FAILED": "Clinica signed us out or refused the sign-in — enter the password again.",
+      "STORAGE_FULL": "The clinic's file storage is full — raise it, then carry on.",
+      "STOPPED": "The pull is stopped — enter the password and press Carry on."
+    }
   }
 }

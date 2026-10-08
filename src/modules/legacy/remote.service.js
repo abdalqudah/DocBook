@@ -1,0 +1,307 @@
+// Direct pull from Clinica: the clinic's owner gives the Clinica address and the clinic's own Clinica sign-in; this
+// server signs in like a browser (the sign-in form of the page, its hidden fields kept), then for each Clinica patient
+// already imported here reads the patient's pages (/dental/<id>, /edit_patient/<id>), collects every attachment link
+// (/system/files/…) and downloads the files it does not have yet straight into the patient's file (patient_attachments,
+// private store, one stored copy per SHA-256). Read-only towards Clinica.
+//   • The password is never written anywhere: it stays in this process's memory while the job runs (to sign in again
+//     when Clinica's session ends) and is dropped when the job ends. After a server restart the job waits for it.
+//   • A saved job (import_jobs type legacy_remote, cursor = legacy_patients.id, heartbeat): stopped, it carries on.
+//   • Gentle: one request at a time with a pause, retries with back-off; only the Clinica address's own links.
+//   • Counts: total/processed = patients, src_links = attachments found in Clinica, success = downloaded now,
+//     skipped = already here, failed (with an import_errors row each).
+const crypto = require('crypto');
+const net = require('net');
+const knex = require('../../db/knex');
+const tenant = require('../../db/tenant');
+const audit = require('../../core/audit');
+const { E } = require('../../core/errors');
+const files = require('./files');
+
+const SOURCE = 'clinica';
+const TYPE = 'legacy_remote';
+const STALE_MS = 2 * 60_000;
+const DELAY_MS = Number(process.env.LEGACY_REMOTE_DELAY_MS || 300);
+const MAX_FILE = 200 * 1024 * 1024;
+const RUNNER = `${require('os').hostname().slice(0, 20)}:${process.pid}:${crypto.randomBytes(3).toString('hex')}`; // eslint-disable-line global-require
+const now = () => new Date();
+const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
+
+// ================================================================= the address
+/** The Clinica address: https (http only in tests), a host name — never this machine or a private network. */
+function baseOf(raw) {
+  let u;
+  try { u = new URL(String(raw || '').trim()); } catch { throw E.validation({ base_url: 'Enter the Clinica address, e.g. https://name.clinicame.net' }); }
+  const test = process.env.NODE_ENV === 'test';
+  if (u.protocol !== 'https:' && !(test && u.protocol === 'http:')) throw E.validation({ base_url: 'The address must start with https://' });
+  const h = u.hostname.replace(/^\[|\]$/g, '');
+  const privateIp = net.isIP(h) && (/^(10\.|127\.|169\.254\.|192\.168\.|0\.)/.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h) || h === '::1' || /^f[cd]/i.test(h));
+  if (!test && (privateIp || h === 'localhost' || !h.includes('.'))) throw E.validation({ base_url: 'Enter the Clinica address on the internet.' });
+  return u.origin;
+}
+
+// ================================================================= a browser-like session
+class Session {
+  constructor(base, user, pass) { Object.assign(this, { base, user, pass, jar: new Map() }); }
+
+  cookie() { return [...this.jar.entries()].map(([k, v]) => `${k}=${v}`).join('; '); }
+
+  keep(res) {
+    (res.headers.getSetCookie ? res.headers.getSetCookie() : []).forEach((h) => {
+      const [kv] = h.split(';'); const i = kv.indexOf('=');
+      if (i > 0) { const k = kv.slice(0, i).trim(); const v = kv.slice(i + 1).trim(); if (/max-age=0|expires=thu, 01 jan 1970/i.test(h) || v === 'deleted') this.jar.delete(k); else this.jar.set(k, v); }
+    });
+  }
+
+  /** A request with the session's cookies, redirects followed by hand (cookies kept on each step); same origin only. */
+  async request(url, { method = 'GET', body = null, binary = false } = {}) {
+    let target = new URL(url, this.base).href; let m = method; let b = body;
+    for (let hop = 0; hop < 8; hop += 1) {
+      if (new URL(target).origin !== this.base) throw Object.assign(new Error('Left the Clinica address'), { code: 'OFF_SITE' });
+      const res = await fetch(target, { // eslint-disable-line no-await-in-loop
+        method: m, redirect: 'manual', body: b,
+        headers: { cookie: this.cookie(), 'user-agent': 'Mozilla/5.0 (DocBook data transfer)', accept: binary ? '*/*' : 'text/html,application/xhtml+xml', ...(b ? { 'content-type': 'application/x-www-form-urlencoded' } : {}) },
+        signal: AbortSignal.timeout(60_000),
+      });
+      this.keep(res);
+      if ([301, 302, 303, 307, 308].includes(res.status) && res.headers.get('location')) {
+        target = new URL(res.headers.get('location'), target).href;
+        if (res.status !== 307 && res.status !== 308) { m = 'GET'; b = null; }
+        continue; // eslint-disable-line no-continue
+      }
+      const type = res.headers.get('content-type') || '';
+      const size = Number(res.headers.get('content-length') || 0);
+      if (binary && size > MAX_FILE) throw Object.assign(new Error('File too large'), { code: 'FILE_TOO_LARGE' });
+      const buf = Buffer.from(await res.arrayBuffer()); // eslint-disable-line no-await-in-loop
+      return { status: res.status, url: target, type, buf, text: binary && !/text\/html/.test(type) ? '' : buf.toString('utf8') };
+    }
+    throw Object.assign(new Error('Too many redirects'), { code: 'REDIRECTS' });
+  }
+
+  /** Signs in with the page's own sign-in form (hidden fields kept). */
+  async login() {
+    for (const p of ['/user/login', '/login', '/']) { // eslint-disable-line no-restricted-syntax
+      const page = await this.request(p).catch(() => null); // eslint-disable-line no-await-in-loop
+      const form = page && page.status === 200 ? loginForm(page.text) : null;
+      if (!form) continue; // eslint-disable-line no-continue
+      const fields = new URLSearchParams();
+      form.inputs.forEach((i) => { if (i.name && i.type !== 'password' && i !== form.userInput && !['submit', 'button', 'image', 'checkbox', 'radio'].includes(i.type)) fields.append(i.name, i.value || ''); });
+      const submit = form.inputs.find((i) => i.type === 'submit' && i.name);
+      if (submit) fields.append(submit.name, submit.value || '');
+      fields.append(form.userInput.name, this.user);
+      fields.append(form.passInput.name, this.pass);
+      const res = await this.request(new URL(form.action || page.url, page.url).href, { method: 'POST', body: fields.toString() }); // eslint-disable-line no-await-in-loop
+      if (res.status < 400 && !loginForm(res.text)) return true;
+      throw Object.assign(new Error('Clinica did not accept the sign-in (user name / password), or asks for a code.'), { code: 'LOGIN_FAILED' });
+    }
+    throw Object.assign(new Error('No sign-in form found at this address.'), { code: 'LOGIN_FORM_NOT_FOUND' });
+  }
+
+  /** A page / file; signed in again once when Clinica shows its sign-in form (session ended). */
+  async get(url, opts = {}) {
+    let r = await this.request(url, opts);
+    if (r.text && loginForm(r.text)) { await this.login(); r = await this.request(url, opts); }
+    if (r.text && loginForm(r.text)) throw Object.assign(new Error('Signed out of Clinica'), { code: 'LOGIN_FAILED' });
+    return r;
+  }
+}
+
+const attr = (tag, name) => { const m = new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i').exec(tag); return m ? (m[2] ?? m[3] ?? m[4] ?? '') : null; };
+const unent = (s) => String(s || '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+/** The page's sign-in form: the form with a password field → { action, inputs, userInput, passInput } or null. */
+function loginForm(html) {
+  const forms = String(html || '').match(/<form\b[\s\S]*?<\/form>/gi) || [];
+  for (const f of forms) { // eslint-disable-line no-restricted-syntax
+    const inputs = (f.match(/<input\b[^>]*>/gi) || []).map((t) => ({ name: attr(t, 'name'), type: (attr(t, 'type') || 'text').toLowerCase(), value: unent(attr(t, 'value')) }));
+    const passInput = inputs.find((i) => i.type === 'password' && i.name);
+    if (!passInput) continue; // eslint-disable-line no-continue
+    const texts = inputs.filter((i) => ['text', 'email', 'tel'].includes(i.type) && i.name);
+    const userInput = texts.find((i) => /user|name|mail|login|phone/i.test(i.name)) || texts[0];
+    if (!userInput) continue; // eslint-disable-line no-continue
+    return { action: unent(attr(f.slice(0, f.indexOf('>') + 1), 'action')), inputs, userInput, passInput };
+  }
+  return null;
+}
+
+/** Every attachment link of a page (/system/files/…), same address only → [{ url, path, name }]. */
+function attachmentLinks(html, pageUrl, base) {
+  const out = new Map();
+  const found = [];
+  String(html || '').replace(/(?:href|src|data-href|data-url|data)\s*=\s*("([^"]*)"|'([^']*)')/gi, (m, q, a, b2) => { found.push(unent(a ?? b2)); return m; });
+  // links written inside scripts / handlers: a quoted address (relative or absolute) that holds /system/files/
+  String(html || '').replace(/["']((?:https?:\/\/[^"'\s<>]+)?\/system\/files\/[^"'<>]+)["']/g, (m, x) => { found.push(unent(x)); return m; });
+  found.filter((x) => x && x.includes('/system/files/')).forEach((raw) => {
+    let u;
+    try { u = new URL(raw, pageUrl); } catch { return; }
+    if (u.origin !== base) return;
+    const path = pathKey(u.href);
+    if (!path || out.has(path)) return;
+    let name = u.pathname.split('/').pop() || 'file';
+    try { name = decodeURIComponent(name); } catch { /* as written */ }
+    out.set(path, { url: u.href, path, name });
+  });
+  return [...out.values()];
+}
+/** A link's key: its path, decoded the same way whichever form it was written in. */
+function pathKey(url) { try { const u = new URL(url); let p = u.pathname; try { p = decodeURI(p); } catch { /* as is */ } return p; } catch { return null; } }
+
+// ================================================================= the job
+const sessions = new Map(); // businessId → Session (memory only)
+const openJob = (businessId) => knex('import_jobs').where({ business_id: businessId, type: TYPE }).whereIn('status', ['processing', 'waiting']).orderBy('id', 'desc').first();
+
+/** Signs in now (so a wrong password is said at once), then starts or carries on the clinic's pull. */
+async function start(ctx, { baseUrl, username, password }) {
+  const base = baseOf(baseUrl);
+  if (!String(username || '').trim() || !String(password || '')) throw E.validation({ username: 'Enter the Clinica user name and password.' });
+  const s = new Session(base, String(username).trim(), String(password));
+  try { await s.login(); } catch (e) { throw E.validation({ password: e.message }); }
+  sessions.set(ctx.businessId, s);
+  const total = Number((await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_source: SOURCE }).whereNotNull('patient_id').count({ n: '*' }))[0].n);
+  const cur = await openJob(ctx.businessId);
+  if (cur) await knex('import_jobs').where({ id: cur.id }).update({ status: 'processing', total, error: null, runner: null, heartbeat_at: null });
+  else await knex('import_jobs').insert({ business_id: ctx.businessId, type: TYPE, status: 'processing', stage: 'cursor:0', total, processed: 0, created_by: ctx.userId || null, started_at: now() });
+  await audit.record(ctx, 'legacy.remote_started', { entityType: 'business', entityId: ctx.businessId, newValues: { address: base, patients: total } });
+  kick(ctx.businessId);
+}
+
+/** Stops the pull (the password is dropped; Start carries on where it was). */
+async function stop(ctx) {
+  sessions.delete(ctx.businessId);
+  const job = await openJob(ctx.businessId);
+  if (job) await knex('import_jobs').where({ id: job.id }).update({ status: 'waiting', error: 'STOPPED', runner: null, heartbeat_at: null });
+  await audit.record(ctx, 'legacy.remote_stopped', { entityType: 'business', entityId: ctx.businessId });
+}
+
+const busy = new Map();
+function kick(businessId) {
+  if (busy.has(businessId)) return busy.get(businessId);
+  const p = tenant.runFor(businessId, () => run(businessId)).catch((e) => console.error('[legacy-remote]', e.message)).finally(() => busy.delete(businessId)); // eslint-disable-line no-console
+  busy.set(businessId, p);
+  return p;
+}
+const settle = (businessId) => busy.get(businessId) || Promise.resolve();
+
+async function fail(job, legacyPatientId, file, code, message) {
+  await knex('import_errors').insert({ business_id: job.business_id, job_id: job.id, legacy_patient_id: legacyPatientId, file: file ? String(file).slice(0, 500) : null, stage: 'remote', error_code: code, message: String(message || '').slice(0, 500) });
+}
+
+async function run(businessId) {
+  for (;;) {
+    const job = await openJob(businessId); // eslint-disable-line no-await-in-loop
+    if (!job || job.status !== 'processing') return;
+    const s = sessions.get(businessId);
+    if (!s) { await knex('import_jobs').where({ id: job.id }).update({ status: 'waiting', error: 'NEEDS_SIGN_IN', runner: null, heartbeat_at: null }); return; } // eslint-disable-line no-await-in-loop
+    const stale = new Date(Date.now() - STALE_MS);
+    const claimed = await knex('import_jobs').where({ id: job.id }).where((w) => w.whereNull('runner').orWhere('runner', RUNNER).orWhereNull('heartbeat_at').orWhere('heartbeat_at', '<', stale)).update({ runner: RUNNER, heartbeat_at: now() }); // eslint-disable-line no-await-in-loop
+    if (!claimed) return;
+    const cursor = Number(String(job.stage || '').replace('cursor:', '')) || 0;
+    const batch = await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').where('id', '>', cursor).orderBy('id').limit(20) // eslint-disable-line no-await-in-loop
+      .select('id', 'patient_id', 'legacy_patient_id', 'legacy_patient_number');
+    if (!batch.length) {
+      sessions.delete(businessId);
+      const [errs] = await knex('import_errors').where({ job_id: job.id }).count({ n: '*' }); // eslint-disable-line no-await-in-loop
+      await knex('import_jobs').where({ id: job.id }).update({ status: Number(errs.n) ? 'completed_with_issues' : 'completed', completed_at: now(), runner: null, heartbeat_at: null, error: null }); // eslint-disable-line no-await-in-loop
+      await audit.record({ businessId, userId: job.created_by }, 'legacy.remote_completed', { entityType: 'import_job', entityId: job.id, newValues: { found: job.src_links, downloaded: job.success, skipped: job.skipped, failed: job.failed } }); // eslint-disable-line no-await-in-loop
+      return;
+    }
+    for (const lp of batch) { // eslint-disable-line no-restricted-syntax
+      if (!sessions.has(businessId)) return; // stopped
+      try {
+        await patient(job, s, lp); // eslint-disable-line no-await-in-loop
+      } catch (e) {
+        if (e.code === 'LOGIN_FAILED' || e.code === 'STORAGE_FULL' || e.code === 'STORAGE_QUOTA') {
+          sessions.delete(businessId);
+          await knex('import_jobs').where({ id: job.id }).update({ status: 'waiting', error: String(e.code || 'STOPPED').slice(0, 255), runner: null, heartbeat_at: null }); // eslint-disable-line no-await-in-loop
+          return;
+        }
+        await fail(job, lp.legacy_patient_id, null, e.code || 'PAGE_FAILED', e.message); // eslint-disable-line no-await-in-loop
+      }
+      await knex('import_jobs').where({ id: job.id }).update({ stage: `cursor:${lp.id}`, processed: knex.raw('processed + 1'), heartbeat_at: now() }); // eslint-disable-line no-await-in-loop
+    }
+  }
+}
+
+async function withRetry(fn) {
+  for (let i = 1; ; i += 1) { // eslint-disable-line no-restricted-syntax
+    try { return await fn(); } catch (e) { // eslint-disable-line no-await-in-loop
+      if (i >= 3 || ['LOGIN_FAILED', 'OFF_SITE', 'FILE_TOO_LARGE'].includes(e.code)) throw e;
+      await sleep(1000 * 2 ** i); // eslint-disable-line no-await-in-loop
+    }
+  }
+}
+
+/** One Clinica patient: its pages → its attachment links → the files not here yet. */
+async function patient(job, s, lp) {
+  const businessId = job.business_id;
+  const links = new Map();
+  for (const p of [`/dental/${encodeURIComponent(lp.legacy_patient_id)}`, `/edit_patient/${encodeURIComponent(lp.legacy_patient_id)}`]) { // eslint-disable-line no-restricted-syntax
+    const r = await withRetry(() => s.get(p)); // eslint-disable-line no-await-in-loop
+    if (r.status === 200) attachmentLinks(r.text, r.url, s.base).forEach((l) => { if (!links.has(l.path)) links.set(l.path, l); });
+    await sleep(DELAY_MS); // eslint-disable-line no-await-in-loop
+  }
+  if (!links.size) return;
+  await knex('import_jobs').where({ id: job.id }).update({ src_links: knex.raw('src_links + ?', [links.size]) });
+  const have = new Set((await knex('patient_attachments').where({ business_id: businessId, legacy_patient_id: lp.legacy_patient_id }).whereNotNull('source_url').pluck('source_url')).map(pathKey));
+  for (const l of links.values()) { // eslint-disable-line no-restricted-syntax
+    if (have.has(l.path)) { await knex('import_jobs').where({ id: job.id }).update({ skipped: knex.raw('skipped + 1') }); continue; } // eslint-disable-line no-await-in-loop, no-continue
+    try {
+      const r = await withRetry(() => s.get(l.url, { binary: true })); // eslint-disable-line no-await-in-loop
+      if (r.status !== 200 || !r.buf.length) throw Object.assign(new Error(`HTTP ${r.status}`), { code: r.status === 404 ? 'SOURCE_NOT_FOUND' : 'DOWNLOAD_FAILED' });
+      const added = await store(job, lp, l, r); // eslint-disable-line no-await-in-loop
+      await knex('import_jobs').where({ id: job.id }).update(added ? { success: knex.raw('success + 1') } : { skipped: knex.raw('skipped + 1') }); // eslint-disable-line no-await-in-loop
+    } catch (e) {
+      if (e.code === 'LOGIN_FAILED' || /STORAGE/.test(e.code || '')) throw e;
+      await fail(job, lp.legacy_patient_id, l.url, e.code || 'DOWNLOAD_FAILED', e.message); // eslint-disable-line no-await-in-loop
+      await knex('import_jobs').where({ id: job.id }).update({ failed: knex.raw('failed + 1') }); // eslint-disable-line no-await-in-loop
+    }
+    await sleep(DELAY_MS); // eslint-disable-line no-await-in-loop
+  }
+}
+
+/** A downloaded file → the patient's file (once per patient and content); false when it was there already. */
+async function store(job, lp, link, r) {
+  const businessId = job.business_id;
+  const sha = files.sha256(r.buf);
+  if (await knex('patient_attachments').where({ business_id: businessId, legacy_patient_id: lp.legacy_patient_id, checksum: sha }).first('id')) return false;
+  const copy = await knex('patient_attachments').where({ business_id: businessId, checksum: sha }).whereNull('duplicate_of').first('id', 'storage_path');
+  const shared = copy && files.exists(copy.storage_path);
+  if (!shared) await require('../storage/storage.service').assertRoom(businessId, r.buf.length); // eslint-disable-line global-require
+  const storagePath = shared ? copy.storage_path : files.put(businessId, sha, r.buf);
+  const name = link.name || 'file';
+  const cat = files.categoryOf(name);
+  await knex('patient_attachments').insert({
+    business_id: businessId, patient_id: lp.patient_id, legacy_patient_ref: lp.id, legacy_source: SOURCE, legacy_patient_id: lp.legacy_patient_id,
+    legacy_patient_number: lp.legacy_patient_number || null, original_filename: name.slice(0, 255), stored_filename: name.slice(0, 255),
+    mime_type: files.typeOf(name, r.buf) || (r.type || '').split(';')[0] || 'application/octet-stream', category: cat, file_size: r.buf.length,
+    stored_bytes: shared ? 0 : r.buf.length, storage_path: storagePath, checksum: sha, duplicate_of: shared ? copy.id : null,
+    source_url: link.url.slice(0, 1000), import_job_id: job.id,
+  }).onConflict(['business_id', 'legacy_patient_id', 'checksum']).ignore();
+  return true;
+}
+
+/** Where the clinic's pull is (for the page). */
+async function progress(businessId) {
+  const job = await knex('import_jobs').where({ business_id: businessId, type: TYPE }).orderBy('id', 'desc').first();
+  if (!job) return null;
+  const running = job.status === 'processing' && sessions.has(businessId);
+  if (running && (!job.heartbeat_at || new Date(job.heartbeat_at) < new Date(Date.now() - STALE_MS))) kick(businessId);
+  const errors = await knex('import_errors').where({ job_id: job.id }).orderBy('id', 'desc').limit(50).select('legacy_patient_id', 'file', 'error_code', 'message');
+  return {
+    id: job.id, status: running ? 'processing' : job.status, waitingFor: job.status === 'processing' && !running ? 'NEEDS_SIGN_IN' : job.error,
+    patients: { done: job.processed, total: job.total }, found: job.src_links, downloaded: job.success, skipped: job.skipped, failed: job.failed,
+    remaining: Math.max(0, job.src_links - job.success - job.skipped - job.failed), errors, startedAt: job.started_at, completedAt: job.completed_at,
+  };
+}
+
+/** A pull whose process stopped (its heartbeat went quiet, the password with it) waits for the password again. */
+async function resumeAll() {
+  await tenant.eachDb(async () => {
+    const stale = new Date(Date.now() - STALE_MS);
+    const jobs = await knex('import_jobs').where({ type: TYPE, status: 'processing' }).where((w) => w.whereNull('heartbeat_at').orWhere('heartbeat_at', '<', stale)).select('id', 'business_id').catch(() => []);
+    for (const j of jobs) { // eslint-disable-line no-restricted-syntax
+      if (sessions.has(j.business_id)) kick(j.business_id);
+      else await knex('import_jobs').where({ id: j.id }).update({ status: 'waiting', error: 'NEEDS_SIGN_IN', runner: null, heartbeat_at: null }); // eslint-disable-line no-await-in-loop
+    }
+  });
+}
+
+module.exports = { TYPE, start, stop, kick, settle, progress, resumeAll, baseOf, loginForm, attachmentLinks, pathKey, Session };
