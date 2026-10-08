@@ -31,7 +31,7 @@ router.get('/', wrap(async (req, res) => {
   const purge = await require('./purge.service').preview(req.ctx.businessId); // eslint-disable-line global-require
   const rs = require('./remote.service'); // eslint-disable-line global-require
   const remote = await rs.progress(req.ctx.businessId);
-  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, remote, remoteSignIn: rs.pendingQuestion(req.ctx.businessId), ...PAGE });
+  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, remote, remoteSignIn: rs.pendingQuestion(req.ctx.businessId), remoteProbe: Boolean(rs.probeReport(req.ctx.businessId)), ...PAGE });
 }));
 
 // Imported treatments → the patients' own files (treatment plan with the doctors) — for imports made before this
@@ -61,6 +61,20 @@ router.post('/remote/start', ownerOnly, wrap(async (req, res) => {
     flash(req, 'error', e.details ? Object.values(e.details).join(' ') : errText(req, e));
   }
   res.redirect(`${BASE}#remote`);
+}));
+// The structure of Clinica's pages (no patient data) — for building the pull of patients, calendar and treatments.
+router.post('/remote/probe', ownerOnly, wrap(async (req, res) => {
+  try {
+    await require('./remote.service').probe(req.ctx, { baseUrl: req.body.base_url, username: req.body.username, password: req.body.password, captcha: req.body.captcha }); // eslint-disable-line global-require
+    flash(req, 'success', req.t('legacy.remote_probed'));
+  } catch (e) { flash(req, 'error', e.details ? Object.values(e.details).join(' ') : errText(req, e)); }
+  res.redirect(`${BASE}#remote`);
+}));
+router.get('/remote/probe.json', ownerOnly, wrap(async (req, res) => {
+  const r = require('./remote.service').probeReport(req.ctx.businessId); // eslint-disable-line global-require
+  if (!r) return res.redirect(`${BASE}#remote`);
+  res.set('Content-Disposition', 'attachment; filename="clinica-structure.json"');
+  return res.type('application/json').send(JSON.stringify(r, null, 2));
 }));
 router.post('/remote/stop', ownerOnly, wrap(async (req, res) => {
   await require('./remote.service').stop(req.ctx); // eslint-disable-line global-require

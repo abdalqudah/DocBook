@@ -97,9 +97,11 @@
         <% if (remoteSignIn.question) { %><label class="field"><span class="label"><%= t('legacy.remote_question') %> <bdi dir="ltr" class="strong" data-remote-question><%= remoteSignIn.question %></bdi></span><input class="input" name="captcha" dir="ltr" required autocomplete="off" inputmode="numeric"><span class="hint"><%= t('legacy.remote_question_hint') %></span></label><% } %>
       </div>
       <p class="small muted" style="margin:0"><%- icon('lock', 'icon-sm') %> <%= t('legacy.remote_privacy') %></p>
-      <div><button class="btn btn-primary" type="submit"><%- icon('download', 'icon-sm') %><%= t(rm && rm.status === 'waiting' ? 'legacy.remote_resume' : 'legacy.remote_start') %></button></div>
+      <div class="row-sm" style="flex-wrap:wrap"><button class="btn btn-primary" type="submit"><%- icon('download', 'icon-sm') %><%= t(rm && rm.status === 'waiting' ? 'legacy.remote_resume' : 'legacy.remote_start') %></button>
+        <button class="btn btn-secondary" type="submit" formaction="<%= B %>/remote/probe" title="<%= t('legacy.remote_probe_hint') %>"><%- icon('search', 'icon-sm') %><%= t('legacy.remote_probe') %></button></div>
     </form>
     <% } %>
+    <% if (remoteProbe) { %><p class="small" style="margin:0"><%- icon('file-text', 'icon-sm') %> <a class="link" href="<%= B %>/remote/probe.json"><%= t('legacy.remote_probe_download') %></a> — <%= t('legacy.remote_probe_note') %></p><% } %>
     <% } %>
   </div>
 </section>

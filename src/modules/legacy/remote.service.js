@@ -196,8 +196,8 @@ function pendingFor(businessId, base) {
 }
 const pendingQuestion = (businessId) => { const p = pending.get(businessId); return p && Date.now() - p.at < PENDING_MS && p.s.pending ? { base: p.s.base, question: p.s.pending.form.captchaInput ? p.s.pending.form.question || '?' : null } : null; };
 
-/** Signs in now (so a wrong password is said at once), then starts or carries on the clinic's pull. */
-async function start(ctx, { baseUrl, username, password, captcha = null }) {
+/** The owner's sign-in (with the answer to Clinica's question, on the page fetched for it) → a signed-in session. */
+async function signIn(ctx, { baseUrl, username, password, captcha = null }) {
   const base = baseOf(baseUrl);
   if (!String(username || '').trim() || !String(password || '')) throw E.validation({ username: 'Enter the Clinica user name and password.' });
   const p = pendingFor(ctx.businessId, base);
@@ -210,6 +210,13 @@ async function start(ctx, { baseUrl, username, password, captcha = null }) {
     if (e.code === 'LOGIN_FAILED') await prepare(ctx, { baseUrl: base }).catch(() => null);
     throw E.validation({ password: e.message });
   }
+  return s;
+}
+
+/** Signs in now (so a wrong password is said at once), then starts or carries on the clinic's pull. */
+async function start(ctx, creds) {
+  const s = await signIn(ctx, creds);
+  const { base } = s;
   sessions.set(ctx.businessId, s);
   const total = Number((await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_source: SOURCE }).whereNotNull('patient_id').count({ n: '*' }))[0].n);
   const cur = await openJob(ctx.businessId);
@@ -360,4 +367,87 @@ async function resumeAll() {
   });
 }
 
-module.exports = { TYPE, prepare, pendingQuestion, start, stop, kick, settle, progress, resumeAll, baseOf, loginForm, captchaQuestion, attachmentLinks, pathKey, Session };
+// ================================================================= the structure of Clinica's pages
+// What the pull of patients, calendar and treatments needs to know about Clinica's pages, without any patient data:
+// for each page — its address with numbers as {n} and query values dropped, its forms (action, input names and types,
+// select names and how many options), its tables (header labels, how many rows), the form labels, the addresses it
+// links to (as patterns, counted) and the addresses its scripts ask for (calendar feeds…). No text, value, title or
+// heading of a page is kept. The session is dropped after (the password is not kept).
+const PATTERN = (u) => {
+  try {
+    const x = new URL(u);
+    const path = x.pathname.split('/').map((seg) => (/\d/.test(seg) ? '{n}' : seg)).join('/');
+    const keys = [...new Set([...x.searchParams.keys()])].sort();
+    return `${path}${keys.length ? `?${keys.map((k) => `${k}=`).join('&')}` : ''}`;
+  } catch { return null; }
+};
+const textOf = (h) => unent(String(h || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim().slice(0, 80);
+function pageShape(html, url, base) {
+  const h = String(html || '');
+  const forms = (h.match(/<form\b[\s\S]*?<\/form>/gi) || []).map((f) => ({
+    action: PATTERN(new URL(unent(attr(f.slice(0, f.indexOf('>') + 1), 'action')) || url, url).href),
+    method: (attr(f.slice(0, f.indexOf('>') + 1), 'method') || 'get').toLowerCase(),
+    inputs: (f.match(/<input\b[^>]*>/gi) || []).map((t) => `${attr(t, 'name') || '?'}:${(attr(t, 'type') || 'text').toLowerCase()}`).filter((x) => !x.startsWith('?:hidden')),
+    selects: (f.match(/<select\b[\s\S]*?<\/select>/gi) || []).map((x) => `${attr(x.slice(0, x.indexOf('>') + 1), 'name') || '?'}(${(x.match(/<option\b/gi) || []).length})`),
+    textareas: (f.match(/<textarea\b[^>]*>/gi) || []).map((t) => attr(t, 'name') || '?'),
+  }));
+  const tables = (h.match(/<table\b[\s\S]*?<\/table>/gi) || []).map((t) => ({
+    headers: (t.match(/<th\b[\s\S]*?<\/th>/gi) || []).map(textOf).slice(0, 30),
+    rows: (t.match(/<tr\b/gi) || []).length,
+  }));
+  const labels = [...new Set((h.match(/<(label|legend)\b[\s\S]*?<\/\1>/gi) || []).map(textOf).filter(Boolean))].slice(0, 80);
+  const links = new Map();
+  const examples = new Map(); // pattern → one real address (to visit; never in the report)
+  h.replace(/href\s*=\s*("([^"]*)"|'([^']*)')/gi, (m, q, a, b2) => {
+    try { const u = new URL(unent(a ?? b2), url); if (u.origin === base) { const k = PATTERN(u.href); if (!examples.has(k)) examples.set(k, u.href); links.set(k, (links.get(k) || 0) + 1); } } catch { /* not an address */ }
+    return m;
+  });
+  const scripts = new Set();
+  (h.match(/<script\b[^>]*src\s*=\s*["'][^"']+["']/gi) || []).forEach((t) => { try { scripts.add(PATTERN(new URL(unent(attr(t, 'src')), url).href)); } catch { /* skip */ } });
+  const feeds = new Set();
+  (h.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || []).forEach((sc) => {
+    (sc.match(/["'](\/[a-z0-9_\-/.]+(?:\?[^"'\s]*)?)["']/gi) || []).forEach((q) => { try { const k = PATTERN(new URL(q.slice(1, -1), url).href); if (k && k.length > 1) feeds.add(k); } catch { /* skip */ } });
+    (sc.match(/\b(fullCalendar|FullCalendar|eventSources?|events\s*:|\$\.ajax|\$\.get|\$\.post|fetch\(|XMLHttpRequest)\b/g) || []).forEach((w) => feeds.add(`js:${w.replace(/\s*:$/, '')}`));
+  });
+  const shape = { page: PATTERN(url), forms, tables, labels, links: [...links.entries()].sort((a, b) => b[1] - a[1]).slice(0, 150), scripts: [...scripts], feeds: [...feeds].slice(0, 80) };
+  Object.defineProperty(shape, 'examples', { value: examples, enumerable: false });
+  return shape;
+}
+
+const probes = new Map(); // businessId → the last report (memory only)
+/** Signs in, reads Clinica's pages (its menu, a patient's pages) and keeps their structure for the owner to download. */
+async function probe(ctx, creds) {
+  const s = await signIn(ctx, creds);
+  const report = { generated_at: now().toISOString(), address: s.base, pages: [] };
+  const seen = new Set();
+  const visit = async (path) => {
+    const url = new URL(path, s.base).href;
+    const key = PATTERN(url);
+    if (!key || seen.has(key) || report.pages.length >= 40) return null;
+    seen.add(key);
+    try {
+      const r = await s.get(url);
+      await sleep(DELAY_MS);
+      const ps = /html/.test(r.type || '') || !r.type ? pageShape(r.text, r.url, s.base) : { page: PATTERN(r.url) };
+      report.pages.push({ status: r.status, type: (r.type || '').split(';')[0], ...ps });
+      return ps;
+    } catch (e) { report.pages.push({ page: key, error: e.code || e.message }); return null; }
+  };
+  const home = await visit('/');
+  const lp = await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_source: SOURCE }).whereNotNull('legacy_patient_id').orderBy('id').first('legacy_patient_id');
+  if (lp) { await visit(`/dental/${encodeURIComponent(lp.legacy_patient_id)}`); await visit(`/edit_patient/${encodeURIComponent(lp.legacy_patient_id)}`); }
+  // the menu: the pages the home page links to (one of each pattern, no sign-out / delete / file links)
+  // only addresses that read: nothing that could sign out, change, send or delete
+  const UNSAFE = /log-?out|sign-?out|delete|remove|cancel|archive|approve|confirm|send|sms|whatsapp|status|toggle|block|clear|reset|pay|refund|void|add|new|create|save|update|edit|backup|export|import|\/system\/files\//i;
+  for (const [k] of (home && home.links) || []) { // eslint-disable-line no-restricted-syntax
+    if (report.pages.length >= 40) break;
+    if (UNSAFE.test(k)) continue; // eslint-disable-line no-continue
+    if (home.examples && home.examples.get(k)) await visit(home.examples.get(k)); // eslint-disable-line no-await-in-loop
+  }
+  probes.set(ctx.businessId, report);
+  await audit.record(ctx, 'legacy.remote_probed', { entityType: 'business', entityId: ctx.businessId, newValues: { address: s.base, pages: report.pages.length } });
+  return report;
+}
+const probeReport = (businessId) => probes.get(businessId) || null;
+
+module.exports = { TYPE, prepare, pendingQuestion, start, stop, probe, probeReport, pageShape, kick, settle, progress, resumeAll, baseOf, loginForm, captchaQuestion, attachmentLinks, pathKey, Session };

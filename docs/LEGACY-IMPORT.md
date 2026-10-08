@@ -371,3 +371,13 @@ password; the server (`remote.service`):
   during the pull, its new question needs the owner again: the pull waits ("open the sign-in page again") and carries
   on from where it was. Codes sent by SMS / e-mail are not supported; `scripts/clinica-attachments-fetch.js` (in the
   signed-in browser) remains the other way.
+
+## 2.8.9: checking the structure of Clinica's pages
+To pull patients, the calendar and treatments straight from Clinica too, the pull has to know Clinica's pages. "Check
+Clinica's structure only" (step 2 of the sign-in) signs in and reads the home page, one imported patient's
+`/dental/<id>` and `/edit_patient/<id>`, and the menu pages the home page links to (one of each address pattern; never
+an address that could sign out, change, send or delete). It keeps, per page, only its shape: the address with numbers
+as `{n}` and query values dropped, forms (action, input names / types, select names and option counts), table headers
+and row counts, form labels, linked address patterns, script addresses and the addresses scripts ask for (calendar
+feeds). No text, value, title or heading — no patient data. The owner downloads it as `clinica-structure.json`
+(memory only; audited `legacy.remote_probed`).

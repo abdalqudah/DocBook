@@ -354,6 +354,11 @@
     "remote_connect": "افتح صفحة الدخول",
     "remote_signin_at": "تسجيل الدخول على",
     "remote_question": "سؤال Clinica:",
-    "remote_question_hint": "اكتب الجواب زي ما بتكتبه بصفحة Clinica."
+    "remote_question_hint": "اكتب الجواب زي ما بتكتبه بصفحة Clinica.",
+    "remote_probe": "فحص بنية Clinica فقط",
+    "remote_probe_hint": "بيدخل وبيقرأ شكل صفحات Clinica بدون بيانات مرضى، وما بينزّل إشي.",
+    "remote_probed": "خلص الفحص — نزّل التقرير وابعته.",
+    "remote_probe_download": "تنزيل تقرير بنية Clinica (clinica-structure.json)",
+    "remote_probe_note": "فيه شكل الصفحات بس (روابط بأرقام مستبدلة، أسماء حقول، عناوين أعمدة) — بدون أي اسم أو رقم أو قيمة مريض. السؤال اللي بتجاوبه مرة وحدة: افتح صفحة الدخول من جديد."
   }
 }

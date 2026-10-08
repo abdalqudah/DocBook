@@ -354,6 +354,11 @@
     "remote_connect": "Open the sign-in page",
     "remote_signin_at": "Signing in at",
     "remote_question": "Clinica's question:",
-    "remote_question_hint": "Type the answer as you would on Clinica's page."
+    "remote_question_hint": "Type the answer as you would on Clinica's page.",
+    "remote_probe": "Check Clinica's structure only",
+    "remote_probe_hint": "Signs in and reads the shape of Clinica's pages without patient data; downloads nothing.",
+    "remote_probed": "Check done — download the report and send it.",
+    "remote_probe_download": "Download the Clinica structure report (clinica-structure.json)",
+    "remote_probe_note": "Only the shape of the pages (addresses with numbers replaced, field names, column headers) — no patient name, number or value. The question is answered once: open the sign-in page again for the next sign-in."
   }
 }

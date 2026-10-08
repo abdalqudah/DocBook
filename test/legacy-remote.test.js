@@ -26,6 +26,7 @@ let sessionsLeft = Infinity; // pages served before Clinica ends the session
 let captchaOn = false; // Clinica asks a math question at sign-in
 
 // A small stand-in for Clinica: a sign-in form with a hidden token, a cookie session, patient pages with file links.
+let fake;
 function fakeClinica() {
   const app = express();
   app.use(express.urlencoded({ extended: false }));
@@ -44,7 +45,14 @@ function fakeClinica() {
     }
     return res.send(String(form));
   });
-  app.get('/', (req, res) => res.send(signedIn(req) ? '<html>Dashboard</html>' : String(form)));
+  function guard0(req, res, next) { return signedIn(req) ? next() : res.redirect(302, '/user/login'); }
+  let loggedOut = 0;
+  app.get('/', (req, res) => res.send(signedIn(req) ? '<html><title>Dr Clinic</title><nav><a href="/patients?page=2">Patients</a><a href="/calendar">Calendar</a><a href="/dental/1001">سامي خالد</a><a href="/user/logout">Log out</a><a href="/patient/7/delete">x</a></nav></html>' : String(form)));
+  app.get('/user/logout', (req, res) => { loggedOut += 1; res.redirect('/'); });
+  app.get('/patient/:id/delete', (req, res) => { loggedOut += 100; res.send('deleted'); });
+  app.get('/patients', guard0, (req, res) => res.send('<table><tr><th>Name</th><th>Mobile</th></tr><tr><td>سامي خالد</td><td>0791234567</td></tr></table>'));
+  app.get('/calendar', guard0, (req, res) => res.send('<div id="cal"></div><script src="/js/fullcalendar.min.js?v=3"></script><script>$("#cal").fullCalendar({ events: "/calendar/events?doctor=5" }); $.ajax({ url: "/appointment/123/details" });</script>'));
+  app.locals.loggedOut = () => loggedOut;
   const guard = (req, res, next) => {
     const sid = signedIn(req);
     if (!sid) return res.redirect(302, '/user/login');
@@ -71,7 +79,8 @@ function fakeClinica() {
 
 test.before(async () => {
   await knex.migrate.latest();
-  clinica = fakeClinica().listen(0);
+  fake = fakeClinica();
+  clinica = fake.listen(0);
   await new Promise((r) => clinica.once('listening', r));
   base = `http://127.0.0.1:${clinica.address().port}`;
   const userId = await knex.transaction(async (trx) => {
@@ -155,4 +164,19 @@ test('a sign-in question (CAPTCHA): shown to the owner, who answers it; never an
   const p = await remote.progress(c2.businessId);
   assert.equal(p.status, 'waiting'); assert.equal(p.waitingFor, 'LOGIN_FAILED');
   captchaOn = false; sessionsLeft = Infinity;
+});
+
+test('structure check: the shape of Clinica\'s pages, no patient data; nothing that signs out or deletes is opened', async () => {
+  const c3 = { ...ctx, businessId: (await knex('businesses').insert({ name: 'Probe clinic', slug: `prb${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0] };
+  await knex('legacy_patients').insert({ business_id: c3.businessId, legacy_source: 'clinica', legacy_patient_id: '1001' });
+  const r = await remote.probe(c3, { baseUrl: base, username: 'owner', password: 's3cret' });
+  const text = JSON.stringify(r);
+  assert.doesNotMatch(text, /سامي|0791234567|Dr Clinic|s3cret/, 'no names, phones, titles or password');
+  const pages = r.pages.map((p) => p.page);
+  assert.ok(pages.includes('/dental/{n}') && pages.includes('/edit_patient/{n}') && pages.includes('/patients?page=') && pages.includes('/calendar'));
+  const cal = r.pages.find((p) => p.page === '/calendar');
+  assert.ok(cal.feeds.includes('/calendar/events?doctor=') && cal.feeds.includes('/appointment/{n}/details') && cal.feeds.includes('js:fullCalendar'));
+  assert.deepEqual(r.pages.find((p) => p.page === '/patients?page=').tables[0].headers, ['Name', 'Mobile']);
+  assert.equal(fake.locals.loggedOut(), 0, 'sign-out / delete never opened');
+  assert.equal(remote.probeReport(c3.businessId), r);
 });
