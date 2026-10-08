@@ -76,3 +76,8 @@ dialog.dialog.lg-viewer:fullscreen { width: 100vw; height: 100vh; border-radius:
 }
 .lg-by { align-items: center; }
 .lg-by form { margin-inline-start: auto; }
+.lg-mode { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.lg-mode.is-initial { border-color: var(--primary); background: var(--primary-soft); }
+.lg-mode > .icon { color: var(--primary); margin-top: 2px; }
+.lg-manual { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border: 1px dashed var(--border-strong); border-radius: var(--radius); }
+.lg-manual .btn { margin-inline-start: auto; }

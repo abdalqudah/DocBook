@@ -124,15 +124,31 @@ background runner (one per clinic, heartbeat; taken over when stale)
   - Every access is logged.
   - `?inline=1` previews images and PDFs; anything else is always a download.
 
-### Matching
-1. A patient here with the same `legacy_patient_id` (source `clinica`) is **MATCHED**.
-2. Otherwise, a patient here with the same `legacy_patient_number` is **MATCHED**.
-3. Otherwise the patient is **UNMATCHED**. Its data is staged in the `legacy_*` tables with `patient_id` NULL and can
-   be linked later from the recovery list.
+### Import modes and the patient key (2.7.2)
+The import is a **migration**: every Clinica patient becomes a patient here. The key of a patient is
+`patients.legacy_source` (= source system, `clinica`) + `patients.legacy_patient_id` (= the Clinica patient id), with a
+unique index per clinic (`patients_legacy_uq` on `business_id, legacy_source, legacy_patient_id`). These fields are
+filled by the import itself; they never need to exist beforehand.
 
-The name is for display only. A patient file is created automatically only when the person starting the import ticks
-"create a patient file for each unmatched patient", and even then not when the mobile number belongs to a patient
-already in the clinic.
+For each old patient the preview shows its plan, and the import does exactly that:
+
+| Plan | When | What the import does |
+|---|---|---|
+| **new** | the Clinica id is not on any patient here | CREATE a patient: name, mobile (`phone`), telephone (`phone2`), e-mail, gender, birth date, the Clinica number as the file number (when free), and `legacy_source`, `legacy_patient_id`, `legacy_patient_number`, `legacy_import_job_id`, `legacy_imported_at` |
+| **existing** | the Clinica id is already on a patient here (an earlier import) | nothing is created; only missing treatments, clinical rows and files are added (resume / re-import) |
+| **matched** | only with the optional duplicate check (below) | linked to the hand-entered patient |
+| **review** | only with the optional check: two Clinica patients point at one hand-entered patient | not created, kept in the recovery list for a person |
+
+Modes:
+1. **Initial migration**: the clinic has no patients. Everything is created; no matching of any kind.
+2. **Re-import / resume**: the same key is found, so nothing is created twice. A concurrent insert of the same key hits
+   the unique index and is retried as "existing".
+3. **Clinic with hand-entered patients**: an optional, separate duplicate check is shown in the preview. It is on by
+   default only when such patients exist, and it never uses the name alone (old number; file number with first name or
+   mobile; mobile with first name). It never stops an initial migration.
+
+Attachments are tied to the patient by the folder / manifest `patient_id` (the Clinica id), never by name. Files whose
+Clinica id is not in the patients file are kept, unattached, for review.
 
 ### Idempotency and resume
 

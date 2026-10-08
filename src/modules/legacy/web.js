@@ -99,8 +99,8 @@ const act = (fn, okKey) => wrap(async (req, res) => {
   res.redirect(back.startsWith(`${BASE}/`) ? back : `${BASE}/jobs/${Number(req.params.id)}`);
 });
 router.post('/jobs/:id(\\d+)/batches/:bid(\\d+)/delete', act((req) => svc.removeBatch(req.ctx, req.params.id, req.params.bid), 'legacy.flash_removed'));
-router.post('/jobs/:id(\\d+)/start', act((req) => svc.start(req.ctx, req.params.id, { createUnmatched: req.body.create_unmatched === '1' }), 'legacy.flash_started'));
-router.post('/jobs/:id(\\d+)/rematch', act((req) => svc.rematchJob(req.ctx, req.params.id), 'legacy.flash_rematched'));
+router.post('/jobs/:id(\\d+)/start', act((req) => svc.start(req.ctx, req.params.id), 'legacy.flash_started'));
+router.post('/jobs/:id(\\d+)/rematch', act((req) => svc.rematchJob(req.ctx, req.params.id, req.body.match_manual === undefined ? {} : { matchManual: req.body.match_manual === '1' }), 'legacy.flash_rematched'));
 router.post('/jobs/:id(\\d+)/cancel', act((req) => svc.cancel(req.ctx, req.params.id), 'legacy.flash_cancelled'));
 router.post('/jobs/:id(\\d+)/resume', act((req) => svc.resume(req.ctx, req.params.id), 'legacy.flash_resumed'));
 router.post('/jobs/:id(\\d+)/errors/:eid(\\d+)/retry', act((req) => svc.retryError(req.ctx, req.params.id, req.params.eid), 'legacy.flash_retry'));

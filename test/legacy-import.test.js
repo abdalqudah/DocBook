@@ -188,7 +188,12 @@ test('analysis → preview: matching by old id / number, ZIP checks, nothing imp
   const s = await svc.summary(ctx.businessId, job.id);
   assert.equal(s.job.status, 'ready');
   assert.equal(s.patients.detected, 3);
-  assert.equal(s.patients.matched, 2); assert.equal(s.patients.unmatched, 1);
+  // The clinic has hand-entered patients → the duplicate check is on: 1001 was imported before (its id is on a patient
+  // here), 1002 is a hand-entered patient carrying the old number, 1003 is new.
+  assert.equal(s.matchManual, true);
+  assert.equal(s.patients.existing, 1); assert.equal(s.patients.matched, 1); assert.equal(s.patients.create, 1);
+  assert.equal(s.patients.duplicates, 1); assert.equal(s.patients.missingId, 1); assert.equal(s.patients.review, 1);
+  assert.equal(s.patients.withFiles, 3); assert.equal(s.orphanFiles, 0);
   assert.equal((await knex('import_items').where({ job_id: job.id, kind: 'patient', ref: '1001' }).first()).target_id, p1);
   assert.equal((await knex('import_items').where({ job_id: job.id, kind: 'patient', ref: '1002' }).first()).target_id, p2);
   assert.equal(s.treatments, 6); assert.equal(s.clinical, 3 * 3 + 1);
@@ -209,7 +214,11 @@ test('import: rows, private files once per SHA-256, unmatched kept apart, reconc
   const lp = await knex('legacy_patients').where({ business_id: ctx.businessId }).orderBy('legacy_patient_id');
   assert.deepEqual(lp.map((r) => r.legacy_patient_id), ['1001', '1002', '1003']);
   assert.equal(lp[0].old_name, 'مريض 1'); assert.equal(lp[0].old_group, 'Ortho');
-  assert.equal(lp[2].patient_id, null, '1003 has no patient here and none is created');
+  const p3 = await knex('patients').where({ id: lp[2].patient_id }).first();
+  assert.equal(p3.full_name, 'مريض 3', '1003 is created as a new patient'); assert.equal(p3.legacy_source, 'clinica'); assert.equal(p3.legacy_patient_id, '1003');
+  assert.equal(p3.legacy_patient_number, 'N-1003'); assert.equal(p3.file_number, 'N-1003'); assert.equal(p3.phone, '0790000002'); assert.equal(p3.phone2, '065000000');
+  assert.equal((await knex('import_items').where({ job_id: job.id, ref: '1003' }).first()).match, 'new');
+  assert.equal((await knex('import_items').where({ job_id: job.id, ref: '1001' }).first()).match, 'existing');
   const p2 = await knex('patients').where({ id: lp[1].patient_id }).first();
   assert.equal(p2.legacy_patient_id, '1002'); assert.equal(p2.full_name, 'Number match', 'the existing patient is not renamed');
   const t = await knex('legacy_treatments').where({ legacy_patient_ref: lp[0].id }).orderBy('position');
@@ -231,7 +240,7 @@ test('import: rows, private files once per SHA-256, unmatched kept apart, reconc
   assert.ok(!xray.storage_path.includes('public'));
   assert.ok(files.read(xray.storage_path).equals(PNG));
   const extra = atts.find((a) => a.original_filename === 'extra.png');
-  assert.equal(extra.patient_id, null); assert.equal(extra.legacy_patient_id, '1003');
+  assert.equal(extra.patient_id, p3.id, 'tied by the folder (old patient id), not the name'); assert.equal(extra.legacy_patient_id, '1003');
 
   // Running it all again adds nothing.
   const before = await Promise.all(['legacy_patients', 'legacy_treatments', 'legacy_clinical_records', 'patient_attachments', 'patients'].map((tb) => knex(tb).count({ n: '*' }).then(([r]) => Number(r.n))));
@@ -241,12 +250,8 @@ test('import: rows, private files once per SHA-256, unmatched kept apart, reconc
   const after = await Promise.all(['legacy_patients', 'legacy_treatments', 'legacy_clinical_records', 'patient_attachments', 'patients'].map((tb) => knex(tb).count({ n: '*' }).then(([r]) => Number(r.n))));
   assert.deepEqual(after, before);
 
-  // Recovery: the unmatched old file becomes a patient here (its data follows).
-  const pid = await svc.createFromLegacy(ctx, lp[2].id);
-  assert.equal((await knex('legacy_patients').where({ id: lp[2].id }).first()).patient_id, pid);
-  assert.equal((await knex('patient_attachments').where({ id: extra.id }).first()).patient_id, pid);
-  assert.equal((await knex('legacy_treatments').where({ legacy_patient_ref: lp[2].id }).first()).patient_id, pid);
-  assert.ok(await knex('audit_logs').where({ business_id: ctx.businessId, action: 'legacy.patient_recovered' }).first());
+  // A second import of the same file creates nothing: the key (clinica + old id) is already here.
+  assert.equal(await svc.createFromLegacy(ctx, lp[2].id), p3.id);
 
   const r = await svc.report(ctx.businessId, job.id);
   assert.equal(r.reconciliation.find((x) => x.key === 'patients').difference, 0);
@@ -255,14 +260,16 @@ test('import: rows, private files once per SHA-256, unmatched kept apart, reconc
 
 test('resume: a job stopped half-way (server restart) carries on from the next item', async () => {
   const json = path.join(TMP, 'p2.json');
-  fs.writeFileSync(json, JSON.stringify(backup(['2001', '2002', '2003', '2004'], '07811111')));
+  const data2 = backup(['2001', '2002', '2003', '2004'], '07811111');
+  data2.patients.forEach((x) => { delete x.attachments; }); // no attachment links (no ZIPs either)
+  fs.writeFileSync(json, JSON.stringify(data2));
   const j2 = await svc.openJob(ctx);
   assert.notEqual(j2.id, job.id);
   await svc.addUpload(ctx, j2.id, upload(json, 'p2.json'), 'patients_json');
   await svc.settle(ctx.businessId);
   // Started by a process that then stopped (server restart) with one item half-done: its runner still looks alive,
   // so nobody else touches it…
-  await knex('import_jobs').where({ id: j2.id }).update({ status: 'processing', stage: 'patients_import', create_unmatched: true, started_at: new Date(), runner: 'gone:1', heartbeat_at: new Date() });
+  await knex('import_jobs').where({ id: j2.id }).update({ status: 'processing', stage: 'patients_import', started_at: new Date(), runner: 'gone:1', heartbeat_at: new Date() });
   await knex('import_items').where({ job_id: j2.id, kind: 'patient', ref: '2001' }).update({ status: 'processing' });
   await svc.resumeAll(); await svc.settle(ctx.businessId);
   assert.equal((await svc.getJob(ctx.businessId, j2.id)).status, 'processing', 'a live runner is not taken over');
@@ -274,7 +281,7 @@ test('resume: a job stopped half-way (server restart) carries on from the next i
   assert.equal(done.status, 'completed');
   assert.equal(Number((await knex('legacy_patients').where({ business_id: ctx.businessId }).whereIn('legacy_patient_id', ['2001', '2002', '2003', '2004']).count({ n: '*' }))[0].n), 4);
   const created = await knex('patients').where({ business_id: ctx.businessId }).whereIn('legacy_patient_id', ['2001', '2002', '2003', '2004']);
-  assert.equal(created.length, 4, 'asked to create the unmatched → one patient each, never twice');
+  assert.equal(created.length, 4, 'one new patient each, never twice');
   assert.ok(!fs.existsSync(svc.jobDir(ctx.businessId, j2.id)), 'uploads removed after a clean import');
 });
 
@@ -295,8 +302,9 @@ test('matching: file number here, mobile + first name; two old patients on one p
   assert.equal(it['4001'].target_id, byFile); assert.equal(it['4001'].match_by, 'file_number');
   assert.equal(it['4002'].target_id, byPhone); assert.equal(it['4002'].match_by, 'phone');
   assert.equal(it['4003'].match_by, 'ambiguous'); assert.equal(it['4004'].match_by, 'ambiguous'); assert.equal(it['4003'].target_id, null);
-  assert.equal(it['4005'].match, 'unmatched');
-  assert.equal(it['4006'].match, 'unmatched', 'same file number, other person');
+  assert.equal(it['4005'].match, 'new');
+  assert.equal(it['4006'].match, 'new', 'same file number, other person → a new patient, not linked');
+  assert.equal(it['4003'].match, 'review');
   const s = await svc.summary(ctx.businessId, j.id);
   assert.equal(s.patients.matched, 2); assert.equal(s.patients.by.ambiguous, 2);
   // A patient numbered by hand afterwards: "match again" picks it up.
@@ -312,6 +320,53 @@ test('matching: file number here, mobile + first name; two old patients on one p
   assert.equal((await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_patient_id: '4003' }).first()).patient_id, null);
 });
 
+test('initial migration into an empty clinic: every Clinica patient created once; files by patient id; re-run creates nothing', async () => {
+  const empty = await makeClinic(`li-empty${tag}@t.test`, 'Empty clinic');
+  const ids = ['2432131', '2432132', '2432133'];
+  const data = backup(ids, '07955555');
+  data.patients[0].patient_number = '1720';
+  data.patients[1].mobile = data.patients[2].mobile; // family members share a mobile: both still created
+  data.patients[2].patient_name = data.patients[1].patient_name; // even the same name: the key is the Clinica id
+  const json = path.join(TMP, 'empty.json'); fs.writeFileSync(json, JSON.stringify(data));
+  const z = path.join(TMP, 'empty.zip');
+  await zip(z, [['manifest.json', Buffer.from(JSON.stringify(ids.map((id) => ({ patient_id: id, original_filename: `${id}.png`, saved_filename: 'a.png', zip_path: `${id}/a.png`, size: PNG.length, status: 'downloaded' }))))],
+    ...ids.map((id) => [`${id}/a.png`, PNG])]);
+  const j = await svc.openJob(empty);
+  assert.equal(Boolean(j.match_manual), false, 'no hand-entered patients → no matching at all');
+  await svc.addUpload(empty, j.id, upload(json, 'clinica-patients.json'), 'patients_json');
+  await svc.addUpload(empty, j.id, upload(z, 'clinica-attachments-01-of-01.zip'), 'attachments_zip');
+  await svc.settle(empty.businessId);
+  const s = await svc.summary(empty.businessId, j.id);
+  assert.equal(s.initial, true);
+  assert.deepEqual([s.patients.detected, s.patients.create, s.patients.existing, s.patients.duplicates, s.patients.review], [3, 3, 0, 0, 0]);
+  assert.equal(s.links, 3); assert.equal(s.patients.withFiles, 3); assert.equal(s.files.valid, 3);
+  assert.equal(Number((await knex('patients').where({ business_id: empty.businessId }).count({ n: '*' }))[0].n), 0, 'the preview creates nothing');
+  await svc.start(empty, j.id);
+  await svc.settle(empty.businessId);
+  const done = await svc.getJob(empty.businessId, j.id);
+  assert.equal(done.status, 'completed');
+  assert.deepEqual([done.sys_patients, done.sys_treatments, done.sys_attachments, done.sys_links], [3, 6, 3, 3]);
+  const pats = await knex('patients').where({ business_id: empty.businessId }).orderBy('legacy_patient_id');
+  assert.deepEqual(pats.map((p) => p.legacy_patient_id), ids);
+  assert.ok(pats.every((p) => p.legacy_source === 'clinica' && p.legacy_import_job_id === j.id));
+  assert.equal(pats[0].legacy_patient_number, '1720'); assert.equal(pats[0].file_number, '1720');
+  for (const p of pats) { // eslint-disable-line no-restricted-syntax
+    const a = await knex('patient_attachments').where({ business_id: empty.businessId, legacy_patient_id: p.legacy_patient_id }).first(); // eslint-disable-line no-await-in-loop
+    assert.equal(a.patient_id, p.id, 'each file on the patient of its Clinica id');
+  }
+  // The unique key: the same Clinica patient cannot be inserted twice.
+  await assert.rejects(() => knex('patients').insert({ business_id: empty.businessId, full_name: 'x', legacy_source: 'clinica', legacy_patient_id: ids[0] }), (e) => e.code === 'ER_DUP_ENTRY');
+  // Running the import again: a new job sees them as already imported and creates nothing.
+  const j2 = await svc.openJob(empty);
+  await svc.addUpload(empty, j2.id, upload(json, 'clinica-patients.json'), 'patients_json');
+  await svc.settle(empty.businessId);
+  const s2 = await svc.summary(empty.businessId, j2.id);
+  assert.deepEqual([s2.patients.create, s2.patients.existing], [0, 3]); assert.equal(s2.initial, false);
+  await svc.start(empty, j2.id); await svc.settle(empty.businessId);
+  assert.equal(Number((await knex('patients').where({ business_id: empty.businessId }).count({ n: '*' }))[0].n), 3);
+  assert.equal(Number((await knex('legacy_treatments').where({ business_id: empty.businessId }).count({ n: '*' }))[0].n), 6);
+});
+
 test('HTTP: owner runs the Import Center; staff cannot; files only through the authorised download', async () => {
   await staff(ctx.businessId, 'receptionist', `li-rec${tag}@t.test`);
   await staff(ctx.businessId, 'doctor', `li-doc${tag}@t.test`);
@@ -323,7 +378,7 @@ test('HTTP: owner runs the Import Center; staff cannot; files only through the a
   r = await owner.get(`/app/import/legacy-clinica/jobs/${job.id}/report.csv`);
   assert.equal(r.status, 200); assert.match(r.text, /reconciliation|patients/);
   r = await owner.get(`/app/import/legacy-clinica/jobs/${job.id}/report.json`);
-  assert.equal(JSON.parse(r.text).reconciliation.length, 4);
+  assert.equal(JSON.parse(r.text).reconciliation.length, 5);
   assert.equal((await owner.get('/admin/import/legacy-clinica')).status, 302);
   // The wizard over HTTP: a new import, the patients file uploaded (multipart, CSRF checked), then cancelled.
   r = await owner.post('/app/import/legacy-clinica/jobs');

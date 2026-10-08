@@ -61,7 +61,8 @@ const jobs = (businessId) => knex('import_jobs').where({ business_id: businessId
 async function openJob(ctx) {
   const cur = await currentJob(ctx.businessId);
   if (cur) return cur;
-  const [id] = await knex('import_jobs').insert({ business_id: ctx.businessId, type: TYPE, status: 'draft', created_by: ctx.userId || null });
+  // The duplicate check against hand-entered patients starts on only when the clinic has such patients.
+  const [id] = await knex('import_jobs').insert({ business_id: ctx.businessId, type: TYPE, status: 'draft', created_by: ctx.userId || null, match_manual: (await manualPatients(ctx.businessId)) > 0 });
   await audit.record(ctx, 'legacy.import_job_created', { entityType: 'import_job', entityId: id, newValues: { source: SOURCE } });
   return getJob(ctx.businessId, id);
 }
@@ -126,84 +127,94 @@ async function removeBatch(ctx, jobId, batchId) {
   await refreshTotals(job.id);
 }
 
-// ================================================================= matching (old patient → a patient here)
-// In this order, the first that gives exactly one patient wins (never the name alone):
-//   legacy_id      the patient here already carries this old id (linked before)
-//   legacy_number  the patient here carries this old patient number
-//   file_number    the patient's file number here is the old patient number (or the old id) AND the first name or the
-//                  mobile agrees — the usual case when the clinic typed its patients with their old numbers
-//   phone          the same mobile number (last 9 digits) AND the same first name — only when exactly one patient here
-//                  has that mobile with that name
-// A patient here already tied to another old id is never matched by file number or mobile, and two old patients that
-// would land on the same patient are both left UNMATCHED (ambiguous) for a person to decide in the recovery list.
+// ================================================================= the plan for each old patient
+// The import is a migration: every Clinica patient becomes a patient here, keyed by (source, old patient id) — the
+// patients table holds that key unique per clinic (patients_legacy_uq), so the same old patient can never be created
+// twice. For each old patient the plan is one of:
+//   new       CREATE a patient here (the usual case — and the only one when the clinic has no patients of its own)
+//   existing  already imported (this old id is on a patient here): nothing is created again; the import only adds
+//             what is missing (resume / re-import)
+//   matched   (only when "check against patients entered by hand" is on) a patient entered here by hand is the same
+//             person: linked to it instead of creating a second one
+//   review    (same option) two old patients point at the same hand-entered patient: left for a person to decide
+// Duplicate check against hand-entered patients is a separate, optional step for a clinic that already has its own
+// patients; it never stops a first migration into an empty clinic. It never uses the name alone:
+//   legacy_number  a patient here carries this old patient number
+//   file_number    the file number here is the old number (or id) AND the first name or the mobile agrees
+//   phone          the same mobile (last 9 digits) AND the same first name, with exactly one such patient here
 const normFile = (v) => { const s = String(v === null || v === undefined ? '' : v).trim().toLowerCase(); return /^\d+$/.test(s) ? String(Number(s)) : s; };
 const normPhone = (v) => { const d = String(v || '').replace(/\D+/g, ''); return d.length >= 9 ? d.slice(-9) : null; };
 const firstName = (v) => require('../clinic/records.lib').foldText(String(v || '')).toLowerCase().replace(/[^\p{L}\p{N} ]+/gu, ' ').trim().split(/\s+/)[0] || ''; // eslint-disable-line global-require
 
-async function matchIndex(businessId) {
-  const rows = await knex('patients').where({ business_id: businessId }).whereNull('transferred_at')
-    .select('id', 'full_name', 'phone', 'phone2', 'file_number', 'legacy_source', 'legacy_patient_id', 'legacy_patient_number');
+/** Patients of the clinic entered by hand (not brought by a legacy import, not moved away). */
+const manualPatients = async (businessId) => Number((await knex('patients').where({ business_id: businessId }).whereNull('legacy_patient_id').whereNull('transferred_at').count({ n: '*' }))[0].n);
+
+async function matchIndex(businessId, withManual) {
   const ix = { byId: new Map(), byNumber: new Map(), byFile: new Map(), byPhone: new Map(), tied: new Map() };
-  const push = (m, k, v) => { if (!k) return; if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
-  rows.forEach((r) => {
-    if (r.legacy_patient_id && (!r.legacy_source || r.legacy_source === SOURCE)) ix.byId.set(String(r.legacy_patient_id), r.id);
-    if (r.legacy_patient_id) ix.tied.set(r.id, String(r.legacy_patient_id));
-    if (r.legacy_patient_number) push(ix.byNumber, normFile(r.legacy_patient_number), r.id);
-    const name = firstName(r.full_name);
-    if (r.file_number) push(ix.byFile, normFile(r.file_number), { id: r.id, name, phones: [r.phone, r.phone2].map(normPhone).filter(Boolean) });
-    [r.phone, r.phone2].map(normPhone).filter(Boolean).forEach((ph) => push(ix.byPhone, ph, { id: r.id, name }));
-  });
+  const imported = await knex('patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('legacy_patient_id').select('id', 'legacy_patient_id');
+  imported.forEach((r) => { ix.byId.set(String(r.legacy_patient_id), r.id); ix.tied.set(r.id, String(r.legacy_patient_id)); });
   const staged = await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').select('legacy_patient_id', 'patient_id');
   staged.forEach((r) => { if (!ix.byId.has(r.legacy_patient_id)) ix.byId.set(r.legacy_patient_id, r.patient_id); ix.tied.set(r.patient_id, r.legacy_patient_id); });
+  if (!withManual) return ix;
+  const rows = await knex('patients').where({ business_id: businessId }).whereNull('transferred_at')
+    .select('id', 'full_name', 'phone', 'phone2', 'file_number', 'legacy_patient_id', 'legacy_patient_number');
+  const push = (m, k, v) => { if (!k) return; if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+  rows.forEach((r) => {
+    if (r.legacy_patient_id) { ix.tied.set(r.id, String(r.legacy_patient_id)); return; } // already someone's old file
+    if (r.legacy_patient_number) push(ix.byNumber, normFile(r.legacy_patient_number), r.id);
+    const name = firstName(r.full_name); const phones = [r.phone, r.phone2].map(normPhone).filter(Boolean);
+    if (r.file_number) push(ix.byFile, normFile(r.file_number), { id: r.id, name, phones });
+    phones.forEach((ph) => push(ix.byPhone, ph, { id: r.id, name }));
+  });
   return ix;
 }
 
-/** The patient here for one old patient → { id, by } or null. */
+/** The plan for one old patient → { plan, id, by }. */
 function candidate(ix, { id, number, mobile, name }) {
   const exact = ix.byId.get(String(id));
-  if (exact) return { id: exact, by: 'legacy_id' };
-  const free = (pid) => !ix.tied.has(pid) || ix.tied.get(pid) === String(id);
+  if (exact) return { plan: 'existing', id: exact, by: 'legacy_id' };
+  const free = (pid) => !ix.tied.has(pid);
   const one = (list) => { const l = [...new Set((list || []).filter(free))]; return l.length === 1 ? l[0] : null; };
   const n = number ? normFile(number) : null;
   let hit = n && one(ix.byNumber.get(n));
-  if (hit) return { id: hit, by: 'legacy_number' };
-  // A file number counts only when the first name or the mobile agrees too (numbers given automatically here — 1, 2,
-  // 3… — can be the same numbers as the old system's for other people).
+  if (hit) return { plan: 'matched', id: hit, by: 'legacy_number' };
   const ph = normPhone(mobile); const fn = firstName(name);
   const agrees = (c) => (fn && c.name === fn) || (ph && c.phones.includes(ph));
   const byFile = (k) => one((ix.byFile.get(k) || []).filter(agrees).map((c) => c.id));
   hit = (n && byFile(n)) || byFile(normFile(id));
-  if (hit) return { id: hit, by: 'file_number' };
+  if (hit) return { plan: 'matched', id: hit, by: 'file_number' };
   if (ph && fn) {
     hit = one((ix.byPhone.get(ph) || []).filter((c) => c.name === fn).map((c) => c.id));
-    if (hit) return { id: hit, by: 'phone' };
+    if (hit) return { plan: 'matched', id: hit, by: 'phone' };
   }
-  return null;
+  return { plan: 'new', id: null, by: null };
 }
 
-/** Matches (again) every old patient of the job; two old patients on one patient → both ambiguous. */
+/** Plans (again) every old patient of the job that is not imported yet. */
 async function rematch(job) {
-  const ix = await matchIndex(job.business_id);
+  const ix = await matchIndex(job.business_id, Boolean(job.match_manual));
   const items = await knex('import_items').where({ job_id: job.id, kind: 'patient' }).whereIn('status', ['pending', 'unmatched'])
     .select('id', 'legacy_patient_id', 'legacy_patient_number', 'mobile', 'display_name');
   const res = new Map(); const claims = new Map();
   items.forEach((it) => {
     const c = candidate(ix, { id: it.legacy_patient_id, number: it.legacy_patient_number, mobile: it.mobile, name: it.display_name });
     res.set(it.id, c);
-    if (c) { if (!claims.has(c.id)) claims.set(c.id, []); claims.get(c.id).push(it); }
+    if (c.plan === 'matched') { if (!claims.has(c.id)) claims.set(c.id, []); claims.get(c.id).push(it); }
   });
   await knex('import_errors').where({ job_id: job.id, error_code: 'AMBIGUOUS_MATCH' }).del();
   for (const [pid, list] of claims) { // eslint-disable-line no-restricted-syntax
     if (list.length < 2) continue; // eslint-disable-line no-continue
     for (const it of list) { // eslint-disable-line no-restricted-syntax
-      res.set(it.id, { id: null, by: 'ambiguous' });
-      await logError(job, { item: it.id, legacyId: it.legacy_patient_id, stage: 'matching', code: 'AMBIGUOUS_MATCH', level: 'warning', message: `${list.length} old patients (${list.map((x) => x.legacy_patient_id).join(', ')}) point at the same patient here (#${pid}); link them by hand.` }); // eslint-disable-line no-await-in-loop
+      res.set(it.id, { plan: 'review', id: null, by: 'ambiguous' });
+      await logError(job, { item: it.id, legacyId: it.legacy_patient_id, stage: 'matching', code: 'AMBIGUOUS_MATCH', level: 'warning', message: `${list.length} old patients (${list.map((x) => x.legacy_patient_id).join(', ')}) point at the same patient here (#${pid}); decide in the recovery list.` }); // eslint-disable-line no-await-in-loop
     }
   }
+  // Grouped updates (13,000 patients → a handful of statements).
+  const groups = new Map();
+  items.forEach((it) => { const c = res.get(it.id); const k = `${c.plan}|${c.by || ''}|${c.id || ''}`; if (!groups.has(k)) groups.set(k, { c, ids: [] }); groups.get(k).ids.push(it.id); });
   await knex.transaction(async (trx) => {
-    for (const it of items) { // eslint-disable-line no-restricted-syntax
-      const c = res.get(it.id);
-      await trx('import_items').where({ id: it.id }).update({ match: c && c.id ? 'matched' : 'unmatched', match_by: c ? c.by : null, target_id: c && c.id ? c.id : null }); // eslint-disable-line no-await-in-loop
+    for (const { c, ids } of groups.values()) { // eslint-disable-line no-restricted-syntax
+      for (let i = 0; i < ids.length; i += 1000) await trx('import_items').whereIn('id', ids.slice(i, i + 1000)).update({ match: c.plan, match_by: c.by, target_id: c.id, status: 'pending' }); // eslint-disable-line no-await-in-loop
     }
   });
 }
@@ -387,11 +398,18 @@ async function counts(jobId) {
 /** Everything the preview / dashboard shows for a job. */
 async function summary(businessId, jobId) {
   const job = await getJob(businessId, jobId);
-  const [batches, c, errs] = await Promise.all([
+  const okFile = ['pending', 'processing', 'imported', 'duplicate', 'failed'];
+  const patientIds = knex('import_items').where({ job_id: job.id, kind: 'patient' }).select('legacy_patient_id');
+  const [batches, c, errs, codes, [withFiles], [orphanFiles], manual] = await Promise.all([
     knex('import_batches').where({ job_id: job.id }).orderBy([{ column: 'kind', order: 'desc' }, { column: 'batch_no' }, { column: 'id' }]),
     counts(job.id),
     knex('import_errors').where({ job_id: job.id }).groupBy('level', 'status').select('level', 'status').count({ n: '*' }),
+    knex('import_errors').where({ job_id: job.id }).whereIn('error_code', ['DUPLICATE_PATIENT_ID', 'MISSING_PATIENT_ID']).groupBy('error_code').select('error_code').count({ n: '*' }),
+    knex('import_items').where({ job_id: job.id, kind: 'attachment' }).whereIn('status', okFile).countDistinct({ n: 'legacy_patient_id' }),
+    knex('import_items').where({ job_id: job.id, kind: 'attachment' }).whereIn('status', okFile).whereNotIn('legacy_patient_id', patientIds).count({ n: '*' }),
+    manualPatients(job.business_id),
   ]);
+  const code = (k) => Number((codes.find((x) => x.error_code === k) || {}).n || 0);
   const zips = batches.filter((b) => b.kind === 'attachments_zip');
   const zipsOk = zips.filter((b) => b.status !== 'duplicate');
   const expected = Math.max(0, ...zipsOk.map((b) => Number(b.batch_total) || 0));
@@ -406,7 +424,15 @@ async function summary(businessId, jobId) {
     job, batches,
     patientsFile: batches.find((b) => b.kind === 'patients_json' && b.status !== 'duplicate') || null,
     zips: { list: zips, detected: zipsOk.length, expected: expected || null, valid: zipsOk.filter((b) => b.status === 'valid').length, invalid: zipsOk.filter((b) => b.status === 'invalid').length, duplicates: zips.length - zipsOk.length, missing, analyzing: zipsOk.filter((b) => ['uploaded', 'analyzing'].includes(b.status)).length },
-    patients: { detected: job.src_patients, matched: c.match.matched || 0, unmatched: c.match.unmatched || 0, created: c.match.new || 0, status: p, by: c.by },
+    // create: new patients to create (or created); existing: already imported before (no duplicate is made);
+    // matched: linked to a hand-entered patient (optional check); review: needs a person (ambiguous, or no old id)
+    patients: {
+      detected: job.src_patients, create: c.match.new || 0, existing: c.match.existing || 0, matched: c.match.matched || 0,
+      review: (c.match.review || 0) + code('MISSING_PATIENT_ID'), ambiguous: c.match.review || 0, missingId: code('MISSING_PATIENT_ID'),
+      duplicates: code('DUPLICATE_PATIENT_ID'), withFiles: Number(withFiles.n) || 0, status: p, by: c.by,
+    },
+    manual, matchManual: Boolean(job.match_manual), initial: manual === 0 && !(c.match.existing),
+    orphanFiles: Number(orphanFiles.n) || 0,
     treatments: job.src_treatments, clinical: job.src_clinical, links: job.src_links,
     files: {
       total: Object.values(att).reduce((a, b) => a + b, 0), valid: (att.pending || 0) + (att.processing || 0) + (att.imported || 0) + (att.duplicate || 0) + (att.failed || 0),
@@ -419,26 +445,31 @@ async function summary(businessId, jobId) {
 }
 
 // ================================================================= start
-async function start(ctx, jobId, { createUnmatched = false } = {}) {
+async function start(ctx, jobId) {
   const job = await getJob(ctx.businessId, jobId);
   if (job.status !== 'ready') throw fail('IMPORT_NOT_READY', 'The files are still being checked.', 409);
   const s = await summary(ctx.businessId, job.id);
   if (!s.patientsFile || s.patientsFile.status !== 'valid') throw fail('IMPORT_NO_PATIENTS', 'Upload the patients file first.', 409);
   const n = await knex('import_jobs').where({ id: job.id, status: 'ready' }).update({
-    status: 'processing', stage: 'patients_import', create_unmatched: Boolean(createUnmatched), started_at: now(), heartbeat_at: null,
+    status: 'processing', stage: 'patients_import', create_unmatched: true, started_at: now(), heartbeat_at: null,
     total: s.patients.detected + s.files.valid, processed: 0, success: 0, failed: 0, skipped: 0,
   });
   if (!n) throw fail('IMPORT_NOT_READY', 'The files are still being checked.', 409);
-  await audit.record(ctx, 'legacy.import_started', { entityType: 'import_job', entityId: job.id, newValues: { patients: s.patients.detected, treatments: s.treatments, attachments: s.files.total, create_unmatched: Boolean(createUnmatched) } });
+  await audit.record(ctx, 'legacy.import_started', { entityType: 'import_job', entityId: job.id, newValues: { patients: s.patients.detected, create: s.patients.create, existing: s.patients.existing, matched: s.patients.matched, review: s.patients.review, treatments: s.treatments, attachments: s.files.valid, match_manual: s.matchManual } });
   kick(ctx.businessId);
 }
 
-/** Runs the matching again (e.g. after patients were added or numbered here) — before the import starts. */
-async function rematchJob(ctx, jobId) {
-  const job = await getJob(ctx.businessId, jobId);
+/** Plans again (e.g. after patients were added here) — before the import starts; `matchManual` switches the optional
+ *  duplicate check against hand-entered patients on / off. */
+async function rematchJob(ctx, jobId, { matchManual } = {}) {
+  let job = await getJob(ctx.businessId, jobId);
   if (job.status !== 'ready') throw fail('IMPORT_NOT_READY', 'The files are still being checked.', 409);
+  if (matchManual !== undefined) {
+    await knex('import_jobs').where({ id: job.id }).update({ match_manual: Boolean(matchManual) });
+    job = await getJob(ctx.businessId, jobId);
+  }
   await rematch(job);
-  await audit.record(ctx, 'legacy.import_rematched', { entityType: 'import_job', entityId: job.id });
+  await audit.record(ctx, 'legacy.import_rematched', { entityType: 'import_job', entityId: job.id, newValues: { match_manual: Boolean(job.match_manual) } });
 }
 
 async function cancel(ctx, jobId) {
@@ -478,26 +509,23 @@ async function importPatient(job, item, index, file) {
     }
   }
   const business = job.business_id;
-  let created = false;
+  let outcome = null;
   await knex.transaction(async (trx) => {
-    // Who this patient is here: matched by the old id (else the old number), or — when asked — a new patient file.
+    // 1. Already imported? (the old id is on a patient here) → no new patient; only what is missing is added.
     let pid = (await trx('patients').where({ business_id: business, legacy_source: SOURCE, legacy_patient_id: p.id }).first('id'))?.id
       || (await trx('legacy_patients').where({ business_id: business, legacy_source: SOURCE, legacy_patient_id: p.id }).whereNotNull('patient_id').first('patient_id'))?.patient_id
-      // else the patient chosen by the matching (file number / mobile…), if it is still free for this old id
-      || (item.target_id ? (await trx('patients').where({ id: item.target_id, business_id: business }).where((w) => w.whereNull('legacy_patient_id').orWhere({ legacy_source: SOURCE, legacy_patient_id: p.id })).first('id'))?.id : null)
       || null;
-    if (!pid && job.create_unmatched && item.match_by !== 'ambiguous') {
-      const phone = p.mobile ? String(p.mobile).replace(/[^\d+]/g, '').slice(0, 40) : null;
-      const clash = phone ? await trx('patients').where({ business_id: business, phone }).first('id') : null;
-      if (clash) {
-        await logError(job, { item: item.id, legacyId: p.id, stage: 'patients_import', code: 'PHONE_BELONGS_TO_PATIENT', message: `Mobile ${phone} belongs to a patient here (#${clash.id}); link them by hand if they are the same person.`, level: 'warning' }, trx);
-      } else {
-        [pid] = await trx('patients').insert({
-          business_id: business, full_name: clip(p.name, 190) || `#${p.id}`, phone, file_number: null,
-          legacy_source: SOURCE, legacy_patient_id: p.id, legacy_patient_number: clip(p.number, 64), legacy_import_job_id: job.id, legacy_imported_at: now(),
-        });
-        created = true;
-      }
+    if (pid) outcome = 'existing';
+    // 2. The optional check against hand-entered patients chose one (still free for this old id) → linked to it.
+    if (!pid && item.match === 'matched' && item.target_id) {
+      pid = (await trx('patients').where({ id: item.target_id, business_id: business }).whereNull('legacy_patient_id').first('id'))?.id || null;
+      outcome = pid ? 'matched' : 'review';
+    }
+    if (!pid && item.match === 'review') outcome = 'review';
+    // 3. Otherwise: a NEW patient, carrying the old system's id and number.
+    if (!pid && outcome !== 'review') {
+      pid = await createPatient(trx, business, job, p);
+      outcome = 'new';
     }
     const lp = {
       business_id: business, legacy_source: SOURCE, legacy_patient_id: p.id, legacy_patient_number: clip(p.number, 64), old_name: clip(p.name, 190),
@@ -535,9 +563,26 @@ async function importPatient(job, item, index, file) {
       }
     }
     if (pid) await linkRows(trx, business, ref, p.id, pid, job.id, p.number);
-    await trx('import_items').where({ id: item.id }).update({ status: pid ? 'imported' : 'unmatched', match: created ? 'new' : (pid ? 'matched' : 'unmatched'), target_id: pid || null, message: null, updated_at: now() });
+    await trx('import_items').where({ id: item.id }).update({ status: pid ? 'imported' : 'unmatched', match: outcome, target_id: pid || null, message: null, updated_at: now() });
   });
-  return { pid: null, created };
+  return outcome;
+}
+
+const GENDER = { male: 'male', m: 'male', 'ذكر': 'male', man: 'male', female: 'female', f: 'female', 'أنثى': 'female', 'انثى': 'female', woman: 'female' };
+/** A new patient from an old patient's record: name, phones, e-mail, gender, birth date, its old number as the file
+ *  number (when free here), and the old system's id / number / import kept on the patient. */
+async function createPatient(trx, business, job, p) {
+  const phone = (v) => (v ? String(v).replace(/[^\d+]/g, '').slice(0, 40) || null : null);
+  const fileNo = p.number ? String(p.number).trim().slice(0, 30) : null;
+  const fileFree = fileNo && !(await trx('patients').where({ business_id: business, file_number: fileNo }).first('id'));
+  const email = p.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email) ? String(p.email).slice(0, 190) : null;
+  const [pid] = await trx('patients').insert({
+    business_id: business, full_name: clip(p.name, 190) || `Clinica #${p.id}`, phone: phone(p.mobile) || phone(p.telephone), phone2: p.mobile ? phone(p.telephone) : null,
+    email, gender: GENDER[String(p.gender || '').trim().toLowerCase()] || null, date_of_birth: map.isoDay(p.birth),
+    file_number: fileFree ? fileNo : null,
+    legacy_source: SOURCE, legacy_patient_id: p.id, legacy_patient_number: clip(p.number, 64), legacy_import_job_id: job.id, legacy_imported_at: now(),
+  });
+  return pid;
 }
 
 async function insertChunks(trx, table, rows) { for (let i = 0; i < rows.length; i += 500) await trx(table).insert(rows.slice(i, i + 500)); } // eslint-disable-line no-await-in-loop
@@ -685,7 +730,9 @@ async function importRound(job) {
       try {
         if (kind === 'patient') {
           if (!pjson || !pjson.stored_path || !fs.existsSync(pjson.stored_path)) throw fail('SOURCE_GONE', 'The patients file is no longer on the server; upload it again.');
-          await importPatient(job, item, index, pjson.stored_path); // eslint-disable-line no-await-in-loop
+          try { await importPatient(job, item, index, pjson.stored_path); } // eslint-disable-line no-await-in-loop
+          // Another run created this old patient at the same moment (unique key): once more finds it imported.
+          catch (e) { if (e.code !== 'ER_DUP_ENTRY') throw e; await importPatient(job, item, index, pjson.stored_path); } // eslint-disable-line no-await-in-loop
           ok += 1;
         } else {
           const r = await importAttachment(job, item, zips); // eslint-disable-line no-await-in-loop
@@ -715,17 +762,21 @@ async function reconcile(job) {
   await knex('import_jobs').where({ id: job.id }).update({ stage: 'reconcile' });
   const ids = knex('import_items').where({ job_id: job.id, kind: 'patient' }).select('legacy_patient_id');
   const refs = knex('legacy_patients').where({ business_id: job.business_id, legacy_source: SOURCE }).whereIn('legacy_patient_id', ids).select('id');
-  const [[pa], [tr], [cl], [at]] = await Promise.all([
-    knex('legacy_patients').where({ business_id: job.business_id, legacy_source: SOURCE }).whereIn('legacy_patient_id', ids).count({ n: '*' }),
+  const [[pa], [tr], [cl], [at], [li]] = await Promise.all([
+    // patients: old patients of the file that are a patient here (created, already imported, or linked)
+    knex('legacy_patients').where({ business_id: job.business_id, legacy_source: SOURCE }).whereIn('legacy_patient_id', ids).whereNotNull('patient_id').count({ n: '*' }),
     knex('legacy_treatments').whereIn('legacy_patient_ref', refs).count({ n: '*' }),
     knex('legacy_clinical_records').whereIn('legacy_patient_ref', refs).count({ n: '*' }),
     knex('import_items').where({ job_id: job.id, kind: 'attachment' }).whereIn('status', ['imported', 'duplicate']).count({ n: '*' }),
+    // files of this import that are attached to a patient (a link in the source is not yet a file)
+    knex('patient_attachments').where({ business_id: job.business_id, legacy_source: SOURCE }).whereNotNull('patient_id')
+      .whereIn('id', knex('import_items').where({ job_id: job.id, kind: 'attachment' }).whereIn('status', ['imported', 'duplicate']).whereNotNull('target_id').select('target_id')).count({ n: '*' }),
   ]);
   const fresh = await knex('import_jobs').where({ id: job.id }).first();
-  const sys = { sys_patients: Number(pa.n), sys_treatments: Number(tr.n), sys_clinical: Number(cl.n), sys_attachments: Number(at.n) };
+  const sys = { sys_patients: Number(pa.n), sys_treatments: Number(tr.n), sys_clinical: Number(cl.n), sys_attachments: Number(at.n), sys_links: Number(li.n) };
   const [[openErr]] = await Promise.all([knex('import_errors').where({ job_id: job.id, level: 'error', status: 'open' }).count({ n: '*' })]);
   const clean = sys.sys_patients === fresh.src_patients && sys.sys_treatments >= fresh.src_treatments && sys.sys_clinical >= fresh.src_clinical
-    && sys.sys_attachments === fresh.src_attachments && Number(openErr.n) === 0;
+    && sys.sys_attachments === fresh.src_attachments && sys.sys_links >= fresh.src_links && Number(openErr.n) === 0;
   await knex('import_jobs').where({ id: job.id }).update({ ...sys, status: clean ? 'completed' : 'completed_with_issues', stage: null, completed_at: now(), heartbeat_at: null });
   await audit.record({ businessId: job.business_id, userId: job.created_by }, 'legacy.import_completed', { entityType: 'import_job', entityId: job.id, newValues: { ...sys, status: clean ? 'completed' : 'completed_with_issues' } });
   // The uploads are no longer needed once everything is in (kept while something can still be retried).
@@ -739,7 +790,9 @@ async function reconcile(job) {
 function reconciliation(job) {
   const row = (k, src, sys) => ({ key: k, source: src, system: sys === null ? null : sys, difference: sys === null ? null : sys - src });
   return [row('patients', job.src_patients, job.sys_patients), row('treatments', job.src_treatments, job.sys_treatments),
-    row('clinical', job.src_clinical, job.sys_clinical), row('attachments', job.src_attachments, job.sys_attachments)];
+    row('clinical', job.src_clinical, job.sys_clinical), row('attachments', job.src_attachments, job.sys_attachments),
+    // the source's attachment links vs the files actually attached to a patient (a link is not a file)
+    row('attachment_links', job.src_links, job.sys_links === undefined ? null : job.sys_links)];
 }
 
 // ================================================================= errors: retry / ignore
