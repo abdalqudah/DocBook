@@ -1,0 +1,131 @@
+<% var L = 'legacy.'; var dl = function (a, inline) { return '/api/patients/' + p.id + '/attachments/' + a.id + '/download' + (inline ? '?inline=1' : ''); };
+   var kb = function (n) { n = Number(n) || 0; return n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' MB' : fmt.number(Math.max(1, Math.round(n / 1024))) + ' KB'; };
+   if (!lg) lg = { patients: [], treatments: [], clinical: [], attachments: [], links: [], fields: [] };
+   var imgs = lg.attachments.filter(function (a) { return a.category === 'image'; }); var docs = lg.attachments.filter(function (a) { return a.category !== 'image'; }); %>
+<div class="lg-tab">
+<nav class="lg-subnav" aria-label="<%= t('patients.tab.legacy') %>">
+  <a href="#lg-overview"><%- icon('id-card', 'icon-sm') %><%= t(L + 'tab.overview') %></a>
+  <a href="#lg-treatments"><%- icon('stethoscope', 'icon-sm') %><%= t(L + 'tab.treatments') %> <span class="badge"><%= fmt.number(lg.treatments.length) %></span></a>
+  <a href="#lg-clinical"><%- icon('clipboard-list', 'icon-sm') %><%= t(L + 'tab.clinical') %> <span class="badge"><%= fmt.number(lg.clinical.length) %></span></a>
+  <a href="#lg-attachments"><%- icon('paperclip', 'icon-sm') %><%= t(L + 'tab.attachments') %> <span class="badge"><%= fmt.number(lg.attachments.length) %></span></a>
+</nav>
+
+<section class="panel mb-4" id="lg-overview">
+  <div class="panel-head"><div><h2><%- icon('archive-restore', 'icon-sm') %> <%= t('patients.tab.legacy') %></h2></div></div>
+  <div class="panel-body stack">
+  <% lg.patients.forEach(function (o) { var _urls = lg.links.filter(function (l) { return l.legacy_patient_ref === o.id; }); var _f = lg.fields.filter(function (f) { return f.owner_id === o.id; }); %>
+    <dl class="dl lg-dl">
+      <dt><%= t(L + 'ov.legacy_id') %></dt><dd><bdi class="num strong"><%= o.legacy_patient_id %></bdi></dd>
+      <dt><%= t(L + 'ov.legacy_number') %></dt><dd><bdi class="num"><%= o.legacy_patient_number || '—' %></bdi></dd>
+      <dt><%= t(L + 'ov.old_name') %></dt><dd dir="auto"><%= o.old_name || '—' %></dd>
+      <dt><%= t(L + 'ov.mobile') %></dt><dd><bdi class="num"><%= o.old_mobile || '—' %></bdi></dd>
+      <dt><%= t(L + 'ov.telephone') %></dt><dd><bdi class="num"><%= o.old_telephone || '—' %></bdi></dd>
+      <dt><%= t(L + 'ov.group') %></dt><dd dir="auto"><%= o.old_group || '—' %></dd>
+      <dt><%= t(L + 'ov.nationality') %></dt><dd dir="auto"><%= o.nationality || '—' %></dd>
+      <% if (o.gender) { %><dt><%= t(L + 'ov.gender') %></dt><dd dir="auto"><%= o.gender %></dd><% } %>
+      <% if (o.birth_date) { %><dt><%= t(L + 'ov.birth') %></dt><dd><bdi><%= o.birth_date %></bdi></dd><% } %>
+      <% if (o.email) { %><dt><%= t(L + 'ov.email') %></dt><dd dir="ltr"><%= o.email %></dd><% } %>
+      <dt><%= t(L + 'ov.urls') %></dt><dd><% if (!_urls.length) { %>—<% } else { %><ul class="lg-urls"><% _urls.forEach(function (u) { %><li><span class="small muted" dir="auto"><%= u.label || '' %></span> <span class="mono lg-url" dir="ltr"><%= u.url %></span></li><% }) %></ul><% } %></dd>
+      <dt><%= t(L + 'ov.imported') %></dt><dd><%= o.imported_on ? fmt.date(o.imported_on) : '—' %></dd>
+    </dl>
+    <% if (_f.length) { %>
+    <details class="lg-more"><summary><%= t(L + 'ov.other') %> (<%= fmt.number(_f.length) %>)</summary>
+      <dl class="dl lg-dl small"><% _f.forEach(function (f) { %><dt dir="ltr"><%= f.field %></dt><dd dir="auto"><%= f.value === null ? '—' : f.value %></dd><% }) %></dl>
+    </details>
+    <% } %>
+  <% }) %>
+  <% if (!lg.patients.length) { %><p class="muted small">—</p><% } %>
+  </div>
+</section>
+
+<section class="panel mb-4" id="lg-treatments">
+  <div class="panel-head"><div><h2><%= t(L + 'tab.treatments') %></h2></div></div>
+  <% if (!lg.treatments.length) { %><div class="empty compact"><p><%= t(L + 'no_treatments') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive lg-treat">
+    <thead><tr><th><%= t(L + 't.date') %></th><th><%= t(L + 't.tooth') %></th><th><%= t(L + 't.description') %></th><th><%= t(L + 't.doctor') %></th><th class="num"><%= t(L + 't.price') %></th><th><%= t(L + 't.type') %></th><th><%= t(L + 't.status') %></th><th><%= t(L + 't.complete') %></th><th><%= t(L + 't.note') %></th><th><%= t(L + 't.referred') %></th></tr></thead>
+    <tbody>
+    <% lg.treatments.forEach(function (r) { %>
+      <tr>
+        <td data-label="<%= t(L + 't.date') %>" class="nowrap"><bdi><%= r.treatment_on ? fmt.date(r.treatment_on) : (r.treatment_date || '—') %></bdi></td>
+        <td data-label="<%= t(L + 't.tooth') %>" class="num"><%= r.tooth || '—' %></td>
+        <td data-label="<%= t(L + 't.description') %>" dir="auto"><%= r.description || '—' %><% if (r.extra && r.extra.length) { %><details class="lg-more small"><summary><%= t(L + 't.more') %></summary><dl class="dl"><% r.extra.forEach(function (f) { %><dt dir="ltr"><%= f.field %></dt><dd dir="auto"><%= f.value === null ? '—' : f.value %></dd><% }) %></dl></details><% } %></td>
+        <td data-label="<%= t(L + 't.doctor') %>" dir="auto"><%= r.doctor || '—' %></td>
+        <td data-label="<%= t(L + 't.price') %>" class="num"><bdi><%= r.price_raw || (r.price !== null ? fmt.number(r.price) : '—') %></bdi></td>
+        <td data-label="<%= t(L + 't.type') %>" dir="auto"><%= r.type || '—' %></td>
+        <td data-label="<%= t(L + 't.status') %>"><% if (r.status) { %><span class="badge" dir="auto"><%= r.status %></span><% } else { %>—<% } %></td>
+        <td data-label="<%= t(L + 't.complete') %>"><bdi><%= r.complete_date || '—' %></bdi></td>
+        <td data-label="<%= t(L + 't.note') %>" dir="auto" class="small"><%= r.note || '—' %></td>
+        <td data-label="<%= t(L + 't.referred') %>" dir="auto"><%= r.referred_by || '—' %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>
+
+<section class="panel mb-4" id="lg-clinical">
+  <div class="panel-head"><div><h2><%= t(L + 'tab.clinical') %></h2></div></div>
+  <div class="panel-body stack">
+  <% if (!lg.clinical.length) { %><p class="muted"><%= t(L + 'no_clinical') %></p><% } %>
+  <% lg.clinical.forEach(function (tb) { %>
+    <div class="lg-ctable">
+      <h3 class="lg-ctitle" dir="ltr"><%= tb.key.replace(/_/g, ' ') %> <span class="badge"><%= fmt.number(tb.rows.length) %></span></h3>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><% tb.columns.forEach(function (c) { %><th dir="ltr"><%= c %></th><% }) %></tr></thead>
+        <tbody><% tb.rows.forEach(function (row) { %><tr><% tb.columns.forEach(function (c) { %><td dir="auto"><%= row[c] === undefined || row[c] === null ? '' : row[c] %></td><% }) %></tr><% }) %></tbody>
+      </table></div>
+    </div>
+  <% }) %>
+  </div>
+</section>
+
+<section class="panel mb-4" id="lg-attachments">
+  <div class="panel-head"><div><h2><%= t(L + 'tab.attachments') %></h2></div></div>
+  <div class="panel-body stack">
+    <% if (!lg.attachments.length) { %><p class="muted"><%= t(L + 'no_files') %></p><% } %>
+    <% if (imgs.length) { %>
+    <h3 class="lg-ctitle"><%- icon('images', 'icon-sm') %> <%= t(L + 'images') %> <span class="badge"><%= fmt.number(imgs.length) %></span></h3>
+    <div class="lg-gallery">
+      <% imgs.forEach(function (a) { %>
+      <figure class="lg-thumb">
+        <% if (a.inline) { %>
+        <button type="button" class="lg-thumb-btn" data-lg-view="<%= dl(a, true) %>" data-download="<%= dl(a) %>" data-name="<%= a.original_filename %>" data-date="<%= fmt.date(a.uploaded_at) %>" data-source="<%= a.source_url || '' %>" aria-label="<%= t(L + 'preview') %>: <%= a.original_filename %>">
+          <img src="<%= dl(a, true) %>" alt="<%= a.original_filename %>" loading="lazy" decoding="async">
+        </button>
+        <% } else { %><a class="lg-thumb-btn lg-thumb-file" href="<%= dl(a) %>"><%- icon('image') %><span class="small">.<%= (a.original_filename.split('.').pop() || '').toLowerCase() %></span></a><% } %>
+        <figcaption><span class="ellipsis d-block small" dir="auto" title="<%= a.original_filename %>"><%= a.original_filename %></span><span class="small muted"><%= kb(a.file_size) %> · <%= fmt.date(a.uploaded_at) %></span></figcaption>
+      </figure>
+      <% }) %>
+    </div>
+    <% } %>
+    <% if (docs.length) { %>
+    <h3 class="lg-ctitle"><%- icon('file-text', 'icon-sm') %> <%= t(L + 'documents') %> <span class="badge"><%= fmt.number(docs.length) %></span></h3>
+    <div class="lg-docs">
+      <% docs.forEach(function (a) { var ext = (a.original_filename.split('.').pop() || '').toUpperCase().slice(0, 5); %>
+      <div class="lg-doc">
+        <span class="lg-doc-ext" aria-hidden="true"><%= ext %></span>
+        <div class="grow min-w-0">
+          <div class="strong ellipsis" dir="auto" title="<%= a.original_filename %>"><%= a.original_filename %></div>
+          <div class="small muted"><%= kb(a.file_size) %> · <%= t(L + 'uploaded') %> <%= fmt.date(a.uploaded_at) %><% if (a.source_url) { %> · <span dir="ltr" class="lg-url" title="<%= a.source_url %>"><%= t(L + 'source') %></span><% } %></div>
+        </div>
+        <% if (a.inline) { %><a class="btn btn-ghost btn-sm" href="<%= dl(a, true) %>" target="_blank" rel="noopener"><%- icon('eye', 'icon-sm') %><%= t(L + 'preview') %></a><% } %>
+        <a class="btn btn-secondary btn-sm" href="<%= dl(a) %>"><%- icon('download', 'icon-sm') %><%= t(L + 'download') %></a>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</section>
+</div>
+
+<dialog class="dialog lg-viewer" data-lg-viewer aria-label="<%= t(L + 'preview') %>">
+  <div class="lg-viewer-bar">
+    <div class="grow min-w-0"><div class="strong ellipsis" data-v-name dir="auto"></div><div class="small muted"><span data-v-date></span> <span class="lg-url" dir="ltr" data-v-source></span></div></div>
+    <button class="btn btn-ghost btn-icon btn-sm" type="button" data-v-zoom="-1" aria-label="<%= t(L + 'zoom_out') %>"><%- icon('minus', 'icon-sm') %></button>
+    <button class="btn btn-ghost btn-icon btn-sm" type="button" data-v-zoom="1" aria-label="<%= t(L + 'zoom_in') %>"><%- icon('plus', 'icon-sm') %></button>
+    <button class="btn btn-ghost btn-icon btn-sm" type="button" data-v-full aria-label="<%= t(L + 'fullscreen') %>"><%- icon('maximize', 'icon-sm') %></button>
+    <a class="btn btn-ghost btn-icon btn-sm" data-v-download href="#" aria-label="<%= t(L + 'download') %>"><%- icon('download', 'icon-sm') %></a>
+    <button class="btn btn-ghost btn-icon btn-sm" type="button" data-v-close aria-label="<%= t(L + 'close') %>"><%- icon('x', 'icon-sm') %></button>
+  </div>
+  <div class="lg-viewer-stage" data-v-stage><img alt="" data-v-img></div>
+</dialog>

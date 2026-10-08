@@ -1,0 +1,217 @@
+<% var B = '/app/import/legacy-clinica'; var J = B + '/jobs/' + s.job.id; var st = s.job.status;
+   var editable = ['draft', 'analyzing', 'ready'].includes(st); var done = ['completed', 'completed_with_issues'].includes(st);
+   var stepIdx = done ? 4 : st === 'processing' || st === 'failed' ? 3 : st === 'ready' && s.patientsFile && s.patientsFile.status === 'valid' ? 2 : s.patientsFile ? 1 : 0;
+   var mb = function (n) { n = Number(n) || 0; return n >= 1073741824 ? fmt.number(Math.round(n / 107374182.4) / 10) + ' GB' : n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' MB' : fmt.number(Math.max(1, Math.round(n / 1024))) + ' KB'; };
+   var live = ['analyzing', 'processing'].includes(st) || s.zips.analyzing > 0; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="<%= B %>"><%= t('legacy.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t('legacy.title') %> <span class="muted">#<%= s.job.id %></span></h1>
+    <p><%- include('_status', { st: st }) %> <% if (s.job.started_at) { %><span class="small muted"><%= t('legacy.col.started') %>: <%= fmt.date(s.job.started_at) %></span><% } %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="<%= B %>/recovery"><%- icon('archive-restore', 'icon-sm') %><%= t('legacy.recovery') %></a>
+    <% if (done || st === 'failed') { %>
+    <a class="btn btn-secondary" href="<%= J %>/report.csv"><%- icon('file-spreadsheet', 'icon-sm') %><%= t('legacy.report_csv') %></a>
+    <a class="btn btn-secondary" href="<%= J %>/report.json"><%- icon('download', 'icon-sm') %><%= t('legacy.report_json') %></a>
+    <% } %>
+  </div>
+</div>
+
+<div class="steps lg-steps" aria-hidden="true">
+  <% ['json', 'zips', 'preview', 'import', 'report'].forEach(function (k, i) { %><div class="step <%= i < stepIdx ? 'done' : i === stepIdx ? 'current' : '' %>"><div class="bar"></div><div class="step-label"><%= t('legacy.step.' + k) %></div></div><% }) %>
+</div>
+
+<div data-legacy-job data-status-url="<%= J %>/status" data-live="<%= live ? '1' : '' %>" data-state="<%= st %>|<%= s.zips.analyzing %>">
+
+<% if (editable) { %>
+<div class="alert alert-info mb-4" role="note"><%- icon('shield-check') %><div class="grow small"><%= t('legacy.privacy') %></div></div>
+<% if (live) { %><div class="alert alert-warning mb-4" role="status" aria-live="polite"><%- icon('hourglass') %><div class="grow"><%= t('legacy.analyzing') %></div></div><% } %>
+
+<div class="grid grid-2 mb-4 lg-uploads">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('legacy.json_title') %></h2><p class="panel-sub"><%= t('legacy.json_sub') %></p></div></div>
+    <div class="panel-body stack">
+      <form class="lg-drop" method="post" action="<%= J %>/upload" enctype="multipart/form-data" data-legacy-drop data-accept=".json">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <span class="lg-drop-icon"><%- icon('file-up') %></span>
+        <strong><%= t('legacy.drop_json') %></strong>
+        <span class="small muted"><%= t('legacy.max', { mb: fmt.number(maxMb) }) %></span>
+        <input class="input" type="file" name="file" accept=".json,application/json" required>
+        <button class="btn btn-secondary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('legacy.upload') %></button>
+        <div class="lg-queue" data-queue></div>
+      </form>
+      <% s.batches.filter(function (b) { return b.kind === 'patients_json'; }).forEach(function (b) { %>
+      <div class="lg-file">
+        <span class="action-icon"><%- icon('file-text', 'icon-sm') %></span>
+        <div class="grow min-w-0">
+          <div class="strong ellipsis" dir="auto"><%= b.original_name %></div>
+          <div class="small muted"><bdi class="num"><%= mb(b.size) %></bdi> · <span class="mono" title="<%= b.sha256 %>"><%= String(b.sha256 || '').slice(0, 12) %>…</span><% if (b.status === 'valid') { %> · <%= t('legacy.p_detected') %>: <bdi class="num"><%= fmt.number(b.valid_files) %></bdi><% } %></div>
+          <% if (b.error) { %><div class="small text-danger"><%= b.error %></div><% } %>
+        </div>
+        <%- include('_status', { st: b.status }) %>
+        <% if (st !== 'analyzing') { %><form method="post" action="<%= J %>/batches/<%= b.id %>/delete" data-confirm="<%= t('legacy.remove_confirm', { name: b.original_name }) %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('legacy.remove') %>"><%- icon('trash-2', 'icon-sm') %></button></form><% } %>
+      </div>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2><%= t('legacy.zips_title') %></h2><p class="panel-sub"><%= t('legacy.zips_sub') %></p></div></div>
+    <div class="panel-body stack">
+      <form class="lg-drop" method="post" action="<%= J %>/upload" enctype="multipart/form-data" data-legacy-drop data-accept=".zip" data-multiple="1">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <span class="lg-drop-icon"><%- icon('cloud-upload') %></span>
+        <strong><%= t('legacy.drop_zips') %></strong>
+        <span class="small muted"><%= t('legacy.max', { mb: fmt.number(maxMb) }) %></span>
+        <input class="input" type="file" name="file" accept=".zip,application/zip" multiple required>
+        <button class="btn btn-secondary btn-sm" type="submit"><%- icon('upload', 'icon-sm') %><%= t('legacy.upload') %></button>
+        <div class="lg-queue" data-queue></div>
+      </form>
+      <div class="summary-strip">
+        <span class="chip"><%= t('legacy.zips_detected') %> <strong><%= fmt.number(s.zips.detected) %></strong></span>
+        <span class="chip"><%= t('legacy.zips_expected') %> <strong><%= s.zips.expected ? fmt.number(s.zips.expected) : '—' %></strong></span>
+        <span class="chip<%= s.zips.missing.length ? ' lg-warn' : '' %>"><%= t('legacy.zips_missing') %> <strong><%= s.zips.missing.length ? s.zips.missing.join(', ') : t('legacy.none') %></strong></span>
+        <span class="chip"><%= t('legacy.zips_duplicate') %> <strong><%= fmt.number(s.zips.duplicates) %></strong></span>
+        <span class="chip<%= s.zips.invalid ? ' lg-bad' : '' %>"><%= t('legacy.zips_corrupted') %> <strong><%= fmt.number(s.zips.invalid) %></strong></span>
+      </div>
+      <% var _z = s.zips.list; if (_z.length) { %>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('legacy.col.batch') %></th><th><%= t('legacy.col.name') %></th><th class="num"><%= t('legacy.col.size') %></th><th class="num"><%= t('legacy.col.valid') %></th><th class="num"><%= t('legacy.col.invalid') %></th><th><%= t('legacy.col.status') %></th><th></th></tr></thead>
+        <tbody>
+        <% _z.forEach(function (b) { %>
+          <tr>
+            <td data-label="<%= t('legacy.col.batch') %>" class="num"><%= b.batch_no ? b.batch_no + (b.batch_total ? ' / ' + b.batch_total : '') : '—' %></td>
+            <td data-label="<%= t('legacy.col.name') %>"><span dir="auto" class="ellipsis d-block" style="max-width:260px"><%= b.original_name %></span><% if (b.error) { %><span class="small text-danger d-block"><%= b.error %></span><% } %></td>
+            <td class="num" data-label="<%= t('legacy.col.size') %>"><%= mb(b.size) %></td>
+            <td class="num" data-label="<%= t('legacy.col.valid') %>"><%= b.valid_files === null ? '—' : fmt.number(b.valid_files) %></td>
+            <td class="num" data-label="<%= t('legacy.col.invalid') %>"><%= b.invalid_files === null ? '—' : fmt.number(b.invalid_files) %></td>
+            <td data-label="<%= t('legacy.col.status') %>"><%- include('_status', { st: b.status }) %></td>
+            <td><% if (st !== 'analyzing') { %><form method="post" action="<%= J %>/batches/<%= b.id %>/delete" data-confirm="<%= t('legacy.remove_confirm', { name: b.original_name }) %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('legacy.remove') %>"><%- icon('trash-2', 'icon-sm') %></button></form><% } %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+      <% } %>
+    </div>
+  </section>
+</div>
+
+<section class="panel mb-4">
+  <div class="panel-head"><div><h2><%= t('legacy.preview_title') %></h2><p class="panel-sub"><%= t('legacy.preview_sub') %></p></div></div>
+  <div class="panel-body stack">
+    <% if (!s.patientsFile || s.patientsFile.status !== 'valid') { %>
+    <p class="muted"><%= t('legacy.need_json') %></p>
+    <% } else { %>
+    <div class="stats lg-stats">
+      <% [['p_detected', s.patients.detected, 'users', ''], ['p_matched', s.patients.matched, 'user-check', 'accent'], ['p_unmatched', s.patients.unmatched, 'user-x', s.patients.unmatched ? 'warning' : ''], ['t_detected', s.treatments, 'stethoscope', ''],
+          ['c_detected', s.clinical, 'clipboard-list', ''], ['l_detected', s.links, 'link', ''], ['f_valid', s.files.valid, 'file-check', 'accent'], ['f_invalid', s.files.invalid, 'circle-x', s.files.invalid ? 'danger' : ''],
+          ['f_dup', s.zips.duplicates, 'copy', ''], ['errors', s.errors, 'circle-alert', s.errors ? 'danger' : ''], ['warnings', s.warnings, 'triangle-alert', s.warnings ? 'warning' : '']].forEach(function (c) { %>
+      <div class="stat"><div class="stat-label"><%= t('legacy.' + c[0]) %><span class="stat-icon <%= c[3] %>"><%- icon(c[2]) %></span></div><div class="stat-value"><%= fmt.number(c[1] || 0) %></div></div>
+      <% }) %>
+    </div>
+    <p class="small muted"><%- icon('info', 'icon-sm') %> <%= t('legacy.match_rule') %></p>
+    <form class="stack" method="post" action="<%= J %>/start" data-confirm="<%= t('legacy.start_confirm', { n: fmt.number(s.patients.detected) }) %>" data-confirm-yes="<%= t('legacy.start') %>" data-confirm-tone="primary">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label class="check"><input type="checkbox" name="create_unmatched" value="1"> <span><%= t('legacy.create_unmatched') %></span></label>
+      <div class="row-sm">
+        <button class="btn btn-primary" type="submit"<%= st !== 'ready' ? ' disabled' : '' %>><%- icon('rocket', 'icon-sm') %><%= t('legacy.start') %></button>
+        <button class="btn btn-ghost" type="submit" form="lg-cancel"><%= t('legacy.cancel') %></button>
+      </div>
+    </form>
+    <% } %>
+    <% if (!s.patientsFile || s.patientsFile.status !== 'valid') { %><div><button class="btn btn-ghost" type="submit" form="lg-cancel"><%= t('legacy.cancel') %></button></div><% } %>
+  </div>
+</section>
+<form id="lg-cancel" method="post" action="<%= J %>/cancel" data-confirm="<%= t('legacy.cancel_confirm') %>" data-confirm-tone="danger"><input type="hidden" name="_csrf" value="<%= csrfToken %>"></form>
+<% } %>
+
+<% if (st === 'processing' || st === 'failed') { %>
+<section class="panel mb-4">
+  <div class="panel-head"><div><h2><%= t('legacy.progress_title') %></h2><p class="panel-sub"><%= t('legacy.progress_sub') %></p></div></div>
+  <div class="panel-body stack">
+    <% if (st === 'failed') { %>
+    <div class="alert alert-error" role="alert"><%- icon('circle-alert') %><div class="grow"><%= s.job.error === 'STORAGE_FULL' ? t('legacy.storage_full') : t('legacy.failed_lead', { error: s.job.error || '' }) %></div>
+      <form method="post" action="<%= J %>/resume"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('legacy.resume') %></button></form></div>
+    <% } %>
+    <div class="row-sm" style="justify-content:space-between;flex-wrap:wrap">
+      <strong data-lg-stage><%= s.job.stage ? t('legacy.stage.' + s.job.stage) : '' %></strong>
+      <span class="num strong" data-lg-pct><%= fmt.number(s.progress) %>%</span>
+    </div>
+    <span class="meter lg-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= s.progress %>"><span data-lg-bar style="width:<%= Math.min(100, s.progress) %>%"></span></span>
+    <p class="small muted" data-lg-processed data-text="<%= t('legacy.processed', { done: '{done}', total: '{total}' }) %>"><%= t('legacy.processed', { done: fmt.number(s.job.processed), total: fmt.number(s.job.total) }) %></p>
+  </div>
+</section>
+<% } %>
+
+<% if (done) { var ok = st === 'completed'; %>
+<div class="alert <%= ok ? 'alert-success' : 'alert-warning' %> mb-4 lg-done" role="status"><%- icon(ok ? 'circle-check' : 'triangle-alert') %><div class="grow"><div class="alert-title"><%= t(ok ? 'legacy.done_ok' : 'legacy.done_issues') %></div><div class="small"><%= t(ok ? 'legacy.done_ok_sub' : 'legacy.done_issues_sub') %></div></div></div>
+<section class="panel mb-4">
+  <div class="panel-head"><div><h2><%= t('legacy.recon_title') %></h2></div><a class="btn btn-secondary btn-sm" href="<%= B %>/recovery"><%= t('legacy.to_recovery') %></a></div>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('legacy.col.what') %></th><th class="num"><%= t('legacy.col.source') %></th><th class="num"><%= t('legacy.col.system') %></th><th class="num"><%= t('legacy.col.difference') %></th></tr></thead>
+    <tbody><% recon.forEach(function (r) { %>
+      <tr><td data-label="<%= t('legacy.col.what') %>"><%= t('legacy.recon.' + r.key) %></td><td class="num" data-label="<%= t('legacy.col.source') %>"><%= fmt.number(r.source || 0) %></td><td class="num" data-label="<%= t('legacy.col.system') %>"><%= r.system === null ? '—' : fmt.number(r.system) %></td>
+        <td class="num" data-label="<%= t('legacy.col.difference') %>"><% if (r.difference === null) { %>—<% } else if (r.difference === 0) { %><span class="badge badge-success badge-dot">0</span><% } else { %><span class="badge badge-warning"><%= r.difference > 0 ? '+' : '' %><%= fmt.number(r.difference) %></span><% } %></td></tr>
+    <% }) %></tbody>
+  </table></div>
+</section>
+<% } %>
+
+<% if (!editable) { %>
+<section class="panel mb-4">
+  <div class="panel-head"><div><h2><%= t('legacy.items_title') %></h2></div></div>
+  <div class="panel-body stack-sm">
+    <% [['items_patients', s.patients.status], ['items_files', s.files.total ? { pending: (s.files.valid - s.files.imported - s.files.duplicates - s.files.failed), imported: s.files.imported, duplicate: s.files.duplicates, failed: s.files.failed, invalid: s.files.invalid, skipped: s.files.skipped } : {}]].forEach(function (g) { %>
+    <div class="row-sm" style="flex-wrap:wrap;gap:6px"><strong class="small" style="min-width:70px"><%= t('legacy.' + g[0]) %></strong>
+      <% ['pending', 'processing', 'imported', 'failed', 'skipped', 'duplicate', 'unmatched', 'invalid'].forEach(function (k) { if (g[1][k]) { %><span class="lg-pill"><%- include('_status', { st: k }) %> <bdi class="num strong"><%= fmt.number(g[1][k]) %></bdi></span><% } }) %>
+    </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<section class="panel" id="errors">
+  <div class="panel-head"><div><h2><%= t('legacy.errors_title') %> <span class="muted small">(<%= fmt.number(errorTotal) %>)</span></h2></div>
+    <form class="row-sm" method="get" action="<%= J %>#errors" style="flex-wrap:wrap">
+      <select class="select select-sm" name="level" aria-label="<%= t('legacy.col.code') %>"><option value=""><%= t('legacy.all') %></option><% ['error', 'warning'].forEach(function (k) { %><option value="<%= k %>"<%= ef.level === k ? ' selected' : '' %>><%= t('legacy.level.' + k) %></option><% }) %></select>
+      <select class="select select-sm" name="estatus" aria-label="<%= t('legacy.col.status') %>"><option value=""><%= t('legacy.all') %></option><% ['open', 'ignored', 'resolved'].forEach(function (k) { %><option value="<%= k %>"<%= ef.status === k ? ' selected' : '' %>><%= t('legacy.estatus.' + k) %></option><% }) %></select>
+      <select class="select select-sm" name="code" aria-label="<%= t('legacy.col.code') %>"><option value=""><%= t('legacy.all') %></option><% codes.forEach(function (k) { %><option value="<%= k %>"<%= ef.code === k ? ' selected' : '' %>><%= k %></option><% }) %></select>
+      <button class="btn btn-secondary btn-sm" type="submit"><%- icon('filter', 'icon-sm') %><%= t('legacy.filter') %></button>
+    </form>
+  </div>
+  <% if (!errors.length) { %>
+  <div class="empty compact"><span class="empty-icon"><%- icon('circle-check') %></span><p><%= t('legacy.errors_empty') %></p></div>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive lg-errors">
+    <thead><tr><th><%= t('legacy.col.patient_id') %></th><th><%= t('legacy.col.file') %></th><th><%= t('legacy.col.stage') %></th><th><%= t('legacy.col.code') %></th><th><%= t('legacy.col.message') %></th><th><%= t('legacy.col.time') %></th><th><%= t('legacy.col.actions') %></th></tr></thead>
+    <tbody>
+    <% errors.forEach(function (e) { %>
+      <tr class="<%= e.status !== 'open' ? 'lg-muted' : '' %>">
+        <td data-label="<%= t('legacy.col.patient_id') %>" class="num"><%= e.legacy_patient_id || '—' %></td>
+        <td data-label="<%= t('legacy.col.file') %>"><span class="ellipsis d-block small" style="max-width:200px" dir="ltr" title="<%= e.file || '' %>"><%= e.file || '—' %></span></td>
+        <td data-label="<%= t('legacy.col.stage') %>" class="small"><%= e.stage %></td>
+        <td data-label="<%= t('legacy.col.code') %>"><span class="badge <%= e.level === 'error' ? 'badge-danger' : 'badge-warning' %>"><%= e.error_code %></span></td>
+        <td data-label="<%= t('legacy.col.message') %>" class="small"><%= e.message %></td>
+        <td data-label="<%= t('legacy.col.time') %>" class="small nowrap"><%= fmt.date(e.created_at) %></td>
+        <td data-label="<%= t('legacy.col.actions') %>">
+          <div class="row-sm">
+            <% if (e.status === 'open') { %>
+            <% if (e.item_id || e.error_code === 'STORAGE_FULL') { %><form method="post" action="<%= J %>/errors/<%= e.id %>/retry"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('legacy.retry') %></button></form><% } %>
+            <form method="post" action="<%= J %>/errors/<%= e.id %>/ignore"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="return_to" value="<%= J %>?epage=<%= errorPage %>#errors"><button class="btn btn-ghost btn-sm" type="submit"><%= t('legacy.ignore') %></button></form>
+            <% } else { %><span class="badge badge-neutral"><%= t('legacy.estatus.' + e.status) %></span><% } %>
+            <details class="lg-details"><summary class="btn btn-ghost btn-sm"><%= t('legacy.details') %></summary>
+              <dl class="dl small"><dt>ID</dt><dd>#<%= e.id %></dd><dt><%= t('legacy.col.patient_id') %></dt><dd><%= e.legacy_patient_id || '—' %></dd><dt><%= t('legacy.col.file') %></dt><dd dir="ltr"><%= e.file || '—' %></dd><dt><%= t('legacy.col.stage') %></dt><dd><%= e.stage %></dd><dt><%= t('legacy.col.code') %></dt><dd><%= e.error_code %> (<%= t('legacy.level.' + e.level) %>)</dd><dt><%= t('legacy.col.message') %></dt><dd dir="auto"><%= e.message %></dd><dt><%= t('legacy.col.time') %></dt><dd><%= new Date(e.created_at).toISOString() %></dd></dl>
+            </details>
+          </div>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (errorPages > 1) { var _q = function (pg) { return J + '?epage=' + pg + (ef.level ? '&level=' + ef.level : '') + (ef.status ? '&estatus=' + ef.status : '') + (ef.code ? '&code=' + ef.code : '') + '#errors'; }; %>
+  <div class="row-sm" style="justify-content:center;padding:12px"><% if (errorPage > 1) { %><a class="btn btn-ghost btn-sm" href="<%= _q(errorPage - 1) %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a><% } %><span class="small muted num"><%= errorPage %> / <%= errorPages %></span><% if (errorPage < errorPages) { %><a class="btn btn-ghost btn-sm" href="<%= _q(errorPage + 1) %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></div>
+  <% } %>
+  <% } %>
+</section>
+</div>

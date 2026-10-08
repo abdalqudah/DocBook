@@ -10,6 +10,8 @@ router.use(site.chrome); // header/footer content of the public pages
 router.use('/', site);
 router.use('/', require('../modules/auth/web'));
 router.use('/app', requireAuth, resolveBusiness, require('./app'));
+router.use('/api/patients', requireAuth, resolveBusiness, require('../modules/legacy/download.web')); // a patient's imported files (private storage, authorised)
+router.use('/admin/import/legacy-clinica', (req, res) => res.redirect('/app/import/legacy-clinica')); // Legacy Patient Recovery lives in the clinic
 router.use('/admin', require('../modules/admin/web'));
 // Medical reps & drug warehouses: public sign-up/landing (/vendors) and their portal (/vendor).
 router.use('/vendors', require('../modules/vendors/public.web'));

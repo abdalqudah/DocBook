@@ -1,0 +1,63 @@
+<% var B = '/app/import/legacy-clinica'; var _qs = function (pg) { return B + '/recovery?page=' + pg + (q ? '&q=' + encodeURIComponent(q) : '') + (status ? '&status=' + status : ''); }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="<%= B %>"><%= t('legacy.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t('legacy.recovery') %></h1>
+    <p><%= t('legacy.recovery_lead') %></p>
+  </div>
+</div>
+<section class="panel">
+  <div class="panel-head">
+    <form class="row-sm" method="get" action="<%= B %>/recovery" role="search" style="flex-wrap:wrap;width:100%">
+      <input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('legacy.search_ph') %>" aria-label="<%= t('legacy.search_ph') %>" style="max-width:340px">
+      <select class="select" name="status" aria-label="<%= t('legacy.col.status') %>" style="max-width:200px">
+        <option value=""><%= t('legacy.f_all') %></option>
+        <option value="matched"<%= status === 'matched' ? ' selected' : '' %>><%= t('legacy.f_matched') %></option>
+        <option value="unmatched"<%= status === 'unmatched' ? ' selected' : '' %>><%= t('legacy.f_unmatched') %></option>
+      </select>
+      <button class="btn btn-secondary" type="submit"><%- icon('search', 'icon-sm') %><%= t('legacy.search') %></button>
+      <span class="small muted num" style="margin-inline-start:auto"><%= fmt.number(list.total) %></span>
+    </form>
+  </div>
+  <% if (!list.rows.length) { %>
+  <div class="empty"><span class="empty-icon"><%- icon('archive-restore') %></span><p><%= t('legacy.empty_recovery') %></p></div>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('legacy.col.legacy_id') %></th><th><%= t('legacy.col.legacy_number') %></th><th><%= t('legacy.col.old_name') %></th><th><%= t('legacy.col.mobile') %></th><th><%= t('legacy.col.patient_here') %></th><th class="num"><%= t('legacy.col.treatments') %></th><th class="num"><%= t('legacy.col.clinical') %></th><th class="num"><%= t('legacy.col.files') %></th><th><%= t('legacy.col.actions') %></th></tr></thead>
+    <tbody>
+    <% list.rows.forEach(function (r) { %>
+      <tr>
+        <td class="num strong" data-label="<%= t('legacy.col.legacy_id') %>"><%= r.legacy_patient_id %></td>
+        <td class="num" data-label="<%= t('legacy.col.legacy_number') %>"><%= r.legacy_patient_number || '—' %></td>
+        <td data-label="<%= t('legacy.col.old_name') %>"><span dir="auto"><%= r.old_name || '—' %></span></td>
+        <td data-label="<%= t('legacy.col.mobile') %>"><bdi class="num"><%= r.old_mobile || '—' %></bdi></td>
+        <td data-label="<%= t('legacy.col.patient_here') %>"><% if (r.patient_id) { %><a class="link" href="/app/patients/<%= r.patient_id %>?tab=legacy" dir="auto"><%= r.patient_name %></a><% } else { %><span class="badge badge-warning badge-dot"><%= t('legacy.unmatched') %></span><% } %></td>
+        <td class="num" data-label="<%= t('legacy.col.treatments') %>"><%= fmt.number(r.treatments) %></td>
+        <td class="num" data-label="<%= t('legacy.col.clinical') %>"><%= fmt.number(r.clinical) %></td>
+        <td class="num" data-label="<%= t('legacy.col.files') %>"><%= fmt.number(r.files) %></td>
+        <td data-label="<%= t('legacy.col.actions') %>">
+          <% if (r.patient_id) { %>
+          <a class="btn btn-secondary btn-sm" href="/app/patients/<%= r.patient_id %>?tab=legacy"><%- icon('eye', 'icon-sm') %><%= t('legacy.view_patient') %></a>
+          <% } else { %>
+          <div class="row-sm" style="flex-wrap:wrap">
+            <form method="post" action="<%= B %>/recovery/<%= r.id %>/create" data-confirm="<%= t('legacy.recover_confirm') %>" data-confirm-tone="primary"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"><%- icon('user-plus', 'icon-sm') %><%= t('legacy.recover') %></button></form>
+            <details class="lg-details"><summary class="btn btn-ghost btn-sm"><%- icon('link', 'icon-sm') %><%= t('legacy.link') %></summary>
+              <form class="stack-sm lg-link" method="post" action="<%= B %>/recovery/<%= r.id %>/link" data-legacy-link>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="patient_id" value="" data-pid>
+                <input class="input" type="search" placeholder="<%= t('legacy.link_ph') %>" aria-label="<%= t('legacy.link_ph') %>" data-find autocomplete="off">
+                <div class="lg-found" data-found></div>
+                <button class="btn btn-secondary btn-sm" type="submit" disabled data-go><%= t('legacy.link_btn') %></button>
+              </form>
+            </details>
+          </div>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (list.pages > 1) { %>
+  <div class="row-sm" style="justify-content:center;padding:12px"><% if (list.page > 1) { %><a class="btn btn-ghost btn-sm" href="<%= _qs(list.page - 1) %>"><%- icon('chevron-left', 'icon-sm flip-rtl') %></a><% } %><span class="small muted num"><%= list.page %> / <%= list.pages %></span><% if (list.page < list.pages) { %><a class="btn btn-ghost btn-sm" href="<%= _qs(list.page + 1) %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a><% } %></div>
+  <% } %>
+  <% } %>
+</section>

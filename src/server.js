@@ -105,6 +105,10 @@ async function start(server) {
     // Each clinic's own encrypted backup, once a day (checked hourly; the last 7 automatic ones are kept).
     setInterval(() => require('./modules/platformops/clinic-backup').runNightly().catch((e) => console.error('[clinic-backup]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console
     setInterval(each(() => require('./modules/integrations/sheets.service').runDue()), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- Google Sheets daily export (clinics that switched it on)
+    // Legacy Patient Recovery: imports left running by a stopped server carry on (now, and whenever a runner went quiet).
+    const legacyTick = () => require('./modules/legacy/import.service').resumeAll().catch((e) => console.error('[legacy-import]', e.message)); // eslint-disable-line global-require, no-console
+    setTimeout(legacyTick, 10_000).unref();
+    setInterval(legacyTick, 5 * 60_000).unref();
   }
   await require('./core/mailer').refreshInstallationMailbox().catch(() => null); // eslint-disable-line global-require -- one clinic without server SMTP: its own mailbox sends
   server.removeAllListeners('request');

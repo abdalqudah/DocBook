@@ -213,6 +213,7 @@
     "by_chat": "Chat attachments",
     "by_online": "Online consultation files",
     "by_fonts": "Fonts",
+    "by_legacy": "Imported files",
     "usage_unl": "{n} files in the library · clinic file storage: {used} · unlimited",
     "quota_more": "Need more space?",
     "kb": "KB",

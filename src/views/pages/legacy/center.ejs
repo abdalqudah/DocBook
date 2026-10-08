@@ -1,0 +1,44 @@
+<% var B = '/app/import/legacy-clinica'; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/patients"><%= t('patients.title') %></a><%- icon('chevron-right', 'flip-rtl') %></div>
+    <h1><%= t('legacy.title') %></h1>
+    <p><%= t('legacy.lead') %></p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="<%= B %>/recovery"><%- icon('archive-restore', 'icon-sm') %><%= t('legacy.recovery') %></a>
+    <% if (current) { %>
+    <a class="btn btn-primary" href="<%= B %>/jobs/<%= current.id %>"><%- icon('arrow-right', 'icon-sm flip-rtl') %><%= t('legacy.continue') %></a>
+    <% } else { %>
+    <form method="post" action="<%= B %>/jobs"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('cloud-upload', 'icon-sm') %><%= t('legacy.start_new') %></button></form>
+    <% } %>
+  </div>
+</div>
+
+<div class="alert alert-info mb-4" role="note"><%- icon('shield-check') %><div class="grow small"><%= t('legacy.privacy') %></div></div>
+
+<% if (legacyCount) { %><p class="small muted mb-4"><%- icon('users', 'icon-sm') %> <a class="link" href="<%= B %>/recovery"><%= t('legacy.legacy_count', { n: fmt.number(legacyCount) }) %></a></p><% } %>
+
+<section class="panel">
+  <div class="panel-head"><div><h2><%= t('legacy.history') %></h2></div></div>
+  <% if (!history.length) { %>
+  <div class="empty compact"><span class="empty-icon"><%- icon('archive-restore') %></span><p><%= t('legacy.no_history') %></p></div>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('legacy.col.job') %></th><th><%= t('legacy.col.status') %></th><th><%= t('legacy.col.started') %></th><th><%= t('legacy.col.completed') %></th><th class="num"><%= t('legacy.col.patients') %></th><th class="num"><%= t('legacy.col.treatments') %></th><th class="num"><%= t('legacy.col.files') %></th></tr></thead>
+    <tbody>
+    <% history.forEach(function (j) { %>
+      <tr>
+        <td data-label="<%= t('legacy.col.job') %>"><a class="link strong" href="<%= B %>/jobs/<%= j.id %>">#<%= j.id %></a></td>
+        <td data-label="<%= t('legacy.col.status') %>"><%- include('_status', { st: j.status }) %></td>
+        <td data-label="<%= t('legacy.col.started') %>"><%= j.started_at ? fmt.date(j.started_at) : fmt.date(j.created_at) %></td>
+        <td data-label="<%= t('legacy.col.completed') %>"><%= j.completed_at ? fmt.date(j.completed_at) : '—' %></td>
+        <td class="num" data-label="<%= t('legacy.col.patients') %>"><%= fmt.number(j.src_patients || 0) %></td>
+        <td class="num" data-label="<%= t('legacy.col.treatments') %>"><%= fmt.number(j.src_treatments || 0) %></td>
+        <td class="num" data-label="<%= t('legacy.col.files') %>"><%= fmt.number(j.src_attachments || 0) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>

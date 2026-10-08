@@ -3,7 +3,7 @@
 // uploaded fonts.
 //   quotaOf(businessId) → { mb, source }: the size the platform admin set for this clinic (businesses.media_quota_mb),
 //     else the package's media.storage_mb (null = no limit), else DEFAULT_MB while no package applies.
-//   stats(businessId)   → { bytes, files, by: { media, patients, chat, online, fonts }, quota, quotaMb, source }
+//   stats(businessId)   → { bytes, files, by: { media, patients, chat, online, fonts, legacy }, quota, quotaMb, source }
 //   assertRoom(businessId, addBytes) → throws STORAGE_FULL when the new files do not fit.
 // Files a patient sends with an online booking are counted but never refused here (the patient is not the one
 // who can free space).
@@ -18,6 +18,8 @@ const PARTS = [
   { key: 'chat', table: 'staff_chat_files' },
   { key: 'online', table: 'online_consultation_files' },
   { key: 'fonts', table: 'clinic_fonts' },
+  // Files brought from a previous system: a file kept once (same SHA-256) counts once (stored_bytes is 0 for copies).
+  { key: 'legacy', table: 'patient_attachments', column: 'stored_bytes' },
 ];
 
 async function quotaOf(businessId) {
@@ -32,7 +34,7 @@ async function quotaOf(businessId) {
 }
 
 async function usage(businessId) {
-  const rows = await Promise.all(PARTS.map((p) => knex(p.table).where({ business_id: businessId }).count({ n: '*' }).sum({ bytes: 'size' }).then(([r]) => r)));
+  const rows = await Promise.all(PARTS.map((p) => knex(p.table).where({ business_id: businessId }).count({ n: '*' }).sum({ bytes: p.column || 'size' }).then(([r]) => r)));
   const by = {}; const counts = {};
   PARTS.forEach((p, i) => { by[p.key] = Number(rows[i].bytes) || 0; counts[p.key] = Number(rows[i].n) || 0; });
   return { by, counts, bytes: Object.values(by).reduce((a, b) => a + b, 0), files: Object.values(counts).reduce((a, b) => a + b, 0) };
@@ -56,7 +58,7 @@ async function usageAll(ids = null) {
   const out = new Map();
   // Every database (each clinic may have its own — src/db/tenant.js).
   await require('../../db/tenant').eachDb(async () => { // eslint-disable-line global-require
-    const parts = PARTS.map((p) => knex(p.table).select('business_id', 'size').modify((q) => { if (ids) q.whereIn('business_id', ids); }));
+    const parts = PARTS.map((p) => knex(p.table).select('business_id', knex.raw('?? as size', [p.column || 'size'])).modify((q) => { if (ids) q.whereIn('business_id', ids); }));
     const rows = await knex.select('business_id').sum({ bytes: 'size' }).from(knex.unionAll(parts, true).as('f')).groupBy('business_id');
     rows.forEach((r) => out.set(Number(r.business_id), (out.get(Number(r.business_id)) || 0) + (Number(r.bytes) || 0)));
   });

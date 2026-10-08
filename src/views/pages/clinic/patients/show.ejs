@@ -35,7 +35,7 @@
 </div>
 
 <% var tabHref = function (k) { return '/app/patients/' + p.id + (k === 'overview' ? '' : '?tab=' + k); };
-   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', surgeries: 'scissors', prescriptions: 'pill', orders: 'activity', documents: 'file-text', billing: 'receipt', timeline: 'history' }; %>
+   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', surgeries: 'scissors', prescriptions: 'pill', orders: 'activity', documents: 'file-text', billing: 'receipt', timeline: 'history', legacy: 'archive-restore' }; %>
 <nav class="tabs mb-4 pt-tabs" aria-label="<%= t('patients.workspace') %>">
   <% tabs.forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%- icon(tabIcon[k], 'icon-sm') %><%= t('patients.tab.' + k) %></a><% }) %>
 </nav>
@@ -257,4 +257,5 @@
   <% }) %></ul><% } %>
 </div>
 <% } %>
+<% if (tab === 'legacy') { %><%- include('../../legacy/_patient-tab', { lg: legacy, p: p }) %><% } %>
 <%- include('../../teamops/_email-patient', { part: 'dialog', mailPatientId: p.id, mailTo: p.email, mailReturn: '/app/patients/' + p.id }) %>
