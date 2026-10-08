@@ -77,29 +77,47 @@ class Session {
     throw Object.assign(new Error('Too many redirects'), { code: 'REDIRECTS' });
   }
 
-  /** Signs in with the page's own sign-in form (hidden fields kept). */
-  async login() {
+  /** The sign-in page and its form (the first of /user/login, /login, / that has one). */
+  async signInPage() {
     for (const p of ['/user/login', '/login', '/']) { // eslint-disable-line no-restricted-syntax
       const page = await this.request(p).catch(() => null); // eslint-disable-line no-await-in-loop
       const form = page && page.status === 200 ? loginForm(page.text) : null;
-      if (!form) continue; // eslint-disable-line no-continue
-      const fields = new URLSearchParams();
-      form.inputs.forEach((i) => { if (i.name && i.type !== 'password' && i !== form.userInput && !['submit', 'button', 'image', 'checkbox', 'radio'].includes(i.type)) fields.append(i.name, i.value || ''); });
-      const submit = form.inputs.find((i) => i.type === 'submit' && i.name);
-      if (submit) fields.append(submit.name, submit.value || '');
-      fields.append(form.userInput.name, this.user);
-      fields.append(form.passInput.name, this.pass);
-      const res = await this.request(new URL(form.action || page.url, page.url).href, { method: 'POST', body: fields.toString() }); // eslint-disable-line no-await-in-loop
-      if (res.status < 400 && !loginForm(res.text)) return true;
-      throw Object.assign(new Error('Clinica did not accept the sign-in (user name / password), or asks for a code.'), { code: 'LOGIN_FAILED' });
+      if (form) return { page, form };
     }
     throw Object.assign(new Error('No sign-in form found at this address.'), { code: 'LOGIN_FORM_NOT_FOUND' });
+  }
+
+  /**
+   * Signs in with the page's own sign-in form (hidden fields kept). A form with a CAPTCHA question needs the answer a
+   * person typed (`answer`, for the form fetched with signInPage and kept in `this.pending`); it is never worked out
+   * here — without one the sign-in stops with CAPTCHA_REQUIRED and the question, for the owner to answer.
+   */
+  async login(answer = null) {
+    const { page, form } = this.pending || await this.signInPage();
+    this.pending = null;
+    if (form.captchaInput && !String(answer || '').trim()) {
+      this.pending = { page, form };
+      throw Object.assign(new Error('Clinica asks a question at sign-in.'), { code: 'CAPTCHA_REQUIRED', question: form.question });
+    }
+    const fields = new URLSearchParams();
+    form.inputs.forEach((i) => { if (i.name && i.type !== 'password' && i !== form.userInput && i !== form.captchaInput && !['submit', 'button', 'image', 'checkbox', 'radio'].includes(i.type)) fields.append(i.name, i.value || ''); });
+    const submit = form.inputs.find((i) => i.type === 'submit' && i.name);
+    if (submit) fields.append(submit.name, submit.value || '');
+    fields.append(form.userInput.name, this.user);
+    fields.append(form.passInput.name, this.pass);
+    if (form.captchaInput) fields.append(form.captchaInput.name, String(answer).trim());
+    const res = await this.request(new URL(form.action || page.url, page.url).href, { method: 'POST', body: fields.toString() });
+    if (res.status < 400 && !loginForm(res.text)) return true;
+    throw Object.assign(new Error('Clinica did not accept the sign-in (user name, password or the answer to its question).'), { code: 'LOGIN_FAILED' });
   }
 
   /** A page / file; signed in again once when Clinica shows its sign-in form (session ended). */
   async get(url, opts = {}) {
     let r = await this.request(url, opts);
-    if (r.text && loginForm(r.text)) { await this.login(); r = await this.request(url, opts); }
+    if (r.text && loginForm(r.text)) {
+      try { await this.login(); } catch (e) { throw Object.assign(e, { code: e.code === 'CAPTCHA_REQUIRED' ? 'LOGIN_FAILED' : e.code }); } // a question: the owner signs in again
+      r = await this.request(url, opts);
+    }
     if (r.text && loginForm(r.text)) throw Object.assign(new Error('Signed out of Clinica'), { code: 'LOGIN_FAILED' });
     return r;
   }
@@ -115,11 +133,22 @@ function loginForm(html) {
     const passInput = inputs.find((i) => i.type === 'password' && i.name);
     if (!passInput) continue; // eslint-disable-line no-continue
     const texts = inputs.filter((i) => ['text', 'email', 'tel'].includes(i.type) && i.name);
-    const userInput = texts.find((i) => /user|name|mail|login|phone/i.test(i.name)) || texts[0];
+    // a CAPTCHA answer field (e.g. Drupal's captcha_response) is not the user name
+    const captchaInput = texts.find((i) => /captcha/i.test(i.name)) || null;
+    const userInput = texts.find((i) => i !== captchaInput && /user|name|mail|login|phone/i.test(i.name)) || texts.find((i) => i !== captchaInput);
     if (!userInput) continue; // eslint-disable-line no-continue
-    return { action: unent(attr(f.slice(0, f.indexOf('>') + 1), 'action')), inputs, userInput, passInput };
+    return { action: unent(attr(f.slice(0, f.indexOf('>') + 1), 'action')), inputs, userInput, passInput, captchaInput, question: captchaInput ? captchaQuestion(f) : null };
   }
   return null;
+}
+
+/** The text of the form's CAPTCHA question as the page shows it ("20 + 0 =") — shown to the owner, who answers it. */
+function captchaQuestion(formHtml) {
+  const i = formHtml.search(/<input\b[^>]*name\s*=\s*["'][^"']*captcha_response/i);
+  const before = (i >= 0 ? formHtml.slice(0, i) : formHtml).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ');
+  const text = unent(before.replace(/<[^>]+>/g, '\n')).split('\n').map((x) => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const eq = [...text].reverse().find((x) => /=\s*$/.test(x) || /\d\s*[-+×x*÷/]\s*\d/.test(x));
+  return (eq || text.slice(-2).join(' ') || '').slice(0, 200);
 }
 
 /** Every attachment link of a page (/system/files/…), same address only → [{ url, path, name }]. */
@@ -148,12 +177,39 @@ function pathKey(url) { try { const u = new URL(url); let p = u.pathname; try { 
 const sessions = new Map(); // businessId → Session (memory only)
 const openJob = (businessId) => knex('import_jobs').where({ business_id: businessId, type: TYPE }).whereIn('status', ['processing', 'waiting']).orderBy('id', 'desc').first();
 
+const pending = new Map(); // businessId → { s, at }: a sign-in page fetched, waiting for the owner's answer
+const PENDING_MS = 10 * 60_000;
+
+/** Opens Clinica's sign-in page for the owner: its question when it asks one ({ question } or { question: null }). */
+async function prepare(ctx, { baseUrl }) {
+  const base = baseOf(baseUrl);
+  const s = new Session(base, '', '');
+  const { page, form } = await s.signInPage().catch((e) => { throw E.validation({ base_url: e.message }); });
+  s.pending = { page, form };
+  pending.set(ctx.businessId, { s, at: Date.now() });
+  return { base, question: form.captchaInput ? form.question || '?' : null };
+}
+/** The sign-in page fetched for the owner (same address, recent), if any. */
+function pendingFor(businessId, base) {
+  const p = pending.get(businessId);
+  return p && p.s.base === base && Date.now() - p.at < PENDING_MS ? p : null;
+}
+const pendingQuestion = (businessId) => { const p = pending.get(businessId); return p && Date.now() - p.at < PENDING_MS && p.s.pending ? { base: p.s.base, question: p.s.pending.form.captchaInput ? p.s.pending.form.question || '?' : null } : null; };
+
 /** Signs in now (so a wrong password is said at once), then starts or carries on the clinic's pull. */
-async function start(ctx, { baseUrl, username, password }) {
+async function start(ctx, { baseUrl, username, password, captcha = null }) {
   const base = baseOf(baseUrl);
   if (!String(username || '').trim() || !String(password || '')) throw E.validation({ username: 'Enter the Clinica user name and password.' });
-  const s = new Session(base, String(username).trim(), String(password));
-  try { await s.login(); } catch (e) { throw E.validation({ password: e.message }); }
+  const p = pendingFor(ctx.businessId, base);
+  const s = p ? p.s : new Session(base, '', '');
+  Object.assign(s, { user: String(username).trim(), pass: String(password) });
+  pending.delete(ctx.businessId);
+  try { await s.login(captcha); } catch (e) {
+    if (e.code === 'CAPTCHA_REQUIRED' || (e.code === 'LOGIN_FAILED' && s.pending)) pending.set(ctx.businessId, { s, at: Date.now() });
+    // a refused sign-in: the next try needs a fresh question
+    if (e.code === 'LOGIN_FAILED') await prepare(ctx, { baseUrl: base }).catch(() => null);
+    throw E.validation({ password: e.message });
+  }
   sessions.set(ctx.businessId, s);
   const total = Number((await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_source: SOURCE }).whereNotNull('patient_id').count({ n: '*' }))[0].n);
   const cur = await openJob(ctx.businessId);
@@ -304,4 +360,4 @@ async function resumeAll() {
   });
 }
 
-module.exports = { TYPE, start, stop, kick, settle, progress, resumeAll, baseOf, loginForm, attachmentLinks, pathKey, Session };
+module.exports = { TYPE, prepare, pendingQuestion, start, stop, kick, settle, progress, resumeAll, baseOf, loginForm, captchaQuestion, attachmentLinks, pathKey, Session };

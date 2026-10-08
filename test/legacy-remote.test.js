@@ -23,6 +23,7 @@ const tag = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 let clinica; let base; let ctx;
 const hits = { login: 0, files: 0 };
 let sessionsLeft = Infinity; // pages served before Clinica ends the session
+let captchaOn = false; // Clinica asks a math question at sign-in
 
 // A small stand-in for Clinica: a sign-in form with a hidden token, a cookie session, patient pages with file links.
 function fakeClinica() {
@@ -30,16 +31,20 @@ function fakeClinica() {
   app.use(express.urlencoded({ extended: false }));
   const live = new Set();
   const signedIn = (req) => { const m = /sid=([a-z0-9]+)/.exec(req.headers.cookie || ''); return m && live.has(m[1]) ? m[1] : null; };
-  const form = '<html><body><form action="/user/login" method="post" id="user-login"><input type="text" name="name"><input type="password" name="pass"><input type="hidden" name="form_build_id" value="fb-123"><input type="submit" name="op" value="Log in"></form></body></html>';
-  app.get('/user/login', (req, res) => res.send(form));
+  let q = 0;
+  const form0 = '<html><body><form action="/user/login" method="post" id="user-login"><input type="text" name="name"><input type="password" name="pass"><input type="hidden" name="form_build_id" value="fb-123">CAPTCHA<input type="submit" name="op" value="Log in"></form></body></html>';
+  const captcha = () => { q += 1; return `<fieldset class="captcha"><legend>CAPTCHA</legend><div>This question is for testing whether or not you are a human visitor.</div><input type="hidden" name="captcha_sid" value="sid${q}"><input type="hidden" name="captcha_token" value="tok${q}"><div class="form-item"><label for="edit-captcha-response">Math question <span class="form-required">*</span></label><span class="field-prefix">${q * 10} + 0 =</span><input type="text" id="edit-captcha-response" name="captcha_response" value="" size="4"><div class="description">Solve this simple math problem and enter the result. E.g. for 1+3, enter 4.</div></div></fieldset>`; };
+  const form = { toString: () => form0.replace('CAPTCHA', captchaOn ? captcha() : '') };
+  app.get('/user/login', (req, res) => res.send(String(form)));
   app.post('/user/login', (req, res) => {
     hits.login += 1;
-    if (req.body.name === 'owner' && req.body.pass === 's3cret' && req.body.form_build_id === 'fb-123' && req.body.op === 'Log in') {
+    const answered = !captchaOn || (req.body.captcha_sid === `sid${q}` && req.body.captcha_response === String(q * 10));
+    if (req.body.name === 'owner' && req.body.pass === 's3cret' && req.body.form_build_id === 'fb-123' && req.body.op === 'Log in' && answered) {
       const sid = `s${hits.login}`; live.add(sid); res.set('Set-Cookie', `sid=${sid}; Path=/; HttpOnly`); return res.redirect(302, '/');
     }
-    return res.send(form);
+    return res.send(String(form));
   });
-  app.get('/', (req, res) => res.send(signedIn(req) ? '<html>Dashboard</html>' : form));
+  app.get('/', (req, res) => res.send(signedIn(req) ? '<html>Dashboard</html>' : String(form)));
   const guard = (req, res, next) => {
     const sid = signedIn(req);
     if (!sid) return res.redirect(302, '/user/login');
@@ -125,4 +130,29 @@ test('pull: only the missing files, into the patient file; re-sign-in when the s
   const again = await remote.progress(ctx.businessId);
   assert.equal(again.downloaded, 0); assert.equal(again.skipped, 3);
   assert.equal(hits.files - before, 1, 'only the missing (404) file is asked for again');
+});
+
+test('a sign-in question (CAPTCHA): shown to the owner, who answers it; never answered here; asked again → the pull waits', async () => {
+  captchaOn = true;
+  const c2 = { ...ctx, businessId: (await knex('businesses').insert({ name: 'Captcha clinic', slug: `cap${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0] };
+  const [pid] = await knex('patients').insert({ business_id: c2.businessId, full_name: 'م', legacy_source: 'clinica', legacy_patient_id: '1001' });
+  await knex('legacy_patients').insert({ business_id: c2.businessId, legacy_source: 'clinica', legacy_patient_id: '1001', patient_id: pid });
+  // without an answer: nothing starts, the question is kept for the owner
+  await assert.rejects(() => remote.start(c2, { baseUrl: base, username: 'owner', password: 's3cret' }));
+  assert.equal(await remote.progress(c2.businessId), null);
+  const opened = await remote.prepare(c2, { baseUrl: base });
+  assert.match(opened.question, /^\d+ \+ 0 =$/);
+  assert.deepEqual(remote.pendingQuestion(c2.businessId), { base, question: opened.question });
+  // a wrong answer is refused (and a fresh question is ready)
+  await assert.rejects(() => remote.start(c2, { baseUrl: base, username: 'owner', password: 's3cret', captcha: '1' }));
+  const fresh = remote.pendingQuestion(c2.businessId);
+  assert.ok(fresh && fresh.question && fresh.question !== opened.question);
+  // the owner's answer: signed in, the pull runs
+  const answer = String(Number(/^(\d+)/.exec(fresh.question)[1])); // what the owner reads and types
+  sessionsLeft = 1; // Clinica ends the session mid-way: the new question needs the owner → the pull waits
+  await remote.start(c2, { baseUrl: base, username: 'owner', password: 's3cret', captcha: answer });
+  await remote.settle(c2.businessId);
+  const p = await remote.progress(c2.businessId);
+  assert.equal(p.status, 'waiting'); assert.equal(p.waitingFor, 'LOGIN_FAILED');
+  captchaOn = false; sessionsLeft = Infinity;
 });

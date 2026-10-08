@@ -347,9 +347,13 @@
     "remote_stopped": "The pull stopped. Press \"Carry on\" to continue where it was.",
     "remote_wait": {
       "NEEDS_SIGN_IN": "The server restarted — enter the password again to carry on.",
-      "LOGIN_FAILED": "Clinica signed us out or refused the sign-in — enter the password again.",
+      "LOGIN_FAILED": "Clinica signed us out or refused the sign-in — open the sign-in page again and answer its question.",
       "STORAGE_FULL": "The clinic's file storage is full — raise it, then carry on.",
       "STOPPED": "The pull is stopped — enter the password and press Carry on."
-    }
+    },
+    "remote_connect": "Open the sign-in page",
+    "remote_signin_at": "Signing in at",
+    "remote_question": "Clinica's question:",
+    "remote_question_hint": "Type the answer as you would on Clinica's page."
   }
 }

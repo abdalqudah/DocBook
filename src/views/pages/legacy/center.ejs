@@ -81,16 +81,25 @@
     <% if (rmRun) { %>
     <form method="post" action="<%= B %>/remote/stop"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary" type="submit"><%- icon('x', 'icon-sm') %><%= t('legacy.remote_stop') %></button></form>
     <% } else { %>
-    <form class="stack-sm" method="post" action="<%= B %>/remote/start" autocomplete="off">
+    <% if (!remoteSignIn) { %>
+    <form class="row-sm" style="flex-wrap:wrap;align-items:flex-end" method="post" action="<%= B %>/remote/prepare">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label class="field grow"><span class="label"><%= t('legacy.remote_address') %></span><input class="input" name="base_url" dir="ltr" required value="https://dentalbh.clinicame.net"></label>
+      <button class="btn btn-primary" type="submit"><%- icon('key-round', 'icon-sm') %><%= t('legacy.remote_connect') %></button>
+    </form>
+    <% } else { %>
+    <form class="stack-sm" method="post" action="<%= B %>/remote/start" autocomplete="off">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="base_url" value="<%= remoteSignIn.base %>">
+      <p class="small" style="margin:0"><%= t('legacy.remote_signin_at') %> <bdi dir="ltr" class="strong"><%= remoteSignIn.base %></bdi></p>
       <div class="grid grid-3">
-        <label class="field"><span class="label"><%= t('legacy.remote_address') %></span><input class="input" name="base_url" dir="ltr" required value="https://dentalbh.clinicame.net"></label>
         <label class="field"><span class="label"><%= t('legacy.remote_user') %></span><input class="input" name="username" dir="ltr" required autocomplete="off"></label>
         <label class="field"><span class="label"><%= t('legacy.remote_pass') %></span><input class="input" name="password" type="password" dir="ltr" required autocomplete="new-password"></label>
+        <% if (remoteSignIn.question) { %><label class="field"><span class="label"><%= t('legacy.remote_question') %> <bdi dir="ltr" class="strong" data-remote-question><%= remoteSignIn.question %></bdi></span><input class="input" name="captcha" dir="ltr" required autocomplete="off" inputmode="numeric"><span class="hint"><%= t('legacy.remote_question_hint') %></span></label><% } %>
       </div>
       <p class="small muted" style="margin:0"><%- icon('lock', 'icon-sm') %> <%= t('legacy.remote_privacy') %></p>
       <div><button class="btn btn-primary" type="submit"><%- icon('download', 'icon-sm') %><%= t(rm && rm.status === 'waiting' ? 'legacy.remote_resume' : 'legacy.remote_start') %></button></div>
     </form>
+    <% } %>
     <% } %>
   </div>
 </section>

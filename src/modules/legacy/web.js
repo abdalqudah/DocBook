@@ -29,8 +29,9 @@ router.get('/', wrap(async (req, res) => {
     knex('legacy_patients').where({ business_id: req.ctx.businessId }).count({ n: '*' })]);
   const promotion = await require('./promote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
   const purge = await require('./purge.service').preview(req.ctx.businessId); // eslint-disable-line global-require
-  const remote = await require('./remote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
-  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, remote, ...PAGE });
+  const rs = require('./remote.service'); // eslint-disable-line global-require
+  const remote = await rs.progress(req.ctx.businessId);
+  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, remote, remoteSignIn: rs.pendingQuestion(req.ctx.businessId), ...PAGE });
 }));
 
 // Imported treatments → the patients' own files (treatment plan with the doctors) — for imports made before this
@@ -46,9 +47,15 @@ router.post('/purge', ownerOnly, wrap(async (req, res) => {
 
 // Direct pull from Clinica (the files the first extraction missed): the owner signs in to Clinica here; the password
 // stays in memory while the pull runs (remote.service).
+// Step 1: open Clinica's sign-in page (its question, if it asks one, is shown to the owner to answer).
+router.post('/remote/prepare', ownerOnly, wrap(async (req, res) => {
+  try { await require('./remote.service').prepare(req.ctx, { baseUrl: req.body.base_url }); } catch (e) { flash(req, 'error', e.details ? Object.values(e.details).join(' ') : errText(req, e)); } // eslint-disable-line global-require
+  res.redirect(`${BASE}#remote`);
+}));
+// Step 2: the owner's sign-in (and answer) → the pull starts.
 router.post('/remote/start', ownerOnly, wrap(async (req, res) => {
   try {
-    await require('./remote.service').start(req.ctx, { baseUrl: req.body.base_url, username: req.body.username, password: req.body.password }); // eslint-disable-line global-require
+    await require('./remote.service').start(req.ctx, { baseUrl: req.body.base_url, username: req.body.username, password: req.body.password, captcha: req.body.captcha }); // eslint-disable-line global-require
     flash(req, 'success', req.t('legacy.remote_started'));
   } catch (e) {
     flash(req, 'error', e.details ? Object.values(e.details).join(' ') : errText(req, e));

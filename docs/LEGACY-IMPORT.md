@@ -365,5 +365,9 @@ password; the server (`remote.service`):
 - never stores the password: it stays in the process's memory while the pull runs. After a restart, a stopped pull or a
   refused sign-in the job waits ("enter the password again") and carries on from the patient it was at.
 - Only `https://` addresses on the internet (no private or local addresses). Owner only. Read-only towards Clinica.
-If Clinica asks for a code at sign-in (two-step / captcha) the pull cannot sign in; `scripts/clinica-attachments-fetch.js`
-(in the signed-in browser) remains the way.
+- **Sign-in question (CAPTCHA, 2.8.8).** Clinica asks a math question at sign-in. The pull never answers it itself:
+  step 1 ("Open the sign-in page") fetches Clinica's sign-in page and shows its question to the owner; step 2 sends the
+  owner's user name, password and answer with that same page's session and hidden fields. If Clinica ends the session
+  during the pull, its new question needs the owner again: the pull waits ("open the sign-in page again") and carries
+  on from where it was. Codes sent by SMS / e-mail are not supported; `scripts/clinica-attachments-fetch.js` (in the
+  signed-in browser) remains the other way.
