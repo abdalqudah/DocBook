@@ -429,3 +429,11 @@ pull added are removed by "Remove everything imported from Clinica" like those t
   page and the calendar drawer, which also edits the note (any time, also after payment).
 - Clinica's calendar: a row marked no-answer / recall brings that outcome; a Note column, when the list has one,
   goes into the appointment's note.
+
+## 2.9.7: clean up doubled appointments
+Import Center → "Clean up doubled appointments" (owner; not while the pull runs; background; audited; safe to repeat):
+a visit the file import made (`v:`, or an `a:` at 09:00) on a day Clinica's calendar has an appointment for the same
+patient is folded into that appointment (same doctor first, else the earliest): its treatments and plan items move
+over, its doctor / branch / note fill what the appointment lacks, and it is removed. Kept as it is when anything of the
+clinic hangs on it (any table with an `appointment_id` — read from the database — or a follow-up), when it was checked
+in or charged. Days without a calendar row are not touched.

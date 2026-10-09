@@ -117,6 +117,25 @@
 </section>
 <% } %>
 
+<% if (isOwner() && (dedupe.doubled || dedupe.running || dedupe.last)) { %>
+<section class="panel mt-6" data-legacy-dedupe>
+  <div class="panel-head"><div><h2><%- icon('calendar-check', 'icon-sm') %> <%= t('legacy.dedupe_title') %></h2><p class="panel-sub"><%= t('legacy.dedupe_sub') %></p></div></div>
+  <div class="panel-body stack">
+    <div class="summary-strip">
+      <span class="chip"><%= t('legacy.dedupe_doubled') %> <strong><%= fmt.number(dedupe.doubled) %></strong></span>
+      <span class="chip"><%= t('legacy.dedupe_kept') %> <strong><%= fmt.number(dedupe.kept) %></strong></span>
+    </div>
+    <% if (dedupe.last) { %><p class="small muted"><%= t('legacy.dedupe_last', { merged: fmt.number(dedupe.last.merged), kept: fmt.number(dedupe.last.kept), treatments: fmt.number(dedupe.last.treatments) }) %></p><% } %>
+    <% if (dedupe.running) { %><p class="small"><%- icon('hourglass', 'icon-sm') %> <%= t('legacy.dedupe_running') %></p>
+    <% } else if (dedupe.doubled) { %>
+    <form method="post" action="<%= B %>/dedupe" data-confirm="<%= t('legacy.dedupe_confirm', { n: fmt.number(dedupe.doubled) }) %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-primary" type="submit"><%- icon('calendar-check', 'icon-sm') %><%= t('legacy.dedupe_button') %></button>
+    </form>
+    <% } %>
+  </div>
+</section>
+<% } %>
 <% if (isOwner() && (purge.patients || purge.visits || purge.plan || purge.files || purge.running)) { %>
 <section class="panel mt-6" data-legacy-purge>
   <%# only to start again from nothing: folded away (the pull adds what is missing and never doubles) %>

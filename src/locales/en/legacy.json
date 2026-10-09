@@ -377,6 +377,16 @@
     "remote_to": "Calendar to",
     "remote_to_hint": "Empty = one year ahead",
     "grp_calendar": "Clinica calendar",
-    "purge_pull_running": "The pull from Clinica is running — stop it first, then delete."
+    "purge_pull_running": "The pull from Clinica is running — stop it first, then delete.",
+    "dedupe_title": "Clean up doubled appointments",
+    "dedupe_sub": "A 09:00 visit of the old import beside the real appointment of the same patient and day from Clinica's calendar: folded into it (its treatments move over) and removed. An appointment with an invoice, payment, consultation, prescription, file or check-in is never touched.",
+    "dedupe_doubled": "Doubled visits",
+    "dedupe_kept": "Left as they are (used by the clinic)",
+    "dedupe_button": "Clean up doubled appointments",
+    "dedupe_confirm": "Fold {n} doubled visits into their real appointments and remove them. Continue?",
+    "dedupe_started": "Clean-up started in the background — refresh the page in a moment.",
+    "dedupe_running": "Cleaning up…",
+    "dedupe_last": "Last clean-up: {merged} folded, {kept} left, {treatments} treatments moved.",
+    "dedupe_pull_running": "The pull from Clinica is running — wait for it to finish or stop it, then clean up."
   }
 }

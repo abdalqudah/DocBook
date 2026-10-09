@@ -584,3 +584,30 @@ test('HTTP: owner runs the Import Center; staff cannot; files only through the a
   // Not served from the public folder.
   assert.equal((await client().get(`/uploads/${att.storage_path}`)).status, 404);
 });
+
+test('clean up doubled appointments: a 09:00 import visit beside the calendar appointment is folded in; what the clinic used stays', async () => {
+  const dedupe = require('../src/modules/legacy/dedupe.service'); // eslint-disable-line global-require
+  const b = ctx.businessId;
+  const [pid] = await knex('patients').insert({ business_id: b, full_name: 'Doubled Patient', phone: '0790003333' });
+  const [doc] = await knex('doctors').insert({ business_id: b, full_name: 'Dr Dd', is_active: true });
+  const base = { business_id: b, patient_id: pid, patient_name: 'Doubled Patient', status: 'completed', appointment_type: 'in_person', source: 'import', payment_status: 'imported', external_source: 'clinica' };
+  const [cal] = await knex('appointments').insert({ ...base, appointment_date: '2023-05-02', appointment_time: '10:30', external_uid: `clinica:dd${tag}:a:cal:2023-05-02:10:30:x` });
+  const [left] = await knex('appointments').insert({ ...base, appointment_date: '2023-05-02', appointment_time: '09:00', doctor_id: doc, notes: 'from the old file', external_uid: `clinica:dd${tag}:v:2023-05-02:a` });
+  const [used] = await knex('appointments').insert({ ...base, appointment_date: '2023-05-02', appointment_time: '09:00', external_uid: `clinica:dd${tag}:v:2023-05-02:b` });
+  await knex('appointments').insert({ business_id: b, patient_id: pid, patient_name: 'Doubled Patient', appointment_date: '2023-06-01', appointment_time: '11:00', status: 'completed', appointment_type: 'in_person', source: 'staff', parent_appointment_id: used }); // a follow-up of it
+  const [lone] = await knex('appointments').insert({ ...base, appointment_date: '2023-05-09', appointment_time: '09:00', external_uid: `clinica:dd${tag}:v:2023-05-09:a` }); // no calendar row that day
+  const p = await dedupe.preview(b);
+  assert.ok(p.doubled >= 1); assert.ok(p.kept >= 1);
+  const owner = await signIn(`li${tag}@t.test`);
+  let r = await owner.get('/app/import/legacy-clinica?lang=en');
+  assert.match(r.text, /Clean up doubled appointments/);
+  r = await owner.post('/app/import/legacy-clinica/dedupe');
+  assert.equal(r.status, 302);
+  await dedupe.start(ctx);
+  assert.ok(!(await knex('appointments').where({ id: left }).first('id')), 'folded in');
+  const k = await knex('appointments').where({ id: cal }).first();
+  assert.equal(k.doctor_id, doc); assert.match(k.notes, /from the old file/); assert.equal(String(k.appointment_time).slice(0, 5), '10:30');
+  assert.ok(await knex('appointments').where({ id: used }).first('id'), 'what the clinic used stays');
+  assert.ok(await knex('appointments').where({ id: lone }).first('id'), 'a day without a calendar row stays');
+  assert.equal((await dedupe.preview(b)).doubled, 0, 'nothing left to do');
+});

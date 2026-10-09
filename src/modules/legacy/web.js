@@ -29,13 +29,24 @@ router.get('/', wrap(async (req, res) => {
     knex('legacy_patients').where({ business_id: req.ctx.businessId }).count({ n: '*' })]);
   const promotion = await require('./promote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
   const purge = await require('./purge.service').preview(req.ctx.businessId); // eslint-disable-line global-require
+  const dedupe = await require('./dedupe.service').preview(req.ctx.businessId); // eslint-disable-line global-require
   const rs = require('./remote.service'); // eslint-disable-line global-require
   const remote = await rs.progress(req.ctx.businessId);
-  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, remote, remoteSignIn: rs.pendingQuestion(req.ctx.businessId), remoteProbe: Boolean(rs.probeReport(req.ctx.businessId)), ...PAGE });
+  res.page('pages/legacy/center', { title: req.t('legacy.title'), current, history, legacyCount: Number(n), promotion, purge, dedupe, remote, remoteSignIn: rs.pendingQuestion(req.ctx.businessId), remoteProbe: Boolean(rs.probeReport(req.ctx.businessId)), ...PAGE });
 }));
 
 // Imported treatments → the patients' own files (treatment plan with the doctors) — for imports made before this
 // was part of the import, and again after the clinic adds its doctors. Runs in the background; safe to run again.
+// Doubled appointments (a 09:00 visit of the import beside the calendar's appointment of that patient and day) →
+// folded into the calendar appointment; what the clinic used is never touched. The owner only; not while the pull runs.
+router.post('/dedupe', ownerOnly, wrap(async (req, res) => {
+  const pull = await require('./remote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
+  if (pull && pull.status === 'processing') { flash(req, 'error', req.t('legacy.dedupe_pull_running')); return res.redirect(BASE); }
+  require('./dedupe.service').start(req.ctx); // eslint-disable-line global-require
+  flash(req, 'success', req.t('legacy.dedupe_started'));
+  return res.redirect(BASE);
+}));
+
 // Remove everything that came from Clinica (to import again cleanly) — the owner only, typed confirmation.
 router.post('/purge', ownerOnly, wrap(async (req, res) => {
   const word = String(req.body.confirm || '').trim();
