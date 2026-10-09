@@ -13,7 +13,7 @@
   var _ok = (can('clinical.view') || can('patients.view')) && _to && (_pid || _vid);
 %>
 <% if (_ok && _part === 'button') { %>
-<button class="btn btn-secondary" type="button" data-open-dialog="patient-mail-dialog" data-teamops-mail><%- icon('mail', 'icon-sm') %><%= t('doctor_mail.button') %></button>
+<button class="btn btn-secondary" type="button" data-open-dialog="patient-mail-dialog" data-teamops-mail title="<%= t('doctor_mail.button') %>"><%- icon('mail', 'icon-sm') %><%= t('doctor_mail.button') %></button>
 <% } else if (_ok && _part === 'dialog') { %>
 <dialog class="dialog wide" id="patient-mail-dialog" aria-labelledby="patient-mail-title" data-teamops-mail-dialog data-src="/app/teamops/patient-email?<%= _pid ? 'patient=' + _pid : '' %><%= _pid && _vid ? '&' : '' %><%= _vid ? 'visit=' + _vid : '' %>">
   <form method="post" action="/app/teamops/patient-email" novalidate>

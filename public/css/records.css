@@ -233,3 +233,19 @@ tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
 .d-block { display: block; }
 .text-danger { color: var(--danger); }
 @media (max-width: 720px) { .pt-check { width: 28px; } }
+
+/* Patient file head: the actions stay beside the name (at the end of the line), compact; never under it on a wide
+   screen. Medium screens show the icons only (each button keeps its name as a tooltip and for screen readers). */
+.pt-page-head { flex-wrap: nowrap; align-items: center; }
+.pt-page-head .pt-page-title { min-width: 0; flex: 1 1 auto; }
+.pt-page-head .pt-actions { flex-wrap: nowrap; flex: 0 0 auto; gap: 6px; align-self: center; }
+.pt-page-head .pt-actions form { display: contents; }
+.pt-page-head .pt-actions .btn { padding: 6px 10px; font-size: 12.5px; gap: 5px; min-height: 0; height: 32px; }
+.pt-page-head .pt-actions .btn .icon-sm { width: 15px; height: 15px; }
+@media (max-width: 1180px) {
+  .pt-page-head .pt-actions .btn:not(.btn-primary) { font-size: 0; gap: 0; width: 34px; padding: 0; justify-content: center; }
+}
+@media (max-width: 640px) {
+  .pt-page-head { flex-wrap: wrap; }
+  .pt-page-head .pt-actions { width: 100%; flex-wrap: wrap; }
+}

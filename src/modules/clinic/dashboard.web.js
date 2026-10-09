@@ -26,6 +26,19 @@ const invBase = (ctx) => {
 };
 const sumOf = async (q) => { const [r] = await q.select(knex.raw('COALESCE(SUM(i.amount),0) as v'), knex.raw('COUNT(*) as n')); return { value: Number(r.v) || 0, count: Number(r.n) || 0 }; };
 
+/** The first name to greet the member with, in the page's language: Arabic when the page is Arabic, English when it is
+ * English — from the account's name and the member's doctor profile (Arabic name / English name), titles left out. */
+async function greetName(req) {
+  const doctorId = (res0(req).myDoctorId) || req.ctx.ownDoctorId || null;
+  const doc = doctorId ? await knex('doctors').where({ id: doctorId, business_id: req.ctx.businessId }).first('full_name', 'full_name_en').catch(() => null) : null;
+  const first = (n) => String(n || '').split(/\s+/).filter((w) => w && !/^(د\.?|dr\.?|دكتور|الدكتور|الدكتورة|doctor|prof\.?)$/i.test(w))[0] || '';
+  const ar = (n) => /[\u0600-\u06ff]/.test(n || ''); const lat = (n) => /[a-z]/i.test(n || '') && !ar(n);
+  const names = [req.ctx.userName, doc && doc.full_name, doc && doc.full_name_en].filter(Boolean);
+  const pick = req.locale === 'en' ? [doc && doc.full_name_en, ...names].find(lat) : names.find(ar);
+  return first(pick || req.ctx.userName);
+}
+const res0 = (req) => (req.res && req.res.locals) || {};
+
 function greetingKey(tz) {
   const { minutes } = scheduling.clinicNow(tz);
   if (minutes < 12 * 60) return 'dashboard.greet_morning';
@@ -295,7 +308,7 @@ router.get('/', wrap(async (req, res) => {
   // A rep's paid ad (sponsored, matched to the clinic's specialty and city) for people who deal with reps.
   if (perms.has('vendors.view') || ctx.doctorId) data.sponsored = (await require('../vendorbilling/billing.service').adsFor(req.business, { limit: 1 }).catch(() => []))[0] || null; // eslint-disable-line global-require
   return res.page('pages/clinic/dashboard/index', {
-    title: req.t('navx.sec_today'), greeting: req.t(greetingKey(ctx.timezone), { name: String(ctx.userName || '').split(/\s+/).filter((w) => !/^(د\.?|dr\.?|دكتور|الدكتور|doctor)$/i.test(w))[0] || '' }),
+    title: req.t('navx.sec_today'), greeting: req.t(greetingKey(ctx.timezone), { name: await greetName(req) }),
     ...data, statusTone: lib.STATUS_TONE, nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), localTime: (d) => lib.localTime(d, ctx.timezone),
     pageScripts: ['/js/records.js', '/js/ownerx.js'], pageStyles: ['/css/records.css', '/css/ownerx.css', '/css/vbill.css'],
   });
