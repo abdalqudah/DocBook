@@ -29,6 +29,10 @@ router.use((req, res, next) => {
 router.get('/', wrap(async (req, res) => {
   const visits = await svc.vendorVisits(req.vendor.id);
   visits.forEach((v) => { v.isPast = v.visit_date < clinicNow(v.timezone).date; });
+  // visits at clinics linked to the platform (their own server): the platform's copy, kept up to date by the clinic
+  const today = clinicNow('Asia/Amman').date;
+  (await require('../hub/hub.service').vendorHubVisits(req.vendor.id).catch(() => [])).forEach((h) => visits.push({ ...h, hub: true, duration_minutes: 15, visit_date: String(h.visit_date).slice(0, 10), isPast: String(h.visit_date).slice(0, 10) < today, showAddress: true })); // eslint-disable-line global-require
+  visits.sort((a, b) => `${b.visit_date} ${b.visit_time}`.localeCompare(`${a.visit_date} ${a.visit_time}`));
   res.page('pages/vendor/visits', base(req, { title: req.t('rep_visits.vendor_side.title'), visits }));
 }));
 

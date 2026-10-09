@@ -43,6 +43,7 @@
       <div class="grow"><div class="strong"><%= L(c.name, c.name_en) %></div><div class="tiny muted"><%= [c.city, specialtyLabel(c.specialty)].filter(Boolean).join(' · ') %></div></div>
       <% if (c.phone) { %><a class="btn btn-ghost btn-sm" href="tel:<%= String(c.phone).replace(/[^0-9+]/g, '') %>"><%- icon('phone', 'icon-sm') %><span class="hide-sm" dir="ltr"><%= c.phone %></span></a><% } %>
       <% if (wa) { %><a class="btn btn-ghost btn-sm" href="https://wa.me/<%= wa %>" target="_blank" rel="noopener noreferrer"><%- icon('message-square', 'icon-sm') %><span class="hide-sm"><%= t('hub.whatsapp') %></span></a><% } %>
+      <% if (Number(c.bookable)) { %><a class="btn btn-primary btn-sm" href="/vendor/visits/hub/<%= c.id %>"><%- icon('calendar-plus', 'icon-sm') %><%= t('rep_visits.vendor_side.choose') %></a><% } %>
       <% if (c.site_url) { %><a class="btn btn-secondary btn-sm" href="<%= c.site_url %>" target="_blank" rel="noopener noreferrer"><%- icon('external-link', 'icon-sm') %><%= t('hub.site') %></a><% } %>
     </li>
     <% }) %>

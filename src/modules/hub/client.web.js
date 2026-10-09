@@ -13,7 +13,7 @@ router.get('/settings/hub', can('data.manage'), wrap(async (req, res) => {
 }));
 router.post('/settings/hub', can('data.manage'), wrap(async (req, res) => {
   try {
-    const r = await hub.saveClient(req.ctx, { hubUrl: req.body.hub_url, key: req.body.key });
+    const r = await hub.saveClient(req.ctx, { hubUrl: req.body.hub_url, key: req.body.key, selfUrl: `${req.protocol}://${req.get('host')}` });
     flash(req, 'success', req.t('hub.linked', { offers: r ? r.offers : 0, ads: r ? r.ads : 0 }));
   } catch (e) { flash(req, 'error', e.details ? Object.values(e.details).join(' ') : e.message); }
   res.redirect('/app/settings/hub');

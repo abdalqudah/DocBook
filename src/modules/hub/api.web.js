@@ -29,6 +29,7 @@ router.get('/:kind(offers|ads)/:id(\\d+)/image', j(async (req, res) => {
   res.set('Content-Type', /^image\/(png|jpe?g|webp|gif)$/.test(img.mime || '') ? img.mime : 'application/octet-stream');
   return res.send(img.data);
 }));
+router.post('/visits/status', j(async (req, res) => res.json(await hub.visitStatus(req.hubLink, req.body || {}))));
 router.post('/ads/:id(\\d+)/click', j(async (req, res) => {
   await require('../vendorbilling/billing.service').adClick(req.params.id); // eslint-disable-line global-require
   res.json({ ok: true });

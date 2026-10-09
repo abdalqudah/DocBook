@@ -34,7 +34,7 @@ const links = () => knex('hub_links').orderBy('created_at', 'desc');
 const linkedClinics = ({ specialty, q } = {}) => knex('hub_links').where({ status: 'active' }).whereNotNull('name').modify((x) => {
   if (specialty) x.where('specialty', specialty);
   if (q) x.where((w) => w.where('name', 'like', `%${q}%`).orWhere('name_en', 'like', `%${q}%`).orWhere('city', 'like', `%${q}%`));
-}).orderBy('name').limit(200).select('id', 'name', 'name_en', 'specialty', 'city', 'phone', 'whatsapp', 'site_url', 'last_seen_at');
+}).orderBy('name').limit(200).select('id', 'name', 'name_en', 'specialty', 'city', 'phone', 'whatsapp', 'site_url', 'last_seen_at', knex.raw('callback_url IS NOT NULL AS bookable'));
 
 /** The link of a key (Authorization: Bearer …), when active. */
 async function linkOf(key) {
@@ -48,6 +48,12 @@ async function hello(link, body = {}) {
     whatsapp: clip(body.whatsapp, 40), site_url: /^https?:\/\/[^\s<>"']+$/i.test(String(body.site_url || '')) ? clip(body.site_url, 300) : null, version: clip(body.version, 30),
     last_seen_at: now(), updated_at: now(),
   };
+  // where the platform reaches the installation (doctors, free times, bookings of reps) and its secret for that
+  const cb = body.callback || {};
+  if (cb.url && /^https?:\/\/[^\s<>"']+$/i.test(String(cb.url)) && (String(cb.url).startsWith('https://') || process.env.NODE_ENV === 'test') && String(cb.secret || '').length >= 24) {
+    row.callback_url = String(cb.url).replace(/\/+$/, '').slice(0, 300);
+    row.callback_enc = secrets.encrypt(String(cb.secret));
+  }
   await knex('hub_links').where({ id: link.id }).update(row);
   return { ok: true, link: link.label };
 }
@@ -101,20 +107,31 @@ async function call(c, path, { method = 'GET', body = null, binary = false } = {
   return binary ? { data: Buffer.from(await res.arrayBuffer()), mime: res.headers.get('content-type') || '' } : res.json();
 }
 
-/** What the installation tells the platform about its clinic (the installation's clinic: its first active one). */
-async function clinicCard() {
-  const b = await knex('businesses').where({ status: 'active' }).orderBy('id').first('id', 'name', 'name_en', 'specialty', 'city', 'phone', 'whatsapp', 'slug');
+/** The installation's clinic (its first active one). */
+const ownClinic = () => knex('businesses').where({ status: 'active' }).orderBy('id').first('id', 'name', 'name_en', 'specialty', 'city', 'phone', 'whatsapp', 'slug', 'timezone');
+/** What the installation tells the platform about its clinic, and where / how the platform reaches it back. */
+async function clinicCard(c = null) {
+  const b = await ownClinic();
   if (!b) return {};
-  const site = process.env.APP_URL ? String(process.env.APP_URL).replace(/\/+$/, '') : null;
-  return { name: b.name, name_en: b.name_en, specialty: b.specialty, city: b.city, phone: b.phone, whatsapp: b.whatsapp, site_url: site, version: require('../../../package.json').version }; // eslint-disable-line global-require
+  const cl = c || await client();
+  const site = cl.callback_url || (process.env.APP_URL ? String(process.env.APP_URL).replace(/\/+$/, '') : null);
+  let secret = null; try { secret = cl.callback_enc ? secrets.decrypt(cl.callback_enc) : null; } catch { secret = null; }
+  return {
+    name: b.name, name_en: b.name_en, specialty: b.specialty, city: b.city, phone: b.phone, whatsapp: b.whatsapp, site_url: site, version: require('../../../package.json').version, // eslint-disable-line global-require
+    callback: site && secret ? { url: site, secret } : undefined,
+  };
 }
 
 /** Settings: saves the platform's address and key after a successful hello. */
-async function saveClient(ctx, { hubUrl, key, enabled = true }) {
+async function saveClient(ctx, { hubUrl, key, enabled = true, selfUrl = null }) {
   const cur = await client();
-  const row = { id: 1, hub_url: hubBase(hubUrl), key_enc: String(key || '').trim() ? secrets.encrypt(String(key).trim()) : cur.key_enc, enabled: Boolean(enabled), updated_at: now() };
+  const row = {
+    id: 1, hub_url: hubBase(hubUrl), key_enc: String(key || '').trim() ? secrets.encrypt(String(key).trim()) : cur.key_enc, enabled: Boolean(enabled), updated_at: now(),
+    callback_enc: cur.callback_enc || secrets.encrypt(crypto.randomBytes(32).toString('base64url')), // the platform's calls to this installation carry it
+    callback_url: (process.env.APP_URL ? String(process.env.APP_URL).replace(/\/+$/, '') : null) || (selfUrl ? String(selfUrl).replace(/\/+$/, '') : null) || cur.callback_url || null,
+  };
   if (!row.key_enc) throw E.validation({ key: 'Enter the link key the platform gave you.' });
-  await call(row, '/hello', { method: 'POST', body: await clinicCard() }).catch((e) => { throw E.validation({ key: e.message }); });
+  await call(row, '/hello', { method: 'POST', body: await clinicCard(row) }).catch((e) => { throw E.validation({ key: e.message }); });
   await knex('hub_client').insert(row).onConflict('id').merge(row);
   await audit.record(ctx, 'hub.client_linked', { entityType: 'hub_client', entityId: 1, newValues: { hub_url: row.hub_url } });
   return sync();
@@ -155,10 +172,23 @@ async function sync() {
   }
 }
 
-/** The cached offers / ads, for the Marketplace and the dashboard. */
-async function cached(kind) {
-  const c = await client();
+/**
+ * The platform's offers / ads, live: when the last sync is older than a few seconds a sync runs first (waited for up to
+ * 4 s; one at a time) — a new offer or ad on the platform shows on the next page view. If the platform does not answer,
+ * the last copy is shown.
+ */
+const FRESH_MS = 15_000;
+let syncing = null;
+async function fresh(c) {
+  if (!c.enabled || !c.key_enc) return;
+  if (c.last_sync_at && Date.now() - new Date(c.last_sync_at).getTime() < FRESH_MS) return;
+  if (!syncing) syncing = sync().catch(() => null).finally(() => { syncing = null; });
+  await Promise.race([syncing, new Promise((r) => { setTimeout(r, 4000).unref(); })]);
+}
+async function cached(kind, { live = true } = {}) {
+  let c = await client();
   if (!c.enabled) return [];
+  if (live) { await fresh(c); c = await client(); }
   const rows = await knex('hub_cache').where({ kind }).orderBy('remote_id', 'desc').select('remote_id', 'data', 'image_mime').catch(() => []);
   return rows.map((r) => ({ ...json(r.data, {}), remote_id: r.remote_id, hub: true, image_mime: r.image_mime }));
 }
@@ -170,7 +200,68 @@ const cachedImage = (kind, remoteId) => knex('hub_cache').where({ kind, remote_i
 /** An ad of the platform clicked here: counted on the platform (best effort). */
 async function adClick(remoteId) { const c = await client(); return call(c, `/ads/${Number(remoteId) || 0}/click`, { method: 'POST', body: {} }).catch(() => null); }
 
+// ================================================================= reps' visits at a linked clinic (live, both ways)
+/** The platform calls the installation (its doctors, free times, a booking) with the secret it gave in its hello. */
+async function remote(link, path, { method = 'GET', body = null } = {}) {
+  const l = typeof link === 'object' ? link : await knex('hub_links').where({ id: Number(link) || 0, status: 'active' }).first();
+  if (!l || !l.callback_url || !l.callback_enc) throw new AppError('HUB_CLINIC_UNREACHABLE', 'This clinic cannot take bookings from the platform yet.', 409);
+  const res = await fetch(`${l.callback_url}/hub-in/v1${path}`, {
+    method, headers: { authorization: `Bearer ${secrets.decrypt(l.callback_enc)}`, accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15_000),
+  }).catch(() => null);
+  if (!res) throw new AppError('HUB_CLINIC_UNREACHABLE', 'The clinic\'s system does not answer now. Try again later.', 502);
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) throw new AppError(out.code || 'HUB_CLINIC_ERROR', out.message || `The clinic answered ${res.status}.`, res.status === 404 ? 404 : 422, out.details);
+  return out;
+}
+const linkFor = (id) => knex('hub_links').where({ id: Number(id) || 0, status: 'active' }).whereNotNull('callback_url').first();
+async function repClinic(linkId) { const l = await linkFor(linkId); if (!l) throw E.notFound('Clinic'); return { link: l, clinic: await remote(l, '/rep/clinic') }; }
+async function repSlots(linkId, doctorId, date) { const l = await linkFor(linkId); if (!l) throw E.notFound('Clinic'); return (await remote(l, `/rep/slots?doctor_id=${Number(doctorId) || ''}&date=${encodeURIComponent(date || '')}`)).slots || []; }
+/** A rep books at a linked clinic: the installation keeps the visit; the platform keeps the rep's copy. */
+async function repBook(vctx, vendor, linkId, input) {
+  if (!vendor || vendor.status !== 'active') throw new AppError('VENDOR_NOT_ACTIVE', 'Your account is waiting for approval.', 403);
+  await require('../vendorbilling/billing.service').assertCan(vendor.id, 'request'); // eslint-disable-line global-require
+  const l = await linkFor(linkId);
+  if (!l) throw E.notFound('Clinic');
+  const v = await knex('vendors').where({ id: vendor.id }).first('id', 'type', 'name', 'name_en', 'phone', 'whatsapp', 'email', 'city');
+  const r = await remote(l, '/rep/book', { method: 'POST', body: { vendor: { hub_id: v.id, type: v.type, name: v.name, name_en: v.name_en, phone: v.phone, whatsapp: v.whatsapp, email: v.email, city: v.city }, rep_name: vctx.userName || null, ...input } });
+  await knex('hub_visits').insert({ link_id: l.id, vendor_id: vendor.id, user_id: vctx.userId || null, remote_id: Number(r.id), doctor_name: clip(r.doctor_name, 190), visit_date: r.visit_date, visit_time: r.visit_time, purpose: clip(input.purpose, 500), status: r.status || 'requested' })
+    .onConflict(['link_id', 'remote_id']).merge();
+  await audit.record({ businessId: null, userId: vctx.userId || null }, 'hub.rep_visit_booked', { entityType: 'hub_link', entityId: l.id, newValues: { vendor_id: vendor.id, remote_id: r.id, status: r.status } });
+  return r;
+}
+async function repCancel(vctx, id) {
+  const hv = await knex('hub_visits').where({ id: Number(id) || 0, vendor_id: vctx.vendorId }).first();
+  if (!hv) throw E.notFound('Visit');
+  if (!['requested', 'confirmed'].includes(hv.status)) throw new AppError('REP_VISIT_STATE', 'This visit can no longer be changed.', 409);
+  await remote(hv.link_id, '/rep/cancel', { method: 'POST', body: { id: hv.remote_id, hub_vendor_id: hv.vendor_id } });
+  await knex('hub_visits').where({ id: hv.id }).update({ status: 'cancelled', updated_at: now() });
+}
+/** The installation tells the platform its decision on a rep's visit → the rep's copy, and a notice to the rep. */
+async function visitStatus(link, body = {}) {
+  const status = ['requested', 'confirmed', 'declined', 'cancelled', 'done'].includes(body.status) ? body.status : null;
+  const hv = await knex('hub_visits').where({ link_id: link.id, remote_id: Number(body.id) || 0 }).first();
+  if (!hv || !status) return { ok: false };
+  await knex('hub_visits').where({ id: hv.id }).update({ status, clinic_note: clip(body.note, 500), updated_at: now() });
+  if (['confirmed', 'declined', 'cancelled'].includes(status) && status !== hv.status) {
+    await require('../platformnotify/notify.service').vendor(hv.vendor_id, `visit_${status}`, { clinic: link.name || link.label, date: hv.visit_date, time: hv.visit_time, note: body.note || '' }, { link: '/vendor/visits', severity: status === 'confirmed' ? 'success' : 'warning' }).catch(() => {}); // eslint-disable-line global-require
+  }
+  return { ok: true };
+}
+/** A rep's visits at linked clinics (for their visits list). */
+const vendorHubVisits = (vendorId) => knex('hub_visits as h').join('hub_links as l', 'l.id', 'h.link_id').where('h.vendor_id', vendorId)
+  .orderBy('h.visit_date', 'desc').limit(200).select('h.*', 'l.name as clinic_name', 'l.name_en as clinic_name_en', 'l.city as clinic_city', 'l.phone as clinic_phone');
+
+/** Installation: a decision on a visit booked from the platform → told to the platform (best effort). */
+async function visitChanged(visitId, status, note) {
+  const v = await knex('rep_visits as r').join('vendors as v', 'v.id', 'r.vendor_id').where('r.id', Number(visitId) || 0).whereNotNull('v.hub_vendor_id').first('r.id');
+  if (!v) return null;
+  const c = await client();
+  return call(c, '/visits/status', { method: 'POST', body: { id: v.id, status, note: note || null } }).catch(() => null);
+}
+
 module.exports = {
+  ownClinic, remote, repClinic, repSlots, repBook, repCancel, visitStatus, vendorHubVisits, visitChanged, fresh,
   createLink, revokeLink, links, linkedClinics, linkOf, hello, offersFor, adsFor, imageOf,
   client, keyOf, saveClient, unlink, sync, cached, cachedOne, cachedImage, adClick, clinicCard,
 };

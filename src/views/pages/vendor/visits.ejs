@@ -37,7 +37,7 @@
           <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= statusCls[r.status] || 'badge-neutral' %>"><%= t('rep_visits.status.' + r.status) %></span></td>
           <td class="actions">
             <% if ((r.status === 'requested' || r.status === 'confirmed') && !r.isPast) { %>
-            <form method="post" action="/vendor/visits/<%= r.id %>/cancel" data-confirm="<%= t('rep_visits.vendor_side.cancel_confirm') %>" data-confirm-title="<%= t('rep_visits.cancel_visit') %>" data-confirm-yes="<%= t('rep_visits.cancel_visit') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('rep_visits.vendor_side.cancel') %></button></form>
+            <form method="post" action="<%= r.hub ? '/vendor/visits/hub/cancel/' + r.id : '/vendor/visits/' + r.id + '/cancel' %>" data-confirm="<%= t('rep_visits.vendor_side.cancel_confirm') %>" data-confirm-title="<%= t('rep_visits.cancel_visit') %>" data-confirm-yes="<%= t('rep_visits.cancel_visit') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-danger-ghost btn-sm" type="submit"><%= t('rep_visits.vendor_side.cancel') %></button></form>
             <% } %>
           </td>
         </tr>

@@ -20,6 +20,7 @@ router.use('/vendors', require('../modules/vendors/public.web'));
   const { requireVendor } = require('../middleware/vendor'); // eslint-disable-line global-require
   const vendor = express.Router();
   vendor.use(requireVendor);
+  vendor.use('/visits/hub', require('../modules/hub/vendor.web')); // visits at clinics linked to the platform (live)
   vendor.use('/visits', require('../modules/marketplace/vendor-visits.web'));
   vendor.use('/orders', require('../modules/purchasing/vendor-orders.web'));
   vendor.use('/notifications', require('../modules/platformnotify/web').vendor());

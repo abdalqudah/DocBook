@@ -1,4 +1,4 @@
-# Patient portal and platform link (2.9.1)
+# Patient portal and platform link (2.9.1, rep visits and live offers 2.9.2)
 
 ## Patient portal (`/<slug>/account`, on a clinic domain `/account`)
 Settings → Patient portal (owner / `settings.manage`): on/off, self sign-up, the sections patients see (visits,
@@ -24,7 +24,14 @@ prescriptions, treatment plan, visit records, files) and the WhatsApp authentica
   (the reps' live offers / approved ads that reach the clinic's specialty and city — the same targeting as a clinic on
   the platform), images, `POST /ads/:id/click`.
 - **Installation:** Settings → Platform link: the platform address and the key (stored encrypted) → hello and sync;
-  hourly sync after. The platform's offers appear in Marketplace → Offers ("From the main platform", with the rep's phone
+  live after: a page that shows them reads the platform first when the copy is older than 15 seconds (waits at most 4
+  s, else shows the copy), and a background sync every minute keeps it warm. The platform's offers appear in Marketplace → Offers ("From the main platform", with the rep's phone
   / WhatsApp / e-mail); its ads show on the dashboard and the Marketplace when there is no local ad (clicks counted on the
   platform). Unlink removes the cached offers and ads.
-- **Reps** see the linked clinics (name, specialty, city, phone, WhatsApp, website) under Visits → Find a clinic.
+- **Reps** see the linked clinics (name, specialty, city, phone, WhatsApp, website) under Visits → Find a clinic, and
+  **book a visit there live** (`/vendor/visits/hub/<link>`): in its hello the installation gives the platform its address
+  and a secret (kept encrypted on both sides); the platform calls the installation's `/hub-in/v1` (`GET /rep/clinic`,
+  `GET /rep/slots`, `POST /rep/book`, `POST /rep/cancel`, Bearer secret) — free times are read at once, the visit lands
+  in the clinic's own Rep visits (a local stand-in rep, `vendors.hub_vendor_id`), the rep keeps a copy on the platform
+  (`hub_visits`, in their Visits list). The clinic's confirm / decline / cancel is sent to the platform at once
+  (`POST /hub/v1/visits/status`) and the rep is notified; the rep can cancel from the platform.

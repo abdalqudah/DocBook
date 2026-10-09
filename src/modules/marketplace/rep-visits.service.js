@@ -387,6 +387,8 @@ async function decide(ctx, id, action, note) {
   if (cleanNote) row.clinic_note = cleanNote;
   await knex('rep_visits').where({ id: v.id }).update(row);
   await audit.record(ctx, `rep_visit.${tr[1]}`, { entityType: 'rep_visit', entityId: v.id, oldValues: { status: v.status }, newValues: { status: tr[1], clinic_note: cleanNote } });
+  // a visit booked by a rep of the platform (linked installation): the platform hears the decision at once
+  await require('../hub/hub.service').visitChanged(v.id, tr[1], cleanNote).catch(() => null); // eslint-disable-line global-require
   if (['confirmed', 'declined', 'cancelled'].includes(tr[1])) {
     const vendor = await knex('vendors').where({ id: v.vendor_id }).first('name', 'email');
     const clinic = await knex('businesses').where({ id: ctx.businessId }).first('name');

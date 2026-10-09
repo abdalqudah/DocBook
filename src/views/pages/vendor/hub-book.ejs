@@ -1,0 +1,56 @@
+<%# A rep books a visit at a clinic linked to the platform (its own server): doctors and free times are read live. %>
+<%
+  var _err = typeof errors !== 'undefined' && errors ? errors : {};
+  var _old = typeof old !== 'undefined' && old ? old : {};
+  var docOpts = (clinic.hasClinicWide ? [{ value: '', label: t('rep_visits.clinic_wide') }] : []).concat(clinic.doctors.map(function (d) { return { value: String(d.id), label: L(d.full_name, d.full_name_en) }; }));
+  var today = new Date().toISOString().slice(0, 10);
+%>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/vendor/visits"><%= t('rep_visits.vendor_side.title') %></a><%- icon('chevron-right', 'flip-rtl') %><a href="/vendor/visits/new"><%= t('rep_visits.vendor_side.find_title') %></a></div>
+    <h1><%= L(clinic.name || link.name, clinic.name_en || link.name_en) %></h1>
+    <p><%= [clinic.city || link.city, specialtyLabel(clinic.specialty || link.specialty)].filter(Boolean).join(' · ') %> · <span class="badge badge-info"><%- icon('link', 'icon-sm') %><%= t('hub.linked_badge') %></span></p>
+  </div>
+  <div class="page-actions"><a class="btn btn-ghost" href="/vendor/visits/new"><%= t('rep_visits.vendor_side.change_clinic') %></a></div>
+</div>
+<div class="mk-book" data-hub-book>
+  <% if (clinic.mode === 'slots') { %>
+  <div class="panel">
+    <div class="panel-head"><h2><%= t('rep_visits.vendor_side.step_when') %></h2></div>
+    <form class="panel-body" method="get" action="/vendor/visits/hub/<%= link.id %>" data-autosubmit>
+      <div class="form-grid">
+        <%- include('../../partials/field', { name: 'doctor_id', id: 'q-doctor', label: t('rep_visits.vendor_side.with'), type: 'select', options: docOpts, value: doctorId ? String(doctorId) : '', old: {}, errors: {} }) %>
+        <%- include('../../partials/field', { name: 'date', id: 'q-date', label: t('rep_visits.vendor_side.date'), type: 'date', value: date, attrs: 'min="' + today + '"', old: {}, errors: {} }) %>
+      </div>
+      <noscript><button class="btn btn-secondary btn-sm mt-2" type="submit"><%= t('rep_visits.vendor_side.show_times') %></button></noscript>
+    </form>
+  </div>
+  <% } %>
+  <form class="panel" method="post" action="/vendor/visits/hub/<%= link.id %>" novalidate>
+    <div class="panel-head"><h2><%= clinic.mode === 'slots' ? t('rep_visits.vendor_side.free_times') : t('rep_visits.vendor_side.step_when') %></h2></div>
+    <div class="panel-body stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <% if (clinic.mode === 'slots') { %>
+        <input type="hidden" name="doctor_id" value="<%= doctorId || '' %>"><input type="hidden" name="visit_date" value="<%= date %>">
+        <% if (!date) { %><p class="small muted"><%= t('rep_visits.vendor_side.pick_date') %></p>
+        <% } else if (!slots || !slots.length) { %><p class="small muted"><%= t('rep_visits.vendor_side.no_times') %></p>
+        <% } else { %>
+        <fieldset class="mk-times"><legend class="label"><%= t('rep_visits.vendor_side.time') %> · <%= fmt.date(date, { weekday: 'long', month: 'long', day: 'numeric' }) %></legend>
+          <div class="mk-slots"><% slots.forEach(function (s, i) { %><label class="mk-slot"><input type="radio" name="visit_time" value="<%= s.time %>"<%= (_old.visit_time ? _old.visit_time === s.time : i === 0) ? ' checked' : '' %>><span dir="ltr"><%= s.time %></span></label><% }) %></div>
+          <% if (_err.visit_time) { %><span class="field-error"><%= _err.visit_time %></span><% } %></fieldset>
+        <% } %>
+      <% } else { %>
+        <div class="form-grid">
+          <%- include('../../partials/field', { name: 'doctor_id', label: t('rep_visits.vendor_side.with'), type: 'select', options: docOpts.filter(function (o) { return o.value; }), value: String(_old.doctor_id || ''), old: {}, errors: _err }) %>
+          <%- include('../../partials/field', { name: 'visit_date', label: t('rep_visits.vendor_side.date'), type: 'date', value: _old.visit_date || '', attrs: 'min="' + today + '"', old: {}, errors: _err }) %>
+          <%- include('../../partials/field', { name: 'visit_time', label: t('rep_visits.vendor_side.time'), type: 'time', value: _old.visit_time || '', old: {}, errors: _err }) %>
+        </div>
+      <% } %>
+      <% if (clinic.mode !== 'slots' || (date && slots && slots.length)) { %>
+      <%- include('../../partials/field', { name: 'purpose', label: t('rep_visits.vendor_side.purpose'), type: 'textarea', required: true, value: _old.purpose || '', old: {}, errors: _err }) %>
+      <% } %>
+    </div>
+    <% if (clinic.mode !== 'slots' || (date && slots && slots.length)) { %><div class="panel-foot"><button class="btn btn-primary" type="submit"><%- icon('calendar-plus', 'icon-sm') %><%= t('rep_visits.vendor_side.book') %></button></div><% } %>
+  </form>
+</div>

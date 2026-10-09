@@ -7,7 +7,7 @@ const PLATFORM = [
   // accounts and sign-in
   'users', 'sessions', 'email_verifications', 'password_resets', 'team_user_prefs',
   // a DocBook on a clinic's own server ↔ the platform (hub.service): the platform's links; the installation's link and cache
-  'hub_links', 'hub_client', 'hub_cache',
+  'hub_links', 'hub_client', 'hub_cache', 'hub_visits',
   // the clinics, their members, roles and invitations; medical centres
   'businesses', 'memberships', 'roles', 'member_page_access', 'invitations', 'clinic_domains', 'centers', 'center_invites',
   // the platform: settings, billing, subscriptions, notices, media of the main site, support
