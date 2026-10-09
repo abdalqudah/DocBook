@@ -19,9 +19,11 @@ const router = express.Router();
 async function settingsPage(req, res, extra = {}) {
   const all = await svc.list(req.ctx.businessId);
   const edit = req.query.edit ? all.find((p) => p.id === Number(req.query.edit)) || null : null;
-  render(req, res, 'partners', 'partners', { title: req.t('settings.nav_partners'), all, edit, KINDS: svc.KINDS, ...extra });
+  // ?kind=pharmacy|lab|imaging: one kind only (the cards of Clinic → Medical setup)
+  const only = svc.KINDS.includes(req.query.kind) ? req.query.kind : (edit && req.query.kind ? edit.kind : null);
+  render(req, res, 'partners', 'partners', { title: only ? req.t(`centres.kinds.${only}`) : req.t('settings.nav_partners'), all, edit, only, KINDS: only ? [only] : svc.KINDS, ...(only ? { workspace: 'clinic' } : {}), ...extra });
 }
-const back = (req) => (req.body && req.body.kind ? `/app/settings/partners#k-${req.body.kind}` : '/app/settings/partners');
+const back = (req) => (req.query.kind && svc.KINDS.includes(req.query.kind) ? `/app/settings/partners?kind=${req.query.kind}` : (req.body && req.body.kind ? `/app/settings/partners#k-${req.body.kind}` : '/app/settings/partners'));
 router.get('/settings/partners', can('settings.manage'), wrap((req, res) => settingsPage(req, res)));
 router.post('/settings/partners', can('settings.manage'), form(async (req, res) => {
   await svc.save(req.ctx, null, req.body);
@@ -36,7 +38,7 @@ router.post('/settings/partners/:id(\\d+)', can('settings.manage'), form(async (
 router.post('/settings/partners/:id(\\d+)/delete', can('settings.manage'), wrap(async (req, res) => {
   await svc.remove(req.ctx, Number(req.params.id));
   flash(req, 'success', req.t('centres.deleted'));
-  res.redirect('/app/settings/partners');
+  res.redirect(back(req));
 }));
 
 // ---------------------------------------------------------------- sending a paper

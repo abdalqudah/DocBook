@@ -25,7 +25,7 @@
     "clock": "Attendance",
     "my_menu": "My account",
     "team_members": "Members",
-    "setup_lead": "The lists your clinical team relies on while working: medications, diagnosis codes, insurance companies, signatures and stamp.",
+    "setup_lead": "The lists the clinical team relies on: medications, lab & imaging tests, pharmacies, labs and imaging centres, diagnosis codes, insurance companies, signatures & stamp.",
     "setup_medications": "Medications",
     "setup_medications_text": "Medicines and ready-made doses for prescriptions.",
     "setup_diagnosis_codes": "Diagnosis codes",
@@ -74,6 +74,12 @@
     "sec_cadm_staff": "Shared staff",
     "sec_cadm_costs": "Shared expenses",
     "sec_cadm_settings": "Settings",
-    "sec_cadm_website": "Centre website"
+    "sec_cadm_website": "Centre website",
+    "setup_partners_pharmacy": "Pharmacies",
+    "setup_partners_pharmacy_text": "Pharmacies prescriptions are sent to, with their details.",
+    "setup_partners_lab": "Laboratories",
+    "setup_partners_lab_text": "Labs lab requests are sent to, with their details.",
+    "setup_partners_imaging": "Imaging centres",
+    "setup_partners_imaging_text": "Imaging centres imaging requests are sent to, with their details."
   }
 }

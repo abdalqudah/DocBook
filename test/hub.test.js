@@ -28,7 +28,7 @@ test.before(async () => {
   const [vendorId] = await knex('vendors').insert({ type: 'rep', name: `Rep ${tag}`, email: `rep${tag}@vendor.test`, phone: '0791230000', status: 'active' });
   [offerId] = await knex('vendor_offers').insert({ vendor_id: vendorId, title: `Hub offer ${tag}`, body: 'Composite 20% off', status: 'published', published_at: new Date(), image: PNG, image_mime: 'image/png' });
   await knex('vendor_offer_specialties').insert({ offer_id: offerId, specialty: 'dentistry' });
-  const today = new Date().toISOString().slice(0, 10);
+  const today = require('../src/modules/clinic/scheduling').clinicNow('Asia/Amman').date; // eslint-disable-line global-require -- the platform's day, as the ads are read
   [adId] = await knex('vendor_ads').insert({ vendor_id: vendorId, offer_id: offerId, title: `Hub ad ${tag}`, status: 'approved', starts_on: today, days: 3, ends_on: today, specialties: '[]', cities: '[]' });
   const { createApp } = require('../src/app'); // eslint-disable-line global-require
   server = createApp().listen(0);

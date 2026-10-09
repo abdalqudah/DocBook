@@ -71,6 +71,26 @@
     "status_open": "Waiting",
     "status_done": "Done",
     "open_paper": "Open",
-    "mark_given": "Handed over"
+    "mark_given": "Handed over",
+    "contact_name": "Contact person",
+    "phone2": "Landline / other number",
+    "city": "City",
+    "map_url": "Map link",
+    "website": "Website",
+    "map": "Map",
+    "hours": "Opening hours",
+    "hours_help": "e.g. Sat–Thu 9 am – 10 pm",
+    "notes": "Notes",
+    "notes_help": "e.g. a discount for the clinic's patients, tests offered, insurers accepted.",
+    "only_lead": {
+      "pharmacy": "The pharmacies the clinic works with and their details — prescriptions are sent to them from the prescription page by WhatsApp or e-mail, or onto their list when inside the clinic.",
+      "lab": "The laboratories the clinic works with and their details — lab requests are sent to them from the request page.",
+      "imaging": "The imaging centres the clinic works with and their details — imaging requests are sent to them from the request page."
+    },
+    "add_one": {
+      "pharmacy": "Add a pharmacy",
+      "lab": "Add a laboratory",
+      "imaging": "Add an imaging centre"
+    }
   }
 }

@@ -11,10 +11,15 @@ const { z, validate, optionalString, email, emptyToUndefined } = require('../../
 const { E } = require('../../core/errors');
 
 const KINDS = ['pharmacy', 'imaging', 'lab', 'hospital'];
+/** An http(s) address (a map link, a website); "www.x.com" gets https:// in front. */
+const webUrl = (max) => z.string().trim().max(max).transform((v) => (/^https?:\/\//i.test(v) ? v : `https://${v}`))
+  .refine((v) => { try { const u = new URL(v); return /^https?:$/.test(u.protocol) && u.hostname.includes('.'); } catch { return false; } }, 'Enter a valid web address.');
 const schema = z.object({
   kind: z.enum(KINDS, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
   name: z.string().trim().min(1, 'Required.').max(120),
   phone: optionalString(40), email: z.preprocess(emptyToUndefined, email().optional()), address: optionalString(255), notes: optionalString(500),
+  contact_name: optionalString(120), phone2: optionalString(40), city: optionalString(100), hours: optionalString(255),
+  map_url: z.preprocess(emptyToUndefined, webUrl(500).optional()), website: z.preprocess(emptyToUndefined, webUrl(255).optional()),
 });
 const on = (raw) => { const v = Array.isArray(raw) ? raw[raw.length - 1] : raw; return v === '1' || v === true || v === 'on'; };
 
@@ -30,7 +35,8 @@ async function get(ctx, id) {
 
 async function save(ctx, id, input) {
   const d = validate(schema, input);
-  const row = { kind: d.kind, name: d.name, phone: d.phone || null, email: d.email || null, address: d.address || null, notes: d.notes || null, in_house: on(input.in_house), is_active: id ? on(input.is_active) : true };
+  const row = { kind: d.kind, name: d.name, phone: d.phone || null, email: d.email || null, address: d.address || null, notes: d.notes || null,
+    contact_name: d.contact_name || null, phone2: d.phone2 || null, city: d.city || null, map_url: d.map_url || null, hours: d.hours || null, website: d.website || null, in_house: on(input.in_house), is_active: id ? on(input.is_active) : true };
   if (!row.in_house && !row.phone && !row.email) throw E.validation({ phone: 'Add a WhatsApp number or an e-mail address.' });
   let pid = id;
   if (id) {

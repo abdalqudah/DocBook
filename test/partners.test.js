@@ -93,3 +93,30 @@ test('partners: add, send a prescription on WhatsApp, an imaging request to the 
   assert.equal(r.status, 404);
   assert.equal((await b.get(`/app/centres/${xray.id}`)).status, 404);
 });
+
+test('medical setup: pharmacies, labs and imaging centres each with their details', async () => {
+  const o = app.agent(); await o.login(mail('b'));
+  let r = await o.get('/app/clinic/setup?lang=en');
+  assert.equal(r.status, 200);
+  for (const k of ['pharmacy', 'lab', 'imaging']) assert.match(r.text, new RegExp(`/app/settings/partners\\?kind=${k}`));
+  r = await o.get('/app/settings/partners?kind=lab&lang=en');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Add a laboratory/); assert.match(r.text, /name="kind" value="lab"/);
+  assert.doesNotMatch(r.text, /id="k-pharmacy"/, 'one kind only');
+  r = await o.submit('/app/settings/partners?kind=lab', '/app/settings/partners?kind=lab', {
+    kind: 'lab', name: 'Bio Lab', contact_name: 'Sara', phone: '0791112222', phone2: '065551234', city: 'Amman', address: 'Gardens St.',
+    map_url: 'maps.google.com/?q=bio', website: 'https://biolab.example.com', hours: 'Sat–Thu 8–20', notes: '10% off for our patients',
+  });
+  assert.equal(r.status, 302); assert.equal(r.location, '/app/settings/partners?kind=lab');
+  const lab = await knex('clinic_partners').where({ business_id: B, name: 'Bio Lab' }).first();
+  assert.equal(lab.contact_name, 'Sara'); assert.equal(lab.phone2, '065551234'); assert.equal(lab.city, 'Amman');
+  assert.equal(lab.map_url, 'https://maps.google.com/?q=bio'); assert.equal(lab.hours, 'Sat–Thu 8–20'); assert.equal(lab.notes, '10% off for our patients');
+  r = await o.get('/app/settings/partners?kind=lab&lang=en');
+  assert.match(r.text, /Bio Lab/); assert.match(r.text, /065551234/); assert.match(r.text, /10% off for our patients/);
+  // an unsafe address is refused
+  r = await o.submit('/app/settings/partners?kind=lab', '/app/settings/partners?kind=lab', { kind: 'lab', name: 'Bad', phone: '0791112223', website: 'javascript:alert(1)' });
+  assert.equal(r.status, 422);
+  assert.ok(!(await knex('clinic_partners').where({ business_id: B, name: 'Bad' }).first()));
+  r = await o.get('/app/clinic/setup?lang=en');
+  assert.match(r.text, /Laboratories/);
+});
