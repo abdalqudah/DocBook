@@ -14,7 +14,7 @@
     "start": "Start compressing",
     "stop": "Stop",
     "confirm": "{n} pictures will be replaced with a compressed WebP (up to 2048 px on the long side). This cannot be undone. Continue?",
-    "rules": "Never touched: browser icons, signatures and stamps (used in PDFs), PDFs, fonts and other files. A picture that does not get smaller stays as it is and is not tried again.",
+    "rules": "Never touched: browser icons, signatures and stamps (used in PDFs), PDFs, fonts and other files. A picture that does not get smaller stays as it is and is not tried again. Files brought from the old system keep their names as in that system.",
     "where": "Where the pictures are",
     "place": "Place",
     "pictures": "Pictures",
@@ -33,7 +33,8 @@
       "vendor_logos": "Rep and warehouse logos",
       "vendor_products": "Product images",
       "vendor_offers": "Offer images",
-      "vendor_ads": "Ad images"
+      "vendor_ads": "Ad images",
+      "legacy_files": "Patient photos brought from the old system (Clinica)"
     }
   }
 }

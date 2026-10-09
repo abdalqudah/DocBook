@@ -401,3 +401,15 @@ question) the pull runs three stages, as one saved job (`import_jobs.stats` keep
    Clinic…) is listed on the Doctors page to tie to a branch.
 Nothing here is deleted, cancelled or overwritten; running the pull again adds nothing that is already here. Patients the
 pull added are removed by "Remove everything imported from Clinica" like those the import added.
+
+## 2.9.4: photos from Clinica kept as small WebP
+- On arrival (ZIP import or the direct pull), a photo (PNG / JPEG / WebP) is stored as a sharp WebP with the same
+  rules as any upload in DocBook (core/imageopt: up to 2048 px on the long side, `sharp_yuv` for thin lines and text,
+  exact alpha; a graphic is tried lossless). Only kept when it is smaller.
+- The stored copy keeps the original's SHA-256 as its key and `checksum`, so the same file brought again is still
+  recognised and never stored twice; `original_filename` / `stored_filename` stay as in Clinica (they are matched to
+  Clinica's file list). The download gets a `.webp` ending; `Content-Length` is read from the disk.
+- Photos imported before 2.9.4: Platform admin → Compress old images → "Patient photos brought from the old system"
+  (rewritten in place, atomically; the attachments sharing the copy follow; tried once).
+- PDFs, Word files and other documents are never changed: a scanned PDF is already compressed images, re-saving a
+  PDF can break a digital signature, and shrinking the pictures inside would lower their quality.

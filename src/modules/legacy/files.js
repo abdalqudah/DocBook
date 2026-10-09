@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const imageopt = require('../../core/imageopt');
 
 const ROOT = process.env.LEGACY_FILES_DIR || path.join(__dirname, '..', '..', '..', 'storage', 'patient-attachments');
 const SHA = /^[a-f0-9]{64}$/;
@@ -80,7 +81,31 @@ const exists = (relative) => { try { return fs.statSync(abs(relative)).isFile();
 const stream = (relative) => fs.createReadStream(abs(relative));
 const read = (relative) => fs.readFileSync(abs(relative));
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
+/**
+ * Keeps a file; a photo (PNG / JPEG / WebP) is kept as a small, sharp WebP (core/imageopt — the same rules as any
+ * upload: up to 2048 px on the long side, sharp text and lines). The key stays the original's checksum, so the same
+ * file sent again is still recognised (never stored twice). → { path, mime (null = unchanged), bytes }
+ */
+async function keep(businessId, sha, buf) {
+  const o = imageopt.isImage(buf) ? await imageopt.optimize(buf) : null;
+  const small = o && o.buffer.length < buf.length ? o.buffer : null;
+  return { path: put(businessId, sha, small || buf), mime: small ? 'image/webp' : null, bytes: (small || buf).length };
+}
+/** A stored photo made small in place (old imports): the new copy replaces the old one atomically. → bytes | null */
+async function shrinkStored(relative) {
+  const p = abs(relative);
+  const buf = fs.readFileSync(p);
+  if (!imageopt.isImage(buf)) return null;
+  const o = await imageopt.optimize(buf);
+  if (!o || o.buffer.length >= buf.length) return null;
+  const tmp = `${p}.${process.pid}.${Date.now()}.part`;
+  fs.writeFileSync(tmp, o.buffer, { mode: 0o600 });
+  fs.renameSync(tmp, p);
+  return { before: buf.length, after: o.buffer.length };
+}
+/** The name to download a file under: a photo kept as WebP gets the .webp ending (the name in the list stays). */
+const downloadName = (name, mime) => (mime === 'image/webp' && extOf(name) !== 'webp' ? `${String(name || 'image').replace(/\.[A-Za-z0-9]{1,5}$/, '')}.webp` : name);
 /** Removes a stored copy (when no attachment uses it any more). */
 function drop(relative) { try { fs.unlinkSync(abs(relative)); } catch { /* gone */ } }
 
-module.exports = { ROOT, IMAGE_EXT, DOC_EXT, MIME, INLINE, extOf, categoryOf, sniff, typeOf, put, exists, stream, read, sha256, drop, abs };
+module.exports = { ROOT, IMAGE_EXT, DOC_EXT, MIME, INLINE, extOf, categoryOf, sniff, typeOf, put, keep, shrinkStored, downloadName, exists, stream, read, sha256, drop, abs };

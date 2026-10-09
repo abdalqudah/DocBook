@@ -274,7 +274,7 @@ async function fileOf(clinic, patientId, kind, id) {
   const a = await knex('patient_attachments').where({ id: Number(id) || 0, business_id: clinic.id, patient_id: patientId }).first('original_filename', 'mime_type', 'storage_path');
   if (!a) return null;
   const files = require('../legacy/files'); // eslint-disable-line global-require
-  return files.exists(a.storage_path) ? { name: a.original_filename, mime: a.mime_type, path: files.abs(a.storage_path) } : null;
+  return files.exists(a.storage_path) ? { name: files.downloadName(a.original_filename, a.mime_type), mime: a.mime_type, path: files.abs(a.storage_path) } : null;
 }
 
 module.exports = { DEFAULTS, SECTIONS, settings, saveSettings, channelsFor, login, setPassword, sendCode, checkCode, invite, inviteFor, useInvite, home, fileOf, accountWith, patientsWith, isEmail };

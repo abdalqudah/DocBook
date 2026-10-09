@@ -637,7 +637,9 @@ async function importAttachment(job, item, zips) {
   }
   const copy = await knex('patient_attachments').where({ business_id: business, checksum: sha }).whereNull('duplicate_of').first('id', 'storage_path');
   if (!copy || !files.exists(copy.storage_path)) await require('../storage/storage.service').assertRoom(business, buf.length); // eslint-disable-line global-require
-  const storagePath = copy && files.exists(copy.storage_path) ? copy.storage_path : files.put(business, sha, buf);
+  const kept = copy && files.exists(copy.storage_path) ? null : await files.keep(business, sha, buf); // a photo → small WebP
+  const storagePath = kept ? kept.path : copy.storage_path;
+  const keptMime = kept ? kept.mime : (await knex('patient_attachments').where({ id: copy.id }).first('mime_type')).mime_type;
   const lp = await knex('legacy_patients').where({ business_id: business, legacy_source: SOURCE, legacy_patient_id: item.legacy_patient_id }).first('id', 'patient_id', 'legacy_patient_number');
   const pid = (lp && lp.patient_id) || (await knex('patients').where({ business_id: business, legacy_source: SOURCE, legacy_patient_id: item.legacy_patient_id }).first('id'))?.id || null;
   // The manifest's own details of the file (name in the old system, its address there).
@@ -654,9 +656,9 @@ async function importAttachment(job, item, zips) {
   const [aid] = await knex('patient_attachments').insert({
     business_id: business, patient_id: pid, legacy_patient_ref: lp ? lp.id : null, legacy_source: SOURCE, legacy_patient_id: item.legacy_patient_id,
     legacy_patient_number: item.legacy_patient_number || (lp && lp.legacy_patient_number) || null,
-    original_filename: clip(original, 255), stored_filename: clip(saved, 255), mime_type: item.mime || files.typeOf(saved, buf) || 'application/octet-stream',
-    category: files.categoryOf(saved) !== 'other' ? files.categoryOf(saved) : files.categoryOf(original), file_size: buf.length,
-    stored_bytes: copy ? 0 : buf.length, storage_path: storagePath, checksum: sha, duplicate_of: copy ? copy.id : null,
+    original_filename: clip(original, 255), stored_filename: clip(saved, 255), mime_type: (keptMime === 'image/webp' && keptMime) || item.mime || files.typeOf(saved, buf) || 'application/octet-stream',
+    category: files.categoryOf(saved) !== 'other' ? files.categoryOf(saved) : files.categoryOf(original), file_size: kept ? kept.bytes : (await knex('patient_attachments').where({ id: copy.id }).first('file_size')).file_size,
+    stored_bytes: copy ? 0 : kept.bytes, storage_path: storagePath, checksum: sha, duplicate_of: copy ? copy.id : null,
     source_url: clip(fieldOf(meta, ['source_url', 'url']), 1000), zip_path: clip(item.ref, 500), import_batch_id: batch.id, import_job_id: job.id,
   }).onConflict(['business_id', 'legacy_patient_id', 'checksum']).ignore();
   const row = aid ? { id: aid } : await knex('patient_attachments').where({ business_id: business, legacy_patient_id: item.legacy_patient_id, checksum: sha }).first('id');

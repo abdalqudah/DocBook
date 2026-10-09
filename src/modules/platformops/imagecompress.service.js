@@ -2,6 +2,7 @@
 // still large) are rewritten as small, sharp WebP (core/imageopt — the same rules as a new upload). One job at a time,
 // in the background, one picture after another; the admin page follows its progress. Every row tried is logged in
 // image_compress_log (so a picture that cannot be made smaller is not tried again), and the run is audited.
+// Also the photos brought from the old system (patient_attachments, on disk).
 // Never touched: the platform's own logo (Branding compresses it on upload), favicons, signatures and stamps (they go into PDFs as PNG/JPEG), fonts, PDFs and other files.
 const crypto = require('crypto');
 const knex = require('../../db/knex');
@@ -30,11 +31,30 @@ const TARGETS = [
   { key: 'vendor_products', table: 'vendor_products', data: 'image', mime: 'image_mime', maxSide: 1600, patch: () => ({ updated_at: now() }) },
   { key: 'vendor_offers', table: 'vendor_offers', data: 'image', mime: 'image_mime', maxSide: 1600, patch: () => ({ updated_at: now() }) },
   { key: 'vendor_ads', table: 'vendor_ads', data: 'image', mime: 'image_mime', maxSide: 1600, patch: () => ({ updated_at: now() }) },
+  // Files brought from the old system (Clinica): on the server's disk (legacy/files), one stored copy per content.
+  // The copy is rewritten in place; every attachment sharing it changes type and size; the names and checksums stay
+  // (they match the old system's list and keep the same file from being brought twice).
+  { key: 'legacy_files', table: 'patient_attachments', data: 'storage_path', mime: 'mime_type', disk: true,
+    candidates: () => knex('patient_attachments').whereNull('duplicate_of').where('stored_bytes', '>', 0)
+      .where((w) => w.whereIn('mime_type', OLD).orWhere((x) => x.where('mime_type', 'image/webp').where('stored_bytes', '>', BIG_WEBP)))
+      .whereNotExists(function tried() { this.select(knex.raw('1')).from('image_compress_log as l').where('l.target', 'legacy_files').whereRaw('l.row_id = patient_attachments.id'); }),
+    bytes: 'stored_bytes',
+    compress: async (id) => {
+      const files = require('../legacy/files'); // eslint-disable-line global-require
+      const a = await knex('patient_attachments').where({ id }).first('id', 'storage_path', 'mime_type');
+      if (!a || !files.exists(a.storage_path)) return { status: 'kept', before: 0, after: 0 };
+      const r = await files.shrinkStored(a.storage_path);
+      if (!r) return { status: 'kept', before: 0, after: 0 };
+      await knex('patient_attachments').where({ storage_path: a.storage_path }).update({ mime_type: 'image/webp', file_size: r.after });
+      await knex('patient_attachments').where({ id: a.id }).update({ stored_bytes: r.after });
+      return { status: 'done', before: r.before, after: r.after };
+    } },
 ];
 const webpName = (n) => `${String(n || 'image').replace(/\.[A-Za-z0-9]{1,5}$/, '')}.webp`.slice(0, 160);
 
 /** Rows of a target worth trying: old formats, or a large WebP — minus the rows already tried. */
 function candidates(t) {
+  if (t.candidates) return t.candidates();
   const q = knex(t.table).whereNotNull(t.data)
     .where((w) => w.whereIn(t.mime, OLD).orWhere((x) => x.where(t.mime, 'image/webp').where(knex.raw(`LENGTH(??) > ${BIG_WEBP}`, [t.data]))))
     .whereNotExists(function tried() { this.select(knex.raw('1')).from('image_compress_log as l').where('l.target', t.key).whereRaw('l.row_id = ??', [`${t.table}.id`]); });
@@ -51,7 +71,7 @@ async function scan() {
   const out = [];
   for (const t of TARGETS) { // eslint-disable-line no-restricted-syntax
     if (!(await available(t))) continue; // eslint-disable-line no-await-in-loop, no-continue
-    const parts = await inEach(t, async () => (await candidates(t).count({ n: '*' }).select(knex.raw('COALESCE(SUM(LENGTH(??)), 0) as bytes', [t.data])))[0]); // eslint-disable-line no-await-in-loop
+    const parts = await inEach(t, async () => (await candidates(t).count({ n: '*' }).select(t.bytes ? knex.raw('COALESCE(SUM(??), 0) as bytes', [t.bytes]) : knex.raw('COALESCE(SUM(LENGTH(??)), 0) as bytes', [t.data])))[0]); // eslint-disable-line no-await-in-loop
     out.push({ key: t.key, count: parts.reduce((a, r) => a + (Number(r.n) || 0), 0), bytes: parts.reduce((a, r) => a + (Number(r.bytes) || 0), 0) });
   }
   return out;
@@ -68,6 +88,7 @@ let job = null; // { running, total, done, kept, failed, before, after, startedA
 const status = () => (job ? { ...job } : { running: false });
 
 async function compressRow(t, id) {
+  if (t.compress) return t.compress(id);
   const row = await knex(t.table).where({ id }).first(['id', t.data, t.mime, ...(t.cols || [])]);
   const buf = row && row[t.data];
   if (!Buffer.isBuffer(buf)) return { status: 'kept', before: 0, after: 0 };

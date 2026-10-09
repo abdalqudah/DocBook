@@ -26,10 +26,10 @@ router.get('/:id(\\d+)/attachments/:attachmentId(\\d+)/download', wrap(async (re
   if (!a || !files.exists(a.storage_path)) throw E.notFound('File');
   await privacy.log(ctx, { patientId: patient.id, what: 'legacy_file', access: privacy.levelOf(acc) });
   const inline = req.query.inline === '1' && files.INLINE.has(a.mime_type);
-  const name = a.original_filename || a.stored_filename || `file-${a.id}`;
+  const name = files.downloadName(a.original_filename || a.stored_filename || `file-${a.id}`, a.mime_type); // a photo kept as WebP: .webp
   res.set({
     'Content-Type': a.mime_type || 'application/octet-stream',
-    'Content-Length': String(a.file_size),
+    'Content-Length': String(require('fs').statSync(files.abs(a.storage_path)).size), // what is stored now (a photo may have been compressed) // eslint-disable-line global-require
     'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${name.replace(/[^\x20-\x7e]+/g, '_').replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(name)}`,
     'Cache-Control': 'private, no-store',
     'X-Content-Type-Options': 'nosniff',

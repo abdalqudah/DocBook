@@ -523,14 +523,16 @@ async function store(job, lp, link, r) {
   const copy = await knex('patient_attachments').where({ business_id: businessId, checksum: sha }).whereNull('duplicate_of').first('id', 'storage_path');
   const shared = copy && files.exists(copy.storage_path);
   if (!shared) await require('../storage/storage.service').assertRoom(businessId, r.buf.length); // eslint-disable-line global-require
-  const storagePath = shared ? copy.storage_path : files.put(businessId, sha, r.buf);
+  const kept = shared ? null : await files.keep(businessId, sha, r.buf); // a photo → small WebP
+  const prev = shared ? await knex('patient_attachments').where({ id: copy.id }).first('mime_type', 'file_size') : null;
+  const storagePath = shared ? copy.storage_path : kept.path;
   const name = link.name || 'file';
   const cat = files.categoryOf(name);
   await knex('patient_attachments').insert({
     business_id: businessId, patient_id: lp.patient_id, legacy_patient_ref: lp.id, legacy_source: SOURCE, legacy_patient_id: lp.legacy_patient_id,
     legacy_patient_number: lp.legacy_patient_number || null, original_filename: name.slice(0, 255), stored_filename: name.slice(0, 255),
-    mime_type: files.typeOf(name, r.buf) || (r.type || '').split(';')[0] || 'application/octet-stream', category: cat, file_size: r.buf.length,
-    stored_bytes: shared ? 0 : r.buf.length, storage_path: storagePath, checksum: sha, duplicate_of: shared ? copy.id : null,
+    mime_type: ((kept ? kept.mime : prev.mime_type) === 'image/webp' && 'image/webp') || files.typeOf(name, r.buf) || (r.type || '').split(';')[0] || 'application/octet-stream', category: cat,
+    file_size: kept ? kept.bytes : prev.file_size, stored_bytes: shared ? 0 : kept.bytes, storage_path: storagePath, checksum: sha, duplicate_of: shared ? copy.id : null,
     source_url: link.url.slice(0, 1000), import_job_id: job.id,
   }).onConflict(['business_id', 'legacy_patient_id', 'checksum']).ignore();
   return true;
