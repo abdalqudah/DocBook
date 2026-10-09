@@ -24,6 +24,7 @@ let clinica; let base; let ctx;
 const hits = { login: 0, files: 0 };
 let sessionsLeft = Infinity; // pages served before Clinica ends the session
 let captchaOn = false; // Clinica asks a math question at sign-in
+let full = false; // the whole Clinica: patients list, a new patient's form and treatments, a calendar day
 
 // A small stand-in for Clinica: a sign-in form with a hidden token, a cookie session, patient pages with file links.
 let fake;
@@ -50,7 +51,14 @@ function fakeClinica() {
   app.get('/', (req, res) => res.send(signedIn(req) ? '<html><title>Dr Clinic</title><nav><a href="/patients?page=2">Patients</a><a href="/calendar">Calendar</a><a href="/dental/1001">سامي خالد</a><a href="/user/logout">Log out</a><a href="/patient/7/delete">x</a></nav></html>' : String(form)));
   app.get('/user/logout', (req, res) => { loggedOut += 1; res.redirect('/'); });
   app.get('/patient/:id/delete', (req, res) => { loggedOut += 100; res.send('deleted'); });
-  app.get('/patients', guard0, (req, res) => res.send('<table><tr><th>Name</th><th>Mobile</th></tr><tr><td>سامي خالد</td><td>0791234567</td></tr></table>'));
+  app.get('/patients', guard0, (req, res) => res.send(full
+    ? `<table><thead><tr><th>Patient Number</th><th>Name</th><th>Mobile</th><th>Tel. No</th><th>Group</th><th>Nationality</th><th>Operations</th></tr></thead><tbody>
+       <tr><td>77</td><td><a href="/edit_patient/2001">ليلى &amp; سامي</a></td><td>962790000077</td><td></td><td>Abdali Hospital</td><td>Jordan</td><td><a href="/edit_patient/2001">Edit</a> <a href="/delete_patient/2001">Delete</a></td></tr>
+       <tr><td></td><td><a href="/edit_patient/1001">مريض</a></td><td></td><td></td><td></td><td></td><td><a href="/edit_patient/1001">Edit</a></td></tr></tbody></table>`
+    : '<table><tr><th>Name</th><th>Mobile</th></tr><tr><td>سامي خالد</td><td>0791234567</td></tr></table>'));
+  app.get('/ncalendar', guard0, (req, res) => res.send(`<form><input name="date[date]" value="${String(req.query.date || '').replace(/[^\d-]/g, '')}"></form>` + (full && req.query.date === '2024-03-05'
+    ? '<table><tr><th>Time</th><th>Patient Name</th><th>Patient Number</th><th>Mobile</th><th>Calendar</th><th>Doctor</th></tr><tr><td>10:30 am</td><td><a href="/dental/2001">ليلى</a></td><td>77</td><td>962790000077</td><td>Abdali Clinic</td><td></td></tr><tr><td>01:00 pm</td><td><a href="/dental/2001">ليلى</a></td><td>77</td><td></td><td>Mansour</td><td></td></tr></table>'
+    : '<table><tr><th>Time</th><th>Patient Name</th><th>Patient Number</th><th>Mobile</th><th>Calendar</th><th>Doctor</th></tr></table>')));
   app.get('/calendar', guard0, (req, res) => res.send('<div id="cal"></div><script src="/js/fullcalendar.min.js?v=3"></script><script>$("#cal").fullCalendar({ events: "/calendar/events?doctor=5" }); $.ajax({ url: "/appointment/123/details" });</script>'));
   app.locals.loggedOut = () => loggedOut;
   const guard = (req, res, next) => {
@@ -60,6 +68,12 @@ function fakeClinica() {
     sessionsLeft -= 1;
     return next();
   };
+  app.get('/dental/:id', guard, (req, res, next) => {
+    if (!(full && req.params.id === '2001')) return next();
+    return res.send(`<form action="/dental/2001"><table><thead><tr><th>Select / Print</th><th>Date</th><th>Tooth</th><th>Description</th><th>Doctor</th><th>Price</th><th>Type</th><th>Status</th><th>Complete Date</th><th>Note</th><th>Referred by</th><th>Complete</th></tr></thead><tbody>
+      <tr><td><input type="checkbox"></td><td>2024-03-05</td><td>16</td><td>Examination &nbsp;&nbsp; more...X<br>Chief Complaint<br>pain<br><br>View Notes</td><td>Faris Qudah</td><td>0.000</td><td>Payment</td><td>Complete</td><td>2024-03-05</td><td>check</td><td></td><td></td></tr>
+      <tr><td><input type="checkbox"></td><td>2024-04-10</td><td>All Teeth</td><td>scaling and polishing</td><td>Faris Qudah</td><td>20.000</td><td>Payment</td><td>Complete</td><td>2024-04-10</td><td></td><td></td><td></td></tr></tbody></table></form>`);
+  });
   app.get('/dental/:id', guard, (req, res) => {
     if (req.params.id !== '1001') return res.send('<html><table><tr><td>No files</td></tr></table></html>');
     return res.send(`<html><table>
@@ -68,6 +82,12 @@ function fakeClinica() {
       <tr><td><a href="/system/files/2021/2253/old.pdf">old.pdf</a></td></tr>
       <tr><td><a href="/system/files/2021/2253/gone.pdf">gone.pdf</a></td></tr></table></html>`);
   });
+  app.get('/edit_patient/:id', guard, (req, res, next) => (full && req.params.id === '2001' ? res.send(`<form action="/edit_patient/2001" method="post">
+      <input name="p_number" value="77"><input name="p_name" value="ليلى &amp; سامي"><input name="p_en_name" value="Laila"><input name="p_mobile_no" value="962790000077"><input name="p_tel_no" value="">
+      <input name="p_dob[date]" value="1990-05-01"><input name="p_email" value="laila@example.com"><input type="checkbox" name="p_show_impoNote" value="1" checked>
+      <select name="p_gender"><option value="">- Select -</option><option value="2" selected="selected">Female</option></select>
+      <select name="p_nationality"><option value="">-</option><option value="JO" selected>Jordan</option></select>
+      <textarea name="p_impoNote">حساسية بنسلين</textarea><textarea name="p_medical_history">ضغط</textarea><textarea name="p_general_note"></textarea></form>`) : next()));
   app.get('/edit_patient/:id', guard, (req, res) => res.send(req.params.id === '1001' ? '<a href="/system/files/2022/2253/1001/report.pdf">report</a><img src="/system/files/2022/2253/1001/%D8%B5%D9%88%D8%B1%D8%A9.png">' : '<html></html>'));
   app.get('/system/files/*', guard, (req, res) => {
     hits.files += 1;
@@ -115,7 +135,7 @@ test('pull: only the missing files, into the patient file; re-sign-in when the s
   assert.equal((await remote.progress(ctx.businessId)), null, 'nothing started with a wrong password');
 
   sessionsLeft = 3; // Clinica ends the session after three pages: signed in again, the pull carries on
-  await remote.start(ctx, { baseUrl: base, username: 'owner', password: 's3cret' });
+  await remote.start(ctx, { baseUrl: base, username: 'owner', password: 's3cret', from: '2024-01-01', to: '2024-01-01' });
   await remote.settle(ctx.businessId);
   const p = await remote.progress(ctx.businessId);
   assert.equal(p.status, 'completed_with_issues');
@@ -134,7 +154,7 @@ test('pull: only the missing files, into the patient file; re-sign-in when the s
 
   // Running it again downloads nothing new.
   const before = hits.files;
-  await remote.start(ctx, { baseUrl: base, username: 'owner', password: 's3cret' });
+  await remote.start(ctx, { baseUrl: base, username: 'owner', password: 's3cret', from: '2024-01-01', to: '2024-01-01' });
   await remote.settle(ctx.businessId);
   const again = await remote.progress(ctx.businessId);
   assert.equal(again.downloaded, 0); assert.equal(again.skipped, 3);
@@ -159,7 +179,7 @@ test('a sign-in question (CAPTCHA): shown to the owner, who answers it; never an
   // the owner's answer: signed in, the pull runs
   const answer = String(Number(/^(\d+)/.exec(fresh.question)[1])); // what the owner reads and types
   sessionsLeft = 1; // Clinica ends the session mid-way: the new question needs the owner → the pull waits
-  await remote.start(c2, { baseUrl: base, username: 'owner', password: 's3cret', captcha: answer });
+  await remote.start(c2, { baseUrl: base, username: 'owner', password: 's3cret', captcha: answer, from: '2024-01-01', to: '2024-01-01' });
   await remote.settle(c2.businessId);
   const p = await remote.progress(c2.businessId);
   assert.equal(p.status, 'waiting'); assert.equal(p.waitingFor, 'LOGIN_FAILED');
@@ -169,7 +189,7 @@ test('a sign-in question (CAPTCHA): shown to the owner, who answers it; never an
 test('structure check: the shape of Clinica\'s pages, no patient data; nothing that signs out or deletes is opened', async () => {
   const c3 = { ...ctx, businessId: (await knex('businesses').insert({ name: 'Probe clinic', slug: `prb${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0] };
   await knex('legacy_patients').insert({ business_id: c3.businessId, legacy_source: 'clinica', legacy_patient_id: '1001' });
-  const r = await remote.probe(c3, { baseUrl: base, username: 'owner', password: 's3cret' });
+  const r = await remote.probe(c3, { baseUrl: base, username: 'owner', password: 's3cret', from: '2024-01-01', to: '2024-01-01' });
   const text = JSON.stringify(r);
   assert.doesNotMatch(text, /سامي|0791234567|Dr Clinic|s3cret/, 'no names, phones, titles or password');
   const pages = r.pages.map((p) => p.page);
@@ -179,4 +199,67 @@ test('structure check: the shape of Clinica\'s pages, no patient data; nothing t
   assert.deepEqual(r.pages.find((p) => p.page === '/patients?page=').tables[0].headers, ['Name', 'Mobile']);
   assert.equal(fake.locals.loggedOut(), 0, 'sign-out / delete never opened');
   assert.equal(remote.probeReport(c3.businessId), r);
+});
+
+test('pull everything: new patients, empty details filled, missing treatments, calendar appointments — nothing changed or doubled', async () => {
+  full = true; sessionsLeft = Infinity; captchaOn = false;
+  const c4 = { ...ctx, businessId: (await knex('businesses').insert({ name: 'Full clinic', slug: `full${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0] };
+  const [fares] = await knex('doctors').insert({ business_id: c4.businessId, full_name: 'د. فارس القضاة', is_active: true, working_hours: '{}', slot_duration_minutes: 30 });
+  const [abdali] = await knex('clinic_branches').insert({ business_id: c4.businessId, name: 'العبدلي' });
+  // 1001 is here already, with a name the clinic typed (kept) and an empty e-mail
+  const [p1] = await knex('patients').insert({ business_id: c4.businessId, full_name: 'اسم من العيادة', legacy_source: 'clinica', legacy_patient_id: '1001' });
+  await knex('legacy_patients').insert({ business_id: c4.businessId, legacy_source: 'clinica', legacy_patient_id: '1001', patient_id: p1 });
+  const run = async () => { await remote.start(c4, { baseUrl: base, username: 'owner', password: 's3cret', from: '2024-03-04', to: '2024-03-06' }); await remote.settle(c4.businessId); return remote.progress(c4.businessId); };
+  let p = await run();
+  assert.equal(p.status, 'completed_with_issues', JSON.stringify(p.errors)); // 1001's gone.pdf
+  assert.deepEqual([p.newPatients, p.newTreatments, p.appointments.added, p.appointments.merged, p.appointments.days], [1, 2, 1, 1, 3]);
+  const laila = await knex('patients').where({ business_id: c4.businessId, legacy_patient_id: '2001' }).first();
+  assert.equal(laila.full_name, 'ليلى & سامي'); assert.equal(laila.name_en, 'Laila'); assert.equal(laila.gender, 'female'); assert.equal(laila.nationality, 'JO');
+  assert.equal(laila.date_of_birth, '1990-05-01'); assert.equal(laila.email, 'laila@example.com'); assert.equal(laila.important_note, 'حساسية بنسلين'); assert.equal(laila.chronic_conditions, 'ضغط');
+  assert.equal((await knex('patients').where({ id: p1 }).first()).full_name, 'اسم من العيادة', 'a name the clinic has is kept');
+  const plan = await knex('dental_plan_items').where({ business_id: c4.businessId, patient_id: laila.id }).orderBy('id');
+  assert.deepEqual(plan.map((i) => [i.procedure_name, i.doctor_id]), [['Examination', fares], ['scaling and polishing', fares]]);
+  assert.match(plan[0].notes, /Chief Complaint: pain/);
+  const appts = await knex('appointments').where({ business_id: c4.businessId, patient_id: laila.id }).orderBy(['appointment_date', 'appointment_time']);
+  // 2024-03-05: the treatments' visit became the 10:30 Abdali appointment; the 13:00 one is added; 2024-04-10: its treatment visit
+  assert.deepEqual(appts.map((a) => [a.appointment_date, a.appointment_time.slice(0, 5)]), [['2024-03-05', '10:30'], ['2024-03-05', '13:00'], ['2024-04-10', '09:00']]);
+  assert.equal(appts[0].doctor_id, fares, 'the treatments\' doctor stays'); assert.match(appts[0].notes, /Abdali Clinic/);
+  assert.equal(plan[0].appointment_id, appts[0].id);
+  // tie the calendar "Abdali Clinic" to the branch: the next pull sets the branch where none is — and adds nothing
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  // the calendar is listed on the Doctors page (seen by the pull); the owner ties it to the branch there
+  const names = await promote.doctorNames(c4.businessId);
+  const cal = names.groups.find((g) => g.name === 'Abdali Clinic');
+  assert.ok(cal && cal.calendar);
+  await promote.saveDoctorMap(c4, [], [{ key: cal.key, branch_id: String(abdali) }]);
+  await promote.settle(c4.businessId);
+  const before = { patients: await knex('patients').where({ business_id: c4.businessId }).count({ n: '*' }), plan: plan.length, appts: appts.length };
+  p = await run();
+  assert.deepEqual([p.newPatients, p.newTreatments, p.appointments.added, p.appointments.merged], [0, 0, 0, 0]);
+  assert.deepEqual(await knex('patients').where({ business_id: c4.businessId }).count({ n: '*' }), before.patients);
+  assert.equal((await knex('dental_plan_items').where({ business_id: c4.businessId, patient_id: laila.id })).length, before.plan);
+  const again = await knex('appointments').where({ business_id: c4.businessId, patient_id: laila.id }).orderBy(['appointment_date', 'appointment_time']);
+  assert.equal(again.length, before.appts);
+  assert.equal(again[0].branch_id, abdali);
+  full = false;
+});
+
+test('calendar: a page that is not the day asked for adds nothing', async () => {
+  const cw = require('../src/modules/legacy/clinica-web'); // eslint-disable-line global-require
+  assert.equal(cw.calendarDay('<table><tr><th>Time</th><th>Mansour</th><th>Abdali Clinic</th></tr><tr><td>10:00</td><td><a href="/dental/5">A</a></td><td></td></tr><tr><td>10:30</td><td></td><td><a href="/edit_patient/6">B</a> <a href="/dental/7">C</a></td></tr></table>').map((a) => [a.time, a.id, a.calendar]).join(';'),
+    '10:00,5,Mansour;10:30,6,Abdali Clinic;10:30,7,Abdali Clinic', 'the day grid when there is no list');
+  full = true;
+  const c5 = { ...ctx, businessId: (await knex('businesses').insert({ name: 'Day clinic', slug: `day${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0] };
+  // Clinica ignoring ?date= (always today): stopped at once
+  const real = fake._router.stack.find((l) => l.route && l.route.path === '/ncalendar');
+  const handle = real.route.stack[real.route.stack.length - 1].handle;
+  real.route.stack[real.route.stack.length - 1].handle = (req, res) => res.send('<form><input name="date[date]" value="2030-01-01"></form><table><tr><th>Time</th><th>Patient Name</th><th>Calendar</th></tr><tr><td>10:00</td><td><a href="/dental/2001">x</a></td><td>Mansour</td></tr></table>');
+  await remote.start(c5, { baseUrl: base, username: 'owner', password: 's3cret', from: '2024-03-04', to: '2024-03-06' });
+  await remote.settle(c5.businessId);
+  real.route.stack[real.route.stack.length - 1].handle = handle;
+  const p = await remote.progress(c5.businessId);
+  assert.ok(p.errors.some((e) => e.error_code === 'CALENDAR_DAY_NOT_SHOWN'));
+  assert.equal(p.appointments.added + p.appointments.merged, 0);
+  assert.equal(Number((await knex('appointments').where({ business_id: c5.businessId }).where('external_uid', 'like', '%:a:cal:%').count({ n: '*' }))[0].n), 0);
+  full = false;
 });

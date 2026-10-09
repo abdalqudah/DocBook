@@ -38,6 +38,8 @@ async function run(ctx) {
   const report = { patients_removed: 0, patients_kept: 0, visits: 0, plan_items: 0, files: 0, doctors: 0 };
   // Patients the import created (the import recorded it on each patient item as match 'new').
   const created = new Set((await knex('import_items').where({ business_id: b, kind: 'patient', match: 'new' }).whereNotNull('target_id').pluck('target_id')).map(Number));
+  // …and those the direct pull from Clinica added (marked with its job)
+  (await knex('patients').where({ business_id: b, legacy_source: SOURCE }).whereIn('legacy_import_job_id', knex('import_jobs').where({ business_id: b, type: 'legacy_remote' }).select('id')).pluck('id')).forEach((id) => created.add(Number(id)));
   // 1. What the conversion made: calendar visits and treatment-plan items.
   report.visits = await knex('appointments').where({ business_id: b, external_source: SOURCE }).del();
   report.plan_items = await knex('dental_plan_items').where({ business_id: b }).whereNotNull('legacy_treatment_id').del();

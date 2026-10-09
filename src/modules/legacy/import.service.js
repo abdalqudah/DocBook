@@ -903,5 +903,5 @@ async function resumeAll() {
 
 module.exports = {
   SOURCE, TYPE, ROOT, jobDir, openJob, rematchJob, candidate, normPhone, normFile, getJob, currentJob, jobs, addUpload, removeBatch, summary, counts, start, cancel, resume, retryError, ignoreError,
-  linkPatient, createFromLegacy, report, reconciliation, resumeAll, kick, settle, manifestEntries,
+  linkPatient, createFromLegacy, report, reconciliation, resumeAll, kick, settle, manifestEntries, createPatient, countryOf,
 };

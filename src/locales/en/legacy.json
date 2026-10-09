@@ -329,8 +329,8 @@
     "grp_col_patients": "Patients",
     "grp_col_branch": "Branch",
     "grp_main_branch": "Doctor's branch (main by default)",
-    "remote_title": "Pull the files straight from Clinica",
-    "remote_sub": "The server signs in to Clinica with your account, reads the page of each imported patient and downloads every attachment not here yet into the patient's file. Nothing is changed in Clinica.",
+    "remote_title": "Pull everything straight from Clinica",
+    "remote_sub": "The server signs in to Clinica with your account and pulls: new patients, missing patient details, missing treatments, calendar appointments and attachments — only what is missing: nothing here is cancelled, changed or doubled. Nothing is changed in Clinica.",
     "remote_address": "Clinica address",
     "remote_user": "Clinica user name",
     "remote_pass": "Clinica password",
@@ -359,6 +359,23 @@
     "remote_probe_hint": "Signs in and reads the shape of Clinica's pages without patient data; downloads nothing.",
     "remote_probed": "Check done — download the report and send it.",
     "remote_probe_download": "Download the Clinica structure report (clinica-structure.json)",
-    "remote_probe_note": "Only the shape of the pages (addresses with numbers replaced, field names, column headers) — no patient name, number or value. The question is answered once: open the sign-in page again for the next sign-in."
+    "remote_probe_note": "Only the shape of the pages (addresses with numbers replaced, field names, column headers) — no patient name, number or value. The question is answered once: open the sign-in page again for the next sign-in.",
+    "remote_stage_label": "Stage",
+    "remote_stage": {
+      "list": "Patients list",
+      "patients": "Patient files",
+      "calendar": "Calendar",
+      "done": "Done"
+    },
+    "remote_new_patients": "New patients",
+    "remote_filled": "Details filled",
+    "remote_new_treatments": "New treatments",
+    "remote_appts": "Appointments added",
+    "remote_days": "Calendar days read",
+    "remote_unmatched": "Appointments with no known patient",
+    "remote_from": "Calendar from",
+    "remote_to": "Calendar to",
+    "remote_to_hint": "Empty = one year ahead",
+    "grp_calendar": "Clinica calendar"
   }
 }

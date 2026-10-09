@@ -138,7 +138,9 @@
   var tick = function () {
     fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (s) {
       if (!s || s.status !== 'processing') { window.location.reload(); return; }
-      set('patients', nf(s.patients.done) + ' / ' + nf(s.patients.total)); set('found', nf(s.found)); set('downloaded', nf(s.downloaded)); set('skipped', nf(s.skipped)); set('failed', nf(s.failed));
+      set('patients', nf(s.patients.done) + ' / ' + nf(s.patients.total)); set('found', nf(s.found));
+      set('newPatients', nf(s.newPatients)); set('filled', nf(s.filled)); set('newTreatments', nf(s.newTreatments));
+      if (s.appointments) { set('appts', nf(s.appointments.added + s.appointments.merged)); set('days', nf(s.appointments.days)); } set('downloaded', nf(s.downloaded)); set('skipped', nf(s.skipped)); set('failed', nf(s.failed));
       setTimeout(tick, 5000);
     }).catch(function () { setTimeout(tick, 15000); });
   };

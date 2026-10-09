@@ -161,7 +161,9 @@ async function doctorNames(businessId) {
     if (!gc.has(k)) gc.set(k, { key: k, name: g, count: 0, branchId: gm.get(k) || null });
     gc.get(k).count += Number(r.n);
   }));
-  return { list, doctors: docs, branches, groups: [...gc.values()].sort((a, b) => b.count - a.count) };
+  // Clinica's calendars seen by the direct pull (Abdali Clinic…), after the patient groups
+  groupMap.forEach((g) => { if (!gc.has(g.group_key)) gc.set(g.group_key, { key: g.group_key, name: g.group_name || g.group_key, count: 0, branchId: g.branch_id || null, calendar: true }); });
+  return { list, doctors: docs, branches, groups: [...gc.values()].sort((a, b) => (a.calendar || false) - (b.calendar || false) || b.count - a.count) };
 }
 
 /** Saves the clinic's choices ({ key, action, doctor_id }) and re-applies them (a job). */
@@ -348,6 +350,18 @@ async function promotePatient(db, businessId, patientId, { resolve = null, stats
     await upsertVisit(db, businessId, who, { key: a.key, date: a.date, time: a.time, duration: a.duration, doctorId, branchId: branchFor(doctorId), status: st, notes: a.note, mayChangeDoctor: ownSet }); // eslint-disable-line no-await-in-loop
     booked.add(a.date); visits += 1;
   }
+  // Appointments read from Clinica's calendar (remote pull): their days have their visit already; that day's
+  // treatments are linked to it.
+  const calByDate = new Map();
+  (await db('appointments').where({ business_id: businessId, patient_id: patientId, external_source: SOURCE }).where('external_uid', 'like', `clinica:${legacyId}:a:cal:%`)
+    .orderBy('appointment_time').select('id', 'appointment_date')).forEach((a) => { const d = dayStr(a.appointment_date); booked.add(d); if (!calByDate.has(d)) calByDate.set(d, a.id); });
+  for (const [d, aid] of calByDate) { // eslint-disable-line no-restricted-syntax
+    const ids = rows.filter((t) => (dayOf(t) || null) === d && !t.appointment_id).map((t) => t.id);
+    if (ids.length) {
+      await db('legacy_treatments').whereIn('id', ids).update({ appointment_id: aid }); // eslint-disable-line no-await-in-loop
+      await db('dental_plan_items').whereIn('legacy_treatment_id', ids).whereNull('appointment_id').update({ appointment_id: aid }); // eslint-disable-line no-await-in-loop
+    }
+  }
   const days = new Map();
   rows.forEach((t) => {
     const d = dayOf(t) || (statusOf(t) === 'done' ? map.isoDay(t.complete_date) : null);
@@ -378,6 +392,59 @@ async function promotePatient(db, businessId, patientId, { resolve = null, stats
   }
   if (stats) { stats.plan_items = (stats.plan_items || 0) + made; stats.visits = (stats.visits || 0) + visits; }
   return made;
+}
+
+// ================================================================= an appointment of Clinica's calendar
+const pad = (n) => String(n).padStart(2, '0');
+/** A DATE column's value as YYYY-MM-DD (driver Date objects are local midnight). */
+const dayStr = (v) => (v instanceof Date ? `${v.getFullYear()}-${pad(v.getMonth() + 1)}-${pad(v.getDate())}` : String(v || '').slice(0, 10));
+
+/**
+ * One appointment read from Clinica's calendar (remote pull) → the clinic's calendar, never twice (key: patient, day,
+ * time, calendar). The visit the import made for that day's treatments becomes this appointment (its time, its
+ * calendar) instead of a second visit; nothing a person set (doctor, branch, status) is changed.
+ * a = { date, time, calendar, doctor, status, note }; returns 'new' | 'merged' | 'existing'.
+ */
+async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve = null, groups = [], today = null } = {}) {
+  const [patient, ref] = await Promise.all([
+    db('patients').where({ id: patientId, business_id: businessId }).first('id', 'full_name', 'phone'),
+    db('legacy_patients').where({ business_id: businessId, patient_id: patientId, legacy_source: SOURCE }).first('legacy_patient_id'),
+  ]);
+  if (!patient || !ref) return null;
+  const doctorOf = resolve || await resolver(db, businessId);
+  const time = timeOf(a.time) || '09:00';
+  const uid = `clinica:${ref.legacy_patient_id}:a:cal:${a.date}:${time}:${crypto.createHash('sha1').update(docKey(a.calendar)).digest('hex').slice(0, 8)}`.slice(0, 190);
+  const named = a.doctor && !doctorOf.infers(a.doctor) ? await doctorOf(a.doctor) : null;
+  const doctorId = named || (a.calendar && clean.chairOf(a.calendar) === null && !doctorOf.infers(a.calendar) ? await doctorOf(a.calendar) : null);
+  const branchId = doctorOf.branchFor ? doctorOf.branchFor([a.calendar, ...groups].filter(Boolean), doctorId) : null;
+  const day0 = today || clinicNow('Asia/Amman').date;
+  const status = a.status === 'cancelled' || a.status === 'no_show' ? a.status : a.date < day0 ? 'completed' : (a.status === 'completed' ? 'completed' : 'confirmed');
+  const note = [a.calendar ? `Clinica: ${a.calendar}` : null, a.note || null].filter(Boolean).join(' · ') || null;
+  const have = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'branch_id');
+  if (have) {
+    const patch = {};
+    if (!have.doctor_id && doctorId) patch.doctor_id = doctorId;
+    if (!have.branch_id && branchId) patch.branch_id = branchId;
+    if (Object.keys(patch).length) await db('appointments').where({ id: have.id }).update(patch);
+    return 'existing';
+  }
+  // the import's visit for that day's treatments (not merged yet): it becomes this appointment
+  const dayVisit = await db('appointments').where({ business_id: businessId, patient_id: patientId, external_source: SOURCE, appointment_date: a.date })
+    .where('external_uid', 'like', `clinica:${ref.legacy_patient_id}:v:%`).orderBy('id').first('id', 'doctor_id', 'branch_id', 'notes');
+  if (dayVisit) {
+    await db('appointments').where({ id: dayVisit.id }).update({
+      external_uid: uid, appointment_time: time, ...(dayVisit.doctor_id || !doctorId ? {} : { doctor_id: doctorId }), ...(dayVisit.branch_id || !branchId ? {} : { branch_id: branchId }),
+      notes: [dayVisit.notes, note].filter(Boolean).join('\n').slice(0, 3000) || null,
+    });
+    return 'merged';
+  }
+  const at = new Date(`${a.date}T12:00:00Z`);
+  await db('appointments').insert({
+    business_id: businessId, doctor_id: doctorId, patient_id: patientId, patient_name: String(patient.full_name || '').slice(0, 190) || '—', patient_phone: patient.phone || null,
+    appointment_date: a.date, appointment_time: time, status, appointment_type: 'in_person', source: 'import', branch_id: branchId,
+    payment_status: status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: note, external_source: SOURCE, external_uid: uid, created_at: at, updated_at: at,
+  }).onConflict(['business_id', 'external_uid']).ignore();
+  return 'new';
 }
 
 // ================================================================= the job
@@ -457,4 +524,4 @@ async function progress(businessId) {
   };
 }
 
-module.exports = { TYPE, promotePatient, start, kick, settle, resumeAll, progress, doctorNames, saveDoctorMap, resolver, docKey, statusOf, toothOf, timeOf };
+module.exports = { TYPE, promotePatient, upsertCalendarAppointment, dayStr, groupsOf, start, kick, settle, resumeAll, progress, doctorNames, saveDoctorMap, resolver, docKey, statusOf, toothOf, timeOf };

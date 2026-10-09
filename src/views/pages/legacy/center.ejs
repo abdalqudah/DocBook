@@ -69,7 +69,14 @@
   <div class="panel-body stack">
     <% if (rm) { %>
     <div class="summary-strip">
+      <span class="chip"><%= t('legacy.remote_stage_label') %> <strong data-rm="stage"><%= t('legacy.remote_stage.' + (rm.stage || 'patients')) %><%= rm.day ? ' · ' + rm.day : '' %></strong></span>
       <span class="chip"><%= t('legacy.col.patients') %> <strong data-rm="patients"><%= fmt.number(rm.patients.done) %> / <%= fmt.number(rm.patients.total) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_new_patients') %> <strong data-rm="newPatients"><%= fmt.number(rm.newPatients) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_filled') %> <strong data-rm="filled"><%= fmt.number(rm.filled) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_new_treatments') %> <strong data-rm="newTreatments"><%= fmt.number(rm.newTreatments) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_appts') %> <strong data-rm="appts"><%= fmt.number(rm.appointments.added + rm.appointments.merged) %></strong></span>
+      <span class="chip"><%= t('legacy.remote_days') %> <strong data-rm="days"><%= fmt.number(rm.appointments.days) %></strong></span>
+      <% if (rm.appointments.unmatched) { %><span class="chip"><%= t('legacy.remote_unmatched') %> <strong><%= fmt.number(rm.appointments.unmatched) %></strong></span><% } %>
       <span class="chip"><%= t('legacy.remote_found') %> <strong data-rm="found"><%= fmt.number(rm.found) %></strong></span>
       <span class="chip"><%= t('legacy.remote_downloaded') %> <strong data-rm="downloaded"><%= fmt.number(rm.downloaded) %></strong></span>
       <span class="chip"><%= t('legacy.remote_skipped') %> <strong data-rm="skipped"><%= fmt.number(rm.skipped) %></strong></span>
@@ -94,6 +101,8 @@
       <div class="grid grid-3">
         <label class="field"><span class="label"><%= t('legacy.remote_user') %></span><input class="input" name="username" dir="ltr" required autocomplete="off"></label>
         <label class="field"><span class="label"><%= t('legacy.remote_pass') %></span><input class="input" name="password" type="password" dir="ltr" required autocomplete="new-password"></label>
+        <label class="field"><span class="label"><%= t('legacy.remote_from') %></span><input class="input" type="date" name="from" value="<%= (rm && rm.range && rm.range.from) || '2019-01-01' %>"></label>
+        <label class="field"><span class="label"><%= t('legacy.remote_to') %></span><input class="input" type="date" name="to" value="<%= (rm && rm.range && rm.range.to) || '' %>"><span class="hint"><%= t('legacy.remote_to_hint') %></span></label>
         <% if (remoteSignIn.question) { %><label class="field"><span class="label"><%= t('legacy.remote_question') %> <bdi dir="ltr" class="strong" data-remote-question><%= remoteSignIn.question %></bdi></span><input class="input" name="captcha" dir="ltr" required autocomplete="off" inputmode="numeric"><span class="hint"><%= t('legacy.remote_question_hint') %></span></label><% } %>
       </div>
       <p class="small muted" style="margin:0"><%- icon('lock', 'icon-sm') %> <%= t('legacy.remote_privacy') %></p>

@@ -381,3 +381,23 @@ as `{n}` and query values dropped, forms (action, input names / types, select na
 and row counts, form labels, linked address patterns, script addresses and the addresses scripts ask for (calendar
 feeds). No text, value, title or heading — no patient data. The owner downloads it as `clinica-structure.json`
 (memory only; audited `legacy.remote_probed`).
+
+## 2.9.0: pull everything straight from Clinica — and add only what is missing
+Built on the structure report of the real Clinica (2.8.9). After the owner's sign-in (with the answer to Clinica's
+question) the pull runs three stages, as one saved job (`import_jobs.stats` keeps its counts and calendar range):
+1. **Patients list** — `/patients?page=N` (50 a page, until the pager repeats): a Clinica id not here yet becomes a
+   patient (same creation as the import: name, phones, number, nationality; `legacy_patients` row).
+2. **Patient files** — for each Clinica patient here: `/dental/<id>` and `/edit_patient/<id>`:
+   - details from Clinica's patient form fill only **empty** fields here (English name, phones, e-mail, birth date,
+     gender, national number, nationality, address, occupation, important note, medical history, medication, note);
+   - treatments of Clinica's treatments table not here yet (same day, tooth, treatment, doctor and note — counted, so two
+     identical treatments stay two) become legacy treatments, then the patient's plan and visits as always;
+   - attachments not here yet, as in 2.8.7.
+3. **Calendar** — `/ncalendar?date=YYYY-MM-DD` for each day of the range (default 2019-01-01 → one year ahead): each
+   appointment of the day's list (or of the day grid) → the clinic's calendar, key `clinica:<id>:a:cal:<day>:<time>:<calendar>`.
+   The visit the import made for that day's treatments becomes this appointment (its time and calendar) instead of a
+   second visit; a doctor or branch already set is kept. If Clinica shows another day than the one asked, the calendar
+   stage stops without adding anything (`CALENDAR_DAY_NOT_SHOWN`). Each Clinica calendar (Mansour, Clinic 2, Abdali
+   Clinic…) is listed on the Doctors page to tie to a branch.
+Nothing here is deleted, cancelled or overwritten; running the pull again adds nothing that is already here. Patients the
+pull added are removed by "Remove everything imported from Clinica" like those the import added.

@@ -45,7 +45,7 @@
     <% groups.forEach(function (g) { %>
       <tr>
         <td data-label="<%= t('legacy.grp_col_group') %>"><strong dir="auto"><%= g.name %></strong></td>
-        <td data-label="<%= t('legacy.grp_col_patients') %>" class="num"><%= fmt.number(g.count) %></td>
+        <td data-label="<%= t('legacy.grp_col_patients') %>" class="num"><%= g.calendar ? t('legacy.grp_calendar') : fmt.number(g.count) %></td>
         <td data-label="<%= t('legacy.grp_col_branch') %>">
           <input type="hidden" name="group_key" value="<%= g.key %>">
           <select class="select" name="group_branch" aria-label="<%= g.name %>">

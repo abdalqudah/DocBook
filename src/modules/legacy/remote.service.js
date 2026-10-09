@@ -16,6 +16,10 @@ const tenant = require('../../db/tenant');
 const audit = require('../../core/audit');
 const { E } = require('../../core/errors');
 const files = require('./files');
+const map = require('./clinica-map');
+const clean = require('./clinica-clean');
+const cw = require('./clinica-web');
+const promote = require('./promote.service');
 
 const SOURCE = 'clinica';
 const TYPE = 'legacy_remote';
@@ -219,9 +223,16 @@ async function start(ctx, creds) {
   const { base } = s;
   sessions.set(ctx.businessId, s);
   const total = Number((await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_source: SOURCE }).whereNotNull('patient_id').count({ n: '*' }))[0].n);
+  const from = map.isoDay(creds.from); const to = map.isoDay(creds.to);
   const cur = await openJob(ctx.businessId);
-  if (cur) await knex('import_jobs').where({ id: cur.id }).update({ status: 'processing', total, error: null, runner: null, heartbeat_at: null });
-  else await knex('import_jobs').insert({ business_id: ctx.businessId, type: TYPE, status: 'processing', stage: 'cursor:0', total, processed: 0, created_by: ctx.userId || null, started_at: now() });
+  if (cur) {
+    const st = statsOf(cur);
+    if (from || to) st.range = { from: from || st.range?.from || DEFAULT_FROM, to: to || st.range?.to || plusDays(today(), 365) };
+    await knex('import_jobs').where({ id: cur.id }).update({ status: 'processing', total, error: null, runner: null, heartbeat_at: null, stats: JSON.stringify(st) });
+  } else {
+    const stats = { range: { from: from || DEFAULT_FROM, to: to || plusDays(today(), 365) } };
+    await knex('import_jobs').insert({ business_id: ctx.businessId, type: TYPE, status: 'processing', stage: 'list:0', total, processed: 0, created_by: ctx.userId || null, started_at: now(), stats: JSON.stringify(stats) });
+  }
   await audit.record(ctx, 'legacy.remote_started', { entityType: 'business', entityId: ctx.businessId, newValues: { address: base, patients: total } });
   kick(ctx.businessId);
 }
@@ -247,6 +258,13 @@ async function fail(job, legacyPatientId, file, code, message) {
   await knex('import_errors').insert({ business_id: job.business_id, job_id: job.id, legacy_patient_id: legacyPatientId, file: file ? String(file).slice(0, 500) : null, stage: 'remote', error_code: code, message: String(message || '').slice(0, 500) });
 }
 
+const DEFAULT_FROM = '2019-01-01';
+const today = () => new Date().toISOString().slice(0, 10);
+const plusDays = (d, n) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const statsOf = (job) => { try { return JSON.parse(job.stats || '{}') || {}; } catch { return {}; } };
+const inc = (st, k, n = 1) => { st[k] = (st[k] || 0) + n; };
+const saveJob = (job, st, patch = {}) => knex('import_jobs').where({ id: job.id }).update({ ...patch, stats: JSON.stringify(st), heartbeat_at: now() });
+
 async function run(businessId) {
   for (;;) {
     const job = await openJob(businessId); // eslint-disable-line no-await-in-loop
@@ -256,31 +274,149 @@ async function run(businessId) {
     const stale = new Date(Date.now() - STALE_MS);
     const claimed = await knex('import_jobs').where({ id: job.id }).where((w) => w.whereNull('runner').orWhere('runner', RUNNER).orWhereNull('heartbeat_at').orWhere('heartbeat_at', '<', stale)).update({ runner: RUNNER, heartbeat_at: now() }); // eslint-disable-line no-await-in-loop
     if (!claimed) return;
-    const cursor = Number(String(job.stage || '').replace('cursor:', '')) || 0;
-    const batch = await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').where('id', '>', cursor).orderBy('id').limit(20) // eslint-disable-line no-await-in-loop
-      .select('id', 'patient_id', 'legacy_patient_id', 'legacy_patient_number');
-    if (!batch.length) {
-      sessions.delete(businessId);
-      const [errs] = await knex('import_errors').where({ job_id: job.id }).count({ n: '*' }); // eslint-disable-line no-await-in-loop
-      await knex('import_jobs').where({ id: job.id }).update({ status: Number(errs.n) ? 'completed_with_issues' : 'completed', completed_at: now(), runner: null, heartbeat_at: null, error: null }); // eslint-disable-line no-await-in-loop
-      await audit.record({ businessId, userId: job.created_by }, 'legacy.remote_completed', { entityType: 'import_job', entityId: job.id, newValues: { found: job.src_links, downloaded: job.success, skipped: job.skipped, failed: job.failed } }); // eslint-disable-line no-await-in-loop
-      return;
-    }
-    for (const lp of batch) { // eslint-disable-line no-restricted-syntax
-      if (!sessions.has(businessId)) return; // stopped
-      try {
-        await patient(job, s, lp); // eslint-disable-line no-await-in-loop
-      } catch (e) {
-        if (e.code === 'LOGIN_FAILED' || e.code === 'STORAGE_FULL' || e.code === 'STORAGE_QUOTA') {
-          sessions.delete(businessId);
-          await knex('import_jobs').where({ id: job.id }).update({ status: 'waiting', error: String(e.code || 'STOPPED').slice(0, 255), runner: null, heartbeat_at: null }); // eslint-disable-line no-await-in-loop
-          return;
-        }
-        await fail(job, lp.legacy_patient_id, null, e.code || 'PAGE_FAILED', e.message); // eslint-disable-line no-await-in-loop
+    const st = statsOf(job);
+    const stage = String(job.stage || 'cursor:0');
+    try {
+      if (stage.startsWith('list:')) await listStage(job, s, st, Number(stage.slice(5)) || 0); // eslint-disable-line no-await-in-loop
+      else if (stage.startsWith('cal:')) { if (await calendarStage(job, s, st, stage.slice(4))) return; } // eslint-disable-line no-await-in-loop
+      else if (await patientsStage(job, s, st, Number(stage.replace('cursor:', '')) || 0)) return; // eslint-disable-line no-await-in-loop
+    } catch (e) {
+      if (e.code === 'LOGIN_FAILED' || /STORAGE/.test(e.code || '')) {
+        sessions.delete(businessId);
+        await knex('import_jobs').where({ id: job.id }).update({ status: 'waiting', error: String(e.code || 'STOPPED').slice(0, 255), runner: null, heartbeat_at: null }); // eslint-disable-line no-await-in-loop
+        return;
       }
-      await knex('import_jobs').where({ id: job.id }).update({ stage: `cursor:${lp.id}`, processed: knex.raw('processed + 1'), heartbeat_at: now() }); // eslint-disable-line no-await-in-loop
+      throw e;
     }
   }
+}
+
+/** Stage 1: Clinica's patients list, page by page — a patient not here yet is added (with its Clinica id). */
+async function listStage(job, s, st, page) {
+  const r = await withRetry(() => s.get(`/patients?page=${page}`));
+  const rows = r.status === 200 ? cw.patientsList(r.text) : [];
+  const first = rows.length ? rows[0].id : null;
+  if (!rows.length || (page > 0 && first === st.list_first)) { // past the last page (a pager shows the last page again)
+    const total = Number((await knex('legacy_patients').where({ business_id: job.business_id, legacy_source: SOURCE }).whereNotNull('patient_id').count({ n: '*' }))[0].n);
+    await saveJob(job, st, { stage: 'cursor:0', total });
+    return;
+  }
+  st.list_first = first; inc(st, 'list_pages');
+  for (const row of rows) { // eslint-disable-line no-restricted-syntax
+    if (await ensurePatient(job, row)) inc(st, 'patients_new'); // eslint-disable-line no-await-in-loop
+  }
+  await sleep(DELAY_MS);
+  await saveJob(job, st, { stage: `list:${page + 1}` });
+}
+
+/** A Clinica patient (id, name, phones…) → its patient here: the one already linked, else a new one; true when new. */
+async function ensurePatient(job, row) {
+  const businessId = job.business_id;
+  if (!row || !row.id) return false;
+  if (await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE, legacy_patient_id: String(row.id) }).whereNotNull('patient_id').first('id')) return false;
+  const importSvc = require('./import.service'); // eslint-disable-line global-require
+  let made = false;
+  await knex.transaction(async (trx) => {
+    let pid = (await trx('patients').where({ business_id: businessId, legacy_source: SOURCE, legacy_patient_id: String(row.id) }).first('id'))?.id;
+    if (!pid) { pid = await importSvc.createPatient(trx, businessId, { id: job.id }, { id: String(row.id), number: row.number || null, name: row.name, mobile: row.mobile, telephone: row.telephone }); made = true; }
+    const lp = { business_id: businessId, legacy_source: SOURCE, legacy_patient_id: String(row.id), legacy_patient_number: row.number || null, old_name: (row.name || '').slice(0, 190) || null,
+      old_mobile: (row.mobile || '').slice(0, 60) || null, old_telephone: (row.telephone || '').slice(0, 60) || null, old_group: (row.group || '').slice(0, 190) || null, nationality: (row.nationality || '').slice(0, 100) || null, import_job_id: job.id };
+    const have = await trx('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE, legacy_patient_id: String(row.id) }).first('id');
+    if (have) await trx('legacy_patients').where({ id: have.id }).update({ patient_id: pid });
+    else await trx('legacy_patients').insert({ ...lp, patient_id: pid });
+    if (made && row.nationality) await trx('patients').where({ id: pid }).update({ nationality: importSvc.countryOf(row.nationality) });
+  });
+  return made;
+}
+
+/** Stage 2: each patient's pages — files, missing treatments, empty details filled; then its plan and visits. */
+async function patientsStage(job, s, st, cursor) {
+  const businessId = job.business_id;
+  const batch = await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').where('id', '>', cursor).orderBy('id').limit(20)
+    .select('id', 'patient_id', 'legacy_patient_id', 'legacy_patient_number', 'old_group');
+  if (!batch.length) {
+    await saveJob(job, st, { stage: `cal:${(st.range && st.range.from) || DEFAULT_FROM}` });
+    return false;
+  }
+  const resolve = await promote.resolver(knex, businessId);
+  const day0 = today();
+  for (const lp of batch) { // eslint-disable-line no-restricted-syntax
+    if (!sessions.has(businessId)) return true; // stopped
+    try {
+      await patient(job, s, lp, st, resolve, day0); // eslint-disable-line no-await-in-loop
+    } catch (e) {
+      if (e.code === 'LOGIN_FAILED' || /STORAGE/.test(e.code || '')) throw e;
+      await fail(job, lp.legacy_patient_id, null, e.code || 'PAGE_FAILED', e.message); // eslint-disable-line no-await-in-loop
+    }
+    await saveJob(job, st, { stage: `cursor:${lp.id}`, processed: knex.raw('processed + 1') }); // eslint-disable-line no-await-in-loop
+  }
+  return false;
+}
+
+/** Stage 3: Clinica's calendar, day by day over the range → appointments (never twice; the treatments' day visit becomes the appointment). */
+async function calendarStage(job, s, st, day) {
+  const businessId = job.business_id;
+  const to = (st.range && st.range.to) || plusDays(today(), 365);
+  if (!day || day > to) {
+    sessions.delete(businessId);
+    const [errs] = await knex('import_errors').where({ job_id: job.id }).count({ n: '*' });
+    await saveJob(job, st, { status: Number(errs.n) ? 'completed_with_issues' : 'completed', completed_at: now(), runner: null, heartbeat_at: null, error: null, stage: 'done' });
+    await audit.record({ businessId, userId: job.created_by }, 'legacy.remote_completed', { entityType: 'import_job', entityId: job.id, newValues: { ...st, found: job.src_links, downloaded: job.success, skipped: job.skipped, failed: job.failed } });
+    return true;
+  }
+  const resolve = await promote.resolver(knex, businessId);
+  let d = day;
+  for (let i = 0; i < 7 && d <= to; i += 1) { // a week per step
+    if (!sessions.has(businessId)) return true;
+    const r = await withRetry(() => s.get(`/ncalendar?date=${d}`)); // eslint-disable-line no-await-in-loop
+    // the page must show the day asked for (else Clinica ignored the address and shows another day: stop, add nothing)
+    if (r.status === 200 && !showsDay(r.text, d)) {
+      await fail(job, null, `/ncalendar?date=${d}`, 'CALENDAR_DAY_NOT_SHOWN', 'Clinica did not show the day asked for; the calendar was not read.'); // eslint-disable-line no-await-in-loop
+      await saveJob(job, st, { stage: 'cal:9999-12-31' }); // eslint-disable-line no-await-in-loop
+      return false;
+    }
+    const list = r.status === 200 ? cw.calendarDay(r.text) : [];
+    // each calendar of Clinica (Mansour, Clinic 2, Abdali Clinic…) can be tied to a branch on the Doctors page
+    for (const cal of [...new Set(list.map((a) => a.calendar).filter(Boolean))]) { // eslint-disable-line no-restricted-syntax
+      await knex('legacy_branch_map').insert({ business_id: businessId, legacy_source: SOURCE, group_key: promote.docKey(cal), group_name: cal.slice(0, 190), branch_id: null }).onConflict(['business_id', 'legacy_source', 'group_key']).ignore(); // eslint-disable-line no-await-in-loop
+    }
+    for (const a of list) { // eslint-disable-line no-restricted-syntax
+      const lp = await patientFor(job, a); // eslint-disable-line no-await-in-loop
+      if (!lp) { inc(st, 'appointments_unmatched'); continue; } // eslint-disable-line no-continue
+      const res = await knex.transaction((trx) => promote.upsertCalendarAppointment(trx, businessId, lp.patient_id, { ...a, date: d }, { resolve, groups: promote.groupsOf(lp.old_group), today: today() })); // eslint-disable-line no-await-in-loop
+      if (res === 'new') inc(st, 'appointments_new'); else if (res === 'merged') inc(st, 'appointments_merged'); else if (res) inc(st, 'appointments_existing');
+    }
+    inc(st, 'days_done');
+    d = plusDays(d, 1);
+    await sleep(DELAY_MS); // eslint-disable-line no-await-in-loop
+  }
+  await saveJob(job, st, { stage: `cal:${d}` });
+  return false;
+}
+
+/** Whether a calendar page is the day asked for: its date field, else the day written on the page (2024-03-05, 05/03/2024, 05-03-2024). */
+function showsDay(html, d) {
+  const shown = cw.formValues(html)['date[date]'];
+  if (shown && map.isoDay(shown)) return map.isoDay(shown) === d;
+  const [y, m, dd] = d.split('-');
+  return [d, `${dd}/${m}/${y}`, `${dd}-${m}-${y}`, `${dd}.${m}.${y}`].some((x) => String(html || '').includes(x));
+}
+
+/** The patient of a calendar row: by its Clinica id (added when new), else by the Clinica file number or mobile — when only one patient has it. */
+async function patientFor(job, a) {
+  const businessId = job.business_id;
+  const q = () => knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id');
+  if (a.id) {
+    let lp = await q().where({ legacy_patient_id: String(a.id) }).first('id', 'patient_id', 'old_group');
+    if (!lp) { await ensurePatient(job, { id: a.id, number: a.number, name: a.name, mobile: a.mobile }); lp = await q().where({ legacy_patient_id: String(a.id) }).first('id', 'patient_id', 'old_group'); }
+    return lp || null;
+  }
+  for (const [col, v] of [['legacy_patient_number', String(a.number || '').trim()], ['old_mobile', String(a.mobile || '').trim()]]) { // eslint-disable-line no-restricted-syntax
+    if (!v) continue; // eslint-disable-line no-continue
+    const hits = await q().where(col, v).limit(2).select('id', 'patient_id', 'old_group'); // eslint-disable-line no-await-in-loop
+    if (hits.length === 1) return hits[0];
+  }
+  return null;
 }
 
 async function withRetry(fn) {
@@ -292,15 +428,25 @@ async function withRetry(fn) {
   }
 }
 
-/** One Clinica patient: its pages → its attachment links → the files not here yet. */
-async function patient(job, s, lp) {
+/** One Clinica patient: its pages → files not here yet, treatments not here yet, empty details filled → plan and visits. */
+async function patient(job, s, lp, st = {}, resolve = null, day0 = null) {
   const businessId = job.business_id;
   const links = new Map();
-  for (const p of [`/dental/${encodeURIComponent(lp.legacy_patient_id)}`, `/edit_patient/${encodeURIComponent(lp.legacy_patient_id)}`]) { // eslint-disable-line no-restricted-syntax
+  const pages = {};
+  for (const [k, p] of [['dental', `/dental/${encodeURIComponent(lp.legacy_patient_id)}`], ['edit', `/edit_patient/${encodeURIComponent(lp.legacy_patient_id)}`]]) { // eslint-disable-line no-restricted-syntax
     const r = await withRetry(() => s.get(p)); // eslint-disable-line no-await-in-loop
-    if (r.status === 200) attachmentLinks(r.text, r.url, s.base).forEach((l) => { if (!links.has(l.path)) links.set(l.path, l); });
+    if (r.status === 200) { pages[k] = r.text; attachmentLinks(r.text, r.url, s.base).forEach((l) => { if (!links.has(l.path)) links.set(l.path, l); }); }
     await sleep(DELAY_MS); // eslint-disable-line no-await-in-loop
   }
+  // details and treatments (added only where missing), then the patient's plan and visits
+  const details = pages.edit ? cw.patientDetails(pages.edit) : null;
+  const treatments = pages.dental ? cw.dentalTreatments(pages.dental) : [];
+  await knex.transaction(async (trx) => {
+    if (details && await fillPatient(trx, businessId, lp, details)) inc(st, 'patients_filled');
+    const added = await addTreatments(trx, job, lp, treatments);
+    if (added) inc(st, 'treatments_new', added);
+    await promote.promotePatient(trx, businessId, lp.patient_id, { resolve, today: day0 });
+  });
   if (!links.size) return;
   await knex('import_jobs').where({ id: job.id }).update({ src_links: knex.raw('src_links + ?', [links.size]) });
   const have = new Set((await knex('patient_attachments').where({ business_id: businessId, legacy_patient_id: lp.legacy_patient_id }).whereNotNull('source_url').pluck('source_url')).map(pathKey));
@@ -318,6 +464,55 @@ async function patient(job, s, lp) {
     }
     await sleep(DELAY_MS); // eslint-disable-line no-await-in-loop
   }
+}
+
+/** Clinica's details → the patient's EMPTY fields only (nothing a person entered is changed); true when one was filled. */
+async function fillPatient(trx, businessId, lp, d) {
+  const p = await trx('patients').where({ id: lp.patient_id, business_id: businessId }).first();
+  if (!p) return false;
+  const phone = (v) => (v ? String(v).replace(/[^\d+]/g, '').slice(0, 40) || null : null);
+  const importSvc = require('./import.service'); // eslint-disable-line global-require
+  const want = {
+    name_en: d.name_en ? d.name_en.slice(0, 190) : null, phone: phone(d.mobile), phone2: phone(d.telephone), email: d.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email) ? d.email.slice(0, 190) : null,
+    date_of_birth: map.isoDay(d.birth), gender: d.gender, national_id: d.national_id ? d.national_id.slice(0, 40) : null, nationality: importSvc.countryOf(d.nationality),
+    address: d.address ? d.address.slice(0, 255) : null, occupation: d.occupation ? d.occupation.slice(0, 120) : null, important_note: d.important_note,
+    chronic_conditions: d.medical_history, current_medications: d.medications, notes: d.general_note,
+  };
+  const patch = {};
+  Object.entries(want).forEach(([k, v]) => { if (v !== null && v !== undefined && v !== '' && (p[k] === null || p[k] === undefined || String(p[k]).trim() === '') && k in p) patch[k] = v; });
+  if (patch.phone2 && (patch.phone2 === (patch.phone || p.phone))) delete patch.phone2;
+  if (patch.important_note && d.important_on_booking && !p.important_on_booking) patch.important_on_booking = true;
+  if (d.group) {
+    const lpRow = await trx('legacy_patients').where({ id: lp.id }).first('old_group');
+    if (!lpRow.old_group) await trx('legacy_patients').where({ id: lp.id }).update({ old_group: d.group.slice(0, 190) });
+  }
+  if (!Object.keys(patch).length) return false;
+  await trx('patients').where({ id: p.id }).update({ ...patch, updated_at: now() });
+  return true;
+}
+
+/** Treatments of the dental page not here yet (same day, tooth, treatment, doctor and note, counted) → legacy rows; how many. */
+async function addTreatments(trx, job, lp, rows) {
+  if (!rows.length) return 0;
+  const key = (t) => [map.isoDay(t.treatment_date || t.date) || '', String(t.tooth || '').trim(), clean.cleanTreatment(t.description).name.toLowerCase(), promote.docKey(t.doctor), clean.cleanTreatment(t.description).lines.concat(String(t.note || '').trim()).join(' ').replace(/\s+/g, ' ').trim().toLowerCase()].join('|');
+  const existing = await trx('legacy_treatments').where({ legacy_patient_ref: lp.id }).select('treatment_date', 'tooth', 'description', 'doctor', 'note', 'row_key');
+  const have = new Map();
+  existing.forEach((t) => { const k = key(t); have.set(k, (have.get(k) || 0) + 1); });
+  const keys = new Set(existing.map((t) => t.row_key));
+  const seen = new Map();
+  let added = 0;
+  for (const [i, raw] of rows.entries()) { // eslint-disable-line no-restricted-syntax
+    const k = key(raw);
+    const n = (seen.get(k) || 0) + 1; seen.set(k, n);
+    if (n <= (have.get(k) || 0)) continue; // eslint-disable-line no-continue
+    const { row } = map.treatment(raw, 100000 + i);
+    row.row_key = `web:${crypto.createHash('sha256').update(k).digest('hex').slice(0, 40)}:${n}`;
+    if (keys.has(row.row_key)) continue; // eslint-disable-line no-continue
+    keys.add(row.row_key);
+    await trx('legacy_treatments').insert({ business_id: job.business_id, legacy_patient_ref: lp.id, patient_id: lp.patient_id, legacy_patient_id: lp.legacy_patient_id, import_job_id: job.id, ...row }); // eslint-disable-line no-await-in-loop
+    added += 1;
+  }
+  return added;
 }
 
 /** A downloaded file → the patient's file (once per patient and content); false when it was there already. */
@@ -348,12 +543,18 @@ async function progress(businessId) {
   const running = job.status === 'processing' && sessions.has(businessId);
   if (running && (!job.heartbeat_at || new Date(job.heartbeat_at) < new Date(Date.now() - STALE_MS))) kick(businessId);
   const errors = await knex('import_errors').where({ job_id: job.id }).orderBy('id', 'desc').limit(50).select('legacy_patient_id', 'file', 'error_code', 'message');
+  const st = statsOf(job);
+  const stage = String(job.stage || '');
   return {
     id: job.id, status: running ? 'processing' : job.status, waitingFor: job.status === 'processing' && !running ? 'NEEDS_SIGN_IN' : job.error,
+    stage: stage.startsWith('list:') ? 'list' : stage.startsWith('cal:') ? 'calendar' : stage === 'done' ? 'done' : 'patients', day: stage.startsWith('cal:') ? stage.slice(4) : null, range: st.range || null,
     patients: { done: job.processed, total: job.total }, found: job.src_links, downloaded: job.success, skipped: job.skipped, failed: job.failed,
     remaining: Math.max(0, job.src_links - job.success - job.skipped - job.failed), errors, startedAt: job.started_at, completedAt: job.completed_at,
+    newPatients: st.patients_new || 0, filled: st.patients_filled || 0, newTreatments: st.treatments_new || 0, listPages: st.list_pages || 0,
+    appointments: { added: st.appointments_new || 0, merged: st.appointments_merged || 0, existing: st.appointments_existing || 0, unmatched: st.appointments_unmatched || 0, days: st.days_done || 0 },
   };
 }
+
 
 /** A pull whose process stopped (its heartbeat went quiet, the password with it) waits for the password again. */
 async function resumeAll() {

@@ -55,7 +55,7 @@ router.post('/remote/prepare', ownerOnly, wrap(async (req, res) => {
 // Step 2: the owner's sign-in (and answer) → the pull starts.
 router.post('/remote/start', ownerOnly, wrap(async (req, res) => {
   try {
-    await require('./remote.service').start(req.ctx, { baseUrl: req.body.base_url, username: req.body.username, password: req.body.password, captcha: req.body.captcha }); // eslint-disable-line global-require
+    await require('./remote.service').start(req.ctx, { baseUrl: req.body.base_url, username: req.body.username, password: req.body.password, captcha: req.body.captcha, from: req.body.from, to: req.body.to }); // eslint-disable-line global-require
     flash(req, 'success', req.t('legacy.remote_started'));
   } catch (e) {
     flash(req, 'error', e.details ? Object.values(e.details).join(' ') : errText(req, e));
