@@ -421,10 +421,12 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
   const day0 = today || clinicNow('Asia/Amman').date;
   const status = a.status === 'cancelled' || a.status === 'no_show' ? a.status : a.date < day0 ? 'completed' : (a.status === 'completed' ? 'completed' : 'confirmed');
   const note = [a.calendar ? `Clinica: ${a.calendar}` : null, a.note || null].filter(Boolean).join(' · ') || null;
-  const have = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'branch_id');
+  const have = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'branch_id', 'call_status');
+  const call = ['no_answer', 'recall'].includes(a.callStatus) ? a.callStatus : null;
   if (have) {
     const patch = {};
     if (!have.doctor_id && doctorId) patch.doctor_id = doctorId;
+    if (call && !have.call_status) patch.call_status = call;
     if (!have.branch_id && branchId) patch.branch_id = branchId;
     if (Object.keys(patch).length) await db('appointments').where({ id: have.id }).update(patch);
     return 'existing';
@@ -438,7 +440,7 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
     .orderByRaw('appointment_time = ? DESC', [time]).orderBy('id').first('id', 'doctor_id', 'branch_id', 'notes');
   if (dayVisit) {
     await db('appointments').where({ id: dayVisit.id }).update({
-      external_uid: uid, appointment_time: time, ...(dayVisit.doctor_id || !doctorId ? {} : { doctor_id: doctorId }), ...(dayVisit.branch_id || !branchId ? {} : { branch_id: branchId }),
+      external_uid: uid, appointment_time: time, ...(call ? { call_status: call } : {}), ...(dayVisit.doctor_id || !doctorId ? {} : { doctor_id: doctorId }), ...(dayVisit.branch_id || !branchId ? {} : { branch_id: branchId }),
       notes: [dayVisit.notes, note].filter(Boolean).join('\n').slice(0, 3000) || null,
     });
     return 'merged';
@@ -447,7 +449,7 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
   await db('appointments').insert({
     business_id: businessId, doctor_id: doctorId, patient_id: patientId, patient_name: String(patient.full_name || '').slice(0, 190) || '—', patient_phone: patient.phone || null,
     appointment_date: a.date, appointment_time: time, status, appointment_type: 'in_person', source: 'import', branch_id: branchId,
-    payment_status: status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: note, external_source: SOURCE, external_uid: uid, created_at: at, updated_at: at,
+    payment_status: status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: note, call_status: call, external_source: SOURCE, external_uid: uid, created_at: at, updated_at: at,
   }).onConflict(['business_id', 'external_uid']).ignore();
   return 'new';
 }

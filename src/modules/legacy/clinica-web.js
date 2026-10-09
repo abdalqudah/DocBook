@@ -94,13 +94,17 @@ function dentalTreatments(html) {
 }
 
 const STATUS = [[/cancel/i, 'cancelled'], [/miss|no.?show/i, 'no_show'], [/complete|served|checkout/i, 'completed'], [/confirm/i, 'confirmed']];
+// Clinica's call outcomes (radio buttons beside the status): no-answer, recall → the appointment's call outcome.
+const CALL = [[/no.?answer/i, 'no_answer'], [/recall/i, 'recall']];
 /** A calendar day's appointments list (/ncalendar?date=…) → [{ time, id, number, name, mobile, calendar, doctor, status }]. */
 function calendarDay(html) {
   const rows = tableBy(html, ['Time', 'Patient Name', 'Calendar']) || [];
   if (!rows.length) return calendarGrid(html);
   return rows.map((r) => {
     const st = STATUS.find(([re]) => re.test(r.cls || '') || re.test(r.Status || ''));
-    return { time: r.Time || '', id: idIn(r.links), number: r['Patient Number'] || '', name: (r['Patient Name'] || '').replace(/\n/g, ' '), mobile: r.Mobile || '', calendar: (r.Calendar || '').replace(/\n/g, ' '), doctor: (r.Doctor || '').replace(/\n/g, ' '), status: st ? st[1] : null };
+    const call = CALL.find(([re]) => re.test(r.cls || '') || re.test(r.Status || ''));
+    const note = String(r.Note || r.Notes || r.Comment || r.Comments || '').replace(/\s+/g, ' ').trim();
+    return { callStatus: call ? call[1] : null, note: note || null, time: r.Time || '', id: idIn(r.links), number: r['Patient Number'] || '', name: (r['Patient Name'] || '').replace(/\n/g, ' '), mobile: r.Mobile || '', calendar: (r.Calendar || '').replace(/\n/g, ' '), doctor: (r.Doctor || '').replace(/\n/g, ' '), status: st ? st[1] : null };
   }).filter((a) => a.name || a.id);
 }
 

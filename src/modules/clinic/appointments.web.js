@@ -436,6 +436,17 @@ router.post('/:id(\\d+)/status', can('appointments.manage'), wrap(async (req, re
   res.redirect(safeReturn(req.body.return_to) || `/app/appointments/${req.params.id}`);
 }));
 
+router.post('/:id(\\d+)/call', can('appointments.manage'), wrap(async (req, res) => {
+  await appts.setCallStatus(req.ctx, Number(req.params.id), req.body.call_status);
+  flash(req, 'success', req.t('appointments.call_saved'));
+  res.redirect(safeReturn(req.body.return_to) || `/app/appointments/${req.params.id}`);
+}));
+router.post('/:id(\\d+)/note', can('appointments.manage'), wrap(async (req, res) => {
+  await appts.setNote(req.ctx, Number(req.params.id), req.body.notes);
+  flash(req, 'success', req.t('appointments.note_saved'));
+  res.redirect(safeReturn(req.body.return_to) || `/app/appointments/${req.params.id}`);
+}));
+
 router.post('/:id(\\d+)/confirm', can('appointments.manage'), wrap(async (req, res) => {
   const back = safeReturn(req.body.return_to) || `/app/appointments/${req.params.id}`;
   try {

@@ -197,7 +197,16 @@
     "next_month": "Next month",
     "this_month": "This month",
     "month": "Month",
-    "more_n": "+{n} more"
+    "more_n": "+{n} more",
+    "call": {
+      "title": "Call outcome",
+      "none": "None",
+      "no_answer": "No answer",
+      "recall": "Call back"
+    },
+    "call_saved": "Call outcome saved.",
+    "note_saved": "Note saved.",
+    "save_note": "Save note"
   },
   "frontdesk": {
     "title": "Reception & waiting list",

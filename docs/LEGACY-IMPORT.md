@@ -422,3 +422,10 @@ pull added are removed by "Remove everything imported from Clinica" like those t
 - "12:30 AM" is read as 00:30.
 - "Remove everything that came from Clinica" is folded away (only to start again from nothing) and is refused while
   the pull is running.
+
+## 2.9.6: call outcome and note of an appointment
+- An appointment has a call outcome beside its status (as Clinica's radio buttons): *No answer* / *Call back*
+  (`appointments.call_status`, with who and when; audited). The booking keeps its time. Set from the appointment
+  page and the calendar drawer, which also edits the note (any time, also after payment).
+- Clinica's calendar: a row marked no-answer / recall brings that outcome; a Note column, when the list has one,
+  goes into the appointment's note.

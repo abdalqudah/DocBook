@@ -208,6 +208,23 @@ async function setStatus(ctx, apptId, status) {
   if (status === 'cancelled' && a.status !== 'cancelled' && ctx.userId) await require('../messaging/messaging.service').notifyCancelled(ctx, a.id); // eslint-disable-line global-require
 }
 
+/** The outcome of the call about an appointment: 'no_answer' | 'recall' | '' (cleared). The status stays. */
+const CALL_STATUSES = ['no_answer', 'recall'];
+async function setCallStatus(ctx, apptId, value) {
+  const v = String(value || '');
+  if (v && !CALL_STATUSES.includes(v)) throw E.validation({ call_status: 'Choose a valid value.' });
+  const a = await get(ctx, apptId);
+  await knex('appointments').where({ id: a.id }).update({ call_status: v || null, call_status_at: v ? new Date() : null, call_status_by: v ? ctx.userId || null : null, updated_at: new Date() });
+  await audit.record(ctx, 'appointment.call_status', { entityType: 'appointment', entityId: a.id, oldValues: { call_status: a.call_status || null }, newValues: { call_status: v || null } });
+}
+/** The appointment's note only (any time, also after payment). */
+async function setNote(ctx, apptId, note) {
+  const a = await get(ctx, apptId);
+  const n = String(note || '').trim().slice(0, 3000) || null;
+  await knex('appointments').where({ id: a.id }).update({ notes: n, updated_at: new Date() });
+  await audit.record(ctx, 'appointment.note', { entityType: 'appointment', entityId: a.id, oldValues: { notes: a.notes || null }, newValues: { notes: n } });
+}
+
 async function checkIn(ctx, apptId, on = true) {
   const a = await get(ctx, apptId);
   if (a.status === 'cancelled') throw E.conflict('APPOINTMENT_CANCELLED', 'This appointment is cancelled.');
@@ -377,5 +394,6 @@ async function voidInvoice(ctx, invId) {
 module.exports = {
   confirm,
   STATUSES, PAYMENT_METHODS, patients, savePatient, resolveOrCreatePatient, timeline,
+  CALL_STATUSES, setCallStatus, setNote,
   list, get, book, update, setStatus, checkIn, callIn, assignDoctor, block, move, followUp, remove, checkout, invoices, voidInvoice, expectedFee,
 };

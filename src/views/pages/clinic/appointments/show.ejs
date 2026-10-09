@@ -20,6 +20,7 @@
         <p><%= fmt.date(a.appointment_date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %> · <span dir="ltr"><%= a.appointment_time %>–<%= a.end_time %></span></p>
         <div class="row-sm wrap mt-2">
           <%- stDot(a.status) %>
+          <% if (a.call_status) { %><span class="badge badge-warning"><%- icon(a.call_status === 'recall' ? 'history' : 'phone-off', 'icon-sm') %><%= t('appointments.call.' + a.call_status) %></span><% } %>
           <% if (a.source === 'website') { %><span class="badge"><%- icon('globe', 'icon-sm') %><%= t('appointments.booked_online') %></span><% } %>
           <% if (a.appointment_type === 'online') { %><span class="badge"><%- icon('monitor', 'icon-sm') %><%= t('appointments.types.online') %></span><% } %>
           <% if (a.payment_status === 'paid') { %><span class="badge"><%- icon('check', 'icon-sm') %><%= t('appointments.payment_statuses.paid') %></span><% } %>
@@ -55,8 +56,26 @@
           <dt><%= t('appointments.source') %></dt><dd><%= a.source === 'import' ? t('calimport.source_label') : t('appointments.sources.' + a.source) %></dd>
           <% if (a.checked_in) { %><dt><%= t('appointments.checked_in') %></dt><dd><%= a.with_doctor ? t('appointments.with_doctor') : t('appointments.arrived') %><% if (a.arrived_at) { %> · <span dir="ltr"><%= new Date(a.arrived_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: business.timezone || 'UTC' }) %></span><% } %></dd><% } %>
           <% if (parent) { %><dt><%= t('appointments.follow_up_of') %></dt><dd><a class="link" href="/app/appointments/<%= parent.id %>"><%= fmt.date(parent.appointment_date) %> · <span dir="ltr"><%= parent.appointment_time %></span></a></dd><% } %>
-          <dt><%= t('common.notes') %></dt><dd style="white-space:pre-line"><%= a.notes || '—' %></dd>
+          <% if (!canManage) { %><dt><%= t('common.notes') %></dt><dd style="white-space:pre-line"><%= a.notes || '—' %></dd><% } %>
         </dl>
+        <% if (canManage) { %>
+        <%# the reception's call and the note, as on the old system: one click each, the status stays %>
+        <form class="appt-call mt-4" method="post" action="/app/appointments/<%= a.id %>/call">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="label"><%= t('appointments.call.title') %></div>
+          <div class="row-sm wrap">
+            <% [['', 'phone', 'none'], ['no_answer', 'phone-off', 'no_answer'], ['recall', 'history', 'recall']].forEach(function (c) { var on = (a.call_status || '') === c[0]; %>
+            <button class="btn btn-sm <%= on ? 'btn-primary' : 'btn-secondary' %>" type="submit" name="call_status" value="<%= c[0] %>" aria-pressed="<%= on %>"><%- icon(c[1], 'icon-sm') %><%= t('appointments.call.' + c[2]) %></button>
+            <% }) %>
+          </div>
+          <% if (a.call_status && a.call_status_at) { %><div class="tiny muted mt-1"><%= fmt.date(a.call_status_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></div><% } %>
+        </form>
+        <form class="mt-4 stack-sm" method="post" action="/app/appointments/<%= a.id %>/note">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <%- include('../../../partials/field', { name: 'notes', id: 'appt-note', label: t('common.notes'), type: 'textarea', value: a.notes || '', placeholder: t('appointments.notes_ph'), attrs: 'rows="2" maxlength="3000" dir="auto"' }) %>
+          <div><button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('appointments.save_note') %></button></div>
+        </form>
+        <% } %>
       </div>
     </div>
 
