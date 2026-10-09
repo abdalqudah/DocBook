@@ -33,4 +33,20 @@
   </ul>
   <% } %>
 </div>
+<% if (typeof linked !== 'undefined' && linked.length) { %>
+<section class="panel flush mt-4" data-hub-linked>
+  <div class="panel-head"><div><h2><%- icon('link', 'icon-sm') %> <%= t('hub.linked_clinics') %></h2><p class="panel-sub"><%= t('hub.linked_clinics_sub') %></p></div></div>
+  <ul class="mk-list">
+    <% linked.forEach(function (c) { var wa = String(c.whatsapp || c.phone || '').replace(/[^0-9]/g, ''); %>
+    <li>
+      <span class="avatar"><%= initials(L(c.name, c.name_en)) %></span>
+      <div class="grow"><div class="strong"><%= L(c.name, c.name_en) %></div><div class="tiny muted"><%= [c.city, specialtyLabel(c.specialty)].filter(Boolean).join(' · ') %></div></div>
+      <% if (c.phone) { %><a class="btn btn-ghost btn-sm" href="tel:<%= String(c.phone).replace(/[^0-9+]/g, '') %>"><%- icon('phone', 'icon-sm') %><span class="hide-sm" dir="ltr"><%= c.phone %></span></a><% } %>
+      <% if (wa) { %><a class="btn btn-ghost btn-sm" href="https://wa.me/<%= wa %>" target="_blank" rel="noopener noreferrer"><%- icon('message-square', 'icon-sm') %><span class="hide-sm"><%= t('hub.whatsapp') %></span></a><% } %>
+      <% if (c.site_url) { %><a class="btn btn-secondary btn-sm" href="<%= c.site_url %>" target="_blank" rel="noopener noreferrer"><%- icon('external-link', 'icon-sm') %><%= t('hub.site') %></a><% } %>
+    </li>
+    <% }) %>
+  </ul>
+</section>
+<% } %>
 <% } %>

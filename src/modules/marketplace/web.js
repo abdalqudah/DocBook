@@ -48,6 +48,10 @@ async function render(req, res, extra = {}) {
     data.offers = await svc.offers(req.ctx, req.business, { specialty, vendor: req.query.vendor, show: req.query.show });
     data.showDismissed = req.query.show === 'dismissed';
     data.sponsored = await billing.adsFor(req.business, { limit: 2 }).catch(() => []);
+    // a DocBook on the clinic's own server, linked to the platform: the platform's offers and ads (Settings → DocBook platform)
+    const hub = require('../hub/hub.service'); // eslint-disable-line global-require
+    data.hubOffers = data.showDismissed ? [] : await hub.cached('offer').catch(() => []);
+    if (!data.sponsored.length) data.sponsored = (await hub.cached('ad').catch(() => [])).sort(() => Math.random() - 0.5).slice(0, 2);
   } else if (tab === 'products') {
     const { rows, meta } = await svc.products(req.ctx, req.business, { specialty, q: req.query.q, vendor: req.query.vendor, page: req.query.page });
     data.products = rows; data.meta = meta;

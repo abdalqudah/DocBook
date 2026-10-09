@@ -7,6 +7,7 @@ const router = express.Router();
 // the request runs in that clinic's own database (src/db/tenant.js).
 router.use(require('../db/tenant').slugMiddleware(require('../modules/businesses/business.service').RESERVED));
 router.use(site.chrome); // header/footer content of the public pages
+router.use('/', require('../modules/patientportal/web')); // the patient portal: /<slug>/account
 router.use('/', site);
 router.use('/', require('../modules/auth/web'));
 router.use('/app', requireAuth, resolveBusiness, require('./app'));

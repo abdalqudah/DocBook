@@ -1,0 +1,38 @@
+<% var chk = function (name, label, help) { return '<label class="check eg-check"><input type="checkbox" name="' + name + '" value="1"' + (s[name] ? ' checked' : '') + '><span><span class="strong">' + escapeHtml(label) + '</span>' + (help ? '<span class="small muted d-block">' + escapeHtml(help) + '</span>' : '') + '</span></label>'; }; %>
+<%- include('_head', { heading: t('settings.nav_patient_portal'), lead: t('pportal.settings_lead'), actions: s.enabled && portalUrl ? '<a class="btn btn-secondary" href="' + escapeHtml(portalUrl) + '" target="_blank" rel="noopener">' + icon('external-link', 'icon-sm') + escapeHtml(t('pportal.open_portal')) + '</a>' : '' }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <form class="stack-lg" method="post" action="/app/settings/patient-portal" data-patient-portal-settings>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('pportal.set_access') %></h2><div class="panel-sub"><%= t('pportal.accounts_count', { n: fmt.number(accounts) }) %></div></div></div>
+      <div class="panel-body stack">
+        <%- chk('enabled', t('pportal.set_enabled'), t('pportal.set_enabled_help')) %>
+        <%- chk('self_signup', t('pportal.set_self_signup'), t('pportal.set_self_signup_help')) %>
+        <% if (portalUrl) { %><div class="set-url"><%- icon('globe', 'icon-sm muted') %><code class="grow truncate" dir="ltr"><%= portalUrl %></code></div><% } %>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('pportal.set_sections') %></h2><div class="panel-sub"><%= t('pportal.set_sections_help') %></div></div></div>
+      <div class="panel-body stack">
+        <%- chk('show_visits', t('pportal.sec_visits')) %>
+        <%- chk('show_prescriptions', t('pportal.sec_prescriptions')) %>
+        <%- chk('show_plan', t('pportal.sec_plan')) %>
+        <%- chk('show_records', t('pportal.sec_records'), t('pportal.set_records_help')) %>
+        <%- chk('show_files', t('pportal.sec_files'), t('pportal.set_files_help')) %>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('pportal.set_codes') %></h2><div class="panel-sub"><%= t('pportal.set_codes_help') %></div></div></div>
+      <div class="panel-body stack">
+        <div class="summary-strip">
+          <span class="chip"><%= t('pportal.ch_whatsapp') %> <strong><%= channels.whatsapp ? '✓' : '—' %></strong></span>
+          <span class="chip"><%= t('pportal.ch_sms') %> <strong><%= channels.sms ? '✓' : '—' %></strong></span>
+          <span class="chip"><%= t('pportal.ch_email') %> <strong><%= channels.email ? '✓' : '—' %></strong></span>
+        </div>
+        <label class="field"><span class="label"><%= t('pportal.set_wa_template') %></span><input class="input" name="wa_template" dir="ltr" value="<%= s.wa_template || '' %>" placeholder="verification_code"><span class="hint"><%= t('pportal.set_wa_template_help') %></span></label>
+      </div>
+    </section>
+    <div><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button></div>
+  </form>
+</div>

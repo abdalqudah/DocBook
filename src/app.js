@@ -53,6 +53,7 @@ function createApp() {
     res.send(theme.markSvg());
   });
   app.use('/', express.static(path.join(__dirname, '..', 'public'), { maxAge: config.isProd ? '7d' : 0, index: false }));
+  app.use('/hub/v1', require('./modules/hub/api.web')); // linked installations: offers & ads of the platform (key, no session / CSRF)
   app.use('/hooks', require('./modules/messaging/hooks.web')); // WhatsApp / SMS provider webhooks: raw body, no session or CSRF
   app.use('/pay', require('./modules/payments/hooks.web')); // card gateway callback/return (PayTabs): raw body, no session or CSRF
 

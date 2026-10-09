@@ -43,6 +43,7 @@ async function customDomain(req, res, next) {
   if (p === '/') { req.url = `/${slug}${q}`; return next(); }
   if (p === '/articles' || p.startsWith('/articles/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: the doctors' articles
   if (p === '/book' || p.startsWith('/book/')) { req.url = `/${slug}${p}${q}`; return next(); }
+  if (p === '/account' || p.startsWith('/account/')) { req.url = `/${slug}${p}${q}`; return next(); } // the patient portal
   if (p === '/logo') { req.url = `/${slug}/logo${q}`; return next(); }
   if (p === '/favicon.ico') { req.url = `/${slug}/favicon${q}`; return next(); } // the clinic's own browser icon (or the platform's)
   if (p.startsWith('/doctors/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: a doctor's page
@@ -50,7 +51,7 @@ async function customDomain(req, res, next) {
   if (p.startsWith('/fonts/')) { req.url = `/${slug}${p}${q}`; return next(); } // website: the clinic's fonts
   if (p.startsWith(`/m/${slug}/`)) return next(); // the page's public images (same origin — the page's CSP allows only 'self')
   if (p === `/${slug}`) return res.redirect(302, `/${q}`);
-  if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/doctors/`) || p.startsWith(`/${slug}/p/`) || p.startsWith(`/${slug}/fonts/`) || p.startsWith(`/${slug}/articles`) || p === `/${slug}/doctors` || p === `/${slug}/logo` || p === `/${slug}/favicon` || p === `/${slug}/theme.css`) return next();
+  if (p.startsWith(`/${slug}/book`) || p.startsWith(`/${slug}/account`) || p.startsWith(`/${slug}/doctors/`) || p.startsWith(`/${slug}/p/`) || p.startsWith(`/${slug}/fonts/`) || p.startsWith(`/${slug}/articles`) || p === `/${slug}/doctors` || p === `/${slug}/logo` || p === `/${slug}/favicon` || p === `/${slug}/theme.css`) return next();
   if (p === '/robots.txt' || p === '/sitemap.xml' || p === '/llms.txt') { req.url = `/${slug}${p}${q}`; return next(); } // the clinic's own crawl files
   // Anything else belongs to the main address.
   return toMain(req.originalUrl);

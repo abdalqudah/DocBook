@@ -1,0 +1,7 @@
+<div class="portal-login-head">
+  <span class="portal-logo sm"><% if (clinic.markUrl || clinic.logo_mime) { %><img src="<%= clinic.markUrl || ('/' + clinic.slug + '/logo?v=' + clinic.logo_version) %>" alt=""><% } else { %><%- icon('hospital') %><% } %></span>
+  <div>
+    <h1><%= heading %></h1>
+    <% if (typeof lead !== 'undefined' && lead) { %><p class="muted small"><%= lead %></p><% } %>
+  </div>
+</div>

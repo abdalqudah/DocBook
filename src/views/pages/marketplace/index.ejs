@@ -39,9 +39,10 @@
     <span class="small muted"><%= showDismissed ? t('market.show_dismissed') : t('market.show_active') %></span>
     <a class="btn btn-ghost btn-sm" href="/app/marketplace?tab=offers<%= specQs %><%= showDismissed ? '' : '&show=dismissed' %>"><%- icon(showDismissed ? 'megaphone' : 'eye-off', 'icon-sm') %><%= showDismissed ? t('market.show_active') : t('market.show_dismissed') %></a>
   </div>
-  <% if (!offers.length) { %>
+  <% var _hub = typeof hubOffers !== 'undefined' ? hubOffers : []; %>
+  <% if (!offers.length && !_hub.length) { %>
     <div class="panel mt-2"><%- include('../../partials/empty', { emptyIcon: 'megaphone', emptyTitle: showDismissed ? t('market.dismissed_empty_title') : t('market.offers_empty_title'), emptyText: showDismissed ? t('market.dismissed_empty_text') : t('market.offers_empty_text') }) %></div>
-  <% } else { %>
+  <% } else if (offers.length) { %>
   <div class="mk-grid mt-2">
     <% offers.forEach(function (o) { %>
     <a class="panel card-link mk-card" href="/app/marketplace/offers/<%= o.id %>">
@@ -52,6 +53,22 @@
           <div class="grow"><div class="small strong truncate"><%= vName(o) %></div><div class="tiny muted"><%= t('market.type_' + o.vendor_type) %></div></div>
           <% if (!o.seen_at) { %><span class="badge badge-dot badge-brand"><%= t('market.new') %></span><% } %>
         </div>
+        <h3 class="mk-title"><%= L(o.title, o.title_en) %></h3>
+        <p class="small muted mk-excerpt"><%= excerpt(L(o.body, o.body_en), 150) %></p>
+        <div class="tiny muted mk-meta"><%- icon('calendar', 'icon-sm') %><%= o.ends_on ? t('market.valid_until', { date: fmt.date(o.ends_on) }) : t('market.open_ended') %></div>
+      </div>
+    </a>
+    <% }) %>
+  </div>
+  <% } %>
+  <% if (_hub.length) { %>
+  <h2 class="h3 mt-4" data-hub-offers><%- icon('link', 'icon-sm') %> <%= t('hub.from_platform') %></h2>
+  <div class="mk-grid mt-2">
+    <% _hub.forEach(function (o) { var v = o.vendor || {}; %>
+    <a class="panel card-link mk-card" href="/app/hub/offers/<%= o.remote_id %>">
+      <% if (o.image_mime) { %><div class="mk-media"><img src="/app/hub/image/offer/<%= o.remote_id %>" alt="" loading="lazy"></div><% } %>
+      <div class="mk-card-body">
+        <div class="person mk-vendor"><span class="avatar"><%= initials(L(v.name, v.name_en) || '?') %></span><div class="grow"><div class="small strong truncate"><%= L(v.name, v.name_en) %></div><% if (v.type) { %><div class="tiny muted"><%= t('market.type_' + v.type) %></div><% } %></div></div>
         <h3 class="mk-title"><%= L(o.title, o.title_en) %></h3>
         <p class="small muted mk-excerpt"><%= excerpt(L(o.body, o.body_en), 150) %></p>
         <div class="tiny muted mk-meta"><%- icon('calendar', 'icon-sm') %><%= o.ends_on ? t('market.valid_until', { date: fmt.date(o.ends_on) }) : t('market.open_ended') %></div>

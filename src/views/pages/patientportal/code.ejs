@@ -1,0 +1,16 @@
+<div class="portal-login-wrap">
+  <div class="portal-login">
+    <%- include('_head', { heading: pend.first ? t('pportal.first_heading') : t('pportal.code_heading'), lead: pend.first ? t('pportal.first_lead', { to: pend.masked }) : t('pportal.code_lead', { to: pend.masked }) }) %>
+    <form class="stack mt-4" method="post" action="<%= B %>/code" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="field"><label class="label" for="pp-code"><%= t('pportal.code') %><span class="req">*</span></label>
+        <input class="input pp-code" id="pp-code" name="code" required inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" autofocus></div>
+      <%- include('_password', { pwLabel: t('pportal.new_password'), pwAuto: 'new-password' }) %>
+      <%- include('_password', { pwName: 'password2', pwLabel: t('pportal.new_password2'), pwAuto: 'new-password' }) %>
+      <p class="small muted" style="margin:0"><%= t('pportal.password_rule') %></p>
+      <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('pportal.save_password') %></button>
+    </form>
+    <a class="portal-back small" href="<%= B %>/<%= pend.purpose === 'signup' ? 'signup' : 'forgot' %>"><%- icon('refresh-cw', 'icon-sm') %><%= t('pportal.resend') %></a>
+  </div>
+</div>

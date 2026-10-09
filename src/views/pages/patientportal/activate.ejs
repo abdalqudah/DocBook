@@ -1,0 +1,18 @@
+<div class="portal-login-wrap">
+  <div class="portal-login">
+    <%- include('_head', { heading: t('pportal.activate_heading'), lead: expired ? '' : t('pportal.activate_lead', { clinic: clinic.displayName }) }) %>
+    <% if (expired) { %>
+      <div class="alert alert-warning mt-4"><%- icon('circle-alert') %><div class="grow"><%= t('pportal.link_expired') %></div></div>
+      <a class="btn btn-secondary btn-block mt-3" href="<%= B %>/login"><%= t('pportal.back_login') %></a>
+    <% } else { %>
+    <form class="stack mt-4" method="post" action="<%= B %>/activate/<%= encodeURIComponent(token) %>" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <%- include('_password', { pwLabel: t('pportal.new_password'), pwAuto: 'new-password' }) %>
+      <%- include('_password', { pwName: 'password2', pwLabel: t('pportal.new_password2'), pwAuto: 'new-password' }) %>
+      <p class="small muted" style="margin:0"><%= t('pportal.password_rule') %></p>
+      <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('pportal.activate') %></button>
+    </form>
+    <% } %>
+  </div>
+</div>

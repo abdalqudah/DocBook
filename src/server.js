@@ -113,6 +113,8 @@ async function start(server) {
       require('./modules/legacy/remote.service').resumeAll().catch((e) => console.error('[legacy-remote]', e.message)), // eslint-disable-line global-require, no-console -- direct pull from Clinica (waits for the password after a restart)
     ]);
     setTimeout(legacyTick, 10_000).unref();
+    // A DocBook on the clinic's own server linked to the platform: its offers and ads, hourly (Settings → DocBook platform).
+    setInterval(() => require('./modules/hub/hub.service').sync().catch((e) => console.error('[hub]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console
     setInterval(legacyTick, 5 * 60_000).unref();
   }
   await require('./core/mailer').refreshInstallationMailbox().catch(() => null); // eslint-disable-line global-require -- one clinic without server SMTP: its own mailbox sends

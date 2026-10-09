@@ -306,7 +306,8 @@ router.get('/', wrap(async (req, res) => {
   }
 
   // A rep's paid ad (sponsored, matched to the clinic's specialty and city) for people who deal with reps.
-  if (perms.has('vendors.view') || ctx.doctorId) data.sponsored = (await require('../vendorbilling/billing.service').adsFor(req.business, { limit: 1 }).catch(() => []))[0] || null; // eslint-disable-line global-require
+  if (perms.has('vendors.view') || ctx.doctorId) data.sponsored = (await require('../vendorbilling/billing.service').adsFor(req.business, { limit: 1 }).catch(() => []))[0]
+    || (await require('../hub/hub.service').cached('ad').catch(() => [])).sort(() => Math.random() - 0.5)[0] || null; // eslint-disable-line global-require
   return res.page('pages/clinic/dashboard/index', {
     title: req.t('navx.sec_today'), greeting: req.t(greetingKey(ctx.timezone), { name: await greetName(req) }),
     ...data, statusTone: lib.STATUS_TONE, nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), localTime: (d) => lib.localTime(d, ctx.timezone),

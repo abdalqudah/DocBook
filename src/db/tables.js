@@ -6,6 +6,8 @@
 const PLATFORM = [
   // accounts and sign-in
   'users', 'sessions', 'email_verifications', 'password_resets', 'team_user_prefs',
+  // a DocBook on a clinic's own server ↔ the platform (hub.service): the platform's links; the installation's link and cache
+  'hub_links', 'hub_client', 'hub_cache',
   // the clinics, their members, roles and invitations; medical centres
   'businesses', 'memberships', 'roles', 'member_page_access', 'invitations', 'clinic_domains', 'centers', 'center_invites',
   // the platform: settings, billing, subscriptions, notices, media of the main site, support
@@ -35,7 +37,7 @@ const TENANT = [
   'doctor_signatures', 'expenses', 'expense_categories', 'growth_measurements', 'icd_custom_codes', 'import_batches', 'import_errors', 'import_items', 'import_jobs', 'import_links', 'insurance_providers',
   'insurance_statements', 'invoices', 'legacy_clinical_records', 'legacy_clinical_values', 'legacy_branch_map', 'legacy_doctor_map', 'legacy_field_values', 'legacy_patient_links', 'legacy_patients', 'legacy_treatments', 'invoice_payments', 'media_usages', 'medical_orders', 'medications', 'message_dispatches', 'message_log',
   'notifications', 'notification_email_rules', 'notification_reads', 'online_consultations', 'online_consultation_files', 'order_catalog',
-  'partners', 'partner_sends', 'partner_transactions', 'patients', 'patient_documents', 'patient_files', 'patient_attachments', 'patient_groups', 'patient_group_members', 'patient_photos', 'payments', 'payment_gateways',
+  'partners', 'partner_sends', 'partner_transactions', 'patients', 'patient_accounts', 'patient_account_codes', 'patient_portal_settings', 'patient_documents', 'patient_files', 'patient_attachments', 'patient_groups', 'patient_group_members', 'patient_photos', 'payments', 'payment_gateways',
   'payroll_adjustments', 'payroll_payments', 'pregnancies', 'pregnancy_checks', 'prescriptions', 'profit_distributions', 'queue_screens',
   'record_access_grants', 'record_access_log', 'recurring_expenses', 'referrals', 'services', 'service_categories', 'share_links',
   'sheet_sync_runs', 'sheet_sync_settings', 'specialty_records', 'specialty_settings', 'staff_chats', 'staff_chat_files', 'staff_chat_members', 'staff_chat_messages',

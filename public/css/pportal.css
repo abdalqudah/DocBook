@@ -1,0 +1,14 @@
+/* Patient portal (/<slug>/account): the sign-in pages use the clinic's sign-in card (portal-login); the patient's page. */
+.pp-pw { position: relative; }
+.pp-pw .input { padding-inline-end: 44px; }
+.pp-pw-eye { position: absolute; inset-inline-end: 4px; top: 50%; transform: translateY(-50%); }
+.pp-channels { display: flex; flex-wrap: wrap; gap: 8px; }
+.pp-channel { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.pp-channel:has(input:checked) { border-color: var(--primary); background: var(--surface-sunken); }
+.pp-code { font-size: 22px; letter-spacing: 6px; text-align: center; }
+.pp-home { max-width: 920px; margin: 24px auto; padding: 0 16px; display: grid; gap: 16px; }
+.pp-home-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pp-tabs { margin-bottom: 0; }
+.pp-rx { margin: 4px 0 0; padding-inline-start: 18px; }
+.pp-home [data-pp-section][hidden] { display: none; }
+.center { text-align: center; }

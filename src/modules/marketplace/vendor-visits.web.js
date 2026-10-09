@@ -37,7 +37,8 @@ router.get('/new', wrap(async (req, res) => {
   if (!clinicId) {
     const specialty = market.SPECIALTIES.includes(req.query.specialty) ? req.query.specialty : null;
     const clinics = req.vendor.status === 'active' ? await svc.bookableClinics({ q: req.query.q, specialty }) : [];
-    return res.page('pages/vendor/visits-find', base(req, { title: req.t('rep_visits.vendor_side.find_title'), clinics, specialties: market.SPECIALTIES, specialty }));
+    const linked = req.vendor.status === 'active' ? await require('../hub/hub.service').linkedClinics({ q: req.query.q, specialty }).catch(() => []) : []; // eslint-disable-line global-require
+    return res.page('pages/vendor/visits-find', base(req, { title: req.t('rep_visits.vendor_side.find_title'), clinics, linked, specialties: market.SPECIALTIES, specialty }));
   }
   return renderBook(req, res);
 }));

@@ -1,0 +1,25 @@
+<%# An offer of a rep on the DocBook platform (read through the platform link, Settings → DocBook platform). %>
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; }; var v = o.vendor || {}; var wa = String(v.whatsapp || v.phone || '').replace(/[^0-9]/g, '');
+   var validity = o.starts_on && o.ends_on ? t('market.valid_from_to', { from: fmt.date(o.starts_on), to: fmt.date(o.ends_on) }) : o.ends_on ? t('market.valid_until', { date: fmt.date(o.ends_on) }) : t('market.open_ended'); %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><a href="/app/marketplace"><%= t('nav.marketplace') %></a><%- icon('chevron-right', 'flip-rtl') %><%= t('hub.from_platform') %></div>
+    <h1><%= L(o.title, o.title_en) %></h1>
+    <p><%= L(v.name, v.name_en) %> · <%= validity %> · <span class="badge badge-info"><%- icon('link', 'icon-sm') %><%= t('hub.from_platform') %></span></p>
+  </div>
+</div>
+<div class="grid grid-main">
+  <div class="panel">
+    <% if (o.image_mime) { %><div class="mk-hero"><img src="/app/hub/image/offer/<%= o.remote_id %>" alt=""></div><% } %>
+    <div class="panel-body stack"><% var body = L(o.body, o.body_en); if (body) { %><div class="mk-pre mk-body"><%= body %></div><% } %></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2><%= L(v.name, v.name_en) %></h2></div>
+    <div class="panel-body stack-sm">
+      <% if (v.city) { %><div class="small muted"><%- icon('map-pin', 'icon-sm') %> <%= v.city %></div><% } %>
+      <% if (v.phone) { %><a class="btn btn-secondary btn-block" href="tel:<%= String(v.phone).replace(/[^0-9+]/g, '') %>"><%- icon('phone', 'icon-sm') %><span dir="ltr"><%= v.phone %></span></a><% } %>
+      <% if (wa) { %><a class="btn btn-secondary btn-block" href="https://wa.me/<%= wa %>" target="_blank" rel="noopener noreferrer"><%- icon('message-square', 'icon-sm') %><%= t('hub.whatsapp') %></a><% } %>
+      <% if (v.email) { %><a class="btn btn-ghost btn-block" href="mailto:<%= v.email %>"><%- icon('mail', 'icon-sm') %><span dir="ltr"><%= v.email %></span></a><% } %>
+    </div>
+  </div>
+</div>

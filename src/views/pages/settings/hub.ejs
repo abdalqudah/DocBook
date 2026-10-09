@@ -1,0 +1,29 @@
+<%- include('_head', { heading: t('settings.nav_hub'), lead: t('hub.settings_lead') }) %>
+<div class="settings-layout">
+  <%- include('_nav') %>
+  <div class="stack-lg" data-hub-settings>
+    <section class="panel">
+      <div class="panel-head"><div><h2><%= t('hub.link_title') %></h2><div class="panel-sub"><%= linked ? t('hub.status_linked', { url: c.hub_url }) : t('hub.status_not_linked') %></div></div><% if (linked) { %><span class="badge badge-success badge-dot"><%= t('hub.linked_badge') %></span><% } %></div>
+      <div class="panel-body stack">
+        <% if (linked) { %>
+        <div class="summary-strip">
+          <span class="chip"><%= t('hub.offers') %> <strong><%= fmt.number(c.offers) %></strong></span>
+          <span class="chip"><%= t('hub.ads') %> <strong><%= fmt.number(c.ads) %></strong></span>
+          <span class="chip"><%= t('hub.last_sync') %> <strong><%= c.last_sync_at ? fmt.date(c.last_sync_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—' %></strong></span>
+        </div>
+        <% if (c.last_error) { %><div class="alert alert-warning small"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= c.last_error %></div></div><% } %>
+        <div class="row-sm" style="flex-wrap:wrap">
+          <form method="post" action="/app/settings/hub/sync"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('refresh-cw', 'icon-sm') %><%= t('hub.sync_now') %></button></form>
+          <form method="post" action="/app/settings/hub/unlink" data-confirm="<%= t('hub.unlink_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('x', 'icon-sm') %><%= t('hub.unlink') %></button></form>
+        </div>
+        <% } %>
+        <form class="stack" method="post" action="/app/settings/hub" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label class="field"><span class="label"><%= t('hub.hub_url') %></span><input class="input" name="hub_url" dir="ltr" required value="<%= c.hub_url || 'https://' %>"></label>
+          <label class="field"><span class="label"><%= t('hub.key') %></span><input class="input" name="key" type="password" dir="ltr" autocomplete="new-password"<%= linked ? '' : ' required' %> placeholder="dbh_…"><span class="hint"><%= t('hub.key_hint') %></span></label>
+          <div><button class="btn <%= linked ? 'btn-secondary' : 'btn-primary' %>" type="submit"><%- icon('link', 'icon-sm') %><%= t(linked ? 'hub.relink' : 'hub.link') %></button></div>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>

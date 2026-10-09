@@ -1,0 +1,18 @@
+<div class="portal-login-wrap">
+  <div class="portal-login">
+    <%- include('_head', { heading: t('pportal.login_heading'), lead: t('pportal.login_lead', { clinic: clinic.displayName }) }) %>
+    <form class="stack mt-4" method="post" action="<%= B %>/login" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="field"><label class="label" for="pp-identifier"><%= t('pportal.identifier') %><span class="req">*</span></label>
+        <input class="input" id="pp-identifier" name="identifier" required autocomplete="username" dir="ltr" autofocus value="<%= old.identifier || '' %>" placeholder="07XXXXXXXX / name@example.com"></div>
+      <%- include('_password', { pwForgot: B + '/forgot', pwOptional: s.self_signup }) %>
+      <% if (s.self_signup) { %><p class="small muted" style="margin:0" data-first-time><%- icon('info', 'icon-sm') %> <%= t('pportal.first_time_hint') %></p><% } %>
+      <button class="btn btn-primary btn-lg btn-block" type="submit"><%- icon('key-round', 'icon-sm') %><%= t('pportal.login') %></button>
+    </form>
+    <% if (s.self_signup) { %><p class="small center mt-3"><%= t('pportal.no_account') %> <a class="link strong" href="<%= B %>/signup"><%= t('pportal.signup') %></a></p><% } %>
+    <div class="divider"></div>
+    <a class="btn btn-secondary btn-block" href="/<%= clinic.slug %>/login" data-staff-login><%- icon('user-cog', 'icon-sm') %><%= t('pportal.staff_login') %></a>
+    <a class="portal-back small" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('portal.back_to_clinic') %></a>
+  </div>
+</div>

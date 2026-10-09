@@ -29,6 +29,7 @@ router.use('/', require('./identity.web')); // Google sign-in + clinic custom do
 router.use('/', require('./vendors.web')); // reps & warehouses: approval and moderation
 router.use('/payments', require('../platformpay/admin.web')); // payment methods: bank, CliQ, wallet, PayTabs
 router.use('/notifications', require('../platformnotify/web').admin()); // platform notifications
+router.use('/', require('../hub/admin.web')); // linked installations (a clinic's own server ↔ the platform)
 router.use('/vendor-billing', require('../vendorbilling/admin.web')); // reps' subscription plans, trial, invoices, ads
 router.use('/', require('./reviews.web'));
 router.use('/', require('./articles.web')); // doctors' articles asking for the main site: approve / reject

@@ -1,0 +1,77 @@
+<% var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   var tone = { completed: 'badge-success', confirmed: 'badge-info', pending: 'badge-warning', cancelled: 'badge-neutral', no_show: 'badge-danger' };
+   var kb = function (n) { return n >= 1048576 ? (Math.round(n / 104857.6) / 10) + ' MB' : Math.max(1, Math.round((n || 0) / 1024)) + ' KB'; };
+   var sections = [['visits', 'calendar-days', s.show_visits], ['records', 'stethoscope', s.show_records], ['prescriptions', 'pill', s.show_prescriptions], ['plan', 'clipboard-list', s.show_plan], ['files', 'paperclip', s.show_files]].filter(function (x) { return x[2]; }); %>
+<div class="pp-home">
+  <div class="pp-home-head">
+    <div class="row-sm">
+      <span class="avatar avatar-lg"><%= initials(patient.full_name) %></span>
+      <div><div class="small muted"><%= t('pportal.hello') %></div><h1 dir="auto" style="margin:0"><%= L(patient.full_name, patient.name_en) %></h1>
+        <% if (patient.file_number) { %><span class="badge badge-neutral"><%- icon('id-card', 'icon-sm') %><bdi dir="ltr"><%= patient.file_number %></bdi></span><% } %></div>
+    </div>
+    <div class="row-sm">
+      <% if (clinic.booking_enabled) { %><a class="btn btn-primary btn-sm" href="/<%= clinic.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><%= t('pportal.book') %></a><% } %>
+      <form method="post" action="<%= B %>/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('log-out', 'icon-sm flip-rtl') %><%= t('pportal.logout') %></button></form>
+    </div>
+  </div>
+  <% if (!sections.length) { %><div class="panel"><div class="empty"><p><%= t('pportal.nothing_shown') %></p></div></div><% } %>
+  <nav class="tabs mb-4 pp-tabs" aria-label="<%= t('pportal.my_file') %>">
+    <% sections.forEach(function (x, i) { %><a href="#pp-<%= x[0] %>" class="<%= i === 0 ? 'active' : '' %>" data-pp-tab="<%= x[0] %>"><%- icon(x[1], 'icon-sm') %><%= t('pportal.sec_' + x[0]) %></a><% }) %>
+  </nav>
+
+  <% if (s.show_visits) { %>
+  <section class="panel flush" id="pp-visits" data-pp-section="visits">
+    <div class="panel-head"><h2><%= t('pportal.sec_visits') %></h2><span class="badge"><%= fmt.number(visits.length) %></span></div>
+    <% if (!visits.length) { %><div class="flush-empty small muted"><%= t('pportal.none') %></div><% } else { %>
+    <ul class="action-list"><% visits.forEach(function (v) { %>
+      <li class="row"><span class="action-icon"><%- icon('calendar-days', 'icon-sm') %></span><span class="grow"><span class="strong"><%= fmt.date(v.appointment_date) %></span> · <span dir="ltr"><%= String(v.appointment_time || '').slice(0, 5) %></span><span class="small muted d-block"><%= L(v.doctor_name, v.doctor_name_en) || '' %></span></span><span class="badge <%= tone[v.status] || 'badge-neutral' %>"><%= t('appointments.statuses.' + v.status) %></span></li>
+    <% }) %></ul><% } %>
+  </section>
+  <% } %>
+
+  <% if (s.show_records) { %>
+  <section class="panel flush" id="pp-records" data-pp-section="records">
+    <div class="panel-head"><h2><%= t('pportal.sec_records') %></h2><span class="badge"><%= fmt.number(records.length) %></span></div>
+    <% if (!records.length) { %><div class="flush-empty small muted"><%= t('pportal.none') %></div><% } else { %>
+    <ul class="action-list"><% records.forEach(function (r) { %>
+      <li><div class="grow"><span class="strong"><%= fmt.date(r.created_at) %></span><% if (r.doctor_name) { %> · <span class="muted"><%= r.doctor_name %></span><% } %>
+        <% if (r.chief_complaint) { %><div class="small"><span class="muted"><%= t('pportal.complaint') %>:</span> <span dir="auto"><%= r.chief_complaint %></span></div><% } %>
+        <% if (r.diagnosis) { %><div class="small"><span class="muted"><%= t('pportal.diagnosis') %>:</span> <span dir="auto"><%= r.diagnosis %></span></div><% } %>
+        <% if (r.plan_text) { %><div class="small rec-pre" dir="auto"><%= r.plan_text %></div><% } %></div></li>
+    <% }) %></ul><% } %>
+  </section>
+  <% } %>
+
+  <% if (s.show_prescriptions) { %>
+  <section class="panel flush" id="pp-prescriptions" data-pp-section="prescriptions">
+    <div class="panel-head"><h2><%= t('pportal.sec_prescriptions') %></h2><span class="badge"><%= fmt.number(prescriptions.length) %></span></div>
+    <% if (!prescriptions.length) { %><div class="flush-empty small muted"><%= t('pportal.none') %></div><% } else { %>
+    <ul class="action-list"><% prescriptions.forEach(function (r) { %>
+      <li><div class="grow"><span class="strong"><%= fmt.date(r.created_at) %></span><% if (r.doctor_name) { %> · <span class="muted"><%= r.doctor_name %></span><% } %>
+        <ul class="pp-rx"><% r.items.forEach(function (it) { %><li dir="auto"><strong><%= it.name || it.drug || it.medication || '' %></strong> <span class="muted"><%= [it.dose, it.frequency, it.duration, it.instructions].filter(Boolean).join(' · ') %></span></li><% }) %></ul>
+        <% if (r.notes) { %><div class="small muted" dir="auto"><%= r.notes %></div><% } %></div></li>
+    <% }) %></ul><% } %>
+  </section>
+  <% } %>
+
+  <% if (s.show_plan) { %>
+  <section class="panel flush" id="pp-plan" data-pp-section="plan">
+    <div class="panel-head"><h2><%= t('pportal.sec_plan') %></h2><span class="badge"><%= fmt.number(plan.length) %></span></div>
+    <% if (!plan.length) { %><div class="flush-empty small muted"><%= t('pportal.none') %></div><% } else { %>
+    <ul class="action-list"><% plan.forEach(function (i) { %>
+      <li class="row"><span class="action-icon"><%- icon(i.status === 'done' ? 'circle-check' : 'clipboard-list', 'icon-sm') %></span><span class="grow"><span class="strong" dir="auto"><%= i.procedure_name %></span><% if (i.tooth) { %> <span class="badge badge-neutral"><%= t('pportal.tooth') %> <bdi dir="ltr"><%= i.tooth %></bdi></span><% } %><span class="small muted d-block"><%= i.done_on ? fmt.date(i.done_on) : '' %><%= i.doctor_name ? ' · ' + i.doctor_name : '' %></span></span><span class="badge <%= i.status === 'done' ? 'badge-success' : i.status === 'cancelled' ? 'badge-neutral' : 'badge-info' %>"><%= t('pportal.plan_' + i.status) %></span></li>
+    <% }) %></ul><% } %>
+  </section>
+  <% } %>
+
+  <% if (s.show_files) { %>
+  <section class="panel flush" id="pp-files" data-pp-section="files">
+    <div class="panel-head"><h2><%= t('pportal.sec_files') %></h2><span class="badge"><%= fmt.number(files.length) %></span></div>
+    <% if (!files.length) { %><div class="flush-empty small muted"><%= t('pportal.none') %></div><% } else { %>
+    <ul class="action-list"><% files.forEach(function (f) { %>
+      <li class="row"><a class="grow row" href="<%= B %>/files/<%= f.kind %>/<%= f.id %>" target="_blank" rel="noopener"><span class="ord-file-thumb"><%- icon(/^image\//.test(f.mime || '') ? 'image' : 'file-text', 'icon-sm') %></span><span class="grow" style="min-width:0"><span class="strong" dir="auto"><%= f.title || f.name %></span><span class="tiny muted d-block"><span dir="ltr"><%= kb(f.size) %></span> · <%= fmt.date(f.created_at) %></span></span></a>
+        <a class="btn btn-ghost btn-icon btn-sm" href="<%= B %>/files/<%= f.kind %>/<%= f.id %>?download=1" aria-label="<%= t('pportal.download') %>"><%- icon('download', 'icon-sm') %></a></li>
+    <% }) %></ul><% } %>
+  </section>
+  <% } %>
+</div>

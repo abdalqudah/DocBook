@@ -20,6 +20,7 @@ const SECTIONS = [
   { group: 'communication', items: [
     { key: 'messaging', href: '/app/settings/messaging', icon: 'message-circle', perms: ['settings.manage'] },
     { key: 'message_texts', href: '/app/settings/messaging/texts', icon: 'pen-line', perms: ['settings.manage'] },
+    { key: 'patient_portal', href: '/app/settings/patient-portal', icon: 'user-round', perms: ['settings.manage'] },
     { key: 'notifications', href: '/app/settings/notifications', icon: 'bell', perms: [] }, // clinic-wide part needs settings.manage; personal part is for everyone
   ] },
   { group: 'payments', items: [
@@ -32,6 +33,7 @@ const SECTIONS = [
   { group: 'integrations', items: [
     { key: 'sheets', href: '/app/settings/google-sheets', icon: 'file-spreadsheet', perms: ['data.manage', 'data.export'] },
     { key: 'database', href: '/app/settings/database', icon: 'plug', perms: ['data.manage'] },
+    { key: 'hub', href: '/app/settings/hub', icon: 'link', perms: ['data.manage'] },
   ] },
   { group: 'subscription', items: [
     { key: 'subscription', href: '/app/settings/subscription', icon: 'receipt', perms: ['settings.manage'] },

@@ -340,13 +340,16 @@ async function renderShow(req, res, extra = {}) {
   // Surgeries (Patients → Surgeries): the tab lists them all, the overview shows the coming ones.
   const surgeries = surgeriesOn ? await require('../surgeries/surgeries.service').forPatient(req.ctx, p.id) : []; // eslint-disable-line global-require
   const unpaid = perms.has('billing.view') ? apptsMine.filter((a) => !['paid', 'imported', 'waived'].includes(a.payment_status) && (a.status === 'completed' || a.checked_in) && a.appointment_date <= today && !['cancelled', 'no_show'].includes(a.status)) : [];
+  // The patient portal: "send the account activation" on the file when the clinic turned the portal on.
+  const portalOn = perms.has('patients.edit') ? (await require('../patientportal/portal.service').settings(req.ctx.businessId)).enabled : false; // eslint-disable-line global-require
+  const portalAccount = portalOn ? Boolean(await knex('patient_accounts').where({ business_id: req.ctx.businessId, patient_id: p.id }).whereNotNull('password_hash').first('id')) : false;
   const profile = require('./patient-profile'); // eslint-disable-line global-require
   const [ppGroups, ppPhoto, ppPeople] = await Promise.all([profile.groupsOf(req.ctx.businessId, p.id), profile.hasPhoto(req.ctx.businessId, p.id),
     knex('users').whereIn('id', [p.case_manager_id, p.updated_by].filter(Boolean)).select('id', 'name')]);
   const nameOf = (uid) => (ppPeople.find((u) => u.id === uid) || {}).name || null;
   res.page('pages/clinic/patients/show', {
     pprofile: { groups: ppGroups, photo: ppPhoto, manager: nameOf(p.case_manager_id), updatedBy: nameOf(p.updated_by), choices: profile.choices(req.t, req.locale) },
-    tab, tabs, prescriptions, certificates, orderTab, legacy, treatmentPlan, lgLink, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
+    tab, tabs, portalOn, portalAccount, prescriptions, certificates, orderTab, legacy, treatmentPlan, lgLink, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
     timeline, invoices: tl.invoices.filter(mine),

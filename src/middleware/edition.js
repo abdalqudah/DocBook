@@ -9,7 +9,7 @@ const edition = require('../config/edition');
 const cache = require('../core/cache');
 const clean = require('../modules/site/clean-urls');
 
-const SITE = [/^\/book(\/|$)/, /^\/doctors\//, /^\/p\//, /^\/fonts\//, /^\/articles(\/|$)/, /^\/(robots\.txt|sitemap\.xml|llms\.txt|logo|logo-square)$/];
+const SITE = [/^\/book(\/|$)/, /^\/account(\/|$)/, /^\/doctors\//, /^\/p\//, /^\/fonts\//, /^\/articles(\/|$)/, /^\/(robots\.txt|sitemap\.xml|llms\.txt|logo|logo-square)$/];
 const AWAY = [/^\/(pricing|features|clinics|vendors|vendor|reps|join|marketplace)(\/|$)/, /^\/blog(\/|$)/];
 
 /** The address (slug) of the installation's clinic (or centre's administration account). */

@@ -1,0 +1,27 @@
+<%# Platform admin → Linked installations (DocBook on a clinic's own server ↔ the platform). %>
+<div class="page-head"><div><h1><%= t('hub.admin_title') %></h1><p><%= t('hub.admin_lead') %></p></div></div>
+<% if (fresh) { %>
+<div class="alert alert-success mb-4" data-hub-key><%- icon('key-round') %><div class="grow"><div class="alert-title"><%= t('hub.key_once') %></div><code dir="ltr" class="small" style="word-break:break-all"><%= fresh.key %></code></div></div>
+<% } %>
+<section class="panel mb-4">
+  <form class="panel-body row-sm" style="flex-wrap:wrap;align-items:flex-end" method="post" action="/admin/hub-links">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label class="field grow"><span class="label"><%= t('hub.label') %></span><input class="input" name="label" required maxlength="120" placeholder="MQ Dental Center"></label>
+    <button class="btn btn-primary" type="submit"><%- icon('key-round', 'icon-sm') %><%= t('hub.create_key') %></button>
+  </form>
+</section>
+<section class="panel flush">
+  <% if (!links.length) { %><div class="flush-empty small muted"><%= t('hub.none') %></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('hub.label') %></th><th><%= t('hub.clinic') %></th><th><%= t('hub.last_seen') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
+    <tbody><% links.forEach(function (l) { %>
+      <tr>
+        <td data-label="<%= t('hub.label') %>"><strong><%= l.label %></strong><div class="tiny muted" dir="ltr"><%= l.key_prefix %>…</div></td>
+        <td data-label="<%= t('hub.clinic') %>"><%= l.name || '—' %><div class="tiny muted"><%= [l.city, l.specialty, l.version].filter(Boolean).join(' · ') %></div><% if (l.site_url) { %><a class="link tiny" href="<%= l.site_url %>" target="_blank" rel="noopener" dir="ltr"><%= l.site_url %></a><% } %></td>
+        <td data-label="<%= t('hub.last_seen') %>"><%= l.last_seen_at ? fmt.date(l.last_seen_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—' %></td>
+        <td data-label="<%= t('common.status') %>"><span class="badge <%= l.status === 'active' ? 'badge-success' : 'badge-neutral' %>"><%= t('hub.st_' + l.status) %></span></td>
+        <td class="actions"><% if (l.status === 'active') { %><form method="post" action="/admin/hub-links/<%= l.id %>/revoke" data-confirm="<%= t('hub.revoke_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('hub.revoke') %></button></form><% } %></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div><% } %>
+</section>

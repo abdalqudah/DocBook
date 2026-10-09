@@ -35,12 +35,14 @@ async function loadClinic(req) {
   if (req.res && req.res.locals) {
     req.res.locals.siteLight = (await require('../website/site.service').look(b.id)).light; // eslint-disable-line global-require
   }
+  const patientPortal = Boolean(await knex('patient_portal_settings').where({ business_id: b.id, enabled: true }).first('business_id').catch(() => null));
   const hasArticles = Boolean(await knex('articles').where({ business_id: b.id, status: 'published', on_site: true }).first('id').catch(() => null));
   const specialtyLabel = b.specialty ? ((k) => { const v = req.t(k); return v === k ? b.specialty : v; })(`specialties.${b.specialty}`) : '';
   return {
     ...b,
     specialtyKey: b.specialty || null,
     hasArticles,
+    patientPortal,
     specialty: specialtyLabel,
     displayName: (en && b.name_en) || b.name,
     markUrl: businesses.markUrl(b, `/${b.slug}`), // square places: the square logo, else the main one

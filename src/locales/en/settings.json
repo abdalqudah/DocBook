@@ -726,7 +726,9 @@
     "photo_saved": "Your photo is saved.",
     "photo_saved_doctor": "Your photo is saved and now shows on the website and booking page.",
     "photo_removed": "Photo removed.",
-    "photo_invalid": "Choose a JPG, PNG or WebP image."
+    "photo_invalid": "Choose a JPG, PNG or WebP image.",
+    "nav_patient_portal": "Patient portal",
+    "nav_hub": "Platform link"
   },
   "team": {
     "lead": "Everyone who signs in to your clinic — doctors, nurses, reception, accounting and management. Each person gets their own login and sees only what their role allows.",

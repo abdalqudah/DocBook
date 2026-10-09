@@ -1,0 +1,22 @@
+<div class="portal-login-wrap">
+  <div class="portal-login">
+    <%- include('_head', { heading: t('pportal.signup_heading'), lead: t('pportal.signup_lead') }) %>
+    <form class="stack mt-4" method="post" action="<%= B %>/signup" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/form-error') %>
+      <div class="field"><label class="label" for="pp-identifier"><%= t('pportal.identifier') %><span class="req">*</span></label>
+        <input class="input<%= errors.identifier ? ' is-invalid' : '' %>" id="pp-identifier" name="identifier" required dir="ltr" autofocus placeholder="07XXXXXXXX / name@example.com">
+        <% if (errors.identifier) { %><span class="field-error"><%= errors.identifier %></span><% } %></div>
+      <fieldset class="field"><legend class="label"><%= t('pportal.send_by') %></legend>
+        <div class="pp-channels">
+          <% var _first = true; ['whatsapp', 'sms', 'email'].forEach(function (c) { if (!channels[c]) return; %>
+          <label class="pp-channel"><input type="radio" name="channel" value="<%= c %>"<%= _first ? ' checked' : '' %>> <%- icon(c === 'email' ? 'mail' : c === 'sms' ? 'message-square' : 'message-circle', 'icon-sm') %><%= t('pportal.ch_' + c) %></label>
+          <% _first = false; }) %>
+        </div>
+        <span class="hint"><%= t('pportal.send_hint') %></span>
+      </fieldset>
+      <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('pportal.send_code') %></button>
+    </form>
+    <a class="portal-back small" href="<%= B %>/login"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('pportal.back_login') %></a>
+  </div>
+</div>

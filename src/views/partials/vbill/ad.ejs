@@ -1,7 +1,8 @@
 <%# A rep's paid ad shown to the clinic (sponsored). Local: ad. Click goes through /app/marketplace/ad/:id (counted). %>
-<% var _a = ad; var _L = function (ar, en) { return locale === 'en' && en ? en : ar; }; %>
-<a class="vb-ad" href="/app/marketplace/ad/<%= _a.id %>" rel="sponsored">
-  <% if (_a.image_mime) { %><img src="/vendors/ad-image/<%= _a.id %>" alt="" loading="lazy"><% } else { %><span class="vb-ad-ico"><%- icon('megaphone') %></span><% } %>
+<% var _a = ad; var _L = function (ar, en) { return locale === 'en' && en ? en : ar; };
+   if (_a.hub) { _a = Object.assign({}, _a, { vendor_name: (_a.vendor || {}).name, vendor_name_en: (_a.vendor || {}).name_en }); } /* an ad of the DocBook platform (linked installation) */ %>
+<a class="vb-ad" href="<%= _a.hub ? '/app/hub/ad/' + _a.remote_id : '/app/marketplace/ad/' + _a.id %>" rel="sponsored">
+  <% if (_a.image_mime) { %><img src="<%= _a.hub ? '/app/hub/image/ad/' + _a.remote_id : '/vendors/ad-image/' + _a.id %>" alt="" loading="lazy"><% } else { %><span class="vb-ad-ico"><%- icon('megaphone') %></span><% } %>
   <span class="grow" style="min-width:0">
     <span class="vb-ad-tag"><%= t('vbill.sponsored') %> · <%= _L(_a.vendor_name, _a.vendor_name_en) %></span>
     <span class="vb-ad-title"><%= _L(_a.title, _a.title_en) %></span>

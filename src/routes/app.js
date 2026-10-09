@@ -185,6 +185,8 @@ router.use('/clinic/branches', require('../modules/clinic/branches.web')); // Cl
 router.use('/clinic/roles', require('../modules/settings/roles.web')); // Clinic → Team → Roles
 router.use('/clinic/hours', require('../modules/clinic/hours.web')); // Clinic → Working hours (the clinic's usual week)
 router.use('/clinic/setup', require('../modules/clinic/setup.web')); // Clinic → Clinical setup (hub of the clinical lists) // Settings → Online payments
+router.use('/', require('../modules/hub/client.web')); // Settings → DocBook platform; the platform's offers and ads
+router.use('/', require('../modules/patientportal/staff.web')); // Settings → Patient portal; a patient's activation link
 router.use('/settings', require('../modules/platformops/system.web')); // system update + sign-in page (the installation's own account)
 router.use('/settings', require('../modules/settings/web'));
 
