@@ -263,3 +263,25 @@ test('calendar: a page that is not the day asked for adds nothing', async () => 
   assert.equal(Number((await knex('appointments').where({ business_id: c5.businessId }).where('external_uid', 'like', '%:a:cal:%').count({ n: '*' }))[0].n), 0);
   full = false;
 });
+
+test('calendar times: what the file import put at 09:00 takes the real time from the calendar — never a second appointment', async () => {
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  const b = (await knex('businesses').insert({ name: 'Times clinic', slug: `tm${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0];
+  const [pid] = await knex('patients').insert({ business_id: b, full_name: 'Time Patient', phone: '0790001111', legacy_source: 'clinica', legacy_patient_id: 'tm1' });
+  await knex('legacy_patients').insert({ business_id: b, legacy_source: 'clinica', legacy_patient_id: 'tm1', patient_id: pid });
+  const base = { business_id: b, patient_id: pid, patient_name: 'Time Patient', appointment_time: '09:00', status: 'completed', appointment_type: 'in_person', source: 'import', payment_status: 'imported', external_source: 'clinica' };
+  await knex('appointments').insert([
+    { ...base, appointment_date: '2024-03-05', external_uid: 'clinica:tm1:v:2024-03-05:x' }, // the visit of that day's treatments
+    { ...base, appointment_date: '2024-03-06', external_uid: 'clinica:tm1:a:77' }, // an appointment of the uploaded file, no time
+  ]);
+  const up = (date, time) => promote.upsertCalendarAppointment(knex, b, pid, { date, time, calendar: 'Mansour', name: 'Time Patient' }, { today: '2026-01-01' });
+  assert.equal(await up('2024-03-05', '10:30 AM'), 'merged');
+  assert.equal(await up('2024-03-06', '4:15 PM'), 'merged');
+  assert.equal(await up('2024-03-05', '10:30 AM'), 'existing', 'read again: nothing new');
+  const rows = await knex('appointments').where({ business_id: b }).orderBy('appointment_date').select('appointment_date', 'appointment_time', 'external_uid');
+  assert.equal(rows.length, 2, 'no second appointment');
+  assert.deepEqual(rows.map((r) => String(r.appointment_time).slice(0, 5)), ['10:30', '16:15']);
+  assert.ok(rows.every((r) => r.external_uid.includes(':a:cal:')));
+  // a second patient that day at another time is another appointment; 12:30 AM is just after midnight
+  assert.equal(promote.timeOf('12:30 AM'), '00:30'); assert.equal(promote.timeOf('12:30 PM'), '12:30');
+});

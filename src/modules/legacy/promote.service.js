@@ -212,6 +212,7 @@ const timeOf = (...vs) => {
     if (m && Number(m[1]) < 24 && Number(m[2]) < 60) {
       let h = Number(m[1]);
       if (/pm|م/i.test(String(v)) && h < 12) h += 12;
+      else if (/am|ص/i.test(String(v)) && h === 12) h = 0; // 12:30 AM
       return `${String(h).padStart(2, '0')}:${m[2]}`;
     }
   }
@@ -428,9 +429,13 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
     if (Object.keys(patch).length) await db('appointments').where({ id: have.id }).update(patch);
     return 'existing';
   }
-  // the import's visit for that day's treatments (not merged yet): it becomes this appointment
+  // What the file import made for that day and that is not tied to a calendar row yet — the visit of that day's
+  // treatments (v:), or an appointment of the uploaded file (a:, often without a time, so put at 09:00): it becomes
+  // this appointment and takes its real time (never a second appointment for the same visit). Same time first.
+  const p = `clinica:${ref.legacy_patient_id}:`;
   const dayVisit = await db('appointments').where({ business_id: businessId, patient_id: patientId, external_source: SOURCE, appointment_date: a.date })
-    .where('external_uid', 'like', `clinica:${ref.legacy_patient_id}:v:%`).orderBy('id').first('id', 'doctor_id', 'branch_id', 'notes');
+    .where((w) => w.where('external_uid', 'like', `${p}v:%`).orWhere((x) => x.where('external_uid', 'like', `${p}a:%`).whereNot('external_uid', 'like', `${p}a:cal:%`)))
+    .orderByRaw('appointment_time = ? DESC', [time]).orderBy('id').first('id', 'doctor_id', 'branch_id', 'notes');
   if (dayVisit) {
     await db('appointments').where({ id: dayVisit.id }).update({
       external_uid: uid, appointment_time: time, ...(dayVisit.doctor_id || !doctorId ? {} : { doctor_id: doctorId }), ...(dayVisit.branch_id || !branchId ? {} : { branch_id: branchId }),

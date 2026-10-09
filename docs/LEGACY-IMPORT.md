@@ -413,3 +413,12 @@ pull added are removed by "Remove everything imported from Clinica" like those t
   (rewritten in place, atomically; the attachments sharing the copy follow; tried once).
 - PDFs, Word files and other documents are never changed: a scanned PDF is already compressed images, re-saving a
   PDF can break a digital signature, and shrinking the pictures inside would lower their quality.
+
+## 2.9.5: real times from Clinica's calendar; the delete folded away
+- Reading a calendar day, a row takes over what the file import made for that patient and day and is not yet tied to
+  a calendar row: the visit of the day's treatments (`v:`) or an appointment of the uploaded file (`a:`, usually
+  without a time, so at 09:00) — same time first. It gets the calendar's real time, doctor and branch; never a
+  second appointment. Days not in the calendar keep their visit at 09:00 (history: completed, nothing booked).
+- "12:30 AM" is read as 00:30.
+- "Remove everything that came from Clinica" is folded away (only to start again from nothing) and is refused while
+  the pull is running.

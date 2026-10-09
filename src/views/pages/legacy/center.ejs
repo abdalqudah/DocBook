@@ -113,12 +113,15 @@
     <% if (remoteProbe) { %><p class="small" style="margin:0"><%- icon('file-text', 'icon-sm') %> <a class="link" href="<%= B %>/remote/probe.json"><%= t('legacy.remote_probe_download') %></a> — <%= t('legacy.remote_probe_note') %></p><% } %>
     <% } %>
   </div>
+  </details>
 </section>
 <% } %>
 
 <% if (isOwner() && (purge.patients || purge.visits || purge.plan || purge.files || purge.running)) { %>
 <section class="panel mt-6" data-legacy-purge>
-  <div class="panel-head"><div><h2><%- icon('trash-2', 'icon-sm') %> <%= t('legacy.purge_title') %></h2><p class="panel-sub"><%= t('legacy.purge_sub') %></p></div></div>
+  <%# only to start again from nothing: folded away (the pull adds what is missing and never doubles) %>
+  <details<%= purge.running ? ' open' : '' %>>
+  <summary class="panel-head" style="cursor:pointer"><div><h2><%- icon('trash-2', 'icon-sm') %> <%= t('legacy.purge_title') %></h2><p class="panel-sub"><%= t('legacy.purge_sub') %></p></div></summary>
   <div class="panel-body stack">
     <div class="summary-strip">
       <span class="chip"><%= t('legacy.col.patients') %> <strong><%= fmt.number(purge.patients) %></strong></span>

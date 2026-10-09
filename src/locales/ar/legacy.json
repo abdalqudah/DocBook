@@ -376,6 +376,7 @@
     "remote_from": "التقويم من",
     "remote_to": "التقويم لحد",
     "remote_to_hint": "فاضي = سنة لقدّام",
-    "grp_calendar": "تقويم بـ Clinica"
+    "grp_calendar": "تقويم بـ Clinica",
+    "purge_pull_running": "السحب من Clinica شغّال الآن — أوقفه أولاً ثم احذف."
   }
 }

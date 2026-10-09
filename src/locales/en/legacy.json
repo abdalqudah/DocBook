@@ -376,6 +376,7 @@
     "remote_from": "Calendar from",
     "remote_to": "Calendar to",
     "remote_to_hint": "Empty = one year ahead",
-    "grp_calendar": "Clinica calendar"
+    "grp_calendar": "Clinica calendar",
+    "purge_pull_running": "The pull from Clinica is running — stop it first, then delete."
   }
 }

@@ -40,6 +40,9 @@ router.get('/', wrap(async (req, res) => {
 router.post('/purge', ownerOnly, wrap(async (req, res) => {
   const word = String(req.body.confirm || '').trim();
   if (!['حذف', 'DELETE', 'delete'].includes(word)) { flash(req, 'error', req.t('legacy.purge_type')); return res.redirect(BASE); }
+  // never while the pull from Clinica is adding (it would carry on into what is being removed): stop it first
+  const pull = await require('./remote.service').progress(req.ctx.businessId); // eslint-disable-line global-require
+  if (pull && pull.status === 'processing') { flash(req, 'error', req.t('legacy.purge_pull_running')); return res.redirect(BASE); }
   require('./purge.service').start(req.ctx); // eslint-disable-line global-require
   flash(req, 'success', req.t('legacy.purge_started'));
   return res.redirect(BASE);
