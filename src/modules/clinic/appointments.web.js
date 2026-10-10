@@ -215,7 +215,9 @@ async function renderIndex(req, res, extra = {}) {
       const k = a.doctor_id || 0;
       (groups[k] = groups[k] || { doctor: a.doctor_id ? { id: a.doctor_id, full_name: a.doctor_name, full_name_en: a.doctor_name_en, color: a.doctor_color } : null, items: [] }).items.push(a);
     });
-    Object.entries(groups).forEach(([k, g]) => columns.push({ ...buildColumn({ key: `o${k}`, doctor: g.doctor, date, off: false, items: g.items, lenOf, showCancelled, orphan: true }), unassigned: !g.doctor }));
+    // a doctor of another branch (active, but not set to work in this one): said so, not "inactive"
+    const activeIds = f.branch ? new Set((await bookableDoctors(ctx)).map((d) => d.id)) : new Set();
+    Object.entries(groups).forEach(([k, g]) => columns.push({ ...buildColumn({ key: `o${k}`, doctor: g.doctor, date, off: false, items: g.items, lenOf, showCancelled, orphan: true }), unassigned: !g.doctor, otherBranch: Boolean(g.doctor && activeIds.has(g.doctor.id)) }));
   }
   const range = gridRange(columns);
   columns.forEach((c) => { c.offRanges = offRanges(c, range); });

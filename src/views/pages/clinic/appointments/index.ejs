@@ -122,7 +122,7 @@
             <span class="doc-dot" style="<%= c.color ? 'background:' + c.color : '' %>"></span>
             <span class="cal-name truncate"><%= c.unassigned ? t('appointments.unassigned') : L(c.name, c.name_en) %></span>
           </a>
-          <span class="cal-sub tiny"><% if (c.unassigned) { %><%= t('appointments.unassigned_hint') %><% } else if (c.orphan) { %><%= t('common.inactive') %><% } else if (c.off) { %><%= t('appointments.cal.day_off') %><% } else if (!c.works) { %><%= t('appointments.cal.closed_day') %><% } else { %><bdi dir="ltr"><%= c.shifts.map(function (s) { return s.start + '–' + s.end; }).join(' · ') %></bdi><% } %></span>
+          <span class="cal-sub tiny"><% if (c.unassigned) { %><%= t('appointments.unassigned_hint') %><% } else if (c.orphan && c.otherBranch) { %><%= t('branches.other_branch_doctor') %><% } else if (c.orphan) { %><%= t('common.inactive') %><% } else if (c.off) { %><%= t('appointments.cal.day_off') %><% } else if (!c.works) { %><%= t('appointments.cal.closed_day') %><% } else { %><bdi dir="ltr"><%= c.shifts.map(function (s) { return s.start + '–' + s.end; }).join(' · ') %></bdi><% } %></span>
         <% } %>
       </div>
       <% }) %>

@@ -272,3 +272,23 @@ test('one doctor in both branches: shown in both, booked in the branch you are i
   assert.equal((await doc.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) })).status, 302);
   assert.equal((await doc.submit('/app/appointments', '/workspaces/branch', { branch: '' })).status, 403, 'not all branches');
 });
+
+test('the Abdali team page lists its own doctors; a doctor\'s login set to all branches makes the doctor work in all; another branch\'s doctor is not "inactive"', async () => {
+  const o = app.agent(); await o.login(mail);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  let r = await o.get('/app/clinic/team?lang=en');
+  assert.equal(r.status, 200);
+  const noLoginBlock = (r.text.split('data-fill').filter((x) => /mode&#34;:&#34;password/.test(x) || /"mode":"password"/.test(x)).join(' '));
+  assert.doesNotMatch(noLoginBlock, /Dr Main/, 'another branch\'s doctor is not offered here');
+  // a Khalidi doctor with a visit in Abdali: "another branch's doctor"
+  const [dk] = await knex('doctors').insert({ business_id: b, full_name: 'Dr Khalidi Only', is_active: true, working_hours: JSON.stringify(scheduling.defaultWorkingHours()), slot_duration_minutes: 30 });
+  await knex('appointments').insert({ business_id: b, doctor_id: dk, branch_id: branch, patient_name: 'Cross Patient', appointment_date: scheduling.clinicNow('Asia/Amman').date, appointment_time: '13:00', status: 'confirmed', appointment_type: 'in_person', source: 'staff' });
+  r = await o.get('/app/appointments?lang=en');
+  assert.match(r.text, /Another branch&#39;s doctor|Another branch's doctor/);
+  // his login set to all branches → the doctor works in every branch
+  const role = await knex('roles').where({ business_id: b, key: 'doctor' }).first('id');
+  await o.submit('/app/clinic/team', '/app/clinic/team', { name: 'Dr Khalidi Login', email: `dk-${tag}@t.test`, role_id: String(role.id), doctor_id: String(dk), mode: 'password', locale: 'en', work_branch: '' });
+  assert.deepEqual((await knex('doctor_branches').where({ doctor_id: dk }).pluck('branch_key')).sort(), [String(branch)].sort());
+  r = await o.get('/app/doctors?lang=en');
+  assert.match(r.text, /Dr Khalidi Only/);
+});

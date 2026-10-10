@@ -31,6 +31,20 @@ const GROUPS = [
 const groupOf = (roleKey) => (GROUPS.find((g) => g.roles && g.roles.includes(roleKey)) || GROUPS[GROUPS.length - 1]).key;
 const ROLE_ORDER = SYSTEM_ROLES.map((r) => r.key);
 
+/**
+ * A doctor's login: its branch is its doctor's (Doctors → also works in). "All branches" here makes the doctor work in
+ * every branch; one branch adds that branch to the doctor. The login itself keeps '' (it follows its doctor).
+ */
+async function doctorBranchFromTeam(ctx, doctorId, wb) {
+  if (!doctorId || wb === undefined || wb === null) return false;
+  const d = await knex('doctors').where({ id: doctorId, business_id: ctx.businessId }).first('branch_id');
+  if (!d) return false;
+  const extra = await branchesSvc.doctorExtra(ctx.businessId, doctorId);
+  const keys = wb === '' ? ['main', ...(await branchesSvc.list(ctx.businessId)).map((r) => String(r.id))] : [...extra, wb];
+  await branchesSvc.setDoctorExtra(ctx, doctorId, keys);
+  return true;
+}
+
 async function teamData(req) {
   const b = req.ctx.businessId;
   const [members, roles, doctors, invitations, pageAccess] = await Promise.all([
@@ -42,9 +56,15 @@ async function teamData(req) {
   ]);
   // a clinic with branches: each member's branch; the list follows the branch chosen in the account menu
   const branchOpts = (await branchesSvc.multi(b)) ? (await branchesSvc.options(req.business, req.t, req.locale)).map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.short || o.label })) : null;
-  if (branchOpts && req.ctx.workBranch) members.splice(0, members.length, ...members.filter((m) => !m.work_branch || m.work_branch === String(req.ctx.workBranch)));
   roles.sort((x, y) => (y.is_system - x.is_system) || (ROLE_ORDER.indexOf(x.key) - ROLE_ORDER.indexOf(y.key)) || (x.id - y.id));
+  // which doctor has a login: from every member (a login of another branch still counts)
   const linked = new Map(members.filter((m) => m.doctor_id).map((m) => [m.doctor_id, m]));
+  if (branchOpts && req.ctx.workBranch) {
+    // the branch's team: its doctors (and their logins), the staff tied to it, and the clinic-wide staff (owner, managers…)
+    const here = new Set((await branchesSvc.doctorIds(req.ctx)).map((r) => Number(r.id)));
+    doctors.splice(0, doctors.length, ...doctors.filter((d) => here.has(Number(d.id))));
+    members.splice(0, members.length, ...members.filter((m) => m.work_branch === String(req.ctx.workBranch) || (m.doctor_id ? here.has(Number(m.doctor_id)) || m.role_key === 'owner' : !m.work_branch)));
+  }
   const invitedDoctors = new Set(invitations.filter((i) => i.doctor_id).map((i) => i.doctor_id));
   const assignable = roles.filter((r) => r.key !== 'owner' || req.ctx.permissions.has('data.manage'));
   // Who the clinic may change the name / e-mail / phone of (businesses.memberDetailsAccess).
@@ -92,7 +112,8 @@ async function addLogin(req, body) {
   if (wb === null) throw E.validation({ work_branch: 'Choose a valid value.' });
   const out = await businesses.addStaff(req.ctx, { name: d.name, email: d.email, phone: d.phone, roleId: d.role_id, doctorId: d.doctor_id, jobTitle: d.job_title, mode: d.mode, locale: d.locale });
   // the branch the new member works in (a member who signs in now; an invitation gets it on the team page once accepted)
-  if (wb && (out.added || out.password)) await knex('memberships').where({ business_id: req.ctx.businessId }).whereIn('user_id', knex('users').where({ email: String(d.email).toLowerCase() }).select('id')).update({ work_branch: wb });
+  if (d.doctor_id && await branchesSvc.multi(req.ctx.businessId)) await doctorBranchFromTeam(req.ctx, d.doctor_id, req.body.work_branch === undefined ? null : wb); // a doctor's login: the doctor's branches
+  else if (wb && (out.added || out.password)) await knex('memberships').where({ business_id: req.ctx.businessId }).whereIn('user_id', knex('users').where({ email: String(d.email).toLowerCase() }).select('id')).update({ work_branch: wb });
   const base = { name: d.name, email: d.email, role: role ? { key: role.key, name: role.name, is_system: role.is_system } : null };
   if (out.added) return { type: 'added', ...base };
   if (out.password) return { type: 'password', ...base, password: out.password };
@@ -125,7 +146,8 @@ router.post('/:id(\\d+)', form(async (req, res) => {
   }
   const wb = req.body.work_branch === undefined ? undefined : await branchesSvc.validScope(req.ctx.businessId, req.body.work_branch);
   if (wb === null) throw E.validation({ work_branch: 'Choose a valid value.' });
-  await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title, workBranch: wb });
+  const forDoctor = d.doctor_id ? await doctorBranchFromTeam(req.ctx, d.doctor_id, wb) : false; // a doctor's login: the doctor's branches
+  await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title, workBranch: forDoctor ? '' : wb });
   flash(req, 'success', req.t('team.member_updated'));
   res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null, openDialog: 'edit-dialog', editAction: req.originalUrl })));

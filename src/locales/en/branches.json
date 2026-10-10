@@ -52,7 +52,7 @@
     "merged_removed": "Branch added; {n} doctor(s) copied into it, and the separate clinic was deleted.",
     "work_in": "Branch you work in",
     "member_branch": "Branch",
-    "member_branch_help": "A member tied to a branch works there only: its appointments, cash desk and reports. \"All branches\" can switch.",
+    "member_branch_help": "A member tied to a branch works there only. For a doctor's login, this applies to the doctor's profile (\"All branches\" = the doctor works in every branch).",
     "short_name": "Short name",
     "short_name_help": "Shown in the top bar instead of the long name, e.g. Abdali",
     "main_short": "Short name of the main branch",
@@ -62,6 +62,7 @@
     "patient_saved": "The patient's branches were saved.",
     "patient_need_one": "Choose at least one branch.",
     "also_in": "Also works in",
-    "also_in_help": "The doctor shows in these branches' calendars too; a visit is booked in the branch you work in. Pay stays with the main branch."
+    "also_in_help": "The doctor shows in these branches' calendars too; a visit is booked in the branch you work in. Pay stays with the main branch.",
+    "other_branch_doctor": "Another branch's doctor — add this branch on their profile"
   }
 }
