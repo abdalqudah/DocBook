@@ -55,7 +55,7 @@ async function patients(ctx) {
   const q = knex('patients').where('patients.business_id', ctx.businessId).orderBy('patients.id')
     .select('patients.id', 'patients.full_name', 'patients.phone', 'patients.date_of_birth', 'patients.national_id');
   lib.scopePatientsToDoctor(q, ctx.ownDoctorId);
-  return q;
+  return require('../clinic/branches.service').scopePatients(q, ctx, 'patients.id'); // eslint-disable-line global-require -- the branch's patients
 }
 
 async function run(ctx, locale, name, job) {

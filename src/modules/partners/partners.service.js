@@ -102,7 +102,12 @@ async function queue(ctx, partnerId) {
   const rows = await knex('partner_sends as s')
     .leftJoin('medical_orders as o', function j() { this.on('o.id', 's.doc_id').andOn('o.business_id', 's.business_id').andOnVal('s.doc_kind', '=', 'order'); })
     .where({ 's.business_id': ctx.businessId, 's.partner_id': p.id })
-    .modify((q) => { if (ctx.ownDoctorId) q.where((w) => w.whereNull('o.doctor_id').orWhere('o.doctor_id', ctx.ownDoctorId)); })
+    
+    // a doctor login: papers of their own visits (or their own orders); the branch: by the visit's branch
+    .modify((q) => {
+      if (ctx.ownDoctorId) q.where((w) => w.where('o.doctor_id', ctx.ownDoctorId).orWhereIn('s.appointment_id', knex('appointments').select('id').where({ business_id: ctx.businessId, doctor_id: ctx.ownDoctorId })));
+      require('../clinic/branches.service').scopeByVisit(q, ctx, 's.appointment_id'); // eslint-disable-line global-require
+    })
     .orderBy('s.id', 'desc').limit(300)
     .select('s.id', 's.doc_kind', 's.doc_id', 's.appointment_id', 's.patient_name', 's.channel', 's.created_at', 's.status as send_status', 'o.status as order_status', 'o.items', 'o.urgency', 'o.kind as order_kind');
   // One line per paper (the latest send), open requests first.

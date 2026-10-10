@@ -199,7 +199,7 @@ async function renderIndex(req, res, extra = {}) {
     weekDoctor = doctors.find((d) => d.id === (ctx.ownDoctorId || f.doctor)) || doctors[0] || null;
     const from = weekStart(date);
     days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
-    all = weekDoctor ? await appts.list(ctx, { from: days[0], to: days[6], doctor: weekDoctor.id, includeBlocked: true, type: f.type }) : [];
+    all = weekDoctor ? await appts.list(ctx, { from: days[0], to: days[6], doctor: weekDoctor.id, includeBlocked: true, type: f.type, branch: f.branch }) : [];
     const off = weekDoctor ? await knex('doctor_days_off').where({ business_id: ctx.businessId, doctor_id: weekDoctor.id }).whereBetween('off_date', [days[0], days[6]]).pluck('off_date') : [];
     const offSet = new Set(off.map((d) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10))));
     if (weekDoctor) columns = days.map((d) => buildColumn({ key: d, doctor: weekDoctor, date: d, off: offSet.has(d), items: all.filter((a) => a.appointment_date === d), lenOf, showCancelled }));

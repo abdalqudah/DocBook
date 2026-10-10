@@ -164,13 +164,14 @@ router.get('/reports/clinical', can('reports.view'), can('clinical.view'), wrap(
   const [data, messages, insured] = await Promise.all([
     svc.report(req.ctx, from, to),
     knex('message_log').where({ business_id: req.ctx.businessId, status: 'sent' }).where('created_at', '>=', `${from} 00:00:00`).where('created_at', '<=', `${to} 23:59:59`)
+      .modify((q) => require('../clinic/branches.service').scopeByVisit(q, req.ctx, 'appointment_id')) // eslint-disable-line global-require
       .groupBy('stage', 'channel').select('stage', 'channel').count({ n: '*' }),
     (() => {
       const q = knex('appointments as a').join('patients as p', 'p.id', 'a.patient_id').leftJoin('insurance_providers as ip', 'ip.id', 'p.insurance_provider_id')
         .where({ 'a.business_id': req.ctx.businessId, 'a.status': 'completed' }).whereNotNull('p.insurance_provider_id')
         .whereBetween('a.appointment_date', [from, to]).groupBy('ip.name').select('ip.name').count({ n: '*' }).countDistinct({ patients: 'a.patient_id' }).orderBy('n', 'desc');
       if (req.ctx.ownDoctorId) q.where('a.doctor_id', req.ctx.ownDoctorId);
-      return q;
+      return require('../clinic/branches.service').scope(q, req.ctx, 'a.branch_id'); // eslint-disable-line global-require
     })(),
   ]);
   const msg = {};

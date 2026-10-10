@@ -138,7 +138,7 @@ async function payees(ctx, period) {
     key: `staff:${r.id}`, type: 'staff', id: r.id, name: r.employee_name, job_title: r.job_title || '', bank_name: r.bank_name || '', iban: compact(r.iban),
     email: (emps[r.employee_id] || {}).email || '', phone: (emps[r.employee_id] || {}).phone || '', amount: r.f.net, paid: r.status === 'paid', method: r.payment_method || null,
   }));
-  const docs = await knex('doctors').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]);
+  const docs = await knex('doctors').where({ business_id: ctx.businessId }).modify((q) => { if (ctx.workBranch) q.whereIn('id', require('../clinic/branches.service').payDoctorIds(ctx)); }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]);
   for (const d of docs) { // eslint-disable-line no-restricted-syntax
     const c = await doctorPay.calculate(ctx, d.id, period); // eslint-disable-line no-await-in-loop
     const net = c.payment ? Number(c.payment.net_pay) : c.netPayroll;

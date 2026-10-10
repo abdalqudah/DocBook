@@ -292,3 +292,24 @@ test('the Abdali team page lists its own doctors; a doctor\'s login set to all b
   r = await o.get('/app/doctors?lang=en');
   assert.match(r.text, /Dr Khalidi Only/);
 });
+
+test('a branch does not open, find or hear about the other branch\'s visits', async () => {
+  const notifications = require('../src/modules/notifications/notification.service'); // eslint-disable-line global-require
+  const rows = await knex('appointments').where({ business_id: b }).whereIn('patient_name', ['Main Patient', 'Abdali Patient']).select('id', 'patient_name');
+  const idOf = (n) => rows.find((x) => x.patient_name === n).id;
+  const o = app.agent(); await o.login(mail);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  assert.equal((await o.get(`/app/appointments/${idOf('Main Patient')}`)).status, 404);
+  assert.equal((await o.get(`/app/appointments/${idOf('Abdali Patient')}`)).status, 200);
+  const s = await o.get('/app/search?q=Patient&format=json');
+  assert.doesNotMatch(s.text, /Main Patient/); assert.match(s.text, /Abdali Patient/);
+  await notifications.notify(b, { permission: 'appointments.manage', type: 'appointment.booked_online', title: 'Online for main', link: `/app/appointments/${idOf('Main Patient')}` });
+  await notifications.notify(b, { permission: 'appointments.manage', type: 'appointment.booked_online', title: 'Online for abdali', link: `/app/appointments/${idOf('Abdali Patient')}` });
+  const u = (await knex('users').where({ email: mail }).first('id')).id;
+  const rbac = require('../src/modules/rbac/rbac.service'); // eslint-disable-line global-require
+  const nctx = { businessId: b, userId: u, permissions: await rbac.getUserPermissions(b, u), workBranch: String(branch) };
+  const titles = (await notifications.list(nctx)).map((x) => x.title);
+  assert.ok(titles.includes('Online for abdali')); assert.ok(!titles.includes('Online for main'));
+  assert.ok((await notifications.list({ ...nctx, workBranch: '' })).some((x) => x.title === 'Online for main'));
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: '' });
+});

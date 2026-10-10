@@ -9,6 +9,7 @@ const payroll = require('./payroll.service');
 const tele = require('../telehealth/telehealth.service');
 const signatures = require('../signatures/signatures.service');
 const media = require('../integrations/media.service');
+const { E } = require('../../core/errors');
 
 const router = express.Router();
 router.use(canAny('doctors.manage', 'appointments.view_all'));
@@ -17,7 +18,7 @@ router.get('/', wrap(async (req, res) => {
   // the branch the member works in (account menu): its doctors only
   const rows = await branchesSvc.scopeDoctors(knex('doctors').where({ business_id: req.ctx.businessId }), req.ctx).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]);
   const today = req.ctx.today;
-  const counts = await knex('appointments').where({ business_id: req.ctx.businessId, appointment_date: today }).whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').groupBy('doctor_id').select('doctor_id').count({ n: '*' });
+  const counts = await branchesSvc.scope(knex('appointments').where({ business_id: req.ctx.businessId, appointment_date: today }), req.ctx, 'branch_id').whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').groupBy('doctor_id').select('doctor_id').count({ n: '*' });
   const accounts = await knex('memberships').where({ business_id: req.ctx.businessId }).whereNotNull('doctor_id').select('doctor_id', 'status');
   const photos = await media.doctorPhotos(req.ctx.businessId, rows.map((r) => r.id));
   res.page('pages/clinic/doctors/index', { title: req.t('nav.doctors'), rows, photos, todayCounts: Object.fromEntries(counts.map((c) => [c.doctor_id, Number(c.n)])), accounts: Object.fromEntries(accounts.map((a) => [a.doctor_id, a.status])), dayKey: scheduling.dayKeyOf(today), parseWh: svc.parseWh });
@@ -56,12 +57,14 @@ router.post('/:id(\\d+)/edit', can('doctors.manage'), form(async (req, res) => {
 
 const renderShow = async (req, res, extra = {}) => {
   const doctor = await svc.doctors.get(req.ctx, Number(req.params.id));
+  // a member tied to a branch opens only that branch's doctors
+  if (req.ctx.branchLocked && req.ctx.workBranch && !(await branchesSvc.doctorIds(req.ctx).where('id', doctor.id).first())) throw E.notFound('Doctor');
   const [daysOff, services, account, rule, upcoming] = await Promise.all([
     svc.daysOff(req.ctx, doctor.id),
     knex('services').where({ business_id: req.ctx.businessId, doctor_id: doctor.id }).orderBy('sort_order'),
     knex('memberships as m').join('users as u', 'u.id', 'm.user_id').where({ 'm.business_id': req.ctx.businessId, 'm.doctor_id': doctor.id }).first('u.name', 'u.email', 'm.status', 'u.last_login_at'),
     payroll.rule(req.ctx, doctor.id),
-    knex('appointments').where({ business_id: req.ctx.businessId, doctor_id: doctor.id }).where('appointment_date', '>=', req.ctx.today).whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').orderBy([{ column: 'appointment_date' }, { column: 'appointment_time' }]).limit(8),
+    branchesSvc.scope(knex('appointments').where({ business_id: req.ctx.businessId, doctor_id: doctor.id }), req.ctx, 'branch_id').where('appointment_date', '>=', req.ctx.today).whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').orderBy([{ column: 'appointment_date' }, { column: 'appointment_time' }]).limit(8),
   ]);
   const online = { ...tele.doctorOnline(doctor), method: tele.effectiveMethod(doctor), windows: tele.windowsByDay(await tele.windowsOf(req.ctx.businessId, doctor.id)), clinicOn: Boolean(req.business.online_enabled) };
   // Signature panel: only for whoever may manage this doctor's signature (settings.manage or the doctor's own login).

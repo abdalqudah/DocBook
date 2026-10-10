@@ -210,7 +210,7 @@ router.post('/settings/diagnosis-codes/:id(\\d+)/delete', codesGate, wrap(async 
 
 // ---------------------------------------------------------------- reports
 const REPORT_ASSETS = { pageScripts: ['/js/records.js'], pageStyles: ['/css/records.css', '/css/clinicalplus.css'] };
-const doctorsOf = (ctx) => knex('doctors').where({ business_id: ctx.businessId }).modify((q) => { if (ctx.ownDoctorId) q.where('id', ctx.ownDoctorId); })
+const doctorsOf = (ctx) => knex('doctors').where({ business_id: ctx.businessId }).modify((q) => { if (ctx.ownDoctorId) q.where('id', ctx.ownDoctorId); require('../clinic/branches.service').scopeDoctors(q, ctx); })
   .orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en', 'color', 'slot_duration_minutes');
 const doctorFilter = (req) => (req.ctx.ownDoctorId ? req.ctx.ownDoctorId : (/^\d+$/.test(req.query.doctor || '') ? Number(req.query.doctor) : null));
 const r1 = (v) => (v === null || v === undefined ? null : Math.round(v * 10) / 10);
@@ -221,7 +221,7 @@ router.get('/reports/diagnoses', can('reports.view'), can('clinical.view'), wrap
   const doctorId = doctorFilter(req);
   const base = () => knex('consultation_diagnoses as cd').join('appointments as a', 'a.id', 'cd.appointment_id')
     .where('cd.business_id', ctx.businessId).whereBetween('a.appointment_date', [range.from, range.to]).whereNot('a.status', 'cancelled')
-    .modify((q) => { if (doctorId) q.where('a.doctor_id', doctorId); });
+    .modify((q) => { if (doctorId) q.where('a.doctor_id', doctorId); require('../clinic/branches.service').scope(q, ctx, 'a.branch_id'); });
   const [codes, byDoc, docCodes, [totals], [{ n: completed }], doctors] = await Promise.all([
     base().groupBy('cd.code').select('cd.code', knex.raw('MAX(cd.title_ar) as title_ar'), knex.raw('MAX(cd.title_en) as title_en'))
       .count({ n: '*' }).select(knex.raw('COUNT(DISTINCT a.patient_id) as patients'), knex.raw('SUM(CASE WHEN cd.is_primary THEN 1 ELSE 0 END) as primaries'))
@@ -230,7 +230,7 @@ router.get('/reports/diagnoses', can('reports.view'), can('clinical.view'), wrap
     base().groupBy('a.doctor_id', 'cd.code').select('a.doctor_id', 'cd.code').count({ n: '*' }),
     base().select(knex.raw('COUNT(DISTINCT cd.appointment_id) as visits'), knex.raw('COUNT(DISTINCT a.patient_id) as patients'), knex.raw('COUNT(DISTINCT cd.code) as codes'), knex.raw('COUNT(*) as n')),
     knex('appointments').where({ business_id: ctx.businessId, status: 'completed' }).whereBetween('appointment_date', [range.from, range.to])
-      .modify((q) => { if (doctorId) q.where('doctor_id', doctorId); }).count({ n: '*' }),
+      .modify((q) => { if (doctorId) q.where('doctor_id', doctorId); require('../clinic/branches.service').scope(q, ctx, 'branch_id'); }).count({ n: '*' }),
     doctorsOf(ctx),
   ]);
   const title = (r) => icd.titleOf(r, req.locale);
@@ -268,11 +268,11 @@ router.get('/reports/consultation-time', can('reports.view'), wrap(async (req, r
   const [timed, [{ n: completed }], doctors] = await Promise.all([
     knex('consultation_timers as ct').join('appointments as a', 'a.id', 'ct.appointment_id').leftJoin('services as s', 's.id', 'a.service_id').leftJoin('doctors as d', 'd.id', 'a.doctor_id')
       .where('ct.business_id', ctx.businessId).whereNotNull('ct.ended_at').whereBetween('a.appointment_date', [range.from, range.to])
-      .modify((q) => { if (doctorId) q.where('a.doctor_id', doctorId); })
+      .modify((q) => { if (doctorId) q.where('a.doctor_id', doctorId); require('../clinic/branches.service').scope(q, ctx, 'a.branch_id'); })
       .select('ct.started_at', 'ct.ended_at', 'ct.paused_seconds', 'a.doctor_id', 'a.service_id', 'a.duration_minutes', 's.duration_minutes as service_minutes', 's.name as service_name', 's.name_en as service_name_en',
         'd.slot_duration_minutes', 'd.full_name', 'd.full_name_en', 'd.color'),
     knex('appointments').where({ business_id: ctx.businessId, status: 'completed' }).whereNot('appointment_type', 'blocked').whereBetween('appointment_date', [range.from, range.to])
-      .modify((q) => { if (doctorId) q.where('doctor_id', doctorId); }).count({ n: '*' }),
+      .modify((q) => { if (doctorId) q.where('doctor_id', doctorId); require('../clinic/branches.service').scope(q, ctx, 'branch_id'); }).count({ n: '*' }),
     doctorsOf(ctx),
   ]);
   // Readings under 30 seconds (started by mistake) or over 4 hours (never stopped) are left out.

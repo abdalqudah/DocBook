@@ -216,12 +216,12 @@ async function attention(ctx, { online, unpaid } = {}) {
   const now = scheduling.clinicNow(ctx.timezone);
   const lateBefore = scheduling.minutesToTime(Math.max(0, now.minutes - LATE_AFTER_MIN));
   const [doc, late, low, reps, adj] = await Promise.all([
-    p.has('doctors.manage') ? knex('doctors').where({ business_id: b, is_active: true }).first('id') : true,
+    p.has('doctors.manage') ? require('./branches.service').scopeDoctors(knex('doctors').where({ business_id: b, is_active: true }), ctx).first('id') : true,
     p.has('frontdesk.use') || p.has('appointments.manage') ? apptBase(ctx).where('a.appointment_date', ctx.today).whereIn('a.status', ['pending', 'confirmed'])
       .where({ 'a.checked_in': false, 'a.with_doctor': false }).where('a.appointment_time', '<', lateBefore).count({ n: '*' }).first() : null,
     p.has('supplies.view') ? knex('supply_items').where({ business_id: b }).whereRaw('current_stock <= reorder_level').count({ n: '*' }).first() : null,
-    p.has('vendors.view') ? knex('rep_visits').where({ business_id: b, status: 'requested' }).where('visit_date', '>=', ctx.today).modify((q) => { if (ctx.ownDoctorId) q.where('doctor_id', ctx.ownDoctorId); }).count({ n: '*' }).first() : null,
-    p.has('payroll.approve') ? knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).count({ n: '*' }).first() : null,
+    p.has('vendors.view') ? knex('rep_visits').where({ business_id: b, status: 'requested' }).where('visit_date', '>=', ctx.today).modify((q) => { if (ctx.ownDoctorId) q.where('doctor_id', ctx.ownDoctorId); if (ctx.workBranch) q.whereIn('doctor_id', require('./branches.service').doctorIds(ctx)); }).count({ n: '*' }).first() : null,
+    p.has('payroll.approve') ? knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).modify((q) => { if (ctx.workBranch) q.whereIn('doctor_id', require('./branches.service').payDoctorIds(ctx)); }).count({ n: '*' }).first() : null,
   ]);
   return [
     // No doctor yet: nothing can be booked (the online booking page shows the clinic's phone instead).
@@ -394,14 +394,14 @@ router.get('/my-day', wrap(async (req, res) => {
 
   let revenue = null;
   if (ctx.permissions.has('finance.view')) {
-    revenue = await sumOf(lib.whereLocalDates(knex('invoices as i').where({ 'i.business_id': ctx.businessId, 'i.doctor_id': doctor.id }), 'i.created_at', date, date, tz));
+    revenue = await sumOf(lib.whereLocalDates(require('./branches.service').scopeByVisit(knex('invoices as i').where({ 'i.business_id': ctx.businessId, 'i.doctor_id': doctor.id }), ctx, 'i.appointment_id'), 'i.created_at', date, date, tz));
   }
   const week = [];
   const wk = Object.fromEntries(weekRows.map((r) => [r.d, Number(r.n)]));
   for (let i = 1; i <= 7; i += 1) { const d = lib.addDays(date, i); week.push({ date: d, n: wk[d] || 0 }); }
 
   // Recent patients (Today, doctor): the last five people this doctor finished a visit with.
-  const recent = ctx.permissions.has('patients.view') ? await knex('appointments').where({ business_id: ctx.businessId, doctor_id: doctor.id, status: 'completed' }).whereNotNull('patient_id')
+  const recent = ctx.permissions.has('patients.view') ? await require('./branches.service').scope(knex('appointments').where({ business_id: ctx.businessId, doctor_id: doctor.id, status: 'completed' }), ctx, 'branch_id').whereNotNull('patient_id')
     .where('appointment_date', '<=', today).groupBy('patient_id').select('patient_id').max({ last: 'appointment_date' }).max({ name: 'patient_name' }).orderBy('last', 'desc').limit(5) : [];
 
   await withDocs(ctx, items.filter((a) => a.state !== 'blocked'));

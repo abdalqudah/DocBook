@@ -49,7 +49,7 @@ function paidFigures(r) {
   return { ...r, liveNet: r.netPayroll, baseSalary: Number(p.base_salary), commissionTotal: Number(p.commission), bonuses: Number(p.bonuses), deductions: Number(p.deductions), advances: Number(p.advances), netPayroll: Number(p.net_pay) };
 }
 async function sheet(ctx, period) {
-  const docs = await knex('doctors').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id');
+  const docs = await knex('doctors').where({ business_id: ctx.businessId }).modify((q) => { if (ctx.workBranch) q.whereIn('id', require('./branches.service').payDoctorIds(ctx)); }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id');
   const rows = [];
   for (const d of docs) rows.push(paidFigures(await calcFull(ctx, d.id, period))); // eslint-disable-line no-await-in-loop
   return rows;
@@ -67,7 +67,7 @@ async function rulesMap(ctx) {
   return Object.fromEntries(rows.map((r) => [r.doctor_id, { basis: r.basis, rate: Number(r.rate) }]));
 }
 const pendingFor = (ctx, period, doctorId) => knex('payroll_adjustments as a').join('doctors as d', 'd.id', 'a.doctor_id').leftJoin('users as u', 'u.id', 'a.created_by')
-  .where({ 'a.business_id': ctx.businessId, 'a.period': period, 'a.approval_status': 'pending' }).modify((q) => { if (doctorId) q.where('a.doctor_id', doctorId); })
+  .where({ 'a.business_id': ctx.businessId, 'a.period': period, 'a.approval_status': 'pending' }).modify((q) => { if (doctorId) q.where('a.doctor_id', doctorId); if (ctx.workBranch) q.whereIn('a.doctor_id', require('./branches.service').payDoctorIds(ctx)); })
   .orderBy('a.created_at').select('a.*', 'd.full_name', 'd.full_name_en', 'u.name as created_by_name');
 
 async function buildSheet(ctx, period) {
@@ -78,6 +78,12 @@ async function buildSheet(ctx, period) {
   return { rows: list, totals: sumRows(list), pending };
 }
 
+// a doctor of another branch (the branch chosen in the account menu): not on this branch's payroll
+router.param('id', (req, res, next, id) => {
+  if (!req.ctx.workBranch) return next();
+  return require('./branches.service').payDoctorIds(req.ctx).where('id', Number(id) || 0).first() // eslint-disable-line global-require
+    .then((d) => next(d ? undefined : require('../../core/errors').E.notFound('Doctor')), next); // eslint-disable-line global-require
+});
 router.get('/', wrap(async (req, res) => {
   const period = periodOf(req);
   const { rows, totals, pending } = await buildSheet(req.ctx, period);

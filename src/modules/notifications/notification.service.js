@@ -2,15 +2,22 @@
 // `dedupe_key` makes alert generation idempotent (e.g. one "budget exceeded" per budget per month).
 const knex = require('../../db/knex');
 
-async function notify(businessId, { userId = null, permission = null, type, title, body = null, link = null, severity = 'info', dedupeKey = null }, trx = knex) {
+async function notify(businessId, { userId = null, permission = null, type, title, body = null, link = null, severity = 'info', dedupeKey = null, appointmentId = null }, trx = knex) {
   // Sent from outside that clinic's own database (platform admin, another practice of a centre…): written there.
   const tenant = require('../../db/tenant'); // eslint-disable-line global-require
-  if (!(await tenant.isHere(businessId))) return tenant.runFor(businessId, () => notify(businessId, { userId, permission, type, title, body, link, severity, dedupeKey }));
+  if (!(await tenant.isHere(businessId))) return tenant.runFor(businessId, () => notify(businessId, { userId, permission, type, title, body, link, severity, dedupeKey, appointmentId }));
   if (dedupeKey) {
     const exists = await trx('notifications').where({ business_id: businessId, dedupe_key: dedupeKey }).first('id');
     if (exists) return exists.id;
   }
-  const [id] = await trx('notifications').insert({ business_id: businessId, user_id: userId, permission, type, title, body, link, severity, dedupe_key: dedupeKey });
+  // About a visit (given, or its link): the visit's branch only
+  const visitId = Number(appointmentId) || Number((/^\/app\/appointments\/(\d+)/.exec(String(link || '')) || [])[1]) || null;
+  let branchKey = null;
+  if (visitId) {
+    const a = await trx('appointments').where({ business_id: businessId, id: visitId }).first('branch_id').catch(() => null);
+    if (a && (a.branch_id || await require('../clinic/branches.service').multi(businessId))) branchKey = a.branch_id ? String(a.branch_id) : 'main'; // eslint-disable-line global-require
+  }
+  const [id] = await trx('notifications').insert({ business_id: businessId, user_id: userId, permission, type, title, body, link, severity, dedupe_key: dedupeKey, branch_key: branchKey });
   // E-mail copy when the clinic enabled it for this event (Settings → Notifications). Background only, never throws.
   try {
     require('../teamops/notify-mail').schedule(businessId, { id, user_id: userId, permission, type, title, body, link, severity }, trx); // eslint-disable-line global-require
@@ -21,7 +28,9 @@ async function notify(businessId, { userId = null, permission = null, type, titl
 function visible(ctx) {
   const perms = [...ctx.permissions];
   return knex('notifications as n').where('n.business_id', ctx.businessId)
-    .andWhere((q) => q.where('n.user_id', ctx.userId).orWhere((q2) => q2.whereNull('n.user_id').andWhere((q3) => q3.whereNull('n.permission').orWhereIn('n.permission', perms.length ? perms : ['-']))));
+    .andWhere((q) => q.where('n.user_id', ctx.userId).orWhere((q2) => q2.whereNull('n.user_id').andWhere((q3) => q3.whereNull('n.permission').orWhereIn('n.permission', perms.length ? perms : ['-']))))
+    // the branch the member works in: its own notifications and the clinic-wide ones
+    .modify((q) => { if (ctx.workBranch) q.where((w) => w.whereNull('n.branch_key').orWhere('n.branch_key', String(ctx.workBranch))); });
 }
 
 async function list(ctx, { limit = 50, unreadOnly = false, type = null } = {}) {

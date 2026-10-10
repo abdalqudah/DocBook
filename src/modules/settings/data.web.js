@@ -76,14 +76,15 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
   const t = req.t;
   const L = res.locals.label;
   const yn = (v) => (v ? t('common.yes') : t('common.no'));
+  const br = require('../clinic/branches.service'); // eslint-disable-line global-require -- the branch chosen in the account menu
   const [patients, appointments, invoices, doctors, services, expenses, insurers] = await Promise.all([
-    knex('patients').where({ business_id: b }).orderBy('id'),
-    knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id').where('a.business_id', b)
+    br.scopePatients(knex('patients').where({ business_id: b }), req.ctx, 'patients.id').orderBy('id'),
+    br.scope(knex('appointments as a').leftJoin('doctors as d', 'd.id', 'a.doctor_id').leftJoin('services as s', 's.id', 'a.service_id').where('a.business_id', b), req.ctx, 'a.branch_id')
       .orderBy([{ column: 'a.appointment_date' }, { column: 'a.appointment_time' }]).select('a.*', 'd.full_name as doctor_name', 's.name as service_name'),
-    knex('invoices').where({ business_id: b }).orderBy('invoice_number'),
-    knex('doctors').where({ business_id: b }).orderBy('full_name'),
+    br.scopeByVisit(knex('invoices').where({ business_id: b }), req.ctx, 'appointment_id').orderBy('invoice_number'),
+    br.scopeDoctors(knex('doctors').where({ business_id: b }), req.ctx).orderBy('full_name'),
     knex('services as s').leftJoin('doctors as d', 'd.id', 's.doctor_id').where('s.business_id', b).orderBy('s.name').select('s.*', 'd.full_name as doctor_name'),
-    knex('expenses').where({ business_id: b }).orderBy('date'),
+    br.scope(knex('expenses').where({ business_id: b }), req.ctx, 'branch_id').orderBy('date'),
     knex('insurance_providers').where({ business_id: b }).select('id', 'name'),
   ]);
   await payParts.attach(b, invoices); // the method column spells out the parts, never "mixed"

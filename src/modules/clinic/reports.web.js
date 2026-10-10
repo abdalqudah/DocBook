@@ -62,7 +62,7 @@ async function build(req, range) {
     ).whereIn('x.patient_id', apptBase(ctx, range).whereNot('a.status', 'cancelled').whereNotNull('a.patient_id').distinct('a.patient_id')),
     apptBase(ctx, range).whereNot('a.status', 'cancelled').groupBy('a.appointment_date').select('a.appointment_date as d').count({ n: '*' }),
     invBase(ctx, range).groupBy('d').select(knex.raw(`${lib.localDateSql('i.created_at', ctx.timezone).toString()} as d`)).sum({ v: 'i.amount' }),
-    lib.whereLocalDates(knex('patients').where({ business_id: ctx.businessId }), 'created_at', range.from, range.to, ctx.timezone).count({ n: '*' }).first(),
+    lib.whereLocalDates(require('./branches.service').scopePatients(knex('patients').where({ business_id: ctx.businessId }), ctx, 'patients.id'), 'created_at', range.from, range.to, ctx.timezone).count({ n: '*' }).first(), // eslint-disable-line global-require
   ]);
 
   // ---- status

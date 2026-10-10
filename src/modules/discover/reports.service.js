@@ -38,7 +38,7 @@ async function build(ctx, range, { locale = 'ar' } = {}) {
   const base = () => {
     const q = knex('appointments as a').where('a.business_id', ctx.businessId).whereNot('a.appointment_type', 'blocked').whereBetween('a.appointment_date', [range.from, range.to]);
     if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
-    return q;
+    return require('../clinic/branches.service').scope(q, ctx, 'a.branch_id'); // eslint-disable-line global-require -- the branch chosen in the account menu
   };
   const [totalRow, docRows, chRows, dayRows, docs] = await Promise.all([
     counts(base()).first(),

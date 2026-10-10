@@ -259,7 +259,7 @@ async function screen(ctx) {
 // ---------------------------------------------------------------- the bill
 async function visit(ctx, apptId) {
   const a = await knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
-    .where({ 'a.business_id': ctx.businessId, 'a.id': Number(apptId) }).modify((q) => { if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); })
+    .where({ 'a.business_id': ctx.businessId, 'a.id': Number(apptId) }).modify((q) => { if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); require('./branches.service').scope(q, ctx, 'a.branch_id'); })
     .first(VISIT_SELECT.concat(['a.notes']));
   if (!a || a.appointment_type === 'blocked') throw E.notFound('Appointment');
   return { ...a, stage: stageOf(a), waited: minutesSince(a.arrived_at) };

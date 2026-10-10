@@ -59,15 +59,16 @@ async function resolveOrCreatePatient(ctx, { name, phone, email: mail }, trx = k
   return pid;
 }
 
+const branchesLib = () => require('./branches.service'); // eslint-disable-line global-require
 async function timeline(ctx, patientId) {
   const w = { business_id: ctx.businessId, patient_id: patientId };
   const [appointments, consultations, prescriptions, invoices] = await Promise.all([
     knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); }).where({ 'a.business_id': ctx.businessId, 'a.patient_id': patientId })
-      .whereNot('a.appointment_type', 'blocked').orderBy([{ column: 'a.appointment_date', order: 'desc' }, { column: 'a.appointment_time', order: 'desc' }])
+      .whereNot('a.appointment_type', 'blocked').modify((q) => branchesLib().scope(q, ctx, 'a.branch_id')).orderBy([{ column: 'a.appointment_date', order: 'desc' }, { column: 'a.appointment_time', order: 'desc' }])
       .select('a.*', 'd.full_name as doctor_name', 's.name as service_name'),
     knex('consultations as c').leftJoin('doctors as d', 'd.id', 'c.doctor_id').where({ 'c.business_id': ctx.businessId, 'c.patient_id': patientId }).orderBy('c.created_at', 'desc').select('c.*', 'd.full_name as doctor_name'),
     knex('prescriptions as p').leftJoin('doctors as d', 'd.id', 'p.doctor_id').where({ 'p.business_id': ctx.businessId, 'p.patient_id': patientId }).orderBy('p.created_at', 'desc').select('p.*', 'd.full_name as doctor_name'),
-    knex('invoices').where(w).orderBy('created_at', 'desc'),
+    branchesLib().scopeByVisit(knex('invoices').where(w), ctx, 'appointment_id').orderBy('created_at', 'desc'),
   ]);
   return { appointments, consultations, prescriptions, invoices, latestDiagnosis: (consultations.find((c) => c.diagnosis) || {}).diagnosis || null };
 }
@@ -80,6 +81,7 @@ function baseQuery(ctx) {
     .leftJoin('clinic_branches as br', function j() { this.on('br.id', 'a.branch_id').andOn('br.business_id', 'a.business_id'); }).where('a.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); // a doctor sees only their own schedule
   require('./rooms.service').scopeRoom(q, ctx); // eslint-disable-line global-require -- an assistant / nurse: their room's doctors
+  require('./branches.service').scope(q, ctx, 'a.branch_id'); // eslint-disable-line global-require -- the branch the member works in
   return q;
 }
 

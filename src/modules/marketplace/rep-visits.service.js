@@ -358,6 +358,7 @@ function clinicVisits(ctx, { tab = 'requests', today }) {
     .select('r.*', 'v.name as vendor_name', 'v.name_en as vendor_name_en', 'v.type as vendor_type', 'v.phone as vendor_phone', 'v.whatsapp as vendor_whatsapp', 'v.email as vendor_email',
       'u.name as rep_name', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color');
   if (ctx.ownDoctorId) q.andWhere('r.doctor_id', ctx.ownDoctorId);
+  if (ctx.workBranch) q.whereIn('r.doctor_id', require('../clinic/branches.service').doctorIds(ctx)); // eslint-disable-line global-require -- the branch's doctors
   if (tab === 'requests') q.andWhere('r.status', 'requested').andWhere('r.visit_date', '>=', today).orderBy('r.visit_date').orderBy('r.visit_time');
   else if (tab === 'upcoming') q.andWhere('r.status', 'confirmed').andWhere('r.visit_date', '>=', today).orderBy('r.visit_date').orderBy('r.visit_time');
   else q.andWhere((w) => w.where('r.visit_date', '<', today).orWhereIn('r.status', ['declined', 'cancelled', 'done'])).orderBy('r.visit_date', 'desc').orderBy('r.visit_time', 'desc').limit(200);
@@ -365,7 +366,7 @@ function clinicVisits(ctx, { tab = 'requests', today }) {
 }
 
 async function counts(ctx, today) {
-  const base = () => { const q = knex('rep_visits').where({ business_id: ctx.businessId }).andWhere('visit_date', '>=', today); if (ctx.ownDoctorId) q.andWhere('doctor_id', ctx.ownDoctorId); return q; };
+  const base = () => { const q = knex('rep_visits').where({ business_id: ctx.businessId }).andWhere('visit_date', '>=', today); if (ctx.ownDoctorId) q.andWhere('doctor_id', ctx.ownDoctorId); if (ctx.workBranch) q.whereIn('doctor_id', require('../clinic/branches.service').doctorIds(ctx)); return q; };
   const [[{ r }], [{ u }]] = await Promise.all([base().where('status', 'requested').count({ r: 'id' }), base().where('status', 'confirmed').count({ u: 'id' })]);
   return { requests: Number(r), upcoming: Number(u) };
 }

@@ -26,7 +26,7 @@ async function page(req, res, extra = {}) {
   const [data, stats, doctors] = await Promise.all([
     reviews.list(ctx, { ...f, page: req.query.page }),
     reviews.stats(ctx, { doctor: f.doctor }),
-    ctx.ownDoctorId ? [] : knex('doctors').where({ business_id: req.ctx.businessId }).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en', 'color'),
+    ctx.ownDoctorId ? [] : require('../clinic/branches.service').scopeDoctors(knex('doctors').where({ business_id: req.ctx.businessId }), ctx).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en', 'color'),
   ]);
   res.page('pages/engage/reviews', {
     title: req.t('reviews.title'), ...data, stats, doctors, f, focus: Number(req.query.focus) || null,

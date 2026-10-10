@@ -138,7 +138,18 @@ async function finishRequest(ctx, id, kind, platform, patch, extra = {}) {
 }
 
 // ---------------------------------------------------------------- figures (read-only, no patient data)
-const DOCTOR_SCOPE = (ctx, q, col) => { if (ctx.ownDoctorId) q.where(col, ctx.ownDoctorId); return q; };
+const BR = () => require('../clinic/branches.service'); // eslint-disable-line global-require
+// a doctor login: their own; the branch chosen in the account menu: its receipts, visits, doctors and expenses
+const DOCTOR_SCOPE = (ctx, q, col) => {
+  if (ctx.ownDoctorId) q.where(col, ctx.ownDoctorId);
+  if (ctx.workBranch) {
+    if (col === 'i.doctor_id') BR().scopeByVisit(q, ctx, 'i.appointment_id');
+    else if (col === 'a.doctor_id') BR().scope(q, ctx, 'a.branch_id');
+    else q.whereIn(col, BR().payDoctorIds(ctx));
+  }
+  return q;
+};
+const EXP_SCOPE = (ctx, q) => BR().scope(q, ctx, 'branch_id');
 const invBase = (ctx, from, to) => DOCTOR_SCOPE(ctx, lib.whereLocalDates(knex('invoices as i').where('i.business_id', ctx.businessId), 'i.created_at', from, to, ctx.timezone), 'i.doctor_id');
 const apptBase = (ctx, from, to) => DOCTOR_SCOPE(ctx, knex('appointments as a').where('a.business_id', ctx.businessId).whereNot('a.appointment_type', 'blocked')
   .whereBetween('a.appointment_date', [from, to]), 'a.doctor_id');
@@ -193,12 +204,12 @@ async function periodData(ctx, from, to, locale = 'ar') {
     knex('doctors').where({ business_id: ctx.businessId }).select('id', 'full_name', 'full_name_en'),
     apptBase(ctx, from, to).groupBy('a.status').select('a.status').count({ n: '*' }),
     apptBase(ctx, from, to).groupBy('a.source').select('a.source').count({ n: '*' }),
-    knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [from, to]).groupBy('category').select('category').sum({ v: 'amount' }).count({ n: '*' }),
+    EXP_SCOPE(ctx, knex('expenses').where({ business_id: ctx.businessId })).whereBetween('date', [from, to]).groupBy('category').select('category').sum({ v: 'amount' }).count({ n: '*' }),
     DOCTOR_SCOPE(ctx, knex('payroll_payments').where({ business_id: ctx.businessId }).whereBetween('period', [from.slice(0, 7), to.slice(0, 7)]), 'doctor_id')
       .first(knex.raw('COALESCE(SUM(net_pay + advances),0) as v'), knex.raw('COUNT(*) as n')), // as in the P&L
     staffSalaries(ctx, from, to),
     hasPayments
-      ? lib.whereLocalDates(knex('payments').where({ business_id: ctx.businessId, status: 'refunded' }), 'refunded_at', from, to, ctx.timezone)
+      ? lib.whereLocalDates(BR().scopeByVisit(knex('payments').where({ business_id: ctx.businessId, status: 'refunded' }), ctx, 'appointment_id'), 'refunded_at', from, to, ctx.timezone)
         .first(knex.raw('COALESCE(SUM(refunded_amount),0) as v'), knex.raw('COUNT(*) as n'))
       : null,
     categoryLabeler(ctx.businessId, locale),
@@ -493,7 +504,7 @@ const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 async function topExpenses(ctx, month) {
   const { from, to } = lib.monthBounds(month);
   const label = await categoryLabeler(ctx.businessId, ctx.locale);
-  const rows = await knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [from, to]).orderBy('amount', 'desc').limit(10)
+  const rows = await EXP_SCOPE(ctx, knex('expenses').where({ business_id: ctx.businessId })).whereBetween('date', [from, to]).orderBy('amount', 'desc').limit(10)
     .select('date', 'category', 'title', 'amount', 'payment_method');
   return rows.map((r) => ({ date: r.date, category: label(r.category), description: ai.scrubText(r.title), amount: round2(r.amount), method: r.payment_method }));
 }

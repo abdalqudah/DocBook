@@ -162,7 +162,7 @@ async function sheet(ctx, period) {
     paid: m.round(t.paid + (r.status === 'paid' ? r.f.net : 0)), paidCount: t.paidCount + (r.status === 'paid' ? 1 : 0),
   }), { base: 0, allowances: 0, bonuses: 0, deductions: 0, fixedDeductions: 0, extraDeductions: 0, advances: 0, net: 0, paid: 0, paidCount: 0 });
   const inRun = new Set(lines.map((l) => l.employee_id));
-  const missing = (await knex('staff_employees').where({ business_id: ctx.businessId, status: 'active' }).orderBy('name').select('id', 'name', 'hire_date'))
+  const missing = (await empScope(knex('staff_employees').where({ business_id: ctx.businessId, status: 'active' }), ctx, 'branch_key').orderBy('name').select('id', 'name', 'hire_date'))
     .filter((e) => !inRun.has(e.id) && !(e.hire_date && String(e.hire_date).slice(0, 7) > period));
   return { rows, totals, missing };
 }

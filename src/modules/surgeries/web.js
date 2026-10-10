@@ -35,7 +35,7 @@ router.get('/', wrap(async (req, res) => {
   const f = { view, date, when: ['upcoming', 'past', 'all'].includes(req.query.when) ? req.query.when : 'upcoming', doctor: Number(req.query.doctor) || null, hospital: Number(req.query.hospital) || null };
   const [hospitals, doctors] = await Promise.all([
     hospitalsOf(ctx),
-    ctx.ownDoctorId ? [] : knex('doctors').where({ business_id: ctx.businessId, is_active: true }).orderBy('full_name').select('id', 'full_name', 'full_name_en', 'color'),
+    ctx.ownDoctorId ? [] : require('../clinic/branches.service').scopeDoctors(knex('doctors').where({ business_id: ctx.businessId, is_active: true }), ctx).orderBy('full_name').select('id', 'full_name', 'full_name_en', 'color'),
   ]);
   const data = { title: req.t('surgeries.title'), f, view, date, hospitals, doctors, canAdd: mayChange(req, null), today: ctx.today, ...ASSETS };
   if (view === 'list') {

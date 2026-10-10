@@ -47,6 +47,8 @@ router.get('/', wrap(async (req, res) => {
       .orderByRaw('a.appointment_date < ? , ABS(DATEDIFF(a.appointment_date, ?))', [ctx.today, ctx.today]).orderBy('a.appointment_time').limit(5)
       .select('a.id', 'a.patient_name', 'a.appointment_date', 'a.appointment_time', 'a.status', 'a.checked_in', 'dr.full_name', 'dr.full_name_en');
     if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
+    require('./branches.service').scope(q, ctx, 'a.branch_id'); // eslint-disable-line global-require
+    require('./rooms.service').scopeRoom(q, ctx); // eslint-disable-line global-require
     const desk = perms.has('frontdesk.use');
     jobs.push(q.then((rows) => rows.map((a) => ({
       group: 'appointments',
@@ -61,6 +63,7 @@ router.get('/', wrap(async (req, res) => {
       .andWhere((w) => { w.where('patient_name', 'like', term); if (phoneTerm) w.orWhere('patient_phone', 'like', phoneTerm); if (/^\d+$/.test(digits)) w.orWhere('invoice_number', Number(digits)); })
       .orderBy('invoice_number', 'desc').limit(5).select('id', 'invoice_number', 'patient_name', 'amount', 'created_at');
     if (ctx.ownDoctorId) q.where('doctor_id', ctx.ownDoctorId);
+    require('./branches.service').scopeByVisit(q, ctx, 'appointment_id'); // eslint-disable-line global-require
     jobs.push(q.then((rows) => rows.map((i) => ({
       group: 'invoices',
       title: `${req.t('billing.invoice_no', { n: i.invoice_number })} · ${i.patient_name}`,
@@ -69,7 +72,7 @@ router.get('/', wrap(async (req, res) => {
     }))));
   }
   if (perms.has('doctors.manage') || perms.has('appointments.view_all')) {
-    jobs.push(knex('doctors').where('business_id', ctx.businessId)
+    jobs.push(require('./branches.service').scopeDoctors(knex('doctors').where('business_id', ctx.businessId), ctx) // eslint-disable-line global-require
       .andWhere((w) => { w.where('full_name', 'like', term).orWhere('full_name_en', 'like', lib.likeTerm(raw)).orWhere('specialization', 'like', term); if (phoneTerm) w.orWhere('phone', 'like', phoneTerm); })
       .orderBy('full_name').limit(4).select('id', 'full_name', 'full_name_en', 'specialization', 'specialization_en')
       .then((rows) => rows.map((r) => ({ group: 'doctors', title: (en && r.full_name_en) || r.full_name, subtitle: [req.t('dashboard.search.doctor'), (en && r.specialization_en) || r.specialization].filter(Boolean).join(' · '), href: `/app/doctors/${r.id}`, icon: 'stethoscope' }))));

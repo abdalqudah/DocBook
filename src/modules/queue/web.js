@@ -15,10 +15,13 @@ router.use(can('frontdesk.use'));
 async function render(req, res, extra = {}) {
   const reach = phoneBase(req);
   const { ctx } = req;
-  const [list, multi, doctors] = await Promise.all([
+  const wb = String(ctx.workBranch || '');
+  const [all, multi, doctors] = await Promise.all([
     svc.list(ctx.businessId), branches.multi(ctx.businessId),
-    require('../../db/knex')('doctors').where({ business_id: ctx.businessId, is_active: true }).orderBy(['sort_order', 'full_name']).select('id', 'full_name', 'full_name_en', 'room'), // eslint-disable-line global-require
+    branches.scopeDoctors(require('../../db/knex')('doctors').where({ business_id: ctx.businessId, is_active: true }), ctx).orderBy(['sort_order', 'full_name']).select('id', 'full_name', 'full_name_en', 'room'), // eslint-disable-line global-require
   ]);
+  // the branch chosen in the account menu: its screens (and those showing every branch)
+  const list = wb ? all.filter((x) => x.branch_id === null || x.branch_id === undefined || String(x.branch_id) === (wb === 'main' ? '0' : wb)) : all;
   let branchOptions = null;
   if (multi) {
     const opts = await branches.options(req.business, req.t, req.locale);

@@ -84,7 +84,7 @@ async function submit(link, input, meta = {}) {
 function scoped(ctx) {
   const q = knex('reviews as r').leftJoin('doctors as d', 'd.id', 'r.doctor_id').where('r.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('r.doctor_id', ctx.ownDoctorId); // a doctor sees the reviews of their own visits
-  return q;
+  return require('../clinic/branches.service').scopeByVisit(q, ctx, 'r.appointment_id'); // eslint-disable-line global-require -- the branch's visits
 }
 
 async function list(ctx, { doctor, rating, status, page = 1 } = {}) {

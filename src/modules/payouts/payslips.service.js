@@ -95,9 +95,9 @@ async function sendAll(ctx, period, { locale = 'ar', again = false } = {}) {
   const out = { sent: 0, noEmail: [], failed: [] };
   const mailer = require('../../core/mailer'); // eslint-disable-line global-require
   if (!(await mailer.configuredFor(ctx.businessId))) throw new AppError('NO_MAIL', 'E-mail is not set up.', 409);
-  const lines = await knex('staff_payroll_lines').where({ business_id: ctx.businessId, period, status: 'paid' }).modify((q) => { if (!again) q.whereNull('slip_sent_at'); }).select('id', 'employee_name');
+  const lines = await knex('staff_payroll_lines').where({ business_id: ctx.businessId, period, status: 'paid' }).modify((q) => { if (!again) q.whereNull('slip_sent_at'); if (ctx.workBranch) q.whereIn('employee_id', knex('staff_employees').where({ business_id: ctx.businessId, branch_key: String(ctx.workBranch) }).select('id')); }).select('id', 'employee_name');
   const pays = await knex('payroll_payments as p').join('doctors as d', 'd.id', 'p.doctor_id').where({ 'p.business_id': ctx.businessId, 'p.period': period })
-    .modify((q) => { if (!again) q.whereNull('p.slip_sent_at'); }).select('p.doctor_id', 'd.full_name');
+    .modify((q) => { if (!again) q.whereNull('p.slip_sent_at'); if (ctx.workBranch) q.whereIn('p.doctor_id', require('../clinic/branches.service').payDoctorIds(ctx)); }).select('p.doctor_id', 'd.full_name');
   const run = async (name, fn) => {
     try { await fn(); out.sent += 1; } catch (e) { (e.code === 'NO_EMAIL' ? out.noEmail : out.failed).push(name); }
   };

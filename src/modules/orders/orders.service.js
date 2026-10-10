@@ -271,7 +271,8 @@ async function removeFile(ctx, patientId, fileId) {
 /** Clinical figures for a date range: tests ordered, referrals by specialty, files added. */
 async function report(ctx, from, to) {
   const range = (q, col) => q.where(col, '>=', `${from} 00:00:00`).where(col, '<=', `${to} 23:59:59`);
-  const own = (q, col) => (ctx.ownDoctorId ? q.where(col, ctx.ownDoctorId) : q);
+  // a doctor login: their own; the branch chosen in the account menu: by the visit's branch
+  const own = (q, col) => require('../clinic/branches.service').scopeByVisit(ctx.ownDoctorId && col ? q.where(col, ctx.ownDoctorId) : q, ctx, 'appointment_id'); // eslint-disable-line global-require
   const orders = await own(range(knex('medical_orders').where({ business_id: ctx.businessId }), 'created_at'), 'doctor_id').select('kind', 'items', 'status');
   const tests = new Map();
   const byKind = { lab: 0, imaging: 0 };
@@ -287,7 +288,7 @@ async function report(ctx, from, to) {
   }
   const [referrals, files] = await Promise.all([
     own(range(knex('referrals').where({ business_id: ctx.businessId }), 'created_at'), 'doctor_id').groupBy('specialty').select('specialty').count({ n: '*' }).orderBy('n', 'desc'),
-    range(knex('patient_files').where({ business_id: ctx.businessId }), 'created_at').groupBy('category').select('category').count({ n: '*' }),
+    own(range(knex('patient_files').where({ business_id: ctx.businessId }), 'created_at'), null).groupBy('category').select('category').count({ n: '*' }),
   ]);
   return {
     orders: orders.length, byKind, byStatus,

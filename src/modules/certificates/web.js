@@ -56,7 +56,7 @@ const typeLabel = (req, type) => req.t(`certificates.types.${type}`);
 const doctorName = (req, r) => (req.locale === 'en' && r.doctor_name_en) || r.doctor_name || '—';
 
 async function doctorsList(req) {
-  const q = knex('doctors').where({ business_id: req.ctx.businessId }).orderBy('full_name').select('id', 'full_name', 'full_name_en', 'color');
+  const q = require('../clinic/branches.service').scopeDoctors(knex('doctors').where({ business_id: req.ctx.businessId }), req.ctx).orderBy('full_name').select('id', 'full_name', 'full_name_en', 'color');
   if (req.ctx.ownDoctorId) q.where('id', req.ctx.ownDoctorId);
   return q;
 }

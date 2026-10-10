@@ -223,7 +223,7 @@ async function applyResult(p, v, env = {}) {
   if (!samePrice(v.amount, p.amount, p.provider) || String(v.currency || '').toUpperCase() !== String(p.currency).toUpperCase()) {
     await knex('payments').where({ id: p.id }).whereIn('status', ['initiated', 'cancelled', 'failed']).update({ ...base, status: 'failed', note: 'mismatch', result_message: `amount/currency mismatch: ${v.amount} ${v.currency}` });
     await audit.record(systemCtx(p.business_id, env), 'payment.mismatch', { entityType: 'appointment', entityId: p.appointment_id, newValues: { payment: p.id, expected: `${p.amount} ${p.currency}`, reported: `${v.amount} ${v.currency}` } });
-    await notifications.notify(p.business_id, { permission: 'billing.manage', type: 'payment.problem', severity: 'danger', title: `#${p.appointment_id} · ${v.amount} ${v.currency}`, body: bilingual('payments.notify.mismatch'), link: `/app/payments/${p.id}` });
+    await notifications.notify(p.business_id, { permission: 'billing.manage', type: 'payment.problem', severity: 'danger', appointmentId: p.appointment_id, title: `#${p.appointment_id} · ${v.amount} ${v.currency}`, body: bilingual('payments.notify.mismatch'), link: `/app/payments/${p.id}` });
     return 'mismatch';
   }
   const claimed = await knex('payments').where({ id: p.id }).whereIn('status', ['initiated', 'cancelled', 'failed']).whereNull('note')
@@ -249,7 +249,7 @@ async function settle(paymentId, env = {}) {
   const flag = async (note) => {
     await knex('payments').where({ id: p.id }).update({ note, updated_at: new Date() });
     await audit.record(ctx, 'payment.needs_attention', { entityType: 'appointment', entityId: p.appointment_id, newValues: { payment: p.id, note } });
-    await notifications.notify(p.business_id, { permission: 'billing.manage', type: 'payment.problem', severity: 'warning', title: `${a ? a.patient_name : '#'} · ${Number(p.amount)} ${p.currency}`, body: bilingual(`payments.notify.${note}`), link: `/app/payments/${p.id}` });
+    await notifications.notify(p.business_id, { permission: 'billing.manage', type: 'payment.problem', severity: 'warning', appointmentId: p.appointment_id, title: `${a ? a.patient_name : '#'} · ${Number(p.amount)} ${p.currency}`, body: bilingual(`payments.notify.${note}`), link: `/app/payments/${p.id}` });
     return note;
   };
   if (!a) return flag('late');
