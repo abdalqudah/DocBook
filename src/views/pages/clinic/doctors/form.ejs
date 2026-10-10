@@ -59,6 +59,9 @@
       <div class="field"><label class="label" for="f-color"><%= t('doctors.color') %></label><input class="color-input" id="f-color" type="color" name="color" value="<%= v('color', '') || '#0e7c6b' %>"></div>
       <div class="stack-sm" style="justify-content:flex-end">
         <label class="check"><input type="checkbox" name="is_active" value="1"<%= v('is_active', true) && v('is_active', true) !== '0' ? ' checked' : '' %>><span><%= t('doctors.active') %></span></label>
+        <input type="hidden" name="booking_form" value="1">
+        <label class="check"><input type="checkbox" name="online_booking" value="1"<%= v('online_booking', true) && v('online_booking', true) !== '0' ? ' checked' : '' %>><span><%= t('doctors.online_booking') %></span></label>
+        <label class="check"><input type="checkbox" name="show_on_site" value="1"<%= v('show_on_site', true) && v('show_on_site', true) !== '0' ? ' checked' : '' %>><span><%= t('doctors.show_on_site') %></span></label>
         <label class="check"><input type="checkbox" name="show_consultation_fee" value="1"<%= v('show_consultation_fee', true) && v('show_consultation_fee', true) !== '0' ? ' checked' : '' %>><span><%= t('doctors.show_fee') %></span></label>
       </div>
     </div></div>

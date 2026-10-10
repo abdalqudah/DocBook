@@ -294,6 +294,10 @@ router.post('/booking', can('website.edit'), act(async (req) => {
   await businesses.updateProfile(req.ctx, { booking_enabled: on });
   flash(req, 'success', req.t(on ? 'settings.booking_on_done' : 'settings.booking_off_done'));
 }, null, '/app/website/booking'));
+// Booking with the clinic only: no doctor choice online; reception chooses the doctor when it confirms.
+router.post('/booking/mode', can('website.edit'), act(async (req) => {
+  await businesses.updateProfile(req.ctx, { booking_clinic_only: [].concat(req.body.booking_clinic_only || []).pop() === '1' });
+}, 'website.booking_mode_saved', '/app/website/booking'));
 // Clinic-wide prices: on the website pages and in booking (each doctor's / service's own choice still applies).
 router.post('/booking/prices', can('website.edit'), act(async (req) => {
   const on = (k) => [].concat(req.body[k] || []).pop() === '1';

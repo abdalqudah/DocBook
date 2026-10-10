@@ -48,6 +48,13 @@ async function saveDoctor(ctx, id, input) {
     if (Object.keys(errors).length) throw E.validation(errors);
     row.social_links = Object.keys(links).length ? JSON.stringify(links) : null;
   }
+  // Online booking and the website listing (only the doctor form carries them): a doctor can be active at the clinic
+  // without taking online bookings, or be kept off the website altogether.
+  if (input && input.booking_form) {
+    const on = (k) => [].concat(input[k] || []).pop() === '1';
+    row.online_booking = on('online_booking');
+    row.show_on_site = on('show_on_site');
+  }
   // Full profile for the website (only the doctor form carries it).
   if (input && input.profile_form) { const prof = require('./doctor-profile'); row.profile = prof.toStore(prof.fromForm(input)); } // eslint-disable-line global-require
   // Hours: the clinic's usual week (kept in step when the clinic changes it) or the doctor's own.

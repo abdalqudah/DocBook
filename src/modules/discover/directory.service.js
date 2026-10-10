@@ -54,7 +54,7 @@ function listed() {
         'b.address', 'b.phone', 'b.online_enabled', 'b.updated_at');
     if (!clinics.length) return [];
     const allIds = clinics.map((c) => c.id);
-    const docsAll = await cross.gatherFor(allIds, (list) => knex('doctors').whereIn('business_id', list).where('is_active', true).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+    const docsAll = await cross.gatherFor(allIds, (list) => knex('doctors').whereIn('business_id', list).where('is_active', true).where('show_on_site', true).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
       .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'online_enabled'));
     const withDoctors = new Set(docsAll.map((d) => d.business_id));
     clinics.splice(0, clinics.length, ...clinics.filter((c) => withDoctors.has(c.id)));

@@ -51,8 +51,10 @@ async function anyDoctorTimes(clinic, { serviceId, date, branch = null }) {
   const svc = serviceId ? await knex('services').where({ id: serviceId, business_id: clinic.id, is_active: true }).first('doctor_id') : null;
   // With branches: only the doctors of the branch the patient chose ('main' = the main branch).
   const inBranch = (q) => { if (branch === 'main') q.whereNull('branch_id'); else if (branch) q.where('branch_id', branch); };
-  const ids = svc && svc.doctor_id ? await knex('doctors').where({ id: svc.doctor_id, business_id: clinic.id, is_active: true }).modify(inBranch).pluck('id')
-    : await knex('doctors').where({ business_id: clinic.id, is_active: true }).modify(inBranch).pluck('id');
+  // Doctors taking online bookings (with "booking with the clinic only" any active doctor's time counts).
+  const bookable = (q) => { q.modify(inBranch); if (!clinic.booking_clinic_only) q.where('online_booking', true); };
+  const ids = svc && svc.doctor_id ? await knex('doctors').where({ id: svc.doctor_id, business_id: clinic.id, is_active: true }).modify(bookable).pluck('id')
+    : await knex('doctors').where({ business_id: clinic.id, is_active: true }).modify(bookable).pluck('id');
   const free = new Map();
   for (const doctorId of ids) {
     try {
@@ -73,6 +75,7 @@ async function freeTimes(req, clinic, { doctorId, serviceId, date, branch = null
   const { min, max } = range(clinic);
   if (!doctorId || !scheduling.isDate(date)) return { slots: [], error: null };
   if (date < min || date > max) return { slots: [], error: req.t('booking.date_range', { n: HORIZON_DAYS }) };
+  if (clinic.booking_clinic_only) doctorId = 'any'; // booking with the clinic only: reception picks the doctor
   if (doctorId === 'any') return { slots: await anyDoctorTimes(clinic, { serviceId, date, branch }), error: null };
   try {
     const slots = await scheduling.availableSlots({ businessId: clinic.id, timezone: clinic.timezone, doctorId, serviceId: serviceId || undefined, date });
@@ -103,7 +106,7 @@ async function renderBook(req, res, clinic, extra = {}) {
   const here = branchChoices.length > 1 && branchSel ? doctors.filter(atBranch(branchSel)) : doctors;
   const sel = {
     branch: branchSel,
-    doctor: (src.doctor_id || src.doctor) === 'any' && here.length > 1 ? 'any' : here.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (here.length === 1 ? here[0].id : null),
+    doctor: clinic.booking_clinic_only || ((src.doctor_id || src.doctor) === 'any' && here.length > 1) ? 'any' : here.some((d) => d.id === idOf(src.doctor_id || src.doctor)) ? idOf(src.doctor_id || src.doctor) : (here.length === 1 ? here[0].id : null),
     service: idOf(src.service_id || src.service),
     date: scheduling.isDate(src.appointment_date || src.date) ? (src.appointment_date || src.date) : null,
     time: scheduling.isTime(src.appointment_time) ? src.appointment_time : null,
@@ -190,6 +193,7 @@ router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 's
   if (!PHONE_RE.test(phone)) return fail(422, req.t('errors.VALIDATION_FAILED'), { patient_phone: req.t('booking.invalid_phone') });
   const { min, max } = range(clinic);
   if (d.appointment_date < min || d.appointment_date > max) return fail(422, req.t('errors.VALIDATION_FAILED'), { appointment_date: req.t('booking.date_range', { n: HORIZON_DAYS }) });
+  if (clinic.booking_clinic_only) d.doctor_id = 'any'; // booking with the clinic only: the request goes to reception
   const anyDoctor = d.doctor_id === 'any';
   // Branch: with "any doctor" the patient's branch choice is kept on the booking (checked against this clinic);
   // with a doctor the booking goes to the doctor's branch.
@@ -209,7 +213,7 @@ router.post('/:slug/book', (req, res, next) => (req.body && req.body.step === 's
       return renderBook(req, res, clinic, { formError: { code: 'SLOT_TAKEN', message: req.t('errors.SLOT_TAKEN') }, errors: { appointment_time: req.t('errors.SLOT_TAKEN') }, old });
     }
   } else {
-    const doctor = await knex('doctors').where({ id: d.doctor_id, business_id: clinic.id, is_active: true }).first('id');
+    const doctor = await knex('doctors').where({ id: d.doctor_id, business_id: clinic.id, is_active: true, online_booking: true }).first('id');
     if (!doctor) return fail(422, req.t('errors.VALIDATION_FAILED'), { doctor_id: translateMessage(req.locale, 'Choose a valid value.') });
   }
 

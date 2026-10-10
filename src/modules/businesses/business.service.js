@@ -15,7 +15,7 @@ const { AppError, E } = require('../../core/errors');
 const rbac = require('../rbac/rbac.service');
 
 const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email',
-  'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'logo_square_mime', 'logo_square_version', 'booking_enabled', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode', 'invoice_next_number', 'favicon_mode', 'favicon_mime', 'favicon_version',
+  'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'logo_square_mime', 'logo_square_version', 'booking_enabled', 'booking_clinic_only', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode', 'invoice_next_number', 'favicon_mode', 'favicon_mime', 'favicon_version',
   'onboarding_step', 'onboarding_completed_at', 'status', 'created_at', 'center_id', 'center_share_cash', 'kind', 'branch_short',
   'online_enabled', 'online_payment_required', 'online_payment_instructions', 'online_payment_instructions_en', 'online_cancellation_policy', 'online_cancellation_policy_en'];
 
@@ -108,7 +108,7 @@ async function listForUser(userId) {
 const isMember = async (userId, businessId) => Boolean(await knex('memberships').where({ user_id: userId, business_id: businessId, status: 'active' }).first('id'));
 
 const PROFILE_FIELDS = ['name', 'name_en', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email', 'address',
-  'map_url', 'working_hours_text', 'tax_number', 'booking_enabled', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode'];
+  'map_url', 'working_hours_text', 'tax_number', 'booking_enabled', 'booking_clinic_only', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode'];
 
 async function updateProfile(ctx, data) {
   const before = await knex('businesses').where({ id: ctx.businessId }).first(PROFILE_FIELDS);

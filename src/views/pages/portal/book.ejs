@@ -39,6 +39,13 @@
     </section>
     <% } %>
 
+    <% if (clinic.booking_clinic_only) { %>
+    <section class="book-step" data-clinic-only>
+      <h2><span class="step-n num">1</span><%= t('booking.with_clinic') %></h2>
+      <input type="radio" name="doctor_id" value="any" checked hidden>
+      <div class="alert alert-info small"><%- icon('hospital', 'icon-sm') %><div class="grow"><%= t('booking.with_clinic_text') %></div></div>
+    </section>
+    <% } else { %>
     <section class="book-step">
       <h2><span class="step-n num">1</span><%= t('booking.choose_doctor') %></h2>
       <% if (!doctors.length) { %>
@@ -66,6 +73,7 @@
       <%- err('doctor_id') %>
       <% } %>
     </section>
+    <% } %>
 
     <section class="book-step">
       <h2><span class="step-n num">2</span><%= t('booking.step_service') %></h2>
@@ -155,7 +163,7 @@
       <%- include('../../partials/portal-clinic-card', { clinic: clinic }) %>
       <h2><%= t('booking.summary') %></h2>
       <dl class="book-sum-list">
-        <div><dt><%- icon('stethoscope', 'icon-sm') %><%= t('common.doctor') %></dt><dd data-sum="doctor"><%= selDoctor ? selDoctor.name : '—' %></dd></div>
+        <div><dt><%- icon('stethoscope', 'icon-sm') %><%= t('common.doctor') %></dt><dd data-sum="doctor"><%= selDoctor ? selDoctor.name : (sel.doctor === 'any' ? t('booking.any_doctor') : '—') %></dd></div>
         <div><dt><%- icon('clipboard-plus', 'icon-sm') %><%= t('common.service') %></dt><dd data-sum="service"><%= selService ? selService.name : t('booking.any_service') %></dd></div>
         <div><dt><%- icon('calendar-days', 'icon-sm') %><%= t('common.date') %></dt><dd data-sum="date"><%= sel.date ? fmt.date(sel.date, { weekday: 'long', day: 'numeric', month: 'long' }) : '—' %></dd></div>
         <div><dt><%- icon('clock', 'icon-sm') %><%= t('common.time') %></dt><dd data-sum="time" class="num"><%= sel.time || '—' %></dd></div>

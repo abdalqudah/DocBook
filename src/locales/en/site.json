@@ -1155,6 +1155,8 @@
     "date_range": "Choose a date within the next {n} days.",
     "rate_limited": "Too many booking requests from this device. Please try again later or call the clinic.",
     "any_doctor": "Any available doctor",
+    "with_clinic": "Booking with the clinic",
+    "with_clinic_text": "Pick the day and time that suit you and your request goes straight to the clinic. Reception assigns the doctor, confirms your appointment and sends you the confirmation.",
     "any_doctor_text": "Pick the time that suits you; the clinic chooses the doctor and confirms with you.",
     "doctor_by_clinic": "Chosen by the clinic when it confirms"
   },

@@ -111,14 +111,18 @@ async function centerPractices(clinic) {
 async function centerPracticeOf(clinic, doctorId) {
   const practices = await centerPractices(clinic);
   if (!practices || !practices.length) return null;
-  const d = await knex('doctors').whereIn('business_id', practices.map((p) => p.id)).where({ id: Number(doctorId) || 0, is_active: true }).first('business_id');
+  const d = await knex('doctors').whereIn('business_id', practices.map((p) => p.id)).where({ id: Number(doctorId) || 0, is_active: true, show_on_site: true }).first('business_id');
   return d ? practices.find((p) => p.id === d.business_id) || null : null;
 }
 const listDoctors = async (req, clinic, where = 'site') => {
   const practices = await centerPractices(clinic);
   const media = require('../integrations/media.service'); // eslint-disable-line global-require
   const [rows, photos] = await Promise.all([
-    knex('doctors').whereIn('business_id', practices ? practices.map((p) => p.id) : [clinic.id]).where({ is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+    knex('doctors').whereIn('business_id', practices ? practices.map((p) => p.id) : [clinic.id]).where({ is_active: true })
+      // The website lists the doctors shown on it; booking offers those taking online bookings (with "booking with the
+      // clinic only" every active doctor counts: reception picks one).
+      .modify((q) => { if (where === 'booking') { if (!clinic.booking_clinic_only) q.where('online_booking', true); } else q.where('show_on_site', true); })
+      .orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
       .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'bio', 'bio_en', 'consultation_fee', 'show_consultation_fee', 'color', 'slot_duration_minutes', 'online_enabled', 'branch_id', 'social_links'),
     practices ? Promise.all(practices.map((p) => media.publicDoctorPhotos(p))).then((all) => Object.assign({}, ...all)) : media.publicDoctorPhotos(clinic),
   ]);

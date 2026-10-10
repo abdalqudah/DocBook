@@ -1102,7 +1102,13 @@
       "username": "Without @ — e.g. mqdentalcenter. The account must be public.",
       "link": "A link starting with https://, tel: or mailto: — used when the button action is \"Custom link\".",
       "url": "An Instagram post or reel link, e.g. https://www.instagram.com/p/…"
-    }
+    },
+    "booking_mode_title": "How patients book",
+    "booking_mode_sub": "With a doctor the patient chooses, or with the clinic.",
+    "booking_clinic_only": "Book with the clinic only",
+    "booking_clinic_only_text": "The patient picks a time only, no doctor; the request reaches the clinic, reception chooses the doctor and confirms, the patient is told and the visit shows in their file.",
+    "booking_mode_saved": "Booking mode saved.",
+    "booking_doctors_note": "Each doctor: \"takes online bookings\" and \"shown on the website\" on their profile."
   },
   "errors_website": {
     "SECTION_ONCE": "This section is already on the page.",
