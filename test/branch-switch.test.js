@@ -68,3 +68,54 @@ test('Today and the reception board follow the branch; the top bar says which', 
   r = await o.get('/app/front-desk?lang=en');
   assert.match(r.text, /Abdali Patient/); assert.match(r.text, /Main Patient/); assert.doesNotMatch(r.text, /data-branch-now/);
 });
+
+test('the cash desk follows the branch: its receipts and its drawer; each branch closes its own drawer', async () => {
+  const cashier = require('../src/modules/clinic/cashier.service'); // eslint-disable-line global-require
+  const rbac = require('../src/modules/rbac/rbac.service'); // eslint-disable-line global-require
+  const u = (await knex('users').where({ email: mail }).first('id')).id;
+  const appts = await knex('appointments').where({ business_id: b }).whereIn('patient_name', ['Main Patient', 'Abdali Patient']).select('id', 'patient_name');
+  const idOf = (n) => appts.find((x) => x.patient_name === n).id;
+  await knex('invoices').insert([
+    { business_id: b, appointment_id: idOf('Main Patient'), patient_name: 'Main Patient', amount: 10, payment_method: 'cash', invoice_number: 9101 },
+    { business_id: b, appointment_id: idOf('Abdali Patient'), patient_name: 'Abdali Patient', amount: 25, payment_method: 'cash', invoice_number: 9102 },
+  ]);
+  const base = { businessId: b, userId: u, permissions: await rbac.getUserPermissions(b, u), currency: 'JOD', timezone: 'Asia/Amman', today: scheduling.clinicNow('Asia/Amman').date };
+  const ab = { ...base, workBranch: String(branch) };
+  const main = { ...base, workBranch: 'main' };
+  assert.equal((await cashier.todayTotals(ab)).total, 25);
+  assert.equal((await cashier.todayTotals(main)).total, 10);
+  assert.equal((await cashier.todayTotals({ ...base, workBranch: '' })).total, 35);
+  assert.equal((await cashier.openPeriod(ab)).expected, 25);
+  await cashier.close(ab, { counted_cash: '25' });
+  assert.equal((await cashier.openPeriod(ab)).expected, 0, 'the branch drawer is closed');
+  assert.equal((await cashier.openPeriod(main)).expected, 10, 'the main branch drawer is not');
+  assert.equal((await cashier.listClosings(main)).length, 0);
+  assert.equal((await cashier.listClosings(ab)).length, 1);
+  const o = app.agent(); await o.login(mail);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  const r = await o.get('/app/cashier?lang=en');
+  assert.equal(r.status, 200);
+});
+
+test('the branch has its own doctors and services; a new doctor goes to it; booking offers its doctors', async () => {
+  const o = app.agent(); await o.login(mail);
+  const docs = await knex('doctors').where({ business_id: b }).select('id', 'full_name');
+  const id = (n) => docs.find((d) => d.full_name === n).id;
+  await knex('services').insert([
+    { business_id: b, name: 'Main cleaning', doctor_id: id('Dr Main'), price: 10, duration_minutes: 30, is_active: true },
+    { business_id: b, name: 'Abdali whitening', doctor_id: id('Dr Abdali'), price: 50, duration_minutes: 30, is_active: true },
+    { business_id: b, name: 'Clinic consult', doctor_id: null, price: 5, duration_minutes: 15, is_active: true },
+  ]);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  let r = await o.get('/app/doctors?lang=en');
+  assert.match(r.text, /Dr Abdali/); assert.doesNotMatch(r.text, /Dr Main/);
+  r = await o.get('/app/doctors/new?lang=en');
+  assert.match(r.text, new RegExp(`<option value="${branch}" selected`), 'a new doctor goes to the branch');
+  r = await o.get('/app/services?lang=en');
+  assert.match(r.text, /Abdali whitening/); assert.match(r.text, /Clinic consult/); assert.doesNotMatch(r.text, /Main cleaning/);
+  r = await o.get('/app/appointments/new?lang=en');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Dr Abdali/); assert.doesNotMatch(r.text, /Dr Main/);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: '' });
+  assert.match((await o.get('/app/doctors?lang=en')).text, /Dr Main/);
+});

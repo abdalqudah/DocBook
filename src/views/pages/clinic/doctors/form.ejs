@@ -45,7 +45,7 @@
   <div class="panel"><div class="panel-head"><h2><%= t('doctors.section_booking') %></h2></div>
     <div class="panel-body form-grid cols-3">
       <% if (branchOptions) { %><input type="hidden" name="branch_form" value="1">
-      <%- include('../../../partials/field', { name: 'branch_id', label: t('branches.work_branch'), type: 'select', value: v('branch_id', '') === null ? '' : String(v('branch_id', '') || ''), options: branchOptions, help: t('branches.work_branch_help') }) %><% } %>
+      <%- include('../../../partials/field', { name: 'branch_id', label: t('branches.work_branch'), type: 'select', value: v('branch_id', '') === null ? '' : String(v('branch_id', '') || (typeof newBranch !== 'undefined' ? newBranch : '')), options: branchOptions, help: t('branches.work_branch_help') }) %><% } %>
       <%- include('../../../partials/field', { name: 'consultation_fee', label: t('doctors.fee'), value: v('consultation_fee', 0), suffix: currency, attrs: 'inputmode="decimal"' }) %>
       <%- include('../../../partials/field', { name: 'slot_duration_minutes', label: t('doctors.slot'), value: v('slot_duration_minutes', 30), suffix: t('common.minutes'), attrs: 'inputmode="numeric"', help: t('doctors.slot_help') }) %>
       <%- include('../../../partials/field', { name: 'base_salary', label: t('doctors.base_salary'), value: v('base_salary', 0), suffix: currency, attrs: 'inputmode="decimal"' }) %>

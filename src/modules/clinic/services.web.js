@@ -4,14 +4,17 @@ const { wrap, form, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const svc = require('./doctors.service');
 const ops = require('../platformops/ops.service'); // service categories
+const branches = require('./branches.service');
 
 const router = express.Router();
 router.use(can('services.manage'));
 
 async function render(req, res, extra = {}) {
   const rows = await knex('services as s').leftJoin('doctors as d', 'd.id', 's.doctor_id').where('s.business_id', req.ctx.businessId)
+    // the branch the member works in: its doctors' services and the clinic-wide ones
+    .modify((q) => { if (req.ctx.workBranch) q.where((w) => w.whereNull('s.doctor_id').orWhere((x) => branches.scope(x.whereNotNull('s.doctor_id'), req.ctx, 'd.branch_id'))); })
     .orderBy([{ column: 's.is_active', order: 'desc' }, { column: 's.sort_order' }, { column: 's.name' }]).select('s.*', 'd.full_name as doctor_name', 'd.color as doctor_color');
-  const doctors = await knex('doctors').where({ business_id: req.ctx.businessId }).orderBy('full_name').select('id', 'full_name');
+  const doctors = await branches.scope(knex('doctors').where({ business_id: req.ctx.businessId }), req.ctx, 'branch_id').orderBy('full_name').select('id', 'full_name');
   const categories = await ops.listCategories(req.ctx.businessId);
   const counts = {};
   rows.forEach((r) => { if (r.category_id) counts[r.category_id] = (counts[r.category_id] || 0) + 1; });

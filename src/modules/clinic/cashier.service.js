@@ -62,12 +62,23 @@ const VISIT_SELECT = ['a.id', 'a.patient_id', 'a.patient_name', 'a.patient_phone
   'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.color as doctor_color', 'd.consultation_fee',
   's.name as service_name', 's.name_en as service_name_en', 's.price as service_price', 'a.doctor_lines', 'a.doctor_finished_at'];
 
+// ---------------------------------------------------------------- the branch chosen in the account menu
+// Visits by their branch; receipts by their visit's branch (a sale without a visit belongs to the main branch); each
+// branch closes its own drawer (cash_closings.branch_scope).
+const scopeKey = (ctx) => String((ctx && ctx.workBranch) || '');
+function invScope(q, ctx, col) {
+  const v = scopeKey(ctx);
+  if (!v) return q;
+  const inBranch = knex('appointments').select('id').where('business_id', ctx.businessId).modify((x) => (v === 'main' ? x.whereNull('branch_id') : x.where('branch_id', Number(v))));
+  return v === 'main' ? q.where((w) => w.whereNull(col).orWhereIn(col, inBranch)) : q.whereIn(col, inBranch);
+}
+
 function unpaidVisits(ctx) {
   const q = knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where('a.business_id', ctx.businessId).where('a.payment_status', 'unpaid').whereNot('a.appointment_type', 'blocked')
     .whereNotIn('a.status', ['cancelled', 'no_show']);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
-  return q;
+  return require('./branches.service').scope(q, ctx); // eslint-disable-line global-require
 }
 
 /** Stage of a visit in the clinic day (for the queue label). */
@@ -97,7 +108,7 @@ async function search(ctx, term) {
 const todayInvoices = (ctx) => {
   const q = lib.whereLocalDates(knex('invoices').where('business_id', ctx.businessId), 'created_at', ctx.today, ctx.today, ctx.timezone);
   if (ctx.ownDoctorId) q.where('doctor_id', ctx.ownDoctorId);
-  return q;
+  return invScope(q, ctx, 'appointment_id');
 };
 
 /** Last receipts issued today (for reprinting). */
@@ -646,7 +657,7 @@ const dbNow = async (trx = knex) => { const [[row]] = await trx.raw('SELECT NOW(
 function cashRows(ctx, start, end, trx = knex) {
   const parts = trx('invoice_payments').where('business_id', ctx.businessId).groupBy('invoice_id')
     .select('invoice_id', knex.raw("SUM(CASE WHEN method = 'cash' THEN amount ELSE 0 END) AS cash"), knex.raw('COUNT(*) AS n')).as('p');
-  return trx('invoices as i').leftJoin(parts, 'p.invoice_id', 'i.id').where('i.business_id', ctx.businessId)
+  return invScope(trx('invoices as i').leftJoin(parts, 'p.invoice_id', 'i.id').where('i.business_id', ctx.businessId), ctx, 'i.appointment_id')
     .where('i.created_at', '>', start).where('i.created_at', '<=', end)
     .whereRaw("(CASE WHEN p.n IS NULL THEN (CASE WHEN i.payment_method = 'cash' THEN 1 ELSE 0 END) ELSE (CASE WHEN p.cash > 0 THEN 1 ELSE 0 END) END) = 1");
 }
@@ -660,13 +671,14 @@ async function expectedCash(ctx, start, end, trx = knex) {
 
 /** Cash expenses recorded in the same window — informational only (not deducted from the stored expected figure). */
 async function cashExpenses(ctx, start, end, trx = knex) {
+  if (scopeKey(ctx)) return { total: 0, count: 0 }; // expenses are the clinic's, not a branch's: shown on the whole-clinic drawer
   const row = await trx('expenses').where({ business_id: ctx.businessId, payment_method: 'cash' })
     .where('created_at', '>', start).where('created_at', '<=', end)
     .first(knex.raw('COALESCE(SUM(amount), 0) AS v'), knex.raw('COUNT(*) AS c'));
   return { total: n(row.v), count: n(row.c) };
 }
 
-const lastClosing = (ctx, trx = knex) => trx('cash_closings').where({ business_id: ctx.businessId }).orderBy('period_end', 'desc').orderBy('id', 'desc').first();
+const lastClosing = (ctx, trx = knex) => trx('cash_closings').where({ business_id: ctx.businessId, branch_scope: scopeKey(ctx) }).orderBy('period_end', 'desc').orderBy('id', 'desc').first();
 
 /**
  * The open drawer period: from the last closing's period_end; with no closing yet, from the start of the clinic's
@@ -708,7 +720,7 @@ async function close(ctx, input) {
     const variance = round(counted - p.expected, ctx.currency);
     const [id] = await trx('cash_closings').insert({
       business_id: ctx.businessId, period_start: p.start, period_end: p.end, expected_cash: p.expected, counted_cash: counted, variance,
-      invoice_count: p.count, closed_by: ctx.userId || null, notes: d.notes || null,
+      invoice_count: p.count, closed_by: ctx.userId || null, notes: d.notes || null, branch_scope: scopeKey(ctx),
     });
     // TIMESTAMPs have one-second resolution: keep the clinic lock until the clock has left period_end's second, so a
     // receipt paid right after this closing can never share its timestamp (and fall between two periods).
@@ -719,6 +731,7 @@ async function close(ctx, input) {
 }
 
 const closingsQuery = (ctx) => knex('cash_closings as c').leftJoin('users as u', 'u.id', 'c.closed_by').where('c.business_id', ctx.businessId)
+  .modify((q) => { if (scopeKey(ctx)) q.where('c.branch_scope', scopeKey(ctx)); }) // a branch sees its own closings; the whole clinic sees all
   .orderBy('c.period_end', 'desc').orderBy('c.id', 'desc').select('c.*', 'u.name as closed_by_name');
 
 const listClosings = (ctx, limit = 200) => closingsQuery(ctx).limit(limit);

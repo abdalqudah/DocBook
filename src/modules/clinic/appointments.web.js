@@ -338,7 +338,8 @@ async function renderForm(req, res, extra = {}) {
   const { ctx } = req;
   const appt = req.params.id ? await appts.get(ctx, Number(req.params.id)) : null;
   if (appt && appt.appointment_type === 'blocked') throw E.notFound('Appointment');
-  const doctors = await bookableDoctors(ctx);
+  // the branch the member works in: its doctors only (an existing visit keeps its own doctor in the list)
+  const doctors = (await bookableDoctors(ctx)).filter((d) => inBranch({ branch: filtersOf(req).branch })(d) || (appt && d.id === appt.doctor_id));
   const q = req.query;
   let v;
   if (appt) {
