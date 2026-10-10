@@ -577,6 +577,8 @@ test('pages, menu and footer: add a page, its address, menu links, footer; live 
   assert.match(r.text, /Since 2010/);
   assert.match(r.text, /<title>Our story · /);
   assert.match(r.text, /ws-nav ws-nav-centered is-static/);
+  assert.match(r.text, new RegExp(`href="/${A.slug}/login" data-site-login`), 'a sign-in button on the website (staff, the patient portal being off)');
+  assert.match(r.text, /data-menu-login/, '…and in the phone menu');
   assert.match(r.text, new RegExp(`href="/${A.slug}/p/our-story" aria-current="page">Our story`));
   assert.match(r.text, /Book now/);
   assert.match(r.text, /Family dental care\./);

@@ -17,7 +17,7 @@ const ACTIVE = ['pending', 'confirmed'];
 const apptBase = (ctx) => {
   const q = knex('appointments as a').where('a.business_id', ctx.businessId).whereNot('a.appointment_type', 'blocked');
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
-  return q;
+  return require('./branches.service').scope(q, ctx); // eslint-disable-line global-require -- the branch chosen in the account menu
 };
 const invBase = (ctx) => {
   const q = knex('invoices as i').where('i.business_id', ctx.businessId);

@@ -139,4 +139,12 @@ async function remove(ctx, id) {
   forget(ctx.businessId);
 }
 
-module.exports = { list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };
+/** A query narrowed to the branch the member works in (account menu): 'main' = no branch, an id = that branch. */
+function scope(q, ctx, col = 'a.branch_id') {
+  const v = ctx && ctx.workBranch;
+  if (v === 'main') q.whereNull(col);
+  else if (Number(v)) q.where(col, Number(v));
+  return q;
+}
+
+module.exports = { scope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };

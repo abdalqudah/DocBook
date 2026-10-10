@@ -1,5 +1,8 @@
 <%# Header of a builder site (doc.header): style, sticky, the clinic's logo/name, the menu and its buttons. %>
-<% var h = wsSite.header || {}; var c = clinic; var menuId = 'ws-menu'; %>
+<% var h = wsSite.header || {}; var c = clinic; var menuId = 'ws-menu';
+   // sign-in: patients (portal on — staff sign in from that page), else staff; "My account" once a patient is in
+   var _login = c.patientSignedIn ? { href: '/' + c.slug + '/account', icon: 'user-round', label: t('pportal.my_account') }
+     : { href: '/' + c.slug + '/' + (c.patientPortal ? 'account/login' : 'login'), icon: 'log-in', label: t('pportal.site_login') }; %>
 <header class="site-nav ws-nav ws-nav-<%= h.style || 'solid' %><%= h.sticky === false ? ' is-static' : '' %> ws-menu-<%= h.menu_pos || 'center' %>"<% if (wsSite.preview) { %> data-ws-sec="__header" data-ws-label="<%= t('website.b.header') %>"<% } %>>
   <div class="container inner">
     <% var _lh = Number(h.logo_height) || 0; if (_lh && _lh < 20) _lh = 20; var _hasImg = Boolean(wsSite.logo || c.logo_mime); %>
@@ -16,13 +19,13 @@
       <% if (h.show_phone && c.telHref) { %><a class="btn btn-ghost btn-sm hide-sm" href="<%= c.telHref %>" dir="ltr"><%- icon('phone', 'icon-sm') %><%= c.phone %></a><% } %>
       <% if (h.show_lang !== false) { %><a class="btn btn-ghost btn-sm lang-btn" href="<%= langUrl(locale === 'ar' ? 'en' : 'ar') %>" lang="<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages') %><span class="hide-xs"><%= locale === 'ar' ? 'English' : 'العربية' %></span></a><% } %>
       <% if (h.show_theme !== false && h.dark_mode !== false) { %><button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button><% } %>
+      <a class="btn btn-secondary btn-sm hide-sm" href="<%= _login.href %>" data-site-login><%- icon(_login.icon, 'icon-sm') %><span><%= _login.label %></span></a>
       <% if (h.show_book !== false && c.booking_enabled && !(typeof hideBookCta !== 'undefined' && hideBookCta)) { %><a class="btn btn-primary btn-sm" href="/<%= c.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><span><%= t('portal.book') %></span></a><% } %>
-      <% if (wsSite.items.length) { %>
       <details class="site-menu ws-nav-menu">
         <summary class="btn btn-ghost btn-icon" aria-label="<%= t('site.menu') %>"><%- icon('menu') %></summary>
-        <div class="site-menu-panel"><% wsSite.items.forEach(function (n) { %><a href="<%= n.href %>" data-menu-close<%- n.current ? ' aria-current="page"' : '' %><%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a><% }) %></div>
+        <div class="site-menu-panel"><% wsSite.items.forEach(function (n) { %><a href="<%= n.href %>" data-menu-close<%- n.current ? ' aria-current="page"' : '' %><%- n.ext ? ' target="_blank" rel="noopener"' : '' %>><%= n.label %></a><% }) %>
+          <% if (wsSite.items.length) { %><div class="sep"></div><% } %><a href="<%= _login.href %>" data-menu-close data-menu-login><%- icon(_login.icon, 'icon-sm') %> <%= _login.label %></a></div>
       </details>
-      <% } %>
     </div>
   </div>
 </header>

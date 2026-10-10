@@ -828,3 +828,18 @@ body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transpa
   .ws-team-reveal .ws-person-more .btn-ghost { color: inherit; }
   .ws-team-reveal .ws-person-in { border: 1px solid var(--border); }
 }
+/* The phone menu reads on its own panel whatever the header's colour (a transparent header over a photo is white). */
+.ws-nav .site-menu-panel { color: var(--text); }
+.ws-nav .site-menu-panel a { display: flex; align-items: center; gap: 8px; color: var(--text); }
+.ws-nav .site-menu-panel .sep { height: 1px; background: var(--border); margin: 6px 4px; }
+/* …and with the menu open over the photo, the bar turns solid so its buttons read too. */
+body.ws-body .ws-nav-transparent:not(.is-scrolled):has(.site-menu[open]),
+body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled):has(.site-menu[open]) { background: var(--surface); color: var(--text); border-bottom-color: var(--border); }
+body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled):has(.site-menu[open]) .btn-ghost { color: var(--text); }
+/* the logo for a light bar again (light theme; in dark the bar is dark and the light-on-dark logo stays) */
+:root[data-theme="light"] body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled):has(.site-menu[open]) .logo-light { display: block; }
+:root[data-theme="light"] body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled):has(.site-menu[open]) .logo-dark { display: none; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled):has(.site-menu[open]) .logo-light { display: block; }
+  :root:not([data-theme="dark"]) body.ws-body:has(.ws-hero-slider, .ws-hero-image_back.has-image) .ws-nav-transparent:not(.is-scrolled):has(.site-menu[open]) .logo-dark { display: none; }
+}

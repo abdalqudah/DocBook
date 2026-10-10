@@ -155,7 +155,7 @@ const FLOW = ['expected', 'arrived', 'with_doctor', 'ready', 'paid'];
 /** Doctors working on a date: active, the weekday enabled in their hours and not on a day off. */
 async function doctorsWorking(ctx, date) {
   const [docs, off] = await Promise.all([
-    knex('doctors').where({ business_id: ctx.businessId, is_active: true }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+    require('./branches.service').scope(knex('doctors').where({ business_id: ctx.businessId, is_active: true }), ctx, 'branch_id').orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
       .select('id', 'full_name', 'full_name_en', 'color', 'working_hours'),
     knex('doctor_days_off').where({ business_id: ctx.businessId, off_date: date }).pluck('doctor_id'),
   ]);
@@ -176,6 +176,7 @@ async function today(ctx, { doctor } = {}) {
     .orderBy('a.appointment_time').select(VISIT_SELECT.concat(['a.source', 'a.patient_email', 'a.paid_at']));
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
   if (doctor) q.where('a.doctor_id', doctor === 'none' ? null : Number(doctor));
+  require('./branches.service').scope(q, ctx); // eslint-disable-line global-require -- the branch chosen in the account menu
   const rows = await q;
   const ids = rows.map((a) => a.id);
   const [invs, rxs, certs, intake] = ids.length ? await Promise.all([

@@ -46,7 +46,7 @@
       </div>
     </details>
     <details class="dropdown">
-      <summary class="user-chip"><span class="avatar"><% if (typeof myPhoto !== 'undefined' && myPhoto) { %><img src="<%= myPhoto %>" alt=""><% } else { %><%= initials(currentUser.name) %><% } %></span><span class="user-name small strong"><%= currentUser.name %></span><%- icon('chevron-down', 'icon-sm muted user-chev') %></summary>
+      <summary class="user-chip"><span class="avatar"><% if (typeof myPhoto !== 'undefined' && myPhoto) { %><img src="<%= myPhoto %>" alt=""><% } else { %><%= initials(currentUser.name) %><% } %></span><span class="user-name small strong"><%= currentUser.name %></span><% if (typeof branchSwitch !== 'undefined' && branchSwitch && branchSwitch.current) { var _bo = branchSwitch.options.find(function (o) { return o.value === String(branchSwitch.current); }); if (_bo) { %><span class="badge badge-info truncate" style="max-width:160px" data-branch-now title="<%= _bo.label %>"><%- icon('map-pin', 'icon-sm') %><%= _bo.label %></span><% } } %><%- icon('chevron-down', 'icon-sm muted user-chev') %></summary>
       <div class="menu">
         <div class="menu-label truncate"><%= currentUser.email %></div>
         <%# Phones: the top-bar buttons that do not fit (language, theme, cash screen, mail) live here. %>

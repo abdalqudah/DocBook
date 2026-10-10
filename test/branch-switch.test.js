@@ -53,3 +53,18 @@ test('the account menu switches the branch; the calendar and list follow it', as
   r = await o.get('/app/appointments?view=list&lang=en');
   assert.match(r.text, /Main Patient/); assert.doesNotMatch(r.text, /Abdali Patient/);
 });
+
+test('Today and the reception board follow the branch; the top bar says which', async () => {
+  const o = app.agent(); await o.login(mail);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  let r = await o.get('/app/front-desk?lang=en');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /Abdali Patient/); assert.doesNotMatch(r.text, /Main Patient/);
+  assert.match(r.text, /data-branch-now/);
+  r = await o.get('/app?lang=en');
+  assert.equal(r.status, 200);
+  assert.doesNotMatch(r.text, /Main Patient/);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: '' });
+  r = await o.get('/app/front-desk?lang=en');
+  assert.match(r.text, /Abdali Patient/); assert.match(r.text, /Main Patient/); assert.doesNotMatch(r.text, /data-branch-now/);
+});
