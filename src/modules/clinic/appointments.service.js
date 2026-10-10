@@ -186,6 +186,7 @@ async function update(ctx, apptId, input) {
     appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: d.service_id ? null : (d.duration_minutes || null),
     appointment_type: d.appointment_type || before.appointment_type, notes: d.notes || null, updated_at: new Date(),
   };
+  if (before.doctor_id !== (d.doctor_id || null)) patch.import_doctor_auto = false; // a person chose the doctor
   const run = async (trx) => {
     await checkRefs(ctx, d, trx);
     // Online consultations keep the online fee set when booking.
@@ -255,7 +256,7 @@ async function callIn(ctx, apptId, on = true) {
 async function assignDoctor(ctx, apptId, doctorId) {
   const a = await get(ctx, apptId);
   return scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: Number(doctorId), serviceId: a.service_id, durationOverride: a.duration_minutes, date: a.appointment_date, time: a.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
-    await trx('appointments').where({ id: a.id }).update({ doctor_id: Number(doctorId), branch_id: await branches.ofDoctor(ctx.businessId, Number(doctorId), trx, ctx.workBranch || branches.keyOf(a.branch_id)), updated_at: new Date() });
+    await trx('appointments').where({ id: a.id }).update({ import_doctor_auto: false, doctor_id: Number(doctorId), branch_id: await branches.ofDoctor(ctx.businessId, Number(doctorId), trx, ctx.workBranch || branches.keyOf(a.branch_id)), updated_at: new Date() });
     await audit.record(ctx, 'appointment.doctor_assigned', { entityType: 'appointment', entityId: a.id, oldValues: { doctor_id: a.doctor_id }, newValues: { doctor_id: Number(doctorId) } }, trx);
   });
 }
@@ -300,6 +301,7 @@ async function move(ctx, apptId, input) {
   await scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: d.doctor_id, serviceId: a.service_id, durationOverride: duration,
     date: d.appointment_date, time: d.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
     const patch = { doctor_id: d.doctor_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: a.service_id ? a.duration_minutes : duration, updated_at: new Date() };
+    if (a.doctor_id !== d.doctor_id) patch.import_doctor_auto = false; // a person chose the doctor
     if (a.appointment_type === 'in_person' && a.doctor_id !== d.doctor_id) patch.amount_due = await expectedFee(trx, ctx.businessId, d.doctor_id, a.service_id);
     if (a.doctor_id !== d.doctor_id) patch.branch_id = await branches.ofDoctor(ctx.businessId, d.doctor_id, trx, ctx.workBranch || branches.keyOf(a.branch_id)); // the visit goes where the doctor works (the same branch when it works there too)
     await trx('appointments').where({ id: a.id, business_id: ctx.businessId }).update(patch);

@@ -360,6 +360,9 @@ async function calendarStage(job, s, st, day) {
   const to = (st.range && st.range.to) || plusDays(today(), 365);
   if (!day || day > to) {
     sessions.delete(businessId);
+    // the calendar read: each visit's real doctor (chairs are rooms) and its branch
+    await promote.reassignDoctors(businessId).catch((e) => console.error('[legacy-remote] doctors', e.message)); // eslint-disable-line no-console
+    await promote.reapplyBranches(businessId).catch((e) => console.error('[legacy-remote] branches', e.message)); // eslint-disable-line no-console
     const [errs] = await knex('import_errors').where({ job_id: job.id }).count({ n: '*' });
     await saveJob(job, st, { status: Number(errs.n) ? 'completed_with_issues' : 'completed', completed_at: now(), runner: null, heartbeat_at: null, error: null, stage: 'done' });
     await audit.record({ businessId, userId: job.created_by }, 'legacy.remote_completed', { entityType: 'import_job', entityId: job.id, newValues: { ...st, found: job.src_links, downloaded: job.success, skipped: job.skipped, failed: job.failed } });

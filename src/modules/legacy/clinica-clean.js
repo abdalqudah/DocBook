@@ -91,7 +91,7 @@ function matchDoctor(name, doctors) {
  * patient's doctor of that day, else the patient's most frequent doctor, else fallback(t). doctorOf(t) is the doctor of
  * a treatment that has one. Returns a Map treatment → doctor (only for the treatments that needed one and got one).
  */
-function inferDoctors(treatments, { needs, doctorOf, dayOf, fallback = () => null }) {
+function inferDoctors(treatments, { needs, doctorOf, dayOf, fallback = () => null, useUsual = true }) {
   const known = treatments.filter((t) => !needs(t) && doctorOf(t) !== null && doctorOf(t) !== undefined && doctorOf(t) !== '');
   const top = (list) => {
     const c = new Map();
@@ -100,7 +100,7 @@ function inferDoctors(treatments, { needs, doctorOf, dayOf, fallback = () => nul
     c.forEach((v, k) => { if (v > n) { best = k; n = v; } });
     return best;
   };
-  const usual = top(known);
+  const usual = useUsual ? top(known) : null;
   const out = new Map();
   treatments.filter(needs).forEach((t) => {
     const d = top(known.filter((k) => dayOf(k) && dayOf(k) === dayOf(t))) || usual || fallback(t);

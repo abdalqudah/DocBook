@@ -322,7 +322,7 @@
     "purge_started": "Removing the imported data in the background — refresh in a minute.",
     "purge_running": "Removing… refresh the page in a minute.",
     "doc_chair": "A clinic chair, not a doctor",
-    "doc_opt_infer": "From the patient's visits (doctor of the day / usual doctor)",
+    "doc_opt_infer": "A chair / no doctor: the doctor on the calendar row, that day's doctor, or who worked in that chair that day",
     "grp_title": "Patient groups and branches",
     "grp_lead": "The Clinica patient groups become patient groups here. Tie a group to a branch to put the visits of its patients on that branch; otherwise a visit is on its doctor's branch.",
     "grp_col_group": "Group in Clinica",

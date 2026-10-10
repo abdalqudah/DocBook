@@ -446,3 +446,12 @@ in or charged. Days without a calendar row are not touched.
   becomes the patient's.
 - "Calendar only" on the pull form: reads Clinica's calendar again over the range (not the patients and files) — adds
   what is missing, fixes times, never twice.
+
+## 2.9.19: Clinica's chairs are rooms — the doctors rotate
+"Clinic 1…5" are chairs; any doctor may work in any of them on a given day. A visit's doctor is (never "the chair's
+usual doctor"): the doctor written on its calendar row (`appointments.import_doctor`, read again by "Calendar only"),
+else the doctor named on its treatments, else who worked in that chair that day (the clinic's other visits in it whose
+doctor is known), else the doctor the calendar is named after ("Mansour"), else its treatments' doctor. A treatment
+written "Clinic 4" gets the patient's doctor that day, else who worked in Clinic 4 that day, else the patient's usual
+doctor. Only visits whose doctor the import set (`import_doctor_auto`) are worked out again — never one a person chose
+(edit, move, transfer, assign clear the flag). Runs after the conversion and after a calendar read.

@@ -335,3 +335,37 @@ test('the Doctors page\'s calendar → branch choice moves the visits read earli
   assert.deepEqual((await knex('patient_branches').where({ patient_id: pid }).pluck('branch_key')).sort(), [String(abdali), 'main'].sort());
   assert.equal(await promote.reapplyBranches(b), 0, 'again: nothing to move');
 });
+
+test('chairs are rooms: each visit\'s doctor is the one written on the calendar, on its treatments, or who worked in that chair that day', async () => {
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  const b = (await knex('businesses').insert({ name: 'Chairs', slug: `ch${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0];
+  const doc = async (name) => (await knex('doctors').insert({ business_id: b, full_name: name, is_active: true }))[0];
+  const [raghad, anas, mansour] = [await doc('Raghad Ali'), await doc('Anas Omar'), await doc('Mansour Qudah')];
+  const pat = async (lid) => {
+    const [pid] = await knex('patients').insert({ business_id: b, full_name: `P ${lid}`, legacy_source: 'clinica', legacy_patient_id: lid });
+    const [ref] = await knex('legacy_patients').insert({ business_id: b, legacy_source: 'clinica', legacy_patient_id: lid, patient_id: pid });
+    return { pid, ref, lid };
+  };
+  const [p1, p2, p3, p4] = [await pat('c1'), await pat('c2'), await pat('c3'), await pat('c4')];
+  const base = { business_id: b, status: 'completed', appointment_type: 'in_person', source: 'import', payment_status: 'imported', external_source: 'clinica', appointment_time: '10:00', import_doctor_auto: true };
+  const ap = async (p, date, cal, extra = {}) => (await knex('appointments').insert({ ...base, patient_id: p.pid, patient_name: `P ${p.lid}`, appointment_date: date, notes: `Clinica: ${cal}`, external_uid: `clinica:${p.lid}:a:cal:${date}:10:00:${cal.replace(/\W/g, '')}`, ...extra }))[0];
+  // Day 1, chair "Clinic 4": P1's treatment that day was by Raghad; P2 has nothing but sat in the same chair
+  const a1 = await ap(p1, '2024-05-01', 'Clinic 4', { doctor_id: mansour }); // wrongly "the chair's doctor" before
+  const a2 = await ap(p2, '2024-05-01', 'Clinic 4', { doctor_id: mansour });
+  await knex('legacy_treatments').insert({ business_id: b, legacy_patient_ref: p1.ref, patient_id: p1.pid, legacy_patient_id: 'c1', row_key: 'ch-1', doctor: 'Raghad Ali', appointment_id: a1, treatment_on: '2024-05-01' });
+  // Day 2, same chair: the calendar row names Anas
+  const a3 = await ap(p3, '2024-05-02', 'Clinic 4', { doctor_id: mansour, import_doctor: 'Anas Omar' });
+  // a visit whose doctor a person chose is never changed
+  const a4 = await ap(p4, '2024-05-02', 'Clinic 4', { doctor_id: mansour, import_doctor_auto: false });
+  await promote.reassignDoctors(b);
+  const docOf = async (id) => (await knex('appointments').where({ id }).first('doctor_id')).doctor_id;
+  assert.equal(await docOf(a1), raghad, 'named on its treatment');
+  assert.equal(await docOf(a2), raghad, 'who worked in Clinic 4 that day');
+  assert.equal(await docOf(a3), anas, 'written on the calendar row');
+  assert.equal(await docOf(a4), mansour, 'chosen by a person: kept');
+  assert.equal(await promote.reassignDoctors(b), 0, 'again: nothing changes');
+  // a treatment written "Clinic 4" that day → who worked in that chair that day (not "the chair's usual doctor")
+  await knex('legacy_treatments').insert({ business_id: b, legacy_patient_ref: p2.ref, patient_id: p2.pid, legacy_patient_id: 'c2', row_key: 'ch-2', doctor: 'Clinic 4', treatment_on: '2024-05-01', description: 'Filling' });
+  await promote.promotePatient(knex, b, p2.pid, { today: '2026-01-01' });
+  assert.equal((await knex('legacy_treatments').where({ business_id: b, row_key: 'ch-2' }).first('doctor_id')).doctor_id, raghad);
+});

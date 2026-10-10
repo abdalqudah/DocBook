@@ -119,6 +119,14 @@ async function resolver(db, businessId) {
     usual.set(key, best ? best[0] : null);
     return usual.get(key);
   };
+  // who worked in a chair on a day: from the visits whose doctor is known (written on Clinica's calendar row, or named
+  // on that visit's treatments) — built once per run
+  let chairDays = null;
+  resolve.chairDoctor = async (day, chairKey) => {
+    if (!day || !chairKey) return null;
+    if (!chairDays) chairDays = await chairDayMap(db, businessId, resolve);
+    return topOf(chairDays.get(`${day}|${chairKey}`));
+  };
   resolve.branchFor = (groups, doctorId) => {
     for (const g of groups) { const k = docKey(g); if (groupBranch.has(k)) return groupBranch.get(k); } // eslint-disable-line no-restricted-syntax
     return doctorId ? branchOf.get(doctorId) || null : null;
@@ -252,7 +260,7 @@ async function upsertVisit(db, businessId, patient, v) {
     business_id: businessId, doctor_id: v.doctorId || null, patient_id: patient.id, patient_name: String(patient.name || '').slice(0, 190) || '—', patient_phone: patient.phone || null,
     appointment_date: v.date, appointment_time: v.time || '09:00', duration_minutes: v.duration || null, status: v.status, appointment_type: 'in_person', source: 'import', branch_id: v.branchId || null,
     // history: 'imported' (never "unpaid" at the cash desk); a booking still to come is an ordinary booking
-    payment_status: v.status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: v.notes ? String(v.notes).slice(0, 3000) : null, external_source: SOURCE, external_uid: uid, created_at: at, updated_at: at,
+    payment_status: v.status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: v.notes ? String(v.notes).slice(0, 3000) : null, external_source: SOURCE, external_uid: uid, import_doctor_auto: true, created_at: at, updated_at: at,
   };
   await db('appointments').insert(row).onConflict(['business_id', 'external_uid']).ignore();
   const a = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'patient_id', 'branch_id');
@@ -281,10 +289,14 @@ async function promotePatient(db, businessId, patientId, { resolve = null, stats
   const dayOf = (t) => t.treatment_on || map.isoDay(t.treatment_date) || null;
   // 1. The doctor of each treatment: the clinic's choice / the same name; a chair or no name → from the patient's visits.
   for (const t of rows) t.resolved = doctorOf.infers(t.doctor) ? null : await doctorOf(t.doctor); // eslint-disable-line no-restricted-syntax, no-await-in-loop
-  const inferred = clean.inferDoctors(rows, { needs: (t) => doctorOf.infers(t.doctor), doctorOf: (t) => t.resolved, dayOf });
+  // A chair (Clinic 1…5) is a room, not a doctor — the doctors rotate: the patient's doctor that day, else who worked
+  // in that chair that day (the clinic's other visits in it), else the patient's usual doctor; never "the chair's".
+  const sameDay = clean.inferDoctors(rows, { needs: (t) => doctorOf.infers(t.doctor), doctorOf: (t) => t.resolved, dayOf, useUsual: false });
+  const usualDoc = clean.inferDoctors(rows, { needs: (t) => doctorOf.infers(t.doctor), doctorOf: (t) => t.resolved, dayOf: () => null });
   for (const t of rows) { // eslint-disable-line no-restricted-syntax
     if (!doctorOf.infers(t.doctor)) continue; // eslint-disable-line no-continue
-    t.resolved = inferred.get(t) || (doctorOf.usualFor ? await doctorOf.usualFor(t.doctor) : null) || null; // eslint-disable-line no-await-in-loop
+    const chair = clean.chairOf(t.doctor) !== null ? docKey(t.doctor) : null;
+    t.resolved = sameDay.get(t) || (chair && doctorOf.chairDoctor ? await doctorOf.chairDoctor(dayOf(t), chair) : null) || usualDoc.get(t) || null; // eslint-disable-line no-await-in-loop
     t.inferred = true;
   }
   // 2. Each treatment → an item of the treatment plan.
@@ -431,11 +443,13 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
   const day0 = today || clinicNow('Asia/Amman').date;
   const status = a.status === 'cancelled' || a.status === 'no_show' ? a.status : a.date < day0 ? 'completed' : (a.status === 'completed' ? 'completed' : 'confirmed');
   const note = [a.calendar ? `Clinica: ${a.calendar}` : null, a.note || null].filter(Boolean).join(' · ') || null;
-  const have = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'branch_id', 'call_status');
+  const have = await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id', 'doctor_id', 'branch_id', 'call_status', 'import_doctor');
   const call = ['no_answer', 'recall'].includes(a.callStatus) ? a.callStatus : null;
+  const docText = a.doctor ? String(a.doctor).replace(/\s+/g, ' ').trim().slice(0, 190) || null : null; // the doctor written on the calendar row
   if (have) {
     const patch = {};
     if (!have.doctor_id && doctorId) patch.doctor_id = doctorId;
+    if (docText && have.import_doctor !== docText) patch.import_doctor = docText;
     if (call && !have.call_status) patch.call_status = call;
     if (!have.branch_id && branchId) patch.branch_id = branchId;
     if (Object.keys(patch).length) await db('appointments').where({ id: have.id }).update(patch);
@@ -450,7 +464,7 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
     .orderByRaw('appointment_time = ? DESC', [time]).orderBy('id').first('id', 'doctor_id', 'branch_id', 'notes');
   if (dayVisit) {
     await db('appointments').where({ id: dayVisit.id }).update({
-      external_uid: uid, appointment_time: time, ...(call ? { call_status: call } : {}), ...(dayVisit.doctor_id || !doctorId ? {} : { doctor_id: doctorId }), ...(dayVisit.branch_id || !branchId ? {} : { branch_id: branchId }),
+      external_uid: uid, appointment_time: time, import_doctor: docText, ...(call ? { call_status: call } : {}), ...(dayVisit.doctor_id || !doctorId ? {} : { doctor_id: doctorId }), ...(dayVisit.branch_id || !branchId ? {} : { branch_id: branchId }),
       notes: [dayVisit.notes, note].filter(Boolean).join('\n').slice(0, 3000) || null,
     });
     return 'merged';
@@ -459,7 +473,7 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
   await db('appointments').insert({
     business_id: businessId, doctor_id: doctorId, patient_id: patientId, patient_name: String(patient.full_name || '').slice(0, 190) || '—', patient_phone: patient.phone || null,
     appointment_date: a.date, appointment_time: time, status, appointment_type: 'in_person', source: 'import', branch_id: branchId,
-    payment_status: status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: note, call_status: call, external_source: SOURCE, external_uid: uid, created_at: at, updated_at: at,
+    payment_status: status === 'confirmed' ? 'unpaid' : 'imported', amount_due: 0, notes: note, call_status: call, external_source: SOURCE, external_uid: uid, import_doctor: docText, import_doctor_auto: true, created_at: at, updated_at: at,
   }).onConflict(['business_id', 'external_uid']).ignore();
   return 'new';
 }
@@ -500,6 +514,7 @@ async function run(businessId) {
     const pids = await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').where('patient_id', '>', cursor) // eslint-disable-line no-await-in-loop
       .distinct('patient_id').orderBy('patient_id').limit(100).pluck('patient_id');
     if (!pids.length) {
+      await reassignDoctors(businessId); // eslint-disable-line no-await-in-loop -- each visit's real doctor (chairs are rooms)
       await reapplyBranches(businessId); // eslint-disable-line no-await-in-loop -- the calendar / group → branch choices, on every visit made from Clinica
       const [vis] = await knex('appointments').where({ business_id: businessId, external_source: SOURCE }).count({ n: '*' }); // eslint-disable-line no-await-in-loop
       await knex('import_jobs').where({ id: job.id }).update({ status: 'completed', completed_at: now(), runner: null, heartbeat_at: null, success: Number(vis.n) }); // eslint-disable-line no-await-in-loop
@@ -512,6 +527,64 @@ async function run(businessId) {
     await knex('import_jobs').where({ id: job.id }).update({ stage: `cursor:${pids[pids.length - 1]}`, processed: knex.raw('processed + ?', [pids.length]), heartbeat_at: now() }); // eslint-disable-line no-await-in-loop
   }
 }
+const topOf = (m) => { if (!m) return null; let best = null; let n = 0; m.forEach((v, k) => { if (v > n) { best = k; n = v; } }); return best; };
+const add = (map, key, id) => { if (!id) return; if (!map.has(key)) map.set(key, new Map()); const m = map.get(key); m.set(id, (m.get(id) || 0) + 1); };
+const calendarOf = (notes) => { const m = /Clinica: ([^·\n]+)/.exec(notes || ''); return m ? m[1].trim() : null; };
+const chairKeyOf = (cal) => (cal && clean.chairOf(cal) !== null ? docKey(cal) : null);
+
+/** What is known about the clinic's Clinica visits: per visit, the doctors named on its treatments; per day + chair, who worked there. */
+async function knownDoctors(db, businessId, resolve) {
+  const real = new Map(); // appointment id → Map(doctor → n) from treatments with a doctor's name
+  const any = new Map(); // appointment id → Map(doctor → n) from every treatment (names and worked-out ones)
+  const trs = await db('legacy_treatments').where({ business_id: businessId }).whereNotNull('appointment_id').select('appointment_id', 'doctor', 'doctor_id');
+  for (const t of trs) { // eslint-disable-line no-restricted-syntax
+    if (!resolve.infers(t.doctor)) add(real, t.appointment_id, await resolve(t.doctor)); // eslint-disable-line no-await-in-loop
+    add(any, t.appointment_id, t.doctor_id);
+  }
+  return { real, any };
+}
+async function chairDayMap(db, businessId, resolve) {
+  const { real } = await knownDoctors(db, businessId, resolve);
+  const map = new Map();
+  const rows = await db('appointments').where({ business_id: businessId, external_source: SOURCE }).select('id', 'appointment_date', 'notes', 'import_doctor');
+  for (const a of rows) { // eslint-disable-line no-restricted-syntax
+    const chair = chairKeyOf(calendarOf(a.notes));
+    if (!chair) continue; // eslint-disable-line no-continue
+    const named = a.import_doctor && !resolve.infers(a.import_doctor) ? await resolve(a.import_doctor) : null; // eslint-disable-line no-await-in-loop
+    add(map, `${dayStr(a.appointment_date)}|${chair}`, named || topOf(real.get(a.id)));
+  }
+  return map;
+}
+
+/**
+ * The doctor of every visit made from Clinica whose doctor the import set (never one a person chose): the doctor
+ * written on its calendar row, else the doctor named on its treatments, else who worked in its chair that day, else
+ * the doctor its calendar is named after (e.g. "Mansour"), else the doctor its treatments were given to. → how many changed.
+ */
+async function reassignDoctors(businessId) {
+  const resolve = await resolver(knex, businessId);
+  const { real, any } = await knownDoctors(knex, businessId, resolve);
+  const chairDays = await chairDayMap(knex, businessId, resolve);
+  let lastId = 0; let changed = 0;
+  for (;;) {
+    const rows = await knex('appointments').where({ business_id: businessId, external_source: SOURCE }).where((w) => w.where('import_doctor_auto', true).orWhereNull('doctor_id')) // eslint-disable-line no-await-in-loop
+      .where('id', '>', lastId).orderBy('id').limit(2000).select('id', 'appointment_date', 'notes', 'import_doctor', 'doctor_id');
+    if (!rows.length) break;
+    lastId = rows[rows.length - 1].id;
+    const to = new Map();
+    for (const a of rows) { // eslint-disable-line no-restricted-syntax
+      const cal = calendarOf(a.notes);
+      const chair = chairKeyOf(cal);
+      const named = a.import_doctor && !resolve.infers(a.import_doctor) ? await resolve(a.import_doctor) : null; // eslint-disable-line no-await-in-loop
+      const target = named || topOf(real.get(a.id)) || (chair ? topOf(chairDays.get(`${dayStr(a.appointment_date)}|${chair}`)) : null)
+        || (cal && !chair && !resolve.infers(cal) ? await resolve(cal) : null) || topOf(any.get(a.id)) || a.doctor_id || null; // eslint-disable-line no-await-in-loop
+      if (target && target !== a.doctor_id) { if (!to.has(target)) to.set(target, []); to.get(target).push(a.id); }
+    }
+    for (const [doc, ids] of to) changed += await knex('appointments').whereIn('id', ids).update({ doctor_id: doc, import_doctor_auto: true }); // eslint-disable-line no-await-in-loop, no-restricted-syntax
+  }
+  return changed;
+}
+
 /**
  * The Doctors page's calendar / group → branch choices (and the doctors' branches) applied to every visit made from
  * Clinica — also those read earlier from its calendar — and then to the patients of the visits that moved: their
@@ -583,4 +656,4 @@ async function progress(businessId) {
   };
 }
 
-module.exports = { reapplyBranches, TYPE, promotePatient, upsertCalendarAppointment, dayStr, groupsOf, start, kick, settle, resumeAll, progress, doctorNames, saveDoctorMap, resolver, docKey, statusOf, toothOf, timeOf };
+module.exports = { reassignDoctors, reapplyBranches, TYPE, promotePatient, upsertCalendarAppointment, dayStr, groupsOf, start, kick, settle, resumeAll, progress, doctorNames, saveDoctorMap, resolver, docKey, statusOf, toothOf, timeOf };
