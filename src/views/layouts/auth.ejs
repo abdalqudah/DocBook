@@ -10,6 +10,8 @@
   var _nameMode = _lp.name_mode || 'beside'; // beside | below | hidden (Settings → Sign-in page)
   // The clinic's logo with its name beside it, under it, or alone; on the dark / colour panel the logo for dark backgrounds.
   var _brand = function (side) {
+    // the side panel is always dark: the platform's light-on-dark logo there
+    if (!_ac && side && brand.logo && brand.logoOnDark) return '<a class="row-sm" href="/" aria-label="' + escapeHtml(brandName) + '"><img class="brand-logo" src="' + escapeHtml(brand.logoOnDark) + '" alt="' + escapeHtml(brandName) + '"></a>';
     if (!_ac) return '<a class="row-sm' + (side ? '' : ' auth-mobile-logo') + '" href="/" aria-label="' + escapeHtml(brandName) + '">' + include('../partials/logo') + '</a>';
     var img = '';
     if (side && _ac.logoDark && _lp.style !== 'light') img = '<img class="auth-clinic-logo" src="' + escapeHtml(_ac.logoDark) + '" alt="' + escapeHtml(_acName) + '">';

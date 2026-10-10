@@ -90,7 +90,7 @@ async function client() {
 }
 const keyOf = (c) => { try { return c && c.key_enc ? secrets.decrypt(c.key_enc) : null; } catch { return null; } };
 const hubBase = (u) => {
-  let x; try { x = new URL(String(u || '').trim()); } catch { throw E.validation({ hub_url: 'Enter the platform address, e.g. https://docbook.app' }); }
+  let x; try { x = new URL(String(u || '').trim()); } catch { throw E.validation({ hub_url: 'Enter the platform address, e.g. https://medworks.app' }); }
   if (x.protocol !== 'https:' && !(process.env.NODE_ENV === 'test' && x.protocol === 'http:')) throw E.validation({ hub_url: 'The address must start with https://' });
   return x.origin;
 };

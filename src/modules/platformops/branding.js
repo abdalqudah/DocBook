@@ -21,7 +21,7 @@ const load = () => cache.remember('platform:branding', async () => {
     knex('platform_settings').where({ key: SETTING }).first('value'),
   ]);
   const s = parse(row && row.value);
-  return { assets: Object.fromEntries(rows.map((r) => [r.key, { version: r.version, mime: r.mime }])), showName: s.show_name !== false };
+  return { assets: Object.fromEntries(rows.map((r) => [r.key, { version: r.version, mime: r.mime }])), showName: s.show_name === undefined ? !brand.logo : s.show_name !== false }; // the MedWorks wordmark already carries the name
 }, 60_000);
 
 /** The brand object for the pages: config values with the admin's uploads laid over. */

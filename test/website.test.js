@@ -583,7 +583,7 @@ test('pages, menu and footer: add a page, its address, menu links, footer; live 
   assert.match(r.text, /Book now/);
   assert.match(r.text, /Family dental care\./);
   assert.match(r.text, /href="https:\/\/instagram\.com\/clinic\.a"/);
-  assert.match(r.text, /portal\.powered|DocBook|href="\/"/, 'the platform line stays unless the package allows hiding it');
+  assert.match(r.text, /portal\.powered|MedWorks|href="\/"/, 'the platform line stays unless the package allows hiding it');
   assert.equal((await v.get(`/${A.slug}/p/nope`)).status, 404);
   // removing the page takes its menu link away
   await o.submit('/app/website/builder?panel=pages', `/app/website/builder/pages/${key}/delete`, {});
