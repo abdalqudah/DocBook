@@ -41,4 +41,22 @@ async function assistantsByRoom(ctx) {
   return map;
 }
 
-module.exports = { roomsOn, setRoom, assistantsByRoom, clean };
+/**
+ * An assistant / nurse tied to a clinic (room) number sees the appointments of the doctors working in that room on
+ * each day: the day's room (doctor_day_rooms) when reception set one, else the doctor's usual room.
+ * `a` is the appointments alias of the query.
+ */
+function scopeRoom(q, ctx, a = 'a') {
+  if (!ctx || !ctx.myRoom || ctx.ownDoctorId) return q;
+  const room = String(ctx.myRoom).trim();
+  return q.where((w) => w
+    .whereExists(function dayRoom() {
+      this.select(knex.raw('1')).from('doctor_day_rooms as ddr').whereRaw(`ddr.doctor_id = ${a}.doctor_id AND ddr.day = ${a}.appointment_date`).where('ddr.room', room);
+    })
+    .orWhere((x) => x.whereIn(`${a}.doctor_id`, knex('doctors').select('id').where({ business_id: ctx.businessId, room }))
+      .whereNotExists(function otherDay() {
+        this.select(knex.raw('1')).from('doctor_day_rooms as ddr2').whereRaw(`ddr2.doctor_id = ${a}.doctor_id AND ddr2.day = ${a}.appointment_date`);
+      })));
+}
+
+module.exports = { roomsOn, setRoom, assistantsByRoom, clean, scopeRoom };

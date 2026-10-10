@@ -96,7 +96,7 @@ async function withRooms(ctx, rows) {
 
 async function queue(ctx) {
   const rows = await unpaidVisits(ctx).where('a.appointment_date', ctx.today)
-    .andWhere((w) => w.where('a.checked_in', true).orWhere('a.with_doctor', true).orWhere('a.status', 'completed'))
+    .andWhere((w) => w.where('a.checked_in', true).orWhere('a.with_doctor', true).orWhereNotNull('a.arrived_at').orWhereNotNull('a.doctor_finished_at'))
     .select(VISIT_SELECT);
   const rank = { done: 0, with_doctor: 1, waiting: 2 };
   await withRooms(ctx, rows);
@@ -190,12 +190,14 @@ async function doctorsWorking(ctx, date) {
  * Today's visits with their flow state, plus the papers each one has (invoice, prescriptions, certificates) for
  * the "Print" menus. Scoped to a doctor's own visits for a doctor login.
  */
-async function today(ctx, { doctor } = {}) {
+async function today(ctx, opts = {}) {
+  const { doctor } = opts;
   const q = knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .where({ 'a.business_id': ctx.businessId, 'a.appointment_date': ctx.today }).whereNot('a.appointment_type', 'blocked')
     .orderBy('a.appointment_time').select(VISIT_SELECT.concat(['a.source', 'a.patient_email', 'a.paid_at']));
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
   if (doctor) q.where('a.doctor_id', doctor === 'none' ? null : Number(doctor));
+  if (!opts.allRooms) require('./rooms.service').scopeRoom(q, ctx); // eslint-disable-line global-require -- an assistant / nurse: their room's doctors
   require('./branches.service').scope(q, ctx); // eslint-disable-line global-require -- the branch chosen in the account menu
   const rows = await q;
   await withRooms(ctx, rows);
@@ -227,19 +229,27 @@ async function today(ctx, { doctor } = {}) {
   });
 }
 
+/**
+ * Who belongs on the cash screen: only patients who actually came — checked in, called in or finished by the doctor —
+ * and today's receipts. Booked patients who have not arrived (and imported visits marked done without an arrival)
+ * stay off it.
+ */
+const cameIn = (a) => Boolean(a.checked_in || a.with_doctor || a.arrived_at || a.called_at || a.doctor_finished_at);
+const atCash = (a) => (a.state === 'paid' ? Boolean(a.invoice) || cameIn(a) : a.state !== 'missed' && a.state !== 'expected' && cameIn(a));
+
 /** The cash screen: one column per doctor working today (or with visits today), ready-to-collect visits on top. */
 async function screen(ctx) {
   const [visits, doctors, totals] = await Promise.all([today(ctx), doctorsWorking(ctx, ctx.today), todayTotals(ctx)]);
   const rank = { ready: 0, with_doctor: 1, arrived: 2, expected: 3, paid: 4 };
   const finished = (a) => (a.doctor_finished_at ? new Date(a.doctor_finished_at).getTime() : 0);
-  const sortCol = (list) => list.filter((a) => a.state !== 'missed').sort((x, y) => rank[x.state] - rank[y.state]
+  const sortCol = (list) => list.filter(atCash).sort((x, y) => rank[x.state] - rank[y.state]
     || (x.state === 'ready' ? finished(x) - finished(y) : 0) || String(x.appointment_time).localeCompare(String(y.appointment_time)));
   const cols = doctors.filter((d) => d.works || visits.some((a) => a.doctor_id === d.id))
     .filter((d) => !ctx.ownDoctorId || d.id === ctx.ownDoctorId)
     .map((d) => ({ doctor: d, visits: sortCol(visits.filter((a) => a.doctor_id === d.id)) }));
-  const none = visits.filter((a) => !a.doctor_id);
-  if (none.length) cols.push({ doctor: null, visits: sortCol(none) });
-  const ready = visits.filter((a) => a.state === 'ready');
+  const none = sortCol(visits.filter((a) => !a.doctor_id));
+  if (none.length) cols.push({ doctor: null, visits: none });
+  const ready = visits.filter((a) => a.state === 'ready' && atCash(a));
   return {
     cols, totals, ready: ready.length, readyTotal: round(ready.reduce((t, a) => t + a.due, 0), ctx.currency),
     readyKey: ready.map((a) => `${a.id}:${a.due}`).sort().join(','),

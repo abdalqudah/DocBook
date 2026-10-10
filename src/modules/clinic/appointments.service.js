@@ -79,6 +79,7 @@ function baseQuery(ctx) {
   const q = knex('appointments as a').leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); }).leftJoin('services as s', function j() { this.on('s.id', 'a.service_id').andOn('s.business_id', 'a.business_id'); })
     .leftJoin('clinic_branches as br', function j() { this.on('br.id', 'a.branch_id').andOn('br.business_id', 'a.business_id'); }).where('a.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId); // a doctor sees only their own schedule
+  require('./rooms.service').scopeRoom(q, ctx); // eslint-disable-line global-require -- an assistant / nurse: their room's doctors
   return q;
 }
 
