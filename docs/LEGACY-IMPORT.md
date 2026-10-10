@@ -437,3 +437,12 @@ patient is folded into that appointment (same doctor first, else the earliest): 
 over, its doctor / branch / note fill what the appointment lacks, and it is removed. Kept as it is when anything of the
 clinic hangs on it (any table with an `appointment_id` — read from the database — or a follow-up), when it was checked
 in or charged. Days without a calendar row are not touched.
+
+## 2.9.8: calendar rows without a Clinica id; calendar only
+- A calendar row without a patient link is matched by the Clinica file number, then by phone compared on its last 9
+  digits (07… / +962 7… / 00962…, mobile or telephone), and a phone several patients share (a family) by the name
+  (Arabic letter forms unified). A row that still matches no file is not dropped: it is added with its name and mobile
+  and no patient file (`clinica:guest:…`, never twice); if a later read matches it to a patient, that same appointment
+  becomes the patient's.
+- "Calendar only" on the pull form: reads Clinica's calendar again over the range (not the patients and files) — adds
+  what is missing, fixes times, never twice.

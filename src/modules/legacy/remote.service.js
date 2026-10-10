@@ -224,14 +224,15 @@ async function start(ctx, creds) {
   sessions.set(ctx.businessId, s);
   const total = Number((await knex('legacy_patients').where({ business_id: ctx.businessId, legacy_source: SOURCE }).whereNotNull('patient_id').count({ n: '*' }))[0].n);
   const from = map.isoDay(creds.from); const to = map.isoDay(creds.to);
+  const calendarOnly = ['1', 'on', true].includes(creds.calendarOnly); // read Clinica's calendar again, nothing else
   const cur = await openJob(ctx.businessId);
   if (cur) {
     const st = statsOf(cur);
     if (from || to) st.range = { from: from || st.range?.from || DEFAULT_FROM, to: to || st.range?.to || plusDays(today(), 365) };
-    await knex('import_jobs').where({ id: cur.id }).update({ status: 'processing', total, error: null, runner: null, heartbeat_at: null, stats: JSON.stringify(st) });
+    await knex('import_jobs').where({ id: cur.id }).update({ status: 'processing', total, error: null, runner: null, heartbeat_at: null, stats: JSON.stringify(st), ...(calendarOnly ? { stage: `cal:${(st.range && st.range.from) || DEFAULT_FROM}` } : {}) });
   } else {
     const stats = { range: { from: from || DEFAULT_FROM, to: to || plusDays(today(), 365) } };
-    await knex('import_jobs').insert({ business_id: ctx.businessId, type: TYPE, status: 'processing', stage: 'list:0', total, processed: 0, created_by: ctx.userId || null, started_at: now(), stats: JSON.stringify(stats) });
+    await knex('import_jobs').insert({ business_id: ctx.businessId, type: TYPE, status: 'processing', stage: calendarOnly ? `cal:${stats.range.from}` : 'list:0', total, processed: 0, created_by: ctx.userId || null, started_at: now(), stats: JSON.stringify(stats) });
   }
   await audit.record(ctx, 'legacy.remote_started', { entityType: 'business', entityId: ctx.businessId, newValues: { address: base, patients: total } });
   kick(ctx.businessId);
@@ -382,7 +383,13 @@ async function calendarStage(job, s, st, day) {
     }
     for (const a of list) { // eslint-disable-line no-restricted-syntax
       const lp = await patientFor(job, a); // eslint-disable-line no-await-in-loop
-      if (!lp) { inc(st, 'appointments_unmatched'); continue; } // eslint-disable-line no-continue
+      if (!lp) {
+        // no patient file in Clinica for this booking (a name and a mobile only): the appointment still goes into the
+        // calendar, with that name and mobile (never twice); the reception opens a file when the patient comes
+        const g = a.name ? await knex.transaction((trx) => promote.upsertCalendarAppointment(trx, businessId, null, { ...a, date: d }, { resolve, today: today() })) : null; // eslint-disable-line no-await-in-loop
+        inc(st, g === 'new' ? 'appointments_guest' : g ? 'appointments_existing' : 'appointments_unmatched');
+        continue; // eslint-disable-line no-continue
+      }
       const res = await knex.transaction((trx) => promote.upsertCalendarAppointment(trx, businessId, lp.patient_id, { ...a, date: d }, { resolve, groups: promote.groupsOf(lp.old_group), today: today() })); // eslint-disable-line no-await-in-loop
       if (res === 'new') inc(st, 'appointments_new'); else if (res === 'merged') inc(st, 'appointments_merged'); else if (res) inc(st, 'appointments_existing');
     }
@@ -411,12 +418,41 @@ async function patientFor(job, a) {
     if (!lp) { await ensurePatient(job, { id: a.id, number: a.number, name: a.name, mobile: a.mobile }); lp = await q().where({ legacy_patient_id: String(a.id) }).first('id', 'patient_id', 'old_group'); }
     return lp || null;
   }
-  for (const [col, v] of [['legacy_patient_number', String(a.number || '').trim()], ['old_mobile', String(a.mobile || '').trim()]]) { // eslint-disable-line no-restricted-syntax
-    if (!v) continue; // eslint-disable-line no-continue
-    const hits = await q().where(col, v).limit(2).select('id', 'patient_id', 'old_group'); // eslint-disable-line no-await-in-loop
-    if (hits.length === 1) return hits[0];
-  }
-  return null;
+  return (await matcherFor(job)).find(a);
+}
+
+// ---------------------------------------------------------------- matching a calendar row without a Clinica id
+/** A name for comparing: Arabic letter forms unified, marks and punctuation dropped, lower case. */
+const nameKey = (s) => String(s || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+  .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+/** A phone for comparing: its last 9 digits (07… / +962 7… / 009627… are the same number). */
+const phoneKey = (s) => { const d = String(s || '').replace(/\D/g, ''); return d.length >= 7 ? d.slice(-9) : ''; };
+const sameName = (x, y) => { const a = nameKey(x); const b = nameKey(y); if (!a || !b) return false; if (a === b) return true; const [s, l] = a.length < b.length ? [a, b] : [b, a]; return s.split(' ').length >= 2 && l.includes(s); };
+const matchers = new Map(); // job id → { at, find }
+/** The clinic's Clinica patients indexed by file number, phone and name (kept for a few minutes per job). */
+async function matcherFor(job) {
+  const have = matchers.get(job.id);
+  if (have && Date.now() - have.at < 10 * 60_000) return have;
+  const rows = await knex('legacy_patients').where({ business_id: job.business_id, legacy_source: SOURCE }).whereNotNull('patient_id')
+    .select('id', 'patient_id', 'old_group', 'legacy_patient_number', 'old_mobile', 'old_telephone', 'old_name');
+  const by = { number: new Map(), phone: new Map(), name: new Map() };
+  const put = (m, k, r) => { if (!k) return; if (!m.has(k)) m.set(k, []); if (!m.get(k).includes(r)) m.get(k).push(r); };
+  rows.forEach((r) => { put(by.number, String(r.legacy_patient_number || '').trim(), r); put(by.phone, phoneKey(r.old_mobile), r); put(by.phone, phoneKey(r.old_telephone), r); put(by.name, nameKey(r.old_name), r); });
+  const one = (list) => (list && list.length === 1 ? list[0] : null);
+  const find = (a) => {
+    const byNum = by.number.get(String(a.number || '').trim());
+    if (one(byNum)) return one(byNum);
+    const byPhone = by.phone.get(phoneKey(a.mobile)) || [];
+    if (byPhone.length === 1 && (!a.name || !byPhone[0].old_name || sameName(a.name, byPhone[0].old_name) || !by.name.has(nameKey(a.name)))) return byPhone[0];
+    // one phone for a family: the one with this name
+    if (byPhone.length > 1) return one(byPhone.filter((r) => sameName(a.name, r.old_name)));
+    // no phone on the row: a name only one patient has
+    if (!phoneKey(a.mobile)) return one(by.name.get(nameKey(a.name)));
+    return null;
+  };
+  const m = { at: Date.now(), find };
+  matchers.set(job.id, m);
+  return m;
 }
 
 async function withRetry(fn) {
@@ -553,7 +589,7 @@ async function progress(businessId) {
     patients: { done: job.processed, total: job.total }, found: job.src_links, downloaded: job.success, skipped: job.skipped, failed: job.failed,
     remaining: Math.max(0, job.src_links - job.success - job.skipped - job.failed), errors, startedAt: job.started_at, completedAt: job.completed_at,
     newPatients: st.patients_new || 0, filled: st.patients_filled || 0, newTreatments: st.treatments_new || 0, listPages: st.list_pages || 0,
-    appointments: { added: st.appointments_new || 0, merged: st.appointments_merged || 0, existing: st.appointments_existing || 0, unmatched: st.appointments_unmatched || 0, days: st.days_done || 0 },
+    appointments: { added: st.appointments_new || 0, merged: st.appointments_merged || 0, existing: st.appointments_existing || 0, unmatched: st.appointments_unmatched || 0, guests: st.appointments_guest || 0, days: st.days_done || 0 },
   };
 }
 
@@ -653,4 +689,4 @@ async function probe(ctx, creds) {
 }
 const probeReport = (businessId) => probes.get(businessId) || null;
 
-module.exports = { TYPE, prepare, pendingQuestion, start, stop, probe, probeReport, pageShape, kick, settle, progress, resumeAll, baseOf, loginForm, captchaQuestion, attachmentLinks, pathKey, Session };
+module.exports = { TYPE, prepare, pendingQuestion, start, stop, probe, probeReport, pageShape, kick, settle, progress, resumeAll, baseOf, loginForm, captchaQuestion, attachmentLinks, pathKey, Session, matcherFor, nameKey, phoneKey };

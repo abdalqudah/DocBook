@@ -406,15 +406,25 @@ const dayStr = (v) => (v instanceof Date ? `${v.getFullYear()}-${pad(v.getMonth(
  * calendar) instead of a second visit; nothing a person set (doctor, branch, status) is changed.
  * a = { date, time, calendar, doctor, status, note }; returns 'new' | 'merged' | 'existing'.
  */
+// patientId null: a booking of Clinica's calendar without a patient file there (a name and a mobile): kept with that
+// name and mobile, its key made of them (never twice), nothing merged into it.
 async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve = null, groups = [], today = null } = {}) {
-  const [patient, ref] = await Promise.all([
+  const guest = !patientId;
+  const [patient, ref] = guest ? [{ id: null, full_name: String(a.name || '').trim(), phone: String(a.mobile || '').trim() || null }, null] : await Promise.all([
     db('patients').where({ id: patientId, business_id: businessId }).first('id', 'full_name', 'phone'),
     db('legacy_patients').where({ business_id: businessId, patient_id: patientId, legacy_source: SOURCE }).first('legacy_patient_id'),
   ]);
-  if (!patient || !ref) return null;
+  if (!patient || (!guest && !ref) || (guest && !patient.full_name)) return null;
   const doctorOf = resolve || await resolver(db, businessId);
   const time = timeOf(a.time) || '09:00';
-  const uid = `clinica:${ref.legacy_patient_id}:a:cal:${a.date}:${time}:${crypto.createHash('sha1').update(docKey(a.calendar)).digest('hex').slice(0, 8)}`.slice(0, 190);
+  const calKey = crypto.createHash('sha1').update(docKey(a.calendar)).digest('hex').slice(0, 8);
+  const guestUid = (name, phone) => `clinica:guest:${a.date}:${time}:${crypto.createHash('sha1').update(`${String(name || '').trim().toLowerCase().replace(/\s+/g, ' ')}|${String(phone || '').replace(/\D/g, '').slice(-9)}|${calKey}`).digest('hex').slice(0, 16)}`;
+  const uid = guest ? guestUid(patient.full_name, patient.phone) : `clinica:${ref.legacy_patient_id}:a:cal:${a.date}:${time}:${calKey}`.slice(0, 190);
+  // read before without a file (a name and a mobile), now matched to the patient: that appointment is theirs
+  if (!guest && a.name) {
+    const was = await db('appointments').where({ business_id: businessId, external_uid: guestUid(a.name, a.mobile) }).whereNull('patient_id').first('id');
+    if (was && !(await db('appointments').where({ business_id: businessId, external_uid: uid }).first('id'))) await db('appointments').where({ id: was.id }).update({ patient_id: patientId, external_uid: uid });
+  }
   const named = a.doctor && !doctorOf.infers(a.doctor) ? await doctorOf(a.doctor) : null;
   const doctorId = named || (a.calendar && clean.chairOf(a.calendar) === null && !doctorOf.infers(a.calendar) ? await doctorOf(a.calendar) : null);
   const branchId = doctorOf.branchFor ? doctorOf.branchFor([a.calendar, ...groups].filter(Boolean), doctorId) : null;
@@ -434,8 +444,8 @@ async function upsertCalendarAppointment(db, businessId, patientId, a, { resolve
   // What the file import made for that day and that is not tied to a calendar row yet — the visit of that day's
   // treatments (v:), or an appointment of the uploaded file (a:, often without a time, so put at 09:00): it becomes
   // this appointment and takes its real time (never a second appointment for the same visit). Same time first.
-  const p = `clinica:${ref.legacy_patient_id}:`;
-  const dayVisit = await db('appointments').where({ business_id: businessId, patient_id: patientId, external_source: SOURCE, appointment_date: a.date })
+  const p = guest ? null : `clinica:${ref.legacy_patient_id}:`;
+  const dayVisit = guest ? null : await db('appointments').where({ business_id: businessId, patient_id: patientId, external_source: SOURCE, appointment_date: a.date })
     .where((w) => w.where('external_uid', 'like', `${p}v:%`).orWhere((x) => x.where('external_uid', 'like', `${p}a:%`).whereNot('external_uid', 'like', `${p}a:cal:%`)))
     .orderByRaw('appointment_time = ? DESC', [time]).orderBy('id').first('id', 'doctor_id', 'branch_id', 'notes');
   if (dayVisit) {

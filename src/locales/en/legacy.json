@@ -387,6 +387,9 @@
     "dedupe_started": "Clean-up started in the background — refresh the page in a moment.",
     "dedupe_running": "Cleaning up…",
     "dedupe_last": "Last clean-up: {merged} folded, {kept} left, {treatments} treatments moved.",
-    "dedupe_pull_running": "The pull from Clinica is running — wait for it to finish or stop it, then clean up."
+    "dedupe_pull_running": "The pull from Clinica is running — wait for it to finish or stop it, then clean up.",
+    "remote_guests": "Appointments without a file (name and mobile)",
+    "remote_calendar_only": "Calendar only",
+    "remote_calendar_only_hint": "Reads Clinica's appointments again (not the patients and files) — adds what is missing and fixes times, never twice."
   }
 }

@@ -387,6 +387,9 @@
     "dedupe_started": "بدأ التنظيف في الخلفية — حدّث الصفحة بعد قليل.",
     "dedupe_running": "التنظيف شغّال…",
     "dedupe_last": "آخر تنظيف: اندمج {merged}، تُرك {kept}، انتقل {treatments} علاج.",
-    "dedupe_pull_running": "السحب من Clinica شغّال الآن — انتظر حتى ينتهي أو أوقفه، ثم نظّف."
+    "dedupe_pull_running": "السحب من Clinica شغّال الآن — انتظر حتى ينتهي أو أوقفه، ثم نظّف.",
+    "remote_guests": "مواعيد بدون ملف (بالاسم والموبايل)",
+    "remote_calendar_only": "التقويم فقط",
+    "remote_calendar_only_hint": "يقرأ مواعيد Clinica من جديد (بدون المرضى والملفات) — يضيف الناقص ويصحّح الأوقات، ولا يكرر."
   }
 }

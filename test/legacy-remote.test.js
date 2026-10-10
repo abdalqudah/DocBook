@@ -285,3 +285,35 @@ test('calendar times: what the file import put at 09:00 takes the real time from
   // a second patient that day at another time is another appointment; 12:30 AM is just after midnight
   assert.equal(promote.timeOf('12:30 AM'), '00:30'); assert.equal(promote.timeOf('12:30 PM'), '12:30');
 });
+
+test('calendar rows without a Clinica id: matched by number, by phone however written, a family phone by name; else kept with name and mobile', async () => {
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  const b = (await knex('businesses').insert({ name: 'Match clinic', slug: `mt${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0];
+  const mk = async (lid, name, mobile, number) => {
+    const [pid] = await knex('patients').insert({ business_id: b, full_name: name, phone: mobile, legacy_source: 'clinica', legacy_patient_id: lid });
+    await knex('legacy_patients').insert({ business_id: b, legacy_source: 'clinica', legacy_patient_id: lid, patient_id: pid, old_name: name, old_mobile: mobile, legacy_patient_number: number });
+    return pid;
+  };
+  const sara = await mk('m1', 'سارة أحمد', '0791112233', '501');
+  const ali = await mk('m2', 'علي محمود', '0795556677', '502');
+  const huda = await mk('m3', 'هدى محمود', '0795556677', '503'); // same phone (family)
+  const m = await remote.matcherFor({ id: `t${tag}`, business_id: b });
+  const pid = (a) => { const r = m.find(a); return r ? r.patient_id : null; };
+  assert.equal(pid({ number: '501', name: 'x' }), sara);
+  assert.equal(pid({ mobile: '+962 79 111 2233', name: 'ساره احمد' }), sara, 'the same number written another way');
+  assert.equal(pid({ mobile: '00962795556677', name: 'هدى محمود' }), huda, 'family phone: by name');
+  assert.equal(pid({ mobile: '0795556677', name: 'علي محمود' }), ali);
+  assert.equal(pid({ mobile: '0795556677', name: 'someone else' }), null, 'family phone, unknown name: not guessed');
+  assert.equal(pid({ mobile: '0790000000', name: 'Walk In' }), null);
+  // not matched: kept with its name and mobile, once
+  const g = { date: '2024-04-01', time: '11:00', name: 'Walk In', mobile: '0790000000', calendar: 'Mansour' };
+  assert.equal(await promote.upsertCalendarAppointment(knex, b, null, g, { today: '2026-01-01' }), 'new');
+  assert.equal(await promote.upsertCalendarAppointment(knex, b, null, g, { today: '2026-01-01' }), 'existing');
+  const row = await knex('appointments').where({ business_id: b, patient_name: 'Walk In' }).first();
+  assert.equal(row.patient_id, null); assert.equal(row.patient_phone, '0790000000'); assert.equal(String(row.appointment_time).slice(0, 5), '11:00');
+  // later matched to a file: that same appointment becomes theirs (not a second one)
+  const walk = await mk('m4', 'Walk In', '0790000000', '504');
+  await promote.upsertCalendarAppointment(knex, b, walk, g, { today: '2026-01-01' });
+  const all = await knex('appointments').where({ business_id: b, appointment_date: '2024-04-01' });
+  assert.equal(all.length, 1); assert.equal(all[0].patient_id, walk);
+});

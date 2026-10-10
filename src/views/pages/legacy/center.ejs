@@ -76,6 +76,7 @@
       <span class="chip"><%= t('legacy.remote_new_treatments') %> <strong data-rm="newTreatments"><%= fmt.number(rm.newTreatments) %></strong></span>
       <span class="chip"><%= t('legacy.remote_appts') %> <strong data-rm="appts"><%= fmt.number(rm.appointments.added + rm.appointments.merged) %></strong></span>
       <span class="chip"><%= t('legacy.remote_days') %> <strong data-rm="days"><%= fmt.number(rm.appointments.days) %></strong></span>
+      <% if (rm.appointments.guests) { %><span class="chip"><%= t('legacy.remote_guests') %> <strong><%= fmt.number(rm.appointments.guests) %></strong></span><% } %>
       <% if (rm.appointments.unmatched) { %><span class="chip"><%= t('legacy.remote_unmatched') %> <strong><%= fmt.number(rm.appointments.unmatched) %></strong></span><% } %>
       <span class="chip"><%= t('legacy.remote_found') %> <strong data-rm="found"><%= fmt.number(rm.found) %></strong></span>
       <span class="chip"><%= t('legacy.remote_downloaded') %> <strong data-rm="downloaded"><%= fmt.number(rm.downloaded) %></strong></span>
@@ -105,6 +106,7 @@
         <label class="field"><span class="label"><%= t('legacy.remote_to') %></span><input class="input" type="date" name="to" value="<%= (rm && rm.range && rm.range.to) || '' %>"><span class="hint"><%= t('legacy.remote_to_hint') %></span></label>
         <% if (remoteSignIn.question) { %><label class="field"><span class="label"><%= t('legacy.remote_question') %> <bdi dir="ltr" class="strong" data-remote-question><%= remoteSignIn.question %></bdi></span><input class="input" name="captcha" dir="ltr" required autocomplete="off" inputmode="numeric"><span class="hint"><%= t('legacy.remote_question_hint') %></span></label><% } %>
       </div>
+      <label class="check"><input type="checkbox" name="calendar_only" value="1"><span><span class="strong"><%= t('legacy.remote_calendar_only') %></span><span class="tiny muted" style="display:block"><%= t('legacy.remote_calendar_only_hint') %></span></span></label>
       <p class="small muted" style="margin:0"><%- icon('lock', 'icon-sm') %> <%= t('legacy.remote_privacy') %></p>
       <div class="row-sm" style="flex-wrap:wrap"><button class="btn btn-primary" type="submit"><%- icon('download', 'icon-sm') %><%= t(rm && rm.status === 'waiting' ? 'legacy.remote_resume' : 'legacy.remote_start') %></button>
         <button class="btn btn-secondary" type="submit" formaction="<%= B %>/remote/probe" title="<%= t('legacy.remote_probe_hint') %>"><%- icon('search', 'icon-sm') %><%= t('legacy.remote_probe') %></button></div>
