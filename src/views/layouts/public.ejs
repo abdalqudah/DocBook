@@ -54,7 +54,9 @@
       <% if (!_light) { %><button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="<%= t('common.toggle_theme') %>"><%- icon('moon', 'theme-moon') %><%- icon('sun', 'theme-sun hidden') %></button><% } %>
       <% if (!portalClinic && path !== '/clinics' && path.indexOf('/clinics/') !== 0) { %><a class="btn btn-ghost btn-sm" href="/clinics" aria-label="<%= t('directory.find_clinic') %>"><%- icon('search', 'icon-sm') %><span class="hide-sm"><%= t('directory.find_clinic') %></span></a><% } %>
       <% if (portalClinic) { %>
-        <% if (portalClinic.patientPortal) { %><a class="btn btn-ghost btn-sm" href="/<%= portalClinic.slug %>/account"><%- icon('user-round', 'icon-sm') %><span class="hide-sm"><%= t('pportal.my_account') %></span></a><% } %>
+        <%# sign-in on the clinic's site: patients (when the portal is on — the staff button is on that page), else staff %>
+        <% if (portalClinic.patientSignedIn) { %><a class="btn btn-secondary btn-sm" href="/<%= portalClinic.slug %>/account" data-site-login><%- icon('user-round', 'icon-sm') %><span><%= t('pportal.my_account') %></span></a>
+        <% } else { %><a class="btn btn-secondary btn-sm" href="/<%= portalClinic.slug %>/<%= portalClinic.patientPortal ? 'account/login' : 'login' %>" data-site-login><%- icon('log-in', 'icon-sm') %><span><%= t('pportal.site_login') %></span></a><% } %>
         <% if (portalClinic.hasArticles) { %><a class="btn btn-ghost btn-sm" href="/<%= portalClinic.slug %>/articles"><%- icon('book-open', 'icon-sm') %><span class="hide-sm"><%= t('articles.menu') %></span></a><% } %>
         <% if (portalClinic.booking_enabled && !(typeof hideBookCta !== 'undefined' && hideBookCta)) { %><a class="btn btn-primary btn-sm" href="/<%= portalClinic.slug %>/book"><%- icon('calendar-plus', 'icon-sm') %><span><%= t('portal.book') %></span></a><% } %>
       <% } else if (currentUser) { %>

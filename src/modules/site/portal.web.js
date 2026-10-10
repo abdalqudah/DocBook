@@ -43,6 +43,7 @@ async function loadClinic(req) {
     specialtyKey: b.specialty || null,
     hasArticles,
     patientPortal,
+    patientSignedIn: Boolean(patientPortal && req.session && req.session.pp && req.session.pp[b.id]),
     specialty: specialtyLabel,
     displayName: (en && b.name_en) || b.name,
     markUrl: businesses.markUrl(b, `/${b.slug}`), // square places: the square logo, else the main one

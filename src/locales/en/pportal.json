@@ -24,7 +24,7 @@
     "hide_password": "Hide password",
     "login": "Sign in",
     "no_account": "No account yet?",
-    "signup": "Create one",
+    "signup": "Create an account",
     "staff_login": "Staff sign-in",
     "signup_heading": "Create an account",
     "signup_lead": "Enter the mobile or e-mail on your file at the clinic; a verification code will be sent.",
@@ -93,6 +93,7 @@
     "set_wa_template_help": "The name of an approved WhatsApp Authentication template with one parameter, the code. Empty = no WhatsApp for codes.",
     "first_time_hint": "First time? Enter the mobile or e-mail you gave the clinic and press \"Sign in\" without a password.",
     "first_heading": "Welcome! Choose your password",
-    "first_lead": "A verification code was sent to {to}. Enter it and choose a password; you go straight to your file."
+    "first_lead": "A verification code was sent to {to}. Enter it and choose a password; you go straight to your file.",
+    "site_login": "Sign in"
   }
 }

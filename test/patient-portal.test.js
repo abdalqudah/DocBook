@@ -63,11 +63,13 @@ test.after(async () => { server.close(); await knex.destroy(); });
 test('off by default: no portal pages; on: sign-in page with the staff button', async () => {
   const c = client();
   assert.equal((await c.get(`/${clinic.slug}/account/login`)).status, 404);
+  assert.match((await c.get(`/${clinic.slug}?lang=ar`)).text, new RegExp(`href="/${clinic.slug}/login" data-site-login`), 'portal off: the site\'s sign-in button goes to the staff sign-in');
   await svc.saveSettings(ctx, { enabled: '1', self_signup: '1', show_visits: '1', show_prescriptions: '1', show_plan: '1' });
   const r = await c.get(`/${clinic.slug}/account/login?lang=ar`);
   assert.equal(r.status, 200);
   assert.match(r.text, /data-pw-eye/); assert.match(r.text, new RegExp(`href="/${clinic.slug}/login" data-staff-login`)); assert.match(r.text, /account\/forgot/);
-  assert.match((await c.get(`/${clinic.slug}?lang=ar`)).text, new RegExp(`/${clinic.slug}/account"`), 'a "My account" link on the clinic page');
+  assert.match(r.text, new RegExp(`href="/${clinic.slug}/account/signup" data-signup`), 'a create-account button on the sign-in page');
+  assert.match((await c.get(`/${clinic.slug}?lang=ar`)).text, new RegExp(`href="/${clinic.slug}/account/login" data-site-login`), 'a sign-in button on the clinic site');
 });
 
 test('the clinic\'s activation link → password → the patient sees only their own file', async () => {
@@ -79,6 +81,7 @@ test('the clinic\'s activation link → password → the patient sees only their
   assert.equal((await c.post(`/${clinic.slug}/account/activate/${token}`, { password: 'short', password2: 'short' })).status, 422);
   assert.equal((await c.post(`/${clinic.slug}/account/activate/${token}`, { password: 'Sara-pass-1', password2: 'Sara-pass-1' })).status, 302);
   const home = await c.get(`/${clinic.slug}/account?lang=ar`);
+  assert.match((await c.get(`/${clinic.slug}?lang=ar`)).text, new RegExp(`href="/${clinic.slug}/account" data-site-login`), 'signed in: "My account" on the site');
   assert.equal(home.status, 200);
   assert.match(home.text, /سارة أحمد/); assert.match(home.text, /Amoxicillin 500/);
   assert.doesNotMatch(home.text, /مريض آخر/, 'never another patient');

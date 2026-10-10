@@ -10,7 +10,10 @@
       <% if (s.self_signup) { %><p class="small muted" style="margin:0" data-first-time><%- icon('info', 'icon-sm') %> <%= t('pportal.first_time_hint') %></p><% } %>
       <button class="btn btn-primary btn-lg btn-block" type="submit"><%- icon('key-round', 'icon-sm') %><%= t('pportal.login') %></button>
     </form>
-    <% if (s.self_signup) { %><p class="small center mt-3"><%= t('pportal.no_account') %> <a class="link strong" href="<%= B %>/signup"><%= t('pportal.signup') %></a></p><% } %>
+    <% if (s.self_signup) { %>
+    <p class="small center muted mt-3" style="margin-bottom:var(--space-2)"><%= t('pportal.no_account') %></p>
+    <a class="btn btn-secondary btn-lg btn-block" href="<%= B %>/signup" data-signup><%- icon('user-plus', 'icon-sm') %><%= t('pportal.signup') %></a>
+    <% } %>
     <div class="divider"></div>
     <a class="btn btn-secondary btn-block" href="/<%= clinic.slug %>/login" data-staff-login><%- icon('user-cog', 'icon-sm') %><%= t('pportal.staff_login') %></a>
     <a class="portal-back small" href="/<%= clinic.slug %>"><%- icon('arrow-left', 'icon-sm flip-rtl') %><%= t('portal.back_to_clinic') %></a>
