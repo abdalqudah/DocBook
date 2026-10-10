@@ -14,7 +14,10 @@ module.exports = {
   // BRAND_NAME in .env renames the product everywhere (a single clinic / centre installation: its own name).
   name: (process.env.BRAND_NAME || '').trim() || (edition.single && (process.env.CLINIC_NAME || '').trim()) || 'MedWorks',
   // Short product line used in titles, the sidebar and the landing page.
-  tagline: {
+  tagline: edition.single ? {
+    en: 'Clinic bookings, patients and billing in one place',
+    ar: 'حجوزات العيادة ومرضاها وفواتيرها في مكان واحد',
+  } : {
     en: 'One Platform. Smarter Healthcare',
     ar: 'منصة واحدة. رعاية صحية أذكى',
   },

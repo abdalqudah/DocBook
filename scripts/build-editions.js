@@ -14,7 +14,8 @@ const ROOT = path.join(__dirname, '..');
 const SRC = path.join(ROOT, 'dist', 'medworks');
 const { version } = require('../package.json');
 
-const NAME = Buffer.from('ZG9jYm9vaw==', 'base64').toString(); // the platform's name, written so this file never carries it
+// the platform's names (the old one and the new one), written so this file never carries them
+const NAME = ['ZG9jYm9vaw==', 'bWVkd29ya3M='].map((x) => Buffer.from(x, 'base64').toString()).join('|');
 const TEXT = /\.(js|cjs|mjs|ejs|json|css|md|txt|svg|html|xml|example|env)$/i;
 const swap = (s) => s.replace(new RegExp(NAME, 'gi'), (m) => (m === m.toUpperCase() ? 'CLINIC' : m[0] === m[0].toUpperCase() ? 'Clinic' : 'clinic'));
 
@@ -154,7 +155,7 @@ function buildSource(edition, file) {
   scrub(out);
   fs.writeFileSync(path.join(out, '.env'), envFor(edition));
   fs.writeFileSync(path.join(out, 'INSTALL.md'), sourceGuideFor(edition));
-  const left = spawnSync('grep', ['-ril', NAME, '.'], { cwd: out, encoding: 'utf8' }).stdout.trim();
+  const left = spawnSync('grep', ['-rilE', NAME, '.'], { cwd: out, encoding: 'utf8' }).stdout.trim();
   if (left) throw new Error(`${file}: still mentions the platform's name:\n${left}`);
   const zip = path.join(ROOT, 'dist', `${file}.zip`);
   fs.rmSync(zip, { force: true });
@@ -185,7 +186,7 @@ for (const [edition, file] of [['clinic', `single-clinic-${version}`], ['center'
   scrub(out);
   fs.writeFileSync(path.join(out, '.env'), envFor(edition));
   fs.writeFileSync(path.join(out, 'INSTALL.md'), guideFor(edition));
-  const left = spawnSync('grep', ['-ril', NAME, '.'], { cwd: out, encoding: 'utf8' }).stdout.trim(); // binary files too
+  const left = spawnSync('grep', ['-rilE', NAME, '.'], { cwd: out, encoding: 'utf8' }).stdout.trim(); // binary files too
   if (left) throw new Error(`${file}: still mentions the platform's name:\n${left}`);
   const zip = path.join(ROOT, 'dist', `${file}.zip`);
   fs.rmSync(zip, { force: true });
@@ -256,7 +257,7 @@ ${rows.join('\n')}
   const envZip = path.join(ROOT, 'dist', `clinic-env-files-${version}.zip`);
   fs.rmSync(envZip, { force: true });
   execFileSync('zip', ['-qr', envZip, '.'], { cwd: envDir });
-  const left = spawnSync('grep', ['-ril', NAME, '.'], { cwd: envDir, encoding: 'utf8' }).stdout.trim();
+  const left = spawnSync('grep', ['-rilE', NAME, '.'], { cwd: envDir, encoding: 'utf8' }).stdout.trim();
   if (left) throw new Error(`env files still mention the platform's name:\n${left}`);
   console.log(`Built dist/specialties-${version}/ (${rows.length} clinics) and dist/clinic-env-files-${version}.zip`);
 }

@@ -18,7 +18,7 @@ const REMAP = [
   ['node_modules/@jsquash/jpeg/codec/', 'vendor/jpeg/'],
 ];
 const remap = (rel) => REMAP.reduce((p, [from, to]) => (p.startsWith(from) ? to + p.slice(from.length) : p), rel);
-const at = (rel) => `require("path").join(__DOCBOOK_ROOT, ${JSON.stringify(rel)})`;
+const at = (rel) => `require("path").join(__MEDWORKS_ROOT, ${JSON.stringify(rel)})`;
 
 // Every module's __dirname / require.resolve() points at its place in the build, relative to app.js.
 const paths = {
@@ -35,7 +35,7 @@ const paths = {
   },
 };
 
-// Knex dialects and optional drivers that DocBook never loads.
+// Knex dialects and optional drivers that MedWorks never loads.
 const EXTERNAL = ['sqlite3', 'better-sqlite3', 'tedious', 'oracledb', 'mysql', 'pg-query-stream', 'pg-native', 'cloudflare:sockets', 'mariadb', 'mariadb/callback'];
 
 function copy(from, to, filter) {
@@ -57,7 +57,8 @@ function copy(from, to, filter) {
     external: EXTERNAL,
     // The image codecs (emscripten) build a URL from import.meta.url even though their WebAssembly is handed to them.
     define: { 'import.meta.url': '"file:///medworks/app.js"' },
-    banner: { js: '#!/usr/bin/env node\nconst __DOCBOOK_ROOT = __dirname;' },
+    // the comment keeps the old marker that updaters before 2.9.29 look for in the first lines of app.js
+    banner: { js: '#!/usr/bin/env node\nconst __MEDWORKS_ROOT = __dirname; // __DOCBOOK_ROOT' },
     plugins: [paths],
     logLevel: 'warning',
   });
@@ -81,7 +82,7 @@ function copy(from, to, filter) {
   copy('.env.example', '.env.example');
   copy('docs/INSTALL.md', 'INSTALL.md');
   fs.writeFileSync(path.join(OUT, 'package.json'), `${JSON.stringify({
-    name: 'docbook', version, private: true, main: 'app.js', engines: { node: '>=20' }, // the package name stays 'docbook': installed servers' updater checks it
+    name: 'medworks', version, private: true, main: 'app.js', engines: { node: '>=20' }, // accepted by the updater from 2.9.28 on
     scripts: { start: 'node app.js', migrate: 'node app.js migrate' },
   }, null, 2)}\n`);
 

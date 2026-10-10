@@ -1,7 +1,7 @@
-// In-app update of an installed DocBook build from its dist zip (worker: platformops).
+// In-app update of an installed MedWorks build from its dist zip (worker: platformops).
 //
 //   upload  → validate the zip (size, zip-slip, symlinks, node_modules, .env, app.js with the dist banner,
-//             package.json named "docbook") and extract it into <root>/.updates/<timestamp>/
+//             package.json named "medworks", or "docbook" before 2.9.29) and extract it into <root>/.updates/<timestamp>/
 //   activate→ copy the files the build owns (app.js, package.json, src/, public/, vendor/, INSTALL.md, .env.example)
 //             into <root>/.updates/backup-<timestamp>/, copy the staged files over the app, touch tmp/restart.txt
 //             (Passenger / LiteSpeed) and exit after the response so the host starts the new version, which runs its
@@ -23,14 +23,16 @@ const MAX_ENTRIES = 20000;
 const OWNED = ['app.js', 'package.json', 'src', 'public', 'vendor', 'INSTALL.md', '.env.example'];
 const KEEP_BACKUPS = 3;
 const UPDATES = '.updates';
-const PKG_NAMES = ['docbook', 'medworks']; // the package name of every build (package.json; 'medworks' accepted for later builds)
+const PKG_NAMES = ['medworks', 'docbook']; // the package name of every build (package.json; 'docbook' = builds before 2.9.29)
+const META = '.medworks-update.json'; // an update's / backup's details (older ones: .docbook-update.json)
+const metaOf = (dir) => readJson(path.join(dir, META)) || readJson(path.join(dir, '.docbook-update.json'));
 
 const fail = (code, message, details) => new AppError(code, message, 422, details);
 
-/** True when `text` (the start of app.js) is the bundled build's entry: the shebang + the __DOCBOOK_ROOT banner. */
+/** True when `text` (the start of app.js) is the bundled build's entry: the shebang + the root banner (__MEDWORKS_ROOT; older builds __DOCBOOK_ROOT). */
 const hasDistBanner = (text) => {
   const s = String(text || '').replace(/^﻿/, '');
-  return s.startsWith('#!/usr/bin/env node') && s.slice(0, 400).includes('__DOCBOOK_ROOT');
+  return s.startsWith('#!/usr/bin/env node') && /__(MEDWORKS|DOCBOOK)_ROOT/.test(s.slice(0, 400));
 };
 
 function readHead(file, bytes = 400) {
@@ -90,18 +92,18 @@ function inspectZip(buffer) {
     const parts = name.split('/').filter(Boolean);
     if (parts.includes('node_modules')) throw fail('UPDATE_NODE_MODULES', 'The zip contains node_modules.', { entry: name });
     if (parts.some((p) => /^\.env($|\.)/.test(p) && p !== '.env.example')) throw fail('UPDATE_ENV_FILE', 'The zip contains an .env file.', { entry: name });
-    if (!OWNED.includes(parts[0])) throw fail('UPDATE_UNEXPECTED_FILE', 'The zip contains a file that is not part of DocBook.', { entry: name });
+    if (!OWNED.includes(parts[0])) throw fail('UPDATE_UNEXPECTED_FILE', 'The zip contains a file that is not part of MedWorks.', { entry: name });
     if (!e.isDirectory) { files += 1; bytes += Number(e.header.size) || 0; names.set(name, e); }
   }
   if (bytes > MAX_UNPACKED_BYTES) throw fail('UPDATE_TOO_BIG', 'The file is too big.', { mb: MAX_ZIP_BYTES / 1048576 });
   const app = names.get('app.js');
   if (!app) throw fail('UPDATE_MISSING_APP', 'app.js is missing at the top of the zip.');
-  if (!hasDistBanner(app.getData().slice(0, 400).toString('utf8'))) throw fail('UPDATE_NOT_DIST', 'app.js is not a DocBook dist build.');
+  if (!hasDistBanner(app.getData().slice(0, 400).toString('utf8'))) throw fail('UPDATE_NOT_DIST', 'app.js is not a MedWorks dist build.');
   const pkgEntry = names.get('package.json');
   if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
   let pkg;
   try { pkg = JSON.parse(pkgEntry.getData().toString('utf8')); } catch { throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.'); }
-  if (!pkg || !PKG_NAMES.includes(pkg.name)) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
+  if (!pkg || !PKG_NAMES.includes(pkg.name)) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to MedWorks.', { name: pkg && pkg.name });
   return { zip, names, version: String(pkg.version || ''), files, bytes };
 }
 
@@ -116,7 +118,7 @@ function list(root, kind) {
   if (!fs.existsSync(d)) return [];
   return fs.readdirSync(d).filter((n) => (kind === 'backup' ? n.startsWith('backup-') : /^\d{8}-\d{6}/.test(n)))
     .filter((n) => fs.statSync(path.join(d, n)).isDirectory()).sort().reverse()
-    .map((n) => ({ id: n, dir: path.join(d, n), ...(readJson(path.join(d, n, '.docbook-update.json')) || {}) }));
+    .map((n) => ({ id: n, dir: path.join(d, n), ...(metaOf(path.join(d, n)) || {}) }));
 }
 
 /** Current state for the admin page. */
@@ -147,7 +149,7 @@ function stage(buffer, { root = DEFAULT_ROOT, by = null } = {}) {
     }
   } catch (e) { rm(dir); throw e; }
   const meta = { version: info.version, from: readVersion(root), files: info.files, bytes: info.bytes, zipBytes: buffer.length, uploadedAt: new Date().toISOString(), by };
-  fs.writeFileSync(path.join(dir, '.docbook-update.json'), JSON.stringify(meta, null, 2));
+  fs.writeFileSync(path.join(dir, META), JSON.stringify(meta, null, 2));
   return { id, dir, ...meta };
 }
 
@@ -191,14 +193,14 @@ function activate({ root = DEFAULT_ROOT, by = null } = {}) {
   requireDist(root);
   const s = list(root, 'staged')[0];
   if (!s) throw fail('UPDATE_NOTHING_STAGED', 'There is no uploaded update.');
-  if (!hasDistBanner(readHead(path.join(s.dir, 'app.js')))) throw fail('UPDATE_NOT_DIST', 'app.js is not a DocBook dist build.');
+  if (!hasDistBanner(readHead(path.join(s.dir, 'app.js')))) throw fail('UPDATE_NOT_DIST', 'app.js is not a MedWorks dist build.');
   let backupId = `backup-${stamp()}`;
   for (let n = 1; fs.existsSync(path.join(updatesDir(root), backupId)); n += 1) backupId = `backup-${stamp()}-${n}`;
   const backup = path.join(updatesDir(root), backupId);
   fs.mkdirSync(backup, { recursive: true });
   const from = readVersion(root);
   copyOwned(root, backup);
-  fs.writeFileSync(path.join(backup, '.docbook-update.json'), JSON.stringify({ version: from, createdAt: new Date().toISOString(), replacedBy: s.version, by }, null, 2));
+  fs.writeFileSync(path.join(backup, META), JSON.stringify({ version: from, createdAt: new Date().toISOString(), replacedBy: s.version, by }, null, 2));
   try {
     copyOwned(s.dir, root);
   } catch (e) {
@@ -217,7 +219,7 @@ function rollback({ root = DEFAULT_ROOT } = {}) {
   requireDist(root);
   const b = list(root, 'backup')[0];
   if (!b) throw fail('UPDATE_NO_BACKUP', 'There is no backup to restore.');
-  if (!hasDistBanner(readHead(path.join(b.dir, 'app.js')))) throw fail('UPDATE_NOT_DIST', 'app.js is not a DocBook dist build.');
+  if (!hasDistBanner(readHead(path.join(b.dir, 'app.js')))) throw fail('UPDATE_NOT_DIST', 'app.js is not a MedWorks dist build.');
   const from = readVersion(root);
   copyOwned(b.dir, root);
   rm(b.dir);
@@ -233,7 +235,7 @@ function restartAfter(res, delayMs = 400) {
 
 // ---------------------------------------------------------------- one-step install
 // Upload the package in a normal form → validate → back up the running files → write the new files → restart.
-// Lenient: a zip whose files sit inside one top folder (e.g. "docbook/") is accepted, and files that are
+// Lenient: a zip whose files sit inside one top folder (e.g. "medworks/") is accepted, and files that are
 // not part of the build (__MACOSX, .DS_Store, notes…) are skipped instead of rejecting the package. Unsafe paths,
 // links, node_modules and .env files are still refused.
 const SKIP_TOPS = new Set(['__MACOSX', 'node_modules', 'tmp', '.updates', '.git']);
@@ -268,12 +270,12 @@ function inspectPackage(buffer) {
   }
   const app = files.get('app.js');
   if (!app) throw fail('UPDATE_MISSING_APP', 'app.js is missing at the top of the zip.');
-  if (!hasDistBanner(app.getData().slice(0, 400).toString('utf8'))) throw fail('UPDATE_NOT_DIST', 'app.js is not a DocBook dist build.');
+  if (!hasDistBanner(app.getData().slice(0, 400).toString('utf8'))) throw fail('UPDATE_NOT_DIST', 'app.js is not a MedWorks dist build.');
   const pkgEntry = files.get('package.json');
   if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
   let pkg;
   try { pkg = JSON.parse(pkgEntry.getData().toString('utf8')); } catch { throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.'); }
-  if (!pkg || !PKG_NAMES.includes(pkg.name)) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
+  if (!pkg || !PKG_NAMES.includes(pkg.name)) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to MedWorks.', { name: pkg && pkg.name });
   return { files, version: String(pkg.version || ''), count: files.size, bytes, sha256: require('crypto').createHash('sha256').update(buffer).digest('hex') }; // eslint-disable-line global-require
 }
 
@@ -293,7 +295,7 @@ function makeBackup(root, meta) {
   const dir = path.join(updatesDir(root), id);
   fs.mkdirSync(dir, { recursive: true });
   copyOwned(root, dir);
-  fs.writeFileSync(path.join(dir, '.docbook-update.json'), JSON.stringify({ version: readVersion(root), createdAt: new Date().toISOString(), ...meta }, null, 2));
+  fs.writeFileSync(path.join(dir, META), JSON.stringify({ version: readVersion(root), createdAt: new Date().toISOString(), ...meta }, null, 2));
   return { id, dir };
 }
 
@@ -332,7 +334,7 @@ function restore(backupId, { root = DEFAULT_ROOT, by = null } = {}) {
   const id = path.basename(String(backupId || ''));
   const b = list(root, 'backup').find((x) => x.id === id);
   if (!b) throw fail('UPDATE_NO_BACKUP', 'There is no backup to restore.');
-  if (!hasDistBanner(readHead(path.join(b.dir, 'app.js')))) throw fail('UPDATE_NOT_DIST', 'app.js is not a DocBook dist build.');
+  if (!hasDistBanner(readHead(path.join(b.dir, 'app.js')))) throw fail('UPDATE_NOT_DIST', 'app.js is not a MedWorks dist build.');
   const from = readVersion(root);
   const to = b.version || readVersion(b.dir);
   makeBackup(root, { replacedBy: to, by, beforeRestore: true });

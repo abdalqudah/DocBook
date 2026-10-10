@@ -15,7 +15,7 @@
         <% if (L(it.text)) { %><p class="lp-tour-text"><%= L(it.text) %></p><% } %>
         <figure class="lp-frame">
           <div class="lp-frame-bar" aria-hidden="true"><span></span><span></span><span></span></div>
-          <img src="/img/landing/<%= _lang %>/<%= it.screen %>.webp" width="1280" height="800" alt="<%= L(it.title) %>"<%= i === 0 ? '' : ' loading="lazy"' %> decoding="async">
+          <img src="/img/landing/<%= _lang %>/<%= it.screen %>.webp?v=<%= assetV %>" width="1280" height="800" alt="<%= L(it.title) %>"<%= i === 0 ? '' : ' loading="lazy"' %> decoding="async">
         </figure>
       </div>
       <% }) %>
