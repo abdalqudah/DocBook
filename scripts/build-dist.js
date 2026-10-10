@@ -1,13 +1,13 @@
-// Builds dist/docbook: one bundled app.js (all libraries inside, no node_modules and no `npm install` needed)
+// Builds dist/medworks: one bundled app.js (all libraries inside, no node_modules and no `npm install` needed)
 // plus the files it reads at run time (views, locales, migrations, public assets, PDF fonts).
-//   npm run build   →   dist/docbook/  and  dist/docbook-<version>-dist.zip
+//   npm run build   →   dist/medworks/  and  dist/medworks-<version>-dist.zip
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const esbuild = require('esbuild'); // eslint-disable-line import/no-extraneous-dependencies
 
 const ROOT = path.join(__dirname, '..');
-const OUT = path.join(ROOT, 'dist', 'docbook');
+const OUT = path.join(ROOT, 'dist', 'medworks');
 const { version } = require('../package.json');
 
 // Where a library's data files live in the build (instead of node_modules).
@@ -56,7 +56,7 @@ function copy(from, to, filter) {
     legalComments: 'none',
     external: EXTERNAL,
     // The image codecs (emscripten) build a URL from import.meta.url even though their WebAssembly is handed to them.
-    define: { 'import.meta.url': '"file:///docbook/app.js"' },
+    define: { 'import.meta.url': '"file:///medworks/app.js"' },
     banner: { js: '#!/usr/bin/env node\nconst __DOCBOOK_ROOT = __dirname;' },
     plugins: [paths],
     logLevel: 'warning',
@@ -81,7 +81,7 @@ function copy(from, to, filter) {
   copy('.env.example', '.env.example');
   copy('docs/INSTALL.md', 'INSTALL.md');
   fs.writeFileSync(path.join(OUT, 'package.json'), `${JSON.stringify({
-    name: 'docbook', version, private: true, main: 'app.js', engines: { node: '>=20' },
+    name: 'docbook', version, private: true, main: 'app.js', engines: { node: '>=20' }, // the package name stays 'docbook': installed servers' updater checks it
     scripts: { start: 'node app.js', migrate: 'node app.js migrate' },
   }, null, 2)}\n`);
 
@@ -91,7 +91,7 @@ function copy(from, to, filter) {
   if (clash) throw new Error(`dist must not contain node_modules:\n${clash}`);
 
   // Files sit at the top of the zip, so it extracts straight into the application root.
-  const zip = path.join(ROOT, 'dist', `docbook-${version}-dist.zip`);
+  const zip = path.join(ROOT, 'dist', `medworks-${version}-dist.zip`);
   fs.rmSync(zip, { force: true });
   execFileSync('zip', ['-qr', zip, '.'], { cwd: OUT });
   console.log(`Built ${path.relative(ROOT, OUT)} and ${path.relative(ROOT, zip)}`);

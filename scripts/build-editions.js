@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const { execFileSync, spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const SRC = path.join(ROOT, 'dist', 'docbook');
+const SRC = path.join(ROOT, 'dist', 'medworks');
 const { version } = require('../package.json');
 
 const NAME = Buffer.from('ZG9jYm9vaw==', 'base64').toString(); // the platform's name, written so this file never carries it

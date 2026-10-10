@@ -23,7 +23,7 @@ const MAX_ENTRIES = 20000;
 const OWNED = ['app.js', 'package.json', 'src', 'public', 'vendor', 'INSTALL.md', '.env.example'];
 const KEEP_BACKUPS = 3;
 const UPDATES = '.updates';
-const PKG_NAME = 'docbook'; // the package name of every build (package.json)
+const PKG_NAMES = ['docbook', 'medworks']; // the package name of every build (package.json; 'medworks' accepted for later builds)
 
 const fail = (code, message, details) => new AppError(code, message, 422, details);
 
@@ -101,7 +101,7 @@ function inspectZip(buffer) {
   if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
   let pkg;
   try { pkg = JSON.parse(pkgEntry.getData().toString('utf8')); } catch { throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.'); }
-  if (!pkg || pkg.name !== PKG_NAME) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
+  if (!pkg || !PKG_NAMES.includes(pkg.name)) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
   return { zip, names, version: String(pkg.version || ''), files, bytes };
 }
 
@@ -179,7 +179,7 @@ function touchRestart(root) {
 
 /** The app root runs this product's own source code (its package.json carries the build's package name). */
 function isOwnSource(root = DEFAULT_ROOT) {
-  try { return JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).name === PKG_NAME; } catch { return false; }
+  try { return PKG_NAMES.includes(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).name); } catch { return false; }
 }
 
 function requireDist(root) {
@@ -273,7 +273,7 @@ function inspectPackage(buffer) {
   if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
   let pkg;
   try { pkg = JSON.parse(pkgEntry.getData().toString('utf8')); } catch { throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.'); }
-  if (!pkg || pkg.name !== PKG_NAME) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
+  if (!pkg || !PKG_NAMES.includes(pkg.name)) throw fail('UPDATE_WRONG_NAME', 'package.json does not belong to DocBook.', { name: pkg && pkg.name });
   return { files, version: String(pkg.version || ''), count: files.size, bytes, sha256: require('crypto').createHash('sha256').update(buffer).digest('hex') }; // eslint-disable-line global-require
 }
 

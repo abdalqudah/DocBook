@@ -95,7 +95,7 @@ test('the clinic (room) number of each doctor today: set on the calendar or the 
   // the waiting-room screen: today's room
   await knex('appointments').where({ id: apptId }).update({ checked_in: true, status: 'confirmed', arrived_at: new Date() });
   const queue = require('../src/modules/queue/queue.service'); // eslint-disable-line global-require
-  const board = await queue.board({ name_style: 'full', show_name: true, branch_id: null, scope: 'clinic' }, { id: b });
+  const board = await queue.board({ name_style: 'full', show_name: true, branch_id: null, scope: 'clinic' }, { id: b, timezone: 'Asia/Amman' });
   assert.equal(board.next.room, '3');
   // the front desk shows it
   r = await o.get('/app/front-desk?lang=en');

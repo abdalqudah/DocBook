@@ -41,7 +41,7 @@ EXIT;
 ```bash
 sudo mkdir -p /var/www/docbook && sudo chown $USER /var/www/docbook
 cd /var/www/docbook
-unzip ~/docbook-2.0.0-dist.zip   # نسخة dist: app.js جاهز بكل المكتبات، بدون node_modules
+unzip ~/medworks-2.0.0-dist.zip   # نسخة dist: app.js جاهز بكل المكتبات، بدون node_modules
 ```
 > نسخة الـ dist لا تحتاج `npm install`. إذا كنت تستخدم الكود المصدري بدلًا منها: `npm ci --omit=dev` (وتُبنى الـ dist بالأمر `npm run build`).
 
@@ -170,7 +170,7 @@ ICE_SERVERS=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:yourdomain.co
 ```bash
 cd /var/www/docbook
 mysqldump -u docbook -p docbook > ~/backup-$(date +%F).sql   # نسخة احتياطية أولًا
-unzip -o ~/docbook-new-dist.zip
+unzip -o ~/medworks-new-dist.zip
 node app.js migrate
 pm2 restart docbook
 ```
