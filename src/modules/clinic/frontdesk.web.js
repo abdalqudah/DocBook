@@ -34,7 +34,13 @@ const doctorFilter = (v) => (v === 'none' ? 'none' : Number(v) > 0 ? Number(v) :
 
 async function renderBoard(req, res, extra = {}) {
   const { ctx } = req;
-  const doctor = ctx.ownDoctorId ? null : doctorFilter(req.query.doctor);
+  let doctor = ctx.ownDoctorId ? null : doctorFilter(req.query.doctor);
+  // an assistant / nurse of a clinic (room): opens on the doctor working in that room today
+  if (!doctor && req.query.doctor === undefined && ctx.myRoom && !ctx.ownDoctorId) {
+    const rooms = await require('./rooms.service').roomsOn(ctx.businessId, ctx.today); // eslint-disable-line global-require
+    const mine = [...rooms.entries()].filter(([, r]) => String(r).trim() === String(ctx.myRoom).trim()).map(([id]) => id);
+    if (mine.length === 1) doctor = mine[0];
+  }
   const [visits, doctors] = await Promise.all([cashier.today(ctx, { doctor }), cashier.doctorsWorking(ctx, ctx.today)]);
   const group = Object.fromEntries(cashier.FLOW.concat('missed').map((k) => [k, []]));
   visits.forEach((a) => group[a.state].push(a));
@@ -46,8 +52,9 @@ async function renderBoard(req, res, extra = {}) {
   }
   const onlineLinks = await require('../telehealth/web').linksFor(req, group.expected.concat(group.arrived)); // eslint-disable-line global-require
   // the clinic (room) number each doctor works in today — reception changes it here; the waiting-room screen shows it
-  const rooms = await require('./rooms.service').roomsOn(ctx.businessId, ctx.today); // eslint-disable-line global-require
-  doctors.forEach((d) => { d.room = rooms.get(d.id) || null; });
+  const rs = require('./rooms.service'); // eslint-disable-line global-require
+  const [rooms, asst] = await Promise.all([rs.roomsOn(ctx.businessId, ctx.today), rs.assistantsByRoom(ctx)]);
+  doctors.forEach((d) => { d.room = rooms.get(d.id) || null; d.assistants = d.room ? asst.get(String(d.room).trim()) || null : null; });
   Object.values(group).flat().forEach((a) => { a.room = a.doctor_id ? rooms.get(a.doctor_id) || null : null; });
   res.page('pages/clinic/frontdesk/index', {
     title: req.t('frontdesk.title'), group, doctors, doctor, ownDoctor: Boolean(ctx.ownDoctorId), onlineLinks, ...(done || {}),

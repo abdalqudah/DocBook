@@ -221,7 +221,12 @@ async function renderIndex(req, res, extra = {}) {
   }
   const range = gridRange(columns);
   columns.forEach((c) => { c.offRanges = offRanges(c, range); });
-  if (view !== 'week') { const rooms = await require('./rooms.service').roomsOn(ctx.businessId, date); columns.forEach((c) => { c.room = c.doctorId ? rooms.get(c.doctorId) || null : null; }); } // eslint-disable-line global-require
+  if (view !== 'week') {
+    // today's clinic (room) number of each doctor, and the assistants of that room
+    const rs = require('./rooms.service'); // eslint-disable-line global-require
+    const [rooms, asst] = await Promise.all([rs.roomsOn(ctx.businessId, date), rs.assistantsByRoom(ctx)]);
+    columns.forEach((c) => { c.room = c.doctorId ? rooms.get(c.doctorId) || null : null; c.assistants = c.room ? asst.get(String(c.room).trim()) || null : null; });
+  }
   const visits = all.filter((a) => a.appointment_type !== 'blocked');
   const stats = {
     total: visits.filter((a) => a.status !== 'cancelled').length,

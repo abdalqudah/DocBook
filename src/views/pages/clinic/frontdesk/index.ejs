@@ -66,7 +66,7 @@
 <div class="panel fx-rooms" data-fx-rooms><div class="panel-body row-sm wrap">
   <span class="small strong"><%- icon('door-open', 'icon-sm') %> <%= t('frontdesk.rooms_today') %></span>
   <% _working.forEach(function (d) { %><form class="cal-room" method="post" action="/app/appointments/room" data-autosubmit><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="doctor_id" value="<%= d.id %>"><input type="hidden" name="return_to" value="/app/front-desk">
-    <label class="small"><%= L(d.full_name, d.full_name_en) %> <input class="input cal-room-input" name="room" value="<%= d.room || '' %>" maxlength="20" inputmode="numeric" dir="ltr" data-submit-on-change aria-label="<%= t('appointments.room_of', { name: L(d.full_name, d.full_name_en) }) %>"></label></form><% }) %>
+    <label class="small"><%= L(d.full_name, d.full_name_en) %> <input class="input cal-room-input" name="room" value="<%= d.room || '' %>" maxlength="20" inputmode="numeric" dir="ltr" data-submit-on-change aria-label="<%= t('appointments.room_of', { name: L(d.full_name, d.full_name_en) }) %>"></label><% if (d.assistants && d.assistants.length) { %> <span class="tiny muted"><%= t('appointments.room_assistants', { names: d.assistants.join('، ') }) %></span><% } %></form><% }) %>
 </div></div>
 <% } %>
 

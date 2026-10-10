@@ -867,7 +867,9 @@
     "wa_open": "Open WhatsApp",
     "wa_ready_text": "The message is ready: open WhatsApp and press send.",
     "result_whatsapp_title": "WhatsApp message ready for {name}",
-    "details_lock_owner": "Another owner changes their own details from their account."
+    "details_lock_owner": "Another owner changes their own details from their account.",
+    "room": "Clinic number",
+    "room_help": "For an assistant / nurse: the clinic (chair) they belong to. The doctor in it is set on the calendar each day."
   },
   "onboarding": {
     "title": "Set up your clinic",

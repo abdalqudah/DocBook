@@ -8,7 +8,7 @@
     var sel = bill && bill.a.id === a.id;
     return '<li><a class="cs-visit' + (sel ? ' is-selected' : '') + '" href="' + visitHref(a.id) + '"' + (sel ? ' aria-current="true"' : '') + '>'
       + '<span class="cs-visit-main"><span class="cs-visit-name"><bdi>' + escapeHtml(a.patient_name) + '</bdi></span>'
-      + '<span class="cs-visit-sub">' + (a.doctor_id ? dot(a.doctor_color) + escapeHtml(L(a.doctor_name, a.doctor_name_en)) : escapeHtml(t('cashier.no_doctor')))
+      + '<span class="cs-visit-sub">' + (a.doctor_id ? dot(a.doctor_color) + escapeHtml(L(a.doctor_name, a.doctor_name_en)) + (a.room ? ' · <b>' + escapeHtml(t('appointments.room_label', { n: a.room })) + '</b>' : '') : escapeHtml(t('cashier.no_doctor')))
       + (a.service_name ? ' · ' + escapeHtml(L(a.service_name, a.service_name_en)) : '') + '</span></span>'
       + '<span class="cs-visit-side"><span class="cs-visit-amount num">' + escapeHtml(money(a.amount_due)) + '</span>'
       + '<span class="cs-visit-meta">' + (showDate ? escapeHtml(fmt.date(a.appointment_date)) : escapeHtml(t('cashier.stage.' + a.stage)) + (a.waited !== null && a.waited !== undefined && a.stage !== 'done' ? ' · <span class="' + (a.waited >= 30 ? 'cs-late' : '') + '">' + escapeHtml(waitText(a)) + '</span>' : '')) + '</span></span>'

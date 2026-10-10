@@ -86,11 +86,20 @@ const stageOf = (a) => (a.status === 'completed' ? 'done' : a.with_doctor ? 'wit
 const minutesSince = (ts, now = Date.now()) => (ts ? Math.max(0, Math.round((now - new Date(ts).getTime()) / 60000)) : null);
 
 /** Today's visits that arrived (checked in / with the doctor) or finished, and are not paid yet. Finished visits first. */
+/** Today's clinic (room) number of each visit's doctor (rooms.service). */
+async function withRooms(ctx, rows) {
+  if (!rows.length) return rows;
+  const rooms = await require('./rooms.service').roomsOn(ctx.businessId, ctx.today); // eslint-disable-line global-require
+  rows.forEach((a) => { a.room = a.doctor_id ? rooms.get(a.doctor_id) || null : null; });
+  return rows;
+}
+
 async function queue(ctx) {
   const rows = await unpaidVisits(ctx).where('a.appointment_date', ctx.today)
     .andWhere((w) => w.where('a.checked_in', true).orWhere('a.with_doctor', true).orWhere('a.status', 'completed'))
     .select(VISIT_SELECT);
   const rank = { done: 0, with_doctor: 1, waiting: 2 };
+  await withRooms(ctx, rows);
   return rows.map((a) => ({ ...a, stage: stageOf(a), waited: minutesSince(a.arrived_at) }))
     .sort((x, y) => rank[x.stage] - rank[y.stage] || String(x.appointment_time).localeCompare(String(y.appointment_time)));
 }
@@ -189,6 +198,7 @@ async function today(ctx, { doctor } = {}) {
   if (doctor) q.where('a.doctor_id', doctor === 'none' ? null : Number(doctor));
   require('./branches.service').scope(q, ctx); // eslint-disable-line global-require -- the branch chosen in the account menu
   const rows = await q;
+  await withRooms(ctx, rows);
   const ids = rows.map((a) => a.id);
   const [invs, rxs, certs, intake] = ids.length ? await Promise.all([
     knex('invoices').where('business_id', ctx.businessId).whereIn('appointment_id', ids).orderBy('id').select('id', 'appointment_id', 'invoice_number', 'amount', 'payment_method'),

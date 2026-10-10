@@ -89,7 +89,7 @@ async function withBusiness(req, res, next, businessId) {
   try {
     let [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);
     let membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id })
-      .first('m.doctor_id', 'm.job_title', 'm.photo_media_id', 'm.work_branch', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
+      .first('m.doctor_id', 'm.job_title', 'm.photo_media_id', 'm.work_branch', 'm.room', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
     let chrome = business;
     let actAs = null;
     if (business.kind === 'center_admin' && business.center_id && actPath(req)) {
@@ -135,6 +135,7 @@ async function withBusiness(req, res, next, businessId) {
         ?? ((req.session && req.session.workBranch && req.session.workBranch[businessId]) || ''),
       branchLocked: Boolean(membership && membership.work_branch && membership.role_key !== 'owner' && !membership.ownBranches),
       ownBranches: (membership && membership.role_key !== 'owner' && membership.ownBranches) || null, // a doctor in several branches: those only
+      myRoom: (membership && !membership.doctor_id && membership.room) || null, // an assistant / nurse: the clinic (room) number they belong to
     };
     req.business = business;
     res.locals.business = chrome;

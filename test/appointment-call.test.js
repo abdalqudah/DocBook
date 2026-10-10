@@ -102,3 +102,23 @@ test('the clinic (room) number of each doctor today: set on the calendar or the 
   assert.match(r.text, /Clinic 3/);
   assert.match(r.text, /data-fx-rooms/);
 });
+
+test('the cash desk shows each doctor\'s clinic number; an assistant belongs to a clinic number and opens on its doctor', async () => {
+  const o = app.agent(); await o.login(mail);
+  const today = scheduling.clinicNow('Asia/Amman').date;
+  // the cashier queue (the visit above is checked in, in clinic 3)
+  let r = await o.get('/app/cashier?lang=en');
+  assert.equal(r.status, 200); assert.match(r.text, /Clinic 3/);
+  r = await o.get('/app/cashier/screen/data');
+  assert.ok(JSON.parse(r.text).visits.some((v) => v.room === 'Clinic 3'));
+  // a nurse of clinic 3
+  const role = await knex('roles').where({ business_id: b, key: 'nurse' }).first('id') || await knex('roles').where({ business_id: b }).whereNotIn('key', ['owner', 'doctor']).first('id');
+  r = await o.submit('/app/clinic/team', '/app/clinic/team', { name: 'Nurse Room Three', email: `nr-${tag}@t.test`, role_id: String(role.id), mode: 'password', locale: 'en', room: '3' });
+  assert.equal(r.status, 302);
+  const m = await knex('memberships').where({ business_id: b }).whereIn('user_id', knex('users').where({ email: `nr-${tag}@t.test` }).select('id')).first('room');
+  assert.equal(m.room, '3');
+  r = await o.get(`/app/appointments?date=${today}&lang=en`);
+  assert.match(r.text, /Assistant: Nurse Room Three/);
+  r = await o.get('/app/clinic/team?lang=en');
+  assert.match(r.text, /data-member-room/);
+});

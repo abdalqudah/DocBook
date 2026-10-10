@@ -214,7 +214,8 @@
     "room": "Clinic",
     "room_of": "{name}'s clinic number today",
     "room_saved": "Clinic number saved.",
-    "room_label": "Clinic {n}"
+    "room_label": "Clinic {n}",
+    "room_assistants": "Assistant: {names}"
   },
   "frontdesk": {
     "title": "Reception & waiting list",

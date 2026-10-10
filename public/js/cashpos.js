@@ -134,7 +134,7 @@
     return '<button type="button" class="pos-card is-' + esc(v.state) + (added ? ' is-in' : '') + '" data-pos-card="' + v.id + '"' + (added ? ' disabled aria-disabled="true"' : '') + '>'
       + '<span class="pos-card-top"><span class="pos-card-when" title="' + esc(v.online ? T.online : T.in_person) + '">' + when + '</span>' + (added ? '<span class="pos-tag">' + esc(T.added) + '</span>' : '') + '</span>'
       + '<span class="pos-card-name"><bdi>' + esc(v.patient) + '</bdi></span>'
-      + '<span class="pos-card-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span>'
+      + '<span class="pos-card-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + (v.room ? ' · <b class="pos-room">' + esc(v.room) + '</b>' : '') + '</span>'
       + (v.practice ? '<span class="pos-card-practice">' + esc(v.practice) + '</span>' : '')
       + '<span class="pos-card-state"><i class="pos-sdot is-' + esc(v.state) + '" aria-hidden="true"></i>' + esc((T.state || {})[v.state] || '') + '</span>'
       + '<span class="pos-card-amount">' + amount + (v.due > 0 ? '<span class="pos-card-src">' + esc(v.fromDoctor ? T.set_by_doctor : T.expected_fee) + '</span>' : '') + '</span>'
@@ -161,7 +161,7 @@
           : '<form class="pos-side-finish" data-pos-finish="' + v.id + '"><input class="pos-side-amt" name="amount" inputmode="decimal" autocomplete="off" value="' + (v.due > 0 ? esc(String(round(v.due))) : '') + '" placeholder="' + esc(T.amount_ph) + '" aria-label="' + esc(T.amount_ph) + '"><button type="submit" class="pos-side-btn is-primary">' + esc(T.finish) + '</button></form>';
         return '<div class="pos-side-row">'
           + '<div class="pos-side-top"><span class="pos-side-time num" dir="ltr">' + esc(v.time) + '</span>'
-          + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + '</span>' + (v.practice ? '<span class="pos-card-practice">' + esc(v.practice) + '</span>' : '') + '</span></div>'
+          + '<span class="pos-side-who"><span class="pos-side-name"><bdi>' + esc(v.patient) + '</bdi></span><span class="pos-side-doc">' + (v.doctor ? '<i class="pos-dot"' + dot + ' aria-hidden="true"></i>' + esc(v.doctor) : esc(T.no_doctor)) + (v.room ? ' · <b class="pos-room">' + esc(v.room) + '</b>' : '') + '</span>' + (v.practice ? '<span class="pos-card-practice">' + esc(v.practice) + '</span>' : '') + '</span></div>'
           + act + '</div>';
       }).join('') : '<p class="pos-side-empty">' + esc((T.side_none || {})[k] || '') + '</p>';
     });

@@ -200,7 +200,7 @@ async function listMembers(businessId) {
   return knex('memberships as m').join('users as u', 'u.id', 'm.user_id').join('roles as r', 'r.id', 'm.role_id')
     .leftJoin('doctors as d', 'd.id', 'm.doctor_id')
     .where('m.business_id', businessId)
-    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.work_branch', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'd.phone as doctor_phone', 'd.whatsapp as doctor_whatsapp', 'u.last_login_at', 'u.must_change_password',
+    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.work_branch', 'm.room', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'd.phone as doctor_phone', 'd.whatsapp as doctor_whatsapp', 'u.last_login_at', 'u.must_change_password',
       'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
     .orderBy('u.name');
 }
@@ -238,7 +238,7 @@ async function resolveDoctor(ctx, role, doctorId, trx = knex) {
   return { id: d.id, takenBy: taken };
 }
 
-async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTitle, workBranch }) {
+async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTitle, workBranch, room }) {
   const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.id': membershipId, 'm.business_id': ctx.businessId }).first('m.*', 'r.key as role_key');
   if (!m) throw E.notFound('Staff member');
   // Nobody but an owner changes their own access or an owner's account.
@@ -257,6 +257,7 @@ async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTi
   if (status) patch.status = status;
   if (jobTitle !== undefined) patch.job_title = jobTitle || null;
   if (workBranch !== undefined && workBranch !== null) patch.work_branch = String(workBranch); // the branch the member works in ('' every branch)
+  if (room !== undefined) patch.room = String(room || '').replace(/\s+/g, ' ').trim().slice(0, 20) || null; // an assistant's clinic (room) number
   if (doctorId !== undefined || role.key === 'doctor') {
     const doc = await resolveDoctor(ctx, role, doctorId === undefined ? m.doctor_id : doctorId);
     if (doc && doc.takenBy && doc.takenBy.id !== m.id) throw E.validation({ doctor_id: 'Another account is already linked to this doctor.' });

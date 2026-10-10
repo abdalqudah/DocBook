@@ -31,4 +31,14 @@ async function setRoom(ctx, doctorId, day, room) {
   return v;
 }
 
-module.exports = { roomsOn, setRoom };
+/** The assistants / nurses of each room (memberships.room), of the branch the member works in: Map room → [names]. */
+async function assistantsByRoom(ctx) {
+  const q = knex('memberships as m').join('users as u', 'u.id', 'm.user_id').where({ 'm.business_id': ctx.businessId, 'm.status': 'active' })
+    .whereNotNull('m.room').whereNot('m.room', '').whereNull('m.doctor_id').select('m.room', 'u.name');
+  if (ctx.workBranch) q.where((w) => w.where('m.work_branch', String(ctx.workBranch)).orWhere('m.work_branch', ''));
+  const map = new Map();
+  (await q.catch(() => [])).forEach((r) => { const k = String(r.room).trim(); if (!map.has(k)) map.set(k, []); map.get(k).push(r.name); });
+  return map;
+}
+
+module.exports = { roomsOn, setRoom, assistantsByRoom, clean };

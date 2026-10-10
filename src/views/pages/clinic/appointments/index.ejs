@@ -129,6 +129,7 @@
             <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="doctor_id" value="<%= c.doctorId %>"><input type="hidden" name="day" value="<%= date %>"><input type="hidden" name="return_to" value="/app/appointments?date=<%= date %>">
             <label class="tiny muted"><%= t('appointments.room') %> <input class="input cal-room-input" name="room" value="<%= c.room || '' %>" maxlength="20" inputmode="numeric" dir="ltr" data-submit-on-change aria-label="<%= t('appointments.room_of', { name: L(c.name, c.name_en) }) %>"></label>
           </form><% } else if (c.room) { %><span class="tiny"><%= t('appointments.room') %> <bdi dir="ltr"><%= c.room %></bdi></span><% } %>
+          <% if (c.assistants && c.assistants.length) { %><span class="tiny muted truncate d-block" data-room-assistants><%= t('appointments.room_assistants', { names: c.assistants.join('، ') }) %></span><% } %>
           <% } %>
         <% } %>
       </div>

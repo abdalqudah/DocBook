@@ -20,6 +20,7 @@
   </div>
   <%- include('../../partials/field', { name: 'phone', label: t('common.phone'), type: 'tel', value: o.phone, attrs: 'dir="ltr" inputmode="tel"' }) %>
   <%- include('../../partials/field', { name: 'job_title', label: t('team.job_title'), value: o.job_title, placeholder: t('team.job_title_ph') }) %>
+  <%- include('../../partials/field', { name: 'room', label: t('team.room'), value: o.room, help: t('team.room_help'), attrs: 'maxlength="20" inputmode="numeric" dir="ltr"' }) %>
   <% if (typeof branchOpts !== 'undefined' && branchOpts) { %><%- include('../../partials/field', { name: 'work_branch', type: 'select', label: t('branches.member_branch'), value: o.work_branch !== undefined ? o.work_branch : (typeof workBranch !== 'undefined' ? workBranch : ''), options: [{ value: '', label: t('branches.all') }].concat(branchOpts), help: t('branches.member_branch_help') }) %><% } %>
   <div class="field">
     <label class="label" for="f-locale"><%= t('team.account_language') %></label>

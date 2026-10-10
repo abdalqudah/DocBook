@@ -112,7 +112,8 @@ async function addLogin(req, body) {
   if (wb === null) throw E.validation({ work_branch: 'Choose a valid value.' });
   const out = await businesses.addStaff(req.ctx, { name: d.name, email: d.email, phone: d.phone, roleId: d.role_id, doctorId: d.doctor_id, jobTitle: d.job_title, mode: d.mode, locale: d.locale });
   // the branch the new member works in (a member who signs in now; an invitation gets it on the team page once accepted)
-  if (d.doctor_id && await branchesSvc.multi(req.ctx.businessId)) await doctorBranchFromTeam(req.ctx, d.doctor_id, req.body.work_branch === undefined ? null : wb); // a doctor's login: the doctor's branches
+  if (d.doctor_id && await branchesSvc.multi(req.ctx.businessId)) await doctorBranchFromTeam(req.ctx, d.doctor_id, (body || {}).work_branch === undefined ? null : wb); // a doctor's login: the doctor's branches
+  else if ((body || {}).room && (out.added || out.password)) await knex('memberships').where({ business_id: req.ctx.businessId }).whereIn('user_id', knex('users').where({ email: String(d.email).toLowerCase() }).select('id')).update({ room: String((body || {}).room).trim().slice(0, 20), ...(wb ? { work_branch: wb } : {}) });
   else if (wb && (out.added || out.password)) await knex('memberships').where({ business_id: req.ctx.businessId }).whereIn('user_id', knex('users').where({ email: String(d.email).toLowerCase() }).select('id')).update({ work_branch: wb });
   const base = { name: d.name, email: d.email, role: role ? { key: role.key, name: role.name, is_system: role.is_system } : null };
   if (out.added) return { type: 'added', ...base };
@@ -147,7 +148,7 @@ router.post('/:id(\\d+)', form(async (req, res) => {
   const wb = req.body.work_branch === undefined ? undefined : await branchesSvc.validScope(req.ctx.businessId, req.body.work_branch);
   if (wb === null) throw E.validation({ work_branch: 'Choose a valid value.' });
   const forDoctor = d.doctor_id ? await doctorBranchFromTeam(req.ctx, d.doctor_id, wb) : false; // a doctor's login: the doctor's branches
-  await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title, workBranch: forDoctor ? '' : wb });
+  await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title, workBranch: forDoctor ? '' : wb, room: req.body.room === undefined ? undefined : (d.doctor_id ? null : req.body.room) });
   flash(req, 'success', req.t('team.member_updated'));
   res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null, openDialog: 'edit-dialog', editAction: req.originalUrl })));

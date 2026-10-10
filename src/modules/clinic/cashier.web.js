@@ -144,6 +144,7 @@ function posVisit(req, a) {
     due, fromDoctor, what: lines.map((l) => (req.locale === 'en' && l.name_en ? l.name_en : l.name) || consult).join(' + '),
     rxs: (a.rxs || []).map((rx) => (clinical ? `/app/visits/${a.id}/prescriptions/${rx.id}?print=1&autoprint=1` : `/app/cashier/papers/${a.id}/prescription/${rx.id}.pdf`)),
     finished: a.doctor_finished_at ? new Date(a.doctor_finished_at).getTime() : 0, practice: a.practice || null,
+    room: a.room ? req.t('appointments.room_label', { n: a.room }) : null, // today's clinic number of the doctor
   };
 }
 function shortDate(req, d) {

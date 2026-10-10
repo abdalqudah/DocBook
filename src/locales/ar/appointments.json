@@ -214,7 +214,8 @@
     "room": "عيادة",
     "room_of": "رقم عيادة {name} اليوم",
     "room_saved": "تم حفظ رقم العيادة.",
-    "room_label": "عيادة رقم {n}"
+    "room_label": "عيادة رقم {n}",
+    "room_assistants": "المساعد: {names}"
   },
   "frontdesk": {
     "title": "الاستقبال وقائمة الانتظار",
