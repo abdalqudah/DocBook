@@ -196,7 +196,8 @@ async function posData(req, addIds = []) {
     const tab = Number(req.query.p) || 0;
     if (tab && bids.includes(tab)) rows = rows.filter((a) => a.bid === tab);
   }
-  const open = rows.filter((a) => !['paid', 'waived', 'imported'].includes(a.payment_status) && a.state !== 'missed');
+  // only patients who actually came in (checked in / with the doctor / finished) — not those booked who have not arrived
+  const open = rows.filter((a) => !['paid', 'waived', 'imported'].includes(a.payment_status) && a.state !== 'missed' && a.state !== 'expected' && svc.cameIn(a));
   const extra = [];
   for (const id of addIds.filter((x) => !open.some((a) => a.id === x))) { // eslint-disable-line no-restricted-syntax
     try {

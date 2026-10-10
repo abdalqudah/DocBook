@@ -46,7 +46,7 @@ async function monthly(businessId, timezone, fromMonth, toMonth, ctx = null) {
       .groupBy('period').select('period').sum({ net: 'net_pay' }).sum({ adv: 'advances' }),
     staff.paidByMonth(businessId, fromMonth, toMonth, bctx),
     // Supplies received (memo): every delivery in the month it arrived — partial ones and those of later-cancelled orders too.
-    lib.whereLocalDates(knex('purchase_receipts as r').where({ 'r.business_id': businessId }), 'r.received_at', from, to, timezone)
+    lib.whereLocalDates(knex('purchase_receipts as r').where({ 'r.business_id': businessId }).modify((q) => { if (bctx && bctx.workBranch) q.whereIn('r.purchase_order_id', br.scopeKey(knex('purchase_orders').select('id').where({ business_id: businessId }), bctx, 'branch_key')); }), 'r.received_at', from, to, timezone)
       .groupBy('mon').select(localMonth('r.received_at').wrap('', ' as mon'))
       .select(knex.raw('COALESCE(SUM(r.quantity * COALESCE(r.unit_cost, 0)), 0) as v')),
     // Revenue by payment method from the payment parts (a cash + card invoice adds to both; never "mixed").

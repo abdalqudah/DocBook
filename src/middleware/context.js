@@ -110,6 +110,12 @@ async function withBusiness(req, res, next, businessId) {
         membership = membership ? { ...membership, doctor_id: null } : membership;
       }
     }
+    // A member with no branch (Team → branch) in a clinic with branches works in the main branch — only the owner and
+    // the clinic manager move between branches (or see all of them).
+    if (membership && !membership.doctor_id && !membership.work_branch && !['owner', 'clinic_manager'].includes(membership.role_key) && !actAs
+      && await require('../modules/clinic/branches.service').multi(businessId).catch(() => false)) { // eslint-disable-line global-require
+      membership = { ...membership, work_branch: 'main' };
+    }
     // A doctor's own login works in its doctor's branch (Doctors → branch), like a member tied to a branch.
     if (membership && membership.doctor_id && membership.role_key !== 'owner' && !membership.work_branch) {
       const doc = await knex('doctors').where({ id: membership.doctor_id, business_id: businessId }).first('branch_id').catch(() => null);

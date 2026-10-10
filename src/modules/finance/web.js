@@ -240,7 +240,7 @@ const budgetsBack = (req) => safeBack(req, '/app/budgets', '/app/budgets');
 
 async function renderBudgets(req, res, extra = {}) {
   const month = [req.query.month].find(m.isMonth) || req.ctx.today.slice(0, 7);
-  const [rows, scopeList, names] = await Promise.all([budgets.evaluate(req.ctx.businessId, req.ctx.timezone, month), budgets.scopes(req.ctx.businessId), budgets.customNames(req.ctx.businessId)]);
+  const [rows, scopeList, names] = await Promise.all([budgets.evaluate(req.ctx.businessId, req.ctx.timezone, month, { ctx: req.ctx }), budgets.scopes(req.ctx.businessId), budgets.customNames(req.ctx.businessId)]);
   const labelOf = (k) => budgets.scopeLabel(req.t, k, names);
   const totals = rows.filter((b) => b.is_active).reduce((t, b) => ({ limit: m.round(t.limit + b.status.limit), spent: m.round(t.spent + b.status.spent), warn: t.warn + (b.status.warn ? 1 : 0), over: t.over + (b.status.over ? 1 : 0) }), { limit: 0, spent: 0, warn: 0, over: 0 });
   res.page('pages/finance/budgets', {
@@ -315,7 +315,7 @@ router.get('/finance', can('finance.view'), wrap(async (req, res) => {
     .concat([{ label: req.t('pnl.doctor_payroll'), value: data.cur.doctorPayroll }, { label: req.t('pnl.staff_salaries'), value: data.cur.staffSalaries }]).filter((i) => i.value > 0);
   const donut = costItems.length ? charts.donut({ items: costItems, fmt: mf, title: req.t('pnl.cost_breakdown'), otherLabel: req.t('pnl.other') }) : null;
   const [budgetRows, names, ov] = await Promise.all([
-    budgets.evaluate(req.ctx.businessId, req.ctx.timezone, req.ctx.today.slice(0, 7), { historyMonths: 1 }),
+    budgets.evaluate(req.ctx.businessId, req.ctx.timezone, req.ctx.today.slice(0, 7), { historyMonths: 1, ctx: req.ctx }),
     budgets.customNames(req.ctx.businessId), partners.overview(req.ctx, data.cur.net),
   ]);
   const budgetAlerts = budgetRows.filter((b) => b.is_active && b.status.state !== 'ok').map((b) => ({ ...b, label: budgets.scopeLabel(req.t, b.scope_key, names) }));

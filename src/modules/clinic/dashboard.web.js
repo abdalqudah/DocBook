@@ -219,7 +219,7 @@ async function attention(ctx, { online, unpaid } = {}) {
     p.has('doctors.manage') ? require('./branches.service').scopeDoctors(knex('doctors').where({ business_id: b, is_active: true }), ctx).first('id') : true,
     p.has('frontdesk.use') || p.has('appointments.manage') ? apptBase(ctx).where('a.appointment_date', ctx.today).whereIn('a.status', ['pending', 'confirmed'])
       .where({ 'a.checked_in': false, 'a.with_doctor': false }).where('a.appointment_time', '<', lateBefore).count({ n: '*' }).first() : null,
-    p.has('supplies.view') ? knex('supply_items').where({ business_id: b }).whereRaw('current_stock <= reorder_level').count({ n: '*' }).first() : null,
+    p.has('supplies.view') ? require('./branches.service').scopeKey(knex('supply_items').where({ business_id: b }), ctx, 'branch_key').whereRaw('current_stock <= reorder_level').count({ n: '*' }).first() : null,
     p.has('vendors.view') ? knex('rep_visits').where({ business_id: b, status: 'requested' }).where('visit_date', '>=', ctx.today).modify((q) => { if (ctx.ownDoctorId) q.where('doctor_id', ctx.ownDoctorId); if (ctx.workBranch) q.whereIn('doctor_id', require('./branches.service').doctorIds(ctx)); }).count({ n: '*' }).first() : null,
     p.has('payroll.approve') ? knex('payroll_adjustments').where({ business_id: b, approval_status: 'pending' }).modify((q) => { if (ctx.workBranch) q.whereIn('doctor_id', require('./branches.service').payDoctorIds(ctx)); }).count({ n: '*' }).first() : null,
   ]);

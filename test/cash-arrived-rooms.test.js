@@ -69,3 +69,12 @@ test("a nurse of a clinic (room) sees that room's doctors' appointments — the 
   assert.match(r.text, /Came In/); assert.doesNotMatch(r.text, /Finished/);
   await knex('doctor_day_rooms').where({ business_id: b }).del();
 });
+
+test('the full-screen cash screen lists only patients who came in', async () => {
+  const o = app.agent(); await o.login(mail('owner'));
+  const r = await o.get('/app/cashier/screen/data');
+  assert.equal(r.status, 200);
+  const names = JSON.parse(r.text).visits.map((v) => v.name || v.patient_name || v.patient).join('|');
+  assert.doesNotMatch(names, /Booked Only|Done No Arrival/);
+  assert.match(names, /Came In/); assert.match(names, /Finished/);
+});

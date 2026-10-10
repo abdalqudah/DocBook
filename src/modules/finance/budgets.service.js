@@ -36,10 +36,14 @@ async function customNames(businessId) {
   return Object.fromEntries(rows.map((r) => [r.key, r.name]));
 }
 
-const list = (businessId) => knex('budgets').where({ business_id: businessId }).orderBy('id');
+// Budgets per branch (budgets.branch_key: null = the whole clinic, 'main' or a branch id): a member sees the budgets
+// of the branch chosen in the account menu; "all branches" shows the whole clinic's.
+const keyOf = (ctx) => (ctx && ctx.workBranch ? String(ctx.workBranch) : null);
+const inBranch = (q, ctx) => { if (ctx === undefined) return q; const k = keyOf(ctx); return k ? q.where('branch_key', k) : q.whereNull('branch_key'); };
+const list = (businessId, ctx) => inBranch(knex('budgets').where({ business_id: businessId }), ctx).orderBy('id');
 
 async function get(ctx, id) {
-  const b = await knex('budgets').where({ id, business_id: ctx.businessId }).first();
+  const b = await inBranch(knex('budgets').where({ id, business_id: ctx.businessId }), ctx).first();
   if (!b) throw E.notFound('Budget');
   return b;
 }
@@ -52,7 +56,7 @@ async function save(ctx, id, input) {
     threshold_percent: z.preprocess((v) => (v === '' || v === undefined || v === null ? 80 : Number(v)), z.number({ invalid_type_error: 'Enter a number.' }).int('Enter a number.').min(1, 'Must be between 0 and 100.').max(100, 'Must be between 0 and 100.')),
     is_active: z.preprocess((v) => v === true || v === '1' || v === 'on' || v === 'true' || v === 1, z.boolean()),
   }), { ...input, is_active: [].concat(input.is_active).pop() });
-  const dup = await knex('budgets').where({ business_id: ctx.businessId, scope_key: d.scope_key }).modify((q) => { if (id) q.whereNot('id', id); }).first('id');
+  const dup = await inBranch(knex('budgets').where({ business_id: ctx.businessId, scope_key: d.scope_key }), ctx).modify((q) => { if (id) q.whereNot('id', id); }).first('id');
   if (dup) throw new AppError('BUDGET_EXISTS', 'There is already a budget for this category.', 409);
   if (id) {
     const before = await get(ctx, id);
@@ -60,7 +64,7 @@ async function save(ctx, id, input) {
     await audit.record(ctx, 'budget.updated', { entityType: 'budget', entityId: id, oldValues: { scope: before.scope_key, limit: Number(before.monthly_limit), threshold: before.threshold_percent, active: !!before.is_active }, newValues: { scope: d.scope_key, limit: d.monthly_limit, threshold: d.threshold_percent, active: d.is_active } });
     return before.id;
   }
-  const [newId] = await knex('budgets').insert({ ...d, business_id: ctx.businessId });
+  const [newId] = await knex('budgets').insert({ ...d, business_id: ctx.businessId, branch_key: keyOf(ctx) });
   await audit.record(ctx, 'budget.created', { entityType: 'budget', entityId: newId, newValues: { scope: d.scope_key, limit: d.monthly_limit, threshold: d.threshold_percent } });
   return newId;
 }
@@ -85,12 +89,16 @@ function spentIn(month, scopeKey) {
  * Budgets of a clinic with their status for `month` and a history of the `historyMonths` months before and including it.
  * @returns [{ ...budget, status, history: [{ month, status }] }]
  */
-async function evaluate(businessId, timezone, month, { historyMonths = 6, budgets = null } = {}) {
-  const rows = budgets || await list(businessId);
+async function evaluate(businessId, timezone, month, { historyMonths = 6, budgets = null, ctx } = {}) {
+  const rows = budgets || await list(businessId, ctx);
   if (!rows.length) return [];
   const first = m.addMonths(month, -(historyMonths - 1));
-  const months = await pnl.monthly(businessId, timezone, first, month);
-  return rows.map((b) => ({
+  // each budget against its own branch's figures (the whole clinic's for a clinic-wide budget)
+  const byKey = {};
+  for (const k of [...new Set(rows.map((b) => b.branch_key || ''))]) { // eslint-disable-line no-restricted-syntax
+    byKey[k] = await pnl.monthly(businessId, timezone, first, month, k ? { businessId, workBranch: k } : null); // eslint-disable-line no-await-in-loop
+  }
+  return rows.map((b) => ({ months: byKey[b.branch_key || ''], b })).map(({ months, b }) => ({
     ...b,
     monthly_limit: Number(b.monthly_limit),
     status: m.budgetStatus(b.monthly_limit, spentIn(months[month], b.scope_key), b.threshold_percent),
@@ -103,7 +111,7 @@ async function evaluate(businessId, timezone, month, { historyMonths = 6, budget
  * @returns the number of new notifications
  */
 async function check(businessId, timezone, month) {
-  const active = (await list(businessId)).filter((b) => b.is_active);
+  const active = (await knex('budgets').where({ business_id: businessId }).orderBy('id')).filter((b) => b.is_active);
   if (!active.length) return 0;
   const evald = await evaluate(businessId, timezone, month, { historyMonths: 1, budgets: active });
   const cfg = await knex('clinic_messaging').where({ business_id: businessId }).first('message_locale').catch(() => null);
@@ -124,7 +132,7 @@ async function check(businessId, timezone, month) {
     const vars = { name: label, pct: s.usage === null ? '—' : s.usage, spent: fmtMoney(s.spent, biz.currency, loc), limit: fmtMoney(s.limit, biz.currency, loc) };
     await notifications.notify(businessId, { // eslint-disable-line no-await-in-loop
       permission: 'finance.view', type: `budget.${kind}`, severity: s.over ? 'danger' : 'warning',
-      title: t(s.over ? 'budgets.notify_over' : 'budgets.notify_warn', vars), body: t('budgets.notify_body', vars), link: `/app/budgets?month=${month}`, dedupeKey,
+      title: t(s.over ? 'budgets.notify_over' : 'budgets.notify_warn', vars), body: t('budgets.notify_body', vars), link: `/app/budgets?month=${month}`, dedupeKey, branchKey: b.branch_key || null,
     });
     sent += 1;
   }

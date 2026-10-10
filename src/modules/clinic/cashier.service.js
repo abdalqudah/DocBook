@@ -762,7 +762,7 @@ async function getClosing(ctx, id) {
   return c;
 }
 
-module.exports = {
+module.exports = { cameIn,
   PAYMENT_METHODS, PAY_METHODS, DENOMINATIONS, denominationsFor, SEARCH_DAYS,
   FLOW, flowState, doctorsWorking, today, screen,
   queue, search, recentReceipts, todayTotals, partsFor, partsOf, visit, doctorBill, defaultLines, changesDoctorBill, servicesFor, activeInsurance, computeBill, settle, pay, receipt, planSale, payMany, MAX_SALE,

@@ -51,6 +51,8 @@ const orderUrl = (req) => `${BASE}/${Number(req.params.id)}`;
 const baseUrlOf = (res) => res.locals.baseUrl || '';
 
 // ---------------------------------------------------------------- list
+// an order of another branch (the branch chosen in the account menu) is not found
+router.param('id', (req, res, next, id) => { svc.get(req.ctx, Number(id) || 0).then(() => next(), next); });
 router.get('/', wrap(async (req, res) => {
   const [{ rows, counts, meta }, suppliers, onOrder] = await Promise.all([svc.list(req.ctx, req.query), svc.listSuppliers(req.ctx), svc.onOrder(req.ctx)]);
   // Low items not yet on an open order or a draft: what "Order low-stock items" would still add.

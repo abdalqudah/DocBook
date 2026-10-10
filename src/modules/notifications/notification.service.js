@@ -2,18 +2,18 @@
 // `dedupe_key` makes alert generation idempotent (e.g. one "budget exceeded" per budget per month).
 const knex = require('../../db/knex');
 
-async function notify(businessId, { userId = null, permission = null, type, title, body = null, link = null, severity = 'info', dedupeKey = null, appointmentId = null }, trx = knex) {
+async function notify(businessId, { userId = null, permission = null, type, title, body = null, link = null, severity = 'info', dedupeKey = null, appointmentId = null, branchKey: givenKey = null }, trx = knex) {
   // Sent from outside that clinic's own database (platform admin, another practice of a centre…): written there.
   const tenant = require('../../db/tenant'); // eslint-disable-line global-require
-  if (!(await tenant.isHere(businessId))) return tenant.runFor(businessId, () => notify(businessId, { userId, permission, type, title, body, link, severity, dedupeKey, appointmentId }));
+  if (!(await tenant.isHere(businessId))) return tenant.runFor(businessId, () => notify(businessId, { userId, permission, type, title, body, link, severity, dedupeKey, appointmentId, branchKey: givenKey }));
   if (dedupeKey) {
     const exists = await trx('notifications').where({ business_id: businessId, dedupe_key: dedupeKey }).first('id');
     if (exists) return exists.id;
   }
   // About a visit (given, or its link): the visit's branch only
   const visitId = Number(appointmentId) || Number((/^\/app\/appointments\/(\d+)/.exec(String(link || '')) || [])[1]) || null;
-  let branchKey = null;
-  if (visitId) {
+  let branchKey = givenKey ? String(givenKey) : null;
+  if (visitId && !branchKey) {
     const a = await trx('appointments').where({ business_id: businessId, id: visitId }).first('branch_id').catch(() => null);
     if (a && (a.branch_id || await require('../clinic/branches.service').multi(businessId))) branchKey = a.branch_id ? String(a.branch_id) : 'main'; // eslint-disable-line global-require
   }

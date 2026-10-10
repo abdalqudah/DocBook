@@ -237,7 +237,9 @@ const payDoctorIds = (ctx) => scope(knex('doctors').select('id').where('business
 function scopeMembers(q, ctx, m = 'm') {
   const v = ctx && ctx.workBranch;
   if (!v) return q;
-  return q.where((w) => w.where(`${m}.work_branch`, String(v)).orWhere((x) => x.where(`${m}.work_branch`, '').whereIn(`${m}.doctor_id`, doctorIds(ctx))));
+  // a member with no branch: a doctor's login follows its doctor; anyone else works in the main branch
+  return q.where((w) => w.where(`${m}.work_branch`, String(v)).orWhere((x) => x.where((e) => e.where(`${m}.work_branch`, '').orWhereNull(`${m}.work_branch`))
+    .where((y) => { y.whereIn(`${m}.doctor_id`, doctorIds(ctx)); if (String(v) === 'main') y.orWhereNull(`${m}.doctor_id`); })));
 }
 
 /** A query narrowed to the branch the member works in (account menu): 'main' = no branch, an id = that branch. */
@@ -248,4 +250,15 @@ function scope(q, ctx, col = 'a.branch_id') {
   return q;
 }
 
-module.exports = { scope, scopeDoctors, doctorExtra, extraByDoctor, setDoctorExtra, payDoctorIds, scopeMembers, scopeByVisit, doctorIds, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };
+/**
+ * Things kept per branch by a branch_key column (supplies, purchase orders): null = the main branch, else a branch id.
+ * ownKey: the key a new row gets from the branch the member works in.
+ */
+const ownKey = (ctx) => (ctx && ctx.workBranch && String(ctx.workBranch) !== 'main' ? String(ctx.workBranch) : null);
+function scopeKey(q, ctx, col) {
+  const v = ctx && ctx.workBranch;
+  if (!v) return q;
+  return String(v) === 'main' ? q.where((w) => w.whereNull(col).orWhere(col, 'main')) : q.where(col, String(v));
+}
+
+module.exports = { ownKey, scopeKey, scope, scopeDoctors, doctorExtra, extraByDoctor, setDoctorExtra, payDoctorIds, scopeMembers, scopeByVisit, doctorIds, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };

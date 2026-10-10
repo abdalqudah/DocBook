@@ -41,17 +41,21 @@ const PAGE = 80;
 function members(ctx) {
   return knex('memberships as m').join('users as u', 'u.id', 'm.user_id').leftJoin('roles as r', 'r.id', 'm.role_id')
     .where({ 'm.business_id': ctx.businessId, 'm.status': 'active' }).whereNot('m.user_id', ctx.userId)
+    // the branch chosen in the account menu: its team (and the owner)
+    .modify((q) => { if (ctx.workBranch) q.where((w) => w.where('r.key', 'owner').orWhere((x) => require('../clinic/branches.service').scopeMembers(x, ctx, 'm'))); }) // eslint-disable-line global-require
     .orderBy('u.name').select('u.id', 'u.name', 'm.job_title', 'r.name as role_name', 'r.key as role_key');
 }
 
 const isMember = async (businessId, userId) => Boolean(await knex('memberships').where({ business_id: businessId, user_id: userId, status: 'active' }).first('id'));
 
-/** The clinic room (created on first use). */
+/** The room of the branch chosen in the account menu ('all' = the whole clinic), created on first use. */
+const roomKey = (ctx) => (ctx && ctx.workBranch ? `branch:${ctx.workBranch}` : 'all');
 async function room(ctx) {
-  let r = await knex('staff_chats').where({ business_id: ctx.businessId, kind: 'room', pair_key: 'all' }).first();
+  const key = roomKey(ctx);
+  let r = await knex('staff_chats').where({ business_id: ctx.businessId, kind: 'room', pair_key: key }).first();
   if (!r) {
-    await knex('staff_chats').insert({ business_id: ctx.businessId, kind: 'room', pair_key: 'all' }).onConflict(['business_id', 'kind', 'pair_key']).ignore();
-    r = await knex('staff_chats').where({ business_id: ctx.businessId, kind: 'room', pair_key: 'all' }).first();
+    await knex('staff_chats').insert({ business_id: ctx.businessId, kind: 'room', pair_key: key }).onConflict(['business_id', 'kind', 'pair_key']).ignore();
+    r = await knex('staff_chats').where({ business_id: ctx.businessId, kind: 'room', pair_key: key }).first();
   }
   return r;
 }
@@ -74,6 +78,7 @@ async function direct(ctx, otherUserId) {
 async function access(ctx, chatId) {
   const c = await knex('staff_chats').where({ id: Number(chatId) || 0, business_id: ctx.businessId }).first();
   if (!c) throw E.notFound('Conversation');
+  if (c.kind === 'room' && c.pair_key !== roomKey(ctx)) throw E.notFound('Conversation'); // another branch's room
   if (c.kind === 'direct') {
     const [a, b] = String(c.pair_key).split(':').map(Number);
     if (ctx.userId !== a && ctx.userId !== b) throw E.notFound('Conversation');
@@ -168,7 +173,7 @@ async function unreadTotal(ctx) {
     .leftJoin('staff_chat_members as r', function j() { this.on('r.chat_id', 'm.chat_id').andOn('r.user_id', knex.raw('?', [ctx.userId])); })
     .join('memberships as mem', function j() { this.on('mem.business_id', 'm.business_id').andOn('mem.user_id', knex.raw('?', [ctx.userId])); })
     .where('m.business_id', ctx.businessId).whereNot('m.user_id', ctx.userId).whereRaw('m.created_at >= mem.created_at')
-    .andWhere((w) => w.where('c.kind', 'room').orWhere('c.pair_key', 'like', `${ctx.userId}:%`).orWhere('c.pair_key', 'like', `%:${ctx.userId}`))
+    .andWhere((w) => w.where((x) => x.where('c.kind', 'room').where('c.pair_key', roomKey(ctx))).orWhere('c.pair_key', 'like', `${ctx.userId}:%`).orWhere('c.pair_key', 'like', `%:${ctx.userId}`))
     .andWhere((w) => w.whereNull('r.last_read_id').orWhereRaw('m.id > r.last_read_id'))
     .count({ n: '*' });
   return Number(n);

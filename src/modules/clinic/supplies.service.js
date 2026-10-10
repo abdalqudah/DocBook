@@ -11,7 +11,10 @@ const notifications = require('../notifications/notification.service');
 const businesses = require('../businesses/business.service');
 
 const suppliers = repo({ table: 'suppliers', entity: 'supplier', searchable: ['name', 'email', 'phone'], defaultSort: ['name', 'asc'] });
-const items = repo({ table: 'supply_items', entity: 'supply_item', searchable: ['name', 'unit'], filters: { supplier: 'supplier_id', low: (q, v) => v === 'yes' && q.whereRaw('supply_items.current_stock <= supply_items.reorder_level') }, defaultSort: ['name', 'asc'] });
+const branches = require('./branches.service');
+// each branch keeps its own stock (supply_items.branch_key); suppliers are shared by the clinic
+const items = repo({ table: 'supply_items', entity: 'supply_item', searchable: ['name', 'unit'], filters: { supplier: 'supplier_id', low: (q, v) => v === 'yes' && q.whereRaw('supply_items.current_stock <= supply_items.reorder_level') }, defaultSort: ['name', 'asc'],
+  scope: (q, ctx) => branches.scopeKey(q, ctx, 'supply_items.branch_key') });
 
 const bool = () => z.preprocess((v) => v === '1' || v === 'on' || v === true, z.boolean());
 // Quantities are kept with 2 decimals: rounded here so the stock, its movement and the audit all show the same number.
@@ -30,7 +33,7 @@ async function lowStockCheck(ctx, itemId, trx = knex) {
   const low = Number(it.current_stock) <= Number(it.reorder_level);
   if (low && !it.last_reorder_requested_at) {
     await trx('supply_items').where({ id: it.id }).update({ last_reorder_requested_at: new Date() });
-    await notifications.notify(ctx.businessId, { permission: 'supplies.view', type: 'supplies.low_stock', severity: 'warning', dedupeKey: `low:${it.id}:${Date.now()}`, title: `${it.name}: ${Number(it.current_stock)} ${it.unit || ''}`.trim(), body: `≤ ${Number(it.reorder_level)}`, link: '/app/supplies?low=yes' }, trx);
+    await notifications.notify(ctx.businessId, { permission: 'supplies.view', type: 'supplies.low_stock', severity: 'warning', dedupeKey: `low:${it.id}:${Date.now()}`, title: `${it.name}: ${Number(it.current_stock)} ${it.unit || ''}`.trim(), body: `≤ ${Number(it.reorder_level)}`, link: '/app/supplies?low=yes', branchKey: it.branch_key || 'main' }, trx);
     if (it.supplier_email) {
       const clinic = await businesses.get(ctx.businessId);
       mailer.send({ businessId: ctx.businessId, kind: 'suppliers', to: it.supplier_email, subject: `Restock request — ${it.name} — ${clinic.name}`,
@@ -52,7 +55,7 @@ async function saveItem(ctx, id, input) {
       await items.update(ctx, id, row, trx);
       if (Number(before.current_stock) !== d.current_stock) await move(ctx, id, { type: 'adjust', quantity: d.current_stock, note: 'edit' }, trx);
     } else {
-      itemId = await items.create(ctx, { ...row, current_stock: d.current_stock }, trx);
+      itemId = await items.create(ctx, { ...row, current_stock: d.current_stock, branch_key: branches.ownKey(ctx) }, trx);
       await trx('stock_movements').insert({ business_id: ctx.businessId, item_id: itemId, type: 'adjust', quantity: d.current_stock, stock_after: d.current_stock, note: 'opening', created_by: ctx.userId });
     }
     await lowStockCheck(ctx, itemId, trx);
@@ -64,7 +67,7 @@ async function saveItem(ctx, id, input) {
 async function move(ctx, itemId, input, outer = null) {
   const d = validate(z.object({ type: z.enum(['in', 'out', 'adjust'], { errorMap: () => ({ message: 'Choose a valid value.' }) }), quantity: qty(), note: optionalString(255) }), input);
   const run = async (trx) => {
-    const it = await trx('supply_items').where({ id: itemId, business_id: ctx.businessId }).forUpdate().first();
+    const it = await branches.scopeKey(trx('supply_items').where({ id: itemId, business_id: ctx.businessId }), ctx, 'branch_key').forUpdate().first();
     if (!it) throw E.notFound('Item');
     const current = Number(it.current_stock);
     const after = d.type === 'in' ? current + d.quantity : d.type === 'out' ? current - d.quantity : d.quantity;

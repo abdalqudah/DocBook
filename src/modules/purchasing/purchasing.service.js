@@ -45,13 +45,15 @@ const recipientOf = (s) => (s ? s.email || (activeVendorId(s) ? s.vendor_email :
 const listSuppliers = (ctx) => knex('suppliers as s').leftJoin('vendors as v', 'v.id', 's.vendor_id').where('s.business_id', ctx.businessId)
   .orderBy('s.name').select('s.id', 's.name', 's.email', 's.phone', 's.is_active', 's.vendor_id', 'v.status as vendor_status', 'v.email as vendor_email');
 
-const listItems = (ctx) => knex('supply_items').where('business_id', ctx.businessId).orderBy('name')
+const BR = () => require('../clinic/branches.service'); // eslint-disable-line global-require
+// each branch orders for its own stock (purchase_orders.branch_key, supply_items.branch_key)
+const listItems = (ctx) => BR().scopeKey(knex('supply_items').where('business_id', ctx.businessId), ctx, 'branch_key').orderBy('name')
   .select('id', 'name', 'unit', 'supplier_id', 'current_stock', 'reorder_level', 'unit_cost', 'vendor_product_id');
 
 /** Items that are ordered but not received yet (open orders), by item id → quantity still to come. */
 async function onOrder(ctx) {
   const rows = await knex('purchase_order_items as l').join('purchase_orders as p', 'p.id', 'l.purchase_order_id')
-    .where('p.business_id', ctx.businessId).whereIn('p.status', OPEN).whereNotNull('l.supply_item_id')
+    .where('p.business_id', ctx.businessId).modify((q) => BR().scopeKey(q, ctx, 'p.branch_key')).whereIn('p.status', OPEN).whereNotNull('l.supply_item_id')
     .groupBy('l.supply_item_id').select('l.supply_item_id').sum({ q: knex.raw('l.quantity - l.received_quantity') });
   return Object.fromEntries(rows.map((r) => [r.supply_item_id, num(r.q)]));
 }
@@ -59,7 +61,7 @@ async function onOrder(ctx) {
 // ---------------------------------------------------------------- reading
 async function get(ctx, id, trx = knex) {
   const po = await trx('purchase_orders as p').leftJoin('users as c', 'c.id', 'p.created_by').leftJoin('vendors as v', 'v.id', 'p.vendor_id')
-    .where({ 'p.id': id, 'p.business_id': ctx.businessId }).first('p.*', 'c.name as created_by_name', 'v.name as vendor_name', 'v.status as vendor_status');
+    .where({ 'p.id': id, 'p.business_id': ctx.businessId }).modify((q) => BR().scopeKey(q, ctx, 'p.branch_key')).first('p.*', 'c.name as created_by_name', 'v.name as vendor_name', 'v.status as vendor_status');
   if (!po) throw E.notFound('Purchase order');
   po.lines = await trx('purchase_order_items').where({ purchase_order_id: id }).orderBy('id');
   po.progress = progress(po);
@@ -74,7 +76,7 @@ function progress(po) {
 }
 
 async function list(ctx, params = {}, { perPage = 25, all = false } = {}) {
-  const base = knex('purchase_orders as p').where('p.business_id', ctx.businessId);
+  const base = BR().scopeKey(knex('purchase_orders as p').where('p.business_id', ctx.businessId), ctx, 'p.branch_key');
   if (STATUSES.includes(params.status)) base.andWhere('p.status', params.status);
   if (params.status === 'open') base.whereIn('p.status', OPEN);
   if (/^\d+$/.test(String(params.supplier || ''))) base.andWhere('p.supplier_id', Number(params.supplier));
@@ -91,7 +93,7 @@ async function list(ctx, params = {}, { perPage = 25, all = false } = {}) {
     .orderByRaw("CASE WHEN p.status = 'draft' THEN 0 ELSE 1 END").orderByRaw('COALESCE(p.sent_at, p.created_at) DESC').orderBy('p.id', 'desc');
   if (!all) q = q.limit(perPage).offset((page - 1) * perPage);
   const rows = (await q).map((r) => ({ ...r, line_count: num(r.line_count), qty_total: num(r.qty_total), qty_received: num(r.qty_received), cost_total: num(r.cost_total) }));
-  const counts = Object.fromEntries((await knex('purchase_orders').where('business_id', ctx.businessId).groupBy('status').select('status').count({ n: '*' })).map((r) => [r.status, Number(r.n)]));
+  const counts = Object.fromEntries((await BR().scopeKey(knex('purchase_orders').where('business_id', ctx.businessId), ctx, 'branch_key').groupBy('status').select('status').count({ n: '*' })).map((r) => [r.status, Number(r.n)]));
   return { rows, counts, meta: { total, page, pages, perPage } };
 }
 
@@ -118,7 +120,7 @@ async function resolveLines(ctx, input, trx = knex) {
   const errors = {};
   const out = [];
   const byItem = new Map();
-  const itemRows = await trx('supply_items').where('business_id', ctx.businessId).select('id', 'name', 'unit', 'vendor_product_id', 'unit_cost');
+  const itemRows = await BR().scopeKey(trx('supply_items').where('business_id', ctx.businessId), ctx, 'branch_key').select('id', 'name', 'unit', 'vendor_product_id', 'unit_cost');
   const items = new Map(itemRows.map((r) => [r.id, r]));
   for (const [key, raw] of rawLines(input)) {
     const r = lineSchema.safeParse(raw || {});
@@ -156,7 +158,7 @@ async function saveDraft(ctx, id, input) {
     const row = { supplier_id: supplier.id, supplier_name: supplier.name, vendor_id: activeVendorId(supplier), notes: head.notes || null };
     let poId = id;
     if (id) {
-      const before = await trx('purchase_orders').where({ id, business_id: ctx.businessId }).forUpdate().first();
+      const before = await BR().scopeKey(trx('purchase_orders').where({ id, business_id: ctx.businessId }), ctx, 'branch_key').forUpdate().first();
       if (!before) throw E.notFound('Purchase order');
       if (before.status !== 'draft') throw conflict('PO_NOT_DRAFT');
       const oldLines = await trx('purchase_order_items').where({ purchase_order_id: id });
@@ -164,7 +166,7 @@ async function saveDraft(ctx, id, input) {
       await trx('purchase_orders').where({ id }).update({ ...row, updated_at: new Date() });
       await audit.record(ctx, 'purchase_order.updated', { entityType: 'purchase_order', entityId: id, oldValues: { supplier: before.supplier_name, lines: lineSummary(oldLines) }, newValues: { supplier: supplier.name, lines: lineSummary(lines) } }, trx);
     } else {
-      [poId] = await trx('purchase_orders').insert({ ...row, business_id: ctx.businessId, po_number: null, status: 'draft', created_by: ctx.userId });
+      [poId] = await trx('purchase_orders').insert({ ...row, business_id: ctx.businessId, po_number: null, status: 'draft', created_by: ctx.userId, branch_key: BR().ownKey(ctx) });
       await audit.record(ctx, 'purchase_order.created', { entityType: 'purchase_order', entityId: poId, newValues: { supplier: supplier.name, lines: lineSummary(lines) } }, trx);
     }
     await trx('purchase_order_items').insert(lines.map((l) => ({ ...l, purchase_order_id: poId })));
@@ -178,7 +180,7 @@ async function saveDraft(ctx, id, input) {
  * Returns { drafts: [ids], noSupplier: n, alreadyOrdered: n }.
  */
 async function draftLowStock(ctx) {
-  const low = await knex('supply_items').where('business_id', ctx.businessId).whereRaw('current_stock <= reorder_level').orderBy('name')
+  const low = await BR().scopeKey(knex('supply_items').where('business_id', ctx.businessId), ctx, 'branch_key').whereRaw('current_stock <= reorder_level').orderBy('name')
     .select('id', 'name', 'unit', 'supplier_id', 'current_stock', 'reorder_level', 'vendor_product_id');
   const pending = await onOrder(ctx);
   const groups = new Map();
@@ -195,7 +197,7 @@ async function draftLowStock(ctx) {
   for (const [supplierId, lines] of groups) {
     const supplier = await getSupplier(ctx, supplierId); // eslint-disable-line no-await-in-loop
     const id = await knex.transaction(async (trx) => { // eslint-disable-line no-await-in-loop
-      const draft = await trx('purchase_orders').where({ business_id: ctx.businessId, supplier_id: supplierId, status: 'draft' }).orderBy('id', 'desc').forUpdate().first('id');
+      const draft = await BR().scopeKey(trx('purchase_orders').where({ business_id: ctx.businessId, supplier_id: supplierId, status: 'draft' }), ctx, 'branch_key').orderBy('id', 'desc').forUpdate().first('id');
       let poId = draft && draft.id;
       if (poId) {
         const have = new Set((await trx('purchase_order_items').where({ purchase_order_id: poId }).whereNotNull('supply_item_id').select('supply_item_id')).map((r) => r.supply_item_id));
@@ -206,7 +208,7 @@ async function draftLowStock(ctx) {
           await audit.record(ctx, 'purchase_order.updated', { entityType: 'purchase_order', entityId: poId, newValues: { added: lineSummary(add), source: 'low_stock' } }, trx);
         }
       } else {
-        [poId] = await trx('purchase_orders').insert({ business_id: ctx.businessId, po_number: null, status: 'draft', supplier_id: supplier.id, supplier_name: supplier.name, vendor_id: activeVendorId(supplier), created_by: ctx.userId });
+        [poId] = await trx('purchase_orders').insert({ business_id: ctx.businessId, po_number: null, status: 'draft', supplier_id: supplier.id, supplier_name: supplier.name, vendor_id: activeVendorId(supplier), created_by: ctx.userId, branch_key: BR().ownKey(ctx) });
         await trx('purchase_order_items').insert(lines.map((l) => ({ ...l, purchase_order_id: poId })));
         await audit.record(ctx, 'purchase_order.created', { entityType: 'purchase_order', entityId: poId, newValues: { supplier: supplier.name, lines: lineSummary(lines), source: 'low_stock' } }, trx);
       }
@@ -405,6 +407,7 @@ async function addExpense(ctx, po, input, trx = knex, { optional = false } = {})
     business_id: ctx.businessId, date: d.date || ctx.today || new Date().toISOString().slice(0, 10), category: 'medical_supplies',
     title: t('purchasing.expense_title', { n: po.po_number, supplier: po.supplier_name }).slice(0, 255), amount, payment_method: d.payment_method,
     invoice_number: d.invoice_number || null, recorded_by: ctx.userName || null, recorded_by_user_id: ctx.userId || null, purchase_order_id: po.id,
+    branch_id: Number(po.branch_key) || null, // the order's branch
   };
   const [id] = await trx('expenses').insert(row);
   await audit.record(ctx, 'expense.created', { entityType: 'expense', entityId: id, newValues: { ...row, source: `purchase_order:${po.id}` } }, trx);

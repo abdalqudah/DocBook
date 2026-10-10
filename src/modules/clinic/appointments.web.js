@@ -290,12 +290,13 @@ router.get('/patient-lookup', can('appointments.manage'), wrap(async (req, res) 
   const out = (rows) => res.json({ data: rows.map((p) => ({ id: p.id, name: p.full_name, phone: p.phone || '', email: p.email || '', dob: p.date_of_birth || '', file: p.file_number || '', note: p.important_on_booking ? p.important_note || '' : '' })) });
   const cols = ['id', 'full_name', 'phone', 'email', 'date_of_birth', 'file_number', 'important_note', 'important_on_booking'];
   // One patient by id (the form opened with the patient already chosen): for the note shown when booking.
-  if (/^\d+$/.test(String(req.query.id || ''))) return out(await knex('patients').where({ business_id: req.ctx.businessId, id: Number(req.query.id) }).limit(1).select(cols));
+  if (/^\d+$/.test(String(req.query.id || ''))) return out(await branchesSvc.scopePatients(knex('patients').where({ business_id: req.ctx.businessId, id: Number(req.query.id) }), req.ctx, 'patients.id').limit(1).select(cols));
   const q = String(req.query.q || '').trim().slice(0, 60);
   if (q.length < 2) return res.json({ data: [] });
   const like = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
   const digits = q.replace(/[^0-9]/g, '');
-  const rows = await knex('patients').where({ business_id: req.ctx.businessId }).whereNull('transferred_at') // moved to another clinic: booked there
+  // the branch chosen in the account menu: its patients only (a patient of another branch is added to this one from the file)
+  const rows = await branchesSvc.scopePatients(knex('patients').where({ business_id: req.ctx.businessId }), req.ctx, 'patients.id').whereNull('transferred_at') // moved to another clinic: booked there
     .andWhere((w) => { require('./records.lib').nameMatch(w, 'full_name', q); // eslint-disable-line global-require
       w.orWhere('name_en', 'like', like).orWhere('file_number', q);
       w.orWhere('phone', 'like', like); if (digits.length >= 3) w.orWhere('phone', 'like', `%${digits}%`).orWhere('phone2', 'like', `%${digits}%`); })

@@ -5,6 +5,7 @@ const { wrap, form, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const exporter = require('../../core/exporter');
 const svc = require('./supplies.service');
+const branches = require('./branches.service');
 
 const router = express.Router();
 router.use(can('supplies.view'));
@@ -13,13 +14,13 @@ const assets = { pageScripts: ['/js/ops.js'], pageStyles: ['/css/ops.css'] };
 const safeReturn = (req, fallback) => (req.body._return && /^\/app\/supplies(\/|\?|$)/.test(String(req.body._return)) ? String(req.body._return) : fallback);
 
 async function allSuppliers(ctx) {
-  const rows = await knex('suppliers as s').leftJoin('supply_items as i', 'i.supplier_id', 's.id').where('s.business_id', ctx.businessId)
+  const rows = await knex('suppliers as s').leftJoin(branches.scopeKey(knex('supply_items').where('business_id', ctx.businessId), ctx, 'branch_key').select('id', 'supplier_id').as('i'), 'i.supplier_id', 's.id').where('s.business_id', ctx.businessId)
     .groupBy('s.id').orderBy('s.name').select('s.*').count({ items: 'i.id' });
   return rows.map((r) => ({ ...r, items: Number(r.items) }));
 }
 
 async function stockSummary(ctx) {
-  const [row] = await knex('supply_items').where({ business_id: ctx.businessId })
+  const [row] = await branches.scopeKey(knex('supply_items').where({ business_id: ctx.businessId }), ctx, 'branch_key')
     .select(knex.raw('COUNT(*) as n'), knex.raw('COALESCE(SUM(CASE WHEN current_stock <= reorder_level THEN 1 ELSE 0 END), 0) as low'),
       knex.raw('COALESCE(SUM(current_stock * unit_cost), 0) as value'), knex.raw('COALESCE(SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END), 0) as out_n'));
   return { count: Number(row.n), low: Number(row.low), value: Number(row.value), out: Number(row.out_n) };
