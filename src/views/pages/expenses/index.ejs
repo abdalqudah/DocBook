@@ -78,6 +78,7 @@
         <%- include('../../partials/field', { name: 'date', label: t('common.date'), required: true, type: 'date', value: today, attrs: 'data-default="' + today + '"' }) %>
         <%- include('../../partials/field', { name: 'category', label: t('common.category'), type: 'select', required: true, options: cats, value: 'miscellaneous' }) %>
         <%- include('../../partials/field', { name: 'payment_method', label: t('expenses.payment_method'), type: 'select', required: true, options: methods.map(function (m) { return { value: m, label: label('payment_methods', m) }; }), value: 'cash' }) %>
+        <% if (typeof expBranches !== 'undefined' && expBranches) { %><%- include('../../partials/field', { name: 'branch_id', label: t('branches.branch'), type: 'select', options: expBranches, value: 'main' }) %><% } %>
         <%- include('../../partials/field', { name: 'invoice_number', label: t('expenses.invoice'), cls: 'full' }) %>
         <%- include('../../partials/field', { name: 'notes', label: t('common.notes'), type: 'textarea', cls: 'full' }) %>
       </div>

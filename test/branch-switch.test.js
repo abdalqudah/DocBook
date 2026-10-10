@@ -185,3 +185,33 @@ test('branches kept apart: patients per branch (move, or both); a doctor\'s logi
   assert.doesNotMatch(r.text, /data-branch-switch/);
   assert.equal((await doc.submit('/app/appointments', '/workspaces/branch', { branch: 'main' })).status, 403);
 });
+
+test('expenses and salaries per branch: recorded in the branch, its drawer and its report', async () => {
+  const o = app.agent(); await o.login(mail);
+  const exp = require('../src/modules/expenses/expense.service'); // eslint-disable-line global-require
+  const staff = require('../src/modules/finance/staff.service'); // eslint-disable-line global-require
+  const rbac = require('../src/modules/rbac/rbac.service'); // eslint-disable-line global-require
+  const u = (await knex('users').where({ email: mail }).first('id')).id;
+  const base = { businessId: b, userId: u, userName: 'Owner', permissions: await rbac.getUserPermissions(b, u), currency: 'JOD', timezone: 'Asia/Amman', today: scheduling.clinicNow('Asia/Amman').date };
+  const ab = { ...base, workBranch: String(branch) }; const main = { ...base, workBranch: 'main' }; const all = { ...base, workBranch: '' };
+  const today = base.today;
+  await exp.save(ab, null, { date: today, category: 'rent', title: 'Abdali rent', amount: '300', payment_method: 'cash' });
+  await exp.save(main, null, { date: today, category: 'rent', title: 'Khalidi rent', amount: '500', payment_method: 'cash' });
+  await exp.save(all, null, { date: today, category: 'utilities', title: 'Abdali water', amount: '20', payment_method: 'bank_transfer', branch_id: String(branch) });
+  const titles = async (ctx) => (await exp.expenses.list(ctx, {}, { all: true })).rows.map((r) => r.title).sort();
+  assert.deepEqual(await titles(ab), ['Abdali rent', 'Abdali water']);
+  assert.deepEqual(await titles(main), ['Khalidi rent']);
+  assert.equal((await titles(all)).length, 3);
+  const khalidiId = (await knex('expenses').where({ business_id: b, title: 'Khalidi rent' }).first('id')).id;
+  await assert.rejects(() => exp.expenses.update(ab, khalidiId, { title: 'x' }), 'another branch\'s expense is not changed from here');
+  // staff employees
+  await staff.saveEmployee(ab, null, { name: 'Abdali Nurse', base_salary: '400', allowances: '0', deductions: '0', status: 'active' });
+  await staff.saveEmployee(main, null, { name: 'Khalidi Nurse', base_salary: '450', allowances: '0', deductions: '0', status: 'active' });
+  assert.deepEqual((await staff.listEmployees(ab)).map((e) => e.name), ['Abdali Nurse']);
+  assert.equal((await staff.listEmployees(all)).length, 2);
+  // the report of the branch has its finance section (its own expenses)
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  const r = await o.get('/app/reports?lang=en');
+  assert.equal(r.status, 200);
+  assert.match(r.text, /320/);
+});

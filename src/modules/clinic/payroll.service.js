@@ -80,7 +80,7 @@ async function calculate(ctx, doctorId, period) {
 
 /** Whole-clinic payroll sheet for a month. */
 async function sheet(ctx, period) {
-  const docs = await knex('doctors').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id');
+  const docs = await require('./branches.service').scope(knex('doctors').where({ business_id: ctx.businessId }), ctx, 'branch_id').orderBy([{ column: 'sort_order' }, { column: 'full_name' }]).select('id');
   const rows = [];
   for (const d of docs) rows.push(await calculate(ctx, d.id, period)); // eslint-disable-line no-await-in-loop
   const totals = rows.reduce((t, r) => ({ base: t.base + r.baseSalary, commission: t.commission + r.commission, bonuses: t.bonuses + r.bonuses, deductions: t.deductions + r.deductions + r.advances, net: t.net + r.netPayroll, revenue: t.revenue + r.commissionDetail.totalRevenue }),

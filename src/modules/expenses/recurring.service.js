@@ -39,7 +39,7 @@ async function schema(businessId) {
   });
 }
 
-const list = (ctx) => knex('recurring_expenses').where({ business_id: ctx.businessId }).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'next_date' }]);
+const list = (ctx) => require('../clinic/branches.service').scope(knex('recurring_expenses').where({ business_id: ctx.businessId }), ctx, 'branch_id').orderBy([{ column: 'is_active', order: 'desc' }, { column: 'next_date' }]);
 
 async function get(ctx, id) {
   const r = await knex('recurring_expenses').where({ id: Number(id) || 0, business_id: ctx.businessId }).first();
@@ -57,7 +57,7 @@ async function save(ctx, id, input) {
     await audit.record(ctx, 'recurring_expense.updated', { entityType: 'recurring_expense', entityId: before.id, oldValues: { amount: Number(before.amount), every: before.every, next_date: before.next_date }, newValues: { amount: row.amount, every: row.every, next_date: row.next_date } });
     return before.id;
   }
-  const [newId] = await knex('recurring_expenses').insert({ ...row, business_id: ctx.businessId, created_by: ctx.userId });
+  const [newId] = await knex('recurring_expenses').insert({ ...row, business_id: ctx.businessId, created_by: ctx.userId, branch_id: await require('./expense.service').branchOf(ctx, input) }); // eslint-disable-line global-require
   await audit.record(ctx, 'recurring_expense.created', { entityType: 'recurring_expense', entityId: newId, newValues: { title: row.title, amount: row.amount, every: row.every } });
   return newId;
 }
@@ -76,7 +76,7 @@ async function post(ctx, r, { amount } = {}) {
   await knex.transaction(async (trx) => {
     const [eid] = await trx('expenses').insert({
       business_id: r.business_id, date, category: r.category, title: r.title, amount: value, payment_method: r.payment_method,
-      notes: r.notes || null, recorded_by: ctx.userName || null, recorded_by_user_id: ctx.userId || null,
+      notes: r.notes || null, recorded_by: ctx.userName || null, recorded_by_user_id: ctx.userId || null, branch_id: r.branch_id || null,
     });
     const next = nextOf(date, r.every, r.day_of_month);
     const ended = r.end_date && next > String(r.end_date);
@@ -95,7 +95,7 @@ async function skip(ctx, r) {
 /** Occurrences waiting for a click (mode "confirm") on or before today. */
 async function due(ctx) {
   const today = ctx.today || scheduling.clinicNow(ctx.timezone || 'Asia/Amman').date;
-  return knex('recurring_expenses').where({ business_id: ctx.businessId, is_active: true, mode: 'confirm' }).where('next_date', '<=', today)
+  return require('../clinic/branches.service').scope(knex('recurring_expenses').where({ business_id: ctx.businessId, is_active: true, mode: 'confirm' }), ctx, 'branch_id').where('next_date', '<=', today)
     .where((q) => q.whereNull('end_date').orWhereRaw('next_date <= end_date')).orderBy('next_date');
 }
 

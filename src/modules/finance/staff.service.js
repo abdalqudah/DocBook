@@ -28,11 +28,22 @@ const employeeSchema = z.object({
 
 const locked = () => new AppError('LINE_PAID', 'This salary is already paid. Reopen it first.', 409);
 
+// The branch the member works in: its employees only (staff_employees.branch_key); the whole clinic sees all.
+const empScope = (q, ctx, col = 'e.branch_key') => { const v = ctx && ctx.workBranch; if (v) q.where(col, String(v)); return q; };
+/** A new / edited employee's branch: the branch the member works in, else the form's, else the linked login's. */
+async function branchKeyOf(ctx, input, membershipId) {
+  if (ctx.workBranch) return String(ctx.workBranch);
+  const v = String((input && input.branch_key) || '');
+  if (v) return (await require('../clinic/branches.service').validScope(ctx.businessId, v)) || ''; // eslint-disable-line global-require
+  if (membershipId) return ((await knex('memberships').where({ id: membershipId }).first('work_branch')) || {}).work_branch || '';
+  return '';
+}
+
 async function listEmployees(ctx, { status } = {}) {
   const q = knex('staff_employees as e').leftJoin('memberships as ms', 'ms.id', 'e.membership_id').leftJoin('users as u', 'u.id', 'ms.user_id')
     .where('e.business_id', ctx.businessId).orderBy([{ column: 'e.status' }, { column: 'e.name' }]).select('e.*', 'u.name as user_name', 'u.email as user_email');
   if (status === 'active' || status === 'inactive') q.where('e.status', status);
-  return q;
+  return empScope(q, ctx);
 }
 
 async function getEmployee(ctx, id) {
@@ -59,7 +70,7 @@ async function saveEmployee(ctx, id, input) {
   const row = {
     name: d.name, job_title: d.job_title || null, phone: d.phone || null, email: d.email || null, bank_name: d.bank_name || null, iban: d.iban || null,
     base_salary: d.base_salary, allowances: d.allowances, deductions: d.deductions, hire_date: d.hire_date || null, status: d.status,
-    membership_id: d.membership_id || null, notes: d.notes || null,
+    membership_id: d.membership_id || null, notes: d.notes || null, branch_key: await branchKeyOf(ctx, input, d.membership_id),
   };
   if (id) {
     const before = await getEmployee(ctx, id);
@@ -106,7 +117,7 @@ async function recompute(lineId, trx = knex) {
 /** Adds a line for every active employee that has none in this month; returns how many were added. */
 async function prepare(ctx, period) {
   if (!m.isMonth(period)) throw E.validation({ period: 'Enter a valid month.' });
-  const emps = await knex('staff_employees').where({ business_id: ctx.businessId, status: 'active' });
+  const emps = await empScope(knex('staff_employees').where({ business_id: ctx.businessId, status: 'active' }), ctx, 'branch_key');
   const have = new Set((await knex('staff_payroll_lines').where({ business_id: ctx.businessId, period }).select('employee_id')).map((r) => r.employee_id));
   let added = 0;
   for (const e of emps) {
@@ -135,7 +146,7 @@ const adjustmentsOf = (lineIds) => (lineIds.length ? knex('staff_payroll_adjustm
 /** The month's sheet: lines with their adjustments and figures, totals, and active employees not in the run yet. */
 async function sheet(ctx, period) {
   const lines = await knex('staff_payroll_lines as l').join('staff_employees as e', 'e.id', 'l.employee_id')
-    .where({ 'l.business_id': ctx.businessId, 'l.period': period }).orderBy('l.employee_name')
+    .where({ 'l.business_id': ctx.businessId, 'l.period': period }).modify((q) => empScope(q, ctx)).orderBy('l.employee_name')
     .select('l.*', 'e.status as employee_status', 'e.bank_name', 'e.iban');
   const adjs = await adjustmentsOf(lines.map((l) => l.id));
   const rows = lines.map((l) => {
@@ -244,8 +255,9 @@ async function payslip(ctx, lineId) {
  * Salary cost of paid staff salaries per month (net paid + advances recovered in that month: the advance itself was
  * paid in cash earlier, so the month's salary cost is the pay before the advance is taken back).
  */
-async function paidByMonth(businessId, fromMonth, toMonth) {
+async function paidByMonth(businessId, fromMonth, toMonth, ctx = null) {
   const rows = await knex('staff_payroll_lines').where({ business_id: businessId, status: 'paid' }).whereBetween('period', [fromMonth, toMonth])
+    .modify((q) => { if (ctx && ctx.workBranch) q.whereIn('employee_id', knex('staff_employees').where({ business_id: businessId, branch_key: String(ctx.workBranch) }).select('id')); })
     .groupBy('period').select('period').sum({ net: 'net_pay' }).sum({ adv: 'advances' });
   return Object.fromEntries(rows.map((r) => [r.period, m.round(Number(r.net) + Number(r.adv))]));
 }

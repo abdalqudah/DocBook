@@ -500,6 +500,7 @@ async function run(businessId) {
     const pids = await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').where('patient_id', '>', cursor) // eslint-disable-line no-await-in-loop
       .distinct('patient_id').orderBy('patient_id').limit(100).pluck('patient_id');
     if (!pids.length) {
+      await reapplyBranches(businessId); // eslint-disable-line no-await-in-loop -- the calendar / group → branch choices, on every visit made from Clinica
       const [vis] = await knex('appointments').where({ business_id: businessId, external_source: SOURCE }).count({ n: '*' }); // eslint-disable-line no-await-in-loop
       await knex('import_jobs').where({ id: job.id }).update({ status: 'completed', completed_at: now(), runner: null, heartbeat_at: null, success: Number(vis.n) }); // eslint-disable-line no-await-in-loop
       continue; // eslint-disable-line no-continue
@@ -511,6 +512,47 @@ async function run(businessId) {
     await knex('import_jobs').where({ id: job.id }).update({ stage: `cursor:${pids[pids.length - 1]}`, processed: knex.raw('processed + ?', [pids.length]), heartbeat_at: now() }); // eslint-disable-line no-await-in-loop
   }
 }
+/**
+ * The Doctors page's calendar / group → branch choices (and the doctors' branches) applied to every visit made from
+ * Clinica — also those read earlier from its calendar — and then to the patients of the visits that moved: their
+ * branches become those of their visits. → how many visits moved.
+ */
+async function reapplyBranches(businessId) {
+  if (!(await knex('clinic_branches').where({ business_id: businessId }).first('id'))) return 0;
+  const resolve = await resolver(knex, businessId);
+  const groupsOfPatient = new Map((await knex('legacy_patients').where({ business_id: businessId, legacy_source: SOURCE }).whereNotNull('patient_id').select('patient_id', 'old_group'))
+    .map((r) => [Number(r.patient_id), groupsOf(r.old_group)]));
+  const touched = new Set();
+  let lastId = 0; let moved = 0;
+  for (;;) {
+    const rows = await knex('appointments').where({ business_id: businessId, external_source: SOURCE }).where('id', '>', lastId).orderBy('id').limit(2000) // eslint-disable-line no-await-in-loop
+      .select('id', 'patient_id', 'doctor_id', 'branch_id', 'notes');
+    if (!rows.length) break;
+    lastId = rows[rows.length - 1].id;
+    const to = new Map(); // branch id (0 = main) → visit ids
+    rows.forEach((a) => {
+      const m = /Clinica: ([^·\n]+)/.exec(a.notes || '');
+      const target = resolve.branchFor([m ? m[1].trim() : null, ...(groupsOfPatient.get(Number(a.patient_id)) || [])].filter(Boolean), a.doctor_id) || null;
+      if ((a.branch_id || null) === target) return;
+      const k = target || 0;
+      if (!to.has(k)) to.set(k, []);
+      to.get(k).push(a.id);
+      if (a.patient_id) touched.add(Number(a.patient_id));
+    });
+    for (const [k, ids] of to) { // eslint-disable-line no-restricted-syntax
+      moved += await knex('appointments').whereIn('id', ids).update({ branch_id: k || null }); // eslint-disable-line no-await-in-loop
+    }
+  }
+  const pids = [...touched];
+  for (let i = 0; i < pids.length; i += 500) {
+    const chunk = pids.slice(i, i + 500);
+    const keys = await knex('appointments').where({ business_id: businessId }).whereIn('patient_id', chunk).distinct('patient_id', 'branch_id'); // eslint-disable-line no-await-in-loop
+    await knex('patient_branches').where({ business_id: businessId }).whereIn('patient_id', chunk).del(); // eslint-disable-line no-await-in-loop
+    if (keys.length) await knex('patient_branches').insert(keys.map((r) => ({ business_id: businessId, patient_id: r.patient_id, branch_key: r.branch_id ? String(r.branch_id) : 'main' }))).onConflict(['patient_id', 'branch_key']).ignore(); // eslint-disable-line no-await-in-loop
+  }
+  return moved;
+}
+
 // The resolver may create a doctor ("create" choice): inside the patient's transaction is fine — it is cached after.
 const resolveIn = (trx, resolve) => resolve;
 
@@ -541,4 +583,4 @@ async function progress(businessId) {
   };
 }
 
-module.exports = { TYPE, promotePatient, upsertCalendarAppointment, dayStr, groupsOf, start, kick, settle, resumeAll, progress, doctorNames, saveDoctorMap, resolver, docKey, statusOf, toothOf, timeOf };
+module.exports = { reapplyBranches, TYPE, promotePatient, upsertCalendarAppointment, dayStr, groupsOf, start, kick, settle, resumeAll, progress, doctorNames, saveDoctorMap, resolver, docKey, statusOf, toothOf, timeOf };

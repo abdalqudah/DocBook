@@ -13,7 +13,15 @@ const expenses = repo({
   table: 'expenses', entity: 'expense', searchable: ['title', 'invoice_number', 'recorded_by', 'notes'], dateColumn: 'date',
   filters: { category: 'category', method: 'payment_method' },
   sortable: { date: 'date', amount: 'amount', title: 'title' }, defaultSort: ['date', 'desc'], sums: ['amount'],
+  scope: (q, ctx) => branches().scope(q, ctx, 'expenses.branch_id'), // the branch the member works in (null = the main branch)
 });
+const branches = () => require('../clinic/branches.service'); // eslint-disable-line global-require
+/** The branch of a new expense: the one the member works in (a member tied to a branch: theirs), else the form's. */
+async function branchOf(ctx, input) {
+  const v = ctx.branchLocked || ctx.workBranch ? String(ctx.workBranch || '') : String((input && input.branch_id) || '');
+  if (!v || v === 'main') return null;
+  return (await knex('clinic_branches').where({ business_id: ctx.businessId, id: Number(v) || 0 }).first('id')) ? Number(v) : null;
+}
 
 async function categories(businessId) {
   const custom = await knex('expense_categories').where({ business_id: businessId }).orderBy('name');
@@ -42,7 +50,7 @@ async function save(ctx, id, input) {
   const data = validate(await schema(ctx.businessId), input);
   const row = { ...data, invoice_number: data.invoice_number || null, notes: data.notes || null };
   if (id) { await expenses.update(ctx, id, row); return id; }
-  return expenses.create(ctx, { ...row, recorded_by: ctx.userName, recorded_by_user_id: ctx.userId });
+  return expenses.create(ctx, { ...row, branch_id: await branchOf(ctx, input), recorded_by: ctx.userName, recorded_by_user_id: ctx.userId });
 }
 
 async function addCategory(ctx, name) {
@@ -56,4 +64,4 @@ async function addCategory(ctx, name) {
   return key;
 }
 
-module.exports = { expenses, categories, allCategoryKeys, save, addCategory, SYSTEM_CATEGORIES, PAYMENT_METHODS };
+module.exports = { branchOf, expenses, categories, allCategoryKeys, save, addCategory, SYSTEM_CATEGORIES, PAYMENT_METHODS };

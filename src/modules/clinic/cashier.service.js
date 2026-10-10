@@ -671,8 +671,8 @@ async function expectedCash(ctx, start, end, trx = knex) {
 
 /** Cash expenses recorded in the same window — informational only (not deducted from the stored expected figure). */
 async function cashExpenses(ctx, start, end, trx = knex) {
-  if (scopeKey(ctx)) return { total: 0, count: 0 }; // expenses are the clinic's, not a branch's: shown on the whole-clinic drawer
-  const row = await trx('expenses').where({ business_id: ctx.businessId, payment_method: 'cash' })
+  // the branch's own expenses (null = the main branch)
+  const row = await require('./branches.service').scope(trx('expenses').where({ business_id: ctx.businessId, payment_method: 'cash' }), ctx, 'branch_id') // eslint-disable-line global-require
     .where('created_at', '>', start).where('created_at', '<=', end)
     .first(knex.raw('COALESCE(SUM(amount), 0) AS v'), knex.raw('COUNT(*) AS c'));
   return { total: n(row.v), count: n(row.c) };

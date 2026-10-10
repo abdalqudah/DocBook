@@ -26,8 +26,11 @@ async function render(req, res, extra = {}) {
     .select('category').sum({ total: 'amount' }).groupBy('category').orderBy('total', 'desc');
   const breakdown = charts.bars({ items: byCat.slice(0, 8).map((r) => ({ label: catName(r.category), value: Number(r.total) })), fmt: (v) => fmt.formatCompact(v, req.business.currency, req.locale) });
   const dueRows = await recurring.due(req.ctx);
+  // all branches: the new expense's branch is chosen on the form (in a branch, it is that branch's)
+  const bs = require('../clinic/branches.service'); // eslint-disable-line global-require
+  const expBranches = !req.ctx.workBranch && await bs.multi(req.ctx.businessId) ? (await bs.options(req.business, req.t, req.locale)).map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.short || o.label })) : null;
   res.page('pages/expenses/index', {
-    dueCount: dueRows.length,
+    dueCount: dueRows.length, expBranches,
     title: req.t('nav.expenses'), rows, totals, meta, system, custom, catName, breakdown, hasBreakdown: byCat.length > 0,
     methods: svc.PAYMENT_METHODS, filtered: ['q', 'category', 'method', 'from', 'to', 'month'].some((k) => req.query[k] && req.query[k] !== 'all'), ...extra,
   });

@@ -104,14 +104,14 @@ async function build(req, range) {
   const discounts = { total: num(discountRow.total), n: num(discountRow.n), avgPct: num(discountRow.avg_pct), invoices: num(discountRow.invoices), gross: revenue + num(discountRow.total) };
 
   let fin = null;
-  // expenses and salaries are the clinic's, not a branch's: the profit section only for the whole clinic
-  if (finance && !ctx.workBranch) {
+  // a branch: its own expenses, its doctors' pay and its employees' salaries
+  if (finance) {
     const [exp, pay] = await Promise.all([
-      knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [range.from, range.to]).first(knex.raw('COALESCE(SUM(amount),0) as v'), knex.raw('COUNT(*) as n')),
+      branchesSvc.scope(knex('expenses').where({ business_id: ctx.businessId }), ctx, 'branch_id').whereBetween('date', [range.from, range.to]).first(knex.raw('COALESCE(SUM(amount),0) as v'), knex.raw('COUNT(*) as n')),
       // Salaries as in the profit & loss: doctors' net + advances taken back, plus paid staff salaries.
-      knex('payroll_payments').where({ business_id: ctx.businessId }).whereBetween('period', [range.from.slice(0, 7), range.to.slice(0, 7)]).first(knex.raw('COALESCE(SUM(net_pay + advances),0) as v'), knex.raw('COUNT(*) as n')),
+      knex('payroll_payments').where({ business_id: ctx.businessId }).modify((q) => { if (ctx.workBranch) q.whereIn('doctor_id', branchesSvc.scope(knex('doctors').where({ business_id: ctx.businessId }), ctx, 'branch_id').select('id')); }).whereBetween('period', [range.from.slice(0, 7), range.to.slice(0, 7)]).first(knex.raw('COALESCE(SUM(net_pay + advances),0) as v'), knex.raw('COUNT(*) as n')),
     ]);
-    const staffPaid = await require('../finance/staff.service').paidByMonth(ctx.businessId, range.from.slice(0, 7), range.to.slice(0, 7)); // eslint-disable-line global-require
+    const staffPaid = await require('../finance/staff.service').paidByMonth(ctx.businessId, range.from.slice(0, 7), range.to.slice(0, 7), ctx); // eslint-disable-line global-require
     const expenses = num(exp.v); const payroll = Math.round((num(pay.v) + Object.values(staffPaid).reduce((a, v) => a + num(v), 0)) * 1000) / 1000;
     fin = { revenue, expenses, expenseCount: num(exp.n), payroll, payrollCount: num(pay.n), net: revenue - expenses - payroll, margin: revenue ? ((revenue - expenses - payroll) * 100) / revenue : null };
   }

@@ -4,8 +4,9 @@ const knex = require('../db/knex');
 const audit = require('./audit');
 const { E } = require('./errors');
 
-function repo({ table, entity, searchable = [], dateColumn = null, filters = {}, sortable = {}, defaultSort = ['id', 'desc'], sums = [] }) {
-  const scoped = (ctx, trx = knex) => trx(table).where(`${table}.business_id`, ctx.businessId);
+function repo({ table, entity, searchable = [], dateColumn = null, filters = {}, sortable = {}, defaultSort = ['id', 'desc'], sums = [], scope = null }) {
+  // scope(q, ctx): narrows every read / change further (e.g. the branch the member works in)
+  const scoped = (ctx, trx = knex) => { const q = trx(table).where(`${table}.business_id`, ctx.businessId); return scope ? scope(q, ctx) : q; };
 
   function applyFilters(q, ctx, params) {
     if (params.q && searchable.length) {

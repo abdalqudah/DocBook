@@ -317,3 +317,21 @@ test('calendar rows without a Clinica id: matched by number, by phone however wr
   const all = await knex('appointments').where({ business_id: b, appointment_date: '2024-04-01' });
   assert.equal(all.length, 1); assert.equal(all[0].patient_id, walk);
 });
+
+test('the Doctors page\'s calendar → branch choice moves the visits read earlier, and their patients', async () => {
+  const promote = require('../src/modules/legacy/promote.service'); // eslint-disable-line global-require
+  const b = (await knex('businesses').insert({ name: 'Branch move', slug: `bm${tag}`, currency: 'JOD', timezone: 'Asia/Amman' }))[0];
+  const [abdali] = await knex('clinic_branches').insert({ business_id: b, name: 'Abdali', is_active: true });
+  const [pid] = await knex('patients').insert({ business_id: b, full_name: 'Moved Patient', legacy_source: 'clinica', legacy_patient_id: 'bm1' });
+  await knex('legacy_patients').insert({ business_id: b, legacy_source: 'clinica', legacy_patient_id: 'bm1', patient_id: pid });
+  const base = { business_id: b, patient_id: pid, patient_name: 'Moved Patient', status: 'completed', appointment_type: 'in_person', source: 'import', payment_status: 'imported', external_source: 'clinica', appointment_time: '10:00' };
+  const [x] = await knex('appointments').insert({ ...base, appointment_date: '2024-02-01', notes: 'Clinica: Abdali Clinic', external_uid: 'clinica:bm1:a:cal:2024-02-01:10:00:aa' });
+  const [y] = await knex('appointments').insert({ ...base, appointment_date: '2024-02-02', notes: 'Clinica: Mansour', external_uid: 'clinica:bm1:a:cal:2024-02-02:10:00:bb' });
+  await knex('patient_branches').insert({ business_id: b, patient_id: pid, branch_key: 'main' });
+  await knex('legacy_branch_map').insert({ business_id: b, legacy_source: 'clinica', group_key: promote.docKey('Abdali Clinic'), group_name: 'Abdali Clinic', branch_id: abdali });
+  assert.equal(await promote.reapplyBranches(b), 1);
+  assert.equal((await knex('appointments').where({ id: x }).first()).branch_id, abdali);
+  assert.equal((await knex('appointments').where({ id: y }).first()).branch_id, null);
+  assert.deepEqual((await knex('patient_branches').where({ patient_id: pid }).pluck('branch_key')).sort(), [String(abdali), 'main'].sort());
+  assert.equal(await promote.reapplyBranches(b), 0, 'again: nothing to move');
+});

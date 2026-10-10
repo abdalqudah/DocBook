@@ -69,7 +69,10 @@ async function renderStaff(req, res, extra = {}) {
   const period = monthOf(req);
   const tab = req.query.tab === 'employees' || extra.tab === 'employees' ? 'employees' : 'run';
   const [sh, employees, members] = await Promise.all([staff.sheet(req.ctx, period), staff.listEmployees(req.ctx), req.ctx.permissions.has('payroll.manage') ? staff.memberOptions(req.ctx) : []]);
+  const bs = require('../clinic/branches.service'); // eslint-disable-line global-require
+  const empBranches = !req.ctx.workBranch && await bs.multi(req.ctx.businessId) ? (await bs.options(req.business, req.t, req.locale)).map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.short || o.label })) : null;
   res.page('pages/finance/staff', {
+    empBranches,
     title: req.t('staffpay.title'), ...nav(period), tab, sheet: sh, employees, members, methods: staff.METHODS, adjTypes: staff.ADJ_TYPES,
     printable: true, pageScripts: ['/js/finance.js'], pageStyles: ['/css/finance.css'], ...extra,
   });
