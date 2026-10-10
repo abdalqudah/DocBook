@@ -45,6 +45,10 @@ async function renderBoard(req, res, extra = {}) {
     done = await require('./cashier.web').doneLocals(req, res, Number(req.query.paid), 'front-desk'); // eslint-disable-line global-require
   }
   const onlineLinks = await require('../telehealth/web').linksFor(req, group.expected.concat(group.arrived)); // eslint-disable-line global-require
+  // the clinic (room) number each doctor works in today — reception changes it here; the waiting-room screen shows it
+  const rooms = await require('./rooms.service').roomsOn(ctx.businessId, ctx.today); // eslint-disable-line global-require
+  doctors.forEach((d) => { d.room = rooms.get(d.id) || null; });
+  Object.values(group).flat().forEach((a) => { a.room = a.doctor_id ? rooms.get(a.doctor_id) || null : null; });
   res.page('pages/clinic/frontdesk/index', {
     title: req.t('frontdesk.title'), group, doctors, doctor, ownDoctor: Boolean(ctx.ownDoctorId), onlineLinks, ...(done || {}),
     nowTime: scheduling.minutesToTime(scheduling.clinicNow(ctx.timezone).minutes), decimals: decimalsOf(ctx.currency),

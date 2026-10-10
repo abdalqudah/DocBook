@@ -123,6 +123,13 @@
             <span class="cal-name truncate"><%= c.unassigned ? t('appointments.unassigned') : L(c.name, c.name_en) %></span>
           </a>
           <span class="cal-sub tiny"><% if (c.unassigned) { %><%= t('appointments.unassigned_hint') %><% } else if (c.orphan && c.otherBranch) { %><%= t('branches.other_branch_doctor') %><% } else if (c.orphan) { %><%= t('common.inactive') %><% } else if (c.off) { %><%= t('appointments.cal.day_off') %><% } else if (!c.works) { %><%= t('appointments.cal.closed_day') %><% } else { %><bdi dir="ltr"><%= c.shifts.map(function (s) { return s.start + '–' + s.end; }).join(' · ') %></bdi><% } %></span>
+          <% if (c.doctorId && !c.orphan) { %>
+          <%# the clinic (room) number the doctor works in today: reception types it, the waiting-room screen shows it %>
+          <% if (canAny('frontdesk.use', 'appointments.manage')) { %><form class="cal-room" method="post" action="/app/appointments/room" data-autosubmit data-cal-room>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="doctor_id" value="<%= c.doctorId %>"><input type="hidden" name="day" value="<%= date %>"><input type="hidden" name="return_to" value="/app/appointments?date=<%= date %>">
+            <label class="tiny muted"><%= t('appointments.room') %> <input class="input cal-room-input" name="room" value="<%= c.room || '' %>" maxlength="20" inputmode="numeric" dir="ltr" data-submit-on-change aria-label="<%= t('appointments.room_of', { name: L(c.name, c.name_en) }) %>"></label>
+          </form><% } else if (c.room) { %><span class="tiny"><%= t('appointments.room') %> <bdi dir="ltr"><%= c.room %></bdi></span><% } %>
+          <% } %>
         <% } %>
       </div>
       <% }) %>

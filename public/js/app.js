@@ -172,7 +172,7 @@
   /* ---------- Auto-submit filter forms ---------- */
   $$('form[data-autosubmit]').forEach(function (form) {
     var timer;
-    $$('select, input[type=checkbox], input[type=date], input[type=month]', form).forEach(function (s) { s.addEventListener('change', function () { form.submit(); }); });
+    $$('select, input[type=checkbox], input[type=date], input[type=month], input[data-submit-on-change]', form).forEach(function (s) { s.addEventListener('change', function () { form.submit(); }); });
     $$('input[type=search]', form).forEach(function (i) { i.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { form.submit(); }, 450); }); });
   });
 

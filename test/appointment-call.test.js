@@ -80,3 +80,25 @@ test('move to another doctor from the appointment page: same day, a free time; a
   assert.equal(a.doctor_id, d1, 'Dr Two is taken at 12:00: refused, nothing changed');
   assert.ok(await knex('audit_logs').where({ business_id: b, action: 'appointment.moved', entity_id: id }).first('id'));
 });
+
+test('the clinic (room) number of each doctor today: set on the calendar or the front desk, shown on the waiting-room screen', async () => {
+  const o = app.agent(); await o.login(mail);
+  const today = scheduling.clinicNow('Asia/Amman').date;
+  const docId = (await knex('appointments').where({ id: apptId }).first('doctor_id')).doctor_id;
+  await knex('doctors').where({ id: docId }).update({ room: '1' });
+  let r = await o.get(`/app/appointments?date=${today}&lang=en`);
+  assert.match(r.text, /data-cal-room/);
+  r = await o.submit(`/app/appointments?date=${today}`, '/app/appointments/room', { doctor_id: String(docId), day: today, room: '3' });
+  assert.equal(r.status, 302);
+  assert.equal((await knex('doctor_day_rooms').where({ doctor_id: docId, day: today }).first('room')).room, '3');
+  assert.equal((await knex('doctors').where({ id: docId }).first('room')).room, '1', 'the usual room stays');
+  // the waiting-room screen: today's room
+  await knex('appointments').where({ id: apptId }).update({ checked_in: true, status: 'confirmed', arrived_at: new Date() });
+  const queue = require('../src/modules/queue/queue.service'); // eslint-disable-line global-require
+  const board = await queue.board({ name_style: 'full', show_name: true, branch_id: null, scope: 'clinic' }, { id: b });
+  assert.equal(board.next.room, '3');
+  // the front desk shows it
+  r = await o.get('/app/front-desk?lang=en');
+  assert.match(r.text, /Clinic 3/);
+  assert.match(r.text, /data-fx-rooms/);
+});

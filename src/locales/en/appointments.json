@@ -210,7 +210,11 @@
     "transfer_title": "Move to another doctor",
     "transfer_help": "Same day, at the same time or another — refused when that time is taken with the other doctor.",
     "transfer": "Move the appointment",
-    "transferred": "The appointment was moved to the other doctor."
+    "transferred": "The appointment was moved to the other doctor.",
+    "room": "Clinic",
+    "room_of": "{name}'s clinic number today",
+    "room_saved": "Clinic number saved.",
+    "room_label": "Clinic {n}"
   },
   "frontdesk": {
     "title": "Reception & waiting list",
@@ -276,7 +280,8 @@
     "ico_rx": "Prescription",
     "ico_pay": "Payment",
     "intake_fix": "One value is not right. Correct it and save — everything else you typed is kept.",
-    "intake_range": "The value must be between {min} and {max}."
+    "intake_range": "The value must be between {min} and {max}.",
+    "rooms_today": "Today's clinics"
   },
   "visits": {
     "title": "Visit",

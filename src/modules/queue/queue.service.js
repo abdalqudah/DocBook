@@ -113,6 +113,8 @@ async function board(screen, clinic) {
   const today = clinicNow(clinic.timezone).date;
   const rows = await knex('appointments as a')
     .leftJoin('doctors as d', function j() { this.on('d.id', 'a.doctor_id').andOn('d.business_id', 'a.business_id'); })
+    // the clinic (room) number the doctor works in today, else its usual one
+    .leftJoin('doctor_day_rooms as dr', function j() { this.on('dr.doctor_id', 'a.doctor_id').andOnVal('dr.day', '=', today); })
     .where({ 'a.appointment_date': today, 'a.checked_in': true })
     // A medical centre's shared screen: every practice of the centre; otherwise this clinic only.
     .modify((q) => {
@@ -128,7 +130,7 @@ async function board(screen, clinic) {
       else if (screen.branch_id) q.where('a.branch_id', screen.branch_id);
     })
     .select('a.id', 'a.patient_name', 'a.with_doctor', 'a.called_at', 'a.arrived_at', 'a.appointment_time', 'a.doctor_id', 'a.appointment_type', 'a.payment_status',
-      'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'd.room');
+      'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', knex.raw('CASE WHEN dr.id IS NULL THEN d.room ELSE dr.room END as room'));
   const name = screen.name_style === 'full' ? (n) => String(n || '').trim() || '—' : shortName;
   // Spoken name: the full name, or only the first name when the screen shows short names ("Ahmad S." reads badly).
   const say = (n) => (screen.name_style === 'full' ? String(n || '').trim() : String(n || '').trim().split(/\s+/)[0] || '');

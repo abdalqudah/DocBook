@@ -61,6 +61,15 @@
   <div class="fx-done small"><span class="muted"><%= t('frontdesk.finished_today') %></span> <strong class="num"><%= fmt.number(finished) %></strong><% if (canPay && finished) { %> · <a class="link" href="/app/cashier/screen"><%= t('frontdesk.to_cash') %></a><% } %></div>
 </div>
 
+<%# today's clinics: the room each working doctor is in (type a number, it saves) %>
+<% var _working = doctors.filter(function (d) { return d.works; }); if (_working.length && !ownDoctor) { %>
+<div class="panel fx-rooms" data-fx-rooms><div class="panel-body row-sm wrap">
+  <span class="small strong"><%- icon('door-open', 'icon-sm') %> <%= t('frontdesk.rooms_today') %></span>
+  <% _working.forEach(function (d) { %><form class="cal-room" method="post" action="/app/appointments/room" data-autosubmit><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="doctor_id" value="<%= d.id %>"><input type="hidden" name="return_to" value="/app/front-desk">
+    <label class="small"><%= L(d.full_name, d.full_name_en) %> <input class="input cal-room-input" name="room" value="<%= d.room || '' %>" maxlength="20" inputmode="numeric" dir="ltr" data-submit-on-change aria-label="<%= t('appointments.room_of', { name: L(d.full_name, d.full_name_en) }) %>"></label></form><% }) %>
+</div></div>
+<% } %>
+
 <% if (!total && !group.missed.length && !finished) { %>
 <div class="panel mt-4"><div class="panel-body"><%- include('../../../partials/empty', { emptyIcon: 'calendar-days', emptyTitle: t('cashx.board_empty_title'), emptyText: t('cashx.board_empty_text'), emptyAction: canBook ? '<button class="btn btn-secondary" type="button" data-open-dialog="fx-walkin">' + icon('user-plus', 'icon-sm') + escapeHtml(t('cashx.walkin')) + '</button>' : '' }) %></div></div>
 <% } else { %>
@@ -101,7 +110,7 @@
           <%- flag %>
         </div>
         <div class="fx-name"><% if (canVisit) { %><a href="/app/visits/<%= a.id %>"><bdi><%= a.patient_name %></bdi></a><% } else { %><bdi><%= a.patient_name %></bdi><% } %></div>
-        <div class="fx-meta"><% if (a.doctor_id) { %><span class="doc-dot" aria-hidden="true"<% if (a.doctor_color) { %> style="background:<%= a.doctor_color %>"<% } %>></span><%= L(a.doctor_name, a.doctor_name_en) %><% } else { %><%= t('appointments.unassigned') %><% } %><% if (a.service_name) { %> · <%= L(a.service_name, a.service_name_en) %><% } %></div>
+        <div class="fx-meta"><% if (a.doctor_id) { %><span class="doc-dot" aria-hidden="true"<% if (a.doctor_color) { %> style="background:<%= a.doctor_color %>"<% } %>></span><%= L(a.doctor_name, a.doctor_name_en) %><% if (a.room) { %> · <span class="badge badge-info" data-room-badge><%= t('appointments.room_label', { n: a.room }) %></span><% } %><% } else { %><%= t('appointments.unassigned') %><% } %><% if (a.service_name) { %> · <%= L(a.service_name, a.service_name_en) %><% } %></div>
         <% if (meta) { %><div class="fx-sub"><%= meta %></div><% } %>
         <% if ((c.key === 'arrived' || c.key === 'with_doctor') && a.intake && (a.intake.complaint || vitalsLine(a.intake.vitals))) { %>
         <div class="fx-intake">

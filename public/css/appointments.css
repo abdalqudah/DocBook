@@ -355,3 +355,7 @@ a.cal-head-link[href]:hover .cal-name, a.cal-head-link[href]:hover .cal-dn { tex
 .cal-head.is-source { opacity: .45; }
 .cal-head.is-target { box-shadow: inset 0 -3px 0 var(--primary); background: var(--primary-soft); }
 .cal-ghost { position: fixed; z-index: 60; pointer-events: none; padding: 8px 14px; border-radius: var(--radius); background: var(--primary); color: var(--primary-ink); font-weight: var(--fw-semibold); font-size: 14px; box-shadow: var(--shadow-lg); white-space: nowrap; width: max-content; max-width: 260px; overflow: hidden; text-overflow: ellipsis; transform: translate(-50%, -120%); }
+/* the clinic (room) number beside each doctor on the day calendar */
+.cal-room { margin-top: 2px; }
+.cal-room label { display: inline-flex; align-items: center; gap: 4px; }
+.cal-room-input { width: 3.2em; min-height: 0; height: 22px; padding: 0 4px; font-size: 12px; text-align: center; }

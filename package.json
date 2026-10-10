@@ -1,6 +1,6 @@
 {
   "name": "docbook",
-  "version": "2.9.20",
+  "version": "2.9.21",
   "description": "DocBook — clinic booking & management: appointments, online booking and consultations, front desk, patient records, billing, payroll, supplies and staff logins",
   "main": "app.js",
   "private": true,

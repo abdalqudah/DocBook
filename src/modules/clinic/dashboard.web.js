@@ -340,11 +340,12 @@ router.get('/my-day', wrap(async (req, res) => {
   const [rows, daysOff, offToday, weekRows] = await Promise.all([
     knex('appointments as a').leftJoin('services as s', 's.id', 'a.service_id')
       .where({ 'a.business_id': ctx.businessId, 'a.doctor_id': doctor.id, 'a.appointment_date': date })
+      .modify((q) => require('./branches.service').scope(q, ctx)) // eslint-disable-line global-require -- a doctor in several branches: the branch chosen
       .orderBy('a.appointment_time')
       .select('a.*', 's.name as service_name', 's.name_en as service_name_en', knex.raw('COALESCE(a.duration_minutes, s.duration_minutes, ?) as length', [doctor.slot_duration_minutes || 30])),
     knex('doctor_days_off').where({ business_id: ctx.businessId, doctor_id: doctor.id }).where('off_date', '>=', today).orderBy('off_date').limit(6),
     knex('doctor_days_off').where({ business_id: ctx.businessId, doctor_id: doctor.id, off_date: date }).first(),
-    knex('appointments').where({ business_id: ctx.businessId, doctor_id: doctor.id }).whereBetween('appointment_date', [lib.addDays(date, 1), lib.addDays(date, 7)])
+    require('./branches.service').scope(knex('appointments').where({ business_id: ctx.businessId, doctor_id: doctor.id }), ctx, 'branch_id').whereBetween('appointment_date', [lib.addDays(date, 1), lib.addDays(date, 7)]) // eslint-disable-line global-require
       .whereNot('appointment_type', 'blocked').whereIn('status', ACTIVE).groupBy('appointment_date').select('appointment_date as d').count({ n: '*' }),
   ]);
   const isToday = date === today;

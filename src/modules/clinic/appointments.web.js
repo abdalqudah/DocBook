@@ -3,7 +3,7 @@
 const express = require('express');
 const knex = require('../../db/knex');
 const { wrap, form, flash } = require('../../routes/helpers');
-const { can, ownerOnly } = require('../../middleware/context');
+const { can, canAny, ownerOnly } = require('../../middleware/context');
 const { AppError, E } = require('../../core/errors');
 const exporter = require('../../core/exporter');
 const { translateMessage } = require('../../core/i18n');
@@ -221,6 +221,7 @@ async function renderIndex(req, res, extra = {}) {
   }
   const range = gridRange(columns);
   columns.forEach((c) => { c.offRanges = offRanges(c, range); });
+  if (view !== 'week') { const rooms = await require('./rooms.service').roomsOn(ctx.businessId, date); columns.forEach((c) => { c.room = c.doctorId ? rooms.get(c.doctorId) || null : null; }); } // eslint-disable-line global-require
   const visits = all.filter((a) => a.appointment_type !== 'blocked');
   const stats = {
     total: visits.filter((a) => a.status !== 'cancelled').length,
@@ -492,6 +493,15 @@ router.post('/:id(\\d+)/move', can('appointments.manage'), wrap(async (req, res)
   }
   flash(req, 'success', req.t('appointments.cal.moved'));
   return res.json({ ok: true });
+}));
+
+// The clinic (room) number a doctor works in on a day: from the calendar header or the front desk (reception).
+router.post('/room', canAny('frontdesk.use', 'appointments.manage'), wrap(async (req, res) => {
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.day || '')) ? String(req.body.day) : req.ctx.today;
+  const room = await require('./rooms.service').setRoom(req.ctx, req.body.doctor_id, day, req.body.room); // eslint-disable-line global-require
+  if (req.accepts(['html', 'json']) === 'json' || req.xhr) return res.json({ ok: true, room });
+  flash(req, 'success', req.t('appointments.room_saved'));
+  return res.redirect(safeReturn(req.body.return_to) || `/app/appointments?date=${day}`);
 }));
 
 // Move to another doctor (appointment page): same day, its time or another; the slot rules as for any move.
