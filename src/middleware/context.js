@@ -110,6 +110,12 @@ async function withBusiness(req, res, next, businessId) {
         membership = membership ? { ...membership, doctor_id: null } : membership;
       }
     }
+    // A doctor's own login works in its doctor's branch (Doctors → branch), like a member tied to a branch.
+    if (membership && membership.doctor_id && membership.role_key !== 'owner' && !membership.work_branch) {
+      const doc = await knex('doctors').where({ id: membership.doctor_id, business_id: businessId }).first('branch_id').catch(() => null);
+      const multi = doc && await require('../modules/clinic/branches.service').multi(businessId).catch(() => false); // eslint-disable-line global-require
+      if (multi) membership = { ...membership, work_branch: doc.branch_id ? String(doc.branch_id) : 'main' };
+    }
     // A doctor account only ever sees its own schedule unless its role grants appointments.view_all.
     const ownDoctorId = membership && membership.doctor_id && !permissions.has('appointments.view_all') ? membership.doctor_id : null;
     req.ctx = {

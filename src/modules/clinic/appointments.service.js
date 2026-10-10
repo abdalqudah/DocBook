@@ -153,6 +153,7 @@ async function insertAppointment(ctx, d, { source, trx }) {
     booking_channel: (/^[a-z]{1,20}$/.test(ctx.channel || '') && ctx.channel) || (source === 'website' ? 'website' : 'staff'),
   });
   await audit.record(ctx, 'appointment.created', { entityType: 'appointment', entityId: apptId, newValues: { date: d.appointment_date, time: d.appointment_time, doctor_id: d.doctor_id, source } }, trx);
+  await branches.attachPatient(trx, ctx.businessId, patientId, branchId); // booked in a branch: the patient is that branch's too
   return apptId;
 }
 

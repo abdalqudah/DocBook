@@ -4,6 +4,7 @@
 // profile open for this member; every profile view is written to the record-access log.
 const express = require('express');
 const knex = require('../../db/knex');
+const branchesSvc = require('./branches.service');
 const audit = require('../../core/audit');
 const exporter = require('../../core/exporter');
 const { AppError, E } = require('../../core/errors');
@@ -42,6 +43,7 @@ function listQuery(ctx, query) {
   else if (/^\d+$/.test(query.insurance || '')) q.where('patients.insurance_provider_id', Number(query.insurance));
   applyFilters(q, query, ctx);
   lib.scopePatientsToDoctor(q, ctx.ownDoctorId);
+  branchesSvc.scopePatients(q, ctx); // the branch the member works in
   const visitScope = ctx.ownDoctorId ? knex.raw(' AND a.doctor_id = ?', [ctx.ownDoctorId]).toString() : '';
   q.select('patients.*', 'ip.name as insurance_name',
     knex.raw(`(SELECT COUNT(*) FROM appointments a WHERE a.patient_id = patients.id AND a.status = 'completed'${visitScope}) as visits`),
@@ -231,6 +233,8 @@ router.get('/export', can('data.export'), wrap(async (req, res) => {
 const rerenderNew = (req, res, extra) => render(req, res, { ...extra, openDialog: 'patient-dialog' });
 router.post('/', can('patients.create'), form(async (req, res) => {
   const id = await appts.savePatient(req.ctx, null, req.body);
+  // added while working in a branch: the patient is that branch's
+  if (req.ctx.workBranch) await branchesSvc.attachPatient(knex, req.ctx.businessId, id, req.ctx.workBranch === 'main' ? null : req.ctx.workBranch);
   flash(req, 'success', req.t('patients.saved'));
   res.redirect(`/app/patients/${id}`);
 }, rerenderNew));
@@ -241,6 +245,7 @@ async function loadPatient(req) {
   const q = knex('patients').leftJoin('insurance_providers as ip', function j() { this.on('ip.id', 'patients.insurance_provider_id').andOn('ip.business_id', 'patients.business_id'); })
     .where({ 'patients.business_id': req.ctx.businessId, 'patients.id': id }).first('patients.*', 'ip.name as insurance_name');
   lib.scopePatientsToDoctor(q, req.ctx.ownDoctorId);
+  branchesSvc.scopePatients(q, req.ctx); // another branch's patient is not opened here
   const p = await q;
   if (!p) throw E.notFound('Patient');
   return p;
@@ -347,7 +352,11 @@ async function renderShow(req, res, extra = {}) {
   const [ppGroups, ppPhoto, ppPeople] = await Promise.all([profile.groupsOf(req.ctx.businessId, p.id), profile.hasPhoto(req.ctx.businessId, p.id),
     knex('users').whereIn('id', [p.case_manager_id, p.updated_by].filter(Boolean)).select('id', 'name')]);
   const nameOf = (uid) => (ppPeople.find((u) => u.id === uid) || {}).name || null;
+  // a clinic with branches: the patient's branch(es) — move to the other branch or keep in both
+  const ptBranches = perms.has('patients.edit') && await branchesSvc.multi(req.ctx.businessId)
+    ? { options: (await branchesSvc.options(req.business, req.t, req.locale)).map((o) => ({ key: o.value === '' ? 'main' : o.value, label: o.short || o.label })), mine: await branchesSvc.patientBranches(req.ctx.businessId, p.id) } : null;
   res.page('pages/clinic/patients/show', {
+    ptBranches,
     pprofile: { groups: ppGroups, photo: ppPhoto, manager: nameOf(p.case_manager_id), updatedBy: nameOf(p.updated_by), choices: profile.choices(req.t, req.locale) },
     tab, tabs, portalOn, portalAccount, prescriptions, certificates, orderTab, legacy, treatmentPlan, lgLink, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
@@ -358,6 +367,12 @@ async function renderShow(req, res, extra = {}) {
   });
 }
 router.get('/:id(\\d+)', wrap((req, res) => renderShow(req, res)));
+// The patient's branches (move to another branch, or both).
+router.post('/:id(\\d+)/branches', can('patients.edit'), wrap(async (req, res) => {
+  const p = await loadPatient(req);
+  try { await branchesSvc.setPatientBranches(req.ctx, p.id, req.body.branches); flash(req, 'success', req.t('branches.patient_saved')); } catch (e) { if (e.code !== 'VALIDATION_FAILED') throw e; flash(req, 'error', req.t('branches.patient_need_one')); }
+  res.redirect(`/app/patients/${p.id}`);
+}));
 
 // Patient file summary on the clinic letterhead: details, allergies and chronic conditions, then — for members who
 // may read the clinical record — visits with diagnoses, prescriptions, tests and referrals.

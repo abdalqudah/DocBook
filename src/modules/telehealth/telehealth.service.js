@@ -448,6 +448,7 @@ async function bookOnline(ctx, clinic, d, files = []) {
       status: 'pending', appointment_type: 'online', source: 'website', amount_due: o.fee, notes: null, created_by: null,
     });
     await audit.record(ctx, 'appointment.created', { entityType: 'appointment', entityId: apptId, newValues: { date: d.appointment_date, time: d.appointment_time, doctor_id: doctor.id, source: 'website', type: 'online' } }, trx);
+    await require('../clinic/branches.service').attachPatient(trx, clinic.id, patientId, doctor.branch_id || null); // eslint-disable-line global-require
     const [cid] = await trx('online_consultations').insert({
       business_id: clinic.id, appointment_id: apptId, token_hash: t.token_hash, token_enc: t.token_enc,
       patient_timezone: d.patient_timezone, patient_country: d.patient_country, reason: d.reason, payment_required: payReq, locale: ctx.locale === 'en' ? 'en' : 'ar',

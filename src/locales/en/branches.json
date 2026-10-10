@@ -56,6 +56,10 @@
     "short_name": "Short name",
     "short_name_help": "Shown in the top bar instead of the long name, e.g. Abdali",
     "main_short": "Short name of the main branch",
-    "main_short_saved": "Short name saved."
+    "main_short_saved": "Short name saved.",
+    "patient_branches": "Patient's branches",
+    "patient_help": "The patient shows in the ticked branches only. To move: tick the new one and untick the old. Both: tick both.",
+    "patient_saved": "The patient's branches were saved.",
+    "patient_need_one": "Choose at least one branch."
   }
 }

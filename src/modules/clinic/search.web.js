@@ -33,6 +33,7 @@ router.get('/', wrap(async (req, res) => {
       .andWhere((w) => { w.where('full_name', 'like', term).orWhere('national_id', 'like', lib.likeTerm(raw)); lib.nameMatch(w, 'full_name', raw); if (phoneTerm) w.orWhere('phone', 'like', phoneTerm); })
       .orderBy('full_name').limit(6).select('id', 'full_name', 'phone', 'national_id');
     lib.scopePatientsToDoctor(q, ctx.ownDoctorId);
+    require('./branches.service').scopePatients(q, ctx, 'patients.id'); // eslint-disable-line global-require
     const book = perms.has('appointments.manage');
     jobs.push(q.then((rows) => rows.map((p) => ({
       group: 'patients', title: p.full_name, subtitle: [p.phone, p.national_id].filter(Boolean).join(' · '), href: `/app/patients/${p.id}`, icon: 'user-round',

@@ -154,6 +154,36 @@ async function validScope(businessId, v) {
   return /^\d+$/.test(s) && (await knex('clinic_branches').where({ business_id: businessId, id: Number(s) }).first('id')) ? s : null;
 }
 
+// ---------------------------------------------------------------- patients of a branch (patient_branches)
+const keyOf = (branchId) => (branchId ? String(branchId) : 'main');
+/** A patient seen in a branch (booked there, added there): kept once. */
+async function attachPatient(db, businessId, patientId, branchId) {
+  if (!patientId || !(await multi(businessId).catch(() => false))) return;
+  await db('patient_branches').insert({ business_id: businessId, patient_id: patientId, branch_key: keyOf(branchId) }).onConflict(['patient_id', 'branch_key']).ignore();
+}
+/** Patients of the branch the member works in: theirs, and those not given a branch yet. */
+function scopePatients(q, ctx, col = 'patients.id') {
+  const v = ctx && ctx.workBranch;
+  if (!v) return q;
+  return q.where((w) => w
+    .whereExists(function mine() { this.select(knex.raw('1')).from('patient_branches as pb').whereRaw('pb.patient_id = ??', [col]).where('pb.branch_key', String(v)); })
+    .orWhereNotExists(function none() { this.select(knex.raw('1')).from('patient_branches as pb2').whereRaw('pb2.patient_id = ??', [col]); }));
+}
+const patientBranches = (businessId, patientId) => knex('patient_branches').where({ business_id: businessId, patient_id: patientId }).pluck('branch_key');
+/** The patient's branches as chosen on their file (at least one); audited. */
+async function setPatientBranches(ctx, patientId, keys) {
+  const valid = new Set(['main', ...(await list(ctx.businessId)).map((r) => String(r.id))]);
+  const want = [...new Set([].concat(keys || []).map(String))].filter((k) => valid.has(k));
+  if (!want.length) throw E.validation({ branches: 'Choose at least one branch.' });
+  const before = await patientBranches(ctx.businessId, patientId);
+  await knex.transaction(async (trx) => {
+    await trx('patient_branches').where({ business_id: ctx.businessId, patient_id: patientId }).whereNotIn('branch_key', want).del();
+    for (const k of want) await trx('patient_branches').insert({ business_id: ctx.businessId, patient_id: patientId, branch_key: k }).onConflict(['patient_id', 'branch_key']).ignore(); // eslint-disable-line no-await-in-loop, no-restricted-syntax
+  });
+  await audit.record(ctx, 'patient.branches', { entityType: 'patient', entityId: patientId, oldValues: { branches: before }, newValues: { branches: want } });
+  return want;
+}
+
 /** A query narrowed to the branch the member works in (account menu): 'main' = no branch, an id = that branch. */
 function scope(q, ctx, col = 'a.branch_id') {
   const v = ctx && ctx.workBranch;
@@ -162,4 +192,4 @@ function scope(q, ctx, col = 'a.branch_id') {
   return q;
 }
 
-module.exports = { scope, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };
+module.exports = { scope, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };

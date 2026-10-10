@@ -44,7 +44,7 @@ test('the account menu switches the branch; the calendar and list follow it', as
   r = await o.get('/app/appointments?view=list&lang=en');
   assert.match(r.text, /Abdali Patient/); assert.doesNotMatch(r.text, /Main Patient/);
   r = await o.get('/app/appointments?view=list&branch=&lang=en');
-  assert.match(r.text, /Main Patient/, 'the page filter still wins (all branches)');
+  assert.doesNotMatch(r.text, /Main Patient/, 'no branch filter on the page: the top bar decides');
   // another clinic's branch: refused
   r = await o.submit('/app/appointments?view=list', '/workspaces/branch', { branch: String(other) });
   assert.equal(r.status, 403);
@@ -149,4 +149,39 @@ test('staff tied to a branch work there only; reports per branch; short names in
   assert.doesNotMatch(r.text, /data-branch-switch/, 'no switching for a member tied to a branch');
   r = await rec.submit('/app/front-desk', '/workspaces/branch', { branch: 'main' });
   assert.equal(r.status, 403);
+});
+
+test('branches kept apart: patients per branch (move, or both); a doctor\'s login works in its branch', async () => {
+  const o = app.agent(); await o.login(mail);
+  const [pm] = await knex('patients').insert({ business_id: b, full_name: `Pat Main ${tag}`, phone: '0791110001' });
+  const [pa] = await knex('patients').insert({ business_id: b, full_name: `Pat Abdali ${tag}`, phone: '0791110002' });
+  await knex('patient_branches').insert([{ business_id: b, patient_id: pm, branch_key: 'main' }, { business_id: b, patient_id: pa, branch_key: String(branch) }]);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  let r = await o.get(`/app/patients?q=${encodeURIComponent(`Pat`)}&lang=en`);
+  assert.match(r.text, new RegExp(`Pat Abdali ${tag}`)); assert.doesNotMatch(r.text, new RegExp(`Pat Main ${tag}`));
+  assert.equal((await o.get(`/app/patients/${pm}`)).status, 404, 'another branch\'s patient is not opened');
+  // a new patient added while in Abdali is Abdali's
+  r = await o.submit('/app/patients/new', '/app/patients', { full_name: `Pat New ${tag}`, phone: '0791110003' });
+  const pn = (await knex('patients').where({ business_id: b, full_name: `Pat New ${tag}` }).first('id')).id;
+  assert.deepEqual(await knex('patient_branches').where({ patient_id: pn }).pluck('branch_key'), [String(branch)]);
+  // move the Abdali patient to both
+  r = await o.get(`/app/patients/${pa}?lang=en`);
+  assert.match(r.text, /data-pt-branches/);
+  r = await o.post(`/app/patients/${pa}/branches`, [['_csrf', o.csrf(r.text)], ['branches', 'main'], ['branches', String(branch)]]);
+  assert.equal(r.status, 302);
+  assert.deepEqual((await knex('patient_branches').where({ patient_id: pa }).pluck('branch_key')).sort(), [String(branch), 'main'].sort());
+  r = await o.submit(`/app/patients/${pa}`, `/app/patients/${pa}/branches`, { branches: [] });
+  assert.equal((await knex('patient_branches').where({ patient_id: pa }).count({ n: '*' }))[0].n, 2, 'at least one branch: nothing changed');
+  // the calendar has no branch filter of its own
+  r = await o.get('/app/appointments?lang=en');
+  assert.doesNotMatch(r.text, /<select[^>]*name="branch"/);
+  // a doctor's login: in its doctor's branch, no switching
+  const role = await knex('roles').where({ business_id: b, key: 'doctor' }).first('id');
+  const dAb = (await knex('doctors').where({ business_id: b, full_name: 'Dr Abdali' }).first('id')).id;
+  r = await o.submit('/app/clinic/team', '/app/clinic/team', { name: 'Dr Abdali Login', email: `da-${tag}@t.test`, role_id: String(role.id), doctor_id: String(dAb), mode: 'password', locale: 'en' });
+  await knex('users').where({ email: `da-${tag}@t.test` }).update({ password_hash: await require('bcryptjs').hash('Passw0rd!x', 4), must_change_password: false, email_verified_at: new Date() }); // eslint-disable-line global-require
+  const doc = app.agent(); await doc.login(`da-${tag}@t.test`);
+  r = await doc.get('/app/appointments?view=list&lang=en');
+  assert.doesNotMatch(r.text, /data-branch-switch/);
+  assert.equal((await doc.submit('/app/appointments', '/workspaces/branch', { branch: 'main' })).status, 403);
 });
