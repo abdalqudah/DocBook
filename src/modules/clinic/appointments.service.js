@@ -141,7 +141,9 @@ async function insertAppointment(ctx, d, { source, trx }) {
     const p = await trx('patients').where({ id: patientId, business_id: ctx.businessId }).first('id');
     if (!p) throw E.validation({ patient_id: 'Choose a valid value.' });
   } else patientId = await resolveOrCreatePatient(ctx, { name: d.patient_name, phone: d.patient_phone, email: d.patient_email }, trx);
-  const branchId = d.doctor_id ? await branches.ofDoctor(ctx.businessId, d.doctor_id, trx) : await branches.check(ctx.businessId, d.branch_id, trx);
+  // a doctor who works in several branches: the branch the member works in (or the one the patient chose online)
+  const prefer = ctx.workBranch || (d.branch_id === undefined || d.branch_id === null || d.branch_id === '' ? null : (Number(d.branch_id) ? String(Number(d.branch_id)) : 'main'));
+  const branchId = d.doctor_id ? await branches.ofDoctor(ctx.businessId, d.doctor_id, trx, prefer) : await branches.check(ctx.businessId, d.branch_id, trx);
   const [apptId] = await trx('appointments').insert({
     business_id: ctx.businessId, branch_id: branchId, doctor_id: d.doctor_id || null, service_id: d.service_id || null, patient_id: patientId,
     patient_name: d.patient_name, patient_phone: d.patient_phone, patient_email: d.patient_email || null,
@@ -253,7 +255,7 @@ async function callIn(ctx, apptId, on = true) {
 async function assignDoctor(ctx, apptId, doctorId) {
   const a = await get(ctx, apptId);
   return scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: Number(doctorId), serviceId: a.service_id, durationOverride: a.duration_minutes, date: a.appointment_date, time: a.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
-    await trx('appointments').where({ id: a.id }).update({ doctor_id: Number(doctorId), branch_id: await branches.ofDoctor(ctx.businessId, Number(doctorId), trx), updated_at: new Date() });
+    await trx('appointments').where({ id: a.id }).update({ doctor_id: Number(doctorId), branch_id: await branches.ofDoctor(ctx.businessId, Number(doctorId), trx, ctx.workBranch || branches.keyOf(a.branch_id)), updated_at: new Date() });
     await audit.record(ctx, 'appointment.doctor_assigned', { entityType: 'appointment', entityId: a.id, oldValues: { doctor_id: a.doctor_id }, newValues: { doctor_id: Number(doctorId) } }, trx);
   });
 }
@@ -269,7 +271,7 @@ async function block(ctx, input) {
   const surgery = input.kind === 'surgery' ? await surgeries.check(ctx, input) : null;
   const label = surgery ? surgeries.labelOf(surgery) : d.label;
   return scheduling.withSlot({ businessId: ctx.businessId, timezone: ctx.timezone, doctorId: d.doctor_id, durationOverride: d.duration_minutes, date: d.appointment_date, time: d.appointment_time }, async (trx) => {
-    const [bid] = await trx('appointments').insert({ business_id: ctx.businessId, branch_id: await branches.ofDoctor(ctx.businessId, d.doctor_id, trx), doctor_id: d.doctor_id, patient_name: label || '—', appointment_date: d.appointment_date, appointment_time: d.appointment_time,
+    const [bid] = await trx('appointments').insert({ business_id: ctx.businessId, branch_id: await branches.ofDoctor(ctx.businessId, d.doctor_id, trx, ctx.workBranch), doctor_id: d.doctor_id, patient_name: label || '—', appointment_date: d.appointment_date, appointment_time: d.appointment_time,
       duration_minutes: d.duration_minutes || null, status: 'confirmed', appointment_type: 'blocked', source: 'staff', notes: label || null, created_by: ctx.userId });
     await audit.record(ctx, 'appointment.blocked', { entityType: 'appointment', entityId: bid, newValues: { ...d, label, surgery: Boolean(surgery) } }, trx);
     if (surgery) await surgeries.fromBlock(trx, ctx, { id: bid, doctor_id: d.doctor_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: d.duration_minutes }, input);
@@ -299,7 +301,7 @@ async function move(ctx, apptId, input) {
     date: d.appointment_date, time: d.appointment_time, excludeAppointmentId: a.id }, async (trx) => {
     const patch = { doctor_id: d.doctor_id, appointment_date: d.appointment_date, appointment_time: d.appointment_time, duration_minutes: a.service_id ? a.duration_minutes : duration, updated_at: new Date() };
     if (a.appointment_type === 'in_person' && a.doctor_id !== d.doctor_id) patch.amount_due = await expectedFee(trx, ctx.businessId, d.doctor_id, a.service_id);
-    if (a.doctor_id !== d.doctor_id) patch.branch_id = await branches.ofDoctor(ctx.businessId, d.doctor_id, trx); // the visit goes where the doctor works
+    if (a.doctor_id !== d.doctor_id) patch.branch_id = await branches.ofDoctor(ctx.businessId, d.doctor_id, trx, ctx.workBranch || branches.keyOf(a.branch_id)); // the visit goes where the doctor works (the same branch when it works there too)
     await trx('appointments').where({ id: a.id, business_id: ctx.businessId }).update(patch);
     if (a.appointment_type === 'blocked') await require('../surgeries/surgeries.service').followBlock(trx, ctx, a.id, d); // eslint-disable-line global-require
     await audit.record(ctx, 'appointment.moved', { entityType: 'appointment', entityId: a.id,

@@ -42,7 +42,7 @@ async function monthly(businessId, timezone, fromMonth, toMonth, ctx = null) {
       .groupBy('mon').select(localMonth('p.refunded_at').wrap('', ' as mon')).sum({ v: 'p.refunded_amount' }),
     (bctx ? br.scope(knex('expenses').where({ business_id: businessId }), bctx, 'branch_id') : knex('expenses').where({ business_id: businessId })).whereBetween('date', [from, to])
       .groupBy('mon', 'category').select(knex.raw("DATE_FORMAT(date, '%Y-%m') as mon"), 'category').sum({ v: 'amount' }),
-    knex('payroll_payments').where({ business_id: businessId }).modify((q) => { if (bctx) q.whereIn('doctor_id', br.doctorIds(bctx)); }).whereBetween('period', [fromMonth, toMonth])
+    knex('payroll_payments').where({ business_id: businessId }).modify((q) => { if (bctx) q.whereIn('doctor_id', br.payDoctorIds(bctx)); }).whereBetween('period', [fromMonth, toMonth])
       .groupBy('period').select('period').sum({ net: 'net_pay' }).sum({ adv: 'advances' }),
     staff.paidByMonth(businessId, fromMonth, toMonth, bctx),
     // Supplies received (memo): every delivery in the month it arrived — partial ones and those of later-cancelled orders too.

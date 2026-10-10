@@ -27,6 +27,8 @@ const safeReturn = (v) => (typeof v === 'string' && /^\/app\/[\w\-/?=&.%]*$/.tes
 /** Active doctors the current user may book for (a doctor login sees only their own). */
 async function bookableDoctors(ctx) {
   const rows = await doctorsSvc.listActive(ctx);
+  const extra = await branchesSvc.extraByDoctor(ctx.businessId); // the other branches each doctor works in
+  rows.forEach((d) => { d.alsoIn = extra.get(d.id) || []; });
   return ctx.ownDoctorId ? rows.filter((d) => d.id === ctx.ownDoctorId) : rows;
 }
 
@@ -53,7 +55,7 @@ const filtersOf = (req) => ({
 });
 // Branch choices for the filters (null when the clinic runs only its main branch).
 const branchFilter = async (req) => ((await branchesSvc.multi(req.ctx.businessId)) ? branchesSvc.options(req.business, req.t, req.locale, { includeInactive: true }) : null);
-const inBranch = (f) => (d) => !f.branch || (f.branch === 'main' ? !d.branch_id : d.branch_id === f.branch);
+const inBranch = (f) => (d) => !f.branch || (f.branch === 'main' ? !d.branch_id : d.branch_id === f.branch) || (d.alsoIn || []).includes(String(f.branch));
 
 // ---------------------------------------------------------------- calendar (day / week) & list
 const T = scheduling.timeToMinutes;

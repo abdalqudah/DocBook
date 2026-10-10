@@ -269,7 +269,14 @@ router.post('/workspaces/branch', requireAuth, wrap(async (req, res) => {
   if (!ok || !(await businesses.isMember(req.user.id, b))) throw E.forbidden('branch');
   // a member tied to a branch (Team) cannot switch
   const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': b, 'm.user_id': req.user.id }).first('m.work_branch', 'm.doctor_id', 'r.key');
-  if (m && (m.work_branch || m.doctor_id) && m.key !== 'owner') throw E.forbidden('branch'); // tied to a branch, or a doctor's own login (its doctor's branch)
+  if (m && m.key !== 'owner' && (m.work_branch || m.doctor_id)) {
+    // tied to a branch: no switching; a doctor's own login: between its doctor's branches only
+    const own = m.work_branch ? [] : await (async () => {
+      const d = await knex('doctors').where({ id: m.doctor_id, business_id: b }).first('branch_id');
+      return d ? [d.branch_id ? String(d.branch_id) : 'main', ...(await knex('doctor_branches').where({ doctor_id: m.doctor_id }).pluck('branch_key'))] : [];
+    })();
+    if (own.length < 2 || !own.includes(v)) throw E.forbidden('branch');
+  }
   req.session.workBranch = { ...(req.session.workBranch || {}), [b]: v };
   const back = String(req.body.return_to || '');
   res.redirect(/^\/app(\/[\w\-/]*)?$/.test(back.split('?')[0]) && !back.startsWith('//') ? back.split('?')[0] : '/app/appointments');

@@ -15,7 +15,7 @@ router.use(canAny('doctors.manage', 'appointments.view_all'));
 
 router.get('/', wrap(async (req, res) => {
   // the branch the member works in (account menu): its doctors only
-  const rows = await branchesSvc.scope(knex('doctors').where({ business_id: req.ctx.businessId }), req.ctx, 'branch_id').orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]);
+  const rows = await branchesSvc.scopeDoctors(knex('doctors').where({ business_id: req.ctx.businessId }), req.ctx).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]);
   const today = req.ctx.today;
   const counts = await knex('appointments').where({ business_id: req.ctx.businessId, appointment_date: today }).whereNot('status', 'cancelled').whereNot('appointment_type', 'blocked').groupBy('doctor_id').select('doctor_id').count({ n: '*' });
   const accounts = await knex('memberships').where({ business_id: req.ctx.businessId }).whereNotNull('doctor_id').select('doctor_id', 'status');
@@ -37,7 +37,8 @@ const renderForm = async (req, res, extra = {}) => {
     // Branch choice: only for a clinic with other branches (the main branch is '').
     branchOptions: (await branchesSvc.multi(req.ctx.businessId)) ? await branchesSvc.options(req.business, req.t, req.locale) : null,
     // a new doctor goes to the branch the member works in
-    newBranch: !doctor && Number(req.ctx.workBranch) ? String(req.ctx.workBranch) : '', ...extra,
+    newBranch: !doctor && Number(req.ctx.workBranch) ? String(req.ctx.workBranch) : '',
+    alsoBranches: doctor ? await branchesSvc.doctorExtra(req.ctx.businessId, doctor.id) : [], ...extra,
   });
 };
 router.get('/new', can('doctors.manage'), wrap((req, res) => renderForm(req, res)));

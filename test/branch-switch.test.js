@@ -239,3 +239,36 @@ test('everything per branch: profit & loss, invoices, attendance staff', async (
   assert.ok(staffAb.some((s) => s.name === 'Reem Desk'));
   assert.ok(!(await att.staff(b, { ...base, workBranch: 'main' })).some((s) => s.name === 'Reem Desk'));
 });
+
+test('one doctor in both branches: shown in both, booked in the branch you are in, its login switches between them only', async () => {
+  const o = app.agent(); await o.login(mail);
+  const dMain = (await knex('doctors').where({ business_id: b, full_name: 'Dr Main' }).first('id')).id;
+  // doctor settings: also works in Abdali
+  let r = await o.get(`/app/doctors/${dMain}/edit?lang=en`);
+  assert.equal(r.status, 200); assert.match(r.text, /data-also-branches/);
+  const branches = require('../src/modules/clinic/branches.service'); // eslint-disable-line global-require
+  await branches.setDoctorExtra({ businessId: b, userId: null }, dMain, [String(branch)]);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  r = await o.get('/app/doctors?lang=en');
+  assert.match(r.text, /Dr Main/); assert.match(r.text, /Dr Abdali/);
+  // booked while in Abdali → an Abdali visit
+  const d = new Date(`${scheduling.clinicNow('Asia/Amman').date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 2); while (d.getUTCDay() !== 0) d.setUTCDate(d.getUTCDate() + 1);
+  const day = d.toISOString().slice(0, 10);
+  r = await o.submit('/app/appointments/new', '/app/appointments/new', { doctor_id: String(dMain), appointment_date: day, appointment_time: '10:00', patient_name: 'Both Branch Patient', patient_phone: '0795550001' });
+  assert.equal(r.status, 302);
+  const ap = await knex('appointments').where({ business_id: b, patient_name: 'Both Branch Patient' }).first();
+  assert.equal(ap.branch_id, branch);
+  // in the main branch he is still there; his visit there goes to the main branch
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: 'main' });
+  r = await o.submit('/app/appointments/new', '/app/appointments/new', { doctor_id: String(dMain), appointment_date: day, appointment_time: '11:00', patient_name: 'Main Visit Patient', patient_phone: '0795550002' });
+  assert.equal((await knex('appointments').where({ business_id: b, patient_name: 'Main Visit Patient' }).first()).branch_id, null);
+  // his own login: between his two branches, not "all"
+  const role = await knex('roles').where({ business_id: b, key: 'doctor' }).first('id');
+  await o.submit('/app/clinic/team', '/app/clinic/team', { name: 'Dr Main Login', email: `dm-${tag}@t.test`, role_id: String(role.id), doctor_id: String(dMain), mode: 'password', locale: 'en' });
+  await knex('users').where({ email: `dm-${tag}@t.test` }).update({ password_hash: await require('bcryptjs').hash('Passw0rd!x', 4), must_change_password: false, email_verified_at: new Date() }); // eslint-disable-line global-require
+  const doc = app.agent(); await doc.login(`dm-${tag}@t.test`);
+  r = await doc.get('/app/appointments?view=list&lang=en');
+  assert.match(r.text, /data-branch-switch/);
+  assert.equal((await doc.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) })).status, 302);
+  assert.equal((await doc.submit('/app/appointments', '/workspaces/branch', { branch: '' })).status, 403, 'not all branches');
+});

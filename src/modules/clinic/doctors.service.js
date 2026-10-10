@@ -61,7 +61,7 @@ async function saveDoctor(ctx, id, input) {
   if (input.branch_form) {
     const branches = require('./branches.service'); // eslint-disable-line global-require
     row.branch_id = await branches.check(ctx.businessId, input.branch_id);
-    if (id) { const cur = await knex('doctors').where({ id, business_id: ctx.businessId }).first('branch_id'); branchMoved = Boolean(cur) && (cur.branch_id || null) !== row.branch_id; }
+    if (id) { const cur = await knex('doctors').where({ id, business_id: ctx.businessId }).first('branch_id'); branchMoved = Boolean(cur) && (cur.branch_id || null) !== row.branch_id ? { from: cur.branch_id || null } : false; }
   }
   // Online consultations section of the doctor form (validated before anything is saved).
   const tele = input.online_form ? require('../telehealth/telehealth.service') : null; // eslint-disable-line global-require
@@ -73,8 +73,12 @@ async function saveDoctor(ctx, id, input) {
     id = await doctors.create(ctx, row); // eslint-disable-line no-param-reassign
   }
   if (online) await tele.applyDoctorOnline(ctx, id, online);
+  // the other branches the doctor also works in (checkboxes under the branch)
+  if (input.branch_form) await require('./branches.service').setDoctorExtra(ctx, id, input.also_branches); // eslint-disable-line global-require
   forgetSpecialty(ctx.businessId); // the clinic's specialty records follow its doctors' specialties
   // A doctor moving to another branch takes their upcoming appointments along (the visit is where the doctor is).
+  // …unless the doctor still works in the old branch (one of its other branches now): those visits stay there.
+  if (branchMoved && (await require('./branches.service').doctorExtra(ctx.businessId, id)).includes(branchMoved.from ? String(branchMoved.from) : 'main')) branchMoved = false; // eslint-disable-line global-require
   if (branchMoved) {
     const today = ctx.today || scheduling.clinicNow(ctx.timezone || 'Asia/Amman').date;
     const moved = await knex('appointments').where({ business_id: ctx.businessId, doctor_id: id }).where('appointment_date', '>=', today)

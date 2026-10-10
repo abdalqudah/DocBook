@@ -61,10 +61,46 @@ async function check(businessId, value, trx = knex, field = 'branch_id') {
 }
 
 /** The branch a doctor works in (null = main). */
-async function ofDoctor(businessId, doctorId, trx = knex) {
+/**
+ * The branch of a visit with this doctor: `prefer` ('main' / a branch id — the branch the member works in, or the one
+ * a patient chose) when the doctor works there too, else the doctor's main branch.
+ */
+async function ofDoctor(businessId, doctorId, trx = knex, prefer = null) {
   if (!doctorId) return null;
   const d = await trx('doctors').where({ id: doctorId, business_id: businessId }).first('branch_id');
-  return d ? d.branch_id || null : null;
+  if (!d) return null;
+  const p = prefer === null || prefer === undefined || prefer === '' ? null : String(prefer);
+  if (p && p !== keyOf(d.branch_id) && await trx('doctor_branches').where({ doctor_id: doctorId, branch_key: p }).first('id')) return p === 'main' ? null : Number(p);
+  return d.branch_id || null;
+}
+/** The other branches a doctor works in ('main' / branch ids). */
+const doctorExtra = (businessId, doctorId) => knex('doctor_branches').where({ business_id: businessId, doctor_id: doctorId }).pluck('branch_key');
+/** Every doctor's other branches: Map doctor id → [keys]. */
+async function extraByDoctor(businessId) {
+  const m = new Map();
+  (await knex('doctor_branches').where({ business_id: businessId }).select('doctor_id', 'branch_key').catch(() => [])).forEach((r) => { if (!m.has(r.doctor_id)) m.set(r.doctor_id, []); m.get(r.doctor_id).push(r.branch_key); });
+  return m;
+}
+/** A doctor's other branches as chosen on their settings (never the main one); audited. */
+async function setDoctorExtra(ctx, doctorId, keys) {
+  const d = await knex('doctors').where({ id: doctorId, business_id: ctx.businessId }).first('branch_id');
+  if (!d) return;
+  const valid = new Set(['main', ...(await list(ctx.businessId)).map((r) => String(r.id))]);
+  const want = [...new Set([].concat(keys || []).map(String))].filter((k) => valid.has(k) && k !== keyOf(d.branch_id));
+  const before = await doctorExtra(ctx.businessId, doctorId);
+  if (before.slice().sort().join() === want.slice().sort().join()) return;
+  await knex('doctor_branches').where({ business_id: ctx.businessId, doctor_id: doctorId }).del();
+  if (want.length) await knex('doctor_branches').insert(want.map((k) => ({ business_id: ctx.businessId, doctor_id: doctorId, branch_key: k })));
+  await audit.record(ctx, 'doctor.branches', { entityType: 'doctor', entityId: doctorId, oldValues: { also: before }, newValues: { also: want } });
+}
+/** Doctors of the branch the member works in: its own and those who also work there (q on doctors, unaliased or `t`). */
+function scopeDoctors(q, ctx, t = 'doctors') {
+  const v = ctx && ctx.workBranch;
+  if (!v) return q;
+  return q.where((w) => {
+    if (String(v) === 'main') w.whereNull(`${t}.branch_id`); else w.where(`${t}.branch_id`, Number(v));
+    w.orWhereIn(`${t}.id`, knex('doctor_branches').select('doctor_id').where({ business_id: ctx.businessId, branch_key: String(v) }));
+  });
 }
 
 /** Refuses one more active branch beyond the package (the main branch counts as one). */
@@ -193,7 +229,9 @@ function scopeByVisit(q, ctx, col = 'i.appointment_id') {
   return String(v) === 'main' ? q.where((w) => w.whereNull(col).orWhereIn(col, visitIds(ctx))) : q.whereIn(col, visitIds(ctx));
 }
 /** The branch's doctors (a subquery of doctor ids). */
-const doctorIds = (ctx) => scope(knex('doctors').select('id').where('business_id', ctx.businessId), ctx, 'branch_id');
+const doctorIds = (ctx) => scopeDoctors(knex('doctors').select('id').where('business_id', ctx.businessId), ctx);
+/** Doctors paid in the branch (their main branch). */
+const payDoctorIds = (ctx) => scope(knex('doctors').select('id').where('business_id', ctx.businessId), ctx, 'branch_id');
 
 /** Staff of the branch: members tied to it (Team → branch), and doctors' logins whose doctor works there. */
 function scopeMembers(q, ctx, m = 'm') {
@@ -210,4 +248,4 @@ function scope(q, ctx, col = 'a.branch_id') {
   return q;
 }
 
-module.exports = { scope, scopeMembers, scopeByVisit, doctorIds, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };
+module.exports = { scope, scopeDoctors, doctorExtra, extraByDoctor, setDoctorExtra, payDoctorIds, scopeMembers, scopeByVisit, doctorIds, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };

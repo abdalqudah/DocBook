@@ -60,6 +60,8 @@
     "patient_branches": "Patient's branches",
     "patient_help": "The patient shows in the ticked branches only. To move: tick the new one and untick the old. Both: tick both.",
     "patient_saved": "The patient's branches were saved.",
-    "patient_need_one": "Choose at least one branch."
+    "patient_need_one": "Choose at least one branch.",
+    "also_in": "Also works in",
+    "also_in_help": "The doctor shows in these branches' calendars too; a visit is booked in the branch you work in. Pay stays with the main branch."
   }
 }

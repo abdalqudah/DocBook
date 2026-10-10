@@ -69,7 +69,7 @@
         <div class="sep"></div>
         <div class="menu-label"><%= t('branches.work_in') %></div>
         <% if (branchSwitch.locked) { var _mine = branchSwitch.options.find(function (o) { return o.value === String(branchSwitch.current); }); %><div class="menu-label"><%- icon('map-pin', 'icon-sm') %> <%= _mine ? (_mine.short || _mine.label) : '' %></div><% } else { %>
-        <% [{ value: '', label: t('branches.all') }].concat(branchSwitch.options).forEach(function (o) { var on = String(branchSwitch.current || '') === o.value; %>
+        <% (branchSwitch.noAll ? [] : [{ value: '', label: t('branches.all') }]).concat(branchSwitch.options).forEach(function (o) { var on = String(branchSwitch.current || '') === o.value; %>
           <form method="post" action="/workspaces/branch"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="branch" value="<%= o.value %>"><input type="hidden" name="return_to" value="<%= path %>"><button type="submit"<%- on ? ' aria-current="true"' : '' %> data-branch-switch><%- icon(on ? 'check' : 'map-pin', 'icon-sm') %><span class="truncate"><%= o.short || o.label %></span></button></form>
         <% }) %>
         <% } %>

@@ -113,8 +113,14 @@ async function withBusiness(req, res, next, businessId) {
     // A doctor's own login works in its doctor's branch (Doctors → branch), like a member tied to a branch.
     if (membership && membership.doctor_id && membership.role_key !== 'owner' && !membership.work_branch) {
       const doc = await knex('doctors').where({ id: membership.doctor_id, business_id: businessId }).first('branch_id').catch(() => null);
-      const multi = doc && await require('../modules/clinic/branches.service').multi(businessId).catch(() => false); // eslint-disable-line global-require
-      if (multi) membership = { ...membership, work_branch: doc.branch_id ? String(doc.branch_id) : 'main' };
+      const bsv = require('../modules/clinic/branches.service'); // eslint-disable-line global-require
+      const multi = doc && await bsv.multi(businessId).catch(() => false);
+      if (multi) {
+        // a doctor who also works in other branches switches between its own branches only (its main one first)
+        const own = [doc.branch_id ? String(doc.branch_id) : 'main', ...(await bsv.doctorExtra(businessId, membership.doctor_id).catch(() => []))];
+        const chosen = req.session && req.session.workBranch && req.session.workBranch[businessId];
+        membership = { ...membership, work_branch: own.includes(String(chosen)) ? String(chosen) : own[0], ownBranches: own.length > 1 ? own : null };
+      }
     }
     // A doctor account only ever sees its own schedule unless its role grants appointments.view_all.
     const ownDoctorId = membership && membership.doctor_id && !permissions.has('appointments.view_all') ? membership.doctor_id : null;
@@ -127,7 +133,8 @@ async function withBusiness(req, res, next, businessId) {
       // a member tied to a branch (Team → branch) works there only; the others choose
       workBranch: (membership && membership.work_branch && membership.role_key !== 'owner' ? membership.work_branch : null)
         ?? ((req.session && req.session.workBranch && req.session.workBranch[businessId]) || ''),
-      branchLocked: Boolean(membership && membership.work_branch && membership.role_key !== 'owner'),
+      branchLocked: Boolean(membership && membership.work_branch && membership.role_key !== 'owner' && !membership.ownBranches),
+      ownBranches: (membership && membership.role_key !== 'owner' && membership.ownBranches) || null, // a doctor in several branches: those only
     };
     req.business = business;
     res.locals.business = chrome;
@@ -156,7 +163,9 @@ async function withBusiness(req, res, next, businessId) {
       const branchesSvc = require('../modules/clinic/branches.service'); // eslint-disable-line global-require
       if (await branchesSvc.multi(businessId).catch(() => false)) {
         const opts = await branchesSvc.options(business, req.t, req.locale);
-        res.locals.branchSwitch = { current: req.ctx.workBranch, locked: req.ctx.branchLocked, options: opts.map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.label, short: o.short })) };
+        const own = req.ctx.ownBranches;
+        res.locals.branchSwitch = { current: req.ctx.workBranch, locked: req.ctx.branchLocked, noAll: Boolean(own),
+          options: opts.map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.label, short: o.short })).filter((o) => !own || own.includes(o.value)) };
       }
       const own = actAs ? { ...req.ctx, businessId: chromeId, permissions: actAs.navPermissions } : req.ctx; // the signed-in account's own inbox
       res.locals.unreadNotifications = await notifications.unreadCount(own);

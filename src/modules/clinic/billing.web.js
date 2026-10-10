@@ -44,7 +44,7 @@ function invoiceQuery(ctx, query) {
 
 async function filterOptions(ctx) {
   const [doctors, insurance] = await Promise.all([
-    branchesSvc.scope(knex('doctors').where({ business_id: ctx.businessId }), ctx, 'branch_id').orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en'),
+    branchesSvc.scopeDoctors(knex('doctors').where({ business_id: ctx.businessId }), ctx).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en'),
     knex('insurance_providers').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'name' }]).select('id', 'name'),
   ]);
   return { doctors, insurance };

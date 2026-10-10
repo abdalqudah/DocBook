@@ -166,7 +166,7 @@ const FLOW = ['expected', 'arrived', 'with_doctor', 'ready', 'paid'];
 /** Doctors working on a date: active, the weekday enabled in their hours and not on a day off. */
 async function doctorsWorking(ctx, date) {
   const [docs, off] = await Promise.all([
-    require('./branches.service').scope(knex('doctors').where({ business_id: ctx.businessId, is_active: true }), ctx, 'branch_id').orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
+    require('./branches.service').scopeDoctors(knex('doctors').where({ business_id: ctx.businessId, is_active: true }), ctx).orderBy([{ column: 'sort_order' }, { column: 'full_name' }])
       .select('id', 'full_name', 'full_name_en', 'color', 'working_hours'),
     knex('doctor_days_off').where({ business_id: ctx.businessId, off_date: date }).pluck('doctor_id'),
   ]);
