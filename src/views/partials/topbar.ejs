@@ -46,7 +46,7 @@
       </div>
     </details>
     <details class="dropdown">
-      <summary class="user-chip"><span class="avatar"><% if (typeof myPhoto !== 'undefined' && myPhoto) { %><img src="<%= myPhoto %>" alt=""><% } else { %><%= initials(currentUser.name) %><% } %></span><span class="user-name small strong"><%= currentUser.name %></span><% if (typeof branchSwitch !== 'undefined' && branchSwitch && branchSwitch.current) { var _bo = branchSwitch.options.find(function (o) { return o.value === String(branchSwitch.current); }); if (_bo) { %><span class="badge badge-info truncate" style="max-width:160px" data-branch-now title="<%= _bo.label %>"><%- icon('map-pin', 'icon-sm') %><%= _bo.label %></span><% } } %><%- icon('chevron-down', 'icon-sm muted user-chev') %></summary>
+      <summary class="user-chip"><span class="avatar"><% if (typeof myPhoto !== 'undefined' && myPhoto) { %><img src="<%= myPhoto %>" alt=""><% } else { %><%= initials(currentUser.name) %><% } %></span><span class="user-name small strong"><%= currentUser.name %></span><% if (typeof branchSwitch !== 'undefined' && branchSwitch && branchSwitch.current) { var _bo = branchSwitch.options.find(function (o) { return o.value === String(branchSwitch.current); }); if (_bo) { %><span class="badge badge-info truncate" style="max-width:160px" data-branch-now title="<%= _bo.label %>"><%- icon('map-pin', 'icon-sm') %><%= _bo.short || _bo.label %></span><% } } %><%- icon('chevron-down', 'icon-sm muted user-chev') %></summary>
       <div class="menu">
         <div class="menu-label truncate"><%= currentUser.email %></div>
         <%# Phones: the top-bar buttons that do not fit (language, theme, cash screen, mail) live here. %>
@@ -68,9 +68,11 @@
         <% if (typeof branchSwitch !== 'undefined' && branchSwitch) { %>
         <div class="sep"></div>
         <div class="menu-label"><%= t('branches.work_in') %></div>
+        <% if (branchSwitch.locked) { var _mine = branchSwitch.options.find(function (o) { return o.value === String(branchSwitch.current); }); %><div class="menu-label"><%- icon('map-pin', 'icon-sm') %> <%= _mine ? (_mine.short || _mine.label) : '' %></div><% } else { %>
         <% [{ value: '', label: t('branches.all') }].concat(branchSwitch.options).forEach(function (o) { var on = String(branchSwitch.current || '') === o.value; %>
-          <form method="post" action="/workspaces/branch"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="branch" value="<%= o.value %>"><input type="hidden" name="return_to" value="<%= path %>"><button type="submit"<%- on ? ' aria-current="true"' : '' %> data-branch-switch><%- icon(on ? 'check' : 'map-pin', 'icon-sm') %><span class="truncate"><%= o.label %></span></button></form>
+          <form method="post" action="/workspaces/branch"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="branch" value="<%= o.value %>"><input type="hidden" name="return_to" value="<%= path %>"><button type="submit"<%- on ? ' aria-current="true"' : '' %> data-branch-switch><%- icon(on ? 'check' : 'map-pin', 'icon-sm') %><span class="truncate"><%= o.short || o.label %></span></button></form>
         <% }) %>
+        <% } %>
         <div class="sep"></div>
         <% } %>
         <a href="/workspaces/new"><%- icon('plus', 'icon-sm') %><%= t('nav.new_workspace') %></a>

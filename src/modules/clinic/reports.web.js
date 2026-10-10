@@ -9,6 +9,7 @@ const { wrap } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const lib = require('./records.lib');
 const payParts = require('./payment-parts');
+const branchesSvc = require('./branches.service');
 
 const router = express.Router();
 router.use(can('reports.view'));
@@ -19,11 +20,17 @@ const SECTIONS = ['status', 'doctors', 'services', 'sources', 'patients', 'metho
 const apptBase = (ctx, r) => {
   const q = knex('appointments as a').where('a.business_id', ctx.businessId).whereNot('a.appointment_type', 'blocked').whereBetween('a.appointment_date', [r.from, r.to]);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
-  return q;
+  return branchesSvc.scope(q, ctx); // the branch chosen in the account menu (or the member's own)
 };
 const invBase = (ctx, r) => {
   const q = lib.whereLocalDates(knex('invoices as i').where('i.business_id', ctx.businessId), 'i.created_at', r.from, r.to, ctx.timezone);
   if (ctx.ownDoctorId) q.where('i.doctor_id', ctx.ownDoctorId);
+  // a branch: receipts of its visits (a sale without a visit belongs to the main branch)
+  const v = String(ctx.workBranch || '');
+  if (v) {
+    const inBranch = knex('appointments').select('id').where('business_id', ctx.businessId).modify((x) => (v === 'main' ? x.whereNull('branch_id') : x.where('branch_id', Number(v))));
+    if (v === 'main') q.where((w) => w.whereNull('i.appointment_id').orWhereIn('i.appointment_id', inBranch)); else q.whereIn('i.appointment_id', inBranch);
+  }
   return q;
 };
 const num = (v) => Number(v) || 0;
@@ -97,7 +104,8 @@ async function build(req, range) {
   const discounts = { total: num(discountRow.total), n: num(discountRow.n), avgPct: num(discountRow.avg_pct), invoices: num(discountRow.invoices), gross: revenue + num(discountRow.total) };
 
   let fin = null;
-  if (finance) {
+  // expenses and salaries are the clinic's, not a branch's: the profit section only for the whole clinic
+  if (finance && !ctx.workBranch) {
     const [exp, pay] = await Promise.all([
       knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [range.from, range.to]).first(knex.raw('COALESCE(SUM(amount),0) as v'), knex.raw('COUNT(*) as n')),
       // Salaries as in the profit & loss: doctors' net + advances taken back, plus paid staff salaries.

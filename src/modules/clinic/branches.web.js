@@ -56,6 +56,7 @@ router.post('/from-clinic', wrap(async (req, res) => {
   }
   res.redirect(BASE);
 }));
+router.post('/main-short', wrap(async (req, res) => { await branches.setMainShort(req.ctx, req.body.short_name); flash(req, 'success', req.t('branches.main_short_saved')); res.redirect(BASE); }));
 router.post('/', form(async (req, res) => { await branches.save(req.ctx, req.business, null, req.body); flash(req, 'success', req.t('branches.saved')); res.redirect(BASE); }, rerender));
 router.post('/:id(\\d+)', form(async (req, res) => { await branches.save(req.ctx, req.business, Number(req.params.id), req.body); flash(req, 'success', req.t('common.updated')); res.redirect(BASE); }, rerender));
 router.post('/:id(\\d+)/off', act((req) => branches.setActive(req.ctx, req.business, Number(req.params.id), false), 'branches.turned_off'));

@@ -9,6 +9,7 @@ const { E } = require('../../core/errors');
 const { wrap, flash } = require('../../routes/helpers');
 const { can } = require('../../middleware/context');
 const businesses = require('../businesses/business.service');
+const branchesSvc = require('../clinic/branches.service');
 const rbac = require('../rbac/rbac.service');
 const { PORTAL_ROLES, SYSTEM_ROLES } = require('../rbac/permissions');
 const { form } = require('./form');
@@ -39,6 +40,9 @@ async function teamData(req) {
     businesses.listInvitations(b),
     require('../access/access.service').summaries(b), // eslint-disable-line global-require
   ]);
+  // a clinic with branches: each member's branch; the list follows the branch chosen in the account menu
+  const branchOpts = (await branchesSvc.multi(b)) ? (await branchesSvc.options(req.business, req.t, req.locale)).map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.short || o.label })) : null;
+  if (branchOpts && req.ctx.workBranch) members.splice(0, members.length, ...members.filter((m) => !m.work_branch || m.work_branch === String(req.ctx.workBranch)));
   roles.sort((x, y) => (y.is_system - x.is_system) || (ROLE_ORDER.indexOf(x.key) - ROLE_ORDER.indexOf(y.key)) || (x.id - y.id));
   const linked = new Map(members.filter((m) => m.doctor_id).map((m) => [m.doctor_id, m]));
   const invitedDoctors = new Set(invitations.filter((i) => i.doctor_id).map((i) => i.doctor_id));
@@ -49,7 +53,7 @@ async function teamData(req) {
     members: members.map((m) => ({ ...m, group: groupOf(m.role_key), isSelf: m.user_id === req.ctx.userId, pageAccess: pageAccess[m.id] || null,
       detailsLock: access[m.id].ok ? '' : access[m.id].reason, emailLock: Boolean(access[m.id].emailLocked) })),
     roles, assignable, doctors: doctors.map((d) => ({ ...d, linkedTo: linked.get(d.id) || null, invited: invitedDoctors.has(d.id) })),
-    invitations, groups: GROUPS,
+    invitations, groups: GROUPS, branchOpts, workBranch: String(req.ctx.workBranch || ''),
   };
 }
 
@@ -84,7 +88,11 @@ const addSchema = z.object({
 async function addLogin(req, body) {
   const d = validate(addSchema, body);
   const role = await knex('roles').where({ id: d.role_id, business_id: req.ctx.businessId }).first('key', 'name', 'is_system');
+  const wb = await branchesSvc.validScope(req.ctx.businessId, body.work_branch);
+  if (wb === null) throw E.validation({ work_branch: 'Choose a valid value.' });
   const out = await businesses.addStaff(req.ctx, { name: d.name, email: d.email, phone: d.phone, roleId: d.role_id, doctorId: d.doctor_id, jobTitle: d.job_title, mode: d.mode, locale: d.locale });
+  // the branch the new member works in (a member who signs in now; an invitation gets it on the team page once accepted)
+  if (wb && (out.added || out.password)) await knex('memberships').where({ business_id: req.ctx.businessId }).whereIn('user_id', knex('users').where({ email: String(d.email).toLowerCase() }).select('id')).update({ work_branch: wb });
   const base = { name: d.name, email: d.email, role: role ? { key: role.key, name: role.name, is_system: role.is_system } : null };
   if (out.added) return { type: 'added', ...base };
   if (out.password) return { type: 'password', ...base, password: out.password };
@@ -115,7 +123,9 @@ router.post('/:id(\\d+)', form(async (req, res) => {
     const a = await businesses.memberDetailsAccess(req.ctx, Number(req.params.id));
     if (a.ok) await businesses.changeMemberDetails(req.ctx, Number(req.params.id), { name: d.name, email: a.emailLocked ? undefined : d.email, phone: d.phone });
   }
-  await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title });
+  const wb = req.body.work_branch === undefined ? undefined : await branchesSvc.validScope(req.ctx.businessId, req.body.work_branch);
+  if (wb === null) throw E.validation({ work_branch: 'Choose a valid value.' });
+  await businesses.changeMember(req.ctx, Number(req.params.id), { roleId: d.role_id, status: d.status, doctorId: d.doctor_id || null, jobTitle: d.job_title, workBranch: wb });
   flash(req, 'success', req.t('team.member_updated'));
   res.redirect('/app/clinic/team');
 }, (req, res, extra) => renderTeam(req, res, { ...extra, result: null, openDialog: 'edit-dialog', editAction: req.originalUrl })));

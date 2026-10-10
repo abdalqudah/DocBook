@@ -267,6 +267,9 @@ router.post('/workspaces/branch', requireAuth, wrap(async (req, res) => {
   const v = String(req.body.branch || '');
   const ok = v === '' || v === 'main' || (/^\d+$/.test(v) && await knex('clinic_branches').where({ business_id: b, id: Number(v) }).first('id'));
   if (!ok || !(await businesses.isMember(req.user.id, b))) throw E.forbidden('branch');
+  // a member tied to a branch (Team) cannot switch
+  const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': b, 'm.user_id': req.user.id }).first('m.work_branch', 'r.key');
+  if (m && m.work_branch && m.key !== 'owner') throw E.forbidden('branch');
   req.session.workBranch = { ...(req.session.workBranch || {}), [b]: v };
   const back = String(req.body.return_to || '');
   res.redirect(/^\/app(\/[\w\-/]*)?$/.test(back.split('?')[0]) && !back.startsWith('//') ? back.split('?')[0] : '/app/appointments');

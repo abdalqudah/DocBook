@@ -50,6 +50,12 @@
     "merge_confirm_empty": "Make “{name}” a branch of this clinic? With the delete option ticked, the separate clinic is deleted for good.",
     "merged": "Branch added; {n} doctor(s) copied into it.",
     "merged_removed": "Branch added; {n} doctor(s) copied into it, and the separate clinic was deleted.",
-    "work_in": "Branch you work in"
+    "work_in": "Branch you work in",
+    "member_branch": "Branch",
+    "member_branch_help": "A member tied to a branch works there only: its appointments, cash desk and reports. \"All branches\" can switch.",
+    "short_name": "Short name",
+    "short_name_help": "Shown in the top bar instead of the long name, e.g. Abdali",
+    "main_short": "Short name of the main branch",
+    "main_short_saved": "Short name saved."
   }
 }

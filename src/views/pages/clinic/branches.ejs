@@ -18,7 +18,8 @@
     <thead><tr><th><%= t('branches.branch') %></th><th><%= t('branches.address') %></th><th><%= t('branches.phone') %></th><th class="num"><%= t('branches.doctors') %></th><th><%= t('common.status') %></th><th class="actions"></th></tr></thead>
     <tbody>
       <tr>
-        <td class="primary-cell"><div class="strong"><%= L(clinic.name, clinic.name_en) %></div><div class="tiny muted"><%= t('branches.main') %></div></td>
+        <td class="primary-cell"><div class="strong"><%= L(clinic.name, clinic.name_en) %></div><div class="tiny muted"><%= t('branches.main') %><% if (clinic.branch_short) { %> · <span class="badge badge-info"><%= clinic.branch_short %></span><% } %></div>
+          <form class="row-sm mt-2" method="post" action="/app/clinic/branches/main-short" data-main-short><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input class="input" name="short_name" value="<%= clinic.branch_short || '' %>" maxlength="40" placeholder="<%= t('branches.main_short') %>" aria-label="<%= t('branches.main_short') %>" style="max-width:180px"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('check', 'icon-sm') %></button></form></td>
         <td data-label="<%= t('branches.address') %>"><%= [clinic.city, clinic.address].filter(Boolean).join(' · ') || '—' %></td>
         <td data-label="<%= t('branches.phone') %>"><bdi><%= clinic.phone || '—' %></bdi></td>
         <td class="num" data-label="<%= t('branches.doctors') %>"><%= doctorsIn.main || 0 %></td>
@@ -27,13 +28,13 @@
       </tr>
       <% rows.forEach(function (b) { %>
       <tr<%= b.is_active ? '' : ' class="muted"' %>>
-        <td class="primary-cell"><div class="strong"><%= L(b.name, b.name_en) %></div><% if (b.map_url) { %><a class="tiny link" href="<%= b.map_url %>" target="_blank" rel="noopener"><%= t('branches.map') %></a><% } %></td>
+        <td class="primary-cell"><div class="strong"><%= L(b.name, b.name_en) %><% if (b.short_name) { %> <span class="badge badge-info"><%= b.short_name %></span><% } %></div><% if (b.map_url) { %><a class="tiny link" href="<%= b.map_url %>" target="_blank" rel="noopener"><%= t('branches.map') %></a><% } %></td>
         <td data-label="<%= t('branches.address') %>"><%= [b.city, b.address].filter(Boolean).join(' · ') || '—' %></td>
         <td data-label="<%= t('branches.phone') %>"><bdi><%= b.phone || '—' %></bdi></td>
         <td class="num" data-label="<%= t('branches.doctors') %>"><%= doctorsIn[b.id] || 0 %></td>
         <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= b.is_active ? 'badge-success' : 'badge-neutral' %>"><%= b.is_active ? t('common.active') : t('branches.inactive') %></span></td>
         <td class="actions"><div class="row-sm" style="justify-content:flex-end">
-          <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="branch-dialog" data-action="/app/clinic/branches/<%= b.id %>" data-dialog-title="<%= t('branches.edit') %>" data-fill="<%= JSON.stringify({ name: b.name, name_en: b.name_en, city: b.city, address: b.address, phone: b.phone, whatsapp: b.whatsapp, map_url: b.map_url, sort_order: b.sort_order }) %>"><%- icon('pencil', 'icon-sm') %></button>
+          <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="<%= t('common.edit') %>" data-open-dialog="branch-dialog" data-action="/app/clinic/branches/<%= b.id %>" data-dialog-title="<%= t('branches.edit') %>" data-fill="<%= JSON.stringify({ name: b.name, name_en: b.name_en, short_name: b.short_name, city: b.city, address: b.address, phone: b.phone, whatsapp: b.whatsapp, map_url: b.map_url, sort_order: b.sort_order }) %>"><%- icon('pencil', 'icon-sm') %></button>
           <% if (b.is_active) { %>
           <form method="post" action="/app/clinic/branches/<%= b.id %>/off" data-confirm="<%= t('branches.off_confirm') %>" data-confirm-title="<%= L(b.name, b.name_en) %>" data-confirm-yes="<%= t('branches.turn_off') %>" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('branches.turn_off') %></button></form>
           <% } else { %>
@@ -79,6 +80,7 @@
       <div class="form-grid">
         <%- include('../../partials/field', { name: 'name', label: t('branches.name_ar'), required: true, attrs: 'dir="auto" maxlength="120"' }) %>
         <%- include('../../partials/field', { name: 'name_en', label: t('branches.name_en'), attrs: 'dir="ltr" maxlength="120"' }) %>
+        <%- include('../../partials/field', { name: 'short_name', label: t('branches.short_name'), help: t('branches.short_name_help'), attrs: 'dir="auto" maxlength="40"' }) %>
         <%- include('../../partials/field', { name: 'city', label: t('branches.city'), attrs: 'dir="auto" maxlength="120"' }) %>
         <%- include('../../partials/field', { name: 'address', label: t('branches.address'), attrs: 'dir="auto" maxlength="255"' }) %>
         <%- include('../../partials/field', { name: 'phone', label: t('branches.phone'), type: 'tel', attrs: 'dir="ltr" maxlength="40"' }) %>

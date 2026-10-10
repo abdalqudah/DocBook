@@ -2,6 +2,9 @@
    var rq = range.custom ? 'from=' + range.from + '&to=' + range.to : 'month=' + range.month;
    var exp = function (section) { if (!canExport) return ''; return '<details class="dropdown rec-exp"><summary class="btn btn-ghost btn-sm" aria-label="' + t('common.export') + '">' + icon('download', 'icon-sm') + '<span class="rec-exp-label">' + t('common.export') + '</span></summary><div class="menu"><a href="/app/reports?' + rq + '&export=' + section + '&format=xlsx">' + icon('file-spreadsheet', 'icon-sm') + t('common.export_xlsx') + '</a><a href="/app/reports?' + rq + '&export=' + section + '&format=csv">' + icon('table', 'icon-sm') + t('common.export_csv') + '</a></div></details>'; };
    var rangeText = range.custom ? fmt.date(range.from) + ' – ' + fmt.date(range.to) : fmt.month(range.month);
+   // the branch the reports are for (account menu / the member's own)
+   var _bn = typeof branchSwitch !== 'undefined' && branchSwitch && branchSwitch.current ? branchSwitch.options.find(function (o) { return o.value === String(branchSwitch.current); }) : null;
+   if (_bn) rangeText += ' · ' + (_bn.short || _bn.label);
    var s = data.status; %>
 <% if (printing) { %>
 <div class="rec-print-title"><h1><%= t('reports.title') %></h1><p class="muted"><%= rangeText %></p></div>

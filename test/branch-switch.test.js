@@ -119,3 +119,34 @@ test('the branch has its own doctors and services; a new doctor goes to it; book
   await o.submit('/app/appointments', '/workspaces/branch', { branch: '' });
   assert.match((await o.get('/app/doctors?lang=en')).text, /Dr Main/);
 });
+
+test('staff tied to a branch work there only; reports per branch; short names in the top bar', async () => {
+  const o = app.agent(); await o.login(mail);
+  // short names
+  let r = await o.submit('/app/clinic/branches', '/app/clinic/branches/main-short', { short_name: 'الخالدي' });
+  assert.equal(r.status, 302);
+  r = await o.submit('/app/clinic/branches', `/app/clinic/branches/${branch}`, { name: `العبدلي ${tag}`, short_name: 'العبدلي' });
+  assert.equal(r.status, 302);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: 'main' });
+  r = await o.get('/app/appointments?lang=en');
+  assert.match(r.text, /data-branch-now[^>]*>[\s\S]{0,400}الخالدي/);
+  // reports follow the branch
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: String(branch) });
+  r = await o.get('/app/reports?lang=en');
+  assert.equal(r.status, 200); assert.match(r.text, /العبدلي/);
+  // a receptionist tied to the Abdali branch
+  const role = await knex('roles').where({ business_id: b, key: 'receptionist' }).first('id');
+  r = await o.submit('/app/clinic/team', '/app/clinic/team', { name: 'Reem Desk', email: `rd-${tag}@t.test`, role_id: String(role.id), mode: 'password', locale: 'en', work_branch: String(branch) });
+  assert.equal(r.status, 302);
+  const rm = await knex('memberships').where({ business_id: b }).whereIn('user_id', knex('users').where({ email: `rd-${tag}@t.test` }).select('id')).first();
+  assert.equal(rm.work_branch, String(branch));
+  r = await o.get('/app/clinic/team?lang=en');
+  assert.match(r.text, /data-member-branch/);
+  await knex('users').where({ email: `rd-${tag}@t.test` }).update({ password_hash: await require('bcryptjs').hash('Passw0rd!x', 4), must_change_password: false, email_verified_at: new Date() }); // eslint-disable-line global-require
+  const rec = app.agent(); await rec.login(`rd-${tag}@t.test`);
+  r = await rec.get('/app/front-desk?lang=en');
+  assert.match(r.text, /Abdali Patient/); assert.doesNotMatch(r.text, /Main Patient/);
+  assert.doesNotMatch(r.text, /data-branch-switch/, 'no switching for a member tied to a branch');
+  r = await rec.submit('/app/front-desk', '/workspaces/branch', { branch: 'main' });
+  assert.equal(r.status, 403);
+});

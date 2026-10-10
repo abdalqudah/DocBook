@@ -13,7 +13,7 @@ const { E, AppError } = require('../../core/errors');
 const httpsUrl = () => z.preprocess(emptyToUndefined, z.string().trim().max(500).url('Enter a valid URL.').refine((v) => /^https:\/\//i.test(v), 'Use an https:// URL.').optional());
 const schema = z.object({
   name: z.string({ required_error: 'Required.' }).trim().min(1, 'Required.').max(120),
-  name_en: optionalString(120), city: optionalString(120), address: optionalString(255),
+  name_en: optionalString(120), short_name: optionalString(40), city: optionalString(120), address: optionalString(255),
   phone: z.preprocess(emptyToUndefined, z.string().trim().max(40).regex(/^[+0-9\s()-]{6,40}$/, 'Enter a valid phone number.').optional()),
   whatsapp: z.preprocess(emptyToUndefined, z.string().trim().max(40).regex(/^[+0-9\s()-]{6,40}$/, 'Enter a valid phone number.').optional()),
   map_url: httpsUrl(),
@@ -40,8 +40,8 @@ const nameOf = (row, locale) => (locale === 'en' && row.name_en) || row.name;
  */
 async function options(clinic, t, locale, { includeInactive = false } = {}) {
   const rows = await list(clinic.id, { activeOnly: !includeInactive });
-  return [{ value: '', label: t('branches.main_named', { name: (locale === 'en' && clinic.name_en) || clinic.name }) },
-    ...rows.map((r) => ({ value: String(r.id), label: nameOf(r, locale) + (r.is_active ? '' : ` (${t('branches.inactive')})`) }))];
+  return [{ value: '', label: t('branches.main_named', { name: (locale === 'en' && clinic.name_en) || clinic.name }), short: clinic.branch_short || null },
+    ...rows.map((r) => ({ value: String(r.id), label: nameOf(r, locale) + (r.is_active ? '' : ` (${t('branches.inactive')})`), short: r.short_name || null }))];
 }
 
 /** Label of a branch id (null = main) for lists. */
@@ -139,6 +139,21 @@ async function remove(ctx, id) {
   forget(ctx.businessId);
 }
 
+/** The main branch's short name (the top bar shows it instead of the clinic's long name). */
+async function setMainShort(ctx, value) {
+  const v = String(value || '').trim().slice(0, 40) || null;
+  const before = await knex('businesses').where({ id: ctx.businessId }).first('branch_short');
+  await knex('businesses').where({ id: ctx.businessId }).update({ branch_short: v });
+  await audit.record(ctx, 'branch.main_short', { entityType: 'business', entityId: ctx.businessId, oldValues: { branch_short: before ? before.branch_short : null }, newValues: { branch_short: v } });
+  require('../businesses/business.service').forget(ctx.businessId); // eslint-disable-line global-require
+}
+/** '' (every branch), 'main' or a branch id of this clinic → that value; anything else → null (refused). */
+async function validScope(businessId, v) {
+  const s = String(v === undefined || v === null ? '' : v);
+  if (s === '' || s === 'main') return s;
+  return /^\d+$/.test(s) && (await knex('clinic_branches').where({ business_id: businessId, id: Number(s) }).first('id')) ? s : null;
+}
+
 /** A query narrowed to the branch the member works in (account menu): 'main' = no branch, an id = that branch. */
 function scope(q, ctx, col = 'a.branch_id') {
   const v = ctx && ctx.workBranch;
@@ -147,4 +162,4 @@ function scope(q, ctx, col = 'a.branch_id') {
   return q;
 }
 
-module.exports = { scope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };
+module.exports = { scope, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };

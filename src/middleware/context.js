@@ -89,7 +89,7 @@ async function withBusiness(req, res, next, businessId) {
   try {
     let [business, permissions] = await Promise.all([businesses.get(businessId), rbac.getUserPermissions(businessId, req.user.id)]);
     let membership = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.business_id': businessId, 'm.user_id': req.user.id })
-      .first('m.doctor_id', 'm.job_title', 'm.photo_media_id', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
+      .first('m.doctor_id', 'm.job_title', 'm.photo_media_id', 'm.work_branch', 'r.key as role_key', 'r.name as role_name', 'r.is_system');
     let chrome = business;
     let actAs = null;
     if (business.kind === 'center_admin' && business.center_id && actPath(req)) {
@@ -118,7 +118,10 @@ async function withBusiness(req, res, next, businessId) {
       actAs, viaPractice: actAs ? actAs.adminBusinessId : undefined,
       ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale, baseUrl: res.locals.baseUrl,
       // the branch the member works in now (account menu → Branch): '' all, 'main', or a branch id — the calendar's default
-      workBranch: (req.session && req.session.workBranch && req.session.workBranch[businessId]) || '',
+      // a member tied to a branch (Team → branch) works there only; the others choose
+      workBranch: (membership && membership.work_branch && membership.role_key !== 'owner' ? membership.work_branch : null)
+        ?? ((req.session && req.session.workBranch && req.session.workBranch[businessId]) || ''),
+      branchLocked: Boolean(membership && membership.work_branch && membership.role_key !== 'owner'),
     };
     req.business = business;
     res.locals.business = chrome;
@@ -147,7 +150,7 @@ async function withBusiness(req, res, next, businessId) {
       const branchesSvc = require('../modules/clinic/branches.service'); // eslint-disable-line global-require
       if (await branchesSvc.multi(businessId).catch(() => false)) {
         const opts = await branchesSvc.options(business, req.t, req.locale);
-        res.locals.branchSwitch = { current: req.ctx.workBranch, options: opts.map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.label })) };
+        res.locals.branchSwitch = { current: req.ctx.workBranch, locked: req.ctx.branchLocked, options: opts.map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.label, short: o.short })) };
       }
       const own = actAs ? { ...req.ctx, businessId: chromeId, permissions: actAs.navPermissions } : req.ctx; // the signed-in account's own inbox
       res.locals.unreadNotifications = await notifications.unreadCount(own);

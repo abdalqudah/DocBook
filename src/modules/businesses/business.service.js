@@ -16,7 +16,7 @@ const rbac = require('../rbac/rbac.service');
 
 const PUBLIC_COLUMNS = ['id', 'name', 'name_en', 'slug', 'specialty', 'country', 'city', 'currency', 'timezone', 'about', 'about_en', 'phone', 'whatsapp', 'email',
   'address', 'map_url', 'working_hours_text', 'tax_number', 'color', 'logo_mime', 'logo_version', 'logo_square_mime', 'logo_square_version', 'booking_enabled', 'prices_on_site', 'prices_on_booking', 'calendar_color_mode', 'invoice_next_number', 'favicon_mode', 'favicon_mime', 'favicon_version',
-  'onboarding_step', 'onboarding_completed_at', 'status', 'created_at', 'center_id', 'center_share_cash', 'kind',
+  'onboarding_step', 'onboarding_completed_at', 'status', 'created_at', 'center_id', 'center_share_cash', 'kind', 'branch_short',
   'online_enabled', 'online_payment_required', 'online_payment_instructions', 'online_payment_instructions_en', 'online_cancellation_policy', 'online_cancellation_policy_en'];
 
 // ---------------------------------------------------------------- clinic portal address (/<slug>)
@@ -200,7 +200,7 @@ async function listMembers(businessId) {
   return knex('memberships as m').join('users as u', 'u.id', 'm.user_id').join('roles as r', 'r.id', 'm.role_id')
     .leftJoin('doctors as d', 'd.id', 'm.doctor_id')
     .where('m.business_id', businessId)
-    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'd.phone as doctor_phone', 'd.whatsapp as doctor_whatsapp', 'u.last_login_at', 'u.must_change_password',
+    .select('m.id', 'm.user_id', 'm.status', 'm.role_id', 'm.doctor_id', 'm.job_title', 'm.work_branch', 'm.created_at', 'u.name', 'u.email', 'u.phone', 'd.phone as doctor_phone', 'd.whatsapp as doctor_whatsapp', 'u.last_login_at', 'u.must_change_password',
       'r.key as role_key', 'r.name as role_name', 'r.is_system', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en')
     .orderBy('u.name');
 }
@@ -238,7 +238,7 @@ async function resolveDoctor(ctx, role, doctorId, trx = knex) {
   return { id: d.id, takenBy: taken };
 }
 
-async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTitle }) {
+async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTitle, workBranch }) {
   const m = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').where({ 'm.id': membershipId, 'm.business_id': ctx.businessId }).first('m.*', 'r.key as role_key');
   if (!m) throw E.notFound('Staff member');
   // Nobody but an owner changes their own access or an owner's account.
@@ -256,13 +256,14 @@ async function changeMember(ctx, membershipId, { roleId, status, doctorId, jobTi
   const patch = { role_id: role.id, updated_at: new Date() };
   if (status) patch.status = status;
   if (jobTitle !== undefined) patch.job_title = jobTitle || null;
+  if (workBranch !== undefined && workBranch !== null) patch.work_branch = String(workBranch); // the branch the member works in ('' every branch)
   if (doctorId !== undefined || role.key === 'doctor') {
     const doc = await resolveDoctor(ctx, role, doctorId === undefined ? m.doctor_id : doctorId);
     if (doc && doc.takenBy && doc.takenBy.id !== m.id) throw E.validation({ doctor_id: 'Another account is already linked to this doctor.' });
     patch.doctor_id = doc ? doc.id : null;
   }
   await knex('memberships').where({ id: membershipId }).update(patch);
-  await audit.record(ctx, 'staff.updated', { entityType: 'staff', entityId: m.user_id, oldValues: { role: m.role_key, status: m.status, doctor_id: m.doctor_id }, newValues: { role: role.key, status: patch.status, doctor_id: patch.doctor_id } });
+  await audit.record(ctx, 'staff.updated', { entityType: 'staff', entityId: m.user_id, oldValues: { role: m.role_key, status: m.status, doctor_id: m.doctor_id, work_branch: m.work_branch }, newValues: { role: role.key, status: patch.status, doctor_id: patch.doctor_id, work_branch: patch.work_branch } });
   rbac.invalidate(ctx.businessId);
 }
 
