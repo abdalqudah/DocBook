@@ -48,7 +48,8 @@ const filtersOf = (req) => ({
   status: appts.STATUSES.includes(req.query.status) ? req.query.status : null,
   q: String(req.query.q || '').trim().slice(0, 100) || null,
   type: ['online', 'in_person'].includes(req.query.type) ? req.query.type : null, // Online consultations filter
-  branch: req.query.branch === 'main' ? 'main' : (Number(req.query.branch) || null), // clinics with branches
+  // clinics with branches: the filter of the page, else the branch the member works in (account menu)
+  branch: ((v) => (v === 'main' ? 'main' : (Number(v) || null)))(req.query.branch !== undefined ? req.query.branch : req.ctx.workBranch),
 });
 // Branch choices for the filters (null when the clinic runs only its main branch).
 const branchFilter = async (req) => ((await branchesSvc.multi(req.ctx.businessId)) ? branchesSvc.options(req.business, req.t, req.locale, { includeInactive: true }) : null);

@@ -261,4 +261,15 @@ router.post('/workspaces/switch', requireAuth, wrap(async (req, res) => {
   res.redirect(await landingFor(req.user.id, id));
 }));
 
+// The branch the member works in (clinics with branches): '' all, 'main', or one of this clinic's branches.
+router.post('/workspaces/branch', requireAuth, wrap(async (req, res) => {
+  const b = Number(req.session.businessId) || 0;
+  const v = String(req.body.branch || '');
+  const ok = v === '' || v === 'main' || (/^\d+$/.test(v) && await knex('clinic_branches').where({ business_id: b, id: Number(v) }).first('id'));
+  if (!ok || !(await businesses.isMember(req.user.id, b))) throw E.forbidden('branch');
+  req.session.workBranch = { ...(req.session.workBranch || {}), [b]: v };
+  const back = String(req.body.return_to || '');
+  res.redirect(/^\/app(\/[\w\-/]*)?$/.test(back.split('?')[0]) && !back.startsWith('//') ? back.split('?')[0] : '/app/appointments');
+}));
+
 module.exports = router;

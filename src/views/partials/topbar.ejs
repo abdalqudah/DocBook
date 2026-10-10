@@ -65,6 +65,14 @@
           <form method="post" action="/workspaces/switch"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="business_id" value="<%= w.id %>"><button type="submit"<%- w.id === business.id ? ' aria-current="true"' : '' %>><%- icon(w.id === business.id ? 'check' : 'building-2', 'icon-sm') %><span class="truncate"><%= w.name %></span></button></form>
         <% }) %>
         <% } %>
+        <% if (typeof branchSwitch !== 'undefined' && branchSwitch) { %>
+        <div class="sep"></div>
+        <div class="menu-label"><%= t('branches.work_in') %></div>
+        <% [{ value: '', label: t('branches.all') }].concat(branchSwitch.options).forEach(function (o) { var on = String(branchSwitch.current || '') === o.value; %>
+          <form method="post" action="/workspaces/branch"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="branch" value="<%= o.value %>"><input type="hidden" name="return_to" value="<%= path %>"><button type="submit"<%- on ? ' aria-current="true"' : '' %> data-branch-switch><%- icon(on ? 'check' : 'map-pin', 'icon-sm') %><span class="truncate"><%= o.label %></span></button></form>
+        <% }) %>
+        <div class="sep"></div>
+        <% } %>
         <a href="/workspaces/new"><%- icon('plus', 'icon-sm') %><%= t('nav.new_workspace') %></a>
         <div class="sep"></div>
         <div class="menu-label"><%= t('nav.personal') %></div>

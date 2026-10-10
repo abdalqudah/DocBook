@@ -117,6 +117,8 @@ async function withBusiness(req, res, next, businessId) {
       roleKey: membership && membership.role_key, doctorId: membership ? membership.doctor_id : null, ownDoctorId, centerId: business.center_id || null, centerAdmin: business.kind === 'center_admin' || Boolean(actAs), // the medical centre's administration account (not a clinic)
       actAs, viaPractice: actAs ? actAs.adminBusinessId : undefined,
       ip: req.ip, userAgent: req.get('user-agent'), sessionId: req.sessionID, locale: req.locale, baseUrl: res.locals.baseUrl,
+      // the branch the member works in now (account menu → Branch): '' all, 'main', or a branch id — the calendar's default
+      workBranch: (req.session && req.session.workBranch && req.session.workBranch[businessId]) || '',
     };
     req.business = business;
     res.locals.business = chrome;
@@ -141,6 +143,12 @@ async function withBusiness(req, res, next, businessId) {
     res.locals.currency = business.currency;
     if (!isJson(req)) {
       res.locals.workspaces = await businesses.listForUser(req.user.id);
+      // A clinic with branches: switch the branch you work in from the account menu.
+      const branchesSvc = require('../modules/clinic/branches.service'); // eslint-disable-line global-require
+      if (await branchesSvc.multi(businessId).catch(() => false)) {
+        const opts = await branchesSvc.options(business, req.t, req.locale);
+        res.locals.branchSwitch = { current: req.ctx.workBranch, options: opts.map((o) => ({ value: o.value === '' ? 'main' : o.value, label: o.label })) };
+      }
       const own = actAs ? { ...req.ctx, businessId: chromeId, permissions: actAs.navPermissions } : req.ctx; // the signed-in account's own inbox
       res.locals.unreadNotifications = await notifications.unreadCount(own);
       res.locals.unreadChat = await require('../modules/chat/chat.service').unreadTotal(own).catch(() => 0); // eslint-disable-line global-require

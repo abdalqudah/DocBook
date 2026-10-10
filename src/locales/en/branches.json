@@ -49,6 +49,7 @@
     "merge_confirm": "Make “{name}” a branch of this clinic?",
     "merge_confirm_empty": "Make “{name}” a branch of this clinic? With the delete option ticked, the separate clinic is deleted for good.",
     "merged": "Branch added; {n} doctor(s) copied into it.",
-    "merged_removed": "Branch added; {n} doctor(s) copied into it, and the separate clinic was deleted."
+    "merged_removed": "Branch added; {n} doctor(s) copied into it, and the separate clinic was deleted.",
+    "work_in": "Branch you work in"
   }
 }
