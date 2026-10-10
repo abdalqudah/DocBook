@@ -56,3 +56,27 @@ test('Clinica: no-answer / recall and the note of a calendar row', () => {
     + '<tr><td>10:30</td><td><a href="/dental/6">B</a></td><td>Mansour</td><td>Recall</td><td></td></tr></table>');
   assert.deepEqual(rows.map((x) => [x.callStatus, x.note, x.status]), [['no_answer', 'اطمني إنو أمورها تمام', null], ['recall', null, null]]);
 });
+
+test('move to another doctor from the appointment page: same day, a free time; a taken time is refused', async () => {
+  const o = app.agent(); await o.login(mail);
+  const wh = JSON.stringify(scheduling.defaultWorkingHours());
+  const [d1] = await knex('doctors').insert({ business_id: b, full_name: 'Dr One', is_active: true, working_hours: wh, slot_duration_minutes: 30 });
+  const [d2] = await knex('doctors').insert({ business_id: b, full_name: 'Dr Two', is_active: true, working_hours: wh, slot_duration_minutes: 30 });
+  const d = new Date(`${scheduling.clinicNow('Asia/Amman').date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 2); while (d.getUTCDay() !== 0) d.setUTCDate(d.getUTCDate() + 1);
+  const day = d.toISOString().slice(0, 10);
+  const base = { business_id: b, appointment_date: day, status: 'confirmed', appointment_type: 'in_person', source: 'staff' };
+  const [id] = await knex('appointments').insert({ ...base, doctor_id: d1, patient_name: 'Move Me', appointment_time: '10:00' });
+  await knex('appointments').insert({ ...base, doctor_id: d2, patient_name: 'Busy', appointment_time: '12:00' });
+  let r = await o.get(`/app/appointments/${id}?lang=en`);
+  assert.match(r.text, /Move to another doctor/); assert.match(r.text, /data-transfer/);
+  r = await o.submit(`/app/appointments/${id}`, `/app/appointments/${id}/transfer`, { doctor_id: String(d2), appointment_time: '10:00' });
+  assert.equal(r.status, 302);
+  let a = await knex('appointments').where({ id }).first();
+  assert.equal(a.doctor_id, d2); assert.equal(String(a.appointment_time).slice(0, 5), '10:00');
+  r = await o.submit(`/app/appointments/${id}`, `/app/appointments/${id}/transfer`, { doctor_id: String(d1), appointment_time: '12:00' });
+  await o.submit(`/app/appointments/${id}`, `/app/appointments/${id}/transfer`, { doctor_id: String(d2), appointment_time: '12:00' });
+  a = await knex('appointments').where({ id }).first();
+  assert.equal(String(a.appointment_time).slice(0, 5), '12:00', 'moved back to Dr One at 12:00 (free there)');
+  assert.equal(a.doctor_id, d1, 'Dr Two is taken at 12:00: refused, nothing changed');
+  assert.ok(await knex('audit_logs').where({ business_id: b, action: 'appointment.moved', entity_id: id }).first('id'));
+});

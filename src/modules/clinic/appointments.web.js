@@ -489,6 +489,22 @@ router.post('/:id(\\d+)/move', can('appointments.manage'), wrap(async (req, res)
   return res.json({ ok: true });
 }));
 
+// Move to another doctor (appointment page): same day, its time or another; the slot rules as for any move.
+router.post('/:id(\\d+)/transfer', can('appointments.manage'), wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  const back = safeReturn(req.body.return_to) || `/app/appointments/${id}`;
+  try {
+    const a = await appts.get(req.ctx, id);
+    await appts.move(req.ctx, id, { doctor_id: req.body.doctor_id, appointment_date: a.appointment_date, appointment_time: req.body.appointment_time || a.appointment_time });
+    flash(req, 'success', req.t('appointments.transferred'));
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    const field = e.details && typeof e.details === 'object' ? Object.values(e.details).find((v) => typeof v === 'string') : null;
+    flash(req, 'error', e.code === 'VALIDATION_FAILED' && field ? translateMessage(req.locale, field) : errText(req, e));
+  }
+  return res.redirect(back);
+}));
+
 router.post('/:id(\\d+)/follow-up', can('appointments.manage'), form(async (req, res) => {
   const id = await appts.followUp(req.ctx, Number(req.params.id), {
     appointment_date: req.body.appointment_date, appointment_time: req.body.appointment_time, appointment_type: req.body.appointment_type,

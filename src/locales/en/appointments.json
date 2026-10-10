@@ -206,7 +206,11 @@
     },
     "call_saved": "Call outcome saved.",
     "note_saved": "Note saved.",
-    "save_note": "Save note"
+    "save_note": "Save note",
+    "transfer_title": "Move to another doctor",
+    "transfer_help": "Same day, at the same time or another — refused when that time is taken with the other doctor.",
+    "transfer": "Move the appointment",
+    "transferred": "The appointment was moved to the other doctor."
   },
   "frontdesk": {
     "title": "Reception & waiting list",

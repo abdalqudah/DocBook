@@ -103,6 +103,19 @@
       </div>
     </div>
     <% } %>
+    <% var _others = doctors.filter(function (d) { return d.id !== a.doctor_id; }); %>
+    <% if (canManage && a.doctor_id && _others.length && !closed && a.payment_status !== 'paid') { %>
+    <div class="panel">
+      <div class="panel-head"><h2><%= t('appointments.transfer_title') %></h2></div>
+      <form class="panel-body stack-sm" method="post" action="/app/appointments/<%= a.id %>/transfer">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <p class="small muted"><%= t('appointments.transfer_help') %></p>
+        <select class="select" name="doctor_id" required aria-label="<%= t('common.doctor') %>"><option value=""><%= t('appointments.choose_doctor') %></option><% _others.forEach(function (d) { %><option value="<%= d.id %>"><%= L(d.full_name, d.full_name_en) %></option><% }) %></select>
+        <label class="field"><span class="label"><%= t('common.time') %></span><input class="input" type="time" name="appointment_time" value="<%= String(a.appointment_time).slice(0, 5) %>" dir="ltr" step="300"></label>
+        <button class="btn btn-secondary btn-block" type="submit" data-transfer><%- icon('user-check', 'icon-sm') %><%= t('appointments.transfer') %></button>
+      </form>
+    </div>
+    <% } %>
     <% if (!a.doctor_id && doctors.length) { %>
     <div class="panel">
       <div class="panel-head"><h2><%= t('appointments.assign_doctor') %></h2></div>
