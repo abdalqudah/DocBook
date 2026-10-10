@@ -25,7 +25,7 @@ async function page(req, res, extra = {}) {
   const branchesNow = st ? Math.max(Number(st.sub.branches) || 1, usage ? usage.branches : 1) : 1;
   return render(req, res, 'subscription', 'subscription', {
     st, cfg, plans, invoices, usage, pending, features: subs.FEATURES, methods: subs.METHODS.filter((m) => m !== 'card'), payMethods: await require('../platformpay/platformpay.service').methods(), payResult: ['paid', 'pending', 'failed'].includes(req.query.pay) ? req.query.pay : null, // eslint-disable-line global-require
- branchesNow, priceFor: branchPricing.priceFor,
+ branchesNow, priceFor: branchPricing.priceFor, branchesOn: await require('../clinic/branches.service').enabled(req.business), // eslint-disable-line global-require
     cycle: ['monthly', 'yearly'].includes(req.query.cycle) ? req.query.cycle : (st && st.sub.billing_cycle) || 'monthly',
     pageStyles: ['/css/admin.css', '/css/subscriptions.css'], pageScripts: ['/js/admin.js', '/js/subscriptions.js'],
     errors: {}, formError: null, old: {}, ...extra,

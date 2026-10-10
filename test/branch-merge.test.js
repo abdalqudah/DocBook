@@ -18,7 +18,7 @@ let app; let owner; let A; let B2; let C3;
 async function clinic(userId, name, extra = {}) {
   await knex.transaction((trx) => businesses.create(userId, { name, currency: 'JOD', timezone: 'Asia/Amman' }, trx));
   const { last_business_id: id } = await knex('users').where({ id: userId }).first('last_business_id');
-  await knex('businesses').where({ id }).update({ onboarding_completed_at: new Date(), ...extra });
+  await knex('businesses').where({ id }).update({ onboarding_completed_at: new Date(), branches_allowed: true, ...extra });
   return id;
 }
 

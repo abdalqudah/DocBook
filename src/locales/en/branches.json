@@ -63,6 +63,9 @@
     "patient_need_one": "Choose at least one branch.",
     "also_in": "Also works in",
     "also_in_help": "The doctor shows in these branches' calendars too; a visit is booked in the branch you work in. Pay stays with the main branch.",
-    "other_branch_doctor": "Another branch's doctor — add this branch on their profile"
+    "other_branch_doctor": "Another branch's doctor — add this branch on their profile",
+    "off_title": "Branches are not available",
+    "off_text": "To open a new branch, add a new clinic with its own subscription; switch between it and this clinic from the account menu.",
+    "off_add_clinic": "Add a new clinic"
   }
 }

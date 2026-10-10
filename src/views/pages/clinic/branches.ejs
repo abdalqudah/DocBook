@@ -3,9 +3,14 @@
    var addBtn = '<button class="btn btn-primary" type="button" data-open-dialog="branch-dialog" data-reset-form data-action="/app/clinic/branches" data-dialog-title="' + t('branches.add') + '">' + icon('plus', 'icon-sm') + t('branches.add') + '</button>'; %>
 <div class="page-head">
   <div><div class="breadcrumbs"><%= t('navx.sec_clinic') %></div><h1><%= t('branches.title') %></h1><p><%= t('branches.lead') %></p></div>
-  <div class="page-actions"><% if (room) { %><%- addBtn %><% } %></div>
+  <div class="page-actions"><% if (room && branchesOn) { %><%- addBtn %><% } %></div>
 </div>
-<% if (!room) { %>
+<% if (!branchesOn) { %>
+<div class="alert alert-info mb-4" data-branches-off><%- icon('info', 'icon-sm') %><div class="grow">
+  <div class="strong"><%= t('branches.off_title') %></div>
+  <div class="small"><%= t('branches.off_text') %></div>
+</div><a class="btn btn-primary btn-sm" href="/workspaces/new"><%- icon('plus', 'icon-sm') %><%= t('branches.off_add_clinic') %></a></div>
+<% } else if (!room) { %>
 <div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow">
   <div class="strong"><%= allowed <= 1 ? t('branches.locked_title') : t('branches.full_title', { n: allowed }) %></div>
   <div class="small"><%= allowed <= 1 ? t('branches.locked_text') : t('branches.full_text') %></div>

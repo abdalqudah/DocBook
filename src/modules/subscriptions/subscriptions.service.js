@@ -405,6 +405,8 @@ async function choosePlan(ctx, business, input) {
   if (!plan || !plan.is_active || !plan.is_public) throw E.validation({ plan_id: 'Choose a valid value.' });
   const today = ctx.today || todayOf(business);
   const sub = await ensure(business, today);
+  // no branches for this clinic (platform / medical centre): one branch — a new branch is a new clinic
+  if (!(await require('../clinic/branches.service').enabled(business))) d.branches = 1; // eslint-disable-line global-require
   const branches = checkBranches(plan, d.branches);
   const used = (await usage(business.id, today)).branches;
   if (branches < used) throw E.validation({ branches: 'The clinic already has more active branches. Turn some off first.' });

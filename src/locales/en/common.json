@@ -283,6 +283,7 @@
     "RESET_LINK_EMAILED": "This person also uses other clinics, so the reset link was e-mailed to them instead.",
     "NOT_PENDING": "This booking is no longer waiting for confirmation.",
     "PLAN_LIMIT_BRANCHES": "Your package does not include another branch. Choose more branches on the subscription page.",
+    "BRANCHES_OFF": "Branches are not available. To open a new branch, add a new clinic with its own subscription.",
     "BRANCH_HAS_DOCTORS": "Move this branch's doctors to another branch first.",
     "BRANCH_HAS_APPOINTMENTS": "This branch has upcoming appointments. Move or cancel them first.",
     "BRANCH_IN_USE": "This branch has doctors or appointments. Turn it off instead.",

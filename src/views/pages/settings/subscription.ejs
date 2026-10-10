@@ -160,12 +160,12 @@
           <div class="segmented" role="radiogroup" aria-label="<%= t('subscriptions.billing_cycle') %>">
             <% ['monthly', 'yearly'].forEach(function (cy) { %><label><input type="radio" name="billing_cycle" value="<%= cy %>"<%= (o.billing_cycle || cycle) === cy ? ' checked' : '' %>><span><%= t('subscriptions.cycle.' + cy) %></span></label><% }) %>
           </div>
-          <div class="field sub-branches">
+          <% if (typeof branchesOn === 'undefined' || branchesOn) { %><div class="field sub-branches">
             <label for="sub-branches"><%= t('subscriptions.branches') %></label>
             <input class="input" type="number" id="sub-branches" name="branches" min="1" max="50" step="1" inputmode="numeric" dir="ltr" value="<%= o.branches || branchesNow %>" data-sub-branches>
             <span class="help"><%= t('subscriptions.branches_help') %></span>
             <% if (errs.branches) { %><span class="field-error"><%= errs.branches %></span><% } %>
-          </div>
+          </div><% } else { %><input type="hidden" name="branches" value="1" data-sub-branches><% } %>
           <div class="choice-grid sub-plan-grid">
             <% var fits = function (pl) { return pl.maxBranches === null || branchesNow <= Math.max(1, pl.maxBranches); }; var firstFit = plans.filter(fits)[0] || plans[0];
                plans.forEach(function (pl, i) { var cur = plan && plan.id === pl.id; var checked = String(o.plan_id || '') === String(pl.id) || (!o.plan_id && (cur || (!plan && pl === firstFit))); %>

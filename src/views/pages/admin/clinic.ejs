@@ -97,6 +97,15 @@
 <% var _sz = function (n) { if (n === null) return t('admin.storage_unl'); return n >= 1073741824 ? fmt.number(Math.round(n / 107374182.4) / 10) + ' ' + t('media_lib.gb') : n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.max(n ? 1 : 0, Math.round(n / 1024))) + ' ' + t('media_lib.kb'); };
    var _mbs = function (mb) { return mb === null ? t('admin.storage_unl') : _sz(mb * 1048576); };
    var _pct = storage.quota ? Math.min(100, Math.round(storage.bytes * 100 / storage.quota)) : 0; %>
+<form class="panel mt-6" id="branches" method="post" action="/admin/clinics/<%= b.id %>/branches">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="branches_allowed" value="0">
+  <div class="panel-head"><div><h2><%- icon('building-2', 'icon-sm') %> <%= t('admin.branches_title') %></h2><p class="panel-sub"><%= t('admin.branches_sub') %></p></div>
+    <span class="badge <%= branchesOn ? 'badge-success' : 'badge-neutral' %>"><%= branchesOn ? t('admin.branches_on') : t('admin.branches_off') %></span></div>
+  <div class="panel-body stack">
+    <label class="check"><input type="checkbox" name="branches_allowed" value="1"<%= branchesAllowed ? ' checked' : '' %>><span><%= t('admin.branches_allow') %></span></label>
+    <div><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+  </div>
+</form>
 <form class="panel mt-6" id="storage" method="post" action="/admin/clinics/<%= b.id %>/storage" data-confirm="<%= t('admin.storage_confirm', { name: b.name }) %>" data-confirm-yes="<%= t('common.save') %>" data-confirm-tone="primary">
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="panel-head"><div><h2><%- icon('database', 'icon-sm') %> <%= t('admin.storage_title') %></h2><p class="panel-sub"><%= t('admin.storage_sub') %></p></div>

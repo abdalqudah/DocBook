@@ -176,7 +176,7 @@ router.get('/clinics/:id(\\d+)', wrap(async (req, res) => {
   let ownTexts = 0;
   try { ownTexts = Object.keys(JSON.parse((msgRow && msgRow.texts) || '{}')).length; } catch { ownTexts = 0; }
   const modules = await ops.state(full);
-  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts, mailboxes, moves, surgeries: { n: Number(surgeries && surgeries.n) || 0, sent: Number(surgeries && surgeries.sent) || 0 } }, storage: await storageOf(full) });
+  page(res, 'clinic', { title: b.name, b, counts: { patients, appts, online, doctors }, members, backups: backup.list(b.id), modules, usage: { sent, screens, chats, centres, centreSends, ownTexts, mailboxes, moves, surgeries: { n: Number(surgeries && surgeries.n) || 0, sent: Number(surgeries && surgeries.sent) || 0 } }, storage: await storageOf(full), branchesAllowed: Boolean((await knex('businesses').where({ id: full.id }).first('branches_allowed') || {}).branches_allowed), branchesOn: await require('../clinic/branches.service').enabled(full) }); // eslint-disable-line global-require
 }));
 
 // ---------------------------------------------------------------- one clinic's file storage (media, patient files, chat …)
@@ -205,6 +205,18 @@ router.post('/clinics/:id(\\d+)/storage', wrap(async (req, res) => {
     oldValues: { media_quota_mb: before ? before.media_quota_mb : null }, newValues: { media_quota_mb: mb } });
   flash(req, 'success', req.t('admin.storage_saved'));
   return res.redirect(`/admin/clinics/${full.id}#storage`);
+}));
+
+// Branches for this clinic (off on the platform: a new branch is a new clinic with its own subscription). Audited.
+router.post('/clinics/:id(\\d+)/branches', wrap(async (req, res) => {
+  const full = await businesses.get(Number(req.params.id));
+  if (!full) throw E.notFound('Clinic');
+  const on = [].concat(req.body.branches_allowed || []).pop() === '1';
+  await knex('businesses').where({ id: full.id }).update({ branches_allowed: on, updated_at: new Date() });
+  businesses.forget(full.id);
+  await audit.record(req.ctx, 'platform.clinic_branches', { entityType: 'clinic', entityId: full.id, newValues: { branches_allowed: on } });
+  flash(req, 'success', req.t('admin.branches_saved'));
+  res.redirect(`/admin/clinics/${full.id}#branches`);
 }));
 
 // The clinic's optional areas (the same switches as the clinic's Settings → Modules), recorded in the clinic's audit log.

@@ -3,7 +3,6 @@
 // hard-coded per plan — what a card lists comes from the plan's limits and entitlement keys.
 const subs = require('../subscriptions/subscriptions.service');
 const entitlements = require('../subscriptions/entitlements');
-const branchPricing = require('../subscriptions/branch-pricing');
 
 // Entitlements listed on a card (included ✓ / not included –), in this order. Labels: site.pricing.f.<key with _>.
 const LISTED = ['website.builder', 'reminders', 'online_payments', 'online_consultations', 'ai_assistant', 'specialty_modules',
@@ -15,10 +14,8 @@ const num = (v) => new Intl.NumberFormat('en', { minimumFractionDigits: 0, maxim
 
 function card(p) {
   const f = p.features || {};
-  const branches = entitlements.valueIn(f, 'clinic.max_branches');
   const m = Number(p.price_monthly) || 0;
   const y = Number(p.price_yearly) || 0;
-  const second = branches === null || branches > 1 ? branchPricing.priceFor(p, 2, 'monthly') - m : null;
   return {
     id: p.id,
     name: { ar: p.name, en: p.name_en || p.name },
@@ -30,7 +27,8 @@ function card(p) {
     free: m === 0 && y === 0,
     save: m > 0 && y > 0 && y < m * 12 ? Math.round((1 - y / (m * 12)) * 100) : 0,
     featured: Boolean(p.is_featured),
-    limits: { doctors: p.max_doctors, staff: p.max_staff, branches, secondBranch: second && second > 0 ? num(second) : null },
+    // on the platform a subscription is one clinic (one branch): another branch is another clinic with its own subscription
+    limits: { doctors: p.max_doctors, staff: p.max_staff, branches: 1, secondBranch: null },
     features: LISTED.map((key) => ({ key: key.replace(/\./g, '_'), on: entitlements.valueIn(f, key) === true })),
     all: Object.fromEntries([...LISTED, 'website.clinic_email', 'website.analytics', 'website.advanced_seo'].map((key) => [key.replace(/\./g, '_'), entitlements.valueIn(f, key) === true])),
     pages: entitlements.valueIn(f, 'website.max_pages'),

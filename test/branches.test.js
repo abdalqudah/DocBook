@@ -34,7 +34,7 @@ test.before(async () => {
   await knex('users').where({ id: userId }).update({ email_verified_at: new Date() });
   const { last_business_id: businessId } = await knex('users').where({ id: userId }).first('last_business_id');
   slug = `br-${tag}`.slice(0, 40);
-  await knex('businesses').where({ id: businessId }).update({ onboarding_completed_at: new Date(), slug, booking_enabled: true, city: 'Amman', address: 'Main street 1' });
+  await knex('businesses').where({ id: businessId }).update({ onboarding_completed_at: new Date(), branches_allowed: true, slug, booking_enabled: true, city: 'Amman', address: 'Main street 1' });
   businesses.forget(businessId);
   business = await businesses.get(businessId);
   ctx = { businessId, userId, roleKey: 'owner', permissions: await rbac.getUserPermissions(businessId, userId), locale: 'en', timezone: 'Asia/Amman', currency: 'JOD', ip: '127.0.0.1' };

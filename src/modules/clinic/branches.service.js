@@ -103,8 +103,24 @@ function scopeDoctors(q, ctx, t = 'doctors') {
   });
 }
 
+/**
+ * May this clinic run branches at all? A single-clinic installation: yes (its package decides how many). On the
+ * platform and in a medical centre: no — a new branch is a new clinic with its own subscription — unless the platform
+ * admin allowed it for this clinic, or the clinic already runs branches (kept).
+ */
+async function enabled(business) {
+  if (!business) return false;
+  const edition = require('../../config/edition'); // eslint-disable-line global-require
+  if (edition.center || business.center_id || business.kind === 'center_admin') return false;
+  if (edition.single) return true;
+  const row = await knex('businesses').where({ id: business.id }).first('branches_allowed').catch(() => null);
+  if (row && row.branches_allowed) return true;
+  return (await list(business.id)).length > 0;
+}
+
 /** Refuses one more active branch beyond the package (the main branch counts as one). */
 async function ensureRoom(business) {
+  if (!(await enabled(business))) throw new AppError('BRANCHES_OFF', 'Branches are not available: add a new clinic with its own subscription.', 409);
   const allowed = await require('../subscriptions/subscriptions.service').branchAllowance(business); // eslint-disable-line global-require
   if (allowed === null) return;
   const active = (await list(business.id, { activeOnly: true })).length + 1;
@@ -261,4 +277,4 @@ function scopeKey(q, ctx, col) {
   return String(v) === 'main' ? q.where((w) => w.whereNull(col).orWhere(col, 'main')) : q.where(col, String(v));
 }
 
-module.exports = { ownKey, scopeKey, scope, scopeDoctors, doctorExtra, extraByDoctor, setDoctorExtra, payDoctorIds, scopeMembers, scopeByVisit, doctorIds, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };
+module.exports = { enabled, ownKey, scopeKey, scope, scopeDoctors, doctorExtra, extraByDoctor, setDoctorExtra, payDoctorIds, scopeMembers, scopeByVisit, doctorIds, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };

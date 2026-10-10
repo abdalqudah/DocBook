@@ -56,8 +56,9 @@ test('the admin marks a plan as most popular; the home page lists public plans w
   assert.doesNotMatch(home.text, new RegExp(`Hidden ${tag}`), 'hidden plans stay off the page');
   assert.match(home.text, /lp-plan is-featured/);
   assert.match(home.text, /حتى 4 أطباء/);
-  assert.match(home.text, /حتى 3 فروع/);
-  assert.match(home.text, /\+<bdi dir="ltr">12 JOD<\/bdi>/, 'second-branch price from the plan');
+  // on the platform a subscription is one clinic: another branch is another clinic with its own subscription
+  assert.doesNotMatch(home.text, /حتى 3 فروع/);
+  assert.doesNotMatch(home.text, /\+<bdi dir="ltr">12 JOD<\/bdi>/);
 
   const card = pricing.card(await require('../src/modules/subscriptions/subscriptions.service').getPlan(featured.id)); // eslint-disable-line global-require
   assert.equal(card.save, 17);
