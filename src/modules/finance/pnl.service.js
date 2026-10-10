@@ -23,30 +23,34 @@ const ym = (v) => (v instanceof Date ? v.toISOString().slice(0, 7) : String(v).s
  * Month-by-month figures for fromMonth..toMonth: { months: { 'YYYY-MM': { revenue, discounts, invoices, online,
  * refunds, byCat: { key: amount }, opex, doctorPayroll, staffSalaries, supplies } } }.
  */
-async function monthly(businessId, timezone, fromMonth, toMonth) {
+async function monthly(businessId, timezone, fromMonth, toMonth, ctx = null) {
+  // the branch the member works in: its receipts (by visit), expenses, doctors' pay and employees' salaries
+  const br = require('../clinic/branches.service'); // eslint-disable-line global-require
+  const bctx = ctx && ctx.workBranch ? { ...ctx, businessId } : null;
+  const byVisit = (q, col) => (bctx ? br.scopeByVisit(q, bctx, col) : q);
   const from = `${fromMonth}-01`;
   const to = m.monthEnd(toMonth);
   const localMonth = (col) => knex.raw(`DATE_FORMAT(${lib.localDateSql(col, timezone).toString()}, '%Y-%m')`);
   const [inv, online, refunds, exp, docPay, staffPay, supplies, methods] = await Promise.all([
-    lib.whereLocalDates(knex('invoices as i').where('i.business_id', businessId), 'i.created_at', from, to, timezone)
+    lib.whereLocalDates(byVisit(knex('invoices as i').where('i.business_id', businessId), 'i.appointment_id'), 'i.created_at', from, to, timezone)
       .groupBy('mon').select(localMonth('i.created_at').wrap('', ' as mon'))
       .sum({ v: 'i.amount' }).sum({ disc: 'i.discount_amount' }).count({ n: '*' }),
     lib.whereLocalDates(knex('invoices as i').join('payments as p', function j() { this.on('p.invoice_id', 'i.id').andOn('p.business_id', 'i.business_id'); })
-      .where('i.business_id', businessId).where('p.status', 'paid'), 'i.created_at', from, to, timezone)
+      .where('i.business_id', businessId).where('p.status', 'paid').modify((q) => byVisit(q, 'i.appointment_id')), 'i.created_at', from, to, timezone)
       .groupBy('mon').select(localMonth('i.created_at').wrap('', ' as mon')).sum({ v: 'i.amount' }),
-    lib.whereLocalDates(knex('payments as p').where('p.business_id', businessId).where('p.status', 'refunded'), 'p.refunded_at', from, to, timezone)
+    lib.whereLocalDates(knex('payments as p').where('p.business_id', businessId).where('p.status', 'refunded').modify((q) => byVisit(q, 'p.appointment_id')), 'p.refunded_at', from, to, timezone)
       .groupBy('mon').select(localMonth('p.refunded_at').wrap('', ' as mon')).sum({ v: 'p.refunded_amount' }),
-    knex('expenses').where({ business_id: businessId }).whereBetween('date', [from, to])
+    (bctx ? br.scope(knex('expenses').where({ business_id: businessId }), bctx, 'branch_id') : knex('expenses').where({ business_id: businessId })).whereBetween('date', [from, to])
       .groupBy('mon', 'category').select(knex.raw("DATE_FORMAT(date, '%Y-%m') as mon"), 'category').sum({ v: 'amount' }),
-    knex('payroll_payments').where({ business_id: businessId }).whereBetween('period', [fromMonth, toMonth])
+    knex('payroll_payments').where({ business_id: businessId }).modify((q) => { if (bctx) q.whereIn('doctor_id', br.doctorIds(bctx)); }).whereBetween('period', [fromMonth, toMonth])
       .groupBy('period').select('period').sum({ net: 'net_pay' }).sum({ adv: 'advances' }),
-    staff.paidByMonth(businessId, fromMonth, toMonth),
+    staff.paidByMonth(businessId, fromMonth, toMonth, bctx),
     // Supplies received (memo): every delivery in the month it arrived — partial ones and those of later-cancelled orders too.
     lib.whereLocalDates(knex('purchase_receipts as r').where({ 'r.business_id': businessId }), 'r.received_at', from, to, timezone)
       .groupBy('mon').select(localMonth('r.received_at').wrap('', ' as mon'))
       .select(knex.raw('COALESCE(SUM(r.quantity * COALESCE(r.unit_cost, 0)), 0) as v')),
     // Revenue by payment method from the payment parts (a cash + card invoice adds to both; never "mixed").
-    payParts.totalsByMethodGrouped(lib.whereLocalDates(knex('invoices as i').where('i.business_id', businessId), 'i.created_at', from, to, timezone),
+    payParts.totalsByMethodGrouped(lib.whereLocalDates(byVisit(knex('invoices as i').where('i.business_id', businessId), 'i.appointment_id'), 'i.created_at', from, to, timezone),
       'i.id', businessId, localMonth),
   ]);
   const months = {};
@@ -92,7 +96,7 @@ async function build(ctx, period) {
   const prev = m.resolvePeriod(period.prevKind, period.prevKey, `${period.fromMonth}-01`);
   const trendFrom = m.addMonths(period.toMonth, -11);
   const earliest = [prev.fromMonth, trendFrom].sort()[0];
-  const months = await monthly(ctx.businessId, ctx.timezone, earliest, period.toMonth);
+  const months = await monthly(ctx.businessId, ctx.timezone, earliest, period.toMonth, ctx);
   const cur = toStatement(sum(months, period.months));
   const before = toStatement(sum(months, prev.months));
   const trend = m.monthsBetween(trendFrom, period.toMonth).map((k) => {
@@ -104,7 +108,7 @@ async function build(ctx, period) {
 
 /** Net profit of one month (used by partner distributions). */
 async function monthNet(ctx, month) {
-  const months = await monthly(ctx.businessId, ctx.timezone, month, month);
+  const months = await monthly(ctx.businessId, ctx.timezone, month, month, ctx);
   return toStatement(sum(months, [month]));
 }
 

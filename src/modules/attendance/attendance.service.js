@@ -316,9 +316,9 @@ async function toggle(ctx, { method = 'button', expect, offNetwork = false, now 
 
 // ---------------------------------------------------------------- reading
 /** Active and former members of the clinic (for names, roles and filters). */
-async function staff(businessId) {
+async function staff(businessId, ctx = null) {
   return knex('memberships as m').join('users as u', 'u.id', 'm.user_id').join('roles as r', 'r.id', 'm.role_id')
-    .where('m.business_id', businessId)
+    .where('m.business_id', businessId).modify((q) => { if (ctx) require('../clinic/branches.service').scopeMembers(q, ctx); }) // eslint-disable-line global-require -- the branch's staff
     .select('m.user_id', 'm.status', 'm.job_title', 'u.name', 'u.email', 'r.id as role_id', 'r.key as role_key', 'r.name as role_name', 'r.is_system')
     .orderBy('u.name');
 }
@@ -330,7 +330,7 @@ async function records(ctx, { from, to, userId, roleId } = {}) {
     .leftJoin('memberships as m', function onM() { this.on('m.user_id', 'a.user_id').andOn('m.business_id', 'a.business_id'); })
     .leftJoin('roles as r', 'r.id', 'm.role_id')
     .leftJoin('users as c', 'c.id', 'a.corrected_by')
-    .where('a.business_id', ctx.businessId)
+    .where('a.business_id', ctx.businessId).modify((q) => require('../clinic/branches.service').scopeMembers(q, ctx)) // eslint-disable-line global-require
     .select('a.*', 'u.name as user_name', 'r.key as role_key', 'r.name as role_name', 'r.is_system', 'c.name as corrected_by_name')
     .orderBy('a.work_date', 'desc').orderBy('a.clock_in', 'desc');
   if (from) q.where('a.work_date', '>=', from);
@@ -401,7 +401,7 @@ function people(allStaff, rows, { userId, roleId } = {}) {
 /** Today's (or one day's) board: every staff member with status, first in, last out, hours, late minutes. */
 async function board(ctx, date, filters = {}) {
   const tz = ctx.timezone || 'UTC';
-  const [rows, allStaff, { planFor, sinceFor, settings: set }] = await Promise.all([records(ctx, { from: date, to: date, ...filters }), staff(ctx.businessId), planner(ctx.businessId, date, date)]);
+  const [rows, allStaff, { planFor, sinceFor, settings: set }] = await Promise.all([records(ctx, { from: date, to: date, ...filters }), staff(ctx.businessId, ctx), planner(ctx.businessId, date, date)]);
   const now = clinicNow(tz);
   const map = byUserDate(rows);
   const list = people(allStaff, rows, filters).map((p) => {
@@ -455,7 +455,7 @@ async function timesheet(ctx, userId, month) {
 async function monthReport(ctx, month, filters = {}) {
   const [from, to] = monthBounds(month);
   const tz = ctx.timezone || 'UTC';
-  const [rows, allStaff, { planFor, sinceFor, settings: set }] = await Promise.all([records(ctx, { from, to, ...filters }), staff(ctx.businessId), planner(ctx.businessId, from, to)]);
+  const [rows, allStaff, { planFor, sinceFor, settings: set }] = await Promise.all([records(ctx, { from, to, ...filters }), staff(ctx.businessId, ctx), planner(ctx.businessId, from, to)]);
   const now = clinicNow(tz);
   const map = byUserDate(rows);
   const dates = listDates(from, to < now.date ? to : now.date);

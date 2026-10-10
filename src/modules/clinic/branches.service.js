@@ -184,6 +184,24 @@ async function setPatientBranches(ctx, patientId, keys) {
   return want;
 }
 
+/** The branch's visits (a subquery of appointment ids). */
+const visitIds = (ctx) => { const v = String(ctx.workBranch); return knex('appointments').select('id').where('business_id', ctx.businessId).modify((x) => (v === 'main' ? x.whereNull('branch_id') : x.where('branch_id', Number(v)))); };
+/** Receipts / papers of the branch: by their visit's branch (one without a visit belongs to the main branch). */
+function scopeByVisit(q, ctx, col = 'i.appointment_id') {
+  const v = ctx && ctx.workBranch;
+  if (!v) return q;
+  return String(v) === 'main' ? q.where((w) => w.whereNull(col).orWhereIn(col, visitIds(ctx))) : q.whereIn(col, visitIds(ctx));
+}
+/** The branch's doctors (a subquery of doctor ids). */
+const doctorIds = (ctx) => scope(knex('doctors').select('id').where('business_id', ctx.businessId), ctx, 'branch_id');
+
+/** Staff of the branch: members tied to it (Team → branch), and doctors' logins whose doctor works there. */
+function scopeMembers(q, ctx, m = 'm') {
+  const v = ctx && ctx.workBranch;
+  if (!v) return q;
+  return q.where((w) => w.where(`${m}.work_branch`, String(v)).orWhere((x) => x.where(`${m}.work_branch`, '').whereIn(`${m}.doctor_id`, doctorIds(ctx))));
+}
+
 /** A query narrowed to the branch the member works in (account menu): 'main' = no branch, an id = that branch. */
 function scope(q, ctx, col = 'a.branch_id') {
   const v = ctx && ctx.workBranch;
@@ -192,4 +210,4 @@ function scope(q, ctx, col = 'a.branch_id') {
   return q;
 }
 
-module.exports = { scope, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };
+module.exports = { scope, scopeMembers, scopeByVisit, doctorIds, keyOf, attachPatient, scopePatients, patientBranches, setPatientBranches, setMainShort, validScope, list, multi, nameOf, options, labelOf, check, ofDoctor, ensureRoom, get, save, usage, setActive, remove, forget };

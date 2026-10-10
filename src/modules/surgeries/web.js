@@ -70,6 +70,7 @@ router.get('/patient-lookup', wrap(async (req, res) => {
     .andWhere((w) => { lib.nameMatch(w, 'patients.full_name', q); w.orWhere('patients.phone', 'like', like); if (digits.length >= 3) w.orWhere('patients.phone', 'like', `%${digits}%`); })
     .orderBy('patients.full_name').limit(8).select('patients.id', 'patients.full_name', 'patients.phone');
   lib.scopePatientsToDoctor(qb, req.ctx.ownDoctorId);
+  require('../clinic/branches.service').scopePatients(qb, req.ctx); // eslint-disable-line global-require
   res.set('Cache-Control', 'no-store');
   return res.json({ data: (await qb).map((p) => ({ id: p.id, name: p.full_name, phone: p.phone || '' })) });
 }));

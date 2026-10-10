@@ -31,7 +31,7 @@ async function provider(ctx, id) {
 /** Statement lines and totals of one company for clinic dates from..to (inclusive). */
 async function build(ctx, providerId, from, to) {
   const p = await provider(ctx, providerId);
-  const q = lib.whereLocalDates(knex('invoices as i').where('i.business_id', ctx.businessId), 'i.created_at', from, to, ctx.timezone)
+  const q = lib.whereLocalDates(require('../clinic/branches.service').scopeByVisit(knex('invoices as i').where('i.business_id', ctx.businessId), ctx, 'i.appointment_id'), 'i.created_at', from, to, ctx.timezone) // eslint-disable-line global-require
     .where((w) => w.where('i.insurance_provider_id', p.id).orWhere((x) => x.whereNull('i.insurance_provider_id').where('i.insurance_provider_name', p.name)))
     .leftJoin('patients as pt', function j() { this.on('pt.id', 'i.patient_id').andOn('pt.business_id', 'i.business_id'); })
     .orderBy('i.created_at').select('i.*', 'pt.insurance_number', 'pt.date_of_birth', 'pt.national_id');

@@ -215,3 +215,27 @@ test('expenses and salaries per branch: recorded in the branch, its drawer and i
   assert.equal(r.status, 200);
   assert.match(r.text, /320/);
 });
+
+test('everything per branch: profit & loss, invoices, attendance staff', async () => {
+  const pnl = require('../src/modules/finance/pnl.service'); // eslint-disable-line global-require
+  const att = require('../src/modules/attendance/attendance.service'); // eslint-disable-line global-require
+  const rbac = require('../src/modules/rbac/rbac.service'); // eslint-disable-line global-require
+  const u = (await knex('users').where({ email: mail }).first('id')).id;
+  const base = { businessId: b, userId: u, permissions: await rbac.getUserPermissions(b, u), currency: 'JOD', timezone: 'Asia/Amman', today: scheduling.clinicNow('Asia/Amman').date };
+  const month = base.today.slice(0, 7);
+  const net = async (wb) => (await pnl.monthNet({ ...base, workBranch: wb }, month));
+  const [all, ab, main] = [await net(''), await net(String(branch)), await net('main')];
+  assert.equal(ab.revenue, 25); assert.equal(main.revenue, 10); assert.equal(all.revenue, 35);
+  assert.equal(ab.opex, 320, 'the branch\'s own expenses'); assert.equal(main.opex, 500);
+  // invoices list
+  const o = app.agent(); await o.login(mail);
+  await o.submit('/app/appointments', '/workspaces/branch', { branch: 'main' });
+  let r = await o.get('/app/billing?lang=en');
+  assert.match(r.text, /Main Patient/); assert.doesNotMatch(r.text, /Abdali Patient/);
+  r = await o.get('/app/finance?lang=en');
+  assert.ok([200, 302].includes(r.status));
+  // attendance: the branch's staff (Reem Desk is Abdali's)
+  const staffAb = await att.staff(b, { ...base, workBranch: String(branch) });
+  assert.ok(staffAb.some((s) => s.name === 'Reem Desk'));
+  assert.ok(!(await att.staff(b, { ...base, workBranch: 'main' })).some((s) => s.name === 'Reem Desk'));
+});

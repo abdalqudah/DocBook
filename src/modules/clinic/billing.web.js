@@ -10,6 +10,7 @@ const appts = require('./appointments.service');
 const lib = require('./records.lib');
 const payParts = require('./payment-parts');
 const invoiceDoc = require('./invoice-doc');
+const branchesSvc = require('./branches.service');
 
 const router = express.Router();
 router.use(can('billing.view'));
@@ -38,12 +39,12 @@ function invoiceQuery(ctx, query) {
   const from = lib.isIso(query.from) ? query.from : null;
   const to = lib.isIso(query.to) ? query.to : null;
   if (from || to) lib.whereLocalDates(q, 'invoices.created_at', from || '2000-01-01', to || '2999-12-31', ctx.timezone);
-  return q;
+  return branchesSvc.scopeByVisit(q, ctx, 'invoices.appointment_id'); // the branch the member works in
 }
 
 async function filterOptions(ctx) {
   const [doctors, insurance] = await Promise.all([
-    knex('doctors').where({ business_id: ctx.businessId }).orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en'),
+    branchesSvc.scope(knex('doctors').where({ business_id: ctx.businessId }), ctx, 'branch_id').orderBy([{ column: 'is_active', order: 'desc' }, { column: 'sort_order' }, { column: 'full_name' }]).select('id', 'full_name', 'full_name_en'),
     knex('insurance_providers').where({ business_id: ctx.businessId }).orderBy([{ column: 'sort_order' }, { column: 'name' }]).select('id', 'name'),
   ]);
   return { doctors, insurance };
@@ -55,7 +56,7 @@ function unpaidQuery(ctx) {
     .whereNotIn('a.status', ['cancelled', 'no_show']).where('a.appointment_date', '<=', ctx.today)
     .andWhere((w) => w.where('a.status', 'completed').orWhere('a.checked_in', true));
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
-  return q;
+  return branchesSvc.scope(q, ctx);
 }
 
 router.get('/', wrap(async (req, res) => {
@@ -161,6 +162,7 @@ async function loadInvoice(req) {
     .where({ 'i.business_id': req.ctx.businessId, 'i.id': Number(req.params.id) })
     .first('i.*', 'u.name as cashier', 'a.appointment_date', 'a.appointment_time', 'a.status as appointment_status', 'a.appointment_type');
   if (!inv || (req.ctx.ownDoctorId && inv.doctor_id !== req.ctx.ownDoctorId)) throw E.notFound('Invoice');
+  if (req.ctx.workBranch && !(await branchesSvc.scopeByVisit(knex('invoices as i').where('i.id', inv.id), req.ctx, 'i.appointment_id').first('i.id'))) throw E.notFound('Invoice'); // another branch's
   return inv;
 }
 

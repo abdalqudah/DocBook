@@ -68,6 +68,7 @@ const base = (ctx) => {
     .where('s.business_id', ctx.businessId)
     .select('s.*', 'd.full_name as doctor_name', 'd.full_name_en as doctor_name_en', 'h.email as hospital_email', 'h.phone as hospital_phone');
   if (ctx.ownDoctorId) q.where('s.doctor_id', ctx.ownDoctorId);
+  if (ctx.workBranch) q.whereIn('s.doctor_id', require('../clinic/branches.service').doctorIds(ctx)); // eslint-disable-line global-require -- the branch's doctors
   return q;
 };
 

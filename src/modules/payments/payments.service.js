@@ -434,6 +434,7 @@ async function runDue(now = Date.now()) {
 async function list(ctx, { status, page = 1 } = {}) {
   const q = knex('payments as p').join('appointments as a', 'a.id', 'p.appointment_id').where('p.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('a.doctor_id', ctx.ownDoctorId);
+  require('../clinic/branches.service').scope(q, ctx); // eslint-disable-line global-require -- the branch the member works in
   if (STATUSES.includes(status)) q.where('p.status', status);
   if (status === 'attention') q.whereIn('p.note', ['duplicate', 'late', 'mismatch']).whereNot('p.status', 'refunded');
   const per = 50;

@@ -22,7 +22,7 @@ const apptBase = (ctx) => {
 const invBase = (ctx) => {
   const q = knex('invoices as i').where('i.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('i.doctor_id', ctx.ownDoctorId);
-  return q;
+  return require('./branches.service').scopeByVisit(q, ctx, 'i.appointment_id'); // eslint-disable-line global-require
 };
 const sumOf = async (q) => { const [r] = await q.select(knex.raw('COALESCE(SUM(i.amount),0) as v'), knex.raw('COUNT(*) as n')); return { value: Number(r.v) || 0, count: Number(r.n) || 0 }; };
 
@@ -200,7 +200,7 @@ async function thisMonth(ctx) {
 
 async function expensesThisMonth(ctx) {
   const month = ctx.today.slice(0, 7);
-  const r = await knex('expenses').where({ business_id: ctx.businessId }).whereBetween('date', [`${month}-01`, ctx.today]).first(knex.raw('COALESCE(SUM(amount),0) as v'), knex.raw('COUNT(*) as n'));
+  const r = await require('./branches.service').scope(knex('expenses').where({ business_id: ctx.businessId }), ctx, 'branch_id').whereBetween('date', [`${month}-01`, ctx.today]).first(knex.raw('COALESCE(SUM(amount),0) as v'), knex.raw('COUNT(*) as n'));
   return { total: num(r.v), count: num(r.n) };
 }
 

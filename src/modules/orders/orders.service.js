@@ -203,6 +203,7 @@ const referralsForPatient = (ctx, patientId) => listReferrals(ctx, { 'r.patient_
 async function patientOf(ctx, patientId) {
   const q = knex('patients').where({ 'patients.business_id': ctx.businessId, 'patients.id': patientId }).first('patients.id', 'patients.full_name');
   lib.scopePatientsToDoctor(q, ctx.ownDoctorId);
+  require('../clinic/branches.service').scopePatients(q, ctx); // eslint-disable-line global-require
   const p = await q;
   if (!p) throw E.notFound('Patient');
   return p;

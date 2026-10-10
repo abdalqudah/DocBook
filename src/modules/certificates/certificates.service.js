@@ -133,7 +133,7 @@ async function nextSerial(trx, businessId, type, year) {
 function scoped(ctx) {
   const q = knex('certificates as c').where('c.business_id', ctx.businessId);
   if (ctx.ownDoctorId) q.where('c.doctor_id', ctx.ownDoctorId); // a doctor login sees only their own documents
-  return q;
+  return require('../clinic/branches.service').scopeByVisit(q, ctx, 'c.appointment_id'); // eslint-disable-line global-require -- the branch's (by visit)
 }
 
 function parse(row) {

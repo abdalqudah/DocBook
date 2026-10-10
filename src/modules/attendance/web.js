@@ -49,7 +49,7 @@ async function render(req, res, extra = {}) {
   if (view === 'team') view = req.query.mode === 'month' ? 'month' : 'today'; // older links
   if (!canView || !['me', 'today', 'month'].includes(view)) view = canView ? 'today' : 'me';
   const month = isMonth(req.query.month) && req.query.month <= today.slice(0, 7) ? req.query.month : today.slice(0, 7);
-  const [settings, open, allStaff] = await Promise.all([svc.settings(ctx.businessId), svc.openShift(ctx.businessId, ctx.userId), svc.staff(ctx.businessId)]);
+  const [settings, open, allStaff] = await Promise.all([svc.settings(ctx.businessId), svc.openShift(ctx.businessId, ctx.userId), svc.staff(ctx.businessId, ctx)]);
   const roles = [];
   allStaff.forEach((s) => { if (!roles.some((r) => r.role_id === s.role_id)) roles.push({ role_id: s.role_id, label: roleLabel(req, s) }); });
   const userId = idOf(req.query.user);
@@ -97,7 +97,7 @@ async function renderStaff(req, res, extra = {}) {
   Object.assign(req.query, { view: 'month', user: String(uid), month });
   res.page('pages/attendance/staff', {
     title: `${req.t('attendance.title')} · ${sheet.person.name}`, sheet, month, months: recentMonths(today), roleLabel: (r) => roleLabel(req, r), hm,
-    staffOptions: (await svc.staff(req.ctx.businessId)).filter((s) => s.status === 'active'), pageStyles: STYLES, pageScripts: SCRIPTS, printable: true, ...extra,
+    staffOptions: (await svc.staff(req.ctx.businessId, req.ctx)).filter((s) => s.status === 'active'), pageStyles: STYLES, pageScripts: SCRIPTS, printable: true, ...extra,
   });
 }
 router.get('/staff/:id(\\d+)', wrap((req, res) => renderStaff(req, res)));
@@ -169,7 +169,7 @@ router.post('/records/:id(\\d+)/delete', can('attendance.manage'), wrap(async (r
 // ---------------------------------------------------------------- working hours and rules (attendance.manage)
 async function renderSettings(req, res, extra = {}) {
   const b = req.ctx.businessId;
-  const [settings, own, allStaff, { planFor }] = await Promise.all([svc.settings(b), svc.schedules(b), svc.staff(b), svc.planner(b, req.ctx.today, req.ctx.today)]);
+  const [settings, own, allStaff, { planFor }] = await Promise.all([svc.settings(b), svc.schedules(b), svc.staff(b, req.ctx), svc.planner(b, req.ctx.today, req.ctx.today)]);
   const staff = allStaff.filter((s) => s.status === 'active').map((s) => {
     const week = {};
     // This week's plan per day, to show where each person's hours come from.
