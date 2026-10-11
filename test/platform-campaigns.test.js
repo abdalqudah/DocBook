@@ -102,6 +102,12 @@ test('a campaign: recipients by filter and pasted, a test e-mail, then sent with
   assert.deepEqual(add, { added: 1, skipped: 1 });
 });
 
+test('{name} without a name: the clinic\'s name, then "Doctor"', () => {
+  assert.equal(campaigns.fill('أهلاً {name}', { name: '', organization: 'عيادة النور' }), 'أهلاً عيادة النور');
+  assert.equal(campaigns.fill('أهلاً {name}', { email: 'a@b.co' }), 'أهلاً دكتور');
+  assert.equal(campaigns.fill('Hi {name}, {organization}', { name: 'Sara' }, 'en'), 'Hi Sara, Sara');
+});
+
 test('the platform limit covers every campaign together', async () => {
   await campaigns.saveSettings({ userId: null }, { per_hour: '1', per_day: '1' });
   const ids = [];

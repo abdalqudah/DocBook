@@ -214,13 +214,17 @@ async function remove(ctx, id) {
   await audit.record(actx(ctx), 'crm.campaign_deleted', { entityType: 'mail_campaign', entityId: c.id, oldValues: { name: c.name, sent: c.n.sent } });
 }
 
-const fill = (text, r) => String(text || '').replace(/\{(name|organization|email)\}/g, (m, k) => (r[k] || '').trim());
+// {name} without a name falls back to the clinic's name, then to "Doctor"; {organization} to the name.
+const fill = (text, r, locale = 'ar') => {
+  const v = { name: (r.name || '').trim() || (r.organization || '').trim() || translator(locale)('camp.name_fallback'), organization: (r.organization || '').trim() || (r.name || '').trim(), email: r.email || '' };
+  return String(text || '').replace(/\{(name|organization|email)\}/g, (m, k) => v[k]);
+};
 function message(c, r) {
   const mailer = require('../../core/mailer'); // eslint-disable-line global-require
   const t = translator(c.locale);
   const href = `${root()}/unsubscribe/${r.token}`;
-  const subject = fill(c.subject, r).replace(/\s+/g, ' ').trim();
-  const html = mailer.layout({ locale: c.locale, title: subject, body: fill(c.body, r), cta: c.cta_url ? c.cta_label : null, href: c.cta_url,
+  const subject = fill(c.subject, r, c.locale).replace(/\s+/g, ' ').trim();
+  const html = mailer.layout({ locale: c.locale, title: subject, body: fill(c.body, r, c.locale), cta: c.cta_url ? c.cta_label : null, href: c.cta_url,
     foot: { text: t('camp.foot_text', { brand: brand.name }), label: t('camp.unsubscribe'), href } });
   return { to: r.email, subject, html, kind: 'campaign', headers: { 'List-Unsubscribe': `<${href}>` } };
 }
@@ -273,7 +277,7 @@ async function tick(now = new Date()) {
           let ok = false; let error = null;
           try { ok = await mailer.send(message(c, r)); if (!ok) error = 'email_not_configured'; } catch (e) { error = String(e.message || e).slice(0, 255); } // eslint-disable-line no-await-in-loop
           await knex('mail_campaign_recipients').where({ id: r.id }).update({ status: ok ? 'sent' : 'failed', error, sent_at: now }); // eslint-disable-line no-await-in-loop
-          if (r.contact_id) await knex('crm_activities').insert({ contact_id: r.contact_id, kind: 'email', body: `${fill(c.subject, r)}\n\n(${c.name})`.slice(0, 8000), status: ok ? 'sent' : 'failed', user_id: c.created_by || null }).catch(() => {}); // eslint-disable-line no-await-in-loop
+          if (r.contact_id) await knex('crm_activities').insert({ contact_id: r.contact_id, kind: 'email', body: `${fill(c.subject, r, c.locale)}\n\n(${c.name})`.slice(0, 8000), status: ok ? 'sent' : 'failed', user_id: c.created_by || null }).catch(() => {}); // eslint-disable-line no-await-in-loop
           gHour -= 1; gDay -= 1;
           if (ok) sent += 1; else failed += 1;
         }
@@ -307,5 +311,5 @@ async function unsubscribe(token) {
 
 module.exports = {
   KEY, STATUSES, DEFAULTS, MAX_RECIPIENTS, settings, saveSettings, list, get, editable, create, update, audience, pasted, addRecipients, clearQueued,
-  setStatus, remove, testSend, tick, byToken, unsubscribe,
+  setStatus, remove, testSend, tick, byToken, unsubscribe, fill,
 };

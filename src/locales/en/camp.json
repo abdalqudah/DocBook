@@ -24,7 +24,7 @@
     "start_at_help": "Leave empty to start as soon as you press Start sending.",
     "subject": "Subject",
     "body": "Message",
-    "body_help": "Write {name} for the customer's name and {organization} for the clinic's. An unsubscribe link is added at the end of every e-mail.",
+    "body_help": "Press Customer's name to put each customer's name in their e-mail, and Clinic's name for their clinic. Anyone without a name gets \"Doctor\". An unsubscribe link is added at the end of every e-mail.",
     "cta_label": "Button text (optional)",
     "cta_label_ph": "Try it free for 14 days",
     "cta_url": "Button link",
@@ -100,6 +100,10 @@
     "unsub_title": "Unsubscribe",
     "unsub_ask": "Stop promotional e-mails to {email}?",
     "unsub_btn": "Yes, stop them",
-    "unsub_done": "Done. No more promotional e-mails will go to {email}."
+    "unsub_done": "Done. No more promotional e-mails will go to {email}.",
+    "insert": "Add:",
+    "insert_name": "Customer's name",
+    "insert_org": "Clinic's name",
+    "name_fallback": "Doctor"
   }
 }

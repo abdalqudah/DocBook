@@ -65,6 +65,16 @@ function convert(amount, rate) {
   return r - (r % 10) + 9;
 }
 
+/**
+ * The yearly price in the page's currency: the same number of months as the plan's own yearly price (350 a year for
+ * 35 a month → 10 × 199 = 1990), so the saving reads the same in every country; converted on its own otherwise.
+ */
+function yearlyOf(plan, monthly, rate) {
+  const months = Number(plan.price_monthly) > 0 ? Number(plan.price_yearly) / Number(plan.price_monthly) : 0;
+  if (!monthly || !months || Number(rate) === 1) return convert(plan.price_yearly, rate);
+  return Number((monthly * months).toFixed(1));
+}
+
 /** The page for a country code (lowercase in the URL) or null when it is not switched on. */
 async function page(cc) {
   const code = String(cc || '').toUpperCase();
@@ -74,7 +84,7 @@ async function page(cc) {
   const subs = require('../subscriptions/subscriptions.service'); // eslint-disable-line global-require
   const pricing = require('../site/pricing'); // eslint-disable-line global-require
   const [plans, st] = await Promise.all([subs.listPlans({ activeOnly: true, publicOnly: true }), subs.settings()]);
-  const local = plans.map((pl) => pricing.card({ ...pl, currency: p.currency, price_monthly: convert(pl.price_monthly, p.rate), price_yearly: convert(pl.price_yearly, p.rate) }));
+  const local = plans.map((pl) => { const m = convert(pl.price_monthly, p.rate); return pricing.card({ ...pl, currency: p.currency, price_monthly: m, price_yearly: yearlyOf(pl, m, p.rate) }); });
   const [clinics, warehouses] = await Promise.all([
     knex('businesses').where({ country: code, status: 'active' }).whereNot('kind', 'center_admin').count({ n: '*' }).then((r) => Number(r[0].n)),
     knex('vendors').where({ country: code, status: 'active' }).count({ n: '*' }).then((r) => Number(r[0].n)),
@@ -84,4 +94,4 @@ async function page(cc) {
 }
 const enabledCodes = async () => Object.entries(await all()).filter(([, v]) => v.on).map(([cc]) => cc);
 
-module.exports = { KEY, CODES, CURRENCY, all, save, page, convert, enabledCodes };
+module.exports = { KEY, CODES, CURRENCY, all, save, page, convert, yearlyOf, enabledCodes };

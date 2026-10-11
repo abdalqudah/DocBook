@@ -14,7 +14,9 @@
       <%- f('start_at', t('camp.start_at'), st, { type: 'datetime-local', help: t('camp.start_at_help') }) %>
     </div>
     <%- f('subject', t('camp.subject'), v.subject, { required: true }) %>
+    <div class="row-sm wrap" data-camp-insert="f-subject"><span class="tiny muted"><%= t('camp.insert') %></span><button class="btn btn-ghost btn-sm" type="button" data-insert="{name}"><%- icon('plus', 'icon-sm') %><%= t('camp.insert_name') %></button><button class="btn btn-ghost btn-sm" type="button" data-insert="{organization}"><%- icon('plus', 'icon-sm') %><%= t('camp.insert_org') %></button></div>
     <%- f('body', t('camp.body'), v.body, { type: 'textarea', required: true, attrs: 'rows="10"', help: t('camp.body_help') }) %>
+    <div class="row-sm wrap" data-camp-insert="f-body"><span class="tiny muted"><%= t('camp.insert') %></span><button class="btn btn-ghost btn-sm" type="button" data-insert="{name}"><%- icon('plus', 'icon-sm') %><%= t('camp.insert_name') %></button><button class="btn btn-ghost btn-sm" type="button" data-insert="{organization}"><%- icon('plus', 'icon-sm') %><%= t('camp.insert_org') %></button></div>
     <div class="form-grid cols-2">
       <%- f('cta_label', t('camp.cta_label'), v.cta_label, { placeholder: t('camp.cta_label_ph') }) %>
       <%- f('cta_url', t('camp.cta_url'), v.cta_url, { attrs: 'dir="ltr"', placeholder: 'https://medworks.app/signup' }) %>
@@ -27,3 +29,4 @@
   </div>
   <div class="panel-foot form-actions"><a class="btn btn-ghost" href="<%= c ? '/admin/crm/campaigns/' + c.id : '/admin/crm/campaigns' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
 </form>
+<script src="/js/crm-campaign.js?v=<%= assetV %>" defer></script>

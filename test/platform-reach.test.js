@@ -70,6 +70,7 @@ test('a country page: off by default; on, the plans in its currency and sign-up 
   assert.match(signup.text, /<option value="Asia\/Riyadh" selected/); assert.match(signup.text, /<option value="SAR" selected/);
   assert.equal(cpages.convert(20, 5.29), 119); assert.equal(cpages.convert(200, 5.29), 1069);
   assert.equal(cpages.convert(35, 5.29), 199); assert.equal(cpages.convert(35, 0.433), 15.9); assert.equal(cpages.convert(35, 0.542), 19.9); assert.equal(cpages.convert(35, 1), 35);
+  assert.equal(cpages.yearlyOf({ price_monthly: 35, price_yearly: 350 }, 199, 5.29), 1990); assert.equal(cpages.yearlyOf({ price_monthly: 35, price_yearly: 350 }, 15.9, 0.43), 159);
 });
 
 test('referrals: the invitation link, the invited clinic marked; its first payment gives the inviter a free month, once', async () => {
