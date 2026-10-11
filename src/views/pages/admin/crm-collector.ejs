@@ -1,0 +1,31 @@
+<%# Admin → CRM → find clinics → the Google Maps collector: a bookmark that runs in the admin's own browser on Google
+    Maps and saves the places it reads to a CSV file, uploaded back on the finder page. %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/crm/finder"><%= t('crmf.title') %></a></div><h1><%= t('crmf.col_title') %></h1><p><%= t('crmf.col_lead') %></p></div>
+</div>
+
+<section class="panel mb-4">
+  <div class="panel-head"><div><h2><%= t('crmf.col_how') %></h2></div></div>
+  <div class="panel-body stack">
+    <ol class="stack" style="padding-inline-start:1.2em;margin:0">
+      <li><%= t('crmf.col_s1') %>
+        <div class="mt-2"><a class="btn btn-primary" href="<%= bookmarklet %>" draggable="true" data-collector-link title="<%= t('crmf.col_drag') %>"><%- icon('map-pin', 'icon-sm') %><%= t('crmf.col_btn') %></a></div>
+        <div class="tiny muted mt-1"><%= t('crmf.col_s1_help') %></div></li>
+      <li><%= t('crmf.col_s2') %> <a class="link" href="https://www.google.com/maps" target="_blank" rel="noopener">google.com/maps</a></li>
+      <li><%= t('crmf.col_s3') %></li>
+      <li><%= t('crmf.col_s4') %></li>
+      <li><%= t('crmf.col_s5') %> <a class="link" href="/admin/crm/finder"><%= t('crmf.title') %></a></li>
+    </ol>
+  </div>
+</section>
+
+<details class="panel mb-4">
+  <summary class="panel-head"><div><h2><%= t('crmf.col_console') %></h2><p class="panel-sub"><%= t('crmf.col_console_sub') %></p></div></summary>
+  <div class="panel-body stack">
+    <textarea class="textarea" rows="8" dir="ltr" readonly data-collector-code aria-label="<%= t('crmf.col_console') %>"><%= code %></textarea>
+    <div><button class="btn btn-secondary" type="button" data-collector-copy data-done="<%= t('crmf.col_copied') %>"><%- icon('copy', 'icon-sm') %><%= t('crmf.col_copy') %></button></div>
+  </div>
+</details>
+
+<p class="tiny muted"><%= t('crmf.col_note') %></p>
+<script src="/js/crm-finder.js?v=<%= assetV %>" defer></script>

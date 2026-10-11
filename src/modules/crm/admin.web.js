@@ -79,6 +79,27 @@ router.post('/crm/finder/searches', leadAct(async (req) => {
 router.post('/crm/finder/searches/:id(\\d+)/run', leadAct(async (req) => { const r = await leads.run(req.ctx, Number(req.params.id), { locale: req.locale }); return req.t('crmf.ran', { found: r.found, added: r.added, fresh: r.fresh }); }));
 router.post('/crm/finder/searches/:id(\\d+)/auto', leadAct(async (req) => { await leads.setAuto(req.ctx, Number(req.params.id), req.body.auto === '1'); return req.t('crmf.saved'); }));
 router.post('/crm/finder/searches/:id(\\d+)/delete', leadAct(async (req) => { await leads.removeSearch(req.ctx, Number(req.params.id)); return req.t('crmf.search_deleted'); }, () => '/admin/crm/finder'));
+// A list of places from a CSV file (the Google Maps collector below, or any list) → leads, like a search.
+const csvUpload = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 + 1, files: 1, fields: 8 } }).single('file');
+const takeCsv = (req, res, next) => csvUpload(req, res, (e) => { if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'The file is larger than 5 MB.' : 'Choose a CSV file.'; next(); });
+router.post('/crm/finder/import', takeCsv, require('../../middleware/web').verifyCsrfAfterUpload, wrap(async (req, res) => {
+  let back = '/admin/crm/finder';
+  try {
+    if (req.uploadError) throw E.validation({ file: req.uploadError });
+    const r = await leads.importFile(req.ctx, req.file, req.body);
+    flash(req, 'success', req.t('crmf.imported', { found: r.found, added: r.added }));
+    back = `/admin/crm/finder?search=${r.id}`;
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    flash(req, 'error', e.details ? Object.values(e.details).filter(Boolean).join(' ') : e.message);
+  }
+  res.redirect(back);
+}));
+// The Google Maps collector: runs in the admin's own browser (a bookmark), so the platform's server never scrapes Google.
+router.get('/crm/finder/collector', wrap(async (req, res) => {
+  const code = await require('fs').promises.readFile(require('path').join(__dirname, '../../../public/js/maps-collector.js'), 'utf8'); // eslint-disable-line global-require
+  page(res, 'crm-collector', { title: req.t('crmf.col_title'), bookmarklet: `javascript:${encodeURIComponent(code.replace(/^\/\*[\s\S]*?\*\/\s*/, ''))}`, code, countries: options().countryOptions(req.locale) });
+}));
 router.post('/crm/finder/leads', leadAct(async (req) => {
   if (req.body.do === 'ignore') return req.t('crmf.ignored', { n: await leads.ignore(req.ctx, req.body.lead) });
   const r = await leads.addToCrm(req.ctx, req.body.lead);

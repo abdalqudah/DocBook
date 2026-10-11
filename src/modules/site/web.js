@@ -160,6 +160,19 @@ router.get('/assets/media/:id/:file', wrap(async (req, res, next) => {
   return res.end(f.data);
 }));
 
+// ---------------------------------------------------------------- privacy policy and terms of service
+// Public pages (linked from every page's footer and from sign-up; Google asks for both when an app uses its sign-in).
+['privacy', 'terms'].forEach((kind) => {
+  router.get(`/${kind}`, wrap(async (req, res) => {
+    const legal = require('./legal'); // eslint-disable-line global-require
+    const chromeSite = res.locals.siteChrome || {};
+    const email = (chromeSite.footer && chromeSite.footer.email) || require('../../config/brand').supportEmail || ''; // eslint-disable-line global-require
+    const doc = legal.page(kind, req.locale, { brand: res.locals.brandName || require('../../config/brand').name, email }); // eslint-disable-line global-require
+    const head = await seo.head(req, res, { kind: 'legal', title: doc.title, description: doc.intro, path: `/${kind}` });
+    res.page('pages/site/legal', { layout: 'public', pageTitle: head.title, seoHead: head, doc, email });
+  }));
+});
+
 // ---------------------------------------------------------------- cookie preferences
 router.get('/preferences/cookies', wrap(async (req, res) => {
   const head = await seo.head(req, res, { kind: 'cookies', title: req.t('growth.cookies_title'), description: req.t('growth.cookies_sub') });

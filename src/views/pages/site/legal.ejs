@@ -1,0 +1,22 @@
+<%# The platform's Privacy Policy / Terms of Service (src/modules/site/legal.js). %>
+<section class="section legal-page">
+  <div class="container lp-narrow">
+    <div class="section-head">
+      <h1><%= doc.title %></h1>
+      <p class="small muted"><%= t('site.legal_updated') %> <time datetime="<%= doc.updated %>"><%= fmt.date(doc.updated) %></time></p>
+      <p><%= doc.intro %></p>
+    </div>
+    <div class="panel"><div class="panel-body stack">
+      <% doc.sections.forEach(function (sec, i) { %>
+      <section class="stack">
+        <h2 class="h3"><%= (i + 1) + '. ' + sec.h %></h2>
+        <% if (sec.ps.length === 1) { %><p><%= sec.ps[0] %></p><% } else { %><ul class="stack" style="padding-inline-start:1.2em;margin:0"><% sec.ps.forEach(function (p) { %><li><%= p %></li><% }) %></ul><% } %>
+      </section>
+      <% }) %>
+      <% if (doc.contact) { var _parts = doc.contact.split(email); %>
+      <p class="strong"><%= _parts[0] %><a class="link" href="mailto:<%= email %>" dir="ltr"><%= email %></a><%= _parts.slice(1).join(email) %></p>
+      <% } %>
+    </div></div>
+    <p class="small muted mt-4"><a class="link" href="<%= doc.kind === 'terms' ? '/privacy' : '/terms' %>"><%= doc.kind === 'terms' ? t('site.privacy') : t('site.terms') %></a> · <a class="link" href="/preferences/cookies"><%= t('growth.cookie_prefs') %></a></p>
+  </div>
+</section>

@@ -618,7 +618,10 @@
           "lead": "Backups, storage by package, and exporting and importing patient files."
         }
       }
-    }
+    },
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "legal_updated": "Last updated:"
   },
   "admin": {
     "title": "Platform admin",

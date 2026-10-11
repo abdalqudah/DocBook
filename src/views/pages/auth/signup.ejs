@@ -47,7 +47,7 @@
     </div>
   </fieldset>
   <div>
-    <label class="check"><input type="checkbox" name="terms" required<%= old.terms ? ' checked' : '' %>><span><%= t('auth.terms_agree') %></span></label>
+    <label class="check"><input type="checkbox" name="terms" required<%= old.terms ? ' checked' : '' %>><span><%= t('auth.terms_agree') %> <a class="link" href="/terms" target="_blank" rel="noopener"><%= t('site.terms') %></a><%= t('auth.terms_and') %><a class="link" href="/privacy" target="_blank" rel="noopener"><%= t('site.privacy') %></a></span></label>
     <% if (errors.terms) { %><div class="field-error"><%= errors.terms %></div><% } %>
   </div>
   <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('auth.create_account') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></button>

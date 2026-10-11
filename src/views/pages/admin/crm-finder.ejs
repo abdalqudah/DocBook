@@ -5,7 +5,7 @@
   <div><div class="breadcrumbs"><a href="/admin/crm"><%= t('crm.title') %></a></div><h1><%= t('crmf.title') %></h1><p><%= t('crmf.lead') %></p></div>
 </div>
 
-<details class="panel mb-4"<%= cfg.hasKey ? '' : ' open' %>>
+<details class="panel mb-4">
   <summary class="panel-head"><div><h2><%- icon('key-round', 'icon-sm') %> <%= t('crmf.key_title') %></h2><p class="panel-sub"><%= cfg.hasKey ? t('crmf.key_set') : t('crmf.key_missing') %></p></div></summary>
   <form method="post" action="/admin/crm/finder/settings" class="panel-body stack" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -23,15 +23,38 @@
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <div class="panel-head"><div><h2><%- icon('search', 'icon-sm') %> <%= t('crmf.new_search') %></h2><p class="panel-sub"><%= t('crmf.new_search_sub') %></p></div></div>
   <div class="panel-body stack">
+    <div class="field"><span class="label"><%= t('crmf.source') %></span><div class="row-sm wrap">
+      <label class="check"><input type="radio" name="source" value="osm"<%= cfg.hasKey ? '' : ' checked' %>> <%= t('crmf.src_osm') %></label>
+      <label class="check"><input type="radio" name="source" value="google"<%= cfg.hasKey ? ' checked' : ' disabled' %>> <%= t('crmf.src_google') %><%= cfg.hasKey ? '' : ' — ' + t('crmf.needs_key') %></label>
+    </div><span class="help"><%= t('crmf.source_help') %></span></div>
     <div class="form-grid cols-3">
       <div class="field"><label class="label" for="f-query"><%= t('crmf.query') %></label><input class="input" id="f-query" name="query" required maxlength="190" placeholder="<%= t('crmf.query_ph') %>"></div>
       <div class="field"><label class="label" for="f-city"><%= t('crmf.city') %></label><input class="input" id="f-city" name="city" maxlength="120"></div>
       <div class="field"><label class="label" for="f-country"><%= t('crmf.country') %></label><select class="select" id="f-country" name="country"><option value=""><%= t('crmf.any_country') %></option><% countries.forEach(function (c) { %><option value="<%= c.value %>"><%= c.label %></option><% }) %></select></div>
     </div>
     <div class="row-sm wrap"><label class="check grow"><input type="checkbox" name="auto" value="1" checked> <%= t('crmf.auto') %></label>
-      <button class="btn btn-primary" type="submit"<%= cfg.hasKey ? '' : ' disabled' %>><%- icon('search', 'icon-sm') %><%= t('crmf.search_now') %></button></div>
+      <button class="btn btn-primary" type="submit"><%- icon('search', 'icon-sm') %><%= t('crmf.search_now') %></button></div>
   </div>
 </form>
+
+<div class="grid grid-2 mb-4">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('map-pin', 'icon-sm') %> <%= t('crmf.col_title') %></h2><p class="panel-sub"><%= t('crmf.col_card') %></p></div></div>
+    <div class="panel-body"><a class="btn btn-secondary" href="/admin/crm/finder/collector"><%= t('crmf.col_open') %></a></div>
+  </section>
+  <form method="post" action="/admin/crm/finder/import" enctype="multipart/form-data" class="panel" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%- icon('upload', 'icon-sm') %> <%= t('crmf.import_title') %></h2><p class="panel-sub"><%= t('crmf.import_sub') %></p></div></div>
+    <div class="panel-body stack">
+      <input class="input" type="file" name="file" accept=".csv,text/csv" required aria-label="<%= t('crmf.import_title') %>">
+      <div class="form-grid cols-2">
+        <input class="input" name="city" maxlength="120" placeholder="<%= t('crmf.city') %>" aria-label="<%= t('crmf.city') %>">
+        <select class="select" name="country" aria-label="<%= t('crmf.country') %>"><option value=""><%= t('crmf.any_country') %></option><% countries.forEach(function (c) { %><option value="<%= c.value %>"><%= c.label %></option><% }) %></select>
+      </div>
+      <div><button class="btn btn-primary" type="submit"><%- icon('upload', 'icon-sm') %><%= t('crmf.import_btn') %></button></div>
+    </div>
+  </form>
+</div>
 
 <% if (searches.length) { %>
 <section class="panel flush mb-4">
@@ -39,12 +62,12 @@
   <div class="table-wrap"><table class="table responsive">
     <thead><tr><th><%= t('crmf.query') %></th><th class="num"><%= t('crmf.results') %></th><th><%= t('crmf.last_run') %></th><th><%= t('crmf.auto_short') %></th><th class="actions"></th></tr></thead>
     <tbody><% searches.forEach(function (s) { %><tr>
-      <td class="primary-cell"><a class="strong" href="/admin/crm/finder<%= qs({ search: s.id, fresh: '', status: 'new' }) %>"><%= s.query %></a><div class="tiny muted"><%= [s.city, s.country ? countryName(s.country) : ''].filter(Boolean).join(' · ') || t('crmf.any_country') %></div><% if (s.last_error) { %><div class="tiny text-danger"><%= s.last_error %></div><% } %></td>
+      <td class="primary-cell"><a class="strong" href="/admin/crm/finder<%= qs({ search: s.id, fresh: '', status: 'new' }) %>"><%= s.query %></a><div class="tiny muted"><span class="badge"><%= t('crmf.src_' + (s.source || 'google')) %></span> <%= [s.city, s.country ? countryName(s.country) : ''].filter(Boolean).join(' · ') || t('crmf.any_country') %></div><% if (s.last_error) { %><div class="tiny text-danger"><%= s.last_error %></div><% } %></td>
       <td class="num" data-label="<%= t('crmf.results') %>"><%= s.leads %><% if (s.fresh) { %> <a class="badge badge-success" href="/admin/crm/finder<%= qs({ search: s.id, fresh: '1', status: 'new' }) %>"><%= t('crmf.fresh_n', { n: s.fresh }) %></a><% } %></td>
       <td data-label="<%= t('crmf.last_run') %>" class="nowrap"><%= s.last_run_at ? fmt.date(s.last_run_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—' %></td>
       <td data-label="<%= t('crmf.auto_short') %>"><form method="post" action="/admin/crm/finder/searches/<%= s.id %>/auto"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="auto" value="<%= s.auto ? '0' : '1' %>"><button class="btn btn-ghost btn-sm" type="submit"><span class="badge <%= s.auto ? 'badge-success' : 'badge-neutral' %> badge-dot"><%= s.auto ? t('crmf.daily') : t('crmf.manual') %></span></button></form></td>
       <td class="actions"><div class="row-sm">
-        <form method="post" action="/admin/crm/finder/searches/<%= s.id %>/run"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"<%= cfg.hasKey ? '' : ' disabled' %>><%- icon('refresh-cw', 'icon-sm') %><%= t('crmf.run') %></button></form>
+        <% if (s.source !== 'import') { %><form method="post" action="/admin/crm/finder/searches/<%= s.id %>/run"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"<%= s.source === 'google' && !cfg.hasKey ? ' disabled' : '' %>><%- icon('refresh-cw', 'icon-sm') %><%= t('crmf.run') %></button></form><% } %>
         <form method="post" action="/admin/crm/finder/searches/<%= s.id %>/delete" data-confirm="<%= t('crmf.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon btn-sm" type="submit" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button></form>
       </div></td>
     </tr><% }) %></tbody>
@@ -61,7 +84,7 @@
 
 <form method="post" action="/admin/crm/finder/leads" class="panel flush" data-finder>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= cfg.hasKey ? t('crmf.none') : t('crmf.none_key') %></p></div><% } else { %>
+  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('crmf.none') %></p></div><% } else { %>
   <% if (f.status === 'new') { %><div class="table-toolbar"><label class="check"><input type="checkbox" data-finder-all> <%= t('crmf.select_all') %></label><span class="grow"></span>
     <button class="btn btn-ghost btn-sm" type="submit" name="do" value="ignore"><%- icon('eye-off', 'icon-sm') %><%= t('crmf.ignore') %></button>
     <button class="btn btn-primary btn-sm" type="submit" name="do" value="add"><%- icon('user-plus', 'icon-sm') %><%= t('crmf.add') %></button></div><% } %>
@@ -74,7 +97,7 @@
         <div class="tiny muted"><%= l.reviews ? t('crmf.reviews', { n: l.reviews, rating: l.rating === null ? '—' : Number(l.rating) }) : t('crmf.no_reviews') %><% if (l.contact_id) { %> · <a class="link" href="/admin/crm/<%= l.contact_id %>"><%= t('crmf.open_contact') %></a><% } %></div></td>
       <td data-label="<%= t('crm.phone') %>" class="nowrap"><% if (l.phone) { %><a class="link" href="tel:<%= l.phone.replace(/[^+0-9]/g, '') %>" dir="ltr"><%= l.phone %></a><% } else { %>—<% } %></td>
       <td data-label="<%= t('crm.email') %>"><% if (l.email) { %><a class="link" href="mailto:<%= l.email %>" dir="ltr"><%= l.email %></a><% } else { %><span class="muted"><%= l.website && l.email === null ? t('crmf.email_pending') : '—' %></span><% } %></td>
-      <td data-label="<%= t('crmf.links') %>" class="nowrap"><% if (l.maps_url) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= l.maps_url %>" target="_blank" rel="noopener" aria-label="<%= t('crmf.on_maps') %>" title="<%= t('crmf.on_maps') %>"><%- icon('map-pin', 'icon-sm') %></a><% } %><% if (l.website) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= l.website %>" target="_blank" rel="noopener nofollow" aria-label="<%= t('crmf.website') %>" title="<%= t('crmf.website') %>"><%- icon('globe', 'icon-sm') %></a><% } %></td>
+      <td data-label="<%= t('crmf.links') %>" class="nowrap"><% if (l.maps_url) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= l.maps_url %>" target="_blank" rel="noopener" aria-label="<%= t('crmf.on_map') %>" title="<%= t('crmf.on_map') %>"><%- icon('map-pin', 'icon-sm') %></a><% } %><% if (l.website) { %><a class="btn btn-ghost btn-icon btn-sm" href="<%= l.website %>" target="_blank" rel="noopener nofollow" aria-label="<%= t('crmf.website') %>" title="<%= t('crmf.website') %>"><%- icon('globe', 'icon-sm') %></a><% } %></td>
     </tr><% }) %></tbody>
   </table></div>
   <% } %>

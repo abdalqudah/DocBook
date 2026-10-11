@@ -1,6 +1,8 @@
-// CRM → find clinics on Google. A saved search ("dental clinic", a city, a country) asks the Google Places API (Text
-// Search, with the platform's own API key) for the places it knows — name, address, phone, website, rating — and
-// reads the public e-mail address from each clinic's website. Searches marked "auto" run again every day: a place that
+// CRM → find clinics. A saved search ("dental clinic", a city, a country) asks the Google Places API (Text Search, with
+// the platform's own API key) or OpenStreetMap (free, no key: the city's area from Nominatim, then the clinics in it from
+// Overpass) for the places it knows — name, address, phone, website, rating — and reads the public e-mail address from
+// each clinic's website. Places can also be uploaded from a CSV file (the Google Maps collector the admin runs in their
+// own browser, or any list). Searches marked "auto" run again every day: a place that
 // was not in the earlier runs is flagged as new on Google (often a clinic that just opened) and the admin is notified.
 // Places are leads until the admin adds them to the CRM (one contact each, matched to an existing one by phone or
 // e-mail) or ignores them.
@@ -10,7 +12,13 @@ const secrets = require('../../core/secrets');
 const outbound = require('../../core/http');
 const { E } = require('../../core/errors');
 
+const crypto = require('crypto');
+
 const KEY = 'crm_google';
+const SOURCES = ['google', 'osm', 'import'];
+const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+const OVERPASS = 'https://overpass-api.de/api/interpreter';
+const MAX_IMPORT = 3000;
 const PLACES = 'https://places.googleapis.com/v1/places:searchText';
 const FIELDS = ['places.id', 'places.displayName', 'places.formattedAddress', 'places.addressComponents', 'places.nationalPhoneNumber', 'places.internationalPhoneNumber',
   'places.websiteUri', 'places.googleMapsUri', 'places.location', 'places.rating', 'places.userRatingCount', 'places.businessStatus', 'nextPageToken'].join(',');
@@ -55,7 +63,9 @@ async function saveSearch(ctx, input = {}) {
   const query = str(input.query, 190);
   if (!query) throw E.validation({ query: 'Required.' });
   const country = /^[A-Z]{2}$/.test(String(input.country || '').toUpperCase()) ? String(input.country).toUpperCase() : null;
-  const [id] = await knex('crm_lead_searches').insert({ query, city: str(input.city, 120), country, auto: input.auto === '1' || input.auto === 'on', created_by: ctx.userId || null });
+  const source = input.source === 'osm' ? 'osm' : 'google';
+  if (source === 'osm' && !str(input.city, 120)) throw E.validation({ city: 'Enter the city: the free map searches one city at a time.' });
+  const [id] = await knex('crm_lead_searches').insert({ query, city: str(input.city, 120), country, source, auto: input.auto === '1' || input.auto === 'on', created_by: ctx.userId || null });
   await audit.record({ ...ctx, businessId: null }, 'crm.lead_search_created', { entityType: 'crm_lead_search', entityId: id, newValues: { query, city: input.city, country } });
   return id;
 }
@@ -124,43 +134,113 @@ async function emailFromSite(site) {
   } catch { return null; }
 }
 
+// ---------------------------------------------------------------- OpenStreetMap (free, no key)
+const GENERIC = /^(عياد[ةه]|عيادات|مركز|مراكز|مجمع|طب|طبي[ةه]?|طبيب|دكتور|د\.?|في|clinics?|medical|centers?|centres?|doctors?|health|in|the)$/i;
+const SPECIALTIES = [[/أسنان|اسنان|dent/i, 'dentist'], [/جلد|derma/i, 'dermatology'], [/أطفال|اطفال|paediat|pediat/i, 'paediatrics'],
+  [/نسائي|توليد|gyn|obstet/i, 'gynaecology'], [/عيون|ophthal|eye/i, 'ophthalmology'], [/عظام|ortho/i, 'orthopaedics'], [/قلب|cardio/i, 'cardiology'],
+  [/أنف|انف|أذن|اذن|otolaryn|\bent\b/i, 'otolaryngology'], [/تجميل|plastic|cosmetic/i, 'plastic_surgery'], [/باطن|internal/i, 'internal'],
+  [/علاج طبيعي|physio/i, 'physiotherapy'], [/نفسي|psych/i, 'psychiatry']];
+const first = (v) => String(v || '').split(';')[0].trim();
+
+/** What a free-text search means on the map: dental only, a specialty, and any other words to find in the name. */
+function osmQuery(text) {
+  const words = String(text || '').split(/[\s,،]+/).filter(Boolean);
+  const specs = SPECIALTIES.filter(([re]) => re.test(text)).map(([, v]) => v);
+  const rest = words.filter((w) => !GENERIC.test(w) && !GENERIC.test(w.replace(/^ال/, '')) && !SPECIALTIES.some(([re]) => re.test(w)));
+  return { dental: specs.length === 1 && specs[0] === 'dentist', specs: specs.filter((v) => v !== 'dentist'), rest };
+}
+
+async function osmPlaces(s, { locale }) {
+  const geo = await transport(`${NOMINATIM}?format=jsonv2&limit=1&accept-language=${locale === 'en' ? 'en' : 'ar'}&q=${encodeURIComponent(s.city)}${s.country ? `&countrycodes=${s.country.toLowerCase()}` : ''}`,
+    { method: 'GET', timeoutMs: 15_000, maxBytes: 200_000, headers: { accept: 'application/json' } });
+  const list = parse(geo.body);
+  const area = Array.isArray(list) ? list[0] : null;
+  if (geo.status !== 200 || !area || !area.boundingbox) throw E.validation({ google: `The map could not find "${s.city}". Check the city's name.` });
+  const [south, north, west, east] = area.boundingbox.map(Number);
+  const box = `(${south},${west},${north},${east})`;
+  const q = osmQuery(s.query);
+  const kinds = q.dental ? ['nwr["amenity"="dentist"]', 'nwr["healthcare"="dentist"]'] : ['nwr["amenity"~"^(clinic|doctors|dentist)$"]', 'nwr["healthcare"~"^(clinic|doctor|dentist|centre|physiotherapist)$"]'];
+  const data = `[out:json][timeout:30];(${kinds.map((k) => `${k}${box};`).join('')});out center tags 400;`;
+  const res = await transport(OVERPASS, { method: 'POST', body: `data=${encodeURIComponent(data)}`, timeoutMs: 45_000, maxBytes: 8_000_000, headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' } });
+  if (res.status !== 200) throw E.validation({ google: res.status === 429 || res.status === 504 ? 'The free map is busy. Try again in a minute.' : `The map answered ${res.status}.` });
+  const out = [];
+  (parse(res.body).elements || []).forEach((e) => {
+    const t = e.tags || {};
+    const name = str(t[`name:${locale === 'en' ? 'en' : 'ar'}`] || t.name || t['name:en'] || t['name:ar'], 190);
+    if (!name) return;
+    const spec = String(t['healthcare:speciality'] || '').toLowerCase();
+    if (q.specs.length && !q.specs.some((v) => spec.includes(v) || SPECIALTIES.find(([, x]) => x === v)[0].test(name))) return;
+    if (q.rest.length && !q.rest.some((w) => name.toLowerCase().includes(w.toLowerCase()))) return;
+    const email = first(t.email || t['contact:email']).toLowerCase();
+    out.push({
+      place_id: `osm:${e.type}/${e.id}`, name,
+      address: str([[t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' '), t['addr:suburb'] || t['addr:district'], t['addr:city']].filter(Boolean).join('، '), 255),
+      city: str(t['addr:city'] || s.city, 120), country: s.country || null,
+      phone: str(first(t.phone || t['contact:phone'] || t['contact:mobile']), 40), website: webUrl(first(t.website || t['contact:website'])),
+      email: /^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,24}$/.test(email) ? email.slice(0, 190) : null,
+      maps_url: `https://www.openstreetmap.org/${e.type}/${e.id}`, lat: e.lat !== undefined ? e.lat : (e.center || {}).lat || null, lng: e.lon !== undefined ? e.lon : (e.center || {}).lon || null,
+      category: str(spec || t.amenity || t.healthcare, 120), rating: null, reviews: 0,
+    });
+  });
+  return out;
+}
+
+// ---------------------------------------------------------------- Google
+async function googlePlaces(s, { locale }) {
+  const key = await apiKey();
+  if (!key) throw E.validation({ google: 'Add the Google Maps API key first.' });
+  const body = { textQuery: [s.query, s.city].filter(Boolean).join(' '), languageCode: locale === 'en' ? 'en' : 'ar', pageSize: 20 };
+  if (s.country) body.regionCode = s.country;
+  const out = [];
+  let token = null;
+  for (let i = 0; i < PAGES; i += 1) {
+    const page = await searchPage(key, token ? { ...body, pageToken: token } : body); // eslint-disable-line no-await-in-loop
+    page.places.forEach((p) => {
+      if (!p.id || p.businessStatus === 'CLOSED_PERMANENTLY') return;
+      out.push({
+        place_id: p.id, name: str(p.displayName && p.displayName.text, 190) || '—', address: str(p.formattedAddress, 255),
+        city: str(component(p, 'locality', false) || component(p, 'administrative_area_level_1', false), 120),
+        country: (component(p, 'country') || s.country || '').toUpperCase().slice(0, 2) || null,
+        phone: str(p.internationalPhoneNumber || p.nationalPhoneNumber, 40), website: webUrl(p.websiteUri), maps_url: webUrl(p.googleMapsUri),
+        lat: p.location ? p.location.latitude : null, lng: p.location ? p.location.longitude : null,
+        rating: p.rating === undefined ? null : p.rating, reviews: p.userRatingCount === undefined ? 0 : p.userRatingCount,
+      });
+    });
+    token = page.next;
+    if (!token) break;
+  }
+  return out;
+}
+
+/** Saves a place found by a search: new (flagged as new on the map after the search's first run) or updated. */
+async function saveLead(s, place, { firstRun, now }) {
+  const { place_id: placeId, ...row } = place;
+  const known = await knex('crm_leads').where({ place_id: placeId }).first('id');
+  if (known) {
+    await knex('crm_leads').where({ id: known.id }).update({ ...Object.fromEntries(Object.entries(row).filter(([, v]) => v !== null && v !== undefined && v !== '')), last_seen_at: now });
+    return false;
+  }
+  await knex('crm_leads').insert({ ...row, place_id: placeId, search_id: s.id, is_new_place: !firstRun, first_seen_at: now, last_seen_at: now });
+  return true;
+}
+
 // ---------------------------------------------------------------- running a search
 async function run(ctx, searchId, { locale = 'ar' } = {}) {
   const s = await knex('crm_lead_searches').where({ id: searchId }).first();
   if (!s) throw E.notFound('Search');
-  const key = await apiKey();
-  if (!key) throw E.validation({ google: 'Add the Google Maps API key first.' });
+  if (s.source === 'import') throw E.validation({ google: 'An uploaded list is not searched again. Upload the file again to update it.' });
   const firstRun = !s.runs;
   const now = new Date();
   let found = 0; let added = 0; let fresh = 0;
   try {
-    const body = { textQuery: [s.query, s.city].filter(Boolean).join(' '), languageCode: locale === 'en' ? 'en' : 'ar', pageSize: 20 };
-    if (s.country) body.regionCode = s.country;
-    let token = null;
-    for (let i = 0; i < PAGES; i += 1) {
-      const page = await searchPage(key, token ? { ...body, pageToken: token } : body); // eslint-disable-line no-await-in-loop
-      for (const p of page.places) { // eslint-disable-line no-restricted-syntax
-        if (!p.id || p.businessStatus === 'CLOSED_PERMANENTLY') continue; // eslint-disable-line no-continue
-        found += 1;
-        const row = {
-          name: str(p.displayName && p.displayName.text, 190) || '—', address: str(p.formattedAddress, 255),
-          city: str(component(p, 'locality', false) || component(p, 'administrative_area_level_1', false), 120),
-          country: (component(p, 'country') || s.country || '').toUpperCase().slice(0, 2) || null,
-          phone: str(p.internationalPhoneNumber || p.nationalPhoneNumber, 40), website: webUrl(p.websiteUri), maps_url: webUrl(p.googleMapsUri),
-          lat: p.location ? p.location.latitude : null, lng: p.location ? p.location.longitude : null,
-          rating: p.rating === undefined ? null : p.rating, reviews: p.userRatingCount === undefined ? 0 : p.userRatingCount, last_seen_at: now,
-        };
-        const known = await knex('crm_leads').where({ place_id: p.id }).first('id'); // eslint-disable-line no-await-in-loop
-        if (known) { await knex('crm_leads').where({ id: known.id }).update(row); continue; } // eslint-disable-line no-await-in-loop, no-continue
-        await knex('crm_leads').insert({ ...row, place_id: p.id, search_id: s.id, is_new_place: !firstRun, first_seen_at: now }); // eslint-disable-line no-await-in-loop
-        added += 1; if (!firstRun) fresh += 1;
-      }
-      token = page.next;
-      if (!token) break;
+    const places = await (s.source === 'osm' ? osmPlaces : googlePlaces)(s, { locale });
+    for (const p of places) { // eslint-disable-line no-restricted-syntax
+      found += 1;
+      if (await saveLead(s, p, { firstRun, now })) { added += 1; if (!firstRun) fresh += 1; } // eslint-disable-line no-await-in-loop
     }
     await knex('crm_lead_searches').where({ id: s.id }).update({ runs: s.runs + 1, last_run_at: now, last_error: null, updated_at: now });
   } catch (e) {
-    await knex('crm_lead_searches').where({ id: s.id }).update({ last_run_at: now, last_error: String((e.details && e.details.google) || e.message).slice(0, 250) });
+    await knex('crm_lead_searches').where({ id: s.id }).update({ last_run_at: now, last_error: String((e.details && (e.details.google || e.details.city)) || e.message).slice(0, 250) });
     throw e;
   }
   if ((await settings()).emails) await fillEmails(EMAILS_PER_RUN);
@@ -169,6 +249,72 @@ async function run(ctx, searchId, { locale = 'ar' } = {}) {
     await pnotify.admin('crm_new_places', { n: fresh, query: [s.query, s.city].filter(Boolean).join(' — ') }, { link: `/admin/crm/finder?search=${s.id}&fresh=1`, severity: 'success' });
   }
   return { found, added, fresh };
+}
+
+// ---------------------------------------------------------------- a list from a file (CSV)
+/** RFC 4180 CSV → rows of cells (quoted cells, "" inside quotes, CR LF or LF; a leading BOM dropped; , or ; or tab). */
+function parseCsv(text) {
+  const src = String(text || '').replace(/^\uFEFF/, '');
+  const firstLine = src.split(/\r?\n/, 1)[0] || '';
+  const sep = [',', ';', '\t'].sort((a, b) => firstLine.split(b).length - firstLine.split(a).length)[0];
+  const rows = []; let row = []; let cell = ''; let q = false;
+  for (let i = 0; i < src.length; i += 1) {
+    const c = src[i];
+    if (q) {
+      if (c === '"' && src[i + 1] === '"') { cell += '"'; i += 1; } else if (c === '"') q = false; else cell += c;
+    } else if (c === '"' && cell === '') q = true;
+    else if (c === sep) { row.push(cell); cell = ''; } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && src[i + 1] === '\n') i += 1;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((x) => String(x).trim() !== ''));
+}
+const HEADS = {
+  name: ['name', 'title', 'الاسم', 'اسم'], phone: ['phone', 'tel', 'telephone', 'mobile', 'الهاتف', 'رقم الهاتف', 'الجوال'], website: ['website', 'site', 'web', 'الموقع', 'الموقع الإلكتروني'],
+  email: ['email', 'e-mail', 'mail', 'البريد', 'البريد الإلكتروني'], address: ['address', 'العنوان'], city: ['city', 'المدينة'], country: ['country', 'الدولة'],
+  maps_url: ['maps_url', 'maps', 'google maps', 'link', 'url', 'الرابط'], rating: ['rating', 'التقييم'], reviews: ['reviews', 'reviews_count', 'المراجعات'],
+  category: ['category', 'type', 'التصنيف', 'النوع'], place_id: ['place_id', 'placeid', 'id'], query: ['query', 'البحث'],
+};
+
+/** Places from a CSV file → a search marked "uploaded", its places as leads (an address already known is updated). */
+async function importFile(ctx, file, input = {}) {
+  if (!file || !file.buffer || !file.buffer.length) throw E.validation({ file: 'Choose a CSV file.' });
+  if (file.buffer.length > 5 * 1024 * 1024) throw E.validation({ file: 'The file is larger than 5 MB.' });
+  const rows = parseCsv(file.buffer.toString('utf8'));
+  const head = (rows.shift() || []).map((h) => String(h).trim().toLowerCase());
+  const col = Object.fromEntries(Object.entries(HEADS).map(([k, names]) => [k, head.findIndex((h) => names.includes(h))]));
+  if (col.name < 0) throw E.validation({ file: 'The file needs a "name" column (the first row holds the column names).' });
+  const country = /^[A-Z]{2}$/.test(String(input.country || '').toUpperCase()) ? String(input.country).toUpperCase() : null;
+  const get = (r, k) => (col[k] >= 0 ? String(r[col[k]] || '').trim() : '');
+  const label = str(input.label, 190) || get(rows[0] || [], 'query') || str(String(file.originalname || '').replace(/\.csv$/i, ''), 190) || 'CSV';
+  const now = new Date();
+  const [id] = await knex('crm_lead_searches').insert({ query: label, city: str(input.city, 120), country, source: 'import', auto: false, runs: 1, last_run_at: now, created_by: ctx.userId || null });
+  const s = { id };
+  let found = 0; let added = 0;
+  for (const r of rows.slice(0, MAX_IMPORT)) { // eslint-disable-line no-restricted-syntax
+    const name = str(get(r, 'name'), 190);
+    if (!name) continue; // eslint-disable-line no-continue
+    const phone = str(get(r, 'phone'), 40);
+    const pid = get(r, 'place_id');
+    const email = get(r, 'email').toLowerCase();
+    const place = {
+      place_id: /^(ChIJ[\w-]{10,}|0x[0-9a-f]+:0x[0-9a-f]+)$/i.test(pid) ? pid : `imp:${crypto.createHash('sha1').update(`${name.toLowerCase()}|${String(phone || '').replace(/\D/g, '').slice(-8)}`).digest('hex')}`,
+      name, phone, address: str(get(r, 'address'), 255), city: str(get(r, 'city') || input.city, 120),
+      country: (/^[A-Za-z]{2}$/.test(get(r, 'country')) ? get(r, 'country').toUpperCase() : country),
+      website: webUrl(get(r, 'website')), email: /^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,24}$/.test(email) ? email.slice(0, 190) : null,
+      maps_url: webUrl(get(r, 'maps_url')), category: str(get(r, 'category'), 120),
+      rating: Number.isFinite(parseFloat(get(r, 'rating'))) ? Math.min(5, parseFloat(get(r, 'rating'))) : null,
+      reviews: parseInt(get(r, 'reviews').replace(/\D/g, ''), 10) || 0,
+    };
+    found += 1;
+    if (await saveLead(s, place, { firstRun: true, now })) added += 1; // eslint-disable-line no-await-in-loop
+  }
+  if (!found) { await knex('crm_lead_searches').where({ id }).del(); throw E.validation({ file: 'No places with a name were found in the file.' }); }
+  await audit.record({ ...ctx, businessId: null }, 'crm.leads_imported', { entityType: 'crm_lead_search', entityId: id, newValues: { label, found, added } });
+  if ((await settings()).emails) await fillEmails(EMAILS_PER_RUN);
+  return { id, found, added };
 }
 
 /** Reads the e-mail of leads that have a website and no e-mail yet (a few per run, four sites at a time). */
@@ -187,8 +333,8 @@ async function fillEmails(limit = EMAILS_PER_RUN) {
 
 /** The daily run of the "auto" searches (src/server.js, hourly tick: each search at most once a day). */
 async function runDue(now = new Date()) {
-  if (!(await apiKey())) return { ran: 0 };
-  const due = await knex('crm_lead_searches').where({ auto: true }).andWhere((w) => w.whereNull('last_run_at').orWhere('last_run_at', '<', new Date(now.getTime() - 20 * 3600_000)));
+  const sources = (await apiKey()) ? ['google', 'osm'] : ['osm'];
+  const due = await knex('crm_lead_searches').where({ auto: true }).whereIn('source', sources).andWhere((w) => w.whereNull('last_run_at').orWhere('last_run_at', '<', new Date(now.getTime() - 20 * 3600_000)));
   let ran = 0;
   for (const s of due) { // eslint-disable-line no-restricted-syntax
     await run({ userId: null, businessId: null }, s.id).catch((e) => console.error('[crm-leads]', e.message)); // eslint-disable-line no-await-in-loop, no-console
@@ -220,7 +366,7 @@ const ids = (v) => [].concat(v || []).map(Number).filter((n) => Number.isInteger
 /** Adds the chosen places to the CRM as prospects (an existing contact with the same phone or e-mail is reused). */
 async function addToCrm(ctx, idList) {
   const crm = require('./crm.service'); // eslint-disable-line global-require
-  const rows = await knex('crm_leads').whereIn('id', ids(idList)).where({ status: 'new' });
+  const rows = await knex('crm_leads as l').leftJoin('crm_lead_searches as s', 's.id', 'l.search_id').whereIn('l.id', ids(idList)).where('l.status', 'new').select('l.*', 's.source');
   let added = 0;
   for (const l of rows) { // eslint-disable-line no-restricted-syntax
     // The same number written another way (+962 6 555 1002, 06-5551002): the last 8 digits, spaces and signs dropped.
@@ -235,9 +381,9 @@ async function addToCrm(ctx, idList) {
     if (!contactId) {
       [contactId] = await knex('crm_contacts').insert({ // eslint-disable-line no-await-in-loop
         kind: 'prospect', name: l.name, organization: l.name, phone: l.phone, email: l.email || null, country: l.country, city: l.city,
-        stage: 'new', source: 'google', notes: [l.address, l.website, l.maps_url].filter(Boolean).join('\n'), created_by: ctx.userId || null,
+        stage: 'new', source: l.source === 'import' ? 'import' : l.source === 'osm' ? 'other' : 'google', notes: [l.address, l.website, l.maps_url].filter(Boolean).join('\n'), created_by: ctx.userId || null,
       });
-      await crm.log(ctx, contactId, 'event', `Google: ${l.name}${l.address ? ` — ${l.address}` : ''}`).catch(() => {}); // eslint-disable-line no-await-in-loop
+      await crm.log(ctx, contactId, 'event', `${l.source === 'osm' ? 'OpenStreetMap' : l.source === 'import' ? 'CSV' : 'Google'}: ${l.name}${l.address ? ` — ${l.address}` : ''}`).catch(() => {}); // eslint-disable-line no-await-in-loop
       added += 1;
     }
     await knex('crm_leads').where({ id: l.id }).update({ status: 'added', contact_id: contactId }); // eslint-disable-line no-await-in-loop
@@ -253,6 +399,6 @@ async function ignore(ctx, idList) {
 }
 
 module.exports = {
-  STATUSES, settings, saveSettings, searches, saveSearch, setAuto, removeSearch, run, runDue, fillEmails, list, counts, addToCrm, ignore,
-  emailsIn, emailFromSite, setTransport,
+  STATUSES, SOURCES, settings, saveSettings, searches, saveSearch, setAuto, removeSearch, run, runDue, fillEmails, list, counts, addToCrm, ignore,
+  importFile, parseCsv, osmQuery, emailsIn, emailFromSite, setTransport,
 };

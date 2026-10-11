@@ -38,6 +38,19 @@ test.before(async () => {
       if (opts.headers['x-goog-api-key'] !== KEY) return { status: 403, body: JSON.stringify({ error: { message: 'API key not valid.' } }) };
       return { status: 200, body: JSON.stringify({ places }) };
     }
+    if (url.startsWith('https://nominatim.openstreetmap.org/')) {
+      calls.push({ osm: 'geo', url });
+      return { status: 200, body: JSON.stringify(url.includes('Nowhere') ? [] : [{ boundingbox: ['31.85', '32.05', '35.80', '36.00'] }]) };
+    }
+    if (url.startsWith('https://overpass-api.de/')) {
+      const q = decodeURIComponent(String(opts.body).replace(/^data=/, ''));
+      calls.push({ osm: 'overpass', q });
+      return { status: 200, body: JSON.stringify({ elements: [
+        { type: 'node', id: 9001, lat: 31.95, lon: 35.91, tags: { amenity: 'dentist', name: `OSM Dental ${tag}`, 'name:ar': `عيادة أسنان الخريطة ${tag}`, phone: '+962 6 555 9001;+962 79 000 0000', website: 'https://osm-dental.example.org', email: 'Hello@osm-dental.example.org', 'addr:street': 'Rainbow St', 'addr:city': 'Amman' } },
+        { type: 'way', id: 9002, center: { lat: 31.96, lon: 35.92 }, tags: { amenity: 'dentist', name: `OSM Smile ${tag}` } },
+        { type: 'node', id: 9003, lat: 31.9, lon: 35.9, tags: { amenity: 'dentist' } },
+      ] }) };
+    }
     if (url.includes('smile1-')) return { status: 200, body: '<a href="mailto:info@smile1-x.test">mail</a> <a href="mailto:hello@' + new URL(url).hostname + '">us</a>' };
     if (url.includes('smile2-') && url.endsWith('/contact')) return { status: 200, body: 'Write to reception [at] ' + new URL(url).hostname };
     if (url.includes('smile2-')) return { status: 200, body: '<a href="/contact">Contact us</a> logo@2x.png' };
@@ -47,7 +60,7 @@ test.before(async () => {
 });
 test.after(async () => {
   leads.setTransport(null);
-  await knex('crm_leads').where('place_id', 'like', `place-${tag}-%`).del();
+  await knex('crm_leads').where('place_id', 'like', `place-${tag}-%`).orWhere('place_id', 'like', 'osm:%900%').orWhere('name', 'like', `%${tag}%`).del();
   await knex('crm_lead_searches').del();
   await knex('platform_settings').where({ key: 'crm_google' }).del();
   if (saved) await knex('platform_settings').insert(saved);
@@ -63,7 +76,7 @@ test('the key is saved encrypted; a search brings in the places with their e-mai
   const a = app.agent(); await a.login(mail('a'));
   let page = await a.get('/admin/crm/finder?lang=en');
   assert.equal(page.status, 200);
-  assert.match(page.text, /Add a Places API key/);
+  assert.match(page.text, /Optional: a Places API key/);
   await a.post('/admin/crm/finder/settings', { _csrf: a.csrf(page.text), api_key: KEY, emails: '1' });
   const row = await knex('platform_settings').where({ key: 'crm_google' }).first();
   assert.ok(!row.value.includes(KEY), 'the key is not stored in clear');
@@ -118,4 +131,67 @@ test('the finder has its own entry in the admin sidebar', async () => {
   const a = app.agent(); await a.login(mail('a'));
   const page = await a.get('/admin?lang=en');
   assert.match(page.text, /href="\/admin\/crm\/finder"/);
+});
+
+test('the free map (OpenStreetMap): no key needed, the city is required, dental searches only dentists', async () => {
+  const a = app.agent(); await a.login(mail('a'));
+  let page = await a.get('/admin/crm/finder?lang=en');
+  assert.match(page.text, /name="source" value="osm"/);
+  await a.post('/admin/crm/finder/searches', { _csrf: a.csrf(page.text), source: 'osm', query: 'عيادة أسنان', city: '', country: 'JO' });
+  assert.equal(await knex('crm_lead_searches').where({ source: 'osm' }).first(), undefined, 'no city, no search');
+  page = await a.get('/admin/crm/finder?lang=en');
+  await a.post('/admin/crm/finder/searches', { _csrf: a.csrf(page.text), source: 'osm', query: 'عيادة أسنان', city: 'Amman', country: 'JO', auto: '1' });
+  const q = calls.filter((c) => c.osm === 'overpass').pop().q;
+  assert.match(q, /"amenity"="dentist"/); assert.doesNotMatch(q, /doctors/);
+  assert.match(q, /\(31\.85,35\.8,32\.05,36\)/);
+  const one = await knex('crm_leads').where({ place_id: 'osm:node/9001' }).first();
+  assert.equal(one.name, `OSM Dental ${tag}`, "the English name on an English page (the Arabic one on an Arabic page)");
+  assert.equal(one.phone, '+962 6 555 9001'); assert.equal(one.email, 'hello@osm-dental.example.org');
+  assert.equal(one.address, 'Rainbow St، Amman'); assert.equal(one.maps_url, 'https://www.openstreetmap.org/node/9001');
+  assert.equal(Number((await knex('crm_leads').where({ place_id: 'osm:way/9002' }).first()).lat), 31.96);
+  assert.equal(await knex('crm_leads').where({ place_id: 'osm:node/9003' }).first(), undefined, 'a place without a name is left out');
+  // runs daily without a Google key too
+  await knex('platform_settings').where({ key: 'crm_google' }).del();
+  await knex('crm_lead_searches').where({ source: 'osm' }).update({ last_run_at: new Date(Date.now() - 2 * 86_400_000) });
+  const before = calls.length;
+  assert.equal((await leads.runDue()).ran, 1);
+  assert.ok(calls.slice(before).some((c) => c.osm === 'overpass'));
+  // added to the CRM, its source "other"
+  const lead = await knex('crm_leads').where({ place_id: 'osm:node/9001' }).first('id');
+  page = await a.get('/admin/crm/finder?lang=en');
+  await a.post('/admin/crm/finder/leads', new URLSearchParams([['_csrf', a.csrf(page.text)], ['do', 'add'], ['lead', String(lead.id)]]));
+  const c = await knex('crm_contacts').where({ email: 'hello@osm-dental.example.org' }).first();
+  assert.equal(c.source, 'other');
+  await knex('crm_contacts').where({ id: c.id }).del();
+});
+
+test('a CSV list (the Google Maps collector\'s file): read with its columns, an address already known is updated', async () => {
+  const a = app.agent(); await a.login(mail('a'));
+  const csv = `\uFEFFname,phone,website,email,address,category,rating,reviews,maps_url,place_id,query\r\n`
+    + `"Collector Clinic, ${tag}",+962 6 555 7001,https://cc-${tag}.example.org/,,"Street 1, Amman",Dentist,4.7,"1,203",https://www.google.com/maps/place/x,ChIJcollector${tag}AAAA,dental Amman\r\n`
+    + `Second Clinic ${tag},,,info@second-${tag}.example.org,,,,,,,dental Amman\r\n,,,,,,,,,,\r\n`;
+  let page = await a.get('/admin/crm/finder?lang=en');
+  assert.match(page.text, /href="\/admin\/crm\/finder\/collector"/);
+  const bad = await a.upload('/admin/crm/finder', '/admin/crm/finder/import', {}, { file: { buffer: Buffer.from('phone\n123\n'), name: 'x.csv' } });
+  assert.equal(bad.status, 302);
+  assert.equal(await knex('crm_lead_searches').where({ source: 'import' }).first(), undefined, 'no name column, nothing kept');
+  const r = await a.upload('/admin/crm/finder', '/admin/crm/finder/import', { city: 'Amman', country: 'JO' }, { file: { buffer: Buffer.from(csv), name: 'google-maps.csv' } });
+  assert.equal(r.status, 302); assert.match(r.location, /\/admin\/crm\/finder\?search=\d+/);
+  const s = await knex('crm_lead_searches').where({ source: 'import' }).first();
+  assert.equal(s.query, 'dental Amman'); assert.equal(s.auto, 0);
+  const one = await knex('crm_leads').where({ place_id: `ChIJcollector${tag}AAAA` }).first();
+  assert.equal(one.name, `Collector Clinic, ${tag}`); assert.equal(one.reviews, 1203); assert.equal(Number(one.rating), 4.7);
+  assert.equal(one.city, 'Amman'); assert.equal(one.country, 'JO'); assert.equal(one.category, 'Dentist'); assert.equal(one.address, 'Street 1, Amman');
+  const two = await knex('crm_leads').where({ search_id: s.id }).where('name', 'like', 'Second Clinic%').first();
+  assert.match(two.place_id, /^imp:[0-9a-f]{40}$/); assert.equal(two.email, `info@second-${tag}.example.org`);
+  // the same file again: nothing new, the place updated
+  page = await a.get('/admin/crm/finder?lang=en');
+  await a.upload('/admin/crm/finder', '/admin/crm/finder/import', {}, { file: { buffer: Buffer.from(csv.replace('4.7', '4.8')), name: 'again.csv' } });
+  assert.equal((await knex('crm_leads').where({ place_id: `ChIJcollector${tag}AAAA` })).length, 1);
+  assert.equal(Number((await knex('crm_leads').where({ place_id: `ChIJcollector${tag}AAAA` }).first()).rating), 4.8);
+  // an uploaded list is not searched again
+  page = await a.get(`/admin/crm/finder?search=${s.id}&lang=en`);
+  assert.doesNotMatch(page.text, new RegExp(`/admin/crm/finder/searches/${s.id}/run`));
+  const col = await a.get('/admin/crm/finder/collector?lang=en');
+  assert.equal(col.status, 200); assert.match(col.text, /href="javascript:/); assert.match(col.text, /Collect clinics/);
 });

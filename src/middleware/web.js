@@ -154,7 +154,8 @@ const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|logo-square|favic
   /^\/app\/import\/legacy-clinica\/jobs\/\d+\/upload\/?$/, // Legacy Patient Recovery: the patients file and attachment ZIPs
   /^\/admin\/clinics\/restore\/?$/, // platform admin: a clinic's backup file
   /^\/admin\/templates\/(upload|images|\d+\/file)\/?$/, // platform admin: Word templates and pictures for templates
-  /^\/admin\/documents\/upload\/?$/]; // platform admin: a PDF uploaded as a document
+  /^\/admin\/documents\/upload\/?$/, // platform admin: a PDF uploaded as a document
+  /^\/admin\/crm\/finder\/import\/?$/]; // platform admin: a CSV list of clinics for the CRM finder
 
 const tokenValid = (req, sent) => Boolean(req.session?.csrf && sent && safeEqual(sent, req.session.csrf));
 
