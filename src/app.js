@@ -113,6 +113,7 @@ function createApp() {
   });
 
   app.use(loadUser);
+  app.use(require('./modules/platformcomms/activity.service').middleware); // who is active on the platform and from where (Admin → Activity)
   app.use(require('./modules/platformops/clinic-types').middleware); // clinic types managed by the platform admin
   app.use(web.locals);
   const branding = require('./modules/platformops/branding');

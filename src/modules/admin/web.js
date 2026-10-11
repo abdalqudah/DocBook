@@ -38,7 +38,9 @@ router.use('/', require('../subscriptions/admin.web'));
 router.use('/', require('../platformops/maintenance.web')); // close the site for maintenance, reopen
 router.use('/', require('../platformops/databases.web')); // each clinic's own database: status, moving clinics, structure sync
 router.use('/', require('../platformops/images.web')); // compress pictures stored before uploads were compressed
-router.use('/', require('../platformops/admin.web')); // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)
+router.use('/', require('../platformops/admin.web'));
+router.use('/', require('../platformcomms/admin.web')); // platform settings (e-mail, WhatsApp) and who is active from where
+router.use('/', require('../crm/admin.web')); // the platform owner's CRM // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)
 
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });
 const like = (q) => `%${String(q).trim().replace(/[%_\\]/g, (m) => `\\${m}`)}%`;

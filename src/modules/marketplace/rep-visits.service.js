@@ -117,7 +117,9 @@ async function removeWindow(ctx, id) {
 //               requests not turned off): the rep sees the doctors' working hours and suggests a date and time;
 //               the clinic confirms or declines. Never more than what the clinic's public page already shows.
 const hasWindow = function e() { this.select(knex.raw('1')).from('rep_visit_slots as w').whereRaw('w.business_id = b.id').andWhere('w.is_active', true); };
-function openToReps(query) {
+/** Clinics open to reps; with `country` (the vendor's), only the clinics of that country (and those without one). */
+function openToReps(query, country = null) {
+  require('../../core/region').inCountry(query, 'b.country', country); // eslint-disable-line global-require
   return query.where('b.status', 'active').andWhere((w) => w
     .where((x) => x.where('b.rep_visits_enabled', true).whereExists(hasWindow))
     .orWhere((x) => x.where('b.rep_requests_off', false).whereNotNull('b.onboarding_completed_at').andWhere((y) => y.where('b.rep_visits_enabled', true).orWhere('b.directory_listed', true))));
@@ -129,8 +131,8 @@ const allDoctors = (businessIds) => cross.gatherFor(businessIds, (ids) => knex('
   .select('id', 'business_id', 'full_name', 'full_name_en', 'specialization', 'specialization_en', 'working_hours').orderBy('sort_order').orderBy('id'));
 
 /** Clinics a rep can reach (see openToReps), each with its mode and doctors. */
-async function bookableClinics({ q, specialty } = {}) {
-  const query = openToReps(knex('businesses as b'))
+async function bookableClinics({ q, specialty, country = null } = {}) {
+  const query = openToReps(knex('businesses as b'), country)
     .select('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty', 'b.rep_visits_enabled', knex.raw('EXISTS (SELECT 1 FROM rep_visit_slots w WHERE w.business_id = b.id AND w.is_active = 1) AS has_windows'))
     .orderBy('b.name').limit(100);
   if (q && String(q).trim()) {
@@ -170,7 +172,8 @@ async function linkedClinics(vendorId, businessIds) {
 
 /** A bookable clinic (only what a rep may see) or null. */
 async function clinicForRep(businessId, vendorId = null) {
-  const b = await openToReps(knex('businesses as b').where('b.id', Number(businessId) || 0))
+  const vc = vendorId ? await knex('vendors').where({ id: vendorId }).first('country') : null; // a rep reaches the clinics of the vendor's country
+  const b = await openToReps(knex('businesses as b').where('b.id', Number(businessId) || 0), vc && vc.country)
     .first('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty', 'b.address', 'b.map_url', 'b.timezone', 'b.rep_visits_auto_confirm', 'b.email', 'b.rep_visits_enabled', 'b.default_working_hours');
   if (!b) return null;
   b.isSupplier = vendorId ? (await linkedClinics(vendorId, [b.id])).has(b.id) : false;

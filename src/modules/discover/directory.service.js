@@ -50,7 +50,7 @@ const eligible = () => knex('businesses as b')
 function listed() {
   return cache.remember('discover:list', async () => {
     const clinics = await eligible().orderBy('b.id').limit(2000)
-      .select('b.id', 'b.slug', 'b.name', 'b.name_en', 'b.specialty', 'b.city', 'b.timezone', 'b.logo_mime', 'b.logo_version', 'b.about', 'b.about_en',
+      .select('b.id', 'b.slug', 'b.name', 'b.name_en', 'b.specialty', 'b.city', 'b.country', 'b.timezone', 'b.logo_mime', 'b.logo_version', 'b.about', 'b.about_en',
         'b.address', 'b.phone', 'b.online_enabled', 'b.updated_at');
     if (!clinics.length) return [];
     const allIds = clinics.map((c) => c.id);
@@ -74,6 +74,7 @@ function listed() {
         ...c,
         specialtyKey: specialtyKey(c.specialty),
         cityKey: norm(c.city),
+        countryKey: String(c.country || '').toUpperCase(),
         insurers: [...new Set(ins.filter((i) => i.business_id === c.id).map((i) => String(i.name).trim()).filter(Boolean))],
         doctors,
         online: Boolean(c.online_enabled) && doctors.some((d) => d.online_enabled),
@@ -164,6 +165,8 @@ function filtersFrom(query = {}, preset = {}) {
     q: String(query.q || '').trim().slice(0, 80),
     specialty: types.valid(s) ? s : '',
     city: norm(query.city).slice(0, 80),
+    // the country: chosen on the page ('all' = every country), else the visitor's (from the proxy's header)
+    country: query.country === 'all' ? '' : (require('../../core/region').clean(query.country) || require('../../core/region').clean(preset.country) || ''), // eslint-disable-line global-require
     insurance: norm(query.insurance).slice(0, 120),
     online: query.online === '1',
     sort, page,
@@ -171,6 +174,7 @@ function filtersFrom(query = {}, preset = {}) {
 }
 
 const matches = (c, f) => (!f.specialty || c.specialtyKey === f.specialty)
+  && (!f.country || !c.countryKey || c.countryKey === f.country)
   && (!f.city || c.cityKey === f.city)
   && (!f.insurance || c.insurers.some((n) => norm(n) === f.insurance))
   && (!f.online || c.online)
@@ -192,6 +196,7 @@ function facets(all) {
   };
   return {
     cities: count(all.map((c) => [c.cityKey, String(c.city || '').trim().replace(/\s+/g, ' ')])),
+    countries: [...new Set(all.map((c) => c.countryKey).filter(Boolean))].sort(),
     insurers: count(all.flatMap((c) => c.insurers.map((n) => [norm(n), n]))),
     specialties: types.keys().filter((k) => all.some((c) => c.specialtyKey === k)),
     online: all.some((c) => c.online),
@@ -207,6 +212,8 @@ const compareNext = (a, b) => {
 /** Search the directory. Returns { rows, total, page, pages, facets }. */
 async function search(filters, locale = 'ar') {
   const all = await listed();
+  // the visitor's country only when clinics are listed there (else every country)
+  if (filters.country && !all.some((c) => c.countryKey === filters.country)) filters.country = ''; // eslint-disable-line no-param-reassign
   const nameOf = (c) => (locale === 'en' && c.name_en) || c.name;
   let rows = all.filter((c) => matches(c, filters)).map((c) => ({ ...c }));
   if (filters.sort === 'soonest') {

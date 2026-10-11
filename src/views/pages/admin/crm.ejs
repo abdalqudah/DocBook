@@ -1,0 +1,41 @@
+<%# Admin → CRM: the pipeline by stage, follow-ups due, and the contacts (clinics, warehouses, reps, prospects). %>
+<% var qs = function (extra) { var p = Object.assign({ q: f.q || '', kind: f.kind || '', stage: f.stage || '', country: f.country || '', due: f.due || '' }, extra); return '?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); };
+   var d = function (v) { return v ? new Date(v).toISOString().slice(0, 10) : ''; }; %>
+<div class="page-head">
+  <div><h1><%= t('crm.title') %></h1><p><%= t('crm.lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="/admin/crm/new"><%- icon('user-plus', 'icon-sm') %><%= t('crm.new') %></a></div>
+</div>
+
+<nav class="tabs mb-4" data-crm-stages>
+  <a href="/admin/crm<%= qs({ stage: '', due: '' }) %>"<%= !f.stage && f.due !== '1' ? ' class="active"' : '' %>><%= t('crm.all') %></a>
+  <a href="/admin/crm<%= qs({ due: '1', stage: '' }) %>"<%= f.due === '1' ? ' class="active"' : '' %>><%- icon('bell', 'icon-sm') %><%= t('crm.due') %><% if (sum.due) { %> <span class="badge badge-warning num"><%= sum.due %></span><% } %></a>
+  <% sum.stages.forEach(function (s) { %><a href="/admin/crm<%= qs({ stage: s.key, due: '' }) %>"<%= f.stage === s.key ? ' class="active"' : '' %>><%= t('crm.stage_' + s.key) %> <span class="badge num"><%= s.n %></span></a><% }) %>
+</nav>
+
+<form method="get" class="panel mb-4"><div class="panel-body row-sm wrap">
+  <input type="hidden" name="stage" value="<%= f.stage || '' %>"><input type="hidden" name="due" value="<%= f.due || '' %>">
+  <input class="input grow" name="q" value="<%= f.q %>" placeholder="<%= t('crm.search') %>">
+  <select class="select" name="kind"><option value=""><%= t('crm.kind_all') %></option><% kinds.forEach(function (k) { %><option value="<%= k %>"<%= f.kind === k ? ' selected' : '' %>><%= t('crm.kind_' + k) %></option><% }) %></select>
+  <select class="select" name="country"><option value=""><%= t('crm.country_all') %></option><% sum.countries.forEach(function (c) { %><option value="<%= c.code %>"<%= f.country === c.code ? ' selected' : '' %>><%= countryName(c.code) %> (<%= c.n %>)</option><% }) %></select>
+  <button class="btn btn-secondary" type="submit"><%- icon('search', 'icon-sm') %><%= t('crm.search_btn') %></button>
+</div></form>
+
+<section class="panel flush">
+  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('crm.none') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive" data-crm-table>
+    <thead><tr><th><%= t('crm.name') %></th><th><%= t('crm.kind') %></th><th><%= t('crm.stage') %></th><th><%= t('crm.place') %></th><th><%= t('crm.contact') %></th><th><%= t('crm.next') %></th></tr></thead>
+    <tbody>
+    <% rows.forEach(function (c) { var due = c.next_action_at && new Date(c.next_action_at) <= now; %>
+      <tr>
+        <td class="primary-cell"><a class="strong" href="/admin/crm/<%= c.id %>"><%= c.name %></a><% if (c.organization && c.organization !== c.name) { %><div class="tiny muted"><%= c.organization %></div><% } %></td>
+        <td data-label="<%= t('crm.kind') %>"><span class="badge"><%= t('crm.kind_' + c.kind) %></span></td>
+        <td data-label="<%= t('crm.stage') %>"><span class="badge badge-dot <%= c.stage === 'customer' ? 'badge-success' : c.stage === 'lost' ? 'badge-neutral' : 'badge-info' %>"><%= t('crm.stage_' + c.stage) %></span></td>
+        <td data-label="<%= t('crm.place') %>" class="small"><%= countryName(c.country) %><% if (c.city) { %> · <%= c.city %><% } %></td>
+        <td data-label="<%= t('crm.contact') %>" class="small" dir="ltr"><%= c.whatsapp || c.phone || '' %><div class="tiny muted"><%= c.email || '' %></div></td>
+        <td data-label="<%= t('crm.next') %>" class="small<%= due ? ' warn-text strong' : '' %>"><%= d(c.next_action_at) %><% if (c.next_action) { %><div class="tiny"><%= c.next_action %></div><% } %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>

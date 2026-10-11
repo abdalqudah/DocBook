@@ -57,7 +57,7 @@ function card(req, c) {
 }
 
 async function directory(req, res, preset = {}) {
-  const f = dir.filtersFrom(req.query, preset);
+  const f = dir.filtersFrom(req.query, { ...preset, country: preset.country || require('../../core/region').ofRequest(req) }); // eslint-disable-line global-require
   const result = await dir.search(f, req.locale);
   const cityLabel = f.city ? (result.facets.cities.find((c) => c.key === f.city) || {}).label : null;
   const specLabel = f.specialty ? req.t(`specialties.${f.specialty}`) : null;
@@ -99,7 +99,7 @@ async function directory(req, res, preset = {}) {
     layout: 'public', title: heading, seoHead: { title: `${heading} · ${site}`, html: tags.join('\n') },
     f, preset, heading, cards, facets: result.facets, total: result.total, allCount: (await dir.listed()).length,
     meta: { page: result.page, pages: result.pages, total: result.total, perPage: dir.PAGE_SIZE },
-    specLabel, cityLabel, filtered, pageStyles: ['/css/discover.css'],
+    specLabel, cityLabel, filtered, pageStyles: ['/css/discover.css'], countryName: (cc) => require('../settings/options').regionName(cc, req.locale), // eslint-disable-line global-require
   });
 }
 

@@ -5,6 +5,7 @@
 // Only ACTIVE vendors (approved by the platform) and their active products / published, in-date offers are visible.
 // These are read queries against the vendor tables so this module does not depend on the vendor portal's service.
 const knex = require('../../db/knex');
+const region = require('../../core/region');
 const audit = require('../../core/audit');
 const { AppError, E } = require('../../core/errors');
 const { z, validate, money } = require('../../core/validate');
@@ -51,6 +52,7 @@ const targets = (table, col, specialty) => function sub() {
  * offer's specialties (broad clinics: all), limited to the offer's cities when it has any.
  */
 function reach(q, business, spec) {
+  region.inCountry(q, 'v.country', business && business.country); // the clinic's country: its vendors only
   const bid = Number(business && business.id) || 0;
   const city = String((business && business.city) || '').trim().toLowerCase();
   return q.andWhere((w) => w
@@ -125,7 +127,7 @@ function productQuery(ctx) {
 
 async function products(ctx, business, { specialty, q, vendor, page: p } = {}) {
   const spec = effectiveSpecialty(business, specialty);
-  const base = productQuery(ctx);
+  const base = region.inCountry(productQuery(ctx), 'v.country', business && business.country);
   if (spec) base.whereExists(targets('vendor_product_specialties', 'product_id', spec));
   if (vendor) base.andWhere('p.vendor_id', Number(vendor) || 0);
   if (q && String(q).trim()) {
@@ -141,7 +143,7 @@ async function products(ctx, business, { specialty, q, vendor, page: p } = {}) {
 }
 
 async function product(ctx, business, id) {
-  const p = await productQuery(ctx).where('p.id', Number(id) || 0).first();
+  const p = await region.inCountry(productQuery(ctx), 'v.country', business && business.country).where('p.id', Number(id) || 0).first();
   if (!p) throw E.notFound('Product');
   const specs = await knex('vendor_product_specialties').where({ product_id: p.id }).pluck('specialty');
   const spec = clinicSpecialty(business);
@@ -175,6 +177,7 @@ async function vendors(ctx, business, { specialty, q } = {}) {
   const query = knex('vendors as v').leftJoin(counts, 'pc.vendor_id', 'v.id')
     .leftJoin('suppliers as s', function j() { this.on('s.vendor_id', 'v.id').andOn('s.business_id', knex.raw('?', [ctx.businessId])); })
     .where('v.status', 'active')
+    .modify((x) => region.inCountry(x, 'v.country', business && business.country)) // the clinic's country
     .select('v.id', 'v.type', 'v.name', 'v.name_en', 'v.contact_name', 'v.email', 'v.phone', 'v.whatsapp', 'v.city', 'v.logo_mime',
       knex.raw('COALESCE(pc.n, 0) as products_count'), 's.id as supplier_id')
     .orderBy('v.name').limit(300);
@@ -196,7 +199,7 @@ async function vendors(ctx, business, { specialty, q } = {}) {
 /** Active vendors that have at least one visible product (for the products tab's vendor filter). */
 async function vendorOptions(business, specialty) {
   const spec = effectiveSpecialty(business, specialty);
-  const q = knex('vendors as v').join('vendor_products as p', 'p.vendor_id', 'v.id').where({ 'v.status': 'active', 'p.is_active': true })
+  const q = region.inCountry(knex('vendors as v').join('vendor_products as p', 'p.vendor_id', 'v.id').where({ 'v.status': 'active', 'p.is_active': true }), 'v.country', business && business.country)
     .distinct('v.id', 'v.name', 'v.name_en').orderBy('v.name');
   if (spec) q.whereExists(function e() { this.select(knex.raw('1')).from('vendor_product_specialties as ps').whereRaw('ps.product_id = p.id').andWhere('ps.specialty', spec); });
   return q;

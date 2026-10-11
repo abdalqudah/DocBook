@@ -1,0 +1,58 @@
+<%# Admin → Activity: who is active on the platform now and from where. %>
+<% var qs = function (extra) { var p = Object.assign({ period: period, country: f.country || '', kind: f.kind || '' }, extra); return '?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); };
+   var ago = function (d) { var m = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000)); return m < 1 ? t('pcomms.just_now') : m < 60 ? t('pcomms.min_ago', { n: m }) : m < 1440 ? t('pcomms.hours_ago', { n: Math.round(m / 60) }) : t('pcomms.days_ago', { n: Math.round(m / 1440) }); }; %>
+<div class="page-head">
+  <div><h1><%= t('pcomms.activity_title') %></h1><p><%= t('pcomms.activity_lead') %></p></div>
+  <div class="page-actions"><% if (geo.lookup) { %>
+    <form method="post" action="/admin/activity/locate"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('map-pin', 'icon-sm') %><%= t('pcomms.geo_locate') %></button></form>
+  <% } else { %><a class="link small" href="/admin/settings#geo"><%= t('pcomms.geo_enable') %></a><% } %></div>
+</div>
+
+<div class="grid grid-3 mb-4">
+  <div class="panel stat" data-stat-online><div class="panel-body"><div class="small muted"><span class="badge badge-dot badge-success"></span> <%= t('pcomms.online_now') %></div><div class="h1 num"><%= counts.online %></div></div></div>
+  <div class="panel stat"><div class="panel-body"><div class="small muted"><%= t('pcomms.today') %></div><div class="h1 num"><%= counts.today %></div></div></div>
+  <div class="panel stat"><div class="panel-body"><div class="small muted"><%= t('pcomms.week') %></div><div class="h1 num"><%= counts.week %></div></div></div>
+</div>
+
+<nav class="tabs mb-4">
+  <% ['online', 'day', 'week', 'month'].forEach(function (k) { %><a href="/admin/activity<%= qs({ period: k }) %>"<%= period === k ? ' class="active" aria-current="page"' : '' %>><%= t('pcomms.period_' + k) %></a><% }) %>
+</nav>
+
+<div class="grid grid-main" style="align-items:start">
+  <section class="panel flush">
+    <div class="panel-head"><div><h2><%= t('pcomms.accounts') %></h2></div>
+      <form method="get" class="row-sm"><input type="hidden" name="period" value="<%= period %>"><input type="hidden" name="country" value="<%= f.country || '' %>">
+        <select class="select select-sm" name="kind" data-autosubmit>
+          <option value=""><%= t('pcomms.kind_all') %></option>
+          <% ['clinic', 'vendor', 'admin', 'other'].forEach(function (k) { %><option value="<%= k %>"<%= f.kind === k ? ' selected' : '' %>><%= t('pcomms.kind_' + k) %></option><% }) %>
+        </select><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.filter') %></button></form></div>
+    <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('pcomms.none') %></p></div><% } else { %>
+    <div class="table-wrap"><table class="table responsive" data-activity-table>
+      <thead><tr><th><%= t('pcomms.who') %></th><th><%= t('pcomms.where_account') %></th><th><%= t('pcomms.from') %></th><th><%= t('pcomms.device') %></th><th><%= t('pcomms.last_seen') %></th></tr></thead>
+      <tbody>
+      <% rows.forEach(function (r) { %>
+        <tr>
+          <td class="primary-cell"><div class="strong"><% if (r.online) { %><span class="badge badge-dot badge-success" title="<%= t('pcomms.online_now') %>"></span> <% } %><%= r.user_name || '—' %></div><div class="tiny muted" dir="ltr"><%= r.user_email %></div></td>
+          <td data-label="<%= t('pcomms.where_account') %>"><span class="badge"><%= t('pcomms.kind_' + r.kind) %></span> <%= r.clinic_name || r.vendor_name || '' %></td>
+          <td data-label="<%= t('pcomms.from') %>"><%= r.place_country ? countryName(r.place_country) : (r.clinic_country ? countryName(r.clinic_country) + ' *' : '—') %><% if (r.ip_city) { %> · <%= r.ip_city %><% } %><div class="tiny muted" dir="ltr"><%= r.ip || '' %></div></td>
+          <td data-label="<%= t('pcomms.device') %>" class="small"><%= r.device %><div class="tiny muted" dir="ltr"><%= r.path || '' %></div></td>
+          <td data-label="<%= t('pcomms.last_seen') %>" class="small"><%= ago(r.last_seen_at) %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+    <div class="panel-body tiny muted"><%= t('pcomms.country_note') %></div>
+    <% } %>
+  </section>
+
+  <aside class="panel">
+    <div class="panel-head"><div><h2><%= t('pcomms.by_country') %></h2></div></div>
+    <div class="panel-body stack-sm">
+      <a class="row between<%= f.country ? '' : ' strong' %>" href="/admin/activity<%= qs({ country: '' }) %>"><span><%= t('pcomms.all_countries') %></span></a>
+      <% countries.forEach(function (c) { %>
+        <% if (c.code) { %><a class="row between<%= f.country === c.code ? ' strong' : '' %>" href="/admin/activity<%= qs({ country: c.code }) %>"><span><%= countryName(c.code) %></span><span class="badge num"><%= c.n %></span></a>
+        <% } else { %><div class="row between muted"><span><%= t('pcomms.unknown_place') %></span><span class="badge num"><%= c.n %></span></div><% } %>
+      <% }) %>
+    </div>
+  </aside>
+</div>

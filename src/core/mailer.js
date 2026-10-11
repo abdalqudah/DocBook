@@ -4,7 +4,21 @@ const nodemailer = require('nodemailer');
 const brand = require('../config/brand');
 
 let transport = null;
-const serverSmtp = () => Boolean(process.env.SMTP_HOST);
+// The platform's SMTP: from the environment (SMTP_HOST…), else from Admin → Platform settings (refreshed every minute
+// and when saved).
+let dbSmtp = null;
+let dbAt = 0;
+async function refreshPlatformSmtp() {
+  dbAt = Date.now();
+  if (process.env.SMTP_HOST) { dbSmtp = null; return null; }
+  let next = null;
+  try { next = await require('../modules/platformcomms/comms.service').smtp(); } catch { next = null; } // eslint-disable-line global-require
+  if (JSON.stringify(next) !== JSON.stringify(dbSmtp)) transport = null;
+  dbSmtp = next;
+  return dbSmtp;
+}
+function resetPlatformSmtp() { transport = null; dbAt = 0; refreshPlatformSmtp().catch(() => {}); }
+const serverSmtp = () => Boolean(process.env.SMTP_HOST) || Boolean(dbSmtp);
 
 // One clinic / one centre installation without the server's own SMTP: the installation's clinic mailbox (Settings →
 // Clinic e-mail, verified) sends every e-mail, account e-mails included — there is no "platform address" to fall
@@ -25,16 +39,18 @@ async function refreshInstallationMailbox() {
   return installationMailbox;
 }
 function configured() {
+  if (Date.now() - dbAt > 60_000) refreshPlatformSmtp().catch(() => {});
   if (Date.now() - checkedAt > 60_000) refreshInstallationMailbox().catch(() => {});
   return serverSmtp() || Boolean(installationMailbox);
 }
 function tx() {
   if (!serverSmtp()) return null;
   if (!transport) {
-    const port = Number(process.env.SMTP_PORT || 465);
+    const env = Boolean(process.env.SMTP_HOST);
+    const c = env ? { host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 465), user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD || '' } : dbSmtp;
     transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST, port, secure: port === 465,
-      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD || '' } : undefined,
+      host: c.host, port: c.port, secure: c.port === 465,
+      auth: c.user ? { user: c.user, pass: c.pass || '' } : undefined,
     });
   }
   return transport;
@@ -119,6 +135,7 @@ async function send({ to, subject, html, replyTo, attachments, fromName, busines
     if (r.sent) return true;
     if (r.replyTo && !replyTo) replyTo = r.replyTo; // eslint-disable-line no-param-reassign
   }
+  if (Date.now() - dbAt > 60_000) await refreshPlatformSmtp();
   const t = tx();
   if (!t) {
     // No server SMTP: the clinic's own verified mailbox, else the installation's. On a one-clinic / one-centre
@@ -135,17 +152,18 @@ async function send({ to, subject, html, replyTo, attachments, fromName, busines
     }
     return false;
   }
-  const from = process.env.MAIL_FROM || `${brand.name} <no-reply@localhost>`;
+  const from = process.env.MAIL_FROM || (dbSmtp && !process.env.SMTP_HOST && dbSmtp.from) || `${brand.name} <no-reply@localhost>`;
   await t.sendMail({ from: fromWithName(from, fromName), to, subject, html, ...(replyTo ? { replyTo } : {}), ...(attachments ? { attachments } : {}) });
   return true;
 }
 
 /** Can e-mail go out for this clinic (the platform account, or the clinic's own verified account)? */
 async function configuredFor(businessId) {
+  if (Date.now() - dbAt > 60_000) await refreshPlatformSmtp();
   if (serverSmtp()) return true;
   if (!installationMailbox) await refreshInstallationMailbox();
   if (installationMailbox) return true;
   return businessId ? require('../modules/clinicmail/clinicmail.service').canSend(businessId) : false; // eslint-disable-line global-require
 }
 
-module.exports = { configured, configuredFor, send, layout, warmLogo, refreshInstallationMailbox };
+module.exports = { configured, configuredFor, send, layout, warmLogo, refreshInstallationMailbox, refreshPlatformSmtp, resetPlatformSmtp };

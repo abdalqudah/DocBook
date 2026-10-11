@@ -117,6 +117,7 @@ async function start(server) {
     setInterval(() => require('./modules/hub/hub.service').sync().catch((e) => console.error('[hub]', e.message)), 60_000).unref(); // eslint-disable-line global-require, no-console -- pages read live too (hub.fresh); this keeps it warm
     setInterval(legacyTick, 5 * 60_000).unref();
   }
+  await require('./core/mailer').refreshPlatformSmtp().catch(() => null); // eslint-disable-line global-require -- the platform's SMTP saved in Admin → Platform settings
   await require('./core/mailer').refreshInstallationMailbox().catch(() => null); // eslint-disable-line global-require -- one clinic without server SMTP: its own mailbox sends
   server.removeAllListeners('request');
   server.on('request', createApp());

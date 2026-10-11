@@ -15,6 +15,8 @@
   _nav.push(['/admin/login-page', 'log-in', 'loginpage.nav', false, 'platform']); // the sign-in page's words and look
   _nav.push(['/admin/databases', 'database', 'dbsep.nav', false, 'platform']); // each clinic's own database
   _nav.push(['/admin/images', 'minimize', 'imgopt.nav', false, 'platform']); // compress pictures stored before uploads were compressed
+  _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'overview'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
+  _nav.push(['/admin/settings', 'settings', 'pcomms.nav', false, 'platform']); // the platform's e-mail and WhatsApp
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
   // Sidebar groups: an entry may name its group in a 5th field (n[4]); otherwise it is looked up by href; unknown → platform.

@@ -29,6 +29,15 @@
         </select>
       </div>
       <% } %>
+      <% if (facets.countries && facets.countries.length > 1) { %>
+      <div class="field" data-dir-country>
+        <label class="label" for="dir-country"><%= t('directory.country') %></label>
+        <select class="select" id="dir-country" name="country">
+          <option value="all"<%= f.country ? '' : ' selected' %>><%= t('directory.any_country') %></option>
+          <% facets.countries.forEach(function (cc) { %><option value="<%= cc %>"<%= f.country === cc ? ' selected' : '' %>><%= countryName(cc) %></option><% }) %>
+        </select>
+      </div>
+      <% } %>
       <div class="field">
         <label class="label" for="dir-city"><%= t('directory.city') %></label>
         <select class="select" id="dir-city" name="city">

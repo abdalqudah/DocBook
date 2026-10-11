@@ -1,0 +1,83 @@
+<%# Admin → Platform settings: the platform's e-mail (SMTP) and WhatsApp (Cloud API, public number / link), IP places. %>
+<%
+  var o = old || {}; var posted = Object.keys(o).length > 0; var errs = errors || {};
+  var m = s.mail; var w = s.whatsapp;
+  var f = function (name, label, value, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: value, errors: errs, old: posted ? o : null }, extra || {})); };
+  var on = function (k, cur) { return posted ? o[k] === '1' : Boolean(cur); };
+%>
+<div class="page-head">
+  <div><h1><%= t('pcomms.title') %></h1><p><%= t('pcomms.lead') %></p></div>
+</div>
+<% if (typeof formError !== 'undefined' && formError) { %><div class="alert alert-danger mb-4"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= formError %></div></div><% } %>
+
+<form method="post" action="/admin/settings" class="stack" autocomplete="off" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <section class="panel" id="mail">
+    <div class="panel-head"><div><h2><%- icon('mail', 'icon-sm') %> <%= t('pcomms.mail_title') %></h2><div class="panel-sub"><%= t('pcomms.mail_sub') %></div></div>
+      <span class="badge badge-dot <%= envSmtp || m.ready ? 'badge-success' : 'badge-neutral' %>"><%= envSmtp ? t('pcomms.mail_env') : m.ready ? t('pcomms.ready') : t('pcomms.not_set') %></span></div>
+    <div class="panel-body stack">
+      <% if (envSmtp) { %><div class="alert alert-info small"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('pcomms.mail_env_note') %></div></div><% } %>
+      <div class="form-grid cols-3">
+        <%- f('mail_host', t('pcomms.mail_host'), m.host, { attrs: 'dir="ltr" placeholder="mail.medworks.app"' }) %>
+        <%- f('mail_port', t('pcomms.mail_port'), m.port, { type: 'select', options: [{ value: 465, label: '465 (SSL)' }, { value: 587, label: '587 (STARTTLS)' }, { value: 25, label: '25' }, { value: 2525, label: '2525' }] }) %>
+        <%- f('mail_user', t('pcomms.mail_user'), m.user, { attrs: 'dir="ltr" autocomplete="off"' }) %>
+      </div>
+      <div class="form-grid cols-3">
+        <%- f('mail_password', t('pcomms.mail_password'), '', { type: 'password', attrs: 'dir="ltr" autocomplete="new-password"', help: m.hasPassword ? t('pcomms.secret_saved') : '' }) %>
+        <%- f('mail_from_email', t('pcomms.mail_from_email'), m.from_email, { attrs: 'dir="ltr" placeholder="info@medworks.app"' }) %>
+        <%- f('mail_from_name', t('pcomms.mail_from_name'), m.from_name, { attrs: 'placeholder="MedWorks"' }) %>
+      </div>
+      <% if (m.hasPassword) { %><label class="check"><input type="checkbox" name="mail_remove_password" value="1"><span><%= t('pcomms.remove_secret') %></span></label><% } %>
+    </div>
+  </section>
+
+  <section class="panel" id="whatsapp">
+    <div class="panel-head"><div><h2><%- icon('message-circle', 'icon-sm') %> <%= t('pcomms.wa_title') %></h2><div class="panel-sub"><%= t('pcomms.wa_sub') %></div></div>
+      <span class="badge badge-dot <%= w.ready ? 'badge-success' : 'badge-neutral' %>"><%= w.ready ? t('pcomms.ready') : t('pcomms.not_set') %></span></div>
+    <div class="panel-body stack">
+      <h3 class="h4"><%= t('pcomms.wa_api') %></h3>
+      <div class="form-grid cols-3">
+        <%- f('wa_phone_number_id', t('pcomms.wa_phone_number_id'), w.phone_number_id, { attrs: 'dir="ltr" inputmode="numeric"', help: t('pcomms.wa_phone_number_id_help') }) %>
+        <%- f('wa_token', t('pcomms.wa_token'), '', { type: 'password', attrs: 'dir="ltr" autocomplete="new-password"', help: w.hasToken ? t('pcomms.secret_saved') : t('pcomms.wa_token_help') }) %>
+        <%- f('wa_default_dial', t('pcomms.wa_default_dial'), w.default_dial, { attrs: 'dir="ltr" inputmode="numeric" maxlength="4"', help: t('pcomms.wa_default_dial_help') }) %>
+      </div>
+      <% if (w.hasToken) { %><label class="check"><input type="checkbox" name="wa_remove_token" value="1"><span><%= t('pcomms.remove_secret') %></span></label><% } %>
+      <h3 class="h4 mt-2"><%= t('pcomms.wa_public') %></h3>
+      <p class="small muted"><%= t('pcomms.wa_public_sub') %></p>
+      <div class="form-grid cols-3">
+        <%- f('wa_public_number', t('pcomms.wa_public_number'), w.public_number, { attrs: 'dir="ltr" inputmode="numeric" placeholder="9627XXXXXXXX"' }) %>
+        <%- f('wa_public_text_ar', t('pcomms.wa_public_text_ar'), w.public_text_ar, {}) %>
+        <%- f('wa_public_text_en', t('pcomms.wa_public_text_en'), w.public_text_en, { attrs: 'dir="ltr"' }) %>
+      </div>
+      <label class="check"><input type="checkbox" name="wa_public_button" value="1"<%= on('wa_public_button', w.public_button) ? ' checked' : '' %>><span><%= t('pcomms.wa_public_button') %></span></label>
+      <% if (publicLink) { %>
+      <div class="field" data-wa-public-link><span class="label"><%= t('pcomms.wa_link') %></span>
+        <div class="row-sm"><input class="input" readonly dir="ltr" value="<%= publicLink %>"><a class="btn btn-secondary btn-sm" href="<%= publicLink %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('pcomms.wa_open') %></a></div>
+        <span class="help"><%= t('pcomms.wa_link_help') %></span></div>
+      <% } %>
+    </div>
+  </section>
+
+  <section class="panel" id="geo">
+    <div class="panel-head"><div><h2><%- icon('map-pin', 'icon-sm') %> <%= t('pcomms.geo_title') %></h2><div class="panel-sub"><%= t('pcomms.geo_sub') %></div></div></div>
+    <div class="panel-body">
+      <label class="check"><input type="checkbox" name="geo_lookup" value="1"<%= on('geo_lookup', s.geo.lookup) ? ' checked' : '' %>><span><%= t('pcomms.geo_lookup') %></span></label>
+    </div>
+  </section>
+
+  <div class="form-actions"><button class="btn btn-primary" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button></div>
+</form>
+
+<div class="grid grid-2 mt-6" style="align-items:start">
+  <form method="post" action="/admin/settings/test-email" class="panel">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%= t('pcomms.test_email') %></h2></div></div>
+    <div class="panel-body row-sm wrap"><input class="input grow" name="to" type="email" dir="ltr" placeholder="you@example.com" required><button class="btn btn-secondary" type="submit"><%- icon('send', 'icon-sm') %><%= t('pcomms.send_test') %></button></div>
+  </form>
+  <form method="post" action="/admin/settings/test-whatsapp" class="panel">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%= t('pcomms.test_whatsapp') %></h2></div></div>
+    <div class="panel-body row-sm wrap"><input class="input grow" name="to" dir="ltr" inputmode="tel" placeholder="9627XXXXXXXX" required><button class="btn btn-secondary" type="submit"<%= w.ready ? '' : ' disabled' %>><%- icon('send', 'icon-sm') %><%= t('pcomms.send_test') %></button></div>
+  </form>
+</div>

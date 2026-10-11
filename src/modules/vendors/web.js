@@ -130,7 +130,7 @@ const renderOffer = async (req, res, extra = {}) => {
     title: req.t(o ? 'vendor_portal.offer_edit' : 'vendor_portal.offer_new'), o,
     specialtyOptions: specialtyOptions(req), products: await vendors.productChoices(req.vendorCtx),
     defaultSpecialties: o ? o.specialties : (await vendors.getProfile(req.vendor.id)).specialties,
-    clinicChoices: await vendors.offerClinicChoices(), maxClinics: await billing.maxOfferClinics(req.vendor.id), pageScripts: ['/js/vbill.js'], pageStyles: ['/css/vendors.css', '/css/vbill.css'], ...extra,
+    clinicChoices: await vendors.offerClinicChoices(req.vendor.country), maxClinics: await billing.maxOfferClinics(req.vendor.id), pageScripts: ['/js/vbill.js'], pageStyles: ['/css/vendors.css', '/css/vbill.css'], ...extra,
   });
 };
 router.get('/offers/new', wrap((req, res) => renderOffer(req, res)));

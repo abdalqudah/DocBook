@@ -339,9 +339,9 @@ const offerSchema = z.object({
 });
 
 /** Clinics a vendor can send an offer to (the same clinics open to reps), for the offer form's picker. */
-async function offerClinicChoices() {
+async function offerClinicChoices(country = null) {
   const { openToReps } = require('../marketplace/rep-visits.service'); // eslint-disable-line global-require
-  return openToReps(knex('businesses as b')).select('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty').orderBy('b.city').orderBy('b.name').limit(1000);
+  return openToReps(knex('businesses as b'), country).select('b.id', 'b.name', 'b.name_en', 'b.city', 'b.specialty').orderBy('b.city').orderBy('b.name').limit(1000);
 }
 async function checkTargets(ctx, target, specialties, clinicIds) {
   if (target === 'specialty') {
@@ -352,7 +352,8 @@ async function checkTargets(ctx, target, specialties, clinicIds) {
   if (!want.length) throw E.validation({ clinic_ids: 'Choose at least one clinic.' });
   const max = await billing.maxOfferClinics(ctx.vendorId);
   if (max !== null && want.length > max) throw new AppError('VENDOR_LIMIT_CLINICS', `Your plan allows up to ${max} clinics per offer.`, 422, { clinic_ids: `Your plan allows up to ${max} clinics per offer.` });
-  const ok = new Set((await offerClinicChoices()).map((c) => c.id));
+  const vrow = await knex('vendors').where({ id: ctx.vendorId }).first('country');
+  const ok = new Set((await offerClinicChoices(vrow && vrow.country)).map((c) => c.id));
   if (want.some((id) => !ok.has(id))) throw E.validation({ clinic_ids: 'Choose a valid value.' });
   return want;
 }

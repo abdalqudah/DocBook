@@ -1,0 +1,34 @@
+<%# Admin → CRM → add / edit a contact. %>
+<% var v = c || {}; var errs = errors || {};
+   var f = function (name, label, value, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: value, errors: errs, old: old }, extra || {})); };
+   var dt = v.next_action_at ? new Date(v.next_action_at).toISOString().slice(0, 16) : ''; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/crm"><%= t('crm.title') %></a></div><h1><%= c ? t('crm.edit') : t('crm.new') %></h1></div>
+</div>
+<form method="post" action="<%= c ? '/admin/crm/' + c.id + '/edit' : '/admin/crm/new' %>" class="panel" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack">
+    <div class="form-grid cols-3">
+      <%- f('name', t('crm.name'), v.name, { required: true }) %>
+      <%- f('organization', t('crm.organization'), v.organization) %>
+      <%- f('kind', t('crm.kind'), v.kind || 'prospect', { type: 'select', options: kinds.map(function (k) { return { value: k, label: t('crm.kind_' + k) }; }) }) %>
+    </div>
+    <div class="form-grid cols-3">
+      <%- f('whatsapp', t('crm.whatsapp'), v.whatsapp, { attrs: 'dir="ltr" inputmode="tel"' }) %>
+      <%- f('phone', t('crm.phone'), v.phone, { attrs: 'dir="ltr" inputmode="tel"' }) %>
+      <%- f('email', t('crm.email'), v.email, { type: 'email', attrs: 'dir="ltr"' }) %>
+    </div>
+    <div class="form-grid cols-3">
+      <%- f('country', t('crm.country'), v.country, { type: 'select', options: countries, placeholder: '—' }) %>
+      <%- f('city', t('crm.city'), v.city) %>
+      <%- f('source', t('crm.source'), v.source, { type: 'select', options: sources.map(function (k) { return { value: k, label: t('crm.source_' + k) }; }), placeholder: '—' }) %>
+    </div>
+    <div class="form-grid cols-3">
+      <%- f('stage', t('crm.stage'), v.stage || 'new', { type: 'select', options: stages.map(function (k) { return { value: k, label: t('crm.stage_' + k) }; }) }) %>
+      <%- f('next_action_at', t('crm.next_at'), dt, { type: 'datetime-local' }) %>
+      <%- f('next_action', t('crm.next_action'), v.next_action) %>
+    </div>
+    <%- f('notes', t('crm.notes'), v.notes, { type: 'textarea', attrs: 'rows="4"' }) %>
+  </div>
+  <div class="panel-foot form-actions"><a class="btn btn-ghost" href="<%= c ? '/admin/crm/' + c.id : '/admin/crm' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>
