@@ -52,14 +52,15 @@ async function save(ctx, body) {
 
 /**
  * A plan's price in the page's currency, rounded up to a price ending in 9: 185.15 → 199 (rounded up to 5 / 10 first,
- * then to the 9 of that ten), 1851.5 → 1869, and under 100 to .9: 15.16 → 15.9. The plans' own currency (rate 1) is
+ * then to the 9 of that ten), 1851.5 → 1869, and under 100 to the nearest whole number: 15.05 → 15, 70.5 → 70. The
+ * plans' own currency (rate 1) is
  * shown as set.
  */
 function convert(amount, rate) {
   const v = Number(amount || 0) * rate;
   if (!v) return 0;
   if (Number(rate) === 1) return Number(amount);
-  if (v < 100) return Number((Math.ceil(v - 0.9 - 1e-9) + 0.9).toFixed(1));
+  if (v < 100) return Math.max(1, Math.round(v - 0.001)); // whole numbers, a half rounds down: 70.5 → 70
   const step = v >= 1000 ? 10 : 5;
   const r = Math.ceil(v / step) * step;
   return r - (r % 10) + 9;
