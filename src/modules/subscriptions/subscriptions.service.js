@@ -33,7 +33,7 @@ const LIMITS = { doctors: 'max_doctors', staff: 'max_staff', appointments: 'max_
 const REMIND_DAYS = [7, 3, 1];
 const KEY = 'subscriptions';
 const DEFAULTS = {
-  enabled: false, trialDays: 30, graceDays: 7, trialNoCard: true, trialPlanId: null,
+  enabled: false, trialDays: 14, graceDays: 7, trialNoCard: true, trialPlanId: null,
   billingName: '', bankName: '', accountName: '', iban: '', swift: '', cliqAlias: '', cliqName: '', instructions: '', instructions_en: '',
 };
 

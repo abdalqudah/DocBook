@@ -26,3 +26,12 @@ test('the onboarding services are in the catalog and running the seed again adds
   const after = [(await knex('sales_services').count({ n: '*' }))[0].n, (await knex('document_templates').count({ n: '*' }))[0].n];
   assert.deepEqual(after.map(Number), before.map(Number));
 });
+
+test('the plans are Basic 35, Advanced 50 and Business 80, the trial 14 days, and the quotation services follow', async () => {
+  const plans = await knex('subscription_plans').whereIn('name_en', ['Basic', 'Advanced', 'Business']).orderBy('price_monthly').select('name', 'name_en', 'price_monthly', 'price_yearly');
+  assert.deepEqual(plans.map((p) => [p.name, Number(p.price_monthly), Number(p.price_yearly)]), [['أساسي', 35, 350], ['متقدم', 50, 500], ['الأعمال', 80, 800]]);
+  assert.equal(await knex('subscription_plans').whereIn('name_en', ['Starter', 'Growth', 'Network']).first('id'), undefined);
+  assert.equal(require('../src/modules/subscriptions/subscriptions.service').DEFAULTS.trialDays, 14); // eslint-disable-line global-require
+  const svc = await knex('sales_services').where({ name_ar: 'الباقة المتقدمة — اشتراك شهري' }).first('price');
+  assert.equal(Number(svc.price), 50);
+});

@@ -96,7 +96,7 @@ exports.up = async (knex) => {
       { name_ar: 'نقل البيانات من النظام السابق', name_en: 'Data migration from the previous system', description_ar: 'استيراد المرضى والمواعيد والملفات من النظام السابق.', description_en: 'Importing patients, appointments and files from the previous system.', unit_ar: 'مرة واحدة', unit_en: 'one time', price: 0, sort: 910 },
     );
     for (const r of rows) { // eslint-disable-line no-restricted-syntax
-      if (!(await knex('sales_services').where({ name_ar: r.name_ar }).first('id'))) await knex('sales_services').insert({ active: true, ...r }); // eslint-disable-line no-await-in-loop
+      if (!(await knex('sales_services').where({ name_ar: r.name_ar }).orWhere({ name_en: r.name_en }).first('id'))) await knex('sales_services').insert({ active: true, ...r }); // eslint-disable-line no-await-in-loop
     }
   }
   if (await knex.schema.hasTable('platform_settings')) {
