@@ -250,7 +250,7 @@ function robots(s, base, aiBlocked = []) {
 async function sitemap(s, base) {
   const x = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const urls = [];
-  if (s.index_home) urls.push({ loc: '/' }, { loc: '/features' }, { loc: '/pricing' }, { loc: '/privacy' }, { loc: '/terms' });
+  if (s.index_home) urls.push({ loc: '/' }, { loc: '/features' }, { loc: '/pricing' }, { loc: '/clinic-management-system' }, { loc: '/switch' }, { loc: '/demo' }, { loc: '/privacy' }, { loc: '/terms' });
   if (s.index_home) (await require('../countrypages/countrypages.service').enabledCodes().catch(() => [])).forEach((cc) => urls.push({ loc: `/${cc.toLowerCase()}` })); // eslint-disable-line global-require -- country pages
   if (s.index_home) {
     const guides = await require('../helpcenter/help.service').list().catch(() => []); // eslint-disable-line global-require -- help articles
@@ -530,7 +530,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
     title = L(s.title, locale) || L(siteContent.seo && siteContent.seo.title, locale) || name;
     description = L(s.description, locale) || L(siteContent.seo && siteContent.seo.description, locale);
     noindex = !s.index_home;
-  } else if (kind === 'pricing' || kind === 'features' || kind === 'blog') {
+  } else if (kind === 'pricing' || kind === 'features' || kind === 'blog' || kind === 'page' || kind === 'legal') { // 'page': the platform's other public pages (/demo, /switch…)
     title = `${pageTitle} · ${name}`;
     description = pageDesc || '';
     noindex = !s.index_home;
@@ -587,7 +587,7 @@ async function head(req, res, { kind, site, clinic, doctors, title: pageTitle, d
   for (const d of ld) tags.push(`<script type="application/ld+json">${ldJson(d)}</script>`);
 
   // Pixels: marketing pages only, only with the visitor's consent.
-  const marketingPage = kind === 'home' || kind === 'cookies' || kind === 'pricing' || kind === 'features' || kind === 'blog';
+  const marketingPage = kind === 'home' || kind === 'cookies' || kind === 'pricing' || kind === 'features' || kind === 'blog' || kind === 'page';
   const pixelsOn = marketingPage && hasPixels(mkt);
   const consent = consentOf(req);
   let pixels = null;

@@ -123,6 +123,9 @@
     <div class="site-footer-bottom">
       <span>© <%= new Date().getFullYear() %> <%= footer && footer.copyright ? footer.copyright : brandName %>. <%= t('site.rights') %></span>
       <span class="row wrap site-footer-links">
+        <a href="/demo"><%= t('mkt.demo.nav') %></a>
+        <a href="/switch"><%= t('mkt.switch.nav') %></a>
+        <a href="/clinic-management-system"><%= t('mkt.cms.nav') %></a>
         <a href="/clinics"><%= t('directory.find_clinic') %></a>
         <a href="/vendors"><%= t('vendors.footer_link') %></a>
         <a href="/privacy"><%= t('site.privacy') %></a>

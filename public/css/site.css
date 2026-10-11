@@ -863,3 +863,26 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .wa-float .icon { width: 22px; height: 22px; }
 @media (max-width: 640px) { .wa-float { padding: 14px; } .wa-float-text { display: none; } }
 @media print { .wa-float { display: none; } }
+
+/* /demo, /switch, /clinic-management-system */
+.lp-page-cta { margin-top: 24px; justify-content: center; }
+.lp-demo-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 32px; align-items: start; }
+.lp-demo-form .btn-lg { justify-self: start; }
+.lp-demo-ok { width: 56px; height: 56px; margin: 0 auto; color: var(--success); }
+.lp-hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.lp-demo-side h2 { margin: 0 0 16px; }
+.lp-demo-gets { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.lp-demo-gets li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; }
+.lp-demo-gets h3 { font-size: 16px; margin: 2px 0 4px; }
+.lp-demo-gets p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+.lp-free-note { display: flex; align-items: center; gap: 8px; margin-top: 20px; padding: 12px 16px; border-radius: 14px; background: var(--primary-soft); color: var(--primary); font-weight: var(--fw-semibold); }
+.lp-free-note.center { justify-content: center; width: fit-content; margin-inline: auto; }
+.lp-step-list.lp-step-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.lp-step-list.lp-step-3::before { inset-inline: 16.6%; }
+.lp-article h2 { margin: 36px 0 12px; font-size: clamp(22px, 2.4vw, 28px); line-height: 1.35; }
+.lp-article h2:first-child { margin-top: 0; }
+.lp-article p { line-height: 1.9; color: var(--text-muted); font-size: 16px; }
+.lp-cms-shot { max-width: 1080px; margin: 24px auto 0; }
+@media (max-width: 900px) { .lp-demo-grid { grid-template-columns: minmax(0, 1fr); } .lp-step-list.lp-step-3 { grid-template-columns: minmax(0, 1fr); } .lp-step-list.lp-step-3::before { display: none; } }
+.lp-cta-demo { position: relative; flex-basis: 100%; margin: 4px 0 0; }
+.lp-cta-demo a { display: inline-flex; align-items: center; gap: 6px; color: inherit; opacity: .9; text-decoration: underline; text-underline-offset: 3px; }

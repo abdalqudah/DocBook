@@ -1,0 +1,64 @@
+<%# /demo — a clinic asks for a demo: the request goes to the platform's CRM (src/modules/crm/demo.service.js). %>
+<% var D = M.demo; var o = old || {}; var e = errors || {};
+   var sel = function (name, list) { return list.map(function (label, i) { return '<option value="' + i + '"' + (String(o[name]) === String(i) ? ' selected' : '') + '>' + label.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }) + '</option>'; }).join(''); }; %>
+<section class="site-hero lp-hero lp-page-hero">
+  <div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container center">
+    <span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= D.kicker %></span>
+    <h1><%= D.title %></h1>
+    <p class="lead"><%= D.lead %></p>
+  </div>
+</section>
+<section class="section">
+  <div class="container lp-demo-grid">
+    <% if (sent) { %>
+    <div class="panel lp-demo-form"><div class="panel-body stack center">
+      <span class="lp-icon lp-demo-ok"><%- icon('circle-check') %></span>
+      <h2><%= D.sent_title %></h2>
+      <p class="muted"><%= D.sent_text %></p>
+      <div class="row-sm wrap lp-page-cta">
+        <% if (typeof platformWa !== 'undefined' && platformWa) { %><a class="btn btn-primary" href="<%= platformWa %>" target="_blank" rel="noopener"><%- icon('message-circle', 'icon-sm') %><%= D.sent_wa %></a><% } %>
+        <a class="btn btn-secondary" href="/signup"><%= D.or_trial %></a>
+      </div>
+    </div></div>
+    <% } else { %>
+    <form method="post" action="/demo" class="panel lp-demo-form" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="lp-hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+      <div class="panel-body stack">
+        <div class="form-grid cols-2">
+          <div class="field"><label class="label" for="d-name"><%= D.name %><span class="req">*</span></label><input class="input<%= e.name ? ' is-invalid' : '' %>" id="d-name" name="name" maxlength="120" autocomplete="name" value="<%= o.name || '' %>" required><% if (e.name) { %><span class="field-error"><%= e.name %></span><% } %></div>
+          <div class="field"><label class="label" for="d-clinic"><%= D.clinic %><span class="req">*</span></label><input class="input<%= e.clinic ? ' is-invalid' : '' %>" id="d-clinic" name="clinic" maxlength="190" autocomplete="organization" value="<%= o.clinic || '' %>" required><% if (e.clinic) { %><span class="field-error"><%= e.clinic %></span><% } %></div>
+        </div>
+        <div class="form-grid cols-2">
+          <div class="field"><label class="label" for="d-phone"><%= D.phone %></label><input class="input<%= e.phone ? ' is-invalid' : '' %>" id="d-phone" name="phone" type="tel" inputmode="tel" dir="ltr" maxlength="40" autocomplete="tel" value="<%= o.phone || '' %>"><% if (e.phone) { %><span class="field-error"><%= e.phone %></span><% } else { %><span class="help"><%= D.phone_help %></span><% } %></div>
+          <div class="field"><label class="label" for="d-email"><%= D.email %></label><input class="input<%= e.email ? ' is-invalid' : '' %>" id="d-email" name="email" type="email" dir="ltr" maxlength="190" autocomplete="email" value="<%= o.email || '' %>"><% if (e.email) { %><span class="field-error"><%= e.email %></span><% } %></div>
+        </div>
+        <div class="form-grid cols-3">
+          <div class="field"><label class="label" for="d-country"><%= D.country %></label><select class="select" id="d-country" name="country"><option value="">—</option><% countries.forEach(function (c) { %><option value="<%= c.value %>"<%= o.country === c.value ? ' selected' : '' %>><%= c.label %></option><% }) %></select></div>
+          <div class="field"><label class="label" for="d-city"><%= D.city %></label><input class="input" id="d-city" name="city" maxlength="120" value="<%= o.city || '' %>"></div>
+          <div class="field"><label class="label" for="d-spec"><%= D.specialty %></label><input class="input" id="d-spec" name="specialty" maxlength="120" placeholder="<%= D.specialty_ph %>" value="<%= o.specialty || '' %>"></div>
+        </div>
+        <div class="form-grid cols-2">
+          <div class="field"><label class="label" for="d-doctors"><%= D.doctors %></label><select class="select" id="d-doctors" name="doctors"><option value="">—</option><%- sel('doctors', D.doctors_opts) %></select></div>
+          <div class="field"><label class="label" for="d-current"><%= D.current %></label><select class="select" id="d-current" name="current"><option value="">—</option><%- sel('current', D.current_opts) %></select></div>
+        </div>
+        <div class="form-grid cols-2">
+          <div class="field"><label class="label" for="d-how"><%= D.how %></label><select class="select" id="d-how" name="how"><%- sel('how', D.how_opts) %></select></div>
+          <div class="field"><label class="label" for="d-when"><%= D.when %></label><select class="select" id="d-when" name="when"><%- sel('when', D.when_opts) %></select></div>
+        </div>
+        <div class="field"><label class="label" for="d-msg"><%= D.message %></label><textarea class="textarea" id="d-msg" name="message" rows="3" maxlength="2000"><%= o.message || '' %></textarea></div>
+        <button class="btn btn-primary btn-lg" type="submit"><%- icon('calendar-check', 'icon-sm') %><%= D.submit %></button>
+        <p class="tiny muted"><%= D.privacy %> <a class="link" href="/privacy"><%= t('site.privacy') %></a></p>
+      </div>
+    </form>
+    <% } %>
+    <aside class="lp-demo-side">
+      <h2 class="h3"><%= D.get_title %></h2>
+      <ul class="lp-demo-gets">
+        <% D.get.forEach(function (g, i) { %><li><span class="lp-icon"><%- icon(['monitor', 'truck', 'book-open', 'circle-help'][i] || 'check') %></span><div><h3><%= g[0] %></h3><p><%= g[1] %></p></div></li><% }) %>
+      </ul>
+      <p class="lp-free-note"><%- icon('gift', 'icon-sm') %><%= M.free_setup %></p>
+    </aside>
+  </div>
+</section>

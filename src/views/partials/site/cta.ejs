@@ -15,6 +15,7 @@
           <% if (L(d.btn2_label) && d.btn2_href) { %><a class="btn btn-lg lp-btn-ghost-inverse" href="<%= d.btn2_href %>"><%= L(d.btn2_label) %></a><% } %>
         <% } %>
       </div>
+      <% if (!currentUser) { %><p class="lp-cta-demo"><a href="/demo"><%- icon('calendar-check', 'icon-sm') %><%= t('mkt.demo.nav') %></a></p><% } %>
     </div>
   <%- include('slot-close', { s: s }) %></div>
 </section>

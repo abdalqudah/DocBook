@@ -1,0 +1,121 @@
+{
+  "mkt": {
+    "free_setup": "Free setup, training and data migration with every subscription",
+    "demo": {
+      "nav": "Book a demo",
+      "kicker": "Free demo",
+      "title": "See MedWorks on your own clinic",
+      "lead": "Leave your details and we'll arrange a short session (about 30 minutes), online or at your clinic, to show you the system the way you work and answer your questions.",
+      "name": "Your name",
+      "clinic": "Clinic or centre name",
+      "phone": "Mobile / WhatsApp",
+      "phone_help": "With the country code, e.g. 9627XXXXXXXX",
+      "email": "E-mail",
+      "country": "Country",
+      "city": "City",
+      "specialty": "Specialty",
+      "specialty_ph": "Dental, dermatology, paediatrics, multi-specialty centre…",
+      "doctors": "Number of doctors",
+      "doctors_opts": ["One doctor", "2–5 doctors", "6–15 doctors", "More than 15"],
+      "current": "What do you use now?",
+      "current_opts": ["Paper and notebooks", "Excel", "Another system", "Nothing yet"],
+      "when": "Best time to contact you",
+      "when_opts": ["Morning", "Afternoon", "Evening", "Any time"],
+      "how": "How would you like the demo?",
+      "how_opts": ["Online (video call)", "A visit to the clinic", "A phone call"],
+      "message": "Anything you'd like us to focus on? (optional)",
+      "submit": "Request the demo",
+      "privacy": "We use your details only to contact you about the demo.",
+      "sent_title": "Thank you, we got your request",
+      "sent_text": "Our team will contact you within one working day to set the time. You can also message us on WhatsApp now.",
+      "sent_wa": "Message us on WhatsApp",
+      "or_trial": "Or start the free trial right away",
+      "get_title": "What you'll get",
+      "get": [
+        ["A tour the way you work", "We show you bookings, the front desk, medical records and billing as your clinic will use them."],
+        ["A plan to switch", "We agree how to move your data safely from your current system or files."],
+        ["Free setup and training", "We set the system up for your clinic and train your team, included in the subscription at no extra cost."],
+        ["Clear answers", "On prices, permissions, privacy and what fits the size of your clinic."]
+      ],
+      "err_name": "Enter your name.",
+      "err_clinic": "Enter the clinic's name.",
+      "err_contact": "Enter a mobile number or an e-mail so we can reach you.",
+      "err_phone": "Enter a valid mobile number with the country code.",
+      "err_email": "Enter a valid e-mail address."
+    },
+    "switch": {
+      "nav": "Switch to MedWorks",
+      "kicker": "Switching is easy",
+      "title": "Switch to MedWorks without downtime or losing your data",
+      "lead": "Whether you work on paper, in Excel or in another system, we move your data safely, set the system up for your clinic and train your team — free with your subscription.",
+      "points_title": "Data migration done right",
+      "points": [
+        ["shield-check", "Secure transfer", "We move patients, appointments, visits and invoices over encrypted connections, and check the counts afterwards so nothing is lost."],
+        ["database", "From any source", "From your current system, Excel or CSV files, or straight from the database; we map the fields with you first."],
+        ["clock", "No downtime", "Your clinic keeps working as usual; we move the data at a time you choose, then you start on MedWorks on the agreed day."],
+        ["user-check", "A specialist with you", "A data specialist from our team guides you step by step, from the first file to your first working day."],
+        ["download", "Your data stays yours", "Export your clinic's data at any time in common formats such as Excel, CSV and PDF, and link a copy to a database on your own server."]
+      ],
+      "steps_title": "Three steps, and the start is free",
+      "steps": [
+        ["1", "Setup", "We set up the clinic — doctors, services, prices, hours, permissions and the booking site — and move your data."],
+        ["2", "Training", "Training for doctors, reception and accounts, online or at the clinic, with written guides and videos."],
+        ["3", "Go live and follow-up", "We stay with you in the first days, with ongoing support in Arabic and English by WhatsApp and e-mail."]
+      ],
+      "free_note": "Setup, training and data migration are included in the subscription at no extra charge.",
+      "faq_title": "Questions about switching",
+      "faq": [
+        ["How long does switching take?", "Most clinics start within one to three days, depending on how much data there is and where it is."],
+        ["Do I pay for data migration or training?", "No. Setup, training and data migration are free with the subscription."],
+        ["What if my records are on paper?", "We start with your patients and upcoming appointments and help you add the rest over time, or import it from an Excel file."],
+        ["Is my data safe?", "Transfer and storage are encrypted, the owner sets each staff member's permissions, every sensitive action is logged, and we take regular backups."],
+        ["Can I go back to my old system?", "Your data is yours; export all of it at any time."]
+      ],
+      "cta_demo": "Book a demo",
+      "cta_trial": "Start the free trial"
+    },
+    "cms": {
+      "nav": "Clinic management system",
+      "kicker": "Clinic management system",
+      "title": "Clinic management system for clinics and medical centres: your whole day in one system",
+      "lead": "MedWorks is a cloud clinic management system in Arabic and English: online booking and appointments, the front desk and waiting list, electronic medical records, prescriptions, billing and insurance, accounting and payroll, and the clinic's website — from any device.",
+      "toc": "On this page",
+      "sections": [
+        ["What is a clinic management system?", "A clinic management system brings a clinic's daily work together in one place: patients' appointments, their medical records, invoices and payments, and reports. Instead of notebooks, Excel and separate programs, doctors, reception and accounts work on the same data, so there are fewer mistakes and more time for patients."],
+        ["Why MedWorks?", "There are many booking systems, but a clinic needs more than bookings. MedWorks covers the whole clinic day: from the patient booking online in each doctor's free times, to the front desk and waiting screen, the medical record, the prescription and invoice, the cash desk, payroll and reports, and the clinic's website. In Arabic and English, with clear prices for each country and a 14-day free trial."]
+      ],
+      "features_title": "Clinic management features in MedWorks",
+      "features": [
+        ["calendar-days", "Online appointment booking", "A booking page and website for the clinic where patients see only each doctor's free times and book themselves, with automatic WhatsApp, SMS and e-mail reminders that cut no-shows."],
+        ["armchair", "Front desk and waiting list", "Every patient in their place: expected, arrived, with the doctor. And a waiting-room TV screen that calls the patient by voice."],
+        ["notebook-pen", "Electronic medical records", "ICD-10 diagnoses, prescriptions, tests and imaging, attached files and specialty forms, in one secure file."],
+        ["file-text", "ePrescriptions", "A prescription printed with the clinic's logo, or sent to the patient and pharmacy by WhatsApp or e-mail in one click."],
+        ["receipt", "Billing and insurance", "Invoices straight from the visit, cash, card and insurance payments, and claim statements per insurer in Excel and PDF."],
+        ["banknote", "Accounting and payroll", "The cash desk and daily closing, expenses, the income statement, staff and doctors' pay, attendance and leave."],
+        ["package", "Inventory and suppliers", "Clinic supplies with low-stock alerts, purchase orders to suppliers, reps' visit appointments and warehouse offers."],
+        ["video", "Telemedicine", "Prepaid video consultations booked from the clinic's website, with the patient's file in front of the doctor."],
+        ["user-round", "Patient portal", "Patients sign in to see their appointments, prescriptions, reports and files, and book their next visit."],
+        ["activity", "Chronic disease follow-up", "Blood pressure, glucose and weight readings across visits in charts, with a flag when a patient's follow-up is overdue."],
+        ["building-2", "Several branches and centres", "Each branch with its own settings and team, the owner sees the whole picture, and each staff member has the permissions the owner sets."],
+        ["chart-no-axes-column", "Reports", "Revenue, appointments, no-shows, diagnoses and each doctor's performance for any period, exported to PDF and Excel."]
+      ],
+      "who_title": "Who is it for?",
+      "who": "A small clinic with one doctor, clinics with several doctors, and medical centres with branches, in every specialty: dentistry, dermatology, paediatrics, gynaecology, ophthalmology, physiotherapy, general practice and more.",
+      "security_title": "Security and privacy",
+      "security": "Connections are encrypted, passwords and connection keys are stored encrypted, each staff member has set permissions, every sensitive action is written to an audit log, and there are regular backups and a full export of your data at any time.",
+      "price_title": "How much does a clinic management system cost?",
+      "price": "A monthly or yearly subscription with no installation fee, priced in each country's currency, and a 14-day free trial without a card. Setup, training and data migration are free with the subscription.",
+      "price_link": "See the prices",
+      "faq_title": "Frequently asked questions",
+      "faq": [
+        ["Does it work in Arabic?", "Yes, fully in Arabic and English, and each user picks their language."],
+        ["Do I need to install anything?", "No. MedWorks runs in the browser on computers, phones and tablets."],
+        ["Can I try it for free?", "Yes, 14 days free without a card, and you can book a demo with our team."],
+        ["Do you move my data from my current system?", "Yes, safely and for free, together with setup and training for your team."],
+        ["Does it suit several branches?", "Yes, each branch with its own settings and team, with the whole picture for the owner."]
+      ],
+      "cta_title": "Ready to organise your clinic?",
+      "cta_text": "Try MedWorks free for 14 days, or book a demo with our team."
+    }
+  }
+}

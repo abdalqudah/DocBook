@@ -128,6 +128,10 @@
     "campaign_done": {
       "title": "E-mail campaign \"{name}\" finished",
       "body": "{sent} sent, {failed} failed."
+    },
+    "demo_request": {
+      "title": "Demo request: {name}",
+      "body": "{clinic}"
     }
   }
 }

@@ -1,0 +1,40 @@
+<%# /switch — moving to MedWorks: data migration done safely, and free setup and training in three steps. %>
+<% var S = M.switch; %>
+<section class="site-hero lp-hero lp-page-hero">
+  <div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container center">
+    <span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= S.kicker %></span>
+    <h1><%= S.title %></h1>
+    <p class="lead"><%= S.lead %></p>
+    <div class="row-sm wrap center lp-page-cta">
+      <a class="btn btn-primary btn-lg" href="/demo"><%= S.cta_demo %><%- icon('arrow-right', 'flip-rtl') %></a>
+      <a class="btn btn-secondary btn-lg" href="/signup"><%= S.cta_trial %></a>
+    </div>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <div class="section-head center"><h2><%= S.points_title %></h2></div>
+    <div class="lp-cat-cards">
+      <% S.points.forEach(function (p) { %>
+      <article class="lp-cat-card" data-reveal><span class="lp-icon"><%- icon(p[0]) %></span><div><h3><%= p[1] %></h3><p><%= p[2] %></p></div></article>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<section class="section alt lp-steps">
+  <div class="container">
+    <div class="section-head center"><h2><%= S.steps_title %></h2></div>
+    <ol class="lp-step-list lp-step-3">
+      <% S.steps.forEach(function (st) { %><li class="lp-step"><span class="lp-step-n num"><%= st[0] %></span><h3><%= st[1] %></h3><p><%= st[2] %></p></li><% }) %>
+    </ol>
+    <p class="lp-free-note center"><%- icon('gift', 'icon-sm') %><%= S.free_note %></p>
+  </div>
+</section>
+<section class="section lp-faq">
+  <div class="container lp-faq-grid">
+    <div><div class="section-head"><h2><%= S.faq_title %></h2></div></div>
+    <div class="faq"><% S.faq.forEach(function (f) { %><details><summary><span><%= f[0] %></span><%- icon('chevron-down', 'icon-sm') %></summary><p><%= f[1] %></p></details><% }) %></div>
+  </div>
+</section>
+<%- include('_mkt-cta', { title: M.cms.cta_title, text: M.cms.cta_text }) %>

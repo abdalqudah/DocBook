@@ -160,6 +160,42 @@ router.get('/assets/media/:id/:file', wrap(async (req, res, next) => {
   return res.end(f.data);
 }));
 
+// ---------------------------------------------------------------- book a demo, switching, the clinic management system page
+// The texts with lists (cards, steps, questions) are read from the dictionary itself (mkt.*), in the visitor's language.
+const mktOf = (locale) => { const i18n = require('../../core/i18n'); return (i18n.dictionaries[locale] || {}).mkt || i18n.dictionaries.en.mkt; }; // eslint-disable-line global-require
+const faqLd = (items) => ({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: items.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) });
+const demoLimiter = require('express-rate-limit')({ windowMs: 15 * 60_000, limit: require('../../config').isTest ? 1000 : 8, standardHeaders: true, legacyHeaders: false, handler: (req, res, next) => next(require('../../core/errors').E.rateLimited()) }); // eslint-disable-line global-require
+
+async function demoPage(req, res, extra = {}) {
+  const M = mktOf(req.locale);
+  const head = await seo.head(req, res, { kind: 'page', title: M.demo.title, description: M.demo.lead, path: '/demo' });
+  res.status(extra.errors ? 422 : 200).page('pages/site/demo', {
+    layout: 'public', bodyClass: 'lp-modern lp-demo-page', pageTitle: head.title, seoHead: head, M,
+    countries: require('../settings/options').countryOptions(req.locale), errors: {}, old: {}, sent: false, ...extra, // eslint-disable-line global-require
+  });
+}
+router.get('/demo', wrap((req, res) => demoPage(req, res, { sent: req.query.sent === '1' })));
+router.post('/demo', demoLimiter, wrap(async (req, res) => {
+  if (String(req.body.website || '').trim()) return res.redirect(303, '/demo?sent=1'); // a robot filled the hidden field
+  try {
+    await require('../crm/demo.service').request(req.body, { t: req.t, opts: mktOf(req.locale).demo, ip: req.ip }); // eslint-disable-line global-require
+  } catch (e) {
+    if (e instanceof require('../../core/errors').AppError && e.details) return demoPage(req, res, { errors: e.details, old: req.body }); // eslint-disable-line global-require
+    throw e;
+  }
+  return res.redirect(303, '/demo?sent=1');
+}));
+router.get('/switch', wrap(async (req, res) => {
+  const M = mktOf(req.locale);
+  const head = await seo.head(req, res, { kind: 'page', title: M.switch.title, description: M.switch.lead, path: '/switch', ld: [faqLd(M.switch.faq)] });
+  res.page('pages/site/switch', { layout: 'public', bodyClass: 'lp-modern lp-switch-page', pageTitle: head.title, seoHead: head, M });
+}));
+router.get('/clinic-management-system', wrap(async (req, res) => {
+  const M = mktOf(req.locale);
+  const head = await seo.head(req, res, { kind: 'page', title: M.cms.title, description: M.cms.lead, path: '/clinic-management-system', ld: [faqLd(M.cms.faq)] });
+  res.page('pages/site/cms', { layout: 'public', bodyClass: 'lp-modern lp-cms-page', pageTitle: head.title, seoHead: head, M });
+}));
+
 // ---------------------------------------------------------------- privacy policy and terms of service
 // Public pages (linked from every page's footer and from sign-up; Google asks for both when an app uses its sign-in).
 ['privacy', 'terms'].forEach((kind) => {

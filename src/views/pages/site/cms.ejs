@@ -1,0 +1,47 @@
+<%# /clinic-management-system — a long page about the clinic management system, written for search engines and for
+    clinics comparing systems: what it is, why MedWorks, every feature, who it suits, security, prices, questions. %>
+<% var C = M.cms; var _lang = locale === 'en' ? 'en' : 'ar'; %>
+<section class="site-hero lp-hero lp-page-hero">
+  <div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container center">
+    <span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= C.kicker %></span>
+    <h1><%= C.title %></h1>
+    <p class="lead"><%= C.lead %></p>
+    <div class="row-sm wrap center lp-page-cta">
+      <a class="btn btn-primary btn-lg" href="/signup"><%= M.switch.cta_trial %><%- icon('arrow-right', 'flip-rtl') %></a>
+      <a class="btn btn-secondary btn-lg" href="/demo"><%= M.switch.cta_demo %></a>
+    </div>
+  </div>
+</section>
+<section class="section">
+  <div class="container lp-narrow lp-article">
+    <% C.sections.forEach(function (sec) { %><h2><%= sec[0] %></h2><p><%= sec[1] %></p><% }) %>
+  </div>
+  <div class="container">
+    <figure class="lp-3d lp-cms-shot"><img src="/img/landing/<%= _lang %>/frontdesk-3d.webp?v=<%= assetV %>" width="1500" height="1000" alt="<%= C.features[1][1] %>" loading="lazy" decoding="async"></figure>
+  </div>
+</section>
+<section class="section alt">
+  <div class="container">
+    <div class="section-head center"><h2><%= C.features_title %></h2></div>
+    <div class="lp-cat-cards">
+      <% C.features.forEach(function (f) { %><article class="lp-cat-card" data-reveal><span class="lp-icon"><%- icon(f[0]) %></span><div><h3><%= f[1] %></h3><p><%= f[2] %></p></div></article><% }) %>
+    </div>
+    <p class="center mt-6"><a class="btn btn-secondary" href="/features"><%= t('site.features_page.title') %><%- icon('arrow-right', 'icon-sm flip-rtl') %></a></p>
+  </div>
+</section>
+<section class="section">
+  <div class="container lp-narrow lp-article">
+    <h2><%= C.who_title %></h2><p><%= C.who %></p>
+    <h2><%= C.security_title %></h2><p><%= C.security %></p>
+    <h2><%= C.price_title %></h2><p><%= C.price %> <a class="link" href="/pricing"><%= C.price_link %></a></p>
+    <p class="lp-free-note"><%- icon('gift', 'icon-sm') %><%= M.free_setup %> — <a class="link" href="/switch"><%= M.switch.nav %></a></p>
+  </div>
+</section>
+<section class="section alt lp-faq">
+  <div class="container lp-faq-grid">
+    <div><div class="section-head"><h2><%= C.faq_title %></h2></div></div>
+    <div class="faq"><% C.faq.forEach(function (f) { %><details><summary><span><%= f[0] %></span><%- icon('chevron-down', 'icon-sm') %></summary><p><%= f[1] %></p></details><% }) %></div>
+  </div>
+</section>
+<%- include('_mkt-cta', { title: C.cta_title, text: C.cta_text }) %>
