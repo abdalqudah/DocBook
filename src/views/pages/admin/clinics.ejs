@@ -1,4 +1,5 @@
 <div class="page-head"><div><h1><%= t('admin.nav_clinics') %></h1><p><%= t('admin.clinics_sub') %></p></div></div>
+<% if (!subsOn) { %><div class="alert alert-warning mb-4"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><b><%= t('admin.subs_off_title') %></b> <%= t('admin.subs_off_text') %></div><a class="btn btn-secondary btn-sm" href="/admin/plans/settings"><%= t('admin.subs_off_cta') %></a></div><% } %>
 <section class="panel flush">
   <form class="table-toolbar" method="get" action="/admin/clinics" data-autosubmit>
     <div class="input-group"><%- icon('search') %><input class="input" type="search" name="q" value="<%= q %>" placeholder="<%= t('admin.search_clinics') %>" aria-label="<%= t('admin.search_clinics') %>"></div>
@@ -7,6 +8,11 @@
       <option value="active"<%= status === 'active' ? ' selected' : '' %>><%= t('admin.status_active') %></option>
       <option value="suspended"<%= status === 'suspended' ? ' selected' : '' %>><%= t('admin.status_suspended') %></option>
     </select>
+    <% if (subsOn) { %><select class="select" name="sub" aria-label="<%= t('admin.col_sub') %>">
+      <option value=""><%= t('admin.sub_all') %></option>
+      <% subStatuses.forEach(function (st) { %><option value="<%= st %>"<%= sub === st ? ' selected' : '' %>><%= t('subscriptions.status.' + st) %></option><% }) %>
+      <option value="none"<%= sub === 'none' ? ' selected' : '' %>><%= t('admin.sub_none') %></option>
+    </select><% } %>
     <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.search') %></button></noscript>
   </form>
   <% if (!rows.length) { %>
@@ -14,7 +20,7 @@
   <% } else { %>
   <div class="table-wrap">
     <table class="table responsive">
-      <thead><tr><th><%= t('admin.col_clinic') %></th><th><%= t('admin.col_address') %></th><th class="num"><%= t('admin.col_staff') %></th><th class="num"><%= t('admin.col_doctors') %></th><th class="num"><%= t('admin.col_appts') %></th><th><%= t('admin.col_status') %></th><th><%= t('admin.col_created') %></th><th><%= t('admin.col_storage') %></th><th><%= t('admin.col_backup') %></th><th class="actions"></th></tr></thead>
+      <thead><tr><th><%= t('admin.col_clinic') %></th><th><%= t('admin.col_address') %></th><th class="num"><%= t('admin.col_staff') %></th><th class="num"><%= t('admin.col_doctors') %></th><th class="num"><%= t('admin.col_appts') %></th><th><%= t('admin.col_account') %></th><% if (subsOn) { %><th><%= t('admin.col_sub') %></th><% } %><th><%= t('admin.col_created') %></th><th><%= t('admin.col_storage') %></th><th><%= t('admin.col_backup') %></th><th class="actions"></th></tr></thead>
       <tbody>
         <% rows.forEach(function (b) { %>
         <tr data-href="/admin/clinics/<%= b.id %>">
@@ -24,6 +30,7 @@
           <td class="num" data-label="<%= t('admin.col_doctors') %>"><%= fmt.number(Number(b.doctors)) %></td>
           <td class="num" data-label="<%= t('admin.col_appts') %>"><%= fmt.number(Number(b.appts)) %></td>
           <td data-label="<%= t('admin.col_status') %>"><span class="badge <%= b.status === 'active' ? 'badge-success' : 'badge-danger' %> badge-dot"><%= t('admin.status_' + b.status) %></span></td>
+          <% if (subsOn) { var _tone = { trialing: 'badge-info', active: 'badge-success', comped: 'badge-success', past_due: 'badge-warning', expired: 'badge-danger', cancelled: 'badge-neutral' }[b.sub_status] || 'badge-neutral'; %><td data-label="<%= t('admin.col_sub') %>" class="nowrap"><a href="/admin/subscriptions/<%= b.id %>"><span class="badge <%= _tone %> badge-dot"><%= b.sub_status ? t('subscriptions.status.' + b.sub_status) : t('admin.sub_none') %></span></a><% if (b.subEnd) { %><div class="small muted"><%= t(b.sub_status === 'expired' || b.sub_status === 'cancelled' ? 'admin.sub_ended' : 'admin.sub_until', { date: fmt.date(b.subEnd) }) %></div><% } %></td><% } %>
           <td data-label="<%= t('admin.col_created') %>" class="nowrap"><%= fmt.date(b.created_at) %></td>
           <td data-label="<%= t('admin.col_storage') %>" class="nowrap"><% var _sz = function (n) { if (n === null) return t('admin.storage_unl'); return n >= 1073741824 ? fmt.number(Math.round(n / 107374182.4) / 10) + ' ' + t('media_lib.gb') : n >= 1048576 ? fmt.number(Math.round(n / 104857.6) / 10) + ' ' + t('media_lib.mb') : fmt.number(Math.round(n / 1024)) + ' ' + t('media_lib.kb'); }; var _p = b.storage.quota ? Math.round(b.storage.bytes * 100 / b.storage.quota) : 0; %><a class="link" href="/admin/clinics/<%= b.id %>#storage"><bdi class="num small"><%= _sz(b.storage.bytes) %> / <%= _sz(b.storage.quota) %></bdi></a><% if (b.storage.quota) { %><span class="meter<%= _p >= 100 ? ' full' : _p >= 80 ? ' warn' : '' %>" style="margin-top:4px;min-width:90px" aria-hidden="true"><span style="width:<%= Math.min(100, _p) %>%"></span></span><% } %></td>
           <td data-label="<%= t('admin.col_backup') %>" class="nowrap"><% if (b.lastBackup) { %><span class="badge <%= Date.now() - new Date(b.lastBackup).getTime() < 36 * 3600000 ? 'badge-success' : 'badge-warning' %> badge-dot"><%= fmt.date(b.lastBackup, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></span><% } else { %><span class="badge badge-neutral"><%= t('admin.backup.never') %></span><% } %></td>

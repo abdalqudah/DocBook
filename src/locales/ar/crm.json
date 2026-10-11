@@ -108,6 +108,8 @@
     "ai_interest_high": "مهتم جداً",
     "ai_interest_medium": "مهتم",
     "ai_interest_low": "اهتمام منخفض",
-    "ai_interest_unknown": "غير واضح بعد"
+    "ai_interest_unknown": "غير واضح بعد",
+    "source_google": "جوجل",
+    "finder": "ابحث في جوجل"
   }
 }

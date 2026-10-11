@@ -98,6 +98,7 @@ router.post('/plans/settings', wrap(async (req, res) => {
 router.get('/subscriptions', wrap(async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 100);
   const status = [...subs.STATUSES, 'reported', 'none'].includes(req.query.status) ? req.query.status : '';
+  await subs.catchUp(); // an ended trial shows as expired even before the hourly run
   const [data, cfg] = await Promise.all([subs.adminList({ q, status, page: req.query.page }), subs.settings()]);
   page(res, 'subscriptions', { title: req.t('subscriptions_admin.subs_title'), ...data, q, status, cfg, statuses: subs.STATUSES, tab: 'subscriptions' });
 }));

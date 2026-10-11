@@ -612,6 +612,26 @@ async function remind(b, sub, kind, end, days) {
  * Runs every hour (src/server.js): starts trials for clinics without a row, moves statuses on, and sends the
  * 7 / 3 / 1-day reminders. `now` is injectable for tests.
  */
+/**
+ * Brings every stored status up to today (a trial that ended → expired, and so on) without the reminders, so the
+ * admin lists never show a clinic as running when its trial or period is over. Cheap: one query, then only the rows
+ * that change. Returns how many changed (0 while subscriptions are off: nothing ends then).
+ */
+async function catchUp(now = new Date()) {
+  const cfg = await settings();
+  if (!cfg.enabled) return 0;
+  const rows = await knex('clinic_subscriptions as s').join('businesses as b', 'b.id', 's.business_id').whereIn('s.status', ['trialing', 'active', 'past_due'])
+    .select('s.*', 'b.timezone', 'b.name');
+  let changed = 0;
+  for (const r of rows) { // eslint-disable-line no-restricted-syntax
+    const today = clinicNow(r.timezone || 'Asia/Amman', now).date;
+    if (!evaluate(subOut(r), today, cfg.graceDays)) continue; // eslint-disable-line no-continue
+    await ensure({ id: r.business_id, timezone: r.timezone, name: r.name }, today, cfg); // eslint-disable-line no-await-in-loop
+    changed += 1;
+  }
+  return changed;
+}
+
 async function runDue(now = new Date()) {
   const cfg = await settings();
   if (!cfg.enabled) return { checked: 0 };
@@ -637,5 +657,5 @@ module.exports = {
   evaluate, accessEnd, isReadOnly, allowedWhileReadOnly, limitFor, addDays, addMonths, periodEnd, diffDays, nextPeriodStart,
   ensure, state, usage, limitsOf, hasFeature, checkLimit, acceptsBookings, branchAllowance, todayOf, setNow,
   listInvoices, getInvoice, choosePlan, reportPayment,
-  extendTrial, changePlan, recordPayment, comp, cancel, voidInvoice, adminList, runDue,
+  extendTrial, changePlan, recordPayment, comp, cancel, voidInvoice, adminList, runDue, catchUp,
 };

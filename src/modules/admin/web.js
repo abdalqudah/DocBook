@@ -49,6 +49,7 @@ router.use('/', require('../helpcenter/admin.web')); // help articles (/help)
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });
 const like = (q) => `%${String(q).trim().replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
 const since = (days) => new Date(Date.now() - days * 86_400_000);
+const dateOnly = (v) => (v instanceof Date ? `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}` : v ? String(v).slice(0, 10) : null);
 const PER_PAGE = 25;
 const pageMeta = (total, p) => { const pages = Math.max(1, Math.ceil(total / PER_PAGE)); const cur = Math.min(Math.max(1, Number(p) || 1), pages); return { total, page: cur, pages, perPage: PER_PAGE }; };
 
@@ -111,22 +112,36 @@ router.get('/', wrap(async (req, res) => {
     ['ads_running', adsRunning, '/admin/vendor-billing?tab=ads', 'sparkles', 'success'],
   ];
   res.locals.pnText = (n) => pnotify.text(req.t, n);
-  page(res, 'overview', { title: req.t('admin.nav_overview'), attention, notes, stats: { clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length, mailboxes, moves, storageBytes, nearFull, surgeries, surgeryClinics }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
+  // With subscriptions on, "how many clinics work" is their subscriptions (an ended trial is not a working clinic).
+  const subsSvc = require('../subscriptions/subscriptions.service'); // eslint-disable-line global-require
+  let subCounts = null;
+  if ((await subsSvc.settings()).enabled) {
+    await subsSvc.catchUp();
+    subCounts = Object.fromEntries((await knex('clinic_subscriptions').groupBy('status').select('status').count({ n: '*' })).map((r) => [r.status, Number(r.n)]));
+  }
+  page(res, 'overview', { title: req.t('admin.nav_overview'), attention, notes, stats: { subCounts, clinics, active, suspended, users, activeUsers, appts, online, sent, screens, chats, centreSends, centreClinics, backedUp, backupTotal: live.length, mailboxes, moves, storageBytes, nearFull, surgeries, surgeryClinics }, dbPending: await require('../../db/auto').pending().catch(() => []), recentClinics, activity, appUrlWarning });
 }));
 
 // ---------------------------------------------------------------- clinics
 router.get('/clinics', wrap(async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 100);
   const status = ['active', 'suspended'].includes(req.query.status) ? req.query.status : '';
-  const base = knex('businesses as b').modify((qb) => {
+  // The subscription as it stands today (a trial that ended shows as expired, not as a working clinic).
+  const subsSvc = require('../subscriptions/subscriptions.service'); // eslint-disable-line global-require
+  const subsCfg = await subsSvc.settings();
+  await subsSvc.catchUp();
+  const sub = subsCfg.enabled && [...subsSvc.STATUSES, 'none'].includes(req.query.sub) ? req.query.sub : '';
+  const base = knex('businesses as b').leftJoin('clinic_subscriptions as s', 's.business_id', 'b.id').modify((qb) => {
     if (q) qb.andWhere((w) => w.where('b.name', 'like', like(q)).orWhere('b.name_en', 'like', like(q)).orWhere('b.slug', 'like', like(q)).orWhere('b.email', 'like', like(q)).orWhere('b.phone', 'like', like(q)));
     if (status) qb.where('b.status', status);
+    if (sub === 'none') qb.whereNull('s.id'); else if (sub) qb.where('s.status', sub);
   });
   const [{ n }] = await base.clone().count({ n: '*' });
   const meta = pageMeta(Number(n), req.query.page);
   const d30 = since(30);
   const rows = await base.clone().orderBy('b.created_at', 'desc').limit(PER_PAGE).offset((meta.page - 1) * PER_PAGE).select(
     'b.id', 'b.name', 'b.name_en', 'b.slug', 'b.status', 'b.city', 'b.currency', 'b.booking_enabled', 'b.created_at', 'b.onboarding_completed_at',
+    's.status as sub_status', 's.trial_ends_at', 's.current_period_end', 's.grace_ends_at',
     knex('memberships').count('*').where('business_id', knex.ref('b.id')).where('status', 'active').as('staff'),
   );
   // Doctors and visits live in each clinic's own database: counted there.
@@ -148,7 +163,11 @@ router.get('/clinics', wrap(async (req, res) => {
   const storageSvc = require('../storage/storage.service'); // eslint-disable-line global-require
   const used = rows.length ? await storageSvc.usageAll(rows.map((r) => r.id)) : new Map();
   await Promise.all(rows.map(async (r) => { const q = await storageSvc.quotaOf(r.id); r.storage = { bytes: used.get(r.id) || 0, quota: q.mb === null ? null : q.mb * storageSvc.MB }; }));
-  page(res, 'clinics', { title: req.t('admin.nav_clinics'), rows, meta, q, status });
+  rows.forEach((r) => {
+    const x = { status: r.sub_status, trial_ends_at: dateOnly(r.trial_ends_at), current_period_end: dateOnly(r.current_period_end), grace_ends_at: dateOnly(r.grace_ends_at) };
+    r.subEnd = r.sub_status === 'expired' ? x.grace_ends_at || x.current_period_end || x.trial_ends_at : subsSvc.accessEnd(x); // expired: the day it ended
+  });
+  page(res, 'clinics', { title: req.t('admin.nav_clinics'), rows, meta, q, status, sub, subsOn: subsCfg.enabled, subStatuses: subsSvc.STATUSES });
 }));
 
 // A clinic's page and its actions run in that clinic's own database (src/db/tenant.js).

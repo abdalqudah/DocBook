@@ -14,7 +14,7 @@ const PLATFORM = [
   'platform_assets', 'platform_settings', 'platform_notifications', 'platform_payments', 'platform_invoices',
   'subscription_plans', 'clinic_subscriptions', 'site_media', 'image_compress_log', 'tenant_dbs', 'support_tickets', 'support_ticket_replies', 'support_ticket_reads',
   // the platform owner's CRM and who is active on the platform (and from where)
-  'crm_contacts', 'crm_activities', 'platform_activity', 'ip_places', 'sales_services', 'quotes', 'quote_items', 'quote_events', 'document_sends', 'email_log', 'document_templates', 'sales_documents', 'template_images', 'lifecycle_emails', 'referral_rewards', 'nps_responses', 'help_articles',
+  'crm_contacts', 'crm_activities', 'platform_activity', 'ip_places', 'sales_services', 'quotes', 'quote_items', 'quote_events', 'document_sends', 'email_log', 'document_templates', 'sales_documents', 'template_images', 'lifecycle_emails', 'referral_rewards', 'nps_responses', 'help_articles', 'crm_lead_searches', 'crm_leads',
   // reps & warehouses, their offers, visits to clinics and purchase orders
   'vendors', 'vendor_users', 'vendor_specialties', 'vendor_products', 'vendor_product_specialties', 'vendor_offers', 'vendor_offer_cities',
   'vendor_offer_products', 'vendor_offer_specialties', 'vendor_offer_targets', 'vendor_offer_views', 'vendor_plans', 'vendor_subscriptions',

@@ -120,6 +120,10 @@
     },
     "nps_low": {
       "title": "Low recommendation score: {clinic} gave {score}/10"
+    },
+    "crm_new_places": {
+      "title": "New clinics on Google: {n}",
+      "body": "They appeared in the search \"{query}\" for the first time."
     }
   }
 }

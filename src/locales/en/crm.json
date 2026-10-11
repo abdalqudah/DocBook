@@ -108,6 +108,8 @@
     "ai_interest_high": "Very interested",
     "ai_interest_medium": "Interested",
     "ai_interest_low": "Low interest",
-    "ai_interest_unknown": "Not clear yet"
+    "ai_interest_unknown": "Not clear yet",
+    "source_google": "Google",
+    "finder": "Find on Google"
   }
 }

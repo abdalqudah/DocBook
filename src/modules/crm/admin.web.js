@@ -51,6 +51,40 @@ const formRun = (fn) => wrap(async (req, res) => {
     return renderForm(req, res, { errors: e.details, old: req.body });
   }
 });
+// ---------------------------------------------------------------- find clinics on Google (leads.service)
+const leads = require('./leads.service');
+// Back to the finder page the admin was on (its filters kept); only a path on this site, never another address.
+const finderBack = (req) => { try { const u = new URL(req.get('referer') || '', 'http://x'); return /^\/admin\/crm\/finder$/.test(u.pathname) ? u.pathname + u.search : '/admin/crm/finder'; } catch { return '/admin/crm/finder'; } };
+const leadAct = (fn, back = finderBack) => wrap(async (req, res) => {
+  try {
+    const msg = await fn(req);
+    if (msg) flash(req, 'success', msg);
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    flash(req, 'error', e.details ? Object.values(e.details).filter(Boolean).join(' ') : e.message);
+  }
+  res.redirect(back(req));
+});
+router.get('/crm/finder', wrap(async (req, res) => {
+  const f = { search: Number(req.query.search) || null, status: leads.STATUSES.includes(req.query.status) ? req.query.status : 'new', fresh: req.query.fresh === '1' ? '1' : '', q: String(req.query.q || '').slice(0, 80) };
+  const [cfg, searches, rows, n] = await Promise.all([leads.settings(), leads.searches(), leads.list(f), leads.counts()]);
+  page(res, 'crm-finder', { title: req.t('crmf.title'), cfg, searches, rows, n, f, countries: options().countryOptions(req.locale), countryName: countryName(req.locale) });
+}));
+router.post('/crm/finder/settings', leadAct(async (req) => { await leads.saveSettings(req.ctx, req.body); return req.t('crmf.settings_saved'); }));
+router.post('/crm/finder/searches', leadAct(async (req) => {
+  const id = await leads.saveSearch(req.ctx, req.body);
+  const r = await leads.run(req.ctx, id, { locale: req.locale });
+  return req.t('crmf.ran', { found: r.found, added: r.added, fresh: r.fresh });
+}, () => '/admin/crm/finder'));
+router.post('/crm/finder/searches/:id(\\d+)/run', leadAct(async (req) => { const r = await leads.run(req.ctx, Number(req.params.id), { locale: req.locale }); return req.t('crmf.ran', { found: r.found, added: r.added, fresh: r.fresh }); }));
+router.post('/crm/finder/searches/:id(\\d+)/auto', leadAct(async (req) => { await leads.setAuto(req.ctx, Number(req.params.id), req.body.auto === '1'); return req.t('crmf.saved'); }));
+router.post('/crm/finder/searches/:id(\\d+)/delete', leadAct(async (req) => { await leads.removeSearch(req.ctx, Number(req.params.id)); return req.t('crmf.search_deleted'); }, () => '/admin/crm/finder'));
+router.post('/crm/finder/leads', leadAct(async (req) => {
+  if (req.body.do === 'ignore') return req.t('crmf.ignored', { n: await leads.ignore(req.ctx, req.body.lead) });
+  const r = await leads.addToCrm(req.ctx, req.body.lead);
+  return req.t('crmf.added', { places: r.places, contacts: r.contacts });
+}));
+
 router.get('/crm/new', wrap((req, res) => renderForm(req, res)));
 router.post('/crm/new', formRun(async (req, res) => {
   const id = await crm.save(req.ctx, null, req.body);

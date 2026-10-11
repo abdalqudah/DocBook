@@ -1071,7 +1071,17 @@
     "stat_surgeries_meta": "خلال 30 يوماً · {n} عيادة",
     "usage_surgeries": "العمليات",
     "usage_surgeries_val": "{n} عملية · {sent} أُرسلت للمستشفى خلال 30 يوماً",
-    "storage_source_server": "الخادم"
+    "storage_source_server": "الخادم",
+    "col_account": "الحساب",
+    "col_sub": "الاشتراك",
+    "sub_all": "كل الاشتراكات",
+    "sub_none": "بلا اشتراك",
+    "sub_until": "حتى {date}",
+    "sub_ended": "انتهى في {date}",
+    "subs_off_title": "الاشتراكات غير مفعّلة.",
+    "subs_off_text": "كل العيادات تعمل دون فترة تجريبية أو انتهاء، لذلك لا تتوقف أي عيادة. فعّل الاشتراكات لتبدأ التجربة المجانية وتتوقف العيادات المنتهية.",
+    "subs_off_cta": "إعدادات الاشتراكات",
+    "stat_clinics_subs": "{paid} مشتركة · {trial} تجريبية · {expired} منتهية"
   },
   "portal": {
     "book": "احجز موعداً",

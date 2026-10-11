@@ -3,7 +3,7 @@
    var d = function (v) { return v ? new Date(v).toISOString().slice(0, 10) : ''; }; %>
 <div class="page-head">
   <div><h1><%= t('crm.title') %></h1><p><%= t('crm.lead') %></p></div>
-  <div class="page-actions"><a class="btn btn-secondary" href="/admin/crm/board" data-crm-board-link><%- icon('columns-2', 'icon-sm') %><%= t('crm.board') %></a><a class="btn btn-primary" href="/admin/crm/new"><%- icon('user-plus', 'icon-sm') %><%= t('crm.new') %></a></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/admin/crm/finder"><%- icon('map-pin', 'icon-sm') %><%= t('crm.finder') %></a><a class="btn btn-secondary" href="/admin/crm/board" data-crm-board-link><%- icon('columns-2', 'icon-sm') %><%= t('crm.board') %></a><a class="btn btn-primary" href="/admin/crm/new"><%- icon('user-plus', 'icon-sm') %><%= t('crm.new') %></a></div>
 </div>
 
 <nav class="tabs mb-4" data-crm-stages>

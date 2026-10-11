@@ -7,18 +7,23 @@ const { E } = require('../../core/errors');
 
 const KINDS = ['clinic', 'warehouse', 'rep', 'prospect', 'partner', 'other'];
 const STAGES = ['new', 'contacted', 'interested', 'demo', 'trial', 'customer', 'lost'];
-const SOURCES = ['signup', 'website', 'whatsapp', 'call', 'referral', 'event', 'import', 'other'];
+const SOURCES = ['signup', 'website', 'whatsapp', 'call', 'referral', 'event', 'import', 'google', 'other'];
 const ACT_KINDS = ['note', 'call', 'email', 'whatsapp', 'meeting', 'stage', 'quote', 'invoice', 'event']; // quote / invoice / event: written by the platform
 
 const str = (v, n) => { const s = String(v === undefined || v === null ? '' : v).trim().slice(0, n); return s || null; };
 const like = (q) => `%${String(q).trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+// A clinic that signed up is a customer only once it pays (or was given the platform free); until then — and after
+// its trial ended without paying, a lead to follow up — it stays at "trial".
+const clinicStage = (b) => (['active', 'past_due', 'comped'].includes(b.sub_status) ? 'customer' : 'trial');
 
 /** Adds the clinics and warehouses not in the CRM yet (source "signup") → how many were added. */
 async function sync() {
   let added = 0;
   const clinics = await knex('businesses as b').where('b.kind', '!=', 'center_admin')
     .whereNotExists(function e() { this.select(knex.raw('1')).from('crm_contacts as c').whereRaw('c.business_id = b.id'); })
-    .select('b.id', 'b.name', 'b.phone', 'b.whatsapp', 'b.email', 'b.country', 'b.city', 'b.status', 'b.created_at').limit(2000);
+    .leftJoin('clinic_subscriptions as s', 's.business_id', 'b.id')
+    .select('b.id', 'b.name', 'b.phone', 'b.whatsapp', 'b.email', 'b.country', 'b.city', 'b.status', 'b.created_at', 's.status as sub_status').limit(2000);
   for (const b of clinics) { // eslint-disable-line no-restricted-syntax
     const owner = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').join('users as u', 'u.id', 'm.user_id') // eslint-disable-line no-await-in-loop
       .where({ 'm.business_id': b.id, 'r.key': 'owner' }).orderBy('m.id').first('u.name', 'u.email', 'u.phone').catch(() => null);
@@ -33,7 +38,7 @@ async function sync() {
     }
     await knex('crm_contacts').insert({ // eslint-disable-line no-await-in-loop
       kind: 'clinic', name: (owner && owner.name) || b.name, organization: b.name, phone: b.phone || (owner && owner.phone) || null, whatsapp: b.whatsapp || null,
-      email: (owner && owner.email) || b.email || null, country: b.country || null, city: b.city || null, stage: b.status === 'active' ? 'customer' : 'new', source: 'signup', business_id: b.id,
+      email: (owner && owner.email) || b.email || null, country: b.country || null, city: b.city || null, stage: clinicStage(b), source: 'signup', business_id: b.id,
     });
     added += 1;
   }
