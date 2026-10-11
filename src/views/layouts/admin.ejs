@@ -8,7 +8,7 @@
   _nav.push(['/admin/reviews', 'star', 'reviews.admin.nav']); // patient reviews moderation
   _nav.push(['/admin/articles', 'notebook-pen', 'articles.admin.nav']); // doctors' articles for the main site
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav']);
-  _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'sales'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
+  _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'sales'], ['/admin/crm/finder', 'map-pin', 'crm.finder', false, 'sales'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
   _nav.push(['/admin/settings', 'settings', 'navx.admin_settings', false, 'platform']); // every platform setting, one place (below)
   _nav.push(['/admin/sales-dashboard', 'chart-no-axes-column', 'dash.nav', false, 'sales'], ['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/templates', 'file-text', 'tpl.nav', false, 'sales'], ['/admin/documents', 'copy', 'tpl.nav_docs', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
@@ -20,7 +20,7 @@
     ['system', [['/admin/security', 'shield-check', 'tfa.nav'], ['/admin/updates', 'cloud-upload', 'platformops.admin_nav'], ['/admin/databases', 'database', 'dbsep.nav'], ['/admin/images', 'minimize', 'imgopt.nav']]],
   ];
   var _inSettings = _settings.some(function (g) { return g[1].some(function (n) { return _p === n[0] || _p.indexOf(n[0] + '/') === 0; }); });
-  var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : n[0] === '/admin/settings' ? _inSettings : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
+  var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : n[0] === '/admin/settings' ? _inSettings : n[0] === '/admin/crm' && _under('/admin/crm/finder') ? false : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
   // Sidebar groups: an entry may name its group in a 5th field (n[4]); otherwise it is looked up by href; unknown → platform.
   var _groupOf = { '/admin': 'overview', '/admin/clinics': 'clinics', '/admin/plans': 'clinics', '/admin/users': 'clinics',
     '/admin/site': 'website', '/admin/seo': 'website', '/admin/growth': 'website', '/admin/domains': 'website', '/admin/google': 'website',

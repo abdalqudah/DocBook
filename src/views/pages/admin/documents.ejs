@@ -1,6 +1,19 @@
 <%# Admin → Sales → Documents: everything made from a template, with who it is for and whether it was opened. %>
 <% var d = function (v) { return v ? fmt.date(new Date(v).toISOString().slice(0, 10)) : ''; }; %>
 <div class="page-head"><div><h1><%= t('tpl.documents') %></h1><p><%= t('tpl.documents_lead') %></p></div><div class="page-actions"><a class="btn btn-primary" href="/admin/templates"><%- icon('file-text', 'icon-sm') %><%= t('tpl.make') %></a></div></div>
+<form method="post" action="/admin/documents/upload" enctype="multipart/form-data" class="panel mb-4" data-pdf-upload>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-head"><div><h2><%- icon('upload', 'icon-sm') %> <%= t('tpl.upload_title') %></h2><p class="panel-sub"><%= t('tpl.upload_lead') %></p></div></div>
+  <div class="panel-body stack">
+    <div class="form-grid cols-3">
+      <div class="field"><label class="label" for="u-file"><%= t('tpl.upload_file') %></label><input class="input" id="u-file" type="file" name="file" accept="application/pdf,.pdf" required></div>
+      <div class="field"><label class="label" for="u-title"><%= t('tpl.doc_title') %></label><input class="input" id="u-title" name="title" maxlength="150" placeholder="<%= t('tpl.upload_title_ph') %>"></div>
+      <div class="field"><label class="label" for="u-contact"><%= t('sales.from_crm') %></label><select class="select" id="u-contact" name="contact_id"><option value="">—</option><% contacts.forEach(function (c) { %><option value="<%= c.id %>"><%= c.name %><%= c.organization ? ' · ' + c.organization : '' %></option><% }) %></select></div>
+    </div>
+    <div class="field"><label class="label" for="u-body"><%= t('tpl.upload_message') %></label><textarea class="textarea" id="u-body" name="body" rows="4" placeholder="<%= t('tpl.upload_message_ph') %>"></textarea></div>
+    <div><button class="btn btn-primary" type="submit"><%- icon('upload', 'icon-sm') %><%= t('tpl.upload_btn') %></button></div>
+  </div>
+</form>
 <section class="panel flush">
   <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('tpl.no_documents') %></p></div><% } else { %>
   <div class="table-wrap"><table class="table responsive" data-documents>

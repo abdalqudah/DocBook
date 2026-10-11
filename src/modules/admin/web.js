@@ -43,7 +43,7 @@ router.use('/', require('../platformcomms/admin.web')); // platform settings (e-
 router.use('/', require('../crm/admin.web')); // the platform owner's CRM
 router.use('/', require('../sales/admin.web')); // quotations, services, seller details, invoices sent, e-mail log // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)
 router.use('/', require('../sales/templates.web')); // document templates and the documents made from them
-router.use('/', require('../countrypages/admin.web')); // a landing page per country (/in/<code>)
+router.use('/', require('../countrypages/admin.web')); // a landing page per country (/<code>)
 router.use('/', require('../helpcenter/admin.web')); // help articles (/help)
 
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });

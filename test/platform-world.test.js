@@ -63,10 +63,10 @@ test('a country page for any country: added from the list, off until switched on
   cache.forgetPrefix('');
   form = await a.get('/admin/country-pages?lang=en');
   assert.match(form.text, /name="BR_currency" value="BRL"/);
-  assert.equal((await app.agent().get('/in/br')).status, 404);
+  assert.equal((await app.agent().get('/br')).status, 404);
   await a.post('/admin/country-pages', { _csrf: a.csrf(form.text), BR_on: '1', BR_currency: 'BRL', BR_rate: '7.1', BR_title_en: `Clinics in Brazil ${tag}` });
   cache.forgetPrefix('');
-  const pg = await app.agent().get('/in/br?lang=en');
+  const pg = await app.agent().get('/br?lang=en');
   assert.equal(pg.status, 200); assert.match(pg.text, new RegExp(`Clinics in Brazil ${tag}`));
 });
 

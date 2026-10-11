@@ -1,14 +1,14 @@
-<%# Admin → Website → Country pages: one landing page per country (/in/<code>), its texts, currency and rate. %>
+<%# Admin → Website → Country pages: one landing page per country (/<code>), its texts, currency and rate. %>
 <% var errs = errors || {}; var o = old || {}; var val = function (cc, f) { var k = cc + '_' + f; return o[k] !== undefined ? o[k] : pages[cc][f]; }; %>
 <div class="page-head"><div><h1><%= t('cpages.admin_title') %></h1><p><%= t('cpages.admin_lead') %></p></div></div>
 <form method="post" action="/admin/country-pages" class="stack" novalidate data-country-pages>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <% codes.forEach(function (cc) { var p = pages[cc]; %>
   <details class="panel"<%= p.on ? ' open' : '' %>>
-    <summary class="panel-head"><div><h2><%= countryName(cc) %> <span class="tiny muted" dir="ltr">/in/<%= cc.toLowerCase() %></span></h2></div><% if (p.on) { %><span class="badge badge-success badge-dot"><%= t('cpages.on') %></span><% } %></summary>
+    <summary class="panel-head"><div><h2><%= countryName(cc) %> <span class="tiny muted" dir="ltr">/<%= cc.toLowerCase() %></span></h2></div><% if (p.on) { %><span class="badge badge-success badge-dot"><%= t('cpages.on') %></span><% } %></summary>
     <div class="panel-body stack-sm">
       <div class="row-sm wrap"><input type="hidden" name="<%= cc %>_on" value="0"><label class="check"><input type="checkbox" name="<%= cc %>_on" value="1"<%= p.on ? ' checked' : '' %>><span><%= t('cpages.on') %></span></label>
-        <% if (p.on) { %><a class="link small" href="/in/<%= cc.toLowerCase() %>" target="_blank" rel="noopener"><%= t('cpages.open') %></a><% } %></div>
+        <% if (p.on) { %><a class="link small" href="/<%= cc.toLowerCase() %>" target="_blank" rel="noopener"><%= t('cpages.open') %></a><% } %></div>
       <div class="form-grid cols-2">
         <div class="field"><label class="label"><%= t('cpages.currency') %></label><input class="input<%= errs[cc + '_currency'] ? ' is-invalid' : '' %>" name="<%= cc %>_currency" value="<%= val(cc, 'currency') %>" dir="ltr" maxlength="3"></div>
         <div class="field"><label class="label"><%= t('cpages.rate') %></label><input class="input<%= errs[cc + '_rate'] ? ' is-invalid' : '' %>" name="<%= cc %>_rate" value="<%= val(cc, 'rate') %>" inputmode="decimal" dir="ltr"><% if (errs[cc + '_rate']) { %><span class="field-error"><%= errs[cc + '_rate'] %></span><% } %></div>

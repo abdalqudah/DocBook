@@ -97,12 +97,15 @@ router.get('/document/:token', wrap(async (req, res) => {
   asLocale(req, res, d.locale);
   res.page('pages/sales/document-public', { layout: 'document', title: d.title, d, html: tpl.render(d.body), p: await sales.profile() });
 }));
-/** A Word document's file (the link is the key). */
+/** A document's file — a Word file, or a PDF uploaded as a document (the link is the key). */
 router.get('/document/:token/download', wrap(async (req, res) => {
   noIndex(res);
   const d = await require('./templates.service').documentByToken(req.params.token, { count: false, withFile: true }); // eslint-disable-line global-require
   if (!d.file) return res.redirect(`/document/${encodeURIComponent(req.params.token)}`);
-  res.set({ 'Content-Type': require('./templates.service').DOCX_MIME, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(d.filename || 'document.docx')}`, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store' }); // eslint-disable-line global-require
+  const t = require('./templates.service'); // eslint-disable-line global-require
+  const pdf = t.isPdfName(d.filename);
+  // A PDF opens in the browser (sandboxed: a PDF never runs the site's scripts); a Word file downloads.
+  res.set({ 'Content-Type': t.mimeOfFile(d.filename), 'Content-Disposition': `${pdf && req.query.download !== '1' ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(d.filename || 'document.docx')}`, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store', ...(pdf ? { 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox" } : {}) });
   return res.end(d.file);
 }));
 /** A picture placed in a template (public: the documents that show it are sent to customers). */

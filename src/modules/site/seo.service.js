@@ -251,7 +251,7 @@ async function sitemap(s, base) {
   const x = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const urls = [];
   if (s.index_home) urls.push({ loc: '/' }, { loc: '/features' }, { loc: '/pricing' });
-  if (s.index_home) (await require('../countrypages/countrypages.service').enabledCodes().catch(() => [])).forEach((cc) => urls.push({ loc: `/in/${cc.toLowerCase()}` })); // eslint-disable-line global-require -- country pages
+  if (s.index_home) (await require('../countrypages/countrypages.service').enabledCodes().catch(() => [])).forEach((cc) => urls.push({ loc: `/${cc.toLowerCase()}` })); // eslint-disable-line global-require -- country pages
   if (s.index_home) {
     const guides = await require('../helpcenter/help.service').list().catch(() => []); // eslint-disable-line global-require -- help articles
     if (guides.length) urls.push({ loc: '/help' }, ...guides.map((g) => ({ loc: `/help/${g.slug}`, lastmod: g.updated_at })));

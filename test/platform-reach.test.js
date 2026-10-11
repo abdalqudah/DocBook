@@ -1,4 +1,4 @@
-// Reaching and keeping clinics: country pages (/in/sa) with prices in the country's currency and sign-up preset to
+// Reaching and keeping clinics: country pages (/sa) with prices in the country's currency and sign-up preset to
 // it; referrals (a free month for the inviting clinic when the invited one pays); the owner's recommendation score
 // (NPS) with low scores told to the admins; the help center (/help, admin, the clinic's Help page); the activity page
 // refreshes itself and reads the visitor's address behind a local proxy.
@@ -50,7 +50,7 @@ test.after(async () => {
 
 test('a country page: off by default; on, the plans in its currency and sign-up preset to the country', async () => {
   await knex('platform_settings').where({ key: cpages.KEY }).del(); cache.forgetPrefix(''); // off until switched on
-  assert.equal((await app.agent().get('/in/sa')).status, 404);
+  assert.equal((await app.agent().get('/sa')).status, 404);
   const a = app.agent(); await a.login(mail('a'));
   const form = await a.get('/admin/country-pages?lang=en');
   assert.equal(form.status, 200);
@@ -59,12 +59,13 @@ test('a country page: off by default; on, the plans in its currency and sign-up 
   r = await a.post('/admin/country-pages', { _csrf: a.csrf(form.text), SA_on: '1', SA_currency: 'SAR', SA_rate: '5.29', SA_title_en: `Clinics in Saudi ${tag}` });
   assert.equal(r.status, 302);
   cache.forgetPrefix('');
-  const page = await app.agent().get('/in/sa?lang=en');
+  assert.equal((await app.agent().get('/in/sa?lang=en')).location, '/sa?lang=en'); // the earlier address moves here
+  const page = await app.agent().get('/sa?lang=en');
   assert.equal(page.status, 200);
   assert.match(page.text, new RegExp(`Clinics in Saudi ${tag}`)); assert.match(page.text, /data-country-page="SA"/);
   assert.match(page.text, /lp-amount num">110<\/span><span class="lp-cur">SAR/, '20 JOD × 5.29 → rounded up to 110 SAR');
   assert.match(page.text, /href="\/signup\?country=SA"/);
-  assert.equal((await app.agent().get('/in/SA')).status, 301);
+  assert.equal((await app.agent().get('/SA')).status, 301);
   const signup = await app.agent().get('/signup?country=SA&lang=en');
   assert.match(signup.text, /<option value="Asia\/Riyadh" selected/); assert.match(signup.text, /<option value="SAR" selected/);
   assert.equal(cpages.convert(20, 5.29), 110); assert.equal(cpages.convert(200, 5.29), 1060);

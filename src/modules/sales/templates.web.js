@@ -81,7 +81,7 @@ router.post('/templates/images', (req, res, next) => imageUpload.single('file')(
   }));
 
 function sendWord(res, buf, name) {
-  res.set({ 'Content-Type': tpl.DOCX_MIME, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(name)}`, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store' });
+  res.set({ 'Content-Type': tpl.mimeOfFile(name), 'Content-Disposition': `${tpl.isPdfName(name) ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(name)}`, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store' });
   return res.end(buf);
 }
 
@@ -112,12 +112,26 @@ router.post('/templates/:id(\\d+)/delete', wrap(async (req, res) => {
 
 // ---------------------------------------------------------------- documents
 router.get('/documents', wrap(async (req, res) => {
-  page(res, 'documents', { title: req.t('tpl.documents'), rows: await tpl.listDocuments() });
+  page(res, 'documents', { title: req.t('tpl.documents'), rows: await tpl.listDocuments(), contacts: await contactsFor() });
 }));
 async function renderDoc(req, res, extra = {}) {
   const doc = await sales.sendable('document', req.params.id, base(res), req.query.locale);
   page(res, 'document-show', { title: doc.label, doc, d: doc.document, html: tpl.render(doc.document.body), sends: await sales.sendsFor('document', doc.id), errors: {}, old: null, ...extra });
 }
+// A ready PDF (a presentation, a brochure) as a document with its own link and message.
+const pdfUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 + 1, files: 1, fields: 8 } }).single('file');
+router.post('/documents/upload', (req, res, next) => pdfUpload(req, res, (e) => { if (e) req.uploadError = e.code === 'LIMIT_FILE_SIZE' ? 'The file is larger than 15 MB.' : 'Choose a PDF file.'; next(); }), verifyCsrfAfterUpload, wrap(async (req, res) => {
+  try {
+    if (req.uploadError) throw new AppError('VALIDATION_FAILED', req.uploadError, 422, { file: req.uploadError });
+    const id = await tpl.uploadDocument(req.ctx, req.file, req.body);
+    flash(req, 'success', req.t('tpl.uploaded'));
+    return res.redirect(`/admin/documents/${id}`);
+  } catch (e) {
+    if (!userErr(e)) throw e;
+    flash(req, 'error', failMsg(e));
+    return res.redirect('/admin/documents');
+  }
+}));
 router.get('/documents/:id(\\d+)', wrap((req, res) => renderDoc(req, res)));
 router.post('/documents/:id(\\d+)', wrap(async (req, res) => {
   try { await tpl.updateDocument(req.ctx, req.params.id, req.body); } catch (e) {

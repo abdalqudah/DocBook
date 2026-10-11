@@ -1,5 +1,7 @@
 <%# A document made from a template, for the customer (its link): print / save as PDF. %>
 <h1 class="h2" style="margin:0 0 4px"><%= d.title %></h1>
 <div class="small muted mb-4"><%= fmt.date(new Date(d.created_at).toISOString().slice(0, 10)) %></div>
-<% if (d.filename) { %><p class="no-print"><a class="btn btn-primary" href="/document/<%= d.token %>/download" data-word-download><%- icon('download', 'icon-sm') %><%= t('tpl.word_download_doc') %></a></p><% } %>
-<article class="doc-body" data-document-body><%- html %></article>
+<% var _pdf = d.filename && /\.pdf$/i.test(d.filename); %>
+<% if (_pdf) { %><p class="no-print row-sm wrap"><a class="btn btn-primary" href="/document/<%= d.token %>/download" target="_blank" rel="noopener" data-pdf-open><%- icon('file-text', 'icon-sm') %><%= t('tpl.pdf_open') %></a><a class="btn btn-secondary" href="/document/<%= d.token %>/download?download=1"><%- icon('download', 'icon-sm') %><%= t('tpl.pdf_download') %></a></p>
+<% } else if (d.filename) { %><p class="no-print"><a class="btn btn-primary" href="/document/<%= d.token %>/download" data-word-download><%- icon('download', 'icon-sm') %><%= t('tpl.word_download_doc') %></a></p><% } %>
+<% if (!_pdf || d.body !== d.title) { %><article class="doc-body" data-document-body><%- html %></article><% } %>

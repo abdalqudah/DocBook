@@ -1,4 +1,4 @@
-// A landing page per country on the platform's site (/in/sa, /in/jo…): its own headline and text, the plans in the
+// A landing page per country on the platform's site (/sa, /jo…): its own headline and text, the plans in the
 // country's currency (the admin's rate from the plans' currency, rounded), how many clinics and drug warehouses of
 // that country are on the platform, and sign-up with the country's time zone and currency already chosen.
 // Admin → Website → Country pages. Stored in platform_settings "country_pages".

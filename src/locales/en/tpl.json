@@ -54,6 +54,17 @@
     "icon_phone": "Phone",
     "icon_email": "E-mail",
     "icon_location": "Location",
-    "icon_calendar": "Book a meeting"
+    "icon_calendar": "Book a meeting",
+    "upload_title": "Upload a PDF",
+    "upload_lead": "A presentation, a brochure or a price list: it becomes a document with its own link, sent by e-mail or WhatsApp with your message, and you see when it is opened.",
+    "upload_file": "The file (PDF up to 15 MB)",
+    "upload_title_ph": "e.g. MedWorks presentation — Saudi Arabia",
+    "upload_message": "Message with the file",
+    "upload_message_ph": "Shown above the file on the link, e.g. Try MedWorks free for 14 days…",
+    "upload_btn": "Upload",
+    "uploaded": "File uploaded. Copy its link or send it.",
+    "pdf_open": "Open the file",
+    "pdf_download": "Download",
+    "pdf_message_help": "This message is shown above the file on the link."
   }
 }

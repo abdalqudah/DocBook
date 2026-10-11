@@ -113,3 +113,9 @@ test('a wrong key: the error is shown on the search, nothing breaks', async () =
   await assert.rejects(leads.run({ userId: null }, s.id));
   assert.match((await knex('crm_lead_searches').where({ id: s.id }).first()).last_error, /API key not valid/);
 });
+
+test('the finder has its own entry in the admin sidebar', async () => {
+  const a = app.agent(); await a.login(mail('a'));
+  const page = await a.get('/admin?lang=en');
+  assert.match(page.text, /href="\/admin\/crm\/finder"/);
+});

@@ -14,6 +14,9 @@ const sales = require('./sales.service');
 const docx = require('../../core/docx');
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const PDF_MIME = 'application/pdf';
+const isPdfName = (name) => /\.pdf$/i.test(String(name || ''));
+const mimeOfFile = (name) => (isPdfName(name) ? PDF_MIME : DOCX_MIME);
 const DOCX_MAX = 10 * 1024 * 1024;
 const COLS = ['id', 'name', 'locale', 'body', 'active', 'kind', 'filename', 'created_by', 'created_at', 'updated_at'];
 /** Icons a template may link ([icon:name](url)) → the icon drawn. */
@@ -147,11 +150,32 @@ const listDocuments = ({ contactId } = {}) => knex('sales_documents as d').leftJ
 /** The team edits a document before (or after) sending: the customer sees the change on the same link. */
 async function updateDocument(ctx, id, body) {
   const d = await getDocument(id);
-  if (d.filename) { await knex('sales_documents').where({ id: d.id }).update({ title: str(body.title, 150) || d.title, updated_at: new Date() }); return; }
+  if (d.filename && !isPdfName(d.filename)) { await knex('sales_documents').where({ id: d.id }).update({ title: str(body.title, 150) || d.title, updated_at: new Date() }); return; }
   const text = String(body.body || '').replace(/\r\n/g, '\n').trim().slice(0, 60000);
   if (!text) throw E.validation({ body: 'Write the document.' });
   await knex('sales_documents').where({ id: d.id }).update({ body: text, title: str(body.title, 150) || d.title, updated_at: new Date() });
 }
+/**
+ * A ready file (a PDF: a brochure, a presentation, a price list) as a document: its own customer link with the message
+ * shown above the file, sent by e-mail or WhatsApp like any other document, and counted when opened.
+ */
+async function uploadDocument(ctx, file, body = {}) {
+  if (!file || !file.buffer || !file.buffer.length) throw E.validation({ file: 'Choose a PDF file.' });
+  if (file.buffer.slice(0, 5).toString('latin1') !== '%PDF-') throw E.validation({ file: 'Choose a PDF file.' });
+  const base = String(file.originalname || 'document.pdf').replace(/\.pdf$/i, '').replace(/[^\p{L}\p{N} ._-]/gu, '').trim().slice(0, 120) || 'document';
+  const title = str(body.title, 150) || base;
+  const contact = body.contact_id ? await knex('crm_contacts').where({ id: Number(body.contact_id) || 0 }).first() : null;
+  const message = String(body.body || '').replace(/\r\n/g, '\n').trim().slice(0, 60000);
+  const [did] = await knex('sales_documents').insert({
+    file: file.buffer, filename: `${base}.pdf`, template_id: null, contact_id: contact ? contact.id : null, title, locale: body.locale === 'en' ? 'en' : 'ar',
+    body: message || title, token: randomToken(24), created_by: ctx.userId || null,
+    recipient_name: contact ? contact.name : null, recipient_email: contact ? contact.email : null, recipient_phone: contact ? contact.whatsapp || contact.phone : null,
+  });
+  await audit.record(ctx, 'platform.document_uploaded', { entityType: 'sales_document', entityId: did, newValues: { title, size: file.buffer.length, contact: contact ? contact.name : null } });
+  if (contact) await crm().log(ctx, contact.id, 'event', title).catch(() => {});
+  return did;
+}
+
 async function removeDocument(ctx, id) {
   const d = await getDocument(id);
   await knex('sales_documents').where({ id: d.id }).del();
@@ -194,4 +218,4 @@ function render(text) {
   return out.join('\n');
 }
 
-module.exports = { DOCX_MIME, ICONS, saveDocx, saveImage, imageByToken, KNOWN, MAIN_FIELDS, fieldsOf, list, get, save, remove, suggestions, generate, getDocument, listDocuments, updateDocument, removeDocument, documentByToken, render };
+module.exports = { DOCX_MIME, PDF_MIME, isPdfName, mimeOfFile, uploadDocument, ICONS, saveDocx, saveImage, imageByToken, KNOWN, MAIN_FIELDS, fieldsOf, list, get, save, remove, suggestions, generate, getDocument, listDocuments, updateDocument, removeDocument, documentByToken, render };

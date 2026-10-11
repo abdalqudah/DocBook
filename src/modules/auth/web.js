@@ -83,7 +83,7 @@ router.get('/signup', wrap(async (req, res) => {
   // An invitation link from another clinic (/signup?ref=CODE): kept until the account is made.
   const refCode = require('../referrals/referrals.service').cleanCode(req.query.ref); // eslint-disable-line global-require
   if (refCode) req.session.ref = refCode;
-  // From a country page (/in/sa): the country's time zone and currency already chosen.
+  // From a country page (/sa): the country's time zone and currency already chosen.
   const cc = String(req.query.country || '').toUpperCase();
   const g = /^[A-Z]{2}$/.test(cc) ? options.geoOf(cc) : null;
   const prefillZone = g ? g.zone : null;

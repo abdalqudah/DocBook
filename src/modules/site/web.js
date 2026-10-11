@@ -84,11 +84,13 @@ router.get('/pricing', wrap(async (req, res) => {
   });
 }));
 
-// ---------------------------------------------------------------- a country's page (/in/sa, /in/jo…)
-router.get('/in/:cc([a-zA-Z]{2})', wrap(async (req, res, next) => {
+// ---------------------------------------------------------------- a country's page (/sa, /jo…)
+// Two letters never clash with a clinic's address (3–40 characters). The earlier /in/sa addresses move here.
+router.get('/in/:cc([a-zA-Z]{2})', (req, res) => res.redirect(301, `/${req.params.cc.toLowerCase()}${req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''}`));
+router.get('/:cc([a-zA-Z]{2})', wrap(async (req, res, next) => {
   const cp = await require('../countrypages/countrypages.service').page(req.params.cc); // eslint-disable-line global-require
   if (!cp) return next();
-  if (req.params.cc !== req.params.cc.toLowerCase()) return res.redirect(301, `/in/${req.params.cc.toLowerCase()}`);
+  if (req.params.cc !== req.params.cc.toLowerCase()) return res.redirect(301, `/${req.params.cc.toLowerCase()}`);
   const content = await site.get();
   const sec = content.sections.find((s) => s.type === 'pricing') || site.defaults().sections.find((s) => s.type === 'pricing');
   const en = req.locale === 'en';
@@ -96,7 +98,7 @@ router.get('/in/:cc([a-zA-Z]{2})', wrap(async (req, res, next) => {
   const title = (en ? cp.title_en || cp.title_ar : cp.title_ar || cp.title_en) || req.t('cpages.default_title', { country });
   const lead = (en ? cp.lead_en || cp.lead_ar : cp.lead_ar || cp.lead_en) || req.t('cpages.default_lead', { country });
   const body = en ? cp.body_en || cp.body_ar : cp.body_ar || cp.body_en;
-  const head = await seo.head(req, res, { kind: 'pricing', site: content, title, description: lead, path: `/in/${cp.code.toLowerCase()}` });
+  const head = await seo.head(req, res, { kind: 'pricing', site: content, title, description: lead, path: `/${cp.code.toLowerCase()}` });
   return res.page('pages/site/country', {
     layout: 'public', bodyClass: 'lp-modern lp-pricing-page', pageTitle: head.title, seoHead: head, content, cp, country, title, lead,
     bodyHtml: body ? require('../sales/templates.service').render(body) : '', // eslint-disable-line global-require
