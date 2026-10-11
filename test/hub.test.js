@@ -70,3 +70,12 @@ test('link → hello → offers and ads cached here; reps see the clinic; revoke
   await hub.unlink({ businessId, userId: null });
   assert.equal((await hub.cached('offer')).length, 0);
 });
+
+test('an unreachable platform says why instead of "fetch failed"', async () => {
+  const err = (code) => Object.assign(new TypeError('fetch failed'), { cause: { code } });
+  assert.match(hub.unreachable('https://medworks.app', err('ENOTFOUND')).message, /medworks\.app was not found/);
+  assert.match(hub.unreachable('https://medworks.app', err('ECONNREFUSED')).message, /did not answer/);
+  assert.match(hub.unreachable('https://medworks.app', err('DEPTH_ZERO_SELF_SIGNED_CERT')).message, /no valid HTTPS certificate/);
+  const r = await fetch('http://127.0.0.1:1/x').catch((e) => hub.unreachable('http://127.0.0.1:1', e));
+  assert.equal(r.code, 'HUB_UNREACHABLE');
+});

@@ -95,13 +95,29 @@ const hubBase = (u) => {
   return x.origin;
 };
 
+/**
+ * Why the platform could not be reached ("fetch failed" says nothing): the address does not resolve, nothing answers,
+ * its HTTPS certificate is not valid yet (e.g. AutoSSL not run), or it took too long.
+ */
+function unreachable(url, e) {
+  const code = String((e && e.cause && (e.cause.code || e.cause.name)) || (e && e.name) || '');
+  const host = (() => { try { return new URL(url).host; } catch { return url; } })();
+  let why;
+  if (/ENOTFOUND|EAI_AGAIN/.test(code)) why = `${host} was not found (check the address and its DNS).`;
+  else if (/ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH/.test(code)) why = `${host} did not answer (is the platform running?).`;
+  else if (/CERT|SSL|TLS|SELF_SIGNED|UNABLE_TO_VERIFY|ERR_TLS/i.test(code)) why = `${host} has no valid HTTPS certificate yet (run AutoSSL on the platform's server) [${code}].`;
+  else if (/Timeout|Abort|ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT/i.test(code)) why = `${host} took too long to answer.`;
+  else why = `${host} could not be reached${code ? ` [${code}]` : ''}.`;
+  return new AppError('HUB_UNREACHABLE', `The platform could not be reached: ${why}`, 502);
+}
+
 async function call(c, path, { method = 'GET', body = null, binary = false } = {}) {
   const key = keyOf(c);
   if (!c.hub_url || !key) throw new AppError('HUB_NOT_LINKED', 'Not linked to the platform.', 409);
   const res = await fetch(`${c.hub_url}/hub/v1${path}`, {
     method, headers: { authorization: `Bearer ${key}`, accept: binary ? '*/*' : 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(30_000),
-  });
+  }).catch((e) => { throw unreachable(c.hub_url, e); });
   if (res.status === 401) throw new AppError('HUB_KEY_REFUSED', 'The platform refused the key.', 409);
   if (!res.ok) throw new AppError('HUB_ERROR', `The platform answered ${res.status}.`, 502);
   return binary ? { data: Buffer.from(await res.arrayBuffer()), mime: res.headers.get('content-type') || '' } : res.json();
@@ -260,7 +276,7 @@ async function visitChanged(visitId, status, note) {
   return call(c, '/visits/status', { method: 'POST', body: { id: v.id, status, note: note || null } }).catch(() => null);
 }
 
-module.exports = {
+module.exports = { unreachable,
   ownClinic, remote, repClinic, repSlots, repBook, repCancel, visitStatus, vendorHubVisits, visitChanged, fresh,
   createLink, revokeLink, links, linkedClinics, linkOf, hello, offersFor, adsFor, imageOf,
   client, keyOf, saveClient, unlink, sync, cached, cachedOne, cachedImage, adClick, clinicCard,
