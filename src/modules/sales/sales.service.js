@@ -21,10 +21,20 @@ const PROFILE_FIELDS = {
   legal_name_ar: 150, legal_name_en: 150, vat_number: 40, cr_number: 40, address_ar: 255, address_en: 255, phone: 40, email: 190, website: 190,
   bank_name: 120, account_name: 150, iban: 40, terms_ar: 3000, terms_en: 3000,
 };
+/** VAT and currency by the customer's country (Seller details can change each). */
+const COUNTRY_RATES = {
+  JO: { tax: 16, currency: 'JOD' }, SA: { tax: 15, currency: 'SAR' }, AE: { tax: 5, currency: 'AED' }, KW: { tax: 0, currency: 'KWD' },
+  QA: { tax: 0, currency: 'QAR' }, BH: { tax: 10, currency: 'BHD' }, OM: { tax: 5, currency: 'OMR' }, EG: { tax: 14, currency: 'EGP' },
+  IQ: { tax: 0, currency: 'IQD' }, PS: { tax: 16, currency: 'ILS' }, LB: { tax: 11, currency: 'USD' },
+};
 const profile = () => cache.remember('sales:profile', async () => {
   const row = await knex('platform_settings').where({ key: 'sales_profile' }).first('value').catch(() => null);
-  return { valid_days: 30, tax_rate: 16, currency: 'JOD', ...(row ? parse(row.value) : {}) };
+  const p = { valid_days: 30, tax_rate: 16, currency: 'JOD', ...(row ? parse(row.value) : {}) };
+  p.country_rates = { ...COUNTRY_RATES, ...(p.country_rates || {}) };
+  return p;
 }, 30_000);
+/** The VAT and currency for a customer in `country` (else the defaults). */
+const ratesFor = (p, country) => (country && p.country_rates[String(country).toUpperCase()]) || { tax: Number(p.tax_rate), currency: p.currency };
 
 async function saveProfile(ctx, body) {
   const p = {};
@@ -37,6 +47,14 @@ async function saveProfile(ctx, body) {
   p.tax_rate = Number(body.tax_rate);
   if (!Number.isFinite(p.tax_rate) || p.tax_rate < 0 || p.tax_rate > 100) errors.tax_rate = 'Enter the VAT rate (e.g. 16).';
   p.currency = /^[A-Z]{3}$/.test(String(body.currency || '').toUpperCase()) ? String(body.currency).toUpperCase() : 'JOD';
+  p.country_rates = {};
+  Object.keys(COUNTRY_RATES).forEach((cc) => {
+    const tax = Number(body[`rate_tax_${cc}`]); const cur = String(body[`rate_currency_${cc}`] || '').trim().toUpperCase();
+    if (body[`rate_tax_${cc}`] === undefined) return;
+    if (!Number.isFinite(tax) || tax < 0 || tax > 100) errors[`rate_tax_${cc}`] = 'Enter the VAT rate (e.g. 16).';
+    else if (!/^[A-Z]{3}$/.test(cur)) errors[`rate_currency_${cc}`] = 'Enter a 3-letter currency code.';
+    else p.country_rates[cc] = { tax, currency: cur };
+  });
   if (Object.keys(errors).length) throw E.validation(errors);
   const value = JSON.stringify(p);
   await knex('platform_settings').insert({ key: 'sales_profile', value }).onConflict('key').merge({ value, updated_at: new Date() });
@@ -124,8 +142,11 @@ async function readQuote(body) {
   if (!v.customer_name) errors.customer_name = 'Enter the customer name.';
   if (v.customer_email && !EMAIL_RE.test(v.customer_email)) errors.customer_email = 'Enter a valid email address.';
   if (v.valid_until < v.issue_date) errors.valid_until = 'The quotation must be valid on or after its date.';
-  if (v.contact_id && !(await knex('crm_contacts').where({ id: v.contact_id }).first('id'))) v.contact_id = null;
-  const taxRate = body.tax_rate === undefined || body.tax_rate === '' ? Number(p.tax_rate) : Number(body.tax_rate);
+  const cRow = v.contact_id ? await knex('crm_contacts').where({ id: v.contact_id }).first('id', 'country') : null;
+  if (!cRow) v.contact_id = null;
+  const rates = ratesFor(p, cRow && cRow.country);
+  if (!/^[A-Z]{3}$/.test(String(body.currency || ''))) v.currency = rates.currency;
+  const taxRate = body.tax_rate === undefined || body.tax_rate === '' ? Number(rates.tax) : Number(body.tax_rate);
   if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) errors.tax_rate = 'Enter the VAT rate (e.g. 16).';
   const discount = Number(String(body.discount || '0').replace(/,/g, ''));
   if (!Number.isFinite(discount) || discount < 0) errors.discount = 'The discount must be zero or more.';
@@ -254,6 +275,8 @@ const T = {
     invoice_whatsapp: 'مرحبا {customer}، هذه فاتورة الاشتراك رقم {number} بقيمة {total} من {seller}:\n{link}',
     document_subject: '{number} — {seller}', document_body: 'مرحبا {customer}،\n\nمرفق {number}.\nبتقدر تشوفه وتطبعه من الرابط.\n\nمع التحية،\n{seller}', document_cta: 'فتح المستند',
     document_whatsapp: 'مرحبا {customer}، هذا {number} من {seller}:\n{link}',
+    receipt_subject: 'تم استلام دفعتك — فاتورة {number}', receipt_body: 'مرحبا {customer}،\n\nاستلمنا دفعة الفاتورة رقم {number} بقيمة {total}. شكراً لك، اشتراكك فعّال.\nبتقدر تشوف الفاتورة وتطبعها من الرابط.\n\nمع التحية،\n{seller}',
+    overdue_subject: 'تذكير: فاتورة {number} بانتظار الدفع', overdue_body: 'مرحبا {customer}،\n\nنذكّرك إنه فاتورة الاشتراك رقم {number} بقيمة {total} لسا ما انْدفعت.\nبتلاقي طرق الدفع على الرابط، وإذا دفعت بلّغنا من صفحة الاشتراك.\n\nمع التحية،\n{seller}',
   },
   en: {
     quote_subject: 'Quotation {number} from {seller}', quote_body: 'Hello {customer},\n\nHere is quotation {number} for {total}, valid until {valid_until}.\nYou can view, print, accept or negotiate it from the link.\n\nBest regards,\n{seller}', quote_cta: 'View quotation',
@@ -262,6 +285,8 @@ const T = {
     invoice_whatsapp: 'Hello {customer}, here is subscription invoice {number} for {total} from {seller}:\n{link}',
     document_subject: '{number} — {seller}', document_body: 'Hello {customer},\n\nPlease find {number} at the link below; you can view and print it.\n\nBest regards,\n{seller}', document_cta: 'Open document',
     document_whatsapp: 'Hello {customer}, here is {number} from {seller}:\n{link}',
+    receipt_subject: 'Payment received — invoice {number}', receipt_body: 'Hello {customer},\n\nWe received the payment of invoice {number} for {total}. Thank you — your subscription is active.\nYou can view and print the invoice from the link.\n\nBest regards,\n{seller}',
+    overdue_subject: 'Reminder: invoice {number} is waiting for payment', overdue_body: 'Hello {customer},\n\nA reminder that subscription invoice {number} for {total} is not paid yet.\nThe payment details are at the link; once paid, let us know from the subscription page.\n\nBest regards,\n{seller}',
   },
 };
 const fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
@@ -299,6 +324,7 @@ async function sendable(type, id, base, locale) {
 }
 function texts(type, locale, vars) {
   const t = T[locale] || T.ar;
+  if (type === 'invoice') return { subject: fill(t.invoice_subject, vars), body: fill(t.invoice_body, vars), cta: t.invoice_cta, whatsapp: fill(t.invoice_whatsapp, vars), receipt: { subject: fill(t.receipt_subject, vars), body: fill(t.receipt_body, vars) }, overdue: { subject: fill(t.overdue_subject, vars), body: fill(t.overdue_body, vars) } };
   return { subject: fill(t[`${type}_subject`], vars), body: fill(t[`${type}_body`], vars), cta: t[`${type}_cta`], whatsapp: fill(t[`${type}_whatsapp`], vars) };
 }
 
@@ -320,10 +346,9 @@ async function sendEmail(ctx, type, id, body, base) {
   if (!text) errors.body = 'Write the message.';
   if (Object.keys(errors).length) throw E.validation(errors);
   const mailer = require('../../core/mailer'); // eslint-disable-line global-require
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   let status = 'sent'; let error = null;
   try {
-    const sent = await mailer.send({ kind: type, to, subject, html: mailer.layout({ locale: doc.locale, title: subject, body: esc(text).replace(/\n/g, '<br>'), cta: doc.texts.cta, href: doc.link }) });
+    const sent = await mailer.send({ kind: type, to, subject, html: mailer.layout({ locale: doc.locale, title: subject, body: text, cta: doc.texts.cta, href: doc.link }) });
     if (!sent) { status = 'failed'; error = 'The platform e-mail is not set up (Admin → Platform settings).'; }
   } catch (e) { status = 'failed'; error = e.message; }
   await logSend(ctx, doc, { channel: 'email', recipient: to, status, error, subject, body: text });
@@ -344,7 +369,7 @@ async function whatsappLink(ctx, type, id, body, base) {
 const sendsFor = (type, id) => knex('document_sends as s').leftJoin('users as u', 'u.id', 's.user_id').where({ 's.doc_type': type, 's.doc_id': Number(id) || 0 }).select('s.*', 'u.name as user_name').orderBy('s.id', 'desc').limit(50);
 
 module.exports = {
-  PROFILE_FIELDS, profile, saveProfile, sellerName,
+  PROFILE_FIELDS, COUNTRY_RATES, ratesFor, profile, saveProfile, sellerName,
   listServices, serviceText, saveService, removeService,
   readItems, totals, createQuote, getQuote, updateQuote, duplicateQuote, removeQuote, quoteState, listQuotes, quoteSummary, quoteByToken, events,
   invoiceShareToken, invoiceByToken, invoiceRecipient,

@@ -1,0 +1,12 @@
+<%# Two-step sign-in: the authenticator app's code (or a recovery code) after the password. %>
+<h1><%= t('tfa.title') %></h1>
+<p class="lead"><%= t('tfa.lead') %></p>
+<form class="stack mt-6" method="post" action="/login/2fa" novalidate data-tfa-form>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <%- include('../../partials/form-error') %>
+  <div class="field"><label class="label" for="f-code"><%= t('tfa.code') %></label>
+    <input class="input input-lg" id="f-code" name="code" inputmode="numeric" autocomplete="one-time-code" dir="ltr" autofocus required maxlength="20"></div>
+  <button class="btn btn-primary btn-lg btn-block" type="submit"><%= t('tfa.verify') %></button>
+</form>
+<p class="mt-4 small muted"><%= t('tfa.recovery_hint') %></p>
+<form method="post" action="/logout" class="mt-4 text-center"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('tfa.cancel') %></button></form>

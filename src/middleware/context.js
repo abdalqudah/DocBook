@@ -15,7 +15,9 @@ async function loadUser(req, res, next) {
   try {
     if (req.session?.userId) {
       const user = await authService.findUser(req.session.userId);
-      if (user && user.status === 'active') req.user = user;
+      // Two-step sign-in on: the account is not used until its code is entered (/login/2fa), whatever the way in.
+      if (user && user.status === 'active' && user.totp_enabled_at && !req.session.totpOk) req.pending2fa = user;
+      else if (user && user.status === 'active') req.user = user;
       else delete req.session.userId;
     }
     next();

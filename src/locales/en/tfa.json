@@ -1,0 +1,28 @@
+{
+  "tfa": {
+    "title": "Two-step sign-in",
+    "lead": "Enter the 6-digit code from your authenticator app.",
+    "code": "Code",
+    "verify": "Continue",
+    "wrong": "The code is not right. Try the newest code from the app.",
+    "recovery_hint": "Lost your phone? Enter one of your recovery codes instead.",
+    "cancel": "Sign out",
+    "nav": "Two-step sign-in",
+    "admin_title": "Two-step sign-in",
+    "admin_lead": "Your account sees every clinic: protect it with a code from an authenticator app (Google Authenticator, Microsoft Authenticator…) after your password.",
+    "on": "On",
+    "off": "Off",
+    "set_up": "Set it up",
+    "step1": "Install an authenticator app on your phone.",
+    "step2": "Scan this code with it (or type the key below).",
+    "step3": "Enter the 6-digit code it shows.",
+    "manual": "Key:",
+    "turn_on": "Turn on",
+    "turn_off": "Turn off",
+    "enabled": "Two-step sign-in is on.",
+    "disabled": "Two-step sign-in is off.",
+    "codes_title": "Your recovery codes",
+    "codes_lead": "Keep them somewhere safe: each one signs you in once if you lose your phone. They are shown only now.",
+    "codes_left": "{n} recovery codes left"
+  }
+}

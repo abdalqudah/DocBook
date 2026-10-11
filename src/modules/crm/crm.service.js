@@ -22,6 +22,15 @@ async function sync() {
   for (const b of clinics) { // eslint-disable-line no-restricted-syntax
     const owner = await knex('memberships as m').join('roles as r', 'r.id', 'm.role_id').join('users as u', 'u.id', 'm.user_id') // eslint-disable-line no-await-in-loop
       .where({ 'm.business_id': b.id, 'r.key': 'owner' }).orderBy('m.id').first('u.name', 'u.email', 'u.phone').catch(() => null);
+    // A prospect we already talk to (a quotation, a call) who signed up with the same e-mail: the same contact.
+    const email = String((owner && owner.email) || b.email || '').toLowerCase();
+    const known = email ? await knex('crm_contacts').whereNull('business_id').whereNull('vendor_id').whereRaw('LOWER(email) = ?', [email]).orderBy('id').first('id', 'organization') : null; // eslint-disable-line no-await-in-loop
+    if (known) {
+      await knex('crm_contacts').where({ id: known.id }).update({ business_id: b.id, kind: 'clinic', organization: known.organization || b.name, country: knex.raw('COALESCE(country, ?)', [b.country || null]), updated_at: new Date() }); // eslint-disable-line no-await-in-loop
+      await log({}, known.id, 'event', `Signed up: ${b.name}`).catch(() => {}); // eslint-disable-line no-await-in-loop
+      added += 1;
+      continue; // eslint-disable-line no-continue
+    }
     await knex('crm_contacts').insert({ // eslint-disable-line no-await-in-loop
       kind: 'clinic', name: (owner && owner.name) || b.name, organization: b.name, phone: b.phone || (owner && owner.phone) || null, whatsapp: b.whatsapp || null,
       email: (owner && owner.email) || b.email || null, country: b.country || null, city: b.city || null, stage: b.status === 'active' ? 'customer' : 'new', source: 'signup', business_id: b.id,
@@ -132,9 +141,8 @@ async function email(ctx, id, { subject, body }, locale = 'ar') {
   if (!subj || !text) throw E.validation({ subject: !subj ? 'Required.' : undefined, body: !text ? 'Required.' : undefined });
   const mailer = require('../../core/mailer'); // eslint-disable-line global-require
   if (!(await mailer.configuredFor(null))) throw E.validation({ subject: 'Set up the platform e-mail first (Admin → Platform settings).' });
-  const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
   let ok = true;
-  try { ok = await mailer.send({ to: c.email, subject: subj, html: mailer.layout({ locale, title: subj, body: esc(text).replace(/\n/g, '<br>') }) }); } catch { ok = false; }
+  try { ok = await mailer.send({ to: c.email, subject: subj, html: mailer.layout({ locale, title: subj, body: text }) }); } catch { ok = false; }
   await log(ctx, c.id, 'email', `${subj}\n\n${text}`, ok ? 'sent' : 'failed');
   if (!ok) throw E.validation({ subject: 'The e-mail could not be sent. Check the platform e-mail settings.' });
 }

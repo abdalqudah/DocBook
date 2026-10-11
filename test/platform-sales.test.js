@@ -67,9 +67,10 @@ test('a quotation: totals, sent by e-mail and WhatsApp, opened, negotiated, answ
   page = await a.get(`/admin/quotes/${id}?lang=en`);
   assert.equal(page.status, 200); assert.match(page.text, new RegExp(`/quote/${q.token}`));
   sent = [];
-  r = await a.post(`/admin/quotes/${id}/email`, { _csrf: a.csrf(page.text), to: mail('c'), subject: 'Your quotation', body: 'Please see the quotation.', locale: 'en' });
+  r = await a.post(`/admin/quotes/${id}/email`, { _csrf: a.csrf(page.text), to: mail('c'), subject: 'Your quotation', body: 'Hello,\nPlease see the quotation.', locale: 'en' });
   assert.equal(r.status, 302);
   assert.equal(sent.length, 1); assert.equal(sent[0].to, mail('c')); assert.match(sent[0].html, new RegExp(`/quote/${q.token}`));
+  assert.doesNotMatch(sent[0].html, /&lt;br&gt;|&amp;lt;/, 'line breaks are real, not shown as code'); assert.match(sent[0].html, /Please see the quotation\./);
   q = await knex('quotes').where({ id }).first();
   assert.equal(q.status, 'sent');
   r = await a.post(`/admin/quotes/${id}/whatsapp`, { _csrf: a.csrf(page.text), phone: '0791234567', locale: 'en' }, { accept: 'application/json' });
@@ -201,10 +202,10 @@ test('signup: the account joins the CRM with a welcome e-mail; every e-mail is i
   assert.ok(c);
   const acts = await knex('crm_activities').where({ contact_id: c.id }).pluck('kind');
   assert.ok(acts.includes('event')); assert.ok(acts.includes('email'));
-  assert.equal(sent.length, 1); assert.equal(sent[0].kind, 'welcome'); assert.match(sent[0].subject, /Welcome to MedWorks/); assert.match(sent[0].html, /https:\/\/medworks\.app\/app/);
+  assert.equal(sent.length, 1); assert.equal(sent[0].kind, 'welcome'); assert.doesNotMatch(sent[0].html, /&lt;br&gt;/); assert.match(sent[0].subject, /Welcome to MedWorks/); assert.match(sent[0].html, /https:\/\/medworks\.app\/app/);
   // the real mailer (no e-mail set up in tests): logged as not sent
   mailer.send = realSend;
-  try { await mailer.send({ kind: 'welcome', to: mail('log'), subject: 'Hello', html: '<p>x</p>' }); } finally { mailer.send = async (o) => { sent.push(o); return true; }; }
+  try { await mailer.send({ kind: 'welcome', to: mail('log'), subject: 'Hello', html: '<p>x</p>' }); } catch { /* another test file may have set a fake SMTP host: logged as failed */ } finally { mailer.send = async (o) => { sent.push(o); return true; }; }
   await new Promise((ok) => { setTimeout(ok, 100); });
   const row = await knex('email_log').where({ to_addr: mail('log') }).first();
   assert.ok(row); assert.equal(row.kind, 'welcome');

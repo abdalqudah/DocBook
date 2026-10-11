@@ -3,19 +3,20 @@
    var f = function (name, label, value, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: value, errors: errs, old: null }, extra || {})); };
    var dOnly = function (x) { return x ? (x instanceof Date ? x.toISOString().slice(0, 10) : String(x).slice(0, 10)) : ''; };
    var items = old ? [].concat(old.item_description || []).map(function (desc, i) { return { description: desc, quantity: [].concat(old.item_quantity || [])[i], unit_price: [].concat(old.item_price || [])[i], service_id: [].concat(old.item_service_id || [])[i] }; }) : (q ? q.items : []);
-   if (!items.length) items = [{ description: '', quantity: 1, unit_price: '' }]; %>
+   if (!items.length) items = [{ description: '', quantity: 1, unit_price: '' }];
+   var startRates = !q && contact && contact.country && p.country_rates[contact.country] ? p.country_rates[contact.country] : { tax: p.tax_rate, currency: p.currency }; %>
 <div class="page-head">
   <div><div class="breadcrumbs"><a href="/admin/quotes"><%= t('sales.quotes') %></a></div><h1><%= q ? (revise ? t('sales.revise_quote', { number: q.number }) : q.number) : t('sales.new_quote') %></h1>
     <% if (revise) { %><p><%= t('sales.revise_lead') %></p><% } %></div>
 </div>
 <% if (typeof formError !== 'undefined' && formError) { %><div class="alert alert-danger mb-4"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= formError %></div></div><% } %>
-<form method="post" action="<%= q ? '/admin/quotes/' + q.id + '/edit' : '/admin/quotes/new' %>" class="stack" novalidate data-quote-form>
+<form method="post" action="<%= q ? '/admin/quotes/' + q.id + '/edit' : '/admin/quotes/new' %>" class="stack" novalidate data-quote-form data-rates="<%= JSON.stringify(p.country_rates) %>"<%= q ? ' data-existing' : '' %>>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <section class="panel"><div class="panel-head"><div><h2><%= t('sales.customer') %></h2></div></div>
     <div class="panel-body stack">
       <div class="field"><label class="label" for="f-contact_id"><%= t('sales.from_crm') %></label>
         <select class="select" id="f-contact_id" name="contact_id" data-quote-contact><option value="">—</option>
-          <% contacts.forEach(function (c) { %><option value="<%= c.id %>" data-name="<%= c.name %>" data-company="<%= c.organization || '' %>" data-email="<%= c.email || '' %>" data-phone="<%= c.whatsapp || c.phone || '' %>"<%= String(v.contact_id || '') === String(c.id) ? ' selected' : '' %>><%= c.name %><%= c.organization ? ' · ' + c.organization : '' %></option><% }) %>
+          <% contacts.forEach(function (c) { %><option value="<%= c.id %>" data-name="<%= c.name %>" data-company="<%= c.organization || '' %>" data-email="<%= c.email || '' %>" data-phone="<%= c.whatsapp || c.phone || '' %>" data-country="<%= c.country || '' %>"<%= String(v.contact_id || '') === String(c.id) ? ' selected' : '' %>><%= c.name %><%= c.organization ? ' · ' + c.organization : '' %></option><% }) %>
         </select></div>
       <div class="form-grid cols-3">
         <%- f('customer_name', t('sales.customer_name'), v.customer_name, { required: true }) %>
@@ -49,8 +50,8 @@
     <div class="panel-body stack">
       <div class="form-grid cols-3">
         <%- f('discount', t('sales.discount'), v.discount !== undefined ? Number(v.discount) : 0, { attrs: 'inputmode="decimal"' }) %>
-        <%- f('tax_rate', t('sales.tax_rate'), v.tax_rate !== undefined ? Number(v.tax_rate) : p.tax_rate, { attrs: 'inputmode="decimal"' }) %>
-        <%- f('currency', t('sales.currency'), v.currency || p.currency, { attrs: 'dir="ltr" maxlength="3"' }) %>
+        <%- f('tax_rate', t('sales.tax_rate'), v.tax_rate !== undefined ? Number(v.tax_rate) : startRates.tax, { attrs: 'inputmode="decimal"' }) %>
+        <%- f('currency', t('sales.currency'), v.currency || startRates.currency, { attrs: 'dir="ltr" maxlength="3"' }) %>
       </div>
       <div class="form-grid cols-3">
         <%- f('issue_date', t('sales.issue_date'), dOnly(v.issue_date) || new Date().toISOString().slice(0, 10), { type: 'date' }) %>

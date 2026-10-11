@@ -1,0 +1,10 @@
+{
+  "onb": {
+    "day3_setup_subject": "{clinic}: three steps to get going",
+    "day3_setup_body": "Hello {name},\n\nTo start taking patients on {brand}:\n- Add your doctors and their working hours.\n- Add your services and prices.\n- Add your team (reception, nurses) with their roles.\n\nIt takes about ten minutes. If you need help, just reply to this e-mail.",
+    "day3_setup_cta": "Open the settings",
+    "day7_booking_subject": "{clinic}: let patients book online",
+    "day7_booking_body": "Hello {name},\n\nYour clinic has its own booking page: share it on WhatsApp, Instagram and Google so patients book themselves, and they get reminders before their visit.\n\nTurn it on from Settings → Online booking.",
+    "day7_booking_cta": "Turn on online booking"
+  }
+}

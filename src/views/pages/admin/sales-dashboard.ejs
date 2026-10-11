@@ -1,0 +1,28 @@
+<%# Admin → Sales → Dashboard: recurring revenue, subscriptions, sign-ups, collections, conversion, by country / source, quotations. %>
+<% var money = function (map) { var ks = Object.keys(map || {}); return ks.length ? ks.map(function (c) { return fmt.money(map[c], c); }).join(' · ') : '—'; }; var d = data; %>
+<div class="page-head"><div><h1><%= t('dash.title') %></h1><p><%= t('dash.lead') %></p></div></div>
+<div class="grid grid-4 mb-4" data-sales-kpis>
+  <div class="panel"><div class="panel-body"><div class="small muted"><%= t('dash.mrr') %></div><div class="h3 num" data-mrr><%= money(d.mrr) %></div><div class="tiny muted"><%= t('dash.paying', { n: d.paying }) %></div></div></div>
+  <div class="panel"><div class="panel-body"><div class="small muted"><%= t('dash.trials') %></div><div class="h3 num"><%= d.byStatus.trialing || 0 %></div><div class="tiny muted"><%= t('dash.past_due', { n: d.byStatus.past_due || 0 }) %></div></div></div>
+  <div class="panel"><div class="panel-body"><div class="small muted"><%= t('dash.conversion') %></div><div class="h3 num"><%= d.conversion.pct === null ? '—' : d.conversion.pct + '%' %></div><div class="tiny muted"><%= t('dash.conversion_help', { a: d.conversion.converted, b: d.conversion.cohort }) %></div></div></div>
+  <div class="panel"><div class="panel-body"><div class="small muted"><%= t('dash.churn') %></div><div class="h3 num"><%= d.churned %></div><div class="tiny muted"><%= t('dash.churn_help') %></div></div></div>
+</div>
+<div class="grid grid-main mb-4" style="align-items:start">
+  <section class="panel flush"><div class="panel-head"><div><h2><%= t('dash.by_month') %></h2></div></div>
+    <div class="table-wrap"><table class="table" data-by-month><thead><tr><th><%= t('dash.month') %></th><th class="num"><%= t('dash.signups') %></th><th class="num"><%= t('dash.collected') %></th></tr></thead>
+      <tbody><% d.months.slice().reverse().forEach(function (m) { %><tr><td dir="ltr" style="text-align:start"><%= m %></td><td class="num"><%= d.signupsByMonth[m] %></td><td class="num"><%= money(d.collected[m]) %></td></tr><% }) %></tbody></table></div></section>
+  <section class="panel"><div class="panel-head"><div><h2><%= t('dash.subs') %></h2></div></div><div class="panel-body small stack-sm">
+    <% ['active', 'trialing', 'past_due', 'expired', 'cancelled', 'comped'].forEach(function (k) { %><div class="row-sm between"><span><%= t('dash.st_' + k) %></span><span class="num strong"><%= d.byStatus[k] || 0 %></span></div><% }) %></div></section>
+</div>
+<div class="grid grid-3" style="align-items:start">
+  <section class="panel flush"><div class="panel-head"><div><h2><%= t('dash.by_country') %></h2></div></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th><%= t('crm.country') %></th><th class="num"><%= t('dash.clinics') %></th><th class="num"><%= t('dash.paying_short') %></th></tr></thead>
+      <tbody><% d.countries.forEach(function (c) { %><tr><td><%= c.code === '—' ? '—' : countryName(c.code) %></td><td class="num"><%= c.clinics %></td><td class="num"><%= c.paying %></td></tr><% }) %></tbody></table></div></section>
+  <section class="panel flush"><div class="panel-head"><div><h2><%= t('dash.by_source') %></h2></div></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th><%= t('crm.source') %></th><th class="num"><%= t('dash.contacts') %></th><th class="num"><%= t('dash.customers') %></th></tr></thead>
+      <tbody><% d.sources.forEach(function (s) { %><tr><td><%= t('crm.source_' + s.source) %></td><td class="num"><%= s.contacts %></td><td class="num"><%= s.customers %></td></tr><% }) %></tbody></table></div></section>
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.quotes') %></h2></div><a class="btn btn-ghost btn-sm" href="/admin/quotes"><%= t('dash.open') %></a></div><div class="panel-body small stack-sm">
+    <div class="row-sm between"><span><%= t('sales.open_quotes') %> (<%= d.quotes.openN %>)</span><span class="strong num"><%= money(d.quotes.open) %></span></div>
+    <div class="row-sm between"><span><%= t('dash.won_year') %> (<%= d.quotes.wonN %>)</span><span class="strong num"><%= money(d.quotes.won) %></span></div>
+    <div class="row-sm between"><span><%= t('dash.win_rate') %></span><span class="strong num"><%= d.quotes.winRate === null ? '—' : d.quotes.winRate + '%' %></span></div></div></section>
+</div>

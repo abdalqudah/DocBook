@@ -7,8 +7,6 @@ const mailer = require('../../core/mailer');
 const { translator } = require('../../core/i18n');
 const crm = require('./crm.service');
 
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-
 /** { businessId } or { vendorId }, the owner { name, email, locale }, the site's base URL. */
 async function onSignup({ businessId = null, vendorId = null, owner, base = '' }) {
   try {
@@ -23,7 +21,7 @@ async function onSignup({ businessId = null, vendorId = null, owner, base = '' }
     const body = t(vendorId ? 'sales.vendor_welcome_body' : 'sales.welcome_body', vars);
     const sent = await mailer.send({
       kind: 'welcome', to: owner.email, subject,
-      html: mailer.layout({ locale: owner.locale, title: subject, body: esc(body).replace(/\n/g, '<br>'), cta: t('sales.welcome_cta'), href: `${String(base).replace(/\/+$/, '')}${vendorId ? '/vendor' : '/app'}` }),
+      html: mailer.layout({ locale: owner.locale, title: subject, body, cta: t('sales.welcome_cta'), href: `${String(base).replace(/\/+$/, '')}${vendorId ? '/vendor' : '/app'}` }),
     });
     if (sent && contact) await crm.log({}, contact.id, 'email', `${subject}\n\n${body}`, 'sent').catch(() => {});
   } catch (e) { /* best effort */ }

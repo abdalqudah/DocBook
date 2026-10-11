@@ -10,14 +10,14 @@
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav']);
   _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'sales'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
   _nav.push(['/admin/settings', 'settings', 'navx.admin_settings', false, 'platform']); // every platform setting, one place (below)
-  _nav.push(['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/templates', 'file-text', 'tpl.nav', false, 'sales'], ['/admin/documents', 'copy', 'tpl.nav_docs', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
+  _nav.push(['/admin/sales-dashboard', 'chart-no-axes-column', 'dash.nav', false, 'sales'], ['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/templates', 'file-text', 'tpl.nav', false, 'sales'], ['/admin/documents', 'copy', 'tpl.nav_docs', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
   // Platform settings: one "Settings" entry in the sidebar; inside, a menu of every settings page.
   var _settings = [
     ['general', [['/admin/settings', 'mail', 'pcomms.nav_comms'], ['/admin/branding', 'image', 'branding_admin.nav'], ['/admin/login-page', 'log-in', 'loginpage.nav'], ['/admin/maintenance', 'wrench', 'maintenance.nav']]],
     ['money', [['/admin/payments', 'credit-card', 'ppay.admin.nav'], ['/admin/sales-profile', 'building-2', 'sales.nav_profile'], ['/admin/clinic-types', 'stethoscope', 'clinic_types.nav']]],
     ['integrations', [['/admin/google', 'key-round', 'identity.nav_google'], ['/admin/ai', 'sparkles', 'ai_admin.nav']]],
-    ['system', [['/admin/updates', 'cloud-upload', 'platformops.admin_nav'], ['/admin/databases', 'database', 'dbsep.nav'], ['/admin/images', 'minimize', 'imgopt.nav']]],
+    ['system', [['/admin/security', 'shield-check', 'tfa.nav'], ['/admin/updates', 'cloud-upload', 'platformops.admin_nav'], ['/admin/databases', 'database', 'dbsep.nav'], ['/admin/images', 'minimize', 'imgopt.nav']]],
   ];
   var _inSettings = _settings.some(function (g) { return g[1].some(function (n) { return _p === n[0] || _p.indexOf(n[0] + '/') === 0; }); });
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : n[0] === '/admin/settings' ? _inSettings : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };

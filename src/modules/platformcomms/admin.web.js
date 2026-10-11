@@ -44,6 +44,46 @@ router.post('/settings/test-whatsapp', wrap(async (req, res) => {
   res.redirect('/admin/settings#whatsapp');
 }));
 
+// ---------------------------------------------------------------- two-step sign-in (this admin's own account)
+const twofactor = require('../auth/twofactor.service');
+async function renderSecurity(req, res, extra = {}) {
+  let setup = null;
+  if (req.session.tfaSetup && !twofactor.enabled(req.user)) {
+    const totp = require('../../core/totp'); // eslint-disable-line global-require
+    const url = totp.otpauth(req.session.tfaSetup, req.user.email, res.locals.brandName || 'MedWorks');
+    setup = { secret: req.session.tfaSetup, qr: await require('qrcode').toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }) }; // eslint-disable-line global-require
+  }
+  page(res, 'security', { title: req.t('tfa.admin_title'), on: twofactor.enabled(req.user), left: twofactor.recoveryLeft(req.user), setup, codes: null, errors: {}, ...extra });
+}
+router.get('/security', wrap((req, res) => renderSecurity(req, res)));
+router.post('/security/start', wrap(async (req, res) => {
+  if (!twofactor.enabled(req.user)) req.session.tfaSetup = require('../../core/totp').newSecret(); // eslint-disable-line global-require
+  res.redirect('/admin/security');
+}));
+router.post('/security/enable', wrap(async (req, res) => {
+  try {
+    const codes = await twofactor.enable(req.ctx, req.user, req.session.tfaSetup, req.body.code);
+    delete req.session.tfaSetup;
+    req.session.totpOk = true; // this session already proved it
+    req.user = await require('../auth/auth.service').findUser(req.user.id); // eslint-disable-line global-require
+    flash(req, 'success', req.t('tfa.enabled'));
+    return renderSecurity(req, res, { codes });
+  } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    res.status(422);
+    return renderSecurity(req, res, { errors: e.details || { code: e.message } });
+  }
+}));
+router.post('/security/disable', wrap(async (req, res) => {
+  try { await twofactor.disable(req.ctx, req.user, req.body.code); } catch (e) {
+    if (!(e instanceof AppError) || e.status >= 500) throw e;
+    res.status(422);
+    return renderSecurity(req, res, { errors: e.details || { code: e.message } });
+  }
+  flash(req, 'success', req.t('tfa.disabled'));
+  return res.redirect('/admin/security');
+}));
+
 // ---------------------------------------------------------------- activity
 router.get('/activity', wrap(async (req, res) => {
   const f = { period: String(req.query.period || 'day'), country: String(req.query.country || '').toUpperCase(), kind: String(req.query.kind || '') };

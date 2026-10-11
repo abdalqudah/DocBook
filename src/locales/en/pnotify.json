@@ -111,6 +111,9 @@
     "quote_answer": {
       "title": "Answer to quotation {number}",
       "body": "{customer}"
+    },
+    "server_error": {
+      "title": "Server errors: {n} (latest {path} — {message})"
     }
   }
 }

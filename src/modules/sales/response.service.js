@@ -32,7 +32,7 @@ async function tellTeam(q, subjectAr, subjectEn, body, base) {
   for (const r of to) { // eslint-disable-line no-restricted-syntax
     const ar = r.locale !== 'en';
     const title = `${q.number}: ${ar ? subjectAr : subjectEn}`;
-    await mailer.send({ kind: 'quote_answer', to: r.email, subject: title, html: mailer.layout({ locale: ar ? 'ar' : 'en', title, body: `${q.customer_name}${q.customer_company ? ` · ${q.customer_company}` : ''}<br>${body || ''}`, cta: ar ? 'افتح العرض' : 'Open quotation', href: `${String(base || process.env.APP_URL || '').replace(/\/+$/, '')}/admin/quotes/${q.id}` }) }).catch(() => {}); // eslint-disable-line no-await-in-loop
+    await mailer.send({ kind: 'quote_answer', to: r.email, subject: title, html: mailer.layout({ locale: ar ? 'ar' : 'en', title, body: `${q.customer_name}${q.customer_company ? ` · ${q.customer_company}` : ''}${body ? `\n${body}` : ''}`, cta: ar ? 'افتح العرض' : 'Open quotation', href: `${String(base || process.env.APP_URL || '').replace(/\/+$/, '')}/admin/quotes/${q.id}` }) }).catch(() => {}); // eslint-disable-line no-await-in-loop
   }
   require('../platformnotify/notify.service').admin('quote_answer', { number: q.number, customer: q.customer_name }, { link: `/admin/quotes/${q.id}`, severity: 'info' }).catch(() => {}); // eslint-disable-line global-require
 }

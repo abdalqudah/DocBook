@@ -35,6 +35,10 @@
       [['customer_name', 'name'], ['customer_company', 'company'], ['customer_email', 'email'], ['customer_phone', 'phone']].forEach(function (p) {
         var el = form.querySelector('[name="' + p[0] + '"]'); if (el && !el.value) el.value = o.getAttribute('data-' + p[1]) || '';
       });
+      // A new quotation: the VAT and currency of the customer's country.
+      var rates = {}; try { rates = JSON.parse(form.getAttribute('data-rates') || '{}'); } catch (err) { rates = {}; }
+      var r = rates[o.getAttribute('data-country')];
+      if (r && !form.hasAttribute('data-existing')) { form.querySelector('[name="tax_rate"]').value = r.tax; form.querySelector('[name="currency"]').value = r.currency; }
     });
   }
   // Templates: placeholders, links, linked icons and pictures are inserted where the cursor is.

@@ -62,6 +62,24 @@
       <div class="panel-body stack-sm"><input class="input" dir="ltr" readonly value="<%= doc.link %>">
         <% if (q.status === 'draft') { %><form method="post" action="/admin/quotes/<%= q.id %>/mark-sent"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('sales.mark_sent') %></button></form><% } %></div></section>
 
+    <% if (q.status === 'accepted') { %>
+    <section class="panel" data-quote-activate><div class="panel-head"><div><h2><%- icon('circle-check', 'icon-sm') %> <%= t('sales.next_step') %></h2></div></div>
+      <div class="panel-body stack-sm small">
+        <% if (contact && contact.business_id) { %>
+          <p class="muted" style="margin:0"><%= t('sales.activate_lead') %></p>
+          <form method="post" action="/admin/quotes/<%= q.id %>/activate" class="stack-sm"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <select class="select" name="plan_id" required aria-label="<%= t('sales.plan') %>"><% plans.forEach(function (p) { %><option value="<%= p.id %>"><%= locale === 'en' && p.name_en ? p.name_en : p.name %></option><% }) %></select>
+            <div class="row-sm"><select class="select grow" name="billing_cycle" aria-label="<%= t('sales.cycle') %>"><option value="yearly"><%= t('sales.cycle_yearly') %></option><option value="monthly"><%= t('sales.cycle_monthly') %></option></select>
+              <input class="input" name="branches" value="1" inputmode="numeric" style="max-width:80px" aria-label="<%= t('sales.branches') %>"></div>
+            <div><button class="btn btn-primary btn-sm" type="submit"<%= plans.length ? '' : ' disabled' %>><%= t('sales.activate_btn') %></button></div>
+          </form>
+          <a class="link" href="/admin/clinics/<%= contact.business_id %>"><%= t('crm.open_clinic') %></a>
+        <% } else { %>
+          <p class="muted" style="margin:0"><%= t('sales.invite_lead') %></p>
+          <form method="post" action="/admin/quotes/<%= q.id %>/invite"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-sm" type="submit"<%= q.customer_email ? '' : ' disabled' %>><%- icon('mail', 'icon-sm') %><%= t('sales.invite_btn') %></button></form>
+        <% } %>
+      </div></section>
+    <% } %>
     <%- include('../../partials/doc-send', { doc: doc, action: '/admin/quotes/' + q.id }) %>
 
     <% if (q.status === 'draft') { %>

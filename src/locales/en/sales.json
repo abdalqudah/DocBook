@@ -177,6 +177,23 @@
     "welcome_body": "Hello {name},\n\nYour account for {clinic} is ready. Sign in any time to finish setting it up: doctors, services, working hours and online booking.\n\nIf you need help, just reply to this e-mail.",
     "welcome_cta": "Open my dashboard",
     "vendor_welcome_body": "Hello {name},\n\nYour account for {clinic} is ready. Add your products and offers so clinics can find you.\n\nIf you need help, just reply to this e-mail.",
-    "signup_event": "Signed up: {name}"
+    "signup_event": "Signed up: {name}",
+    "next_step": "Next step",
+    "activate_lead": "The customer has an account: choose the plan and the invoice is issued and e-mailed with its link.",
+    "activate_btn": "Issue the subscription invoice",
+    "activated": "Invoice issued and sent to the clinic.",
+    "plan": "Plan",
+    "cycle": "Billing",
+    "branches": "Branches",
+    "invite_lead": "The customer has no account yet: send the sign-up link. Once they sign up with the same e-mail they are linked to this contact.",
+    "invite_btn": "Send the sign-up link",
+    "invited": "Sign-up link sent.",
+    "invite_subject": "Your {brand} account",
+    "invite_body": "Hello {name},\n\nThank you for accepting quotation {number}. Create your clinic's account from the link to start; your subscription is activated right after.",
+    "invite_cta": "Create my account",
+    "ev_activated": "Subscription",
+    "ev_invited": "Sign-up link",
+    "country_rates": "VAT and currency by country",
+    "country_rates_help": "A quotation for a customer in one of these countries starts with its VAT and currency (you can still change them)."
   }
 }

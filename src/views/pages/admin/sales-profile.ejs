@@ -14,6 +14,12 @@
   </div></section>
   <section class="panel"><div class="panel-head"><div><h2><%= t('sales.defaults') %></h2></div></div><div class="panel-body stack">
     <div class="form-grid cols-3"><%- f('valid_days', t('sales.valid_days'), { attrs: 'inputmode="numeric"' }) %><%- f('tax_rate', t('sales.tax_rate'), { attrs: 'inputmode="decimal"' }) %><%- f('currency', t('sales.currency'), { attrs: 'dir="ltr" maxlength="3"' }) %></div>
+    <div class="field"><span class="label"><%= t('sales.country_rates') %></span><span class="help"><%= t('sales.country_rates_help') %></span>
+      <div class="table-wrap"><table class="table" data-country-rates><thead><tr><th><%= t('crm.country') %></th><th><%= t('sales.tax_rate') %></th><th><%= t('sales.currency') %></th></tr></thead><tbody>
+        <% Object.keys(p.country_rates).forEach(function (cc) { var r = p.country_rates[cc]; var o2 = old || {}; %><tr><td><%= countryName(cc) %></td>
+          <td><input class="input num<%= errors['rate_tax_' + cc] ? ' is-invalid' : '' %>" name="rate_tax_<%= cc %>" value="<%= o2['rate_tax_' + cc] !== undefined ? o2['rate_tax_' + cc] : r.tax %>" inputmode="decimal" style="max-width:100px"></td>
+          <td><input class="input<%= errors['rate_currency_' + cc] ? ' is-invalid' : '' %>" name="rate_currency_<%= cc %>" value="<%= o2['rate_currency_' + cc] !== undefined ? o2['rate_currency_' + cc] : r.currency %>" dir="ltr" maxlength="3" style="max-width:90px"></td></tr><% }) %>
+      </tbody></table></div></div>
     <%- f('terms_ar', t('sales.terms_ar'), { type: 'textarea', attrs: 'rows="4"' }) %>
     <%- f('terms_en', t('sales.terms_en'), { type: 'textarea', attrs: 'rows="4" dir="ltr"' }) %>
   </div></section>

@@ -35,7 +35,27 @@ const clinicChoices = (req) => ({ specialtyOptions: require('../platformops/clin
 
 // ---------- Login
 const renderLogin = (req, res, extra = {}) => res.page('pages/auth/login', { layout: 'auth', title: req.t('auth.login_title'), ...extra });
+// ---------- Two-step sign-in: the authenticator app's code (or a recovery code) after the password / Google
+const twofactor = require('./twofactor.service');
+const render2fa = (req, res, extra = {}) => res.page('pages/auth/twofactor', { layout: 'auth', title: req.t('tfa.title'), errors: {}, ...extra });
+router.get('/login/2fa', (req, res) => (req.pending2fa ? render2fa(req, res) : res.redirect('/login')));
+router.post('/login/2fa', limiter, wrap(async (req, res) => {
+  if (!req.pending2fa) return res.redirect('/login');
+  if (await twofactor.check(req.pending2fa, req.body.code)) {
+    req.session.totpOk = true;
+    req.session.tfaTries = 0;
+    req.user = req.pending2fa;
+    return afterLogin(req, res);
+  }
+  req.session.tfaTries = (req.session.tfaTries || 0) + 1;
+  await require('../../core/audit').record({ userId: req.pending2fa.id, ip: req.ip }, 'auth.totp_failed', { entityType: 'user', entityId: req.pending2fa.id, newValues: { tries: req.session.tfaTries } }); // eslint-disable-line global-require
+  if (req.session.tfaTries >= 5) return req.session.destroy(() => { res.clearCookie('db.sid'); res.redirect('/login'); }); // sign in again
+  res.status(422);
+  return render2fa(req, res, { formError: { code: 'TOTP_WRONG', message: req.t('tfa.wrong') }, errors: {} });
+}));
+
 router.get('/login', wrap(async (req, res) => {
+  if (req.pending2fa) return res.redirect('/login/2fa');
   // ?preview=1: the installation's own account looks at the sign-in page it is editing.
   if (req.user && !(req.query.preview === '1' && req.user.is_platform_admin)) return res.redirect(req.user.must_change_password ? '/password/new' : await landingFor(req.user.id, req.session.businessId));
   return renderLogin(req, res);
@@ -44,6 +64,7 @@ router.post('/login', limiter, form(async (req, res) => {
   const data = validate(z.object({ email: email(), password: z.string().min(1, 'Password is required.') }), req.body);
   const user = await authService.authenticate(data, { ip: req.ip, userAgent: req.get('user-agent') });
   await signIn(req, user);
+  if (twofactor.enabled(user)) return res.redirect('/login/2fa');
   if (!req.cookies.db_lang && user.locale) res.cookie('db_lang', user.locale, { maxAge: 365 * 86_400_000, sameSite: 'lax', httpOnly: true, secure: config.isProd });
   return afterLogin(req, res);
 }, (req, res, extra) => renderLogin(req, res, extra)));
@@ -55,6 +76,9 @@ router.get('/signup', wrap(async (req, res) => {
   if (req.user) return res.redirect(req.query.center ? `/workspaces/center/${encodeURIComponent(req.query.center)}` : '/app');
   // Invited to a medical centre: the new practice joins it.
   const invite = req.query.center ? await centers.inviteByToken(req.query.center) : null;
+  // From a sign-up link e-mailed with an accepted quotation: the address filled in.
+  const prefillEmail = /^[^\s@<>]{1,64}@[^\s@<>]{1,190}\.[^\s@<>]{2,}$/.test(String(req.query.email || '')) ? String(req.query.email) : '';
+  if (prefillEmail && !invite) return renderSignup(req, res, { prefillEmail });
   return renderSignup(req, res, invite ? { centerInvite: { token: req.query.center, name: (req.locale === 'en' && invite.center.name_en) || invite.center.name, email: invite.email } } : {});
 }));
 router.post('/signup', limiter, form(async (req, res) => {

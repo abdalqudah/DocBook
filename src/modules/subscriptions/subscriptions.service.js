@@ -421,7 +421,7 @@ async function choosePlan(ctx, business, input) {
     const number = await numberInvoice(id, trx);
     await audit.record(ctx, 'subscription.plan_chosen', { entityType: 'platform_invoice', entityId: id, newValues: { number, plan_id: plan.id, billing_cycle: d.billing_cycle, branches, amount, voided_open_invoices: voided } }, trx);
     return id;
-  });
+  }).then((id) => { if (!ctx.noMail) require('../sales/billing-mail.service').issued(id); return id; }); // eslint-disable-line global-require -- the invoice and its link by e-mail
 }
 
 const noticeSchema = z.object({
@@ -526,6 +526,7 @@ async function recordPayment(ctx, businessId, input) {
   });
   await adminAudit(ctx, 'platform.subscription_payment', b, sub, { status: sub.status, current_period_end: sub.current_period_end },
     { status: 'active', invoice_id: inv.id, amount, branches, method: d.method, reference: d.reference || null, period_start: start, period_end: end });
+  if (!ctx.noMail) require('../sales/billing-mail.service').paid(inv.id); // eslint-disable-line global-require -- the receipt by e-mail
   return { invoiceId: inv.id, start, end };
 }
 

@@ -19,6 +19,7 @@ function errorHandler(err, req, res, next) {
   const known = err instanceof AppError;
   const status = known ? err.status : 500;
   if (!known && !config.isTest) console.error(`[error] ${req.method} ${req.originalUrl}`, err); // eslint-disable-line no-console
+  if (status >= 500) require('../core/error-alerts').report(req, err); // eslint-disable-line global-require -- the platform admins are told (throttled)
   const code = known ? err.code : 'INTERNAL_ERROR';
   const message = known ? err.message : 'Something went wrong. Please try again.';
   const t = res.locals.t || ((k) => k);

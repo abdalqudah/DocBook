@@ -7,7 +7,7 @@
     <div class="row-sm"><span class="badge badge-brand">1</span><span class="fieldset-title" style="margin:0"><%= t('auth.section_account') %></span></div>
     <div class="form-grid">
       <%- include('../../partials/field', { name: 'name', label: t('auth.full_name'), required: true, autocomplete: 'name', cls: 'full', help: t('auth.full_name_help') }) %>
-      <%- include('../../partials/field', { name: 'email', label: t('auth.work_email'), type: 'email', required: true, autocomplete: 'email', attrs: 'inputmode="email" dir="ltr"' }) %>
+      <%- include('../../partials/field', { name: 'email', label: t('auth.work_email'), type: 'email', value: typeof prefillEmail !== 'undefined' ? prefillEmail : '', required: true, autocomplete: 'email', attrs: 'inputmode="email" dir="ltr"' }) %>
       <div class="field">
         <label class="label" for="f-password"><%= t('auth.password') %><span class="req">*</span></label>
         <input class="input<%= errors.password ? ' is-invalid' : '' %>" id="f-password" name="password" type="password" required minlength="8" autocomplete="new-password">

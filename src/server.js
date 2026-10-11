@@ -96,6 +96,8 @@ async function start(server) {
     // Appointment messages (WhatsApp / SMS / e-mail): confirmations, reminders and review requests, every minute.
     const messagingTick = () => require('./modules/messaging/messaging.service').runDue().catch((e) => console.error('[messaging]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(each(messagingTick), 60_000).unref();
+    setInterval(() => require('./modules/crm/onboarding-mail.service').runDue().catch((e) => console.error('[onboarding-mail]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- day 3 / day 7 e-mails to new clinics
+    setInterval(() => require('./modules/sales/billing-mail.service').runOverdue().catch((e) => console.error('[billing-mail]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- one reminder per overdue platform invoice
     setInterval(() => require('./modules/subscriptions/subscriptions.service').runDue().catch((e) => console.error('[subscriptions]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- trials/periods ending, reminders (no-op while subscriptions are off)
     setInterval(each(() => require('./modules/finance/budgets.service').runDue()), 24 * 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- daily budget threshold / exceeded alerts (once per budget per month)
     const recurringTick = () => require('./modules/expenses/recurring.service').runDue().catch((e) => console.error('[recurring]', e.message)); // eslint-disable-line global-require, no-console -- rent, phone… recorded on their date
