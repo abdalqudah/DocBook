@@ -89,7 +89,7 @@ async function warmLogo(clinic) {
   for (let i = 0; i < 20 && logoSizes.get(`${clinic.id || clinic.slug}:${Number(clinic.logo_version) || 0}`) === null; i += 1) await new Promise((r) => { setTimeout(r, 10); }); // eslint-disable-line no-await-in-loop
 }
 
-function layout({ locale = 'en', title, body, cta, href, clinic = null, base = '' }) {
+function layout({ locale = 'en', title, body, cta, href, clinic = null, base = '', foot = null }) {
   const c = brand.colors.light;
   const rtl = locale === 'ar';
   const dir = rtl ? 'rtl' : 'ltr';
@@ -112,6 +112,7 @@ function layout({ locale = 'en', title, body, cta, href, clinic = null, base = '
 <div style="margin-bottom:18px;text-align:${align}">${head}</div>
 <h1 dir="${dir}" style="font-size:18px;margin:0 0 12px;text-align:${align}">${esc(title)}</h1><p dir="${dir}" style="line-height:1.8;margin:0 0 20px;text-align:${align}">${text}</p>
 ${cta ? `<div style="text-align:${align}"><a href="${esc(href)}" style="display:inline-block;background:${primary};color:${ink};padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700">${esc(cta)}</a></div>` : ''}
+${foot ? `<p dir="${dir}" style="margin:24px 0 0;padding-top:14px;border-top:1px solid ${c.border};font-size:12px;line-height:1.7;color:${c.textSubtle};text-align:${align}">${esc(foot.text)} <a href="${esc(foot.href)}" style="color:${c.textSubtle}">${esc(foot.label)}</a></p>` : ''}
 </div></body></html>`;
 }
 
@@ -149,7 +150,7 @@ async function send(opts) {
   }
 }
 
-async function sendRaw({ to, subject, html, replyTo, attachments, fromName, businessId, kind }) {
+async function sendRaw({ to, subject, html, replyTo, attachments, fromName, businessId, kind, headers }) {
   const cm = require('../modules/clinicmail/clinicmail.service'); // eslint-disable-line global-require
   const msg = { to, subject, html, replyTo, attachments, fromName };
   if (businessId && kind) {
@@ -175,7 +176,7 @@ async function sendRaw({ to, subject, html, replyTo, attachments, fromName, busi
     return false;
   }
   const from = process.env.MAIL_FROM || (dbSmtp && !process.env.SMTP_HOST && dbSmtp.from) || `${brand.name} <no-reply@localhost>`;
-  await t.sendMail({ from: fromWithName(from, fromName), to, subject, html, ...(replyTo ? { replyTo } : {}), ...(attachments ? { attachments } : {}) });
+  await t.sendMail({ from: fromWithName(from, fromName), to, subject, html, ...(replyTo ? { replyTo } : {}), ...(attachments ? { attachments } : {}), ...(headers ? { headers } : {}) });
   return true;
 }
 

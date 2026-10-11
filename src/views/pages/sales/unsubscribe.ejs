@@ -1,0 +1,8 @@
+<%# The unsubscribe link of a bulk e-mail: one button, then a confirmation. %>
+<h1 class="h2" style="margin:0 0 12px"><%= t('camp.unsub_title') %></h1>
+<% if (done) { %>
+<p><%= t('camp.unsub_done', { email: r.email }) %></p>
+<% } else { %>
+<p class="mb-4"><%= t('camp.unsub_ask', { email: r.email }) %></p>
+<form method="post" action="/unsubscribe/<%= token %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%= t('camp.unsub_btn') %></button></form>
+<% } %>

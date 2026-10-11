@@ -124,6 +124,10 @@
     "crm_new_places": {
       "title": "New clinics on Google: {n}",
       "body": "They appeared in the search \"{query}\" for the first time."
+    },
+    "campaign_done": {
+      "title": "E-mail campaign \"{name}\" finished",
+      "body": "{sent} sent, {failed} failed."
     }
   }
 }

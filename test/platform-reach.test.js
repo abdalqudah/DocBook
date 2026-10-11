@@ -63,12 +63,13 @@ test('a country page: off by default; on, the plans in its currency and sign-up 
   const page = await app.agent().get('/sa?lang=en');
   assert.equal(page.status, 200);
   assert.match(page.text, new RegExp(`Clinics in Saudi ${tag}`)); assert.match(page.text, /data-country-page="SA"/);
-  assert.match(page.text, /lp-amount num">110<\/span><span class="lp-cur">SAR/, '20 JOD × 5.29 → rounded up to 110 SAR');
+  assert.match(page.text, /lp-amount num">119<\/span><span class="lp-cur">SAR/, '20 JOD × 5.29 → rounded up to 119 SAR');
   assert.match(page.text, /href="\/signup\?country=SA"/);
   assert.equal((await app.agent().get('/SA')).status, 301);
   const signup = await app.agent().get('/signup?country=SA&lang=en');
   assert.match(signup.text, /<option value="Asia\/Riyadh" selected/); assert.match(signup.text, /<option value="SAR" selected/);
-  assert.equal(cpages.convert(20, 5.29), 110); assert.equal(cpages.convert(200, 5.29), 1060);
+  assert.equal(cpages.convert(20, 5.29), 119); assert.equal(cpages.convert(200, 5.29), 1069);
+  assert.equal(cpages.convert(35, 5.29), 199); assert.equal(cpages.convert(35, 0.433), 15.9); assert.equal(cpages.convert(35, 0.542), 19.9); assert.equal(cpages.convert(35, 1), 35);
 });
 
 test('referrals: the invitation link, the invited clinic marked; its first payment gives the inviter a free month, once', async () => {

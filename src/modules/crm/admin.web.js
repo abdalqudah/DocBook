@@ -85,6 +85,54 @@ router.post('/crm/finder/leads', leadAct(async (req) => {
   return req.t('crmf.added', { places: r.places, contacts: r.contacts });
 }));
 
+// Bulk e-mail: campaigns to chosen contacts, so many an hour and a day.
+const campaigns = require('./campaigns.service');
+const campAct = (fn, back) => leadAct(fn, back);
+const campBack = (req) => `/admin/crm/campaigns/${Number(req.params.id) || ''}`;
+const audienceFilter = (q) => ({ q: String(q.q || '').slice(0, 80), kind: q.kind, stage: q.stage, country: String(q.country || '').toUpperCase().slice(0, 2), source: q.source });
+router.get('/crm/campaigns', wrap(async (req, res) => {
+  const [rows, limits] = await Promise.all([campaigns.list(), campaigns.settings()]);
+  page(res, 'crm-campaigns', { title: req.t('camp.title'), rows, limits });
+}));
+router.post('/crm/campaigns/settings', campAct(async (req) => { await campaigns.saveSettings(req.ctx, req.body); return req.t('camp.limits_saved'); }, () => '/admin/crm/campaigns'));
+const campForm = (req, res, c, extra = {}) => page(res, 'crm-campaign-form', { title: c ? c.name : req.t('camp.new'), c, limits: extra.limits, errors: extra.errors || {}, old: extra.old || null });
+router.get('/crm/campaigns/new', wrap(async (req, res) => campForm(req, res, null, { limits: await campaigns.settings() })));
+router.post('/crm/campaigns/new', wrap(async (req, res) => {
+  try {
+    const id = await campaigns.create(req.ctx, req.body);
+    flash(req, 'success', req.t('camp.created'));
+    res.redirect(`/admin/crm/campaigns/${id}`);
+  } catch (e) {
+    if (!(e instanceof AppError) || !e.details) throw e;
+    res.status(422); campForm(req, res, null, { limits: await campaigns.settings(), errors: e.details, old: req.body });
+  }
+}));
+router.get('/crm/campaigns/:id(\\d+)', wrap(async (req, res) => {
+  const c = await campaigns.get(req.params.id);
+  const f = audienceFilter(req.query);
+  const people = campaigns.editable(c) ? await campaigns.audience(f, 1000) : [];
+  page(res, 'crm-campaign', { title: c.name, c, f, people, limits: await campaigns.settings(), kinds: crm.KINDS, stages: crm.STAGES, sources: crm.SOURCES,
+    countries: options().countryOptions(req.locale), editable: campaigns.editable(c), me: req.user && req.user.email });
+}));
+router.get('/crm/campaigns/:id(\\d+)/edit', wrap(async (req, res) => campForm(req, res, await campaigns.get(req.params.id), { limits: await campaigns.settings() })));
+router.post('/crm/campaigns/:id(\\d+)/edit', wrap(async (req, res) => {
+  try {
+    await campaigns.update(req.ctx, req.params.id, req.body);
+    flash(req, 'success', req.t('camp.saved'));
+    res.redirect(campBack(req));
+  } catch (e) {
+    if (!(e instanceof AppError) || !e.details) throw e;
+    res.status(422); campForm(req, res, await campaigns.get(req.params.id), { limits: await campaigns.settings(), errors: e.details, old: req.body });
+  }
+}));
+router.post('/crm/campaigns/:id(\\d+)/recipients', campAct(async (req) => { const r = await campaigns.addRecipients(req.ctx, req.params.id, req.body); return req.t('camp.added', { added: r.added, skipped: r.skipped }); }, campBack));
+router.post('/crm/campaigns/:id(\\d+)/recipients/clear', campAct(async (req) => req.t('camp.cleared', { n: await campaigns.clearQueued(req.ctx, req.params.id) }), campBack));
+router.post('/crm/campaigns/:id(\\d+)/test', campAct(async (req) => { await campaigns.testSend(req.ctx, req.params.id, req.body.test_to); return req.t('camp.test_sent', { to: req.body.test_to }); }, campBack));
+['start', 'pause', 'cancel'].forEach((action) => {
+  router.post(`/crm/campaigns/:id(\\d+)/${action}`, campAct(async (req) => { await campaigns.setStatus(req.ctx, req.params.id, action); return req.t(`camp.did_${action}`); }, campBack));
+});
+router.post('/crm/campaigns/:id(\\d+)/delete', campAct(async (req) => { await campaigns.remove(req.ctx, req.params.id); return req.t('camp.deleted'); }, () => '/admin/crm/campaigns'));
+
 router.get('/crm/new', wrap((req, res) => renderForm(req, res)));
 router.post('/crm/new', formRun(async (req, res) => {
   const id = await crm.save(req.ctx, null, req.body);

@@ -124,6 +124,10 @@
     "crm_new_places": {
       "title": "عيادات جديدة على جوجل: {n}",
       "body": "ظهرت في البحث «{query}» لأول مرة."
+    },
+    "campaign_done": {
+      "title": "اكتملت حملة البريد «{name}»",
+      "body": "أُرسل {sent}، وفشل {failed}."
     }
   }
 }

@@ -1,0 +1,29 @@
+<%# Admin → CRM → bulk e-mail → a new campaign / change one (while a draft or paused). %>
+<% var v = c || { locale: 'ar', per_hour: Math.min(50, limits.per_hour), per_day: Math.min(300, limits.per_day) }; var errs = errors || {};
+   var f = function (name, label, value, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: value, errors: errs, old: old }, extra || {})); };
+   var st = v.start_at ? new Date(new Date(v.start_at).getTime() - new Date(v.start_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/crm/campaigns"><%= t('camp.title') %></a></div><h1><%= c ? t('camp.edit') : t('camp.new') %></h1></div>
+</div>
+<form method="post" action="<%= c ? '/admin/crm/campaigns/' + c.id + '/edit' : '/admin/crm/campaigns/new' %>" class="panel" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack">
+    <div class="form-grid cols-3">
+      <%- f('name', t('camp.name'), v.name, { required: true, help: t('camp.name_help') }) %>
+      <%- f('locale', t('camp.locale'), v.locale, { type: 'select', options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }] }) %>
+      <%- f('start_at', t('camp.start_at'), st, { type: 'datetime-local', help: t('camp.start_at_help') }) %>
+    </div>
+    <%- f('subject', t('camp.subject'), v.subject, { required: true }) %>
+    <%- f('body', t('camp.body'), v.body, { type: 'textarea', required: true, attrs: 'rows="10"', help: t('camp.body_help') }) %>
+    <div class="form-grid cols-2">
+      <%- f('cta_label', t('camp.cta_label'), v.cta_label, { placeholder: t('camp.cta_label_ph') }) %>
+      <%- f('cta_url', t('camp.cta_url'), v.cta_url, { attrs: 'dir="ltr"', placeholder: 'https://medworks.app/signup' }) %>
+    </div>
+    <div class="form-grid cols-2">
+      <%- f('per_hour', t('camp.per_hour'), v.per_hour, { type: 'number', required: true, attrs: 'min="1" dir="ltr"' }) %>
+      <%- f('per_day', t('camp.per_day'), v.per_day, { type: 'number', required: true, attrs: 'min="1" dir="ltr"' }) %>
+    </div>
+    <p class="small muted"><%= t('camp.limits_note', { hour: limits.per_hour, day: limits.per_day }) %></p>
+  </div>
+  <div class="panel-foot form-actions"><a class="btn btn-ghost" href="<%= c ? '/admin/crm/campaigns/' + c.id : '/admin/crm/campaigns' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>

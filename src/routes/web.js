@@ -8,6 +8,7 @@ const router = express.Router();
 router.use(require('../db/tenant').slugMiddleware(require('../modules/businesses/business.service').RESERVED));
 router.use(site.chrome); // header/footer content of the public pages
 router.use('/', require('../modules/sales/public.web'));
+router.use('/', require('../modules/crm/public.web')); // the unsubscribe link of the platform's bulk e-mails (/unsubscribe/<token>)
 router.use('/', require('../modules/helpcenter/public.web')); // the platform's help center (/help, /help/<slug>) // the platform's quotations and invoices for customers (/quote/<token>, /invoice/<token>)
 router.use('/', require('../modules/patientportal/web')); // the patient portal: /<slug>/account
 router.use('/', site);

@@ -1,0 +1,31 @@
+<%# Admin → CRM → bulk e-mail: the campaigns with their progress, and the platform's overall sending limits. %>
+<% var badge = { draft: 'badge-neutral', sending: 'badge-success badge-dot', paused: 'badge-warning', done: 'badge-info', cancelled: 'badge-neutral' }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/crm"><%= t('crm.title') %></a></div><h1><%= t('camp.title') %></h1><p><%= t('camp.lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="/admin/crm/campaigns/new"><%- icon('plus', 'icon-sm') %><%= t('camp.new') %></a></div>
+</div>
+
+<form method="post" action="/admin/crm/campaigns/settings" class="panel mb-4" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-head"><div><h2><%- icon('gauge', 'icon-sm') %> <%= t('camp.limits_title') %></h2><p class="panel-sub"><%= t('camp.limits_sub') %></p></div></div>
+  <div class="panel-body row-sm wrap">
+    <div class="field"><label class="label" for="g-hour"><%= t('camp.per_hour') %></label><input class="input" id="g-hour" name="per_hour" type="number" min="1" max="10000" value="<%= limits.per_hour %>" dir="ltr"></div>
+    <div class="field"><label class="label" for="g-day"><%= t('camp.per_day') %></label><input class="input" id="g-day" name="per_day" type="number" min="1" max="100000" value="<%= limits.per_day %>" dir="ltr"></div>
+    <div class="field"><span class="label">&nbsp;</span><button class="btn btn-secondary" type="submit"><%= t('common.save') %></button></div>
+  </div>
+</form>
+
+<section class="panel flush">
+  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('camp.none') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('camp.name') %></th><th><%= t('camp.status') %></th><th><%= t('camp.progress') %></th><th><%= t('camp.limits_short') %></th></tr></thead>
+    <tbody><% rows.forEach(function (c) { var done = c.n.sent + c.n.failed + c.n.skipped; %><tr>
+      <td class="primary-cell"><a class="strong" href="/admin/crm/campaigns/<%= c.id %>"><%= c.name %></a><div class="tiny muted"><%= c.subject %></div></td>
+      <td data-label="<%= t('camp.status') %>"><span class="badge <%= badge[c.status] || '' %>"><%= t('camp.st_' + c.status) %></span></td>
+      <td data-label="<%= t('camp.progress') %>" style="min-width:180px"><div class="meter thin"><span style="width:<%= c.n.total ? Math.round(done * 100 / c.n.total) : 0 %>%"></span></div>
+        <div class="tiny muted"><%= t('camp.progress_n', { sent: c.n.sent, total: c.n.total, failed: c.n.failed }) %></div></td>
+      <td data-label="<%= t('camp.limits_short') %>" class="nowrap tiny"><%= t('camp.limits_val', { hour: c.per_hour, day: c.per_day }) %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

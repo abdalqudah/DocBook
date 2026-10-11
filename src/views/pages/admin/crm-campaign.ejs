@@ -1,0 +1,94 @@
+<%# Admin → CRM → one bulk e-mail campaign: its state and limits, start / pause / cancel, a test e-mail, choosing the
+    recipients (CRM contacts by filter or one by one, or pasted addresses) and who it went to. %>
+<% var badge = { draft: 'badge-neutral', sending: 'badge-success badge-dot', paused: 'badge-warning', done: 'badge-info', cancelled: 'badge-neutral' };
+   var n = c.n; var done = n.sent + n.failed + n.skipped;
+   var post = function (path, label, ic, cls, confirm) { return '<form method="post" action="/admin/crm/campaigns/' + c.id + '/' + path + '"' + (confirm ? ' data-confirm="' + confirm + '"' : '') + '><input type="hidden" name="_csrf" value="' + csrfToken + '"><button class="btn ' + cls + '" type="submit">' + icon(ic, 'icon-sm') + label + '</button></form>'; };
+   var fq = function (extra) { var p = Object.assign({ q: f.q, kind: f.kind, stage: f.stage, country: f.country, source: f.source }, extra); return Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/crm/campaigns"><%= t('camp.title') %></a></div><h1><%= c.name %> <span class="badge <%= badge[c.status] %>"><%= t('camp.st_' + c.status) %></span></h1>
+    <p><%= c.status === 'sending' && c.start_at && new Date(c.start_at) > new Date() ? t('camp.starts_at', { at: fmt.date(c.start_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) : t('camp.lead_' + c.status) %></p></div>
+  <div class="page-actions row-sm wrap">
+    <% if (editable) { %><a class="btn btn-secondary" href="/admin/crm/campaigns/<%= c.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a><% } %>
+    <% if (editable && n.queued) { %><%- post('start', c.status === 'paused' ? t('camp.resume') : t('camp.start'), 'send', 'btn-primary', t('camp.start_confirm', { n: n.queued, hour: c.per_hour, day: c.per_day })) %><% } %>
+    <% if (c.status === 'sending') { %><%- post('pause', t('camp.pause'), 'square', 'btn-secondary') %><% } %>
+    <% if (['draft', 'sending', 'paused'].includes(c.status)) { %><%- post('cancel', t('camp.cancel'), 'circle-x', 'btn-ghost', t('camp.cancel_confirm')) %><% } %>
+    <% if (c.status !== 'sending') { %><%- post('delete', t('common.delete'), 'trash-2', 'btn-ghost', t('camp.delete_confirm')) %><% } %>
+  </div>
+</div>
+<% if (c.last_error === 'email_not_configured' && c.status === 'sending') { %><div class="alert alert-warning mb-4"><%= t('camp.no_email') %> <a class="link" href="/admin/settings"><%= t('camp.no_email_cta') %></a></div><% } %>
+
+<div class="stats mb-4">
+  <div class="stat"><div class="stat-label"><%= t('camp.n_total') %></div><div class="stat-value num"><%= n.total %></div><div class="meter thin"><span style="width:<%= n.total ? Math.round(done * 100 / n.total) : 0 %>%"></span></div></div>
+  <div class="stat"><div class="stat-label"><%= t('camp.n_sent') %></div><div class="stat-value num"><%= n.sent %></div><div class="stat-meta"><%= t('camp.n_failed', { n: n.failed }) %> · <%= t('camp.n_skipped', { n: n.skipped }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('camp.n_queued') %></div><div class="stat-value num"><%= n.queued %></div><div class="tiny muted"><%= n.queued ? t('camp.eta', { h: Math.ceil(n.queued / Math.max(1, Math.min(c.per_hour, limits.per_hour))) }) : '—' %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('camp.limits_short') %></div><div class="stat-value num" dir="ltr"><%= c.lastHour %> / <%= c.per_hour %></div><div class="tiny muted"><%= t('camp.used', { hour: c.lastHour, day: c.lastDay, dayMax: c.per_day }) %></div></div>
+</div>
+
+<div class="grid grid-2 mb-4">
+  <section class="panel">
+    <div class="panel-head"><div><h2><%- icon('mail', 'icon-sm') %> <%= t('camp.message') %></h2><p class="panel-sub" dir="auto"><%= c.subject %></p></div></div>
+    <div class="panel-body stack">
+      <div class="small" dir="auto" style="white-space:pre-line"><%= c.body %></div>
+      <% if (c.cta_url) { %><p><a class="btn btn-secondary btn-sm" href="<%= c.cta_url %>" target="_blank" rel="noopener"><%= c.cta_label %></a></p><% } %>
+    </div>
+  </section>
+  <form method="post" action="/admin/crm/campaigns/<%= c.id %>/test" class="panel" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="panel-head"><div><h2><%- icon('flask-conical', 'icon-sm') %> <%= t('camp.test_title') %></h2><p class="panel-sub"><%= t('camp.test_sub') %></p></div></div>
+    <div class="panel-body row-sm wrap"><input class="input grow" type="email" name="test_to" value="<%= me || '' %>" dir="ltr" aria-label="<%= t('camp.test_title') %>"><button class="btn btn-secondary" type="submit"><%- icon('send', 'icon-sm') %><%= t('camp.test_send') %></button></div>
+  </form>
+</div>
+
+<% if (editable) { %>
+<section class="panel mb-4">
+  <div class="panel-head"><div><h2><%- icon('users', 'icon-sm') %> <%= t('camp.choose') %></h2><p class="panel-sub"><%= t('camp.choose_sub') %></p></div>
+    <% if (n.queued) { %><%- post('recipients/clear', t('camp.clear', { n: n.queued }), 'trash-2', 'btn-ghost btn-sm', t('camp.clear_confirm')) %><% } %></div>
+  <form method="get" action="/admin/crm/campaigns/<%= c.id %>" class="panel-body stack">
+    <input class="input" type="search" name="q" value="<%= f.q %>" placeholder="<%= t('camp.search_ph') %>" aria-label="<%= t('camp.search_ph') %>">
+    <div class="grid grid-4"><select class="select" name="kind" aria-label="<%= t('crm.kind') %>"><option value=""><%= t('camp.any_kind') %></option><% kinds.forEach(function (k) { %><option value="<%= k %>"<%= f.kind === k ? ' selected' : '' %>><%= t('crm.kind_' + k) %></option><% }) %></select>
+    <select class="select" name="stage" aria-label="<%= t('crm.stage') %>"><option value=""><%= t('camp.any_stage') %></option><% stages.forEach(function (k) { %><option value="<%= k %>"<%= f.stage === k ? ' selected' : '' %>><%= t('crm.stage_' + k) %></option><% }) %></select>
+    <select class="select" name="source" aria-label="<%= t('crm.source') %>"><option value=""><%= t('camp.any_source') %></option><% sources.forEach(function (k) { %><option value="<%= k %>"<%= f.source === k ? ' selected' : '' %>><%= t('crm.source_' + k) %></option><% }) %></select>
+    <select class="select" name="country" aria-label="<%= t('crm.country') %>"><option value=""><%= t('camp.any_country') %></option><% countries.forEach(function (o) { %><option value="<%= o.value %>"<%= f.country === o.value ? ' selected' : '' %>><%= o.label %></option><% }) %></select></div>
+    <div><button class="btn btn-secondary" type="submit"><%- icon('search', 'icon-sm') %><%= t('camp.filter') %></button></div>
+  </form>
+  <form method="post" action="/admin/crm/campaigns/<%= c.id %>/recipients" data-camp-people novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% ['q', 'kind', 'stage', 'country', 'source'].forEach(function (k) { %><input type="hidden" name="<%= k %>" value="<%= f[k] || '' %>"><% }) %>
+    <% if (!people.length) { %><div class="panel-body"><p class="muted"><%= t('camp.no_people') %></p></div><% } else { %>
+    <div class="table-toolbar"><label class="check"><input type="checkbox" data-camp-all> <%= t('camp.select_all') %></label><span class="grow"></span>
+      <button class="btn btn-secondary btn-sm" type="submit" name="scope" value="ticked"><%= t('camp.add_ticked') %></button>
+      <button class="btn btn-primary btn-sm" type="submit" name="scope" value="filter"><%= t('camp.add_filter', { n: people.length }) %></button></div>
+    <div class="table-wrap" style="max-height:420px;overflow:auto"><table class="table responsive">
+      <thead><tr><th style="width:40px"></th><th><%= t('crm.name') %></th><th><%= t('crm.email') %></th><th><%= t('crm.stage') %></th></tr></thead>
+      <tbody><% people.forEach(function (p) { %><tr>
+        <td><input type="checkbox" name="contact" value="<%= p.id %>" aria-label="<%= p.name %>"></td>
+        <td class="primary-cell"><span class="strong"><%= p.name %></span><div class="tiny muted"><%= [p.organization, p.city].filter(Boolean).join(' · ') %></div></td>
+        <td data-label="<%= t('crm.email') %>" dir="ltr"><%= p.email %></td>
+        <td data-label="<%= t('crm.stage') %>"><span class="badge"><%= t('crm.stage_' + p.stage) %></span></td>
+      </tr><% }) %></tbody>
+    </table></div>
+    <% } %>
+    <div class="panel-body stack">
+      <div class="field"><label class="label" for="f-emails"><%= t('camp.paste') %></label><textarea class="textarea" id="f-emails" name="emails" rows="4" dir="ltr" placeholder="name@clinic.com, Dr. Name"></textarea><span class="help"><%= t('camp.paste_help') %></span></div>
+      <div><button class="btn btn-secondary" type="submit" name="scope" value="ticked"><%- icon('plus', 'icon-sm') %><%= t('camp.add_pasted') %></button></div>
+    </div>
+  </form>
+</section>
+<% } %>
+
+<section class="panel flush">
+  <div class="panel-head"><div><h2><%= t('camp.recipients') %></h2><p class="panel-sub"><%= t('camp.recipients_sub') %></p></div></div>
+  <% if (!c.recipients.length) { %><div class="panel-body"><p class="muted"><%= t('camp.no_recipients') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('crm.email') %></th><th><%= t('crm.name') %></th><th><%= t('camp.status') %></th><th><%= t('camp.sent_at') %></th></tr></thead>
+    <tbody><% c.recipients.forEach(function (r) { %><tr>
+      <td class="primary-cell" dir="ltr"><% if (r.contact_id) { %><a class="link" href="/admin/crm/<%= r.contact_id %>"><%= r.email %></a><% } else { %><%= r.email %><% } %></td>
+      <td data-label="<%= t('crm.name') %>"><%= r.name || '—' %></td>
+      <td data-label="<%= t('camp.status') %>"><span class="badge <%= r.status === 'sent' ? 'badge-success' : r.status === 'failed' ? 'badge-danger' : '' %>"><%= t('camp.r_' + r.status) %></span><% if (r.error && r.status !== 'sent') { %><div class="tiny muted"><%= r.error === 'unsubscribed' ? t('camp.r_unsubscribed') : r.error === 'cancelled' ? t('camp.st_cancelled') : r.error %></div><% } %></td>
+      <td data-label="<%= t('camp.sent_at') %>" class="nowrap"><%= r.sent_at ? fmt.date(r.sent_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—' %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% if (n.total > c.recipients.length) { %><div class="panel-body tiny muted"><%= t('camp.more', { n: n.total - c.recipients.length }) %></div><% } %>
+  <% } %>
+</section>
+<script src="/js/crm-campaign.js?v=<%= assetV %>" defer></script>
