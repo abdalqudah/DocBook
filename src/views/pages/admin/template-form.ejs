@@ -1,0 +1,19 @@
+<%# Admin → Sales → Templates → new / edit: the text with {placeholders}. %>
+<% var v = Object.assign({}, tp || {}, old || {}); var errs = errors || {}; %>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/admin/templates"><%= t('tpl.title') %></a></div><h1><%= tp ? tp.name : t('tpl.new') %></h1></div></div>
+<form method="post" action="<%= tp ? '/admin/templates/' + tp.id + '/edit' : '/admin/templates/new' %>" class="panel" novalidate data-template-form>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack">
+    <div class="form-grid cols-2">
+      <%- include('../../partials/field', { name: 'name', label: t('tpl.name'), value: v.name, required: true, errors: errs, old: null }) %>
+      <%- include('../../partials/field', { name: 'locale', label: t('sales.language'), type: 'select', value: v.locale || 'ar', options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }], errors: errs, old: null }) %>
+    </div>
+    <div class="field"><label class="label" for="f-body"><%= t('tpl.body') %><span class="req">*</span></label>
+      <div class="row-sm wrap"><% fields.forEach(function (f) { %><button class="btn btn-ghost btn-sm" type="button" data-insert="{<%= f %>}" dir="ltr">{<%= f %>}</button><% }) %></div>
+      <textarea class="textarea<%= errs.body ? ' is-invalid' : '' %>" id="f-body" name="body" rows="18" required data-template-body><%= v.body || '' %></textarea>
+      <% if (errs.body) { %><span class="field-error"><%= errs.body %></span><% } else { %><span class="help"><%= t('tpl.body_help') %></span><% } %></div>
+    <input type="hidden" name="active" value="0"><label class="check"><input type="checkbox" name="active" value="1"<%= tp && !tp.active ? '' : ' checked' %>><span><%= t('sales.active') %></span></label>
+  </div>
+  <div class="panel-foot row-sm"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button><a class="btn btn-ghost" href="<%= tp ? '/admin/templates/' + tp.id : '/admin/templates' %>"><%= t('common.cancel') %></a></div>
+</form>
+<script src="/js/sales.js?v=<%= assetV %>" defer></script>

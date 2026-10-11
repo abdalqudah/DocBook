@@ -68,8 +68,11 @@ async function renderShow(req, res, extra = {}) {
   const c = await crm.get(req.params.id);
   const comms = await require('../platformcomms/comms.service').get(); // eslint-disable-line global-require
   const quotes = await require('../sales/sales.service').listQuotes({ contactId: c.id }); // eslint-disable-line global-require
+  const docs = await require('../sales/templates.service').listDocuments({ contactId: c.id }); // eslint-disable-line global-require
+  const insights = require('./insights.service'); // eslint-disable-line global-require
+  const aiOn = (await require('../ai/ai.service').platformSettings()).active; // eslint-disable-line global-require
   page(res, 'crm-show', {
-    quotes,
+    quotes, docs, aiOn, aiSummary: insights.read(c),
     title: c.name, c, wa: waLink(c, req), waApi: comms.whatsapp.ready, mailReady: comms.mail.ready || Boolean(process.env.SMTP_HOST),
     stages: crm.STAGES, countryName: countryName(req.locale), errors: {}, old: null, ...extra,
   });
@@ -100,6 +103,18 @@ router.post('/crm/:id(\\d+)/email', act((req) => crm.email(req.ctx, Number(req.p
 router.post('/crm/:id(\\d+)/whatsapp', act((req) => crm.whatsapp(req.ctx, Number(req.params.id), req.body.wa_text), 'crm.wa_sent'));
 // "Opened WhatsApp": the admin sent it from the app on their phone — kept on the timeline.
 router.post('/crm/:id(\\d+)/wa-opened', act((req) => crm.log(req.ctx, Number(req.params.id), 'whatsapp', req.t('crm.wa_opened_note')), 'crm.logged'));
+// AI summary of the contact (the platform's AI settings): kept on the contact, shown on its page.
+router.post('/crm/:id(\\d+)/ai-summary', wrap(async (req, res) => {
+  try {
+    await require('./insights.service').summarize(req.ctx, Number(req.params.id), req.locale); // eslint-disable-line global-require
+    flash(req, 'success', req.t('crm.ai_done'));
+  } catch (e) {
+    if (!(e instanceof AppError)) throw e;
+    const k = `errors_ai.${e.code}`; const msg = req.t(k, { brand: res.locals.brandName });
+    flash(req, 'error', msg !== k ? msg : req.t('errors_ai.AI_API_ERROR'));
+  }
+  res.redirect(`/admin/crm/${Number(req.params.id)}#ai`);
+}));
 router.post('/crm/:id(\\d+)/delete', wrap(async (req, res) => {
   await crm.remove(req.ctx, Number(req.params.id));
   flash(req, 'success', req.t('crm.deleted'));

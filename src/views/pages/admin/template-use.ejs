@@ -1,0 +1,24 @@
+<%# Admin → Sales → Templates → one: make it for a customer (the placeholders filled from the CRM), preview, made before. %>
+<% var errs = errors || {}; var o = old || {}; var oldVal = function (f, i) { var ns = [].concat(o.field_name || []); var vs = [].concat(o.field_value || []); var k = ns.indexOf(f); return k >= 0 ? vs[k] : values[f]; }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/templates"><%= t('tpl.title') %></a></div><h1><%= tp.name %></h1></div>
+  <div class="page-actions"><a class="btn btn-ghost" href="/admin/templates/<%= tp.id %>/edit"><%- icon('pencil', 'icon-sm') %><%= t('common.edit') %></a>
+    <form method="post" action="/admin/templates/<%= tp.id %>/delete" class="inline" data-confirm="<%= t('tpl.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button></form></div>
+</div>
+<div class="grid grid-main" style="align-items:start">
+  <section class="panel"><div class="panel-head"><div><h2><%= t('tpl.preview') %></h2></div></div><div class="panel-body doc-body"><%- preview %></div></section>
+  <div class="stack">
+    <form method="get" class="panel"><div class="panel-body row-sm"><select class="select grow" name="contact" aria-label="<%= t('sales.from_crm') %>"><option value="">— <%= t('sales.from_crm') %> —</option><% contacts.forEach(function (c) { %><option value="<%= c.id %>"<%= contact && contact.id === c.id ? ' selected' : '' %>><%= c.name %><%= c.organization ? ' · ' + c.organization : '' %></option><% }) %></select><button class="btn btn-secondary btn-sm" type="submit"><%= t('tpl.fill') %></button></div></form>
+    <form method="post" action="/admin/templates/<%= tp.id %>/generate" class="panel" data-generate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="contact_id" value="<%= contact ? contact.id : '' %>">
+      <div class="panel-head"><div><h2><%- icon('file-text', 'icon-sm') %> <%= t('tpl.make') %></h2><% if (contact) { %><div class="panel-sub"><%= contact.name %></div><% } %></div></div>
+      <div class="panel-body stack-sm">
+        <% if (typeof formError !== 'undefined' && formError) { %><div class="alert alert-danger small"><%= formError %></div><% } %>
+        <%- include('../../partials/field', { name: 'title', label: t('tpl.doc_title'), value: o.title || (tp.name + (contact ? ' — ' + (contact.organization || contact.name) : '')), errors: errs, old: null }) %>
+        <% tp.fields.forEach(function (f) { %><div class="field"><label class="label" dir="ltr" style="text-align:start">{<%= f %>}</label><input type="hidden" name="field_name" value="<%= f %>"><input class="input" name="field_value" value="<%= oldVal(f) || '' %>"></div><% }) %>
+        <div><button class="btn btn-primary" type="submit"><%= t('tpl.make_btn') %></button></div>
+      </div>
+    </form>
+    <% if (made.length) { %><section class="panel"><div class="panel-head"><div><h2><%= t('tpl.made') %></h2></div></div><div class="panel-body small stack-sm"><% made.forEach(function (d) { %><div><a class="link" href="/admin/documents/<%= d.id %>"><%= d.title %></a><% if (d.contact_name) { %> <span class="muted">· <%= d.contact_name %></span><% } %></div><% }) %></div></section><% } %>
+  </div>
+</div>

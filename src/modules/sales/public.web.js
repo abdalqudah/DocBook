@@ -61,4 +61,13 @@ router.get('/invoice/:token', wrap(async (req, res) => {
   res.page('pages/sales/invoice-public', { layout: 'document', title: `${res.locals.t('sales.invoice')} ${inv.number || `#${inv.id}`}`, inv, p: await sales.profile() });
 }));
 
+/** A document made from a template (its link): view, print or save as PDF. */
+router.get('/document/:token', wrap(async (req, res) => {
+  noIndex(res);
+  const tpl = require('./templates.service'); // eslint-disable-line global-require
+  const d = await tpl.documentByToken(req.params.token, { count: !isTeam(req) });
+  asLocale(req, res, d.locale);
+  res.page('pages/sales/document-public', { layout: 'document', title: d.title, d, html: tpl.render(d.body), p: await sales.profile() });
+}));
+
 module.exports = router;

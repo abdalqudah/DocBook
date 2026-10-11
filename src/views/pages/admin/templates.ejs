@@ -1,0 +1,17 @@
+<%# Admin → Sales → Templates: documents with {placeholders}, made for a customer in one step. %>
+<div class="page-head">
+  <div><h1><%= t('tpl.title') %></h1><p><%= t('tpl.lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/admin/documents"><%- icon('file-text', 'icon-sm') %><%= t('tpl.documents') %></a><a class="btn btn-primary" href="/admin/templates/new"><%- icon('plus', 'icon-sm') %><%= t('tpl.new') %></a></div>
+</div>
+<% if (contact) { %><div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('tpl.pick_for', { name: contact.name }) %></div></div><% } %>
+<section class="panel flush">
+  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('tpl.none') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive" data-templates>
+    <thead><tr><th><%= t('tpl.name') %></th><th><%= t('tpl.fields') %></th><th class="num"><%= t('tpl.uses') %></th><th></th></tr></thead>
+    <tbody><% rows.forEach(function (x) { %><tr>
+      <td class="primary-cell"><a class="strong" href="/admin/templates/<%= x.id %><%= contact ? '?contact=' + contact.id : '' %>"><%= x.name %></a> <span class="badge"><%= x.locale === 'en' ? 'EN' : 'ع' %></span><% if (!x.active) { %> <span class="badge badge-neutral"><%= t('sales.inactive') %></span><% } %></td>
+      <td data-label="<%= t('tpl.fields') %>" class="tiny"><%= x.fields.map(function (f) { return '{' + f + '}'; }).join(' ') %></td>
+      <td data-label="<%= t('tpl.uses') %>" class="num"><%= x.uses %></td>
+      <td><a class="btn btn-secondary btn-sm" href="/admin/templates/<%= x.id %><%= contact ? '?contact=' + contact.id : '' %>"><%- icon('file-text', 'icon-sm') %><%= t('tpl.make') %></a></td>
+    </tr><% }) %></tbody></table></div><% } %>
+</section>

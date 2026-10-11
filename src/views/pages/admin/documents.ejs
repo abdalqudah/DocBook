@@ -1,0 +1,14 @@
+<%# Admin → Sales → Documents: everything made from a template, with who it is for and whether it was opened. %>
+<% var d = function (v) { return v ? fmt.date(new Date(v).toISOString().slice(0, 10)) : ''; }; %>
+<div class="page-head"><div><h1><%= t('tpl.documents') %></h1><p><%= t('tpl.documents_lead') %></p></div><div class="page-actions"><a class="btn btn-primary" href="/admin/templates"><%- icon('file-text', 'icon-sm') %><%= t('tpl.make') %></a></div></div>
+<section class="panel flush">
+  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('tpl.no_documents') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive" data-documents>
+    <thead><tr><th><%= t('tpl.doc_title') %></th><th><%= t('sales.customer') %></th><th><%= t('sales.issue_date') %></th><th class="num"><%- icon('eye', 'icon-sm') %></th></tr></thead>
+    <tbody><% rows.forEach(function (x) { %><tr>
+      <td class="primary-cell"><a class="strong" href="/admin/documents/<%= x.id %>"><%= x.title %></a></td>
+      <td data-label="<%= t('sales.customer') %>"><%= x.contact_name || x.recipient_name || '—' %></td>
+      <td data-label="<%= t('sales.issue_date') %>"><%= d(x.created_at) %></td>
+      <td class="num"><%= x.view_count %></td>
+    </tr><% }) %></tbody></table></div><% } %>
+</section>

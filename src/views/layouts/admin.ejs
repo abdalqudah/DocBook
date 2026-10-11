@@ -10,7 +10,7 @@
   _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav']);
   _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'sales'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
   _nav.push(['/admin/settings', 'settings', 'navx.admin_settings', false, 'platform']); // every platform setting, one place (below)
-  _nav.push(['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
+  _nav.push(['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/templates', 'file-text', 'tpl.nav', false, 'sales'], ['/admin/documents', 'copy', 'tpl.nav_docs', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
   // Platform settings: one "Settings" entry in the sidebar; inside, a menu of every settings page.
   var _settings = [

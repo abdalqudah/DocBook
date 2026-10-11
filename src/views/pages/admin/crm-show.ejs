@@ -1,5 +1,6 @@
 <%# Admin → CRM → a contact: details, stage, next follow-up, quick actions (note / call, e-mail, WhatsApp) and the timeline. %>
-<% var dt = function (v) { try { return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v)); } catch (e) { return ''; } };
+<% var dtx = function (v) { try { return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v)); } catch (e) { return ''; } };
+   var dt = function (v) { try { return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v)); } catch (e) { return ''; } };
    var KI = { note: 'notebook-pen', call: 'phone', email: 'mail', whatsapp: 'message-circle', meeting: 'users', stage: 'arrow-right', quote: 'file-text', invoice: 'receipt', event: 'zap' }; %>
 <div class="page-head">
   <div><div class="breadcrumbs"><a href="/admin/crm"><%= t('crm.title') %></a></div>
@@ -82,6 +83,26 @@
         <div><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.save') %></button></div>
       </div>
     </form>
+    <section class="panel" id="ai" data-crm-ai>
+      <div class="panel-head"><div><h2><%- icon('sparkles', 'icon-sm') %> <%= t('crm.ai_title') %></h2><% if (c.ai_summary_at) { %><div class="panel-sub"><%= dtx(c.ai_summary_at) %></div><% } %></div>
+        <% if (aiOn) { %><form method="post" action="/admin/crm/<%= c.id %>/ai-summary"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= aiSummary ? t('crm.ai_refresh') : t('crm.ai_make') %></button></form><% } %></div>
+      <div class="panel-body small stack-sm">
+        <% if (aiSummary) { %>
+          <div><span class="badge <%= aiSummary.interest_level === 'high' ? 'badge-success' : aiSummary.interest_level === 'low' ? 'badge-neutral' : 'badge-info' %>"><%= t('crm.ai_interest_' + aiSummary.interest_level) %></span></div>
+          <p style="white-space:pre-wrap;margin:0" data-ai-summary><%= aiSummary.summary %></p>
+          <% if (aiSummary.next_action) { %><div><span class="strong"><%= t('crm.ai_next') %>:</span> <%= aiSummary.next_action %></div><% } %>
+          <% if (aiSummary.risks && aiSummary.risks.length) { %><div><span class="strong"><%= t('crm.ai_risks') %>:</span><ul style="margin:4px 0;padding-inline-start:18px"><% aiSummary.risks.forEach(function (r) { %><li><%= r %></li><% }) %></ul></div><% } %>
+          <% if (aiSummary.suggested_message) { %><div><span class="strong"><%= t('crm.ai_message') %>:</span><textarea class="textarea" rows="4" readonly><%= aiSummary.suggested_message %></textarea></div><% } %>
+          <p class="tiny muted"><%= t('crm.ai_note') %></p>
+        <% } else if (aiOn) { %><p class="muted"><%= t('crm.ai_empty') %></p>
+        <% } else { %><p class="muted"><%= t('crm.ai_off') %> <a class="link" href="/admin/ai"><%= t('crm.setup') %></a></p><% } %>
+      </div>
+    </section>
+    <section class="panel" data-crm-docs>
+      <div class="panel-head"><div><h2><%= t('tpl.documents') %></h2></div><a class="btn btn-ghost btn-sm" href="/admin/templates?contact=<%= c.id %>"><%- icon('plus', 'icon-sm') %><%= t('tpl.make') %></a></div>
+      <div class="panel-body small stack-sm"><% if (!docs.length) { %><p class="muted"><%= t('tpl.no_documents') %></p><% } %>
+        <% docs.forEach(function (d) { %><div class="row-sm between"><a class="link" href="/admin/documents/<%= d.id %>"><%= d.title %></a><span class="muted"><%- icon('eye', 'icon-sm') %> <%= d.view_count %></span></div><% }) %></div>
+    </section>
     <section class="panel" data-crm-quotes>
       <div class="panel-head"><div><h2><%= t('sales.quotes') %></h2></div><a class="btn btn-ghost btn-sm" href="/admin/quotes/new?contact=<%= c.id %>"><%- icon('plus', 'icon-sm') %><%= t('sales.new_quote') %></a></div>
       <div class="panel-body small stack-sm"><% if (!quotes.length) { %><p class="muted"><%= t('sales.no_quotes') %></p><% } %>

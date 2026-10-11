@@ -1,0 +1,33 @@
+{
+  "tpl": {
+    "nav": "Templates",
+    "nav_docs": "Documents",
+    "title": "Document templates",
+    "lead": "Agreements, offer letters and welcome packs with {placeholders}, made for a customer in one step and sent with a link.",
+    "new": "New template",
+    "none": "No templates yet.",
+    "name": "Name",
+    "fields": "Placeholders",
+    "uses": "Made",
+    "make": "Make a document",
+    "make_btn": "Make the document",
+    "pick_for": "Pick a template to make a document for {name}.",
+    "body": "The text",
+    "body_help": "Placeholders in braces, e.g. {company_name}. Formatting: \"# \" heading, \"## \" sub-heading, \"- \" list, **bold**.",
+    "saved": "Template saved.",
+    "deleted": "Template deleted.",
+    "delete_confirm": "Delete this template? Documents already made stay.",
+    "preview": "Preview",
+    "fill": "Fill from the CRM",
+    "doc_title": "Document title",
+    "made": "Made from this template",
+    "generated": "Document ready: send it from here.",
+    "documents": "Documents",
+    "documents_lead": "Documents made from templates, each with a link the customer opens and prints.",
+    "no_documents": "No documents yet.",
+    "edit_doc": "Edit the text",
+    "doc_saved": "Document saved. The customer sees it on the same link.",
+    "doc_deleted": "Document deleted.",
+    "doc_delete_confirm": "Delete this document? Its link stops working."
+  }
+}

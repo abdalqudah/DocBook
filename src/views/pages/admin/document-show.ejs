@@ -1,0 +1,29 @@
+<%# Admin → Sales → Documents → one: the text (editable), its customer link, sending it, the sends. %>
+<% var dt = function (v) { try { return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v)); } catch (e) { return ''; } }; var o = old || {}; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/documents"><%= t('tpl.documents') %></a></div><h1><%= d.title %></h1>
+    <p><%= doc.name || '' %><% if (d.view_count) { %> · <%- icon('eye', 'icon-sm') %> <%= t('sales.viewed_n', { n: d.view_count }) %><% } %><% if (d.contact_id) { %> · <a class="link" href="/admin/crm/<%= d.contact_id %>"><%= t('crm.title') %></a><% } %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="<%= doc.link %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('sales.open_link') %></a>
+    <form method="post" action="/admin/documents/<%= d.id %>/delete" class="inline" data-confirm="<%= t('tpl.doc_delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button></form></div>
+</div>
+<div class="grid grid-main" style="align-items:start">
+  <div class="stack">
+    <section class="panel"><div class="panel-head"><div><h2><%= t('tpl.preview') %></h2></div></div><div class="panel-body doc-body" data-doc-preview><%- html %></div></section>
+    <details class="panel"><summary class="panel-head"><div><h2><%- icon('pencil', 'icon-sm') %> <%= t('tpl.edit_doc') %></h2></div></summary>
+      <form method="post" action="/admin/documents/<%= d.id %>" class="panel-body stack-sm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input class="input" name="title" value="<%= o.title || d.title %>">
+        <textarea class="textarea" name="body" rows="16"><%= o.body || d.body %></textarea>
+        <% if (errors.body) { %><span class="field-error"><%= errors.body %></span><% } %>
+        <div><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button></div>
+      </form></details>
+    <section class="panel"><div class="panel-head"><div><h2><%= t('sales.sends') %></h2></div></div>
+      <div class="panel-body"><input class="input mb-4" dir="ltr" readonly value="<%= doc.link %>">
+        <% if (!sends.length) { %><p class="small muted"><%= t('sales.no_sends') %></p><% } else { %>
+        <ul class="stack-sm" style="list-style:none;padding:0;margin:0" data-sends><% sends.forEach(function (s) { %>
+          <li class="small"><%- icon(s.channel === 'email' ? 'mail' : 'message-circle', 'icon-sm') %> <bdi dir="ltr"><%= s.recipient %></bdi> · <span class="badge <%= s.status === 'failed' ? 'badge-danger' : 'badge-success' %>"><%= t('sales.send_' + s.status) %></span> <span class="muted"><%= dt(s.created_at) %></span><% if (s.error) { %><div class="tiny muted"><%= s.error %></div><% } %></li>
+        <% }) %></ul><% } %></div></section>
+  </div>
+  <%- include('../../partials/doc-send', { doc: doc, action: '/admin/documents/' + d.id }) %>
+</div>
+<script src="/js/sales.js?v=<%= assetV %>" defer></script>

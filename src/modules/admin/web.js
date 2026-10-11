@@ -42,6 +42,7 @@ router.use('/', require('../platformops/admin.web'));
 router.use('/', require('../platformcomms/admin.web')); // platform settings (e-mail, WhatsApp) and who is active from where
 router.use('/', require('../crm/admin.web')); // the platform owner's CRM
 router.use('/', require('../sales/admin.web')); // quotations, services, seller details, invoices sent, e-mail log // in-app update from a dist zip // plans and clinic subscriptions // patient reviews: moderation (hide with a reason)
+router.use('/', require('../sales/templates.web')); // document templates and the documents made from them
 
 const page = (res, view, data) => res.page(`pages/admin/${view}`, { layout: 'admin', pageStyles: ['/css/site.css'], ...data });
 const like = (q) => `%${String(q).trim().replace(/[%_\\]/g, (m) => `\\${m}`)}%`;

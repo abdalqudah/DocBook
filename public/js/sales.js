@@ -37,6 +37,15 @@
       });
     });
   }
+  // Templates: a placeholder button inserts {field} where the cursor is.
+  var tplBody = document.querySelector('[data-template-body]');
+  document.querySelectorAll('[data-insert]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (!tplBody) return;
+      var v = b.getAttribute('data-insert'); var s = tplBody.selectionStart || 0; var e = tplBody.selectionEnd || s;
+      tplBody.value = tplBody.value.slice(0, s) + v + tplBody.value.slice(e); tplBody.focus(); tplBody.selectionStart = tplBody.selectionEnd = s + v.length;
+    });
+  });
   document.querySelectorAll('[data-wa-send]').forEach(function (f) {
     f.addEventListener('submit', function (e) {
       e.preventDefault();

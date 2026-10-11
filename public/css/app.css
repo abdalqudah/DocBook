@@ -1087,3 +1087,10 @@ a.pn-title:hover { color: var(--primary); }
 .pp-photo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex: none; border: 2px solid var(--border); }
 .ord-legacy { border-top: 1px solid var(--border); }
 .ord-legacy-head { display: flex; align-items: center; gap: 6px; padding: 10px 16px 0; }
+
+/* A sales document made from a template (Admin → Documents, and its customer link). */
+.doc-body { line-height: 1.85; }
+.doc-body h2 { font-size: var(--fs-lg, 1.25rem); margin: 20px 0 8px; }
+.doc-body h3 { font-size: var(--fs-md, 1.05rem); margin: 16px 0 6px; }
+.doc-body p { margin: 0 0 12px; }
+.doc-body ul { margin: 0 0 12px; padding-inline-start: 22px; }

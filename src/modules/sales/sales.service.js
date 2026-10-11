@@ -252,12 +252,16 @@ const T = {
     quote_whatsapp: 'مرحبا {customer}، هذا عرض السعر رقم {number} بقيمة {total} من {seller}، صالح حتى {valid_until}:\n{link}',
     invoice_subject: 'فاتورة {number} من {seller}', invoice_body: 'مرحبا {customer}،\n\nفاتورة الاشتراك رقم {number} بقيمة {total}.\nبتقدر تشوفها وتطبعها من الرابط.\n\nمع التحية،\n{seller}', invoice_cta: 'الفاتورة',
     invoice_whatsapp: 'مرحبا {customer}، هذه فاتورة الاشتراك رقم {number} بقيمة {total} من {seller}:\n{link}',
+    document_subject: '{number} — {seller}', document_body: 'مرحبا {customer}،\n\nمرفق {number}.\nبتقدر تشوفه وتطبعه من الرابط.\n\nمع التحية،\n{seller}', document_cta: 'فتح المستند',
+    document_whatsapp: 'مرحبا {customer}، هذا {number} من {seller}:\n{link}',
   },
   en: {
     quote_subject: 'Quotation {number} from {seller}', quote_body: 'Hello {customer},\n\nHere is quotation {number} for {total}, valid until {valid_until}.\nYou can view, print, accept or negotiate it from the link.\n\nBest regards,\n{seller}', quote_cta: 'View quotation',
     quote_whatsapp: 'Hello {customer}, here is quotation {number} for {total} from {seller}, valid until {valid_until}:\n{link}',
     invoice_subject: 'Invoice {number} from {seller}', invoice_body: 'Hello {customer},\n\nHere is subscription invoice {number} for {total}.\nYou can view and print it from the link.\n\nBest regards,\n{seller}', invoice_cta: 'View invoice',
     invoice_whatsapp: 'Hello {customer}, here is subscription invoice {number} for {total} from {seller}:\n{link}',
+    document_subject: '{number} — {seller}', document_body: 'Hello {customer},\n\nPlease find {number} at the link below; you can view and print it.\n\nBest regards,\n{seller}', document_cta: 'Open document',
+    document_whatsapp: 'Hello {customer}, here is {number} from {seller}:\n{link}',
   },
 };
 const fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
@@ -282,6 +286,14 @@ async function sendable(type, id, base, locale) {
     const contact = await knex('crm_contacts').where({ business_id: inv.business_id }).orderBy('id').first('id');
     const vars = { customer: r.name, number: inv.number || `#${inv.id}`, total: moneyText(inv.amount, inv.currency, loc), seller: sellerName(p, loc), link: `${root}/invoice/${await invoiceShareToken(inv.id)}` };
     return { type, id: inv.id, label: vars.number, locale: loc, contactId: contact ? contact.id : null, name: r.name, email: r.email, phone: r.phone, country: r.country, link: vars.link, invoice: inv, vars, texts: texts('invoice', loc, vars) };
+  }
+  if (type === 'document') {
+    const d = await knex('sales_documents').where({ id: Number(id) || 0 }).first();
+    if (!d) throw E.notFound('Document');
+    const loc = locale === 'en' || locale === 'ar' ? locale : d.locale;
+    const c = d.contact_id ? await knex('crm_contacts').where({ id: d.contact_id }).first('country') : null;
+    const vars = { customer: d.recipient_name || '', number: d.title, seller: sellerName(p, loc), link: `${root}/document/${d.token}` };
+    return { type, id: d.id, label: d.title, locale: loc, contactId: d.contact_id, name: d.recipient_name, email: d.recipient_email, phone: d.recipient_phone, country: c && c.country, link: vars.link, document: d, vars, texts: texts('document', loc, vars) };
   }
   throw E.notFound('Document');
 }

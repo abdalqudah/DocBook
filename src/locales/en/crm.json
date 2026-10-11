@@ -94,6 +94,20 @@
     "board_lead": "Drag a card to another stage, or pick the stage on the card.",
     "list_view": "List",
     "moved": "Stage updated.",
-    "move_failed": "Could not move it. Try again."
+    "move_failed": "Could not move it. Try again.",
+    "ai_title": "AI summary",
+    "ai_make": "Summarise",
+    "ai_refresh": "Refresh",
+    "ai_done": "Summary ready.",
+    "ai_empty": "Get a short summary, the next step and a suggested message from this contact's history.",
+    "ai_off": "Switch on the AI (API key) to summarise contacts.",
+    "ai_next": "Next step",
+    "ai_risks": "Watch out",
+    "ai_message": "Suggested message",
+    "ai_note": "Written by AI from the timeline; check it before acting.",
+    "ai_interest_high": "Very interested",
+    "ai_interest_medium": "Interested",
+    "ai_interest_low": "Low interest",
+    "ai_interest_unknown": "Not clear yet"
   }
 }
