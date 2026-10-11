@@ -81,6 +81,11 @@
     "setup_partners_lab_text": "المختبرات التي تُرسل لها طلبات التحاليل وبياناتها.",
     "setup_partners_imaging": "مراكز الأشعة",
     "setup_partners_imaging_text": "مراكز الأشعة التي تُرسل لها طلبات الأشعة وبياناتها.",
-    "admin_grp_sales": "المبيعات والعملاء"
+    "admin_grp_sales": "المبيعات والعملاء",
+    "admin_settings": "الإعدادات",
+    "set_grp_general": "عام",
+    "set_grp_money": "الدفع والفوترة",
+    "set_grp_integrations": "الربط",
+    "set_grp_system": "النظام"
   }
 }

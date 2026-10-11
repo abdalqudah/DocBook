@@ -1,25 +1,26 @@
 <%
   var _p = typeof adminPath !== 'undefined' ? adminPath.replace(/\/$/, '') : '';
   var _nav = [['/admin', 'layout-dashboard', 'nav_overview', true], ['/admin/clinics', 'hospital', 'nav_clinics'], ['/admin/users', 'users', 'nav_users'], ['/admin/site', 'layout-template', 'nav_site'], ['/admin/seo', 'search', 'nav_seo'], ['/admin/growth', 'megaphone', 'nav_growth']];
-  _nav.push(['/admin/domains', 'globe', 'identity.nav_domains'], ['/admin/google', 'key-round', 'identity.nav_google']); // identity area
+  _nav.push(['/admin/domains', 'globe', 'identity.nav_domains']); // clinics' own domains
   _nav.push(['/admin/vendors', 'briefcase-business', 'vendors.admin.nav']); // reps & warehouses
   _nav.push(['/admin/hub-links', 'link', 'hub.admin_nav', false, 'market']); // linked installations
   _nav.push(['/admin/vendor-billing', 'credit-card', 'vbill.admin.nav', false, 'market']); // reps' plans, trial, invoices and ads
   _nav.push(['/admin/reviews', 'star', 'reviews.admin.nav']); // patient reviews moderation
   _nav.push(['/admin/articles', 'notebook-pen', 'articles.admin.nav']); // doctors' articles for the main site
-  _nav.push(['/admin/clinic-types', 'stethoscope', 'clinic_types.nav', false, 'clinics']); // clinic types offered at sign-up and in settings
-  _nav.push(['/admin/payments', 'credit-card', 'ppay.admin.nav', false, 'clinics']); // payment methods and PayTabs
-  _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav'], ['/admin/ai', 'sparkles', 'ai_admin.nav'], ['/admin/updates', 'cloud-upload', 'platformops.admin_nav']);
-  _nav.push(['/admin/branding', 'image', 'branding_admin.nav', false, 'platform']); // platform logo and browser icon
-  _nav.push(['/admin/maintenance', 'wrench', 'maintenance.nav', false, 'platform']); // close the site for maintenance
-  _nav.push(['/admin/login-page', 'log-in', 'loginpage.nav', false, 'platform']); // the sign-in page's words and look
-  _nav.push(['/admin/databases', 'database', 'dbsep.nav', false, 'platform']); // each clinic's own database
-  _nav.push(['/admin/images', 'minimize', 'imgopt.nav', false, 'platform']); // compress pictures stored before uploads were compressed
+  _nav.push(['/admin/plans', 'wallet', 'subscriptions_admin.nav']);
   _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'sales'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
-  _nav.push(['/admin/settings', 'settings', 'pcomms.nav', false, 'platform']); // the platform's e-mail and WhatsApp
-  _nav.push(['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/sales-profile', 'building-2', 'sales.nav_profile', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
+  _nav.push(['/admin/settings', 'settings', 'navx.admin_settings', false, 'platform']); // every platform setting, one place (below)
+  _nav.push(['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
-  var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
+  // Platform settings: one "Settings" entry in the sidebar; inside, a menu of every settings page.
+  var _settings = [
+    ['general', [['/admin/settings', 'mail', 'pcomms.nav_comms'], ['/admin/branding', 'image', 'branding_admin.nav'], ['/admin/login-page', 'log-in', 'loginpage.nav'], ['/admin/maintenance', 'wrench', 'maintenance.nav']]],
+    ['money', [['/admin/payments', 'credit-card', 'ppay.admin.nav'], ['/admin/sales-profile', 'building-2', 'sales.nav_profile'], ['/admin/clinic-types', 'stethoscope', 'clinic_types.nav']]],
+    ['integrations', [['/admin/google', 'key-round', 'identity.nav_google'], ['/admin/ai', 'sparkles', 'ai_admin.nav']]],
+    ['system', [['/admin/updates', 'cloud-upload', 'platformops.admin_nav'], ['/admin/databases', 'database', 'dbsep.nav'], ['/admin/images', 'minimize', 'imgopt.nav']]],
+  ];
+  var _inSettings = _settings.some(function (g) { return g[1].some(function (n) { return _p === n[0] || _p.indexOf(n[0] + '/') === 0; }); });
+  var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : n[0] === '/admin/settings' ? _inSettings : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
   // Sidebar groups: an entry may name its group in a 5th field (n[4]); otherwise it is looked up by href; unknown → platform.
   var _groupOf = { '/admin': 'overview', '/admin/clinics': 'clinics', '/admin/plans': 'clinics', '/admin/users': 'clinics',
     '/admin/site': 'website', '/admin/seo': 'website', '/admin/growth': 'website', '/admin/domains': 'website', '/admin/google': 'website',
@@ -85,7 +86,10 @@
     <main class="content admin-content" id="main">
       <% if (typeof maintenanceOn !== 'undefined' && maintenanceOn) { %><div class="alert alert-warning mb-4" role="status"><%- icon('wrench', 'icon-sm') %><div class="grow"><%= t('maintenance.bar') %></div><a class="btn btn-secondary btn-sm" href="<%= edition.single ? '/app/settings/maintenance' : '/admin/maintenance' %>"><%= t('maintenance.bar_link') %></a></div><% } %>
 
-      <%- body %>
+      <% if (_inSettings) { %><div class="settings-layout" data-admin-settings>
+        <nav class="settings-nav" aria-label="<%= t('navx.admin_settings') %>"><% _settings.forEach(function (g) { %><div class="group"><%= t('navx.set_grp_' + g[0]) %></div><% g[1].forEach(function (n) { var on = n[0] === '/admin/settings' ? (_p === n[0] || _p.indexOf('/admin/settings/') === 0) : _under(n[0]); %><a href="<%= n[0] %>" class="<%= on ? 'active' : '' %>"<% if (on) { %> aria-current="page"<% } %>><%- icon(n[1], 'icon-sm') %><span class="truncate"><%= t(n[2]) %></span></a><% }) %><% }) %></nav>
+        <div><%- body %></div>
+      </div><% } else { %><%- body %><% } %>
     </main>
   </div>
 </div>

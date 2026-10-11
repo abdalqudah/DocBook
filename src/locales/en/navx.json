@@ -81,6 +81,11 @@
     "setup_partners_lab_text": "Labs lab requests are sent to, with their details.",
     "setup_partners_imaging": "Imaging centres",
     "setup_partners_imaging_text": "Imaging centres imaging requests are sent to, with their details.",
-    "admin_grp_sales": "Sales & customers"
+    "admin_grp_sales": "Sales & customers",
+    "admin_settings": "Settings",
+    "set_grp_general": "General",
+    "set_grp_money": "Payments and billing",
+    "set_grp_integrations": "Integrations",
+    "set_grp_system": "System"
   }
 }

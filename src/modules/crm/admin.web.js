@@ -1,8 +1,9 @@
 // Platform admin → CRM: contacts (clinics, warehouses, reps, prospects) with their stage and next follow-up, and
 // each contact's timeline — notes, calls, e-mails and WhatsApp messages sent from the platform. Mounted in admin/web.js.
 const express = require('express');
+const knex = require('../../db/knex');
 const { wrap, flash } = require('../../routes/helpers');
-const { AppError } = require('../../core/errors');
+const { AppError, E } = require('../../core/errors');
 const crm = require('./crm.service');
 
 const router = express.Router();
@@ -22,6 +23,18 @@ router.get('/crm', wrap(async (req, res) => {
   const f = { q: String(req.query.q || '').slice(0, 80), kind: req.query.kind, stage: req.query.stage, country: String(req.query.country || '').toUpperCase(), due: req.query.due };
   const [rows, sum] = await Promise.all([crm.list(f), crm.summary()]);
   page(res, 'crm', { title: req.t('crm.title'), rows, sum, f, kinds: crm.KINDS, stages: crm.STAGES, countryName: countryName(req.locale), now: new Date() });
+}));
+
+// The pipeline as a board: a column per stage, cards dragged between them (or moved with the card's menu on a phone).
+router.get('/crm/board', wrap(async (req, res) => {
+  await crm.sync();
+  const f = { q: String(req.query.q || '').slice(0, 80), kind: req.query.kind, country: String(req.query.country || '').toUpperCase() };
+  const [rows, sum] = await Promise.all([crm.list(f), crm.summary()]);
+  const ids = rows.map((r) => r.id);
+  const open = ids.length ? await knex('quotes').whereIn('contact_id', ids).whereIn('status', ['sent', 'negotiating']).groupBy('contact_id', 'currency').select('contact_id', 'currency').sum({ total: 'total' }).count({ n: '*' }) : [];
+  const quotes = {}; open.forEach((o) => { (quotes[o.contact_id] = quotes[o.contact_id] || []).push(o); });
+  const columns = crm.STAGES.map((k) => ({ key: k, rows: rows.filter((r) => r.stage === k) }));
+  page(res, 'crm-board', { title: req.t('crm.board'), columns, quotes, sum, f, kinds: crm.KINDS, stages: crm.STAGES, countryName: countryName(req.locale), now: new Date(), pageScripts: ['/js/crm-board.js'] });
 }));
 
 async function renderForm(req, res, extra = {}) {
@@ -62,20 +75,24 @@ async function renderShow(req, res, extra = {}) {
   });
 }
 router.get('/crm/:id(\\d+)', wrap((req, res) => renderShow(req, res)));
+const wantsJson = (req) => /application\/json/.test(req.get('accept') || '');
 const act = (fn, okKey) => wrap(async (req, res) => {
   try {
     const r = await fn(req);
+    if (wantsJson(req)) return res.json({ ok: !(r && r.ok === false), error: r && r.error ? r.error : undefined });
     if (r && r.ok === false) flash(req, 'error', `${req.t('crm.wa_failed')} ${r.error || ''}`.trim());
     else flash(req, 'success', req.t(okKey));
   } catch (e) {
     if (!(e instanceof AppError) || e.status >= 500) throw e;
+    if (wantsJson(req)) return res.status(422).json({ ok: false, error: e.details ? Object.values(e.details).filter(Boolean).join(' ') : e.message });
     flash(req, 'error', e.details ? Object.values(e.details).filter(Boolean).join(' ') : e.message);
   }
-  res.redirect(`/admin/crm/${req.params.id}`);
+  return res.redirect(`/admin/crm/${req.params.id}`);
 });
 router.post('/crm/:id(\\d+)/note', act((req) => crm.log(req.ctx, Number(req.params.id), ['note', 'call', 'meeting'].includes(req.body.kind) ? req.body.kind : 'note', req.body.body), 'crm.logged'));
 router.post('/crm/:id(\\d+)/follow-up', act((req) => crm.followUp(req.ctx, Number(req.params.id), { at: req.body.at, text: req.body.text }), 'crm.follow_saved'));
 router.post('/crm/:id(\\d+)/stage', act(async (req) => {
+  if (!crm.STAGES.includes(req.body.stage)) throw E.validation({ stage: 'Choose a valid value.' });
   const c = await crm.get(req.params.id);
   return crm.save(req.ctx, c.id, { ...c, next_action_at: c.next_action_at ? new Date(c.next_action_at).toISOString().slice(0, 16) : '', stage: req.body.stage });
 }, 'crm.saved'));

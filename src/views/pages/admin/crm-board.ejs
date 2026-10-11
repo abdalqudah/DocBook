@@ -1,0 +1,32 @@
+<%# Admin → CRM → board: the pipeline, a column per stage; drag a card to another column (or use its menu) to move it. %>
+<% var qs = function (extra) { var p = Object.assign({ q: f.q || '', kind: f.kind || '', country: f.country || '' }, extra); return '?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); };
+   var d = function (v) { return v ? fmt.date(new Date(v).toISOString().slice(0, 10)) : ''; }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/crm"><%= t('crm.title') %></a></div><h1><%= t('crm.board') %></h1><p><%= t('crm.board_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/admin/crm<%= qs({}) %>"><%- icon('list', 'icon-sm') %><%= t('crm.list_view') %></a><a class="btn btn-primary" href="/admin/crm/new"><%- icon('user-plus', 'icon-sm') %><%= t('crm.new') %></a></div>
+</div>
+<form method="get" class="panel mb-4"><div class="panel-body row-sm wrap">
+  <input class="input grow" name="q" value="<%= f.q %>" placeholder="<%= t('crm.search') %>">
+  <select class="select" name="kind"><option value=""><%= t('crm.kind_all') %></option><% kinds.forEach(function (k) { %><option value="<%= k %>"<%= f.kind === k ? ' selected' : '' %>><%= t('crm.kind_' + k) %></option><% }) %></select>
+  <select class="select" name="country"><option value=""><%= t('crm.country_all') %></option><% sum.countries.forEach(function (c) { %><option value="<%= c.code %>"<%= f.country === c.code ? ' selected' : '' %>><%= countryName(c.code) %> (<%= c.n %>)</option><% }) %></select>
+  <button class="btn btn-secondary" type="submit"><%- icon('search', 'icon-sm') %><%= t('crm.search_btn') %></button>
+</div></form>
+<div class="crm-board" data-crm-board data-csrf="<%= csrfToken %>" data-moved="<%= t('crm.moved') %>" data-failed="<%= t('crm.move_failed') %>">
+  <% columns.forEach(function (col) { %>
+  <section class="crm-col" data-stage="<%= col.key %>">
+    <header class="crm-col-head"><span class="strong"><%= t('crm.stage_' + col.key) %></span><span class="badge num" data-count><%= col.rows.length %></span></header>
+    <div class="crm-col-body" data-drop>
+      <% col.rows.forEach(function (c) { var due = c.next_action_at && new Date(c.next_action_at) <= now; var qs2 = quotes[c.id] || []; %>
+      <article class="crm-card" draggable="true" data-card="<%= c.id %>">
+        <a class="strong" href="/admin/crm/<%= c.id %>"><%= c.name %></a>
+        <% if (c.organization && c.organization !== c.name) { %><div class="tiny muted truncate"><%= c.organization %></div><% } %>
+        <div class="row-sm wrap tiny"><span class="badge"><%= t('crm.kind_' + c.kind) %></span><% if (c.country) { %><span class="muted"><%= countryName(c.country) %></span><% } %></div>
+        <% qs2.forEach(function (o) { %><div class="tiny"><%- icon('file-text', 'icon-sm') %> <%= fmt.money(o.total, o.currency) %> <span class="muted">(<%= o.n %>)</span></div><% }) %>
+        <% if (c.next_action_at || c.next_action) { %><div class="tiny <%= due ? 'warn-text' : 'muted' %>"><%- icon('bell', 'icon-sm') %> <%= d(c.next_action_at) %> <%= c.next_action || '' %></div><% } %>
+        <select class="select select-sm" data-card-stage aria-label="<%= t('crm.stage') %>"><% stages.forEach(function (k) { %><option value="<%= k %>"<%= c.stage === k ? ' selected' : '' %>><%= t('crm.stage_' + k) %></option><% }) %></select>
+      </article>
+      <% }) %>
+    </div>
+  </section>
+  <% }) %>
+</div>

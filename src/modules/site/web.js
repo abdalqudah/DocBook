@@ -21,6 +21,17 @@ function secCls(s) {
   return c.join(' ');
 }
 
+/** The platform's WhatsApp button on its own pages (Admin → Settings → WhatsApp → "Show a WhatsApp button"). */
+async function platformWa(locale) {
+  if (require('../../config/edition').single) return null; // eslint-disable-line global-require
+  try {
+    const comms = require('../platformcomms/comms.service'); // eslint-disable-line global-require
+    if (!(await comms.get()).whatsapp.public_button) return null;
+    const href = await comms.publicLink(locale);
+    return href ? { href } : null;
+  } catch { return null; }
+}
+
 /** Loads the header/footer content, media and social links for every public page (cached for a minute). */
 async function chrome(req, res, next) {
   try {
@@ -33,6 +44,7 @@ async function chrome(req, res, next) {
       res.locals.siteMedia = m;
       res.locals.siteSocial = Object.entries(mk.social || {}).map(([k, href]) => ({ key: k, href, icon: (seo.SOCIAL[k] || {}).icon || 'link' }));
       // The main site's "Articles" link, once one doctor's article is approved for it.
+      res.locals.platformWa = await platformWa(req.locale);
       res.locals.blogOn = await require('../../core/cache').remember('blog:on', async () => (await require('../articles/articles.service').platformList({ per: 1 })).total > 0, 60_000).catch(() => false); // eslint-disable-line global-require
     }
     next();

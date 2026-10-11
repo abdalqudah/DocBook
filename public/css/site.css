@@ -845,3 +845,10 @@ a.lp-contact-card:hover { border-color: var(--primary); }
   .site-nav .right .btn-sm { padding-inline: 10px; white-space: nowrap; }
 }
 @media (max-width: 420px) { body:not(.site-portal) .site-nav .right [data-theme-toggle] { display: none; } }
+
+/* The platform's WhatsApp button (Admin → Settings → WhatsApp): floats at the reading end's bottom corner. */
+.wa-float { position: fixed; inset-inline-end: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 999px; background: var(--success); color: var(--surface); font-weight: var(--fw-semibold); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, .18)); text-decoration: none; }
+.wa-float:hover { filter: brightness(1.06); color: var(--surface); }
+.wa-float .icon { width: 22px; height: 22px; }
+@media (max-width: 640px) { .wa-float { padding: 14px; } .wa-float-text { display: none; } }
+@media print { .wa-float { display: none; } }

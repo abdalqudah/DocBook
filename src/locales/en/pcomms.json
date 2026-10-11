@@ -82,6 +82,8 @@
     "just_now": "just now",
     "min_ago": "{n} min ago",
     "hours_ago": "{n} h ago",
-    "days_ago": "{n} days ago"
+    "days_ago": "{n} days ago",
+    "wa_float": "Chat on WhatsApp",
+    "nav_comms": "E-mail and WhatsApp"
   }
 }

@@ -158,3 +158,14 @@
 .mt-lang { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 8px; align-items: start; }
 .mt-tag { width: 28px; height: 36px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: var(--fw-bold); color: var(--text-muted); background: var(--surface-sunken); border-radius: var(--radius-sm); }
 .mt-var { display: inline-block; padding: 1px 6px; border-radius: 6px; background: var(--surface-sunken); font-size: 12px; direction: ltr; }
+
+/* Admin → CRM → board: a column per stage, cards dragged between them (scrolls sideways on narrow screens). */
+.crm-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.crm-col { background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; min-height: 160px; }
+.crm-col.is-over { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.crm-col-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.crm-col-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; flex: 1; min-height: 80px; }
+.crm-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; display: flex; flex-direction: column; gap: 6px; cursor: grab; }
+.crm-card.is-dragging { opacity: .5; }
+.crm-card .select-sm { margin-top: 2px; }
+@media (hover: hover) { .crm-card .select-sm { opacity: .7; } .crm-card:hover .select-sm { opacity: 1; } }

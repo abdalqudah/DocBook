@@ -89,6 +89,11 @@
     "open_vendor": "Open the rep / warehouse",
     "act_quote": "Quotation",
     "act_invoice": "Invoice",
-    "act_event": "Platform event"
+    "act_event": "Platform event",
+    "board": "Pipeline board",
+    "board_lead": "Drag a card to another stage, or pick the stage on the card.",
+    "list_view": "List",
+    "moved": "Stage updated.",
+    "move_failed": "Could not move it. Try again."
   }
 }

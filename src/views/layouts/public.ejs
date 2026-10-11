@@ -139,6 +139,7 @@
   </div>
 </div>
 <% } %>
+<% if (typeof platformWa !== 'undefined' && platformWa && !portalClinic && !embed && !_ws) { %><a class="wa-float" href="<%= platformWa.href %>" target="_blank" rel="noopener" data-wa-float aria-label="<%= t('pcomms.wa_float') %>"><%- icon('message-circle') %><span class="wa-float-text"><%= t('pcomms.wa_float') %></span></a><% } %>
 <script src="/js/app.js?v=<%= assetV %>" defer></script>
 <% if (head && head.pixels) { %><script src="/js/pixels.js?v=<%= assetV %>" defer></script><% } %>
 <script src="/js/site.js?v=<%= assetV %>" defer></script>
