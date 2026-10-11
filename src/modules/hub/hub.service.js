@@ -175,7 +175,11 @@ async function call(c, path, { method = 'GET', body = null, binary = false } = {
     const text = await res.text().catch(() => '');
     const title = ((/<title[^>]*>([^<]{0,120})/i.exec(text) || [])[1] || '').trim();
     const host = (() => { try { return new URL(c.hub_url).host; } catch { return c.hub_url; } })();
-    throw new AppError('HUB_NOT_API', `${host} answered with a web page instead of the platform link (HTTP ${res.status}${title ? `, “${title}”` : ''}). This is usually the hosting's bot protection (Imunify360 / LiteSpeed) checking the visitor: ask the host to allow this server's IP address for ${host}.`, 502);
+    const where = await addressesOf(c.hub_url);
+    const hint = /park|domain (is )?for sale|coming soon|default web ?page|index of/i.test(title)
+      ? `The name still leads this server to a parking / default page, not to the platform: its DNS here still has an old address${where ? ` (${where})` : ''} — wait until it updates, or ask this server's host to flush its DNS cache.`
+      : `This is usually the hosting's bot protection (Imunify360 / LiteSpeed) checking the visitor: ask the host to allow this server's IP address for ${host}.`;
+    throw new AppError('HUB_NOT_API', `${host} answered with a web page instead of the platform link (HTTP ${res.status}${title ? `, “${title}”` : ''}). ${hint}`, 502);
   }
   if (!res.ok) throw new AppError('HUB_ERROR', `The platform answered ${res.status}.`, 502);
   return binary ? { data: Buffer.from(await res.arrayBuffer()), mime: res.headers.get('content-type') || '' } : res.json();
