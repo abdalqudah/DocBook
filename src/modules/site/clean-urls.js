@@ -11,7 +11,7 @@ const cache = require('../../core/cache');
 // Addresses of the system itself: a website page never takes one of these over.
 const SYSTEM = new Set(('app admin api hooks m pay brand favicon healthz theme ads ad-image assets auth blog clinics features forgot invite '
   + 'login logo logo-square logout media password preferences pricing r reset return signup verify verify-email workspaces css js img '
-  + 'c d share kiosk telehealth vendor vendors marketplace join reps staff enter p fonts book doctors articles').split(' '));
+  + 'c d share kiosk telehealth vendor vendors marketplace join reps staff enter p fonts book doctors articles quote invoice').split(' '));
 
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

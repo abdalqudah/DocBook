@@ -1,0 +1,17 @@
+<%# A platform subscription invoice for the clinic (its link): print / save as PDF. %>
+<% var money = function (v) { return fmt.money(v, inv.currency); }; var d = function (v) { return v ? fmt.date(v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10)) : ''; };
+   var name = locale === 'en' && inv.clinic_name_en ? inv.clinic_name_en : inv.clinic_name; var plan = locale === 'en' && inv.plan_name_en ? inv.plan_name_en : inv.plan_name; %>
+<div class="row between wrap mb-4" style="align-items:flex-start">
+  <div><h1 class="h2" style="margin:0"><%= t('sales.invoice') %> <bdi dir="ltr"><%= inv.number || '#' + inv.id %></bdi></h1>
+    <div class="small muted"><%= t('sales.issue_date') %>: <%= d(inv.created_at) %></div></div>
+  <span class="badge badge-dot <%= inv.status === 'paid' ? 'badge-success' : 'badge-warning' %>" data-invoice-status="<%= inv.status %>"><%= t('sales.inv_' + inv.status) %></span>
+</div>
+<section class="mb-4"><div class="small muted"><%= t('sales.to') %></div><div class="strong"><%= name %></div>
+  <div class="small muted"><%= [inv.clinic_address, inv.clinic_city].filter(Boolean).join(' · ') %><% if (inv.clinic_tax) { %> · <%= t('sales.vat_number') %>: <bdi dir="ltr"><%= inv.clinic_tax %></bdi><% } %></div></section>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th><%= t('sales.item') %></th><th><%= t('sales.period') %></th><th class="num"><%= t('sales.amount') %></th></tr></thead>
+  <tbody><tr><td><%= t('sales.subscription') %>: <%= plan || '' %> (<%= t('sales.cycle_' + inv.billing_cycle) %>)</td><td><%= d(inv.period_start) %> – <%= d(inv.period_end) %></td><td class="num"><%= money(inv.amount) %></td></tr></tbody>
+  <tfoot><tr><td colspan="2" class="num strong"><%= t('sales.total') %></td><td class="num strong"><%= money(inv.amount) %></td></tr></tfoot>
+</table></div>
+<% if (inv.status === 'paid') { %><p class="small"><%- icon('circle-check', 'icon-sm') %> <%= t('sales.paid_on', { date: d(inv.paid_at) }) %></p><% } else if (p.iban) { %>
+<section class="mt-4 small"><span class="strong"><%= t('sales.bank') %>:</span> <%= p.bank_name || '' %> · <%= p.account_name || '' %> · IBAN <bdi dir="ltr"><%= p.iban %></bdi></section><% } %>

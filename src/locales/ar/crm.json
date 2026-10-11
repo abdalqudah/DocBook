@@ -86,6 +86,9 @@
     "status_sent": "انبعت",
     "status_failed": "فشل",
     "open_clinic": "افتح العيادة",
-    "open_vendor": "افتح المندوب / المستودع"
+    "open_vendor": "افتح المندوب / المستودع",
+    "act_quote": "عرض سعر",
+    "act_invoice": "فاتورة",
+    "act_event": "حدث بالمنصة"
   }
 }

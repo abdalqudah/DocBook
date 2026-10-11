@@ -1,0 +1,25 @@
+<%# A document the platform sends to a customer (quotation, invoice): the platform's letterhead, print / save as PDF. %>
+<!doctype html>
+<html lang="<%= locale %>" dir="<%= dir %>" data-v="<%= assetV %>" data-theme="light">
+<head><%- include('../partials/head') %></head>
+<body class="print-page">
+<main class="print-sheet">
+  <div class="print-actions no-print"><button class="btn btn-primary btn-sm" type="button" data-print><%- icon('printer', 'icon-sm') %><%= t('sales.print') %></button>
+    <a class="btn btn-ghost btn-sm" href="?lang=<%= locale === 'ar' ? 'en' : 'ar' %>"><%- icon('languages', 'icon-sm') %><%= locale === 'ar' ? 'English' : 'العربية' %></a></div>
+  <% var _p = typeof p !== 'undefined' && p ? p : {}; var _seller = (locale === 'en' ? _p.legal_name_en || _p.legal_name_ar : _p.legal_name_ar || _p.legal_name_en) || brandName; %>
+  <header class="print-letterhead plh-m">
+    <% if (brand.logo) { %><img class="plh-logo" src="<%= brand.logo %>" alt="<%= brandName %>"><% } %>
+    <div class="grow">
+      <div class="plh-name"><%= _seller %></div>
+      <div class="muted small"><%= [locale === 'en' ? _p.address_en || _p.address_ar : _p.address_ar || _p.address_en, _p.phone ? '⁦' + _p.phone + '⁩' : '', _p.email, _p.website].filter(Boolean).join(' · ') %></div>
+      <% if (_p.vat_number) { %><div class="muted small"><%= t('sales.vat_number') %>: <bdi dir="ltr"><%= _p.vat_number %></bdi><% if (_p.cr_number) { %> · <%= t('sales.cr_number') %>: <bdi dir="ltr"><%= _p.cr_number %></bdi><% } %></div><% } %>
+    </div>
+  </header>
+  <%- include('../partials/toasts') %>
+  <%- body %>
+  <footer class="print-footer muted tiny"><span><%= _seller %></span><span dir="ltr"><%= (typeof baseUrl !== 'undefined' ? baseUrl : '').replace(/^https?:\/\//, '') %></span></footer>
+</main>
+<script src="/js/app.js?v=<%= assetV %>" defer></script>
+<% (typeof pageScripts !== 'undefined' ? pageScripts : []).forEach(function (h) { %><script src="<%= h %>?v=<%= assetV %>" defer></script><% }) %>
+</body>
+</html>

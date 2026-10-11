@@ -1,0 +1,21 @@
+<%# Admin → Sales → Seller details: the letterhead on quotations and invoices, bank details, default terms, VAT and validity. %>
+<% var f = function (name, label, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: p[name], errors: errors, old: old }, extra || {})); }; %>
+<div class="page-head"><div><h1><%= t('sales.profile') %></h1><p><%= t('sales.profile_lead') %></p></div></div>
+<form method="post" action="/admin/sales-profile" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.seller') %></h2></div></div><div class="panel-body stack">
+    <div class="form-grid cols-2"><%- f('legal_name_ar', t('sales.legal_name_ar')) %><%- f('legal_name_en', t('sales.legal_name_en'), { attrs: 'dir="ltr"' }) %></div>
+    <div class="form-grid cols-2"><%- f('vat_number', t('sales.vat_number'), { attrs: 'dir="ltr"' }) %><%- f('cr_number', t('sales.cr_number'), { attrs: 'dir="ltr"' }) %></div>
+    <div class="form-grid cols-2"><%- f('address_ar', t('sales.address_ar')) %><%- f('address_en', t('sales.address_en'), { attrs: 'dir="ltr"' }) %></div>
+    <div class="form-grid cols-3"><%- f('phone', t('crm.phone'), { attrs: 'dir="ltr"' }) %><%- f('email', t('crm.email'), { type: 'email', attrs: 'dir="ltr"' }) %><%- f('website', t('sales.website'), { attrs: 'dir="ltr"' }) %></div>
+  </div></section>
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.bank') %></h2></div></div><div class="panel-body form-grid cols-3">
+    <%- f('bank_name', t('sales.bank_name')) %><%- f('account_name', t('sales.account_name')) %><%- f('iban', 'IBAN', { attrs: 'dir="ltr"' }) %>
+  </div></section>
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.defaults') %></h2></div></div><div class="panel-body stack">
+    <div class="form-grid cols-3"><%- f('valid_days', t('sales.valid_days'), { attrs: 'inputmode="numeric"' }) %><%- f('tax_rate', t('sales.tax_rate'), { attrs: 'inputmode="decimal"' }) %><%- f('currency', t('sales.currency'), { attrs: 'dir="ltr" maxlength="3"' }) %></div>
+    <%- f('terms_ar', t('sales.terms_ar'), { type: 'textarea', attrs: 'rows="4"' }) %>
+    <%- f('terms_en', t('sales.terms_en'), { type: 'textarea', attrs: 'rows="4" dir="ltr"' }) %>
+  </div></section>
+  <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
+</form>

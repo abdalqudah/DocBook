@@ -93,6 +93,7 @@ router.post('/signup', limiter, form(async (req, res) => {
   await require('../../db/tenant-admin').placeSafely(newBid); // eslint-disable-line global-require
   const user = await authService.findUser(userId);
   await verify.send(user, { locale: req.locale }).catch(() => {});
+  await require('../crm/welcome.service').onSignup({ businessId: newBid, owner: user, base: res.locals.baseUrl || config.appUrl }); // eslint-disable-line global-require
   await signIn(req, user);
   return res.redirect(asCenter ? '/app/center' : '/app/onboarding');
 }, renderSignup));

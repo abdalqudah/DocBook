@@ -1,0 +1,18 @@
+<%# Admin → Sales → an invoice: its customer link and sending it (e-mail / WhatsApp), with the sends. %>
+<% var d = function (v) { return v ? fmt.date(v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10)) : ''; };
+   var dt = function (v) { try { return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v)); } catch (e) { return ''; } }; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/sales-invoices"><%= t('sales.invoices') %></a></div><h1 dir="ltr" style="text-align:start"><%= doc.label %></h1>
+    <p><span class="badge badge-dot <%= inv.status === 'paid' ? 'badge-success' : 'badge-warning' %>"><%= t('sales.inv_' + inv.status) %></span> <%= doc.name || '' %> · <span class="strong"><%= fmt.money(inv.amount, inv.currency) %></span> · <%= d(inv.period_start) %> – <%= d(inv.period_end) %><% if (inv.view_count) { %> · <%- icon('eye', 'icon-sm') %> <%= t('sales.viewed_n', { n: inv.view_count }) %><% } %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="<%= doc.link %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('sales.open_link') %></a></div>
+</div>
+<div class="grid grid-main" style="align-items:start">
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.sends') %></h2></div></div>
+    <div class="panel-body"><input class="input mb-4" dir="ltr" readonly value="<%= doc.link %>">
+      <% if (!sends.length) { %><p class="small muted"><%= t('sales.no_sends') %></p><% } else { %>
+      <ul class="stack-sm" style="list-style:none;padding:0;margin:0" data-sends><% sends.forEach(function (s) { %>
+        <li class="small"><%- icon(s.channel === 'email' ? 'mail' : 'message-circle', 'icon-sm') %> <bdi dir="ltr"><%= s.recipient %></bdi> · <span class="badge <%= s.status === 'failed' ? 'badge-danger' : 'badge-success' %>"><%= t('sales.send_' + s.status) %></span> <span class="muted"><%= dt(s.created_at) %><%= s.user_name ? ' · ' + s.user_name : '' %></span><% if (s.error) { %><div class="tiny muted"><%= s.error %></div><% } %></li>
+      <% }) %></ul><% } %></div></section>
+  <%- include('../../partials/doc-send', { doc: doc, action: '/admin/sales-invoices/' + inv.id }) %>
+</div>
+<script src="/js/sales.js?v=<%= assetV %>" defer></script>

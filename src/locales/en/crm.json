@@ -86,6 +86,9 @@
     "status_sent": "sent",
     "status_failed": "failed",
     "open_clinic": "Open the clinic",
-    "open_vendor": "Open the rep / warehouse"
+    "open_vendor": "Open the rep / warehouse",
+    "act_quote": "Quotation",
+    "act_invoice": "Invoice",
+    "act_event": "Platform event"
   }
 }

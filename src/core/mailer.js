@@ -127,12 +127,34 @@ function fromWithName(from, name) {
  * connected its own address sends from it (src/modules/clinicmail); otherwise — or if that fails — the platform
  * account sends it with the clinic's address as Reply-To. Account e-mails never pass a businessId.
  */
-async function send({ to, subject, html, replyTo, attachments, fromName, businessId, kind }) {
+/** Every e-mail the platform tries to send, with how it went (Admin → E-mail log). Never fails the caller. */
+function logMail(row) {
+  try {
+    const knex = require('../db/knex'); // eslint-disable-line global-require
+    const r = { kind: String(row.kind || 'other').slice(0, 40), to_addr: String([].concat(row.to || '').join(', ')).slice(0, 255) || '—', subject: row.subject ? String(row.subject).slice(0, 255) : null,
+      business_id: row.businessId || null, via: row.via, status: row.status, error: row.error ? String(row.error).slice(0, 500) : null };
+    (knex.main || knex)('email_log').insert(r).catch(() => {});
+  } catch { /* the log never breaks sending */ }
+}
+
+async function send(opts) {
+  const meta = { kind: opts.kind, to: opts.to, subject: opts.subject, businessId: opts.businessId };
+  try {
+    const r = await sendRaw(opts);
+    logMail({ ...meta, via: r === 'clinic' ? 'clinic' : r ? 'platform' : 'none', status: r ? 'sent' : 'not_sent', error: r ? null : 'email_not_configured' });
+    return Boolean(r);
+  } catch (e) {
+    logMail({ ...meta, via: 'platform', status: 'failed', error: e.message });
+    throw e;
+  }
+}
+
+async function sendRaw({ to, subject, html, replyTo, attachments, fromName, businessId, kind }) {
   const cm = require('../modules/clinicmail/clinicmail.service'); // eslint-disable-line global-require
   const msg = { to, subject, html, replyTo, attachments, fromName };
   if (businessId && kind) {
     const r = await cm.trySend(businessId, kind, msg);
-    if (r.sent) return true;
+    if (r.sent) return 'clinic';
     if (r.replyTo && !replyTo) replyTo = r.replyTo; // eslint-disable-line no-param-reassign
   }
   if (Date.now() - dbAt > 60_000) await refreshPlatformSmtp();
@@ -143,12 +165,12 @@ async function send({ to, subject, html, replyTo, attachments, fromName, busines
     // for its address (reminders, letters…) stays off.
     const single = require('../config/edition').single; // eslint-disable-line global-require
     const any = single || !cm.KINDS.includes(kind);
-    if (businessId && (await cm.trySend(businessId, kind || 'account', msg, { any })).sent) return true;
+    if (businessId && (await cm.trySend(businessId, kind || 'account', msg, { any })).sent) return 'clinic';
     if (!installationMailbox && Date.now() - checkedAt > 5_000) await refreshInstallationMailbox();
     if (installationMailbox && installationMailbox !== businessId) {
       const id = installationMailbox;
       const r = await require('../db/tenant').runFor(id, () => cm.trySend(id, kind || 'account', msg, { any: true })); // eslint-disable-line global-require
-      if (r.sent) return true;
+      if (r.sent) return 'clinic';
     }
     return false;
   }

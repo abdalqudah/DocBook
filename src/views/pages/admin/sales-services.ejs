@@ -1,0 +1,32 @@
+<%# Admin → Sales → Services: the catalog ticked into quotations (name, description, unit and price in both languages). %>
+<% var v = edit || {}; var f = function (name, label, value, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: value, errors: errors, old: old }, extra || {})); }; %>
+<div class="page-head"><div><h1><%= t('sales.services') %></h1><p><%= t('sales.services_lead') %></p></div></div>
+<div class="grid grid-main" style="align-items:start">
+  <section class="panel flush">
+    <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('sales.no_services') %></p></div><% } else { %>
+    <div class="table-wrap"><table class="table responsive" data-services-table>
+      <thead><tr><th><%= t('sales.service') %></th><th class="num"><%= t('sales.price') %></th><th><%= t('common.status') %></th><th></th></tr></thead>
+      <tbody><% rows.forEach(function (s) { %><tr>
+        <td class="primary-cell"><span class="strong"><%= locale === 'en' && s.name_en ? s.name_en : s.name_ar %></span><% if (s.unit_ar || s.unit_en) { %> <span class="tiny muted">/ <%= locale === 'en' && s.unit_en ? s.unit_en : s.unit_ar %></span><% } %>
+          <% var desc = locale === 'en' && s.description_en ? s.description_en : s.description_ar; if (desc) { %><div class="tiny muted"><%= desc %></div><% } %></td>
+        <td data-label="<%= t('sales.price') %>" class="num"><%= Number(s.price) %></td>
+        <td data-label="<%= t('common.status') %>"><span class="badge <%= s.active ? 'badge-success' : 'badge-neutral' %>"><%= s.active ? t('sales.active') : t('sales.inactive') %></span></td>
+        <td class="row-sm"><a class="btn btn-ghost btn-sm" href="/admin/sales-services?edit=<%= s.id %>"><%- icon('pencil', 'icon-sm') %></a>
+          <form method="post" action="/admin/sales-services/<%= s.id %>/delete" class="inline" data-confirm="<%= t('sales.service_remove_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit" aria-label="<%= t('common.delete') %>"><%- icon('trash-2', 'icon-sm') %></button></form></td>
+      </tr><% }) %></tbody></table></div><% } %>
+  </section>
+  <form method="post" action="/admin/sales-services" class="panel" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (v.id) { %><input type="hidden" name="id" value="<%= v.id %>"><% } %>
+    <div class="panel-head"><div><h2><%= v.id ? t('sales.edit_service') : t('sales.add_service_title') %></h2></div></div>
+    <div class="panel-body stack-sm">
+      <%- f('name_ar', t('sales.name_ar'), v.name_ar, { required: true }) %>
+      <%- f('name_en', t('sales.name_en'), v.name_en, { attrs: 'dir="ltr"' }) %>
+      <%- f('description_ar', t('sales.description_ar'), v.description_ar, { type: 'textarea', attrs: 'rows="2"' }) %>
+      <%- f('description_en', t('sales.description_en'), v.description_en, { type: 'textarea', attrs: 'rows="2" dir="ltr"' }) %>
+      <div class="form-grid cols-2"><%- f('unit_ar', t('sales.unit_ar'), v.unit_ar) %><%- f('unit_en', t('sales.unit_en'), v.unit_en, { attrs: 'dir="ltr"' }) %></div>
+      <div class="form-grid cols-2"><%- f('price', t('sales.price'), v.price !== undefined ? Number(v.price) : '', { attrs: 'inputmode="decimal"' }) %><%- f('sort', t('sales.sort'), v.sort || 0, { attrs: 'inputmode="numeric"' }) %></div>
+      <input type="hidden" name="active" value="0"><label class="check"><input type="checkbox" name="active" value="1"<%= v.id && !v.active ? '' : ' checked' %>><span><%= t('sales.active') %></span></label>
+      <div class="row-sm"><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button><% if (v.id) { %><a class="btn btn-ghost btn-sm" href="/admin/sales-services"><%= t('common.cancel') %></a><% } %></div>
+    </div>
+  </form>
+</div>

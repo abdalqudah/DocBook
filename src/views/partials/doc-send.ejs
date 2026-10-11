@@ -1,0 +1,22 @@
+<%# Send a sales document (quotation / invoice): e-mail with the link as a button, or WhatsApp (wa.me) with the text ready. %>
+<section class="panel" data-doc-send>
+  <div class="panel-head"><div><h2><%- icon('send', 'icon-sm') %> <%= t('sales.send_doc') %></h2></div>
+    <div class="segmented"><a href="?locale=ar"<%= doc.locale === 'ar' ? ' class="active"' : '' %>>ع</a><a href="?locale=en"<%= doc.locale === 'en' ? ' class="active"' : '' %>>EN</a></div></div>
+  <div class="panel-body stack">
+    <form method="post" action="<%= action %>/email" class="stack-sm" data-send-email>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="locale" value="<%= doc.locale %>">
+      <label class="label" for="s-to"><%- icon('mail', 'icon-sm') %> <%= t('sales.by_email') %></label>
+      <input class="input" id="s-to" name="to" type="email" dir="ltr" required value="<%= doc.email || '' %>" placeholder="name@example.com">
+      <input class="input" name="subject" required value="<%= doc.texts.subject %>">
+      <textarea class="textarea" name="body" rows="5" required><%= doc.texts.body %></textarea>
+      <div><button class="btn btn-primary btn-sm" type="submit"><%- icon('send', 'icon-sm') %><%= t('sales.send_email') %></button></div>
+    </form>
+    <form method="post" action="<%= action %>/whatsapp" class="stack-sm" data-wa-send>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="locale" value="<%= doc.locale %>">
+      <label class="label" for="s-phone"><%- icon('message-circle', 'icon-sm') %> <%= t('sales.by_whatsapp') %></label>
+      <input class="input" id="s-phone" name="phone" dir="ltr" inputmode="tel" value="<%= doc.phone || '' %>" placeholder="+9627…">
+      <textarea class="textarea" name="text" rows="4"><%= doc.texts.whatsapp %></textarea>
+      <div><button class="btn btn-secondary btn-sm" type="submit"><%- icon('external-link', 'icon-sm') %><%= t('sales.open_whatsapp') %></button></div>
+    </form>
+  </div>
+</section>

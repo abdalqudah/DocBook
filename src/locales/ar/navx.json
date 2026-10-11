@@ -80,6 +80,7 @@
     "setup_partners_lab": "مراكز التحاليل",
     "setup_partners_lab_text": "المختبرات التي تُرسل لها طلبات التحاليل وبياناتها.",
     "setup_partners_imaging": "مراكز الأشعة",
-    "setup_partners_imaging_text": "مراكز الأشعة التي تُرسل لها طلبات الأشعة وبياناتها."
+    "setup_partners_imaging_text": "مراكز الأشعة التي تُرسل لها طلبات الأشعة وبياناتها.",
+    "admin_grp_sales": "المبيعات والعملاء"
   }
 }

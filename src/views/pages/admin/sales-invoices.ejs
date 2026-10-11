@@ -1,0 +1,15 @@
+<%# Admin → Sales → Invoices: the platform's subscription invoices, each with a link to share and send. %>
+<% var d = function (v) { return v ? fmt.date(v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10)) : ''; }; %>
+<div class="page-head"><div><h1><%= t('sales.invoices') %></h1><p><%= t('sales.invoices_lead') %></p></div></div>
+<section class="panel flush">
+  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('sales.no_invoices') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive" data-invoices-table>
+    <thead><tr><th><%= t('sales.number') %></th><th><%= t('sales.customer') %></th><th><%= t('sales.issue_date') %></th><th class="num"><%= t('sales.total') %></th><th><%= t('common.status') %></th></tr></thead>
+    <tbody><% rows.forEach(function (i) { %><tr>
+      <td class="primary-cell"><a class="strong" href="/admin/sales-invoices/<%= i.id %>" dir="ltr"><%= i.number || '#' + i.id %></a></td>
+      <td data-label="<%= t('sales.customer') %>"><%= i.clinic_name %><% if (i.clinic_country) { %> <span class="tiny muted"><%= i.clinic_country %></span><% } %></td>
+      <td data-label="<%= t('sales.issue_date') %>"><%= d(i.created_at) %></td>
+      <td data-label="<%= t('sales.total') %>" class="num"><%= fmt.money(i.amount, i.currency) %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= i.status === 'paid' ? 'badge-success' : 'badge-warning' %>"><%= t('sales.inv_' + i.status) %></span><% if (i.view_count) { %> <span class="tiny muted"><%- icon('eye', 'icon-sm') %><%= i.view_count %></span><% } %></td>
+    </tr><% }) %></tbody></table></div><% } %>
+</section>

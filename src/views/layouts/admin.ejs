@@ -15,15 +15,16 @@
   _nav.push(['/admin/login-page', 'log-in', 'loginpage.nav', false, 'platform']); // the sign-in page's words and look
   _nav.push(['/admin/databases', 'database', 'dbsep.nav', false, 'platform']); // each clinic's own database
   _nav.push(['/admin/images', 'minimize', 'imgopt.nav', false, 'platform']); // compress pictures stored before uploads were compressed
-  _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'overview'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
+  _nav.push(['/admin/crm', 'handshake', 'crm.nav', false, 'sales'], ['/admin/activity', 'activity', 'pcomms.activity_nav', false, 'overview']); // CRM, who is active and from where
   _nav.push(['/admin/settings', 'settings', 'pcomms.nav', false, 'platform']); // the platform's e-mail and WhatsApp
+  _nav.push(['/admin/quotes', 'file-text', 'sales.nav_quotes', false, 'sales'], ['/admin/sales-invoices', 'receipt', 'sales.nav_invoices', false, 'sales'], ['/admin/sales-services', 'list', 'sales.nav_services', false, 'sales'], ['/admin/sales-profile', 'building-2', 'sales.nav_profile', false, 'sales'], ['/admin/email-log', 'mail', 'sales.nav_email_log', false, 'sales']);
   var _under = function (base) { return _p === base || _p.indexOf(base + '/') === 0; };
   var _active = function (n) { return n[3] ? (_p === '/admin' || _p === '') : (_under(n[0]) || (n[0] === '/admin/plans' && _under('/admin/subscriptions'))); };
   // Sidebar groups: an entry may name its group in a 5th field (n[4]); otherwise it is looked up by href; unknown → platform.
   var _groupOf = { '/admin': 'overview', '/admin/clinics': 'clinics', '/admin/plans': 'clinics', '/admin/users': 'clinics',
     '/admin/site': 'website', '/admin/seo': 'website', '/admin/growth': 'website', '/admin/domains': 'website', '/admin/google': 'website',
     '/admin/vendors': 'market', '/admin/reviews': 'market', '/admin/articles': 'website', '/admin/ai': 'platform', '/admin/updates': 'platform' };
-  var _groups = ['overview', 'clinics', 'website', 'market', 'platform'].map(function (g) {
+  var _groups = ['overview', 'sales', 'clinics', 'website', 'market', 'platform'].map(function (g) {
     return { key: g, items: _nav.filter(function (n) { return (n[4] || _groupOf[n[0]] || 'platform') === g; }) };
   }).filter(function (g) { return g.items.length; });
   var _label = function (n) { return t(n[2].indexOf('.') > 0 ? n[2] : 'admin.' + n[2]); };

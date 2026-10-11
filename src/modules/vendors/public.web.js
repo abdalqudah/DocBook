@@ -81,6 +81,7 @@ router.post('/signup', limiter, form(async (req, res) => {
   const user = await authService.findUser(out.userId);
   await verify.send(user, { locale: req.locale }).catch(() => {});
   await notifyAdmins(res, out.vendorId, String(req.body.name || '')).catch(() => {});
+  await require('../crm/welcome.service').onSignup({ vendorId: out.vendorId, owner: user, base: res.locals.baseUrl || config.appUrl }); // eslint-disable-line global-require
   await signIn(req, user);
   delete req.session.returnTo;
   flash(req, 'success', req.t('vendors.signup_done'));

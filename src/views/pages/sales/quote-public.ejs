@@ -1,0 +1,90 @@
+<%# The customer's quotation link: the quotation (print / PDF), its state, and accept (signature) / negotiate / decline. %>
+<% var money = function (v) { return fmt.money(v, q.currency); }; var d = function (v) { return v ? fmt.date(v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10)) : ''; };
+   var errs = errors || {}; var o = old || {}; var open = ['sent', 'viewed', 'negotiating'].indexOf(state) >= 0;
+   var seller = (locale === 'en' ? p.legal_name_en || p.legal_name_ar : p.legal_name_ar || p.legal_name_en) || brandName; %>
+<div class="row between wrap mb-4" style="align-items:flex-start">
+  <div><h1 class="h2" style="margin:0"><%= t('sales.quotation') %> <bdi dir="ltr"><%= q.number %></bdi></h1>
+    <div class="small muted"><%= t('sales.issue_date') %>: <%= d(q.issue_date) %> · <%= t('sales.valid_until') %>: <%= d(q.valid_until) %><% if (q.revision > 1) { %> · <%= t('sales.revision_n', { n: q.revision }) %><% } %></div></div>
+  <span class="badge badge-dot <%= state === 'accepted' ? 'badge-success' : state === 'declined' || state === 'expired' ? 'badge-neutral' : 'badge-info' %>" data-quote-state="<%= state %>"><%= t('sales.state_' + state) %></span>
+</div>
+
+<section class="mb-4"><div class="small muted"><%= t('sales.to') %></div>
+  <div class="strong"><%= q.customer_name %><% if (q.customer_company) { %> · <%= q.customer_company %><% } %></div>
+  <div class="small muted"><%= [q.customer_address, q.customer_email, q.customer_phone].filter(Boolean).join(' · ') %><% if (q.customer_vat) { %> · <%= t('sales.vat_number') %>: <bdi dir="ltr"><%= q.customer_vat %></bdi><% } %></div></section>
+
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>#</th><th><%= t('sales.item') %></th><th class="num"><%= t('sales.qty') %></th><th class="num"><%= t('sales.price') %></th><th class="num"><%= t('sales.amount') %></th></tr></thead>
+  <tbody><% q.items.forEach(function (it, i) { %><tr><td class="num"><%= i + 1 %></td><td style="white-space:pre-wrap"><%= it.description %></td><td class="num"><%= Number(it.quantity) %></td><td class="num"><%= money(it.unit_price) %></td><td class="num"><%= money(it.amount) %></td></tr><% }) %></tbody>
+  <tfoot>
+    <tr><td colspan="4" class="num"><%= t('sales.subtotal') %></td><td class="num"><%= money(q.subtotal) %></td></tr>
+    <% if (Number(q.discount)) { %><tr><td colspan="4" class="num"><%= t('sales.discount') %></td><td class="num">− <%= money(q.discount) %></td></tr><% } %>
+    <tr><td colspan="4" class="num"><%= t('sales.tax') %> (<%= Number(q.tax_rate) %>%)</td><td class="num"><%= money(q.tax) %></td></tr>
+    <tr><td colspan="4" class="num strong"><%= t('sales.total') %></td><td class="num strong" data-quote-total><%= money(q.total) %></td></tr>
+  </tfoot>
+</table></div>
+<% if (q.notes) { %><p class="small" style="white-space:pre-wrap"><%= q.notes %></p><% } %>
+<% var terms = q.terms || (locale === 'en' ? p.terms_en || p.terms_ar : p.terms_ar || p.terms_en); if (terms) { %><section class="mt-4"><h2 class="h4"><%= t('sales.terms') %></h2><p class="small" style="white-space:pre-wrap"><%= terms %></p></section><% } %>
+<% if (p.iban) { %><section class="mt-4 small"><span class="strong"><%= t('sales.bank') %>:</span> <%= p.bank_name || '' %> · <%= p.account_name || '' %> · IBAN <bdi dir="ltr"><%= p.iban %></bdi></section><% } %>
+
+<% if (state === 'accepted') { %>
+<section class="panel mt-6" data-quote-accepted><div class="panel-body row-sm wrap" style="align-items:center">
+  <div class="grow"><div class="strong"><%- icon('circle-check', 'icon-sm') %> <%= t('sales.accepted_by', { name: q.response_name }) %><% if (q.signer_title) { %> · <%= q.signer_title %><% } %></div><div class="small muted"><%= d(q.responded_at) %></div></div>
+  <img src="/quote/<%= q.token %>/signature.png" alt="<%= t('sales.signature') %>" style="max-height:80px;max-width:240px">
+</div></section>
+<% } else if (state === 'declined') { %>
+<div class="alert alert-info mt-6"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('sales.declined_note') %></div></div>
+<% } else if (state === 'expired') { %>
+<div class="alert alert-warning mt-6"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('sales.expired_note') %></div></div>
+<% } %>
+
+<% if (events.length) { %>
+<section class="panel mt-6 no-print" id="conversation"><div class="panel-head"><div><h2><%= t('sales.conversation') %></h2></div></div>
+  <div class="panel-body stack-sm"><% events.forEach(function (e) { %>
+    <div class="small"><span class="badge"><%= t('sales.ev_' + e.type) %></span> <span class="muted"><%= e.by === 'team' ? seller : (e.name || q.customer_name) %> · <%= d(e.created_at) %></span>
+      <% if (e.amount !== null && e.amount !== undefined && e.type !== 'accepted') { %> · <span class="strong"><%= money(e.amount) %></span><% } %>
+      <% if (e.message) { %><div style="white-space:pre-wrap"><%= e.message %></div><% } %></div>
+  <% }) %></div></section>
+<% } %>
+
+<% if (open) { %>
+<section class="panel mt-6 no-print" data-quote-answer>
+  <nav class="tabs"><% ['accept', 'negotiate', 'decline'].forEach(function (k) { %><a href="?tab=<%= k %>#answer"<%= tab === k ? ' class="active"' : '' %>><%= t('sales.tab_' + k) %></a><% }) %></nav>
+  <div class="panel-body" id="answer">
+    <% if (typeof formError !== 'undefined' && formError) { %><div class="alert alert-danger small mb-2"><%= formError %></div><% } %>
+    <% if (tab === 'accept') { %>
+    <form method="post" action="/quote/<%= q.token %>/accept" class="stack" data-sign-form>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-grid cols-2">
+        <%- include('../../partials/field', { name: 'name', label: t('sales.your_name'), value: '', required: true, errors: errs, old: o }) %>
+        <%- include('../../partials/field', { name: 'title', label: t('sales.your_title'), value: '', errors: errs, old: o }) %>
+      </div>
+      <div class="field"><span class="label"><%= t('sales.sign_here') %><span class="req">*</span></span>
+        <canvas class="sign-pad" data-sign-pad width="600" height="180" style="width:100%;max-width:600px;height:180px;border:1px dashed var(--border-strong);border-radius:var(--radius);touch-action:none;background:var(--surface)"></canvas>
+        <input type="hidden" name="signature" data-sign-value>
+        <div><button class="btn btn-ghost btn-sm" type="button" data-sign-clear><%= t('sales.clear') %></button></div>
+        <% if (errs.signature) { %><span class="field-error"><%= errs.signature %></span><% } %></div>
+      <label class="check"><input type="checkbox" name="agree" value="1"><span><%= t('sales.agree', { total: money(q.total) }) %></span></label>
+      <% if (errs.agree) { %><span class="field-error"><%= errs.agree %></span><% } %>
+      <div><button class="btn btn-primary" type="submit"><%- icon('circle-check', 'icon-sm') %><%= t('sales.accept_btn') %></button></div>
+    </form>
+    <% } else if (tab === 'negotiate') { %>
+    <form method="post" action="/quote/<%= q.token %>/negotiate" class="stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-grid cols-2">
+        <%- include('../../partials/field', { name: 'name', label: t('sales.your_name'), value: '', errors: errs, old: o }) %>
+        <%- include('../../partials/field', { name: 'amount', label: t('sales.proposed_amount', { currency: q.currency }), value: '', attrs: 'inputmode="decimal"', errors: errs, old: o }) %>
+      </div>
+      <%- include('../../partials/field', { name: 'message', label: t('sales.your_message'), type: 'textarea', value: '', attrs: 'rows="3"', errors: errs, old: o }) %>
+      <div><button class="btn btn-primary" type="submit"><%- icon('send', 'icon-sm') %><%= t('sales.send') %></button></div>
+    </form>
+    <% } else { %>
+    <form method="post" action="/quote/<%= q.token %>/decline" class="stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <%- include('../../partials/field', { name: 'reason', label: t('sales.reason'), type: 'select', value: '', placeholder: '—', options: reasons.map(function (r) { return { value: r, label: t('sales.reason_' + r) }; }), errors: errs, old: o }) %>
+      <%- include('../../partials/field', { name: 'note', label: t('sales.note_optional'), type: 'textarea', value: '', attrs: 'rows="2"', errors: errs, old: o }) %>
+      <div><button class="btn btn-secondary" type="submit"><%= t('sales.decline_btn') %></button></div>
+    </form>
+    <% } %>
+  </div>
+</section>
+<% } %>

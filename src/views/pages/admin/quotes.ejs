@@ -1,0 +1,26 @@
+<%# Admin → Quotations: open and won totals, the list by state. %>
+<% var money = function (v, c) { return fmt.money(v, c); }; var d = function (v) { return v ? fmt.date(v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10)) : ''; }; %>
+<div class="page-head">
+  <div><h1><%= t('sales.quotes') %></h1><p><%= t('sales.quotes_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-primary" href="/admin/quotes/new"><%- icon('plus', 'icon-sm') %><%= t('sales.new_quote') %></a></div>
+</div>
+<div class="grid grid-3 mb-4">
+  <div class="panel"><div class="panel-body"><div class="small muted"><%= t('sales.open_quotes') %></div><div class="h2 num"><%= sum.open %></div></div></div>
+  <div class="panel"><div class="panel-body"><div class="small muted"><%= t('sales.won_year') %></div><div class="h2 num"><%= sum.won %></div></div></div>
+  <div class="panel"><div class="panel-body"><div class="small muted"><%= t('sales.drafts') %></div><div class="h2 num"><%= sum.drafts %></div></div></div>
+</div>
+<nav class="tabs mb-4"><a href="/admin/quotes"<%= !state ? ' class="active"' : '' %>><%= t('crm.all') %></a><% ['draft', 'sent', 'viewed', 'negotiating', 'accepted', 'declined', 'expired'].forEach(function (k) { %><a href="/admin/quotes?state=<%= k %>"<%= state === k ? ' class="active"' : '' %>><%= t('sales.state_' + k) %></a><% }) %></nav>
+<section class="panel flush">
+  <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('sales.no_quotes') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive" data-quotes-table>
+    <thead><tr><th><%= t('sales.number') %></th><th><%= t('sales.customer') %></th><th><%= t('sales.issue_date') %></th><th class="num"><%= t('sales.total') %></th><th><%= t('common.status') %></th></tr></thead>
+    <tbody><% rows.forEach(function (q) { %><tr>
+      <td class="primary-cell"><a class="strong" href="/admin/quotes/<%= q.id %>" dir="ltr"><%= q.number %></a></td>
+      <td data-label="<%= t('sales.customer') %>"><%= q.customer_name %><% if (q.customer_company) { %><div class="tiny muted"><%= q.customer_company %></div><% } %></td>
+      <td data-label="<%= t('sales.issue_date') %>"><%= d(q.issue_date) %></td>
+      <td data-label="<%= t('sales.total') %>" class="num"><%= money(q.total, q.currency) %></td>
+      <td data-label="<%= t('common.status') %>"><span class="badge badge-dot <%= q.state === 'accepted' ? 'badge-success' : ['declined', 'expired'].indexOf(q.state) >= 0 ? 'badge-neutral' : q.state === 'negotiating' ? 'badge-warning' : 'badge-info' %>"><%= t('sales.state_' + q.state) %></span><% if (q.view_count) { %> <span class="tiny muted"><%- icon('eye', 'icon-sm') %><%= q.view_count %></span><% } %></td>
+    </tr><% }) %></tbody>
+  </table></div>
+  <% } %>
+</section>

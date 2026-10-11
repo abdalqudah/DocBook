@@ -1,6 +1,6 @@
 <%# Admin → CRM → a contact: details, stage, next follow-up, quick actions (note / call, e-mail, WhatsApp) and the timeline. %>
 <% var dt = function (v) { try { return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v)); } catch (e) { return ''; } };
-   var KI = { note: 'notebook-pen', call: 'phone', email: 'mail', whatsapp: 'message-circle', meeting: 'users', stage: 'arrow-right' }; %>
+   var KI = { note: 'notebook-pen', call: 'phone', email: 'mail', whatsapp: 'message-circle', meeting: 'users', stage: 'arrow-right', quote: 'file-text', invoice: 'receipt', event: 'zap' }; %>
 <div class="page-head">
   <div><div class="breadcrumbs"><a href="/admin/crm"><%= t('crm.title') %></a></div>
     <h1><%= c.name %></h1>
@@ -82,6 +82,11 @@
         <div><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.save') %></button></div>
       </div>
     </form>
+    <section class="panel" data-crm-quotes>
+      <div class="panel-head"><div><h2><%= t('sales.quotes') %></h2></div><a class="btn btn-ghost btn-sm" href="/admin/quotes/new?contact=<%= c.id %>"><%- icon('plus', 'icon-sm') %><%= t('sales.new_quote') %></a></div>
+      <div class="panel-body small stack-sm"><% if (!quotes.length) { %><p class="muted"><%= t('sales.no_quotes') %></p><% } %>
+        <% quotes.forEach(function (q) { %><div class="row-sm between"><a class="link" href="/admin/quotes/<%= q.id %>" dir="ltr"><%= q.number %></a><span><%= fmt.money(q.total, q.currency) %> · <span class="badge"><%= t('sales.state_' + q.state) %></span></span></div><% }) %></div>
+    </section>
     <section class="panel">
       <div class="panel-head"><div><h2><%= t('crm.details') %></h2></div></div>
       <div class="panel-body small stack-sm">

@@ -1,0 +1,66 @@
+<%# Admin → Quotations → new / edit (a sent one: a revision the customer sees on the same link). %>
+<% var errs = errors || {}; var v = Object.assign({}, q || {}, contact ? { contact_id: contact.id, customer_name: contact.name, customer_company: contact.organization, customer_email: contact.email, customer_phone: contact.whatsapp || contact.phone } : {}, old || {});
+   var f = function (name, label, value, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: value, errors: errs, old: null }, extra || {})); };
+   var dOnly = function (x) { return x ? (x instanceof Date ? x.toISOString().slice(0, 10) : String(x).slice(0, 10)) : ''; };
+   var items = old ? [].concat(old.item_description || []).map(function (desc, i) { return { description: desc, quantity: [].concat(old.item_quantity || [])[i], unit_price: [].concat(old.item_price || [])[i], service_id: [].concat(old.item_service_id || [])[i] }; }) : (q ? q.items : []);
+   if (!items.length) items = [{ description: '', quantity: 1, unit_price: '' }]; %>
+<div class="page-head">
+  <div><div class="breadcrumbs"><a href="/admin/quotes"><%= t('sales.quotes') %></a></div><h1><%= q ? (revise ? t('sales.revise_quote', { number: q.number }) : q.number) : t('sales.new_quote') %></h1>
+    <% if (revise) { %><p><%= t('sales.revise_lead') %></p><% } %></div>
+</div>
+<% if (typeof formError !== 'undefined' && formError) { %><div class="alert alert-danger mb-4"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= formError %></div></div><% } %>
+<form method="post" action="<%= q ? '/admin/quotes/' + q.id + '/edit' : '/admin/quotes/new' %>" class="stack" novalidate data-quote-form>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.customer') %></h2></div></div>
+    <div class="panel-body stack">
+      <div class="field"><label class="label" for="f-contact_id"><%= t('sales.from_crm') %></label>
+        <select class="select" id="f-contact_id" name="contact_id" data-quote-contact><option value="">—</option>
+          <% contacts.forEach(function (c) { %><option value="<%= c.id %>" data-name="<%= c.name %>" data-company="<%= c.organization || '' %>" data-email="<%= c.email || '' %>" data-phone="<%= c.whatsapp || c.phone || '' %>"<%= String(v.contact_id || '') === String(c.id) ? ' selected' : '' %>><%= c.name %><%= c.organization ? ' · ' + c.organization : '' %></option><% }) %>
+        </select></div>
+      <div class="form-grid cols-3">
+        <%- f('customer_name', t('sales.customer_name'), v.customer_name, { required: true }) %>
+        <%- f('customer_company', t('sales.customer_company'), v.customer_company) %>
+        <%- f('customer_email', t('crm.email'), v.customer_email, { type: 'email', attrs: 'dir="ltr"' }) %>
+      </div>
+      <div class="form-grid cols-3">
+        <%- f('customer_phone', t('crm.whatsapp'), v.customer_phone, { attrs: 'dir="ltr" inputmode="tel"' }) %>
+        <%- f('customer_vat', t('sales.vat_number'), v.customer_vat, { attrs: 'dir="ltr"' }) %>
+        <%- f('customer_address', t('sales.address'), v.customer_address) %>
+      </div>
+    </div></section>
+
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.lines') %></h2></div>
+    <% if (services.length) { %><select class="select select-sm" data-quote-service><option value=""><%= t('sales.add_service') %></option><% services.forEach(function (s) { %><option value="<%= s.id %>" data-text-ar="<%= [s.name_ar, s.unit_ar ? '(' + s.unit_ar + ')' : ''].filter(Boolean).join(' ') + (s.description_ar ? '\n' + s.description_ar : '') %>" data-text-en="<%= [s.name_en || s.name_ar, s.unit_en ? '(' + s.unit_en + ')' : ''].filter(Boolean).join(' ') + (s.description_en ? '\n' + s.description_en : '') %>" data-price="<%= Number(s.price) %>"><%= s.name_ar %> — <%= Number(s.price) %></option><% }) %></select><% } %></div>
+    <div class="panel-body stack-sm">
+      <% if (errs.items) { %><div class="field-error"><%= errs.items %></div><% } %>
+      <div class="table-wrap"><table class="table" data-quote-lines>
+        <thead><tr><th><%= t('sales.item') %></th><th style="width:110px"><%= t('sales.qty') %></th><th style="width:150px"><%= t('sales.price') %></th><th style="width:40px"></th></tr></thead>
+        <tbody><% items.forEach(function (it) { %><tr data-line>
+          <td><input type="hidden" name="item_service_id" value="<%= it.service_id || '' %>"><textarea class="textarea" name="item_description" rows="2" required><%= it.description %></textarea></td>
+          <td><input class="input num" name="item_quantity" value="<%= it.quantity === undefined || it.quantity === null ? 1 : Number(it.quantity) %>" inputmode="decimal"></td>
+          <td><input class="input num" name="item_price" value="<%= it.unit_price === '' || it.unit_price === undefined ? '' : Number(it.unit_price) %>" inputmode="decimal"></td>
+          <td><button class="btn btn-ghost btn-icon btn-sm" type="button" data-line-remove aria-label="<%= t('common.delete') %>"><%- icon('x', 'icon-sm') %></button></td>
+        </tr><% }) %></tbody>
+      </table></div>
+      <div><button class="btn btn-secondary btn-sm" type="button" data-line-add><%- icon('plus', 'icon-sm') %><%= t('sales.add_line') %></button></div>
+    </div></section>
+
+  <section class="panel"><div class="panel-head"><div><h2><%= t('sales.terms_money') %></h2></div></div>
+    <div class="panel-body stack">
+      <div class="form-grid cols-3">
+        <%- f('discount', t('sales.discount'), v.discount !== undefined ? Number(v.discount) : 0, { attrs: 'inputmode="decimal"' }) %>
+        <%- f('tax_rate', t('sales.tax_rate'), v.tax_rate !== undefined ? Number(v.tax_rate) : p.tax_rate, { attrs: 'inputmode="decimal"' }) %>
+        <%- f('currency', t('sales.currency'), v.currency || p.currency, { attrs: 'dir="ltr" maxlength="3"' }) %>
+      </div>
+      <div class="form-grid cols-3">
+        <%- f('issue_date', t('sales.issue_date'), dOnly(v.issue_date) || new Date().toISOString().slice(0, 10), { type: 'date' }) %>
+        <%- f('valid_until', t('sales.valid_until'), dOnly(v.valid_until), { type: 'date', help: t('sales.valid_help', { n: p.valid_days }) }) %>
+        <%- f('locale', t('sales.language'), v.locale || 'ar', { type: 'select', options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }] }) %>
+      </div>
+      <%- f('notes', t('sales.notes'), v.notes, { type: 'textarea', attrs: 'rows="2"' }) %>
+      <%- f('terms', t('sales.terms'), v.terms, { type: 'textarea', attrs: 'rows="3"', help: t('sales.terms_help') }) %>
+      <% if (revise) { %><%- f('revision_note', t('sales.revision_note'), '', { type: 'textarea', attrs: 'rows="2"' }) %><% } %>
+    </div></section>
+  <div class="form-actions"><a class="btn btn-ghost" href="<%= q ? '/admin/quotes/' + q.id : '/admin/quotes' %>"><%= t('common.cancel') %></a><button class="btn btn-primary" type="submit"><%= revise ? t('sales.save_revision') : t('common.save') %></button></div>
+</form>
+<script src="/js/sales.js?v=<%= assetV %>" defer></script>

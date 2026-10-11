@@ -8,7 +8,7 @@ const { E } = require('../../core/errors');
 const KINDS = ['clinic', 'warehouse', 'rep', 'prospect', 'partner', 'other'];
 const STAGES = ['new', 'contacted', 'interested', 'demo', 'trial', 'customer', 'lost'];
 const SOURCES = ['signup', 'website', 'whatsapp', 'call', 'referral', 'event', 'import', 'other'];
-const ACT_KINDS = ['note', 'call', 'email', 'whatsapp', 'meeting', 'stage'];
+const ACT_KINDS = ['note', 'call', 'email', 'whatsapp', 'meeting', 'stage', 'quote', 'invoice', 'event']; // quote / invoice / event: written by the platform
 
 const str = (v, n) => { const s = String(v === undefined || v === null ? '' : v).trim().slice(0, n); return s || null; };
 const like = (q) => `%${String(q).trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
@@ -112,7 +112,7 @@ async function remove(ctx, id) {
 async function log(ctx, contactId, kind, body, status = null) {
   if (!ACT_KINDS.includes(kind)) throw E.validation({ kind: 'Choose a valid value.' });
   const text = str(body, 8000);
-  if (!text && kind !== 'stage') throw E.validation({ body: 'Required.' });
+  if (!text && !['stage', 'event'].includes(kind)) throw E.validation({ body: 'Required.' });
   const [id] = await knex('crm_activities').insert({ contact_id: contactId, kind, body: text, status, user_id: ctx.userId || null });
   await knex('crm_contacts').where({ id: contactId }).update({ updated_at: new Date() });
   return id;

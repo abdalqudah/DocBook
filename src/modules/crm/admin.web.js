@@ -54,7 +54,9 @@ router.post('/crm/:id(\\d+)/edit', formRun(async (req, res) => {
 async function renderShow(req, res, extra = {}) {
   const c = await crm.get(req.params.id);
   const comms = await require('../platformcomms/comms.service').get(); // eslint-disable-line global-require
+  const quotes = await require('../sales/sales.service').listQuotes({ contactId: c.id }); // eslint-disable-line global-require
   page(res, 'crm-show', {
+    quotes,
     title: c.name, c, wa: waLink(c, req), waApi: comms.whatsapp.ready, mailReady: comms.mail.ready || Boolean(process.env.SMTP_HOST),
     stages: crm.STAGES, countryName: countryName(req.locale), errors: {}, old: null, ...extra,
   });
