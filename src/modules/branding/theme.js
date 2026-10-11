@@ -38,7 +38,8 @@ function vars(c) {
 function baseCss() {
   const { light, dark } = brand.colors;
   const common = `--font-sans: ${brand.fonts.sans}; --font-mono: ${brand.fonts.mono}; --radius-sm: ${brand.radius.sm}; --radius: ${brand.radius.md}; --radius-lg: ${brand.radius.lg};`;
-  return `:root { ${common} ${vars(light)} color-scheme: light; }
+  const faces = (brand.fontFaces || []).map((f) => `@font-face { font-family: "${f.family}"; src: url("${f.src}") format("woff2"); font-weight: ${f.weight}; font-style: normal; font-display: swap; unicode-range: ${f.range}; }`).join('\n');
+  return `${faces ? `${faces}\n` : ''}:root { ${common} ${vars(light)} color-scheme: light; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${vars(dark)} color-scheme: dark; } }
 :root[data-theme="dark"] { ${vars(dark)} color-scheme: dark; }
 `;
