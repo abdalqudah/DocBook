@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Rebuilds the screenshots of the landing and features pages (public/img/landing/<lang>/*.webp) from the real app:
-// a sample clinic is created in the TEST database (never a live one), the pages are opened in Chromium in Arabic and
-// English, and the stills and the two animated tours ("a visit", "a surgery") are written as WebP.
+// a sample clinic is created in the TEST database (never a live one) under the MedWorks name and logo, the pages are
+// opened in Chromium in Arabic and English, and the stills, their 3D versions (<screen>-3d.webp: the page's own
+// content, larger, in a tilted window with a soft shadow) and the two animated tours ("a visit", "a surgery") are
+// written as WebP.
 // Usage: NODE_ENV=test node scripts/landing-shots.js   (needs Playwright + Chromium, Python 3 with Pillow)
 process.env.NODE_ENV = 'test';
 const fs = require('fs');
@@ -25,7 +27,7 @@ try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(
 
 const T = {
   ar: {
-    clinic: 'عيادة النور', owner: 'Laila Mansour',
+    clinic: 'MedWorks', owner: 'Laila Mansour',
     doctors: [{ name: 'د. سارة الأحمد', spec: 'طب عام', color: '#0A6FD6' }, { name: 'د. خالد المصري', spec: 'طب أسنان', color: '#7C3AED' }],
     services: [['كشفية عامة', 15, 20, 0], ['استشارة متابعة', 10, 15, 0], ['تنظيف أسنان', 25, 30, 1]],
     patients: ['أحمد يوسف', 'ريم الخطيب', 'ليان خالد', 'محمد سالم', 'سلمى العمري', 'عمر الزعبي', 'كريم ناصر', 'دانة البطاينة', 'يوسف حداد', 'زيد المومني'],
@@ -34,7 +36,7 @@ const T = {
     complaint: 'ألم في الأسنان', note: 'ألم منذ يومين عند المضغ',
   },
   en: {
-    clinic: 'Al Noor Clinic', owner: 'Laila Mansour',
+    clinic: 'MedWorks', owner: 'Laila Mansour',
     doctors: [{ name: 'Dr. Sara Ahmad', spec: 'General practice', color: '#0A6FD6' }, { name: 'Dr. Khaled Masri', spec: 'Dentistry', color: '#7C3AED' }],
     services: [['General consultation', 15, 20, 0], ['Follow-up visit', 10, 15, 0], ['Dental cleaning', 25, 30, 1]],
     patients: ['Ahmad Yousef', 'Reem Khatib', 'Layan Khaled', 'Mohammad Salem', 'Salma Omari', 'Omar Zoubi', 'Karim Nasser', 'Dana Bataineh', 'Yousef Haddad', 'Zaid Momani'],
@@ -46,7 +48,7 @@ const T = {
 const PASSWORD = 'Passw0rd!x';
 const addDays = (iso, n) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
-async function seed(lang, tag) {
+async function seed(lang, tag, logos) {
   const L = T[lang];
   const email = `shots-${lang}-${tag}@medworks.test`;
   const userId = await knex.transaction(async (trx) => {
@@ -56,7 +58,7 @@ async function seed(lang, tag) {
   });
   await knex('users').where({ id: userId }).update({ email_verified_at: new Date(), locale: lang });
   const b = (await knex('users').where({ id: userId }).first('last_business_id')).last_business_id;
-  await knex('businesses').where({ id: b }).update({ onboarding_completed_at: new Date(), setup_dismissed_at: new Date(), slug: `noor-${lang}-${tag}`.slice(0, 40), booking_enabled: true, phone: '0790000001', city: lang === 'ar' ? 'عمّان' : 'Amman' });
+  await knex('businesses').where({ id: b }).update({ onboarding_completed_at: new Date(), setup_dismissed_at: new Date(), slug: `medworks-${lang}-${tag}`.slice(0, 40), name_en: 'MedWorks', logo: logos.wide, logo_mime: 'image/png', logo_version: 2, logo_square: logos.square, logo_square_mime: 'image/png', logo_square_version: 2, booking_enabled: true, phone: '0790000001', city: lang === 'ar' ? 'عمّان' : 'Amman' });
   businesses.forget(b);
   const ctx = { businessId: b, userId, roleKey: 'owner', permissions: await rbac.getUserPermissions(b, userId), locale: lang, timezone: 'Asia/Amman', currency: 'JOD', ip: '127.0.0.1', today: scheduling.clinicNow('Asia/Amman').date, workBranch: '' };
   await setup.saveHours(ctx, { days: ['sat', 'sun', 'mon', 'tue', 'wed', 'thu'], s1: '09:00', e1: '17:00' });
@@ -134,7 +136,9 @@ import sys, json
 from PIL import Image
 job = json.loads(sys.argv[1])
 if job['kind'] == 'still':
-    Image.open(job['src']).convert('RGB').save(job['out'], 'WEBP', quality=82, method=6)
+    im = Image.open(job['src']).convert('RGB')
+    if im.width > 1280: im = im.resize((1280, round(im.height * 1280 / im.width)), Image.LANCZOS)  # taken at 2x for the 3D version
+    im.save(job['out'], 'WEBP', quality=82, method=6)
 else:
     keys = [Image.open(p).convert('RGB').resize(tuple(job['size']), Image.LANCZOS) for p in job['frames']]
     frames, durs = [], []
@@ -148,6 +152,51 @@ else:
 `;
 const py = (job) => execFileSync('python3', ['-I', '-c', PY, JSON.stringify(job)], { stdio: 'inherit' });
 
+// The MedWorks logo as the sample clinic's logo (wide, and the pulse mark alone for the square one).
+async function logos(browser) {
+  const page = await browser.newPage({ deviceScaleFactor: 2 });
+  const svg = fs.readFileSync(path.join(ROOT, 'public', 'img', 'brand', 'medworks-logo-full.svg'), 'utf8');
+  const mark = svg.replace(/viewBox="[^"]*"/, 'viewBox="-3 -62 640 640"').replace(/(<path[^>]*\/>)[\s\S]*<\/svg>/, '$1</svg>');
+  const shoot = async (markup, w, h) => {
+    await page.setViewportSize({ width: w, height: h });
+    await page.setContent(`<style>html,body{margin:0;background:transparent}svg{display:block;width:${w}px;height:${h}px}</style>${markup}`);
+    return page.screenshot({ omitBackground: true });
+  };
+  const out = { wide: await shoot(svg, 600, 136), square: await shoot(mark, 256, 256) };
+  await page.close();
+  return out;
+}
+
+// 3D: the page's content (the sidebar and empty edges left out, so the text reads larger) in a browser window turned
+// a little towards the text beside it, with a soft shadow; transparent around, 1500 × 1000 at 2×.
+const CROP = { // x, y, width, height of the 1280 × 800 screen; the sidebar is on the right in Arabic, on the left in English
+  today: [24, 56, 1000, 640], calendar: [24, 56, 1000, 640], frontdesk: [24, 56, 1000, 640], patient: [24, 56, 1000, 640],
+  cash: [24, 56, 1000, 640], surgeries: [24, 56, 1000, 640], builder: [340, 40, 900, 600],
+};
+async function render3d(browser, png, out, { lang, screen, turn }) {
+  const page = await browser.newPage({ deviceScaleFactor: 2, viewport: { width: 1500, height: 1000 } });
+  const [x0, y0, w, h] = CROP[screen] || [0, 0, 1280, 800];
+  const x = lang === 'ar' ? x0 : 1280 - x0 - w; // the same crop, mirrored for the left-to-right screens
+  const W = 1240; const k = W / w;
+  const src = `data:image/png;base64,${fs.readFileSync(png).toString('base64')}`;
+  await page.setContent(`<!doctype html><style>html,body{margin:0;background:transparent}
+    .stage{position:relative;width:1500px;height:1000px;perspective:2400px}
+    .win{position:absolute;left:130px;top:${Math.round(500 - (h * k + 34) / 2)}px;width:${W}px;border-radius:18px;overflow:hidden;background:white;
+      transform:rotateY(${turn}deg) rotateX(3deg);box-shadow:0 0 0 1px rgba(10,27,54,.08),0 40px 80px -24px rgba(6,20,46,.40)}
+    .bar{height:34px;display:flex;align-items:center;gap:8px;padding:0 14px;background:linear-gradient(rgb(243,246,251),rgb(230,236,245))}
+    .bar i{width:11px;height:11px;border-radius:50%;background:rgb(255,95,87)}.bar i:nth-child(2){background:rgb(254,188,46)}.bar i:nth-child(3){background:rgb(40,200,64)}
+    .shot{position:relative;overflow:hidden;height:${Math.round(h * k)}px}
+    .shot img{position:absolute;max-width:none;width:${Math.round(1280 * k)}px;left:${-Math.round(x * k)}px;top:${-Math.round(y0 * k)}px}
+    .glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,0) 32%);pointer-events:none}
+    </style><div class="stage"><div class="win"><div class="bar"><i></i><i></i><i></i></div><div class="shot"><img src="${src}"></div><div class="glare"></div></div></div>`);
+  await page.waitForTimeout(150);
+  const tmpPng = `${out}.png`;
+  await page.screenshot({ path: tmpPng, omitBackground: true });
+  await page.close();
+  execFileSync('python3', ['-I', '-c', 'import sys\nfrom PIL import Image\nImage.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=86, method=6)', tmpPng, out]);
+  fs.rmSync(tmpPng);
+}
+
 (async () => {
   await knex.migrate.latest();
   cache.forgetPrefix('');
@@ -157,12 +206,13 @@ const py = (job) => execFileSync('python3', ['-I', '-c', PY, JSON.stringify(job)
   const browser = await chromium.launch(fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {}).catch(() => chromium.launch());
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'shots-'));
   const tag = Date.now().toString(36);
+  const logo = await logos(browser);
   for (const lang of ['ar', 'en']) { // eslint-disable-line no-restricted-syntax
-    const s = await seed(lang, tag); // eslint-disable-line no-await-in-loop
+    const s = await seed(lang, tag, logo); // eslint-disable-line no-await-in-loop
     const out = path.join(ROOT, 'public', 'img', 'landing', lang);
     const shot = (name) => path.join(tmp, `${lang}-${name}.png`);
     for (const [vw, vh, kind] of [[1280, 800, 'still'], [1120, 700, 'flow']]) { // eslint-disable-line no-restricted-syntax
-      const ctxB = await browser.newContext({ viewport: { width: vw, height: vh }, locale: lang === 'ar' ? 'ar-JO' : 'en-GB', colorScheme: 'light', timezoneId: 'Asia/Amman' }); // eslint-disable-line no-await-in-loop
+      const ctxB = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: kind === 'still' ? 2 : 1, locale: lang === 'ar' ? 'ar-JO' : 'en-GB', colorScheme: 'light', timezoneId: 'Asia/Amman' }); // eslint-disable-line no-await-in-loop
       const page = await ctxB.newPage(); // eslint-disable-line no-await-in-loop
       await page.goto(`${base}/login?lang=${lang}`); // eslint-disable-line no-await-in-loop
       await page.fill('input[name=email]', s.email); await page.fill('input[name=password]', PASSWORD); // eslint-disable-line no-await-in-loop
@@ -181,6 +231,7 @@ const py = (job) => execFileSync('python3', ['-I', '-c', PY, JSON.stringify(job)
         for (const [name, url] of Object.entries(stills)) { // eslint-disable-line no-restricted-syntax
           await capture(page, base, url, shot(name), { wait: name === 'builder' ? 1500 : 700 }); // eslint-disable-line no-await-in-loop
           py({ kind: 'still', src: shot(name), out: path.join(out, `${name}.webp`) });
+          await render3d(browser, shot(name), path.join(out, `${name}-3d.webp`), { lang, screen: name, turn: lang === 'ar' ? 8 : -8 }); // eslint-disable-line no-await-in-loop
         }
       } else {
         // A visit: the calendar → booking → reception → the visit → the cash screen.

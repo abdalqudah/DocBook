@@ -9,6 +9,14 @@ body.site { background: var(--surface); overflow-x: hidden; }
 .site-nav.is-scrolled { box-shadow: 0 6px 24px color-mix(in srgb, var(--text) 7%, transparent); }
 .site-nav .inner { gap: 20px; }
 .site-links { gap: 4px; }
+/* The platform's menu in the middle of the bar: the logo and the buttons share the space on either side. */
+@media (min-width: 901px) {
+  body:not(.site-portal) .site-nav .site-brand { flex: 1 1 0; min-width: max-content; }
+  body:not(.site-portal) .site-nav .site-links { flex: none; justify-content: center; }
+  body:not(.site-portal) .site-nav .site-links ~ .right { flex: 1 1 0; justify-content: flex-end; margin-inline-start: 0; }
+}
+.site-links a[aria-current="page"] { color: var(--primary); }
+@media (min-width: 901px) and (max-width: 1400px) { body:not(.site-portal) .site-nav .right a[href="/clinics"] .hide-sm { display: none; } }
 .site-links a { white-space: nowrap; padding: 7px 12px; border-radius: var(--pill); transition: background .15s, color .15s; }
 .site-links a:hover { background: var(--surface-sunken); }
 @media (max-width: 1200px) { .site-links a { padding: 7px 8px; } .site-links a:nth-child(n+6) { display: none; } }
@@ -751,6 +759,9 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .lp-frame-bar { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface-sunken); direction: ltr; }
 .lp-frame-bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
 .lp-frame img { display: block; width: 100%; height: auto; }
+/* A screen in 3D (a tilted window with its own shadow, transparent around): no frame of its own. */
+.lp-3d { margin: 0; }
+.lp-3d img { display: block; width: 100%; height: auto; }
 .lp-tour-ui { display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .lp-tour-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 5px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface); }
 .lp-tour-tab { border: 0; background: transparent; color: var(--text-muted); font: inherit; font-weight: var(--fw-semibold); font-size: 14px; padding: 8px 16px; border-radius: var(--pill); cursor: pointer; transition: background .2s, color .2s; }
@@ -758,7 +769,7 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .lp-tour-tab.is-on { background: var(--lp-grad, var(--primary)); color: var(--primary-ink); box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--primary) 80%, transparent); }
 .lp-tour-panel { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 14px; }
 .lp-tour-panel[hidden] { display: none; }
-.lp-tour-panel:not([hidden]) .lp-frame { animation: lp-tour-in .45s cubic-bezier(.2, .7, .2, 1); }
+.lp-tour-panel:not([hidden]) .lp-frame, .lp-tour-panel:not([hidden]) .lp-3d { animation: lp-tour-in .45s cubic-bezier(.2, .7, .2, 1); }
 .lp-tour-text { text-align: center; color: var(--text-muted); max-width: 680px; margin: 0 auto; }
 .lp-tour-more { display: flex; justify-content: center; margin-top: 26px; }
 @keyframes lp-tour-in { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -788,7 +799,7 @@ a.lp-contact-card:hover { border-color: var(--primary); }
 .lp-cat-card h3 { font-size: 16px; margin: 2px 0 4px; }
 .lp-cat-card p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
 
-@media (prefers-reduced-motion: reduce) { .lp-tour-panel:not([hidden]) .lp-frame { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-tour-panel:not([hidden]) .lp-frame, .lp-tour-panel:not([hidden]) .lp-3d { animation: none; } }
 
 /* An uploaded logo shows exactly as it is: no coloured tile, frame, rounding or shadow; it keeps its own proportions. */
 .portal-mark:has(img), .portal-logo:has(img) { width: auto; max-width: 260px; background: transparent; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }

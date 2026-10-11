@@ -621,7 +621,8 @@
     },
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
-    "legal_updated": "Last updated:"
+    "legal_updated": "Last updated:",
+    "home_nav": "Home"
   },
   "admin": {
     "title": "Platform admin",

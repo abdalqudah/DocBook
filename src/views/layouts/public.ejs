@@ -41,10 +41,11 @@
         <span class="portal-brand-name"><%= portalClinic.displayName %></span>
       </a>
     <% } else { %>
-      <a class="row-sm" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
+      <a class="row-sm site-brand" href="/" aria-label="<%= brandName %>"><%- include('../partials/logo') %></a>
       <% if (header && header.items && header.items.length) { %>
       <nav class="site-links" aria-label="<%= t('site.nav_label') %>">
-        <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href) return; %><a href="<%= n.href %>"><%= Lx(n.label) %></a><% }) %>
+        <a href="/"<%= path === '/' ? ' aria-current="page"' : '' %>><%= t('site.home_nav') %></a>
+        <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href || n.href === '/') return; %><a href="<%= n.href %>"<%= n.href === path ? ' aria-current="page"' : '' %>><%= Lx(n.label) %></a><% }) %>
         <% if (typeof blogOn !== 'undefined' && blogOn) { %><a href="/blog"><%= t('articles.blog_nav') %></a><% } %>
       </nav>
       <% } %>
@@ -69,7 +70,8 @@
       <details class="site-menu">
         <summary class="btn btn-ghost btn-icon" aria-label="<%= t('site.menu') %>"><%- icon('menu') %></summary>
         <div class="site-menu-panel">
-          <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href) return; %><a href="<%= n.href %>" data-menu-close><%= Lx(n.label) %></a><% }) %>
+          <a href="/" data-menu-close><%= t('site.home_nav') %></a>
+          <% header.items.forEach(function (n) { if (!Lx(n.label) || !n.href || n.href === '/') return; %><a href="<%= n.href %>" data-menu-close><%= Lx(n.label) %></a><% }) %>
           <% if (typeof blogOn !== 'undefined' && blogOn) { %><a href="/blog" data-menu-close><%= t('articles.blog_nav') %></a><% } %>
           <% if (!currentUser) { %><a href="/login"><%= header ? Lx(header.login_label) || t('site.sign_in') : t('site.sign_in') %></a><% } %>
         </div>

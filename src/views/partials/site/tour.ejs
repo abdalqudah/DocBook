@@ -1,4 +1,4 @@
-<%# A tour of the platform: tabs with real screenshots (public/img/landing/<lang>/<screen>.webp) in a browser frame. %>
+<%# A tour of the platform: tabs with real screenshots, shown in 3D (public/img/landing/<lang>/<screen>-3d.webp). %>
 <% var d = s.data || {}; var _lang = locale === 'en' ? 'en' : 'ar'; var _items = (d.items || []).filter(function (it) { return it && it.screen; }); %>
 <% if (_items.length) { %>
 <section class="section lp-tour <%= secCls(s) %>" id="<%= s.anchor %>"><%- include('bg', { s: s }) %>
@@ -13,9 +13,8 @@
       <% _items.forEach(function (it, i) { %>
       <div class="lp-tour-panel" role="tabpanel" id="<%= s.id %>-panel-<%= i %>" aria-labelledby="<%= s.id %>-tab-<%= i %>"<%= i === 0 ? '' : ' hidden' %> data-tour-panel="<%= i %>">
         <% if (L(it.text)) { %><p class="lp-tour-text"><%= L(it.text) %></p><% } %>
-        <figure class="lp-frame">
-          <div class="lp-frame-bar" aria-hidden="true"><span></span><span></span><span></span></div>
-          <img src="/img/landing/<%= _lang %>/<%= it.screen %>.webp?v=<%= assetV %>" width="1280" height="800" alt="<%= L(it.title) %>"<%= i === 0 ? '' : ' loading="lazy"' %> decoding="async">
+        <figure class="lp-3d">
+          <img src="/img/landing/<%= _lang %>/<%= it.screen %>-3d.webp?v=<%= assetV %>" width="1500" height="1000" alt="<%= L(it.title) %>"<%= i === 0 ? '' : ' loading="lazy"' %> decoding="async">
         </figure>
       </div>
       <% }) %>

@@ -129,7 +129,7 @@ test('platform tour, task videos and the "All features" page; the home page show
   const home = await admin.get('/?lang=ar');
   assert.equal(home.status, 200);
   assert.match(home.text, /data-tour/);
-  assert.match(home.text, /\/img\/landing\/ar\/today\.webp/);
+  assert.match(home.text, /\/img\/landing\/ar\/today-3d\.webp/, 'the tour shows the screens in 3D');
   assert.match(home.text, /\/img\/landing\/ar\/flow-visit\.webp/);
   assert.match(home.text, /href="\/features"/);
   const showcase = home.text.slice(home.text.indexOf('lp-showcase'), home.text.indexOf('</section>', home.text.indexOf('lp-showcase')));
@@ -138,10 +138,11 @@ test('platform tour, task videos and the "All features" page; the home page show
   const page = await admin.get('/features?lang=en');
   assert.equal(page.status, 200);
   for (const cat of ['appointments', 'records', 'surgeries', 'money', 'team', 'partners', 'website', 'data']) assert.match(page.text, new RegExp(`id="${cat}"`));
-  assert.match(page.text, /\/img\/landing\/en\/surgeries\.webp/);
+  assert.match(page.text, /\/img\/landing\/en\/surgeries-3d\.webp/);
   assert.ok((page.text.match(/class="lp-cat-card"/g) || []).length >= 40);
   assert.doesNotMatch(page.text, />site\.d\./); // every text is translated
   assert.equal((await admin.get('/img/landing/ar/flow-surgery.webp')).status, 200);
+  assert.equal((await admin.get('/img/landing/en/builder-3d.webp')).status, 200);
   // An already edited page gets the tour and the videos once, and the header link points at the new page.
   const v = site.normalise({ version: 1, rev: 5, header: { items: [{ label: { ar: 'المزايا', en: 'Features' }, href: '/#features' }] }, sections: [{ id: 'h', type: 'hero', data: {} }, { id: 'f', type: 'features', data: { items: [] } }], footer: {} });
   assert.deepEqual(v.sections.map((s) => s.type), ['hero', 'tour', 'features', 'demos']);
