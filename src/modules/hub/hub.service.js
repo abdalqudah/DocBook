@@ -95,32 +95,64 @@ const hubBase = (u) => {
   return x.origin;
 };
 
+/** The addresses a URL's name resolves to here (for the error message): "1.2.3.4, 2a02::1". */
+async function addressesOf(url) {
+  try { const list = await require('dns').promises.lookup(new URL(url).hostname, { all: true }); return list.map((x) => x.address).join(', '); } catch { return ''; } // eslint-disable-line global-require
+}
+
 /**
  * A request between the platform and an installation. It says who it is (hosting firewalls and bot protection often
  * drop requests with the bare "node" user agent, closing the connection without an answer), and is tried once more
  * when the connection was dropped before any answer (a sleeping app waking).
  */
 const LINK_UA = `MedWorks-Link/${require('../../../package.json').version} (+https://medworks.app)`; // eslint-disable-line global-require
+const DROPPED = /UND_ERR_SOCKET|ECONNRESET|UND_ERR_CLOSED|EPIPE|ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT/;
 async function linkFetch(url, init, timeoutMs) {
-  const go = () => fetch(url, { ...init, headers: { 'user-agent': LINK_UA, ...init.headers }, signal: AbortSignal.timeout(timeoutMs) });
-  try { return await go(); } catch (e) {
+  const headers = { 'user-agent': LINK_UA, ...init.headers };
+  try { return await fetch(url, { ...init, headers, signal: AbortSignal.timeout(timeoutMs) }); } catch (e) {
     const code = String((e && e.cause && e.cause.code) || '');
-    if (!/UND_ERR_SOCKET|ECONNRESET|UND_ERR_CLOSED|EPIPE/.test(code)) throw e;
+    if (!DROPPED.test(code)) throw e;
     await new Promise((r) => { setTimeout(r, 1500); });
-    return go();
+    // Again over IPv4 only: a domain with an IPv6 record its server does not answer on fails here although browsers
+    // (which fall back by themselves) open it fine.
+    try { return await ipv4Fetch(url, { ...init, headers }, timeoutMs); } catch (e2) { e2.first = code; throw e2; }
   }
+}
+
+/** A small fetch over IPv4 (node:http / node:https, family 4) answering like fetch: status, ok, headers.get, json, arrayBuffer. */
+function ipv4Fetch(url, { method = 'GET', headers = {}, body } = {}, timeoutMs = 15_000) {
+  const u = new URL(url);
+  const mod = u.protocol === 'https:' ? require('https') : require('http'); // eslint-disable-line global-require
+  return new Promise((resolve, reject) => {
+    const req = mod.request(u, { method, headers: { ...headers, ...(body ? { 'content-length': Buffer.byteLength(body) } : {}) }, family: 4, timeout: timeoutMs }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        resolve({
+          status: res.statusCode, ok: res.statusCode >= 200 && res.statusCode < 300, headers: { get: (k) => res.headers[String(k).toLowerCase()] || null },
+          json: async () => JSON.parse(buf.toString('utf8')), arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length),
+        });
+      });
+      res.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' })));
+    req.on('error', (err) => reject(Object.assign(new TypeError('fetch failed'), { cause: err })));
+    if (body) req.write(body);
+    req.end();
+  });
 }
 
 /**
  * Why the platform could not be reached ("fetch failed" says nothing): the address does not resolve, nothing answers,
  * its HTTPS certificate is not valid yet (e.g. AutoSSL not run), or it took too long.
  */
-function unreachable(url, e) {
-  const code = String((e && e.cause && (e.cause.code || e.cause.name)) || (e && e.name) || '');
-  const host = (() => { try { return new URL(url).host; } catch { return url; } })();
+function unreachable(url, e, addrs = '') {
+  const code = String((e && e.cause && (e.cause.code || e.cause.name)) || (e && e.name) || '') + (e && e.first && e.first !== String((e.cause && e.cause.code) || '') ? `, first ${e.first}` : '');
+  const host = (() => { try { return new URL(url).host; } catch { return url; } })() + (addrs ? ` (${addrs})` : '');
   let why;
   if (/ENOTFOUND|EAI_AGAIN/.test(code)) why = `${host} was not found (check the address and its DNS).`;
-  else if (/ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH/.test(code)) why = `${host} did not answer (is the platform running?).`;
+  else if (/ECONNREFUSED|EHOSTUNREACH|ENETUNREACH/.test(code)) why = `${host} refused the connection from this server — its firewall may block this server's address, or the name points to the wrong server [${code}].`;
   else if (/CERT|SSL|TLS|SELF_SIGNED|UNABLE_TO_VERIFY|ERR_TLS/i.test(code)) why = `${host} has no valid HTTPS certificate yet (run AutoSSL on the platform's server) [${code}].`;
   else if (/Timeout|Abort|ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT/i.test(code)) why = `${host} took too long to answer.`;
   else if (/UND_ERR_SOCKET|ECONNRESET|UND_ERR_CLOSED|EPIPE/.test(code)) why = `${host} closed the connection without answering — usually the hosting's firewall or bot protection (ask the host to allow this server's address) [${code}].`;
@@ -134,7 +166,7 @@ async function call(c, path, { method = 'GET', body = null, binary = false } = {
   const res = await linkFetch(`${c.hub_url}/hub/v1${path}`, {
     method, headers: { authorization: `Bearer ${key}`, accept: binary ? '*/*' : 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
-  }, 30_000).catch((e) => { throw unreachable(c.hub_url, e); });
+  }, 30_000).catch(async (e) => { throw unreachable(c.hub_url, e, await addressesOf(c.hub_url)); });
   if (res.status === 401) throw new AppError('HUB_KEY_REFUSED', 'The platform refused the key.', 409);
   if (!res.ok) throw new AppError('HUB_ERROR', `The platform answered ${res.status}.`, 502);
   return binary ? { data: Buffer.from(await res.arrayBuffer()), mime: res.headers.get('content-type') || '' } : res.json();
@@ -293,7 +325,7 @@ async function visitChanged(visitId, status, note) {
   return call(c, '/visits/status', { method: 'POST', body: { id: v.id, status, note: note || null } }).catch(() => null);
 }
 
-module.exports = { unreachable, linkFetch,
+module.exports = { unreachable, linkFetch, ipv4Fetch,
   ownClinic, remote, repClinic, repSlots, repBook, repCancel, visitStatus, vendorHubVisits, visitChanged, fresh,
   createLink, revokeLink, links, linkedClinics, linkOf, hello, offersFor, adsFor, imageOf,
   client, keyOf, saveClient, unlink, sync, cached, cachedOne, cachedImage, adClick, clinicCard,

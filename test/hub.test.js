@@ -74,7 +74,7 @@ test('link → hello → offers and ads cached here; reps see the clinic; revoke
 test('an unreachable platform says why instead of "fetch failed"', async () => {
   const err = (code) => Object.assign(new TypeError('fetch failed'), { cause: { code } });
   assert.match(hub.unreachable('https://medworks.app', err('ENOTFOUND')).message, /medworks\.app was not found/);
-  assert.match(hub.unreachable('https://medworks.app', err('ECONNREFUSED')).message, /did not answer/);
+  assert.match(hub.unreachable('https://medworks.app', err('ECONNREFUSED')).message, /refused the connection from this server/);
   assert.match(hub.unreachable('https://medworks.app', err('DEPTH_ZERO_SELF_SIGNED_CERT')).message, /no valid HTTPS certificate/);
   const r = await fetch('http://127.0.0.1:1/x').catch((e) => hub.unreachable('http://127.0.0.1:1', e));
   assert.equal(r.code, 'HUB_UNREACHABLE');
@@ -89,4 +89,17 @@ test('link requests say who they are (firewalls drop the bare "node" agent) and 
   assert.equal(res.status, 200);
   assert.match(ua, /^MedWorks-Link\//);
   assert.match(hub.unreachable('https://x.test', Object.assign(new TypeError('fetch failed'), { cause: { code: 'UND_ERR_SOCKET' } })).message, /closed the connection without answering/);
+});
+
+test('the IPv4 fallback answers like fetch', async () => {
+  const http = require('http'); // eslint-disable-line global-require
+  let got = null;
+  const srv = await new Promise((r) => { const x = http.createServer((req, res) => { let b = ''; req.on('data', (c) => { b += c; }); req.on('end', () => { got = { ua: req.headers['user-agent'], body: b }; res.setHeader('content-type', 'application/json'); res.end('{"ok":1}'); }); }).listen(0, '127.0.0.1', () => r(x)); });
+  const res = await hub.ipv4Fetch(`http://localhost:${srv.address().port}/hub/v1/hello`, { method: 'POST', headers: { 'user-agent': 'MedWorks-Link/x', 'content-type': 'application/json' }, body: '{"a":1}' }, 5000);
+  srv.close();
+  assert.equal(res.status, 200); assert.ok(res.ok); assert.deepEqual(await res.json(), { ok: 1 });
+  assert.equal(res.headers.get('Content-Type'), 'application/json');
+  assert.deepEqual(got, { ua: 'MedWorks-Link/x', body: '{"a":1}' });
+  const refused = await hub.ipv4Fetch('http://127.0.0.1:1/', {}, 2000).catch((e) => e);
+  assert.equal(refused.cause.code, 'ECONNREFUSED');
 });
