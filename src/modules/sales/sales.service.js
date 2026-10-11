@@ -29,7 +29,7 @@ const COUNTRY_RATES = {
 };
 const profile = () => cache.remember('sales:profile', async () => {
   const row = await knex('platform_settings').where({ key: 'sales_profile' }).first('value').catch(() => null);
-  const p = { valid_days: 30, tax_rate: 16, currency: 'JOD', ...(row ? parse(row.value) : {}) };
+  const p = { valid_days: 30, tax_rate: 16, currency: 'JOD', quote_prefix: 'Q-{YYYY}-', quote_start: 1, ...(row ? parse(row.value) : {}) };
   p.country_rates = { ...COUNTRY_RATES, ...(p.country_rates || {}) };
   return p;
 }, 30_000);
@@ -47,10 +47,16 @@ async function saveProfile(ctx, body) {
   p.tax_rate = Number(body.tax_rate);
   if (!Number.isFinite(p.tax_rate) || p.tax_rate < 0 || p.tax_rate > 100) errors.tax_rate = 'Enter the VAT rate (e.g. 16).';
   p.currency = /^[A-Z]{3}$/.test(String(body.currency || '').toUpperCase()) ? String(body.currency).toUpperCase() : 'JOD';
+  p.quote_prefix = str(body.quote_prefix, 20) || 'Q-{YYYY}-';
+  if (!/^[A-Za-z0-9._\/{}-]{1,20}$/.test(p.quote_prefix)) errors.quote_prefix = 'Use letters, numbers, dashes, slashes and {YYYY}.';
+  p.quote_start = Math.min(999999, Math.max(1, Number.parseInt(body.quote_start, 10) || 1));
   p.country_rates = {};
-  Object.keys(COUNTRY_RATES).forEach((cc) => {
+  const codes = Object.keys(body).map((k) => (/^rate_tax_([A-Z]{2})$/.exec(k) || [])[1]).filter(Boolean);
+  const add = String(body.rate_add || '').toUpperCase();
+  if (/^[A-Z]{2}$/.test(add) && !codes.includes(add) && String(body.rate_add_tax ?? '').trim() !== '') { body[`rate_tax_${add}`] = body.rate_add_tax; body[`rate_currency_${add}`] = body.rate_add_currency; codes.push(add); } // eslint-disable-line no-param-reassign
+  codes.forEach((cc) => {
     const tax = Number(body[`rate_tax_${cc}`]); const cur = String(body[`rate_currency_${cc}`] || '').trim().toUpperCase();
-    if (body[`rate_tax_${cc}`] === undefined) return;
+    if (body[`rate_remove_${cc}`] === '1') return;
     if (!Number.isFinite(tax) || tax < 0 || tax > 100) errors[`rate_tax_${cc}`] = 'Enter the VAT rate (e.g. 16).';
     else if (!/^[A-Z]{3}$/.test(cur)) errors[`rate_currency_${cc}`] = 'Enter a 3-letter currency code.';
     else p.country_rates[cc] = { tax, currency: cur };
@@ -122,10 +128,24 @@ function totals(items, { discount, taxRate, currency }) {
   const tax = round(((subtotal - disc) * taxRate) / 100, currency);
   return { subtotal, discount: disc, tax, total: round(subtotal - disc + tax, currency) };
 }
+const NUMBER_RE = /^[A-Za-z0-9][A-Za-z0-9._\/-]{0,39}$/;
+/** The next free number: the seller's prefix ({YYYY} = the year, default "Q-{YYYY}-") and counter (from its start). */
 async function nextNumber(trx) {
-  const prefix = `Q-${new Date().getUTCFullYear()}-`;
-  const last = await trx('quotes').where('number', 'like', `${prefix}%`).orderBy('id', 'desc').forUpdate().first('number');
-  return `${prefix}${String(last ? Number(last.number.slice(prefix.length)) + 1 : 1).padStart(4, '0')}`;
+  const p = await profile();
+  const prefix = String(p.quote_prefix || 'Q-{YYYY}-').replace(/\{YYYY\}/g, String(new Date().getUTCFullYear()));
+  const start = Math.max(1, Number.parseInt(p.quote_start, 10) || 1);
+  const rows = await trx('quotes').where('number', 'like', `${prefix.replace(/[\\%_]/g, (c) => `\\${c}`)}%`).forUpdate().pluck('number');
+  const used = rows.map((n) => Number(n.slice(prefix.length))).filter((n) => Number.isInteger(n));
+  let next = Math.max(start, used.length ? Math.max(...used) + 1 : start);
+  while (rows.includes(`${prefix}${String(next).padStart(4, '0')}`)) next += 1;
+  return `${prefix}${String(next).padStart(4, '0')}`;
+}
+/** A number typed by the team: its format, and not used by another quotation. */
+async function checkNumber(number, exceptId = 0) {
+  const n = str(number, 40);
+  if (!NUMBER_RE.test(n)) return { error: 'Use letters, numbers, dashes or slashes (up to 40).' };
+  if (await knex('quotes').where({ number: n }).whereNot('id', Number(exceptId) || 0).first('id')) return { error: 'Another quotation has this number.' };
+  return { number: n };
 }
 async function readQuote(body) {
   const p = await profile();
@@ -136,7 +156,7 @@ async function readQuote(body) {
     customer_vat: str(body.customer_vat, 40) || null, customer_address: str(body.customer_address, 255) || null,
     locale: body.locale === 'en' ? 'en' : 'ar', currency: /^[A-Z]{3}$/.test(String(body.currency || '')) ? body.currency : p.currency,
     issue_date: /^\d{4}-\d{2}-\d{2}$/.test(body.issue_date || '') ? body.issue_date : today(),
-    notes: str(body.notes, 3000) || null, terms: str(body.terms, 5000) || null,
+    notes: str(body.notes, 3000) || null, terms: str(body.terms, 5000) || null, title: str(body.title, 200) || null,
   };
   v.valid_until = /^\d{4}-\d{2}-\d{2}$/.test(body.valid_until || '') ? body.valid_until : addDays(v.issue_date, p.valid_days);
   if (!v.customer_name) errors.customer_name = 'Enter the customer name.';
@@ -159,8 +179,10 @@ const itemRows = (quoteId, items) => items.map((i) => ({ quote_id: quoteId, desc
 
 async function createQuote(ctx, body) {
   const { v, items } = await readQuote(body);
+  const typed = str(body.number, 40) ? await checkNumber(body.number) : null;
+  if (typed && typed.error) throw E.validation({ number: typed.error });
   const id = await knex.transaction(async (trx) => {
-    const [qid] = await trx('quotes').insert({ ...v, number: await nextNumber(trx), token: randomToken(24), created_by: ctx.userId || null });
+    const [qid] = await trx('quotes').insert({ ...v, number: typed ? typed.number : await nextNumber(trx), token: randomToken(24), created_by: ctx.userId || null });
     await trx('quote_items').insert(itemRows(qid, items));
     return qid;
   });
@@ -178,6 +200,11 @@ async function updateQuote(ctx, id, body, { revised = false } = {}) {
   const q = await getQuote(id);
   if (['accepted', 'declined'].includes(q.status)) throw new AppError('QUOTE_CLOSED', 'This quotation was already answered by the customer. Duplicate it to make a new one.', 409);
   const { v, items } = await readQuote(body);
+  if (str(body.number, 40) && str(body.number, 40) !== q.number) {
+    const typed = await checkNumber(body.number, q.id);
+    if (typed.error) throw E.validation({ number: typed.error });
+    v.number = typed.number;
+  }
   await knex.transaction(async (trx) => {
     await trx('quotes').where({ id: q.id }).update({ ...v, ...(revised ? { revision: q.revision + 1, status: q.status === 'draft' ? 'draft' : 'sent' } : {}), updated_at: new Date() });
     await trx('quote_items').where({ quote_id: q.id }).del();
@@ -190,7 +217,7 @@ async function updateQuote(ctx, id, body, { revised = false } = {}) {
 async function duplicateQuote(ctx, id) {
   const q = await getQuote(id);
   const p = await profile();
-  const KEEP = ['contact_id', 'customer_name', 'customer_company', 'customer_email', 'customer_phone', 'customer_vat', 'customer_address', 'locale', 'currency', 'subtotal', 'discount', 'tax_rate', 'tax', 'total', 'notes', 'terms'];
+  const KEEP = ['title', 'contact_id', 'customer_name', 'customer_company', 'customer_email', 'customer_phone', 'customer_vat', 'customer_address', 'locale', 'currency', 'subtotal', 'discount', 'tax_rate', 'tax', 'total', 'notes', 'terms'];
   const newId = await knex.transaction(async (trx) => {
     const [qid] = await trx('quotes').insert({ ...Object.fromEntries(KEEP.map((k) => [k, q[k]])), issue_date: today(), valid_until: addDays(today(), p.valid_days), number: await nextNumber(trx), token: randomToken(24), created_by: ctx.userId || null });
     await trx('quote_items').insert(q.items.map((i) => ({ quote_id: qid, description: i.description, quantity: i.quantity, unit_price: i.unit_price, amount: i.amount, sort: i.sort, service_id: i.service_id })));
@@ -299,7 +326,7 @@ async function sendable(type, id, base, locale) {
   if (type === 'quote') {
     const q = await getQuote(id);
     const loc = locale === 'en' || locale === 'ar' ? locale : q.locale;
-    const vars = { customer: q.customer_name, number: q.number, total: moneyText(q.total, q.currency, loc), valid_until: dateOnly(q.valid_until), seller: sellerName(p, loc), link: `${root}/quote/${q.token}` };
+    const vars = { customer: q.customer_name, number: q.title ? `${q.number} — ${q.title}` : q.number, total: moneyText(q.total, q.currency, loc), valid_until: dateOnly(q.valid_until), seller: sellerName(p, loc), link: `${root}/quote/${q.token}` };
     return { type, id: q.id, label: q.number, locale: loc, contactId: q.contact_id, name: q.customer_name, email: q.customer_email, phone: q.customer_phone, link: vars.link, quote: q, vars, texts: texts('quote', loc, vars) };
   }
   if (type === 'invoice') {

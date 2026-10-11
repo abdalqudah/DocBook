@@ -6,7 +6,7 @@ const svc = require('./countrypages.service');
 
 const router = express.Router();
 const render = async (req, res, extra = {}) => res.page('pages/admin/country-pages', {
-  layout: 'admin', pageStyles: ['/css/site.css', '/css/admin.css'], title: req.t('cpages.admin_title'), pages: await svc.all(), codes: svc.CODES,
+  layout: 'admin', pageStyles: ['/css/site.css', '/css/admin.css'], title: req.t('cpages.admin_title'), pages: await svc.all(), codes: Object.keys(await svc.all()), allCountries: require('../settings/options').countryOptions(req.locale), // eslint-disable-line global-require
   countryName: (cc) => require('../settings/options').regionName(cc, req.locale), errors: {}, old: null, ...extra, // eslint-disable-line global-require
 });
 router.get('/country-pages', wrap((req, res) => render(req, res)));

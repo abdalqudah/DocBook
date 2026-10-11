@@ -118,7 +118,7 @@ async function saveClinic(ctx, input) {
     name: d.name, name_en: d.name_en || null, specialty: d.specialty || null, phone: d.phone || null, whatsapp: d.whatsapp || null,
     city: d.city || null, address: d.address || null,
   };
-  if (d.timezone) { patch.timezone = d.timezone; patch.country = options.countryForZone(d.timezone) || null; }
+  if (d.timezone) { patch.timezone = d.timezone; const cc = options.countryForZone(d.timezone); if (cc) patch.country = cc; }
   if (d.currency) patch.currency = d.currency;
   await businesses.updateProfile(ctx, patch);
   if (logo) await businesses.setAppearance(ctx, { logo: logo.buffer, logoMime: logo.mime });

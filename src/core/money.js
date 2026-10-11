@@ -17,6 +17,10 @@ function round(value, currency) {
   return (Math.sign(n) * Math.round(Math.abs(n) * f + 1e-9)) / f;
 }
 
-const CURRENCIES = ['JOD', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'KWD', 'QAR', 'BHD', 'OMR', 'EGP', 'IQD', 'LBP', 'SYP', 'TRY', 'MAD', 'TND', 'DZD', 'LYD'];
+const FIRST = ['JOD', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'KWD', 'QAR', 'BHD', 'OMR', 'EGP', 'IQD', 'LBP', 'SYP', 'TRY', 'MAD', 'TND', 'DZD', 'LYD'];
+// the region's currencies first, then every other ISO currency (a clinic anywhere)
+let ALL = [];
+try { ALL = Intl.supportedValuesOf('currency'); } catch { ALL = []; }
+const CURRENCIES = [...new Set([...FIRST, ...ALL])];
 
 module.exports = { decimalsOf, round, CURRENCIES };

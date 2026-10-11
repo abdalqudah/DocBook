@@ -36,6 +36,11 @@
       <%- include('../../partials/field', { name: 'specialty', label: t('auth.industry'), type: 'select', placeholder: t('common.select'), options: specialtyOptions, attrs: !_inv && _type === 'center' ? 'disabled' : '' }) %>
     </div>
     <div class="form-grid">
+      <% var _cc = (old && old.country) || (typeof prefillCountry !== 'undefined' && prefillCountry) || ''; %>
+      <div class="field"><label class="label" for="f-country"><%= t('auth.country') %></label>
+        <select class="select<%= errors.country ? ' is-invalid' : '' %>" id="f-country" name="country" data-geo-country><option value=""><%= t('common.select') %></option>
+          <% countryOptions.forEach(function (c) { %><option value="<%= c.value %>"<% if (c.geo) { %> data-zone="<%= c.geo.zone %>" data-currency="<%= c.geo.currency %>"<% } %><%= _cc === c.value ? ' selected' : '' %>><%= c.label %></option><% }) %></select>
+        <% if (errors.country) { %><span class="field-error"><%= errors.country %></span><% } %></div>
       <%- include('../../partials/field', { name: 'city', label: t('auth.city'), autocomplete: 'address-level2' }) %>
       <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: typeof prefillCurrency !== 'undefined' && prefillCurrency ? prefillCurrency : 'JOD', options: currencyOptions }) %>
       <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', required: true, value: typeof prefillZone !== 'undefined' && prefillZone ? prefillZone : 'Asia/Amman', options: zoneOptions }) %>

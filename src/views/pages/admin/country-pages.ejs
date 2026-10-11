@@ -24,5 +24,8 @@
     </div>
   </details>
   <% }) %>
+  <div class="panel"><div class="panel-body row-sm wrap"><label class="label" for="f-add-country"><%= t('cpages.add_country') %></label>
+    <select class="select" id="f-add-country" name="add_country" style="max-width:280px"><option value="">—</option><% allCountries.filter(function (c) { return codes.indexOf(c.value) < 0; }).forEach(function (c) { %><option value="<%= c.value %>"><%= c.label %></option><% }) %></select>
+    <span class="help"><%= t('cpages.add_help') %></span></div></div>
   <div class="form-actions"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button></div>
 </form>

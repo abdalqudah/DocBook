@@ -4,7 +4,7 @@
    var closed = ['accepted', 'declined'].indexOf(q.status) >= 0; %>
 <div class="page-head">
   <div><div class="breadcrumbs"><a href="/admin/quotes"><%= t('sales.quotes') %></a></div>
-    <h1 dir="ltr" style="text-align:start"><%= q.number %></h1>
+    <h1><%= q.title || '' %> <bdi dir="ltr" class="<%= q.title ? 'muted' : '' %>"><%= q.number %></bdi></h1>
     <p><span class="badge badge-dot <%= state === 'accepted' ? 'badge-success' : state === 'negotiating' ? 'badge-warning' : 'badge-info' %>" data-quote-state="<%= state %>"><%= t('sales.state_' + state) %></span>
       <%= q.customer_name %><%= q.customer_company ? ' · ' + q.customer_company : '' %> · <span class="strong"><%= money(q.total) %></span><% if (q.revision > 1) { %> · <%= t('sales.revision_n', { n: q.revision }) %><% } %>
       <% if (q.view_count) { %> · <%- icon('eye', 'icon-sm') %> <%= t('sales.viewed_n', { n: q.view_count }) %><% } %></p></div>

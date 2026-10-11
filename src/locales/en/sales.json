@@ -194,6 +194,15 @@
     "ev_activated": "Subscription",
     "ev_invited": "Sign-up link",
     "country_rates": "VAT and currency by country",
-    "country_rates_help": "A quotation for a customer in one of these countries starts with its VAT and currency (you can still change them)."
+    "country_rates_help": "A quotation for a customer in one of these countries starts with its VAT and currency (you can still change them).",
+    "title_field": "Quotation title",
+    "title_ph": "e.g. Pro plan for Al Noor Clinic",
+    "number_auto": "Automatic",
+    "number_help": "Leave empty for the next number, or type your own.",
+    "quote_prefix": "Number prefix",
+    "quote_prefix_help": "{YYYY} becomes the year, e.g. Q-{YYYY}- → Q-2026-0001.",
+    "quote_start": "Start numbering from",
+    "quote_start_help": "The first number of the counter (e.g. 100 → Q-2026-0100).",
+    "rate_add": "Add a country…"
   }
 }

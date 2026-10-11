@@ -12,6 +12,10 @@
 <% if (typeof formError !== 'undefined' && formError) { %><div class="alert alert-danger mb-4"><%- icon('circle-alert', 'icon-sm') %><div class="grow"><%= formError %></div></div><% } %>
 <form method="post" action="<%= q ? '/admin/quotes/' + q.id + '/edit' : '/admin/quotes/new' %>" class="stack" novalidate data-quote-form data-rates="<%= JSON.stringify(p.country_rates) %>"<%= q ? ' data-existing' : '' %>>
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <section class="panel"><div class="panel-body form-grid cols-2" data-quote-title>
+    <%- f('title', t('sales.title_field'), v.title, { placeholder: t('sales.title_ph') }) %>
+    <%- f('number', t('sales.number'), q ? q.number : '', { attrs: 'dir="ltr"', placeholder: t('sales.number_auto'), help: q ? '' : t('sales.number_help') }) %>
+  </div></section>
   <section class="panel"><div class="panel-head"><div><h2><%= t('sales.customer') %></h2></div></div>
     <div class="panel-body stack">
       <div class="field"><label class="label" for="f-contact_id"><%= t('sales.from_crm') %></label>

@@ -3,7 +3,7 @@
    var errs = errors || {}; var o = old || {}; var open = ['sent', 'viewed', 'negotiating'].indexOf(state) >= 0;
    var seller = (locale === 'en' ? p.legal_name_en || p.legal_name_ar : p.legal_name_ar || p.legal_name_en) || brandName; %>
 <div class="row between wrap mb-4" style="align-items:flex-start">
-  <div><h1 class="h2" style="margin:0"><%= t('sales.quotation') %> <bdi dir="ltr"><%= q.number %></bdi></h1>
+  <div><h1 class="h2" style="margin:0"><%= q.title || t('sales.quotation') %> <bdi dir="ltr" class="muted"><%= q.number %></bdi></h1>
     <div class="small muted"><%= t('sales.issue_date') %>: <%= d(q.issue_date) %> · <%= t('sales.valid_until') %>: <%= d(q.valid_until) %><% if (q.revision > 1) { %> · <%= t('sales.revision_n', { n: q.revision }) %><% } %></div></div>
   <span class="badge badge-dot <%= state === 'accepted' ? 'badge-success' : state === 'declined' || state === 'expired' ? 'badge-neutral' : 'badge-info' %>" data-quote-state="<%= state %>"><%= t('sales.state_' + state) %></span>
 </div>

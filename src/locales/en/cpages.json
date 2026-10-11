@@ -20,6 +20,8 @@
     "body_en": "Text (English)",
     "body_help": "Optional. \"# \" heading, \"- \" list, **bold**, [text](https://…).",
     "open": "Open the page",
-    "saved": "Country pages saved."
+    "saved": "Country pages saved.",
+    "add_country": "Add a country",
+    "add_help": "Choose a country and save: its page appears above, switched off until you turn it on."
   }
 }

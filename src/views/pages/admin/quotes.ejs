@@ -15,7 +15,7 @@
   <div class="table-wrap"><table class="table responsive" data-quotes-table>
     <thead><tr><th><%= t('sales.number') %></th><th><%= t('sales.customer') %></th><th><%= t('sales.issue_date') %></th><th class="num"><%= t('sales.total') %></th><th><%= t('common.status') %></th></tr></thead>
     <tbody><% rows.forEach(function (q) { %><tr>
-      <td class="primary-cell"><a class="strong" href="/admin/quotes/<%= q.id %>" dir="ltr"><%= q.number %></a></td>
+      <td class="primary-cell"><a class="strong" href="/admin/quotes/<%= q.id %>"><bdi dir="ltr"><%= q.number %></bdi></a><% if (q.title) { %><div class="tiny muted"><%= q.title %></div><% } %></td>
       <td data-label="<%= t('sales.customer') %>"><%= q.customer_name %><% if (q.customer_company) { %><div class="tiny muted"><%= q.customer_company %></div><% } %></td>
       <td data-label="<%= t('sales.issue_date') %>"><%= d(q.issue_date) %></td>
       <td data-label="<%= t('sales.total') %>" class="num"><%= money(q.total, q.currency) %></td>

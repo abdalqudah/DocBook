@@ -25,13 +25,15 @@ const limiter = rateLimit({ windowMs: 15 * 60_000, limit: config.isTest ? 1000 :
 const clinicSchema = {
   clinic_name: z.string().trim().min(2, 'Enter the clinic name.').max(160),
   specialty: z.preprocess((v) => (v === '' ? undefined : v), z.string().refine((v) => require('../platformops/clinic-types').visible().includes(v), 'Choose a valid value.').optional()),
+  country: z.preprocess((v) => (v === '' ? undefined : v), z.enum(options.COUNTRIES, { errorMap: () => ({ message: 'Choose a valid value.' }) }).optional()),
   city: optionalString(100),
   currency: z.enum(CURRENCIES, { errorMap: () => ({ message: 'Choose a currency.' }) }),
   timezone: z.enum(options.ZONE_IDS, { errorMap: () => ({ message: 'Choose a valid value.' }) }),
 };
-const clinicFields = (d) => ({ name: d.clinic_name, currency: d.currency, specialty: d.specialty || null, city: d.city || null, timezone: d.timezone, country: options.countryForZone(d.timezone) });
+const clinicFields = (d) => ({ name: d.clinic_name, currency: d.currency, specialty: d.specialty || null, city: d.city || null, timezone: d.timezone, country: d.country || options.countryForZone(d.timezone) });
 const clinicChoices = (req) => ({ specialtyOptions: require('../platformops/clinic-types').options(req.t), // eslint-disable-line global-require
-  currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale) });
+  currencyOptions: options.currencyOptions(req.t, req.locale), zoneOptions: options.zoneOptions(req.locale),
+  countryOptions: options.countryOptions(req.locale).map((c) => ({ ...c, geo: options.geoOf(c.value) })) });
 
 // ---------- Login
 const renderLogin = (req, res, extra = {}) => res.page('pages/auth/login', { layout: 'auth', title: req.t('auth.login_title'), ...extra });
@@ -70,7 +72,7 @@ router.post('/login', limiter, form(async (req, res) => {
 }, (req, res, extra) => renderLogin(req, res, extra)));
 
 // ---------- Clinic sign-up: owner account + clinic, then the in-app setup wizard continues
-const renderSignup = (req, res, extra = {}) => res.page('pages/auth/signup', { layout: 'auth', wide: true, title: req.t('auth.signup_title'), pageScripts: ['/js/center.js'], pageStyles: ['/css/center.css'], ...clinicChoices(req), ...extra });
+const renderSignup = (req, res, extra = {}) => res.page('pages/auth/signup', { layout: 'auth', wide: true, title: req.t('auth.signup_title'), pageScripts: ['/js/center.js', '/js/signup-geo.js'], pageStyles: ['/css/center.css'], ...clinicChoices(req), ...extra });
 router.get('/signup', wrap(async (req, res) => {
   if (!config.allowSignup) return res.redirect('/login');
   if (req.user) return res.redirect(req.query.center ? `/workspaces/center/${encodeURIComponent(req.query.center)}` : '/app');
@@ -83,9 +85,10 @@ router.get('/signup', wrap(async (req, res) => {
   if (refCode) req.session.ref = refCode;
   // From a country page (/in/sa): the country's time zone and currency already chosen.
   const cc = String(req.query.country || '').toUpperCase();
-  const prefillZone = /^[A-Z]{2}$/.test(cc) ? (options.ZONES.find((z) => z[1] === cc) || [])[0] || null : null;
-  const prefillCurrency = prefillZone ? require('../countrypages/countrypages.service').CURRENCY[cc] || null : null; // eslint-disable-line global-require
-  if ((prefillEmail || prefillZone) && !invite) return renderSignup(req, res, { prefillEmail, prefillZone, prefillCurrency });
+  const g = /^[A-Z]{2}$/.test(cc) ? options.geoOf(cc) : null;
+  const prefillZone = g ? g.zone : null;
+  const prefillCurrency = g ? g.currency : null;
+  if ((prefillEmail || prefillZone) && !invite) return renderSignup(req, res, { prefillEmail, prefillZone, prefillCurrency, prefillCountry: g ? cc : null });
   return renderSignup(req, res, invite ? { centerInvite: { token: req.query.center, name: (req.locale === 'en' && invite.center.name_en) || invite.center.name, email: invite.email } } : {});
 }));
 router.post('/signup', limiter, form(async (req, res) => {

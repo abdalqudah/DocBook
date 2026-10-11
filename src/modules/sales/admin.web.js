@@ -125,7 +125,7 @@ router.post('/sales-services/:id(\\d+)/delete', act(async (req) => { await sales
 
 // ---------------------------------------------------------------- seller details
 async function renderProfile(req, res, extra = {}) {
-  page(res, 'sales-profile', { title: req.t('sales.profile'), p: await sales.profile(), fields: sales.PROFILE_FIELDS, countryName: (cc) => require('../settings/options').regionName(cc, req.locale), errors: {}, old: null, ...extra }); // eslint-disable-line global-require
+  page(res, 'sales-profile', { title: req.t('sales.profile'), p: await sales.profile(), fields: sales.PROFILE_FIELDS, countryName: (cc) => require('../settings/options').regionName(cc, req.locale), addCountries: require('../settings/options').countryOptions(req.locale), errors: {}, old: null, ...extra }); // eslint-disable-line global-require
 }
 router.get('/sales-profile', wrap((req, res) => renderProfile(req, res)));
 router.post('/sales-profile', wrap(async (req, res) => {

@@ -64,7 +64,7 @@ const renderClinic = async (req, res, extra = {}) => {
   render(req, res, 'clinic', 'clinic', {
     b: req.business, hasInvoices: Number(n) > 0,
     specialtyOptions: require('../platformops/clinic-types').options(req.t, req.business && req.business.specialty), // eslint-disable-line global-require
-    currencyOptions: options.currencyOptions(req.t), zoneOptions: options.zoneOptions(req.locale), countryOptions: options.countryOptions(req.locale), ...extra,
+    currencyOptions: options.currencyOptions(req.t, req.locale), zoneOptions: options.zoneOptions(req.locale), countryOptions: options.countryOptions(req.locale), ...extra,
   });
 };
 router.get('/clinic', can('settings.manage'), wrap((req, res) => renderClinic(req, res)));
