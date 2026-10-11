@@ -81,8 +81,10 @@ test('pages: admin home attention + bell, notification pages mark read', async (
   assert.equal(home.status, 200);
   assert.match(home.text, /href="\/admin\/notifications"/);
   assert.match(home.text, /\/admin\/vendor-billing\?tab=invoices&amp;status=reported/);
+  const opened = new Date(Date.now() - 1000);
   assert.equal((await m.get('/admin/notifications')).status, 200);
-  assert.equal(await notify.unread('admin', null), 0);
+  // everything there before the page was opened is now read (other test files may add new ones meanwhile)
+  assert.equal(Number((await knex('platform_notifications').where({ audience: 'admin' }).whereNull('read_at').where('created_at', '<', opened).count({ n: '*' }))[0].n), 0);
   const r = app.agent(); await r.login(repEmail);
   const dash = await r.get('/vendor');
   assert.equal(dash.status, 200);

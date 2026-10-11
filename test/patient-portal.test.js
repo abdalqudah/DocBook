@@ -87,7 +87,7 @@ test('the clinic\'s activation link → password → the patient sees only their
   assert.doesNotMatch(home.text, /مريض آخر/, 'never another patient');
   assert.doesNotMatch(home.text, /data-pp-section="files"/, 'files hidden by default');
   // the link is used once
-  assert.match((await client().get(`/${clinic.slug}/account/activate/${token}`)).text, /link_expired|انتهى/);
+  assert.match((await client().get(`/${clinic.slug}/account/activate/${token}`)).text, /link_expired|انتهت صلاحية الرابط/);
   // sign in again with the mobile (any form) or the e-mail
   const c2 = client();
   await c2.get(`/${clinic.slug}/account/login`);
@@ -147,7 +147,7 @@ test('first time: the mobile alone on the sign-in page → a code → a password
     await c.get(`/${clinic.slug}/account/login`);
     const r = await c.post(`/${clinic.slug}/account/login`, { identifier: '0793333333', password: '' });
     assert.equal(r.status, 302); assert.match(r.location, /\/account\/code$/);
-    assert.match((await c.get(`/${clinic.slug}/account/code?lang=ar`)).text, /أهلاً فيك/);
+    assert.match((await c.get(`/${clinic.slug}/account/code?lang=ar`)).text, /أهلًا\ بك/);
     assert.equal((await c.post(`/${clinic.slug}/account/code`, { code: '135790', password: 'First-pass-1', password2: 'First-pass-1' })).status, 302);
     assert.match((await c.get(`/${clinic.slug}/account?lang=ar`)).text, /مراجع قديم/);
     // next time: the password, as usual (no code)
