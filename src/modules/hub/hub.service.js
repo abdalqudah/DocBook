@@ -96,6 +96,22 @@ const hubBase = (u) => {
 };
 
 /**
+ * A request between the platform and an installation. It says who it is (hosting firewalls and bot protection often
+ * drop requests with the bare "node" user agent, closing the connection without an answer), and is tried once more
+ * when the connection was dropped before any answer (a sleeping app waking).
+ */
+const LINK_UA = `MedWorks-Link/${require('../../../package.json').version} (+https://medworks.app)`; // eslint-disable-line global-require
+async function linkFetch(url, init, timeoutMs) {
+  const go = () => fetch(url, { ...init, headers: { 'user-agent': LINK_UA, ...init.headers }, signal: AbortSignal.timeout(timeoutMs) });
+  try { return await go(); } catch (e) {
+    const code = String((e && e.cause && e.cause.code) || '');
+    if (!/UND_ERR_SOCKET|ECONNRESET|UND_ERR_CLOSED|EPIPE/.test(code)) throw e;
+    await new Promise((r) => { setTimeout(r, 1500); });
+    return go();
+  }
+}
+
+/**
  * Why the platform could not be reached ("fetch failed" says nothing): the address does not resolve, nothing answers,
  * its HTTPS certificate is not valid yet (e.g. AutoSSL not run), or it took too long.
  */
@@ -107,6 +123,7 @@ function unreachable(url, e) {
   else if (/ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH/.test(code)) why = `${host} did not answer (is the platform running?).`;
   else if (/CERT|SSL|TLS|SELF_SIGNED|UNABLE_TO_VERIFY|ERR_TLS/i.test(code)) why = `${host} has no valid HTTPS certificate yet (run AutoSSL on the platform's server) [${code}].`;
   else if (/Timeout|Abort|ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT/i.test(code)) why = `${host} took too long to answer.`;
+  else if (/UND_ERR_SOCKET|ECONNRESET|UND_ERR_CLOSED|EPIPE/.test(code)) why = `${host} closed the connection without answering — usually the hosting's firewall or bot protection (ask the host to allow this server's address) [${code}].`;
   else why = `${host} could not be reached${code ? ` [${code}]` : ''}.`;
   return new AppError('HUB_UNREACHABLE', `The platform could not be reached: ${why}`, 502);
 }
@@ -114,10 +131,10 @@ function unreachable(url, e) {
 async function call(c, path, { method = 'GET', body = null, binary = false } = {}) {
   const key = keyOf(c);
   if (!c.hub_url || !key) throw new AppError('HUB_NOT_LINKED', 'Not linked to the platform.', 409);
-  const res = await fetch(`${c.hub_url}/hub/v1${path}`, {
+  const res = await linkFetch(`${c.hub_url}/hub/v1${path}`, {
     method, headers: { authorization: `Bearer ${key}`, accept: binary ? '*/*' : 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
-    body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(30_000),
-  }).catch((e) => { throw unreachable(c.hub_url, e); });
+    body: body ? JSON.stringify(body) : undefined,
+  }, 30_000).catch((e) => { throw unreachable(c.hub_url, e); });
   if (res.status === 401) throw new AppError('HUB_KEY_REFUSED', 'The platform refused the key.', 409);
   if (!res.ok) throw new AppError('HUB_ERROR', `The platform answered ${res.status}.`, 502);
   return binary ? { data: Buffer.from(await res.arrayBuffer()), mime: res.headers.get('content-type') || '' } : res.json();
@@ -221,10 +238,10 @@ async function adClick(remoteId) { const c = await client(); return call(c, `/ad
 async function remote(link, path, { method = 'GET', body = null } = {}) {
   const l = typeof link === 'object' ? link : await knex('hub_links').where({ id: Number(link) || 0, status: 'active' }).first();
   if (!l || !l.callback_url || !l.callback_enc) throw new AppError('HUB_CLINIC_UNREACHABLE', 'This clinic cannot take bookings from the platform yet.', 409);
-  const res = await fetch(`${l.callback_url}/hub-in/v1${path}`, {
+  const res = await linkFetch(`${l.callback_url}/hub-in/v1${path}`, {
     method, headers: { authorization: `Bearer ${secrets.decrypt(l.callback_enc)}`, accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
-    body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15_000),
-  }).catch(() => null);
+    body: body ? JSON.stringify(body) : undefined,
+  }, 15_000).catch(() => null);
   if (!res) throw new AppError('HUB_CLINIC_UNREACHABLE', 'The clinic\'s system does not answer now. Try again later.', 502);
   const out = await res.json().catch(() => ({}));
   if (!res.ok) throw new AppError(out.code || 'HUB_CLINIC_ERROR', out.message || `The clinic answered ${res.status}.`, res.status === 404 ? 404 : 422, out.details);
@@ -276,7 +293,7 @@ async function visitChanged(visitId, status, note) {
   return call(c, '/visits/status', { method: 'POST', body: { id: v.id, status, note: note || null } }).catch(() => null);
 }
 
-module.exports = { unreachable,
+module.exports = { unreachable, linkFetch,
   ownClinic, remote, repClinic, repSlots, repBook, repCancel, visitStatus, vendorHubVisits, visitChanged, fresh,
   createLink, revokeLink, links, linkedClinics, linkOf, hello, offersFor, adsFor, imageOf,
   client, keyOf, saveClient, unlink, sync, cached, cachedOne, cachedImage, adClick, clinicCard,

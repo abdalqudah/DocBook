@@ -79,3 +79,14 @@ test('an unreachable platform says why instead of "fetch failed"', async () => {
   const r = await fetch('http://127.0.0.1:1/x').catch((e) => hub.unreachable('http://127.0.0.1:1', e));
   assert.equal(r.code, 'HUB_UNREACHABLE');
 });
+
+test('link requests say who they are (firewalls drop the bare "node" agent) and name a dropped connection', async () => {
+  const http = require('http'); // eslint-disable-line global-require
+  let ua = null;
+  const srv = await new Promise((r) => { const x = http.createServer((req, res) => { ua = req.headers['user-agent']; res.end('{}'); }).listen(0, '127.0.0.1', () => r(x)); });
+  const res = await hub.linkFetch(`http://127.0.0.1:${srv.address().port}/`, { method: 'GET', headers: {} }, 5000);
+  srv.close();
+  assert.equal(res.status, 200);
+  assert.match(ua, /^MedWorks-Link\//);
+  assert.match(hub.unreachable('https://x.test', Object.assign(new TypeError('fetch failed'), { cause: { code: 'UND_ERR_SOCKET' } })).message, /closed the connection without answering/);
+});
