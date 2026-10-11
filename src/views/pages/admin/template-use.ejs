@@ -6,7 +6,8 @@
     <form method="post" action="/admin/templates/<%= tp.id %>/delete" class="inline" data-confirm="<%= t('tpl.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button></form></div>
 </div>
 <div class="grid grid-main" style="align-items:start">
-  <section class="panel"><div class="panel-head"><div><h2><%= t('tpl.preview') %></h2></div></div><div class="panel-body doc-body"><%- preview %></div></section>
+  <section class="panel"><div class="panel-head"><div><h2><%= t('tpl.preview') %></h2><% if (tp.kind === 'docx') { %><div class="panel-sub"><%= t('tpl.word_preview') %></div><% } %></div>
+    <% if (tp.kind === 'docx') { %><a class="btn btn-ghost btn-sm" href="/admin/templates/<%= tp.id %>/download"><%- icon('download', 'icon-sm') %><%= t('tpl.word_download') %></a><% } %></div><div class="panel-body doc-body"><%- preview %></div></section>
   <div class="stack">
     <form method="get" class="panel"><div class="panel-body row-sm"><select class="select grow" name="contact" aria-label="<%= t('sales.from_crm') %>"><option value="">— <%= t('sales.from_crm') %> —</option><% contacts.forEach(function (c) { %><option value="<%= c.id %>"<%= contact && contact.id === c.id ? ' selected' : '' %>><%= c.name %><%= c.organization ? ' · ' + c.organization : '' %></option><% }) %></select><button class="btn btn-secondary btn-sm" type="submit"><%= t('tpl.fill') %></button></div></form>
     <form method="post" action="/admin/templates/<%= tp.id %>/generate" class="panel" data-generate>

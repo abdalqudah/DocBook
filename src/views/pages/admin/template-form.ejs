@@ -8,12 +8,25 @@
       <%- include('../../partials/field', { name: 'name', label: t('tpl.name'), value: v.name, required: true, errors: errs, old: null }) %>
       <%- include('../../partials/field', { name: 'locale', label: t('sales.language'), type: 'select', value: v.locale || 'ar', options: [{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }], errors: errs, old: null }) %>
     </div>
+    <% if (tp && tp.kind === 'docx') { %>
+    <div class="alert alert-info"><%- icon('file-text', 'icon-sm') %><div class="grow"><%= t('tpl.word_is', { file: tp.filename || '' }) %> <a class="link" href="/admin/templates/<%= tp.id %>/download"><%= t('tpl.word_download') %></a></div></div>
+    <% } else { %>
     <div class="field"><label class="label" for="f-body"><%= t('tpl.body') %><span class="req">*</span></label>
       <div class="row-sm wrap"><% fields.forEach(function (f) { %><button class="btn btn-ghost btn-sm" type="button" data-insert="{<%= f %>}" dir="ltr">{<%= f %>}</button><% }) %></div>
+      <div class="row-sm wrap" data-tpl-tools data-csrf="<%= csrfToken %>">
+        <label class="btn btn-secondary btn-sm"><%- icon('image', 'icon-sm') %><%= t('tpl.add_image') %><input type="file" accept="image/png,image/jpeg,image/webp" hidden data-tpl-image></label>
+        <button class="btn btn-secondary btn-sm" type="button" data-insert="[<%= t('tpl.link_text') %>](https://)"><%- icon('link', 'icon-sm') %><%= t('tpl.add_link') %></button>
+        <select class="select select-sm" data-tpl-icon aria-label="<%= t('tpl.add_icon') %>"><option value=""><%= t('tpl.add_icon') %></option><% icons.forEach(function (k) { %><option value="<%= k %>"><%= t('tpl.icon_' + k) %></option><% }) %></select>
+      </div>
       <textarea class="textarea<%= errs.body ? ' is-invalid' : '' %>" id="f-body" name="body" rows="18" required data-template-body><%= v.body || '' %></textarea>
-      <% if (errs.body) { %><span class="field-error"><%= errs.body %></span><% } else { %><span class="help"><%= t('tpl.body_help') %></span><% } %></div>
+      <% if (errs.body) { %><span class="field-error"><%= errs.body %></span><% } else { %><span class="help"><%= t('tpl.body_help') %> <%= t('tpl.body_help2') %></span><% } %></div>
+    <% } %>
     <input type="hidden" name="active" value="0"><label class="check"><input type="checkbox" name="active" value="1"<%= tp && !tp.active ? '' : ' checked' %>><span><%= t('sales.active') %></span></label>
   </div>
   <div class="panel-foot row-sm"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button><a class="btn btn-ghost" href="<%= tp ? '/admin/templates/' + tp.id : '/admin/templates' %>"><%= t('common.cancel') %></a></div>
 </form>
+<% if (tp && tp.kind === 'docx') { %>
+<form method="post" action="/admin/templates/<%= tp.id %>/file" enctype="multipart/form-data" class="panel mt-4"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body row-sm wrap"><input class="input grow" type="file" name="file" accept=".docx" required><button class="btn btn-secondary" type="submit"><%- icon('cloud-upload', 'icon-sm') %><%= t('tpl.word_replace') %></button></div></form>
+<% } %>
 <script src="/js/sales.js?v=<%= assetV %>" defer></script>

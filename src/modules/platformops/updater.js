@@ -98,7 +98,12 @@ function inspectZip(buffer) {
   if (bytes > MAX_UNPACKED_BYTES) throw fail('UPDATE_TOO_BIG', 'The file is too big.', { mb: MAX_ZIP_BYTES / 1048576 });
   const app = names.get('app.js');
   if (!app) throw fail('UPDATE_MISSING_APP', 'app.js is missing at the top of the zip.');
-  if (!hasDistBanner(app.getData().slice(0, 400).toString('utf8'))) throw fail('UPDATE_NOT_DIST', 'app.js is not a MedWorks dist build.');
+  const head = app.getData().slice(0, 400).toString('utf8');
+  if (!hasDistBanner(head)) {
+    // A ready build of the other kind (the platform's own file on a renamed installation, or the reverse).
+    if (head.startsWith('#!/usr/bin/env node') && /__[A-Z]+_ROOT/.test(head)) throw fail('UPDATE_WRONG_EDITION', 'This update file is for another kind of installation.');
+    throw fail('UPDATE_NOT_DIST', 'app.js is not a MedWorks dist build.');
+  }
   const pkgEntry = names.get('package.json');
   if (!pkgEntry) throw fail('UPDATE_MISSING_PACKAGE', 'package.json is missing at the top of the zip.');
   let pkg;

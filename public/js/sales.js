@@ -37,14 +37,27 @@
       });
     });
   }
-  // Templates: a placeholder button inserts {field} where the cursor is.
+  // Templates: placeholders, links, linked icons and pictures are inserted where the cursor is.
   var tplBody = document.querySelector('[data-template-body]');
-  document.querySelectorAll('[data-insert]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      if (!tplBody) return;
-      var v = b.getAttribute('data-insert'); var s = tplBody.selectionStart || 0; var e = tplBody.selectionEnd || s;
-      tplBody.value = tplBody.value.slice(0, s) + v + tplBody.value.slice(e); tplBody.focus(); tplBody.selectionStart = tplBody.selectionEnd = s + v.length;
-    });
+  var insert = function (v) {
+    if (!tplBody) return;
+    var s = tplBody.selectionStart || 0; var e = tplBody.selectionEnd || s;
+    tplBody.value = tplBody.value.slice(0, s) + v + tplBody.value.slice(e); tplBody.focus(); tplBody.selectionStart = tplBody.selectionEnd = s + v.length;
+  };
+  document.querySelectorAll('[data-insert]').forEach(function (b) { b.addEventListener('click', function () { insert(b.getAttribute('data-insert')); }); });
+  var iconSel = document.querySelector('[data-tpl-icon]');
+  if (iconSel) iconSel.addEventListener('change', function () { if (iconSel.value) insert('[icon:' + iconSel.value + '|' + iconSel.selectedOptions[0].textContent.trim() + '](https://)'); iconSel.value = ''; });
+  var img = document.querySelector('[data-tpl-image]');
+  if (img) img.addEventListener('change', function () {
+    var f = img.files && img.files[0];
+    if (!f) return;
+    var fd = new FormData(); fd.append('file', f);
+    var csrf = img.closest('[data-tpl-tools]').getAttribute('data-csrf');
+    fetch('/admin/templates/images', { method: 'POST', body: fd, credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-Token': csrf } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.ok) insert('\n' + d.markup + '\n'); else window.alert(d.error || 'Error'); })
+      .catch(function () { window.alert('Error'); })
+      .then(function () { img.value = ''; });
   });
   document.querySelectorAll('[data-wa-send]').forEach(function (f) {
     f.addEventListener('submit', function (e) {

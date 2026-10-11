@@ -134,7 +134,7 @@ function sourceGuideFor(edition) {
 5. افتح الدومين للموقع، و **/admin** للإدارة.
 
 ## التحديث من لوحة الإدارة
-**/admin/platform** ← «تحديث النظام»: ارفع ملف التحديث الجاهز (update-….zip) واكتب كلمة مرورك. تُحفظ نسخة احتياطية من ملفاتك أولًا، ويمكن الرجوع إليها من نفس الصفحة. بعد أول تحديث يعمل الموقع بالنسخة الجاهزة (لا يحتاج npm install).
+**/admin/platform** ← «تحديث النظام»: ارفع ملف التحديث الجاهز (update-clinic-….zip) واكتب كلمة مرورك. تُحفظ نسخة احتياطية من ملفاتك أولًا، ويمكن الرجوع إليها من نفس الصفحة. بعد أول تحديث يعمل الموقع بالنسخة الجاهزة (لا يحتاج npm install).
 
 ## وضع الصيانة
 **/admin/platform** ← «وضع الصيانة»: إغلاق الموقع العام (أو كل النظام) برسالة للزوار، وفتحه بضغطة. للطوارئ: أضف \`MAINTENANCE=site\` أو \`MAINTENANCE=all\` إلى \`.env\` وأعد التشغيل.
@@ -163,17 +163,19 @@ function buildSource(edition, file) {
   console.log(`Built dist/${file}.zip`);
 }
 
-// The update file for the admin page (System update): the ready build without .env — the same for both editions.
-{
-  const out = path.join(ROOT, 'dist', `update-${version}`);
+// The update files for the admin page (System update): the ready build without .env.
+//   update-<v>.zip          the platform itself (its own name kept: its updater only takes its own build)
+//   update-clinic-<v>.zip   a one-clinic / medical-centre installation (renamed like those builds)
+for (const [file, renamed] of [[`update-${version}`, false], [`update-clinic-${version}`, true]]) {
+  const out = path.join(ROOT, 'dist', file);
   fs.rmSync(out, { recursive: true, force: true });
   fs.cpSync(SRC, out, { recursive: true });
   for (const f of ['INSTALL.md', '.env.example']) fs.rmSync(path.join(out, f), { force: true });
-  scrub(out);
-  const zip = path.join(ROOT, 'dist', `update-${version}.zip`);
+  if (renamed) scrub(out);
+  const zip = path.join(ROOT, 'dist', `${file}.zip`);
   fs.rmSync(zip, { force: true });
   execFileSync('zip', ['-qr', zip, '.'], { cwd: out });
-  console.log(`Built dist/update-${version}.zip`);
+  console.log(`Built dist/${file}.zip`);
 }
 
 for (const [edition, file] of [['clinic', `single-clinic-source-${version}`], ['center', `medical-center-source-${version}`]]) buildSource(edition, file);

@@ -10,7 +10,23 @@ const mailer = require('../src/core/mailer');
 const secrets = require('../src/core/secrets');
 const auth = require('../src/modules/auth/auth.service');
 const insights = require('../src/modules/crm/insights.service');
+const AdmZip = require('adm-zip');
+const docx = require('../src/core/docx');
 const { serve } = require('./_http');
+
+/** A small Word file: a placeholder split across runs (as Word does), a hyperlink and a picture that must survive. */
+function wordFile() {
+  const z = new AdmZip();
+  z.addFile('[Content_Types].xml', Buffer.from('<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>'));
+  z.addFile('word/document.xml', Buffer.from('<?xml version="1.0"?><w:document xmlns:w="w"><w:body>'
+    + '<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Agreement with {comp</w:t></w:r><w:r><w:t>any_name} &amp; partners</w:t></w:r></w:p>'
+    + '<w:p><w:hyperlink r:id="rId9"><w:r><w:t>Chat on WhatsApp</w:t></w:r></w:hyperlink></w:p>'
+    + '<w:p><w:r><w:t>Plan: {plan}</w:t></w:r></w:p></w:body></w:document>'));
+  z.addFile('word/_rels/document.xml.rels', Buffer.from('<Relationships><Relationship Id="rId9" Type="hyperlink" Target="https://wa.me/962790000000" TargetMode="External"/></Relationships>'));
+  z.addFile('word/media/image1.png', Buffer.from('PNGDATA'));
+  return z.toBuffer();
+}
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 const tag = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 const mail = (k) => `ptpl-${k}-${tag}@t.test`;
@@ -35,6 +51,7 @@ test.after(async () => {
   if (savedAi) await knex('platform_settings').insert(savedAi);
   await knex('sales_documents').where({ contact_id: contactId }).del();
   await knex('document_templates').where('name', 'like', `%${tag}%`).del();
+  await knex('document_templates').where('filename', 'agreement.docx').where('name', 'like', `%${tag}%`).del();
   await knex('crm_contacts').where({ id: contactId }).del();
   cache.forgetPrefix('');
   if (app) await app.close();
@@ -90,6 +107,58 @@ test('a template made for a CRM contact: placeholders filled, its own link, sent
   assert.match(cpage.text, /data-crm-docs/); assert.match(cpage.text, new RegExp(`/admin/documents/${did}`));
   await a.post(`/admin/documents/${did}/delete`, { _csrf: a.csrf(page.text) });
   assert.equal((await app.agent().get(`/document/${d.token}`)).status, 404);
+});
+
+test('a Word template: placeholders read across runs, filled for a customer; pictures and links kept; downloaded from the link', async () => {
+  assert.deepEqual(docx.placeholders(wordFile()).sort(), ['company_name', 'plan']);
+  assert.equal(docx.placeholders(Buffer.from('not a zip')), null);
+  const a = app.agent(); await a.login(mail('a'));
+  let r = await a.upload('/admin/templates?lang=en', '/admin/templates/upload', { name: `Word ${tag}`, locale: 'en' }, { file: { buffer: Buffer.from('hello'), name: 'notes.txt' } });
+  assert.equal(r.status, 302); assert.equal(r.location, '/admin/templates');
+  assert.equal(await knex('document_templates').where({ name: `Word ${tag}` }).first('id'), undefined);
+  r = await a.upload('/admin/templates?lang=en', '/admin/templates/upload', { name: `Word ${tag}`, locale: 'en' }, { file: { buffer: wordFile(), name: 'agreement.docx' } });
+  assert.equal(r.status, 302);
+  const tid = Number(r.location.split('/').pop());
+  const page = await a.get(`/admin/templates/${tid}?contact=${contactId}&lang=en`);
+  assert.equal(page.status, 200); assert.match(page.text, /Agreement with \{company_name\}/); assert.match(page.text, /Download Word/);
+  r = await a.post(`/admin/templates/${tid}/generate`, [['_csrf', a.csrf(page.text)], ['contact_id', String(contactId)], ['field_name', 'company_name'], ['field_value', 'Smile & Co <1>'], ['field_name', 'plan'], ['field_value', 'Pro']]);
+  assert.equal(r.status, 302);
+  const did = Number(r.location.split('/').pop());
+  const d = await knex('sales_documents').where({ id: did }).first();
+  assert.ok(d.file); assert.match(d.filename, /\.docx$/);
+  const out = new AdmZip(d.file);
+  const xml = out.getEntry('word/document.xml').getData().toString('utf8');
+  assert.match(xml, /Agreement with Smile &amp; Co &lt;1&gt; &amp; partners/); assert.match(xml, /<w:b\/>/, 'formatting of the first run kept');
+  assert.match(xml, /Chat on WhatsApp/); assert.equal(out.getEntry('word/media/image1.png').getData().toString(), 'PNGDATA');
+  assert.match(out.getEntry('word/_rels/document.xml.rels').getData().toString(), /wa\.me\/962790000000/);
+  const pub = await app.agent().get(`/document/${d.token}`);
+  assert.equal(pub.status, 200); assert.match(pub.text, /data-word-download/);
+  const dl = await app.agent().get(`/document/${d.token}/download`);
+  assert.equal(dl.status, 200); assert.match(dl.type, /wordprocessingml/); assert.ok(dl.body.length > 100);
+  assert.equal((await a.get(`/admin/documents/${did}/download`)).status, 200);
+  const edit = await a.get(`/admin/templates/${tid}/edit?lang=en`);
+  assert.equal(edit.status, 200); assert.match(edit.text, /Replace the Word file/); assert.doesNotMatch(edit.text, /data-template-body/);
+  const show = await a.get(`/admin/documents/${did}?lang=en`);
+  assert.equal(show.status, 200); assert.match(show.text, /data-word-download/);
+});
+
+test('online templates: pictures uploaded into the text, links and linked icons; nothing else becomes markup', async () => {
+  const a = app.agent(); await a.login(mail('a'));
+  const r = await a.upload('/admin/templates/new?lang=en', '/admin/templates/images', {}, { file: { buffer: PNG, name: 'logo.png' } });
+  assert.equal(r.status, 200);
+  const { token, markup } = JSON.parse(r.text);
+  assert.match(markup, /^!\[\]\(img:[A-Za-z0-9]+\)$/);
+  const img = await app.agent().get(`/document-image/${token}`);
+  assert.equal(img.status, 200); assert.match(img.type, /^image\//);
+  const bad = await a.upload('/admin/templates/new?lang=en', '/admin/templates/images', {}, { file: { buffer: Buffer.from('<svg onload=alert(1)>'), name: 'x.svg' } });
+  assert.equal(bad.status, 422);
+  const tpl = require('../src/modules/sales/templates.service'); // eslint-disable-line global-require
+  const html = tpl.render(`${markup}\n[Our site](https://medworks.app)\n[icon:whatsapp|Chat](https://wa.me/962790000000) [icon:nope](https://x.y)\n[bad](javascript:alert(1))`);
+  assert.match(html, new RegExp(`<img class="doc-img" src="/document-image/${token}"`));
+  assert.match(html, /<a href="https:\/\/medworks\.app" target="_blank" rel="noopener">Our site<\/a>/);
+  assert.match(html, /class="doc-icon" href="https:\/\/wa\.me\/962790000000"[^>]*><svg class="icon"[^>]*><use href="\/icons\.svg#i-message-circle">/);
+  assert.doesNotMatch(html, /href="javascript/); assert.doesNotMatch(html, /i-nope/);
+  await knex('template_images').where({ token }).del();
 });
 
 test('AI summary of a contact: structured result kept on the contact; contact details removed; off → a clear message', async () => {

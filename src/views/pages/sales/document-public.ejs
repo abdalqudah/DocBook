@@ -1,4 +1,5 @@
 <%# A document made from a template, for the customer (its link): print / save as PDF. %>
 <h1 class="h2" style="margin:0 0 4px"><%= d.title %></h1>
 <div class="small muted mb-4"><%= fmt.date(new Date(d.created_at).toISOString().slice(0, 10)) %></div>
+<% if (d.filename) { %><p class="no-print"><a class="btn btn-primary" href="/document/<%= d.token %>/download" data-word-download><%- icon('download', 'icon-sm') %><%= t('tpl.word_download_doc') %></a></p><% } %>
 <article class="doc-body" data-document-body><%- html %></article>

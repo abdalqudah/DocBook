@@ -4,12 +4,22 @@
   <div class="page-actions"><a class="btn btn-secondary" href="/admin/documents"><%- icon('file-text', 'icon-sm') %><%= t('tpl.documents') %></a><a class="btn btn-primary" href="/admin/templates/new"><%- icon('plus', 'icon-sm') %><%= t('tpl.new') %></a></div>
 </div>
 <% if (contact) { %><div class="alert alert-info mb-4"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('tpl.pick_for', { name: contact.name }) %></div></div><% } %>
+<form method="post" action="/admin/templates/upload" enctype="multipart/form-data" class="panel mb-4" data-word-upload>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-head"><div><h2><%- icon('file-text', 'icon-sm') %> <%= t('tpl.word_title') %></h2><div class="panel-sub"><%= t('tpl.word_lead') %></div></div></div>
+  <div class="panel-body row-sm wrap">
+    <input class="input" type="file" name="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+    <input class="input grow" name="name" placeholder="<%= t('tpl.name') %>">
+    <select class="select" name="locale" aria-label="<%= t('sales.language') %>"><option value="ar">العربية</option><option value="en">English</option></select>
+    <button class="btn btn-primary" type="submit"><%- icon('cloud-upload', 'icon-sm') %><%= t('tpl.word_upload') %></button>
+  </div>
+</form>
 <section class="panel flush">
   <% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('tpl.none') %></p></div><% } else { %>
   <div class="table-wrap"><table class="table responsive" data-templates>
     <thead><tr><th><%= t('tpl.name') %></th><th><%= t('tpl.fields') %></th><th class="num"><%= t('tpl.uses') %></th><th></th></tr></thead>
     <tbody><% rows.forEach(function (x) { %><tr>
-      <td class="primary-cell"><a class="strong" href="/admin/templates/<%= x.id %><%= contact ? '?contact=' + contact.id : '' %>"><%= x.name %></a> <span class="badge"><%= x.locale === 'en' ? 'EN' : 'ع' %></span><% if (!x.active) { %> <span class="badge badge-neutral"><%= t('sales.inactive') %></span><% } %></td>
+      <td class="primary-cell"><a class="strong" href="/admin/templates/<%= x.id %><%= contact ? '?contact=' + contact.id : '' %>"><%= x.name %></a> <% if (x.kind === 'docx') { %><span class="badge badge-info">Word</span> <% } %><span class="badge"><%= x.locale === 'en' ? 'EN' : 'ع' %></span><% if (!x.active) { %> <span class="badge badge-neutral"><%= t('sales.inactive') %></span><% } %></td>
       <td data-label="<%= t('tpl.fields') %>" class="tiny"><%= x.fields.map(function (f) { return '{' + f + '}'; }).join(' ') %></td>
       <td data-label="<%= t('tpl.uses') %>" class="num"><%= x.uses %></td>
       <td><a class="btn btn-secondary btn-sm" href="/admin/templates/<%= x.id %><%= contact ? '?contact=' + contact.id : '' %>"><%- icon('file-text', 'icon-sm') %><%= t('tpl.make') %></a></td>

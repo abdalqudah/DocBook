@@ -3,7 +3,7 @@
 <div class="page-head">
   <div><div class="breadcrumbs"><a href="/admin/documents"><%= t('tpl.documents') %></a></div><h1><%= d.title %></h1>
     <p><%= doc.name || '' %><% if (d.view_count) { %> · <%- icon('eye', 'icon-sm') %> <%= t('sales.viewed_n', { n: d.view_count }) %><% } %><% if (d.contact_id) { %> · <a class="link" href="/admin/crm/<%= d.contact_id %>"><%= t('crm.title') %></a><% } %></p></div>
-  <div class="page-actions"><a class="btn btn-secondary" href="<%= doc.link %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('sales.open_link') %></a>
+  <div class="page-actions"><% if (d.filename) { %><a class="btn btn-secondary" href="/admin/documents/<%= d.id %>/download" data-word-download><%- icon('download', 'icon-sm') %><%= t('tpl.word_download') %></a><% } %><a class="btn btn-secondary" href="<%= doc.link %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('sales.open_link') %></a>
     <form method="post" action="/admin/documents/<%= d.id %>/delete" class="inline" data-confirm="<%= t('tpl.doc_delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button></form></div>
 </div>
 <div class="grid grid-main" style="align-items:start">
@@ -13,7 +13,7 @@
       <form method="post" action="/admin/documents/<%= d.id %>" class="panel-body stack-sm">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input class="input" name="title" value="<%= o.title || d.title %>">
-        <textarea class="textarea" name="body" rows="16"><%= o.body || d.body %></textarea>
+        <% if (d.filename) { %><p class="small muted"><%= t('tpl.word_doc_note') %></p><% } else { %><textarea class="textarea" name="body" rows="16"><%= o.body || d.body %></textarea><% } %>
         <% if (errors.body) { %><span class="field-error"><%= errors.body %></span><% } %>
         <div><button class="btn btn-primary btn-sm" type="submit"><%= t('common.save') %></button></div>
       </form></details>

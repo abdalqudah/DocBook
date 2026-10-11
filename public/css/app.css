@@ -1094,3 +1094,6 @@ a.pn-title:hover { color: var(--primary); }
 .doc-body h3 { font-size: var(--fs-md, 1.05rem); margin: 16px 0 6px; }
 .doc-body p { margin: 0 0 12px; }
 .doc-body ul { margin: 0 0 12px; padding-inline-start: 22px; }
+.doc-body .doc-img { display: block; max-width: 100%; height: auto; margin: 8px 0; border-radius: var(--radius-sm); }
+.doc-body .doc-icon { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; margin: 2px; border: 1px solid var(--border); border-radius: 999px; color: var(--primary); text-decoration: none; }
+.doc-body .doc-icon .icon { width: 18px; height: 18px; }

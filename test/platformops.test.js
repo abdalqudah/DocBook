@@ -173,6 +173,8 @@ test('update zip validation', () => {
   assert.equal(code(() => updater.inspectZip(distZip())), 'OK');
   assert.equal(code(() => updater.inspectZip(distZip({ skip: ['app.js'] }))), 'UPDATE_MISSING_APP');
   assert.equal(code(() => updater.inspectZip(distZip({ extra: { 'app.js': 'console.log(1)' } }))), 'UPDATE_NOT_DIST');
+  // the renamed build (one clinic / medical centre) on the platform: told which file to use
+  assert.equal(code(() => updater.inspectZip(distZip({ extra: { 'app.js': '#!/usr/bin/env node\nconst __CLINIC_ROOT = __dirname; // __CLINIC_ROOT\n' } }))), 'UPDATE_WRONG_EDITION');
   assert.equal(code(() => updater.inspectZip(distZip({ skip: ['package.json'] }))), 'UPDATE_MISSING_PACKAGE');
   assert.equal(code(() => updater.inspectZip(distZip({ name: 'other-app' }))), 'UPDATE_WRONG_NAME');
   assert.equal(code(() => updater.inspectZip(distZip({ extra: { 'vendor/node_modules/x/index.js': '1' } }))), 'UPDATE_NODE_MODULES');

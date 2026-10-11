@@ -69,5 +69,20 @@ router.get('/document/:token', wrap(async (req, res) => {
   asLocale(req, res, d.locale);
   res.page('pages/sales/document-public', { layout: 'document', title: d.title, d, html: tpl.render(d.body), p: await sales.profile() });
 }));
+/** A Word document's file (the link is the key). */
+router.get('/document/:token/download', wrap(async (req, res) => {
+  noIndex(res);
+  const d = await require('./templates.service').documentByToken(req.params.token, { count: false, withFile: true }); // eslint-disable-line global-require
+  if (!d.file) return res.redirect(`/document/${encodeURIComponent(req.params.token)}`);
+  res.set({ 'Content-Type': require('./templates.service').DOCX_MIME, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(d.filename || 'document.docx')}`, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store' }); // eslint-disable-line global-require
+  return res.end(d.file);
+}));
+/** A picture placed in a template (public: the documents that show it are sent to customers). */
+router.get('/document-image/:token', wrap(async (req, res, next) => {
+  const img = await require('./templates.service').imageByToken(req.params.token); // eslint-disable-line global-require
+  if (!img) return next();
+  res.set({ 'Content-Type': img.mime, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'public, max-age=86400', 'Content-Security-Policy': "default-src 'none'", 'Cross-Origin-Resource-Policy': 'cross-origin' });
+  return res.end(img.data);
+}));
 
 module.exports = router;

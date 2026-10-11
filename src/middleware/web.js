@@ -152,7 +152,8 @@ const MULTIPART_ROUTES = [/^\/app\/settings\/appearance\/(logo|logo-square|favic
   /^\/admin\/updates\/install\/?$/, // platform admin: system update package (zip)
   /^\/app\/settings\/system-update\/install\/?$/, // the same, from the clinic settings of the installation's own account
   /^\/app\/import\/legacy-clinica\/jobs\/\d+\/upload\/?$/, // Legacy Patient Recovery: the patients file and attachment ZIPs
-  /^\/admin\/clinics\/restore\/?$/]; // platform admin: a clinic's backup file
+  /^\/admin\/clinics\/restore\/?$/, // platform admin: a clinic's backup file
+  /^\/admin\/templates\/(upload|images|\d+\/file)\/?$/]; // platform admin: Word templates and pictures for templates
 
 const tokenValid = (req, sent) => Boolean(req.session?.csrf && sent && safeEqual(sent, req.session.csrf));
 
