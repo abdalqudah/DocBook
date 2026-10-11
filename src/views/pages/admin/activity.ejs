@@ -9,7 +9,7 @@
   <% } else { %><a class="link small" href="/admin/settings#geo"><%= t('pcomms.geo_enable') %></a><% } %></div>
 </div>
 
-<div class="grid grid-3 mb-4">
+<div class="grid grid-3 mb-4 act-stats">
   <div class="panel stat" data-stat-online><div class="panel-body"><div class="small muted"><span class="badge badge-dot badge-success"></span> <%= t('pcomms.online_now') %></div><div class="h1 num"><%= counts.online %></div></div></div>
   <div class="panel stat"><div class="panel-body"><div class="small muted"><%= t('pcomms.today') %></div><div class="h1 num"><%= counts.today %></div></div></div>
   <div class="panel stat"><div class="panel-body"><div class="small muted"><%= t('pcomms.week') %></div><div class="h1 num"><%= counts.week %></div></div></div>

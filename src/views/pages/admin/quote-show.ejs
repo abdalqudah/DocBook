@@ -23,7 +23,7 @@
         <tbody><% q.items.forEach(function (it) { %><tr><td style="white-space:pre-wrap"><%= it.description %></td><td class="num"><%= Number(it.quantity) %></td><td class="num"><%= money(it.unit_price) %></td><td class="num"><%= money(it.amount) %></td></tr><% }) %></tbody>
         <tfoot>
           <tr><td colspan="3" class="num"><%= t('sales.subtotal') %></td><td class="num"><%= money(q.subtotal) %></td></tr>
-          <% if (Number(q.discount)) { %><tr><td colspan="3" class="num"><%= t('sales.discount') %></td><td class="num">− <%= money(q.discount) %></td></tr><% } %>
+          <% if (Number(q.discount)) { %><tr><td colspan="3" class="num"><%= t('sales.discount') %></td><td class="num"><bdi dir="ltr">− <%= money(q.discount) %></bdi></td></tr><% } %>
           <tr><td colspan="3" class="num"><%= t('sales.tax') %> (<%= Number(q.tax_rate) %>%)</td><td class="num"><%= money(q.tax) %></td></tr>
           <tr><td colspan="3" class="num strong"><%= t('sales.total') %></td><td class="num strong"><%= money(q.total) %></td></tr>
         </tfoot></table></div></section>
@@ -39,7 +39,7 @@
     <section class="panel" id="conversation"><div class="panel-head"><div><h2><%= t('sales.conversation') %></h2></div></div>
       <div class="panel-body stack-sm">
         <% if (!events.length) { %><p class="small muted"><%= t('sales.no_events') %></p><% } %>
-        <% events.forEach(function (e) { %><div class="small" data-quote-event="<%= e.type %>"><span class="badge"><%= t('sales.ev_' + e.type) %></span> <span class="muted"><%= e.by === 'team' ? (e.user_name || t('sales.team')) : (e.name || q.customer_name) %> · <%= dt(e.created_at) %></span>
+        <% events.forEach(function (e) { %><div class="small" data-quote-event="<%= e.type %>"><span class="badge"><%= t('sales.ev_' + e.type) %></span> <span class="muted"><bdi><%= e.by === 'team' ? (e.user_name || t('sales.team')) : (e.name || q.customer_name) %></bdi> · <bdi><%= dt(e.created_at) %></bdi></span>
           <% if (e.amount !== null && e.amount !== undefined && e.type !== 'accepted') { %> · <span class="strong"><%= money(e.amount) %></span><% } %>
           <% if (e.message) { %><div style="white-space:pre-wrap"><%= e.message %></div><% } %></div><% }) %>
         <% if (!closed && q.status !== 'draft') { %>
@@ -53,7 +53,7 @@
     <section class="panel"><div class="panel-head"><div><h2><%= t('sales.sends') %></h2></div></div>
       <div class="panel-body"><% if (!sends.length) { %><p class="small muted"><%= t('sales.no_sends') %></p><% } else { %>
         <ul class="stack-sm" style="list-style:none;padding:0;margin:0" data-sends><% sends.forEach(function (s) { %>
-          <li class="small"><%- icon(s.channel === 'email' ? 'mail' : 'message-circle', 'icon-sm') %> <bdi dir="ltr"><%= s.recipient %></bdi> · <span class="badge <%= s.status === 'failed' ? 'badge-danger' : 'badge-success' %>"><%= t('sales.send_' + s.status) %></span> <span class="muted"><%= dt(s.created_at) %><%= s.user_name ? ' · ' + s.user_name : '' %></span><% if (s.error) { %><div class="tiny muted"><%= s.error %></div><% } %></li>
+          <li class="small"><%- icon(s.channel === 'email' ? 'mail' : 'message-circle', 'icon-sm') %> <bdi dir="ltr"><%= s.recipient %></bdi> · <span class="badge <%= s.status === 'failed' ? 'badge-danger' : 'badge-success' %>"><%= t('sales.send_' + s.status) %></span> <span class="muted"><bdi><%= dt(s.created_at) %></bdi><% if (s.user_name) { %> · <bdi><%= s.user_name %></bdi><% } %></span><% if (s.error) { %><div class="tiny muted"><%= s.error %></div><% } %></li>
         <% }) %></ul><% } %></div></section>
   </div>
 

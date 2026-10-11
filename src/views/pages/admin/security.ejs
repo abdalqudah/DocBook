@@ -28,7 +28,7 @@
 </div></section>
 <% } else { %>
 <section class="panel"><div class="panel-body stack-sm">
-  <span class="badge badge-neutral badge-dot"><%= t('tfa.off') %></span>
+  <div><span class="badge badge-neutral badge-dot"><%= t('tfa.off') %></span></div>
   <form method="post" action="/admin/security/start"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('shield-check', 'icon-sm') %><%= t('tfa.set_up') %></button></form>
 </div></section>
 <% } %>

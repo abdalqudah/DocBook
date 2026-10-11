@@ -17,7 +17,7 @@
 <% } else if (payResult === 'pending') { %><div class="alert alert-info mt-4 no-print" data-pay-result="pending"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('invpay.pending') %></div></div>
 <% } else if (payResult === 'failed') { %><div class="alert alert-warning mt-4 no-print" data-pay-result="failed"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('invpay.failed') %></div></div><% } %>
 <% if (inv.status === 'paid') { %><p class="small"><%- icon('circle-check', 'icon-sm') %> <%= t('sales.paid_on', { date: d(inv.paid_at) }) %></p>
-<% } else { %>
+<% } else if (pay.card || pay.bank || pay.cliq || pay.wallet || p.iban || pay.instructions || pay.instructions_en) { %>
 <section class="panel mt-6" data-invoice-pay><div class="panel-head"><div><h2><%= t('invpay.title') %></h2></div></div>
   <div class="panel-body stack-sm small">
     <% if (inv.status === 'reported') { %><div class="alert alert-info"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('invpay.reported') %></div></div><% } %>

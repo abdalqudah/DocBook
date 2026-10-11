@@ -225,7 +225,7 @@
     </section>
     <p class="tiny muted"><%- icon('info', 'icon-sm') %> <%= t('subscriptions.data_note') %></p>
     <% } %>
-    <% if (typeof referral !== 'undefined' && referral && !edition.single) { var refLink = (typeof baseUrl !== 'undefined' && baseUrl ? baseUrl.replace(/\/+$/, '') : '') + '/signup?ref=' + referral.code; %>
+    <% if (typeof referral !== 'undefined' && referral && !edition.single && st) { var refLink = (typeof baseUrl !== 'undefined' && baseUrl ? baseUrl.replace(/\/+$/, '') : '') + '/signup?ref=' + referral.code; %>
     <section class="panel" id="referral" data-referral>
       <div class="panel-head"><div><h2><%- icon('gift', 'icon-sm') %> <%= t('ref.title') %></h2><div class="panel-sub"><%= t('ref.lead') %></div></div></div>
       <div class="panel-body stack-sm">

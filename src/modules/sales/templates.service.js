@@ -172,7 +172,7 @@ async function documentByToken(token, { count = true, withFile = false } = {}) {
 /** Plain text → safe HTML blocks: escape first, then "# " / "## " headings, "- " lists, **bold**, paragraphs. */
 function render(text) {
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  const URL = '(https?:\\/\\/[^\\s)]+|mailto:[^\\s)]+|tel:[+\\d\\s-]+)';
+  const URL = '(https?:\\/\\/[^\\s)]+|mailto:[^\\s)]+|tel:[+\\d\\s-]+|\\/(?!\\/)[^\\s)]*)'; // a site address (/app/doctors) too, never //host
   const inline = (s) => esc(s)
     .replace(/!\[([^\]]{0,120})\]\(img:([A-Za-z0-9]{8,64})\)/g, '<img class="doc-img" src="/document-image/$2" alt="$1">')
     .replace(new RegExp(`\\[icon:([a-z]+)(?:\\|([^\\]]{0,60}))?\\]\\(${URL}\\)`, 'g'), (m, name, label, href) => (ICONS[name]

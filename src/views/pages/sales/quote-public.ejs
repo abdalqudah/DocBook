@@ -17,7 +17,7 @@
   <tbody><% q.items.forEach(function (it, i) { %><tr><td class="num"><%= i + 1 %></td><td style="white-space:pre-wrap"><%= it.description %></td><td class="num"><%= Number(it.quantity) %></td><td class="num"><%= money(it.unit_price) %></td><td class="num"><%= money(it.amount) %></td></tr><% }) %></tbody>
   <tfoot>
     <tr><td colspan="4" class="num"><%= t('sales.subtotal') %></td><td class="num"><%= money(q.subtotal) %></td></tr>
-    <% if (Number(q.discount)) { %><tr><td colspan="4" class="num"><%= t('sales.discount') %></td><td class="num">− <%= money(q.discount) %></td></tr><% } %>
+    <% if (Number(q.discount)) { %><tr><td colspan="4" class="num"><%= t('sales.discount') %></td><td class="num"><bdi dir="ltr">− <%= money(q.discount) %></bdi></td></tr><% } %>
     <tr><td colspan="4" class="num"><%= t('sales.tax') %> (<%= Number(q.tax_rate) %>%)</td><td class="num"><%= money(q.tax) %></td></tr>
     <tr><td colspan="4" class="num strong"><%= t('sales.total') %></td><td class="num strong" data-quote-total><%= money(q.total) %></td></tr>
   </tfoot>
@@ -40,7 +40,7 @@
 <% if (events.length) { %>
 <section class="panel mt-6 no-print" id="conversation"><div class="panel-head"><div><h2><%= t('sales.conversation') %></h2></div></div>
   <div class="panel-body stack-sm"><% events.forEach(function (e) { %>
-    <div class="small"><span class="badge"><%= t('sales.ev_' + e.type) %></span> <span class="muted"><%= e.by === 'team' ? seller : (e.name || q.customer_name) %> · <%= d(e.created_at) %></span>
+    <div class="small"><span class="badge"><%= t('sales.ev_' + e.type) %></span> <span class="muted"><bdi><%= e.by === 'team' ? seller : (e.name || q.customer_name) %></bdi> · <bdi><%= d(e.created_at) %></bdi></span>
       <% if (e.amount !== null && e.amount !== undefined && e.type !== 'accepted') { %> · <span class="strong"><%= money(e.amount) %></span><% } %>
       <% if (e.message) { %><div style="white-space:pre-wrap"><%= e.message %></div><% } %></div>
   <% }) %></div></section>

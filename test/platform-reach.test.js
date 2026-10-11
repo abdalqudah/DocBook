@@ -49,6 +49,7 @@ test.after(async () => {
 });
 
 test('a country page: off by default; on, the plans in its currency and sign-up preset to the country', async () => {
+  await knex('platform_settings').where({ key: cpages.KEY }).del(); cache.forgetPrefix(''); // off until switched on
   assert.equal((await app.agent().get('/in/sa')).status, 404);
   const a = app.agent(); await a.login(mail('a'));
   const form = await a.get('/admin/country-pages?lang=en');
@@ -89,9 +90,12 @@ test('referrals: the invitation link, the invited clinic marked; its first payme
   assert.equal((await knex('referral_rewards').where({ referred_id: invited.id }).first()).applied, 'period');
   await subs.recordPayment(sys, invited.id, { plan_id: String(planId), billing_cycle: 'monthly', amount: '20', method: 'cash' });
   assert.equal(await knex('referral_rewards').where({ referrer_id: aBid }).count({ n: '*' }).then((x) => Number(x[0].n)), 1, 'once per invited clinic');
-  // the inviter sees it on the subscription page
+  // the inviter sees it on the subscription page (shown while subscriptions are on)
+  const savedSubs = await subs.settings();
+  await subs.saveSettings(sys, { ...savedSubs, trialDays: 30, graceDays: 7, enabled: '1', trialNoCard: '1' });
   const o = app.agent(); await o.login(mail('a1'));
   const s = await o.get('/app/settings/subscription?lang=en');
+  await subs.saveSettings(sys, { ...savedSubs, enabled: savedSubs.enabled ? '1' : '', trialNoCard: savedSubs.trialNoCard ? '1' : '' });
   assert.match(s.text, /data-referral/); assert.match(s.text, new RegExp(`/signup\\?ref=${code}`)); assert.match(s.text, /1 signed up · 1 free months earned/);
   assert.equal(referrals.addMonth('2026-01-31'), '2026-02-28');
 });

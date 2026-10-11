@@ -134,7 +134,7 @@ input[type="date"].input, input[type="month"].input { min-width: 0; }
 .segmented { display: inline-flex; padding: 3px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface); gap: 2px; flex-wrap: wrap; }
 .segmented a, .segmented label { padding: 6px 14px; border-radius: var(--pill); font-size: 13px; font-weight: var(--fw-semibold); color: var(--text-muted); cursor: pointer; }
 .segmented a.active, .segmented input:checked + span { background: var(--secondary); color: var(--secondary-ink); }
-.segmented label { padding: 0; } .segmented label span { display: inline-block; padding: 6px 14px; border-radius: var(--pill); }
+.segmented label { padding: 0; } .segmented label span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--pill); }
 .segmented input { position: absolute; opacity: 0; pointer-events: none; }
 
 /* ---------- Cards / panels ---------- */
@@ -1106,3 +1106,8 @@ a.pn-title:hover { color: var(--primary); }
 .nps-scale input:checked + span { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
 .nps-scale input:focus-visible + span { box-shadow: var(--focus-ring); }
 .nps-banner .input { max-width: 260px; }
+@media (max-width: 640px) {
+  .nps-banner { gap: 6px; font-size: 13px; }
+  .nps-scale span { min-width: 26px; height: 26px; font-size: 12px; }
+  .nps-banner .input { max-width: none; flex: 1 1 160px; }
+}
