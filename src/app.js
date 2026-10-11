@@ -22,6 +22,18 @@ function createApp() {
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
 
+  // Behind a proxy on a local socket (cPanel's Passenger, a unix socket): Express has no remote address, so req.ip is
+  // empty. The connection can only come from that local proxy, so the address it appended last is the visitor's.
+  if (config.trustProxy) {
+    app.use((req, res, next) => {
+      if (!req.socket.remoteAddress) {
+        const xff = String(req.headers['x-forwarded-for'] || '').split(',').map((x) => x.trim()).filter(Boolean);
+        const ip = xff[xff.length - 1] || String(req.headers['x-real-ip'] || '').trim();
+        if (/^[0-9a-f.:]{3,45}$/i.test(ip)) Object.defineProperty(req, 'ip', { value: ip, configurable: true });
+      }
+      next();
+    });
+  }
   // Every request has a database context (src/db/tenant.js): the main database until its clinic is known.
   app.use((req, res, next) => require('./db/tenant').als.run({ req: true }, next)); // eslint-disable-line global-require
   app.use(helmet({

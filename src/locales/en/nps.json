@@ -1,0 +1,10 @@
+{
+  "nps": {
+    "question": "How likely are you to recommend {brand} to another clinic? (0 = not at all, 10 = certainly)",
+    "comment": "What should we improve? (optional)",
+    "send": "Send",
+    "later": "Not now",
+    "thanks": "Thank you for your feedback.",
+    "pick": "Choose a number from 0 to 10."
+  }
+}

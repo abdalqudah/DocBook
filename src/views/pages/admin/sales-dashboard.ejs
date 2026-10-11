@@ -11,8 +11,11 @@
   <section class="panel flush"><div class="panel-head"><div><h2><%= t('dash.by_month') %></h2></div></div>
     <div class="table-wrap"><table class="table" data-by-month><thead><tr><th><%= t('dash.month') %></th><th class="num"><%= t('dash.signups') %></th><th class="num"><%= t('dash.collected') %></th></tr></thead>
       <tbody><% d.months.slice().reverse().forEach(function (m) { %><tr><td dir="ltr" style="text-align:start"><%= m %></td><td class="num"><%= d.signupsByMonth[m] %></td><td class="num"><%= money(d.collected[m]) %></td></tr><% }) %></tbody></table></div></section>
+  <div class="stack">
+  <section class="panel" data-nps-score><div class="panel-body"><div class="small muted"><%= t('dash.nps') %></div><div class="h3 num"><%= d.nps.nps === null ? '—' : d.nps.nps %></div><div class="tiny muted"><%= t('dash.nps_help', { n: d.nps.n, p: d.nps.promoters || 0, dd: d.nps.detractors || 0 }) %> · <%= t('dash.referrals', { n: d.referrals }) %></div></div></section>
   <section class="panel"><div class="panel-head"><div><h2><%= t('dash.subs') %></h2></div></div><div class="panel-body small stack-sm">
     <% ['active', 'trialing', 'past_due', 'expired', 'cancelled', 'comped'].forEach(function (k) { %><div class="row-sm between"><span><%= t('dash.st_' + k) %></span><span class="num strong"><%= d.byStatus[k] || 0 %></span></div><% }) %></div></section>
+  </div>
 </div>
 <div class="grid grid-3" style="align-items:start">
   <section class="panel flush"><div class="panel-head"><div><h2><%= t('dash.by_country') %></h2></div></div>

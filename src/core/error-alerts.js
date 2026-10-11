@@ -16,7 +16,8 @@ function report(req, err) {
     lastAt = now;
     const n = pending; pending = 0;
     const path = String(req.originalUrl || '').split('?')[0].replace(/\d{4,}/g, ':n').slice(0, 120);
-    const message = String((err && err.message) || err || '').split('\n')[0].slice(0, 200);
+    // quoted values (a database error can carry the value it refused) are blanked: no personal data leaves in a mail
+    const message = String((err && err.message) || err || '').split('\n')[0].replace(/'[^']*'|"[^"]*"/g, '…').slice(0, 200);
     setImmediate(async () => {
       try {
         await require('../modules/platformnotify/notify.service').admin('server_error', { n, path, message }, { link: '/admin', severity: 'warning' }); // eslint-disable-line global-require

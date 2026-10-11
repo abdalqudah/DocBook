@@ -98,7 +98,7 @@ async function invoiceFor(kind, { businessId, vendorId, invoiceId }) {
 }
 
 /** Starts a card payment for an open invoice. → the PayTabs page to send the payer to. */
-async function start(kind, { businessId = null, vendorId = null, invoiceId, userId = null, baseUrl, lang = 'ar', customer = {} }) {
+async function start(kind, { businessId = null, vendorId = null, invoiceId, userId = null, baseUrl, lang = 'ar', customer = {}, viaLink = false }) {
   const inv = await invoiceFor(kind, { businessId, vendorId, invoiceId });
   if (!inv) throw E.notFound('Invoice');
   if (!inv.open) throw new AppError('INVOICE_CLOSED', 'This invoice is already closed.', 409);
@@ -106,7 +106,7 @@ async function start(kind, { businessId = null, vendorId = null, invoiceId, user
   const c = await client();
   if (!c) throw new AppError('PAY_NOT_CONFIGURED', 'Card payment is not available.', 409);
   const publicId = crypto.randomBytes(12).toString('hex');
-  const [id] = await knex('platform_payments').insert({ public_id: publicId, kind, invoice_id: inv.id, business_id: businessId, vendor_id: vendorId, amount: inv.amount, currency: inv.currency, user_id: userId });
+  const [id] = await knex('platform_payments').insert({ public_id: publicId, kind, invoice_id: inv.id, business_id: businessId, vendor_id: vendorId, amount: inv.amount, currency: inv.currency, user_id: userId, via_link: Boolean(viaLink) });
   const base = String(baseUrl || '').replace(/\/+$/, '');
   try {
     const r = await c.createPayment({
@@ -183,4 +183,13 @@ async function returned(publicId, fields) {
 /** Where the payer goes back to after PayTabs. */
 const backUrl = (p, result) => `${p && p.kind === 'vendor' ? '/vendor/billing' : '/app/settings/subscription'}?pay=${['paid', 'already'].includes(result) ? 'paid' : result === 'pending' ? 'pending' : 'failed'}`;
 
-module.exports = { KEY, REGIONS, BANK_KEYS, settings, methods, adminView, save, client, testConnection, start, verify, settle, callback, returned, backUrl, byPublicId };
+/** Where the payer goes back to: a payment started from the invoice's own link (no account) returns to that link. */
+async function backUrlFor(p, result) {
+  if (p && p.kind === 'clinic' && p.via_link) {
+    const inv = await knex('platform_invoices').where({ id: p.invoice_id }).first('share_token');
+    if (inv && inv.share_token) return `/invoice/${inv.share_token}?pay=${['paid', 'already'].includes(result) ? 'paid' : result === 'pending' ? 'pending' : 'failed'}`;
+  }
+  return backUrl(p, result);
+}
+
+module.exports = { backUrlFor, KEY, REGIONS, BANK_KEYS, settings, methods, adminView, save, client, testConnection, start, verify, settle, callback, returned, backUrl, byPublicId };

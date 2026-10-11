@@ -161,3 +161,25 @@ test('pages: admin payment methods, rep billing shows card + wallet, return rout
   assert.ok(!ap.text.includes(KEY));
   assert.match(ap.text, /JO71CBJO/);
 });
+
+test('pay from the invoice link (no sign-in): the card page, back to the link with the result, the invoice paid', async () => {
+  const [inv] = await knex('platform_invoices').insert({ number: `LNK-${tag}`, business_id: businessId, plan_id: planId, billing_cycle: 'monthly', period_start: '2026-10-01', period_end: '2026-10-31', amount: 30, currency: 'JOD', status: 'open' });
+  const token = await require('../src/modules/sales/sales.service').invoiceShareToken(inv); // eslint-disable-line global-require
+  const v = app.agent();
+  const page = await v.get(`/invoice/${token}?lang=en`);
+  assert.equal(page.status, 200); assert.match(page.text, /data-invoice-pay/); assert.match(page.text, /data-pay-card/);
+  assert.match(page.text, /JO71CBJO0000000000001234567890/); assert.match(page.text, /PLATFORM/);
+  const go = await v.post(`/invoice/${token}/pay`, { _csrf: v.csrf(page.text) });
+  assert.equal(go.status, 200); assert.match(go.text, /data-pay-redirect/);
+  const p = await knex('platform_payments').where({ invoice_id: inv, kind: 'clinic' }).orderBy('id', 'desc').first();
+  assert.ok(p.via_link); assert.equal(p.user_id, null);
+  sim.tx[p.provider_ref].status = 'A';
+  const back = await v.post(`/pay/platform/return/${p.public_id}`, { tranRef: p.provider_ref });
+  assert.equal(back.status, 303); assert.equal(back.location, `/invoice/${token}?pay=paid`);
+  assert.equal((await knex('platform_invoices').where({ id: inv }).first('status')).status, 'paid');
+  const after = await v.get(`/invoice/${token}?pay=paid&lang=en`);
+  assert.match(after.text, /data-pay-result="paid"/); assert.doesNotMatch(after.text, /data-pay-card/);
+  // paid: another attempt is refused politely
+  const again = await v.post(`/invoice/${token}/pay`, { _csrf: v.csrf(after.text) });
+  assert.equal(again.status, 302); assert.equal(again.location, `/invoice/${token}`);
+});

@@ -96,6 +96,7 @@ async function start(server) {
     // Appointment messages (WhatsApp / SMS / e-mail): confirmations, reminders and review requests, every minute.
     const messagingTick = () => require('./modules/messaging/messaging.service').runDue().catch((e) => console.error('[messaging]', e.message)); // eslint-disable-line global-require, no-console
     setInterval(each(messagingTick), 60_000).unref();
+    setInterval(async () => { try { if ((await require('./modules/platformcomms/comms.service').get()).geo.lookup) await require('./modules/platformcomms/activity.service').locate(60); } catch (e) { console.error('[activity]', e.message); } }, 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- countries of new addresses (when switched on)
     setInterval(() => require('./modules/crm/onboarding-mail.service').runDue().catch((e) => console.error('[onboarding-mail]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- day 3 / day 7 e-mails to new clinics
     setInterval(() => require('./modules/sales/billing-mail.service').runOverdue().catch((e) => console.error('[billing-mail]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- one reminder per overdue platform invoice
     setInterval(() => require('./modules/subscriptions/subscriptions.service').runDue().catch((e) => console.error('[subscriptions]', e.message)), 60 * 60_000).unref(); // eslint-disable-line global-require, no-console -- trials/periods ending, reminders (no-op while subscriptions are off)

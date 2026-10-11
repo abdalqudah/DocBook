@@ -44,7 +44,10 @@ async function runDue(now = new Date()) {
       const t = translator(o.locale === 'en' ? 'en' : 'ar');
       const vars = { name: o.name, clinic: b.name, brand: brand.name };
       const subject = t(`onb.${step.key}_subject`, vars);
-      const ok = await mailer.send({ kind: 'onboarding', to: o.email, subject, html: mailer.layout({ locale: o.locale, title: subject, body: t(`onb.${step.key}_body`, vars), cta: t(`onb.${step.key}_cta`), href: `${String(config.appUrl).replace(/\/+$/, '')}${step.cta}` }) }); // eslint-disable-line no-await-in-loop
+      const root = String(config.appUrl).replace(/\/+$/, '');
+      const hasHelp = await knex('help_articles').where({ published: true }).first('id').catch(() => null); // eslint-disable-line no-await-in-loop
+      const body = `${t(`onb.${step.key}_body`, vars)}${hasHelp ? `\n\n${t('helpc.email_line', { url: `${root}/help` })}` : ''}`;
+      const ok = await mailer.send({ kind: 'onboarding', to: o.email, subject, html: mailer.layout({ locale: o.locale, title: subject, body, cta: t(`onb.${step.key}_cta`), href: `${String(config.appUrl).replace(/\/+$/, '')}${step.cta}` }) }); // eslint-disable-line no-await-in-loop
       await mark(ok ? 'sent' : 'failed'); // eslint-disable-line no-await-in-loop
       if (ok) sent += 1;
     } catch (e) { await mark('failed'); } // eslint-disable-line no-await-in-loop

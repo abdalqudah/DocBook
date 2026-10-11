@@ -1,0 +1,17 @@
+<%# Admin → Website → Help articles → new / edit. %>
+<% var v = Object.assign({}, a || {}, old || {}); var f = function (name, label, extra) { return include('../../partials/field', Object.assign({ name: name, label: label, value: v[name], errors: errors, old: null }, extra || {})); }; %>
+<div class="page-head"><div><div class="breadcrumbs"><a href="/admin/help"><%= t('helpc.admin_title') %></a></div><h1><%= a ? (a.title_ar) : t('helpc.new') %></h1></div></div>
+<form method="post" action="<%= a ? '/admin/help/' + a.id : '/admin/help/new' %>" class="panel" novalidate>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <div class="panel-body stack">
+    <div class="form-grid cols-2"><%- f('title_ar', t('helpc.f_title_ar'), { required: true }) %><%- f('title_en', t('helpc.f_title_en'), { attrs: 'dir="ltr"' }) %></div>
+    <div class="form-grid cols-3"><%- f('slug', t('helpc.f_slug'), { attrs: 'dir="ltr"', help: t('helpc.f_slug_help') }) %>
+      <%- f('category', t('helpc.f_category'), { type: 'select', options: categories.map(function (c) { return { value: c, label: t('helpc.cat_' + c) }; }) }) %><%- f('sort', t('sales.sort'), { attrs: 'inputmode="numeric"' }) %></div>
+    <%- f('body_ar', t('helpc.f_body_ar'), { type: 'textarea', attrs: 'rows="14"', required: true, help: t('tpl.body_help') + ' ' + t('tpl.body_help2') }) %>
+    <%- f('body_en', t('helpc.f_body_en'), { type: 'textarea', attrs: 'rows="10" dir="ltr"' }) %>
+    <input type="hidden" name="published" value="0"><label class="check"><input type="checkbox" name="published" value="1"<%= a && !a.published ? '' : ' checked' %>><span><%= t('helpc.published') %></span></label>
+  </div>
+  <div class="panel-foot row-sm"><button class="btn btn-primary" type="submit"><%= t('common.save') %></button><a class="btn btn-ghost" href="/admin/help"><%= t('common.cancel') %></a>
+    <% if (a) { %><a class="btn btn-ghost" href="/help/<%= a.slug %>" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('helpc.open') %></a><% } %></div>
+</form>
+<% if (a) { %><form method="post" action="/admin/help/<%= a.id %>/delete" class="mt-4" data-confirm="<%= t('helpc.delete_confirm') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-sm" type="submit"><%- icon('trash-2', 'icon-sm') %><%= t('common.delete') %></button></form><% } %>

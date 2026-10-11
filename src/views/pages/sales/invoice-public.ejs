@@ -13,5 +13,20 @@
   <tbody><tr><td><%= t('sales.subscription') %>: <%= plan || '' %> (<%= t('sales.cycle_' + inv.billing_cycle) %>)</td><td><%= d(inv.period_start) %> – <%= d(inv.period_end) %></td><td class="num"><%= money(inv.amount) %></td></tr></tbody>
   <tfoot><tr><td colspan="2" class="num strong"><%= t('sales.total') %></td><td class="num strong"><%= money(inv.amount) %></td></tr></tfoot>
 </table></div>
-<% if (inv.status === 'paid') { %><p class="small"><%- icon('circle-check', 'icon-sm') %> <%= t('sales.paid_on', { date: d(inv.paid_at) }) %></p><% } else if (p.iban) { %>
-<section class="mt-4 small"><span class="strong"><%= t('sales.bank') %>:</span> <%= p.bank_name || '' %> · <%= p.account_name || '' %> · IBAN <bdi dir="ltr"><%= p.iban %></bdi></section><% } %>
+<% if (payResult === 'paid') { %><div class="alert alert-success mt-4 no-print" data-pay-result="paid"><%- icon('circle-check', 'icon-sm') %><div class="grow"><%= t('invpay.paid') %></div></div>
+<% } else if (payResult === 'pending') { %><div class="alert alert-info mt-4 no-print" data-pay-result="pending"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('invpay.pending') %></div></div>
+<% } else if (payResult === 'failed') { %><div class="alert alert-warning mt-4 no-print" data-pay-result="failed"><%- icon('triangle-alert', 'icon-sm') %><div class="grow"><%= t('invpay.failed') %></div></div><% } %>
+<% if (inv.status === 'paid') { %><p class="small"><%- icon('circle-check', 'icon-sm') %> <%= t('sales.paid_on', { date: d(inv.paid_at) }) %></p>
+<% } else { %>
+<section class="panel mt-6" data-invoice-pay><div class="panel-head"><div><h2><%= t('invpay.title') %></h2></div></div>
+  <div class="panel-body stack-sm small">
+    <% if (inv.status === 'reported') { %><div class="alert alert-info"><%- icon('info', 'icon-sm') %><div class="grow"><%= t('invpay.reported') %></div></div><% } %>
+    <% if (pay.card) { %><form method="post" action="/invoice/<%= inv.share_token %>/pay" class="no-print" data-pay-card><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary" type="submit"><%- icon('credit-card', 'icon-sm') %><%= t('invpay.card_btn', { amount: money(inv.amount) }) %></button><% if (pay.cardTest) { %> <span class="badge badge-warning"><%= t('invpay.test_mode') %></span><% } %></form><% } %>
+    <% if (pay.bank) { %><div><span class="strong"><%= t('invpay.bank') %>:</span> <%= pay.bank.bankName || '' %> · <%= pay.bank.accountName || '' %> · IBAN <bdi dir="ltr"><%= pay.bank.iban || '' %></bdi><% if (pay.bank.swift) { %> · SWIFT <bdi dir="ltr"><%= pay.bank.swift %></bdi><% } %></div>
+    <% } else if (p.iban) { %><div><span class="strong"><%= t('invpay.bank') %>:</span> <%= p.bank_name || '' %> · <%= p.account_name || '' %> · IBAN <bdi dir="ltr"><%= p.iban %></bdi></div><% } %>
+    <% if (pay.cliq) { %><div><span class="strong">CliQ:</span> <bdi dir="ltr"><%= pay.cliq.alias %></bdi><% if (pay.cliq.name) { %> · <%= pay.cliq.name %><% } %></div><% } %>
+    <% if (pay.wallet) { %><div><span class="strong"><%= pay.wallet.name || t('invpay.wallet') %>:</span> <bdi dir="ltr"><%= pay.wallet.number %></bdi><% if (pay.wallet.holder) { %> · <%= pay.wallet.holder %><% } %></div><% } %>
+    <% var instr = locale === 'en' ? pay.instructions_en || pay.instructions : pay.instructions || pay.instructions_en; if (instr) { %><p class="muted" style="white-space:pre-wrap;margin:0"><%= instr %></p><% } %>
+    <p class="muted no-print" style="margin:0"><%= t('invpay.transfer_note') %></p>
+  </div></section>
+<% } %>

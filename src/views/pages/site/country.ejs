@@ -1,0 +1,19 @@
+<%# /in/<country> — the platform for one country: its headline and text, the plans in its currency, and sign-up with
+    the country already chosen (Admin → Website → Country pages). %>
+<section class="site-hero lp-hero lp-page-hero" data-country-page="<%= cp.code %>">
+  <div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container center">
+    <span class="eyebrow-tag"><span class="pulse-dot" aria-hidden="true"></span><%= country %></span>
+    <h1><%= title %></h1>
+    <p class="lead"><%= lead %></p>
+    <div class="row-sm wrap" style="justify-content:center">
+      <a class="btn btn-primary btn-lg" href="<%= signupHref %>" data-country-signup><%= t('cpages.start') %></a>
+      <a class="btn btn-secondary btn-lg" href="#plans"><%= t('cpages.see_prices') %></a>
+    </div>
+    <% if (cp.clinics || cp.warehouses) { %><p class="small muted mt-4"><%= t('cpages.counts', { clinics: cp.clinics, warehouses: cp.warehouses, country: country }) %></p><% } %>
+  </div>
+</section>
+<% if (bodyHtml) { %><section class="section"><div class="container" style="max-width:820px"><article class="doc-body"><%- bodyHtml %></article></div></section><% } %>
+<%- include('../../partials/site/pricing', { s: { ...sec, data: { ...(sec.data || {}), kicker: '', title: { ar: 'الباقات والأسعار', en: 'Plans and prices' }, lead: { ar: '', en: '' } } }, onPricingPage: true }) %>
+<section class="section"><div class="container center"><p class="small muted"><%= t('cpages.price_note', { currency: cp.currency }) %></p>
+  <a class="btn btn-primary btn-lg" href="<%= signupHref %>"><%= t('cpages.start') %></a></div></section>

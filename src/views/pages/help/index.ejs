@@ -8,6 +8,10 @@
   <% if (_tk) { %><div class="page-actions"><a class="btn btn-secondary" href="/app/tickets"><%- icon('message-square', 'icon-sm') %><%= t('nav.tickets') %></a></div><% } %>
 </div>
 
+<% if (typeof guides !== 'undefined' && guides.length) { %>
+<section class="panel mb-4" data-help-guides><div class="panel-head"><div><h2><%- icon('life-buoy', 'icon-sm') %> <%= t('helpc.guides') %></h2></div><a class="btn btn-ghost btn-sm" href="/help" target="_blank" rel="noopener"><%= t('helpc.guides_all') %></a></div>
+  <ul class="panel-body grid grid-2" style="list-style:none;margin:0;gap:6px 24px"><% guides.slice(0, 12).forEach(function (g) { %><li><a class="link" href="/help/<%= g.slug %>" target="_blank" rel="noopener"><%= g.title %></a></li><% }) %></ul></section>
+<% } %>
 <div class="help-search">
   <div class="input-group"><%- icon('search', 'icon-sm') %><input class="input" type="search" data-help-search placeholder="<%= t('help.search_ph') %>" aria-label="<%= t('common.search') %>" autocomplete="off"></div>
 </div>

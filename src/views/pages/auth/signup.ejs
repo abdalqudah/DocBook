@@ -37,8 +37,8 @@
     </div>
     <div class="form-grid">
       <%- include('../../partials/field', { name: 'city', label: t('auth.city'), autocomplete: 'address-level2' }) %>
-      <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: 'JOD', options: currencyOptions }) %>
-      <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', required: true, value: 'Asia/Amman', options: zoneOptions }) %>
+      <%- include('../../partials/field', { name: 'currency', label: t('common.currency'), type: 'select', required: true, value: typeof prefillCurrency !== 'undefined' && prefillCurrency ? prefillCurrency : 'JOD', options: currencyOptions }) %>
+      <%- include('../../partials/field', { name: 'timezone', label: t('auth.timezone'), type: 'select', required: true, value: typeof prefillZone !== 'undefined' && prefillZone ? prefillZone : 'Asia/Amman', options: zoneOptions }) %>
     </div>
   </fieldset>
   <div>

@@ -55,8 +55,10 @@ async function overview(now = new Date()) {
   });
   q.winRate = q.wonN + q.lostN ? Math.round((q.wonN / (q.wonN + q.lostN)) * 100) : null;
 
+  const nps = await require('../feedback/feedback.service').score().catch(() => ({ nps: null, n: 0 })); // eslint-disable-line global-require
+  const referrals = await knex('businesses').whereNotNull('referred_by').where('created_at', '>=', new Date(now - 90 * DAY)).count({ n: '*' }).then((r) => n(r[0].n)).catch(() => 0);
   return {
-    mrr, byStatus, paying: active.length, months, signupsByMonth, collected,
+    nps, referrals, mrr, byStatus, paying: active.length, months, signupsByMonth, collected,
     conversion: { cohort: cohort.length, converted, pct: cohort.length ? Math.round((converted / cohort.length) * 100) : null },
     churned, countries: Object.entries(countries).map(([code, v]) => ({ code, ...v })).sort((a, b) => b.clinics - a.clinics),
     sources: sources.map((r) => ({ source: r.source || 'other', contacts: n(r.contacts), customers: n(r.customers) })).sort((a, b) => b.contacts - a.contacts),

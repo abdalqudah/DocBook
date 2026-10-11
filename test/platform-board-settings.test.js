@@ -51,11 +51,15 @@ test('the WhatsApp button shows on the platform site when switched on', async ()
   let home = await app.agent().get('/?lang=en');
   assert.doesNotMatch(home.text, /data-wa-float/);
   const a = app.agent(); await a.login(mail('a'));
-  const page = await a.get('/admin/settings?lang=en');
-  const r = await a.post('/admin/settings', { _csrf: a.csrf(page.text), wa_public_number: '962790000000', wa_public_text_en: 'Hello MedWorks', wa_public_button: '1', wa_default_dial: '962' });
-  assert.equal(r.status, 302);
-  cache.forgetPrefix('');
-  home = await app.agent().get('/?lang=en');
+  // another test file may save the same platform setting at the same moment: save, check, and once more if overwritten
+  for (let i = 0; i < 3; i += 1) {
+    const page = await a.get('/admin/settings?lang=en'); // eslint-disable-line no-await-in-loop
+    const r = await a.post('/admin/settings', { _csrf: a.csrf(page.text), wa_public_number: '962790000000', wa_public_text_en: 'Hello MedWorks', wa_public_button: '1', wa_default_dial: '962' }); // eslint-disable-line no-await-in-loop
+    assert.equal(r.status, 302);
+    cache.forgetPrefix('');
+    home = await app.agent().get('/?lang=en'); // eslint-disable-line no-await-in-loop
+    if (/data-wa-float/.test(home.text)) break;
+  }
   assert.match(home.text, /data-wa-float/);
   assert.match(home.text, /href="https:\/\/wa\.me\/962790000000\?text=Hello%20MedWorks"/);
 });

@@ -27,6 +27,7 @@ async function page(req, res, extra = {}) {
     st, cfg, plans, invoices, usage, pending, features: subs.FEATURES, methods: subs.METHODS.filter((m) => m !== 'card'), payMethods: await require('../platformpay/platformpay.service').methods(), payResult: ['paid', 'pending', 'failed'].includes(req.query.pay) ? req.query.pay : null, // eslint-disable-line global-require
  branchesNow, priceFor: branchPricing.priceFor, branchesOn: await require('../clinic/branches.service').enabled(req.business), // eslint-disable-line global-require
     cycle: ['monthly', 'yearly'].includes(req.query.cycle) ? req.query.cycle : (st && st.sub.billing_cycle) || 'monthly',
+    referral: await require('../referrals/referrals.service').summary(req.ctx.businessId), // eslint-disable-line global-require
     pageStyles: ['/css/admin.css', '/css/subscriptions.css'], pageScripts: ['/js/admin.js', '/js/subscriptions.js'],
     errors: {}, formError: null, old: {}, ...extra,
   });

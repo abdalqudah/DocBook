@@ -64,7 +64,7 @@ router.post('/platform/return/:pid', limiter, express.urlencoded({ extended: fal
   try {
     const out = await ppay.returned(req.params.pid, req.body || {});
     if (!out.payment) return res.status(404).type('text/plain').send('Not found');
-    return res.redirect(303, ppay.backUrl(out.payment, out.result));
+    return res.redirect(303, await ppay.backUrlFor(out.payment, out.result));
   } catch (e) {
     console.error('[platform pay] return:', e.message); // eslint-disable-line no-console
     return res.status(500).type('text/plain').send('Something went wrong. Please open your billing page again.');

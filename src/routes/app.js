@@ -52,6 +52,7 @@ router.use(wrap(async (req, res, next) => {
   res.locals.navGroups = nav.forUser(perms, req.ctx);
   res.locals.navActions = nav.actionsFor(perms, req.ctx);
   res.locals.verifyBanner = verify.required() && !verify.isVerified(req.user);
+  res.locals.npsAsk = req.method === 'GET' && !req.xhr ? await require('../modules/feedback/feedback.service').shouldAsk(req.ctx, req.business).catch(() => false) : false; // eslint-disable-line global-require
   res.locals.ctx = req.ctx;
   res.locals.faviconHref = businesses.faviconPath(req.business, '/app'); // the clinic's browser icon (null = the platform's)
   const badges = { waiting: 0, pendingAdjustments: 0, lowStock: 0, toPay: 0, newOffers: 0, repRequests: 0 };
@@ -116,6 +117,7 @@ router.use(require('../modules/subscriptions/enforce')); // trial / plan gate (o
 router.use(require('../modules/platformops/gate'));
 router.use(require('../modules/access/gate')); // per-member page access: hides denied pages from the menu and blocks their addresses
 router.use(require('../modules/teamops/presence.service').middleware); // "last seen" on every page load // clinic modules on/off: hides their menu items and blocks their pages
+router.use('/', require('../modules/feedback/web')); // the owner's recommendation score (NPS)
 router.use('/onboarding', require('../modules/onboarding/web'));
 router.use(require('./moved')); // pages that moved to another workspace: old GET addresses answer 301 (redesign)
 router.use('/api', require('../modules/clinic/api.web'));

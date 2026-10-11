@@ -1,0 +1,14 @@
+{
+  "invpay": {
+    "title": "Pay this invoice",
+    "card_btn": "Pay {amount} by card",
+    "test_mode": "test mode",
+    "bank": "Bank transfer",
+    "wallet": "E-wallet",
+    "transfer_note": "Paid by transfer or CliQ? Report it from the clinic's subscription page so it is confirmed.",
+    "reported": "A payment was reported for this invoice and is being confirmed.",
+    "paid": "Payment received. Thank you, your subscription is active.",
+    "pending": "The payment is being processed. This page will show it once confirmed.",
+    "failed": "The card payment did not go through. You can try again or pay by transfer."
+  }
+}

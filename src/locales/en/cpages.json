@@ -1,0 +1,25 @@
+{
+  "cpages": {
+    "default_title": "Clinic management software in {country}",
+    "default_lead": "Bookings, patient records, billing and your clinic's website, in Arabic and English.",
+    "start": "Start free",
+    "see_prices": "See prices",
+    "counts": "{clinics} clinics and {warehouses} drug warehouses in {country} already use the platform.",
+    "price_note": "Prices in {currency}, excluding VAT where it applies.",
+    "nav": "Country pages",
+    "admin_title": "Country pages",
+    "admin_lead": "A landing page for each country at /in/<code> (for example /in/sa), with the plans in its currency and sign-up set to the country.",
+    "on": "Show the page",
+    "rate": "Rate from the plans' currency",
+    "currency": "Currency",
+    "title_ar": "Headline (Arabic)",
+    "title_en": "Headline (English)",
+    "lead_ar": "Intro (Arabic)",
+    "lead_en": "Intro (English)",
+    "body_ar": "Text (Arabic)",
+    "body_en": "Text (English)",
+    "body_help": "Optional. \"# \" heading, \"- \" list, **bold**, [text](https://…).",
+    "open": "Open the page",
+    "saved": "Country pages saved."
+  }
+}

@@ -93,7 +93,7 @@ async function negotiate(token, body, { base } = {}) {
   await knex('quotes').where({ id: q.id }).update({ status: 'negotiating', updated_at: new Date() });
   await event(q, { type: 'negotiation', by: 'customer', name: str(body.name, 150) || null, amount, message: message || null });
   if (q.contact_id) await crm().log(sys, q.contact_id, 'quote', `${q.number}: negotiation${amount !== null ? ` (${amount} ${q.currency})` : ''}${message ? `\n${message}` : ''}`).catch(() => {});
-  await tellTeam(q, 'طلب تفاوض', 'negotiation request', `${amount !== null ? `${amount} ${q.currency}<br>` : ''}${message}`, base);
+  await tellTeam(q, 'طلب تفاوض', 'negotiation request', `${amount !== null ? `${amount} ${q.currency}\n` : ''}${message}`, base);
 }
 
 /** The team's reply on the quotation's conversation (the customer sees it on the link). */

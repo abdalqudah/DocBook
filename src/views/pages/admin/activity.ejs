@@ -2,7 +2,8 @@
 <% var qs = function (extra) { var p = Object.assign({ period: period, country: f.country || '', kind: f.kind || '' }, extra); return '?' + Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); };
    var ago = function (d) { var m = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000)); return m < 1 ? t('pcomms.just_now') : m < 60 ? t('pcomms.min_ago', { n: m }) : m < 1440 ? t('pcomms.hours_ago', { n: Math.round(m / 60) }) : t('pcomms.days_ago', { n: Math.round(m / 1440) }); }; %>
 <div class="page-head">
-  <div><h1><%= t('pcomms.activity_title') %></h1><p><%= t('pcomms.activity_lead') %></p></div>
+  <div><h1><%= t('pcomms.activity_title') %></h1><p><%= t('pcomms.activity_lead') %></p>
+    <p class="tiny muted" data-activity-live data-every="30"><%- icon('refresh-cw', 'icon-sm') %> <%= t('pcomms.live_note') %> · <%= t('pcomms.updated_at', { time: new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { timeStyle: 'medium' }).format(updatedAt) }) %></p></div>
   <div class="page-actions"><% if (geo.lookup) { %>
     <form method="post" action="/admin/activity/locate"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="period" value="<%= period %>"><button class="btn btn-secondary btn-sm" type="submit"><%- icon('map-pin', 'icon-sm') %><%= t('pcomms.geo_locate') %></button></form>
   <% } else { %><a class="link small" href="/admin/settings#geo"><%= t('pcomms.geo_enable') %></a><% } %></div>

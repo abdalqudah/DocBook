@@ -1,0 +1,9 @@
+<%# Admin → Website → Help articles: the list (published or not, views). %>
+<div class="page-head"><div><h1><%= t('helpc.admin_title') %></h1><p><%= t('helpc.admin_lead') %></p></div>
+  <div class="page-actions"><a class="btn btn-secondary" href="/help" target="_blank" rel="noopener"><%- icon('external-link', 'icon-sm') %><%= t('helpc.open') %></a><a class="btn btn-primary" href="/admin/help/new"><%- icon('plus', 'icon-sm') %><%= t('helpc.new') %></a></div></div>
+<section class="panel flush"><% if (!rows.length) { %><div class="panel-body"><p class="muted"><%= t('helpc.empty') %></p></div><% } else { %>
+  <div class="table-wrap"><table class="table responsive" data-help-admin><thead><tr><th><%= t('helpc.f_title') %></th><th><%= t('helpc.f_category') %></th><th class="num"><%- icon('eye', 'icon-sm') %></th><th><%= t('common.status') %></th></tr></thead>
+    <tbody><% rows.forEach(function (a) { %><tr><td class="primary-cell"><a class="strong" href="/admin/help/<%= a.id %>"><%= locale === 'en' && a.title_en ? a.title_en : a.title_ar %></a><div class="tiny muted" dir="ltr">/help/<%= a.slug %></div></td>
+      <td data-label="<%= t('helpc.f_category') %>"><%= t('helpc.cat_' + a.category) %></td><td class="num"><%= a.views %></td>
+      <td><span class="badge <%= a.published ? 'badge-success' : 'badge-neutral' %>"><%= a.published ? t('helpc.published') : t('helpc.draft') %></span></td></tr><% }) %></tbody></table></div><% } %>
+</section>

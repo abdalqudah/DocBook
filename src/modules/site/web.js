@@ -84,6 +84,27 @@ router.get('/pricing', wrap(async (req, res) => {
   });
 }));
 
+// ---------------------------------------------------------------- a country's page (/in/sa, /in/jo…)
+router.get('/in/:cc([a-zA-Z]{2})', wrap(async (req, res, next) => {
+  const cp = await require('../countrypages/countrypages.service').page(req.params.cc); // eslint-disable-line global-require
+  if (!cp) return next();
+  if (req.params.cc !== req.params.cc.toLowerCase()) return res.redirect(301, `/in/${req.params.cc.toLowerCase()}`);
+  const content = await site.get();
+  const sec = content.sections.find((s) => s.type === 'pricing') || site.defaults().sections.find((s) => s.type === 'pricing');
+  const en = req.locale === 'en';
+  const country = require('../settings/options').regionName(cp.code, req.locale); // eslint-disable-line global-require
+  const title = (en ? cp.title_en || cp.title_ar : cp.title_ar || cp.title_en) || req.t('cpages.default_title', { country });
+  const lead = (en ? cp.lead_en || cp.lead_ar : cp.lead_ar || cp.lead_en) || req.t('cpages.default_lead', { country });
+  const body = en ? cp.body_en || cp.body_ar : cp.body_ar || cp.body_en;
+  const head = await seo.head(req, res, { kind: 'pricing', site: content, title, description: lead, path: `/in/${cp.code.toLowerCase()}` });
+  return res.page('pages/site/country', {
+    layout: 'public', bodyClass: 'lp-modern lp-pricing-page', pageTitle: head.title, seoHead: head, content, cp, country, title, lead,
+    bodyHtml: body ? require('../sales/templates.service').render(body) : '', // eslint-disable-line global-require
+    sec: { ...sec, id: 'country-pricing', anchor: 'plans', hidden: false, design: {} }, pricing: cp.pricing,
+    signupHref: `/signup?country=${cp.code}`,
+  });
+}));
+
 // ---------------------------------------------------------------- all features (/features)
 // Every feature, grouped by what a clinic does, each group beside a real screenshot; then the videos and the call
 // to start. The home page shows the main ones and links here.

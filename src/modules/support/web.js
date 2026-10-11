@@ -26,14 +26,20 @@ function roleSummaries() {
   });
 }
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res, next) => {
+  // The platform's own guides (Admin → Help articles), on the platform only.
+  let guides = [];
+  if (!require('../../config/edition').single) { // eslint-disable-line global-require
+    const help = require('../helpcenter/help.service'); // eslint-disable-line global-require
+    try { guides = (await help.list()).map((a) => ({ slug: a.slug, title: help.pick(a, req.locale).title })); } catch (e) { return next(e); }
+  }
   const dict = dictionaries[req.locale] || dictionaries.en;
   const sections = (dict.help && dict.help.sections) || dictionaries.en.help.sections;
   const has = (list) => list.some((p) => req.ctx.permissions.has(p));
   const links = Object.fromEntries(Object.entries(LINKS).filter(([, l]) => has(l.perms)).map(([k, l]) => [k, l]));
   const email = String(process.env.SUPPORT_EMAIL || '').trim();
   res.page('pages/help/index', {
-    title: req.t('help.title'), sections, links, roles: roleSummaries(),
+    title: req.t('help.title'), sections, links, roles: roleSummaries(), guides,
     // Permission keys contain dots, so they are looked up directly rather than through t().
     permLabel: (p) => (dict.perms && dict.perms[p]) || (dictionaries.en.perms || {})[p] || p,
     supportEmail: /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(email) ? email : null,

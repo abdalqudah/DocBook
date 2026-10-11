@@ -1097,3 +1097,12 @@ a.pn-title:hover { color: var(--primary); }
 .doc-body .doc-img { display: block; max-width: 100%; height: auto; margin: 8px 0; border-radius: var(--radius-sm); }
 .doc-body .doc-icon { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; margin: 2px; border: 1px solid var(--border); border-radius: 999px; color: var(--primary); text-decoration: none; }
 .doc-body .doc-icon .icon { width: 18px; height: 18px; }
+
+/* The owner's recommendation score (NPS) under the top bar: 0–10, a comment, send / not now. */
+.nps-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.nps-scale { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.nps-scale input { position: absolute; opacity: 0; pointer-events: none; }
+.nps-scale span { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; font-variant-numeric: tabular-nums; }
+.nps-scale input:checked + span { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.nps-scale input:focus-visible + span { box-shadow: var(--focus-ring); }
+.nps-banner .input { max-width: 260px; }

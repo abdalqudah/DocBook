@@ -78,7 +78,14 @@ router.get('/signup', wrap(async (req, res) => {
   const invite = req.query.center ? await centers.inviteByToken(req.query.center) : null;
   // From a sign-up link e-mailed with an accepted quotation: the address filled in.
   const prefillEmail = /^[^\s@<>]{1,64}@[^\s@<>]{1,190}\.[^\s@<>]{2,}$/.test(String(req.query.email || '')) ? String(req.query.email) : '';
-  if (prefillEmail && !invite) return renderSignup(req, res, { prefillEmail });
+  // An invitation link from another clinic (/signup?ref=CODE): kept until the account is made.
+  const refCode = require('../referrals/referrals.service').cleanCode(req.query.ref); // eslint-disable-line global-require
+  if (refCode) req.session.ref = refCode;
+  // From a country page (/in/sa): the country's time zone and currency already chosen.
+  const cc = String(req.query.country || '').toUpperCase();
+  const prefillZone = /^[A-Z]{2}$/.test(cc) ? (options.ZONES.find((z) => z[1] === cc) || [])[0] || null : null;
+  const prefillCurrency = prefillZone ? require('../countrypages/countrypages.service').CURRENCY[cc] || null : null; // eslint-disable-line global-require
+  if ((prefillEmail || prefillZone) && !invite) return renderSignup(req, res, { prefillEmail, prefillZone, prefillCurrency });
   return renderSignup(req, res, invite ? { centerInvite: { token: req.query.center, name: (req.locale === 'en' && invite.center.name_en) || invite.center.name, email: invite.email } } : {});
 }));
 router.post('/signup', limiter, form(async (req, res) => {
@@ -118,6 +125,7 @@ router.post('/signup', limiter, form(async (req, res) => {
   const user = await authService.findUser(userId);
   await verify.send(user, { locale: req.locale }).catch(() => {});
   await require('../crm/welcome.service').onSignup({ businessId: newBid, owner: user, base: res.locals.baseUrl || config.appUrl }); // eslint-disable-line global-require
+  if (req.session.ref) { await require('../referrals/referrals.service').attach(newBid, req.session.ref).catch(() => {}); delete req.session.ref; } // eslint-disable-line global-require
   await signIn(req, user);
   return res.redirect(asCenter ? '/app/center' : '/app/onboarding');
 }, renderSignup));

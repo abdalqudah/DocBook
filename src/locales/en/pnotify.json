@@ -114,6 +114,12 @@
     },
     "server_error": {
       "title": "Server errors: {n} (latest {path} — {message})"
+    },
+    "referral_credit": {
+      "title": "A referral reward is waiting: {clinic} earned a free month but has no running subscription"
+    },
+    "nps_low": {
+      "title": "Low recommendation score: {clinic} gave {score}/10"
     }
   }
 }

@@ -527,6 +527,7 @@ async function recordPayment(ctx, businessId, input) {
   await adminAudit(ctx, 'platform.subscription_payment', b, sub, { status: sub.status, current_period_end: sub.current_period_end },
     { status: 'active', invoice_id: inv.id, amount, branches, method: d.method, reference: d.reference || null, period_start: start, period_end: end });
   if (!ctx.noMail) require('../sales/billing-mail.service').paid(inv.id); // eslint-disable-line global-require -- the receipt by e-mail
+  await require('../referrals/referrals.service').onPaid(b.id, inv.id).catch((e) => console.error('[referrals]', e.message)); // eslint-disable-line global-require, no-console -- the inviting clinic's free month
   return { invoiceId: inv.id, start, end };
 }
 

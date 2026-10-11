@@ -30,6 +30,9 @@
     "customers": "Customers",
     "won_year": "Accepted this year",
     "win_rate": "Win rate",
-    "open": "Open"
+    "open": "Open",
+    "nps": "Recommendation score (NPS)",
+    "nps_help": "{n} clinics answered · {p} promoters · {dd} detractors",
+    "referrals": "{n} referred sign-ups (90 days)"
   }
 }

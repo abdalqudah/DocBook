@@ -11,6 +11,13 @@
     <%- include('../partials/topbar') %>
     <% if (typeof verifyBanner !== 'undefined' && verifyBanner) { %><div class="banner info"><%- icon('mail') %><span><%= t('verify.banner', { email: currentUser.email }) %></span><form method="post" action="/verify-email/resend"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-secondary btn-sm" type="submit"><%= t('verify.resend') %></button></form></div><% } %>
     <%- include('../pages/subscriptions/_banner') %>
+    <% if (typeof npsAsk !== 'undefined' && npsAsk) { %><form method="post" action="/app/feedback" class="banner info nps-banner" data-nps><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <span class="strong"><%= t('nps.question', { brand: brandName }) %></span>
+      <span class="nps-scale" role="radiogroup" aria-label="<%= t('nps.question', { brand: brandName }) %>"><% for (var i = 0; i <= 10; i += 1) { %><label><input type="radio" name="score" value="<%= i %>" required><span><%= i %></span></label><% } %></span>
+      <input class="input input-sm" name="comment" maxlength="1000" placeholder="<%= t('nps.comment') %>">
+      <button class="btn btn-primary btn-sm" type="submit"><%= t('nps.send') %></button>
+      <button class="btn btn-ghost btn-sm" type="submit" name="later" value="1" formnovalidate><%= t('nps.later') %></button>
+    </form><% } %>
     <main class="content" id="main">
       <%- include('../partials/section-tabs') %>
       <%- include('../partials/act-bar') %>

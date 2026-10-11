@@ -1,7 +1,7 @@
 <%
   var _p = typeof adminPath !== 'undefined' ? adminPath.replace(/\/$/, '') : '';
   var _nav = [['/admin', 'layout-dashboard', 'nav_overview', true], ['/admin/clinics', 'hospital', 'nav_clinics'], ['/admin/users', 'users', 'nav_users'], ['/admin/site', 'layout-template', 'nav_site'], ['/admin/seo', 'search', 'nav_seo'], ['/admin/growth', 'megaphone', 'nav_growth']];
-  _nav.push(['/admin/domains', 'globe', 'identity.nav_domains']); // clinics' own domains
+  _nav.push(['/admin/domains', 'globe', 'identity.nav_domains'], ['/admin/country-pages', 'map-pin', 'cpages.nav', false, 'website'], ['/admin/help', 'life-buoy', 'helpc.admin_title', false, 'website']); // clinics' own domains; a page per country
   _nav.push(['/admin/vendors', 'briefcase-business', 'vendors.admin.nav']); // reps & warehouses
   _nav.push(['/admin/hub-links', 'link', 'hub.admin_nav', false, 'market']); // linked installations
   _nav.push(['/admin/vendor-billing', 'credit-card', 'vbill.admin.nav', false, 'market']); // reps' plans, trial, invoices and ads

@@ -269,14 +269,14 @@ async function invoiceRecipient(businessId) {
 // ---------------------------------------------------------------- sending (e-mail, WhatsApp link)
 const T = {
   ar: {
-    quote_subject: 'عرض سعر {number} من {seller}', quote_body: 'مرحبا {customer}،\n\nمرفق عرض السعر رقم {number} بقيمة {total}، صالح حتى {valid_until}.\nبتقدر تشوفه وتطبعه وتوافق عليه أو تفاوض عليه من الرابط.\n\nمع التحية،\n{seller}', quote_cta: 'عرض السعر',
-    quote_whatsapp: 'مرحبا {customer}، هذا عرض السعر رقم {number} بقيمة {total} من {seller}، صالح حتى {valid_until}:\n{link}',
-    invoice_subject: 'فاتورة {number} من {seller}', invoice_body: 'مرحبا {customer}،\n\nفاتورة الاشتراك رقم {number} بقيمة {total}.\nبتقدر تشوفها وتطبعها من الرابط.\n\nمع التحية،\n{seller}', invoice_cta: 'الفاتورة',
-    invoice_whatsapp: 'مرحبا {customer}، هذه فاتورة الاشتراك رقم {number} بقيمة {total} من {seller}:\n{link}',
-    document_subject: '{number} — {seller}', document_body: 'مرحبا {customer}،\n\nمرفق {number}.\nبتقدر تشوفه وتطبعه من الرابط.\n\nمع التحية،\n{seller}', document_cta: 'فتح المستند',
-    document_whatsapp: 'مرحبا {customer}، هذا {number} من {seller}:\n{link}',
-    receipt_subject: 'تم استلام دفعتك — فاتورة {number}', receipt_body: 'مرحبا {customer}،\n\nاستلمنا دفعة الفاتورة رقم {number} بقيمة {total}. شكراً لك، اشتراكك فعّال.\nبتقدر تشوف الفاتورة وتطبعها من الرابط.\n\nمع التحية،\n{seller}',
-    overdue_subject: 'تذكير: فاتورة {number} بانتظار الدفع', overdue_body: 'مرحبا {customer}،\n\nنذكّرك إنه فاتورة الاشتراك رقم {number} بقيمة {total} لسا ما انْدفعت.\nبتلاقي طرق الدفع على الرابط، وإذا دفعت بلّغنا من صفحة الاشتراك.\n\nمع التحية،\n{seller}',
+    quote_subject: 'عرض سعر {number} من {seller}', quote_body: 'مرحباً {customer}،\n\nنرفق لكم عرض السعر رقم {number} بقيمة {total}، وهو صالح حتى {valid_until}.\nيمكنكم الاطلاع عليه وطباعته والموافقة عليه أو التفاوض بشأنه من خلال الرابط.\n\nمع خالص التحية،\n{seller}', quote_cta: 'عرض السعر',
+    quote_whatsapp: 'مرحباً {customer}، إليكم عرض السعر رقم {number} بقيمة {total} من {seller}، وهو صالح حتى {valid_until}:\n{link}',
+    invoice_subject: 'فاتورة {number} من {seller}', invoice_body: 'مرحباً {customer}،\n\nنرفق لكم فاتورة الاشتراك رقم {number} بقيمة {total}.\nيمكنكم الاطلاع عليها وطباعتها من خلال الرابط.\n\nمع خالص التحية،\n{seller}', invoice_cta: 'عرض الفاتورة',
+    invoice_whatsapp: 'مرحباً {customer}، إليكم فاتورة الاشتراك رقم {number} بقيمة {total} من {seller}:\n{link}',
+    document_subject: '{number} — {seller}', document_body: 'مرحباً {customer}،\n\nنرفق لكم {number} على الرابط أدناه، ويمكنكم الاطلاع عليه وطباعته.\n\nمع خالص التحية،\n{seller}', document_cta: 'فتح المستند',
+    document_whatsapp: 'مرحباً {customer}، إليكم {number} من {seller}:\n{link}',
+    receipt_subject: 'تم استلام دفعتكم — فاتورة {number}', receipt_body: 'مرحباً {customer}،\n\nاستلمنا دفعة الفاتورة رقم {number} بقيمة {total}. شكراً لكم، واشتراككم الآن فعّال.\nيمكنكم الاطلاع على الفاتورة وطباعتها من خلال الرابط.\n\nمع خالص التحية،\n{seller}',
+    overdue_subject: 'تذكير: الفاتورة {number} بانتظار الدفع', overdue_body: 'مرحباً {customer}،\n\nنودّ تذكيركم بأن فاتورة الاشتراك رقم {number} بقيمة {total} لم تُسدَّد بعد.\nتجدون طرق الدفع على الرابط، وبعد السداد يُرجى إبلاغنا من صفحة الاشتراك.\n\nمع خالص التحية،\n{seller}',
   },
   en: {
     quote_subject: 'Quotation {number} from {seller}', quote_body: 'Hello {customer},\n\nHere is quotation {number} for {total}, valid until {valid_until}.\nYou can view, print, accept or negotiate it from the link.\n\nBest regards,\n{seller}', quote_cta: 'View quotation',

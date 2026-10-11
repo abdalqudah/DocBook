@@ -1,12 +1,17 @@
 // The customer's links: /quote/<token> a quotation (view, print, accept with a signature, decline or negotiate) and
 // /invoice/<token> a platform subscription invoice. No account needed: the link itself is the key.
 const express = require('express');
+const rateLimit = require('express-rate-limit');
+const config = require('../../config');
 const { wrap, flash } = require('../../routes/helpers');
 const { AppError } = require('../../core/errors');
 const sales = require('./sales.service');
 const response = require('./response.service');
 
 const router = express.Router();
+// The customer's answers and card payments from a link: each one e-mails the team or opens a payment, so a link
+// cannot be used to flood either.
+const limiter = rateLimit({ windowMs: 15 * 60_000, limit: config.isTest ? 1000 : 20, standardHeaders: true, legacyHeaders: false, handler: (req, res, next) => next(require('../../core/errors').E.rateLimited()) }); // eslint-disable-line global-require
 const noIndex = (res) => { res.set('X-Robots-Tag', 'noindex, nofollow'); res.set('Referrer-Policy', 'no-referrer'); };
 // The platform's team opening a link from the admin is not counted as the customer viewing it.
 const isTeam = (req) => Boolean(req.user && req.user.is_platform_admin);
@@ -38,9 +43,9 @@ const answer = (fn, tab) => wrap(async (req, res) => {
   }
   return res.redirect(`/quote/${encodeURIComponent(req.params.token)}${tab === 'negotiate' ? '#conversation' : ''}`);
 });
-router.post('/quote/:token/accept', answer((req, res) => response.accept(req.params.token, req.body, { ip: req.ip, base: res.locals.baseUrl }), 'accept'));
-router.post('/quote/:token/decline', answer((req, res) => response.decline(req.params.token, req.body, { base: res.locals.baseUrl }), 'decline'));
-router.post('/quote/:token/negotiate', answer(async (req, res) => {
+router.post('/quote/:token/accept', limiter, answer((req, res) => response.accept(req.params.token, req.body, { ip: req.ip, base: res.locals.baseUrl }), 'accept'));
+router.post('/quote/:token/decline', limiter, answer((req, res) => response.decline(req.params.token, req.body, { base: res.locals.baseUrl }), 'decline'));
+router.post('/quote/:token/negotiate', limiter, answer(async (req, res) => {
   await response.negotiate(req.params.token, req.body, { base: res.locals.baseUrl });
   flash(req, 'success', res.locals.t('sales.negotiation_sent'));
 }, 'negotiate'));
@@ -58,7 +63,30 @@ router.get('/invoice/:token', wrap(async (req, res) => {
   const inv = await sales.invoiceByToken(req.params.token, { count: !isTeam(req) });
   const r = await sales.invoiceRecipient(inv.business_id);
   asLocale(req, res, r.locale);
-  res.page('pages/sales/invoice-public', { layout: 'document', title: `${res.locals.t('sales.invoice')} ${inv.number || `#${inv.id}`}`, inv, p: await sales.profile() });
+  const pay = await require('../platformpay/platformpay.service').methods(); // eslint-disable-line global-require
+  res.page('pages/sales/invoice-public', {
+    layout: 'document', title: `${res.locals.t('sales.invoice')} ${inv.number || `#${inv.id}`}`, inv, p: await sales.profile(), pay,
+    payResult: ['paid', 'pending', 'failed'].includes(req.query.pay) ? req.query.pay : null,
+  });
+}));
+/** Pay the invoice by card from its link (no sign-in: the link is the key). */
+router.post('/invoice/:token/pay', limiter, wrap(async (req, res) => {
+  noIndex(res);
+  const inv = await sales.invoiceByToken(req.params.token, { count: false });
+  const back = `/invoice/${encodeURIComponent(req.params.token)}`;
+  const r = await sales.invoiceRecipient(inv.business_id);
+  try {
+    const out = await require('../platformpay/platformpay.service').start('clinic', { // eslint-disable-line global-require
+      businessId: inv.business_id, invoiceId: inv.id, userId: null, viaLink: true, baseUrl: require('../../middleware/web').publicBase(req), lang: res.locals.locale, // eslint-disable-line global-require
+      customer: { name: inv.clinic_name, email: r.email || undefined },
+    });
+    return res.page('pages/platformpay/go', { layout: 'auth', title: res.locals.t('ppay.go_title'), ...out, back, noindex: true, pageScripts: ['/js/payments.js'] });
+  } catch (e) {
+    if (!e.code || (e.status >= 500 && e.code !== 'PAY_PROVIDER_ERROR' && e.code !== 'PAY_PROVIDER_UNREACHABLE')) throw e;
+    const k = `ppay.err.${e.code}`;
+    flash(req, 'error', res.locals.t(k) !== k ? res.locals.t(k) : res.locals.t('ppay.err.generic'));
+    return res.redirect(back);
+  }
 }));
 
 /** A document made from a template (its link): view, print or save as PDF. */

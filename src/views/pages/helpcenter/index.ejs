@@ -1,0 +1,11 @@
+<%# /help — the platform's help articles by topic, with search. %>
+<section class="site-hero lp-hero lp-page-hero"><div class="lp-hero-bg" aria-hidden="true"></div>
+  <div class="container center"><h1><%= t('helpc.title') %></h1><p class="lead"><%= t('helpc.lead') %></p>
+    <form method="get" action="/help" class="row-sm" style="justify-content:center;max-width:520px;margin:16px auto 0"><input class="input grow" name="q" value="<%= q %>" placeholder="<%= t('helpc.search') %>" aria-label="<%= t('helpc.search') %>"><button class="btn btn-primary" type="submit"><%- icon('search', 'icon-sm') %></button></form></div></section>
+<section class="section"><div class="container" style="max-width:960px" data-help-list>
+  <% if (!groups.length) { %><p class="center muted"><%= q ? t('helpc.no_results') : t('helpc.empty') %></p><% } %>
+  <div class="grid grid-2"><% groups.forEach(function (g) { %>
+    <div class="panel"><div class="panel-head"><div><h2><%= t('helpc.cat_' + g.key) %></h2></div></div>
+      <ul class="panel-body stack-sm" style="list-style:none;margin:0"><% g.rows.forEach(function (a) { %><li><a class="link" href="/help/<%= a.slug %>"><%= a.title %></a></li><% }) %></ul></div>
+  <% }) %></div>
+</div></section>

@@ -114,6 +114,12 @@
     },
     "server_error": {
       "title": "أخطاء بالخادم: {n} (آخرها {path} — {message})"
+    },
+    "referral_credit": {
+      "title": "مكافأة إحالة معلّقة: حصلت {clinic} على شهر مجاني وليس لديها اشتراك فعّال"
+    },
+    "nps_low": {
+      "title": "تقييم منخفض: أعطت {clinic} درجة {score}/10"
     }
   }
 }

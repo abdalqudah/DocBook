@@ -85,10 +85,14 @@ router.post('/security/disable', wrap(async (req, res) => {
 }));
 
 // ---------------------------------------------------------------- activity
+let lastLocate = 0;
 router.get('/activity', wrap(async (req, res) => {
   const f = { period: String(req.query.period || 'day'), country: String(req.query.country || '').toUpperCase(), kind: String(req.query.kind || '') };
+  const geo = (await comms.get()).geo;
+  // addresses not placed yet are looked up in the background (seen on the next refresh)
+  if (geo.lookup && Date.now() - lastLocate > 5 * 60_000) { lastLocate = Date.now(); activity.locate(20).catch(() => {}); } // at most every 5 minutes (the page refreshes itself)
   const data = await activity.overview(f);
-  page(res, 'activity', { title: req.t('pcomms.activity_title'), ...data, f, countryName: regionName(req.locale), geo: (await comms.get()).geo });
+  page(res, 'activity', { title: req.t('pcomms.activity_title'), ...data, f, countryName: regionName(req.locale), geo, pageScripts: ['/js/activity.js'], updatedAt: new Date() });
 }));
 router.post('/activity/locate', wrap(async (req, res) => {
   if (!(await comms.get()).geo.lookup) { flash(req, 'error', req.t('pcomms.geo_off')); return res.redirect('/admin/activity'); }

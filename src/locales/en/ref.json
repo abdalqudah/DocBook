@@ -1,0 +1,13 @@
+{
+  "ref": {
+    "title": "Invite a clinic, get a free month",
+    "lead": "Share your link with other clinics. When a clinic signs up through it and pays its first subscription, you get one month free.",
+    "share_whatsapp": "Share on WhatsApp",
+    "share_text": "I use this system for my clinic and recommend it:",
+    "counts": "{signed} signed up · {rewarded} free months earned",
+    "reward_title": "You earned a free month",
+    "reward_period": "{clinic} subscribed through your invitation: one month was added to your subscription.",
+    "reward_trial": "{clinic} subscribed through your invitation: one month was added to your trial.",
+    "reward_credit": "{clinic} subscribed through your invitation: your free month will be added when you subscribe."
+  }
+}
