@@ -168,6 +168,15 @@ async function call(c, path, { method = 'GET', body = null, binary = false } = {
     body: body ? JSON.stringify(body) : undefined,
   }, 30_000).catch(async (e) => { throw unreachable(c.hub_url, e, await addressesOf(c.hub_url)); });
   if (res.status === 401) throw new AppError('HUB_KEY_REFUSED', 'The platform refused the key.', 409);
+  // A web page instead of the platform's answer: the hosting's bot protection checking the "visitor", or a page in front
+  // of the app (parking, setup) — never the link itself.
+  const type = String(res.headers.get('content-type') || '');
+  if (!binary && !/json/i.test(type)) {
+    const text = await res.text().catch(() => '');
+    const title = ((/<title[^>]*>([^<]{0,120})/i.exec(text) || [])[1] || '').trim();
+    const host = (() => { try { return new URL(c.hub_url).host; } catch { return c.hub_url; } })();
+    throw new AppError('HUB_NOT_API', `${host} answered with a web page instead of the platform link (HTTP ${res.status}${title ? `, “${title}”` : ''}). This is usually the hosting's bot protection (Imunify360 / LiteSpeed) checking the visitor: ask the host to allow this server's IP address for ${host}.`, 502);
+  }
   if (!res.ok) throw new AppError('HUB_ERROR', `The platform answered ${res.status}.`, 502);
   return binary ? { data: Buffer.from(await res.arrayBuffer()), mime: res.headers.get('content-type') || '' } : res.json();
 }
@@ -196,7 +205,13 @@ async function saveClient(ctx, { hubUrl, key, enabled = true, selfUrl = null }) 
     callback_url: (process.env.APP_URL ? String(process.env.APP_URL).replace(/\/+$/, '') : null) || (selfUrl ? String(selfUrl).replace(/\/+$/, '') : null) || cur.callback_url || null,
   };
   if (!row.key_enc) throw E.validation({ key: 'Enter the link key the platform gave you.' });
-  await call(row, '/hello', { method: 'POST', body: await clinicCard(row) }).catch((e) => { throw E.validation({ key: e.message }); });
+  // The address and key are kept even when the platform cannot be reached yet (no need to paste them again); the link
+  // is on only once the platform answered.
+  try { await call(row, '/hello', { method: 'POST', body: await clinicCard(row) }); } catch (e) {
+    const keep = { ...row, enabled: false };
+    await knex('hub_client').insert(keep).onConflict('id').merge(keep);
+    throw E.validation({ key: e.message });
+  }
   await knex('hub_client').insert(row).onConflict('id').merge(row);
   await audit.record(ctx, 'hub.client_linked', { entityType: 'hub_client', entityId: 1, newValues: { hub_url: row.hub_url } });
   return sync();

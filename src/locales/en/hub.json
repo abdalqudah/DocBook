@@ -28,6 +28,7 @@
     "hub_url": "Platform address",
     "key": "Link key",
     "key_hint": "From the platform admin: Linked installations → Create a link key.",
+    "key_saved": "Key saved — leave empty to use it",
     "link": "Link",
     "relink": "Update the link",
     "linked": "Linked to the platform: {offers} offers and {ads} ads.",

@@ -103,3 +103,17 @@ test('the IPv4 fallback answers like fetch', async () => {
   const refused = await hub.ipv4Fetch('http://127.0.0.1:1/', {}, 2000).catch((e) => e);
   assert.equal(refused.cause.code, 'ECONNREFUSED');
 });
+
+test('a web page instead of the platform link is named (bot protection); the address and key are kept', async () => {
+  const http = require('http'); // eslint-disable-line global-require
+  const srv = await new Promise((r) => { const x = http.createServer((req, res) => { res.setHeader('content-type', 'text/html'); res.end('<!DOCTYPE html><html><head><title>Checking your browser</title></head><body></body></html>'); }).listen(0, '127.0.0.1', () => r(x)); });
+  const before = await hub.client();
+  const url = `http://127.0.0.1:${srv.address().port}`;
+  const e = await hub.saveClient({ businessId, userId: null }, { hubUrl: url, key: 'dbh_kept_key' }).catch((x) => x);
+  srv.close();
+  assert.match(Object.values(e.details || {}).join(' '), /answered with a web page instead of the platform link \(HTTP 200, “Checking your browser”\)/);
+  const c = await hub.client();
+  assert.equal(c.hub_url, url); assert.equal(c.enabled ? 1 : 0, 0, 'not linked');
+  assert.equal(require('../src/core/secrets').decrypt(c.key_enc), 'dbh_kept_key', 'the key is kept'); // eslint-disable-line global-require
+  await knex('hub_client').where({ id: 1 }).update({ hub_url: before.hub_url, key_enc: before.key_enc, enabled: before.enabled });
+});
