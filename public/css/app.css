@@ -315,6 +315,10 @@ dialog.drawer .dialog-body { flex: 1; }
 .chart-tip { position: absolute; top: 0; pointer-events: none; transform: translate(-50%, -110%); background: var(--secondary); color: var(--secondary-ink); padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; white-space: nowrap; display: flex; flex-direction: column; box-shadow: var(--shadow); z-index: 5; }
 .chart-tip strong { font-size: 13px; }
 .chart-tip[hidden] { display: none; }
+/* Measures over time (modules/chronic): the target band behind the line, out-of-range values ringed in the danger colour. */
+.ck-band { fill: var(--success); opacity: .09; } .ck-band.s2 { fill: var(--success); opacity: .06; }
+.ch-dot.ck-out { fill: var(--danger); }
+.ck-out-ring { fill: none; stroke: var(--danger); stroke-width: 1.5; opacity: .7; }
 /* Anything marked hidden stays hidden, whatever its own display (an .alert or .btn toggled by a script). */
 [hidden] { display: none !important; }
 @media (max-width: 600px) { .ch-xl-alt { display: none; } }

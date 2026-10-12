@@ -34,6 +34,7 @@ const NAV = [
   { group: 'patients', icon: 'users', items: [
     { key: 'patients', href: '/app/patients', icon: 'users', perms: ['patients.view'] },
     { key: 'certificates', href: '/app/certificates', icon: 'badge-check', perms: ['certificates.view'] },
+    { key: 'chronic', href: '/app/chronic', icon: 'heart-pulse', perms: ['clinical.view'] }, // chronic disease tracking: conditions, readings, overdue follow-up
   ] },
   // Surgeries: their own line under Patients (day / week / month / list).
   { group: 'surgeries', icon: 'scissors', items: [

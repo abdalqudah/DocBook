@@ -306,10 +306,12 @@ async function renderShow(req, res, extra = {}) {
   // Patient workspace tabs (redesign 3.9): one address, ?tab=…; a tab shows only to members who may see its records.
   const perms = req.ctx.permissions;
   const surgeriesOn = (perms.has('clinical.view') || perms.has('appointments.manage')) && (typeof res.locals.moduleOn !== 'function' || res.locals.moduleOn('surgeries'));
-  const tabs = ['overview', clinicalOk || (perms.has('clinical.view') && !access.clinical) ? 'clinical' : null, 'appointments', surgeriesOn ? 'surgeries' : null, clinicalOk ? 'prescriptions' : null,
+  const tabs = ['overview', clinicalOk || (perms.has('clinical.view') && !access.clinical) ? 'clinical' : null, clinicalOk ? 'tracking' : null, 'appointments', surgeriesOn ? 'surgeries' : null, clinicalOk ? 'prescriptions' : null,
     clinicalOk ? 'orders' : null, perms.has('certificates.view') || clinicalOk ? 'documents' : null, perms.has('billing.view') ? 'billing' : null, 'timeline'].filter(Boolean);
   // What came from a previous system (Clinica) is in its place in the file — plan, visits, files — with no tab of its own.
   const tab = tabs.includes(req.query.tab) ? req.query.tab : 'overview';
+  // Chronic conditions (badges on every tab) and, on the Tracking tab, the readings and charts — modules/chronic.
+  const chronic = clinicalOk ? await require('../chronic/web').forPatientPage(req, p, { full: tab === 'tracking' }) : null; // eslint-disable-line global-require
   const byDateDesc = (a, b) => `${b.appointment_date} ${b.appointment_time}`.localeCompare(`${a.appointment_date} ${a.appointment_time}`);
   const prescriptions = clinicalOk ? timeline.flatMap((e) => (e.kind === 'visit' ? e.prescriptions.map((rx) => ({ ...rx, appt: e.appt })) : e.kind === 'prescription' ? [e.row] : [])) : [];
   let certificates = [];
@@ -358,7 +360,7 @@ async function renderShow(req, res, extra = {}) {
   res.page('pages/clinic/patients/show', {
     ptBranches,
     pprofile: { groups: ppGroups, photo: ppPhoto, manager: nameOf(p.case_manager_id), updatedBy: nameOf(p.updated_by), choices: profile.choices(req.t, req.locale) },
-    tab, tabs, portalOn, portalAccount, prescriptions, certificates, orderTab, legacy, treatmentPlan, lgLink, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
+    tab, tabs, chronic, portalOn, portalAccount, prescriptions, certificates, orderTab, legacy, treatmentPlan, lgLink, transferLinks, movedTo, canTransfer, unpaid, surgeries, surgeriesOn, canSurgery: perms.has('appointments.manage') || Boolean(req.ctx.ownDoctorId && perms.has('clinical.edit')), allAppointments: apptsMine.slice().sort(byDateDesc),
     reportVisits: clinicalOk ? timeline.filter((e) => e.kind === 'visit' && e.consultation).map((e) => e.appt) : [],
     title: p.full_name, patient: p, stats, upcoming, latestDiagnosis, access, lastOpened, icdTitle: (r) => icd.titleOf(r, req.locale),
     timeline, invoices: tl.invoices.filter(mine),

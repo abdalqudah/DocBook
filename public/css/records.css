@@ -249,3 +249,24 @@ tr.is-upcoming td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
   .pt-page-head { flex-wrap: wrap; }
   .pt-page-head .pt-actions { width: 100%; flex-wrap: wrap; }
 }
+
+/* Chronic disease tracking (modules/chronic): the measure's latest / change / target, legend keys, condition rows, the list. */
+.ck-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin: 0 0 var(--space-3); }
+.ck-kpis dt { font-size: var(--fs-xs); color: var(--text-muted); }
+.ck-kpis dd { margin: 2px 0 0; }
+.ck-measure.is-out { border-color: var(--danger); }
+.ck-change.is-up { color: var(--warning); } .ck-change.is-down { color: var(--primary); }
+.ck-legend { display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 6px 0 0; }
+.ck-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ck-key { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: var(--primary); }
+.ck-key.s2 { background: var(--text-subtle); }
+.ck-cond-row { align-items: flex-start; gap: var(--space-2); }
+.ck-cond { text-decoration: none; }
+.ck-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.ck-overdue-row td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+[dir="rtl"] .ck-overdue-row td:first-child { box-shadow: inset -3px 0 0 var(--danger); }
+.ck-setting { flex-wrap: wrap; }
+.ck-days { width: 6em; }
+.ck-add > summary { list-style: none; cursor: pointer; }
+.ck-add > summary::-webkit-details-marker { display: none; }
+@media (max-width: 520px) { .ck-kpis { grid-template-columns: 1fr 1fr; } }

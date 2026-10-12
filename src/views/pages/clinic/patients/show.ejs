@@ -16,6 +16,7 @@
           <% if (p.file_number) { %><span class="badge badge-neutral" title="<%= t('pprofile.file_number') %>"><%- icon('id-card', 'icon-sm') %><bdi dir="ltr"><%= p.file_number %></bdi></span><% } %>
           <% if (p.category && p.category !== 'standard') { %><span class="badge badge-warning"><%- icon('star', 'icon-sm') %><%= t('pprofile.categories.' + p.category) %></span><% } %>
           <% _pp.groups.forEach(function (g) { %><span class="badge badge-info" dir="auto"><%= g.name %></span><% }) %>
+          <% if (typeof chronic !== 'undefined' && chronic) { chronic.conditions.forEach(function (c) { %><a class="badge badge-warning ck-cond" href="/app/patients/<%= p.id %>?tab=tracking" title="<%= [c.started_on ? t('chronic.since', { date: fmt.date(c.started_on) }) : '', c.note || ''].filter(Boolean).join(' — ') %>"><%- icon('heart-pulse', 'icon-sm') %><span dir="auto"><%= c.condition_key === 'other' ? c.label : t('chronic.conditions.' + c.condition_key) %></span></a><% }); } %>
           <% if (age !== null) { %><span><%= t('patients.years', { n: age }) %></span><% } %>
           <% if (p.gender) { %><span><%= t('patients.genders.' + p.gender) %></span><% } %>
           <% if (p.phone) { %><a class="link" href="tel:<%= p.phone.replace(/[^\d+]/g, '') %>" dir="ltr"><%- icon('phone', 'icon-sm') %><%= p.phone %></a><% } %>
@@ -43,7 +44,7 @@
 </div>
 
 <% var tabHref = function (k) { return '/app/patients/' + p.id + (k === 'overview' ? '' : '?tab=' + k); };
-   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', surgeries: 'scissors', prescriptions: 'pill', orders: 'activity', documents: 'file-text', billing: 'receipt', timeline: 'history', legacy: 'archive-restore' }; %>
+   var tabIcon = { overview: 'user-round', clinical: 'stethoscope', appointments: 'calendar-days', surgeries: 'scissors', prescriptions: 'pill', orders: 'activity', documents: 'file-text', billing: 'receipt', timeline: 'history', legacy: 'archive-restore', tracking: 'heart-pulse' }; %>
 <nav class="tabs mb-4 pt-tabs" aria-label="<%= t('patients.workspace') %>">
   <% tabs.forEach(function (k) { %><a href="<%= tabHref(k) %>" class="<%= tab === k ? 'active' : '' %>"<% if (tab === k) { %> aria-current="page"<% } %>><%- icon(tabIcon[k], 'icon-sm') %><%= t('patients.tab.' + k) %></a><% }) %>
 </nav>
@@ -219,6 +220,8 @@
   </div>
 </div>
 <% } %>
+
+<% if (tab === 'tracking' && typeof chronic !== 'undefined' && chronic && chronic.charts) { %><%- include('../../chronic/_tracking', { ck: chronic, p: p }) %><% } %>
 
 <% if (tab === 'appointments') { %>
 <div class="panel flush">

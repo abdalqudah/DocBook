@@ -1,0 +1,96 @@
+<%# The patient's Tracking tab (modules/chronic): chronic conditions, a chart per measure with its latest value, change and
+    target, the add-a-reading form and every reading (entered here or from a visit's vital signs). Locals: ck, p. %>
+<% var P = '../../partials/';
+   var kindOpts = ck.kinds.map(function (k) { return { value: k, label: t('chronic.kinds.' + k) + ' (' + ck.units[k] + ')' }; }); %>
+<div class="grid grid-main ck-tab">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><div><h2><%= t('chronic.tab_title') %></h2><p class="panel-sub"><%= t('chronic.tab_lead') %></p></div></div>
+    </div>
+    <% if (!ck.charts.length) { %>
+    <div class="panel"><%- include(P + 'empty', { compact: true, emptyIcon: 'activity', emptyTitle: t('chronic.no_readings_title'), emptyText: t('chronic.no_readings') }) %></div>
+    <% } else { %>
+    <div class="stack ck-charts">
+      <% ck.charts.forEach(function (c) { %>
+      <section class="panel ck-measure<%= c.lastOut ? ' is-out' : '' %>" aria-labelledby="ck-<%= c.key %>" data-measure="<%= c.key %>">
+        <div class="panel-head"><h2 id="ck-<%= c.key %>"><%= t('chronic.measures.' + c.key) %></h2><span class="tiny muted" dir="ltr"><%= c.unit %></span></div>
+        <div class="panel-body">
+          <dl class="ck-kpis">
+            <div><dt><%= t('chronic.latest') %><% if (c.latestLabel) { %> · <%= c.latestLabel %><% } %></dt><dd><bdi dir="ltr" class="strong"><%= c.latest %></bdi> <% if (c.lastOut) { %><span class="badge badge-danger"><%= t('chronic.out_of_range') %></span><% } else { %><span class="badge badge-success"><%= t('chronic.in_range') %></span><% } %><div class="tiny muted"><%= fmt.date(c.lastOn) %></div></dd></div>
+            <div><dt><%= t('chronic.change') %></dt><dd><% if (c.change) { %><bdi dir="ltr" class="ck-change<%= c.change.dir > 0 ? ' is-up' : c.change.dir < 0 ? ' is-down' : '' %>"><%= c.change.text %></bdi><% } else { %><span class="muted small"><%= t('chronic.no_change') %></span><% } %></dd></div>
+            <div><dt><%= t('chronic.target') %></dt><dd><bdi dir="ltr"><%= c.target || '—' %></bdi><% if (c.outCount) { %><div class="tiny muted"><%= t('chronic.out_n', { n: fmt.number(c.outCount) }) %></div><% } %></dd></div>
+          </dl>
+          <%- c.svg %>
+          <% if (c.series.length > 1) { %><p class="tiny muted ck-legend"><% c.series.forEach(function (s) { %><span><i class="ck-key <%= s.cls %>"></i><%= s.label %></span><% }) %></p><% } %>
+          <% if (c.key === 'bmi' && ck.heightCm) { %><p class="tiny muted"><%= t('chronic.bmi_note', { h: fmt.number(ck.heightCm, 1) }) %></p><% } %>
+        </div>
+      </section>
+      <% }) %>
+    </div>
+    <p class="tiny muted"><%= t('chronic.targets_note') %></p>
+    <% } %>
+
+    <% if (ck.readings.length) { %>
+    <section class="panel flush" aria-labelledby="ck-all">
+      <div class="panel-head"><h2 id="ck-all"><%= t('chronic.all_readings') %></h2><span class="badge"><%= fmt.number(ck.readings.length) %></span></div>
+      <div class="table-wrap"><table class="table responsive">
+        <thead><tr><th><%= t('chronic.date') %></th><th><%= t('chronic.kind') %></th><th class="num"><%= t('chronic.value') %></th><th><%= t('chronic.source') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+        <tbody><% ck.readings.slice(0, 300).forEach(function (r) { %><tr>
+          <td class="primary-cell nowrap"><span class="strong"><%= fmt.date(r.measured_on) %></span><% if (r.measured_time) { %> <span class="small muted" dir="ltr"><%= r.measured_time %></span><% } %><% if (r.note) { %><div class="tiny muted" dir="auto"><%= r.note %></div><% } %></td>
+          <td data-label="<%= t('chronic.kind') %>"><%= t('chronic.kinds.' + r.kind) %><% if (r.kind === 'glucose' && r.context) { %> <span class="small muted">· <%= t('chronic.contexts.' + r.context) %></span><% } %></td>
+          <td class="num" data-label="<%= t('chronic.value') %>"><bdi dir="ltr"><%= ck.valueText(r) %> <span class="muted small"><%= r.unit %></span></bdi></td>
+          <td data-label="<%= t('chronic.source') %>"><% if (r.source === 'visit') { %><a class="link small" href="/app/visits/<%= r.appointment_id %>"><%- icon('stethoscope', 'icon-sm') %><%= t('chronic.source_visit') %></a><% } else { %><span class="small"><%= t('chronic.source_manual') %></span><% if (r.entered_by_name) { %> <span class="tiny muted">· <%= r.entered_by_name %></span><% } %><% } %></td>
+          <td class="actions"><% if (r.source === 'manual' && ck.canReading) { %><%- include(P + 'delete-form', { action: '/app/patients/' + p.id + '/chronic/readings/' + r.id + '/delete' }) %><% } %></td>
+        </tr><% }) %></tbody>
+      </table></div>
+    </section>
+    <% } %>
+  </div>
+
+  <div class="stack">
+    <section class="panel" aria-labelledby="ck-conds">
+      <div class="panel-head"><h2 id="ck-conds"><%= t('chronic.conditions_title') %></h2></div>
+      <div class="panel-body stack-sm">
+        <% if (!ck.conditions.length) { %><p class="small muted"><%= t('chronic.no_conditions') %></p><% } %>
+        <% ck.conditions.forEach(function (c) { %>
+        <div class="row ck-cond-row">
+          <span class="badge badge-warning"><%- icon('heart-pulse', 'icon-sm') %><span dir="auto"><%= c.condition_key === 'other' ? c.label : t('chronic.conditions.' + c.condition_key) %></span></span>
+          <span class="grow small muted"><%= c.started_on ? t('chronic.since', { date: fmt.date(c.started_on) }) : '' %><% if (c.note) { %><span class="d-block" dir="auto"><%= c.note %></span><% } %></span>
+          <% if (ck.canCondition) { %><%- include(P + 'delete-form', { action: '/app/patients/' + p.id + '/chronic/conditions/' + c.id + '/delete', confirmText: t('chronic.remove_condition_confirm') }) %><% } %>
+        </div>
+        <% }) %>
+        <% if (ck.canCondition) { %>
+        <details class="ck-add"<%= ck.conditions.length ? '' : ' open' %>>
+          <summary class="btn btn-secondary btn-sm"><%- icon('plus', 'icon-sm') %><%= t('chronic.add_condition') %></summary>
+          <form method="post" action="/app/patients/<%= p.id %>/chronic/conditions" class="mt-2"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="form-grid">
+              <%- include(P + 'field', { name: 'condition_key', label: t('chronic.condition'), type: 'select', required: true, options: ck.conditionKeys.map(function (k) { return { value: k, label: t('chronic.conditions.' + k) }; }), cls: 'full' }) %>
+              <%- include(P + 'field', { name: 'label', label: t('chronic.other_name'), attrs: 'maxlength="120"', cls: 'full' }) %>
+              <%- include(P + 'field', { name: 'started_on', label: t('chronic.started_on'), type: 'date', attrs: 'max="' + clinicToday + '"', cls: 'full' }) %>
+              <%- include(P + 'field', { name: 'note', label: t('chronic.note'), attrs: 'maxlength="500"', cls: 'full' }) %>
+            </div>
+            <button class="btn btn-primary btn-sm mt-2" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button>
+          </form>
+        </details>
+        <% } %>
+      </div>
+    </section>
+
+    <% if (ck.canReading) { %>
+    <section class="panel" aria-labelledby="ck-add-reading">
+      <div class="panel-head"><h2 id="ck-add-reading"><%= t('chronic.add_reading') %></h2></div>
+      <form class="panel-body" method="post" action="/app/patients/<%= p.id %>/chronic/readings"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-grid">
+          <%- include(P + 'field', { name: 'kind', label: t('chronic.kind'), type: 'select', required: true, options: kindOpts, cls: 'full' }) %>
+          <%- include(P + 'field', { name: 'value', label: t('chronic.value'), required: true, attrs: 'dir="ltr" maxlength="20" autocomplete="off" placeholder="120/80"', help: t('chronic.value_help'), cls: 'full' }) %>
+          <%- include(P + 'field', { name: 'context', label: t('chronic.context'), type: 'select', options: ck.contexts.map(function (k) { return { value: k, label: t('chronic.contexts.' + k) }; }), value: 'fasting', cls: 'full' }) %>
+          <%- include(P + 'field', { name: 'measured_on', label: t('chronic.date'), type: 'date', required: true, value: clinicToday, attrs: 'max="' + clinicToday + '"' }) %>
+          <%- include(P + 'field', { name: 'measured_time', label: t('chronic.time'), type: 'time', attrs: 'dir="ltr"' }) %>
+          <%- include(P + 'field', { name: 'note', id: 'f-reading-note', label: t('chronic.note'), attrs: 'maxlength="500"', cls: 'full' }) %>
+        </div>
+        <button class="btn btn-primary btn-sm mt-2" type="submit"><%- icon('plus', 'icon-sm') %><%= t('chronic.add_reading') %></button>
+      </form>
+    </section>
+    <% } %>
+  </div>
+</div>

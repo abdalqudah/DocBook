@@ -39,6 +39,11 @@ router.get('/:slug/account', wrap(async (req, res, next) => {
   if (!who) return res.redirect(`${base(got.clinic)}/login`);
   const data = await svc.home(got.clinic, who.patientId);
   if (!data.patient) { delete req.session.pp[got.clinic.id]; return res.redirect(`${base(got.clinic)}/login`); }
+  // With the medical record shown: the patient's own readings over time (modules/chronic), when there are any.
+  if (data.s.show_records) {
+    const chronic = require('../chronic/service'); // eslint-disable-line global-require
+    data.readingCharts = require('../chronic/view').charts(await chronic.trackingOf({ businessId: got.clinic.id, ownDoctorId: null, today: null }, data.patient), req.t, req.locale); // eslint-disable-line global-require
+  }
   return page(req, res, got.clinic, 'home', data);
 }));
 

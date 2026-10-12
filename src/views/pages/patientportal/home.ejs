@@ -1,7 +1,7 @@
 <% var L = function (ar, en) { return locale === 'en' && en ? en : ar; };
    var tone = { completed: 'badge-success', confirmed: 'badge-info', pending: 'badge-warning', cancelled: 'badge-neutral', no_show: 'badge-danger' };
    var kb = function (n) { return n >= 1048576 ? (Math.round(n / 104857.6) / 10) + ' MB' : Math.max(1, Math.round((n || 0) / 1024)) + ' KB'; };
-   var sections = [['visits', 'calendar-days', s.show_visits], ['records', 'stethoscope', s.show_records], ['prescriptions', 'pill', s.show_prescriptions], ['plan', 'clipboard-list', s.show_plan], ['files', 'paperclip', s.show_files]].filter(function (x) { return x[2]; }); %>
+   var sections = [['visits', 'calendar-days', s.show_visits], ['records', 'stethoscope', s.show_records], ['readings', 'heart-pulse', s.show_records && typeof readingCharts !== 'undefined' && readingCharts.length > 0], ['prescriptions', 'pill', s.show_prescriptions], ['plan', 'clipboard-list', s.show_plan], ['files', 'paperclip', s.show_files]].filter(function (x) { return x[2]; }); %>
 <div class="pp-home">
   <div class="pp-home-head">
     <div class="row-sm">
@@ -39,6 +39,21 @@
         <% if (r.diagnosis) { %><div class="small"><span class="muted"><%= t('pportal.diagnosis') %>:</span> <span dir="auto"><%= r.diagnosis %></span></div><% } %>
         <% if (r.plan_text) { %><div class="small rec-pre" dir="auto"><%= r.plan_text %></div><% } %></div></li>
     <% }) %></ul><% } %>
+  </section>
+  <% } %>
+
+  <% if (s.show_records && typeof readingCharts !== 'undefined' && readingCharts.length) { %>
+  <section class="panel" id="pp-readings" data-pp-section="readings">
+    <div class="panel-head"><h2><%= t('chronic.portal_title') %></h2></div>
+    <div class="panel-body stack">
+      <% readingCharts.forEach(function (c) { %>
+      <div data-measure="<%= c.key %>">
+        <div class="row-sm"><strong><%= t('chronic.measures.' + c.key) %></strong><bdi dir="ltr" class="muted small"><%= c.latest %> <%= c.unit %></bdi><% if (c.lastOut) { %><span class="badge badge-danger"><%= t('chronic.out_of_range') %></span><% } %></div>
+        <% if (c.target) { %><div class="tiny muted"><%= t('chronic.target') %>: <bdi dir="ltr"><%= c.target %></bdi></div><% } %>
+        <%- c.svg %>
+      </div>
+      <% }) %>
+    </div>
   </section>
   <% } %>
 
