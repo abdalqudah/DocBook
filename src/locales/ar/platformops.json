@@ -287,6 +287,7 @@
     "UPDATE_NOTHING_STAGED": "لا يوجد تحديث مرفوع.",
     "UPDATE_NO_BACKUP": "لا توجد نسخة احتياطية للاستعادة.",
     "UPDATE_COPY_FAILED": "تعذّر نسخ التحديث، وأُعيدت الملفات السابقة.",
-    "UPDATE_WRONG_EDITION": "مرفوض: ملف التحديث هذا لنوع تنصيب آخر. على المنصة ارفع update-<الإصدار>.zip، وعلى تنصيب العيادة الواحدة أو المركز الطبي ارفع update-clinic-<الإصدار>.zip."
+    "UPDATE_WRONG_EDITION": "مرفوض: ملف التحديث هذا لنوع تنصيب آخر. على المنصة ارفع update-<الإصدار>.zip، وعلى تنصيب العيادة الواحدة أو المركز الطبي ارفع update-clinic-<الإصدار>.zip.",
+    "UPDATE_CONTAINER": "هذا الخادم يعمل داخل Docker: التحديث يتم بالأمر deploy/deploy.sh على الخادم (انظر docs/VPS_DEPLOYMENT_GUIDE.md) وليس من هذه الصفحة."
   }
 }

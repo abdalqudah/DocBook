@@ -353,7 +353,8 @@
         "preferences_updated": "Changed display preferences"
       },
       "data": {
-        "exported": "Exported clinic data"
+        "exported": "Exported clinic data",
+        "list_exported": "Exported a list (CSV/Excel)"
       },
       "medication": {
         "starter_list_added": "Added the common medications list"

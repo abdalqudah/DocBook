@@ -15,6 +15,16 @@
 
 ---
 
+## الطريقة الموصى بها لسيرفر VPS: Docker
+لسيرفر VPS جديد (مثل Hostinger بنظام Ubuntu 24.04) استخدم حزمة Docker الجاهزة: التطبيق وقاعدة البيانات وشهادات
+HTTPS التلقائية، مع نسخ احتياطي مشفّر واسترجاع مُختبَر ورجوع تلقائي عند فشل التحديث.
+الخطوات بالأوامر في `docs/VPS_DEPLOYMENT_GUIDE.md`، والإعدادات في `docs/ENVIRONMENT_VARIABLES.md`.
+(Docker deployment for a VPS: see docs/VPS_DEPLOYMENT_GUIDE.md.)
+
+الطرق التالية (PM2 + nginx، أو cPanel) ما زالت مدعومة.
+
+---
+
 ## الطريقة الأولى: سيرفر VPS (Ubuntu 22.04/24.04) — الأنسب
 
 ### 1) تثبيت البرامج

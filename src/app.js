@@ -146,6 +146,19 @@ function createApp() {
   // CSRF check; the booking-widget embed mode (frameable /<slug>/book?embed=1) uses a signed token instead of the session.
   app.use(require('./modules/discover/embed').wrapCsrf(web.csrf));
 
+  // Asked by the reverse proxy (deploy/caddy/Caddyfile, on-demand TLS) before it obtains a certificate for a host:
+  // yes only for the platform's own host (and its www) and the clinics' verified, live custom domains. Answers from
+  // the proxy's private network only; the proxy also refuses /internal/ from the internet.
+  app.get('/internal/tls-ask', async (req, res) => {
+    const from = String(req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+    if (!/^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|::1$|fd)/.test(from)) return res.status(404).end();
+    const host = String(req.query.domain || '').toLowerCase().replace(/\.$/, '');
+    let platform = ''; try { platform = new URL(config.appUrl).hostname.toLowerCase(); } catch { /* none */ }
+    const ok = Boolean(host) && (host === platform || host === `www.${platform}`
+      || Boolean(await require('./modules/branding/domain.service').clinicForHost(host).catch(() => null))); // eslint-disable-line global-require
+    return res.status(ok ? 200 : 404).end();
+  });
+
   app.get('/healthz', async (req, res) => {
     try { await knex.raw('select 1'); res.json({ status: 'ok' }); } catch { res.status(503).json({ status: 'db_unavailable' }); }
   });

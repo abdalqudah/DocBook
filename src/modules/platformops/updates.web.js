@@ -15,6 +15,10 @@ const auth = require('../auth/auth.service');
 const updater = require('./updater');
 
 const ROOT = () => (process.env.NODE_ENV === 'test' && process.env.DOCBOOK_UPDATE_ROOT) || updater.DEFAULT_ROOT; // tests point this at a scratch copy
+// In a container (deploy/: MEDWORKS_CONTAINER=1) the app's files come from its image and are replaced on every deploy:
+// a version installed from this page would be lost at the next restart, so updates go through deploy/deploy.sh there.
+const inContainer = () => process.env.MEDWORKS_CONTAINER === '1';
+const containerBlock = () => { if (inContainer()) throw new AppError('UPDATE_CONTAINER', 'This server runs in Docker: update it with deploy/deploy.sh on the server.', 409); };
 
 /** The update pages on `router` at `path` (its full address `base`), drawn in `layout`. */
 function mount(router, { path = '/updates', base = '/admin/updates', layout = 'admin' } = {}) {
@@ -77,6 +81,7 @@ function mount(router, { path = '/updates', base = '/admin/updates', layout = 'a
 
   router.post(`${path}/install`, zipFile, verifyCsrfAfterUpload, wrap(async (req, res) => {
     try {
+      containerBlock();
       await confirmPassword(req);
       if (req.uploadError) throw req.uploadError;
       const r = updater.install(req.file ? req.file.buffer : null, { root: ROOT(), by: req.user.email, fileName: req.file && req.file.originalname });
@@ -88,6 +93,7 @@ function mount(router, { path = '/updates', base = '/admin/updates', layout = 'a
 
   router.post(`${path}/restore`, form(async (req, res) => {
     try {
+      containerBlock();
       await confirmPassword(req);
       const r = updater.restore(req.body.backup, { root: ROOT(), by: req.user.email });
       await audit.record(req.ctx, 'platform.update_rolled_back', { entityType: 'app_update', entityId: String(req.body.backup || '').slice(0, 60), oldValues: { version: r.from }, newValues: { version: r.to } });

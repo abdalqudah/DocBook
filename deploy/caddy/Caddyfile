@@ -1,0 +1,44 @@
+# MedWorks behind Caddy: HTTPS for the platform's domain (and www, redirected to it) with certificates Caddy obtains
+# from Let's Encrypt and renews by itself; HTTP is redirected to HTTPS. Clinics' verified custom domains get their
+# certificate on first visit (on-demand TLS), but only after the app confirms the domain (/internal/tls-ask).
+# DOMAIN and ACME_EMAIL come from .env (see compose.yaml). No access log: request paths can carry private link tokens
+# (quotations, invoices, shared files); the app keeps its own audit log.
+{
+	email {$ACME_EMAIL}
+	on_demand_tls {
+		ask http://app:3000/internal/tls-ask
+	}
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+(medworks) {
+	encode zstd gzip
+	# The app's internal endpoints are never served to the internet.
+	@internal path /internal/*
+	respond @internal 404
+	reverse_proxy app:3000 {
+		# The app keeps long requests (exports, imports, video consultation signalling) open; give them time.
+		transport http {
+			read_timeout 10m
+			write_timeout 10m
+		}
+	}
+}
+
+{$DOMAIN} {
+	import medworks
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+# Any other host: a clinic's custom domain (certificate on demand, only when the app says yes).
+https:// {
+	tls {
+		on_demand
+	}
+	import medworks
+}

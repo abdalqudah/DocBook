@@ -59,7 +59,7 @@ const guardVisit = wrap(async (req, res, next) => {
   if (acc.reason === 'no_permission' || acc.clinical) return next();
   return deny(req, res, `/app/visits/${a.id}`);
 });
-router.use(['/patients/:pid(\\d+)/dental', '/patients/:pid(\\d+)/pregnancy', '/specialty/panel/:pid(\\d+)'], guardPatient(false));
+router.use(['/patients/:pid(\\d+)/dental', '/patients/:pid(\\d+)/pregnancy', '/patients/:pid(\\d+)/records', '/specialty/panel/:pid(\\d+)'], guardPatient(false)); // specialty records (spirometry, …) too
 router.use('/patients/:pid(\\d+)/growth', guardPatient(true));
 router.use(['/patient-docs/:aid(\\d+)', '/visits/:aid(\\d+)/ai'], guardVisit);
 

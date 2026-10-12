@@ -27,7 +27,31 @@ function required(name, fallback) {
   return value;
 }
 
+/**
+ * What a production server must not run without. With STRICT_CONFIG=true (set by the Docker deployment, deploy/)
+ * the app refuses to start when any is missing — instead of falling back to development defaults; without it the
+ * problems are only logged (shared hosts that rely on the generated .session-secret keep working).
+ */
+function productionProblems(e = process.env) {
+  const out = [];
+  const secret = String(e.SESSION_SECRET || '');
+  if (secret.length < 32 || /dev-only/.test(secret)) out.push('SESSION_SECRET must be a random string of at least 32 characters.');
+  if (String(e.APP_KEY || '').length < 32) out.push('APP_KEY must be set (at least 32 characters) and never changed: it encrypts stored credentials.');
+  let url = null; try { url = new URL(String(e.APP_URL || '')); } catch { /* reported below */ }
+  if (!url) out.push('APP_URL must be the public address, e.g. https://medworks.app');
+  else if (url.protocol !== 'https:') out.push('APP_URL must start with https:// in production.');
+  else if (/^(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(url.hostname)) out.push('APP_URL must not be a local address in production.');
+  if (!e.DB_NAME || !e.DB_USER) out.push('DB_NAME and DB_USER must be set.');
+  if (!e.DB_PASSWORD) out.push('DB_PASSWORD must be set.');
+  if (String(e.TRUST_PROXY || '').trim() === 'false') out.push('TRUST_PROXY must not be false behind the reverse proxy (client addresses and secure cookies depend on it).');
+  if (e.SUPER_ADMIN_EMAIL && e.SUPER_ADMIN_PASSWORD && String(e.SUPER_ADMIN_PASSWORD).length < 12) out.push('SUPER_ADMIN_PASSWORD must be at least 12 characters.');
+  return out;
+}
+const strictConfig = String(process.env.STRICT_CONFIG || '').toLowerCase() === 'true';
+
 module.exports = {
+  productionProblems,
+  strictConfig,
   env,
   isProd: env === 'production',
   isTest,

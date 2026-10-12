@@ -181,7 +181,10 @@ function dateText(iso, f) {
   const [y, m, d] = String(iso).slice(0, 10).split('-');
   return { 'YYYY-MM-DD': `${y}-${m}-${d}`, 'DD/MM/YYYY': `${d}/${m}/${y}`, 'MM/DD/YYYY': `${m}/${d}/${y}`, YYYYMMDD: `${y}${m}${d}`, 'DD-MM-YYYY': `${d}-${m}-${y}` }[f] || `${y}-${m}-${d}`;
 }
-const csvCell = (v, sep) => { const s = String(v ?? ''); return s.includes(sep) || /["\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+// A text cell a spreadsheet would run as a formula (=, +, @, a tab, or - before something that is not a number) gets a
+// leading apostrophe; numbers (amounts) are written as they are, so the bank still reads them.
+const unformula = (s) => (/^[=+@\t\r]/.test(s) || /^-(?!\d+(\.\d+)?$)/.test(s) ? `'${s}` : s);
+const csvCell = (v, sep) => { const s = unformula(String(v ?? '')); return s.includes(sep) || /["\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 
 /**
  * Builds one bank file. info = { period, valueDate, currency, clinicName, reference, t }.
@@ -276,4 +279,4 @@ async function make(ctx, { templateId, period, keys, action, to, markPaid, value
 const history = (ctx, period) => knex('bank_transfers as b').leftJoin('users as u', 'u.id', 'b.created_by').where({ 'b.business_id': ctx.businessId })
   .modify((q) => { if (period) q.where('b.period', period); }).orderBy('b.created_at', 'desc').limit(30).select('b.*', 'u.name as by_name');
 
-module.exports = { roundTo, FIELDS, FORMATS, DELIMITERS, DATE_FORMATS, PRESETS, ibanValid, accountState, list, get, save, remove, fromPreset, payees, templateFor, groups, build, make, history };
+module.exports = { csvCell, roundTo, FIELDS, FORMATS, DELIMITERS, DATE_FORMATS, PRESETS, ibanValid, accountState, list, get, save, remove, fromPreset, payees, templateFor, groups, build, make, history };

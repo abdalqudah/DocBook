@@ -1,0 +1,13 @@
+# Daily encrypted backup of MedWorks (deploy/backup.sh). Install: see docs/BACKUP_AND_RESTORE.md
+[Unit]
+Description=MedWorks backup (databases and files)
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+WorkingDirectory=/opt/medworks
+ExecStart=/opt/medworks/deploy/backup.sh
+Nice=10
+IOSchedulingClass=idle

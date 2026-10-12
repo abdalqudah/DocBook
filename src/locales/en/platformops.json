@@ -287,6 +287,7 @@
     "UPDATE_NOTHING_STAGED": "There is no uploaded update.",
     "UPDATE_NO_BACKUP": "There is no backup to restore.",
     "UPDATE_COPY_FAILED": "The update could not be copied; the previous files were put back.",
-    "UPDATE_WRONG_EDITION": "Refused: this update file is for another kind of installation. On the platform upload update-<version>.zip; on a one-clinic or medical-centre installation upload update-clinic-<version>.zip."
+    "UPDATE_WRONG_EDITION": "Refused: this update file is for another kind of installation. On the platform upload update-<version>.zip; on a one-clinic or medical-centre installation upload update-clinic-<version>.zip.",
+    "UPDATE_CONTAINER": "This server runs in Docker: updates are installed with deploy/deploy.sh on the server (see docs/VPS_DEPLOYMENT_GUIDE.md), not from this page."
   }
 }

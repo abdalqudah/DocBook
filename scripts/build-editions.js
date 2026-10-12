@@ -146,11 +146,13 @@ function sourceGuideFor(edition) {
 }
 
 // The full source (tracked files), scrubbed the same way, with the edition's .env.
+const PLATFORM_DEPLOY = /^(deploy\/|Dockerfile$|compose\.yaml$|\.dockerignore$|CHANGELOG\.md$|docs\/(ARCHITECTURE_AUDIT|FEATURE_INVENTORY|SECURITY_AUDIT|DEPLOYMENT_PLAN|DATABASE_MIGRATION_PLAN|TEST_RESULTS|KNOWN_ISSUES|PRODUCTION_READINESS|VPS_DEPLOYMENT_GUIDE|ROLLBACK_GUIDE|BACKUP_AND_RESTORE|ENVIRONMENT_VARIABLES)\.md$)/;
 function buildSource(edition, file) {
   const out = path.join(ROOT, 'dist', file);
   fs.rmSync(out, { recursive: true, force: true });
   const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean)
-    .filter((f) => f !== 'scripts/build-editions.js' && fs.existsSync(path.join(ROOT, f)));
+    .filter((f) => f !== 'scripts/build-editions.js' && fs.existsSync(path.join(ROOT, f)))
+    .filter((f) => !PLATFORM_DEPLOY.test(f)); // the platform's own Docker / VPS package (its domain, its backups) is not part of a clinic's copy
   for (const f of files) { fs.mkdirSync(path.join(out, path.dirname(f)), { recursive: true }); fs.copyFileSync(path.join(ROOT, f), path.join(out, f)); }
   scrub(out);
   fs.writeFileSync(path.join(out, '.env'), envFor(edition));

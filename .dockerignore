@@ -1,0 +1,24 @@
+# Nothing secret, personal or bulky goes into the build context.
+.git
+.gitignore
+.claude
+node_modules
+dist
+storage
+backups
+.env
+.env.*
+!.env.example
+.session-secret
+*.log
+*.pem
+*.key
+*.dbk
+*.sql
+*.sql.gz
+*.tar.gz
+.DS_Store
+.vscode
+.idea
+test
+docs/*.pdf

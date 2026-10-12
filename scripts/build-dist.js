@@ -91,6 +91,8 @@ function copy(from, to, filter) {
   const clash = execFileSync('find', ['.', '-name', 'node_modules'], { cwd: OUT, encoding: 'utf8' }).trim();
   if (clash) throw new Error(`dist must not contain node_modules:\n${clash}`);
 
+  // The Docker image (Dockerfile) uses the folder itself: no zip there (and no zip tool in the build image).
+  if (process.env.BUILD_NO_ZIP === '1') { console.log(`Built ${path.relative(ROOT, OUT)}`); return; }
   // Files sit at the top of the zip, so it extracts straight into the application root.
   const zip = path.join(ROOT, 'dist', `medworks-${version}-dist.zip`);
   fs.rmSync(zip, { force: true });

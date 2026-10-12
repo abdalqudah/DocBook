@@ -353,7 +353,8 @@
         "preferences_updated": "غيّر تفضيلات العرض"
       },
       "data": {
-        "exported": "صدّر بيانات العيادة"
+        "exported": "صدّر بيانات العيادة",
+        "list_exported": "صدّر قائمة (CSV/Excel)"
       },
       "medication": {
         "starter_list_added": "أضاف قائمة الأدوية الشائعة"

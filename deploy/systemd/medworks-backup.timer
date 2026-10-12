@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the MedWorks backup every night
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

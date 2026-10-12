@@ -61,6 +61,11 @@ function setupErrorHandler(err) {
 
 async function start(server) {
   const config = require('./config');
+  if (config.isProd || config.strictConfig) {
+    const problems = config.productionProblems();
+    if (problems.length && config.strictConfig) throw Object.assign(new Error(`Missing required environment variable: ${problems.join(' ')}`), { code: 'MISSING_ENV' });
+    problems.forEach((p) => console.warn(`[config] ${p}`)); // eslint-disable-line no-console
+  }
   const knex = require('./db/knex');
   const { createApp } = require('./app');
   await knex.raw('select 1');
@@ -127,9 +132,18 @@ async function start(server) {
   server.removeAllListeners('request');
   server.on('request', createApp());
   console.log(`[${brand.name}] ready on ${PORT} (${config.env})`); // eslint-disable-line no-console
-  const shutdown = () => server.close(() => knex.destroy().then(() => process.exit(0)));
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
+  // Stop taking requests, let the ones in flight finish (at most 15 s: docker stop waits 20 s), then close the database.
+  let stopping = false;
+  const shutdown = (signal) => {
+    if (stopping) return;
+    stopping = true;
+    console.log(`[${brand.name}] ${signal}: shutting down`); // eslint-disable-line no-console
+    setTimeout(() => process.exit(0), 15_000).unref();
+    server.close(() => knex.destroy().catch(() => null).then(() => process.exit(0)));
+    if (server.closeIdleConnections) server.closeIdleConnections();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 /**
