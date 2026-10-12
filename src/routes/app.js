@@ -172,6 +172,7 @@ router.use('/website', require('../modules/website/web')); // Website workspace 
 router.use('/messaging', require('../modules/messaging/staff.web')); // WhatsApp click-to-chat for staff
 router.use('/settings/messaging', require('../modules/messaging/web')); // Settings → Messaging (reminders, channels, log)
 router.use('/attendance', require('../modules/attendance/web'));
+router.use('/leave', require('../modules/leave/web')); // staff leave: requests, approvals, balances, who is on leave
 router.use('/settings/database', require('../modules/datasync/web'));
 router.use('/help', require('../modules/support/web'));
 router.use('/', require('../modules/finance/web')); // staff payroll, partners, budgets, profit & loss

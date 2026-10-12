@@ -11,6 +11,7 @@ const GROUPS = [
   { key: 'payroll', perms: ['payroll.view', 'payroll.manage', 'payroll.approve'] },
   { key: 'supplies', perms: ['supplies.view', 'supplies.manage', 'expenses.view', 'expenses.manage'] },
   { key: 'attendance', perms: ['attendance.view', 'attendance.manage'] },
+  { key: 'leave', perms: ['leave.manage'] }, // approve / reject staff leave, record leave for someone (asking for leave needs no permission)
   { key: 'vendors', perms: ['vendors.view', 'vendors.manage'] },
   { key: 'reviews', perms: ['reviews.view', 'reviews.manage'] },
   // The clinic's website (Website workspace): managing it does not need the clinic's settings rights.

@@ -58,6 +58,7 @@
           <div class="sep"></div>
         </div>
         <% if (!(typeof moduleOn === 'function') || moduleOn('attendance')) { %><a href="/app/attendance"><%- icon('clock', 'icon-sm') %><%= t('navx.clock') %></a><% } %>
+        <a href="/app/leave"><%- icon('calendar-x', 'icon-sm') %><%= t('leave.my_menu') %></a>
         <div class="sep"></div>
         <% if (typeof workspaces !== 'undefined' && workspaces.length > 1) { %>
         <div class="menu-label"><%= t('nav.workspaces') %></div>
