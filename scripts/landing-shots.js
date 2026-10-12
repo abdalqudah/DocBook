@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 // Rebuilds the screenshots of the landing and features pages (public/img/landing/<lang>/*.webp) from the real app:
 // a sample clinic is created in the TEST database (never a live one) under the MedWorks name and logo, the pages are
-// opened in Chromium in Arabic and English, and the stills, their 3D versions (<screen>-3d.webp: the page's own
-// content, larger, in a tilted window with a soft shadow) and the two animated tours ("a visit", "a surgery") are
+// opened in Chromium in Arabic and English, and the stills and the two animated tours ("a visit", "a surgery") are
 // written as WebP.
 // Usage: NODE_ENV=test node scripts/landing-shots.js   (needs Playwright + Chromium, Python 3 with Pillow)
 process.env.NODE_ENV = 'test';
@@ -137,7 +136,7 @@ from PIL import Image
 job = json.loads(sys.argv[1])
 if job['kind'] == 'still':
     im = Image.open(job['src']).convert('RGB')
-    if im.width > 1280: im = im.resize((1280, round(im.height * 1280 / im.width)), Image.LANCZOS)  # taken at 2x for the 3D version
+    if im.width > 1280: im = im.resize((1280, round(im.height * 1280 / im.width)), Image.LANCZOS)  # taken at 2x: sharper when scaled down
     im.save(job['out'], 'WEBP', quality=82, method=6)
 else:
     keys = [Image.open(p).convert('RGB').resize(tuple(job['size']), Image.LANCZOS) for p in job['frames']]
@@ -165,36 +164,6 @@ async function logos(browser) {
   const out = { wide: await shoot(svg, 600, 136), square: await shoot(mark, 256, 256) };
   await page.close();
   return out;
-}
-
-// 3D: the page's content (the sidebar and empty edges left out, so the text reads larger) in a browser window turned
-// a little towards the text beside it, with a soft shadow; transparent around, 1500 × 1000 at 2×.
-const CROP = { // x, y, width, height of the 1280 × 800 screen; the sidebar is on the right in Arabic, on the left in English
-  today: [24, 56, 1000, 640], calendar: [24, 56, 1000, 640], frontdesk: [24, 56, 1000, 640], patient: [24, 56, 1000, 640],
-  cash: [24, 56, 1000, 640], surgeries: [24, 56, 1000, 640], builder: [340, 40, 900, 600],
-};
-async function render3d(browser, png, out, { lang, screen, turn }) {
-  const page = await browser.newPage({ deviceScaleFactor: 2, viewport: { width: 1500, height: 1000 } });
-  const [x0, y0, w, h] = CROP[screen] || [0, 0, 1280, 800];
-  const x = lang === 'ar' ? x0 : 1280 - x0 - w; // the same crop, mirrored for the left-to-right screens
-  const W = 1240; const k = W / w;
-  const src = `data:image/png;base64,${fs.readFileSync(png).toString('base64')}`;
-  await page.setContent(`<!doctype html><style>html,body{margin:0;background:transparent}
-    .stage{position:relative;width:1500px;height:1000px;perspective:2400px}
-    .win{position:absolute;left:130px;top:${Math.round(500 - (h * k + 34) / 2)}px;width:${W}px;border-radius:18px;overflow:hidden;background:white;
-      transform:rotateY(${turn}deg) rotateX(3deg);box-shadow:0 0 0 1px rgba(10,27,54,.08),0 40px 80px -24px rgba(6,20,46,.40)}
-    .bar{height:34px;display:flex;align-items:center;gap:8px;padding:0 14px;background:linear-gradient(rgb(243,246,251),rgb(230,236,245))}
-    .bar i{width:11px;height:11px;border-radius:50%;background:rgb(255,95,87)}.bar i:nth-child(2){background:rgb(254,188,46)}.bar i:nth-child(3){background:rgb(40,200,64)}
-    .shot{position:relative;overflow:hidden;height:${Math.round(h * k)}px}
-    .shot img{position:absolute;max-width:none;width:${Math.round(1280 * k)}px;left:${-Math.round(x * k)}px;top:${-Math.round(y0 * k)}px}
-    .glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,0) 32%);pointer-events:none}
-    </style><div class="stage"><div class="win"><div class="bar"><i></i><i></i><i></i></div><div class="shot"><img src="${src}"></div><div class="glare"></div></div></div>`);
-  await page.waitForTimeout(150);
-  const tmpPng = `${out}.png`;
-  await page.screenshot({ path: tmpPng, omitBackground: true });
-  await page.close();
-  execFileSync('python3', ['-I', '-c', 'import sys\nfrom PIL import Image\nImage.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=86, method=6)', tmpPng, out]);
-  fs.rmSync(tmpPng);
 }
 
 (async () => {
@@ -231,7 +200,6 @@ async function render3d(browser, png, out, { lang, screen, turn }) {
         for (const [name, url] of Object.entries(stills)) { // eslint-disable-line no-restricted-syntax
           await capture(page, base, url, shot(name), { wait: name === 'builder' ? 1500 : 700 }); // eslint-disable-line no-await-in-loop
           py({ kind: 'still', src: shot(name), out: path.join(out, `${name}.webp`) });
-          await render3d(browser, shot(name), path.join(out, `${name}-3d.webp`), { lang, screen: name, turn: lang === 'ar' ? 8 : -8 }); // eslint-disable-line no-await-in-loop
         }
       } else {
         // A visit: the calendar → booking → reception → the visit → the cash screen.

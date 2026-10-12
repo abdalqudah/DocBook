@@ -23,8 +23,9 @@
     </div>
     <div class="lp-cat-body<%= g.screen ? '' : ' no-shot' %>">
       <% if (g.screen) { %>
-      <figure class="lp-3d lp-cat-shot" data-reveal>
-        <img src="/img/landing/<%= _lang %>/<%= g.screen %>-3d.webp?v=<%= assetV %>" width="1500" height="1000" alt="<%= t(F + 'cats.' + g.key + '.title') %>" loading="lazy" decoding="async">
+      <figure class="lp-frame lp-cat-shot" data-reveal>
+        <div class="lp-frame-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+        <img src="/img/landing/<%= _lang %>/<%= g.screen %>.webp?v=<%= assetV %>" width="1280" height="800" alt="<%= t(F + 'cats.' + g.key + '.title') %>" loading="lazy" decoding="async">
       </figure>
       <% } %>
       <div class="lp-cat-cards">
