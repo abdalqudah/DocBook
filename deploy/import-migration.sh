@@ -6,11 +6,20 @@
 #   the app user's rights on it), the files into the storage volume;  5. compares every table's row count and every
 #   file's checksum with the export;  6. starts the app (it brings the database structure up to date) and checks that
 #   the stored credentials are readable with this APP_KEY.
-#   deploy/import-migration.sh <export folder> [--fix-mysql8-collation]
+#   deploy/import-migration.sh <export folder> [--fix-mysql8-collation] [--no-proxy]
+#     --no-proxy   before the DNS switch: starts only the database and the app (on 127.0.0.1:8080), never Caddy
 source "$(dirname "$0")/lib.sh"
 require_cmd docker; require_cmd sha256sum; require_cmd openssl
-SRC="${1:?Usage: deploy/import-migration.sh <export folder> [--fix-mysql8-collation]}"
-FIX=0; [ "${2:-}" = "--fix-mysql8-collation" ] && FIX=1
+SRC="${1:?Usage: deploy/import-migration.sh <export folder> [--fix-mysql8-collation] [--no-proxy]}"; shift
+FIX=0; SERVICES=()
+for a in "$@"; do
+  case "$a" in
+    --fix-mysql8-collation) FIX=1 ;;
+    # Before the domain points here: start only the database and the app (app on 127.0.0.1:8080), not Caddy.
+    --no-proxy) export COMPOSE_FILE="compose.yaml:deploy/compose.preview.yaml"; SERVICES=(db app) ;;
+    *) die "Unknown option $a" ;;
+  esac
+done
 [ -f "$SRC/MANIFEST.sha256" ] && [ -f "$SRC/INFO.txt" ] || die "Not an export folder: $SRC"
 (cd "$SRC" && sha256sum --quiet -c MANIFEST.sha256) || die "The export's checksums do not match: copy it again."
 log "Export checksums OK"
@@ -62,6 +71,6 @@ rm -f /tmp/medworks-import-files.$$
 log "Checking the stored credentials with this APP_KEY"
 dc run --rm --no-deps -T app node app.js check-secrets || die "Stored credentials are NOT readable: set APP_KEY to the old server's value (or its SESSION_SECRET), then run: docker compose run --rm app node app.js check-secrets"
 log "Starting the app (it brings the database structure up to date)"
-dc up -d
+dc up -d "${SERVICES[@]}"
 wait_healthy app 600 || die "The app is not healthy: docker compose logs app"
 log "IMPORT COMPLETE. Take a backup now: deploy/backup.sh"

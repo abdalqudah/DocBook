@@ -35,15 +35,32 @@ Each deploy (`deploy/deploy.sh`) also takes a backup first and stops if it fails
 
 ## Off-server copies (required for real disaster recovery)
 
-A backup on the same disk does not survive the loss of the VPS. Not configured yet (needs a destination and approval).
-Options: Hostinger's VPS snapshots (whole-server, in hPanel) **plus** a copy of the encrypted folders to another
-provider, e.g. with `rclone` to S3-compatible storage, or `rsync` to another server:
+A backup on the same disk does not survive the loss of the VPS. `deploy/offsite.sh` copies the **encrypted** backup
+folders to storage outside the server (the destination never receives the passphrase or anything in clear; a backup
+made with `--no-encrypt` is refused):
+
+| `.env` | Destination |
+|---|---|
+| `OFFSITE_TARGET=rclone:<remote>:<bucket/path>` | any rclone remote: S3, Backblaze B2, Cloudflare R2, Wasabi, Hetzner Object Storage… (`rclone config` as the `deploy` user) |
+| `OFFSITE_TARGET=rsync:<user@host>:<path>` | another server / storage box over SSH (key login) |
 
 ```bash
-rsync -a --delete-after /var/backups/medworks/ backup@other-host:/srv/medworks-backups/
+deploy/offsite.sh test                 # write, read back, compare, remove a marker
+deploy/offsite.sh push                 # every finished backup not there yet; each copy is verified by checksum
+deploy/offsite.sh list
+deploy/offsite.sh pull <folder> /tmp/x # fetch one back, checks its manifest
+deploy/restore.sh --verify /tmp/x/<folder>
 ```
 
-The folders are already encrypted, so the destination never sees patient data in clear.
+- Nothing is ever deleted at the destination: set an expiry rule there (e.g. 90 days) and, if offered, versioning or
+  object lock, so a compromised server cannot erase the off-site history.
+- A copy that differs from the local files (damaged or tampered) is detected and sent again.
+- The systemd service runs `offsite.sh push` after each successful nightly backup; with `OFFSITE_TARGET` empty it
+  only warns.
+- Also take Hostinger VPS snapshots (whole server, in hPanel) before risky steps.
+
+Tested locally (synthetic data): both backends; a deleted local backup fetched back from the off-server copy restored
+completely (`docs/TEST_RESULTS.md` §9). The real destination is not chosen yet.
 
 ## Test a backup (never touches production)
 

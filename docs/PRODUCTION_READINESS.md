@@ -21,7 +21,9 @@ NOT TESTED = not run.
 | Security | Privacy-rule bypass fixed; exports audited; CSV injection fixed | PASS | Tests fail before / pass after |
 | Security | Medium items SEC-02/SEC-04 | OPEN | Owner decision (`docs/KNOWN_ISSUES.md`) |
 | Backup | Encrypted backup + verified restore + production restore | PASS (local) | TEST_RESULTS |
-| Backup | Scheduled on the VPS; off-server copy | BLOCKED | Needs the VPS and a destination |
+| Backup | Off-server copy tooling (`deploy/offsite.sh`), restore from the off-server copy | PASS (local) | TEST_RESULTS §9 |
+| Backup | Scheduled on the VPS; real off-server destination | BLOCKED | Needs the VPS and a provider account (STOP C) |
+| Deploy | Pre-DNS first deploy without Caddy/certificates; `--first` refused on existing data; go-live switch | PASS (local) | TEST_RESULTS §9 |
 | Migration | Old-server export → import, row counts and files identical, credentials readable | PASS (synthetic data) | TEST_RESULTS |
 | Migration | Real production data | BLOCKED | Needs approval, old-server access and a maintenance window |
 | Rollback | Automatic rollback on unhealthy deploy; manual image and data rollback | PASS (script paths tested: unhealthy start, restore) | `deploy/deploy.sh`, ROLLBACK_GUIDE |
@@ -31,7 +33,7 @@ NOT TESTED = not run.
 
 ## Go-live checklist (on the VPS)
 
-1. `docs/VPS_DEPLOYMENT_GUIDE.md` sections 1–8 → `docker compose ps` all healthy.
+1. `docs/VPS_PREPARATION_CHECKLIST.md` §1–10 (pre-DNS, synthetic data) → `docker compose ps` all healthy.
 2. Migration rehearsal (`docs/DATABASE_MIGRATION_PLAN.md`) → counts/files/credentials OK.
 3. Backup timer enabled; `deploy/backup.sh` + `deploy/restore.sh --verify` OK; off-server copy configured.
 4. DNS switch → certificates issued → checks in guide §9.

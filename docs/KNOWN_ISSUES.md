@@ -22,9 +22,10 @@ because the fix changes how people use the system.
 
 | Item | Detail | Next step |
 |---|---|---|
-| Not deployed | Nothing runs on the VPS yet; no DNS change, no certificates | Approvals in `docs/DEPLOYMENT_PLAN.md` §5 |
+| Not deployed | Nothing runs on the VPS yet; no DNS change, no certificates | Runbook `docs/VPS_PREPARATION_CHECKLIST.md` (gates STOP A–E) |
 | One app process only | Background jobs run inside the web process with no inter-process lock (`src/server.js`) | Keep one `app` container. Before scaling out: a DB-lock per job or a separate worker |
-| No off-server backups | Backups are written on the VPS disk only | Choose a destination (second provider / object storage) and add an `rsync`/`rclone` step |
+| Off-server backups: destination not chosen | `deploy/offsite.sh` (rclone or rsync, verified copies, nightly after the backup) is ready and tested locally; no destination account exists yet | Choose a provider and run `deploy/offsite.sh test` (checklist §10) |
+| Setup-error page is public | With a bad configuration the app answers every request with a 503 page naming the missing setting (never its value) until fixed | Info only; it never happens with `preflight.sh` passing |
 | No load test | No capacity figure can be stated | Run k6/autocannon against a staging copy with realistic data; size the VPS from it |
 | No external monitoring | Health check is local (Docker) | Add an uptime monitor on `https://medworks.app/healthz` and disk/memory alerts |
 | Image pull limits | Docker Hub anonymous pulls are rate-limited | `docker login` on the VPS (free account) if builds hit HTTP 429 |

@@ -103,3 +103,33 @@ Status: PASS = run and the result checked; FAIL = run and failed; BLOCKED = cann
 | Check | Status | Evidence |
 |---|---|---|
 | Load test / concurrent users | NOT TESTED | no figure is claimed |
+
+## 9. VPS preparation stage (2026-10-12, local Docker copy of the stack; the VPS itself was not reachable)
+
+| Check | Status | Evidence |
+|---|---|---|
+| SSH to 187.7.75.192 from the build environment | BLOCKED | TCP 22 does not connect; the egress proxy refuses the IP on 80/443 (403). No server state was observed or changed |
+| DNS of medworks.app | NOT TESTED | No DNS resolution available in the build environment |
+| `update-2.9.52.zip` integrity | PASS | `unzip -t` no errors; SHA-256 `1ca1e323d08b4aa6f6a23946eb1894d2b65bc3ce23923716def5385ad66a8dfa`; `inspectZip` → version 2.9.52, 981 files |
+| Zip matches the release commit | PASS | Clean checkout of `351fa00` rebuilt: all 981 files byte-identical to the zip (first attempt differed only because of a symlinked `node_modules` path; repeated with a real copy) |
+| `deploy/init-env.sh` | PASS | `.env` mode 600, six distinct 48-character secrets, same keys as the template, no secret in its output, refuses without an IP and refuses to overwrite an existing `.env` |
+| `preflight.sh --before-dns` | PASS | 0 problems with an unresolvable domain (information line); without the flag the same domain is a problem |
+| Preflight bug: unresolvable domain | FIXED | `getent` exit 2 under `set -e` ended preflight silently with no DNS line or summary; now reported |
+| Preflight catches an exposed database | PASS | `ports: ["3306:3306"]` added to `db` → `✗ unexpected published ports: db 0.0.0.0 3306 tcp`; removed → ✓ |
+| Preflight catches `.env` mode 644 | PASS | `✗ .env is readable by others (644)` |
+| `deploy.sh --first` with an existing database volume | PASS | refused: `--first is only for an empty server …` |
+| `deploy.sh --first --no-proxy` on an empty server | PASS | no backup; image built; volumes `medworks_db_data`, `medworks_app_storage` only (no Caddy volumes); `db` and `app` healthy; only host listener `127.0.0.1:8080`; no proxy container; `Healthy. Version: 2.9.52` |
+| Sign-up through the loopback port (SSH-tunnel path) | PASS | synthetic clinic created with its own database `medworks_synthetic_test_clinic` (grants script works on a fresh volume) |
+| `deploy.sh --no-proxy` update with data | PASS | backup of both databases first, `:previous` kept, healthy, still no Caddy |
+| `deploy.sh` (go-live) while the domain does not resolve | PASS | refused by preflight |
+| Go-live switch (preflight stubbed locally) | PASS | backup, Caddy started on 80/443, preview port 8080 removed, `/healthz` ok over HTTPS |
+| Pre-DNS mode kept by backup / restore | PASS | after `backup.sh` and `restore.sh --production` the app still has only `127.0.0.1:8080`, Caddy not started |
+| `import-migration.sh … --no-proxy` | PASS | 357 tables identical; Caddy not started; migrated clinic owner signs in through the loopback port and sees the patients |
+| Off-server copy, rsync backend | PASS | `test` OK; 6 encrypted backups sent and checksum-verified; second push sends 0 |
+| Off-server copy, rclone backend (local remote) | PASS | `test` OK; push verified; a byte changed at the destination was detected and re-sent |
+| Tampered off-server copy fetched back | PASS | `pull` refuses: `The fetched copy does not match its manifest` |
+| Lost-server restore from the off-server copy | PASS | local backup deleted → `pull` → `restore.sh --verify`: all 357 tables match, synthetic patients counted |
+| Off-server push without `OFFSITE_TARGET` | PASS | warning, exit 0 (nightly backup unit does not fail) |
+| Strict environment validation (`APP_KEY` empty) | PASS | `/healthz` and every page 503 `setup_error`, no application served; process exits after 60 s (exit 1) |
+| Real provider for off-server storage | BLOCKED | needs an account (STOP C) |
+| Commands on the VPS (runbook) | NOT TESTED | to be run by the operator: `docs/VPS_PREPARATION_CHECKLIST.md` |

@@ -1,5 +1,27 @@
 # Changelog
 
+## Deployment tooling after 2.9.52 (application unchanged)
+
+The application code is identical to the 2.9.52 release (`351fa00`); only `deploy/` and `docs/` changed.
+
+### Added
+- `deploy/init-env.sh`: creates `.env` with secrets generated on the server, never printed, never overwriting.
+- `deploy/offsite.sh`: encrypted backups copied off the server (rclone or rsync), each copy checksum-verified;
+  `pull` + `restore.sh --verify` for restore tests; run by the nightly backup service after each backup.
+- Pre-DNS mode: `deploy/deploy.sh --no-proxy` and `import-migration.sh --no-proxy` start only the database and the
+  app (on `127.0.0.1:8080`, for an SSH tunnel) and never Caddy, so no certificate is requested; backup and restore
+  keep that mode; `deploy/compose.preview.yaml`.
+- `deploy/preflight.sh --before-dns`; checks that compose is valid, that only Caddy publishes ports (80/443) and that
+  the docker daemon is reachable.
+- `docs/VPS_PREPARATION_CHECKLIST.md`: Hostinger runbook with expected results and approval gates.
+
+### Fixed
+- `deploy.sh --first` is refused when a database volume already exists; a normal deploy starts a stopped database
+  for its backup.
+- `preflight.sh` ended silently when the domain did not resolve.
+- VPS guide: the SSH hardening file must sort before Ubuntu's `50-cloud-init.conf` (`01-medworks.conf`), or password
+  login stays enabled; go-live uses `deploy.sh` (not `--first`).
+
 ## 2.9.52 — VPS readiness (Docker deployment package)
 
 No feature, route, screen or report was removed or changed in behaviour, except the items marked **Security**.

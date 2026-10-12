@@ -146,7 +146,7 @@ function sourceGuideFor(edition) {
 }
 
 // The full source (tracked files), scrubbed the same way, with the edition's .env.
-const PLATFORM_DEPLOY = /^(deploy\/|Dockerfile$|compose\.yaml$|\.dockerignore$|CHANGELOG\.md$|docs\/(ARCHITECTURE_AUDIT|FEATURE_INVENTORY|SECURITY_AUDIT|DEPLOYMENT_PLAN|DATABASE_MIGRATION_PLAN|TEST_RESULTS|KNOWN_ISSUES|PRODUCTION_READINESS|VPS_DEPLOYMENT_GUIDE|ROLLBACK_GUIDE|BACKUP_AND_RESTORE|ENVIRONMENT_VARIABLES)\.md$)/;
+const PLATFORM_DEPLOY = /^(deploy\/|Dockerfile$|compose\.yaml$|\.dockerignore$|CHANGELOG\.md$|docs\/(ARCHITECTURE_AUDIT|FEATURE_INVENTORY|SECURITY_AUDIT|DEPLOYMENT_PLAN|DATABASE_MIGRATION_PLAN|TEST_RESULTS|KNOWN_ISSUES|PRODUCTION_READINESS|VPS_DEPLOYMENT_GUIDE|ROLLBACK_GUIDE|BACKUP_AND_RESTORE|ENVIRONMENT_VARIABLES|VPS_PREPARATION_CHECKLIST)\.md$)/;
 function buildSource(edition, file) {
   const out = path.join(ROOT, 'dist', file);
   fs.rmSync(out, { recursive: true, force: true });

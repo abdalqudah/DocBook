@@ -28,7 +28,11 @@ Users' sessions move with the main database, so people stay signed in after the 
 1. On the old server: `EXPORT_PASSPHRASE='…' bash deploy/export-old-server.sh /path/to/old/app /root/medworks-export`
    — `mysqldump --single-transaction` of every database, row counts, files archive and checksums.
 2. Copy the folder to the VPS: `rsync -a /root/medworks-export deploy@VPS:/opt/medworks-import/`
-3. On the VPS (fresh stack, app stopped): `EXPORT_PASSPHRASE='…' deploy/import-migration.sh /opt/medworks-import/medworks-export`
+3. On the VPS, into an **empty** installation (no `medworks_db_data` volume with data; a synthetic rehearsal
+   installation must first be removed with `docker compose down -v`, which needs approval), with `APP_KEY` set to the
+   old server's value: `docker compose up -d db`, then
+   `EXPORT_PASSPHRASE='…' deploy/import-migration.sh /opt/medworks-import/medworks-export --no-proxy`
+   (`--no-proxy` before the DNS switch: Caddy stays off, the app is reached through the SSH tunnel on 127.0.0.1:8080).
    It checks the checksums, imports, compares the row count of **every table**, compares every file's checksum, runs
    `check-secrets`, then starts the app (which applies any newer migrations) and waits for health.
 4. Click through the app on a temporary hostname; then wipe the rehearsal (`docker compose down -v` on the VPS only).

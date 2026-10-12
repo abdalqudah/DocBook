@@ -100,6 +100,8 @@ In Docker, keep the folder variables unset: the defaults are inside the `app_sto
 | `BACKUP_DIR` | Backup folder (`/var/backups/medworks`). |
 | `BACKUP_KEEP_DAYS` | Retention in days (`14`). |
 | `BACKUP_PASSPHRASE` | Encrypts backups (≥ 16 characters). Blanked for the app container. Keep a copy off the server. |
+| `OFFSITE_TARGET` | Off-server copy destination for `deploy/offsite.sh`: `rclone:<remote>:<path>` or `rsync:<user@host>:<path>`. Empty = none. |
+| `COMPOSE_FILE` | Do not set in `.env`. The scripts set it to `compose.yaml:deploy/compose.preview.yaml` in pre-DNS mode (`--no-proxy`). |
 | `EXPORT_PASSPHRASE` | Given on the command line for `export-old-server.sh` / `import-migration.sh`; not stored. |
 
 ## Build / test only

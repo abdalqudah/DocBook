@@ -3,8 +3,9 @@
 Exact commands, in order. Replace `203.0.113.10` with the VPS IP and `medworks.app` with the domain. Lines starting
 with `#` are explanations. Nothing here contains a password: every secret is generated on the server.
 
-> Status: these steps have **not** been run on the real VPS yet. The Docker part (sections 6–10) was run on a local
-> test stack; see `docs/TEST_RESULTS.md`.
+> Status: these steps have **not** been run on the real VPS yet. The Docker part (sections 6–12) was run on a local
+> test stack; see `docs/TEST_RESULTS.md`. For the Hostinger server (187.7.75.192) follow the step-by-step runbook
+> with expected results and approval gates: `docs/VPS_PREPARATION_CHECKLIST.md`.
 
 ## 0. Before you start
 
@@ -25,93 +26,65 @@ timedatectl set-timezone UTC
 reboot   # if a new kernel was installed; then ssh in again
 ```
 
-## 2. Non-root user with SSH keys; disable password and root login
+## 2. Non-root user with SSH keys (root stays usable until verified)
+
+Exact commands with expected output: `docs/VPS_PREPARATION_CHECKLIST.md` §3. In short: create `deploy` (sudo),
+put your public key in `/home/deploy/.ssh/authorized_keys`, and check `ssh deploy@203.0.113.10 'sudo -v'` from a
+second terminal while the root session stays open. Only then, as a separate approved step, disable root and password
+login:
 
 ```bash
-adduser --disabled-password --gecos "" deploy
-usermod -aG sudo deploy
-mkdir -p /home/deploy/.ssh && cp /root/.ssh/authorized_keys /home/deploy/.ssh/
-chown -R deploy:deploy /home/deploy/.ssh && chmod 700 /home/deploy/.ssh && chmod 600 /home/deploy/.ssh/authorized_keys
-passwd deploy        # a sudo password for deploy (password manager)
-
-# SSH: keys only, no root login
-cat >/etc/ssh/sshd_config.d/60-medworks.conf <<'EOF'
+# Files in /etc/ssh/sshd_config.d are read in name order and the FIRST value wins; Ubuntu cloud images ship
+# 50-cloud-init.conf with "PasswordAuthentication yes", so this file must sort before it (01-…).
+sudo tee /etc/ssh/sshd_config.d/01-medworks.conf >/dev/null <<'CONF'
 PermitRootLogin no
 PasswordAuthentication no
 KbdInteractiveAuthentication no
-EOF
-sshd -t && systemctl reload ssh
+CONF
+sudo sshd -t && sudo systemctl reload ssh
+sudo sshd -T | grep -E '^(permitrootlogin|passwordauthentication|kbdinteractiveauthentication) '   # all "no"
 ```
 
-**Open a second terminal and check `ssh deploy@203.0.113.10` works before closing the root session.**
+Keep the provider's browser / recovery console at hand to undo it (delete that file, reload ssh) if needed.
 
 ## 3. Firewall
 
 ```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-sudo ufw allow OpenSSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 443/udp      # HTTP/3
+sudo ufw limit OpenSSH
 sudo ufw enable
 sudo ufw status verbose
+# only at go-live (section 9):
+# sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 443/udp
 ```
 
-Docker publishes only ports 80/443 (Caddy). The database has no published port. Note: ports Docker publishes bypass
-ufw rules, so never add `ports:` to the `db` or `app` services.
-If Hostinger's own firewall (hPanel → VPS → Firewall) is enabled, allow 22, 80 and 443 there too.
+Docker publishes only ports 80/443 (Caddy) after go-live, and before it only `127.0.0.1:8080` (loopback). The
+database has no published port. Ports Docker publishes bypass ufw, so never add `ports:` to `db` or `app`
+(`deploy/preflight.sh` checks it).
 
 ## 4. Docker Engine and Compose (official repository)
 
-```bash
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-  | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
-sudo apt update
-sudo apt -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-sudo usermod -aG docker deploy
-exit    # log out and back in as deploy so the group applies
-docker version && docker compose version
-```
+`docs/VPS_PREPARATION_CHECKLIST.md` §5: Docker's apt repository, `docker-ce` + `docker-compose-plugin`,
+`/etc/docker/daemon.json` with `live-restore` and log rotation, `deploy` in the `docker` group, swap if none.
 
 ## 5. Get the code
 
-```bash
-sudo mkdir -p /opt/medworks /var/backups/medworks
-sudo chown deploy:deploy /opt/medworks /var/backups/medworks
-chmod 700 /var/backups/medworks
+`/opt/medworks` (owner `deploy`) and `/var/backups/medworks` (mode 700). Clone the private repository with a
+read-only GitHub deploy key, check out the release branch, and confirm the application code equals the release
+commit (checklist §6.4).
 
-# The repository is private: give the server a read-only deploy key
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/medworks_deploy -C "medworks-vps"
-cat ~/.ssh/medworks_deploy.pub     # GitHub → repository → Settings → Deploy keys → Add (read-only)
-cat >>~/.ssh/config <<'EOF'
-Host github.com
-  IdentityFile ~/.ssh/medworks_deploy
-  IdentitiesOnly yes
-EOF
-git clone git@github.com:abdalqudah/docbook.git /opt/medworks
-cd /opt/medworks
-git checkout <release tag or branch to deploy>
-```
-
-## 6. Environment file
+## 6. Environment file (secrets generated on the server, never printed)
 
 ```bash
 cd /opt/medworks
-cp deploy/.env.production.example .env
-chmod 600 .env
-gen() { openssl rand -base64 48 | tr -d '\n=+/' | cut -c1-48; }
-sed -i "s|^SESSION_SECRET=.*|SESSION_SECRET=$(gen)|; s|^DB_PASSWORD=.*|DB_PASSWORD=$(gen)|; s|^DB_ROOT_PASSWORD=.*|DB_ROOT_PASSWORD=$(gen)|; s|^BACKUP_PASSPHRASE=.*|BACKUP_PASSPHRASE=$(gen)|; s|^SUPER_ADMIN_PASSWORD=.*|SUPER_ADMIN_PASSWORD=$(gen)|" .env
-# APP_KEY: a NEW install → $(gen). MOVING from the old server → the old server's APP_KEY (or its SESSION_SECRET
-# if it never had an APP_KEY). Set it by hand:
-nano .env       # APP_KEY, DOMAIN, ACME_EMAIL, APP_URL, SERVER_IP=203.0.113.10, DB_BUFFER_POOL (≈ 25–40 % of RAM), SMTP_*
+deploy/init-env.sh 203.0.113.10        # creates .env (600) with random secrets; refuses if .env exists
+nano .env                              # DOMAIN, APP_URL, ACME_EMAIL, SUPER_ADMIN_EMAIL, DB_BUFFER_POOL, SMTP_*, OFFSITE_TARGET
 ```
 
-Copy `.env` to your password manager / an offline place (`BACKUP_PASSPHRASE` is needed to restore any backup).
-Every variable: `docs/ENVIRONMENT_VARIABLES.md`.
+Copy `.env` into your password manager (it holds the only copy of `BACKUP_PASSPHRASE`). Moving from the old server:
+`APP_KEY` must be the old server's value before the import. Every variable: `docs/ENVIRONMENT_VARIABLES.md`.
+Never run `docker compose config` without `--quiet`: it prints the environment, secrets included.
 
 ## 7. Database
 
@@ -119,34 +92,30 @@ Nothing to install: MariaDB 11.4 runs in the `db` container, with its data in th
 first start it creates `DB_NAME`, the app user, and (from `deploy/mariadb/init/`) the right to create the clinic
 databases `<DB_NAME>_*`. The app creates every table at its first start (132 migrations).
 
-## 8. First deploy (before DNS: test on the IP)
+## 8. First deploy before DNS (database + app only, reached through an SSH tunnel)
 
 ```bash
 cd /opt/medworks
-deploy/preflight.sh          # the DNS line fails until section 9 — that is expected now; everything else must be ✓
-docker compose build app
-docker compose up -d db app  # without the proxy: no certificate requests yet
-docker compose ps            # db and app "healthy" (first start: 1–3 minutes, migrations)
-docker compose exec app node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>r.text()).then(console.log)"
-docker compose logs --tail 50 app
+deploy/preflight.sh --before-dns        # all ✓; the DNS line is information only
+deploy/deploy.sh --first --no-proxy     # db + app, app on 127.0.0.1:8080 only; Caddy NOT started: no certificates
+curl -s http://127.0.0.1:8080/healthz   # {"status":"ok"}
+# from your computer:  ssh -N -L 8080:127.0.0.1:8080 deploy@203.0.113.10   then open http://localhost:8080
 ```
 
-Moving data from the old server happens here, before the proxy and DNS: `docs/DATABASE_MIGRATION_PLAN.md`.
+`--first` is refused once the database volume exists; later updates use `deploy/deploy.sh --no-proxy` (before DNS)
+or `deploy/deploy.sh` (after). Data from the old server goes into an **empty** installation:
+`docs/DATABASE_MIGRATION_PLAN.md` (`import-migration.sh … --no-proxy` before the DNS switch).
 
-## 9. Domain and HTTPS
+## 9. Domain and HTTPS (go-live)
 
 Only after section 8 is healthy and the switch is approved:
 
-1. DNS for `medworks.app` (at the registrar / Hostinger DNS zone):
-   - `A  @    203.0.113.10` TTL 300
-   - `A  www  203.0.113.10` TTL 300
-   - remove any `AAAA` records unless the VPS has IPv6 configured.
-2. Wait until both resolve: `dig +short medworks.app www.medworks.app` → `203.0.113.10`.
-3. Start everything:
-   ```bash
-   deploy/deploy.sh --first     # preflight must be all ✓ now; starts db, app and Caddy
-   ```
-4. Caddy obtains the Let's Encrypt certificates by itself (`docker compose logs proxy | grep -i certificate`).
+1. Open the web ports: `sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 443/udp`.
+2. DNS for `medworks.app`: `A @ 203.0.113.10` and `A www 203.0.113.10`, TTL 300; remove `AAAA` records unless the
+   VPS has IPv6 configured. Wait until `dig +short medworks.app www.medworks.app` shows the IP.
+3. `deploy/preflight.sh` must end with `0 problem(s)` (DNS included).
+4. `deploy/deploy.sh` takes a backup, then starts Caddy, which obtains the Let's Encrypt certificates
+   (`docker compose logs proxy | grep -i certificate`); the `127.0.0.1:8080` preview port is removed.
 5. Check:
    ```bash
    curl -sI http://medworks.app | head -3         # 308 → https
@@ -179,7 +148,8 @@ deploy/backup.sh                                     # one now
 deploy/restore.sh --verify /var/backups/medworks/<newest>   # prove it restores
 ```
 
-Copy backups off the server as well (details and options in `docs/BACKUP_AND_RESTORE.md`).
+Off-server copies: set `OFFSITE_TARGET` in `.env`, then `deploy/offsite.sh test` and `deploy/offsite.sh push`; the
+nightly service runs the push after each backup (`docs/BACKUP_AND_RESTORE.md`).
 
 ## 12. Updates and rollback
 

@@ -1,0 +1,10 @@
+# Pre-DNS preview, used only before the domain points at this server (deploy/deploy.sh --first --no-proxy adds it).
+# The app is published on the server's LOOPBACK address only — nothing new is reachable from the internet — and is
+# opened from your computer through an SSH tunnel:
+#   ssh -N -L 8080:127.0.0.1:8080 deploy@<server>      then browse http://localhost:8080
+# Caddy is not started in this mode, so no certificate is requested. The normal start (`docker compose up -d`, or
+# deploy/deploy.sh without --no-proxy) does not use this file and recreates the app without this port.
+services:
+  app:
+    ports:
+      - "127.0.0.1:8080:3000"

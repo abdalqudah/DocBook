@@ -26,6 +26,15 @@ envval() {
 
 dc() { docker compose "$@"; }
 
+# Pre-DNS preview mode (deploy/deploy.sh --no-proxy): the app is published on 127.0.0.1:8080 and Caddy is not
+# running. When the app container was started that way, every script keeps that mode, so a backup, restore or
+# import never starts Caddy (which would request certificates) or drops the preview port by itself.
+MW_PREVIEW_AUTO=0
+if [ -z "${COMPOSE_FILE:-}" ] && [ -f deploy/compose.preview.yaml ] \
+   && docker inspect -f '{{json .HostConfig.PortBindings}}' medworks-app-1 2>/dev/null | grep -q '"HostIp":"127.0.0.1","HostPort":"8080"'; then
+  export COMPOSE_FILE="compose.yaml:deploy/compose.preview.yaml"; MW_PREVIEW_AUTO=1
+fi
+
 # Runs SQL as the database root user inside the db container; the password goes through the environment, never argv.
 db_root() { dc exec -T -e MYSQL_PWD="$(envval DB_ROOT_PASSWORD)" db mariadb -uroot "$@"; }
 

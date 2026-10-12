@@ -9,5 +9,7 @@ Type=oneshot
 User=deploy
 WorkingDirectory=/opt/medworks
 ExecStart=/opt/medworks/deploy/backup.sh
+# Then the off-server copy (does nothing, with a warning, while OFFSITE_TARGET is empty; fails the unit if a copy fails).
+ExecStartPost=/opt/medworks/deploy/offsite.sh push
 Nice=10
 IOSchedulingClass=idle

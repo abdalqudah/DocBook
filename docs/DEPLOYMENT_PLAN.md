@@ -48,7 +48,7 @@ listed in `docs/KNOWN_ISSUES.md` before any capacity is promised.
 | B. Hardening | Production config validation, graceful shutdown, container-aware updater, TLS ask endpoint, `check-secrets`, privacy-rule fix, CSV-injection fix, export audit | Done in 2.9.52, with tests |
 | C. Packaging | Dockerfile, compose, Caddy, scripts, systemd timer | Done, built and run locally |
 | D. Verification | Build, health, HTTPS, headers, isolation, backup → restore, old-server export → import, restarts | Done locally (`docs/TEST_RESULTS.md`) |
-| E. VPS deployment | Server setup, first deploy on a temporary hostname or IP, test data only | **Waiting for approval and VPS access** |
+| E. VPS deployment | Server setup, first deploy without Caddy (SSH tunnel), synthetic data only, off-server backups | **Runbook ready** (`docs/VPS_PREPARATION_CHECKLIST.md`); to be run by the operator (no SSH from the build environment) |
 | F. Cut-over | Final export from the old server, import, DNS switch, monitoring | **Waiting for approval** (`docs/DATABASE_MIGRATION_PLAN.md`) |
 
 ## 5. Approvals needed before stages E–F
