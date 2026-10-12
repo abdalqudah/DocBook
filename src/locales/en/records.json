@@ -78,7 +78,8 @@
       "timeline": "Timeline",
       "legacy": "Legacy Records",
       "orders": "Tests & files",
-      "surgeries": "Surgeries"
+      "surgeries": "Surgeries",
+      "tracking": "Tracking"
     },
     "next_appointment": "Next appointment",
     "no_next": "No upcoming appointment",

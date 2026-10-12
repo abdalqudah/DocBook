@@ -62,7 +62,8 @@
       "front_desk": "Front desk",
       "certificates": "Certificates",
       "reviews": "Reviews",
-      "surgeries": "Surgeries"
+      "surgeries": "Surgeries",
+      "chronic": "Chronic conditions"
     },
     "setup_orders_catalog": "Lab tests & imaging",
     "setup_orders_catalog_text": "The lab tests and imaging studies doctors pick from.",

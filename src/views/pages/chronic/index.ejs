@@ -1,0 +1,55 @@
+<%# Patients with chronic conditions (modules/chronic): filter by condition / overdue, last reading, last visit, follow-up flag. %>
+<% var P = '../../partials/'; var overdueN = rows.filter(function (r) { return r.overdue; }).length;
+   var condName = function (c) { return c.condition_key === 'other' ? c.label : t('chronic.conditions.' + c.condition_key); }; %>
+<div class="page-head">
+  <div>
+    <div class="breadcrumbs"><%= t('navx.sec_patients') %></div>
+    <h1><%= t('chronic.list_title') %></h1>
+    <p><%= t('chronic.list_lead') %></p>
+  </div>
+  <% if (can('settings.manage')) { %>
+  <div class="page-actions">
+    <form class="row-sm ck-setting" method="post" action="/app/chronic/settings"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label class="small" for="ck-days"><%= t('chronic.overdue_setting') %></label>
+      <input class="input ck-days" id="ck-days" type="number" name="overdue_days" min="7" max="730" value="<%= overdueDays %>" dir="ltr">
+      <span class="small muted"><%= t('chronic.overdue_setting_help') %></span>
+      <button class="btn btn-secondary btn-sm" type="submit"><%- icon('check', 'icon-sm') %><%= t('common.save') %></button>
+    </form>
+  </div>
+  <% } %>
+</div>
+
+<div class="stats cols-3 mb-4">
+  <div class="stat"><div class="stat-label"><%= t('chronic.total') %><span class="stat-icon"><%- icon('users') %></span></div><div class="stat-value"><%= fmt.number(rows.length) %></div><div class="stat-meta"><%= condition ? t('chronic.conditions.' + condition) : t('chronic.all_conditions') %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('chronic.overdue_count') %><span class="stat-icon <%= overdueN ? 'danger' : 'info' %>"><%- icon('calendar-x') %></span></div><div class="stat-value"><%= fmt.number(overdueN) %></div><div class="stat-meta"><%= t('chronic.overdue_days_ago', { n: fmt.number(overdueDays) }) %></div></div>
+  <div class="stat"><div class="stat-label"><%= t('chronic.on_track') %><span class="stat-icon accent"><%- icon('heart-pulse') %></span></div><div class="stat-value"><%= fmt.number(rows.length - overdueN) %></div><div class="stat-meta">&nbsp;</div></div>
+</div>
+
+<div class="panel flush">
+  <form class="table-toolbar" method="get" data-autosubmit>
+    <select class="select" name="condition" aria-label="<%= t('chronic.condition') %>">
+      <option value=""><%= t('chronic.all_conditions') %></option>
+      <% conditions.forEach(function (k) { %><option value="<%= k %>"<%= condition === k ? ' selected' : '' %>><%= t('chronic.conditions.' + k) %></option><% }) %>
+    </select>
+    <label class="check"><input type="checkbox" name="overdue" value="1"<%= overdueOnly ? ' checked' : '' %>><span><%= t('chronic.overdue_only') %></span></label>
+    <noscript><button class="btn btn-secondary btn-sm" type="submit"><%= t('common.filter') %></button></noscript>
+    <% if (condition || overdueOnly) { %><a class="btn btn-ghost btn-sm" href="/app/chronic"><%- icon('x', 'icon-sm') %><%= t('common.clear') %></a><% } %>
+  </form>
+  <% if (!rows.length) { %>
+    <%- include(P + 'empty', { emptyIcon: 'heart-pulse', emptyTitle: t('chronic.list_empty_title'), emptyText: t('chronic.list_empty') }) %>
+  <% } else { %>
+  <div class="table-wrap"><table class="table responsive">
+    <thead><tr><th><%= t('chronic.patient') %></th><th><%= t('chronic.conditions_title') %></th><th><%= t('chronic.last_reading') %></th><th><%= t('chronic.last_visit') %></th><th><%= t('chronic.follow_up') %></th><th class="actions"><span class="sr-only"><%= t('common.actions') %></span></th></tr></thead>
+    <tbody><% rows.forEach(function (r) { var href = '/app/patients/' + r.patient.id + '?tab=tracking'; %>
+      <tr<%= r.overdue ? ' class="ck-overdue-row"' : '' %> data-patient="<%= r.patient.id %>">
+        <td class="primary-cell"><a class="strong" href="<%= href %>" dir="auto"><%= r.patient.full_name %></a><% if (r.patient.file_number) { %> <span class="tiny muted"><bdi dir="ltr">#<%= r.patient.file_number %></bdi></span><% } %><% if (r.patient.phone) { %><div class="small muted" dir="ltr"><%= r.patient.phone %></div><% } %></td>
+        <td data-label="<%= t('chronic.conditions_title') %>"><div class="ck-badges"><% r.conditions.forEach(function (c) { %><span class="badge badge-warning" dir="auto"><%= condName(c) %></span><% }) %></div></td>
+        <td data-label="<%= t('chronic.last_reading') %>"><% if (r.reading) { %><span><%= t('chronic.kinds.' + r.reading.kind) %></span> <bdi dir="ltr" class="strong"><%= valueText(r.reading) %> <span class="muted small"><%= r.reading.unit %></span></bdi><div class="tiny muted"><%= fmt.date(r.reading.measured_on) %><%= r.reading.source === 'visit' ? ' · ' + t('chronic.from_visit') : '' %></div><% } else { %><span class="muted">—</span><% } %></td>
+        <td data-label="<%= t('chronic.last_visit') %>"><%= r.lastVisit ? fmt.date(r.lastVisit) : '—' %></td>
+        <td data-label="<%= t('chronic.follow_up') %>"><% if (r.overdue) { %><span class="badge badge-danger" data-overdue><%- icon('calendar-x', 'icon-sm') %><%= t('chronic.overdue') %></span><div class="tiny muted"><%= r.daysSince === null ? t('chronic.never_seen') : t('chronic.overdue_days_ago', { n: fmt.number(r.daysSince) }) %></div><% } else { %><span class="badge badge-success"><%= t('chronic.on_track') %></span><% } %></td>
+        <td class="actions"><a class="btn btn-ghost btn-icon btn-sm" href="<%= href %>" aria-label="<%= t('chronic.open_tracking') %>" title="<%= t('chronic.open_tracking') %>"><%- icon('chevron-right', 'icon-sm flip-rtl') %></a></td>
+      </tr>
+    <% }) %></tbody>
+  </table></div>
+  <% } %>
+</div>
