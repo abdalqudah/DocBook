@@ -91,6 +91,11 @@
                   <% if (draft && canManage) { %><form method="post" action="/app/staff-payroll/adjustments/<%= a.id %>/delete" data-confirm="<%= t('staffpay.adj_remove_confirm') %>" data-confirm-title="<%= t('staffpay.adj_remove') %>" data-confirm-yes="<%= t('common.delete') %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-ghost btn-icon fin-btn-xs" type="submit" aria-label="<%= t('staffpay.adj_remove') %>" title="<%= t('staffpay.adj_remove') %>"><%- icon('x', 'icon-sm') %></button></form><% } %>
                 </li><% }) %>
               </ul><% } %>
+              <% if (r.unpaidLeaveDays) { %><div class="row-sm mt-1">
+                <span class="badge badge-warning"><%= t('leave.payroll_unpaid', { n: fmt.number(r.unpaidLeaveDays) }) %></span>
+                <% if (r.leaveDeducted) { %><span class="tiny muted"><%= t('leave.payroll_deducted') %></span>
+                <% } else if (draft && canManage) { %><form method="post" action="/app/leave/payroll/lines/<%= r.id %>/deduct" class="fin-inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_return" value="<%= back %>"><button class="btn btn-ghost btn-sm" type="submit" title="<%= t('leave.payroll_deduct_help') %>"><%- icon('minus', 'icon-sm') %><%= t('leave.payroll_deduct') %></button></form><% } %>
+              </div><% } %>
             </div></td>
             <td class="num" data-label="<%= t('staffpay.base_salary') %>"><%= fmt.amount(r.f.base) %></td>
             <td class="num" data-label="<%= t('staffpay.allowances') %>"><%= fmt.amount(r.f.allowances) %></td>

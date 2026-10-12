@@ -115,8 +115,8 @@ router.get('/export', can('attendance.view'), can('data.export'), wrap(async (re
     const rep = await svc.monthReport(req.ctx, month, { roleId });
     return exporter.send(req, res, {
       name: `${t('attendance.export_report_name')} ${month}`,
-      header: [t('attendance.person'), t('attendance.role'), t('attendance.days_present'), t('attendance.hours_worked'), t('attendance.late_days'), t('attendance.late_minutes'), t('attendance.absent_days'), t('attendance.overtime'), t('attendance.missing_out')],
-      rows: rep.rows.map((p) => [p.name, roleLabel(req, p), p.present, Math.round((p.worked / 60) * 100) / 100, p.late, p.lateMinutes, p.absent, Math.round((p.overtime / 60) * 100) / 100, p.missingOut]),
+      header: [t('attendance.person'), t('attendance.role'), t('attendance.days_present'), t('attendance.hours_worked'), t('attendance.late_days'), t('attendance.late_minutes'), t('attendance.absent_days'), t('attendance.leave_days'), t('attendance.overtime'), t('attendance.missing_out')],
+      rows: rep.rows.map((p) => [p.name, roleLabel(req, p), p.present, Math.round((p.worked / 60) * 100) / 100, p.late, p.lateMinutes, p.absent, p.leave, Math.round((p.overtime / 60) * 100) / 100, p.missingOut]),
     });
   }
   if (view === 'today') {

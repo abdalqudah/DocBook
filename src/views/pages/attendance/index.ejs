@@ -64,7 +64,7 @@
     <div class="stats att-stats mb-4">
       <div class="stat"><div class="stat-label"><%= t('attendance.st_present') %></div><div class="stat-value"><%= fmt.number(s.present) %></div><div class="stat-meta"><%= t('attendance.in_now_n', { n: fmt.number(s.in_now) }) %></div></div>
       <div class="stat"><div class="stat-label"><%= t('attendance.st_late') %></div><div class="stat-value<%= s.late ? ' att-warn' : '' %>"><%= fmt.number(s.late) %></div><div class="stat-meta"><%= t('attendance.grace_meta', { n: fmt.number(board.settings.grace) }) %></div></div>
-      <div class="stat"><div class="stat-label"><%= t('attendance.st_absent') %></div><div class="stat-value<%= s.absent ? ' att-danger' : '' %>"><%= fmt.number(s.absent) %></div><div class="stat-meta"><%= s.not_yet ? t('attendance.not_yet_n', { n: fmt.number(s.not_yet) }) : '—' %></div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.st_absent') %></div><div class="stat-value<%= s.absent ? ' att-danger' : '' %>"><%= fmt.number(s.absent) %></div><div class="stat-meta"><%= [s.not_yet ? t('attendance.not_yet_n', { n: fmt.number(s.not_yet) }) : '', s.leave ? t('attendance.leave_n', { n: fmt.number(s.leave) }) : ''].filter(Boolean).join(' · ') || '—' %></div></div>
       <div class="stat"><div class="stat-label"><%= t('attendance.hours_worked') %></div><div class="stat-value" dir="ltr"><%= hm(s.minutes) %></div><div class="stat-meta"><%= s.off ? t('attendance.off_n', { n: fmt.number(s.off) }) : '—' %></div></div>
     </div>
     <% if (!board.hasAnyPlan) { %><div class="alert alert-info mb-4 no-print"><%- icon('info') %><div class="grow"><%= t('attendance.no_plan_note') %><% if (canManage) { %> <a href="/app/attendance/settings"><%= t('attendance.set_hours') %></a><% } %></div></div><% } %>
@@ -94,14 +94,14 @@
       <div class="stat"><div class="stat-label"><%= t('attendance.people_present') %></div><div class="stat-value"><%= fmt.number(r.totals.people) %></div><div class="stat-meta"><%= fmt.month(month) %></div></div>
       <div class="stat"><div class="stat-label"><%= t('attendance.hours_worked') %></div><div class="stat-value" dir="ltr"><%= hm(r.totals.worked) %></div><div class="stat-meta"><%= r.totals.overtime ? t('attendance.overtime_meta', { h: hm(r.totals.overtime) }) : '—' %></div></div>
       <div class="stat"><div class="stat-label"><%= t('attendance.late_days') %></div><div class="stat-value<%= r.totals.late ? ' att-warn' : '' %>"><%= fmt.number(r.totals.late) %></div><div class="stat-meta">&nbsp;</div></div>
-      <div class="stat"><div class="stat-label"><%= t('attendance.absent_days') %></div><div class="stat-value<%= r.totals.absent ? ' att-danger' : '' %>"><%= fmt.number(r.totals.absent) %></div><div class="stat-meta">&nbsp;</div></div>
+      <div class="stat"><div class="stat-label"><%= t('attendance.absent_days') %></div><div class="stat-value<%= r.totals.absent ? ' att-danger' : '' %>"><%= fmt.number(r.totals.absent) %></div><div class="stat-meta"><%= r.totals.leave ? t('attendance.leave_n', { n: fmt.number(r.totals.leave) }) : '\u00a0' %></div></div>
     </div>
     <div class="panel flush mb-4">
       <% if (!r.rows.length) { %>
         <%- include('../../partials/empty', { emptyIcon: 'users', emptyTitle: t('attendance.empty_team_title'), emptyText: t('attendance.empty_team_text'), compact: true }) %>
       <% } else { %>
       <div class="table-wrap"><table class="table responsive">
-        <thead><tr><th><%= t('attendance.person') %></th><th class="num"><%= t('attendance.days_present') %></th><th class="num"><%= t('attendance.hours_worked') %></th><th class="num"><%= t('attendance.late_days') %></th><th class="num"><%= t('attendance.absent_days') %></th><th class="num"><%= t('attendance.overtime') %></th><th class="num"><%= t('attendance.missing_out') %></th><th class="actions no-print"></th></tr></thead>
+        <thead><tr><th><%= t('attendance.person') %></th><th class="num"><%= t('attendance.days_present') %></th><th class="num"><%= t('attendance.hours_worked') %></th><th class="num"><%= t('attendance.late_days') %></th><th class="num"><%= t('attendance.absent_days') %></th><th class="num"><%= t('attendance.leave_days') %></th><th class="num"><%= t('attendance.overtime') %></th><th class="num"><%= t('attendance.missing_out') %></th><th class="actions no-print"></th></tr></thead>
         <tbody>
         <% r.rows.forEach(function (p) { %>
           <tr>
@@ -110,6 +110,7 @@
             <td class="num strong" data-label="<%= t('attendance.hours_worked') %>" dir="ltr"><%= p.worked ? hm(p.worked) : '—' %></td>
             <td class="num" data-label="<%= t('attendance.late_days') %>"><% if (p.late) { %><span class="att-warn"><%= fmt.number(p.late) %></span> <span class="tiny muted"><%= t('attendance.min_n', { n: fmt.number(p.lateMinutes) }) %></span><% } else { %><span class="muted">—</span><% } %></td>
             <td class="num" data-label="<%= t('attendance.absent_days') %>"><% if (p.absent) { %><span class="att-danger"><%= fmt.number(p.absent) %></span><% } else { %><span class="muted">—</span><% } %></td>
+            <td class="num" data-label="<%= t('attendance.leave_days') %>"><%= p.leave ? fmt.number(p.leave) : '—' %></td>
             <td class="num" data-label="<%= t('attendance.overtime') %>" dir="ltr"><%= p.overtime ? hm(p.overtime) : '—' %></td>
             <td class="num" data-label="<%= t('attendance.missing_out') %>"><% if (p.missingOut) { %><span class="att-tag warn"><%= fmt.number(p.missingOut) %></span><% } else { %><span class="muted">—</span><% } %></td>
             <td class="actions no-print"><a class="btn btn-ghost btn-sm" href="/app/attendance/staff/<%= p.user_id %>?month=<%= month %>"><%= t('attendance.open_timesheet') %></a></td>

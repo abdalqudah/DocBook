@@ -147,6 +147,7 @@
     },
     "cashier": "Patient billing",
     "attendance": "Attendance",
+    "leave": "Staff leave",
     "marketplace": "Reps & offers",
     "rep_visits": "Rep visits",
     "certificates": "Sick leave & medical reports",
@@ -355,6 +356,7 @@
     "reports": "Reports & exports",
     "admin": "Administration",
     "attendance": "Staff attendance",
+    "leave": "Staff leave",
     "vendors": "Reps & suppliers",
     "reviews": "Patient reviews",
     "website": "Clinic website"
@@ -395,6 +397,7 @@
     "audit.view": "View the audit log",
     "attendance.view": "View staff attendance",
     "attendance.manage": "Attendance screen (QR) and corrections",
+    "leave.manage": "Approve or reject staff leave and record leave for others",
     "vendors.view": "See reps' products, offers and visits",
     "vendors.manage": "Add reps as suppliers, manage rep visit hours and bookings",
     "reviews.view": "Read patient reviews (doctors: of their own visits)",

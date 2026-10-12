@@ -67,6 +67,7 @@ const NAV = [
     { key: 'branches', href: '/app/clinic/branches', icon: 'map-pin', perms: ['settings.manage'] },
     { key: 'center', href: '/app/center', icon: 'building-2', perms: ['settings.manage'] }, // medical centre: practices sharing reception
     { key: 'attendance', href: '/app/attendance', icon: 'clock', perms: [], tabPerms: ['attendance.view'] }, // everyone clocks in (user menu); the tab is for managers
+    { key: 'leave', href: '/app/leave', icon: 'calendar-x', perms: [], tabPerms: ['leave.manage'] }, // everyone asks for leave (user menu); the tab is for approvers
     { key: 'clinical_setup', href: '/app/clinic/setup', icon: 'pill', perms: ['settings.manage', 'prescriptions.create', 'clinical.edit'],
       lights: ['/app/settings/medications', '/app/settings/diagnosis-codes', '/app/settings/insurance', '/app/settings/signatures', '/app/specialty/settings', '/app/clinic/orders-catalog'] },
   ] },

@@ -13,6 +13,7 @@
 // Working hours ("the plan") decide late / absent / overtime, computed when read (so a corrected record or a
 // changed plan is reflected everywhere): the person's own hours (attendance_schedules) → a linked doctor's
 // working hours and days off → the clinic's default hours (attendance_settings) → no plan (only what was recorded).
+// Approved staff leave (src/modules/leave) turns a day without shifts into "on leave" instead of absent.
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const knex = require('../../db/knex');
@@ -267,6 +268,13 @@ function dayStatus(plan, shifts, date, now, grace, since = null) {
   return { ...out, status: 'absent' };
 }
 
+/** A day without shifts that falls in approved leave is "on leave" (never on a day off). lv = leave.daysMap entry. */
+function withLeave(st, lv) {
+  if (!lv || st.status === 'off' || st.status === 'present' || st.status === 'late') return st;
+  return { ...st, status: 'leave', leaveKind: lv.kind, leaveHalf: lv.half };
+}
+const leaveMap = (businessId, from, to) => require('../leave/leave.service').daysMap(businessId, from, to); // eslint-disable-line global-require
+
 // ---------------------------------------------------------------- clocking
 const openShiftQuery = (trx, businessId, userId, now) => trx('attendance_records')
   .where({ business_id: businessId, user_id: userId }).whereNull('clock_out').where('clock_in', '>=', new Date(now - OPEN_SHIFT_MS))
@@ -401,34 +409,35 @@ function people(allStaff, rows, { userId, roleId } = {}) {
 /** Today's (or one day's) board: every staff member with status, first in, last out, hours, late minutes. */
 async function board(ctx, date, filters = {}) {
   const tz = ctx.timezone || 'UTC';
-  const [rows, allStaff, { planFor, sinceFor, settings: set }] = await Promise.all([records(ctx, { from: date, to: date, ...filters }), staff(ctx.businessId, ctx), planner(ctx.businessId, date, date)]);
+  const [rows, allStaff, { planFor, sinceFor, settings: set }, leave] = await Promise.all([records(ctx, { from: date, to: date, ...filters }), staff(ctx.businessId, ctx), planner(ctx.businessId, date, date), leaveMap(ctx.businessId, date, date)]);
   const now = clinicNow(tz);
   const map = byUserDate(rows);
   const list = people(allStaff, rows, filters).map((p) => {
     const shifts = map.get(`${p.user_id}:${date}`) || [];
-    const st = dayStatus(planFor(p.user_id, date), shifts, date, now, set.grace, sinceFor(p.user_id));
+    const st = withLeave(dayStatus(planFor(p.user_id, date), shifts, date, now, set.grace, sinceFor(p.user_id)), leave.get(`${p.user_id}:${date}`));
     const outs = shifts.filter((r) => r.clock_out).map((r) => r.outTime);
     return { ...p, shifts, ...st, isIn: shifts.some((r) => r.isOpen), missingOut: shifts.some((r) => r.missingOut), lastOut: outs.length ? outs[outs.length - 1] : null };
   });
   const count = (fn) => list.filter(fn).length;
   const summary = {
     present: count((p) => p.status === 'present' || p.status === 'late'), late: count((p) => p.status === 'late'), absent: count((p) => p.status === 'absent'),
-    not_yet: count((p) => p.status === 'not_yet'), off: count((p) => p.status === 'off'), no_record: count((p) => p.status === 'no_record'), in_now: count((p) => p.isIn),
+    not_yet: count((p) => p.status === 'not_yet'), off: count((p) => p.status === 'off'), leave: count((p) => p.status === 'leave'), no_record: count((p) => p.status === 'no_record'), in_now: count((p) => p.isIn),
     minutes: list.reduce((s, p) => s + p.worked, 0),
   };
   return { date, rows: list, records: rows, summary, settings: set, hasAnyPlan: list.some((p) => p.plan !== null) };
 }
 
 function sumDays(days) {
-  const t = { present: 0, late: 0, lateMinutes: 0, absent: 0, off: 0, worked: 0, overtime: 0, planned: 0, missingOut: 0, shifts: 0 };
+  const t = { present: 0, late: 0, lateMinutes: 0, absent: 0, off: 0, leave: 0, worked: 0, overtime: 0, planned: 0, missingOut: 0, shifts: 0 };
   for (const d of days) {
     if (d.status === 'present' || d.status === 'late') t.present += 1;
     if (d.status === 'late') { t.late += 1; t.lateMinutes += d.lateMinutes; }
     if (d.status === 'absent') t.absent += 1;
     if (d.status === 'off') t.off += 1;
+    if (d.status === 'leave') t.leave += 1;
     t.worked += d.worked;
     t.overtime += d.overtime;
-    if (d.plan && d.plan !== 'off' && d.status !== 'not_yet' && d.status !== 'no_record') t.planned += d.plan.minutes;
+    if (d.plan && d.plan !== 'off' && !['not_yet', 'no_record', 'leave'].includes(d.status)) t.planned += d.plan.minutes;
     t.missingOut += d.shifts.filter((r) => r.missingOut).length;
     t.shifts += d.shifts.length;
   }
@@ -439,14 +448,14 @@ function sumDays(days) {
 async function timesheet(ctx, userId, month) {
   const [from, to] = monthBounds(month);
   const tz = ctx.timezone || 'UTC';
-  const [rows, allStaff, { planFor, sinceFor, settings: set }] = await Promise.all([records(ctx, { from, to, userId }), staff(ctx.businessId), planner(ctx.businessId, from, to)]);
+  const [rows, allStaff, { planFor, sinceFor, settings: set }, leave] = await Promise.all([records(ctx, { from, to, userId }), staff(ctx.businessId), planner(ctx.businessId, from, to), leaveMap(ctx.businessId, from, to)]);
   const person = allStaff.find((s) => s.user_id === Number(userId));
   if (!person) throw E.notFound('Staff member');
   const now = clinicNow(tz);
   const map = byUserDate(rows);
   const days = listDates(from, to).map((date) => {
     const shifts = map.get(`${person.user_id}:${date}`) || [];
-    return { date, shifts, future: date > now.date, ...dayStatus(planFor(person.user_id, date), shifts, date, now, set.grace, sinceFor(person.user_id)) };
+    return { date, shifts, future: date > now.date, ...withLeave(dayStatus(planFor(person.user_id, date), shifts, date, now, set.grace, sinceFor(person.user_id)), leave.get(`${person.user_id}:${date}`)) };
   });
   return { person, month, days, totals: sumDays(days.filter((d) => !d.future)), settings: set, hasAnyPlan: days.some((d) => d.plan !== null) };
 }
@@ -455,17 +464,17 @@ async function timesheet(ctx, userId, month) {
 async function monthReport(ctx, month, filters = {}) {
   const [from, to] = monthBounds(month);
   const tz = ctx.timezone || 'UTC';
-  const [rows, allStaff, { planFor, sinceFor, settings: set }] = await Promise.all([records(ctx, { from, to, ...filters }), staff(ctx.businessId, ctx), planner(ctx.businessId, from, to)]);
+  const [rows, allStaff, { planFor, sinceFor, settings: set }, leave] = await Promise.all([records(ctx, { from, to, ...filters }), staff(ctx.businessId, ctx), planner(ctx.businessId, from, to), leaveMap(ctx.businessId, from, to)]);
   const now = clinicNow(tz);
   const map = byUserDate(rows);
   const dates = listDates(from, to < now.date ? to : now.date);
   const list = people(allStaff, rows, filters).map((p) => {
     const since = sinceFor(p.user_id);
-    const days = dates.map((date) => ({ date, shifts: map.get(`${p.user_id}:${date}`) || [], ...dayStatus(planFor(p.user_id, date), map.get(`${p.user_id}:${date}`) || [], date, now, set.grace, since) }));
+    const days = dates.map((date) => ({ date, shifts: map.get(`${p.user_id}:${date}`) || [], ...withLeave(dayStatus(planFor(p.user_id, date), map.get(`${p.user_id}:${date}`) || [], date, now, set.grace, since), leave.get(`${p.user_id}:${date}`)) }));
     return { ...p, ...sumDays(days), isIn: rows.some((r) => r.user_id === p.user_id && r.isOpen) };
   });
   const total = (k) => list.reduce((s, p) => s + p[k], 0);
-  return { month, rows: list, records: rows, totals: { worked: total('worked'), late: total('late'), absent: total('absent'), overtime: total('overtime'), people: list.filter((p) => p.present).length }, settings: set };
+  return { month, rows: list, records: rows, totals: { worked: total('worked'), late: total('late'), absent: total('absent'), leave: total('leave'), overtime: total('overtime'), people: list.filter((p) => p.present).length }, settings: set };
 }
 
 /** The last clock-ins / clock-outs of today for the door screen: first name + initial, action and time. */
@@ -577,7 +586,7 @@ async function remove(ctx, id) {
 
 module.exports = { zonedToUtc,
   STEP_MS, GRACE_STEPS, TICKET_MS, OPEN_SHIFT_MS, DAY_KEYS, WEEK_ORDER, stepOf, issueToken, verifyToken, currentQr,
-  settings, saveSettings, schedules, saveSchedule, removeSchedule, planner, dayStatus,
+  settings, saveSettings, schedules, saveSchedule, removeSchedule, planner, dayStatus, withLeave,
   openShift, toggle, staff, records, myMonth, totalsByPerson, board, timesheet, monthReport, feed,
   getRecord, correct, addManual, remove, localDate, localTime, zonedToUtc, minutesOf, monthBounds, shiftDay,
 };

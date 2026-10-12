@@ -149,12 +149,14 @@ async function sheet(ctx, period) {
     .where({ 'l.business_id': ctx.businessId, 'l.period': period }).modify((q) => empScope(q, ctx)).orderBy('l.employee_name')
     .select('l.*', 'e.status as employee_status', 'e.bank_name', 'e.iban');
   const adjs = await adjustmentsOf(lines.map((l) => l.id));
+  // Approved unpaid leave of the month (employees linked to a login): shown on the line, offered as a deduction.
+  const unpaid = await require('../leave/leave.service').unpaidByEmployee(ctx.businessId, period, lines.map((l) => l.employee_id)); // eslint-disable-line global-require
   const rows = lines.map((l) => {
     const mine = adjs.filter((a) => a.line_id === l.id);
     const f = l.status === 'paid'
       ? { base: Number(l.base_salary), allowances: Number(l.allowances), deductions: Number(l.deductions), bonuses: Number(l.bonuses), extraDeductions: Number(l.extra_deductions), advances: Number(l.advances), net: Number(l.net_pay) }
       : m.lineFigures(l, mine);
-    return { ...l, adjustments: mine, f };
+    return { ...l, adjustments: mine, f, unpaidLeaveDays: unpaid.get(l.employee_id) || 0, leaveDeducted: mine.some((a) => a.source === 'leave') };
   });
   const totals = rows.reduce((t, r) => ({
     base: m.round(t.base + r.f.base), allowances: m.round(t.allowances + r.f.allowances), bonuses: m.round(t.bonuses + r.f.bonuses),
